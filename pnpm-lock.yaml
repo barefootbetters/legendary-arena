@@ -14,14 +14,11 @@ importers:
 
   apps/registry-viewer:
     dependencies:
-      '@legendary-arena/registry':
-        specifier: workspace:*
-        version: link:../../packages/registry
       vue:
         specifier: ^3.4.27
         version: 3.5.30(typescript@5.9.3)
       zod:
-        specifier: ^3.25.76
+        specifier: ^3.23.8
         version: 3.25.76
     devDependencies:
       '@vitejs/plugin-vue':
