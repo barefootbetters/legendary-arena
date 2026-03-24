@@ -1,4 +1,11 @@
 {
   "metadataBaseUrl": "https://images.barefootbetters.com",
-  "eagerLoad": ["2099", "3dtc", "amwp", "mdns", "msis", "wpnx", "wtif", "bkwd"]
+  "eagerLoad": [
+    "core", "dkcy", "ff04", "pttr", "vill", "gotg", "fear",
+    "3dtc", "ssw1", "ssw2", "ca75", "cvwr", "dead", "noir",
+    "xmen", "smhc", "chmp", "wwhk", "msp1", "antm", "vnom",
+    "dims", "rvlt", "shld", "asrd", "nmut", "cosm", "rlmk",
+    "anni", "msmc", "dstr", "mgtg", "bkpt", "bkwd", "msis",
+    "mdns", "wtif", "amwp", "2099", "wpnx"
+  ]
 }
