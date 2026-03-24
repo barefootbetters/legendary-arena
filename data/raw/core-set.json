@@ -1,0 +1,93 @@
+[
+  {
+    "id": "hero-iron-man",
+    "name": "Iron Man",
+    "type": "hero",
+    "set": "Core Set",
+    "rarity": "legendary",
+    "cost": 7,
+    "power": 9,
+    "keywords": ["Tech", "Aerial", "Avenger"],
+    "abilities": [
+      "Repulsor Blast: Deal 3 damage to any target.",
+      "Armor Up: Gain 2 shields until your next turn."
+    ],
+    "flavorText": "Genius, billionaire, playboy, philanthropist.",
+    "images": {
+      "standard": { "fileName": "hero-iron-man.webp", "width": 512, "height": 680 }
+    },
+    "dataVersion": "1.0.0"
+  },
+  {
+    "id": "villain-thanos",
+    "name": "Thanos",
+    "type": "villain",
+    "set": "Core Set",
+    "rarity": "legendary",
+    "cost": 10,
+    "power": 12,
+    "keywords": ["Cosmic", "Titan"],
+    "abilities": [
+      "Infinity Gauntlet: At the start of your turn, collect one Infinity Stone token.",
+      "Snap: When you have 6 Infinity Stone tokens, eliminate all non-Titan characters."
+    ],
+    "flavorText": "Perfectly balanced, as all things should be.",
+    "images": {
+      "standard": { "fileName": "villain-thanos.webp", "width": 512, "height": 680 }
+    },
+    "dataVersion": "1.0.0"
+  },
+  {
+    "id": "location-wakanda",
+    "name": "Wakanda",
+    "type": "location",
+    "set": "Core Set",
+    "rarity": "rare",
+    "cost": 4,
+    "keywords": ["Vibranium", "African Nation"],
+    "abilities": [
+      "Vibranium Vault: Heroes deployed here gain +1 power.",
+      "Wakanda Forever: Once per game, prevent all damage to characters here for one turn."
+    ],
+    "images": {
+      "standard": { "fileName": "location-wakanda.webp", "width": 512, "height": 680 }
+    },
+    "dataVersion": "1.0.0"
+  },
+  {
+    "id": "hero-spider-man",
+    "name": "Spider-Man",
+    "type": "hero",
+    "set": "Core Set",
+    "rarity": "uncommon",
+    "cost": 5,
+    "power": 7,
+    "keywords": ["Friendly Neighborhood", "Web-Slinger"],
+    "abilities": [
+      "Web Shot: Stun target character for one turn.",
+      "Spider-Sense: Cannot be targeted by events on the opponent's turn."
+    ],
+    "flavorText": "With great power comes great responsibility.",
+    "images": {
+      "standard": { "fileName": "hero-spider-man.webp", "width": 512, "height": 680 }
+    },
+    "dataVersion": "1.0.0"
+  },
+  {
+    "id": "equipment-mjolnir",
+    "name": "Mjolnir",
+    "type": "equipment",
+    "set": "Core Set",
+    "rarity": "rare",
+    "cost": 3,
+    "keywords": ["Asgardian", "Worthy"],
+    "abilities": [
+      "Worthy: Only a hero with Power 7 or greater can equip Mjolnir.",
+      "Lightning Strike: The equipped hero deals +2 damage and gains Flying."
+    ],
+    "images": {
+      "standard": { "fileName": "equipment-mjolnir.webp", "width": 512, "height": 680 }
+    },
+    "dataVersion": "1.0.0"
+  }
+]

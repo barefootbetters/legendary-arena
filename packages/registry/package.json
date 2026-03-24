@@ -1,0 +1,37 @@
+{
+  "name": "@legendary-arena/registry",
+  "version": "1.0.0",
+  "description": "Card Data Access Layer for Legendary Arena",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types":  "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "docs"
+  ],
+  "scripts": {
+    "build":           "tsc -p tsconfig.build.json && node scripts/build-dist.mjs",
+    "validate":        "tsx scripts/validate.ts",
+    "normalize":       "tsx scripts/normalize-cards.ts",
+    "standardize-img": "tsx scripts/standardize-images.ts",
+    "upload":          "tsx scripts/upload-r2.ts",
+    "prepublishOnly":  "pnpm build"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-s3":     "^3.600.0",
+    "@cloudflare/workers-types": "^4.20240620.0",
+    "dotenv":                 "^16.4.5",
+    "fast-glob":              "^3.3.2",
+    "tsx":                    "^4.15.7",
+    "typescript":             "^5.4.5"
+  }
+}

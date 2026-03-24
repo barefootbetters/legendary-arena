@@ -1,0 +1,24 @@
+{
+  "name": "legendary-arena",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Legendary Arena monorepo — card registry, viewer, and tooling",
+  "scripts": {
+    "registry:validate": "pnpm --filter @legendary-arena/registry validate",
+    "registry:build":    "pnpm --filter @legendary-arena/registry build",
+    "registry:upload":   "pnpm --filter @legendary-arena/registry upload",
+    "viewer:dev":        "pnpm --filter registry-viewer dev",
+    "viewer:build":      "pnpm --filter registry-viewer build"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=9"
+  }
+}
