@@ -22,7 +22,7 @@ export const HeroClassSchema = z.enum([
 
 // ── Hero card — much more permissive ─────────────────────────────────────────
 export const HeroCardSchema = z.object({
-  name:        z.string(),
+  name:        z.string().optional().nullable(),  // missing in some patch-merged cards
   displayName: z.string().optional().nullable(),
   slug:        z.string(),
   // rarity: accept 0,1,2,3 or any number — some sets use 0 or omit it
