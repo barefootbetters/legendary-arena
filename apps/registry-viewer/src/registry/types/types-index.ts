@@ -44,9 +44,9 @@ export interface FlatCard {
   heroName?:  string;
   team?:      string;
   hc?:        HeroClass;
-  rarity?:    1 | 2 | 3;
+  rarity?:     number;      // 0-3 depending on set
   rarityLabel?: string;
-  slot?:      number;
+  slot?:       number;      // may be missing in some sets
   cost?:      number;
   attack?:    string | null;
   recruit?:   string | null;

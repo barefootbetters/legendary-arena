@@ -1,0 +1,1602 @@
+{
+  "id": 39,
+  "abbr": "amwp",
+  "exportName": "MSAntManWasp",
+  "heroes": [
+    {
+      "id": 273,
+      "name": "Scott Lang, Cat Burglar",
+      "slug": "scott-lang-cat-burglar",
+      "team": "crime-syndicate",
+      "cards": [
+        {
+          "slug": "petty-larceny",
+          "name": "Petty Larceny",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 1,
+          "attack": null,
+          "recruit": "1+",
+          "abilities": [
+            "Heist: You get +2[icon:recruit]."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-scott-lang-cat-burglar-1c1.webp"
+        },
+        {
+          "slug": "anything-for-cassie",
+          "name": "Anything for Cassie",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": "1+",
+          "recruit": "1+",
+          "abilities": [
+            "Whenever you gain a Wound this turn, return that Wound to the Wound Deck.",
+            "Heist: Rescue a Bystander."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-scott-lang-cat-burglar-2c2.webp"
+        },
+        {
+          "slug": "shocking-support",
+          "name": "Shocking Support",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "abilities": [
+            "Heist: You get +2[icon:attack]."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-scott-lang-cat-burglar-4c3.webp"
+        },
+        {
+          "slug": "x-con-security-van",
+          "name": "X-Con Security Van",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 5,
+          "attack": "2",
+          "recruit": null,
+          "abilities": [
+            "Heist: You may move a Villain to an empty city space. If you do, KO one of your Heroes."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-scott-lang-cat-burglar-5u.webp"
+        },
+        {
+          "slug": "putting-a-crew-together",
+          "name": "Putting a Crew Together",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 5,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "3+",
+          "recruit": null,
+          "abilities": [
+            "Heist: You get +1[icon:attack] for each different cost card you have."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-scott-lang-cat-burglar-6u2.webp"
+        },
+        {
+          "slug": "the-big-score",
+          "name": "The Big Score",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 6,
+          "hc": "covert",
+          "cost": 8,
+          "attack": "4+",
+          "recruit": null,
+          "abilities": [
+            "Heist: You get +4[icon:attack]. If the card revealed from the Villain Deck is a Master Strike, KO it and put a card from the Bystander Deck on top of the Villain Deck."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-scott-lang-cat-burglar-8r.webp"
+        }
+      ]
+    },
+    {
+      "id": 274,
+      "name": "Ant-Man",
+      "slug": "ant-man",
+      "team": "avengers",
+      "cards": [
+        {
+          "name": "Hitch a Ride",
+          "displayName": "Hitch a Ride",
+          "slug": "hitch-a-ride",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 2,
+          "attack": null,
+          "recruit": "1+",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-ant-man-2c1.webp",
+          "abilities": [
+            "[keyword:Size-Changing] [hc:covert]",
+            "[keyword:Antics]: You get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Look Out for the Little Guy!",
+          "displayName": "Look Out for the Little Guy!",
+          "slug": "look-out-for-the-little-guy",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 3,
+          "attack": "1",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-ant-man-3c2.webp",
+          "abilities": [
+            "[keyword:Size-Changing] [hc:strength]",
+            "Reveal the top card of your deck. If it's [hc:strength] or has [keyword:Size-Changing] draw it."
+          ]
+        },
+        {
+          "name": "Shrink Away",
+          "displayName": "Shrink Away",
+          "slug": "shrink-away",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-ant-man-4c3.webp",
+          "abilities": [
+            "[keyword:Size-Changing] [hc:covert]",
+            "[hc:covert]: All Villains and the Mastermind get -1[icon:attack] this turn."
+          ]
+        },
+        {
+          "name": "Bug Swarm",
+          "displayName": "Bug Swarm",
+          "slug": "bug-swarm",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 5,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-ant-man-5u.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:strength][hc:strength][hc:strength]",
+            "[keyword:Antics]: You may KO a card from your hand or discard pile."
+          ]
+        },
+        {
+          "name": "Tiny little Risk",
+          "displayName": "Tiny little Risk",
+          "slug": "tiny-little-risk",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 5,
+          "hc": "covert",
+          "cost": 6,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-ant-man-6u2.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:covert][hc:covert][hc:covert]",
+            "[keyword:Heist]: Draw two cards."
+          ]
+        },
+        {
+          "name": "Giant-Man",
+          "displayName": "Giant-Man",
+          "slug": "giant-man",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 6,
+          "hc": "strength",
+          "cost": 9,
+          "attack": "6+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-ant-man-9r.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:strength][hc:strength][hc:strength][hc:strength][hc:strength]",
+            "You get +1[icon:attack] for each card you played this turn that's [hc:strength] and/or has Size-Changing."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 275,
+      "name": "Wasp",
+      "slug": "wasp",
+      "team": "avengers",
+      "cards": [
+        {
+          "slug": "follow-my-lead",
+          "name": "Follow my Lead",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": "2*",
+          "attack": "1+",
+          "recruit": null,
+          "abilities": [
+            "Size-Changing [hc:ranged]",
+            "If this is the first card you played this turn, you get +1[icon:attack]."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-wasp-2c1.webp"
+        },
+        {
+          "slug": "flitting-sting",
+          "name": "Flitting Sting",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": "3*",
+          "attack": "1+",
+          "recruit": "1+",
+          "abilities": [
+            "Size-Changing [hc:ranged]",
+            "[hc:ranged]: You get +1[icon:recruit] and +1[icon:attack]."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-wasp-3c2.webp"
+        },
+        {
+          "slug": "master-physicist",
+          "name": "Master Physicist",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "tech",
+          "cost": "4*",
+          "attack": null,
+          "recruit": "2+",
+          "abilities": [
+            "Size-Changing [hc:tech]",
+            "You get +1[icon:recruit] for each other card you have with a \"+\" symbol in its recruit icon."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-wasp-4c3.webp"
+        },
+        {
+          "slug": "positive-ions",
+          "name": "Positive Ions",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": "5*",
+          "attack": "2+",
+          "recruit": null,
+          "abilities": [
+            "Size-Changing [hc:ranged]",
+            "You get +1[icon:attack] for each other card you have with a \"+\" symbol in its attack icon."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-wasp-5u.webp"
+        },
+        {
+          "slug": "infiltrate",
+          "name": "Infiltrate",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 5,
+          "hc": "tech",
+          "cost": "6*",
+          "attack": "1+",
+          "recruit": null,
+          "abilities": [
+            "Microscopic Size-Changing [hc:tech][hc:tech][hc:tech]",
+            "When you draw a new hand this turn, draw an extra card.",
+            "Heist: You get +3[icon:attack]."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-wasp-6u2.webp"
+        },
+        {
+          "slug": "hope-returns",
+          "name": "Hope Returns",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 6,
+          "hc": "ranged",
+          "cost": "9*",
+          "attack": "4+",
+          "recruit": "4+",
+          "abilities": [
+            "Microscopic Size-Changing [hc:ranged][hc:ranged][hc:ranged][hc:ranged][hc:ranged]",
+            "You get +1[icon:recruit] for each other card you have with a \"+\" symbol in its recruit icon.",
+            "You get +1[icon:attack] for each other card you have with a \"+\" symbol in its attack icon."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-wasp-9r.webp"
+        }
+      ]
+    },
+    {
+      "id": 276,
+      "name": "Cassie Lang",
+      "slug": "cassie-lang",
+      "team": "avengers",
+      "cards": [
+        {
+          "name": "Start Small",
+          "displayName": "Start Small",
+          "slug": "start-small",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 2,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-cassie-lang-2c1.webp",
+          "abilities": [
+            "[keyword:Size-Changing] [hc:tech]",
+            "To play this, you must discard a card. Then, if you have a Villain in your Victory Pile worth 2[icon:piercing] or less, draw a card."
+          ]
+        },
+        {
+          "name": "Giant Hug",
+          "displayName": "Giant Hug",
+          "slug": "giant-hug",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-cassie-lang-4c2.webp",
+          "abilities": [
+            "[keyword:Size-Changing] [hc:strength]",
+            "Choose a player. If that player reveals a card that costs 5 or more, that player draws a card."
+          ]
+        },
+        {
+          "name": "Colossal Stomp",
+          "displayName": "Colossal Stomp",
+          "slug": "colossal-stomp",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 5,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-cassie-lang-5c3.webp",
+          "abilities": [
+            "[keyword:Size-Changing] [hc:strength]",
+            "[hc:strength]: You may defeat a Villain worth 2[icon:piercing] or less."
+          ]
+        },
+        {
+          "name": "Quantum Beacon",
+          "displayName": "Quantum Beacon",
+          "slug": "quantum-beacon",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 5,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-cassie-lang-5u.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech]",
+            "[hc:tech]: Reveal the top card of the Villain Deck. If it's a Bystander, rescue it. If it's a Vilain worth 2[icon:piercing] or less, you may fight it this turn. If you rescue or defeat that card, don't play a card from the Vilain Deck next turn."
+          ]
+        },
+        {
+          "name": "Learn from the Past",
+          "displayName": "Learn from the Past",
+          "slug": "learn-from-the-past",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 5,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-cassie-lang-6u2.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:strength][hc:strength][hc:strength]",
+            "[hc:strength]: You may do the Fight effect of a Villain in your Victory Pile worth 2[icon:piercing] or less."
+          ]
+        },
+        {
+          "name": "Inspire Revolution",
+          "displayName": "Inspire Revolution",
+          "slug": "inspire-revolution",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 6,
+          "hc": "strength",
+          "cost": 9,
+          "attack": "5+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-cassie-lang-9r.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:strength][hc:strength][hc:strength][hc:strength][hc:strength]",
+            "You get +1[icon:attack] for each Villain worth 2[icon:piercing] or less in your Victory Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 277,
+      "name": "Janet van Dyne",
+      "slug": "janet-van-dyne",
+      "team": "unaffiliated",
+      "cards": [
+        {
+          "slug": "subatomic-size",
+          "name": "Subatomic Size",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": "2*",
+          "attack": "0+",
+          "recruit": null,
+          "abilities": [
+            "Microscopic Size-Changing [hc:covert][hc:covert]",
+            "Draw a card.",
+            "[hc:covert][hc:covert]: You get +2[icon:attack]."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-janet-van-dyne-2c1.webp"
+        },
+        {
+          "slug": "search-for-peace",
+          "name": "Search for Peace",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2+",
+          "abilities": [
+            "[hc:covert]: Explore. You get +[icon:recruit] equal to the Found Hero's printed recruit."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-janet-van-dyne-3c2.webp"
+        },
+        {
+          "slug": "prepare-for-war",
+          "name": "Prepare for War",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "abilities": [
+            "[hc:ranged]: Explore. You get +[icon:attack] equal to the Found Hero's printed attack."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-janet-van-dyne-4c3.webp"
+        },
+        {
+          "slug": "wasp-of-another-generation",
+          "name": "Wasp of Another Generation",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "covert",
+          "cost": "5*",
+          "attack": "2+",
+          "recruit": null,
+          "abilities": [
+            "Size-Changing [hc:covert]",
+            "[hc:covert]: Explore. Then you get +1[icon:attack] for each time you explored this turn."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-janet-van-dyne-5u.webp"
+        },
+        {
+          "slug": "quantum-contradiction",
+          "name": "Quantum Contradiction",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 5,
+          "hc": "ranged",
+          "cost": 6,
+          "attack": "4",
+          "recruit": "4",
+          "abilities": [
+            "When you play this, put it on top of the Hero Deck or KO it."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-janet-van-dyne-6u2.webp"
+        },
+        {
+          "slug": "finally-found-you",
+          "name": "Finally Found You",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 6,
+          "hc": "covert",
+          "cost": 8,
+          "attack": "4+",
+          "recruit": "4+",
+          "abilities": [
+            "Explore.",
+            "[hc:covert]: You get +[icon:recruit] equal to the Found Hero's printed recruit and +[icon:attack] equal to its printed attack."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-janet-van-dyne-8r.webp"
+        }
+      ]
+    },
+    {
+      "id": 278,
+      "name": "Freedom Fighters",
+      "slug": "freedom-fighters",
+      "team": "unaffiliated",
+      "cards": [
+        {
+          "slug": "veb",
+          "name": "Veb",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": "1",
+          "recruit": null,
+          "abilities": [
+            "Reveal the top card of your deck. If that card has any \"holes\" printed inside any of its icons (0, 4, 6, 8, or 9), draw it.",
+            "[hc:instinct]: You may KO the card you drew this way."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-freedom-fighters-2c1.webp"
+        },
+        {
+          "slug": "mystics",
+          "name": "Mystics",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": null,
+          "recruit": "1",
+          "abilities": [
+            "When you draw a new hand this turn, draw an extra card."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-freedom-fighters-3c2.webp"
+        },
+        {
+          "slug": "steel-warrior",
+          "name": "Steel Warrior",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": "1+",
+          "recruit": null,
+          "abilities": [
+            "Streets Conqueror 1",
+            "Draw a card."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-freedom-fighters-4c3.webp"
+        },
+        {
+          "slug": "xolum",
+          "name": "Xolum",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "abilities": [
+            "Bridge Conqueror 1",
+            "[hc:ranged]: You get +2[icon:attack]."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-freedom-fighters-5u.webp"
+        },
+        {
+          "slug": "quaz",
+          "name": "Quaz",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 5,
+          "hc": "ranged",
+          "cost": 6,
+          "attack": "2+",
+          "recruit": "2+",
+          "abilities": [
+            "[hc:ranged]: Choose recruit or attack. Then Explore. You get the printed value of the icon you chose on the Found Hero."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-freedom-fighters-6u2.webp"
+        },
+        {
+          "slug": "freedom-forever",
+          "name": "Freedom Forever",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 6,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": "5",
+          "recruit": null,
+          "abilities": [
+            "Explore.",
+            "[hc:instinct]: You may choose a player to gain the Found Hero."
+          ],
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-freedom-fighters-7r.webp"
+        }
+      ]
+    },
+    {
+      "id": 279,
+      "name": "Jentorra",
+      "slug": "jentorra",
+      "team": "unaffiliated",
+      "cards": [
+        {
+          "name": "Take the High Ground",
+          "displayName": "Take the High Ground",
+          "slug": "take-the-high-ground",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 2,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-jentorra-2c1.webp",
+          "abilities": [
+            "[keyword:Conqueror]",
+            "If there are no Villains on the Rooftops, draw a card."
+          ]
+        },
+        {
+          "name": "Hit and Run",
+          "displayName": "Hit and Run",
+          "slug": "hit-and-run",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "0+",
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-jentorra-3c2.webp",
+          "abilities": [
+            "You may move a Villain to an adjacent city space. If another Villain is already there, swap them.",
+            "[hc:instinct]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Unite the Oppressed",
+          "displayName": "Unite the Oppressed",
+          "slug": "unite-the-oppressed",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-jentorra-4c3.webp",
+          "abilities": [
+            "[hc:strength]: [keyword:Conqueror]"
+          ]
+        },
+        {
+          "name": "Find Your Courage",
+          "displayName": "Find Your Courage",
+          "slug": "find-your-courage",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 5,
+          "attack": null,
+          "recruit": "3+",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-jentorra-5u.webp",
+          "abilities": [
+            "[hc:instinct]: [keyword:Explore]. If the Found Hero is [hc:instinct] or has no team icon, you get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Lead Powerful Allies",
+          "displayName": "Lead Powerful Allies",
+          "slug": "lead-powerful-allies",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 5,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-jentorra-6u2.webp",
+          "abilities": [
+            "[hc:strength]: [keyword:Explore]. You get +[icon:attack] equal to the Found Hero's cost."
+          ]
+        },
+        {
+          "name": "Conquer the Conqueror",
+          "displayName": "Conquer the Conqueror",
+          "slug": "conquer-the-conqueror",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 6,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": "5+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-jentorra-7r.webp",
+          "abilities": [
+            "[keyword:Conqueror]",
+            "You get +1[icon:attack] for each Villain worth, 4[icon:piercing] or more and each Mastermind Tactic in your Victory Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 280,
+      "name": "Ant Army",
+      "slug": "ant-army",
+      "team": "unaffiliated",
+      "cards": [
+        {
+          "name": "Up the Ante",
+          "displayName": "Up the Ante",
+          "slug": "up-the-ante",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 1,
+          "attack": "1",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-ant-army-1c1.webp",
+          "abilities": [
+            "[keyword:Heist]: Draw a card."
+          ]
+        },
+        {
+          "name": "Antagonize",
+          "displayName": "Antagonize",
+          "slug": "antagonize",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-ant-army-2c2.webp",
+          "abilities": [
+            "[keyword:Size-Changing] [hc:instinct]",
+            "[keyword:Antics]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Anticipate",
+          "displayName": "Anticipate",
+          "slug": "anticipate",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-ant-army-4c3.webp",
+          "abilities": [
+            "[keyword:Size-Changing] [hc:tech]",
+            "[keyword:Antics]: Draw a card."
+          ]
+        },
+        {
+          "name": "Antiproton Experiments",
+          "displayName": "Antiproton Experiments",
+          "slug": "antiproton-experiments",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 5,
+          "attack": "1+",
+          "recruit": "1+",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-ant-army-5u.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech]",
+            "[keyword:Antics]: You get +2[icon:recruit] and +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Anti-Tank Weapons",
+          "displayName": "Anti-Tank Weapons",
+          "slug": "anti-tank-weapons",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 5,
+          "hc": "tech",
+          "cost": 6,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-ant-army-6u2.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech]",
+            "[hc:tech]: You get +3[icon:attack]."
+          ]
+        },
+        {
+          "name": "Revolutionary Anthem",
+          "displayName": "Revolutionary Anthem",
+          "slug": "revolutionary-anthem",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 6,
+          "hc": "tech",
+          "cost": 9,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hr-ant-army-9r.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech][hc:tech][hc:tech]",
+            "[keyword:Antics]: You get +2[icon:attack].",
+            "[keyword:Heist]: You get +2[icon:attack]. If the card revealed from the Villain Deck is a Scheme Twist, you get another +2[icon:attack], and you may shuffle that deck."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 97,
+      "name": "Darren Cross",
+      "slug": "darren-cross",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Darren Cross",
+          "slug": "darren-cross",
+          "tactic": false,
+          "vAttack": "8+",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-mm-darren-cross.webp",
+          "abilities": [
+            "[keyword:Conqueror]",
+            "Always Leads: Cross Technologies",
+            "Master Strike: Darren Cross [keyword:Double-Cross] each player. Then he [keyword:Transform]."
+          ]
+        },
+        {
+          "name": "Yellowjacket",
+          "slug": "yellowjacket",
+          "tactic": false,
+          "vAttack": "12",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-ma-darren-cross-yellowjacket.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:tech][hc:tech]",
+            "Master Strike: Each player discards a [hc:instinct] Hero or [keyword:Size-Changing] Hero or gains a Wound. Yellowjacket [keyword:Transform]."
+          ]
+        },
+        {
+          "name": "Corporate Raider",
+          "slug": "corporate-raider",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-mt-darren-cross-corporate-raider.webp",
+          "abilities": [
+            "Fight: KO one of your Heroes with a [icon:recruit] icon. If the Bank is empty, move a Villain to the Bank.",
+            "This Mastermind [keyword:Transform]."
+          ]
+        },
+        {
+          "name": "Protect My Investments",
+          "slug": "protect-my-investments",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-mt-darren-cross-protect-my-investments.webp",
+          "abilities": [
+            "Fight: If the Bank is empty, each other player chooses a Villain worth 2[icon:piercing] or more from their Victory Pile. You choose one of those Villains to enter the Bank.",
+            "This Mastermind [keyword:Transform]."
+          ]
+        },
+        {
+          "name": "Shrinking Research Budget",
+          "slug": "shrinking-research-budget",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-mt-darren-cross-shrinking-research-budget.webp",
+          "abilities": [
+            "Fight: Each Hero currently in the HQ that has no [keyword:Size-Changing] abilities gains [keyword:Size-Changing] for one of its Hero Classes.",
+            "This Mastermind [keyword:Transform]."
+          ]
+        },
+        {
+          "name": "Steal Pym Particles",
+          "slug": "steal-pym-particles",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-mt-darren-cross-steal-pym-particles.webp",
+          "abilities": [
+            "Fight: Each other player shuffles a [hc:covert], [hc:tech], or [keyword:Size-Changing] card from their hand or discard pile into the Hero Deck.",
+            "This Mastermind [keyword:Transform]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 98,
+      "name": "Ghost, Master Thief",
+      "slug": "ghost-master-thief",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Ghost, Master Thief",
+          "slug": "ghost-master-thief",
+          "tactic": false,
+          "vAttack": "8+",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-mm-ghost-master-thief.webp",
+          "abilities": [
+            "Ghost gets +1[icon:attack] for each different cost among her “Kidnapped Victimis.“ While this side is face up, you may recruit cards from her Kidnapped Victims (in any order), spending 2[icon:recruit] extra for each.",
+            "Always Leads: Ghost Chasers",
+            "Master Strike: Each player reveals a [hc:instinct] Hero or discards two cards with [icon:recruit] icons. Ghost [keyword:Transform]."
+          ]
+        },
+        {
+          "name": "Ghost, Intangible",
+          "slug": "ghost-intangible",
+          "tactic": false,
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-ma-ghost-master-thief-ghost-intangible.webp",
+          "abilities": [
+            "You can't fight Ghost unless you made at least 6[icon:recruit] this turn.",
+            "Master Strike: Each player discards a [hc:covert] Hero or puts a non-grey Hero from their hand or discard pile next to Ghost as a “Kidnapped Victim.“ Ghost [keyword:Transform]."
+          ]
+        },
+        {
+          "name": "Elaborate Rescue Plan",
+          "slug": "elaborate-rescue-plan",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-mt-ghost-master-thief-elaborate-rescue-plan.webp",
+          "abilities": [
+            "Fight: You may choose a player to gain one of Ghost's Kidnapped Victims.",
+            "Ghost [keyword:Transform]."
+          ]
+        },
+        {
+          "name": "Nightmarish Wraith",
+          "slug": "nightmarish-wraith",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-mt-ghost-master-thief-nightmarish-wraith.webp",
+          "abilities": [
+            "Fight: Each other player puts a non-grey Hero from their discard pile next to Ghost as a Kidnapped Victim.",
+            "Ghost [keyword:Transform]."
+          ]
+        },
+        {
+          "name": "Shadowy Abduction",
+          "slug": "shadowy-abduction",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-mt-ghost-master-thief-shadowy-abduction.webp",
+          "abilities": [
+            "Fight: Put the highest cost Hero from the HQ next to Ghost as a Kidnapped Victim.",
+            "Ghost [keyword:Transform]."
+          ]
+        },
+        {
+          "name": "Draining Quantum Energy Chamber",
+          "slug": "draining-quantum-energy-chamber",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-mt-ghost-master-thief-draining-quantum-energy-chamber.webp",
+          "abilities": [
+            "Fight: Each other player reveals their hand and KOs one of their cards that shares a Hero Class with any of Ghost's Kidnapped Victims.",
+            "Ghost [keyword:Transform]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 99,
+      "name": "Kang, Quantum Conqueror",
+      "slug": "kang-quantum-conqueror",
+      "alwaysLeads": [],
+      "vp": 7,
+      "cards": [
+        {
+          "name": "Kang, Quantum Conqueror",
+          "slug": "kang-quantum-conqueror",
+          "tactic": false,
+          "vAttack": "11+",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-mm-kang-quantum-conqueror.webp",
+          "abilities": [
+            "[keyword:Conqueror]",
+            "Always Leads: Armada of Kang. Set aside the Villains from an extra Villain Group as “Timeline Variants.“",
+            "Master Strike: Each player discards a [hc:strength] Hero or gains a Wound. Put a random Timeline Variant Villain face up in the “Multiverse“ space. Kang [keyword:Transform]."
+          ]
+        },
+        {
+          "name": "Kang, Multiverse Conqueror",
+          "slug": "kang-multiverse-conqueror",
+          "tactic": false,
+          "vAttack": "10+",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-ma-kang-quantum-conqueror-kang-multiverse-conqueror.webp",
+          "abilities": [
+            "[keyword:Conqueror]",
+            "While either side of Kang is face up, the “Multiverse“ is a space to his left that can hold multiple Villains. You can fight them (in any order) only while this side is face up.",
+            "Master Strike: If there are any Villains in the Multiverse, each player gains a Wound. Then a Villain from the Multiverse enters an empty space among the Rooftops, Streets or Bridge. Kang [keyword:Transform]."
+          ]
+        },
+        {
+          "name": "Conqueror's Wrath",
+          "slug": "conquerors-wrath",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-mt-kang-quantum-conqueror-conquerors-wrath.webp",
+          "abilities": [
+            "Fight: If there are any Villains in the Rooftops, Streets, and/or Bridge, each player gains a Wound. If there are any Villains in the Multiverse, each player gains a Wound.",
+            "Kang [keyword:Transform]."
+          ]
+        },
+        {
+          "name": "Kang's Defiance",
+          "slug": "kangs-defiance",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-mt-kang-quantum-conqueror-kangs-defiance.webp",
+          "abilities": [
+            "Fight: If any of the Rooftops, Streets, or Bridge are empty, reveal the top card of the Villain Deck. If it's a Villain, it enters one of those spaces.",
+            "Put a random Timeline Variant Villain face up in the “Multiverse“ space.",
+            "Kang [keyword:Transform]."
+          ]
+        },
+        {
+          "name": "Multiversal Engine Core",
+          "slug": "multiversal-engine-core",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-mt-kang-quantum-conqueror-multiversal-engine-core.webp",
+          "abilities": [
+            "Fight: Kang [keyword:Double-Cross] each other player.",
+            "Put a random Timeline Variant Villain face up in the “Multiverse“ space.",
+            "Kang [keyword:Transform]."
+          ]
+        },
+        {
+          "name": "The Time Sphere",
+          "slug": "the-time-sphere",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-mt-kang-quantum-conqueror-the-time-sphere.webp",
+          "abilities": [
+            "Fight: Each other player puts two cards from their hand on the bottom of their deck. You draw two cards.",
+            "Kang [keyword:Transform]."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 119,
+      "name": "Cross Technologies",
+      "slug": "cross-technologies",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Hydra Arms Dealer",
+          "slug": "hydra-arms-dealer",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-cross-technologies-hydra-arms-dealer.webp",
+          "abilities": [
+            "Fight: You get +2[icon:recruit], usable only to recruit Heroes with an [icon:attack] icon."
+          ]
+        },
+        {
+          "name": "Cross' Security Detail",
+          "slug": "cross-security-detail",
+          "vp": "4",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-cross-technologies-cross-security-detail.webp",
+          "abilities": [
+            "While the back side of a Mastermind card is face up, this Villain gets +2[icon:attack] and “Escape: Each player discards a card.“",
+            "Fight: KO one of your Heroes."
+          ]
+        },
+        {
+          "name": "Shrinksperiments",
+          "slug": "shrinksperiments",
+          "vp": "3",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-cross-technologies-shrinksperiments.webp",
+          "abilities": [
+            "[keyword:Size-Changing] [hc:tech]",
+            "Fight: A Hero in the HQ loses all [keyword:Size-Changing] abilities, then gains [keyword:Size-Changing] [hc:tech] this turn."
+          ]
+        },
+        {
+          "name": "Yellowjacket Prototype",
+          "slug": "yellowjacket-prototype",
+          "vp": "5",
+          "vAttack": "9",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-cross-technologies-yellowjacket-prototype.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:instinct][hc:instinct][hc:instinct][hc:instinct]",
+            "Ambush: Each player reveals a [hc:instinct] Hero or gains a Wound.",
+            "Escape: Same effect."
+          ]
+        },
+        {
+          "name": "Take Over Pym Technologies",
+          "slug": "take-over-pym-technologies",
+          "vp": "2",
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-cross-technologies-take-over-pym-technologies.webp",
+          "abilities": [
+            "Ambush: This Scheme captures Bystanders equal to the number of players plus 1, as “Pym Tech Scientists.“",
+            "Special Rules: Once per turn, you may pay 3[icon:recruit] or discard a card with [keyword:Size-Changing]. If you do, rescue a Pym Tech Scientist and draw a card. If you rescue the last Scientist, defeat this Scheme.",
+            "Twist: This captures another Pym Tech Scientist. Then, if it has 3 or more Scientists, each player discards a card."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 120,
+      "name": "Ghost Chasers",
+      "slug": "ghost-chasers",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Sonny Burch's Goons",
+          "slug": "sonny-burchs-goons",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-ghost-chasers-sonny-burchs-goons.webp",
+          "abilities": [
+            "Fight: [keyword:Heist]: You get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Anitolov",
+          "slug": "anitolov",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-ghost-chasers-anitolov.webp",
+          "abilities": [
+            "Fight: [keyword:Heist]: You may KO up to two of your Heroes."
+          ]
+        },
+        {
+          "name": "Corrupted Government Agents",
+          "slug": "corrupted-government-agents",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-ghost-chasers-corrupted-government-agents.webp",
+          "abilities": [
+            "Ambush: Corrupted Government Agents [keyword:Double-Cross] each player.",
+            "Fight: You may look at the top three cards of any deck and put them back in any order."
+          ]
+        },
+        {
+          "name": "Uzman, with Truth Serum",
+          "slug": "uzman-with-truth-serum",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-ghost-chasers-uzman-with-truth-serum.webp",
+          "abilities": [
+            "Fight: Look at the top card of the Hero Deck and claim a Hero Class it has. Choose another player to guess “Truth“ or “Lie.“ If they guessed right, they either KO that Hero or choose a player to gain it. If they guessed wrong, you decide what to do with that Hero Instead. (In solo, you just decide.)"
+          ]
+        },
+        {
+          "name": "Sonny Burch",
+          "slug": "sonny-burch",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-ghost-chasers-sonny-burch.webp",
+          "abilities": [
+            "Ambush: Sonny Burch [keyword:Double-Cross] each player.",
+            "Fight: [keyword:Heist]: You may choose a player to gain a [hc:tech] or [hc:ranged] Hero from the HQ."
+          ]
+        },
+        {
+          "name": "Dr. Bill Foster",
+          "slug": "dr-bill-foster",
+          "vp": "4",
+          "vAttack": "0",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-ghost-chasers-dr-bill-foster.webp",
+          "abilities": [
+            "To fight Dr. Bill Foster, you must solve a math equation: Discard three cards such that the costs of two of them add up to the cost of the third. They can't all cost 0.",
+            "Escape: Each player discards a card that costs 0."
+          ]
+        },
+        {
+          "name": "Goliath",
+          "slug": "goliath",
+          "vp": "5",
+          "vAttack": "8",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-ghost-chasers-goliath.webp",
+          "abilities": [
+            "[keyword:Size-Changing] [hc:strength]",
+            "Ambush: Goliath [keyword:Double-Cross] each player.",
+            "Fight: Goliath topples over, crushing another Villain. You may defeat a Villain that has 4[icon:attack] or less in an adjacent city space."
+          ]
+        },
+        {
+          "name": "High-Speed Car Chase",
+          "slug": "high-speed-car-chase",
+          "vp": "3",
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-ghost-chasers-high-speed-car-chase.webp",
+          "abilities": [
+            "Ambush: Stack 2 cards from the Wound Deck next to this Scheme as “Dangerous Stunts.“",
+            "Twist: If there is a Villain in the Streets: Add 2 Dangerous Stunts. Then if there are at least 5 Stunts, there is a “car crash“: Each player gains one of the Stunts as a Wound. KO the rest of the Stunts and this Scheme.",
+            "Otherwise: Return a Dangerous Stunt to the Wound Deck. If there are still Stunts here, move a Villain to the Streets. If there aren't any Stunts, defeat this Scheme."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 121,
+      "name": "Armada of Kang",
+      "slug": "armada-of-kang",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Quantumnaut Elite",
+          "slug": "quantumnaut-elite",
+          "vp": "4",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-armada-of-kang-quantumnaut-elite.webp",
+          "abilities": [
+            "[keyword:Conqueror]",
+            "[keyword:Conqueror]",
+            "Fight: KO two of your Heroes."
+          ]
+        },
+        {
+          "name": "Troop Ships of Kang",
+          "slug": "troop-ships-of-kang",
+          "vp": "3",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-armada-of-kang-troop-ships-of-kang.webp",
+          "abilities": [
+            "[keyword:Conqueror]",
+            "Ambush: A Villain worth 2[icon:piercing] or 3[icon:piercing] from any player's Victory Pile enters the city."
+          ]
+        },
+        {
+          "name": "City Defense System",
+          "slug": "city-defense-system",
+          "vp": "3",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-armada-of-kang-city-defense-system.webp",
+          "abilities": [
+            "[keyword:Conqueror]",
+            "Ambush: Each player reveals a [hc:ranged] Hero or gains a Wound.",
+            "Escape: Same effect."
+          ]
+        },
+        {
+          "name": "Lord Krylar's Yacht",
+          "slug": "lord-krylars-yacht",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-armada-of-kang-lord-krylars-yacht.webp",
+          "abilities": [
+            "Ambush: You may say “I'm sure we can trust Lord Krylar...“ If you do: Draw a card, reveal it, and if it has an odd numbered cost, Lord Krylar [keyword:Double-Cross] each player. ",
+            "Fight: Same effect.",
+            "Escape: Same effect."
+          ]
+        },
+        {
+          "name": "Energy Shield",
+          "slug": "energy-shield",
+          "vp": "4",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-armada-of-kang-energy-shield.webp",
+          "abilities": [
+            "[keyword:Conqueror]",
+            "Ambush: Put this Energy Shield above the Mastermind space. While it's there, you can't fight the Mastermind. (You can still fight the Energy Shield.)"
+          ]
+        },
+        {
+          "name": "Pursuit Craft",
+          "slug": "pursuit-craft",
+          "vp": "4",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-armada-of-kang-pursuit-craft.webp",
+          "abilities": [
+            "[keyword:Conqueror]",
+            "Ambush: (After this enters the city) If other Villains or the Mastermind have Conqueror abilities naming any empty city spaces, Pursuit Craft moves to one of those city spaces."
+          ]
+        },
+        {
+          "name": "M.O.D.O.K.",
+          "slug": "m-o-d-o-k",
+          "vp": "5",
+          "vAttack": "8",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-armada-of-kang-m-o-d-o-k.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:ranged][hc:ranged][hc:ranged][hc:ranged]",
+            "Ambush: M.O.D.O.K. [keyword:Double-Cross] each player.",
+            "Fight: Each player KOs one of their Heroes."
+          ]
+        },
+        {
+          "name": "Build a Conquering Army",
+          "slug": "build-a-conquering-army",
+          "vp": "4",
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-armada-of-kang-build-a-conquering-army.webp",
+          "abilities": [
+            "Ambush: If the Bridge is empty, move a Villain to the Bridge. Choose an unused Henchman Group and stack Henchmen from it next to this Scheme equal to the number of players.",
+            "Special Rules: Players may fight Henchmen stacked here. While here, those Henchmen also have “[keyword:Conqueror].“ If you defeat the last Henchman here, defeat this Scheme.",
+            "Twist: Stack another of those Henchmen next to this Scheme (from a Victory Pile if necessary). Then, if there are two more Henchmen here than the number of players: Each player gains a Wound, 3 of those Henchmen enter the city, and you KO this Scheme and the rest of those Henchmen."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 122,
+      "name": "Quantum Realm",
+      "slug": "quantum-realm",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Axian Bartender",
+          "slug": "axian-bartender",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-quantum-realm-axian-bartender.webp",
+          "abilities": [
+            "Ambush: Any number of times this turn, you may pay 2[icon:recruit] to “buy a refreshment“ and KO a Wound from your hand or from any player's discard pile.",
+            "Fight: Same effect."
+          ]
+        },
+        {
+          "name": "Axiam Maitre D'",
+          "slug": "axiam-maitre-d",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-quantum-realm-axiam-maitre-d.webp",
+          "abilities": [
+            "Fight: [keyword:Explore]. The Found Hero costs 2 less to recruit this turn."
+          ]
+        },
+        {
+          "name": "Lord Krylar's Valet",
+          "slug": "lord-krylars-valet",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-quantum-realm-lord-krylars-valet.webp",
+          "abilities": [
+            "Fight: [keyword:Explore]. You get +[icon:recruit] equal to the Found Hero's printed [icon:recruit]."
+          ]
+        },
+        {
+          "name": "Sky Manta",
+          "slug": "sky-manta",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-quantum-realm-sky-manta.webp",
+          "abilities": [
+            "Fight: [keyword:Explore]. If you recruit the Found Hero this turn, set it aside. When you draw a new hand this turn, add that card to your hand."
+          ]
+        },
+        {
+          "name": "Lord Krylar's Appetizer",
+          "slug": "lord-krylars-appetizer",
+          "vp": "3",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-quantum-realm-lord-krylars-appetizer.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:covert][hc:covert][hc:covert][hc:covert]",
+            "Fight: Choose a player to “eat the appetizer“ and KO a card of their choice from their discard pile."
+          ]
+        },
+        {
+          "name": "Hungering Energy",
+          "slug": "hungering-energy",
+          "vp": "4",
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-quantum-realm-hungering-energy.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech][hc:tech]",
+            "Fight: KO one of your Heroes."
+          ]
+        },
+        {
+          "name": "Quantumoeba",
+          "slug": "quantumoeba",
+          "vp": "5",
+          "vAttack": "8",
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-quantum-realm-quantumoeba.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:strength][hc:strength][hc:strength][hc:strength]",
+            "Ambush: Quantumoeba “eats“ a Henchman from any player's Victory Pile, capturing it and gaining its printed [icon:attack].",
+            "Fight: Put the eaten Henchman in your Victory Pile and do its Fight effect."
+          ]
+        },
+        {
+          "name": "Quantumania",
+          "slug": "quantumania",
+          "vp": "2",
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/amwp/amwp-vi-quantum-realm-quantumania.webp",
+          "abilities": [
+            "Ambush: Each player puts a non-grey Hero from their hand or discard pile next to this Scheme as a “Quantum Duplicate.“ Then do the Twist effect below.",
+            "Twist: The top card of the Hero Deck becomes another Quantum Duplicate. Each player reveals their hand and discards all their cards that have the same name as any Quantum Duplicate.",
+            "Special Rules: Players may spend [icon:attack] equal to a Quantum Duplicate's printed cost to KO that Hero or choose a player to gain it. When there are no more Quantum Duplicates, defeat this Scheme."
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [
+    {
+      "id": 41,
+      "name": "Quantumnauts",
+      "slug": "quantumnauts",
+      "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hm-quantumnauts.webp",
+      "abilities": []
+    },
+    {
+      "id": 42,
+      "name": "Quantum Hound",
+      "slug": "quantum-hound",
+      "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hm-quantum-hound.webp",
+      "abilities": []
+    },
+    {
+      "id": 43,
+      "name": "Tardigrade",
+      "slug": "tardigrade",
+      "imageUrl": "https://images.barefootbetters.com/amwp/amwp-hm-tardigrade-covert.webp",
+      "abilities": [],
+      "imageUrlByClass": {
+        "covert": "https://images.barefootbetters.com/amwp/amwp-hm-tardigrade-covert.webp",
+        "instinct": "https://images.barefootbetters.com/amwp/amwp-hm-tardigrade-instinct.webp",
+        "ranged": "https://images.barefootbetters.com/amwp/amwp-hm-tardigrade-ranged.webp",
+        "strength": "https://images.barefootbetters.com/amwp/amwp-hm-tardigrade-strength.webp",
+        "tech": "https://images.barefootbetters.com/amwp/amwp-hm-tardigrade-tech.webp"
+      }
+    }
+  ],
+  "schemes": [
+    {
+      "id": 178,
+      "name": "Auction Shrink Tech to Highest Bidder",
+      "slug": "auction-shrink-tech-to-highest-bidder",
+      "imageUrl": "https://images.barefootbetters.com/amwp/amwp-sc-auction-shrink-tech-to-highest-bidder.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 11 Twists. Set aside all 14 cards of a random extra Hero that has any [keyword:Size-Changing] cards as “Shrink Tech.“",
+            "Twist: Stack this Twist next to the Scheme as a “Hostile Bid.“ Reveal a random Hero from the Shrink Tech. This turn you may recruit that Hero, but it costs 1[icon:recruit] more for each Hostile Bid. If you recruit it, either KO that Hero or choose any player to gain it. If you don't recruit it by the end of this turn, stack it next to the Scheme as “Controlled by Arms Dealers.“",
+            "Evil Wins: When 8 Shrink Tech cards are Controlled by Arms Dealers."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 179,
+      "name": "Safeguard Dark Secrets",
+      "slug": "safeguard-dark-secrets",
+      "imageUrl": "https://images.barefootbetters.com/amwp/amwp-sc-safeguard-dark-secrets.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 5 Twists.",
+            "Twist: Stack this Twist next to the Mastermind as a “Secret,“ then play another card from the Villain Deck.",
+            "Special Rules: You have the ability “[keyword:Heist]: You get +1[icon:recruit]. Shuffle a Secret from next to the Mastermind into the Villain Deck.“",
+            "Evil Wins: When the Mastermind has 5 Secrets."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 180,
+      "name": "Escape an Imprisoning Dimension",
+      "slug": "escape-an-imprisoning-dimension",
+      "imageUrl": "https://images.barefootbetters.com/amwp/amwp-sc-escape-an-imprisoning-dimension.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 5 Twists.",
+            "Special Rules: During your turn, any number of times, you may spend 1[icon:attack] to “Seal“ an unsealed city space or unsealed Mastermind space by putting a card above it from the Wound Stack.",
+            "Twist: If any city space with a Villain in it or the Mastermind space is not “sealed,“ stack this Twist next to the Mastermind as a “Discovered Escape Route.“ Otherwise, return 3 Seals from above spaces to the Wound Deck, shuffle this Twist into the Villain Deck, and play another card from the Villain Deck.",
+            "Evil Wins: When 3 Escape Routes have been discovered."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 181,
+      "name": "Siphon Energy from the Quantum Realm",
+      "slug": "siphon-energy-from-the-quantum-realm",
+      "imageUrl": "https://images.barefootbetters.com/amwp/amwp-sc-siphon-energy-from-the-quantum-realm.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 9 Twists. Set aside the “Quantum Realm“ Villain Group as an extra group. Shuffle its Ambush Scheme into the Villain Deck.",
+            "Twist: Stack this Twist next to the Mastermind as a “Quantum Siphon.“ Put a random set aside Quantum Realm Villain on the Siphons. Do its Ambush effect. If there was already a Quantum Realm Villain on the Siphons, KO It.",
+            "Special Rules: You may fight Villains on the Quantum Siphons. They get +1[icon:attack] for each two Siphons.",
+            "Evil Wins: When 4 Quantum Realm Villains have been KO'd or there are 9 Quantum Siphons."
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [
+    {
+      "id": 58,
+      "name": "Agent Jimmy Woo",
+      "slug": "agent-jimmy-woo",
+      "vp": 1,
+      "imageUrl": "https://images.barefootbetters.com/amwp/amwp-by-agent-jimmy-woo.webp",
+      "cards": [
+        {
+          "qtd": 2,
+          "abilities": [
+            "Rescue: Do some “close-up magic“: Reveal the top two cards of your deck. The player on your left says one of those card names (in solo mode, say one yourself). Mix them up, reveal one and say “Is this your card?“. If it draw it. Put the rest back in any order."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 59,
+      "name": "Maggie Lang",
+      "slug": "maggie-lang",
+      "vp": 1,
+      "imageUrl": "https://images.barefootbetters.com/amwp/amwp-by-maggie-lang.webp",
+      "cards": [
+        {
+          "qtd": 2,
+          "abilities": [
+            "Rescue: You may return a card that costs 2 or less from your discard pile to your hand."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 60,
+      "name": "Officer Jim Paxton",
+      "slug": "officer-jim-paxton",
+      "vp": 1,
+      "imageUrl": "https://images.barefootbetters.com/amwp/amwp-by-officer-jim-paxton.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "Rescue: You may defeat a Henchman."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 61,
+      "name": "Young Cassie Lang",
+      "slug": "young-cassie-lang",
+      "vp": 1,
+      "imageUrl": "https://images.barefootbetters.com/amwp/amwp-by-young-cassie-lang.webp",
+      "cards": [
+        {
+          "qtd": 2,
+          "abilities": [
+            "Rescue: You get +2[icon:recruit], usable only to recruit a Hero that costs 2 or less or a Hero with [keyword:Size-Changing]."
+          ]
+        }
+      ]
+    }
+  ],
+  "wounds": [],
+  "other": []
+}

@@ -1,0 +1,896 @@
+{
+  "id": 41,
+  "abbr": "wpnx",
+  "exportName": "WeaponX",
+  "heroes": [
+    {
+      "id": 286,
+      "name": "Fantomex",
+      "slug": "fantomex",
+      "team": "x-force",
+      "cards": [
+        {
+          "name": "Sentient Bullets",
+          "displayName": "Sentient Bullets",
+          "slug": "sentient-bullets",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 1,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-hr-fantomex-1c1.webp",
+          "abilities": [
+            "[keyword:Weapon X Sequence]"
+          ]
+        },
+        {
+          "name": "Three Brains",
+          "displayName": "Three Brains",
+          "slug": "three-brains",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 2,
+          "attack": null,
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-hr-fantomex-2c2.webp",
+          "abilities": [
+            "[keyword:Weapon X Sequence], getting [icon:recruit] instead of [icon:attack]. If you got at least 3[icon:recruit] this way, draw a card."
+          ]
+        },
+        {
+          "name": "Misdirection",
+          "displayName": "Misdirection",
+          "slug": "misdirection",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 3,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-hr-fantomex-3c3.webp",
+          "abilities": [
+            "[keyword:Weapon X Sequence]",
+            "When you draw a new hand this turn, draw an extra card, then put a card from your hand on top of your deck."
+          ]
+        },
+        {
+          "name": "Weapon XIII",
+          "displayName": "Weapon XIII",
+          "slug": "weapon-xiii",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 4,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-hr-fantomex-4u.webp",
+          "abilities": [
+            "[keyword:Weapon X Sequence]",
+            "[hc:tech]: You may KO one of your cards that has the same cost as any of your other cards."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 287,
+      "name": "Marrow",
+      "slug": "marrow",
+      "team": "x-force",
+      "cards": [
+        {
+          "name": "Bone Shards",
+          "displayName": "Bone Shards",
+          "slug": "bone-shards",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-hr-marrow-3c1.webp",
+          "abilities": [
+            "[team:x-force]: [keyword:Berserk]"
+          ]
+        },
+        {
+          "name": "Hyper-Adaptive Skeleton",
+          "displayName": "Hyper-Adaptive Skeleton",
+          "slug": "hyper-adaptive-skeleton",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 2,
+          "attack": "1+",
+          "recruit": "1+",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-hr-marrow-2c2.webp",
+          "abilities": [
+            "For all of your Heroes' [keyword:Berserk] abilities this turn, you get the Berserked cards' printed [icon:recruit] just like you get their printed [icon:attack].",
+            "[hc:strength]: [keyword:Berserk]"
+          ]
+        },
+        {
+          "name": "Osteogenesis",
+          "displayName": "Osteogenesis",
+          "slug": "osteogenesis",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "2",
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-hr-marrow-6u.webp",
+          "abilities": [
+            "Draw two cards. Then put a card from your hand on top of your deck."
+          ]
+        },
+        {
+          "name": "Metabolic Overdrive",
+          "displayName": "Metabolic Overdrive",
+          "slug": "metabolic-overdrive",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 7,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-hr-marrow-7r.webp",
+          "abilities": [
+            "[keyword:Weapon X Sequence]",
+            "Reveal the top six cards of your deck. Discard all the ones that cost 0 and put the rest back in any order."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 288,
+      "name": "Weapon H",
+      "slug": "weapon-h",
+      "team": "avengers",
+      "cards": [
+        {
+          "name": "Evolving Abilities",
+          "displayName": "Evolving Abilities",
+          "slug": "evolving-abilities",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-hr-weapon-h-4c1.webp",
+          "abilities": [
+            "You may have this card make all [icon:recruit] instead of [icon:attack] (including the ability below).",
+            "[hc:instinct]: You get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "The Future of Warfare",
+          "displayName": "The Future of Warfare",
+          "slug": "the-future-of-warfare",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 3,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-hr-weapon-h-3c2.webp",
+          "abilities": [
+            "Look at the top card of your deck.",
+            "Discard it or put it back.",
+            "[hc:strength]: [keyword:Berserk]"
+          ]
+        },
+        {
+          "name": "Slice and Smash",
+          "displayName": "Slice and Smash",
+          "slug": "slice-and-smash",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-hr-weapon-h-5u.webp",
+          "abilities": [
+            "[keyword:Berserk]",
+            "[hc:strength]: You may KO the card you Berserked."
+          ]
+        },
+        {
+          "name": "Ultimate Killing Machine",
+          "displayName": "Ultimate Killing Machine",
+          "slug": "ultimate-killing-machine",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 8,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-hr-weapon-h-8r.webp",
+          "abilities": [
+            "[keyword:Weapon X Sequence]",
+            "[hc:strength]: Using the Wound Deck, [keyword:Berserk], [keyword:Berserk], [keyword:Berserk], [keyword:Berserk], [keyword:Berserk], [keyword:Berserk], putting those discarded Wounds on the bottom of the Wound Deck."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 289,
+      "name": "Weapon X (Wolverine)",
+      "slug": "weapon-x-wolverine",
+      "team": "marvel-knights",
+      "cards": [
+        {
+          "name": "Violent Conditioning",
+          "displayName": "Violent Conditioning",
+          "slug": "violent-conditioning",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-hr-weapon-x-wolverine-3c1.webp",
+          "abilities": [
+            "You may gain a Wound. If you do, [keyword:Berserk], [keyword:Berserk]."
+          ]
+        },
+        {
+          "name": "Raging Regeneration",
+          "displayName": "Raging Regeneration",
+          "slug": "raging-regeneration",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-hr-weapon-x-wolverine-4c2.webp",
+          "abilities": [
+            "[keyword:Berserk]",
+            "[hc:instinct]: You may KO a Wound from your hand or discard pile. If you do, [keyword:Berserk] again."
+          ]
+        },
+        {
+          "name": "Infuse Skeleton with Adamantium",
+          "displayName": "Infuse Skeleton with Adamantium",
+          "slug": "infuse-skeleton-with-adamantium",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-hr-weapon-x-wolverine-5u.webp",
+          "abilities": [
+            "To play this, you must put another card from your hand on top of your deck.",
+            "[keyword:Weapon X Sequence]"
+          ]
+        },
+        {
+          "name": "Escape the Weapon X Lab",
+          "displayName": "Escape the Weapon X Lab",
+          "slug": "escape-the-weapon-x-lab",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 6,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-hr-weapon-x-wolverine-6u2.webp",
+          "abilities": [
+            "[keyword:Weapon X Sequence]",
+            "[hc:instinct]: You may reveal cards from the Wound Deck until you reveal an Enraging Wound. Gain that Enraging Wound to your hand. Put the other revealed cards back on the bottom.",
+            "If you gain a Wound this way, [keyword:Berserk]."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 102,
+      "name": "Omega Red",
+      "slug": "omega-red",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Omega Red",
+          "slug": "omega-red",
+          "tactic": false,
+          "vAttack": "10+",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-mm-omega-red.webp",
+          "abilities": [
+            "Omega Red gets +2[icon:attack] while you have any Wounds and +2[icon:attack] while there are any Wounds in your discard pile.",
+            "When you KO any Wounds for the first time in a turn, put them on the bottom of the Wound Deck and gain a Wound to the bottom of your deck.",
+            "Always Leads: Any Villain Group",
+            "Master Strike: Each player discards one of their [hc:covert] Heroes or gains a Wound."
+          ]
+        },
+        {
+          "name": "Epic Omega Red",
+          "slug": "epic-omega-red",
+          "tactic": false,
+          "vAttack": "12+",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-me-omega-red.webp",
+          "abilities": [
+            "Omega Red gets +3[icon:attack] while you have any Wounds and +3[icon:attack] while there are any Wounds in your discard pile.",
+            "Whenever you KO any Wounds, put them on the bottom of the Wound Deck and gain a Wound to the bottom of your deck.",
+            "Always Leads: Any Villain Group",
+            "Master Strike: Each player KOs one of their [hc:covert] Heroes or gains a Wound."
+          ]
+        },
+        {
+          "name": "Carbonadium Tentacles",
+          "slug": "carbonadium-tentacles",
+          "tactic": true,
+          "vAttack": "10",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-mt-omega-red-carbonadium-tentacles.webp",
+          "abilities": [
+            "Fight: After you draw a new hand of cards at the end of this turn, each player discards down to three cards or gains a Wound."
+          ]
+        },
+        {
+          "name": "The Carbonadium Synthesizer",
+          "slug": "the-carbonadium-synthesizer",
+          "tactic": true,
+          "vAttack": "10",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-mt-omega-red-the-carbonadium-synthesizer.webp",
+          "abilities": [
+            "Fight: You may return a Wound from your hand or any player's discard pile to the bottom of the Wound Deck. If you do, draw a card."
+          ]
+        },
+        {
+          "name": "Death Pheromones",
+          "slug": "death-pheromones",
+          "tactic": true,
+          "vAttack": "10",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-mt-omega-red-death-pheromones.webp",
+          "abilities": [
+            "Fight: Each other player discards a [hc:tech] Hero or gains a Wound."
+          ]
+        },
+        {
+          "name": "Drain Life Force",
+          "slug": "drain-life-force",
+          "tactic": true,
+          "vAttack": "10",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-mt-omega-red-drain-life-force.webp",
+          "abilities": [
+            "Fight: If this is not the final Tactic, and if you have at least two Wounds in your hand and/or discard pile, return all of them to the bottom of the Wound Deck and shuffle this Tactic back into Omega Red's other Tactics."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 103,
+      "name": "Romulus",
+      "slug": "romulus",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Romulus",
+          "slug": "romulus",
+          "tactic": false,
+          "vAttack": "9+",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-mm-romulus.webp",
+          "abilities": [
+            "[keyword:Weapon X Sequence]",
+            "Always Leads: Weapon Plus",
+            "Master Strike: Each player reveals that they have a greater [keyword:Weapon X Sequence] than Romulus or gains a Wound. Then if this is the fifth Strike this game, this Strike becomes a Scheme Twist that takes effect immediately. (Once per game)"
+          ]
+        },
+        {
+          "name": "Epic Romulus",
+          "slug": "epic-romulus",
+          "tactic": false,
+          "vAttack": "10+",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-me-romulus.webp",
+          "abilities": [
+            "[keyword:Weapon X Sequence]",
+            "Always Leads: Weapon Plus",
+            "Master Strike: Each player reveals that they have a greater [keyword:Weapon X Sequence] than Romulus (don't double his Sequence for this) or gains a Wound to the top of their deck. Then if this is the third Strike this game, this Strike becomes a Scheme Twist that takes effect immediately. (Once per game)"
+          ]
+        },
+        {
+          "name": "Anoint an Heir to Take My Place",
+          "slug": "anoint-an-heir-to-take-my-place",
+          "tactic": true,
+          "vAttack": "9",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-mt-romulus-anoint-an-heir-to-take-my-place.webp",
+          "abilities": [
+            "Fight: If this is not the last Tactic, a Hero from the HQ that costs 6 or more Ascends to become an additional Mastermind with [icon:attack] equal to its printed cost and only these abilities: “Fight: Choose a player to gain this as a Hero.",
+            "Master Strike: Each player discards a card of this Hero Class or gains a Wound.“"
+          ]
+        },
+        {
+          "name": "Bite of the Muramasa Blade",
+          "slug": "bite-of-the-muramasa-blade",
+          "tactic": true,
+          "vAttack": "9",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-mt-romulus-bite-of-the-muramasa-blade.webp",
+          "abilities": [
+            "Fight: Each other player reveals three cards with different, adjacent costs (e.g. 2,3,4) or gains a Wound."
+          ]
+        },
+        {
+          "name": "Master of Schemes",
+          "slug": "master-of-schemes",
+          "tactic": true,
+          "vAttack": "9",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-mt-romulus-master-of-schemes.webp",
+          "abilities": [
+            "Fight: If this is not the last Tactic, reveal the top 2 cards of the Villain Deck. Play a Master Strike or Scheme Twist from among them, putting the rest back in any order."
+          ]
+        },
+        {
+          "name": "Take Over the Weapon X Program",
+          "slug": "take-over-the-weapon-x-program",
+          "tactic": true,
+          "vAttack": "9",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-mt-romulus-take-over-the-weapon-x-program.webp",
+          "abilities": [
+            "Fight: You get +[icon:recruit] equal to the [icon:attack] Romulus is gaining from [keyword:Weapon X Sequence]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 104,
+      "name": "Sabretooth",
+      "slug": "sabretooth",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Sabretooth",
+          "slug": "sabretooth",
+          "tactic": false,
+          "vAttack": "8+",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-mm-sabretooth.webp",
+          "abilities": [
+            "Sabretooth [keyword:Berserk] once for each Savagery stacked here.",
+            "Always Leads: Berserkers",
+            "Master Strike: Stack this Strike next to Sabretooth as a “Savagery.“ Each player KOs one of their Heroes that costs more than the number of Savageries. Any player that cannot do so gains a Wound instead.",
+            "[keyword:Fail]: KO a non-grey Hero discarded by Sabretooth's Berserking."
+          ]
+        },
+        {
+          "name": "Epic Sabretooth",
+          "slug": "epic-sabretooth",
+          "tactic": false,
+          "vAttack": "9+",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-me-sabretooth.webp",
+          "abilities": [
+            "Sabretooth [keyword:Berserk] once for each Savagery stacked here, plus two more times.",
+            "Always Leads: Berserkers",
+            "Master Strike: Stack this Strike next to Sabretooth as a “Savagery.“ Each player KOs one of their Heroes that costs at least 2 more than the number of Savageries. Any player that cannot do so gains a Wound instead.",
+            "[keyword:Fail]: KO a non-grey Hero discarded by Sabretooth's Berserking."
+          ]
+        },
+        {
+          "name": "Adamantium-Laced Claws",
+          "slug": "adamantium-laced-claws",
+          "tactic": true,
+          "vAttack": "8",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-mt-sabretooth-adamantium-laced-claws.webp",
+          "abilities": [
+            "Fight: Each other player reveals a [hc:instinct] Hero or gains a Wound."
+          ]
+        },
+        {
+          "name": "Lethal Fangs",
+          "slug": "lethal-fangs",
+          "tactic": true,
+          "vAttack": "8",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-mt-sabretooth-lethal-fangs.webp",
+          "abilities": [
+            "Fight: KO a grey Hero discarded by Sabretooth's Berserking. (You can't KO cards you shuffled into your deck during the Berserking.)"
+          ]
+        },
+        {
+          "name": "Salivating Prowl",
+          "slug": "salivating-prowl",
+          "tactic": true,
+          "vAttack": "8",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-mt-sabretooth-salivating-prowl.webp",
+          "abilities": [
+            "Fight: Reveal the top three cards of your deck. Draw one of them, discard one, and put the other back on top of your deck."
+          ]
+        },
+        {
+          "name": "Sudden Savagery",
+          "slug": "sudden-savagery",
+          "tactic": true,
+          "vAttack": "8",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-mt-sabretooth-sudden-savagery.webp",
+          "abilities": [
+            "Fight: Stack a card from the Wound Deck next to Sabretooth as a “Savagery.“"
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 125,
+      "name": "Berserkers",
+      "slug": "berserkers",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Cyber",
+          "slug": "cyber",
+          "vp": "5",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-vi-berserkers-cyber.webp",
+          "abilities": [
+            "[keyword:Berserk], [keyword:Berserk]",
+            "Fight: KO one your Heroes. If any of the cards you Berserked were [hc:instinct] or [hc:tech], shuffle Cyber into the Villain Deck, then play another card from the Villain Deck.",
+            "[keyword:Fail]: Each player discards a [hc:instinct] or [hc:tech] Hero or gains a Wound.",
+            "Escape: Do the Fail effect."
+          ]
+        },
+        {
+          "name": "Feral",
+          "slug": "feral",
+          "vp": null,
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-vi-berserkers-feral.webp",
+          "abilities": [
+            "[keyword:Berserk], [keyword:Berserk]",
+            "Fight: Choose a player to gain this as a Hero.",
+            "[keyword:Fail]: KO a non-grey Hero from your discard pile.",
+            "Escape: Each player discards a non-grey Hero.",
+            "[object Object]",
+            "[hc:instinct]: [keyword:Berserk], [keyword:Berserk]"
+          ]
+        },
+        {
+          "name": "Thornn",
+          "slug": "thornn",
+          "vp": "2",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-vi-berserkers-thornn.webp",
+          "abilities": [
+            "[keyword:Berserk]",
+            "Ambush: Choose a card named “Feral“ from any player's discard pile to enter the city as a Villain.",
+            "Fight: Draw the card you Berserked.",
+            "[keyword:Fail]: When you draw a new hand at the end of this turn, discard a card."
+          ]
+        },
+        {
+          "name": "Wild Child",
+          "slug": "wild-child",
+          "vp": "4",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-vi-berserkers-wild-child.webp",
+          "abilities": [
+            "[keyword:Berserk], [keyword:Berserk], [keyword:Berserk]",
+            "Fight: KO one of the cards you Berserked this way that costs 0.",
+            "[keyword:Fail]: KO a card discarded by Wild Child's Berserking that costs 1 or more. (You can't KO cards you shuffled into your deck during the Berserking.)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 126,
+      "name": "Weapon Plus",
+      "slug": "weapon-plus",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Daken",
+          "slug": "daken",
+          "vp": "4",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-vi-weapon-plus-daken.webp",
+          "abilities": [
+            "[keyword:Weapon X Sequence]",
+            "[keyword:Berserk]",
+            "Fight: KO one of your Heroes.",
+            "[keyword:Fail]: You gain a Wound."
+          ]
+        },
+        {
+          "name": "Huntsman (Weapon XII)",
+          "slug": "huntsman-weapon-xii",
+          "vp": "2",
+          "vAttack": "2+",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-vi-weapon-plus-huntsman-weapon-xii.webp",
+          "abilities": [
+            "[keyword:Weapon X Sequence]",
+            "Ambush: Reveal the top 3 cards of the Hero Deck. Huntsman captures each that costs 4 or less. Put the rest on the bottom of the Hero Deck.",
+            "Fight: If Huntsman has any captured Heroes, choose a player to gain one of them and return Huntsman to his city space with the rest of them. (Ignore his Ambush.)"
+          ]
+        },
+        {
+          "name": "Nuke (Weapon VII)",
+          "slug": "nuke-weapon-vii",
+          "vp": "2",
+          "vAttack": "2+",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-vi-weapon-plus-nuke-weapon-vii.webp",
+          "abilities": [
+            "[keyword:Weapon X Sequence]",
+            "Fight: Reveal the top card of the Hero Deck as “Nuke's Adrenaline Pill“:",
+            "[hc:covert]: “Rage“ — Each other player gains a Wound.",
+            "[hc:instinct]: “Balance“ — Draw a card.",
+            "[hc:ranged]: “Relax“ — You get +2[icon:recruit].",
+            "Escape: Each player gains a Wound."
+          ]
+        },
+        {
+          "name": "Skinless Man (Weapon III)",
+          "slug": "skinless-man-weapon-iii",
+          "vp": "3",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-vi-weapon-plus-skinless-man-weapon-iii.webp",
+          "abilities": [
+            "[keyword:Weapon X Sequence]",
+            "Ambush: Skinless Man captures a Bystander of your choice from your Victory Pile. If you don't have one, gain a Wound and he captures one from the Bystander Deck."
+          ]
+        },
+        {
+          "name": "Typhoid Mary (Weapon IX)",
+          "slug": "typhoid-mary-weapon-ix",
+          "vp": "3",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-vi-weapon-plus-typhoid-mary-weapon-ix.webp",
+          "abilities": [
+            "[keyword:Weapon X Sequence]",
+            "Fight: Reveal the top card of the Hero Deck as her “Personality“:",
+            "[hc:strength]: “Typhoid“ — Put a card from your discard pile on top of the deck of the player to your left.",
+            "[hc:instinct]: “Mary“ — Rescue a Bystander.",
+            "[hc:covert]: “Bloody Mary“ — Each other player gains a Wound.",
+            "[hc:tech]: “Mutant Zero“ — KO one of your cards that costs 0.",
+            "[hc:ranged]: “Walker“ — Put a card you played ",
+            "this turn on top of your deck."
+          ]
+        },
+        {
+          "name": "Ultimaton (Weapon XV)",
+          "slug": "ultimaton-weapon-xv",
+          "vp": "6",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-vi-weapon-plus-ultimaton-weapon-xv.webp",
+          "abilities": [
+            "[keyword:Weapon X Sequence]",
+            "Ambush: Each player discards a non-grey Hero.",
+            "Fight: Each player KOs one of their grey Heroes.",
+            "Escape: Each player KOs one of their non-grey Heroes."
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [],
+  "schemes": [
+    {
+      "id": 186,
+      "name": "Condition Logan into Weapon X",
+      "slug": "condition-logan-into-weapon-x",
+      "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-sc-condition-logan-into-weapon-x.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. Include exactly 1 Hero with Wolverine or Logan in its name.",
+            "Twist 1,3,5: “Induce Violent Rage“: If you don't defeat an Enemy worth 2[icon:piercing] or more this turn, then after you draw a new hand at the end of this turn, each player discards down to four cards.",
+            "Twist 2,4,6“Test the Subject's Healing Factor“: Each player discards a [hc:strength] or [hc:instinct] Hero or gains a Wound.",
+            "Twist 7“Unleash Weapon X“: For each Wolverine and/or Logan Hero in the HQ, each player gains a Wound.",
+            "Twist 8: Evil Wins!"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 187,
+      "name": "Go After Heroes' Loved Ones",
+      "slug": "go-after-heroes-loved-ones",
+      "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-sc-go-after-heroes-loved-ones.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: Add an extra Hero. Don't use multiple Heroes that have the same Hero Name. 1 player: 8 Twists. 2-4 players: 10 Twists. 5 players: 11 Twists. Set aside a lowest-cost card for each Hero Name, face up, with 2 face up Bystanders under it as “Loved Ones.“",
+            "Twist 1-6: KO the Hero in the rightmost HQ space. KO one of that Hero Name's Loved Ones. Each player discards a card of that Hero Name. If you discard a card this way during your turn, you [keyword:Berserk]. If that Hero Name has no more Loved Ones, that Hero is “Lost in Grief“: KO all of that Hero Name from the HQ and Hero Deck, then shuffle it.",
+            "Twist 7-11: Do that Twist effect twice.",
+            "Evil Wins: When the Hero Deck runs out."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 188,
+      "name": "Wipe Heroes' Memories",
+      "slug": "wipe-heroes-memories",
+      "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-sc-wipe-heroes-memories.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: Twists equal to the number of players plus 4.",
+            "Twist: You “forget your past“: If you have any face up Villains or Tactics in your Victory Pile, put one of them on the bottom of your Victory Pile face down, then shuffle this Twist back into the Villain Deck, then play a card from the Villain Deck. If you didn't have any face up Villains or Tactics, then instead stack this Twist next to the Scheme as a “Total Memory Wipe.“",
+            "Special Rules: Face down cards in your Victory Pile count as not being there at all until you count their VP at game end.",
+            "Evil Wins: When there are 4 Total Memory Wipes."
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [],
+  "wounds": [
+    {
+      "id": 12,
+      "name": "Blazing Vengeance",
+      "filterName": null,
+      "slug": "blazing-vengeance",
+      "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-wd-blazing-vengeance.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "Healing: When you defeat a Mastermind Tactic this turn, you may KO this Wound."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "name": "Broken Bones",
+      "filterName": null,
+      "slug": "broken-bones",
+      "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-wd-broken-bones.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "To play this, you must put another card from your hand on top of your deck.",
+            "Healing: When you draw a card this turn (including drawing this card but not including drawing a new hand at the end of your turn), you may KO this Wound."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "name": "Concussion",
+      "filterName": null,
+      "slug": "concussion",
+      "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-wd-concussion.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "Healing: When you play two cards of the same Hero Class this turn, you may KO this Wound."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "name": "Erratic Powers",
+      "filterName": null,
+      "slug": "erratic-powers",
+      "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-wd-erratic-powers.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "To play this, you must discard three cards, then draw a card.",
+            "Healing: When you use a Superpower Ability this turn, you may KO this Wound. (e.g. “[hc:strength]: You get +1[icon:attack].“)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "name": "Insults and Injuries",
+      "filterName": null,
+      "slug": "insults-and-injuries",
+      "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-wd-insults-and-injuries.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "Healing: When you defeat a Villain worth at least 2[icon:piercing] this turn, you may KO this Wound."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "name": "Last Breath",
+      "filterName": null,
+      "slug": "last-breath",
+      "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-wd-last-breath.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "To play this, you must gain a Wound to the top of your deck.",
+            "Healing: When you KO another Wound this turn, you may KO this Wound."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "name": "Massive Blood Loss",
+      "filterName": null,
+      "slug": "massive-blood-loss",
+      "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-wd-massive-blood-loss.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "To play this, you must discard a card.",
+            "Healing: When you discard a card this turn (not including discarding to play this card or discarding at the end of your turn) you may KO this Wound."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "name": "Shell Shock",
+      "filterName": null,
+      "slug": "shell-shock",
+      "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-wd-shell-shock.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "Healing: When you recruit two Heroes this turn, you may KO this Wound."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "name": "Sudden Terror",
+      "filterName": null,
+      "slug": "sudden-terror",
+      "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-wd-sudden-terror.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "Healing: When you recruit a Hero that costs 7 or more this turn, you may KO this Wound."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "name": "Wild Rage",
+      "filterName": null,
+      "slug": "wild-rage",
+      "imageUrl": "https://images.barefootbetters.com/wpnx/wpnx-wd-wild-rage.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "Healing: When you defeat a Henchman this turn, you may KO this Wound."
+          ]
+        }
+      ]
+    }
+  ],
+  "other": []
+}

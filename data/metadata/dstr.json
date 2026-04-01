@@ -1,0 +1,703 @@
+{
+  "id": 32,
+  "abbr": "dstr",
+  "exportName": "DoctorStrange",
+  "heroes": [
+    {
+      "id": 235,
+      "name": "Doctor Strange",
+      "slug": "doctor-strange",
+      "team": "avengers",
+      "cards": [
+        {
+          "name": "Wand of Watoomb",
+          "displayName": "Wand of Watoomb",
+          "slug": "wand-of-watoomb",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-hr-doctor-strange-3c1.webp",
+          "abilities": [
+            "[keyword:Ritual Artifact] — If you drew a card, you may discard Wand of Watoomb to get +3[icon:attack]."
+          ]
+        },
+        {
+          "name": "Keeper of the Sanctum",
+          "displayName": "Keeper of the Sanctum",
+          "slug": "keeper-of-the-sanctum",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-hr-doctor-strange-4c2.webp",
+          "abilities": [
+            "If you control an [keyword:Artifact], draw a card."
+          ]
+        },
+        {
+          "name": "Book of Cagliostro",
+          "displayName": "Book of Cagliostro",
+          "slug": "book-of-cagliostro",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-hr-doctor-strange-2u.webp",
+          "abilities": [
+            "[keyword:Ritual Artifact] — If you fought a Villain, you may discard Book of Cagliostro to get +[icon:recruit] equal to that enemy's VP."
+          ]
+        },
+        {
+          "name": "The Eye of Agamotto",
+          "displayName": "The Eye of Agamotto",
+          "slug": "the-eye-of-agamotto",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 8,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-hr-doctor-strange-8r.webp",
+          "abilities": [
+            "[keyword:Ritual Artifact] — If you played another [keyword:Artifact] or three other cards of the same Hero Class, you may discard the Eye of Agamotto to get +7[icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 236,
+      "name": "Doctor Voodoo",
+      "slug": "doctor-voodoo",
+      "team": "avengers",
+      "cards": [
+        {
+          "name": "Commune with the Spirit World",
+          "displayName": "Commune with the Spirit World",
+          "slug": "commune-with-the-spirit-world",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-hr-doctor-voodoo-3c1.webp",
+          "abilities": [
+            "You may discard an [keyword:Artifact] you control or three cards from your hand. If you do, KO a card from your hand or discard pile."
+          ]
+        },
+        {
+          "name": "Medallion of Many Loas",
+          "displayName": "Medallion of Many Loas",
+          "slug": "medallion-of-many-loas",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 4,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-hr-doctor-voodoo-4c2.webp",
+          "abilities": [
+            "[keyword:Ritual Artifact] — If you have at least three Hero Classes, you may discard Medallion of Many Loas to get +1[icon:attack] for each Hero Class you have, including this one."
+          ]
+        },
+        {
+          "name": "Staff of Legba",
+          "displayName": "Staff of Legba",
+          "slug": "staff-of-legba",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 5,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-hr-doctor-voodoo-5u.webp",
+          "abilities": [
+            "[keyword:Ritual Artifact] — If you recruited a Hero, you may discard Staff of Legba to get +[icon:attack] equal to that Hero's cost."
+          ]
+        },
+        {
+          "name": "Posessed by Brother's Spirit",
+          "displayName": "Posessed by Brother's Spirit",
+          "slug": "posessed-by-brothers-spirit",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": "4+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-hr-doctor-voodoo-7r.webp",
+          "abilities": [
+            "The first time that one of your Heroes or a Hero from your deck or discard pile is KO'd this turn, you get +4[icon:recruit] or +4[icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 237,
+      "name": "Clea",
+      "slug": "clea",
+      "team": "marvel-knights",
+      "cards": [
+        {
+          "name": "Prepare Dark Magic",
+          "displayName": "Prepare Dark Magic",
+          "slug": "prepare-dark-magic",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-hr-clea-3c1.webp",
+          "abilities": [
+            "Draw a card. Then put a card from your hand on top of your deck."
+          ]
+        },
+        {
+          "name": "Demonic Descendant",
+          "displayName": "Demonic Descendant",
+          "slug": "demonic-descendant",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-hr-clea-4c2.webp",
+          "abilities": [
+            "You may make a [keyword:Demonic Bargain] to get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Bind the Dark Dimension",
+          "displayName": "Bind the Dark Dimension",
+          "slug": "bind-the-dark-dimension",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 6,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-hr-clea-6u.webp",
+          "abilities": [
+            "[hc:ranged]: You may choose a player to make a [keyword:Demonic Bargain] to KO up to one Hero of their choice from their hand or discard pile."
+          ]
+        },
+        {
+          "name": "The Purple Gem",
+          "displayName": "The Purple Gem",
+          "slug": "the-purple-gem",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 7,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-hr-clea-7r.webp",
+          "abilities": [
+            "[keyword:Ritual Artifact] — If any cards were “revealed“, “looked at“, or “discarded“ from any deck, you may discard the Purple Gem to get +6[icon:attack]. (Just drawing or playing a card from a deck doesn't count.)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 238,
+      "name": "Ancient One, The",
+      "slug": "ancient-one-the",
+      "team": "unaffiliated",
+      "cards": [
+        {
+          "name": "Astral Confrontation",
+          "displayName": "Astral Confrontation",
+          "slug": "astral-confrontation",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-hr-ancient-one-the-3c1.webp",
+          "abilities": [
+            "You may have a Villain from the city enter the [keyword:Astral Plane]."
+          ]
+        },
+        {
+          "name": "Teachings of Kamar-Taj",
+          "displayName": "Teachings of Kamar-Taj",
+          "slug": "teachings-of-kamar-taj",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 5,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-hr-ancient-one-the-5c2.webp",
+          "abilities": [
+            "Draw two cards."
+          ]
+        },
+        {
+          "name": "War of the Mind",
+          "displayName": "War of the Mind",
+          "slug": "war-of-the-mind",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 6,
+          "attack": null,
+          "recruit": "3+",
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-hr-ancient-one-the-6u.webp",
+          "abilities": [
+            "You may fight the Mastermind using only [icon:recruit] instead of [icon:attack] this turn.",
+            "[hc:covert]: You get +3[icon:recruit]."
+          ]
+        },
+        {
+          "name": "The Orb of Agamotto",
+          "displayName": "The Orb of Agamotto",
+          "slug": "the-orb-of-agamotto",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 8,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-hr-ancient-one-the-8r.webp",
+          "abilities": [
+            "[keyword:Ritual Artifact] — If you fought a Villain or Mastermind, you may set aside the Orb of Agamotto to reveal the top four cards of your deck. KO up to one of them, put two of them in your hand, and put the rest back on top in any order. Then discard the Orb of Agamotto."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 239,
+      "name": "Vishanti, The",
+      "slug": "vishanti-the",
+      "team": "unaffiliated",
+      "cards": [
+        {
+          "name": "Oshtur",
+          "displayName": "Oshtur",
+          "slug": "oshtur",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-hr-vishanti-the-3c1.webp",
+          "abilities": [
+            "You may KO a Wound from your hand or discard pile. If you do, draw a card."
+          ]
+        },
+        {
+          "name": "Hoggoth",
+          "displayName": "Hoggoth",
+          "slug": "hoggoth",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-hr-vishanti-the-5c2.webp",
+          "abilities": [
+            "You may make a [keyword:Demonic Bargain] to get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Agamotto",
+          "displayName": "Agamotto",
+          "slug": "agamotto",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-hr-vishanti-the-4u.webp",
+          "abilities": [
+            "Reveal the top card of your deck. Discard it or put it back.",
+            "[hc:ranged]: You may choose a player to make a [keyword:Demonic Bargain] to draw two extra cards at the end of this turn."
+          ]
+        },
+        {
+          "name": "The Book of the Vishanti",
+          "displayName": "The Book of the Vishanti",
+          "slug": "the-book-of-the-vishanti",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 7,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-hr-vishanti-the-7r.webp",
+          "abilities": [
+            "[keyword:Ritual Artifact] — If any player gained a Wound, you may set aside the Book of the Vishanti to KO up to one Wound from any player's discard pile, then draw three cards. Then discard the Book of the Vishanti. You can use this during any player's turn."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 81,
+      "name": "Nightmare",
+      "slug": "nightmare",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Nightmare",
+          "slug": "nightmare",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-mm-nightmare.webp",
+          "abilities": [
+            "When you fight Nightmare in the [keyword:Astral Plane], instead of revealing a Tactic, KO one of your Heroes and Nightmare moves to the Mastermind Space.",
+            "Always Leads: Fear Lords",
+            "Master Strike: Nightmare enters the [keyword:Astral Plane]. If he was already there, each player discards a random card.",
+            "Escape: Each player KOs one of their non-grey Heroes. Nightmare moves to the Mastermind space."
+          ]
+        },
+        {
+          "name": "Epic Nightmare",
+          "slug": "epic-nightmare",
+          "tactic": false,
+          "vAttack": "8",
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-me-nightmare.webp",
+          "abilities": [
+            "When you fight Nightmare in the [keyword:Astral Plane], instead of revealing a Tactic, KO one of your Heroes and Nightmare moves to the Mastermind Space.",
+            "Always Leads: Fear Lords",
+            "Master Strike: Nightmare enters the [keyword:Astral Plane]. If he was already there, each player discards two random cards.",
+            "Escape: Each player KOs one of their non-grey Heroes. Nightmare moves to the Mastermind space."
+          ]
+        },
+        {
+          "name": "Don't Fall Asleep",
+          "slug": "dont-fall-asleep",
+          "tactic": true,
+          "vAttack": 6,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-mt-nightmare-dont-fall-asleep.webp",
+          "abilities": [
+            "Fight: Each other player discards two cards with [icon:recruit] icons. Nightmare enters the [keyword:Astral Plane]."
+          ]
+        },
+        {
+          "name": "Dream Weaver",
+          "slug": "dream-weaver",
+          "tactic": true,
+          "vAttack": 6,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-mt-nightmare-dream-weaver.webp",
+          "abilities": [
+            "Fight: For each of your [hc:ranged] Heroes, rescue a Bystander. Nightmare enters the [keyword:Astral Plane]."
+          ]
+        },
+        {
+          "name": "Night Terrors",
+          "slug": "night-terrors",
+          "tactic": true,
+          "vAttack": 6,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-mt-nightmare-night-terrors.webp",
+          "abilities": [
+            "Fight: Each other player reveals a [hc:covert] Hero or gains a Wound. Nightmare enters the [keyword:Astral Plane]."
+          ]
+        },
+        {
+          "name": "Deadly Waking Nightmares",
+          "slug": "deadly-waking-nightmares",
+          "tactic": true,
+          "vAttack": 6,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-mt-nightmare-deadly-waking-nightmares.webp",
+          "abilities": [
+            "Fight: Each other player KOs one of their non-grey Heroes. Each player who KO'd a Hero this way draws a card. Nightmare enters the [keyword:Astral Plane]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 82,
+      "name": "Dormammu",
+      "slug": "dormammu",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Dormammu",
+          "slug": "dormammu",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-mm-dormammu.webp",
+          "abilities": [
+            "Always Leads: Lords of the Netherworld",
+            "Master Strike: Each player makes a [keyword:Demonic Bargain] with Dormammu to discard down to four cards."
+          ]
+        },
+        {
+          "name": "Epic Dormammu",
+          "slug": "epic-dormammu",
+          "tactic": false,
+          "vAttack": "13",
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-me-dormammu.webp",
+          "abilities": [
+            "Always Leads: Lords of the Netherworld",
+            "Master Strike: Each player reveals the top card of their deck and discards it if it costs 0. Then each player makes a [keyword:Demonic Bargain] with Dormammu to discard down to three cards."
+          ]
+        },
+        {
+          "name": "Demonic Hellfire",
+          "slug": "demonic-hellfire",
+          "tactic": true,
+          "vAttack": 11,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-mt-dormammu-demonic-hellfire.webp",
+          "abilities": [
+            "Fight: Each other player makes a [keyword:Demonic Bargain] with Dormammu to KO a non-grey Hero from their discard pile."
+          ]
+        },
+        {
+          "name": "Flames of Regency",
+          "slug": "flames-of-regency",
+          "tactic": true,
+          "vAttack": 11,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-mt-dormammu-flames-of-regency.webp",
+          "abilities": [
+            "Fight: Each other player makes a [keyword:Demonic Bargain] with Dormammu to discard a card with an [icon:attack] icon."
+          ]
+        },
+        {
+          "name": "Barter for Souls",
+          "slug": "barter-for-souls",
+          "tactic": true,
+          "vAttack": 11,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-mt-dormammu-barter-for-souls.webp",
+          "abilities": [
+            "Fight: Choose a player to make a [keyword:Demonic Bargain] with Dormammu to gain a Hero from the HQ that costs 6 or less."
+          ]
+        },
+        {
+          "name": "Torments of the Dark Dimension",
+          "slug": "torments-of-the-dark-dimension",
+          "tactic": true,
+          "vAttack": 11,
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-mt-dormammu-torments-of-the-dark-dimension.webp",
+          "abilities": [
+            "Fight: Each other player makes a [keyword:Demonic Bargain] with Dormammu to gain a 0-cost Hero from the KO pile."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 102,
+      "name": "Fear Lords",
+      "slug": "fear-lords",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Nox",
+          "slug": "nox",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-vi-fear-lords-nox.webp",
+          "abilities": [
+            "Fight: KO one of your Heroes. Then, if Nox was in the city, she enters the [keyword:Astral Plane] and captures a Bystander."
+          ]
+        },
+        {
+          "name": "D'Spayre",
+          "slug": "dspayre",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-vi-fear-lords-dspayre.webp",
+          "abilities": [
+            "Ambush: D'Spayre enters the [keyword:Astral Plane] and captures a Bystander.",
+            "Fight: KO a Hero. Then, if D'Spayre was in the [keyword:Astral Plane], he enters the city, ignoring his Ambush ability."
+          ]
+        },
+        {
+          "name": "Dreamstalker",
+          "slug": "dreamstalker",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-vi-fear-lords-dreamstalker.webp",
+          "abilities": [
+            "Fight: Draw two cards. Then, if Dreamstalker was in the city, it enters the [keyword:Astral Plane].",
+            "Escape: Each player discards down to four cards."
+          ]
+        },
+        {
+          "name": "The Lurking Unknown",
+          "slug": "the-lurking-unknown",
+          "vp": "3",
+          "vAttack": "2",
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-vi-fear-lords-the-lurking-unknown.webp",
+          "abilities": [
+            "Fight: Reveal the top card of the Hero Deck. You may spend [icon:recruit] equal to that card's cost to have the player of your choice gain that Hero. If you don't, the Lurking Unknown enters the [keyword:Astral Plane] (even if it was already there).",
+            "Escape: Reveal the top card of the Hero Deck. Each player reveals their hand and KOs a Hero with that cost."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 103,
+      "name": "Lords of the Netherworld",
+      "slug": "lords-of-the-netherworld",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Mindless Ones",
+          "slug": "mindless-ones",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-vi-lords-of-the-netherworld-mindless-ones.webp",
+          "abilities": [
+            "Ambush: Mindless Ones capture the rightmost Hero in the HQ that costs 4 or less.",
+            "Fight: Choose a player to make a [keyword:Demonic Bargain] with the Lords of the Netherworld to gain that Hero."
+          ]
+        },
+        {
+          "name": "Baron Mordo",
+          "slug": "baron-mordo",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-vi-lords-of-the-netherworld-baron-mordo.webp",
+          "abilities": [
+            "Fight: Choose a player to make a [keyword:Demonic Bargain] with Baron Mordo to draw two extra cards at the end of this turn."
+          ]
+        },
+        {
+          "name": "Satana Hellstrom",
+          "slug": "satana-hellstrom",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-vi-lords-of-the-netherworld-satana-hellstrom.webp",
+          "abilities": [
+            "Fight: Choose a player to make a [keyword:Demonic Bargain] with Satana Hellstrom to rescue three Bystanders."
+          ]
+        },
+        {
+          "name": "Satannish",
+          "slug": "satannish",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-vi-lords-of-the-netherworld-satannish.webp",
+          "abilities": [
+            "Ambush: Choose a player to make a [keyword:Demonic Bargain] with Satannish to reveal the top card of the Hero Deck and gain it if it costs 4 or less.",
+            "Fight: Same effect, but cost 6 or less.",
+            "Escape: Same effect, but cost 2 or less."
+          ]
+        },
+        {
+          "name": "Umar",
+          "slug": "umar",
+          "vp": "5",
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/dstr/dstr-vi-lords-of-the-netherworld-umar.webp",
+          "abilities": [
+            "Ambush: Choose a player to make a [keyword:Demonic Bargain] with Umar to KO a Hero of their choice from the HQ.",
+            "Fight: Choose a player to make a [keyword:Demonic Bargain] with Umar to gain a Hero of their choice that costs 6 or less from the KO pile.",
+            "Escape: Same as Fight effect, but cost 0."
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [],
+  "schemes": [
+    {
+      "id": 150,
+      "name": "War for the Dream Dimension",
+      "slug": "war-for-the-dream-dimension",
+      "imageUrl": "https://images.barefootbetters.com/dstr/dstr-sc-war-for-the-dream-dimension.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 7 Twists. Add an extra Villain Group.",
+            "Twist: Reveal the top two cards of the Villain Deck. The Villain you revealed with the highest printed [icon:attack] enters the [keyword:Astral Plane]. (It does not do any Ambush abilities.) If you revealed a second Villain this way, that Villain enters the city. Put the rest of the revealed cards back in any order.",
+            "Evil Wins: When there are 3 Villains per player in the Escape Pile or the Villain Deck runs out."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 151,
+      "name": "Claim Souls for Demons",
+      "slug": "claim-souls-for-demons",
+      "imageUrl": "https://images.barefootbetters.com/dstr/dstr-sc-claim-souls-for-demons.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists.",
+            "Twist 1-3: Each player makes a [keyword:Demonic Bargain] to rescue a Bystander. If that Bargain wounds that player, stack that Bystander next to the Scheme as a “Tormented Soul“ instead.",
+            "Twist 4-8: Each player makes a [keyword:Demonic Bargain]  to gain a S.H.I.E.L.D. Officer. If that Bargain wounds that player, stack that Officer next to the Scheme as a “Tormented Soul“ instead.",
+            "Evil Wins: When the number of Tormented Souls is four times the number of players."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 152,
+      "name": "Cursed Pages of the Darkhold Tome",
+      "slug": "cursed-pages-of-the-darkhold-tome",
+      "imageUrl": "https://images.barefootbetters.com/dstr/dstr-sc-cursed-pages-of-the-darkhold-tome.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 11 Twists, representing Cursed Pages of the Darkhold Tome. Add an extra Villain Group.",
+            "Special Rules: Cursed Pages are [keyword:Ritual Artifact] with “If you fought a Villain or Mastermind, you may discard this to get +3[icon:recruit].“",
+            "Twist: Put this Cursed Page next to the Mastermind, plus a Cursed Page from any player's control or discard pile or the KO pile. For this turn only, the first time you fight a Villain or Mastermind, put one of the Mastermind's Cursed Pages into your discard pile.",
+            "Evil Wins: When the Mastermind has 7 Cursed Pages at the end of any player's turn or the Villain Deck runs out."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 153,
+      "name": "Duels of Science and Magic",
+      "slug": "duels-of-science-and-magic",
+      "imageUrl": "https://images.barefootbetters.com/dstr/dstr-sc-duels-of-science-and-magic.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 2 players: 9 Twists. 1 or 4 players: 10 Twists. 3 or 5 players: 11 Twists.",
+            "Twist 1, 3, and 5: “Duel of Science“: Each player reveals a [hc:tech] or [hc:ranged] Hero or discards down to 4 cards. If at least half the players (round up) failed to reveal, put this Twist next to the Mastermind as a “Duel Won.“",
+            "Twist 2, 4, and 6: “Duel of Magic“: Same effect, but with [hc:instinct] or [hc:covert].",
+            "Twist 7-11: “Duel of Science and Magic“: Same effect, but each player must reveal at least three of these colors: [hc:instinct], [hc:covert], [hc:tech], [hc:ranged].",
+            "Evil Wins: When the Mastermind has won 5 Duels."
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [],
+  "wounds": [],
+  "other": []
+}

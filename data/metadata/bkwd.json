@@ -1,0 +1,771 @@
+{
+  "id": 35,
+  "abbr": "bkwd",
+  "exportName": "BlackWidow",
+  "heroes": [
+    {
+      "id": 250,
+      "name": "Black Widow",
+      "slug": "black-widow",
+      "team": "shield",
+      "cards": [
+        {
+          "name": "Evasive Acrobatics",
+          "displayName": "Evasive Acrobatics",
+          "slug": "evasive-acrobatics",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-hr-black-widow-3c1.webp",
+          "abilities": [
+            "[keyword:Dodge]",
+            "When you [keyword:Dodge] with or play this card, you may also [keyword:Dodge] with another card from your hand."
+          ]
+        },
+        {
+          "name": "Widow's Bite",
+          "displayName": "Widow's Bite",
+          "slug": "widows-bite",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 4,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-hr-black-widow-4c2.webp",
+          "abilities": [
+            "[keyword:Dodge]",
+            "[keyword:Dark Memories]"
+          ]
+        },
+        {
+          "name": "Weave a Web of Spies",
+          "displayName": "Weave a Web of Spies",
+          "slug": "weave-a-web-of-spies",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 5,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-hr-black-widow-5u.webp",
+          "abilities": [
+            "[keyword:Dodge]",
+            "If you drew any cards this turn, you may send one of your other Heroes [keyword:Undercover]."
+          ]
+        },
+        {
+          "name": "Infiltrate the Conspiracy",
+          "displayName": "Infiltrate the Conspiracy",
+          "slug": "infiltrate-the-conspiracy",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 7,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-hr-black-widow-7r.webp",
+          "abilities": [
+            "You may send one of your Heroes [keyword:Undercover].",
+            "You get +3[icon:attack] if you have at least 4 Bystanders and/or Undercover Heroes in your Victory Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 251,
+      "name": "Yelena Belova",
+      "slug": "yelena-belova",
+      "team": "shield",
+      "cards": [
+        {
+          "name": "Strike and Fade",
+          "displayName": "Strike and Fade",
+          "slug": "strike-and-fade",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 2,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-hr-yelena-belova-2c1.webp",
+          "abilities": [
+            "Send this [keyword:Undercover]."
+          ]
+        },
+        {
+          "name": "Unveil Identity",
+          "displayName": "Unveil Identity",
+          "slug": "unveil-identity",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-hr-yelena-belova-3c2.webp",
+          "abilities": [
+            "[hc:instinct]: You may [keyword:Unleash] one of your Heroes from [keyword:Undercover]."
+          ]
+        },
+        {
+          "name": "Twilight Ops",
+          "displayName": "Twilight Ops",
+          "slug": "twilight-ops",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 6,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-hr-yelena-belova-6u.webp",
+          "abilities": [
+            "[keyword:Dodge]",
+            "When you [keyword:Dodge] with this card, you may [keyword:Unleash] one of your Heroes from [keyword:Undercover].",
+            "When you play this card, send it [keyword:Undercover]."
+          ]
+        },
+        {
+          "name": "Destroy the Red Room",
+          "displayName": "Destroy the Red Room",
+          "slug": "destroy-the-red-room",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 8,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-hr-yelena-belova-8r.webp",
+          "abilities": [
+            "You may [keyword:Unleash] one of your Heroes from [keyword:Undercover].",
+            "You may send a Hero from your discard pile [keyword:Undercover]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 252,
+      "name": "Red Guardian",
+      "slug": "red-guardian",
+      "team": "unaffiliated",
+      "cards": [
+        {
+          "name": "Sleeper Agent",
+          "displayName": "Sleeper Agent",
+          "slug": "sleeper-agent",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-hr-red-guardian-3c1.webp",
+          "abilities": [
+            "[keyword:When Recruited]: Send this [keyword:Undercover].",
+            "When you fight a Villain, you may [keyword:Unleash] this card from [keyword:Undercover].",
+            "[hc:covert]: Draw a card."
+          ]
+        },
+        {
+          "name": "Magnetic Shield",
+          "displayName": "Magnetic Shield",
+          "slug": "magnetic-shield",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-hr-red-guardian-4c2.webp",
+          "abilities": [
+            "[keyword:When Recruited]: Send this [keyword:Undercover].",
+            "When you recruit another [hc:covert] Hero, you may [keyword:Unleash] this card from [keyword:Undercover].",
+            "[hc:covert]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Death Was Only a Ruse",
+          "displayName": "Death Was Only a Ruse",
+          "slug": "death-was-only-a-ruse",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-hr-red-guardian-6u.webp",
+          "abilities": [
+            "[keyword:When Recruited]: Send this [keyword:Undercover].",
+            "When a Master Strike is completed or any player fights the Mastermind, you may [keyword:Unleash] this card from [keyword:Undercover].",
+            "[hc:covert]: You may send one of your other Heroes [keyword:Undercover]."
+          ]
+        },
+        {
+          "name": "Champion of the Winter Guard",
+          "displayName": "Champion of the Winter Guard",
+          "slug": "champion-of-the-winter-guard",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 8,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-hr-red-guardian-8r.webp",
+          "abilities": [
+            "[keyword:When Recruited]: Send this [keyword:Undercover].",
+            "When a Scheme Twist is completed or you play your third [hc:covert] Hero in a turn, you may [keyword:Unleash] this card from [keyword:Undercover].",
+            "[hc:covert]: You get +2[icon:attack] for each other [hc:covert] Hero you played this turn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 253,
+      "name": "White Tiger",
+      "slug": "white-tiger",
+      "team": "marvel-knights",
+      "cards": [
+        {
+          "name": "Dark Influence of the Hand",
+          "displayName": "Dark Influence of the Hand",
+          "slug": "dark-influence-of-the-hand",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-hr-white-tiger-3c1.webp",
+          "abilities": [
+            "[keyword:Dodge]",
+            "[keyword:Dark Memories]."
+          ]
+        },
+        {
+          "name": "Amulets of the Tiger God",
+          "displayName": "Amulets of the Tiger God",
+          "slug": "amulets-of-the-tiger-god",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-hr-white-tiger-4c2.webp",
+          "abilities": [
+            "Reveal the top two cards of your deck. Draw one of them that costs 0 and discard the rest."
+          ]
+        },
+        {
+          "name": "Camouflaged Huntress",
+          "displayName": "Camouflaged Huntress",
+          "slug": "camouflaged-huntress",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 5,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-hr-white-tiger-5u.webp",
+          "abilities": [
+            "Whenever you defeat a Henchman this turn, you may KO one of your cards."
+          ]
+        },
+        {
+          "name": "Shadowed Resurrection",
+          "displayName": "Shadowed Resurrection",
+          "slug": "shadowed-resurrection",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 8,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-hr-white-tiger-8r.webp",
+          "abilities": [
+            "[keyword:Dark Memories], drawing that many cards instead of gaining [icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 254,
+      "name": "Falcon & Winter Soldier",
+      "slug": "falcon-winter-soldier",
+      "team": "avengers",
+      "cards": [
+        {
+          "name": "Attune",
+          "displayName": "Attune",
+          "slug": "attune",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": null,
+          "recruit": "3",
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-hr-falcon-winter-soldier-3c1.webp",
+          "abilities": [
+            "To play this side, you must discard a card."
+          ]
+        },
+        {
+          "name": "Atone",
+          "displayName": "Atone",
+          "slug": "atone",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 3,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-hr-falcon-winter-soldier-3c1.webp",
+          "abilities": [
+            "[keyword:Dark Memories]."
+          ]
+        },
+        {
+          "name": "Relocate",
+          "displayName": "Relocate",
+          "slug": "relocate",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-hr-falcon-winter-soldier-4c2.webp",
+          "abilities": [
+            "[keyword:Dodge].",
+            "[hc:instinct]: You get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Reload",
+          "displayName": "Reload",
+          "slug": "reload",
+          "rarity": 1,
+          "rarityLabel": "Common 4",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-hr-falcon-winter-soldier-4c2.webp",
+          "abilities": [
+            "[hc:tech]: Draw a card."
+          ]
+        },
+        {
+          "name": "New Wings",
+          "displayName": "New Wings",
+          "slug": "new-wings",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 5,
+          "hc": "tech",
+          "cost": 5,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-hr-falcon-winter-soldier-5u.webp",
+          "abilities": [
+            "If you discarded any cards this turn, you get +4[icon:attack]."
+          ]
+        },
+        {
+          "name": "New Plan",
+          "displayName": "New Plan",
+          "slug": "new-plan",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 6,
+          "hc": "covert",
+          "cost": 5,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-hr-falcon-winter-soldier-5u.webp",
+          "abilities": [
+            "Draw two cards."
+          ]
+        },
+        {
+          "name": "Captain America's Legacy",
+          "displayName": "Captain America's Legacy",
+          "slug": "captain-americas-legacy",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 7,
+          "hc": "strength",
+          "cost": 7,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-hr-falcon-winter-soldier-7r.webp",
+          "abilities": [
+            "You get +1[icon:attack] for each Hero Class you have.",
+            "[team:avengers]: [keyword:Dark Memories]."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 87,
+      "name": "Taskmaster",
+      "slug": "taskmaster",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Taskmaster",
+          "slug": "taskmaster",
+          "tactic": false,
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-mm-taskmaster.webp",
+          "abilities": [
+            "Henchmen get +1[icon:attack] for each “Henchman Training“ stacked here.",
+            "During your turn, Taskmaster gets +[icon:attack] equal to the highest cost Hero you played this turn.",
+            "Always Leads: Taskmaster's Thunderbolts",
+            "Master Strike: Stack this Strike next to Taskmaster as “Henchman Training.“ If there are any Henchmen in the city, each player gains a Wound."
+          ]
+        },
+        {
+          "name": "Epic Taskmaster",
+          "slug": "epic-taskmaster",
+          "tactic": false,
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-me-taskmaster.webp",
+          "abilities": [
+            "Henchmen get +2[icon:attack] for each “Henchman Training“ stacked here.",
+            "During your turn, Taskmaster gets +[icon:attack] equal to double the highest cost Hero you played this turn.",
+            "Always Leads: Taskmaster's Thunderbolts",
+            "Master Strike: Stack this Strike next to Taskmaster as “Henchman Training.“ If there are any Henchmen in the city, each player gains a Wound."
+          ]
+        },
+        {
+          "name": "S.H.I.E.L.D. Initiative Trainer",
+          "slug": "shield-initiative-trainer",
+          "tactic": true,
+          "vAttack": 5,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-mt-taskmaster-shield-initiative-trainer.webp",
+          "abilities": [
+            "Fight: Choose a Henchman from any player's Victory Pile to enter the city.",
+            "KO any number of S.H.I.E.L.D. Agents and/or Troopers. Gain that many S.H.I.E.L.D. Officers."
+          ]
+        },
+        {
+          "name": "Photographic Reflexes",
+          "slug": "photographic-reflexes",
+          "tactic": true,
+          "vAttack": 5,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-mt-taskmaster-photographic-reflexes.webp",
+          "abilities": [
+            "Fight: Choose a Henchman from any player's Victory Pile to enter the city.",
+            "Play a copy of a Hero in the HQ that costs 6 or less."
+          ]
+        },
+        {
+          "name": "Teacher and Assassin",
+          "slug": "teacher-and-assassin",
+          "tactic": true,
+          "vAttack": 5,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-mt-taskmaster-teacher-and-assassin.webp",
+          "abilities": [
+            "Fight: Choose a Henchman from any player's Victory Pile to enter the city.",
+            "Each other player reveals their hand and puts one of their non-grey Heroes on the bottom of the Hero Deck."
+          ]
+        },
+        {
+          "name": "Henchman Instructor",
+          "slug": "henchman-instructor",
+          "tactic": true,
+          "vAttack": 5,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-mt-taskmaster-henchman-instructor.webp",
+          "abilities": [
+            "Fight: Choose a Henchman from any player's Victory Pile to enter the city.",
+            "Then each other player discards a card for each Henchman in the city and/or Escape Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 88,
+      "name": "Indestructible Man",
+      "slug": "indestructible-man",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Indestructible Man",
+          "slug": "indestructible-man",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-mm-indestructible-man.webp",
+          "abilities": [
+            "You can't use [icon:attack] to fight Indestructible Man.",
+            "Once during each of your turns, you may shuffle two Elite Assassins from your Victory Pile into the Villain Deck. If you do, fight Indestructible Man.",
+            "Always Leads: Elite Assassins",
+            "Master Strike: Shuffle an Elite Assassin from your Victory Pile into the Villain Deck. If you can't, each player gains a Wound."
+          ]
+        },
+        {
+          "name": "Epic Indestructible Man",
+          "slug": "epic-indestructible-man",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-me-indestructible-man.webp",
+          "abilities": [
+            "You can't use [icon:attack] to fight Indestructible Man.",
+            "Once during each of your turns, you may shuffle three Elite Assassins from your Victory Pile into the Villain Deck. If you do, fight Indestructible Man.",
+            "Always Leads: Elite Assassins",
+            "Master Strike: Each player shuffles an Elite Assassin from their Victory Pile into the Villain Deck. Each player that can't gains a Wound."
+          ]
+        },
+        {
+          "name": "Manipulate Murderous Mad Monk",
+          "slug": "manipulate-murderous-mad-monk",
+          "tactic": true,
+          "vAttack": 8,
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-mt-indestructible-man-manipulate-murderous-mad-monk.webp",
+          "abilities": [
+            "Fight: If this is not the last Tactic, rescue four Bystanders and this Tactic enters the city as a “Molot Boga“ Villain whose abilities are:",
+            "“Ambush: Play two cards from the Villain Deck.",
+            "Fight: KO one of your Heroes.",
+            "Escape: Shuffle this back into Indestructible Man's Mastermind Tactics.“"
+          ]
+        },
+        {
+          "name": "Secrets of Indestructibility",
+          "slug": "secrets-of-indestructibility",
+          "tactic": true,
+          "vAttack": "*",
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-mt-indestructible-man-secrets-of-indestructibility.webp",
+          "abilities": [
+            "Fight: KO up to two Wounds from your hand and/or discard pile.",
+            "If this is not the last Tactic, play two cards from the Villain Deck."
+          ]
+        },
+        {
+          "name": "International Arms Dealer",
+          "slug": "international-arms-dealer",
+          "tactic": true,
+          "vAttack": "*",
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-mt-indestructible-man-international-arms-dealer.webp",
+          "abilities": [
+            "Fight: Gain a [hc:tech] Hero from the HQ. Each other player reveals a [hc:tech] Hero or gains a Wound.",
+            "If this is not the last Tactic, play two cards from the Villain Deck."
+          ]
+        },
+        {
+          "name": "Unveil Project Four",
+          "slug": "unveil-project-four",
+          "tactic": true,
+          "vAttack": "*",
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-mt-indestructible-man-unveil-project-four.webp",
+          "abilities": [
+            "Fight: Each other player reveals their hand and discards each card with a “4“ printed anywhere on it. (The copyright date line doesn't count.)",
+            "If this is not the last Tactic, play two cards from the Villain Deck."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 108,
+      "name": "Taskmaster's Thunderbolts",
+      "slug": "taskmasters-thunderbolts",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Jester",
+          "slug": "jester",
+          "vp": "2",
+          "vAttack": "2",
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-vi-taskmasters-thunderbolts-jester.webp",
+          "abilities": [
+            "Ambush: Jester captures a Bystander.",
+            "Fight: Reveal the top four cards of the Villain Deck. Play all the Henchmen you find. Put the rest back in any order."
+          ]
+        },
+        {
+          "name": "Joystick",
+          "slug": "joystick",
+          "vp": "2",
+          "vAttack": "3",
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-vi-taskmasters-thunderbolts-joystick.webp",
+          "abilities": [
+            "Ambush: Choose a Henchman from any player's Victory Pile to enter the city."
+          ]
+        },
+        {
+          "name": "Jack O'Lantern",
+          "slug": "jack-olantern",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-vi-taskmasters-thunderbolts-jack-olantern.webp",
+          "abilities": [
+            "Fight: Choose a Henchman from any player's Victory Pile to enter the city.",
+            "Escape: Each player with fewer than two Henchmen in their Victory Pile gains a Wound."
+          ]
+        },
+        {
+          "name": "Bullseye",
+          "slug": "bullseye",
+          "vp": "3",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-vi-taskmasters-thunderbolts-bullseye.webp",
+          "abilities": [
+            "Ambush: Choose [icon:recruit] or [icon:attack], then reveal the top card of the Hero Deck. If it has that icon, Bullseye captures it and gets +[icon:attack] equal to that Hero's cost.",
+            "Fight: The player of your choice gains the captured Hero.",
+            "Escape: KO that Hero."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 109,
+      "name": "Elite Assassins",
+      "slug": "elite-assassins",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Blue Talon",
+          "slug": "blue-talon",
+          "vp": "2",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-vi-elite-assassins-blue-talon.webp",
+          "abilities": [
+            "[object Object]",
+            "Ambush: Each player reveals a [hc:ranged] Hero or gains a Wound.",
+            "Fight: You may send a Hero from your discard pile [keyword:Undercover]."
+          ]
+        },
+        {
+          "name": "Iron Maiden",
+          "slug": "iron-maiden",
+          "vp": "2",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-vi-elite-assassins-iron-maiden.webp",
+          "abilities": [
+            "[object Object]",
+            "Ambush: Each player must send one of their non-grey Heroes [keyword:Undercover].",
+            "Fight: Each player may [keyword:Unleash] one of their Heroes from [keyword:Undercover]."
+          ]
+        },
+        {
+          "name": "Snapdragon",
+          "slug": "snapdragon",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-vi-elite-assassins-snapdragon.webp",
+          "abilities": [
+            "Ambush: Each player discards a non-grey Hero. Then each player draws a card.",
+            "Fight: You may send one of your Heroes [keyword:Undercover]."
+          ]
+        },
+        {
+          "name": "Black Lotus",
+          "slug": "black-lotus",
+          "vp": "3",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-vi-elite-assassins-black-lotus.webp",
+          "abilities": [
+            "Ambush: Each player discards a card that costs 0.",
+            "Fight: You get +3[icon:recruit]."
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [],
+  "schemes": [
+    {
+      "id": 162,
+      "name": "Corrupt the Spy Agencies",
+      "slug": "corrupt-the-spy-agencies",
+      "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-sc-corrupt-the-spy-agencies.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 7 Twists.",
+            "Twist 1-6: Each player sends one of their non-grey Heroes [keyword:Undercover]. Then each player may [keyword:Unleash] a Hero from [keyword:Undercover] with a lower cost than the one that player just sent [keyword:Undercover].",
+            "Twist 7: Evil Wins!"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 163,
+      "name": "Train Black Widows in the Red Room",
+      "slug": "train-black-widows-in-the-red-room",
+      "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-sc-train-black-widows-in-the-red-room.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists, minus 1 Twist per player. Add 8 S.H.I.E.L.D. Officers to the Villain Deck.",
+            "Special Rules: Officers in the Villain Deck and city are “Black Widow Initiate“ Villains with 3+[icon:attack] and “[keyword:Dark Memories]. Fight: Gain this as an Officer (without [keyword:Dark Memories]) or send it [keyword:Undercover].“",
+            "Twist: A Black Widow Initiate enters the city from the Officer Stack. Play another card from the Villain Deck.",
+            "Evil Wins: When there 3 Villains per player in the Escape Pile or the Villain Deck runs out."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 164,
+      "name": "Sniper Rifle Assassins",
+      "slug": "sniper-rifle-assassins",
+      "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-sc-sniper-rifle-assassins.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 11 Twists, minus 1 Twist per player.",
+            "Twist: Each player must [keyword:Dodge] with a Hero from their hand, revealing the card they drew. KO each non-grey Hero drawn this way.",
+            "Evil Wins: When there are four non-grey Heroes per player in the KO Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 165,
+      "name": "Frame Heroes for Murder",
+      "slug": "frame-heroes-for-murder",
+      "imageUrl": "https://images.barefootbetters.com/bkwd/bkwd-sc-frame-heroes-for-murder.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 7 Twists. 6 Heroes.",
+            "Twist 1-6: Stack a card from the HQ next to the scheme as “Incriminating Evidence“ that has a different cost than any card already in that stack.",
+            "Twist 7: Add any card from the HQ to the Incriminating Evidence.",
+            "Evil Wins: When there are 5 pieces of Incriminating Evidence."
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [],
+  "wounds": [],
+  "other": []
+}

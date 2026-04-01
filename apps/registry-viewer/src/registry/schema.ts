@@ -23,22 +23,26 @@ export const HeroClassSchema = z.enum([
 // ── Hero card — much more permissive ─────────────────────────────────────────
 export const HeroCardSchema = z.object({
   name:        z.string(),
-  displayName: z.string().optional().nullable(),   // missing in many sets
+  displayName: z.string().optional().nullable(),
   slug:        z.string(),
-  rarity:      z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  // rarity: accept 0,1,2,3 or any number — some sets use 0 or omit it
+  rarity:      z.number().int().optional().nullable(),
   rarityLabel: z.string().optional().nullable(),
-  slot:        z.number().int().min(1),             // no upper limit — some sets have 6+
+  // slot: optional — some sets omit it entirely
+  slot:        z.number().int().min(1).optional().nullable(),
   hc:          HeroClassSchema.optional().nullable(),
-  cost:        z.union([z.number(), z.string(), z.null()]).optional(), // string/null in some sets
-  attack:      z.string().nullable().optional(),
-  recruit:     z.string().nullable().optional(),
+  cost:        z.union([z.number(), z.string(), z.null()]).optional(),
+  // attack/recruit: accept number OR string OR null — some sets use numbers
+  attack:      z.union([z.string(), z.number(), z.null()]).optional(),
+  recruit:     z.union([z.string(), z.number(), z.null()]).optional(),
   imageUrl:    z.string().url().optional().nullable(),
   abilities:   z.array(z.string()).optional().default([]),
 });
 
 // ── Hero ──────────────────────────────────────────────────────────────────────
 export const HeroSchema = z.object({
-  id:    z.number().int().nullable(),   // null in 3dtc
+  // id: optional — some sets omit it entirely, others use null
+  id:    z.number().int().optional().nullable(),
   name:  z.string(),
   slug:  z.string(),
   team:  z.string().optional().nullable(),

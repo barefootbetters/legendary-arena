@@ -1,0 +1,1013 @@
+{
+  "id": 36,
+  "abbr": "msis",
+  "exportName": "MSInfinitySaga",
+  "heroes": [
+    {
+      "id": 255,
+      "name": "Doctor Strange",
+      "slug": "doctor-strange",
+      "team": "avengers",
+      "cards": [
+        {
+          "name": "Open Portals",
+          "displayName": "Open Portals",
+          "slug": "open-portals",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 2,
+          "attack": null,
+          "recruit": "1+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-doctor-strange-2c1.webp",
+          "abilities": [
+            "[object Object]",
+            "[hc:ranged]: You get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Defend this Dimension",
+          "displayName": "Defend this Dimension",
+          "slug": "defend-this-dimension",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-doctor-strange-3c2.webp",
+          "abilities": [
+            "[hc:instinct]: Reveal the top card of the Villain Deck. If it's a Villain, you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Sift Futures",
+          "displayName": "Sift Futures",
+          "slug": "sift-futures",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-doctor-strange-4c3.webp",
+          "abilities": [
+            "[object Object]",
+            "Choose a Hero Class. Reveal the top card of your deck. If it's the Hero Class you named, draw it."
+          ]
+        },
+        {
+          "name": "Invoke the Time Stone",
+          "displayName": "Invoke the Time Stone",
+          "slug": "invoke-the-time-stone",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 5,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-doctor-strange-5u1.webp",
+          "abilities": [
+            "[object Object]",
+            "[hc:ranged] [keyword:Sacrifice]: Take another turn after this one. Don't play a card from the Villain Deck at the start of that turn."
+          ]
+        },
+        {
+          "name": "Bind Evil",
+          "displayName": "Bind Evil",
+          "slug": "bind-evil",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 5,
+          "hc": "instinct",
+          "cost": 6,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-doctor-strange-6u2.webp",
+          "abilities": [
+            "[hc:instinct]: Reveal the top card of the Villain Deck. If it's a Master Strike, KO that Strike, you get +3[icon:attack], and put a card from the Bystander Deck on top of the Villain Deck."
+          ]
+        },
+        {
+          "name": "1 in 14,000,065",
+          "displayName": "1 in 14,000,065",
+          "slug": "1-in-14-000-065",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 6,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": "5",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-doctor-strange-7r.webp",
+          "abilities": [
+            "[hc:instinct] [keyword:Sacrifice]: Guess the name of the top card of the Villain Deck, then reveal it. If you guessed right, draw six cards."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 256,
+      "name": "Black Panther",
+      "slug": "black-panther",
+      "team": "avengers",
+      "cards": [
+        {
+          "name": "Wakanda Forever",
+          "displayName": "Wakanda Forever",
+          "slug": "wakanda-forever",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 2,
+          "attack": "1",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-black-panther-2c1.webp",
+          "abilities": [
+            "[hc:covert]: Draw a card."
+          ]
+        },
+        {
+          "name": "Avengers Reassembled",
+          "displayName": "Avengers Reassembled",
+          "slug": "avengers-reassembled",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-black-panther-3c2.webp",
+          "abilities": [
+            "If you have all five Hero Classes, you get +3[icon:attack]."
+          ]
+        },
+        {
+          "name": "Great Many Lives Lost",
+          "displayName": "Great Many Lives Lost",
+          "slug": "great-many-lives-lost",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-black-panther-4c3.webp",
+          "abilities": [
+            "[hc:instinct] [keyword:Sacrifice]: KO up to two cards from your hand and/or discard pile."
+          ]
+        },
+        {
+          "name": "Council of War",
+          "displayName": "Council of War",
+          "slug": "council-of-war",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 5,
+          "attack": "0+",
+          "recruit": "3+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-black-panther-5u1.webp",
+          "abilities": [
+            "You get +1[icon:recruit] for each other [rule:multicolored] Hero you have.",
+            "[hc:strength]: You may have this card make all [icon:attack] instead of [icon:recruit]."
+          ]
+        },
+        {
+          "name": "Vibranium Nanites",
+          "displayName": "Vibranium Nanites",
+          "slug": "vibranium-nanites",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 5,
+          "hc": "tech",
+          "cost": 6,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-black-panther-6u2.webp",
+          "abilities": [
+            "Reveal the top card of your deck. If it's [rule:multicolored], draw it. Otherwise, put it back or discard it.",
+            "[hc:tech]: You may KO that card."
+          ]
+        },
+        {
+          "name": "Fateful Return",
+          "displayName": "Fateful Return",
+          "slug": "fateful-return",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 6,
+          "hc": "instinct",
+          "cost": 8,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-black-panther-8r.webp",
+          "abilities": [
+            "You get +2[icon:attack] for each Hero Class you have."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 257,
+      "name": "Bruce Banner",
+      "slug": "bruce-banner",
+      "team": "avengers",
+      "cards": [
+        {
+          "name": "Burst of Rage",
+          "displayName": "Burst of Rage",
+          "slug": "burst-of-rage",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 1,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-bruce-banner-1c1.webp",
+          "abilities": [
+            "[hc:strength] [keyword:Sacrifice]: You get +3[icon:attack]. You may KO a card from your hand or discard pile."
+          ]
+        },
+        {
+          "name": "Brains and Brawn",
+          "displayName": "Brains and Brawn",
+          "slug": "brains-and-brawn",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 3,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-bruce-banner-3c2.webp",
+          "abilities": [
+            "[hc:tech][hc:strength]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Hulkbuster Armor",
+          "displayName": "Hulkbuster Armor",
+          "slug": "hulkbuster-armor",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-bruce-banner-4c3.webp",
+          "abilities": [
+            "You may KO a Wound from your hand or discard pile. If you do, you get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Hulk Gets Smashed",
+          "displayName": "Hulk Gets Smashed",
+          "slug": "hulk-gets-smashed",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 5,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-bruce-banner-5u1.webp",
+          "abilities": [
+            "[hc:strength]: You main gain a Wound. If you do, KO up to two other cards from your hand and/or discard pile."
+          ]
+        },
+        {
+          "name": "Crush Puny Weaklings",
+          "displayName": "Crush Puny Weaklings",
+          "slug": "crush-puny-weaklings",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 5,
+          "hc": "tech",
+          "cost": 6,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-bruce-banner-6u2.webp",
+          "abilities": [
+            "[hc:tech]: You get +1[icon:attack] for each Henchman in your Victory Pile."
+          ]
+        },
+        {
+          "name": "Reverse the Snap",
+          "displayName": "Reverse the Snap",
+          "slug": "reverse-the-snap",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 6,
+          "hc": "tech",
+          "cost": 7,
+          "attack": "5",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-bruce-banner-7r.webp",
+          "abilities": [
+            "[hc:tech] [keyword:Sacrifice]: Gain up to one other Hero from the KO pile. Then combine you deck and discard pile. Put all those cards that cost 0 into your discard pile. Shuffle the rest into a new deck."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 258,
+      "name": "Captain Marvel",
+      "slug": "captain-marvel",
+      "team": "avengers",
+      "cards": [
+        {
+          "name": "Dawning Hope",
+          "displayName": "Dawning Hope",
+          "slug": "dawning-hope",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 2,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-captain-marvel-2c1.webp",
+          "abilities": [
+            "Draw a card.",
+            "If you had already drawn any cards this turn, draw two cards instead."
+          ]
+        },
+        {
+          "name": "Infused by the Tesseract",
+          "displayName": "Infused by the Tesseract",
+          "slug": "infused-by-the-tesseract",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "0+",
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-captain-marvel-3c2.webp",
+          "abilities": [
+            "Draw a card.",
+            "[keyword:Endgame]: This card makes [icon:attack] instead of [icon:recruit]."
+          ]
+        },
+        {
+          "name": "Return from the Stars",
+          "displayName": "Return from the Stars",
+          "slug": "return-from-the-stars",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 4,
+          "attack": "0+",
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-captain-marvel-4c3.webp",
+          "abilities": [
+            "[hc:strength]: You get +2[icon:recruit].",
+            "[keyword:Endgame]: This card makes all [icon:attack] instead of [icon:recruit]."
+          ]
+        },
+        {
+          "name": "Turning Point",
+          "displayName": "Turning Point",
+          "slug": "turning-point",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-captain-marvel-5u1.webp",
+          "abilities": [
+            "For the rest of this turn, it is the [keyword:Endgame] for your Hero cards.",
+            "If it was already the [keyword:Endgame], you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Moment of Destiny",
+          "displayName": "Moment of Destiny",
+          "slug": "moment-of-destiny",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 5,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-captain-marvel-6u2.webp",
+          "abilities": [
+            "[hc:ranged]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Time to End It",
+          "displayName": "Time to End It",
+          "slug": "time-to-end-it",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 6,
+          "hc": "ranged",
+          "cost": 8,
+          "attack": "5+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-captain-marvel-8r.webp",
+          "abilities": [
+            "You get +1[icon:attack] for each other [hc:ranged] and/or [hc:strength] card you played this turn.",
+            "[keyword:Endgame]: Instead, you get +2[icon:attack] for each."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 259,
+      "name": "Wanda & Vision",
+      "slug": "wanda-vision",
+      "team": "avengers",
+      "cards": [
+        {
+          "name": "We Have to Destroy It",
+          "displayName": "We Have to Destroy It",
+          "slug": "we-have-to-destroy-it",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 1,
+          "attack": null,
+          "recruit": "1+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-wanda-vision-1c1.webp",
+          "abilities": [
+            "[hc:tech] [keyword:Sacrifice]: You get +3[icon:recruit]. You may KO a card from your hand or discard pile."
+          ]
+        },
+        {
+          "name": "Witchcraft",
+          "displayName": "Witchcraft",
+          "slug": "witchcraft",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-wanda-vision-3c2.webp",
+          "abilities": [
+            "Reveal the top card of your deck. If it has an odd-numbered cost, draw it. ( 0 is even.)"
+          ]
+        },
+        {
+          "name": "Hold On",
+          "displayName": "Hold On",
+          "slug": "hold-on",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 3,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-wanda-vision-3c3.webp",
+          "abilities": [
+            "[hc:covert]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Let Go",
+          "displayName": "Let Go",
+          "slug": "let-go",
+          "rarity": 1,
+          "rarityLabel": "Common 4",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-wanda-vision-3c3.webp",
+          "abilities": [
+            "[hc:ranged] [keyword:Sacrifice]: Draw 3 cards. You may KO a card from your hand or discard pile."
+          ]
+        },
+        {
+          "name": "Magic",
+          "displayName": "Magic",
+          "slug": "magic",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 5,
+          "hc": "ranged",
+          "cost": 5,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-wanda-vision-5u1.webp",
+          "abilities": [
+            "You get +1[icon:attack] for each other Hero with an odd-numbered cost you played this turn."
+          ]
+        },
+        {
+          "name": "Science",
+          "displayName": "Science",
+          "slug": "science",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 6,
+          "hc": "tech",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-wanda-vision-5u1.webp",
+          "abilities": [
+            "[hc:tech]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Rage",
+          "displayName": "Rage",
+          "slug": "rage",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 3",
+          "slot": 7,
+          "hc": "covert",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-wanda-vision-5u2.webp",
+          "abilities": [
+            "If a Hero was put into the KO pile this turn you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Grief",
+          "displayName": "Grief",
+          "slug": "grief",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 4",
+          "slot": 8,
+          "hc": "tech",
+          "cost": 5,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-wanda-vision-5u2.webp",
+          "abilities": [
+            "If a Master Strike was completed this turn, you get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Odd Couple",
+          "displayName": "Odd Couple",
+          "slug": "odd-couple",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 9,
+          "hc": "covert",
+          "cost": 7,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-hr-wanda-vision-7r.webp",
+          "abilities": [
+            "[hc:ranged]: Reveal the top five cards of the Hero Deck. You may put one of them with an odd-numbered cost into your hand. You may KO one of them. Put the rest back in any order."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 89,
+      "name": "Thanos",
+      "slug": "thanos",
+      "alwaysLeads": [],
+      "vp": 7,
+      "cards": [
+        {
+          "name": "Thanos",
+          "slug": "thanos",
+          "tactic": false,
+          "vAttack": "11+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-mm-thanos.webp",
+          "abilities": [
+            "Thanos get +1[icon:attack] for each Infinity Stone in the city and/or Escape Pile.",
+            "Always Leads: Infinity Stones",
+            "Master Strike: The leftmost Infinity Stone in the city escapes. Then an Infinity Stone worth 4VP or more enters the city from your Victory Pile. If you didn't have any, each player gains a Wound.",
+            "Thanos Wins: When 6 Infinity Stones escape."
+          ]
+        },
+        {
+          "name": "Epic Thanos",
+          "slug": "epic-thanos",
+          "tactic": false,
+          "vAttack": "13+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-me-thanos.webp",
+          "abilities": [
+            "Thanos get +2[icon:attack] for each Infinity Stone in the city and/or Escape Pile.",
+            "Always Leads: Infinity Stones",
+            "Master Strike: The lowest [icon:attack] Infinity Stone in the city escapes. Then an Infinity Stone worth 4VP or more enters the city from your Victory Pile. Each player that didn't have any gains a Wound.",
+            "Thanos Wins: When 6 Infinity Stones escape."
+          ]
+        },
+        {
+          "name": "The Snap",
+          "slug": "the-snap",
+          "tactic": true,
+          "vAttack": 11,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-mt-thanos-the-snap.webp",
+          "abilities": [
+            "Fight: Each other player discards half of their cards. Destroy half of the HQ spaces. (Round down the losses.) Turn the Heroes there face down to mark the destroyed spaces. Don't refill those spaces."
+          ]
+        },
+        {
+          "name": "Destiny Arrives All the Same",
+          "slug": "destiny-arrives-all-the-same",
+          "tactic": true,
+          "vAttack": 11,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-mt-thanos-destiny-arrives-all-the-same.webp",
+          "abilities": [
+            "Fight: Each other player reveals a Hero that costs 7 or more or gains a Wound."
+          ]
+        },
+        {
+          "name": "Price to Pay",
+          "slug": "price-to-pay",
+          "tactic": true,
+          "vAttack": 11,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-mt-thanos-price-to-pay.webp",
+          "abilities": [
+            "Fight: Each other player discards cards equal to the number of Infinity Stones in the city and/or Escape Pile or gains a Wound."
+          ]
+        },
+        {
+          "name": "You Should Have Gone for the Head",
+          "slug": "you-should-have-gone-for-the-head",
+          "tactic": true,
+          "vAttack": 11,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-mt-thanos-you-should-have-gone-for-the-head.webp",
+          "abilities": [
+            "Fight: KO one of your Heroes.",
+            "If this is the last Mastermind Tactic: You do not win the game. Players must fight Thanos one more time to put the Mastermind card in their Victory Pile and win the game."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 90,
+      "name": "Ebony Maw",
+      "slug": "ebony-maw",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Ebony Maw",
+          "slug": "ebony-maw",
+          "tactic": false,
+          "vAttack": "8+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-mm-ebony-maw.webp",
+          "abilities": [
+            "[keyword:Endgame]: +4[icon:attack]",
+            "Always Leads: Children of Thanos",
+            "Master Strike: It is the [keyword:Endgame] this turn. Each player reveals their hand and discards their highest-cost Hero. If it was already the [keyword:Endgame], KO those Heroes."
+          ]
+        },
+        {
+          "name": "Epic Ebony Maw",
+          "slug": "epic-ebony-maw",
+          "tactic": false,
+          "vAttack": "10+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-me-ebony-maw.webp",
+          "abilities": [
+            "[keyword:Endgame]: +5[icon:attack]",
+            "Always Leads: Children of Thanos",
+            "Master Strike: It is the [keyword:Endgame] this turn. Each player reveals their hand and KOs their highest-cost Hero. If it was already the [keyword:Endgame], play another card from the Villain Deck."
+          ]
+        },
+        {
+          "name": "Your Powers are Quaint",
+          "slug": "your-powers-are-quaint",
+          "tactic": true,
+          "vAttack": 8,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-mt-ebony-maw-your-powers-are-quaint.webp",
+          "abilities": [
+            "Fight: Each other player chooses a Hero Class, then reveals their hand and discards all non-grey Heroes that aren't that Hero Class.",
+            "[keyword:Endgame]: Then they also discard all grey Heroes."
+          ]
+        },
+        {
+          "name": "Hear Me and Rejoice",
+          "slug": "hear-me-and-rejoice",
+          "tactic": true,
+          "vAttack": 8,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-mt-ebony-maw-hear-me-and-rejoice.webp",
+          "abilities": [
+            "Fight: When you draw a new hand of cards at the end of this turn, draw two extra cards.",
+            "[keyword:Endgame]: Same effect, but three cards instead."
+          ]
+        },
+        {
+          "name": "Smile...Even in Death",
+          "slug": "smile-even-in-death",
+          "tactic": true,
+          "vAttack": 8,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-mt-ebony-maw-smile-even-in-death.webp",
+          "abilities": [
+            "Fight: KO up to two of your Heroes.",
+            "[keyword:Endgame]: Then KO up to one Hero from your discard pile."
+          ]
+        },
+        {
+          "name": "You May Think This is Suffering",
+          "slug": "you-may-think-this-is-suffering",
+          "tactic": true,
+          "vAttack": 8,
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-mt-ebony-maw-you-may-think-this-is-suffering.webp",
+          "abilities": [
+            "Fight: Each other player reveals a [hc:covert] Hero or gains a Wound.",
+            "[keyword:Endgame]: Then each other player reveals a [hc:ranged] Hero or gains a Wound."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 110,
+      "name": "Children of Thanos",
+      "slug": "children-of-thanos",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Endless Armies of Chitauri",
+          "slug": "endless-armies-of-chitauri",
+          "vp": "3",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-vi-children-of-thanos-endless-armies-of-chitauri.webp",
+          "abilities": [
+            "[keyword:Endgame]: +2[icon:attack]",
+            "Fight: KO one of your Heroes. Then reveal the top card of the Villain Deck. If it's a Children of Thanos Villain, Endless Armies of Chitauri reenters the Sewers."
+          ]
+        },
+        {
+          "name": "Outriders",
+          "slug": "outriders",
+          "vp": "3",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-vi-children-of-thanos-outriders.webp",
+          "abilities": [
+            "[keyword:Endgame]: +2[icon:attack]",
+            "Fight: You may KO a card from your discard pile."
+          ]
+        },
+        {
+          "name": "Outrider Dropships",
+          "slug": "outrider-dropships",
+          "vp": "3",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-vi-children-of-thanos-outrider-dropships.webp",
+          "abilities": [
+            "[keyword:Endgame]: +2[icon:attack]",
+            "Ambush: A Villain worth 2VP, 3VP, or 4VP from any player's Victory Pile enters the city."
+          ]
+        },
+        {
+          "name": "Outrider Threshers",
+          "slug": "outrider-threshers",
+          "vp": "4",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-vi-children-of-thanos-outrider-threshers.webp",
+          "abilities": [
+            "[keyword:Endgame]: +2[icon:attack]",
+            "Fight: KO one of your Heroes. Then choose any number of Heroes from the HQ. Put them on the bottom of the Hero Deck."
+          ]
+        },
+        {
+          "name": "Cull Obsidian",
+          "slug": "cull-obsidian",
+          "vp": "5",
+          "vAttack": "6+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-vi-children-of-thanos-cull-obsidian.webp",
+          "abilities": [
+            "[keyword:Endgame]: +3[icon:attack]",
+            "Ambush: It is the [keyword:Endgame] this turn. If it was already the [keyword:Endgame], each player reveals a Hero that costs 6 or more or gains a Wound.",
+            "Escape: Same effect."
+          ]
+        },
+        {
+          "name": "Corvus Glaive",
+          "slug": "corvus-glaive",
+          "vp": "5",
+          "vAttack": "6+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-vi-children-of-thanos-corvus-glaive.webp",
+          "abilities": [
+            "[keyword:Endgame]: +3[icon:attack]",
+            "Ambush: It is the [keyword:Endgame] this turn. If it was already the [keyword:Endgame], each player KOs a Bystander from their Victory Pile or gains a Wound.",
+            "Escape: Same effect."
+          ]
+        },
+        {
+          "name": "Chitauri Gorilla",
+          "slug": "chitauri-gorilla",
+          "vp": "4",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-vi-children-of-thanos-chitauri-gorilla.webp",
+          "abilities": [
+            "[keyword:Endgame]: +2[icon:attack]",
+            "Ambush: Chitauri Gorilla captures a Bystander."
+          ]
+        },
+        {
+          "name": "Proxima Midnight",
+          "slug": "proxima-midnight",
+          "vp": "5",
+          "vAttack": "7+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-vi-children-of-thanos-proxima-midnight.webp",
+          "abilities": [
+            "[keyword:Endgame]: +3[icon:attack]",
+            "Ambush: It is the [keyword:Endgame] this turn. If it was already the [keyword:Endgame], each player reveals an [hc:instinct] Hero or gains a Wound.",
+            "Escape: Same effect."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 111,
+      "name": "Infinity Stones",
+      "slug": "infinity-stones",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "The Power Stone",
+          "slug": "the-power-stone",
+          "vp": "5",
+          "vAttack": "6+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-vi-infinity-stones-the-power-stone.webp",
+          "abilities": [
+            "The Power Stone gets +1[icon:attack] for each other Infinity Stone in the city and/or Escape Pile.",
+            "Ambush: Each player without an Infinity Stone in their Victory Pile gains a Wound.",
+            "Fight: KO one of your Heroes. Then KO a Wound from your hand or discard pile."
+          ]
+        },
+        {
+          "name": "The Space Stone",
+          "slug": "the-space-stone",
+          "vp": "5",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-vi-infinity-stones-the-space-stone.webp",
+          "abilities": [
+            "The Space Stone gets +1[icon:attack] for each empty space in the city.",
+            "Ambush: The Space Stone captures three Bystanders. Then move an Infinity Stone from any city space to the Bridge. If there's already a Villain there, swap them.",
+            "Fight: Move and/or swap any number of Villains to other city spaces."
+          ]
+        },
+        {
+          "name": "The Reality Stone",
+          "slug": "the-reality-stone",
+          "vp": "5",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-vi-infinity-stones-the-reality-stone.webp",
+          "abilities": [
+            "The Reality Stone gets +1[icon:attack] for each Master Strike in the KO pile and/or stacked next to the Mastermind.",
+            "Ambush: Reveal the top three cards of the Villain Deck. Play a Master Strike from among them. Put the rest back in any order.",
+            "Fight: Same effect, but KO the Master Strike instead of playing it. Then, whether you KO or not, put a card from the Bystander Deck on top of the Villain Deck."
+          ]
+        },
+        {
+          "name": "The Time Stone",
+          "slug": "the-time-stone",
+          "vp": "5",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-vi-infinity-stones-the-time-stone.webp",
+          "abilities": [
+            "[keyword:Endgame]: +4[icon:attack]",
+            "Ambush: Play another card from the Villain Deck.",
+            "Fight: Take another turn after this one. Don't play a card from the Villain Deck at the start of that turn."
+          ]
+        },
+        {
+          "name": "The Soul Stone",
+          "slug": "the-soul-stone",
+          "vp": "5",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-vi-infinity-stones-the-soul-stone.webp",
+          "abilities": [
+            "The Soul Stone gets +1[icon:attack] for each other Villain in the city.",
+            "Ambush: Each player without an Infinity Stone in their Victory Pile KOs a non-grey Hero from their discard pile.",
+            "Fight: Reveal the top two cards of your deck, KO one of them and draw the other."
+          ]
+        },
+        {
+          "name": "The Mind Stone",
+          "slug": "the-mind-stone",
+          "vp": "5",
+          "vAttack": "1+",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-vi-infinity-stones-the-mind-stone.webp",
+          "abilities": [
+            "The Mind Stone gets +[icon:attack] equal to the highest cost of Hero in the HQ.",
+            "Ambush: All Heroes currently in the HQ cost 2 more this turn.",
+            "Fight: Gain a Hero from the HQ."
+          ]
+        },
+        {
+          "name": "Nebula, Stone Seeker",
+          "slug": "nebula-stone-seeker",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-vi-infinity-stones-nebula-stone-seeker.webp",
+          "abilities": [
+            "Ambush: Nebula captures a Hero from the Officer Deck or HQ that costs 4 or less.",
+            "Fight: Either KO that Hero or choose a player to gain it.",
+            "[object Object]"
+          ]
+        },
+        {
+          "name": "Stonekeeper",
+          "slug": "stonekeeper",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/msis/msis-vi-infinity-stones-stonekeeper.webp",
+          "abilities": [
+            "Ambush: If the Soul Stone is in the city or Escape Pile, each player discards a card. If it's in a player's Victory Pile, that player draws two cards.",
+            "Fight: Each player KOs one of their Heroes.",
+            "[object Object]"
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [],
+  "schemes": [
+    {
+      "id": 166,
+      "name": "Sacrifice for the Soul Stone",
+      "slug": "sacrifice-for-the-soul-stone",
+      "imageUrl": "https://images.barefootbetters.com/msis/msis-sc-sacrifice-for-the-soul-stone.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: Twists equal to the number of players plus 4.",
+            "Twist: You may KO one of your non-grey Heroes and one of your grey Heroes to ”Sacrifice for the Soul Stone.” If you do, draw three cards, shuffle this Twist back into Villain Deck, then play another card from the Villain Deck. If you don't, stack a Hero from the HQ next to the Mastermind, ”Sacrificed for the Soul Stone.”",
+            "Evil Wins: When the Mastermind has sacrificed 5 Heroes for the Soul Stone."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 167,
+      "name": "Halve All Life in the Universe",
+      "slug": "halve-all-life-in-the-universe",
+      "imageUrl": "https://images.barefootbetters.com/msis/msis-sc-halve-all-life-in-the-universe.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 5 Twists",
+            "Twist 1,3,5: Choose 3 Heroes from the HQ and KO them.",
+            "Twist 2,4: Deal the Hero Deck into two facedown piles (as equally as possible). KO one of them.",
+            "Evil Wins: When the Hero Deck or Villain Deck runs out."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 168,
+      "name": "Warp Reality into a TV Show",
+      "slug": "warp-reality-into-a-tv-show",
+      "imageUrl": "https://images.barefootbetters.com/msis/msis-sc-warp-reality-into-a-tv-show.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 11 Twists. The rightmost city space represents a TV show from ”the 50s.” The space on its left is ”the 60s,” then ”the 70s.” The city is only those 3 spaces. The HQ is only the 3 spaces beneath those. Move the Mastermind & Officer Deck to mark the city's left edge.",
+            "Twist 1-4: Another TV show (city space) appears on the left side of the city, representing the 80s, 90s, 2000s, & 2010s. Another HQ space appears beneath it.",
+            "Twist 5-11: Destroy the rightmost TV show and the HQ space beneath it. KO any Hero in that HQ space. Push forward any Villain there. Move the Villain Deck & Hero Deck to mark the city's right edge.",
+            "Evil Wins: When all TV is destroyed."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 169,
+      "name": "The Time Heist",
+      "slug": "the-time-heist",
+      "imageUrl": "https://images.barefootbetters.com/msis/msis-sc-the-time-heist.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 11 Twists. Use 4 Heroes in the Hero Deck, plus 4 other Heroes to make a ”Past Hero Deck.” Above the board, make room for an alternate city called ”The Past.” It has the normal 5 spaces, from Sewers to Bridge. The Past has its own ”Past HQ” filled by the ”Past Hero Deck.” To start, play as if ”The Past” city, HQ, and Hero Deck don't exist.",
+            "Twist 1,3,5,7,9: Until the next Twist, move the Villain Deck next to ”The Past,” and play as if ”The Past” city, HQ, and Hero Deck exist, while the normal city, HQ, and Hero Deck don't exist. (Use the normal decks and spaces for everything except the city, HQ, and Hero Deck.)",
+            "Twist 10: Evil wins!"
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [],
+  "wounds": [],
+  "other": []
+}
