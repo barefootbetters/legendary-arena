@@ -666,7 +666,7 @@
       "name": "Ronan the Accuser",
       "slug": "ronan-the-accuser",
       "alwaysLeads": [],
-      "vp": 6,
+      "vp": null,
       "cards": [
         {
           "name": "Ronan the Accuser",
@@ -741,7 +741,7 @@
       "name": "Ego, the Living Planet",
       "slug": "ego-the-living-planet",
       "alwaysLeads": [],
-      "vp": 6,
+      "vp": null,
       "cards": [
         {
           "name": "Ego, the Living Planet",

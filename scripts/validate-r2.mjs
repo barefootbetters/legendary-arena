@@ -200,9 +200,9 @@ function validateMasterminds(mastermindsData, setAbbreviation) {
       recordError(`[${setAbbreviation}] Mastermind "${mastermind.slug}" is missing the required "name" field.`);
     }
 
-    if (mastermind.vp === undefined || mastermind.vp === null) {
-      recordWarning(`[${setAbbreviation}] Mastermind "${mastermind.slug}" is missing the "vp" field. Older sets may omit this — default to 0.`);
-    }
+    // why: some masterminds (e.g., Ronan, Ego) have no VP printed on the
+    // physical card. A null/missing vp is valid data, not a defect.
+    // The game engine defaults missing VP to 0 at scoring time.
 
     if (!Array.isArray(mastermind.cards)) {
       recordError(`[${setAbbreviation}] Mastermind "${mastermind.slug}" is missing the required "cards" array.`);
