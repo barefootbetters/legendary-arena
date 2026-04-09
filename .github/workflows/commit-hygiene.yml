@@ -1,0 +1,155 @@
+name: Commit Hygiene (EC Mode)
+
+# Mirrors .githooks/commit-msg and .githooks/pre-commit rules in CI.
+# Catches commits that bypassed local hooks (--no-verify, missing install).
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  commit-messages:
+    name: Validate commit messages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # need full history for commit range
+
+      - name: Check commit messages against EC-mode rules
+        run: |
+          chmod +x .githooks/commit-msg
+
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          COMMITS=$(git rev-list "$BASE".."$HEAD")
+          FAIL=0
+          TOTAL=0
+          PASSED=0
+
+          for SHA in $COMMITS; do
+            TOTAL=$((TOTAL + 1))
+            MSG_FILE=$(mktemp)
+            git log --format='%s' -n 1 "$SHA" > "$MSG_FILE"
+            SUBJECT=$(cat "$MSG_FILE")
+
+            echo "::group::Commit $SHA — $SUBJECT"
+            if .githooks/commit-msg "$MSG_FILE" 2>&1; then
+              echo "✅ Passed"
+              PASSED=$((PASSED + 1))
+            else
+              echo "::error::Commit $SHA failed hygiene check: $SUBJECT"
+              FAIL=$((FAIL + 1))
+            fi
+            echo "::endgroup::"
+            rm -f "$MSG_FILE"
+          done
+
+          echo ""
+          echo "Results: $PASSED/$TOTAL passed, $FAIL failed"
+
+          if [ "$FAIL" -gt 0 ]; then
+            echo ""
+            echo "Fix: amend or rebase commits to use valid prefixes (EC-###: / SPEC: / INFRA:)"
+            echo "See: docs/ai/REFERENCE/01.3-commit-hygiene-under-ec-mode.md"
+            exit 1
+          fi
+
+  file-hygiene:
+    name: Validate staged file patterns
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check PR diff for forbidden file patterns
+        run: |
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          CHANGED=$(git diff --name-only "$BASE".."$HEAD")
+          FAIL=0
+
+          # No .env files
+          if echo "$CHANGED" | grep -qE '\.env$|\.env\.'; then
+            echo "::error::PR includes .env file(s). Remove before merging."
+            FAIL=1
+          fi
+
+          # No node_modules
+          if echo "$CHANGED" | grep -q 'node_modules/'; then
+            echo "::error::PR includes node_modules/ files. These must not be committed."
+            FAIL=1
+          fi
+
+          # No dist/ build output
+          if echo "$CHANGED" | grep -qE '^(packages|apps)/[^/]+/dist/'; then
+            echo "::error::PR includes build output (dist/). Add to .gitignore."
+            FAIL=1
+          fi
+
+          # No .test.mjs (project convention: .test.ts only)
+          if echo "$CHANGED" | grep -qE '\.test\.mjs$'; then
+            echo "::error::PR includes .test.mjs file(s). Project convention requires .test.ts."
+            FAIL=1
+          fi
+
+          # No credentials
+          if echo "$CHANGED" | grep -qiE 'credentials\.json|secrets\.json|\.pem$|\.key$'; then
+            echo "::error::PR includes credential or key file(s). Do not commit secrets."
+            FAIL=1
+          fi
+
+          if [ "$FAIL" -eq 0 ]; then
+            echo "✅ All file hygiene checks passed"
+          else
+            exit 1
+          fi
+
+  ec-code-traceability:
+    name: Verify code commits reference ECs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check code-changing commits have EC prefix
+        run: |
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          COMMITS=$(git rev-list "$BASE".."$HEAD")
+          FAIL=0
+
+          for SHA in $COMMITS; do
+            # Get files changed in this commit
+            FILES=$(git diff-tree --no-commit-id --name-only -r "$SHA")
+            HAS_CODE=$(echo "$FILES" | grep -cE '^(packages/|apps/)' || true)
+
+            if [ "$HAS_CODE" -gt 0 ]; then
+              SUBJECT=$(git log --format='%s' -n 1 "$SHA")
+              IS_EC=$(echo "$SUBJECT" | grep -cE '^EC-[0-9]+[A-Z]?:' || true)
+
+              if [ "$IS_EC" -eq 0 ]; then
+                echo "::error::Commit $SHA changes code but lacks EC-### prefix: $SUBJECT"
+                FAIL=$((FAIL + 1))
+              else
+                # Verify the referenced EC file exists
+                EC_NUM=$(echo "$SUBJECT" | sed -E 's/^EC-([0-9]+[A-Z]?).*/\1/')
+                EC_FILE=$(find docs/ai/execution-checklists -name "EC-${EC_NUM}-*.checklist.md" 2>/dev/null | head -n 1)
+                if [ -z "$EC_FILE" ]; then
+                  echo "::error::Commit $SHA references EC-${EC_NUM} but no checklist file exists."
+                  FAIL=$((FAIL + 1))
+                fi
+              fi
+            fi
+          done
+
+          if [ "$FAIL" -eq 0 ]; then
+            echo "✅ All code commits are EC-traceable"
+          else
+            echo ""
+            echo "Fix: ensure code-changing commits use EC-###: prefix with a valid EC file."
+            echo "See: docs/ai/REFERENCE/01.3-commit-hygiene-under-ec-mode.md"
+            exit 1
+          fi
