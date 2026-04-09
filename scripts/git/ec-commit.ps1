@@ -119,6 +119,11 @@ if (-not $Message) {
 if ($Check) {
     Write-Host ""
     Write-Host "DRY RUN — validating commit message..." -ForegroundColor Cyan
+    Write-Host "Staged files:" -ForegroundColor DarkGray
+    git diff --cached --name-only | ForEach-Object {
+        Write-Host "  $_" -ForegroundColor DarkGray
+    }
+    Write-Host ""
     $tempFile = [System.IO.Path]::GetTempFileName()
     Set-Content -Path $tempFile -Value $Message
     $hookPath = Join-Path $repoRoot '.githooks/commit-msg'
