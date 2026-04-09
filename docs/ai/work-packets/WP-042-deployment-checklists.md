@@ -141,8 +141,8 @@ Contents:
   `SKIP_IMAGES`, `IMAGE_DELAY_MS`); 5-phase validation pipeline description;
   exit code semantics (0 = pass, 1 = errors); output files
   (`dist/registry-health.json`)
-- **A.2 — Registry config** — `registry-config.json` existence and shape (array
-  of 40 set abbreviation strings); verification via Phase 1
+- **A.2 — Registry manifest** — `metadata/sets.json` existence and shape (array
+  of 40 set entries with `abbr` fields); verification via Phase 1
 - **A.3 — Metadata files** — 6 required metadata files with expected entry
   counts; 40 per-set card JSON files with schema and `imageUrl` domain checks;
   verification via Phases 2 and 3
@@ -156,7 +156,7 @@ Contents:
   `localhost:5173`), cache-control headers (immutable for images, 1h for JSON),
   rclone remote verification
 - **A.7 — New set upload procedure** — ordered steps for adding an expansion:
-  local validate, upload JSON, upload images, update `registry-config.json`,
+  local validate, upload JSON, upload images, verify `metadata/sets.json`,
   R2 validate, `pnpm seed`, registry-viewer verification
 
 Each item is a verifiable assertion with a specific verification command or

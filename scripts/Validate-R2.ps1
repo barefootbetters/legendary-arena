@@ -13,7 +13,7 @@
     data/cards/      per-set card JSON files (core.json, mdns.json, etc.)
 
   The TypeScript script runs in five phases:
-    Phase 1 — Registry config (registry-config.json)
+    Phase 1 — Registry manifest (metadata/sets.json)
     Phase 2 — Metadata files (sets.json, card-types.json, etc.)
     Phase 3 — Per-set card JSON (schema, imageUrl domain, data quality)
     Phase 4 — Cross-references (alwaysLeads consistency, slug uniqueness)
@@ -22,7 +22,7 @@
 .PARAMETER R2Mode
   Switch. When present, validates the live R2 bucket at
   https://images.barefootbetters.com instead of local files.
-  Enables registry-config.json check and image spot-checks.
+  Enables metadata/sets.json check and image spot-checks.
 
 .PARAMETER SkipImages
   Switch. When present, skips Phase 5 image HEAD checks.

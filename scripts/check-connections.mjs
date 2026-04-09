@@ -442,7 +442,9 @@ async function checkCloudflareR2() {
 
   try {
     const startTime = Date.now();
-    const response = await fetch(`${publicUrl}/registry-config.json`, {
+    // why: metadata/sets.json is the authoritative registry manifest in R2.
+    // No registry-config.json exists — that was an incorrect assumption.
+    const response = await fetch(`${publicUrl}/metadata/sets.json`, {
       signal: AbortSignal.timeout(5000),
     });
     const elapsedMilliseconds = Date.now() - startTime;
@@ -450,13 +452,13 @@ async function checkCloudflareR2() {
 
     if (!response.ok) {
       recordResult('CONNECTIONS', 'Cloudflare R2', false,
-        `registry-config.json returned HTTP ${response.status}.`,
+        `metadata/sets.json returned HTTP ${response.status}.`,
         'Check R2_PUBLIC_URL in .env and verify the R2 bucket is publicly accessible.');
       return;
     }
 
     recordResult('CONNECTIONS', 'Cloudflare R2', true,
-      `registry-config.json → ${response.status} ${contentType}  (${elapsedMilliseconds}ms)`);
+      `metadata/sets.json → ${response.status} ${contentType}  (${elapsedMilliseconds}ms)`);
   } catch (fetchError) {
     recordResult('CONNECTIONS', 'Cloudflare R2', false,
       `Connection failed: ${fetchError.message}`,

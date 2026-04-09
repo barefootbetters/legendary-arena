@@ -147,7 +147,7 @@ A governed reference document with the following sections:
   critical sets.json vs card-types.json distinction.
 - **§3 — Image & Asset Conventions** — R2 base URL, image URL construction
   patterns (with real examples), image naming convention table by card type,
-  hero card suffix encoding (cost + rarity), `registry-config.json` shape
+  hero card suffix encoding (cost + rarity), `metadata/sets.json` registry manifest
 - **§4 — PostgreSQL Schema Reference** — table inventory with purposes,
   key foreign keys, `ext_id` convention, what PostgreSQL stores vs what stays
   in R2. Note: "PostgreSQL is server-layer; see Layer Boundary."
