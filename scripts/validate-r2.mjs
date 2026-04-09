@@ -250,6 +250,32 @@ function validateVillainGroups(villainGroupsData, setAbbreviation) {
 }
 
 /**
+ * Validates henchman records within a set's metadata.
+ * Henchmen are flat records (each entry IS the card), unlike villain groups
+ * which have a nested cards[] array. Shape: { slug, name, imageUrl, vAttack, vp }.
+ * @param {Array} henchmenData - The henchmen array from set JSON
+ * @param {string} setAbbreviation - Set abbreviation for error messages
+ */
+function validateHenchmen(henchmenData, setAbbreviation) {
+  for (const henchman of henchmenData) {
+    if (!henchman.slug || typeof henchman.slug !== 'string') {
+      recordError(`[${setAbbreviation}] A henchman is missing the required "slug" field.`);
+      continue;
+    }
+
+    validateSlugFormat(henchman.slug, setAbbreviation, `henchman "${henchman.slug}"`);
+
+    if (!henchman.name || typeof henchman.name !== 'string') {
+      recordError(`[${setAbbreviation}] Henchman "${henchman.slug}" is missing the required "name" field.`);
+    }
+
+    if (!henchman.imageUrl || typeof henchman.imageUrl !== 'string') {
+      recordWarning(`[${setAbbreviation}] Henchman "${henchman.slug}" is missing "imageUrl".`);
+    }
+  }
+}
+
+/**
  * Validates scheme records within a set's metadata.
  * @param {Array} schemesData - The schemes array from set JSON
  * @param {string} setAbbreviation - Set abbreviation for error messages
@@ -314,6 +340,17 @@ function checkIntraSetDuplicateSlugs(setJson, setAbbreviation) {
           duplicateSlugs.add(villainGroup.slug);
         }
         seenSlugs.add(villainGroup.slug);
+      }
+    }
+  }
+
+  if (Array.isArray(setJson.henchmen)) {
+    for (const henchmanGroup of setJson.henchmen) {
+      if (henchmanGroup.slug) {
+        if (seenSlugs.has(henchmanGroup.slug)) {
+          duplicateSlugs.add(henchmanGroup.slug);
+        }
+        seenSlugs.add(henchmanGroup.slug);
       }
     }
   }
@@ -444,6 +481,14 @@ async function checkMetadataForAllSets(setEntries) {
         validateVillainGroups(setJson.villains, setAbbreviation);
       }
 
+      if (!setJson.henchmen) {
+        recordWarning(`[${setAbbreviation}] Metadata JSON is missing the "henchmen" key.`);
+      } else if (!Array.isArray(setJson.henchmen)) {
+        recordError(`[${setAbbreviation}] "henchmen" key exists but is not an array.`);
+      } else {
+        validateHenchmen(setJson.henchmen, setAbbreviation);
+      }
+
       if (!setJson.schemes) {
         recordWarning(`[${setAbbreviation}] Metadata JSON is missing the "schemes" key.`);
       } else if (!Array.isArray(setJson.schemes)) {
@@ -495,37 +540,47 @@ async function spotCheckImages(allSetMetadata) {
   const missingImages = [];
 
   for (const [setAbbreviation, setJson] of allSetMetadata) {
-    // Mastermind image: {abbr}-mm-{slug}.webp
+    // Mastermind image: use stored imageUrl from the base (non-tactic) card
+    // why: some masterminds have only tactic cards and no base mastermind image.
+    // Using the stored imageUrl from the first card avoids constructing URLs
+    // for cards that don't exist.
     if (Array.isArray(setJson.masterminds) && setJson.masterminds.length > 0) {
       const firstMastermind = setJson.masterminds[0];
-      if (firstMastermind.slug) {
-        const mastermindImageUrl = `${R2_BASE_URL}/${setAbbreviation}/${setAbbreviation}-mm-${firstMastermind.slug}.webp`;
-        const mastermindResult = await headCheckImage(mastermindImageUrl);
-        totalChecked++;
+      if (Array.isArray(firstMastermind.cards) && firstMastermind.cards.length > 0) {
+        const baseCard = firstMastermind.cards.find(card => card.tactic === false);
+        const cardToCheck = baseCard || firstMastermind.cards[0];
 
-        if (mastermindResult) {
-          totalPassed++;
-        } else {
-          missingImages.push(mastermindImageUrl);
+        if (cardToCheck.imageUrl) {
+          const mastermindResult = await headCheckImage(cardToCheck.imageUrl);
+          totalChecked++;
+
+          if (mastermindResult) {
+            totalPassed++;
+          } else {
+            missingImages.push(cardToCheck.imageUrl);
+          }
         }
       }
     }
 
-    // Villain image: {abbr}-vi-{groupSlug}-{cardSlug}.webp
+    // Villain image: use stored imageUrl when available, fall back to constructed URL
     if (Array.isArray(setJson.villains) && setJson.villains.length > 0) {
       const firstVillainGroup = setJson.villains[0];
-      if (firstVillainGroup.slug && Array.isArray(firstVillainGroup.cards) && firstVillainGroup.cards.length > 0) {
+      if (Array.isArray(firstVillainGroup.cards) && firstVillainGroup.cards.length > 0) {
         const firstVillainCard = firstVillainGroup.cards[0];
-        if (firstVillainCard.slug) {
-          const villainImageUrl = `${R2_BASE_URL}/${setAbbreviation}/${setAbbreviation}-vi-${firstVillainGroup.slug}-${firstVillainCard.slug}.webp`;
-          const villainResult = await headCheckImage(villainImageUrl);
-          totalChecked++;
 
-          if (villainResult) {
-            totalPassed++;
-          } else {
-            missingImages.push(villainImageUrl);
-          }
+        // why: prefer stored imageUrl (same principle as hero cards per 00.2 §3.2).
+        // Fall back to constructed URL only if imageUrl is absent.
+        const villainImageUrl = firstVillainCard.imageUrl
+          || `${R2_BASE_URL}/${setAbbreviation}/${setAbbreviation}-vi-${firstVillainGroup.slug}-${firstVillainCard.slug}.webp`;
+
+        const villainResult = await headCheckImage(villainImageUrl);
+        totalChecked++;
+
+        if (villainResult) {
+          totalPassed++;
+        } else {
+          missingImages.push(villainImageUrl);
         }
       }
     }
@@ -638,6 +693,18 @@ function findCrossSetDuplicateSlugs(allSetMetadata) {
             slugToSets.set(villainGroup.slug, []);
           }
           slugToSets.get(villainGroup.slug).push(setAbbreviation);
+        }
+      }
+    }
+
+    // Henchmen
+    if (Array.isArray(setJson.henchmen)) {
+      for (const henchmanGroup of setJson.henchmen) {
+        if (henchmanGroup.slug) {
+          if (!slugToSets.has(henchmanGroup.slug)) {
+            slugToSets.set(henchmanGroup.slug, []);
+          }
+          slugToSets.get(henchmanGroup.slug).push(setAbbreviation);
         }
       }
     }
