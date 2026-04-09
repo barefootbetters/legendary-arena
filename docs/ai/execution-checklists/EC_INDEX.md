@@ -145,6 +145,16 @@ is active. See 01.2 for the clause-driven diagnosis sequence.
 
 ---
 
+## Registry Hygiene (R-EC Series)
+
+| EC | Scope | Execution Scope | Status |
+|---|---|---|---|
+| R-EC-01 | Registry / R2 Data | Fix `[object Object]` abilities in R2 metadata (msmc, bkpt, msis) | Deferred |
+| R-EC-02 | Registry / Card Data | Fix missing vp fields in mgtg masterminds | Done |
+| R-EC-03 | Registry / R2 Images | Resolve 5 missing images (slug mismatch or not uploaded) | Deferred |
+
+---
+
 ## Rules
 
 - EC status tracks **independently** from WP completion status in `WORK_INDEX.md`
