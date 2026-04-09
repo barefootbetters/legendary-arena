@@ -53,7 +53,11 @@ function Test-ToolOnPath {
     $resolvedPath = $toolInfo.Source
     try {
         $versionOutput = & $ToolCommand --version 2>&1 | Select-Object -First 1
-        $versionString = ($versionOutput -replace '[^0-9.]', '' -split '\.' | Select-Object -First 3) -join '.'
+        if ($versionOutput -match '(\d+\.\d+\.\d+)') {
+            $versionString = $Matches[1]
+        } else {
+            $versionString = "unknown"
+        }
 
         if ($MinVersion) {
             $installedMajor = [int]($versionString.Split('.')[0])
@@ -110,7 +114,9 @@ Write-Host ""
 
 Write-Host "── .ENV FILE ──────────────────────────────────────────────────────────────" -ForegroundColor White
 
-$envPath = Join-Path (Get-Location) '.env'
+$repoRoot = git rev-parse --show-toplevel 2>$null
+if (-not $repoRoot) { $repoRoot = Get-Location }
+$envPath = Join-Path $repoRoot '.env'
 $placeholderCount = 0
 
 if (-not (Test-Path $envPath)) {
@@ -140,7 +146,8 @@ if (-not (Test-Path $envPath)) {
                 $varValue -match '^your-' -or
                 $varValue -match '^change-me$' -or
                 $varValue -match '^REPLACE_' -or
-                $varValue -match '^<.*>$') {
+                $varValue -match '^<.*>$' -or
+                $varValue -match '^X{4,}$') {
 
                 $status = "PLACEHOLDER"
                 $statusColor = "Yellow"
@@ -242,3 +249,14 @@ if ($summaryItems.Count -eq 0) {
 Write-Host ""
 Write-Host "  Next: fix the above, then run network checks with: pnpm check" -ForegroundColor Cyan
 Write-Host ""
+
+# ── Hard exit for automation ──────────────────────────────────────────────────
+
+$criticalFailure =
+    ($toolsMissing -gt 0) -or
+    ($configMissing)      -or
+    ($placeholderCount -gt 0)
+
+if ($criticalFailure) {
+    exit 1
+}
