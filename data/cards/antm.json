@@ -1,0 +1,793 @@
+{
+  "id": 21,
+  "abbr": "antm",
+  "exportName": "AntMan",
+  "heroes": [
+    {
+      "id": 172,
+      "name": "Ant-Man",
+      "slug": "ant-man",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Ride the Ants",
+          "displayName": "Ride the Ants",
+          "slug": "ride-the-ants",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 4,
+          "attack": "1",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-hr-ant-man-4c1.webp",
+          "abilities": [
+            "[keyword:Size-Changing] [hc:tech]",
+            "Draw a card."
+          ]
+        },
+        {
+          "name": "Risky Science",
+          "displayName": "Risky Science",
+          "slug": "risky-science",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 5,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-hr-ant-man-5c2.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech]",
+            "[hc:tech]: You may discard a card. If you do, draw a card."
+          ]
+        },
+        {
+          "name": "Giant Ego",
+          "displayName": "Giant Ego",
+          "slug": "giant-ego",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-hr-ant-man-6u.webp",
+          "abilities": [
+            "[keyword:Size-Changing] [hc:tech]",
+            "You get +1[icon:attack] for each extra card you drew this turn."
+          ]
+        },
+        {
+          "name": "Pym Particles",
+          "displayName": "Pym Particles",
+          "slug": "pym-particles",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 9,
+          "attack": "5",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-hr-ant-man-9r.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech][hc:tech][hc:tech]",
+            "A hero in the HQ with no Size-Changing abilities gain [keyword:Size-Changing] [hc:tech] this turn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 173,
+      "name": "Black Knight",
+      "slug": "black-knight",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Amulet of Avalon",
+          "displayName": "Amulet of Avalon",
+          "slug": "amulet-of-avalon",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-hr-black-knight-3c1.webp",
+          "abilities": [
+            "You get [keyword:Empowered] by the color of your choice."
+          ]
+        },
+        {
+          "name": "Defend the Weak",
+          "displayName": "Defend the Weak",
+          "slug": "defend-the-weak",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-hr-black-knight-3c2.webp",
+          "abilities": [
+            "[hc:strength]: Return a 0-cost card from your discard pile to your hand."
+          ]
+        },
+        {
+          "name": "Flying Steed",
+          "displayName": "Flying Steed",
+          "slug": "flying-steed",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 6,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-hr-black-knight-6u.webp",
+          "abilities": [
+            "When a Master Strike is played, before it takes effect, you may discard this card. If you do, draw three extra cards at the end of this turn."
+          ]
+        },
+        {
+          "name": "The Ebony Blade",
+          "displayName": "The Ebony Blade",
+          "slug": "the-ebony-blade",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-hr-black-knight-7r.webp",
+          "abilities": [
+            "You get +[icon:attack] equal to the printed [icon:attack] of a Villain in your Victory Pile. (Mastermind tactics aren't Villains.)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 174,
+      "name": "Jocasta",
+      "slug": "jocasta",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Creation of Ultron",
+          "displayName": "Creation of Ultron",
+          "slug": "creation-of-ultron",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 3,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-hr-jocasta-3c1.webp",
+          "abilities": [
+            "[hc:tech]: You get [keyword:Empowered] by [hc:tech]."
+          ]
+        },
+        {
+          "name": "Reprocess",
+          "displayName": "Reprocess",
+          "slug": "reprocess",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-hr-jocasta-4c2.webp",
+          "abilities": [
+            "If your discard pile is empty, you get +2[icon:recruit]. Otherwise, shuffle your discard pile into your deck."
+          ]
+        },
+        {
+          "name": "Holographic Image Inducer",
+          "displayName": "Holographic Image Inducer",
+          "slug": "holographic-image-inducer",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 6,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-hr-jocasta-6u.webp",
+          "abilities": [
+            "[keyword:Size-Changing] [hc:tech]",
+            "Draw two cards."
+          ]
+        },
+        {
+          "name": "Electromagnetic Eyebeams",
+          "displayName": "Electromagnetic Eyebeams",
+          "slug": "electromagnetic-eyebeams",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 7,
+          "attack": "5+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-hr-jocasta-7r.webp",
+          "abilities": [
+            "If your discard pile is empty, you get +2[icon:attack]. Otherwise shuffle your discard pile into your deck."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 175,
+      "name": "Wasp",
+      "slug": "wasp",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Bio-Electric Sting",
+          "displayName": "Bio-Electric Sting",
+          "slug": "bio-electric-sting",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-hr-wasp-3c1.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:covert][hc:covert]",
+            "[hc:covert]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Tiny Winged Justice",
+          "displayName": "Tiny Winged Justice",
+          "slug": "tiny-winged-justice",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-hr-wasp-4c2.webp",
+          "abilities": [
+            "[keyword:Size-Changing] [hc:covert]",
+            "[hc:covert]: Draw a card."
+          ]
+        },
+        {
+          "name": "Swarm Tactics",
+          "displayName": "Swarm Tactics",
+          "slug": "swarm-tactics",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 6,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-hr-wasp-6u.webp",
+          "abilities": [
+            "[keyword:Size-Changing] [hc:covert]",
+            "You get +1[icon:attack] for each card you recruited this turn."
+          ]
+        },
+        {
+          "name": "Founding Avenger",
+          "displayName": "Founding Avenger",
+          "slug": "founding-avenger",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 9,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-hr-wasp-9r.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:covert][hc:covert][hc:covert][hc:covert][hc:covert]",
+            "[team:avengers]: You get +1[icon:attack] for each other [team:avengers] card you played this turn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 176,
+      "name": "Wonder Man",
+      "slug": "wonder-man",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "One-Hit Wonder",
+          "displayName": "One-Hit Wonder",
+          "slug": "one-hit-wonder",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 2,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-hr-wonder-man-2c1.webp",
+          "abilities": [
+            "Chose one: Draw a card, or you get [keyword:Empowered] by [hc:strength]."
+          ]
+        },
+        {
+          "name": "Ionic Energy",
+          "displayName": "Ionic Energy",
+          "slug": "ionic-energy",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-hr-wonder-man-4c2.webp",
+          "abilities": [
+            "You may put a card from the HQ on the bottom of the Hero Deck.",
+            "[hc:ranged]: You get [keyword:Empowered] by [hc:ranged]."
+          ]
+        },
+        {
+          "name": "Absorb Ambient Power",
+          "displayName": "Absorb Ambient Power",
+          "slug": "absorb-ambient-power",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 5,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-hr-wonder-man-5u.webp",
+          "abilities": [
+            "Put a card from the HQ on the bottom of the Hero Deck. If that card had a [icon:recruit] icon, you get +3[icon:recruit]. If that card had an [icon:attack] icon, you get +3[icon:attack]. (if both, get both.)"
+          ]
+        },
+        {
+          "name": "8th Wonder of the World",
+          "displayName": "8th Wonder of the World",
+          "slug": "8th-wonder-of-the-world",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 8,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-hr-wonder-man-8r.webp",
+          "abilities": [
+            "[keyword:Size-Changing] [hc:strength]",
+            "Choose any number of cards from the HQ. Put them on the bottom of the Hero Deck. Then you get [keyword:Empowered] by [hc:ranged] and [hc:strength]."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 57,
+      "name": "Morgan Le Fay",
+      "slug": "morgan-le-fay",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Morgan Le Fay",
+          "slug": "morgan-le-fay",
+          "tactic": false,
+          "vAttack": "7*",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-mm-morgan-le-fay.webp",
+          "abilities": [
+            "[keyword:Chivalrous Duel]",
+            "Always Leads: Queen's Vengeance",
+            "Master Strike: Each player in turn reveals a [hc:covert] Hero or gains a 0-cost Hero or Wound from the KO pile."
+          ]
+        },
+        {
+          "name": "Epic Morgan Le Fay",
+          "slug": "epic-morgan-le-fay",
+          "tactic": false,
+          "vAttack": "9",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-me-morgan-le-fay.webp",
+          "abilities": [
+            "[keyword:Chivalrous Duel]",
+            "Always Leads: Queen's Vengeance",
+            "Master Strike: Each player in turn gains a Wound, then gains a 0-cost Hero from the KO pile."
+          ]
+        },
+        {
+          "name": "Reverse the Flow of Time",
+          "slug": "reverse-the-flow-of-time",
+          "tactic": true,
+          "vAttack": 7,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-mt-morgan-le-fay-reverse-the-flow-of-time.webp",
+          "abilities": [
+            "Fight: For the rest of the game, players take turns in the opposite order around the table."
+          ]
+        },
+        {
+          "name": "Sorcerous Blasts",
+          "slug": "sorcerous-blasts",
+          "tactic": true,
+          "vAttack": 7,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-mt-morgan-le-fay-sorcerous-blasts.webp",
+          "abilities": [
+            "Fight: Each other player discards a [hc:covert] Hero or gains a Wound."
+          ]
+        },
+        {
+          "name": "Stolen Tomes of Merlin",
+          "slug": "stolen-tomes-of-merlin",
+          "tactic": true,
+          "vAttack": 7,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-mt-morgan-le-fay-stolen-tomes-of-merlin.webp",
+          "abilities": [
+            "Fight: You get +4[icon:recruit] usable only for recruiting [hc:covert] and/or [hc:ranged] Heroes."
+          ]
+        },
+        {
+          "name": "Transmogrify",
+          "slug": "transmogrify",
+          "tactic": true,
+          "vAttack": 7,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-mt-morgan-le-fay-transmogrify.webp",
+          "abilities": [
+            "Fight: Each other player in turn KOs a non-grey Hero from their discard pile, then gains a card from the KO pile that has a lower cost."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 58,
+      "name": "Ultron",
+      "slug": "ultron",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Ultron",
+          "slug": "ultron",
+          "tactic": false,
+          "vAttack": "9+",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-mm-ultron.webp",
+          "abilities": [
+            "Always Leads: Ultron's Legacy",
+            "Master Strike: Each player reveals a [hc:tech] Hero or puts a non-grey Hero from their discard pile into a “Threat Analysis pile“ next to Ultron. Ultron is [keyword:Empowered] by each color in his Threat Analysis pile."
+          ]
+        },
+        {
+          "name": "Epic Ultron",
+          "slug": "epic-ultron",
+          "tactic": false,
+          "vAttack": "10+",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-me-ultron.webp",
+          "abilities": [
+            "Always Leads: Ultron's Legacy",
+            "Master Strike: Each player puts a non-grey Hero from their hand into a “Threat Analysis pile“ next to Ultron. Ultron is [keyword:Triple Empowered] by each color in his Threat Analysis pile."
+          ]
+        },
+        {
+          "name": "Arrogant Blindspot",
+          "slug": "arrogant-blindspot",
+          "tactic": true,
+          "vAttack": 9,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-mt-ultron-arrogant-blindspot.webp",
+          "abilities": [
+            "Fight: You may gain a Hero from Ultron's Threat Analysis pile."
+          ]
+        },
+        {
+          "name": "Paralyzing Encephalo-Ray",
+          "slug": "paralyzing-encephalo-ray",
+          "tactic": true,
+          "vAttack": 9,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-mt-ultron-paralyzing-encephalo-ray.webp",
+          "abilities": [
+            "Fight: Each other player reveals their hand and discards each card that has the same card name as any card in Ultron's Threat Analysis pile."
+          ]
+        },
+        {
+          "name": "Predictive Analysis",
+          "slug": "predictive-analysis",
+          "tactic": true,
+          "vAttack": 9,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-mt-ultron-predictive-analysis.webp",
+          "abilities": [
+            "Fight: Put the top three cards of the Hero Deck into Ultron's Threat Analysis pile."
+          ]
+        },
+        {
+          "name": "Self-Repairing Legions",
+          "slug": "self-repairing-legions",
+          "tactic": true,
+          "vAttack": 9,
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-mt-ultron-self-repairing-legions.webp",
+          "abilities": [
+            "Fight: Each other player in turn reveals a [hc:tech] Hero or puts an Ultron's Legacy Villain from the Victory Pile into an empty city space."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 76,
+      "name": "Ultron's Legacy",
+      "slug": "ultrons-legacy",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Ultron Roboticks",
+          "slug": "ultron-roboticks",
+          "vp": "2",
+          "vAttack": "3",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-vi-ultrons-legacy-ultron-roboticks.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech]",
+            "Fight: KO one of your Heroes."
+          ]
+        },
+        {
+          "name": "Original Ultron-1",
+          "slug": "original-ultron-1",
+          "vp": "2",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-vi-ultrons-legacy-original-ultron-1.webp",
+          "abilities": [
+            "[keyword:Empowered] by [hc:ranged]",
+            "Fight: KO one of your Heroes."
+          ]
+        },
+        {
+          "name": "Legions of Ultron",
+          "slug": "legions-of-ultron",
+          "vp": "3",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-vi-ultrons-legacy-legions-of-ultron.webp",
+          "abilities": [
+            "[keyword:Empowered] by [hc:tech]",
+            "Fight: Draw a card."
+          ]
+        },
+        {
+          "name": "Alkhema",
+          "slug": "alkhema",
+          "vp": "3",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-vi-ultrons-legacy-alkhema.webp",
+          "abilities": [
+            "[keyword:Empowered] by [hc:instinct]",
+            "Fight: KO a card from your discard pile."
+          ]
+        },
+        {
+          "name": "Ultron-Pym",
+          "slug": "ultron-pym",
+          "vp": "3",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-vi-ultrons-legacy-ultron-pym.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech][hc:tech][hc:tech]",
+            "Fight: A Hero in the HQ with no Size-Changing abilites gains [keyword:Size-Changing] [hc:tech] this turn."
+          ]
+        },
+        {
+          "name": "Future Ultron Prime",
+          "slug": "future-ultron-prime",
+          "vp": "5",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-vi-ultrons-legacy-future-ultron-prime.webp",
+          "abilities": [
+            "[keyword:Double Empowered] by [hc:tech]",
+            "Ambush: Put all non-[hc:tech] Heroes from the HQ on the bottom of the Hero Deck."
+          ]
+        },
+        {
+          "name": "Brutish Ultron-14",
+          "slug": "brutish-ultron-14",
+          "vp": "4",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-vi-ultrons-legacy-brutish-ultron-14.webp",
+          "abilities": [
+            "[keyword:Empowered] by [hc:strength]",
+            "Fight: Each player reveals a [hc:strength] Hero or gains a Wound.",
+            "Escape: Same effect."
+          ]
+        },
+        {
+          "name": "Crimson Cowl",
+          "slug": "crimson-cowl",
+          "vp": "4",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-vi-ultrons-legacy-crimson-cowl.webp",
+          "abilities": [
+            "[keyword:Empowered] by [hc:covert]",
+            "Ambush: Crimson Cowl captures a Bystander."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 77,
+      "name": "Queen's Vengeance",
+      "slug": "queens-vengeance",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Daystar",
+          "slug": "daystar",
+          "vp": "2",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-vi-queens-vengeance-daystar.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:ranged][hc:ranged][hc:ranged][hc:ranged][hc:ranged]",
+            "Fight: Reveal the top card of your deck. You may KO it."
+          ]
+        },
+        {
+          "name": "Blackbird",
+          "slug": "blackbird",
+          "vp": "3",
+          "vAttack": "3",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-vi-queens-vengeance-blackbird.webp",
+          "abilities": [
+            "[keyword:Chivalrous Duel]",
+            "Fight: KO one of your Heroes."
+          ]
+        },
+        {
+          "name": "Gigantus",
+          "slug": "gigantus",
+          "vp": "4",
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-vi-queens-vengeance-gigantus.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:strength][hc:strength][hc:strength][hc:strength][hc:strength][hc:strength]",
+            "Fight: KO one of your Heroes."
+          ]
+        },
+        {
+          "name": "Iron Knight",
+          "slug": "iron-knight",
+          "vp": "4",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-vi-queens-vengeance-iron-knight.webp",
+          "abilities": [
+            "[keyword:Chivalrous Duel]",
+            "Escape: Each player reveals a [hc:tech] Hero or gains a Wound."
+          ]
+        },
+        {
+          "name": "Yeoman America",
+          "slug": "yeoman-america",
+          "vp": "5",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-vi-queens-vengeance-yeoman-america.webp",
+          "abilities": [
+            "[keyword:Chivalrous Duel]",
+            "Fight: You get +1[icon:recruit] for each color of Hero you have (including grey)."
+          ]
+        },
+        {
+          "name": "Star-Knight",
+          "slug": "star-knight",
+          "vp": "3",
+          "vAttack": "3",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-vi-queens-vengeance-star-knight.webp",
+          "abilities": [
+            "[keyword:Chivalrous Duel]",
+            "Fight: KO a card from your discard pile."
+          ]
+        },
+        {
+          "name": "Pixie",
+          "slug": "pixie",
+          "vp": "2",
+          "vAttack": "3",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-vi-queens-vengeance-pixie.webp",
+          "abilities": [
+            "[keyword:Microscopic Size-Changing] [hc:covert][hc:covert][hc:covert][hc:covert]",
+            "Fight: Reveal a [hc:covert] Hero or play another card from the Villain Deck."
+          ]
+        },
+        {
+          "name": "Mordred the Evil",
+          "slug": "mordred-the-evil",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/antm/antm-vi-queens-vengeance-mordred-the-evil.webp",
+          "abilities": [
+            "Fight: Choose a card in your discard pile. The player to your right gains it.",
+            "Escape: Each player simultaneously does that same effect."
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [],
+  "schemes": [
+    {
+      "id": 106,
+      "name": "Age of Ultron",
+      "slug": "age-of-ultron",
+      "imageUrl": "https://images.barefootbetters.com/antm/antm-sc-age-of-ultron.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 11 Twists. 4-5 Players: Add another Hero.",
+            "Twist: Put the top card of the Hero Deck next to the Scheme in an “Evolution“ Pile. Then this Twist enters the city as an “Evolved Ultron“ Villain.",
+            "Special Rules: Evolved Ultrons have 4[icon:attack] and are [keyword:Empowered] by each color in the Evolution pile. They're worth 6VP.",
+            "Evil Wins: When 7 Evolved Ultrons are in the city and/or Escape Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 107,
+      "name": "Pull Earth into Medieval Times",
+      "slug": "pull-earth-into-medieval-times",
+      "imageUrl": "https://images.barefootbetters.com/antm/antm-sc-pull-earth-into-medieval-times.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 9 Twists.",
+            "Twist 1-6: Until the start of your next turn, all Villains and Mastermind everywhere have [keyword:Chivalrous Duel].",
+            "Twist 7-9: Each player puts a Villain from the Victory Pile into the Escape Pile.",
+            "Evil Wins: When 3 Villains per player have escaped."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 108,
+      "name": "Transform Commuters into Giant Ants",
+      "slug": "transform-commuters-into-giant-ants",
+      "imageUrl": "https://images.barefootbetters.com/antm/antm-sc-transform-commuters-into-giant-ants.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: Twists equal to the number of players plus 6.",
+            "Twist: Stack this Twist next to the Scheme. Then for each Twist in that stack, put a Bystander face down next to the Mastermind as a 2[icon:attack] “Giant Ant“ Villain. When you fight one, rescue it as a Bystander.",
+            "Evil Wins: When ther are 10 Giant Ants next to the Mastermind."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 109,
+      "name": "Trap Heroes in the Microverse",
+      "slug": "trap-heroes-in-the-microverse",
+      "imageUrl": "https://images.barefootbetters.com/antm/antm-sc-trap-heroes-in-the-microverse.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 11 Twists. Add all 14 cards for and extra Hero the Villain Deck.",
+            "Special Rules: Heroes in the Villain Deck are “Micro-Sized“ Villains with [icon:attack] equal to their printed cost. They have [keyword:Size-Changing] for their card color and no outher abilites while in the city. When you fight one, choose any player to gain it as a Hero.",
+            "Twist: Play two cards from the Villain Deck.",
+            "Evil Wins: When 3 Villains per player have escaped or the Villain Deck runs out."
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [],
+  "wounds": [],
+  "other": []
+}

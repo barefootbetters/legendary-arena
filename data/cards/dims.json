@@ -1,0 +1,332 @@
+{
+  "id": 23,
+  "abbr": "dims",
+  "exportName": "Dimensions",
+  "heroes": [
+    {
+      "id": 182,
+      "name": "Jessica Jones",
+      "slug": "jessica-jones",
+      "team": "marvel-knights",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Alter Ego",
+          "displayName": "Alter Ego",
+          "slug": "alter-ego",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dims/dims-hr-jessica-jones-3c1.webp",
+          "abilities": [
+            "[keyword:Switcheroo 4]"
+          ]
+        },
+        {
+          "name": "Alias Investigations",
+          "displayName": "Alias Investigations",
+          "slug": "alias-investigations",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 4,
+          "attack": "1",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dims/dims-hr-jessica-jones-4c2.webp",
+          "abilities": [
+            "[keyword:Switcheroo 5]",
+            "[keyword:Investigate] for a card with an [icon:attack] icon."
+          ]
+        },
+        {
+          "name": "Crack the Case",
+          "displayName": "Crack the Case",
+          "slug": "crack-the-case",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 5,
+          "attack": null,
+          "recruit": "3",
+          "imageUrl": "https://images.barefootbetters.com/dims/dims-hr-jessica-jones-5u.webp",
+          "abilities": [
+            "[keyword:Switcheroo 6]",
+            "[keyword:Investigate] for a card with an [icon:recruit] icon. You may draw that card or KO it."
+          ]
+        },
+        {
+          "name": "Uncover Hidden Evil",
+          "displayName": "Uncover Hidden Evil",
+          "slug": "uncover-hidden-evil",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 7,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dims/dims-hr-jessica-jones-7r.webp",
+          "abilities": [
+            "[hc:covert]: [keyword:Investigate] the Villain Deck for a Villain. You may put it into your Victory Pile and do its Fight effect. Otherwise, put it back on the top or bottom of that deck."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 183,
+      "name": "Ms. America",
+      "slug": "ms-america",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Star Power",
+          "displayName": "Star Power",
+          "slug": "star-power",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 3,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dims/dims-hr-ms-america-3c1.webp",
+          "abilities": [
+            "[keyword:Teleport]",
+            "[hc:strength]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Search Parallel Dimensions",
+          "displayName": "Search Parallel Dimensions",
+          "slug": "search-parallel-dimensions",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/dims/dims-hr-ms-america-4c2.webp",
+          "abilities": [
+            "[keyword:Investigate] for an [team:avengers] card and [keyword:Teleport] that card."
+          ]
+        },
+        {
+          "name": "Kick a Hole in Reality",
+          "displayName": "Kick a Hole in Reality",
+          "slug": "kick-a-hole-in-reality",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dims/dims-hr-ms-america-6u.webp",
+          "abilities": [
+            "[hc:strength]: Reveal the top card of your deck. KO it or [keyword:Teleport] it."
+          ]
+        },
+        {
+          "name": "Hyper-Cosmic Awareness",
+          "displayName": "Hyper-Cosmic Awareness",
+          "slug": "hyper-cosmic-awareness",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 7,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dims/dims-hr-ms-america-7r.webp",
+          "abilities": [
+            "You get +1[icon:attack] for each other card in your hand."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 184,
+      "name": "Squirrel Girl",
+      "slug": "squirrel-girl",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Find Tiny Friends",
+          "displayName": "Find Tiny Friends",
+          "slug": "find-tiny-friends",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dims/dims-hr-squirrel-girl-2c1.webp",
+          "abilities": [
+            "[keyword:Switcheroo 3]",
+            "[keyword:Investigate] for a card that costs 3 or less."
+          ]
+        },
+        {
+          "name": "Nut Punch",
+          "displayName": "Nut Punch",
+          "slug": "nut-punch",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dims/dims-hr-squirrel-girl-3c2.webp",
+          "abilities": [
+            "[keyword:Switcheroo 4]",
+            "[hc:instinct]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Squirrelgility",
+          "displayName": "Squirrelgility",
+          "slug": "squirrelgility",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dims/dims-hr-squirrel-girl-4u.webp",
+          "abilities": [
+            "[keyword:Switcheroo 5]",
+            "You get +2[icon:attack] if at least 2 cards entered the HQ this turn."
+          ]
+        },
+        {
+          "name": "Unbeatable Squirrel Girl",
+          "displayName": "Unbeatable Squirrel Girl",
+          "slug": "unbeatable-squirrel-girl",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 8,
+          "attack": "5",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dims/dims-hr-squirrel-girl-8r.webp",
+          "abilities": [
+            "You may choose a number from 1 to 5. A Hero in your hand gains [keyword:Switcheroo] for that number.",
+            "[hc:instinct][hc:instinct]: You may choose a number from 1 to 8 instead."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 61,
+      "name": "J. Jonah Jameson",
+      "slug": "j-jonah-jameson",
+      "alwaysLeads": [],
+      "vp": 5,
+      "cards": [
+        {
+          "name": "J. Jonah Jameson",
+          "slug": "j-jonah-jameson",
+          "tactic": false,
+          "vAttack": "4*",
+          "imageUrl": "https://images.barefootbetters.com/dims/dims-mm-j-jonah-jameson.webp",
+          "abilities": [
+            "Start of Game: Put 2 S.H.I.E.L.D. Officers per player into a face down “Angry Mobs“ stack.",
+            "Special Rules: You can spend 4[icon:attack] to reveal a random Angry Mob and put it into any player's discard pile. You can't fight J. Jonah Jameson while he has Angry Mobs.",
+            "Always Leads: Spider-Slayers",
+            "Master Strike: Each player [keyword:Investigates] their deck for a card and puts it into the Angry Mobs stack."
+          ]
+        },
+        {
+          "name": "Epic J. Jonah Jameson",
+          "slug": "epic-j-jonah-jameson",
+          "tactic": false,
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/dims/dims-me-j-jonah-jameson.webp",
+          "abilities": [
+            "Start of Game: Put 3 S.H.I.E.L.D. Officers per player into a face down “Angry Mobs“ stack.",
+            "Special Rules: You can spend 5[icon:attack] to reveal a random Angry Mob and put it into any player's discard pile. You can't fight J. Jonah Jameson while he has Angry Mobs.",
+            "Always Leads: Spider-Slayers",
+            "Master Strike: Each player [keyword:Investigates] their deck for a card and puts it into the Angry Mobs stack. If that card cost 0, that player gains a Wound."
+          ]
+        },
+        {
+          "name": "Incite Violent Riots",
+          "slug": "incite-violent-riots",
+          "tactic": true,
+          "vAttack": 4,
+          "imageUrl": "https://images.barefootbetters.com/dims/dims-mt-j-jonah-jameson-incite-violent-riots.webp",
+          "abilities": [
+            "Fight: Each player puts a Wound from the Wound Stack into the Angry Mobs stack."
+          ]
+        },
+        {
+          "name": "Promote Spider-Slayer Security",
+          "slug": "promote-spider-slayer-security",
+          "tactic": true,
+          "vAttack": 4,
+          "imageUrl": "https://images.barefootbetters.com/dims/dims-mt-j-jonah-jameson-promote-spider-slayer-security.webp",
+          "abilities": [
+            "Fight: Each other player puts a Spider-Slayer from their Victory Pile into the Angry Mobs stack. When a Spider-Slayer is revealed from the Angry Mobs, it enters the city."
+          ]
+        },
+        {
+          "name": "Slanderous Editorial",
+          "slug": "slanderous-editorial",
+          "tactic": true,
+          "vAttack": 4,
+          "imageUrl": "https://images.barefootbetters.com/dims/dims-mt-j-jonah-jameson-slanderous-editorial.webp",
+          "abilities": [
+            "Fight: Each other player [keyword:Investigates] their deck for a non-grey Hero and puts it into the Angry Mobs stack. Players reveal all the cards they investigated."
+          ]
+        },
+        {
+          "name": "That Menace Spider-Man!",
+          "slug": "that-menace-spider-man",
+          "tactic": true,
+          "vAttack": 4,
+          "imageUrl": "https://images.barefootbetters.com/dims/dims-mt-j-jonah-jameson-that-menace-spider-man.webp",
+          "abilities": [
+            "Fight: Each other player reveals their hand and discard a [team:spider-friends] Hero. Any player who cannot must instead put a non-grey card from their hand into the Angry Mobs stack."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [],
+  "henchmen": [],
+  "schemes": [],
+  "bystanders": [
+    {
+      "id": 42,
+      "name": "Forklift Driver",
+      "slug": "forklift-driver",
+      "vp": 1,
+      "imageUrl": "https://images.barefootbetters.com/dims/dims-by-forklift-driver.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "When you rescue this Bystander, put any number of Heroes from the HQ on the bottom of the Hero Deck."
+          ]
+        }
+      ]
+    }
+  ],
+  "wounds": [],
+  "other": []
+}

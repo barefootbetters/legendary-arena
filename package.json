@@ -4,11 +4,15 @@
   "version": "0.0.0",
   "description": "Legendary Arena monorepo — card registry, viewer, and tooling",
   "scripts": {
-    "registry:validate": "pnpm --filter @legendary-arena/registry validate",
-    "registry:build":    "pnpm --filter @legendary-arena/registry build",
-    "registry:upload":   "pnpm --filter @legendary-arena/registry upload",
-    "viewer:dev":        "pnpm --filter registry-viewer dev",
-    "viewer:build":      "pnpm --filter registry-viewer build"
+    "registry:validate":    "pnpm --filter @legendary-arena/registry validate",
+    "registry:build":       "pnpm --filter @legendary-arena/registry build",
+    "registry:upload":      "pnpm --filter @legendary-arena/registry upload",
+    "viewer:dev":           "pnpm --filter registry-viewer dev",
+    "viewer:build":         "pnpm --filter registry-viewer build",
+
+    "validate":             "pwsh scripts/Validate-R2.ps1",
+    "validate:r2":          "pwsh scripts/Validate-R2.ps1 -R2Mode",
+    "validate:r2:fast":     "pwsh scripts/Validate-R2.ps1 -R2Mode -SkipImages"
   },
   "workspaces": [
     "packages/*",

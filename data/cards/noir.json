@@ -1,0 +1,734 @@
+{
+  "id": 15,
+  "abbr": "noir",
+  "exportName": "Noir",
+  "heroes": [
+    {
+      "id": 127,
+      "name": "Angel Noir",
+      "slug": "angel-noir",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Impetuous Dive",
+          "displayName": "Impetuous Dive",
+          "slug": "impetuous-dive",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-hr-angel-noir-3c1.webp",
+          "abilities": [
+            "[hc:instinct]: You get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Multitalented",
+          "displayName": "Multitalented",
+          "slug": "multitalented",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": "1",
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-hr-angel-noir-4c2.webp",
+          "abilities": [
+            "Choose a Hero Class. [keyword:Investigate] for a card of that Hero Class."
+          ]
+        },
+        {
+          "name": "Identical Twin Brother",
+          "displayName": "Identical Twin Brother",
+          "slug": "identical-twin-brother",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 5,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-hr-angel-noir-5u.webp",
+          "abilities": [
+            "You get the printed [icon:recruit] and [icon:attack] of a Hero in the HQ. Then put that Hero on the bottom of the Hero Deck."
+          ]
+        },
+        {
+          "name": "Missing Person Case",
+          "displayName": "Missing Person Case",
+          "slug": "missing-person-case",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 8,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-hr-angel-noir-8r.webp",
+          "abilities": [
+            "[keyword:Investigate] the Hero Deck for any card and put that card in your hand."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 128,
+      "name": "Daredevil Noir",
+      "slug": "daredevil-noir",
+      "team": "marvel-knights",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Balancing Act",
+          "displayName": "Balancing Act",
+          "slug": "balancing-act",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": "1",
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-hr-daredevil-noir-3c1.webp",
+          "abilities": [
+            "The next Hero you recruit this turn goes on top of your deck."
+          ]
+        },
+        {
+          "name": "Listen for Heartbeats",
+          "displayName": "Listen for Heartbeats",
+          "slug": "listen-for-heartbeats",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-hr-daredevil-noir-4c2.webp",
+          "abilities": [
+            "Choose a number 1 or more. [keyword:Investigate] for a card of that cost."
+          ]
+        },
+        {
+          "name": "Discover the Bodies",
+          "displayName": "Discover the Bodies",
+          "slug": "discover-the-bodies",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 5,
+          "attack": null,
+          "recruit": "3",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-hr-daredevil-noir-5u.webp",
+          "abilities": [
+            "[hc:covert]: [keyword:Investigate] for a card that costs 0. KO that card."
+          ]
+        },
+        {
+          "name": "Hitting Rock Bottom",
+          "displayName": "Hitting Rock Bottom",
+          "slug": "hitting-rock-bottom",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-hr-daredevil-noir-7r.webp",
+          "abilities": [
+            "Discard a card from the top or bottom of your deck. If it costs 0, you get +1[icon:attack] and repeat this process. If your deck runs out, stop."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 129,
+      "name": "Iron Man Noir",
+      "slug": "iron-man-noir",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Steam-Powered Arsenal",
+          "displayName": "Steam-Powered Arsenal",
+          "slug": "steam-powered-arsenal",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-hr-iron-man-noir-3c1.webp",
+          "abilities": [
+            "To play this, you must put another card from your hand on top of your deck."
+          ]
+        },
+        {
+          "name": "Mechanized Plate-Mail",
+          "displayName": "Mechanized Plate-Mail",
+          "slug": "mechanized-plate-mail",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-hr-iron-man-noir-4c2.webp",
+          "abilities": [
+            "[keyword:Investigate] for a [hc:tech] card."
+          ]
+        },
+        {
+          "name": "Learn from Enemies",
+          "displayName": "Learn from Enemies",
+          "slug": "learn-from-enemies",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 6,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-hr-iron-man-noir-6u.webp",
+          "abilities": [
+            "[hc:tech]: You may use the “Fight“ ability of a Villain worth 1[icon:piercing] in your Victory Pile."
+          ]
+        },
+        {
+          "name": "Adventurers Assemble!",
+          "displayName": "Adventurers Assemble!",
+          "slug": "adventurers-assemble",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 7,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-hr-iron-man-noir-7r.webp",
+          "abilities": [
+            "Whenever you [keyword:Investigate] this turn, look at three cards instead of two.",
+            "Choose [icon:recruit] or [icon:attack]. [keyword:Investigate] for a card with that icon."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 130,
+      "name": "Luke Cage Noir",
+      "slug": "luke-cage-noir",
+      "team": "marvel-knights",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Follow Big Leads",
+          "displayName": "Follow Big Leads",
+          "slug": "follow-big-leads",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-hr-luke-cage-noir-4c1.webp",
+          "abilities": [
+            "You get +1[icon:recruit] for each other card you played this turn that costs 4 or more."
+          ]
+        },
+        {
+          "name": "Private Investigations",
+          "displayName": "Private Investigations",
+          "slug": "private-investigations",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-hr-luke-cage-noir-4c2.webp",
+          "abilities": [
+            "[keyword:Investigate] for a card that costs 4 or more."
+          ]
+        },
+        {
+          "name": "Unbreakable Cage",
+          "displayName": "Unbreakable Cage",
+          "slug": "unbreakable-cage",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-hr-luke-cage-noir-6u.webp",
+          "abilities": [
+            "Once per turn, if a player would gain a Wound, you may reveal this card and [keyword:Investigate] for any card instead."
+          ]
+        },
+        {
+          "name": "Weight of the World",
+          "displayName": "Weight of the World",
+          "slug": "weight-of-the-world",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 8,
+          "attack": "5+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-hr-luke-cage-noir-8r.webp",
+          "abilities": [
+            "You get +2[icon:attack] for each other card you played this turn that costs 4 or more."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 131,
+      "name": "Spider-Man Noir",
+      "slug": "spider-man-noir",
+      "team": "spider-friends",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Gumshoe's Revolver",
+          "displayName": "Gumshoe's Revolver",
+          "slug": "gumshoes-revolver",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 2,
+          "attack": "1",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-hr-spider-man-noir-2c1.webp",
+          "abilities": [
+            "[keyword:Investigate] for a card that costs 2 or less."
+          ]
+        },
+        {
+          "name": "Webs of Darkness",
+          "displayName": "Webs of Darkness",
+          "slug": "webs-of-darkness",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 2,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-hr-spider-man-noir-2c2.webp",
+          "abilities": [
+            "[hc:ranged]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Solve the Crime",
+          "displayName": "Solve the Crime",
+          "slug": "solve-the-crime",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-hr-spider-man-noir-2u.webp",
+          "abilities": [
+            "[hc:instinct]: [keyword:Investigate] the Bystander Stack for a Bystander and rescue it."
+          ]
+        },
+        {
+          "name": "Spider-Totem's Chosen",
+          "displayName": "Spider-Totem's Chosen",
+          "slug": "spider-totems-chosen",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 2,
+          "attack": "1",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-hr-spider-man-noir-2r.webp",
+          "abilities": [
+            "[team:spider-friends]: [keyword:Investigate] each player's deck for a card that costs 2 or less, play a copy of that card, then put it into their discard pile."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 38,
+      "name": "Charles Xavier, Professor of Crime",
+      "slug": "charles-xavier-professor-of-crime",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Charles Xavier, Professor of Crime",
+          "slug": "charles-xavier-professor-of-crime",
+          "tactic": false,
+          "vAttack": "8+",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-mm-charles-xavier-professor-of-crime.webp",
+          "abilities": [
+            "Charles Xavier gets +1[icon:attack] for each Bystander in the HQ and city.",
+            "Always Leads: X-Men Noir",
+            "Master Strike: Four Heroes in the HQ capture [keyword:Hidden Witness]."
+          ]
+        },
+        {
+          "name": "Commit to the Asylum",
+          "slug": "commit-to-the-asylum",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-mt-charles-xavier-professor-of-crime-commit-to-the-asylum.webp",
+          "abilities": [
+            "Fight: Each other player [keyword:Investigates] their deck for a card with an [icon:attack] icon and KOs it. Players reveal all the cards they [keyword:Investigated]."
+          ]
+        },
+        {
+          "name": "Master Manipulator",
+          "slug": "master-manipulator",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-mt-charles-xavier-professor-of-crime-master-manipulator.webp",
+          "abilities": [
+            "Fight: [keyword:Investigate] the Hero Deck for an [team:x-men] card and put it into your discard pile."
+          ]
+        },
+        {
+          "name": "Corrupt Weak Minds",
+          "slug": "corrupt-weak-minds",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-mt-charles-xavier-professor-of-crime-corrupt-weak-minds.webp",
+          "abilities": [
+            "Fight: Each other player puts a random Bystander from their Victory Pile onto a Hero in the HQ as a [keyword:Hidden Witness]."
+          ]
+        },
+        {
+          "name": "X-Con Men",
+          "slug": "x-con-men",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-mt-charles-xavier-professor-of-crime-x-con-men.webp",
+          "abilities": [
+            "Fight: Each other player reveals an [team:x-men] Hero or gains a Wound."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 39,
+      "name": "The Goblin, Underworld Boss",
+      "slug": "the-goblin-underworld-boss",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "The Goblin, Underworld Boss",
+          "slug": "the-goblin-underworld-boss",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-mm-the-goblin-underworld-boss.webp",
+          "abilities": [
+            "Start of Game: The Goblin captures 2 [keyword:Hidden Witness].",
+            "Always Leads: Goblin's Freak Show",
+            "Master Strike: Two random Bystanders from each player's Victory Pile become [keyword:Hidden Witness] held by The Goblin. Any player who didn't have two Bystanders gains a Wound instead."
+          ]
+        },
+        {
+          "name": "Sinister Dreams",
+          "slug": "sinister-dreams",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-mt-the-goblin-underworld-boss-sinister-dreams.webp",
+          "abilities": [
+            "Fight: Each other player reveals a [team:sinister-six] or [team:spider-friends] Hero or gains a Wound."
+          ]
+        },
+        {
+          "name": "Blackmail the Judges",
+          "slug": "blackmail-the-judges",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-mt-the-goblin-underworld-boss-blackmail-the-judges.webp",
+          "abilities": [
+            "Fight: For each Goblin's Freak Show Villain in the city, The Goblin captures 2 [keyword:Hidden Witness]."
+          ]
+        },
+        {
+          "name": "Carnival of Carnage",
+          "slug": "carnival-of-carnage",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-mt-the-goblin-underworld-boss-carnival-of-carnage.webp",
+          "abilities": [
+            "Fight: For each Goblin's Freak Show Villain in the city, each other player discards a card."
+          ]
+        },
+        {
+          "name": "Blind Loyalty",
+          "slug": "blind-loyalty",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-mt-the-goblin-underworld-boss-blind-loyalty.webp",
+          "abilities": [
+            "Fight: [keyword:Investigate] the Villain Deck for a Goblin's Freak Show Villain and put it into your Victory Pile."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 51,
+      "name": "Goblin's Freak Show",
+      "slug": "goblins-freak-show",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Vulture, Carnival Cannibal",
+          "slug": "vulture-carnival-cannibal",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-vi-goblins-freak-show-vulture-carnival-cannibal.webp",
+          "abilities": [
+            "Ambush: The Vulture captures 2 [keyword:Hidden Witnesses].",
+            "Fight: Each other player KOs a Bystander from their Victory Pile or gains a Wound.",
+            "Escape: Each player gains a Wound."
+          ]
+        },
+        {
+          "name": "The Chameleon",
+          "slug": "the-chameleon",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-vi-goblins-freak-show-the-chameleon.webp",
+          "abilities": [
+            "Ambush: Chameleon captures a [keyword:Hidden Witness].",
+            "Fight: Reveal the top card of the Villain Deck. If it's a Villain, it enters the city space where The Chameleon was."
+          ]
+        },
+        {
+          "name": "Kraven, Animal Trainer",
+          "slug": "kraven-animal-trainer",
+          "vp": "4",
+          "vAttack": "",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-vi-goblins-freak-show-kraven-animal-trainer.webp",
+          "abilities": [
+            "Ambush: For each Hero in the HQ that costs 7 or more, Kraven captures a [keyword:Hidden Witness]. Kraven's [icon:attack] is equal to the cost of the highest-cost card in the HQ."
+          ]
+        },
+        {
+          "name": "Ox",
+          "slug": "ox",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-vi-goblins-freak-show-ox.webp",
+          "abilities": [
+            "Ambush: Each other player reveals a [hc:strength] Hero or Ox captures a random Bystander from their Victory Pile as a [keyword:Hidden Witness]."
+          ]
+        },
+        {
+          "name": "Montana",
+          "slug": "montana",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-vi-goblins-freak-show-montana.webp",
+          "abilities": [
+            "Ambush: Each Goblin's Freak Show Villain captures a [keyword:Hidden Witness]."
+          ]
+        },
+        {
+          "name": "Fancy Dan",
+          "slug": "fancy-dan",
+          "vp": "2",
+          "vAttack": "1",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-vi-goblins-freak-show-fancy-dan.webp",
+          "abilities": [
+            "Ambush: Fancy Dan captures 3 [keyword:Hidden Witnesses].",
+            "Fight: KO one of your Heroes."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 52,
+      "name": "X-Men Noir",
+      "slug": "x-men-noir",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Bobby “Iceman“ Drake",
+          "slug": "bobby-iceman-drake",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-vi-x-men-noir-bobby-iceman-drake.webp",
+          "abilities": [
+            "Fight: [keyword:Investigate] for a card with a [icon:recruit] icon."
+          ]
+        },
+        {
+          "name": "Comrade Rasputin, Steel Wall",
+          "slug": "comrade-rasputin-steel-wall",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-vi-x-men-noir-comrade-rasputin-steel-wall.webp",
+          "abilities": [
+            "Fight: [keyword:Investigate] for a Hero that costs 0 and KO it."
+          ]
+        },
+        {
+          "name": "Henry “Beast“ McCoy",
+          "slug": "henry-beast-mccoy",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-vi-x-men-noir-henry-beast-mccoy.webp",
+          "abilities": [
+            "Fight: [keyword:Investigate] for any card that's [hc:tech] or [hc:strength]."
+          ]
+        },
+        {
+          "name": "Jean Grey Noir",
+          "slug": "jean-grey-noir",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-vi-x-men-noir-jean-grey-noir.webp",
+          "abilities": [
+            "Fight: When you draw a new hand of cards at the end of your turn, [keyword:Investigate] for an extra card."
+          ]
+        },
+        {
+          "name": "Scott “Cyclops“ Summers",
+          "slug": "scott-cyclops-summers",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-vi-x-men-noir-scott-cyclops-summers.webp",
+          "abilities": [
+            "Escape: Each player [keyword:Investigates] their deck for a card that costs 1 or more and KOs it. Players reveal the cards they [keyword:Investigated]."
+          ]
+        },
+        {
+          "name": "Warden Emma Frost",
+          "slug": "warden-emma-frost",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-vi-x-men-noir-warden-emma-frost.webp",
+          "abilities": [
+            "Escape: [keyword:Investigate] the Villain Deck for a Scheme Twist and play it. Reveal all the cards you [keyword:Investigated]."
+          ]
+        },
+        {
+          "name": "Ororo Munroe, Storm-Tossed",
+          "slug": "ororo-munroe-storm-tossed",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-vi-x-men-noir-ororo-munroe-storm-tossed.webp",
+          "abilities": [
+            "Fight: KO a Hero from the HQ. [keyword:Investigate] the Hero Deck for a card to put in that emptied HQ space."
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [],
+  "schemes": [
+    {
+      "id": 72,
+      "name": "Find the Split Personality Killer",
+      "slug": "find-the-split-personality-killer",
+      "imageUrl": "https://images.barefootbetters.com/noir/noir-sc-find-the-split-personality-killer.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists.",
+            "Twist 1-5: Shuffle 3 Bystanders from the Bystander Stack and the top card of the Hero Deck face down next to this Scheme as a deck of “Murder Suspects.“",
+            "Special Rules: Whenever you defeat a Villain, you may pay 1[icon:attack] extra to [keyword:Investigate] the Murder Suspects for a Bystander and rescue it.",
+            "Twist 6: Each player writes down their guess for which Hero Name is the Split Personality Killer. Reveal the entire Murder Suspects Deck. The Hero Name with the most cards in the Murder Suspect Deck (or tied for most) is the Split Personality Killer. Each player who guessed right wins. All other players lose."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 73,
+      "name": "Silence the Witnesses",
+      "slug": "silence-the-witnesses",
+      "imageUrl": "https://images.barefootbetters.com/noir/noir-sc-silence-the-witnesses.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 6 Twists.",
+            "Twist: This Scheme captures 3 [keyword:Hidden Witnesses]. If it already had any [keyword:Hidden Witnesses], put those into the Escape Pile.",
+            "Evil Wins: When 6 Bystanders are in the Escape Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 74,
+      "name": "Five Families of Crime",
+      "slug": "five-families-of-crime",
+      "imageUrl": "https://images.barefootbetters.com/noir/noir-sc-five-families-of-crime.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. Add two extra Villain Groups. Split the Villain Deck into 5 shuffled decks, one above each city space.",
+            "Special Rules: Each Villain Deck uses its own city of one city space. Each turn, you choose which Villain Deck plays a card.",
+            "Twist: Play two cards from a Villain Deck.",
+            "Evil Wins: When 8 Villains escape or all Villain Decks run out."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 75,
+      "name": "Hidden Heart of Darkness",
+      "slug": "hidden-heart-of-darkness",
+      "imageUrl": "https://images.barefootbetters.com/noir/noir-sc-hidden-heart-of-darkness.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. Shuffle the Mastermind Tactics into the Villain Deck as Villains.",
+            "Special Rules: If there are no Tactics in the city, you can win the game by fighting the Mastermind card.",
+            "Twist: Each player shuffles a Tactic from their Victory Pile into the Villain Deck. Any player who did so draws two cards. Then, [keyword:Investigate] the Villain Deck for a Tactic and that Tactic enters the city. Reveal all the cards you [keyword:Investigated].",
+            "Evil Wins: When 2 Tactics escape."
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [
+    {
+      "id": 21,
+      "name": "Detective Wolverine",
+      "slug": "detective-wolverine",
+      "vp": 1,
+      "imageUrl": "https://images.barefootbetters.com/noir/noir-by-detective-wolverine.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "When you rescue this Bystander, [keyword:Investigate] the Villain Deck for a Villain worth 1[icon:piercing] and put it in your Victory Pile."
+          ]
+        }
+      ]
+    }
+  ],
+  "wounds": [],
+  "other": []
+}

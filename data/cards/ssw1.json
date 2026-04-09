@@ -1,0 +1,1811 @@
+{
+  "id": 10,
+  "abbr": "ssw1",
+  "exportName": "SecretWars1",
+  "heroes": [
+    {
+      "id": 71,
+      "name": "Apocalyptic Kitty Pryde",
+      "slug": "apocalyptic-kitty-pryde",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Phase Out",
+          "displayName": "Phase Out",
+          "slug": "phase-out",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-apocalyptic-kitty-pryde-4c1.webp",
+          "abilities": [
+            "[hc:covert]: You may KO a card from your hand or discard pile. If you do, you get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Infiltrate HQ",
+          "displayName": "Infiltrate HQ",
+          "slug": "infiltrate-hq",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-apocalyptic-kitty-pryde-3c2.webp",
+          "abilities": [
+            "You may put a Hero from the HQ on the bottom of the Hero Deck. The Hero that replaces it in the HQ costs 1 less during this turn."
+          ]
+        },
+        {
+          "name": "Disrupt Circuits",
+          "displayName": "Disrupt Circuits",
+          "slug": "disrupt-circuits",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-apocalyptic-kitty-pryde-5u.webp",
+          "abilities": [
+            "You get +1 [icon:attack] for each [hc:tech] Hero in the HQ."
+          ]
+        },
+        {
+          "name": "Untouchable",
+          "displayName": "Untouchable",
+          "slug": "untouchable",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 7,
+          "attack": null,
+          "recruit": "5",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-apocalyptic-kitty-pryde-7r.webp",
+          "abilities": [
+            "When any player defeats a Villain or Mastermind with a “Fight“ effect, you may discard this card to cancel that fight effect. If you do, draw three cards."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 72,
+      "name": "Black Bolt",
+      "slug": "black-bolt",
+      "team": "illuminati",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Destructive Whisper",
+          "displayName": "Destructive Whisper",
+          "slug": "destructive-whisper",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-black-bolt-3c1.webp",
+          "abilities": [
+            "You get +1[icon:attack] if you reveal four cards with no rules text."
+          ]
+        },
+        {
+          "name": "Speak No Words",
+          "displayName": "Speak No Words",
+          "slug": "speak-no-words",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 4,
+          "attack": "1",
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-black-bolt-4c2.webp",
+          "abilities": []
+        },
+        {
+          "name": "Silence is Golden",
+          "displayName": "Silence is Golden",
+          "slug": "silence-is-golden",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "4+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-black-bolt-6u.webp",
+          "abilities": [
+            "Choose a card you played this turn with no rules text. You get its [icon:recruit] and [icon:attack] again."
+          ]
+        },
+        {
+          "name": "Hypersonic Scream",
+          "displayName": "Hypersonic Scream",
+          "slug": "hypersonic-scream",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 8,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-black-bolt-8r.webp",
+          "abilities": [
+            "For each card with no rules text you played this turn, draw a card."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 73,
+      "name": "Black Panther",
+      "slug": "black-panther",
+      "team": "illuminati",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Catlike Reflexes",
+          "displayName": "Catlike Reflexes",
+          "slug": "catlike-reflexes",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-black-panther-3c1.webp",
+          "abilities": [
+            "Draw a card."
+          ]
+        },
+        {
+          "name": "Multifaceted Genius",
+          "displayName": "Multifaceted Genius",
+          "slug": "multifaceted-genius",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-black-panther-4c2.webp",
+          "abilities": [
+            "You get +1[icon:attack] for each other multicolored card you played this turn."
+          ]
+        },
+        {
+          "name": "Stalk the Urban Jungle",
+          "displayName": "Stalk the Urban Jungle",
+          "slug": "stalk-the-urban-jungle",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-black-panther-6u.webp",
+          "abilities": [
+            "Whenever you defeat a Villain on the Rooftops or Streets this turn, you may KO one of your cards or a card from your discard pile."
+          ]
+        },
+        {
+          "name": "King of Wakanda",
+          "displayName": "King of Wakanda",
+          "slug": "king-of-wakanda",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-black-panther-7r.webp",
+          "abilities": [
+            "Gain three [rule:Sidekicks].",
+            "[team:illuminati]: Put them on top of your deck."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 74,
+      "name": "Captain Marvel",
+      "slug": "captain-marvel",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Absorb Energies",
+          "displayName": "Absorb Energies",
+          "slug": "absorb-energies",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-captain-marvel-3c1.webp",
+          "abilities": [
+            "[hc:ranged]: For each other [hc:ranged] Hero you have played this turn, you get+1[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Supersonic Flight",
+          "displayName": "Supersonic Flight",
+          "slug": "supersonic-flight",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 3,
+          "attack": "1",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-captain-marvel-3c2.webp",
+          "abilities": [
+            "Draw a card."
+          ]
+        },
+        {
+          "name": "Marvelous Strength",
+          "displayName": "Marvelous Strength",
+          "slug": "marvelous-strength",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 5,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-captain-marvel-5u.webp",
+          "abilities": [
+            "[hc:strength]: For each other [hc:strength] Hero you have played this turn, you get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Cosmic Energies",
+          "displayName": "Cosmic Energies",
+          "slug": "cosmic-energies",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 7,
+          "attack": "5+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-captain-marvel-7r.webp",
+          "abilities": [
+            "[hc:strength][hc:strength][hc:ranged][hc:ranged]: You get +6[icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 75,
+      "name": "Dr. Strange",
+      "slug": "dr-strange",
+      "team": "illuminati",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Cloak of Levitation",
+          "displayName": "Cloak of Levitation",
+          "slug": "cloak-of-levitation",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-dr-strange-4c1.webp",
+          "abilities": [
+            "[hc:ranged]: Reveal the top card of your deck. Draw it or [keyword:Teleport] it."
+          ]
+        },
+        {
+          "name": "Trust Me, I'm a Doctor",
+          "displayName": "Trust Me, I'm a Doctor",
+          "slug": "trust-me-im-a-doctor",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": null,
+          "recruit": "1+",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-dr-strange-2c2.webp",
+          "abilities": [
+            "[team:illuminati]: You may KO a card from your hand or discard pile. If you do, you get +1[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Fight the Future",
+          "displayName": "Fight the Future",
+          "slug": "fight-the-future",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 5,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-dr-strange-5u.webp",
+          "abilities": [
+            "[hc:instinct]: Reveal the top card of the Villain Deck. If it's a Villain, you get +2[icon:attack] and may fight that Villain this turn."
+          ]
+        },
+        {
+          "name": "Sorcerer Supreme",
+          "displayName": "Sorcerer Supreme",
+          "slug": "sorcerer-supreme",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 7,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-dr-strange-7r.webp",
+          "abilities": [
+            "Reveal the top three cards of your deck. Draw any number of them and [keyword:Teleport] the rest."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 76,
+      "name": "Lady Thor",
+      "slug": "lady-thor",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Mysterious Origin",
+          "displayName": "Mysterious Origin",
+          "slug": "mysterious-origin",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-lady-thor-3c1.webp",
+          "abilities": [
+            "Once per turn, if you made at least 6[icon:recruit] this turn, draw a card."
+          ]
+        },
+        {
+          "name": "Chosen by Asgard",
+          "displayName": "Chosen by Asgard",
+          "slug": "chosen-by-asgard",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": "0+",
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-lady-thor-4c2.webp",
+          "abilities": [
+            "Once per turn, if you made at least 6[icon:recruit] this turn, you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Heir to the Hammer",
+          "displayName": "Heir to the Hammer",
+          "slug": "heir-to-the-hammer",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-lady-thor-6u.webp",
+          "abilities": [
+            "[hc:strength][hc:ranged]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Living Thunderstorm",
+          "displayName": "Living Thunderstorm",
+          "slug": "living-thunderstorm",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 8,
+          "attack": "0+",
+          "recruit": "4",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-lady-thor-8r.webp",
+          "abilities": [
+            "Once per turn, if you made at least 6[icon:recruit] this turn, you get +6[icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 77,
+      "name": "Magik",
+      "slug": "magik",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Rally the New Mutants",
+          "displayName": "Rally the New Mutants",
+          "slug": "rally-the-new-mutants",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 2,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-magik-2c1.webp",
+          "abilities": [
+            "Gain a [rule:Sidekick].",
+            "[hc:covert]: Gain another [rule:Sidekick]."
+          ]
+        },
+        {
+          "name": "Travel through Limbo",
+          "displayName": "Travel through Limbo",
+          "slug": "travel-through-limbo",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-magik-3c2.webp",
+          "abilities": [
+            "[keyword:Teleport]",
+            "[hc:ranged]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Dimensional Portal",
+          "displayName": "Dimensional Portal",
+          "slug": "dimensional-portal",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-magik-5u.webp",
+          "abilities": [
+            "[keyword:Teleport]",
+            "For each [rule:Sidekick] you played this turn, you get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Wield the Soulsword",
+          "displayName": "Wield the Soulsword",
+          "slug": "wield-the-soulsword",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 7,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-magik-7r.webp",
+          "abilities": [
+            "[keyword:Teleport]",
+            "Choose a Villain or Mastermind in your Victory Pile. You get +[icon:attack] equal to its printed VP."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 78,
+      "name": "Maximus",
+      "slug": "maximus",
+      "team": "cabal",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Mental Domination",
+          "displayName": "Mental Domination",
+          "slug": "mental-domination",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-maximus-3c1.webp",
+          "abilities": [
+            "[hc:covert]: Defeat a Henchman Villain for free"
+          ]
+        },
+        {
+          "name": "Enslave the Will",
+          "displayName": "Enslave the Will",
+          "slug": "enslave-the-will",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-maximus-4c2.webp",
+          "abilities": [
+            "[hc:tech]: Whenever you defeat a Villain this turn, you gain a [rule:Sidekick]."
+          ]
+        },
+        {
+          "name": "Pieces on a Chessboard",
+          "displayName": "Pieces on a Chessboard",
+          "slug": "pieces-on-a-chessboard",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 5,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-maximus-5u.webp",
+          "abilities": [
+            "You may have a Henchman Villain from your Victory Pile enter the city. If you do, draw a card."
+          ]
+        },
+        {
+          "name": "Inhuman Mastery",
+          "displayName": "Inhuman Mastery",
+          "slug": "inhuman-mastery",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 7,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-maximus-7r.webp",
+          "abilities": [
+            "Each other player reveals a[hc:tech] hero or chooses a Henchman Villain from their Victory Pile. You defeat all those Henchmen for free.",
+            "[team:cabal]: You get +1[icon:attack]for each Henchman you defeated this turn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 79,
+      "name": "Namor, the Sub-Mariner",
+      "slug": "namor-the-sub-mariner",
+      "team": "cabal",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Lead the Armies of Atlantis",
+          "displayName": "Lead the Armies of Atlantis",
+          "slug": "lead-the-armies-of-atlantis",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-namor-the-sub-mariner-3c1.webp",
+          "abilities": [
+            "[hc:instinct]: Gain a [rule:Sidekick]."
+          ]
+        },
+        {
+          "name": "Ruler of the Seas",
+          "displayName": "Ruler of the Seas",
+          "slug": "ruler-of-the-seas",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-namor-the-sub-mariner-4c2.webp",
+          "abilities": [
+            "[hc:strength]: You get +2[icon:attack], usable only against Villains on the Bridge or the Mastermind."
+          ]
+        },
+        {
+          "name": "Feed the Sharks",
+          "displayName": "Feed the Sharks",
+          "slug": "feed-the-sharks",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-namor-the-sub-mariner-6u.webp",
+          "abilities": [
+            "You may KO a card from your hand or discard pile. If you do, draw a card."
+          ]
+        },
+        {
+          "name": "Imperius Rex",
+          "displayName": "Imperius Rex",
+          "slug": "imperius-rex",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 7,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-namor-the-sub-mariner-7r.webp",
+          "abilities": [
+            "Defeat a Villain for free.",
+            "[hc:strength][hc:strength][hc:instinct][hc:instinct]: Instead, defeat the Mastermind once for free."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 80,
+      "name": "Old Man Logan",
+      "slug": "old-man-logan",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Last Survivor",
+          "displayName": "Last Survivor",
+          "slug": "last-survivor",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-old-man-logan-3c1.webp",
+          "abilities": [
+            "[hc:instinct]: You may KO a card from your hand or discard pile. If you KO a wound this way, draw a card."
+          ]
+        },
+        {
+          "name": "Loner",
+          "displayName": "Loner",
+          "slug": "loner",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-old-man-logan-5c2.webp",
+          "abilities": [
+            "If you don't recruit any heroes this turn, you get .+2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Rage Out",
+          "displayName": "Rage Out",
+          "slug": "rage-out",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 6,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-old-man-logan-6u.webp",
+          "abilities": [
+            "[hc:instinct][keyword:: Cross-Dimensional Wolverine Rampage.] For each other player who gained a Wound this way, you get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "No More Heroes",
+          "displayName": "No More Heroes",
+          "slug": "no-more-heroes",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": "5+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-old-man-logan-7r.webp",
+          "abilities": [
+            "Reveal your hand. You get +5[icon:attack] if you haven't played any [team:shield] or [team:hydra] cards this turn and don't have any in your hand."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 81,
+      "name": "Proxima Midnight",
+      "slug": "proxima-midnight",
+      "team": "cabal",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Inspiration Through Power",
+          "displayName": "Inspiration Through Power",
+          "slug": "inspiration-through-power",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": "1",
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-proxima-midnight-2c1.webp",
+          "abilities": []
+        },
+        {
+          "name": "Master Combatant",
+          "displayName": "Master Combatant",
+          "slug": "master-combatant",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-proxima-midnight-4c2.webp",
+          "abilities": [
+            "If the most recent Hero you have played this turn has a [icon:recruit] icon, you get +2[icon:recruit]. If it has an [icon:attack] icon, you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "General of the Black Order",
+          "displayName": "General of the Black Order",
+          "slug": "general-of-the-black-order",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 5,
+          "attack": "3",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-proxima-midnight-5u.webp",
+          "abilities": [
+            "[hc:instinct]: You get +3[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Supernova Spear",
+          "displayName": "Supernova Spear",
+          "slug": "supernova-spear",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 8,
+          "attack": "4+",
+          "recruit": "4+",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-proxima-midnight-8r.webp",
+          "abilities": [
+            "[hc:covert]: You get +4[icon:recruit] and +4[icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 82,
+      "name": "Superior Iron Man",
+      "slug": "superior-iron-man",
+      "team": "illuminati",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Armor Upgrades",
+          "displayName": "Armor Upgrades",
+          "slug": "armor-upgrades",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 2,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-superior-iron-man-2c1.webp",
+          "abilities": [
+            "[hc:tech]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Optimized Technology",
+          "displayName": "Optimized Technology",
+          "slug": "optimized-technology",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 5,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-superior-iron-man-5c2.webp",
+          "abilities": [
+            "Draw a card."
+          ]
+        },
+        {
+          "name": "Superior to Others",
+          "displayName": "Superior to Others",
+          "slug": "superior-to-others",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-superior-iron-man-3u.webp",
+          "abilities": [
+            "[hc:ranged]: Look at the top two cards of your deck. If one of them has a higher cost than the other, draw it. Put the rest back in any order."
+          ]
+        },
+        {
+          "name": "#Humblebrag",
+          "displayName": "#Humblebrag",
+          "slug": "humblebrag",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 8,
+          "attack": "5",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-superior-iron-man-8r.webp",
+          "abilities": [
+            "Draw a card for each other player who has fewer cards in their Victory Pile than you."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 83,
+      "name": "Thanos",
+      "slug": "thanos",
+      "team": "cabal",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Transdimensional Overlord",
+          "displayName": "Transdimensional Overlord",
+          "slug": "transdimensional-overlord",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-thanos-5c1.webp",
+          "abilities": [
+            "[keyword:Teleport]",
+            "You may KO a Bystander from your Victory Pile. If you do, you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Revel in Destruction",
+          "displayName": "Revel in Destruction",
+          "slug": "revel-in-destruction",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-thanos-3c2.webp",
+          "abilities": [
+            "[team:cabal]: KO a Bystander from the Bystander Stack. Then, you get +1[icon:recruit] for every three Bystanders in the KO pile."
+          ]
+        },
+        {
+          "name": "Galactic Domination",
+          "displayName": "Galactic Domination",
+          "slug": "galactic-domination",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 6,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-thanos-6u.webp",
+          "abilities": [
+            "[hc:ranged]: Each other player reveals a [hc:ranged] Hero or chooses a Bystander from their Victory Pile. You “rescue“ those bystanders."
+          ]
+        },
+        {
+          "name": "Utter Annihilation",
+          "displayName": "Utter Annihilation",
+          "slug": "utter-annihilation",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 8,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-thanos-8r.webp",
+          "abilities": [
+            "KO six Bystanders from the Bystander Stack. Then, defeat any Villain or Mastermind whose [icon:attack] is less than the number of Bystanders in the KO pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 84,
+      "name": "Ultimate Spider-Man",
+      "slug": "ultimate-spider-man",
+      "team": "spider-friends",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Leaping Spider",
+          "displayName": "Leaping Spider",
+          "slug": "leaping-spider",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 2,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-ultimate-spider-man-2c1.webp",
+          "abilities": [
+            "Reveal the top card of your deck. If it costs 2 or less, draw it.",
+            "[hc:strength]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Marvel Team-Up",
+          "displayName": "Marvel Team-Up",
+          "slug": "marvel-team-up",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 2,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-ultimate-spider-man-2c2.webp",
+          "abilities": [
+            "Gain a [rule:Sidekick].",
+            "Reveal the top card of your deck. If it costs 2 or less, draw it."
+          ]
+        },
+        {
+          "name": "Web-Slinger",
+          "displayName": "Web-Slinger",
+          "slug": "web-slinger",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 2,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-ultimate-spider-man-2u.webp",
+          "abilities": [
+            "You get +2[icon:attack], usable only against the Mastermind or Villains on the Rooftops or Bridge.",
+            "Reveal the top card of your deck. If it costs 2 or less, draw it."
+          ]
+        },
+        {
+          "name": "Hero from Another Dimension",
+          "displayName": "Hero from Another Dimension",
+          "slug": "hero-from-another-dimension",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 2,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hr-ultimate-spider-man-2r.webp",
+          "abilities": [
+            "You get +2[icon:attack] for each other card you have played this turn that costs 1 or 2."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 21,
+      "name": "Madelyne Pryor, Goblin Queen",
+      "slug": "madelyne-pryor-goblin-queen",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Madelyne Pryor, Goblin Queen",
+          "slug": "madelyne-pryor-goblin-queen",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mm-madelyne-pryor-goblin-queen.webp",
+          "abilities": [
+            "Bystanders captured by Madelyne are “Demon Goblin“ Villains with 2[icon:attack]. You can fight them to rescue them as Bystanders. You can't fight her while she has any Demon Goblins.",
+            "Always Leads: Limbo",
+            "Master Strike: Madelyne captures 4 Bystanders. If she already had any Bystanders before that, then each player gains a Wound."
+          ]
+        },
+        {
+          "name": "City of Demon Goblins",
+          "slug": "city-of-demon-goblins",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-madelyne-pryor-goblin-queen-city-of-demon-goblins.webp",
+          "abilities": [
+            "Fight: Madelyne captures five Bystanders."
+          ]
+        },
+        {
+          "name": "Corrupted Clone of Jean Grey",
+          "slug": "corrupted-clone-of-jean-grey",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-madelyne-pryor-goblin-queen-corrupted-clone-of-jean-grey.webp",
+          "abilities": [
+            "Fight: Each other player reveals an [team:x-men] Hero or gains a Wound."
+          ]
+        },
+        {
+          "name": "Everyone's a Demon on the Inside",
+          "slug": "everyones-a-demon-on-the-inside",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-madelyne-pryor-goblin-queen-everyones-a-demon-on-the-inside.webp",
+          "abilities": [
+            "Fight: Madelyne captures a Bystander from each other player's Victory Pile."
+          ]
+        },
+        {
+          "name": "Gather the Harvest",
+          "slug": "gather-the-harvest",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-madelyne-pryor-goblin-queen-gather-the-harvest.webp",
+          "abilities": [
+            "Fight: For each Limbo Villain in the city and/or Escape Pile, Madelyne captures a Bystander."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "name": "Nimrod, Super Sentinel",
+      "slug": "nimrod-super-sentinel",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Nimrod, Super Sentinel",
+          "slug": "nimrod-super-sentinel",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mm-nimrod-super-sentinel.webp",
+          "abilities": [
+            "You can't fight Nimrod unless you made at least 6[icon:recruit] this turn.",
+            "Always Leads: Sentinel Territories",
+            "Master Strike: Each player who does not reveal a [hc:tech] Hero must choose [icon:recruit] or [icon:attack], then discard all their cards with that icon."
+          ]
+        },
+        {
+          "name": "Adapt and Destroy",
+          "slug": "adapt-and-destroy",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-nimrod-super-sentinel-adapt-and-destroy.webp",
+          "abilities": [
+            "Fight:  Choose [icon:recruit] or [icon:attack]. Each other player reveals their hand and discards a card with that icon."
+          ]
+        },
+        {
+          "name": "Detect Mutation",
+          "slug": "detect-mutation",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-nimrod-super-sentinel-detect-mutation.webp",
+          "abilities": [
+            "Fight:  Choose [icon:recruit] or [icon:attack]. Then, reveal the top card of your deck. If that card has that icon, draw it and repeat this process."
+          ]
+        },
+        {
+          "name": "Scatter the Mutants",
+          "slug": "scatter-the-mutants",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-nimrod-super-sentinel-scatter-the-mutants.webp",
+          "abilities": [
+            "Fight:  Choose [icon:recruit] or [icon:attack]. Put all Heroes from the HQ with that icon on the bottom of the Hero Deck."
+          ]
+        },
+        {
+          "name": "Teleport and Incarcerate",
+          "slug": "teleport-and-incarcerate",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-nimrod-super-sentinel-teleport-and-incarcerate.webp",
+          "abilities": [
+            "Fight:  Choose [icon:recruit] or [icon:attack]. Then, reveal the top card of that Hero Deck. If that card has that icon, gain that card, and [keyword:Teleport] it."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "name": "Wasteland Hulk",
+      "slug": "wasteland-hulk",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Wasteland Hulk",
+          "slug": "wasteland-hulk",
+          "tactic": false,
+          "vAttack": "7+",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mm-wasteland-hulk.webp",
+          "abilities": [
+            "Wasteland Hulk gets +3[icon:attack] for each of his Mastermind Tactics among all players' Victory Piles.",
+            "Always Leads: Wasteland",
+            "Master Strike: [keyword:Cross-Dimensional Hulk Rampage]"
+          ]
+        },
+        {
+          "name": "Brutal Beating",
+          "slug": "brutal-beating",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-wasteland-hulk-brutal-beating.webp",
+          "abilities": [
+            "Fight: Each other player counts the number of Wounds in their discard pile, then discards that many cards."
+          ]
+        },
+        {
+          "name": "Memories of Pain",
+          "slug": "memories-of-pain",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-wasteland-hulk-memories-of-pain.webp",
+          "abilities": [
+            "Fight: Each other player puts two Wounds from their discard pile on top of their deck."
+          ]
+        },
+        {
+          "name": "Radioactive Regeneration",
+          "slug": "radioactive-regeneration",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-wasteland-hulk-radioactive-regeneration.webp",
+          "abilities": [
+            "Fight: KO up to two Wounds from your hand and/or discard pile."
+          ]
+        },
+        {
+          "name": "Revert to Bruce Banner",
+          "slug": "revert-to-bruce-banner",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-wasteland-hulk-revert-to-bruce-banner.webp",
+          "abilities": [
+            "Fight: You gain a [hc:tech]Hero from the HQ for free."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "name": "Zombie Green Goblin",
+      "slug": "zombie-green-goblin",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Zombie Green Goblin",
+          "slug": "zombie-green-goblin",
+          "tactic": false,
+          "vAttack": "11+",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mm-zombie-green-goblin.webp",
+          "abilities": [
+            "Zombie Green Goblin gets +1[icon:attack] for each Hero in the KO pile that costs 7 or more.",
+            "Always Leads: The Deadlands",
+            "Master Strike: [keyword:Rise of The Living Dead]. KO each Hero in the HQ that costs 7 or more. Then, each player discards a card for each Hero in the KO pile that costs 7 or more."
+          ]
+        },
+        {
+          "name": "Army of Cadavers",
+          "slug": "army-of-cadavers",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-zombie-green-goblin-army-of-cadavers.webp",
+          "abilities": [
+            "Fight: [keyword:Rise of The Living Dead] (this effect never makes Mastermind Tactics return.) Then, each other player discards a card for each Villain in the city that has “[keyword:Rise of The Living Dead].“"
+          ]
+        },
+        {
+          "name": "The Hungry Dead",
+          "slug": "the-hungry-dead",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-zombie-green-goblin-the-hungry-dead.webp",
+          "abilities": [
+            "Fight: [keyword:Rise of The Living Dead] (this effect never makes Mastermind Tactics return.) Then, each other player gains a Wound if there are any Villains in the city with “[keyword:Rise of The Living Dead].“"
+          ]
+        },
+        {
+          "name": "Love to Have You for Dinner",
+          "slug": "love-to-have-you-for-dinner",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-zombie-green-goblin-love-to-have-you-for-dinner.webp",
+          "abilities": [
+            "Fight: [keyword:Rise of The Living Dead] (this effect never makes Mastermind Tactics return.) Then, reveal the top 5 cards of the Hero Deck. KO all those Heroes that cost 7 or more. Put the rest on the bottom of the Hero Deck in random order."
+          ]
+        },
+        {
+          "name": "Reign of Terror",
+          "slug": "reign-of-terror",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-zombie-green-goblin-reign-of-terror.webp",
+          "abilities": [
+            "Fight: [keyword:Rise of The Living Dead] (this effect never makes Mastermind Tactics return.) Then, put all Heroes from the HQ that cost 6 or less on the bottom of the Hero Deck."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 28,
+      "name": "Deadlands, The",
+      "slug": "deadlands-the",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Zombie Baron Zemo",
+          "slug": "zombie-baron-zemo",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-deadlands-the-zombie-baron-zemo.webp",
+          "abilities": [
+            "Ambush: [keyword:Rise of The Living Dead]",
+            "Fight: For each of your [team:avengers] Heroes, rescue a Bystander."
+          ]
+        },
+        {
+          "name": "Zombie Loki",
+          "slug": "zombie-loki",
+          "vp": "6",
+          "vAttack": "8",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-deadlands-the-zombie-loki.webp",
+          "abilities": [
+            "Ambush: [keyword:Rise of The Living Dead]",
+            "Escape: Loki ascends to become a [rule:new Mastermind]. He gains the ability, “Master Strike: Each player reveals a [hc:strength] Hero or gains a Wound.“"
+          ]
+        },
+        {
+          "name": "Zombie Madame Hydra",
+          "slug": "zombie-madame-hydra",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-deadlands-the-zombie-madame-hydra.webp",
+          "abilities": [
+            "Ambush: [keyword:Rise of The Living Dead]",
+            "Fight: KO one of your [team:shield] Heroes or [team:hydra] Allies."
+          ]
+        },
+        {
+          "name": "Zombie Mr. Sinister",
+          "slug": "zombie-mr-sinister",
+          "vp": "5",
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-deadlands-the-zombie-mr-sinister.webp",
+          "abilities": [
+            "Ambush: [keyword:Rise of The Living Dead]",
+            "Escape: Sinister ascends to become a [rule:new Mastermind]. He gains the ability, “Master Strike: Sinister captures a Bystander. Then, each player with exactly 6 cards reveals a [hc:covert] Hero or discards cards equal to the number of Bystanders Sinister has.“"
+          ]
+        },
+        {
+          "name": "Zombie M.O.D.O.K.",
+          "slug": "zombie-m-o-d-o-k",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-deadlands-the-zombie-m-o-d-o-k.webp",
+          "abilities": [
+            "Ambush: [keyword:Rise of The Living Dead]",
+            "Fight: KO one of your heroes with a [icon:recruit] icon."
+          ]
+        },
+        {
+          "name": "Zombie Mysterio",
+          "slug": "zombie-mysterio",
+          "vp": "6",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-deadlands-the-zombie-mysterio.webp",
+          "abilities": [
+            "Ambush: [keyword:Rise of The Living Dead]",
+            "Escape: Shuffle this card into the Mastermind's face-down Mastermind Tactics. It becomes a Mastermind Tactic that says “Fight: Draw two cards.“"
+          ]
+        },
+        {
+          "name": "Zombie Thanos",
+          "slug": "zombie-thanos",
+          "vp": "6",
+          "vAttack": "9",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-deadlands-the-zombie-thanos.webp",
+          "abilities": [
+            "Ambush: [keyword:Rise of The Living Dead]",
+            "Escape: Thanos ascends to become a [rule:new Mastermind]. He gains the ability, “Master Strike: Each player reveals their hand and KOs one of their non-grey Heroes.“"
+          ]
+        },
+        {
+          "name": "Zombie Venom",
+          "slug": "zombie-venom",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-deadlands-the-zombie-venom.webp",
+          "abilities": [
+            "Ambush: [keyword:Rise of The Living Dead]",
+            "You can't defeat Zombie Venom unless you have a [hc:covert] Hero.",
+            "Escape: Each player gains a Wound."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "name": "Domain of Apocalypse",
+      "slug": "domain-of-apocalypse",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Apocalyptic Blink",
+          "slug": "apocalyptic-blink",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-domain-of-apocalypse-apocalyptic-blink.webp",
+          "abilities": [
+            "Fight: Reveal the top card of your deck. Draw it or [keyword:Teleport] it."
+          ]
+        },
+        {
+          "name": "Apocalyptic Magneto",
+          "slug": "apocalyptic-magneto",
+          "vp": "6",
+          "vAttack": "8",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-domain-of-apocalypse-apocalyptic-magneto.webp",
+          "abilities": [
+            "Fight: Gain an [team:x-men] Hero from the HQ for free.",
+            "Escape: Magneto ascends to become a [rule:new Mastermind]. He gains the ability, “Master Strike: Each player reveals an [team:x-men] Hero or discards down to 4 cards.“"
+          ]
+        },
+        {
+          "name": "Apocalyptic Rogue",
+          "slug": "apocalyptic-rogue",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-domain-of-apocalypse-apocalyptic-rogue.webp",
+          "abilities": [
+            "Fight: Reveal the top card of the Hero deck. The player of your choice gains it.",
+            "Escape: Reveal the top card of the Hero deck. Each player reveals their hand and discards a card of that class."
+          ]
+        },
+        {
+          "name": "Apocalyptic Weapon X",
+          "slug": "apocalyptic-weapon-x",
+          "vp": "5",
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-domain-of-apocalypse-apocalyptic-weapon-x.webp",
+          "abilities": [
+            "Fight: KO one of your heroes.",
+            "Escape: [keyword:Cross-Dimensional Wolverine Rampage]"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "name": "Limbo",
+      "slug": "limbo",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Inferno Colossus",
+          "slug": "inferno-colossus",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-limbo-inferno-colossus.webp",
+          "abilities": [
+            "Ambush: The Mastermind captures a Bystander.",
+            "Fight: KO one of your Heroes."
+          ]
+        },
+        {
+          "name": "Inferno Cyclops",
+          "slug": "inferno-cyclops",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-limbo-inferno-cyclops.webp",
+          "abilities": [
+            "Ambush: Inferno Cyclops captures a Bystander.",
+            "Escape: The Mastermind captures all the Bystanders this Villain had.",
+            "(Players still discard for the Bystander being carried away.)"
+          ]
+        },
+        {
+          "name": "Inferno Darkchilde",
+          "slug": "inferno-darkchilde",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-limbo-inferno-darkchilde.webp",
+          "abilities": [
+            "Fight: Reveal the top card of your deck. KO it or [keyword:Teleport] it.",
+            "Escape: Each player [keyword:Teleports] a random card from their hand."
+          ]
+        },
+        {
+          "name": "Inferno Nightcrawler",
+          "slug": "inferno-nightcrawler",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-limbo-inferno-nightcrawler.webp",
+          "abilities": [
+            "Fight: Up to two cards in your hand that have a [icon:recruit] icon gain [keyword:Teleport] this turn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "name": "Manhattan (Earth-1610)",
+      "slug": "manhattan-earth-1610",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Ultimate Captain America",
+          "slug": "ultimate-captain-america",
+          "vp": null,
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-manhattan-earth-1610-ultimate-captain-america.webp",
+          "abilities": [
+            "Fight: Gain this as a Hero.",
+            "You get +1[icon:attack] for each color of Hero you have. (including [hc:strength] and grey)"
+          ]
+        },
+        {
+          "name": "Ultimate Captain Marvel",
+          "slug": "ultimate-captain-marvel",
+          "vp": null,
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-manhattan-earth-1610-ultimate-captain-marvel.webp",
+          "abilities": [
+            "Fight: Gain this as a Hero.",
+            "[keyword:Teleport]"
+          ]
+        },
+        {
+          "name": "Ultimate Thor",
+          "slug": "ultimate-thor",
+          "vp": null,
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-manhattan-earth-1610-ultimate-thor.webp",
+          "abilities": [
+            "Fight: Gain this as a Hero.",
+            "Escape: [keyword:Cross-Dimensional Thor Rampage]",
+            "[hc:ranged]: You get +3[icon:attack]."
+          ]
+        },
+        {
+          "name": "Ultimate Wasp",
+          "slug": "ultimate-wasp",
+          "vp": null,
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-manhattan-earth-1610-ultimate-wasp.webp",
+          "abilities": [
+            "Fight: Gain this as a Hero.",
+            "[hc:covert]: You get +2[icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "name": "Sentinel Territories",
+      "slug": "sentinel-territories",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Colossus of Future Past",
+          "slug": "colossus-of-future-past",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-sentinel-territories-colossus-of-future-past.webp",
+          "abilities": [
+            "Fight: Colossus alters the future: Don't play a Villain card at the beginning of next turn."
+          ]
+        },
+        {
+          "name": "Kate Pryde of Future Past",
+          "slug": "kate-pryde-of-future-past",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-sentinel-territories-kate-pryde-of-future-past.webp",
+          "abilities": [
+            "Fight: You get +1[icon:recruit]. Then, Kate Pryde alters the future: At the beginning of the next player's turn, that player gets +1[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Rachel Summers of Future Past",
+          "slug": "rachel-summers-of-future-past",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-sentinel-territories-rachel-summers-of-future-past.webp",
+          "abilities": [
+            "Fight: Rachel Summers alters the future: During the next player's turn, all Villains and the Mastermind get -1[icon:attack].",
+            "Escape: This turn, all Villains and the Mastermind get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Wolverine of Future Past",
+          "slug": "wolverine-of-future-past",
+          "vp": "5",
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-sentinel-territories-wolverine-of-future-past.webp",
+          "abilities": [
+            "Fight: Wolverine alters the future: At the start of the next player's turn, you draw a card, and that player draws a card.",
+            "Escape: [keyword:Cross-Dimensional Wolverine Rampage]"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "name": "Wasteland",
+      "slug": "wasteland",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "The Hulk Gang",
+          "slug": "the-hulk-gang",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-wasteland-the-hulk-gang.webp",
+          "abilities": [
+            "Fight: [keyword:Cross-Dimensional Hulk Rampage]",
+            "Escape: Same effect."
+          ]
+        },
+        {
+          "name": "Wasteland Kingpin",
+          "slug": "wasteland-kingpin",
+          "vp": "6",
+          "vAttack": "11",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-wasteland-wasteland-kingpin.webp",
+          "abilities": [
+            "[keyword:Bribe]",
+            "Escape: Kingpin ascends to become a [rule:new Mastermind]. He gains the ability, “Master Strike: Each player reveals an [hc:instinct] Hero or discards their hand and draws 5 cards.“"
+          ]
+        },
+        {
+          "name": "Wasteland Hawkeye",
+          "slug": "wasteland-hawkeye",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-wasteland-wasteland-hawkeye.webp",
+          "abilities": [
+            "Ambush: Wasteland Hawkeye captures a Bystander.",
+            "Fight: Each other player draws a card, or each other player discards a card."
+          ]
+        },
+        {
+          "name": "Wasteland Spider-Girl",
+          "slug": "wasteland-spider-girl",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-vi-wasteland-wasteland-spider-girl.webp",
+          "abilities": [
+            "Fight: Reveal the top card of your deck. If it costs 2 or less, KO it."
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [
+    {
+      "id": 13,
+      "name": "Ghost Racers",
+      "slug": "ghost-racers",
+      "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hm-ghost-racers.webp",
+      "abilities": []
+    },
+    {
+      "id": 14,
+      "name": "M.O.D.O.K.s",
+      "slug": "m-o-d-o-k-s",
+      "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hm-m-o-d-o-k-s.webp",
+      "abilities": []
+    },
+    {
+      "id": 15,
+      "name": "Thor Corps",
+      "slug": "thor-corps",
+      "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-hm-thor-corps.webp",
+      "abilities": []
+    }
+  ],
+  "schemes": [
+    {
+      "id": 40,
+      "name": "Build an Army of Annihilation",
+      "slug": "build-an-army-of-annihilation",
+      "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-sc-build-an-army-of-annihilation.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 9 Twists. Put 10 extra Annihilation Wave Henchmen in the KO pile.",
+            "Twist: KO all Annihilation Henchmen from players' Victory Piles. Stack this Twist next to the Scheme. Then, for each Twist in that stack, put an Annihilation Henchman from the KO pile next to the Mastermind. Players can fight those Henchmen.",
+            "Evil Wins: When there are 10 Annihilation Henchmen next to the Mastermind."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 41,
+      "name": "Corrupt the Next Generation of Heroes",
+      "slug": "corrupt-the-next-generation-of-heroes",
+      "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-sc-corrupt-the-next-generation-of-heroes.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. Add 10 [rule:Sidekicks] to the Villain Deck.",
+            "Special Rules: [rule:Sidekicks] in the Villain Deck and city are Villains. Their [icon:attack] is 2 plus the number of Twists stacked next to this Scheme. When you defeat a [rule:Sidekick], gain it to the top of your deck.",
+            "Twists 1-7: Each player returns a [rule:Sidekick] from their discard pile to the [rule:Sidekick] Stack. Then, two [rule:Sidekicks] from the [rule:Sidekick] Stack enter the city.",
+            "Twist 8: All [rule:Sidekicks] in the city escape.",
+            "Evil Wins: When 4 [rule:Sidekicks] escape."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 42,
+      "name": "Crush Them With My Bare Hands",
+      "slug": "crush-them-with-my-bare-hands",
+      "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-sc-crush-them-with-my-bare-hands.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 5 Twists. If playing solo, add an extra Villain Group.",
+            "Twist: This Twist becomes a Master Strike that takes effect immediately.",
+            "Evil Wins: When 8 Master Strikes have taken effect."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 43,
+      "name": "Dark Alliance",
+      "slug": "dark-alliance",
+      "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-sc-dark-alliance.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists.",
+            "Twist 1: Add a random [rule:second Mastermind] to the game with one Mastermind Tactic.",
+            "Twist 2-4: If the [rule:second Mastermind] is still in play, it gains another Mastermind Tactic.",
+            "Twist 5-6: Each Mastermind captures a Bystander.",
+            "Twist 7: Evil Wins!"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 44,
+      "name": "Fragmented Realities",
+      "slug": "fragmented-realities",
+      "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-sc-fragmented-realities.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: Add an extra Villain Group. Shuffle the Villain Deck, then split it as evenly as possible into a Villain Deck for each player. Then, shuffle 2 Twists into each player's Villain Deck.",
+            "Special Rules: The normal city does not exist. Instead, each player has a different dimension in front of them with one city space. Villains and Bystanders from your Villain Deck enter your dimension. You can fight Villains in any dimension.",
+            "Twist: Play two card from your Villain Deck.",
+            "Evil Wins: When the number of non-grey Heroes in the KO pile is 5 times the number of players."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 45,
+      "name": "Master of Tyrants",
+      "slug": "master-of-tyrants",
+      "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-sc-master-of-tyrants.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. Choose 3 other Masterminds, and shuffle their 12 Tactics into the Villain Deck. Those Tactics are “Tyrant Villains“ with their printed [icon:attack] and no abilities.",
+            "Twist 1-7: Put this Twist under a Tyrant Villain as “Dark Power.“ It gets +2[icon:attack].",
+            "Twist 8: All Tyrant Villains in the city escape.",
+            "Evil Wins: When 5 Tyrant Villains escape."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 46,
+      "name": "Pan-Dimensional Plague",
+      "slug": "pan-dimensional-plague",
+      "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-sc-pan-dimensional-plague.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 10 Twists.",
+            "Twist: KO all Wounds from next to the HQ. Then, put a Wound from the Wound Stack next to each Hero in the HQ.",
+            "Special Rules: When a player recruits a Hero with a Wound next to it, that player can either gain that Wound or pay 1[icon:recruit] to return that Wound to the Wound Stack.",
+            "Evil Wins: When the Wound Stack runs out."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 47,
+      "name": "Smash Two Dimensions Together",
+      "slug": "smash-two-dimensions-together",
+      "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-sc-smash-two-dimensions-together.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. Add an extra Villain Group. Put the Villain Deck on the Bank space.",
+            "Special Rules: The Sewers and Bank do not exist, so the city is only 3 spaces. There is a parallel dimension with 3 city spaces above the main city. Whenever a Villain enters the city, the current player chooses which city it enters.",
+            "Twist 1-7: Play two cards from the Villain Deck.",
+            "Twist 8: All Villains in both dimensions escape.",
+            "Evil Wins: When 10 Villains escape."
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [
+    {
+      "id": 15,
+      "name": "Banker",
+      "slug": "banker",
+      "vp": 1,
+      "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-by-banker.webp",
+      "cards": [
+        {
+          "qtd": 3,
+          "abilities": [
+            "When you rescue this Bystander, you get +2[icon:recruit], usable only to recruit Heroes in the HQ space under the Bank."
+          ]
+        }
+      ]
+    }
+  ],
+  "wounds": [],
+  "other": []
+}

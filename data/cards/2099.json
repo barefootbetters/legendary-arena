@@ -1,0 +1,842 @@
+{
+  "id": 40,
+  "abbr": "2099",
+  "exportName": "Marvel2099",
+  "heroes": [
+    {
+      "id": 281,
+      "name": "Spider-Man 2099",
+      "slug": "spider-man-2099",
+      "team": "spider-friends",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Retractable Talons",
+          "displayName": "Retractable Talons",
+          "slug": "retractable-talons",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 2,
+          "attack": "1",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-hr-spider-man-2099-2c1.webp",
+          "abilities": [
+            "You may send this [keyword:Undercover].",
+            "[keyword:Cyber-Mod][hc:covert]: Draw a card."
+          ]
+        },
+        {
+          "name": "Venomous Fangs",
+          "displayName": "Venomous Fangs",
+          "slug": "venomous-fangs",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-hr-spider-man-2099-3c2.webp",
+          "abilities": [
+            "[keyword:Cyber-Mod][hc:covert][hc:covert]: Draw a card."
+          ]
+        },
+        {
+          "name": "Spider-Silk Webbing",
+          "displayName": "Spider-Silk Webbing",
+          "slug": "spider-silk-webbing",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 5,
+          "attack": null,
+          "recruit": "3",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-hr-spider-man-2099-5u.webp",
+          "abilities": [
+            "The next Hero you recruit this turn goes on top of your deck.",
+            "[hc:strength]: [keyword:Fated Future]"
+          ]
+        },
+        {
+          "name": "Spider-Sense Telepathy",
+          "displayName": "Spider-Sense Telepathy",
+          "slug": "spider-sense-telepathy",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": "5",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-hr-spider-man-2099-7r.webp",
+          "abilities": [
+            "Reveal the top three cards of the Hero Deck. You may send one of them [keyword:Undercover]. Put the rest back in any order.",
+            "[team:spider-friends]: You may play a copy of the card you sent [keyword:Undercover] this way."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 282,
+      "name": "Ghost Rider 2099",
+      "slug": "ghost-rider-2099",
+      "team": "marvel-knights",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Cyber-Specter",
+          "displayName": "Cyber-Specter",
+          "slug": "cyber-specter",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-hr-ghost-rider-2099-3c1.webp",
+          "abilities": [
+            "[keyword:Cyber-Mod][hc:tech]: You get +1[icon:recruit].",
+            "[keyword:Cyber-Mod][hc:tech][hc:tech]: Draw a card."
+          ]
+        },
+        {
+          "name": "Hell Ride",
+          "displayName": "Hell Ride",
+          "slug": "hell-ride",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-hr-ghost-rider-2099-4c2.webp",
+          "abilities": [
+            "You may send this and a card from the HQ [keyword:Undercover]. If you do, you get +2[icon:attack].",
+            "[keyword:Cyber-Mod][hc:tech][hc:tech][hc:tech]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Death Beyond Death",
+          "displayName": "Death Beyond Death",
+          "slug": "death-beyond-death",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 5,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-hr-ghost-rider-2099-5u.webp",
+          "abilities": [
+            "[team:marvel-knights]: You may KO a Henchman from your Victory Pile. If you do, you get +2[icon:attack] and you may do that Henchman's Fight effect."
+          ]
+        },
+        {
+          "name": "Infernal Chainsaw",
+          "displayName": "Infernal Chainsaw",
+          "slug": "infernal-chainsaw",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 7,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-hr-ghost-rider-2099-7r.webp",
+          "abilities": [
+            "You may send a card from the HQ [keyword:Undercover].",
+            "[keyword:Cyber-Mod][hc:tech]: [keyword:Fated Future] and you get +1[icon:attack] for each [hc:tech] card in your Victory Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 283,
+      "name": "Doctor Doom 2099",
+      "slug": "doctor-doom-2099",
+      "team": "unaffiliated",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Subvert This New Future",
+          "displayName": "Subvert This New Future",
+          "slug": "subvert-this-new-future",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-hr-doctor-doom-2099-3c1.webp",
+          "abilities": [
+            "You may send this and a card from your hand or discard pile [keyword:Undercover]. If you do, you get +1[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Doomblast",
+          "displayName": "Doomblast",
+          "slug": "doomblast",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-hr-doctor-doom-2099-3c2.webp",
+          "abilities": [
+            "[keyword:Cyber-Mod][hc:ranged]: You get +1[icon:attack].",
+            "[keyword:Cyber-Mod][hc:ranged][hc:ranged][hc:ranged]: Instead you get +3[icon:attack]."
+          ]
+        },
+        {
+          "name": "Flesh-Grafted Doombots",
+          "displayName": "Flesh-Grafted Doombots",
+          "slug": "flesh-grafted-doombots",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 6,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-hr-doctor-doom-2099-6u.webp",
+          "abilities": [
+            "[hc:tech]: You may look at the top three cards of your deck. If you do, send one of them [keyword:Undercover] and put the rest back in any order."
+          ]
+        },
+        {
+          "name": "Tear Through Time Itself",
+          "displayName": "Tear Through Time Itself",
+          "slug": "tear-through-time-itself",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 8,
+          "attack": "6",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-hr-doctor-doom-2099-8r.webp",
+          "abilities": [
+            "You may send a card from your hand or discard pile [keyword:Undercover].",
+            "[keyword:Fated Future]",
+            "[keyword:Cyber-Mod][hc:ranged][hc:ranged]: If you haven't taken any extra turns this game, you may take another turn after this one. Don't play a card from the Villain Deck at the start of that turn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 284,
+      "name": "Hulk 2099",
+      "slug": "hulk-2099",
+      "team": "marvel-knights",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Rage Incarnate",
+          "displayName": "Rage Incarnate",
+          "slug": "rage-incarnate",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-hr-hulk-2099-3c1.webp",
+          "abilities": [
+            "[keyword:Cyber-Mod Wound]: You get +1[icon:attack].",
+            "[keyword:Cyber-Mod 4 Wounds]: Instead you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Push Pain Under the Surface",
+          "displayName": "Push Pain Under the Surface",
+          "slug": "push-pain-under-the-surface",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-hr-hulk-2099-4c2.webp",
+          "abilities": [
+            "You may send a Wound from your hand or discard pile [keyword:Undercover].",
+            "[hc:strength]: You may send a Hero from your hand or discard pile [keyword:Undercover] instead."
+          ]
+        },
+        {
+          "name": "Massive Gamma Detonation",
+          "displayName": "Massive Gamma Detonation",
+          "slug": "massive-gamma-detonation",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 6,
+          "attack": "5",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-hr-hulk-2099-6u.webp",
+          "abilities": [
+            "To play this, you must discard two cards or gain a Wound.",
+            "[hc:tech]: [keyword:Fated Future]"
+          ]
+        },
+        {
+          "name": "Cataclysmic Frenzy",
+          "displayName": "Cataclysmic Frenzy",
+          "slug": "cataclysmic-frenzy",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 8,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-hr-hulk-2099-8r.webp",
+          "abilities": [
+            "For each player, either send a Wound from that player's discard pile [keyword:Undercover] into your own Victory Pile, or that player gains a Wound.",
+            "[keyword:Cyber-Mod Wound]: You get +1[icon:attack] for each Wound in your Victory Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 285,
+      "name": "Ravage 2099",
+      "slug": "ravage-2099",
+      "team": "marvel-knights",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Down in the Dregs",
+          "displayName": "Down in the Dregs",
+          "slug": "down-in-the-dregs",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-hr-ravage-2099-3c1.webp",
+          "abilities": [
+            "[hc:instinct]: Draw a card from the bottom of your deck."
+          ]
+        },
+        {
+          "name": "Toxic Mutations",
+          "displayName": "Toxic Mutations",
+          "slug": "toxic-mutations",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-hr-ravage-2099-5c2.webp",
+          "abilities": [
+            "[hc:strength]You get +2[icon:attack] and [keyword:Fated Future]."
+          ]
+        },
+        {
+          "name": "Detect Vibrations",
+          "displayName": "Detect Vibrations",
+          "slug": "detect-vibrations",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 6,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-hr-ravage-2099-6u.webp",
+          "abilities": [
+            "Reveal the top two cards of the Villain Deck and put them back in any order.",
+            "[keyword:Fated Future]"
+          ]
+        },
+        {
+          "name": "Overhorns and Underhorns",
+          "displayName": "Overhorns and Underhorns",
+          "slug": "overhorns-and-underhorns",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 8,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-hr-ravage-2099-8r.webp",
+          "abilities": [
+            "Reveal the top card of your deck. You get +[icon:attack] equal to that card's cost. Discard it or put it back.",
+            "[team:marvel-knights]: Then do the same thing with the bottom card of your deck."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 100,
+      "name": "Sinister Six 2099",
+      "slug": "sinister-six-2099",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Electro 2099",
+          "slug": "electro-2099",
+          "tactic": true,
+          "vAttack": "9",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-mt-sinister-six-2099-electro-2099.webp",
+          "abilities": [
+            "Always Leads: Any “Alchemax“ or “Sinister“ Villain Group",
+            "Setup: [rule:Adapt].",
+            "Master Strike: Each player discards three cards then draws a card. [rule:Adapt].",
+            "Fight: You may discard any number of cards, then draw that many cards. [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "Epic Electro 2099",
+          "slug": "epic-electro-2099",
+          "tactic": true,
+          "vAttack": "12",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-mc-sinister-six-2099-electro-2099.webp",
+          "abilities": [
+            "Always Leads: Any “Alchemax“ or “Sinister“ Villain Group",
+            "Setup: [rule:Adapt].",
+            "Master Strike: Each player discards four cards then draws a card. [rule:Adapt].",
+            "Fight: You may discard a card. If you do, draw a card. [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "Sandwoman 2099",
+          "slug": "sandwoman-2099",
+          "tactic": true,
+          "vAttack": "6+",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-mt-sinister-six-2099-sandwoman-2099.webp",
+          "abilities": [
+            "Sandwoman 2099 gets +2[icon:attack] for each Villain in the city.",
+            "Master Strike: You may either recruit or attack this turn, but not both. [rule:Adapt].",
+            "Fight: The next player may either recruit or attack in their next turn, but not both. [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "Epic Sandwoman 2099",
+          "slug": "epic-sandwoman-2099",
+          "tactic": true,
+          "vAttack": "7+",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-mc-sinister-six-2099-sandwoman-2099.webp",
+          "abilities": [
+            "Sandwoman 2099 gets +3[icon:attack] for each Villain in the city.",
+            "Master Strike: You may either recruit or attack this turn, but not both. [rule:Adapt].",
+            "Fight: The next player may either recruit or attack in their next turn, but not both. [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "Vulture 2099",
+          "slug": "vulture-2099",
+          "tactic": true,
+          "vAttack": "7+",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-mt-sinister-six-2099-vulture-2099.webp",
+          "abilities": [
+            "Vulture 2099 gets +[icon:attack] equal to the highest [icon:piercing] value of any Villain in the Escape Pile, Rooftops, or Bridge.",
+            "Master Strike: If there are any Villains on the Rooftops or Birdge, one of them escapes and each player gains a Wound. [rule:Adapt].",
+            "Fight: You may move a Villain to another city space. If another Villain is already there, swap them. [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "Epic Vulture 2099",
+          "slug": "epic-vulture-2099",
+          "tactic": true,
+          "vAttack": "9+",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-mc-sinister-six-2099-vulture-2099.webp",
+          "abilities": [
+            "Vulture 2099 gets +[icon:attack] equal to the highest two [icon:piercing] values among Villains in the Escape Pile, Rooftops, and Bridge.",
+            "Master Strike: If there are any Villains on the Rooftops or Birdge, each of them escapes and each player gains a Wound. [rule:Adapt].",
+            "Fight: You may move a Villain to another city space. If another Villain is already there, swap them. [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "Doctor Octopus 2099",
+          "slug": "doctor-octopus-2099",
+          "tactic": true,
+          "vAttack": "8+",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-mt-sinister-six-2099-doctor-octopus-2099.webp",
+          "abilities": [
+            "Doctor Octopus 2099 gets +4[icon:attack] unless you played at least 8 cards or a Hero that costs 8 this turn.",
+            "Master Strike: Each player discards cards whose total cost is at least 8 (for that player) or gains a Wound. [rule:Adapt].",
+            "Fight: You may gain a Hero from the HQ whose cost is at least 8. [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "Epic Doctor Octopus 2099",
+          "slug": "epic-doctor-octopus-2099",
+          "tactic": true,
+          "vAttack": "8+",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-mc-sinister-six-2099-doctor-octopus-2099.webp",
+          "abilities": [
+            "Doctor Octopus 2099 gets +8[icon:attack] unless you played at least 8 cards or a Hero that costs 8 this turn.",
+            "Master Strike: Each player discards cards whose total cost is exactly 8 (for that player) or gains a Wound. [rule:Adapt].",
+            "Fight: You get +4[icon:recruit], usable only to recruit a Hero that costs at least 8. [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "Venom 2099",
+          "slug": "venom-2099",
+          "tactic": true,
+          "vAttack": "10",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-mt-sinister-six-2099-venom-2099.webp",
+          "abilities": [
+            "Venom 2099 gets -1[icon:attack] for each card you have that costs 2.",
+            "Master Strike: Each player KOs a card that costs 2 from their hand or discard pile or gains a Wound. [rule:Adapt].",
+            "Fight: You may gain a Hero that costs 2 from the HQ or KO pile. [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "Epic Venom 2099",
+          "slug": "epic-venom-2099",
+          "tactic": true,
+          "vAttack": "13",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-mc-sinister-six-2099-venom-2099.webp",
+          "abilities": [
+            "Venom 2099 gets -1[icon:attack] for each card you have that costs 2.",
+            "Master Strike: Each player KOs a card that costs 2 from their hand or gains a Wound. [rule:Adapt].",
+            "Fight: You may gain a Hero that costs 2 from the HQ or KO pile. [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "Goblin 2099",
+          "slug": "goblin-2099",
+          "tactic": true,
+          "vAttack": "11",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-mt-sinister-six-2099-goblin-2099.webp",
+          "abilities": [
+            "Goblin 2099 gets -1[icon:attack] for each Bystander in your Victory Pile.",
+            "Master Strike: Each player puts a Bystander from their Victory Pile into the Escape Pile or gains a Wound. [rule:Adapt].",
+            "Fight: Each villain in the city captures a Bystander. [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "Epic Goblin 2099",
+          "slug": "epic-goblin-2099",
+          "tactic": true,
+          "vAttack": "14",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-mc-sinister-six-2099-goblin-2099.webp",
+          "abilities": [
+            "Goblin 2099 gets -1[icon:attack] for each Bystander in your Victory Pile.",
+            "Master Strike: Each player puts two Bystanders from their Victory Pile into the Escape Pile or gains a Wound. [rule:Adapt].",
+            "Fight: Each villain in the city captures a Bystander. [rule:Adapt]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 101,
+      "name": "Alchemax Executives",
+      "slug": "alchemax-executives",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Avatarr, CEO of Alchemax",
+          "slug": "avatarr-ceo-of-alchemax",
+          "tactic": true,
+          "vAttack": "10",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-mt-alchemax-executives-avatarr-ceo-of-alchemax.webp",
+          "abilities": [
+            "Always Leads: Alchemax Enforcers",
+            "Setup: Add an extra Hero to the Hero Deck. [rule:Adapt].",
+            "Master Strike: Put the two highest-cost Heroes from the HQ into the Escape Pile. Then [keyword:Cyber-Mod][hc:ranged]: Each player gains a Wound. [rule:Adapt].",
+            "Fight: Each other player puts a non-grey Hero from their hand or discard pile into the Escape Pile. [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "Epic Avatarr",
+          "slug": "epic-avatarr",
+          "tactic": true,
+          "vAttack": "13",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-mc-alchemax-executives-avatarr.webp",
+          "abilities": [
+            "Always Leads: Alchemax Enforcers",
+            "Setup: Add an extra Hero to the Hero Deck. [rule:Adapt].",
+            "Master Strike: Put the three highest-cost Heroes from the HQ into the Escape Pile. Then [keyword:Cyber-Mod][hc:ranged]: Each player gains a Wound to the top of their deck. [rule:Adapt].",
+            "Fight: Each other player puts a non-grey Hero from their hand into the Escape Pile. [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "Fearmaster, VP of the Public Eye",
+          "slug": "fearmaster-vp-of-the-public-eye",
+          "tactic": true,
+          "vAttack": "7+",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-mt-alchemax-executives-fearmaster-vp-of-the-public-eye.webp",
+          "abilities": [
+            "Fearmaster gets +1[icon:attack] for each grey Hero you have.",
+            "Master Strike: Put the two lowest-cost Heroes from the HQ into the Escape Pile. Then [keyword:Cyber-Mod][hc:instinct]: Count the number of [hc:instinct] cards in the Escape Pile. Each player discards that many non-grey Heroes, then draws a card for each card they discarded this way. [rule:Adapt].",
+            "Fight: Each other player discards 2 grey Heroes. [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "Epic Fearmaster",
+          "slug": "epic-fearmaster",
+          "tactic": true,
+          "vAttack": "8+",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-mc-alchemax-executives-fearmaster.webp",
+          "abilities": [
+            "Fearmaster gets +2[icon:attack] for each grey Hero you have.",
+            "Master Strike: Put the three lowest-cost Heroes from the HQ into the Escape Pile. Then [keyword:Cyber-Mod][hc:instinct]: Count the number of [hc:instinct] cards in the Escape Pile. Each player discards that many non-grey Heroes, then draws two cards. [rule:Adapt].",
+            "Fight: Each other player discards 3 grey Heroes. [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "John Herod, Executive VP",
+          "slug": "john-herod-executive-vp",
+          "tactic": true,
+          "vAttack": "8+",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-mt-alchemax-executives-john-herod-executive-vp.webp",
+          "abilities": [
+            "[keyword:Cyber-Mod][hc:covert][hc:covert]: John Herod gets +5[icon:attack].",
+            "Master Strike: Put the two rightmost Heroes from the HQ into the Escape Pile. Then [keyword:Cyber-Mod][hc:covert]: You may pay 5[icon:attack] this turn to “expose Fake Captain America.“ If you do, KO one of your Heroes. If you don't by the end of this turn, each player gains a Wound (after you draw your new hand.) [rule:Adapt].",
+            "Fight: KO two of your Heroes. [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "Epic John Herod",
+          "slug": "epic-john-herod",
+          "tactic": true,
+          "vAttack": "9+",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-mc-alchemax-executives-john-herod.webp",
+          "abilities": [
+            "[keyword:Cyber-Mod][hc:covert][hc:covert]: John Herod gets +7[icon:attack].",
+            "Master Strike: Put the three rightmost Heroes from the HQ into the Escape Pile. Then [keyword:Cyber-Mod][hc:covert]: You may pay 7[icon:attack] this turn to “expose Fake Captain America.“ If you do, KO one of your Heroes. If you don't by the end of this turn, each player gains a Wound (after you draw your new hand.) [rule:Adapt].",
+            "Fight: KO one of your Heroes. [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "Tiger Wylde, General of Alchemax Elite",
+          "slug": "tiger-wylde-general-of-alchemax-elite",
+          "tactic": true,
+          "vAttack": "9+",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-mt-alchemax-executives-tiger-wylde.webp",
+          "abilities": [
+            "[keyword:Cyber-Mod][hc:strength]: Tiger Wylde gets +1[icon:attack] for each [hc:strength] card in the Escape Pile.",
+            "Master Strike: Put the two leftmost Heroes from the HQ into the Escape Pile. Then [keyword:Cyber-Mod][hc:tech]: Each player reveals a [hc:tech] card or discards a card. [rule:Adapt].",
+            "Fight: Send a Hero from the Escape Pile [keyword:Undercover]. Then [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "Epic Tiger Wylde",
+          "slug": "epic-tiger-wylde",
+          "tactic": true,
+          "vAttack": "11+",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-mc-alchemax-executives-tiger-wylde.webp",
+          "abilities": [
+            "[keyword:Cyber-Mod][hc:strength]: Tiger Wylde gets +1[icon:attack] for each [hc:strength] card in the Escape Pile.",
+            "Master Strike: Put the three leftmost Heroes from the HQ into the Escape Pile. Then [keyword:Cyber-Mod][hc:tech]: Each player discards a card at random. [rule:Adapt].",
+            "Fight: Send a Hero from the Escape Pile [keyword:Undercover]. Then [rule:Adapt]."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 123,
+      "name": "False Aesir of Alchemax",
+      "slug": "false-aesir-of-alchemax",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Heimdall 2099",
+          "slug": "heimdall-2099",
+          "vp": "2",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-vi-false-aesir-of-alchemax-heimdall-2099.webp",
+          "abilities": [
+            "[keyword:Uru-Enchanted Weapon]",
+            "Ambush: Heimdall 2099 captures a Bystander.",
+            "[keyword:Fight or Fail]: If the (Rainbow) Bridge is empty and Heimdall's [keyword:Uru-Enchanted Weapon] revealed a Villain, that Villain enters the Bridge. When a Villain enters this way, shuffle a card from the Bystander Deck into the Villain Deck."
+          ]
+        },
+        {
+          "name": "Hela 2099",
+          "slug": "hela-2099",
+          "vp": "3",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-vi-false-aesir-of-alchemax-hela-2099.webp",
+          "abilities": [
+            "[keyword:2 Uru-Enchanted Weapons]",
+            "[keyword:Fight or Fail]: A Henchman Villain from any player's Victory Pile enters the city.",
+            "Escape: Each player KOs two Henchmen from their Victory Pile or gains a Wound."
+          ]
+        },
+        {
+          "name": "Loki 2099",
+          "slug": "loki-2099",
+          "vp": "3",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-vi-false-aesir-of-alchemax-loki-2099.webp",
+          "abilities": [
+            "[keyword:2 Uru-Enchanted Weapons]",
+            "Ambush: Shuffle a Master Strike from the KO pile back into the Villain Deck.",
+            "[keyword:Fight or Fail]: If his [keyword:Uru-Enchanted Weapon] revealed any Master Strikes, play one of them.",
+            "Escape: Search the Villain Deck for a Master Strike, shuffle the Villain Deck, and play that Master Strike."
+          ]
+        },
+        {
+          "name": "Thor 2099",
+          "slug": "thor-2099",
+          "vp": "4",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-vi-false-aesir-of-alchemax-thor-2099.webp",
+          "abilities": [
+            "[keyword:Uru-Enchanted Weapon]",
+            "Ambush: Each player discards a card that costs 5 or more or gains a Wound.",
+            "[keyword:Fight or Fail]: Put a card that costs 5 or more from your discard pile on the bottom of your deck.",
+            "Escape: Repeat the Ambush effect."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 124,
+      "name": "Alchemax Enforcers",
+      "slug": "alchemax-enforcers",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Cyber-Nostra",
+          "slug": "cyber-nostra",
+          "vp": "2",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-vi-alchemax-enforcers-cyber-nostra.webp",
+          "abilities": [
+            "[keyword:Cyber-Mod][hc:tech]: Cyber-Nostra gets +1[icon:attack] for each [hc:tech] card in the Escape Pile.",
+            "Ambush: Put the top card of the Hero Deck into the Escape Pile.",
+            "Fight: [keyword:Cyber-Mod][hc:tech]: KO one of your Heroes."
+          ]
+        },
+        {
+          "name": "Whackoid",
+          "slug": "whackoid",
+          "vp": "3",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-vi-alchemax-enforcers-whackoid.webp",
+          "abilities": [
+            "[keyword:Cyber-Mod][hc:instinct]: Whackoid gets +1[icon:attack].",
+            "[keyword:Cyber-Mod][hc:covert][hc:covert][hc:covert]: Whackoid gets +3[icon:attack].",
+            "Ambush: Put the top card of the Hero Deck into the Escape Pile. Whackoid captures all Bystanders from other Villains in the city. If he captures any Bystanders this way, each player gains a Wound."
+          ]
+        },
+        {
+          "name": "Venture",
+          "slug": "venture",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-vi-alchemax-enforcers-venture.webp",
+          "abilities": [
+            "Ambush: Put the top card of the Hero Deck into the Escape Pile. Venture captures a Bystander. [keyword:Cyber-Mod][hc:ranged]: Venture also captures a non-grey Hero from your discard pile.",
+            "Fight: Either KO that captured Hero or choose a player to gain it."
+          ]
+        },
+        {
+          "name": "Jigsaw 2099",
+          "slug": "jigsaw-2099",
+          "vp": "5",
+          "vAttack": "6+",
+          "imageUrl": "https://images.barefootbetters.com/2099/2099-vi-alchemax-enforcers-jigsaw-2099.webp",
+          "abilities": [
+            "Jigsaw 2099 gets +1[icon:attack] for each Bystander he has.",
+            "Ambush: Put the top card of the Hero Deck into the Escape Pile.",
+            "Fight: KO one of your Heroes. [keyword:Cyber-Mod][hc:strength]: If Jigsaw 2099 had no Bystanders, he reenters the city and captures a Bystander for each [hc:strength] card in the Escape Pile.",
+            "Escape: [keyword:Cyber-Mod][hc:strength]: Each player gains a Wound."
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [],
+  "schemes": [
+    {
+      "id": 182,
+      "name": "Pull Reality Into Cyberspace",
+      "slug": "pull-reality-into-cyberspace",
+      "imageUrl": "https://images.barefootbetters.com/2099/2099-sc-pull-reality-into-cyberspace.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 7 Twists, representing “Cyberspace.“",
+            "Special Rules: Enemies under any Cyberspace get +1[icon:attack] for each Cyberspace on the board, and they can be fought with any combination of [icon:recruit] and [icon:attack].",
+            "Twists 1-5: Put this Cyberspace above the rightmost city space that isn't yet under Cyberspace.",
+            "Twist 6: Put this Cyberspace above the Mastermind.",
+            "Twist 7: Evil Wins!"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 183,
+      "name": "Become President of the United States",
+      "slug": "become-president-of-the-united-states",
+      "imageUrl": "https://images.barefootbetters.com/2099/2099-sc-become-president-of-the-united-states.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 11 Twists",
+            "Special Rules: Once per turn, you may stack one of your non-grey Heroes next to this Scheme to earn “Ten Million Votes“ For that Hero Name. If you do, you may also send one of your grey Heroes [keyword:Undercover] as “Secret Service.“",
+            "Twist: If there's a Villain in the Bank or Streets, the Mastermind “vows to cursh crime“ and you stack this Twist next to the Mastermind as “Ten Million Votes.“ Otherwise, you may discard two cards to “counter negative advertising,“ shuffle this Twist back into the Villain Deck, and play another card from that deck. If you don't discard, stack this Twist next to the Mastermind as “Ten Million Votes.“",
+            "Evil Wins: When the Mastermind is elected President by having Forty Million more votes than the highest-voted Hero Name."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 184,
+      "name": "Subjugate Earth with Mega-Corporations",
+      "slug": "subjugate-earth-with-mega-corporations",
+      "imageUrl": "https://images.barefootbetters.com/2099/2099-sc-subjugate-earth-with-mega-corporations.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: Add an extra Hero. 11 Twists.",
+            "Twist: Put the Hero from the HQ space under the Bank into a “Mega-Corp Domination“ Stack matching its Hero Class (off of the board). Do the listed effect for that Mega-Corp:",
+            "[hc:strength]: Green Globe: Each player discards a card with a [icon:recruit] icon.",
+            "[hc:instinct]: Alchemax: Each player discards a [hc:instinct] Hero or gains a Wound.",
+            "[hc:covert]: Public Eye: Each plaeyer discards two cards, then draws a card.",
+            "[hc:tech]: D/MONIX: Each player discards a card with an [icon:attack] icon.",
+            "[hc:ranged]: Stark-Fujikawa: A villain from your Victory Pile reenters the city.",
+            "Evil Wins: When a single Mega-Corp has 3 Dominations."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 185,
+      "name": "Befoul Earth Into a Polluted Wasteland",
+      "slug": "befoul-earth-into-a-polluted-wasteland",
+      "imageUrl": "https://images.barefootbetters.com/2099/2099-sc-befoul-earth-into-a-polluted-wasteland.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: Add an extra Hero. 8 Twists, representing “Toxic Sludge.“",
+            "Twist: Put this Toxic Sludge under and HQ space. NO space can have two Sludges unless all spaces already have one.",
+            "Special Rules: To recruit a Hero, you must also pay 2 [icon:recruit] for each Toxic Sludge under it. During your turn, if there is any Sludge under the HQ, you may “flush the Toxic Sludge into the river.“ If you do, then KO all the Sludge and the Heroes in those HQ spaces, and each player gains a Wound.",
+            "Evil Wins: When the Hero Deck runs out, or there are 8 Toxic Sludges under the HQ and/or in the river (KO pile)."
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [],
+  "wounds": [],
+  "other": []
+}

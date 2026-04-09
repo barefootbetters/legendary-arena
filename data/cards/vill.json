@@ -1,0 +1,2021 @@
+{
+  "id": 6,
+  "abbr": "vill",
+  "exportName": "Villains",
+  "heroes": [
+    {
+      "id": 43,
+      "name": "Bullseye",
+      "slug": "bullseye",
+      "team": "crime-syndicate",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Fulfill the Contract",
+          "displayName": "Fulfill the Contract",
+          "slug": "fulfill-the-contract",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": null,
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-bullseye-2c1.webp",
+          "abilities": [
+            "[keyword:Dodge]",
+            "Choose an Adversary Group. You get +1[icon:recruit] for each Adversary in your Victory Pile from that Adversary Group."
+          ]
+        },
+        {
+          "name": "Everything's a Weapon",
+          "displayName": "Everything's a Weapon",
+          "slug": "everythings-a-weapon",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-bullseye-3c2.webp",
+          "abilities": [
+            "[hc:instinct]: Draw a card."
+          ]
+        },
+        {
+          "name": "Specialist Assassin",
+          "displayName": "Specialist Assassin",
+          "slug": "specialist-assassin",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 6,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-bullseye-6u.webp",
+          "abilities": [
+            "Choose an Adversary. It gets -1[icon:attack] for each Adversary in your Victory Pile from that Adversary Group."
+          ]
+        },
+        {
+          "name": "Perfect Aim",
+          "displayName": "Perfect Aim",
+          "slug": "perfect-aim",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 7,
+          "attack": "5+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-bullseye-7r.webp",
+          "abilities": [
+            "You get +5[icon:attack] for each Commander Tactic in your Victory Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 44,
+      "name": "Dr. Octopus",
+      "slug": "dr-octopus",
+      "team": "sinister-six",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Brilliant Research",
+          "displayName": "Brilliant Research",
+          "slug": "brilliant-research",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-dr-octopus-3c1.webp",
+          "abilities": [
+            "[hc:tech]: When you draw a new hand of cards at the end of this turn, draw an extra card."
+          ]
+        },
+        {
+          "name": "Crazed Experiments",
+          "displayName": "Crazed Experiments",
+          "slug": "crazed-experiments",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 5,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-dr-octopus-5c2.webp",
+          "abilities": [
+            "Draw a card."
+          ]
+        },
+        {
+          "name": "Eighth Time's a Charm",
+          "displayName": "Eighth Time's a Charm",
+          "slug": "eighth-times-a-charm",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-dr-octopus-6u.webp",
+          "abilities": [
+            "If this is the eighth card you played this turn, you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Octo-Pulverize",
+          "displayName": "Octo-Pulverize",
+          "slug": "octo-pulverize",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 8,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-dr-octopus-8r.webp",
+          "abilities": [
+            "Discard cards from the top of your deck until your deck runs out or you have discarded 8 cards (don't shuffle). Then you get +1[icon:attack] for each card you discarded this turn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 45,
+      "name": "Electro",
+      "slug": "electro",
+      "team": "sinister-six",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Electroshock Therapy",
+          "displayName": "Electroshock Therapy",
+          "slug": "electroshock-therapy",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 2,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-electro-2c1.webp",
+          "abilities": [
+            "[keyword:Dodge]",
+            "Reveal the top card of your deck. You may KO it."
+          ]
+        },
+        {
+          "name": "Shocking Robbery",
+          "displayName": "Shocking Robbery",
+          "slug": "shocking-robbery",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-electro-3c2.webp",
+          "abilities": [
+            "[keyword:Dodge]",
+            "You get +3[icon:attack] usable only against Adversaries in the Bank.",
+            "[hc:ranged]: Instead you may get +3[icon:attack] usable only against the Commander."
+          ]
+        },
+        {
+          "name": "Supercharge",
+          "displayName": "Supercharge",
+          "slug": "supercharge",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-electro-5u.webp",
+          "abilities": [
+            "You get +1[icon:attack] for each card you discarded this turn."
+          ]
+        },
+        {
+          "name": "Anti-Matter",
+          "displayName": "Anti-Matter",
+          "slug": "anti-matter",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 7,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-electro-7r.webp",
+          "abilities": [
+            "All Adversaries and the Commander get -1[icon:attack] this turn.",
+            "[team:sinister-six][team:sinister-six]: Same Effect."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 46,
+      "name": "Enchantress",
+      "slug": "enchantress",
+      "team": "foes-of-asgard",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Enchant the Senses",
+          "displayName": "Enchant the Senses",
+          "slug": "enchant-the-senses",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-enchantress-3c1.webp",
+          "abilities": [
+            "[hc:ranged]: Whenever you defeat an Adversary this turn, you gain a New Recruit."
+          ]
+        },
+        {
+          "name": "Soul Sacrifice",
+          "displayName": "Soul Sacrifice",
+          "slug": "soul-sacrifice",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 4,
+          "attack": null,
+          "recruit": "1+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-enchantress-4c2.webp",
+          "abilities": [
+            "You may KO a card from your hand or discard pile. You get +[icon:recruit] equal to that card's cost."
+          ]
+        },
+        {
+          "name": "Irresistible Bribe",
+          "displayName": "Irresistible Bribe",
+          "slug": "irresistible-bribe",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 6,
+          "attack": null,
+          "recruit": "3",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-enchantress-6u.webp",
+          "abilities": [
+            "Choose an Adversary. You can spend any combination of [icon:recruit] and [icon:attack] to fight that Adversary this turn.",
+            "[hc:covert][hc:covert]: You can also spend any combination of [icon:recruit] and [icon:attack] to fight the Commander this turn."
+          ]
+        },
+        {
+          "name": "Unending Anguish",
+          "displayName": "Unending Anguish",
+          "slug": "unending-anguish",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 7,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-enchantress-7r.webp",
+          "abilities": [
+            "Draw three cards.",
+            "[team:foes-of-asgard]: Then put Unending Anguish on the bottom of your deck."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 47,
+      "name": "Green Goblin",
+      "slug": "green-goblin",
+      "team": "sinister-six",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Pumpkin Bombs",
+          "displayName": "Pumpkin Bombs",
+          "slug": "pumpkin-bombs",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 3,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-green-goblin-3c1.webp",
+          "abilities": [
+            "[keyword:Dodge]",
+            "If you discarded any cards this turn, you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Goblin Glider",
+          "displayName": "Goblin Glider",
+          "slug": "goblin-glider",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-green-goblin-4c2.webp",
+          "abilities": [
+            "[keyword:Dodge]",
+            "When you play or [keyword:Dodge] with this card, another [team:hydra] Ally in your hand gains [keyword:Dodge] this turn."
+          ]
+        },
+        {
+          "name": "Unstable Kidnapper",
+          "displayName": "Unstable Kidnapper",
+          "slug": "unstable-kidnapper",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 5,
+          "attack": null,
+          "recruit": "3",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-green-goblin-5u.webp",
+          "abilities": [
+            "[keyword:Dodge]",
+            "If you discarded any cards this turn, kidnap a Bystander."
+          ]
+        },
+        {
+          "name": "Experimental Goblin Serum",
+          "displayName": "Experimental Goblin Serum",
+          "slug": "experimental-goblin-serum",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 7,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-green-goblin-7r.webp",
+          "abilities": [
+            "Return from your discard pile to your hand all the cards you discarded this turn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 48,
+      "name": "Juggernaut",
+      "slug": "juggernaut",
+      "team": "brotherhood",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Crimson Gem of Cyttorak",
+          "displayName": "Crimson Gem of Cyttorak",
+          "slug": "crimson-gem-of-cyttorak",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-juggernaut-4c1.webp",
+          "abilities": [
+            "[hc:strength]: Each other player reveals the top card of their deck, and if it costs 1[icon:vp], 2[icon:vp], or 3[icon:vp], discards it. You get +1[icon:recruit] for each card discarded this way."
+          ]
+        },
+        {
+          "name": "Size Matters",
+          "displayName": "Size Matters",
+          "slug": "size-matters",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-juggernaut-4c2.webp",
+          "abilities": [
+            "You get +1[icon:attack] for each other card you played this turn that costs 4[icon:vp] or more."
+          ]
+        },
+        {
+          "name": "Runaway Train",
+          "displayName": "Runaway Train",
+          "slug": "runaway-train",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 5,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-juggernaut-5u.webp",
+          "abilities": [
+            "To play this card, you must discard a card from your hand."
+          ]
+        },
+        {
+          "name": "Unstoppable Force",
+          "displayName": "Unstoppable Force",
+          "slug": "unstoppable-force",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 8,
+          "attack": "5+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-juggernaut-8r.webp",
+          "abilities": [
+            "Choose one: Each player KOs two cards from their hand, or each player KOs two cards from their discard pile. Then you get +1[icon:attack] for each non-grey Ally KO'd this turn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 49,
+      "name": "Kingpin",
+      "slug": "kingpin",
+      "team": "crime-syndicate",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Pull the Strings",
+          "displayName": "Pull the Strings",
+          "slug": "pull-the-strings",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-kingpin-3c1.webp",
+          "abilities": [
+            "Whenever a card effect causes you to gain a New Recruit this turn, put that New Recruit into your hand.",
+            "Gain a New Recruit."
+          ]
+        },
+        {
+          "name": "Recruitment Day",
+          "displayName": "Recruitment Day",
+          "slug": "recruitment-day",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-kingpin-3c2.webp",
+          "abilities": [
+            "[hc:strength]: Gain a New Recruit."
+          ]
+        },
+        {
+          "name": "Import Illegal Weapons",
+          "displayName": "Import Illegal Weapons",
+          "slug": "import-illegal-weapons",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 5,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-kingpin-5u.webp",
+          "abilities": [
+            "You get +1[icon:attack] for each New Recruit you played this turn."
+          ]
+        },
+        {
+          "name": "Endless Underlings",
+          "displayName": "Endless Underlings",
+          "slug": "endless-underlings",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 8,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-kingpin-8r.webp",
+          "abilities": [
+            "Gain three New Recruits.",
+            "[team:crime-syndicate][team:crime-syndicate]: If you would return a New Recruit to the New Recruit Stack this turn, put it on the bottom of your deck instead."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 50,
+      "name": "Kraven",
+      "slug": "kraven",
+      "team": "sinister-six",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Ceaseless Tracker",
+          "displayName": "Ceaseless Tracker",
+          "slug": "ceaseless-tracker",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": null,
+          "recruit": "1+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-kraven-2c1.webp",
+          "abilities": [
+            "[keyword:Dodge]",
+            "[team:sinister-six]: You get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Corner the Prey",
+          "displayName": "Corner the Prey",
+          "slug": "corner-the-prey",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-kraven-4c2.webp",
+          "abilities": [
+            "Choose an Adversary. If there are no empty city spaces adjacent to that Adversary, it gets -1[icon:attack] this turn."
+          ]
+        },
+        {
+          "name": "Hunt Down",
+          "displayName": "Hunt Down",
+          "slug": "hunt-down",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-kraven-5u.webp",
+          "abilities": [
+            "Choose an Adversary and a direction. Move that Adversary as many adjacent, empty spaces as you can in that direction. You get +1[icon:attack] for each space it moved."
+          ]
+        },
+        {
+          "name": "He's the Best Around",
+          "displayName": "He's the Best Around",
+          "slug": "hes-the-best-around",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 8,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-kraven-8r.webp",
+          "abilities": [
+            "You get +[icon:attack] equal to the Cost of the highest-cost Ally in the Lair."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 51,
+      "name": "Loki",
+      "slug": "loki",
+      "team": "foes-of-asgard",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "All Humans Are Expendable",
+          "displayName": "All Humans Are Expendable",
+          "slug": "all-humans-are-expendable",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-loki-3c1.webp",
+          "abilities": [
+            "[hc:covert]: You may KO a card from your hand or discard pile. If you do, gain a New Recruit."
+          ]
+        },
+        {
+          "name": "Illusionary Bindings",
+          "displayName": "Illusionary Bindings",
+          "slug": "illusionary-bindings",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-loki-4c2.webp",
+          "abilities": [
+            "[hc:ranged]: Each other player reveals a [hc:ranged] Ally or gains a Bindings. If any number of players gained a Bindings this way, you get +1[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Father of Lies",
+          "displayName": "Father of Lies",
+          "slug": "father-of-lies",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 5,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-loki-5u.webp",
+          "abilities": [
+            "Look at the top two cards of another player's deck. Without revealing those cards, call one of them ”Good” and one ”Bad.” That player puts one of those cards into their discard pile and the other into your discard pile."
+          ]
+        },
+        {
+          "name": "God of Mischief",
+          "displayName": "God of Mischief",
+          "slug": "god-of-mischief",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 8,
+          "attack": "6",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-loki-8r.webp",
+          "abilities": [
+            "Each player reveals a [team:foes-of-asgard] Ally or reveals their hand. For each player that revealed their hand, you may swap a card from that hand with a card in the Lair of the same cost."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 52,
+      "name": "Magneto",
+      "slug": "magneto",
+      "team": "brotherhood",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Magnetic Levitation",
+          "displayName": "Magnetic Levitation",
+          "slug": "magnetic-levitation",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-magneto-3c1.webp",
+          "abilities": [
+            "[keyword:Dodge]",
+            "You may choose a Bindings from your hand or discard pile and have another player gain that Bindings. If you do, you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Mutants Will Rule",
+          "displayName": "Mutants Will Rule",
+          "slug": "mutants-will-rule",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-magneto-4c2.webp",
+          "abilities": [
+            "[keyword:Dodge]",
+            "[hc:strength]: Choose a player. That player reveals a [team:brotherhood] Ally or gains a Bindings. If a Bindings is gained this way, you get +1[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Weapons from Scrap Metal",
+          "displayName": "Weapons from Scrap Metal",
+          "slug": "weapons-from-scrap-metal",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 5,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-magneto-5u.webp",
+          "abilities": [
+            "If you discarded any cards this turn, draw a card."
+          ]
+        },
+        {
+          "name": "Master of Magnetism",
+          "displayName": "Master of Magnetism",
+          "slug": "master-of-magnetism",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 7,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-magneto-7r.webp",
+          "abilities": [
+            "[team:brotherhood]: For each other [team:brotherhood] Ally you played this turn, choose a player to gain a Bindings. Then you get +2[icon:attack] for each Bindings gained this turn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 53,
+      "name": "Mysterio",
+      "slug": "mysterio",
+      "team": "sinister-six",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Psychedelic Mist",
+          "displayName": "Psychedelic Mist",
+          "slug": "psychedelic-mist",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 2,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-mysterio-2c1.webp",
+          "abilities": [
+            "[keyword:Dodge]",
+            "[hc:covert]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Shifting Decoy",
+          "displayName": "Shifting Decoy",
+          "slug": "shifting-decoy",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 3,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-mysterio-3c2.webp",
+          "abilities": [
+            "Put a card from the lair on the bottom of the Ally Deck. If that card had a [icon:recruit] icon, you get +2[icon:recruit]. If that card had an [icon:attack] icon, you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Holographic Illusion",
+          "displayName": "Holographic Illusion",
+          "slug": "holographic-illusion",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 5,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-mysterio-5u.webp",
+          "abilities": [
+            "You get +1[icon:attack] for each color of Ally in the Lair."
+          ]
+        },
+        {
+          "name": "False Reflection",
+          "displayName": "False Reflection",
+          "slug": "false-reflection",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-mysterio-7r.webp",
+          "abilities": [
+            "Put a card from the Lair on the bottom of the Ally Deck. You get +[icon:recruit] equal to that card's printed [icon:recruit] and +[icon:attack] equal to that card's printed [icon:attack].",
+            "[team:sinister-six]: Then, for each other [team:sinister-six] Ally you played this turn, do the same effect. (Use a different Ally from the Lair each time.)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 54,
+      "name": "Mystique",
+      "slug": "mystique",
+      "team": "brotherhood",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Show Your True Colors",
+          "displayName": "Show Your True Colors",
+          "slug": "show-your-true-colors",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-mystique-3c1.webp",
+          "abilities": [
+            "[keyword:Dodge]",
+            "As you play this card, you may choose a class. This card is that class instead of [hc:covert] this turn."
+          ]
+        },
+        {
+          "name": "Hidden Weapons",
+          "displayName": "Hidden Weapons",
+          "slug": "hidden-weapons",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-mystique-4c2.webp",
+          "abilities": [
+            "[hc:instinct][hc:tech]: You get +3[icon:attack]."
+          ]
+        },
+        {
+          "name": "Turn the Tide",
+          "displayName": "Turn the Tide",
+          "slug": "turn-the-tide",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-mystique-4u.webp",
+          "abilities": [
+            "Reveal the top card of the Ally Deck. You may play a copy of that card this turn. When you do, put that card on the bottom of the Ally Deck."
+          ]
+        },
+        {
+          "name": "Spy Games",
+          "displayName": "Spy Games",
+          "slug": "spy-games",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 7,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-mystique-7r.webp",
+          "abilities": [
+            "Reveal the top five cards of the Ally Deck. You get +[icon:attack] equal to their total printed [icon:attack]. Then put them back in any order."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 55,
+      "name": "Sabretooth",
+      "slug": "sabretooth",
+      "team": "brotherhood",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Leap of the Tiger",
+          "displayName": "Leap of the Tiger",
+          "slug": "leap-of-the-tiger",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-sabretooth-3c1.webp",
+          "abilities": [
+            "Reveal the top card of your deck, then put it back on top of your deck or into your discard pile. If that card was an [hc:instinct] Ally, you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Take One for the Team",
+          "displayName": "Take One for the Team",
+          "slug": "take-one-for-the-team",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": null,
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-sabretooth-4c2.webp",
+          "abilities": [
+            "Reveal the top card of your deck. If it's a [team:brotherhood] Ally, you may draw it. Otherwise, you may KO it."
+          ]
+        },
+        {
+          "name": "Stealthy Predator",
+          "displayName": "Stealthy Predator",
+          "slug": "stealthy-predator",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 2,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-sabretooth-2u.webp",
+          "abilities": [
+            "Reveal the top three cards of your deck. Draw one of them, discard one, and put the other back on top of your deck."
+          ]
+        },
+        {
+          "name": "Upper Hand",
+          "displayName": "Upper Hand",
+          "slug": "upper-hand",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 7,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-sabretooth-7r.webp",
+          "abilities": [
+            "Each player reveals a [hc:instinct] Ally or reveals the top card of their deck. Choose any number of those revealed top cards to be KO'd.",
+            "[hc:instinct]: You get +1[icon:attack] for each card KO'd this turn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 56,
+      "name": "Ultron",
+      "slug": "ultron",
+      "team": "unaffiliated",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Encephalo-Ray",
+          "displayName": "Encephalo-Ray",
+          "slug": "encephalo-ray",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 2,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-ultron-2c1.webp",
+          "abilities": [
+            "[keyword:Dodge]",
+            "[hc:tech]: You get +1[icon:attack] for each other [hc:tech] Ally you played this turn."
+          ]
+        },
+        {
+          "name": "Army of Ultrons",
+          "displayName": "Army of Ultrons",
+          "slug": "army-of-ultrons",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-ultron-3c2.webp",
+          "abilities": [
+            "[keyword:Dodge]",
+            "Reveal a [team:hydra] card from your hand. That card is [hc:tech] instead of its normal color this turn."
+          ]
+        },
+        {
+          "name": "Genetic Experimentation",
+          "displayName": "Genetic Experimentation",
+          "slug": "genetic-experimentation",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 6,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-ultron-6u.webp",
+          "abilities": [
+            "[hc:tech]: Kidnap a Bystander for each other [hc:tech] Ally you played this turn."
+          ]
+        },
+        {
+          "name": "Molecular Rearrangement",
+          "displayName": "Molecular Rearrangement",
+          "slug": "molecular-rearrangement",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 8,
+          "attack": "5+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-ultron-8r.webp",
+          "abilities": [
+            "Each other player reveals a [hc:tech] Ally or discards their hand. Each player who discarded their hand this way draws 5 cards.",
+            "[hc:tech]: You get +3[icon:attack] for each Ally discarded this way that costs 7[icon:vp] or more."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 57,
+      "name": "Venom",
+      "slug": "venom",
+      "team": "sinister-six",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Symbiote Takeover",
+          "displayName": "Symbiote Takeover",
+          "slug": "symbiote-takeover",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-venom-3c1.webp",
+          "abilities": [
+            "[hc:strength]: Kidnap a Bystander."
+          ]
+        },
+        {
+          "name": "Devour",
+          "displayName": "Devour",
+          "slug": "devour",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-venom-4c2.webp",
+          "abilities": [
+            "You may KO a Bystander from your Victory Pile. If you do, you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Horrify the Populace",
+          "displayName": "Horrify the Populace",
+          "slug": "horrify-the-populace",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-venom-6u.webp",
+          "abilities": [
+            "Each Adversary with a 4[icon:attack] or more guards a Bystander."
+          ]
+        },
+        {
+          "name": "Ravenous Greed",
+          "displayName": "Ravenous Greed",
+          "slug": "ravenous-greed",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": "5",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-hr-venom-7r.webp",
+          "abilities": [
+            "Each other player reveals an [hc:instinct] Ally or KOs a Bystander from their Victory Pile.",
+            "[hc:instinct]: Kidnap all Bystanders that were KO'd this turn. Then you get +1[icon:recruit] for each Bystander you kidnapped this turn."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 14,
+      "name": "Dr. Strange",
+      "slug": "dr-strange",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Dr. Strange",
+          "slug": "dr-strange",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mm-dr-strange.webp",
+          "abilities": [
+            "Always Leads: Defenders",
+            "Command Strike: Reveal the top three cards of the Adversary Deck. Put the Adversary you revealed with the highest printed [icon:attack] on top of that deck. Then play a Plot Twist from among the cards you revealed. Then put the rest of those cards on the bottom of that deck in random order."
+          ]
+        },
+        {
+          "name": "Book of the Vishanti",
+          "slug": "book-of-the-vishanti",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-dr-strange-book-of-the-vishanti.webp",
+          "abilities": [
+            "Fight: Each other player reveals a [hc:covert] Ally or discards all the cards in their hand, then draws as many cards as they discarded."
+          ]
+        },
+        {
+          "name": "Crimson Bands of Cyttorak",
+          "slug": "crimson-bands-of-cyttorak",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-dr-strange-crimson-bands-of-cyttorak.webp",
+          "abilities": [
+            "Fight: Each other player reveals their hand, then gains a Bindings for each non-grey Ally that player has."
+          ]
+        },
+        {
+          "name": "Eye of Agamotto",
+          "slug": "eye-of-agamotto",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-dr-strange-eye-of-agamotto.webp",
+          "abilities": [
+            "Fight: Reveal cards from the Ally Deck equal to the number of players. Put one of those cards into each player's discard pile."
+          ]
+        },
+        {
+          "name": "Winds of Watoomb",
+          "slug": "winds-of-watoomb",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-dr-strange-winds-of-watoomb.webp",
+          "abilities": [
+            "Fight: After you draw a new hand of cards at the end of this turn, each player simultaneously passes a non-grey Ally from their hand to the hand of the player on their left."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "name": "Nick Fury",
+      "slug": "nick-fury",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Nick Fury",
+          "slug": "nick-fury",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mm-nick-fury.webp",
+          "abilities": [
+            "Always Leads: Avengers",
+            "Command Strike: Stack this Strike next to Nick Fury. Then [keyword:demolish] each player once for each Strike stacked here."
+          ]
+        },
+        {
+          "name": "Bounty on Fury's Head",
+          "slug": "bounty-on-furys-head",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-nick-fury-bounty-on-furys-head.webp",
+          "abilities": [
+            "Fight: KO any number of your [team:hydra] Allies. For each Ally you KO'd this way, you may gain a Madame HYDRA."
+          ]
+        },
+        {
+          "name": "Purge Hydra",
+          "slug": "purge-hydra",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-nick-fury-purge-hydra.webp",
+          "abilities": [
+            "Fight: Each other player reveals their hand and discards two [team:hydra] Allies."
+          ]
+        },
+        {
+          "name": "The Avengers Initiative",
+          "slug": "the-avengers-initiative",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-nick-fury-the-avengers-initiative.webp",
+          "abilities": [
+            "Fight: Each other player reveals a [hc:tech] Ally or chooses an Avengers Adversary from their Victory Pile and it enters the Bridge."
+          ]
+        },
+        {
+          "name": "Total Fury",
+          "slug": "total-fury",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-nick-fury-total-fury.webp",
+          "abilities": [
+            "Fight: Defeat an Adversary whose [icon:attack] is less than the number of [team:hydra] Allies in the KO pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "name": "Odin",
+      "slug": "odin",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Odin",
+          "slug": "odin",
+          "tactic": false,
+          "vAttack": "10+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mm-odin.webp",
+          "abilities": [
+            "Always Leads: Asgardian Warriors",
+            "Odin gets +1[icon:attack] for each Asgardian Warrior in the city and in the Overrun Pile.",
+            "Command Strike: Each player puts an Asgardian Warrior from their Victory Pile into an empty city space. Any player who cannot do so gains a Bindings."
+          ]
+        },
+        {
+          "name": "Divine Justice",
+          "slug": "divine-justice",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-odin-divine-justice.webp",
+          "abilities": [
+            "Fight: Each other player with a Bindings in their discard pile gains another Bindings."
+          ]
+        },
+        {
+          "name": "Might of Valhalla",
+          "slug": "might-of-valhalla",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-odin-might-of-valhalla.webp",
+          "abilities": [
+            "Fight: Draw a card for each Asgardian Warrior in your Victory Pile."
+          ]
+        },
+        {
+          "name": "Riches of Asgard",
+          "slug": "riches-of-asgard",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-odin-riches-of-asgard.webp",
+          "abilities": [
+            "Fight: You get +1[icon:recruit] for each Asgardian Warrior in your Victory Pile."
+          ]
+        },
+        {
+          "name": "Ride of the Valkyries",
+          "slug": "ride-of-the-valkyries",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-odin-ride-of-the-valkyries.webp",
+          "abilities": [
+            "Fight: Each other player reveals a [team:foes-of-asgard] Ally or discards a card for each Asgardian Warrior in the Overrun Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "name": "Professor X",
+      "slug": "professor-x",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Professor X",
+          "slug": "professor-x",
+          "tactic": false,
+          "vAttack": "8+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mm-professor-x.webp",
+          "abilities": [
+            "Always Leads: X-men First Class",
+            "Command Strike: Choose the two highest-cost Allies in the Lair. Stack them next to Professor X as “Telepathic Pawns.“ Professor X gets +1[icon:attack] for each Ally stacked next to him. Players can recrut the top Ally in the stack next to Professor X."
+          ]
+        },
+        {
+          "name": "Cerebro Device",
+          "slug": "cerebro-device",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-professor-x-cerebro-device.webp",
+          "abilities": [
+            "Fight: Reveal the top three cards of the Adversary Deck. Play any Adversaries you revealed that have “[keyword:X-Treme Attack]“. Put the rest back in random order."
+          ]
+        },
+        {
+          "name": "Mental Dominance",
+          "slug": "mental-dominance",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-professor-x-mental-dominance.webp",
+          "abilities": [
+            "Fight: Stack the top three cards of the Ally Deck next to Professor X in random order as “Telepathic Pawns.“"
+          ]
+        },
+        {
+          "name": "Mightiest Mutant Mind",
+          "slug": "mightiest-mutant-mind",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-professor-x-mightiest-mutant-mind.webp",
+          "abilities": [
+            "Fight: Each other player reveals a [team:brotherhood] Ally or stacks a non-grey Ally from their hand next to Professor X as a “Telepathic Pawn.“"
+          ]
+        },
+        {
+          "name": "Telepathic Imprisonment",
+          "slug": "telepathic-imprisonment",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-professor-x-telepathic-imprisonment.webp",
+          "abilities": [
+            "Fight: Each other player reveals a [team:brotherhood] Ally or gains a Bindings."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 18,
+      "name": "Avengers",
+      "slug": "avengers",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Ant-Man",
+          "slug": "ant-man",
+          "vp": "2",
+          "vAttack": "3",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-avengers-ant-man.webp",
+          "abilities": [
+            "[keyword:Elusive 4]"
+          ]
+        },
+        {
+          "name": "Captain America",
+          "slug": "captain-america",
+          "vp": "5",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-avengers-captain-america.webp",
+          "abilities": [
+            "Ambush: Each player reveals three colors of Allies or gains a Bindings. (Grey is a color.)",
+            "Fight: Same effect.",
+            "Captain America gets +1[icon:attack] for each color of Ally in the Lair.",
+            "Overrun: [keyword:Demolish] each player."
+          ]
+        },
+        {
+          "name": "Hulk",
+          "slug": "hulk",
+          "vp": "6",
+          "vAttack": "8",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-avengers-hulk.webp",
+          "abilities": [
+            "Ambush: [keyword:Demolish] each player twice.",
+            "Fight: Same effect.",
+            "Overrun: Same effect."
+          ]
+        },
+        {
+          "name": "Iron Man",
+          "slug": "iron-man",
+          "vp": "5",
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-avengers-iron-man.webp",
+          "abilities": [
+            "Ambush: Each player reveals a [hc:tech] Ally or gains a Bindings.",
+            "Fight: Same effect.",
+            "Overrun: [keyword:Demolish] each player."
+          ]
+        },
+        {
+          "name": "Thor",
+          "slug": "thor",
+          "vp": "5",
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-avengers-thor.webp",
+          "abilities": [
+            "Ambush: KO each Ally from the Lair that costs 7[icon:vp] or more.",
+            "Fight: Same effect.",
+            "Overrun: [keyword:Demolish] each player."
+          ]
+        },
+        {
+          "name": "Wasp",
+          "slug": "wasp",
+          "vp": "4",
+          "vAttack": "1",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-avengers-wasp.webp",
+          "abilities": [
+            "[keyword:Elusive 7]"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "name": "Defenders",
+      "slug": "defenders",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Daredevil",
+          "slug": "daredevil",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-defenders-daredevil.webp",
+          "abilities": [
+            "Fight: The next Ally you recruit this turn goes on top of your deck.",
+            "Overrun: Each player reveals the top card of their deck and if it costs 1[icon:vp] or more, discards it."
+          ]
+        },
+        {
+          "name": "Iron Fist",
+          "slug": "iron-fist",
+          "vp": "2",
+          "vAttack": "3",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-defenders-iron-fist.webp",
+          "abilities": [
+            "To fight Iron Fist, you must also reveal three Allies with different costs."
+          ]
+        },
+        {
+          "name": "Namor, The Sub-Mariner",
+          "slug": "namor-the-sub-mariner",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-defenders-namor-the-sub-mariner.webp",
+          "abilities": [
+            "Ambush: If any other Defenders Adversaries are in the city, each player gains a Bindings.",
+            "Fight: Same Effect.",
+            "Overrun: Same Effect."
+          ]
+        },
+        {
+          "name": "Luke Cage",
+          "slug": "luke-cage",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-defenders-luke-cage.webp",
+          "abilities": [
+            "Fight: Each player reveals the top three cards of their deck. You choose which players discard them and which players put them back on top in the order of their choice."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "name": "Marvel Knights",
+      "slug": "marvel-knights",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Black Panther",
+          "slug": "black-panther",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-marvel-knights-black-panther.webp",
+          "abilities": [
+            "Fight: Each player draws a card."
+          ]
+        },
+        {
+          "name": "Elektra",
+          "slug": "elektra",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-marvel-knights-elektra.webp",
+          "abilities": [
+            "Fight: KO one of your Allies. Then KO a Bindings from your hand or discard pile."
+          ]
+        },
+        {
+          "name": "Punisher",
+          "slug": "punisher",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-marvel-knights-punisher.webp",
+          "abilities": [
+            "Fight: Reveal the top card of your deck. If it costs 0[icon:vp], KO it.",
+            "Overrun: Each player reveals the top card of their deck and if it costs 1[icon:vp] or more, KOs it."
+          ]
+        },
+        {
+          "name": "Ghost Rider",
+          "slug": "ghost-rider",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-marvel-knights-ghost-rider.webp",
+          "abilities": [
+            "Fight: You may KO another Adversary from your Victory Pile. If you do, you get +3[icon:recruit].",
+            "Overrun: Each player may KO an Adversary from their Victory Pile. Any player who does not do so gains a Bindings."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "name": "Spider Friends",
+      "slug": "spider-friends",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Black Cat",
+          "slug": "black-cat",
+          "vp": "2",
+          "vAttack": "2",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-spider-friends-black-cat.webp",
+          "abilities": [
+            "[keyword:Elusive 6]",
+            "Fight: Each player reveals the top card of their deck. Choose any number of those cards to be discarded."
+          ]
+        },
+        {
+          "name": "Firestar",
+          "slug": "firestar",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-spider-friends-firestar.webp",
+          "abilities": [
+            "Fight: Reveal the top card of your deck. If it has a [icon:recruit] icon, KO it.",
+            "Overrun: Each player reveals the top card of their deck, and if it has an [icon:attack] icon, KO it."
+          ]
+        },
+        {
+          "name": "Moon Knight",
+          "slug": "moon-knight",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-spider-friends-moon-knight.webp",
+          "abilities": [
+            "Fight: KO one of your Allies. Then, if you fought Moon Knight on the Rooftops, KO another of your Allies."
+          ]
+        },
+        {
+          "name": "Spider-Man",
+          "slug": "spider-man",
+          "vp": "3",
+          "vAttack": "2",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-spider-friends-spider-man.webp",
+          "abilities": [
+            "Fight: Reveal the top card of the Adversary Deck. If that card is worth 2[icon:piercing] or less, play it. If you play a card from the Adversary Deck this way, put Spider-Man back on top of the Adversary Deck.",
+            "Overrun: Each player gains a Bindings."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "name": "Uncanny Avengers",
+      "slug": "uncanny-avengers",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Havok",
+          "slug": "havok",
+          "vp": "2",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-uncanny-avengers-havok.webp",
+          "abilities": [
+            "[keyword:X-Treme Attack]",
+            "Ambush: Each player who does not reveal a [hc:ranged] Ally discards two cards, then draws a card."
+          ]
+        },
+        {
+          "name": "Rogue",
+          "slug": "rogue",
+          "vp": "2",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-uncanny-avengers-rogue.webp",
+          "abilities": [
+            "[keyword:X-Treme Attack]",
+            "Fight: Each other player discards the top card of their deck. Play a copy of one of those Allies."
+          ]
+        },
+        {
+          "name": "Scarlet Witch",
+          "slug": "scarlet-witch",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-uncanny-avengers-scarlet-witch.webp",
+          "abilities": [
+            "Fight: Reveal the top three cards of your deck. Put any that have odd-numbered costs into your hand and discard the rest. (0 is even.)"
+          ]
+        },
+        {
+          "name": "Wolverine",
+          "slug": "wolverine",
+          "vp": "5",
+          "vAttack": "7+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-uncanny-avengers-wolverine.webp",
+          "abilities": [
+            "[keyword:X-Treme Attack]",
+            "Wolverine gets +1[icon:attack] for each card you've drawn this turn.",
+            "Overrun: Each player reveals an [hc:instinct] Ally or gains a Bindings. Then shuffle Wolverine back into the Adversary deck."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "name": "Uncanny X-Men",
+      "slug": "uncanny-x-men",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Colossus",
+          "slug": "colossus",
+          "vp": "3",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-uncanny-x-men-colossus.webp",
+          "abilities": [
+            "[keyword:X-Treme Attack]",
+            "Fight: You may KO a Bindings from your hand or discard pile. If you don't, each other player gains a Bindings."
+          ]
+        },
+        {
+          "name": "Nightcrawler",
+          "slug": "nightcrawler",
+          "vp": "2",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-uncanny-x-men-nightcrawler.webp",
+          "abilities": [
+            "[keyword:X-Treme Attack]",
+            "Fight: Choose an Ally you played this turn. When you draw a new hand of cards at the end of this turn, add that Ally to your new hand as an extra card."
+          ]
+        },
+        {
+          "name": "Shadowcat",
+          "slug": "shadowcat",
+          "vp": "2",
+          "vAttack": "2*+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-uncanny-x-men-shadowcat.webp",
+          "abilities": [
+            "[keyword:X-Treme Attack]",
+            "[keyword:Elusive 5]"
+          ]
+        },
+        {
+          "name": "Storm",
+          "slug": "storm",
+          "vp": "2",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-uncanny-x-men-storm.webp",
+          "abilities": [
+            "[keyword:X-Treme Attack]",
+            "Ambush: (After Storm enters the city). Move Storm to the Rooftops. If another Adversary is already there, swap them.",
+            "Fight: If you fight Storm on the Rooftops, each other player gains a Bindings."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "name": "X-Men First Class",
+      "slug": "x-men-first-class",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Angel",
+          "slug": "angel",
+          "vp": "2",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-x-men-first-class-angel.webp",
+          "abilities": [
+            "[keyword:X-Treme Attack]",
+            "Fight: Draws two cards, then discard a card."
+          ]
+        },
+        {
+          "name": "Iceman",
+          "slug": "iceman",
+          "vp": "3",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-x-men-first-class-iceman.webp",
+          "abilities": [
+            "[keyword:X-Treme Attack]",
+            "Fight: Draw a card for each [hc:ranged] Ally you played this turn."
+          ]
+        },
+        {
+          "name": "Jean Grey",
+          "slug": "jean-grey",
+          "vp": "4",
+          "vAttack": "6+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-x-men-first-class-jean-grey.webp",
+          "abilities": [
+            "[keyword:X-Treme Attack]",
+            "Ambush: Jean Grey guards a Bystander for each Adversary in the city with X-Treme Attack (including Jean).",
+            "Fight: You get +1[icon:recruit] for each Bystander you kidnapped this turn."
+          ]
+        },
+        {
+          "name": "Beast",
+          "slug": "beast",
+          "vp": "3",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-x-men-first-class-beast.webp",
+          "abilities": [
+            "[keyword:X-Treme Attack]",
+            "Fight: KO one of your Allies. Then KO another of your Allies if there are any other Adversaries in the city with X-Treme Attack."
+          ]
+        },
+        {
+          "name": "Cyclops",
+          "slug": "cyclops",
+          "vp": "4",
+          "vAttack": "6+",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-vi-x-men-first-class-cyclops.webp",
+          "abilities": [
+            "[keyword:X-Treme Attack]",
+            "To Fight Cyclops, you must also discard a card.",
+            "Overrun: Each player reveals a [team:brotherhood] Ally or discards a card."
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [
+    {
+      "id": 7,
+      "name": "Asgardian Warriors",
+      "slug": "asgardian-warriors",
+      "imageUrl": "https://images.barefootbetters.com/vill/vill-hm-asgardian-warriors.webp",
+      "abilities": []
+    },
+    {
+      "id": 8,
+      "name": "Cops",
+      "slug": "cops",
+      "imageUrl": "https://images.barefootbetters.com/vill/vill-hm-cops.webp",
+      "abilities": []
+    },
+    {
+      "id": 9,
+      "name": "Multiple Man",
+      "slug": "multiple-man",
+      "imageUrl": "https://images.barefootbetters.com/vill/vill-hm-multiple-man.webp",
+      "abilities": []
+    },
+    {
+      "id": 10,
+      "name": "S.H.I.E.L.D. Assault Squad",
+      "slug": "shield-assault-squad",
+      "imageUrl": "https://images.barefootbetters.com/vill/vill-hm-shield-assault-squad.webp",
+      "abilities": []
+    }
+  ],
+  "schemes": [
+    {
+      "id": 25,
+      "name": "Build an Underground MegaVault Prison",
+      "slug": "build-an-underground-megavault-prison",
+      "imageUrl": "https://images.barefootbetters.com/vill/vill-sc-build-an-underground-megavault-prison.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. The Bindings stack holds 5 Bindings per player.",
+            "Twist: If there is an Adversary in the Sewers, each player gains a Bindings. Otherwise, reveal the top card of the Adversary Deck. If that card is an Adversary, it enters the Sewers.",
+            "Good Wins: When the Bindings stack runs out."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "name": "Cage Villains in Power-Suppressing Cells",
+      "slug": "cage-villains-in-power-suppressing-cells",
+      "imageUrl": "https://images.barefootbetters.com/vill/vill-sc-cage-villains-in-power-suppressing-cells.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. Stack 2 Cops per player next to this Plot.",
+            "Twist: Each player returns all Cops from their Victory Pile to the Cop Stack. Then each player puts a non-grey Ally from their hand in front of them. Put a Cop from the Cop Stack on top of each of those Allies.",
+            "Special Rules: You can fight any Cop on top of Allies. If you do, the player of your choice gains that Ally.",
+            "Good Wins: When a Twist must put out a Cop, but the Cop Stack is already empty."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "name": "Crown Thor King of Asgard",
+      "slug": "crown-thor-king-of-asgard",
+      "imageUrl": "https://images.barefootbetters.com/vill/vill-sc-crown-thor-king-of-asgard.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. Put the Thor Adversary next to this Plot.",
+            "Twist: If Thor is in the city, he overruns. Otherwise, Thor enters the Bridge from wherever he is, and Thor guards 3 Bystanders.",
+            "Special Rules: Whenever Thor overruns, stack a Plot Twist from the KO pile next to this Plot as a “Triumph of Asgard.“",
+            "Good Wins: When there are 3 Triumphs of Asgard next to this Plot."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "name": "Crush HYDRA",
+      "slug": "crush-hydra",
+      "imageUrl": "https://images.barefootbetters.com/vill/vill-sc-crush-hydra.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists.",
+            "Twists 1-7: Each Adversary in the city captures a New Recruit, or if there are no more New Recruits, a Madame HYDRA.",
+            "Twist 8: Put all captured Allies from the city into the Overrun Pile.",
+            "Special Rules: An Adversary gets +1[icon:attack] for each Ally it has captured. When you fight that Adversary, gain those Allies.",
+            "Good Wins: When there are 11 Allies in the Overrun Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "name": "Graduation at Xavier's X-Academy",
+      "slug": "graduation-at-xaviers-x-academy",
+      "imageUrl": "https://images.barefootbetters.com/vill/vill-sc-graduation-at-xaviers-x-academy.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. Stack 8 Bystanders next to this Plot as “Young Mutants.“",
+            "Twist: Put a Bystander from next to this Plot into the Overrun Pile.",
+            "Good Wins: When there are 8 Bystanders in the Overrun Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "name": "Infiltrate the Lair with Spies",
+      "slug": "infiltrate-the-lair-with-spies",
+      "imageUrl": "https://images.barefootbetters.com/vill/vill-sc-infiltrate-the-lair-with-spies.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists, Stack 21 Bystanders next to this Plot as “Infiltrating Spies.“",
+            "Twist: Put all Bystanders from the Lair into the Overrun pile. Then put a Bystander from next to this Plot into each Lair space under the Bridge, Streets, and Sewers.",
+            "Special Rules: When you recruit an Ally, kidnap any Bystander in that Lair space. When an Ally leaves the Lair in any other way, put any Bystander from that Lair space into the Overrun Pile.",
+            "Good Wins: When there are 12 Bystanders in the Overrun Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "name": "Mass Produce War Machine Armor",
+      "slug": "mass-produce-war-machine-armor",
+      "imageUrl": "https://images.barefootbetters.com/vill/vill-sc-mass-produce-war-machine-armor.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists, Include 10 S.H.I.E.L.D. Assault Squads as one of the Backup Adversary groups.",
+            "Twist: Stack this Twist next to the Plot as “War Machine Technology.“ An Assault Squad from the current player's Victory Pile enters the Bridge.",
+            "Special Rules: Assault Squads get +1[icon:attack] for each War Machine Technology next to the Plot.",
+            "Good Wins: When there are 3 Assault Squads in the Overrun Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "name": "Resurrect Heroes with Norn Stones",
+      "slug": "resurrect-heroes-with-norn-stones",
+      "imageUrl": "https://images.barefootbetters.com/vill/vill-sc-resurrect-heroes-with-norn-stones.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists.",
+            "Twists 1-6: An Adversary from the current player's Victory Pile enters the Bridge. Then play the top card of the Adversary Deck.",
+            "Twists 7-8: Each player puts an Adversary from their Victory Pile into the Overrun Pile.",
+            "Good Wins: When there are 3 Adversaries per player in the Overrun Pile."
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [
+    {
+      "id": 5,
+      "name": "Bystander",
+      "slug": "bystander",
+      "vp": 1,
+      "imageUrl": "https://images.barefootbetters.com/vill/vill-by-bystander.webp",
+      "cards": [
+        {
+          "qtd": 30,
+          "abilities": []
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Computer Hacker",
+      "slug": "computer-hacker",
+      "vp": 1,
+      "imageUrl": "https://images.barefootbetters.com/vill/vill-by-computer-hacker.webp",
+      "cards": [
+        {
+          "qtd": 3,
+          "abilities": [
+            "When you kidnap this Bystander, draw an extra card when you draw a new hand at the end of your turn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Engineer",
+      "slug": "engineer",
+      "vp": 1,
+      "imageUrl": "https://images.barefootbetters.com/vill/vill-by-engineer.webp",
+      "cards": [
+        {
+          "qtd": 3,
+          "abilities": [
+            "When you kidnap this Bystander, reveal the top card of your deck. If it costs 0[icon:vp], KO it."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Public Speaker",
+      "slug": "public-speaker",
+      "vp": 1,
+      "imageUrl": "https://images.barefootbetters.com/vill/vill-by-public-speaker.webp",
+      "cards": [
+        {
+          "qtd": 3,
+          "abilities": [
+            "When you kidnap this Bystander, gain +1[icon:recruit]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Rock Star",
+      "slug": "rock-star",
+      "vp": 1,
+      "imageUrl": "https://images.barefootbetters.com/vill/vill-by-rock-star.webp",
+      "cards": [
+        {
+          "qtd": 3,
+          "abilities": [
+            "When you kidnap this Bystander, kidnap another Bystander."
+          ]
+        }
+      ]
+    }
+  ],
+  "wounds": [
+    {
+      "id": 2,
+      "name": "Bindings",
+      "filterName": null,
+      "slug": "bindings",
+      "imageUrl": "https://images.barefootbetters.com/vill/vill-wd-bindings.webp",
+      "cards": [
+        {
+          "qtd": 30,
+          "abilities": [
+            "Betrayal: If you don't recruit any Allies or defeat any Adversaries or Commanders on your turn, you may KO a Bindings from your hand. If you do, the player to your right gains all the other Bindings from your hand."
+          ]
+        }
+      ]
+    }
+  ],
+  "other": []
+}

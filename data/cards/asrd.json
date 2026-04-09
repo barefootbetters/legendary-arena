@@ -1,0 +1,774 @@
+{
+  "id": 26,
+  "abbr": "asrd",
+  "exportName": "HeroesOfAsgard",
+  "heroes": [
+    {
+      "id": 198,
+      "name": "Beta Ray Bill",
+      "slug": "beta-ray-bill",
+      "team": "heroes-of-asgard",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Hope of the Korbinites",
+          "displayName": "Hope of the Korbinites",
+          "slug": "hope-of-the-korbinites",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 1,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-hr-beta-ray-bill-1c1.webp",
+          "abilities": [
+            "To play this, you must discard a card.",
+            "Then, if you are [keyword:Worthy], draw a card."
+          ]
+        },
+        {
+          "name": "Bio-Engineered Cyborg",
+          "displayName": "Bio-Engineered Cyborg",
+          "slug": "bio-engineered-cyborg",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 5,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-hr-beta-ray-bill-5c2.webp",
+          "abilities": [
+            "You may discard a card. If you do, draw a card."
+          ]
+        },
+        {
+          "name": "Stormbreaker",
+          "displayName": "Stormbreaker",
+          "slug": "stormbreaker",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-hr-beta-ray-bill-4u.webp",
+          "abilities": [
+            "You cannot throw Stormbreaker unless you are [keyword:Worthy].",
+            "[keyword:Thrown Artifact] — To throw this, you must discard a card from your hand. Then you get +2[icon:attack] for each card you discarded from your hand this turn."
+          ]
+        },
+        {
+          "name": "The Warship Skuttlebutt",
+          "displayName": "The Warship Skuttlebutt",
+          "slug": "the-warship-skuttlebutt",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 8,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-hr-beta-ray-bill-8r.webp",
+          "abilities": [
+            "You may discard a card. Then count the number of cards you discarded from your hand this turn. Draw that many cards."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 199,
+      "name": "Lady Sif",
+      "slug": "lady-sif",
+      "team": "heroes-of-asgard",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Dimensional Blade",
+          "displayName": "Dimensional Blade",
+          "slug": "dimensional-blade",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-hr-lady-sif-2c1.webp",
+          "abilities": [
+            "[keyword:Thrown Artifact] — When you throw this you get +1[icon:recruit] and +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Weapons Master",
+          "displayName": "Weapons Master",
+          "slug": "weapons-master",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-hr-lady-sif-5c2.webp",
+          "abilities": [
+            "If you control any Artifacts, you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Winged Helm",
+          "displayName": "Winged Helm",
+          "slug": "winged-helm",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 3,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-hr-lady-sif-3u.webp",
+          "abilities": [
+            "[keyword:Thrown Artifact] — You may throw this to get +1[icon:attack].",
+            "During any player's turn, if a player would gain a Wound, you may throw this to prevent that Wound and draw two cards instead."
+          ]
+        },
+        {
+          "name": "Golden Apples of Idunn",
+          "displayName": "Golden Apples of Idunn",
+          "slug": "golden-apples-of-idunn",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 7,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-hr-lady-sif-7r.webp",
+          "abilities": [
+            "[keyword:Thrown Artifact] — When you throw this, you get +4[icon:attack] and you may KO a card from your hand or discard pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 200,
+      "name": "Thor",
+      "slug": "thor",
+      "team": "heroes-of-asgard",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Test of Virtue",
+          "displayName": "Test of Virtue",
+          "slug": "test-of-virtue",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "0+",
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-hr-thor-3c1.webp",
+          "abilities": [
+            "If you are [keyword:Worthy], you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Divine Lightning",
+          "displayName": "Divine Lightning",
+          "slug": "divine-lightning",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 5,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-hr-thor-5c2.webp",
+          "abilities": [
+            "You get +1[icon:attack] for each other card you played this turn that makes you [keyword:Worthy]."
+          ]
+        },
+        {
+          "name": "Mjolnir",
+          "displayName": "Mjolnir",
+          "slug": "mjolnir",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 4,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-hr-thor-4u.webp",
+          "abilities": [
+            "You cannot throw Mjolnir unless you are [keyword:Worthy].",
+            "[keyword:Thrown Artifact] — When you throw this, you get +3[icon:attack], then you get +1[icon:attack] for each [hc:ranged] Hero you played this turn."
+          ]
+        },
+        {
+          "name": "Royal Decree",
+          "displayName": "Royal Decree",
+          "slug": "royal-decree",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 8,
+          "attack": "5",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-hr-thor-8r.webp",
+          "abilities": [
+            "[team:heroes-of-asgard]: Each player who is [keyword:Worthy] draws a card. Each Villain that isn't worth at least 5VP gets -1[icon:attack] this turn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 201,
+      "name": "Valkyrie",
+      "slug": "valkyrie",
+      "team": "heroes-of-asgard",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Dragonfang",
+          "displayName": "Dragonfang",
+          "slug": "dragonfang",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 3,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-hr-valkyrie-3c1.webp",
+          "abilities": [
+            "[keyword:Thrown Artifact] — When you throw this, you get [keyword:Sewers Conqueror 2]."
+          ]
+        },
+        {
+          "name": "Flying Stallion",
+          "displayName": "Flying Stallion",
+          "slug": "flying-stallion",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-hr-valkyrie-4c2.webp",
+          "abilities": [
+            "[keyword:Streets] [keyword:Conqueror] 1",
+            "When an Ambush ability is played, before it takes effect, you may discard this card. If you do, draw two extra cards at the end of this turn."
+          ]
+        },
+        {
+          "name": "Usher to Valhalla",
+          "displayName": "Usher to Valhalla",
+          "slug": "usher-to-valhalla",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 6,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-hr-valkyrie-6u.webp",
+          "abilities": [
+            "[keyword:Bridge] [keyword:Conqueror] 1",
+            "[team:heroes-of-asgard]: The first time you defeat a Villain this turn, you may KO one of your cards or a card from your discard pile."
+          ]
+        },
+        {
+          "name": "Ride of the Valkyries",
+          "displayName": "Ride of the Valkyries",
+          "slug": "ride-of-the-valkyries",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-hr-valkyrie-7r.webp",
+          "abilities": [
+            "[keyword:Streets] [keyword:Conqueror] 1",
+            "[hc:instinct]: You get +1[icon:attack] for every 4 Heroes in the KO pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 202,
+      "name": "Warriors Three, The",
+      "slug": "warriors-three-the",
+      "team": "heroes-of-asgard",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Fandral the Dashing",
+          "displayName": "Fandral the Dashing",
+          "slug": "fandral-the-dashing",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-hr-warriors-three-the-3c1.webp",
+          "abilities": [
+            "You may move a Villain to an adjacent city space. If another Villain is already there, swap them.",
+            "[hc:covert]: Draw a card."
+          ]
+        },
+        {
+          "name": "Hogun the Grim",
+          "displayName": "Hogun the Grim",
+          "slug": "hogun-the-grim",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-hr-warriors-three-the-4c2.webp",
+          "abilities": [
+            "[hc:strength]: You may KO a card from your hand or discard pile."
+          ]
+        },
+        {
+          "name": "Volstagg the Valiant",
+          "displayName": "Volstagg the Valiant",
+          "slug": "volstagg-the-valiant",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-hr-warriors-three-the-6u.webp",
+          "abilities": [
+            "[keyword:Bridge] [keyword:Conqueror] 1",
+            "[hc:instinct]: Instead, [keyword:Conqueror]"
+          ]
+        },
+        {
+          "name": "Three Stand as One",
+          "displayName": "Three Stand as One",
+          "slug": "three-stand-as-one",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 8,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-hr-warriors-three-the-8r.webp",
+          "abilities": [
+            "If you played at least three other non-grey Heroes with different card names this turn, you get +3[icon:attack].",
+            "[team:heroes-of-asgard]: [keyword:Streets Conqueror 3]"
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 67,
+      "name": "Hela, Goddess of Death",
+      "slug": "hela-goddess-of-death",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Hela, Goddess of Death",
+          "slug": "hela-goddess-of-death",
+          "tactic": false,
+          "vAttack": "10+",
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-mm-hela-goddess-of-death.webp",
+          "abilities": [
+            "[keyword:Bridge] [keyword:Conqueror] 5 [keyword:Streets] [keyword:Conqueror] 5",
+            "Always Leads: Omens of Ragnarok",
+            "Master Strike: This Strike enters the city as a 5[icon:attack] \"Army of the Dead\" Villain worth 3VP. Then choose a Villain worth 3VP or more from your Victory Pile (including an Army of the Dead) to enter the city. If you didn't have any, each player gains a Wound."
+          ]
+        },
+        {
+          "name": "Epic Hela, Goddess of Death",
+          "slug": "epic-hela-goddess-of-death",
+          "tactic": false,
+          "vAttack": "12+",
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-me-hela-goddess-of-death.webp",
+          "abilities": [
+            "[keyword:Bridge] [keyword:Conqueror] 6 [keyword:Streets] [keyword:Conqueror] 6",
+            "Always Leads: Omens of Ragnarok",
+            "Master Strike: This Strike enters the city as a 6[icon:attack] \"Army of the Dead\" Villain worth 4VP. Then choose a Villain worth 4VP or more from your Victory Pile (including an Army of the Dead) to enter the city. If you didn't have any, each player gains a Wound."
+          ]
+        },
+        {
+          "name": "Hela's Cloak",
+          "slug": "helas-cloak",
+          "tactic": true,
+          "vAttack": "+2",
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-mt-hela-goddess-of-death-helas-cloak.webp",
+          "abilities": [
+            "Fight: Rescue 4 Bystanders. Hela captures this card as a [keyword:Villainous Weapons].",
+            "",
+            "[keyword:Artifact] - Once during each player's turn, if you would gain a Wound, you may draw a card instead."
+          ]
+        },
+        {
+          "name": "The Nightsword",
+          "slug": "the-nightsword",
+          "tactic": true,
+          "vAttack": "+3",
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-mt-hela-goddess-of-death-the-nightsword.webp",
+          "abilities": [
+            "Fight: Rescue 4 Bystanders. Hela captures this card as a [keyword:Villainous Weapons].",
+            "",
+            "[keyword:Thrown Artifact] - When you throw this, you get [keyword:Conqueror]."
+          ]
+        },
+        {
+          "name": "Seize Bifrost, The Rainbow Bridge",
+          "slug": "seize-bifrost-the-rainbow-bridge",
+          "tactic": true,
+          "vAttack": 10,
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-mt-hela-goddess-of-death-seize-bifrost-the-rainbow-bridge.webp",
+          "abilities": [
+            "Fight: Reveal the top card of the Villain Deck. If it's a Villain, that Villain enters the Bridge or Streets, if one of those spaces is empty."
+          ]
+        },
+        {
+          "name": "Naglfar, Longship of Fingernails",
+          "slug": "naglfar-longship-of-fingernails",
+          "tactic": true,
+          "vAttack": 10,
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-mt-hela-goddess-of-death-naglfar-longship-of-fingernails.webp",
+          "abilities": [
+            "Fight: The player on your right reveals the Villain from their Victory Pile that's worth the most VP. That Villain enters the Bridge or Streets, if one of those spaces is empty."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 68,
+      "name": "Malekith the Accursed",
+      "slug": "malekith-the-accursed",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Malekith the Accursed",
+          "slug": "malekith-the-accursed",
+          "tactic": false,
+          "vAttack": 8,
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-mm-malekith-the-accursed.webp",
+          "abilities": [
+            "Always Leads: Dark Council",
+            "Master Strike: Malekith captures a [keyword:Villainous Weapon] from the city or from any player's control or discard pile. Then this Master Strike enters the city as a [keyword:Villainous Weapon] called “Darkspear“ that gives +2[icon:attack]. When you gain a Darkspear, it becomes a [keyword:Thrown Artifact] that gives +2[icon:attack] when thrown."
+          ]
+        },
+        {
+          "name": "Epic Malekith the Accursed",
+          "slug": "epic-malekith-the-accursed",
+          "tactic": false,
+          "vAttack": 10,
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-me-malekith-the-accursed.webp",
+          "abilities": [
+            "Always Leads: Dark Council",
+            "Master Strike: Malekith captures a [keyword:Villainous Weapon] from the city, then captures one from any player's control or discard pile. Then this Master Strike enters the city as a [keyword:Villainous Weapon] called “Darkspear“ that gives +3[icon:attack]. When you gain a Darkspear, it becomes a [keyword:Thrown Artifact] that gives +2[icon:attack] when thrown."
+          ]
+        },
+        {
+          "name": "Black Hammer of the Accursed",
+          "slug": "black-hammer-of-the-accursed",
+          "tactic": true,
+          "vAttack": "+4",
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-mt-malekith-the-accursed-black-hammer-of-the-accursed.webp",
+          "abilities": [
+            "Fight: Rescue 4 Bystanders. Malekith captures a [keyword:Villainous Weapons] from the city or from any player's control or discard pile. Then this Tactic enters the city as a [keyword:Villainous Weapons].",
+            "",
+            "[keyword:Artifact] - Once per turn, you may KO a Hero from your discard pile."
+          ]
+        },
+        {
+          "name": "Dagger of Living Abyss",
+          "slug": "dagger-of-living-abyss",
+          "tactic": true,
+          "vAttack": "+2",
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-mt-malekith-the-accursed-dagger-of-living-abyss.webp",
+          "abilities": [
+            "Fight: Rescue 4 Bystanders. Malekith captures a [keyword:Villainous Weapons] from the city or from any player's control or discard pile. Then this Tactic enters the city as a [keyword:Villainous Weapons].",
+            "",
+            "[keyword:Artifact] - Once per turn, you may defeat a Villain worth 2VP or less."
+          ]
+        },
+        {
+          "name": "The Hunting Horn of Faerie",
+          "slug": "the-hunting-horn-of-faerie",
+          "tactic": true,
+          "vAttack": "+3",
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-mt-malekith-the-accursed-the-hunting-horn-of-faerie.webp",
+          "abilities": [
+            "Fight: Rescue 4 Bystanders. Malekith captures a [keyword:Villainous Weapons] from the city or from any player's control or discard pile. Then this Tactic enters the city as a [keyword:Villainous Weapons].",
+            "",
+            "[keyword:Artifact] - Once per turn, draw a card."
+          ]
+        },
+        {
+          "name": "Vulnerable to Cold Iron",
+          "slug": "vulnerable-to-cold-iron",
+          "tactic": true,
+          "vAttack": 8,
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-mt-malekith-the-accursed-vulnerable-to-cold-iron.webp",
+          "abilities": [
+            "Fight: You get +2[icon:recruit] for each [hc:tech] Hero you have."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 86,
+      "name": "Dark Council",
+      "slug": "dark-council",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Laufey, Father Of Loki",
+          "slug": "laufey-father-of-loki",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-vi-dark-council-laufey-father-of-loki.webp",
+          "abilities": [
+            "Ambush: Laufey captures The Casket of Ancient Winters from any Villain, Mastermind, player's control, or discard pile.",
+            "Escape: If Laufey holds The Casket of Ancient Winters, say “Fimbulwinter has come,“ and each player discards down to 3 cards."
+          ]
+        },
+        {
+          "name": "The Mangog",
+          "slug": "the-mangog",
+          "vp": "4",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-vi-dark-council-the-mangog.webp",
+          "abilities": [
+            "The Mangog gets +1[icon:attack] for each Villain in the Victory Pile of the player on your right.",
+            "Escape: Each player who is not [keyword:Worthy] gains a Wound."
+          ]
+        },
+        {
+          "name": "Ulik, The Troll",
+          "slug": "ulik-the-troll",
+          "vp": "2",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-vi-dark-council-ulik-the-troll.webp",
+          "abilities": [
+            "Ulik gets +2[icon:attack] if you are not [keyword:Worthy].",
+            "Fight: KO one of your Heroes."
+          ]
+        },
+        {
+          "name": "Sindr, Fire Giant Queen",
+          "slug": "sindr-fire-giant-queen",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-vi-dark-council-sindr-fire-giant-queen.webp",
+          "abilities": [
+            "Fight: If you are [keyword:Worthy], you get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Jarnbjorn, First Axe of Thor",
+          "slug": "jarnbjorn-first-axe-of-thor",
+          "vp": null,
+          "vAttack": "+3",
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-vi-dark-council-jarnbjorn-first-axe-of-thor.webp",
+          "abilities": [
+            "[keyword:Villainous Weapons]",
+            "",
+            "[keyword:Thrown Artifact] When you throw this, you get +3[icon:attack]."
+          ]
+        },
+        {
+          "name": "The Casket of Ancient Winters",
+          "slug": "the-casket-of-ancient-winters",
+          "vp": null,
+          "vAttack": "+4",
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-vi-dark-council-the-casket-of-ancient-winters.webp",
+          "abilities": [
+            "[keyword:Villainous Weapons]",
+            "",
+            "[keyword:Artifact] Once per turn, if you are [keyword:Worthy], you get +2[icon:recruit]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 87,
+      "name": "Omens of Ragnarok",
+      "slug": "omens-of-ragnarok",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "The Eternal Flame",
+          "slug": "the-eternal-flame",
+          "vp": null,
+          "vAttack": "+4",
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-vi-omens-of-ragnarok-the-eternal-flame.webp",
+          "abilities": [
+            "[keyword:Villainous Weapons]",
+            "Ambush: If Surtur is in the city, he captures The Eternal Flame. If a player controls \"Surtur's Crown\", that card enters the city as the Villain Surtur and captures The Eternal Flame.",
+            "[keyword:Artifact] Once per turn, return a 0-cost card from your discard pile to your hand."
+          ]
+        },
+        {
+          "name": "The Hel-Crown",
+          "slug": "the-hel-crown",
+          "vp": null,
+          "vAttack": "+3",
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-vi-omens-of-ragnarok-the-hel-crown.webp",
+          "abilities": [
+            "[keyword:Villainous Weapons]",
+            "",
+            "[keyword:Artifact] Once per turn, you get [keyword:Conqueror]."
+          ]
+        },
+        {
+          "name": "Skurge, The Executioner",
+          "slug": "skurge-the-executioner",
+          "vp": "2",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-vi-omens-of-ragnarok-skurge-the-executioner.webp",
+          "abilities": [
+            "[keyword:Bridge] [keyword:Conqueror] 3",
+            "Fight: KO one of your Heroes."
+          ]
+        },
+        {
+          "name": "Surtur, Fire Giant King",
+          "slug": "surtur-fire-giant-king",
+          "vp": null,
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-vi-omens-of-ragnarok-surtur-fire-giant-king.webp",
+          "abilities": [
+            "Fight: Put this into your discard pile as a \"Surtur's Crown\" Artifact.",
+            "Escape: If Surtur was holding The Eternal Flame, say \"Ragnarok has come\", KO each [team:heroes-of-asgard] Hero from the HQ, and each player gains two Wounds.",
+            "",
+            "[keyword:Artifact] Once per turn, you get [keyword:Conqueror]."
+          ]
+        },
+        {
+          "name": "Jormungand, The World-Serpent",
+          "slug": "jormungand-the-world-serpent",
+          "vp": "5",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-vi-omens-of-ragnarok-jormungand-the-world-serpent.webp",
+          "abilities": [
+            "[keyword:Sewers] [keyword:Conqueror] 1",
+            "[keyword:Bank] [keyword:Conqueror] 1",
+            "[keyword:Rooftops] [keyword:Conqueror] 1",
+            "[keyword:Streets] [keyword:Conqueror] 1",
+            "[keyword:Bridge] [keyword:Conqueror] 1",
+            "Fight: Each Hero currently in the HQ costs 1 less this turn."
+          ]
+        },
+        {
+          "name": "The Fenris Wolf",
+          "slug": "the-fenris-wolf",
+          "vp": "3",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/asrd/asrd-vi-omens-of-ragnarok-the-fenris-wolf.webp",
+          "abilities": [
+            "[keyword:Streets] [keyword:Conqueror] 2",
+            "Ambush: The Fenris Wolf moves forward to the Rooftops, pushing other Villains forward as normal."
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [],
+  "schemes": [
+    {
+      "id": 122,
+      "name": "Asgardian Test of Worth",
+      "slug": "asgardian-test-of-worth",
+      "imageUrl": "https://images.barefootbetters.com/asrd/asrd-sc-asgardian-test-of-worth.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 11 Twists.",
+            "Twist 1-7: Each player who is not [keyword:Worthy] discards a card. Then, if at least half the players (round up) are not [keyword:Worthy], put this Twist next to the Scheme as a “Moral Failing.“",
+            "Twist 8-11: Put this Twist next to the Scheme as a “Moral Failing.“",
+            "Evil Wins: When there are 5 Moral Failings."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 123,
+      "name": "Dark World of Svartalfheim, The",
+      "slug": "dark-world-of-svartalfheim-the",
+      "imageUrl": "https://images.barefootbetters.com/asrd/asrd-sc-dark-world-of-svartalfheim-the.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 10 Twists.",
+            "Twist: Put this Twist next to a city space of HQ space that doesn't already have one, as “Eternal Darkness.“",
+            "Special Rules: Villains in city spaces with Eternal Darkness get +1[icon:attack]. To recruit a Hero in an HQ space with Eternal Darkness, you must pay an extra 1[icon:recruit].",
+            "Evil Wins: When all city spaces or all HQ spaces are covered in Eternal Darkness."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 124,
+      "name": "War of the Frost Giants",
+      "slug": "war-of-the-frost-giants",
+      "imageUrl": "https://images.barefootbetters.com/asrd/asrd-sc-war-of-the-frost-giants.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 9 Twists.",
+            "Twist 1-7: This Twist enters the city as a “Frost Giant Invader“ Villain worth 6VP with 6[icon:attack] and the ability “If you are not [keyword:Worthy], this gets +4[icon:attack].“",
+            "Twist 8-9: Same effect, then a Frost Giant Invader from each player's Victory Pile enters the city.",
+            "Evil Wins: When there are 5 Frost Giant Invaders in the city and/or Escape Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 125,
+      "name": "Ragnarok, Twilight of the Gods",
+      "slug": "ragnarok-twilight-of-the-gods",
+      "imageUrl": "https://images.barefootbetters.com/asrd/asrd-sc-ragnarok-twilight-of-the-gods.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 11 Twists.",
+            "Twist: Choose a Villain from your Victory Pile worth at least 2VP to enter the city. Then, if the total [icon:attack] of Villains in the city is at least as high as the Guardian [icon:attack] listed below, put this Twist next to the Scheme as a “Guardian Defeated.“",
+            "Twist 1: Balder, 11[icon:attack]",
+            "Twist 2: Odin, 24[icon:attack]",
+            "Twist 3: Vidar, 19[icon:attack]",
+            "Twist 4: Tyr, 16[icon:attack]",
+            "Twist 5: Heimdall, 12[icon:attack]",
+            "Twist 6: Frey, 7[icon:attack]",
+            "Twist 7: Frigga, 8[icon:attack]",
+            "Twist 8-11: Warriors of Valhalla, 6[icon:attack]",
+            "Evil Wins: When there are 5 Guardians Defeated."
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [],
+  "wounds": [],
+  "other": []
+}

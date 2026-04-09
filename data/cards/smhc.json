@@ -1,0 +1,730 @@
+{
+  "id": 17,
+  "abbr": "smhc",
+  "exportName": "SpiderManHomecoming",
+  "heroes": [
+    {
+      "id": 147,
+      "name": "Happy Hogan",
+      "slug": "happy-hogan",
+      "team": "unaffiliated",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Head of Security",
+          "displayName": "Head of Security",
+          "slug": "head-of-security",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-hr-happy-hogan-3c1.webp",
+          "abilities": [
+            "[keyword:Coordinate]",
+            "KO all Wounds you gained this turn."
+          ]
+        },
+        {
+          "name": "Watchful Eye",
+          "displayName": "Watchful Eye",
+          "slug": "watchful-eye",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-hr-happy-hogan-4c2.webp",
+          "abilities": [
+            "[hc:instinct]: [keyword:Danger Sense 2]. If this revealed any Master Strikes, KO those Strikes, then you may KO a card from your hand or discard pile."
+          ]
+        },
+        {
+          "name": "Loyal Friend",
+          "displayName": "Loyal Friend",
+          "slug": "loyal-friend",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 5,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-hr-happy-hogan-5u.webp",
+          "abilities": [
+            "[keyword:Coordinate]",
+            "[keyword:Striker]"
+          ]
+        },
+        {
+          "name": "Asset Management",
+          "displayName": "Asset Management",
+          "slug": "asset-management",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 5,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-hr-happy-hogan-5r.webp",
+          "abilities": [
+            "[keyword:Double Striker]"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 148,
+      "name": "High Tech Spider-Man",
+      "slug": "high-tech-spider-man",
+      "team": "spider-friends",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Advanced Targeting System",
+          "displayName": "Advanced Targeting System",
+          "slug": "advanced-targeting-system",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 2,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-hr-high-tech-spider-man-2c1.webp",
+          "abilities": [
+            "Reveal the top card of your deck. If it costs 2 or less, draw it.",
+            "[hc:covert]: Draw a card."
+          ]
+        },
+        {
+          "name": "Recon Drone Connection",
+          "displayName": "Recon Drone Connection",
+          "slug": "recon-drone-connection",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 2,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-hr-high-tech-spider-man-2c2.webp",
+          "abilities": [
+            "[keyword:Wall-Crawl]",
+            "[keyword:Danger Sense 3]"
+          ]
+        },
+        {
+          "name": "Spider-Grip",
+          "displayName": "Spider-Grip",
+          "slug": "spider-grip",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 2,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-hr-high-tech-spider-man-2u.webp",
+          "abilities": [
+            "[keyword:Wall-Crawl]",
+            "[hc:tech]: Choose two Villains in adjacent city spaces. Each of them gets -1[icon:attack] this turn."
+          ]
+        },
+        {
+          "name": "Friendly Neighborhood...",
+          "displayName": "Friendly Neighborhood...",
+          "slug": "friendly-neighborhood",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 2,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-hr-high-tech-spider-man-2r.webp",
+          "abilities": [
+            "[keyword:Wall-Crawl]",
+            "[keyword:Coordinate]",
+            "You get +3[icon:attack], usable only against the Mastermind or Villains on the Rooftops or Streets."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 149,
+      "name": "Peter Parker, Homecoming",
+      "slug": "peter-parker-homecoming",
+      "team": "spider-friends",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Avenger in Training",
+          "displayName": "Avenger in Training",
+          "slug": "avenger-in-training",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-hr-peter-parker-homecoming-2c1.webp",
+          "abilities": [
+            "[keyword:Wall-Crawl]",
+            "[hc:instinct]: [keyword:Danger Sense 1]. If this revealed a Villain, you may fight it."
+          ]
+        },
+        {
+          "name": "Heightened Senses",
+          "displayName": "Heightened Senses",
+          "slug": "heightened-senses",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 2,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-hr-peter-parker-homecoming-2c2.webp",
+          "abilities": [
+            "[keyword:Danger Sense 2]",
+            "Reveal the top card of your deck. If it costs 2 or less, draw it."
+          ]
+        },
+        {
+          "name": "Homemade Web-Shooters",
+          "displayName": "Homemade Web-Shooters",
+          "slug": "homemade-web-shooters",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 2,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-hr-peter-parker-homecoming-2u.webp",
+          "abilities": [
+            "[keyword:Wall-Crawl]",
+            "[hc:tech]: [keyword:Danger Sense 1]. If this revealed a Bystander, rescue it."
+          ]
+        },
+        {
+          "name": "Something is Happening",
+          "displayName": "Something is Happening",
+          "slug": "something-is-happening",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 2,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-hr-peter-parker-homecoming-2r.webp",
+          "abilities": [
+            "[keyword:Wall-Crawl]",
+            "[keyword:Coordinate]",
+            "[keyword:Danger Sense 4]. If this revealed any Scheme Twists, you may shuffle the Villain Deck."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 150,
+      "name": "Peter's Allies",
+      "slug": "peters-allies",
+      "team": "spider-friends",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Ned",
+          "displayName": "Ned",
+          "slug": "ned",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 2,
+          "attack": null,
+          "recruit": "1+",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-hr-peters-allies-2c1.webp",
+          "abilities": [
+            "[keyword:Coordinate]",
+            "[hc:covert]: You get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Michelle",
+          "displayName": "Michelle",
+          "slug": "michelle",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-hr-peters-allies-3c2.webp",
+          "abilities": [
+            "You may choose a Villain or Mastermind. You can fight it using only [icon:recruit] this turn."
+          ]
+        },
+        {
+          "name": "Liz",
+          "displayName": "Liz",
+          "slug": "liz",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 6,
+          "attack": null,
+          "recruit": "4",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-hr-peters-allies-6u.webp",
+          "abilities": [
+            "Whenever you [keyword:Coordinate] a card to another player, you may reveal this to draw two cards instead of one."
+          ]
+        },
+        {
+          "name": "May Parker",
+          "displayName": "May Parker",
+          "slug": "may-parker",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 7,
+          "attack": null,
+          "recruit": "5",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-hr-peters-allies-7r.webp",
+          "abilities": [
+            "[keyword:Coordinate]",
+            "[team:spider-friends]: Each Villain gets -2[icon:attack] this turn. The next time you fight the Mastermind this turn, it gets -2[icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 151,
+      "name": "Tony Stark",
+      "slug": "tony-stark",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Genius, Billionaire...",
+          "displayName": "Genius, Billionaire...",
+          "slug": "genius-billionaire",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 2,
+          "attack": "1",
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-hr-tony-stark-2c1.webp",
+          "abilities": [
+            "[keyword:Coordinate]"
+          ]
+        },
+        {
+          "name": "Stay Out of Trouble",
+          "displayName": "Stay Out of Trouble",
+          "slug": "stay-out-of-trouble",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-hr-tony-stark-4c2.webp",
+          "abilities": [
+            "[keyword:Coordinate]",
+            "[hc:tech]: [keyword:Danger Sense 2]"
+          ]
+        },
+        {
+          "name": "Little Grey Area",
+          "displayName": "Little Grey Area",
+          "slug": "little-grey-area",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 5,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-hr-tony-stark-5u.webp",
+          "abilities": [
+            "[team:avengers]: [keyword:Danger Sense 1]. If this revealed a Villain, then Villains from that same Villain Group get -1[icon:attack] this turn."
+          ]
+        },
+        {
+          "name": "As Usual, I Did All the Work",
+          "displayName": "As Usual, I Did All the Work",
+          "slug": "as-usual-i-did-all-the-work",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 7,
+          "attack": "5",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-hr-tony-stark-7r.webp",
+          "abilities": [
+            "[keyword:Coordinate]",
+            "If another player accepts this [keyword:Coordinate], then at the end of this turn, move all cards that entered that player's Victory Pile this turn into your Victory Pile."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 46,
+      "name": "Adrian Toomes",
+      "slug": "adrian-toomes",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Adrian Toomes",
+          "slug": "adrian-toomes",
+          "tactic": false,
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-mm-adrian-toomes.webp",
+          "abilities": [
+            "[keyword:Double Striker]",
+            "Always Leads: Salvagers",
+            "Master Strike: Starting from the Sewers, each Villain in the city uses its “Escape“ ability."
+          ]
+        },
+        {
+          "name": "Epic Adrian Toomes",
+          "slug": "epic-adrian-toomes",
+          "tactic": false,
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-me-adrian-toomes.webp",
+          "abilities": [
+            "[keyword:Triple Striker]",
+            "Always Leads: Salvagers",
+            "Master Strike: Starting from the Sewers, each Villain in the city uses its “Ambush“ ability, then its “Escape“ ability."
+          ]
+        },
+        {
+          "name": "Don't Interfere",
+          "slug": "dont-interfere",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-mt-adrian-toomes-dont-interfere.webp",
+          "abilities": [
+            "Fight: [keyword:Danger Sense 4]. If this revealed any Bystanders, rescue them."
+          ]
+        },
+        {
+          "name": "More Harm than Good",
+          "slug": "more-harm-than-good",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-mt-adrian-toomes-more-harm-than-good.webp",
+          "abilities": [
+            "Fight: Each other player discards a [team:spider-friends] Hero or gains a Wound."
+          ]
+        },
+        {
+          "name": "Take Everything",
+          "slug": "take-everything",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-mt-adrian-toomes-take-everything.webp",
+          "abilities": [
+            "Fight: You may put a card from your discard pile on top of your deck."
+          ]
+        },
+        {
+          "name": "The World's Changed",
+          "slug": "the-worlds-changed",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-mt-adrian-toomes-the-worlds-changed.webp",
+          "abilities": [
+            "Fight: [keyword:Danger Sense 3]. Put all Henchmen Villains revealed this way into your Victory Pile, then do their “Fight“ abilities."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 47,
+      "name": "Vulture",
+      "slug": "vulture",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Vulture",
+          "slug": "vulture",
+          "tactic": false,
+          "vAttack": "8+",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-mm-vulture.webp",
+          "abilities": [
+            "[keyword:Striker]",
+            "Always Leads: Vulture Tech",
+            "Master Strike: Put a Wound from the Wound Stack below each HQ space as a “Winged Assault.“ Whenever a player gains or KOs a Hero from the HQ, the player on their right gains one of the Wounds below that HQ space."
+          ]
+        },
+        {
+          "name": "Epic Vulture",
+          "slug": "epic-vulture",
+          "tactic": false,
+          "vAttack": "10+",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-me-vulture.webp",
+          "abilities": [
+            "[keyword:Striker]",
+            "Always Leads: Vulture Tech",
+            "Master Strike: Put a Wound from the Wound Stack or KO pile below each HQ space as a “Winged Assault.“ Whenever a player gains or KOs a Hero from the HQ, the player on their right gains one of the Wounds below that HQ space, putting it on top of their deck."
+          ]
+        },
+        {
+          "name": "Bird of Prey",
+          "slug": "bird-of-prey",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-mt-vulture-bird-of-prey.webp",
+          "abilities": [
+            "Fight: Each other player discards a [team:spider-friends] Hero or discards two cards."
+          ]
+        },
+        {
+          "name": "Lurking Shadow",
+          "slug": "lurking-shadow",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-mt-vulture-lurking-shadow.webp",
+          "abilities": [
+            "Fight: [keyword:Danger Sense 2]. If the Rooftops are empty, a Villain you revealed enters the Rooftops."
+          ]
+        },
+        {
+          "name": "Mid Air Heist",
+          "slug": "mid-air-heist",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-mt-vulture-mid-air-heist.webp",
+          "abilities": [
+            "Fight: You get +5[icon:recruit] usable only to recruit [hc:tech] Heroes."
+          ]
+        },
+        {
+          "name": "Winged Assault",
+          "slug": "winged-assault",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-mt-vulture-winged-assault.webp",
+          "abilities": [
+            "Fight: Put two “Winged Assault“ Wounds from under the HQ into each other player's discard pile."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 60,
+      "name": "Salvagers",
+      "slug": "salvagers",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Hybrid Alien Tech",
+          "slug": "hybrid-alien-tech",
+          "vp": "4",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-vi-salvagers-hybrid-alien-tech.webp",
+          "abilities": [
+            "[keyword:Striker]",
+            "Fight: KO one of your 0-cost Heroes.",
+            "Escape: The current player reveals a [hc:ranged] Hero or gains a 0-cost Hero from the KO pile."
+          ]
+        },
+        {
+          "name": "Shocker #1",
+          "slug": "shocker-1",
+          "vp": "3",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-vi-salvagers-shocker-1.webp",
+          "abilities": [
+            "[keyword:Striker]",
+            "Escape: Each player reveals an [hc:instinct] Hero or discards a card."
+          ]
+        },
+        {
+          "name": "Shocker #2",
+          "slug": "shocker-2",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-vi-salvagers-shocker-2.webp",
+          "abilities": [
+            "Ambush: Each player reveals their hand and discards all cards with the same card name as a card in the HQ.",
+            "Escape: (After the normal HQ KO for this escaping) Same effect."
+          ]
+        },
+        {
+          "name": "Tinkerer",
+          "slug": "tinkerer",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-vi-salvagers-tinkerer.webp",
+          "abilities": [
+            "Fight: You get +1[icon:recruit] for each [hc:tech] Hero in the HQ.",
+            "Escape: Each player reveals a [hc:tech] Hero or gains a Wound."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 61,
+      "name": "Vulture Tech",
+      "slug": "vulture-tech",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Chitauri Weapon Assault",
+          "slug": "chitauri-weapon-assault",
+          "vp": "4",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-vi-vulture-tech-chitauri-weapon-assault.webp",
+          "abilities": [
+            "[keyword:Striker]",
+            "Fight: KO one of your Heroes with a [icon:recruit] icon.",
+            "Escape: Each player discards a card with a [icon:recruit] icon."
+          ]
+        },
+        {
+          "name": "High Tech Helmet",
+          "slug": "high-tech-helmet",
+          "vp": "3",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-vi-vulture-tech-high-tech-helmet.webp",
+          "abilities": [
+            "[keyword:Striker]",
+            "Fight: [keyword:Danger Sense 3]"
+          ]
+        },
+        {
+          "name": "Razor Talons",
+          "slug": "razor-talons",
+          "vp": "2",
+          "vAttack": "2+",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-vi-vulture-tech-razor-talons.webp",
+          "abilities": [
+            "[keyword:Striker]",
+            "Fight: The next Hero you gain this turn has [keyword:Wall-Crawl]."
+          ]
+        },
+        {
+          "name": "Turbine Powered",
+          "slug": "turbine-powered",
+          "vp": "5",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-vi-vulture-tech-turbine-powered.webp",
+          "abilities": [
+            "[keyword:Striker]",
+            "Ambush: Turbine Powered captures a Bystander. Then move this Villain to the Rooftops. If there's already a Villain there, swap them."
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [],
+  "schemes": [
+    {
+      "id": 84,
+      "name": "Distract the Hero",
+      "slug": "distract-the-hero",
+      "imageUrl": "https://images.barefootbetters.com/smhc/smhc-sc-distract-the-hero.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. Use at least 1[team:spider-friends] Hero.",
+            "Twist: If you get any Victory Points this turn, put this Twist on the bottom of the Villain Deck. Otherwise, stack this Twist next to the Scheme as a “Villainous Interruption.“",
+            "Evil Wins: When there have been 5 Villainous Interruptions."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 85,
+      "name": "Explosion at the Washington Monument",
+      "slug": "explosion-at-the-washington-monument",
+      "imageUrl": "https://images.barefootbetters.com/smhc/smhc-sc-explosion-at-the-washington-monument.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. Shuffle 18 Bystanders and 14 Wounds, then deal them evenly into eight decks. Put these decks in a row, as Floors of the Washington Monument.",
+            "Special Rules: Whenever you fight a Villain, you may reveal any face-down card from any Floor. If it's a Bystander, rescue it. If it's a Wound, put it back face-up.",
+            "Twist: KO the topmost Floor of the Washington Monument. You gain one of the Wounds KO'd this way.",
+            "Evil Wins: When 10 Bystanders are in the KO pile and/or Escape Pile, or all Floors are KO'd."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 86,
+      "name": "Ferry Disaster",
+      "slug": "ferry-disaster",
+      "imageUrl": "https://images.barefootbetters.com/smhc/smhc-sc-ferry-disaster.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 9 Twists. Put the Bystander Stack above the Sewers as the “Ferry.“",
+            "Twist 1-4: If there's a Villain in the city space below the Ferry, KO 2 Bystanders from the Ferry. Whether you KO'd or not, the Ferry moves one space left.",
+            "Twist 5-8: Same effect, but it moves right.",
+            "Twist 9: KO half the Bystanders from the Bystander deck, rounding up.",
+            "Evil Wins: When 7 Bystanders are in the KO pile and/or Escape Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 87,
+      "name": "Scavenge Alien Weaponry",
+      "slug": "scavenge-alien-weaponry",
+      "imageUrl": "https://images.barefootbetters.com/smhc/smhc-sc-scavenge-alien-weaponry.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 7 Twists. Add an extra Henchmen Group of 10 cards as “Smugglers.“",
+            "Special Rules: Smugglers have [keyword:Striker].",
+            "Twist: Play two cards from the Villain Deck.",
+            "Evil Wins: When 3 Villains per player have escaped or the Villain Deck runs out."
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [
+    {
+      "id": 32,
+      "name": "Damage Control",
+      "slug": "damage-control",
+      "vp": 1,
+      "imageUrl": "https://images.barefootbetters.com/smhc/smhc-by-damage-control.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "When you rescue this Bystander, reveal the top two cards of your deck. Put any that cost 2 or less into your hand. Put the rest back in any order."
+          ]
+        }
+      ]
+    }
+  ],
+  "wounds": [],
+  "other": []
+}

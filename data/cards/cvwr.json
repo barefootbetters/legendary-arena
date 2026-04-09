@@ -1,0 +1,2463 @@
+{
+  "id": 13,
+  "abbr": "cvwr",
+  "exportName": "CivilWar",
+  "heroes": [
+    {
+      "id": 106,
+      "name": "Captain America, Secret Avenger",
+      "slug": "captain-america-secret-avenger",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Bold Leadership",
+          "displayName": "Bold Leadership",
+          "slug": "bold-leadership",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 2,
+          "attack": null,
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-captain-america-secret-avenger-2c1.webp",
+          "abilities": [
+            "You get +1[icon:recruit] for each Hero Class you have."
+          ]
+        },
+        {
+          "name": "Inspire a Nation",
+          "displayName": "Inspire a Nation",
+          "slug": "inspire-a-nation",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 3,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-captain-america-secret-avenger-3c2.webp",
+          "abilities": [
+            "Gain a [rule:Sidekick]."
+          ]
+        },
+        {
+          "name": "Inspire a Man",
+          "displayName": "Inspire a Man",
+          "slug": "inspire-a-man",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-captain-america-secret-avenger-3c3.webp",
+          "abilities": []
+        },
+        {
+          "name": "Secret Avengers Assemble!",
+          "displayName": "Secret Avengers Assemble!",
+          "slug": "secret-avengers-assemble",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-captain-america-secret-avenger-5u.webp",
+          "abilities": [
+            "You get +1[icon:attack] for each [rule:Sidekick] and other [team:avengers] Hero you played this turn."
+          ]
+        },
+        {
+          "name": "Freedom Never Dies",
+          "displayName": "Freedom Never Dies",
+          "slug": "freedom-never-dies",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 5,
+          "hc": "ranged",
+          "cost": 7,
+          "attack": "5",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-captain-america-secret-avenger-7r.webp",
+          "abilities": [
+            "Whenever you play a [rule:Sidekick] or another [team:avengers] Hero this turn set that card aside. At the end of your turn, put those cards on the bottom of your deck in random order before you draw your new hand."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 107,
+      "name": "Cloak & Dagger",
+      "slug": "cloak-dagger",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Above",
+          "displayName": "Above",
+          "slug": "above",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-cloak-dagger-3c1.webp",
+          "abilities": []
+        },
+        {
+          "name": "Below",
+          "displayName": "Below",
+          "slug": "below",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": null,
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-cloak-dagger-3c2.webp",
+          "abilities": [
+            "You get +3[icon:recruit] usable only to recruit Heroes in the HQ space under the Sewers."
+          ]
+        },
+        {
+          "name": "Flee",
+          "displayName": "Flee",
+          "slug": "flee",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-cloak-dagger-4c3.webp",
+          "abilities": [
+            "[keyword:Phasing]",
+            "[hc:covert]: You get +1[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Fight",
+          "displayName": "Fight",
+          "slug": "fight",
+          "rarity": 1,
+          "rarityLabel": "Common 4",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-cloak-dagger-4c4.webp",
+          "abilities": [
+            "[keyword:Phasing]",
+            "[hc:ranged] You get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Darkness",
+          "displayName": "Darkness",
+          "slug": "darkness",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 5,
+          "hc": "covert",
+          "cost": 6,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-cloak-dagger-6u.webp",
+          "abilities": [
+            "[hc:covert]: Reveal the top card of your deck. If it costs 0, KO it."
+          ]
+        },
+        {
+          "name": "Light",
+          "displayName": "Light",
+          "slug": "light",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 6,
+          "hc": "ranged",
+          "cost": 6,
+          "attack": null,
+          "recruit": "3",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-cloak-dagger-6u2.webp",
+          "abilities": [
+            "[hc:ranged]: Reveal the top card of your deck. If it costs 1 or more, draw it."
+          ]
+        },
+        {
+          "name": "Penumbra",
+          "displayName": "Penumbra",
+          "slug": "penumbra",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 7,
+          "hc": "ranged",
+          "cost": 7,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-cloak-dagger-7r.webp",
+          "abilities": [
+            "Whenever you play a [rule:Divided Card] card this turn, play both sides as if they were two different cards."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 108,
+      "name": "Daredevil",
+      "slug": "daredevil",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Dual Existence",
+          "displayName": "Dual Existence",
+          "slug": "dual-existence",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-daredevil-2c1.webp",
+          "abilities": [
+            "Look at the top two cards of your deck. Draw one and put the other back."
+          ]
+        },
+        {
+          "name": "Roundhouse Side Kick",
+          "displayName": "Roundhouse Side Kick",
+          "slug": "roundhouse-side-kick",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-daredevil-4c2.webp",
+          "abilities": [
+            "Choose a number, then reveal the top card of your deck. If that card is that cost, gain a [rule:Sidekick]."
+          ]
+        },
+        {
+          "name": "Hidden Identity",
+          "displayName": "Hidden Identity",
+          "slug": "hidden-identity",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 6,
+          "attack": null,
+          "recruit": "3",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-daredevil-6u.webp",
+          "abilities": [
+            "The next Hero you recruit this turn goes on top of your deck."
+          ]
+        },
+        {
+          "name": "Revealed Identity",
+          "displayName": "Revealed Identity",
+          "slug": "revealed-identity",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-daredevil-6u2.webp",
+          "abilities": [
+            "You get +1[icon:attack] for each different cost of Hero you have."
+          ]
+        },
+        {
+          "name": "Master of Martial Arts",
+          "displayName": "Master of Martial Arts",
+          "slug": "master-of-martial-arts",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 5,
+          "hc": "covert",
+          "cost": 8,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-daredevil-8r.webp",
+          "abilities": [
+            "[team:avengers]: Discard the top two cards of your deck. If they have different costs, you get +2[icon:attack], then repeat this process."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 109,
+      "name": "Falcon",
+      "slug": "falcon",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Rapid Reinforcements",
+          "displayName": "Rapid Reinforcements",
+          "slug": "rapid-reinforcements",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-falcon-3c1.webp",
+          "abilities": [
+            "Put a Hero from the HQ on the bottom of the Hero Deck.",
+            "[hc:tech]: If that Hero had a [icon:recruit] icon, you get +1[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Talk with Birds",
+          "displayName": "Talk with Birds",
+          "slug": "talk-with-birds",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-falcon-4c2.webp",
+          "abilities": [
+            "[hc:ranged]: Gain a [rule:Sidekick]."
+          ]
+        },
+        {
+          "name": "Squawk Back",
+          "displayName": "Squawk Back",
+          "slug": "squawk-back",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-falcon-4c3.webp",
+          "abilities": [
+            "Look at the top three cards of your deck. Draw one. Put the rest back in any order."
+          ]
+        },
+        {
+          "name": "Scout the Battlefield",
+          "displayName": "Scout the Battlefield",
+          "slug": "scout-the-battlefield",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 6,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-falcon-6u.webp",
+          "abilities": [
+            "You get +1[icon:attack] for each card in the HQ with an [icon:attack] icon."
+          ]
+        },
+        {
+          "name": "Fly in a Friend",
+          "displayName": "Fly in a Friend",
+          "slug": "fly-in-a-friend",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 5,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-falcon-7r.webp",
+          "abilities": [
+            "[team:avengers]: You get +[icon:attack] equal to the printed [icon:attack] of a Hero in the HQ."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 110,
+      "name": "Goliath",
+      "slug": "goliath",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Brilliant Biochemist",
+          "displayName": "Brilliant Biochemist",
+          "slug": "brilliant-biochemist",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-goliath-4c1.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:tech]"
+          ]
+        },
+        {
+          "name": "Massive Warrior",
+          "displayName": "Massive Warrior",
+          "slug": "massive-warrior",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-goliath-4c2.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:strength]"
+          ]
+        },
+        {
+          "name": "Growth Industry",
+          "displayName": "Growth Industry",
+          "slug": "growth-industry",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 5,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-goliath-5c3.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:tech]",
+            "[hc:tech]: Draw a card."
+          ]
+        },
+        {
+          "name": "Being Big is Best",
+          "displayName": "Being Big is Best",
+          "slug": "being-big-is-best",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-goliath-6u.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:strength]",
+            "You get +1[icon:attack] for each other card you played this turn that costs 4 or more."
+          ]
+        },
+        {
+          "name": "Enormous Implications",
+          "displayName": "Enormous Implications",
+          "slug": "enormous-implications",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 5,
+          "hc": "strength",
+          "cost": 8,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-goliath-8r.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:strength]",
+            "You get +[icon:attack] equal to the cost of another card you played this turn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 111,
+      "name": "Hercules",
+      "slug": "hercules",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Manly Dullard",
+          "displayName": "Manly Dullard",
+          "slug": "manly-dullard",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 3,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-hercules-3c1.webp",
+          "abilities": [
+            "To play this, you must discard a card from your hand."
+          ]
+        },
+        {
+          "name": "Boy Genius",
+          "displayName": "Boy Genius",
+          "slug": "boy-genius",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 3,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-hercules-3c2.webp",
+          "abilities": [
+            "Draw a card."
+          ]
+        },
+        {
+          "name": "Crowd Favorite",
+          "displayName": "Crowd Favorite",
+          "slug": "crowd-favorite",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-hercules-4c3.webp",
+          "abilities": [
+            "[hc:instinct]: Whenever you defeat a Villain this turn, rescue a Bystander."
+          ]
+        },
+        {
+          "name": "Prince of Power",
+          "displayName": "Prince of Power",
+          "slug": "prince-of-power",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 5,
+          "attack": null,
+          "recruit": "3",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-hercules-5u.webp",
+          "abilities": [
+            "[hc:strength]: Reveal the top card of your deck. If it costs 0, KO it."
+          ]
+        },
+        {
+          "name": "Son of Zeus",
+          "displayName": "Son of Zeus",
+          "slug": "son-of-zeus",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 5,
+          "hc": "strength",
+          "cost": 7,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-hercules-7r.webp",
+          "abilities": [
+            "Rescue a Bystander. Then, you get +1[icon:attack] for each Bystander in your Victory Pile.",
+            "[team:avengers]: You get +1[icon:recruit] for each Bystander in your Victory Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 112,
+      "name": "Hulkling",
+      "slug": "hulkling",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Half-Kree",
+          "displayName": "Half-Kree",
+          "slug": "half-kree",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 4,
+          "attack": null,
+          "recruit": "3",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-hulkling-4c1.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:strength]",
+            "Gain a Wound."
+          ]
+        },
+        {
+          "name": "Half-Skrull",
+          "displayName": "Half-Skrull",
+          "slug": "half-skrull",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-hulkling-4c2.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:covert]"
+          ]
+        },
+        {
+          "name": "Cellular Regeneration",
+          "displayName": "Cellular Regeneration",
+          "slug": "cellular-regeneration",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-hulkling-5c3.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:strength]",
+            "You may KO a Wound from your hand or discard pile. If you do, you get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Impersonate",
+          "displayName": "Impersonate",
+          "slug": "impersonate",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 6,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-hulkling-6u.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:covert]",
+            "Play this card as a copy of another Hero you played this turn. This card is both [hc:covert] and the class and color you copy."
+          ]
+        },
+        {
+          "name": "Enormous Shapeshifter",
+          "displayName": "Enormous Shapeshifter",
+          "slug": "enormous-shapeshifter",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 5,
+          "hc": "covert",
+          "cost": 8,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-hulkling-8r.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:covert]",
+            "[hc:covert]: You get +4[icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 113,
+      "name": "Luke Cage",
+      "slug": "luke-cage",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Cautious",
+          "displayName": "Cautious",
+          "slug": "cautious",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-luke-cage-3c1.webp",
+          "abilities": []
+        },
+        {
+          "name": "Reckless",
+          "displayName": "Reckless",
+          "slug": "reckless",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-luke-cage-3c2.webp",
+          "abilities": [
+            "Gain a Wound."
+          ]
+        },
+        {
+          "name": "Take a Bullet for the Team",
+          "displayName": "Take a Bullet for the Team",
+          "slug": "take-a-bullet-for-the-team",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 4,
+          "attack": "1",
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-luke-cage-4c3.webp",
+          "abilities": [
+            "If any player would gain a Wound, you may discard this card instead. If you do, draw two cards."
+          ]
+        },
+        {
+          "name": "Sweet Christmas",
+          "displayName": "Sweet Christmas",
+          "slug": "sweet-christmas",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 5,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-luke-cage-5u.webp",
+          "abilities": [
+            "[hc:instinct]: Look at the top three cards of your deck. Discard them all or put them back in any order."
+          ]
+        },
+        {
+          "name": "Unbreakable Skin",
+          "displayName": "Unbreakable Skin",
+          "slug": "unbreakable-skin",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 5,
+          "hc": "strength",
+          "cost": 8,
+          "attack": "6",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-luke-cage-8r.webp",
+          "abilities": [
+            "[team:avengers]: [keyword:Fortify] the Wound Stack. While it's fortified, players can't gain Wounds. At the beginning of your next turn, put this card in your discard pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 114,
+      "name": "Patriot",
+      "slug": "patriot",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "New Generation of Heroes",
+          "displayName": "New Generation of Heroes",
+          "slug": "new-generation-of-heroes",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 2,
+          "attack": null,
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-patriot-2c1.webp",
+          "abilities": [
+            "You get +1[icon:recruit] for each Hero Name among your non-[team:shield] Heroes."
+          ]
+        },
+        {
+          "name": "Intuitive Tactician",
+          "displayName": "Intuitive Tactician",
+          "slug": "intuitive-tactician",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-patriot-3c2.webp",
+          "abilities": [
+            "You get +1[icon:attack] for each Hero Name among your non-[team:shield] Heroes."
+          ]
+        },
+        {
+          "name": "Incredible Effort",
+          "displayName": "Incredible Effort",
+          "slug": "incredible-effort",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 5,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-patriot-5u.webp",
+          "abilities": [
+            "[hc:covert]: You get +3[icon:attack]."
+          ]
+        },
+        {
+          "name": "Effortless",
+          "displayName": "Effortless",
+          "slug": "effortless",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 5,
+          "attack": null,
+          "recruit": "3",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-patriot-5u2.webp",
+          "abilities": []
+        },
+        {
+          "name": "Lead the Young Avengers",
+          "displayName": "Lead the Young Avengers",
+          "slug": "lead-the-young-avengers",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 5,
+          "hc": "tech",
+          "cost": 8,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-patriot-8r.webp",
+          "abilities": [
+            "Reveal the top three cards of your deck. If you revealed at least three different Hero Names this way, draw those three cards. Otherwise, put them back in any order."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 115,
+      "name": "Peter Parker",
+      "slug": "peter-parker",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Conflicted Loyalties",
+          "displayName": "Conflicted Loyalties",
+          "slug": "conflicted-loyalties",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 2,
+          "attack": "1",
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-peter-parker-2c1.webp",
+          "abilities": [
+            "[hc:tech]: Reveal the top card of your deck. If it costs 2 or less, draw it."
+          ]
+        },
+        {
+          "name": "Spider-Man Unmasked",
+          "displayName": "Spider-Man Unmasked",
+          "slug": "spider-man-unmasked",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": "1",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-peter-parker-2c2.webp",
+          "abilities": [
+            "Gain a [rule:Sidekick].",
+            "[hc:instinct]: Put that [rule:Sidekick] on top of your deck."
+          ]
+        },
+        {
+          "name": "Protect My Family",
+          "displayName": "Protect My Family",
+          "slug": "protect-my-family",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 2,
+          "attack": "1",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-peter-parker-2u.webp",
+          "abilities": [
+            "Rescue a Bystander."
+          ]
+        },
+        {
+          "name": "Hot Bowl of Soup",
+          "displayName": "Hot Bowl of Soup",
+          "slug": "hot-bowl-of-soup",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": null,
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-peter-parker-2u2.webp",
+          "abilities": [
+            "You may KO a Wound from your hand or discard pile."
+          ]
+        },
+        {
+          "name": "Reluctant Celebrity",
+          "displayName": "Reluctant Celebrity",
+          "slug": "reluctant-celebrity",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 5,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-peter-parker-2r.webp",
+          "abilities": [
+            "[hc:instinct]: You get +1[icon:attack] for each extra card you've drawn this turn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 116,
+      "name": "Speedball",
+      "slug": "speedball",
+      "team": "new-warriors",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Reckless Rescue Attempt",
+          "displayName": "Reckless Rescue Attempt",
+          "slug": "reckless-rescue-attempt",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-speedball-3c1.webp",
+          "abilities": [
+            "[hc:ranged]: Reveal the top card of the Villain Deck. If it's a Villain, rescue a Bystander. Otherwise, KO a Bystander from the Bystander Deck."
+          ]
+        },
+        {
+          "name": "Bounce Around",
+          "displayName": "Bounce Around",
+          "slug": "bounce-around",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-speedball-4c2.webp",
+          "abilities": [
+            "[hc:covert]: If there are any Bystanders in the city or KO pile, you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Double Down",
+          "displayName": "Double Down",
+          "slug": "double-down",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 5,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-speedball-5u.webp",
+          "abilities": [
+            "Draw two cards."
+          ]
+        },
+        {
+          "name": "Bubble Up",
+          "displayName": "Bubble Up",
+          "slug": "bubble-up",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 5,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-speedball-5u2.webp",
+          "abilities": [
+            "You get +3[icon:attack] usable only against Villains on the Bridge or against the Mastermind."
+          ]
+        },
+        {
+          "name": "Kinetic Force Field",
+          "displayName": "Kinetic Force Field",
+          "slug": "kinetic-force-field",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 5,
+          "hc": "ranged",
+          "cost": 7,
+          "attack": "5",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-speedball-7r.webp",
+          "abilities": [
+            "If a Master Strike would occur, you may reveal this card to KO that Master Strike, cancel its effects, and draw a card."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 117,
+      "name": "Stature",
+      "slug": "stature",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Shrink to Nothing",
+          "displayName": "Shrink to Nothing",
+          "slug": "shrink-to-nothing",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 2,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-stature-2c1.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:tech]",
+            "Draw a card.",
+            "[hc:tech]: You get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Crush Ants",
+          "displayName": "Crush Ants",
+          "slug": "crush-ants",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 5,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-stature-5c2.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:strength]",
+            "[hc:strength]: Defeat a Villain that has 3[icon:attack] or less."
+          ]
+        },
+        {
+          "name": "Crush File Sizes",
+          "displayName": "Crush File Sizes",
+          "slug": "crush-file-sizes",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 5,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-stature-5c3.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:tech]",
+            "[hc:tech]: Draw a card."
+          ]
+        },
+        {
+          "name": "Growing Confidence",
+          "displayName": "Growing Confidence",
+          "slug": "growing-confidence",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-stature-6u.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:strength]",
+            "[hc:strength]: You get +1[icon:attack] for each Villain in your Victory Pile that has a printed [icon:attack] 3 or less."
+          ]
+        },
+        {
+          "name": "Trample the Tiny",
+          "displayName": "Trample the Tiny",
+          "slug": "trample-the-tiny",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 5,
+          "hc": "strength",
+          "cost": 8,
+          "attack": "5",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-stature-8r.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:strength]",
+            "[hc:strength]: Defeat each Villain that has 4 [icon:attack] or less."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 118,
+      "name": "Storm & Black Panther",
+      "slug": "storm-black-panther",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Gathering Rain Clouds",
+          "displayName": "Gathering Rain Clouds",
+          "slug": "gathering-rain-clouds",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 2,
+          "attack": null,
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-storm-black-panther-2c1.webp",
+          "abilities": [
+            "[hc:ranged]: Draw a card."
+          ]
+        },
+        {
+          "name": "Gathering Clues",
+          "displayName": "Gathering Clues",
+          "slug": "gathering-clues",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": "1",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-storm-black-panther-2c2.webp",
+          "abilities": [
+            "[hc:instinct]: Draw a card."
+          ]
+        },
+        {
+          "name": "Lightning Strike",
+          "displayName": "Lightning Strike",
+          "slug": "lightning-strike",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-storm-black-panther-3c3.webp",
+          "abilities": [
+            "Any Villain you fight on the Rooftops this turn gets -1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Pouncing Strike",
+          "displayName": "Pouncing Strike",
+          "slug": "pouncing-strike",
+          "rarity": 1,
+          "rarityLabel": "Common 4",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-storm-black-panther-3c4.webp",
+          "abilities": [
+            "You may move a Villain to an adjacent empty city space."
+          ]
+        },
+        {
+          "name": "Tsunami of Water",
+          "displayName": "Tsunami of Water",
+          "slug": "tsunami-of-water",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 5,
+          "hc": "ranged",
+          "cost": 5,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-storm-black-panther-5u.webp",
+          "abilities": [
+            "[hc:ranged]: You get +2[icon:attack] usable only against the Mastermind."
+          ]
+        },
+        {
+          "name": "Tsunami of Justice",
+          "displayName": "Tsunami of Justice",
+          "slug": "tsunami-of-justice",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 6,
+          "hc": "covert",
+          "cost": 5,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-storm-black-panther-5u2.webp",
+          "abilities": [
+            "[hc:covert]: You may KO a card from your hand or discard pile."
+          ]
+        },
+        {
+          "name": "King & Queen of Wakanda",
+          "displayName": "King & Queen of Wakanda",
+          "slug": "king-queen-of-wakanda",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 7,
+          "hc": "tech",
+          "cost": 7,
+          "attack": "5",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-storm-black-panther-7r.webp",
+          "abilities": [
+            "Reveal any number of multi-class cards from your hand. Gain that many [rule:Sidekicks]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 119,
+      "name": "Tigra",
+      "slug": "tigra",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Friendship",
+          "displayName": "Friendship",
+          "slug": "friendship",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 2,
+          "attack": null,
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-tigra-2c1.webp",
+          "abilities": [
+            "[hc:covert]: Gain a [rule:Sidekick]."
+          ]
+        },
+        {
+          "name": "Ferocity",
+          "displayName": "Ferocity",
+          "slug": "ferocity",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": "1",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-tigra-2c2.webp",
+          "abilities": [
+            "[hc:instinct]: Draw a card."
+          ]
+        },
+        {
+          "name": "Supernatural Senses",
+          "displayName": "Supernatural Senses",
+          "slug": "supernatural-senses",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-tigra-3c3.webp",
+          "abilities": [
+            "Look at the top card of your deck. Discard it or put it back.",
+            "[hc:instinct][hc:instinct]: You may KO the card you discarded this way."
+          ]
+        },
+        {
+          "name": "Can't Surprise a Cat",
+          "displayName": "Can't Surprise a Cat",
+          "slug": "cant-surprise-a-cat",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 5,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-tigra-5u.webp",
+          "abilities": [
+            "If an Ambush effect would occur, you may discard this card to cancel that effect and draw two cards."
+          ]
+        },
+        {
+          "name": "Mystic Talisman",
+          "displayName": "Mystic Talisman",
+          "slug": "mystic-talisman",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 5,
+          "hc": "covert",
+          "cost": 7,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-tigra-7r.webp",
+          "abilities": [
+            "Recruit a Hero from the HQ for free.",
+            "[team:avengers]: You get that Hero's printed [icon:recruit] and [icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 120,
+      "name": "Vision",
+      "slug": "vision",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Solar Energy",
+          "displayName": "Solar Energy",
+          "slug": "solar-energy",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-vision-3c1.webp",
+          "abilities": [
+            "[keyword:Phasing]",
+            "[hc:ranged]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Through Solid Objects",
+          "displayName": "Through Solid Objects",
+          "slug": "through-solid-objects",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-vision-4c2.webp",
+          "abilities": [
+            "[keyword:Phasing]",
+            "Choose a Hero Class. Reveal the top card of your deck. If it's the Hero Class you named, then draw it."
+          ]
+        },
+        {
+          "name": "Lighter than Air",
+          "displayName": "Lighter than Air",
+          "slug": "lighter-than-air",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 6,
+          "attack": null,
+          "recruit": "3",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-vision-6u.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:ranged]",
+            "[keyword:Phasing]"
+          ]
+        },
+        {
+          "name": "Harder than Diamond",
+          "displayName": "Harder than Diamond",
+          "slug": "harder-than-diamond",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 6,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-vision-6u2.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:tech]",
+            "[keyword:Phasing]"
+          ]
+        },
+        {
+          "name": "Insubstantial Accomplishments",
+          "displayName": "Insubstantial Accomplishments",
+          "slug": "insubstantial-accomplishments",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 5,
+          "hc": "tech",
+          "cost": 7,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-vision-7r.webp",
+          "abilities": [
+            "[keyword:Phasing]",
+            "When you play this, you may swap a card from your hand with the top two cards of your deck."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 121,
+      "name": "Wiccan",
+      "slug": "wiccan",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Sorcerous Illusions",
+          "displayName": "Sorcerous Illusions",
+          "slug": "sorcerous-illusions",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 2,
+          "attack": null,
+          "recruit": "1+",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-wiccan-2c1.webp",
+          "abilities": [
+            "[keyword:Phasing]",
+            "[hc:covert]: You get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Astral Projection",
+          "displayName": "Astral Projection",
+          "slug": "astral-projection",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-wiccan-4c2.webp",
+          "abilities": [
+            "[keyword:Phasing]",
+            "Choose a number, and then reveal the top card of your deck. If that card is that cost, then you get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Supersonic Spells",
+          "displayName": "Supersonic Spells",
+          "slug": "supersonic-spells",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-wiccan-4u.webp",
+          "abilities": [
+            "[hc:ranged]: Draw a card."
+          ]
+        },
+        {
+          "name": "Supersonic Speed",
+          "displayName": "Supersonic Speed",
+          "slug": "supersonic-speed",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 4,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-wiccan-4u2.webp",
+          "abilities": [
+            "Draw a card.",
+            "[hc:covert]: Draw another card."
+          ]
+        },
+        {
+          "name": "Clairvoyance",
+          "displayName": "Clairvoyance",
+          "slug": "clairvoyance",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 5,
+          "hc": "ranged",
+          "cost": 7,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hr-wiccan-7r.webp",
+          "abilities": [
+            "Choose a number, and then reveal the top card of your deck. If that card is that cost, draw it and draw another card."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 31,
+      "name": "Authoritarian Iron Man",
+      "slug": "authoritarian-iron-man",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Authoritarian Iron Man",
+          "slug": "authoritarian-iron-man",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mm-authoritarian-iron-man.webp",
+          "abilities": [
+            "Always Leads: Superhuman Registration Act",
+            "Master Strike: Authoritarian Iron Man [keyword:fortifies] the next city space to his right, starting with the Bridge. You can't fight him while there's a Villain in that space. Villains in that space get +3[icon:attack]."
+          ]
+        },
+        {
+          "name": "Armada of Armors",
+          "slug": "armada-of-armors",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-authoritarian-iron-man-armada-of-armors.webp",
+          "abilities": [
+            "Fight: You get +6[icon:recruit] usable only to recruit [hc:ranged] and/or [hc:tech] Heroes."
+          ]
+        },
+        {
+          "name": "Freeze Domestic Assets",
+          "slug": "freeze-domestic-assets",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-authoritarian-iron-man-freeze-domestic-assets.webp",
+          "abilities": [
+            "Fight: Each other player reveals their hand and discards all their cards with [icon:recruit] icons."
+          ]
+        },
+        {
+          "name": "Man the Fortifications",
+          "slug": "man-the-fortifications",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-authoritarian-iron-man-man-the-fortifications.webp",
+          "abilities": [
+            "Fight: Reveal the top card of the Villain Deck. If it's a Villain, it enters the city space that Authoritarian Iron Man is fortifying."
+          ]
+        },
+        {
+          "name": "Recall to Service",
+          "slug": "recall-to-service",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-authoritarian-iron-man-recall-to-service.webp",
+          "abilities": [
+            "Fight: The Villain with the highest printed [icon:attack] in the Escape Pile enters the city space that Authoritarian Iron Man is fortifying."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "name": "Baron Helmut Zemo",
+      "slug": "baron-helmut-zemo",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Baron Helmut Zemo",
+          "slug": "baron-helmut-zemo",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mm-baron-helmut-zemo.webp",
+          "abilities": [
+            "Baron Zemo gets -1[icon:attack] for each Villain in your Victory Pile.",
+            "Always Leads: Thunderbolts",
+            "Master Strike: Each player KOs a Villain from their Victory Pile. Any player who cannot do so gains a Wound."
+          ]
+        },
+        {
+          "name": "Blasted Henchmen!",
+          "slug": "blasted-henchmen",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-baron-helmut-zemo-blasted-henchmen.webp",
+          "abilities": [
+            "Fight: Each other player reveals a [hc:tech] Hero or KOs a Villain from their Victory Pile."
+          ]
+        },
+        {
+          "name": "Cursed Dynasty",
+          "slug": "cursed-dynasty",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-baron-helmut-zemo-cursed-dynasty.webp",
+          "abilities": [
+            "Fight: When you draw a new hand of cards at the end of this turn, draw two extra cards."
+          ]
+        },
+        {
+          "name": "Endless Minions",
+          "slug": "endless-minions",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-baron-helmut-zemo-endless-minions.webp",
+          "abilities": [
+            "Fight: Each other player reveals a [hc:tech] Hero or chooses a Villain from their Victory Pile and it enters the city."
+          ]
+        },
+        {
+          "name": "Revenge for My Father",
+          "slug": "revenge-for-my-father",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-baron-helmut-zemo-revenge-for-my-father.webp",
+          "abilities": [
+            "Fight: Each other player reveals their hand. Each player who revealed an [team:avengers] Hero gains a Wound."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "name": "Maria Hill, Director of S.H.I.E.L.D.",
+      "slug": "maria-hill-director-of-shield",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Maria Hill, Director of S.H.I.E.L.D.",
+          "slug": "maria-hill-director-of-shield",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mm-maria-hill-director-of-shield.webp",
+          "abilities": [
+            "[keyword:Double S.H.I.E.L.D. Clearance]. You can't fight Maria Hill while there are any S.H.I.E.L.D. Elite or Officers in the city.",
+            "Always Leads: S.H.I.E.L.D. Elite",
+            "Master Strike: Two S.H.I.E.L.D. Officers enter the city as 3[icon:attack] Villains. When you fight them, gain them as Heroes."
+          ]
+        },
+        {
+          "name": "Crash the Helicarrier",
+          "slug": "crash-the-helicarrier",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-maria-hill-director-of-shield-crash-the-helicarrier.webp",
+          "abilities": [
+            "Fight: KO any number of your [team:shield] Heroes."
+          ]
+        },
+        {
+          "name": "Declare Martial Law",
+          "slug": "declare-martial-law",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-maria-hill-director-of-shield-declare-martial-law.webp",
+          "abilities": [
+            "Fight: Put a S.H.I.E.L.D. Officer into each empty city space as 3[icon:attack] Villains. When you fight them, gain them as Heroes."
+          ]
+        },
+        {
+          "name": "Evacuation Code Epsilon",
+          "slug": "evacuation-code-epsilon",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-maria-hill-director-of-shield-evacuation-code-epsilon.webp",
+          "abilities": [
+            "Fight: Each other player reveals their hand and discards a [team:shield] card."
+          ]
+        },
+        {
+          "name": "Rapid Response Team",
+          "slug": "rapid-response-team",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-maria-hill-director-of-shield-rapid-response-team.webp",
+          "abilities": [
+            "Fight: Two S.H.I.E.L.D. Officers enter the city as 3[icon:attack] Villains. When you fight them, gain them as Heroes."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "name": "Misty Knight",
+      "slug": "misty-knight",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Misty Knight",
+          "slug": "misty-knight",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mm-misty-knight.webp",
+          "abilities": [
+            "[keyword:Bribe]",
+            "Always Leads: Heroes for Hire",
+            "Master Strike: Each player reveals 4 cards with [icon:recruit] icons or gains a Wound."
+          ]
+        },
+        {
+          "name": "Bionic Repulsor Field",
+          "slug": "bionic-repulsor-field",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-misty-knight-bionic-repulsor-field.webp",
+          "abilities": [
+            "Fight: Each other player reveals a [team:marvel-knights] Hero or puts two cards from their hand on top of the deck."
+          ]
+        },
+        {
+          "name": "Cyborg Detective",
+          "slug": "cyborg-detective",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-misty-knight-cyborg-detective.webp",
+          "abilities": [
+            "Fight: Reveal the top three cards of the Villain Deck. Put them back in any order."
+          ]
+        },
+        {
+          "name": "Trusted Bodyguard",
+          "slug": "trusted-bodyguard",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-misty-knight-trusted-bodyguard.webp",
+          "abilities": [
+            "Fight: Going clockwise, the first other player with Colleen Wing in their Victory Pile rescues 5 Bystanders and returns Colleen Wing to play [keyword:fortifying] Misty Knight."
+          ]
+        },
+        {
+          "name": "Vibranium Cyber Arm",
+          "slug": "vibranium-cyber-arm",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-misty-knight-vibranium-cyber-arm.webp",
+          "abilities": [
+            "Fight: Each other player reveals a [team:marvel-knights] Hero or gains a Wound."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "name": "Ragnarok",
+      "slug": "ragnarok",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Ragnarok",
+          "slug": "ragnarok",
+          "tactic": false,
+          "vAttack": "6+",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mm-ragnarok.webp",
+          "abilities": [
+            "Ragnarok gets +2[icon:attack] for each Hero Class among Heroes in the HQ.",
+            "Always Leads: Registration Enforcers",
+            "Master Strike: Each player says “zero“ or “not zero.“ Then, each player discards all their cards with that cost."
+          ]
+        },
+        {
+          "name": "Electrical Charge",
+          "slug": "electrical-charge",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-ragnarok-electrical-charge.webp",
+          "abilities": [
+            "Fight: Count how many [hc:ranged] Heroes you have. Draw that many cards."
+          ]
+        },
+        {
+          "name": "God of Cyborg Thunder",
+          "slug": "god-of-cyborg-thunder",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-ragnarok-god-of-cyborg-thunder.webp",
+          "abilities": [
+            "Fight: You can spend [icon:recruit] as [icon:attack] this turn."
+          ]
+        },
+        {
+          "name": "Hammer Goliath",
+          "slug": "hammer-goliath",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-ragnarok-hammer-goliath.webp",
+          "abilities": [
+            "Fight: KO each Hero from the HQ that costs 7 or more."
+          ]
+        },
+        {
+          "name": "Unnatural Storm Clouds",
+          "slug": "unnatural-storm-clouds",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-ragnarok-unnatural-storm-clouds.webp",
+          "abilities": [
+            "Fight: Put all Heroes from the HQ on the bottom of the Hero Deck in random order."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 42,
+      "name": "CSA Special Marshals",
+      "slug": "csa-special-marshals",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Bullseye",
+          "slug": "bullseye",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-csa-special-marshals-bullseye.webp",
+          "abilities": [
+            "Fight: KO one of your heroes with a [icon:recruit] icon.",
+            "Escape: Each player KOs one of their Heroes that has printed [icon:attack] of 2 or more."
+          ]
+        },
+        {
+          "name": "Moonstone",
+          "slug": "moonstone",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-csa-special-marshals-moonstone.webp",
+          "abilities": [
+            "Fight: Each other player discards two cards, and then draws a card."
+          ]
+        },
+        {
+          "name": "Penance",
+          "slug": "penance",
+          "vp": "3",
+          "vAttack": "2+",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-csa-special-marshals-penance.webp",
+          "abilities": [
+            "Penance gets +1[icon:attack] for each Villain in your Victory Pile."
+          ]
+        },
+        {
+          "name": "Venom",
+          "slug": "venom",
+          "vp": "4",
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-csa-special-marshals-venom.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:covert]",
+            "Escape: [keyword:Fortify] the Bystander Stack. While it's fortified, if a Bystander would be rescued from there, KO that Bystander instead."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 43,
+      "name": "Great Lakes Avengers",
+      "slug": "great-lakes-avengers",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Big Bertha",
+          "slug": "big-bertha",
+          "vp": "4",
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-great-lakes-avengers-big-bertha.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:strength]",
+            "Fight: Each player reveals a [hc:strength] Hero or gains a Wound.",
+            "Escape: Same effect."
+          ]
+        },
+        {
+          "name": "Flatman",
+          "slug": "flatman",
+          "vp": "2",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-great-lakes-avengers-flatman.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:covert]",
+            "Fight: KO a card from your discard pile."
+          ]
+        },
+        {
+          "name": "Mr. Immortal",
+          "slug": "mr-immortal",
+          "vp": "2",
+          "vAttack": "2",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-great-lakes-avengers-mr-immortal.webp",
+          "abilities": [
+            "Fight: Reveal the top card of the Villain Deck. If it's a Villain or Bystander, Mr. Immortal reenters the Sewers."
+          ]
+        },
+        {
+          "name": "Squirrel Girl",
+          "slug": "squirrel-girl",
+          "vp": "2",
+          "vAttack": "3",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-great-lakes-avengers-squirrel-girl.webp",
+          "abilities": [
+            "You can't fight Squirrel Girl if you played more than one card this turn.",
+            "Escape: [keyword:Fortify] the Sidekick Stack. While it's fortified, [rule:Sidekicks] can't be recruited or gained."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 44,
+      "name": "Heroes for Hire",
+      "slug": "heroes-for-hire",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Colleen Wing",
+          "slug": "colleen-wing",
+          "vp": "5",
+          "vAttack": "9",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-heroes-for-hire-colleen-wing.webp",
+          "abilities": [
+            "[keyword:Bribe]",
+            "Escape: [keyword:Fortify] the Mastermind. While it's fortified, the Mastermind can't be fought."
+          ]
+        },
+        {
+          "name": "Humbug",
+          "slug": "humbug",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-heroes-for-hire-humbug.webp",
+          "abilities": [
+            "[keyword:Bribe]",
+            "Fight: KO one of your Heroes."
+          ]
+        },
+        {
+          "name": "Shang-Chi",
+          "slug": "shang-chi",
+          "vp": "2",
+          "vAttack": "3",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-heroes-for-hire-shang-chi.webp",
+          "abilities": [
+            "[keyword:Bribe]",
+            "Fight: If you have any cards in your discard pile, then shuffle them into your deck, and Shang-Chi reenters the Sewers."
+          ]
+        },
+        {
+          "name": "Tarantula",
+          "slug": "tarantula",
+          "vp": "5",
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-heroes-for-hire-tarantula.webp",
+          "abilities": [
+            "[keyword:Bribe]",
+            "Fight: Each player discards two cards or gains a Wound.",
+            "Escape: Same effect."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 45,
+      "name": "Registration Enforcers",
+      "slug": "registration-enforcers",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Blade",
+          "slug": "blade",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-registration-enforcers-blade.webp",
+          "abilities": [
+            "Fight: If you fight Blade in the Sewers or Rooftops, you get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Captain Marvel",
+          "slug": "captain-marvel",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-registration-enforcers-captain-marvel.webp",
+          "abilities": [
+            "Fight: Each player swaps a card from their hand with the top card of their deck.",
+            "Escape: Each player swaps their hand with the top four cards of their deck."
+          ]
+        },
+        {
+          "name": "Deadpool",
+          "slug": "deadpool",
+          "vp": "5",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-registration-enforcers-deadpool.webp",
+          "abilities": [
+            "Ambush: Each player reveals a card that costs 5 or discards down to 5 cards.",
+            "Fight: Same effect.",
+            "Escape: Same effect."
+          ]
+        },
+        {
+          "name": "Micromax",
+          "slug": "micromax",
+          "vp": "3",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-registration-enforcers-micromax.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:instinct]",
+            "Fight: KO one of your Heroes."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 46,
+      "name": "S.H.I.E.L.D. Elite",
+      "slug": "shield-elite",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Agent Eric Marshall",
+          "slug": "agent-eric-marshall",
+          "vp": "2",
+          "vAttack": "1",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-shield-elite-agent-eric-marshall.webp",
+          "abilities": [
+            "[keyword:S.H.I.E.L.D. Clearance]",
+            "Ambush: A S.H.I.E.L.D. Officer enters the city as a 3[icon:attack] Villain. When you fight it, gain it as a Hero."
+          ]
+        },
+        {
+          "name": "Agent Gabe Jones",
+          "slug": "agent-gabe-jones",
+          "vp": "2",
+          "vAttack": "2",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-shield-elite-agent-gabe-jones.webp",
+          "abilities": [
+            "[keyword:S.H.I.E.L.D. Clearance]",
+            "Fight: A S.H.I.E.L.D. Officer enters the city as a 3[icon:attack] Villain. When you fight it, gain it as a Hero."
+          ]
+        },
+        {
+          "name": "Dum Dum Dugan",
+          "slug": "dum-dum-dugan",
+          "vp": "3",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-shield-elite-dum-dum-dugan.webp",
+          "abilities": [
+            "[keyword:S.H.I.E.L.D. Clearance]",
+            "Fight: Each player with no S.H.I.E.L.D. Officers in their discard pile gains a Wound.",
+            "Escape: Same effect."
+          ]
+        },
+        {
+          "name": "Sharon Carter, Agent 13",
+          "slug": "sharon-carter-agent-13",
+          "vp": "5",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-shield-elite-sharon-carter-agent-13.webp",
+          "abilities": [
+            "[keyword:S.H.I.E.L.D. Clearance]",
+            "Escape: [keyword:Fortify] the S.H.I.E.L.D. Officer stack. While it's fortified, whenever any number of S.H.I.E.L.D. Officers become Villains, an extra one becomes a Villain."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 47,
+      "name": "Superhuman Registration Act",
+      "slug": "superhuman-registration-act",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Iron Spider",
+          "slug": "iron-spider",
+          "vp": "3",
+          "vAttack": "2",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-superhuman-registration-act-iron-spider.webp",
+          "abilities": [
+            "Ambush: [keyword:Fortify] your deck. While Iron Spider fortifies a players deck, that player draws one fewer card at the end of their turn.",
+            "Fight: Reveal the top card of the Villain Deck. If that card is worth 2VP or less, Iron Spider fortifies the deck of the player on your left."
+          ]
+        },
+        {
+          "name": "Ms. Marvel",
+          "slug": "ms-marvel",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-superhuman-registration-act-ms-marvel.webp",
+          "abilities": [
+            "Escape: [keyword:Fortify] an HQ space. While its fortified, Heroes can't be gained from that space."
+          ]
+        },
+        {
+          "name": "She-Hulk",
+          "slug": "she-hulk",
+          "vp": "5",
+          "vAttack": "8",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-superhuman-registration-act-she-hulk.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:strength]",
+            "Escape: [keyword:Fortify] the Villain deck. When a Master Strike is completed from that deck, each player gains a Wound and She-Hulk enters the Sewers."
+          ]
+        },
+        {
+          "name": "Yellowjacket",
+          "slug": "yellowjacket",
+          "vp": "4",
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-superhuman-registration-act-yellowjacket.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:tech]",
+            "Escape: [keyword:Fortify] the Hero Deck. While it's fortified, whenever a Hero in the HQ costs 7 or more, KO that Hero."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 48,
+      "name": "Thunderbolts",
+      "slug": "thunderbolts",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Fixer",
+          "slug": "fixer",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-thunderbolts-fixer.webp",
+          "abilities": [
+            "Fight: Look at the top three cards of your deck. KO one and put the rest back in any order."
+          ]
+        },
+        {
+          "name": "Mach-IV",
+          "slug": "mach-iv",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-thunderbolts-mach-iv.webp",
+          "abilities": [
+            "Fight: Each player reveals a [hc:tech] Hero or gains a Wound.",
+            "Escape: Same effect."
+          ]
+        },
+        {
+          "name": "Radioactive Man",
+          "slug": "radioactive-man",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-thunderbolts-radioactive-man.webp",
+          "abilities": [
+            "Escape: [keyword:Fortify] the Wound Stack. While it's fortified, whenever a player gains a Wound, that player gains an extra Wound."
+          ]
+        },
+        {
+          "name": "Songbird",
+          "slug": "songbird",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-vi-thunderbolts-songbird.webp",
+          "abilities": [
+            "Fight: Each player without another Thunderbolts Villain in their Victory Pile gains a Wound.",
+            "Escape: Same effect."
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [
+    {
+      "id": 19,
+      "name": "Mandroid",
+      "slug": "mandroid",
+      "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hm-mandroid.webp",
+      "abilities": []
+    },
+    {
+      "id": 20,
+      "name": "Cape-Killers",
+      "slug": "cape-killers",
+      "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-hm-cape-killers.webp",
+      "abilities": []
+    }
+  ],
+  "schemes": [
+    {
+      "id": 60,
+      "name": "Avengers vs. X-Men",
+      "slug": "avengers-vs-x-men",
+      "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-sc-avengers-vs-x-men.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 9 Twists. Hero Deck has 3 Heroes of one Team and 3 Heroes of another Team. ([team:avengers],[team:x-men],[team:spider-friends],[team:marvel-knights], etc.)",
+            "Twist 1-7: Each player reveals their hand. Each player that has cards of both those teams gains a Wound.",
+            "Twist 8: Evil wins!"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 61,
+      "name": "Dark Reign of H.A.M.M.E.R. Officers",
+      "slug": "dark-reign-of-h-a-m-m-e-r-officers",
+      "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-sc-dark-reign-of-h-a-m-m-e-r-officers.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 7 Twists.",
+            "Twist: Stack this Twist next to the Scheme. Then, for each Twist in that stack, put a S.H.I.E.L.D. Officer next to the Mastermind as a 3[icon:attack] Villain with [keyword:S.H.I.E.L.D. Clearance]. You can fight them to gain them as Heroes.",
+            "Evil Wins: When there are 7 Officers next to the Mastermind."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 62,
+      "name": "Epic Super Hero Civil War",
+      "slug": "epic-super-hero-civil-war",
+      "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-sc-epic-super-hero-civil-war.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 1 player: 4 Heroes in Hero Deck. 1-3 players: 9 Twists. 4-5 players: 6 Twists.",
+            "Twist: Stack this Twist next to the Scheme. Then, for each Twist in that stack, KO a Hero from the HQ and immediately refill that HQ space.",
+            "Evil Wins: When the Hero Deck runs out."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 63,
+      "name": "Imprison Unregistered Superhumans",
+      "slug": "imprison-unregistered-superhumans",
+      "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-sc-imprison-unregistered-superhumans.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 11 Twists.",
+            "Twist 1, 3, 5, 7, 9: This Scheme [keyword:fortifies ] the city space to its right starting with the Bridge. Villains in that space get +1[icon:attack].",
+            "Other Twists: If there's a Villain in that fortified city space, KO a Bystander.",
+            "Evil Wins: When 3 Bystanders are in the KO pile and/or Escape Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 64,
+      "name": "Nitro the Supervillain Threatens Crowds",
+      "slug": "nitro-the-supervillain-threatens-crowds",
+      "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-sc-nitro-the-supervillain-threatens-crowds.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists.",
+            "Twist: KO all Bystanders held by Villains. Then, the Villain with the highest [icon:attack] captures 3 Bystanders.",
+            "Evil Wins: When 15 Bystanders are in the KO pile and/or Escape Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 65,
+      "name": "Predict Future Crime",
+      "slug": "predict-future-crime",
+      "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-sc-predict-future-crime.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 6 Twists. Add an extra Villain Group.",
+            "Twist: Reveal the top 3 cards of the Villain Deck. Play each Villain you revealed. Put the rest back in any order.",
+            "Evil Wins: When there are 2 Villains per player in the Escape Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 66,
+      "name": "Reveal Heroes' Secret Identities",
+      "slug": "reveal-heroes-secret-identities",
+      "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-sc-reveal-heroes-secret-identities.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 6 Twists. 7 Heroes in Hero Deck.",
+            "Twist: Put a Hero from the HQ next to the Scheme as an “Unmasked“ Hero. All cards with “Unmasked“ Hero Names cost +1[icon:recruit] to recruit. You can't Unmask a Hero Name that has already been Unmasked.",
+            "Evil Wins: When 5 Heroes are Unmasked."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 67,
+      "name": "United States Split by Civil War",
+      "slug": "united-states-split-by-civil-war",
+      "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-sc-united-states-split-by-civil-war.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 10 Twists.",
+            "Twist: If there is a Villain on the Streets or Bridge, put this Twist in a stack of “Western States Victories.“ Otherwise, if there is a Villain in the Sewers, put this Twist in a stack of “Eastern States Victories.“",
+            "Evil Wins: When there are 3 Western Victories or 3 Eastern Victories."
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [
+    {
+      "id": 19,
+      "name": "Aspiring Hero",
+      "slug": "aspiring-hero",
+      "vp": 1,
+      "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-by-aspiring-hero.webp",
+      "cards": [
+        {
+          "qtd": 4,
+          "abilities": [
+            "When you rescue this Bystander, gain a [rule:Sidekick]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "name": "Comic Shop Keeper",
+      "slug": "comic-shop-keeper",
+      "vp": 1,
+      "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-by-comic-shop-keeper.webp",
+      "cards": [
+        {
+          "qtd": 3,
+          "abilities": [
+            "When you rescue this Bystander, reveal the top three cards of the Hero Deck. The player of your choice gains one of them that costs 3 or less. Put the rest back in any order."
+          ]
+        }
+      ]
+    }
+  ],
+  "wounds": [
+    {
+      "id": 3,
+      "name": "Blinding Flash",
+      "filterName": null,
+      "slug": "blinding-flash",
+      "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-wd-blinding-flash.webp",
+      "cards": [
+        {
+          "qtd": 2,
+          "abilities": [
+            "Healing: You may discard a card and have each other player discard a card. If you do, KO this Wound."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Blunt Force Trauma",
+      "filterName": null,
+      "slug": "blunt-force-trauma",
+      "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-wd-blunt-force-trauma.webp",
+      "cards": [
+        {
+          "qtd": 2,
+          "abilities": [
+            "Healing: You may spend 5[icon:attack]. If you do, KO this Wound."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Corrosive Webbing",
+      "filterName": null,
+      "slug": "corrosive-webbing",
+      "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-wd-corrosive-webbing.webp",
+      "cards": [
+        {
+          "qtd": 2,
+          "abilities": [
+            "Healing: You may KO this Wound. If you do, gain another Wound."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Fatal Blow",
+      "filterName": null,
+      "slug": "fatal-blow",
+      "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-wd-fatal-blow.webp",
+      "cards": [
+        {
+          "qtd": 2,
+          "abilities": [
+            "Healing: You may KO a Hero that costs 1 or more from your hand or discard pile. If you do, KO this Wound."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Psychic Trauma",
+      "filterName": null,
+      "slug": "psychic-trauma",
+      "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-wd-psychic-trauma.webp",
+      "cards": [
+        {
+          "qtd": 2,
+          "abilities": [
+            "Healing: You may spend 5[icon:recruit]. If you do, KO this Wound."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Spreading Nanovirus",
+      "filterName": null,
+      "slug": "spreading-nanovirus",
+      "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-wd-spreading-nanovirus.webp",
+      "cards": [
+        {
+          "qtd": 3,
+          "abilities": [
+            "Healing: You may have the player on your left gain this Wound."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Subdermal Tracker",
+      "filterName": null,
+      "slug": "subdermal-tracker",
+      "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-wd-subdermal-tracker.webp",
+      "cards": [
+        {
+          "qtd": 2,
+          "abilities": [
+            "Healing: You may play a card from the Villain Deck. If you do, KO this Wound."
+          ]
+        }
+      ]
+    }
+  ],
+  "other": []
+}

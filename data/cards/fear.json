@@ -1,0 +1,675 @@
+{
+  "id": 8,
+  "abbr": "fear",
+  "exportName": "FearItself",
+  "heroes": [
+    {
+      "id": 63,
+      "name": "Greithoth, Breaker of Wills",
+      "slug": "greithoth-breaker-of-wills",
+      "team": "foes-of-asgard",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Absorb Metal",
+          "displayName": "Absorb Metal",
+          "slug": "absorb-metal",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-greithoth-breaker-of-wills-3c1.webp",
+          "abilities": [
+            "If you control an [keyword:Artifact], you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Mace of Chains",
+          "displayName": "Mace of Chains",
+          "slug": "mace-of-chains",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-greithoth-breaker-of-wills-3c2.webp",
+          "abilities": [
+            "[keyword:Thrown Artifact]",
+            "When you throw this, you get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Break the Will to Resist",
+          "displayName": "Break the Will to Resist",
+          "slug": "break-the-will-to-resist",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 5,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-greithoth-breaker-of-wills-5u.webp",
+          "abilities": [
+            "[hc:covert]: Each player discards the bottom card of their deck. For each non-grey card discard this way, you get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Body of Uru",
+          "displayName": "Body of Uru",
+          "slug": "body-of-uru",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 7,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-greithoth-breaker-of-wills-7r.webp",
+          "abilities": [
+            "You get +[icon:attack] equal to the total number of [keyword:Artifacts] controlled by players and [keyword:Artifacts] the Lair."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 64,
+      "name": "Kuurth, Breaker of Stone",
+      "slug": "kuurth-breaker-of-stone",
+      "team": "foes-of-asgard",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Reach for Power",
+          "displayName": "Reach for Power",
+          "slug": "reach-for-power",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-kuurth-breaker-of-stone-4c1.webp",
+          "abilities": [
+            "Reveal the top or bottom card of your deck. If it costs 4 or more, you get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Unstoppable Sledge",
+          "displayName": "Unstoppable Sledge",
+          "slug": "unstoppable-sledge",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-kuurth-breaker-of-stone-4c2.webp",
+          "abilities": [
+            "[keyword:Thrown Artifact]",
+            "When you throw this, you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Contest of Strength",
+          "displayName": "Contest of Strength",
+          "slug": "contest-of-strength",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 5,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-kuurth-breaker-of-stone-5u.webp",
+          "abilities": [
+            "[team:foes-of-asgard]: Discard the top card of any player's deck. Then reveal the top or bottom card of your deck. If the card you revealed has an equal or higher cost, you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Break Every Bone",
+          "displayName": "Break Every Bone",
+          "slug": "break-every-bone",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 7,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-kuurth-breaker-of-stone-7r.webp",
+          "abilities": [
+            "Reveal a card from your hand, the top card of your deck, and the bottom card of your deck. You get +[icon:attack] equal to their total costs."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 65,
+      "name": "Nerkkod, Breaker of Oceans",
+      "slug": "nerkkod-breaker-of-oceans",
+      "team": "foes-of-asgard",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Pull of the Tides",
+          "displayName": "Pull of the Tides",
+          "slug": "pull-of-the-tides",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-nerkkod-breaker-of-oceans-3c1.webp",
+          "abilities": [
+            "You may move an Adversary to an adjacent city space. If another Adversary is already there, swap them."
+          ]
+        },
+        {
+          "name": "Feed My Undersea Legions",
+          "displayName": "Feed My Undersea Legions",
+          "slug": "feed-my-undersea-legions",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-nerkkod-breaker-of-oceans-4c2.webp",
+          "abilities": [
+            "Whenever you defeat an Adversary on the Bridge this turn, you may KO one of your cards or a card from your discard pile. If you do, gain a New Recruit."
+          ]
+        },
+        {
+          "name": "Cudgel of the Deep",
+          "displayName": "Cudgel of the Deep",
+          "slug": "cudgel-of-the-deep",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 5,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-nerkkod-breaker-of-oceans-5u.webp",
+          "abilities": [
+            "[keyword:Thrown Artifact]",
+            "When you throw this, you get +3[icon:attack], usable only against Adversaries on the Bridge or the Commander."
+          ]
+        },
+        {
+          "name": "Break Their Loyalties",
+          "displayName": "Break Their Loyalties",
+          "slug": "break-their-loyalties",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": "5",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-nerkkod-breaker-of-oceans-7r.webp",
+          "abilities": [
+            "[team:foes-of-asgard]: Each other player reveals their hand. Choose a New Recruit or Madame HYDRA from each of those players' hands and put them into your hand."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 66,
+      "name": "Nul, Breaker of Worlds",
+      "slug": "nul-breaker-of-worlds",
+      "team": "foes-of-asgard",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Demolition Derby",
+          "displayName": "Demolition Derby",
+          "slug": "demolition-derby",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-nul-breaker-of-worlds-3c1.webp",
+          "abilities": [
+            "[hc:strength]: Choose a player and [keyword:Demolish] them. If that player discards a card this way, draw a card."
+          ]
+        },
+        {
+          "name": "Otherworldly Maul",
+          "displayName": "Otherworldly Maul",
+          "slug": "otherworldly-maul",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-nul-breaker-of-worlds-4c2.webp",
+          "abilities": [
+            "[keyword:Thrown Artifact]",
+            "When you throw this, you get +2[icon:attack] for each [hc:strength] Ally you played this turn."
+          ]
+        },
+        {
+          "name": "Nul Smash!",
+          "displayName": "Nul Smash!",
+          "slug": "nul-smash",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-nul-breaker-of-worlds-6u.webp",
+          "abilities": [
+            "Say “NUL SMASH!“ Then each player slaps a palm on the table. The last other player to slap a palm on the table gains a Bindings."
+          ]
+        },
+        {
+          "name": "Break the World",
+          "displayName": "Break the World",
+          "slug": "break-the-world",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 8,
+          "attack": "6",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-nul-breaker-of-worlds-8r.webp",
+          "abilities": [
+            "KO up to two cards from your hand and/or discard pile. For each Bindings you KO this way, [keyword:demolish] each other player."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 67,
+      "name": "Skadi",
+      "slug": "skadi",
+      "team": "hydra",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Dark Prophecy",
+          "displayName": "Dark Prophecy",
+          "slug": "dark-prophecy",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-skadi-3c1.webp",
+          "abilities": [
+            "[hc:tech]: Gain a Madame HYDRA."
+          ]
+        },
+        {
+          "name": "Ancient Oath of HYDRA",
+          "displayName": "Ancient Oath of HYDRA",
+          "slug": "ancient-oath-of-hydra",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 5,
+          "attack": "1",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-skadi-5c2.webp",
+          "abilities": [
+            "You may discard a[team:hydra] Ally. If you do, draw two cards."
+          ]
+        },
+        {
+          "name": "Hammer of the Serpent",
+          "displayName": "Hammer of the Serpent",
+          "slug": "hammer-of-the-serpent",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 5,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-skadi-5u.webp",
+          "abilities": [
+            "[keyword:Thrown Artifact]",
+            "When you throw this, you get +2[icon:attack] for each card you discarded this turn.",
+            "(Throwing an Artifact does not count as “discarding“ it.)"
+          ]
+        },
+        {
+          "name": "War Banner of HYDRA",
+          "displayName": "War Banner of HYDRA",
+          "slug": "war-banner-of-hydra",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 7,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-skadi-7r.webp",
+          "abilities": [
+            "[keyword:Thrown Artifact]",
+            "When you throw this, you get +1[icon:attack] for each other[team:hydra] Ally you played this turn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 68,
+      "name": "Skirn, Breaker of Men",
+      "slug": "skirn-breaker-of-men",
+      "team": "foes-of-asgard",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Towering Leader",
+          "displayName": "Towering Leader",
+          "slug": "towering-leader",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-skirn-breaker-of-men-3c1.webp",
+          "abilities": [
+            "Gain two New Recruits.",
+            "[hc:instinct]: Gain a third New Recruit."
+          ]
+        },
+        {
+          "name": "Underhanded Dealings",
+          "displayName": "Underhanded Dealings",
+          "slug": "underhanded-dealings",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-skirn-breaker-of-men-4c2.webp",
+          "abilities": [
+            "Look at the bottom card of your deck. Discard it or put it back.",
+            "[hc:covert]: Draw a card from the bottom of your deck."
+          ]
+        },
+        {
+          "name": "Titanic Bludgeon",
+          "displayName": "Titanic Bludgeon",
+          "slug": "titanic-bludgeon",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 2,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-skirn-breaker-of-men-2u.webp",
+          "abilities": [
+            "[keyword:Thrown Artifact]",
+            "When you throw this, you get +1[icon:attack] for each card you've drawn this turn. (This doesn't count the six cards you draw at the end of your turn.)"
+          ]
+        },
+        {
+          "name": "Break Your Hopes",
+          "displayName": "Break Your Hopes",
+          "slug": "break-your-hopes",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 7,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-hr-skirn-breaker-of-men-7r.webp",
+          "abilities": [
+            "Each player reveals a [hc:covert] Ally or discards a card. For each card discarded this way, you draw a card."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 20,
+      "name": "Uru-Enchanted Iron Man",
+      "slug": "uru-enchanted-iron-man",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Uru-Enchanted Iron Man",
+          "slug": "uru-enchanted-iron-man",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-mm-uru-enchanted-iron-man.webp",
+          "abilities": [
+            "Always Leads: The Mighty",
+            "Command Strike: [keyword:Demolish] each player. Then stack this Strike next to Iron Man. Uru-Enchanted Iron Man has an [keyword:Uru-Enchanted Weapon] for each Strike stacked here."
+          ]
+        },
+        {
+          "name": "Armor of the Destroyer",
+          "slug": "armor-of-the-destroyer",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-mt-uru-enchanted-iron-man-armor-of-the-destroyer.webp",
+          "abilities": [
+            "Fight: For each [hc:tech] Ally you have, [keyword:demolish] each other player."
+          ]
+        },
+        {
+          "name": "Pepper Potts in Rescue Armor",
+          "slug": "pepper-potts-in-rescue-armor",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-mt-uru-enchanted-iron-man-pepper-potts-in-rescue-armor.webp",
+          "abilities": [
+            "Fight: A Bystander from the Bystander Stack becomes a Command Strike that takes effect immediately."
+          ]
+        },
+        {
+          "name": "Quantum Inventions",
+          "slug": "quantum-inventions",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-mt-uru-enchanted-iron-man-quantum-inventions.webp",
+          "abilities": [
+            "Fight: Draw two cards. Then, if you reveal a [hc:tech] card, draw two more cards."
+          ]
+        },
+        {
+          "name": "Repulsor Coils",
+          "slug": "repulsor-coils",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-mt-uru-enchanted-iron-man-repulsor-coils.webp",
+          "abilities": [
+            "Fight: Each other player reveals a [hc:tech] Ally or gains a Bindings."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 27,
+      "name": "Mighty, The",
+      "slug": "mighty-the",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Black Widow",
+          "slug": "black-widow",
+          "vp": "4",
+          "vAttack": "3",
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-vi-mighty-the-black-widow.webp",
+          "abilities": [
+            "[keyword:2 Uru-Enchanted Weapons]",
+            "[keyword:Fight or Fail]: If her Uru-Enchanted Weapons revealed any Bystanders, kidnap them."
+          ]
+        },
+        {
+          "name": "Dr. Strange",
+          "slug": "dr-strange",
+          "vp": "4",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-vi-mighty-the-dr-strange.webp",
+          "abilities": [
+            "Ambush: Reveal the top three cards of the Adversary Deck. Put the Adversary you revealed with the highest printed VP on top of that deck. Put the rest on the bottom of that deck in random order.",
+            "[keyword:Uru-Enchanted Weapon]",
+            "[keyword:Fight or Fail]: You get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Hawkeye",
+          "slug": "hawkeye",
+          "vp": "2",
+          "vAttack": "3",
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-vi-mighty-the-hawkeye.webp",
+          "abilities": [
+            "[keyword:Uru-Enchanted Weapon]",
+            "[keyword:Fight or Fail]: Choose one: Each other player draws a card, or each other player discards a card."
+          ]
+        },
+        {
+          "name": "Iron Fist",
+          "slug": "iron-fist",
+          "vp": "2",
+          "vAttack": "3",
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-vi-mighty-the-iron-fist.webp",
+          "abilities": [
+            "[keyword:Uru-Enchanted Weapon]",
+            "[keyword:Fight or Fail]: If his Uru-Enchanted Weapon revealed an Adversary, KO one of your Allies."
+          ]
+        },
+        {
+          "name": "Ms. Marvel",
+          "slug": "ms-marvel",
+          "vp": "3",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-vi-mighty-the-ms-marvel.webp",
+          "abilities": [
+            "[keyword:Uru-Enchanted Weapon]",
+            "[keyword:Fight or Fail]: If her Uru-Enchanted Weapon revealed a Command Strike or Plot Twist, play it.",
+            "Overrun: Each player reveals a [hc:ranged] Ally or gains a Bindings."
+          ]
+        },
+        {
+          "name": "Red She-Hulk",
+          "slug": "red-she-hulk",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-vi-mighty-the-red-she-hulk.webp",
+          "abilities": [
+            "[keyword:Uru-Enchanted Weapon]",
+            "[keyword:Fight or Fail]: If her Uru-Enchanted Weapon revealed an Adversary, put that Adversary into your Victory Pile."
+          ]
+        },
+        {
+          "name": "Spider-Man",
+          "slug": "spider-man",
+          "vp": "3",
+          "vAttack": "2",
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-vi-mighty-the-spider-man.webp",
+          "abilities": [
+            "[keyword:2 Uru-Enchanted Weapons]",
+            "[keyword:Fight or Fail]: Play all the cards revealed by his Uru-Enchanted Weapon that are worth 2 VP or less.",
+            "Overrun: Each player gains a Bindings."
+          ]
+        },
+        {
+          "name": "Wolverine",
+          "slug": "wolverine",
+          "vp": "6",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-vi-mighty-the-wolverine.webp",
+          "abilities": [
+            "[keyword:2 Uru-Enchanted Weapons]",
+            "[keyword:Fight or Fail]: Draw two cards.",
+            "Overrun: Each player reveals an [hc:instinct] Ally or gains a Bindings. Then put Wolverine on top of the Adversary Deck."
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [],
+  "schemes": [
+    {
+      "id": 37,
+      "name": "Fear Itself",
+      "slug": "fear-itself",
+      "imageUrl": "https://images.barefootbetters.com/fear/fear-sc-fear-itself.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 10 Twists.",
+            "Earth's “Fear Level“ starts at 8. The number of Allies in the Lair is always equal to the Fear Level.",
+            "Twist: KO an Ally from the Lair. The Fear Level goes down by 1.",
+            "Good Wins: When the Fear Level is 0."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "name": "Last Stand at Avengers Tower",
+      "slug": "last-stand-at-avengers-tower",
+      "imageUrl": "https://images.barefootbetters.com/fear/fear-sc-last-stand-at-avengers-tower.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 6 Twists.",
+            "Twist: Stack this Twist above the Rooftops as “StarkTech Defenses.“ If there is an Adversary on the Rooftops, choose 3 Allies from the Lair & KO them.",
+            "Special Rules: While an Adversary is on the Rooftops, it gets +1[icon:attack] for each StarkTech Defenses.",
+            "Good Wins: When there are 13 non-grey Allies in the KO pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 39,
+      "name": "Traitor, The",
+      "slug": "traitor-the",
+      "imageUrl": "https://images.barefootbetters.com/fear/fear-sc-traitor-the.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 2+ players only. 8 Twists. Shuffle a 'Betrayal Deck' of 3 Bindings per player and a 9th Twist.",
+            "Twists 1-3: If there is no revealed Traitor, each player puts a 'Betrayal Card' from the Betrayal Deck face down in front of them and looks at it.",
+            "Special Rules: During your turn, you may reveal a Twist from your Betrayal Cards to become 'the Traitor'. If you do, each other player gains all the Bindings from their Betrayal Cards.",
+            "During your turns, you may spend 4[icon:attack] any number of times to play an additional card from the Adversary Deck.",
+            "Twists 8: Good wins! The Traitor reveals themself and also wins.",
+            "When the players win: The Traitor reveals themself and loses."
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [],
+  "wounds": [],
+  "other": []
+}

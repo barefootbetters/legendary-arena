@@ -1,7 +1,20 @@
 /**
  * impl/localRegistry.ts
- * Loads set data from the local filesystem (for CI validation).
- * Node.js only.
+ * Loads set data from the local filesystem (for CI validation and dev tools).
+ * Node.js only — not included in the browser bundle.
+ *
+ * Directory layout expected:
+ *   metadataDir/     (default: data/metadata/)
+ *     sets.json          ← set index (id, abbr, name, releaseDate, etc.)
+ *     card-types.json    ← card type taxonomy
+ *     hero-classes.json
+ *     hero-teams.json
+ *     icons-meta.json
+ *     leads.json
+ *   cardsDir/        (default: data/cards/)
+ *     core.json          ← per-set card data
+ *     dkcy.json
+ *     ... (one file per set abbreviation)
  */
 
 import { readFile, readdir } from "node:fs/promises";
@@ -20,31 +33,48 @@ import type {
 } from "../types/index.js";
 
 export interface LocalRegistryOptions {
-  /** Path to folder containing card-types.json + {abbr}.json files */
+  /** Path to the metadata lookup folder containing sets.json, card-types.json, etc. */
   metadataDir: string;
+  /**
+   * Path to the folder containing per-set card JSON files ({abbr}.json).
+   * Defaults to a sibling "cards/" directory next to metadataDir.
+   * Example: if metadataDir is "data/metadata", cardsDir defaults to "data/cards".
+   */
+  cardsDir?: string;
 }
 
 export async function createRegistryFromLocalFiles(
   options: LocalRegistryOptions
 ): Promise<CardRegistry> {
-  const dir = resolve(options.metadataDir);
+  const metadataDir = resolve(options.metadataDir);
+
+  // why: cardsDir defaults to a sibling "cards/" directory so the caller
+  // only needs to specify metadataDir — the most common case
+  const cardsDir = resolve(
+    options.cardsDir ?? join(metadataDir, "..", "cards")
+  );
+
   const errors: Array<{ setAbbr?: string; code: string; message: string }> = [];
 
-  // ── Load card-types.json ───────────────────────────────────────────────────
+  // ── Load set index from sets.json ──────────────────────────────────────────
+  // why: sets.json is the canonical set index (id, abbr, name, releaseDate, type).
+  // The older code incorrectly read card-types.json here — that file is the
+  // card type taxonomy (hero-common1, villain, scheme, etc.) which is a
+  // completely different shape.
   let setIndex: SetIndexEntry[] = [];
   try {
     const raw: unknown = JSON.parse(
-      await readFile(join(dir, "card-types.json"), "utf8")
+      await readFile(join(metadataDir, "sets.json"), "utf8")
     );
     if (Array.isArray(raw)) {
       for (const item of raw) {
-        const r = SetIndexEntrySchema.safeParse(item);
-        if (r.success) {
-          setIndex.push(r.data);
+        const result = SetIndexEntrySchema.safeParse(item);
+        if (result.success) {
+          setIndex.push(result.data);
         } else {
           errors.push({
-            code: "SET_INDEX_INVALID",
-            message: r.error.issues.map((i) => i.message).join("; "),
+            code:    "SET_INDEX_INVALID",
+            message: result.error.issues.map((i) => i.message).join("; "),
           });
         }
       }
@@ -56,19 +86,30 @@ export async function createRegistryFromLocalFiles(
     });
   }
 
-  // ── Load all {abbr}.json files ─────────────────────────────────────────────
-  const loadedSets = new Map<string, SetData>();
-  const setIndexMap = new Map(setIndex.map((s) => [s.abbr, s]));
+  // ── Load all per-set card JSON files from cardsDir ─────────────────────────
+  // why: cardsDir contains only card set files — no filtering is needed.
+  // The lookup files (sets.json, card-types.json, etc.) live in metadataDir.
+  const loadedSets    = new Map<string, SetData>();
+  const setIndexByAbbr = new Map(setIndex.map((s) => [s.abbr, s]));
 
-  const files = (await readdir(dir)).filter(
-    (f) => extname(f) === ".json" && f !== "card-types.json"
-  );
+  let cardFiles: string[] = [];
+  try {
+    cardFiles = (await readdir(cardsDir)).filter(
+      (f) => extname(f) === ".json"
+    );
+  } catch (err) {
+    errors.push({
+      code:    "CARDS_DIR_ERROR",
+      message: `Could not read cards directory "${cardsDir}": ` +
+               (err instanceof Error ? err.message : String(err)),
+    });
+  }
 
-  for (const file of files) {
+  for (const file of cardFiles) {
     const abbr = file.replace(".json", "");
     try {
       const raw: unknown = JSON.parse(
-        await readFile(join(dir, file), "utf8")
+        await readFile(join(cardsDir, file), "utf8")
       );
       const result = SetDataSchema.safeParse(raw);
       if (result.success) {
@@ -94,7 +135,7 @@ export async function createRegistryFromLocalFiles(
   function rebuildFlatCards(): FlatCard[] {
     const all: FlatCard[] = [];
     for (const [abbr, set] of loadedSets) {
-      const meta = setIndexMap.get(abbr);
+      const meta = setIndexByAbbr.get(abbr);
       all.push(...flattenSet(set, meta?.name ?? abbr));
     }
     return all;
@@ -107,16 +148,17 @@ export async function createRegistryFromLocalFiles(
         totalHeroes:     [...loadedSets.values()].reduce((n, s) => n + s.heroes.length, 0),
         totalCards:      rebuildFlatCards().length,
         loadedSetAbbrs:  [...loadedSets.keys()],
-        metadataBaseUrl: dir,
+        metadataBaseUrl: metadataDir,
       };
     },
 
-    listSets():             SetIndexEntry[]  { return setIndex; },
-    getSet(abbr: string):   SetData | undefined { return loadedSets.get(abbr); },
-    listHeroes():           Hero[]  { return [...loadedSets.values()].flatMap((s) => s.heroes); },
-    listCards():            FlatCard[] { return rebuildFlatCards(); },
-    query(q: CardQuery):    FlatCard[] { return applyQuery(rebuildFlatCards(), q); },
-    validate():             HealthReport {
+    listSets():           SetIndexEntry[]    { return setIndex; },
+    getSet(abbr: string): SetData | undefined { return loadedSets.get(abbr); },
+    listHeroes():         Hero[]             { return [...loadedSets.values()].flatMap((s) => s.heroes); },
+    listCards():          FlatCard[]         { return rebuildFlatCards(); },
+    query(q: CardQuery):  FlatCard[]         { return applyQuery(rebuildFlatCards(), q); },
+
+    validate(): HealthReport {
       return buildHealthReport(setIndex, [...loadedSets.values()], errors);
     },
   };

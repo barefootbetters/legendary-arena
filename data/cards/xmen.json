@@ -1,0 +1,2444 @@
+{
+  "id": 16,
+  "abbr": "xmen",
+  "exportName": "XMen",
+  "heroes": [
+    {
+      "id": 132,
+      "name": "Aurora & Northstar",
+      "slug": "aurora-northstar",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Northern Lights",
+          "displayName": "Northern Lights",
+          "slug": "northern-lights",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-aurora-northstar-3c1.webp",
+          "abilities": [
+            "[keyword:Soaring Flight]",
+            "[keyword:Lightshow]: Draw a card."
+          ]
+        },
+        {
+          "name": "Blazing Flare",
+          "displayName": "Blazing Flare",
+          "slug": "blazing-flare",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-aurora-northstar-4c2.webp",
+          "abilities": [
+            "[keyword:Lightshow]: You get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Blazing Fists",
+          "displayName": "Blazing Fists",
+          "slug": "blazing-fists",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-aurora-northstar-4c3.webp",
+          "abilities": [
+            "[keyword:Berserk]"
+          ]
+        },
+        {
+          "name": "Twin Blast",
+          "displayName": "Twin Blast",
+          "slug": "twin-blast",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-aurora-northstar-5u.webp",
+          "abilities": [
+            "[keyword:Soaring Flight]",
+            "[keyword:Lightshow]: You get +3[icon:attack]."
+          ]
+        },
+        {
+          "name": "Mach 10",
+          "displayName": "Mach 10",
+          "slug": "mach-10",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 5,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": "0+",
+          "recruit": "4",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-aurora-northstar-7r.webp",
+          "abilities": [
+            "[keyword:Soaring Flight]",
+            "All Heroes you recruit this turn have [keyword:Soaring Flight].",
+            "[keyword:Lightshow]: You get +2[icon:attack]for each [keyword:Lightshow] card you played this turn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 133,
+      "name": "Banshee",
+      "slug": "banshee",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Sonar Detection",
+          "displayName": "Sonar Detection",
+          "slug": "sonar-detection",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 2,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-banshee-2c1.webp",
+          "abilities": [
+            "Draw a card.",
+            "[keyword:Piercing Energy]",
+            "[keyword:X-Gene] [hc:covert]: You get +1[icon:6]."
+          ]
+        },
+        {
+          "name": "Speed of Sound",
+          "displayName": "Speed of Sound",
+          "slug": "speed-of-sound",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-banshee-3c2.webp",
+          "abilities": [
+            "[keyword:Soaring Flight]",
+            "[keyword:Piercing Energy]"
+          ]
+        },
+        {
+          "name": "Sonic Blastwave",
+          "displayName": "Sonic Blastwave",
+          "slug": "sonic-blastwave",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 5,
+          "attack": null,
+          "recruit": "3",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-banshee-5u.webp",
+          "abilities": [
+            "[keyword:Piercing Energy]",
+            "[hc:ranged]: You may have this card produce [icon:6] instead of[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Bone-Shattering Howl",
+          "displayName": "Bone-Shattering Howl",
+          "slug": "bone-shattering-howl",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 8,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-banshee-8r.webp",
+          "abilities": [
+            "[keyword:Piercing Energy]",
+            "[hc:ranged][hc:covert]: You may use[icon:attack] as if it were [icon:6] this turn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 134,
+      "name": "Beast",
+      "slug": "beast",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Captivating Conundrum",
+          "displayName": "Captivating Conundrum",
+          "slug": "captivating-conundrum",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 2,
+          "attack": "1",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-beast-2c1.webp",
+          "abilities": [
+            "[keyword:X-Gene] [hc:tech]: Draw a card."
+          ]
+        },
+        {
+          "name": "Furry Fury",
+          "displayName": "Furry Fury",
+          "slug": "furry-fury",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-beast-4c2.webp",
+          "abilities": [
+            "[keyword:Berserk]",
+            "[keyword:X-Gene] [hc:strength]: [keyword:Berserk]"
+          ]
+        },
+        {
+          "name": "Calculated Rage",
+          "displayName": "Calculated Rage",
+          "slug": "calculated-rage",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 5,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-beast-5u.webp",
+          "abilities": [
+            "Look at the top card of your deck. Discard it or put it back.",
+            "[keyword:Berserk]"
+          ]
+        },
+        {
+          "name": "Recursive Pummeling",
+          "displayName": "Recursive Pummeling",
+          "slug": "recursive-pummeling",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 8,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-beast-8r.webp",
+          "abilities": [
+            "[keyword:Berserk]",
+            "[keyword:X-Gene] [team:x-men]: You may return a 0-cost, 3-cost, and 4-cost card from your discard pile to your hand."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 135,
+      "name": "Cannonball",
+      "slug": "cannonball",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Kinetic Blast Field",
+          "displayName": "Kinetic Blast Field",
+          "slug": "kinetic-blast-field",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-cannonball-3c1.webp",
+          "abilities": [
+            "[keyword:Soaring Flight]",
+            "[hc:instinct]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Carry to the Air",
+          "displayName": "Carry to the Air",
+          "slug": "carry-to-the-air",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-cannonball-4c2.webp",
+          "abilities": [
+            "[keyword:Soaring Flight]",
+            "[hc:strength]: The next Hero you recruit this turn has [keyword:Soaring Flight]."
+          ]
+        },
+        {
+          "name": "Natural Leader",
+          "displayName": "Natural Leader",
+          "slug": "natural-leader",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-cannonball-6u.webp",
+          "abilities": [
+            "[keyword:Soaring Flight]",
+            "[hc:strength]: Return a [team:shield]Hero from your discard pile to your hand."
+          ]
+        },
+        {
+          "name": "Human Cannon",
+          "displayName": "Human Cannon",
+          "slug": "human-cannon",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 8,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-cannonball-8r.webp",
+          "abilities": [
+            "[keyword:Soaring Flight]",
+            "If you played at least 6 other cards this turn, you get +2[icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 136,
+      "name": "Colossus & Wolverine",
+      "slug": "colossus-wolverine",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Reliable",
+          "displayName": "Reliable",
+          "slug": "reliable",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-colossus-wolverine-3c1.webp",
+          "abilities": []
+        },
+        {
+          "name": "Unpredictable",
+          "displayName": "Unpredictable",
+          "slug": "unpredictable",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-colossus-wolverine-3c2.webp",
+          "abilities": [
+            "[keyword:Berserk], [keyword:Berserk]"
+          ]
+        },
+        {
+          "name": "Fastball Special",
+          "displayName": "Fastball Special",
+          "slug": "fastball-special",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-colossus-wolverine-4c3.webp",
+          "abilities": [
+            "[keyword:Soaring Flight]",
+            "[keyword:X-Gene] [hc:instinct]: [keyword:Berserk]"
+          ]
+        },
+        {
+          "name": "Insane Disregard for Danger",
+          "displayName": "Insane Disregard for Danger",
+          "slug": "insane-disregard-for-danger",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 6,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-colossus-wolverine-6u.webp",
+          "abilities": [
+            "[keyword:Berserk]",
+            "If you have a Wound in your hand or discard pile, KO it. Otherwise, gain a Wound."
+          ]
+        },
+        {
+          "name": "Uncanny X-Men",
+          "displayName": "Uncanny X-Men",
+          "slug": "uncanny-x-men",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 5,
+          "hc": "strength",
+          "cost": 7,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-colossus-wolverine-7r.webp",
+          "abilities": [
+            "[keyword:Berserk], [keyword:Berserk], [keyword:Berserk]",
+            "Then, draw a card for each [team:x-men] card you Berserked."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 137,
+      "name": "Dazzler",
+      "slug": "dazzler",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Convert Sound to Light",
+          "displayName": "Convert Sound to Light",
+          "slug": "convert-sound-to-light",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-dazzler-3c1.webp",
+          "abilities": [
+            "[keyword:Piercing Energy]",
+            "[keyword:Lightshow]: You get +1[icon:6] for each Lightshow card you played this turn."
+          ]
+        },
+        {
+          "name": "Dazzling Glamour",
+          "displayName": "Dazzling Glamour",
+          "slug": "dazzling-glamour",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-dazzler-4c2.webp",
+          "abilities": [
+            "[keyword:Lightshow]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Citywide Mega-Concert",
+          "displayName": "Citywide Mega-Concert",
+          "slug": "citywide-mega-concert",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 5,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-dazzler-5u.webp",
+          "abilities": [
+            "[keyword:Lightshow]: When you draw a new hand of cards at the end of this turn, draw two extra cards."
+          ]
+        },
+        {
+          "name": "Inspire the World",
+          "displayName": "Inspire the World",
+          "slug": "inspire-the-world",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 7,
+          "attack": "5",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-dazzler-7r.webp",
+          "abilities": [
+            "[keyword:Lightshow]: Put a Hero from the HQ on top of your deck."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 138,
+      "name": "Havok",
+      "slug": "havok",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Blinding Burst",
+          "displayName": "Blinding Burst",
+          "slug": "blinding-burst",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "0+",
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-havok-3c1.webp",
+          "abilities": [
+            "[keyword:Lightshow]: You get +3[icon:attack] usable only against the Mastermind."
+          ]
+        },
+        {
+          "name": "Unleash Havok",
+          "displayName": "Unleash Havok",
+          "slug": "unleash-havok",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-havok-4c2.webp",
+          "abilities": [
+            "To play this card, you must discard a card from your hand.",
+            "[keyword:Berserk], [keyword:Berserk]"
+          ]
+        },
+        {
+          "name": "Concussive Plasma",
+          "displayName": "Concussive Plasma",
+          "slug": "concussive-plasma",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-havok-5u.webp",
+          "abilities": [
+            "[keyword:X-Gene] [hc:ranged]: You get +1[icon:attack]for each [hc:ranged] card in your discard pile."
+          ]
+        },
+        {
+          "name": "Radiation Focus Array",
+          "displayName": "Radiation Focus Array",
+          "slug": "radiation-focus-array",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 7,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-havok-7r.webp",
+          "abilities": [
+            "[keyword:Berserk]",
+            "[keyword:X-Gene] [hc:ranged]: You get the total printed[icon:attack]of all the [hc:ranged] cards in your discard pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 139,
+      "name": "Jubilee",
+      "slug": "jubilee",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Light a Spark",
+          "displayName": "Light a Spark",
+          "slug": "light-a-spark",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 2,
+          "attack": null,
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-jubilee-2c1.webp",
+          "abilities": [
+            "Draw a card.",
+            "[keyword:Lightshow]: You get +1[icon:recruit] for each Lightshow card you played this turn."
+          ]
+        },
+        {
+          "name": "Blasting Fireworks",
+          "displayName": "Blasting Fireworks",
+          "slug": "blasting-fireworks",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-jubilee-4c2.webp",
+          "abilities": [
+            "Draw a card.",
+            "[keyword:Lightshow]: You get +1[icon:attack] for each Lightshow card you played this turn."
+          ]
+        },
+        {
+          "name": "Unexpected Explosion",
+          "displayName": "Unexpected Explosion",
+          "slug": "unexpected-explosion",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 5,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-jubilee-5u.webp",
+          "abilities": [
+            "[keyword:Lightshow]: Look at the top card of your deck. If it costs 0, KO it."
+          ]
+        },
+        {
+          "name": "Prismatic Cascade",
+          "displayName": "Prismatic Cascade",
+          "slug": "prismatic-cascade",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 7,
+          "attack": "5+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-jubilee-7r.webp",
+          "abilities": [
+            "[keyword:Lightshow]: You get +1[icon:recruit]and +1[icon:attack]for each [keyword:Lightshow] card you played this turn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 140,
+      "name": "Kitty Pryde",
+      "slug": "kitty-pryde",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Intangible Qualities",
+          "displayName": "Intangible Qualities",
+          "slug": "intangible-qualities",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-kitty-pryde-3c1.webp",
+          "abilities": [
+            "Put a card from the HQ on the bottom of the Hero deck. If that card had a [icon:recruit], get +2[icon:recruit]. If that card had an [icon:attack], you get +2[icon:attack]. (If both, get both.)"
+          ]
+        },
+        {
+          "name": "Going through a Phase",
+          "displayName": "Going through a Phase",
+          "slug": "going-through-a-phase",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 4,
+          "attack": "1",
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-kitty-pryde-4c2.webp",
+          "abilities": [
+            "[keyword:X-Gene] [team:x-men]: Draw a card."
+          ]
+        },
+        {
+          "name": "Ghost in the Machine",
+          "displayName": "Ghost in the Machine",
+          "slug": "ghost-in-the-machine",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 6,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-kitty-pryde-6u.webp",
+          "abilities": [
+            "You get +1[icon:attack]for each different cost among the Heroes in the HQ."
+          ]
+        },
+        {
+          "name": "Lockheed, Kitty's Dragon",
+          "displayName": "Lockheed, Kitty's Dragon",
+          "slug": "lockheed-kittys-dragon",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 8,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-kitty-pryde-8r.webp",
+          "abilities": [
+            "[keyword:Soaring Flight]",
+            "Put a card from the HQ on the bottom of the Hero Deck. You get +[icon:attack] equal to its cost."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 141,
+      "name": "Legion",
+      "slug": "legion",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Bend Steel",
+          "displayName": "Bend Steel",
+          "slug": "bend-steel",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 2,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-legion-2c1.webp",
+          "abilities": [
+            "[keyword:Berserk]"
+          ]
+        },
+        {
+          "name": "Bend Light",
+          "displayName": "Bend Light",
+          "slug": "bend-light",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 2,
+          "attack": null,
+          "recruit": "1+",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-legion-2c2.webp",
+          "abilities": [
+            "[keyword:Lightshow]: You get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Split Personality",
+          "displayName": "Split Personality",
+          "slug": "split-personality",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-legion-3c3.webp",
+          "abilities": []
+        },
+        {
+          "name": "Split Eardrums",
+          "displayName": "Split Eardrums",
+          "slug": "split-eardrums",
+          "rarity": 1,
+          "rarityLabel": "Common 4",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-legion-3c4.webp",
+          "abilities": [
+            "[keyword:Piercing Energy]"
+          ]
+        },
+        {
+          "name": "Channel Time",
+          "displayName": "Channel Time",
+          "slug": "channel-time",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 5,
+          "hc": "instinct",
+          "cost": 5,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-legion-5u.webp",
+          "abilities": [
+            "Draw two cards."
+          ]
+        },
+        {
+          "name": "Channel Fire",
+          "displayName": "Channel Fire",
+          "slug": "channel-fire",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 6,
+          "hc": "tech",
+          "cost": 5,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-legion-5u2.webp",
+          "abilities": [
+            "You get +1[icon:attack]for each different Hero Class in your discard pile."
+          ]
+        },
+        {
+          "name": "Maelstrom of Clashing Powers",
+          "displayName": "Maelstrom of Clashing Powers",
+          "slug": "maelstrom-of-clashing-powers",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 7,
+          "hc": "covert",
+          "cost": 8,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-legion-8r.webp",
+          "abilities": [
+            "[keyword:Soaring Flight]",
+            "Reveal the top three cards of the Hero Deck. You get their total printed [icon:attack]. Put them on the bottom of the Hero Deck."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 142,
+      "name": "Longshot",
+      "slug": "longshot",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Fortune Favors the Bold",
+          "displayName": "Fortune Favors the Bold",
+          "slug": "fortune-favors-the-bold",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-longshot-3c1.webp",
+          "abilities": [
+            "To play this card, you must put a card from your hand on top of your deck."
+          ]
+        },
+        {
+          "name": "Flurry of Blades",
+          "displayName": "Flurry of Blades",
+          "slug": "flurry-of-blades",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-longshot-4c2.webp",
+          "abilities": [
+            "[keyword:Berserk]",
+            "[hc:tech]: [keyword:Berserk]"
+          ]
+        },
+        {
+          "name": "Make My Own Luck",
+          "displayName": "Make My Own Luck",
+          "slug": "make-my-own-luck",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 6,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-longshot-6u.webp",
+          "abilities": [
+            "Look at the top card of your deck. Discard it or put it back.",
+            "[hc:covert]: You may KO the card you discarded this way."
+          ]
+        },
+        {
+          "name": "Escape from Mojo World",
+          "displayName": "Escape from Mojo World",
+          "slug": "escape-from-mojo-world",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 7,
+          "attack": "5+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-longshot-7r.webp",
+          "abilities": [
+            "Reveal the top card of the Villain Deck. If it's a Villain, you may put it on the bottom of that Deck.",
+            "[team:x-men]: You get +[icon:attack]equal to the printed Victory Points of the card you revealed."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 143,
+      "name": "Phoenix",
+      "slug": "phoenix",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Life & Death Incarnate",
+          "displayName": "Life & Death Incarnate",
+          "slug": "life-death-incarnate",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 3,
+          "attack": null,
+          "recruit": "3",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-phoenix-3c1.webp",
+          "abilities": [
+            "KO this card.",
+            "You may KO a card from your hand or discard pile."
+          ]
+        },
+        {
+          "name": "Obliterating Fire",
+          "displayName": "Obliterating Fire",
+          "slug": "obliterating-fire",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-phoenix-4c2.webp",
+          "abilities": [
+            "[keyword:Soaring Flight]",
+            "[keyword:Piercing Energy]",
+            "KO this card."
+          ]
+        },
+        {
+          "name": "Reincarnating Phoenix",
+          "displayName": "Reincarnating Phoenix",
+          "slug": "reincarnating-phoenix",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 6,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-phoenix-6u.webp",
+          "abilities": [
+            "Draw two cards.",
+            "You may put a Hero that was KO'd this turn into your discard pile."
+          ]
+        },
+        {
+          "name": "Driven Mad by Power",
+          "displayName": "Driven Mad by Power",
+          "slug": "driven-mad-by-power",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 9,
+          "attack": "6+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-phoenix-9r.webp",
+          "abilities": [
+            "[keyword:Berserk], [keyword:Berserk], [keyword:Berserk], [keyword:Berserk]",
+            "KO all the cards you Berserked. If this card makes at least 13[icon:attack], then the Phoenix Force becomes corrupted by power and devours the Earth. You win, Evil wins, and all other players lose."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 144,
+      "name": "Polaris",
+      "slug": "polaris",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Ride the Magnetic Waves",
+          "displayName": "Ride the Magnetic Waves",
+          "slug": "ride-the-magnetic-waves",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-polaris-3c1.webp",
+          "abilities": [
+            "[keyword:Soaring Flight]",
+            "[hc:covert]: When you draw a new hand of cards at the end of this turn, draw an extra card."
+          ]
+        },
+        {
+          "name": "Electromagnetic Pulse",
+          "displayName": "Electromagnetic Pulse",
+          "slug": "electromagnetic-pulse",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-polaris-4c2.webp",
+          "abilities": [
+            "[keyword:Piercing Energy]",
+            "[hc:ranged]: Draw a card."
+          ]
+        },
+        {
+          "name": "Subtle Attunement",
+          "displayName": "Subtle Attunement",
+          "slug": "subtle-attunement",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 6,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-polaris-6u.webp",
+          "abilities": [
+            "[keyword:Soaring Flight]",
+            "[hc:covert]: Look at the top two cards of your deck. You may KO one of them. Put the rest back in any order."
+          ]
+        },
+        {
+          "name": "Reverse Polarity",
+          "displayName": "Reverse Polarity",
+          "slug": "reverse-polarity",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 8,
+          "attack": null,
+          "recruit": "4",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-polaris-8r.webp",
+          "abilities": [
+            "[keyword:Soaring Flight]",
+            "[keyword:X-Gene] [team:x-men]: You can use [icon:recruit] as [icon:attack] this turn, and vice versa."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 145,
+      "name": "Psylocke",
+      "slug": "psylocke",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Psychic Knife",
+          "displayName": "Psychic Knife",
+          "slug": "psychic-knife",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-psylocke-2c1.webp",
+          "abilities": [
+            "Draw a card.",
+            "[keyword:Piercing Energy]",
+            "[hc:instinct]: You get +1[icon:6]."
+          ]
+        },
+        {
+          "name": "Precognition",
+          "displayName": "Precognition",
+          "slug": "precognition",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-psylocke-3c2.webp",
+          "abilities": [
+            "Reveal the top card of the Hero Deck. You may recruit it this turn. If you do, draw a card."
+          ]
+        },
+        {
+          "name": "Butterfly Effect",
+          "displayName": "Butterfly Effect",
+          "slug": "butterfly-effect",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 5,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-psylocke-5u.webp",
+          "abilities": [
+            "[keyword:Piercing Energy]",
+            "[keyword:X-Gene] [hc:covert]: You get +1[icon:6]."
+          ]
+        },
+        {
+          "name": "Telepathic Ninjutsu",
+          "displayName": "Telepathic Ninjutsu",
+          "slug": "telepathic-ninjutsu",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-psylocke-7r.webp",
+          "abilities": [
+            "[keyword:Piercing Energy]",
+            "Reveal the top card of the Hero Deck. The player of your choice puts it in their hand."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 146,
+      "name": "X-23",
+      "slug": "x-23",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Adamantium Foot Claws",
+          "displayName": "Adamantium Foot Claws",
+          "slug": "adamantium-foot-claws",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-x-23-3c1.webp",
+          "abilities": [
+            "[keyword:X-Gene] [hc:instinct]: Draw a card."
+          ]
+        },
+        {
+          "name": "Healing Factor Genome",
+          "displayName": "Healing Factor Genome",
+          "slug": "healing-factor-genome",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-x-23-4c2.webp",
+          "abilities": [
+            "[keyword:Berserk]",
+            "You may KO a Wound from your hand or discard pile."
+          ]
+        },
+        {
+          "name": "Bioengineered Assassin",
+          "displayName": "Bioengineered Assassin",
+          "slug": "bioengineered-assassin",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 6,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-x-23-6u.webp",
+          "abilities": [
+            "[keyword:Berserk]",
+            "[keyword:X-Gene] [hc:instinct]: You may KO a card from your hand or discard pile."
+          ]
+        },
+        {
+          "name": "Heir to Wolverine",
+          "displayName": "Heir to Wolverine",
+          "slug": "heir-to-wolverine",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hr-x-23-7r.webp",
+          "abilities": [
+            "[keyword:Berserk], [keyword:Berserk]",
+            "[keyword:X-Gene] [hc:instinct]: Count the[hc:instinct] cards in your discard pile. [keyword:Berserk] that many times."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 40,
+      "name": "Arcade",
+      "slug": "arcade",
+      "alwaysLeads": [],
+      "vp": 5,
+      "cards": [
+        {
+          "name": "Arcade",
+          "slug": "arcade",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mm-arcade.webp",
+          "abilities": [
+            "Start of Game: Arcade captures 5 [keyword:Human Shields].",
+            "Always Leads: Murderworld",
+            "Master Strike: Arcade captures a random Bystander from each player's Victory Pile as a [keyword:Human Shield]. Each player who didn't have a Bystander gains a Wound instead."
+          ]
+        },
+        {
+          "name": "Epic Arcade",
+          "slug": "epic-arcade",
+          "tactic": false,
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-me-arcade.webp",
+          "abilities": [
+            "Start of Game: Arcade captures 8 [keyword:Human Shields]. Play a random Horror.",
+            "Always Leads: Murderworld",
+            "Master Strike: Arcade captures two random Bystander from each player's Victory Pile as a [keyword:Human Shield]. Each player who didn't have two Bystanders gains a Wound instead."
+          ]
+        },
+        {
+          "name": "I Love a Parade!",
+          "slug": "i-love-a-parade",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-arcade-i-love-a-parade.webp",
+          "abilities": [
+            "Fight: Arcade captures two [keyword:Human Shields]. Play an extra card from the Villain Deck next turn."
+          ]
+        },
+        {
+          "name": "I Need an Audience",
+          "slug": "i-need-an-audience",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-arcade-i-need-an-audience.webp",
+          "abilities": [
+            "Fight: Arcade captures [keyword:Human Shields] equal to the number of Villains in the city."
+          ]
+        },
+        {
+          "name": "Roulette Wheel of Death",
+          "slug": "roulette-wheel-of-death",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-arcade-roulette-wheel-of-death.webp",
+          "abilities": [
+            "Fight: Arcade captures a random Bystander as a [keyword:Human Shield] from each of these places: The Bystander Stack, the Escape Pile, each city space, and each other player's Victory Pile."
+          ]
+        },
+        {
+          "name": "Welcome to my Theme Park!",
+          "slug": "welcome-to-my-theme-park",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-arcade-welcome-to-my-theme-park.webp",
+          "abilities": [
+            "Fight: Arcade and each Murderworld Villain in the city capture two [keyword:Human Shields]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 41,
+      "name": "Dark Phoenix",
+      "slug": "dark-phoenix",
+      "alwaysLeads": [],
+      "vp": 7,
+      "cards": [
+        {
+          "name": "Dark Phoenix",
+          "slug": "dark-phoenix",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mm-dark-phoenix.webp",
+          "abilities": [
+            "Always Leads: Hellfire Club",
+            "Master Strike: KO the top card of the Hero Deck and each card in the Hero Deck that shares a color with it. Shuffle the Hero Deck.",
+            "Dark Phoenix Wins: When the Hero Deck is empty."
+          ]
+        },
+        {
+          "name": "Epic Dark Phoenix",
+          "slug": "epic-dark-phoenix",
+          "tactic": false,
+          "vAttack": "15",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-me-dark-phoenix.webp",
+          "abilities": [
+            "Always Leads: Hellfire Club",
+            "Master Strike: KO the top card of the Hero Deck and each card in the Hero Deck that shares a color with it. Shuffle the Hero Deck. Then, each player plays a Hellfire Club card from their Victory Pile. Next, play a random Horror.",
+            "Dark Phoenix Wins: When the Hero Deck is empty."
+          ]
+        },
+        {
+          "name": "Burn the World to Ashes",
+          "slug": "burn-the-world-to-ashes",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-dark-phoenix-burn-the-world-to-ashes.webp",
+          "abilities": [
+            "Fight: Each other player discards each card from their hand that has the same name as any card in the KO pile."
+          ]
+        },
+        {
+          "name": "Consume an Entire Galaxy",
+          "slug": "consume-an-entire-galaxy",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-dark-phoenix-consume-an-entire-galaxy.webp",
+          "abilities": [
+            "Fight: Each other player chooses a card from their discard pile that costs 1 or more and KOs it."
+          ]
+        },
+        {
+          "name": "Fiery Reincarnation",
+          "slug": "fiery-reincarnation",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-dark-phoenix-fiery-reincarnation.webp",
+          "abilities": [
+            "Fight: Gain a Hero from the KO pile that costs 7 or more."
+          ]
+        },
+        {
+          "name": "Worship Me as a God",
+          "slug": "worship-me-as-a-god",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-dark-phoenix-worship-me-as-a-god.webp",
+          "abilities": [
+            "Fight: Each other player gains two 0-cost cards from the KO pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 42,
+      "name": "Deathbird",
+      "slug": "deathbird",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Deathbird",
+          "slug": "deathbird",
+          "tactic": false,
+          "vAttack": "8+",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mm-deathbird.webp",
+          "abilities": [
+            "Deathbird gets +1[icon:attack] for each Shi'ar Villain in the city and Escape Pile.",
+            "Always Leads: Shi'ar Imperial Guard and a Shi'ar Henchmen Group.",
+            "Master Strike: If there are already any Shi'ar Villains in the city, each player gains a Wound. Then this strike enters the city as a “Shi'ar Battlecruiser“ [icon:7] Villain with 7[icon:attack] worth 5 [icon:piercing]."
+          ]
+        },
+        {
+          "name": "Epic Deathbird",
+          "slug": "epic-deathbird",
+          "tactic": false,
+          "vAttack": "10+",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-me-deathbird.webp",
+          "abilities": [
+            "Deathbird gets +2[icon:attack] for each Shi'ar Villain in the city and Escape Pile.",
+            "Always Leads: Shi'ar Imperial Guard and a Shi'ar Henchmen Group.",
+            "Master Strike: If there are already any Shi'ar Villains in the city, play a random Horror. Then this strike enters the city as a “Shi'ar Battleship“ [icon:7] Villain with 9[icon:attack] worth 6 [icon:piercing]."
+          ]
+        },
+        {
+          "name": "Shi'ar Elite Bodyguards",
+          "slug": "shiar-elite-bodyguards",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-deathbird-shiar-elite-bodyguards.webp",
+          "abilities": [
+            "Fight: Rescue 4 Bystanders. This Tactic enters the city as a Villain whose only ability is “Escape: Shuffle this card back into Deathbird's Mastermind Tactics as another Tactic.“"
+          ]
+        },
+        {
+          "name": "Shi'ar Extermination Legion",
+          "slug": "shiar-extermination-legion",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-deathbird-shiar-extermination-legion.webp",
+          "abilities": [
+            "Fight: Rescue 4 Bystanders. This Tactic enters the city as a Villain whose only ability is “Escape: Each player discards two cards.“"
+          ]
+        },
+        {
+          "name": "Shi'ar Hovertake Battalion",
+          "slug": "shiar-hovertake-battalion",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-deathbird-shiar-hovertake-battalion.webp",
+          "abilities": [
+            "Fight: Rescue 4 Bystanders. This Tactic enters the city as a Villain whose only ability is “Escape: Each player gains a Wound.“"
+          ]
+        },
+        {
+          "name": "Shi'ar Master Spies",
+          "slug": "shiar-master-spies",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-deathbird-shiar-master-spies.webp",
+          "abilities": [
+            "Fight: Rescue 4 Bystanders. This Tactic enters the city as a Villain whose only ability is “Escape: This card becomes a Scheme Twist that takes effect immediately.“"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 43,
+      "name": "Mojo",
+      "slug": "mojo",
+      "alwaysLeads": [],
+      "vp": 5,
+      "cards": [
+        {
+          "name": "Mojo",
+          "slug": "mojo",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mm-mojo.webp",
+          "abilities": [
+            "Start of Game: Mojo captures 3 [keyword:Human Shields].",
+            "All Bystanders in Victory Piles are worth 3 [icon:piercing].",
+            "Always Leads: Mojoverse",
+            "Master Strike: Mojo captures a [keyword:Human Shield]. Each player reveals a [hc:tech] Hero or discards a card at random."
+          ]
+        },
+        {
+          "name": "Epic Mojo",
+          "slug": "epic-mojo",
+          "tactic": false,
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-me-mojo.webp",
+          "abilities": [
+            "Start of Game: Mojo captures 6 [keyword:Human Shields]. Play a random Horror.",
+            "All Bystanders in Victory Piles are worth 4 [icon:piercing].",
+            "Always Leads: Mojoverse",
+            "Master Strike: Mojo and each Mojoverse Villain capture a [keyword:Human Shield]. Each player reveals a [hc:tech] Hero or discards down to 4 cards."
+          ]
+        },
+        {
+          "name": "Billions of TV Viewers",
+          "slug": "billions-of-tv-viewers",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-mojo-billions-of-tv-viewers.webp",
+          "abilities": [
+            "Fight: Each player reveals a [hc:tech] Hero or chooses a random Bystander from their Victory Pile. Mojo captures those Bystanders as [keyword:Human Shields]."
+          ]
+        },
+        {
+          "name": "Brain-Melting TV Marathon",
+          "slug": "brain-melting-tv-marathon",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-mojo-brain-melting-tv-marathon.webp",
+          "abilities": [
+            "Fight: Each other player without a Mojo Tactic in their Victory Pile gains a Wound."
+          ]
+        },
+        {
+          "name": "Cross-Dimensional Marketing",
+          "slug": "cross-dimensional-marketing",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-mojo-cross-dimensional-marketing.webp",
+          "abilities": [
+            "Fight: You get +1[icon:recruit] for each Bystander in your Victory Pile. Mojo captures a [keyword:Human Shield]."
+          ]
+        },
+        {
+          "name": "Mojo Branding Opportunity",
+          "slug": "mojo-branding-opportunity",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-mojo-mojo-branding-opportunity.webp",
+          "abilities": [
+            "Fight: Draw a card for each Mojoverse Villain in your Victory Pile. Mojo captures a [keyword:Human Shield]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 44,
+      "name": "Onslaught",
+      "slug": "onslaught",
+      "alwaysLeads": [],
+      "vp": 7,
+      "cards": [
+        {
+          "name": "Onslaught",
+          "slug": "onslaught",
+          "tactic": false,
+          "vAttack": "10+",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mm-onslaught.webp",
+          "abilities": [
+            "Each player's hand size is 1 less.",
+            "Always Leads: Dark Descendants",
+            "Master Strike: KO all Heroes [keyword:Dominated] by Onslaught. Then each player reveals their hand and chooses one of their non-grey Heroes. Onslaught [keyword:Dominates] those Heroes."
+          ]
+        },
+        {
+          "name": "Epic Onslaught",
+          "slug": "epic-onslaught",
+          "tactic": false,
+          "vAttack": "12+",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-me-onslaught.webp",
+          "abilities": [
+            "Each player's hand size is 1 less.",
+            "Always Leads: Dark Descendants",
+            "Master Strike: KO all Heroes [keyword:Dominated] by Onslaught. Then each player reveals their hand and chooses two of their non-grey Heroes. Onslaught [keyword:Dominates] those Heroes. Then play a random Horror."
+          ]
+        },
+        {
+          "name": "Godlike Psionic Entity",
+          "slug": "godlike-psionic-entity",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-onslaught-godlike-psionic-entity.webp",
+          "abilities": [
+            "Fight: Onslaught [keyword:Dominates] all five Heroes from the HQ."
+          ]
+        },
+        {
+          "name": "Sins of X-Men Past",
+          "slug": "sins-of-x-men-past",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-onslaught-sins-of-x-men-past.webp",
+          "abilities": [
+            "Fight: Each other player reveals the top six cards of their deck and chooses an [team:x-men] Hero revealed this way. Onslaught [keyword:Dominates] those Heroes. Put the rest back in random order."
+          ]
+        },
+        {
+          "name": "Xavier and Magneto Combined",
+          "slug": "xavier-and-magneto-combined",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-onslaught-xavier-and-magneto-combined.webp",
+          "abilities": [
+            "Fight: Reveal the top three cards of the Hero Deck. Onslaught [keyword:Dominates] all the [team:x-men] and [team:brotherhood] Heroes you revealed. Put the rest back in random order."
+          ]
+        },
+        {
+          "name": "Worldwide Mental Control",
+          "slug": "worldwide-mental-control",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-onslaught-worldwide-mental-control.webp",
+          "abilities": [
+            "Fight: Onslaught [keyword:Dominates] four 0-cost Heroes from the KO pile. The next time a player fights Onslaught, KO those 0-cost Heroes."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 45,
+      "name": "Shadow King",
+      "slug": "shadow-king",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Shadow King",
+          "slug": "shadow-king",
+          "tactic": false,
+          "vAttack": "7+",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mm-shadow-king.webp",
+          "abilities": [
+            "Always Leads: Shadow-X",
+            "Master Strike: KO all Heroes [keyword:Dominated] by Shadow King. Then each player chooses a non-grey Hero from their discard pile. Shadow King [keyword:Dominates] those Heroes."
+          ]
+        },
+        {
+          "name": "Epic Shadow King",
+          "slug": "epic-shadow-king",
+          "tactic": false,
+          "vAttack": "9+",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-me-shadow-king.webp",
+          "abilities": [
+            "Start of Game: Play two random Horrors.",
+            "Always Leads: Shadow-X",
+            "Master Strike: KO all Heroes [keyword:Dominated] by Shadow King. Then each player chooses a non-grey Hero from their discard pile. Shadow King [keyword:Dominates] those Heroes."
+          ]
+        },
+        {
+          "name": "Fiend of the Astral Plane",
+          "slug": "fiend-of-the-astral-plane",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-shadow-king-fiend-of-the-astral-plane.webp",
+          "abilities": [
+            "Fight: Each other player reveals their hand and shuffles two cards with [icon:recruit] icons from their hand back into their deck."
+          ]
+        },
+        {
+          "name": "Poison their Minds",
+          "slug": "poison-their-minds",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-shadow-king-poison-their-minds.webp",
+          "abilities": [
+            "Fight: Each other player reveals their hand and chooses one of their non-grey Heroes. Shadow King [keyword:Dominates] those Heroes."
+          ]
+        },
+        {
+          "name": "Psychic Seduction",
+          "slug": "psychic-seduction",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-shadow-king-psychic-seduction.webp",
+          "abilities": [
+            "Fight: Shadow King [keyword:Dominates] each Hero that costs 5 or less from the HQ."
+          ]
+        },
+        {
+          "name": "Telepathic Betrayal",
+          "slug": "telepathic-betrayal",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-shadow-king-telepathic-betrayal.webp",
+          "abilities": [
+            "Fight: If the “Betrayal of the Shadow“ Trap is in any Victory Pile or the KO pile, put it on top of the Villain Deck."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 53,
+      "name": "Dark Descendants",
+      "slug": "dark-descendants",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Fatale",
+          "slug": "fatale",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-dark-descendants-fatale.webp",
+          "abilities": [
+            "Fight: KO one of your Heroes.",
+            "Escape: The Mastermind [keyword:Dominates] the top card of the Hero Deck."
+          ]
+        },
+        {
+          "name": "Havok, Brainwashed",
+          "slug": "havok-brainwashed",
+          "vp": null,
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-dark-descendants-havok-brainwashed.webp",
+          "abilities": [
+            "Fight: Gain this as a Hero.",
+            "Escape: Havok becomes a Hero [keyword:Dominated] by the Mastermind.",
+            "[keyword:X-Gene] [hc:ranged]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Nemesis",
+          "slug": "nemesis",
+          "vp": "5",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-dark-descendants-nemesis.webp",
+          "abilities": [
+            "Ambush: Each player reveals their hand and chooses one of their non-grey Heroes. Nemesis [keyword:Dominates] those Heroes."
+          ]
+        },
+        {
+          "name": "Psychic Subjugation",
+          "slug": "psychic-subjugation",
+          "vp": "3",
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-dark-descendants-psychic-subjugation.webp",
+          "abilities": [
+            "By End of Turn: Recruit the left-most and right-most Heroes in the HQ.",
+            "Or Suffer: Each of those Heroes you didn't recruit enters the city as a Villain with [icon:attack] equal to that Hero's cost. When you fight one, you gain it."
+          ]
+        },
+        {
+          "name": "Random",
+          "slug": "random",
+          "vp": "3",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-dark-descendants-random.webp",
+          "abilities": [
+            "Ambush: Random [keyword:Dominates] the top card of the Hero Deck. Then, each player reveals their hand and chooses one of their Heroes with that same cost. Random [keyword:Dominates] those Heroes."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 54,
+      "name": "Hellfire Club",
+      "slug": "hellfire-club",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Corrupt the Phoenix Force",
+          "slug": "corrupt-the-phoenix-force",
+          "vp": "3",
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-hellfire-club-corrupt-the-phoenix-force.webp",
+          "abilities": [
+            "By End of Turn: Have no Hellfire Villains in the city.",
+            "Or Suffer: This Trap becomes a 6[icon:attack] “Phoenix Force“ [icon:7] Villain that enters the city and [keyword:Dominates] all the Heroes in the HQ that cost 6 or less."
+          ]
+        },
+        {
+          "name": "Emma Frost (White Queen)",
+          "slug": "emma-frost-white-queen",
+          "vp": "4",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-hellfire-club-emma-frost-white-queen.webp",
+          "abilities": [
+            "Ambush: Each player chooses an [team:x-men] Hero from their discard pile. Emma Frost [keyword:Dominates] those Heroes."
+          ]
+        },
+        {
+          "name": "Harry Leland (Black Bishop)",
+          "slug": "harry-leland-black-bishop",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-hellfire-club-harry-leland-black-bishop.webp",
+          "abilities": [
+            "Ambush: Heroes cost 1 more to recruit this turn.",
+            "Escape: Same effect."
+          ]
+        },
+        {
+          "name": "Mastermind (Jason Wyngarde)",
+          "slug": "mastermind-jason-wyngarde",
+          "vp": "6",
+          "vAttack": "8+",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-hellfire-club-mastermind-jason-wyngarde.webp",
+          "abilities": [
+            "Ambush: This Villain ascends to become a [rule:new Mastermind]. He gains the ability “Master Strike: Each player simultaneously reveals a non-grey Hero.“ Mastermind [keyword:Dominates] the revealed Hero with the highest cost (and tied for highest)."
+          ]
+        },
+        {
+          "name": "Sebastian Shaw (Black King)",
+          "slug": "sebastian-shaw-black-king",
+          "vp": "4",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-hellfire-club-sebastian-shaw-black-king.webp",
+          "abilities": [
+            "Sebastian Shaw has +1[icon:attack] for each card you've played from your hand this turn.",
+            "Escape: Each player gains a Wound."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 55,
+      "name": "Mojoverse",
+      "slug": "mojoverse",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Mindwarping TV Broadcast",
+          "slug": "mindwarping-tv-broadcast",
+          "vp": "3",
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-mojoverse-mindwarping-tv-broadcast.webp",
+          "abilities": [
+            "Ambush: A Villain captures a Bystander.",
+            "By End of Turn: Have no Bystanders in the city captured by Villains.",
+            "Or Suffer: After you draw your new hand at end of turn, each player discards down to four cards in hand."
+          ]
+        },
+        {
+          "name": "Minor Domo",
+          "slug": "minor-domo",
+          "vp": "2",
+          "vAttack": "2",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-mojoverse-minor-domo.webp",
+          "abilities": [
+            "Ambush: Minor Domo captures 2 [keyword:Human Shields].",
+            "Escape: Each player simultaneously reveals a card from their hand. Whoever revealed the lowest cost card (or tied for lowest) gains a Wound."
+          ]
+        },
+        {
+          "name": "Major Domo",
+          "slug": "major-domo",
+          "vp": "3",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-mojoverse-major-domo.webp",
+          "abilities": [
+            "Ambush: Major Domo captures a [keyword:Human Shield].",
+            "Escape: Each player simultaneously reveals a card from their hand. Whoever reveals the highest-costing card (or tied for highest) gains a Wound."
+          ]
+        },
+        {
+          "name": "Spiral",
+          "slug": "spiral",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-mojoverse-spiral.webp",
+          "abilities": [
+            "Ambush: Each player reveals a [hc:covert] Hero or discards their hand. Each player who discarded their hand this way draws 5 cards.",
+            "Escape: Same effect."
+          ]
+        },
+        {
+          "name": "Warwolves",
+          "slug": "warwolves",
+          "vp": "2",
+          "vAttack": "3",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-mojoverse-warwolves.webp",
+          "abilities": [
+            "Ambush: These Warwolves capture a [keyword:Human Shield].",
+            "Fight: KO one of your Heroes."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 56,
+      "name": "Murderworld",
+      "slug": "murderworld",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Animatronic Killer Clowns",
+          "slug": "animatronic-killer-clowns",
+          "vp": "2",
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-murderworld-animatronic-killer-clowns.webp",
+          "abilities": [
+            "By End of Turn: Recruit two Heroes.",
+            "Or Suffer: This Trap enters the city as a 3[icon:attack] “Animatronic Killer Clown“ [icon:7] Villain that captures a [keyword:Human Shield]."
+          ]
+        },
+        {
+          "name": "Guillotine Rollercoaster",
+          "slug": "guillotine-rollercoaster",
+          "vp": "3",
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-murderworld-guillotine-rollercoaster.webp",
+          "abilities": [
+            "By End of Turn: Have at least four different costs of Heroes in the HQ.",
+            "Or Suffer: After you draw your new hand at the end of this turn, each player reveals their hand and discards each card with the same cost as the cards in the HQ."
+          ]
+        },
+        {
+          "name": "Miss Locke",
+          "slug": "miss-locke",
+          "vp": "2",
+          "vAttack": "2",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-murderworld-miss-locke.webp",
+          "abilities": [
+            "Ambush: Miss Locke captures 2 [keyword:Human Shields]. Then reveal the top card of the Villain Deck. If it's a [rule:Trap] or Master Strike, play it."
+          ]
+        },
+        {
+          "name": "Monstrous Pinball Machine",
+          "slug": "monstrous-pinball-machine",
+          "vp": "3",
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-murderworld-monstrous-pinball-machine.webp",
+          "abilities": [
+            "By End of Turn: Pay any amount of [icon:recruit]. Then you must reveal the top card of the Hero Deck. If you paid enough, recruit that Hero and put this Trap in your Victory Pile.",
+            "Or Suffer: KO that Hero. Play two extra cards from the Villain Deck next turn."
+          ]
+        },
+        {
+          "name": "Sulfuric Acid Water Slide",
+          "slug": "sulfuric-acid-water-slide",
+          "vp": "2",
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-murderworld-sulfuric-acid-water-slide.webp",
+          "abilities": [
+            "Ambush: Play another card from the Villain Deck.",
+            "By End of Turn: Have no Villains in the Sewers.",
+            "Or Suffer: Each player gains a Wound."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 57,
+      "name": "Shadow-X",
+      "slug": "shadow-x",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Betrayal of the Shadow",
+          "slug": "betrayal-of-the-shadow",
+          "vp": "4",
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-shadow-x-betrayal-of-the-shadow.webp",
+          "abilities": [
+            "By End of Turn: You may pay 6[icon:recruit].",
+            "Or Suffer: Each player reveals their hand. Then, each player chooses a Shadow-X card from their hand or discard pile to enter the city as a Villain."
+          ]
+        },
+        {
+          "name": "Dark Angel",
+          "slug": "dark-angel",
+          "vp": null,
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-shadow-x-dark-angel.webp",
+          "abilities": [
+            "Fight: Gain this as a Hero.",
+            "[keyword:X-Gene] [hc:instinct]: The next Hero you recruit from the HQ has [keyword:Soaring Flight]."
+          ]
+        },
+        {
+          "name": "Dark Beast",
+          "slug": "dark-beast",
+          "vp": null,
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-shadow-x-dark-beast.webp",
+          "abilities": [
+            "Fight: Gain this as a Hero.",
+            "[keyword:X-Gene] [hc:tech]: You may KO a card from your hand or discard pile."
+          ]
+        },
+        {
+          "name": "Dark Cyclops",
+          "slug": "dark-cyclops",
+          "vp": null,
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-shadow-x-dark-cyclops.webp",
+          "abilities": [
+            "Ambush: Each player reveals a [hc:ranged] Hero or discards a card.",
+            "Fight: Gain this as a Hero.",
+            "[keyword:X-Gene] [hc:ranged]: Return a [hc:ranged] Hero from your discard pile to your hand."
+          ]
+        },
+        {
+          "name": "Dark Iceman",
+          "slug": "dark-iceman",
+          "vp": null,
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-shadow-x-dark-iceman.webp",
+          "abilities": [
+            "Fight: Gain this as a Hero.",
+            "[keyword:X-Gene] [hc:strength]: Draw a card."
+          ]
+        },
+        {
+          "name": "Dark Marvel Girl",
+          "slug": "dark-marvel-girl",
+          "vp": null,
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-shadow-x-dark-marvel-girl.webp",
+          "abilities": [
+            "Ambush: Dark Marvel Girl [keyword:Dominates] each [team:x-men] Hero that costs 4 or less from the HQ.",
+            "Fight: Gain this as a Hero.",
+            "[keyword:X-Gene] [hc:covert]: Rescue a Bystander."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 58,
+      "name": "Shi'ar Imperial Guard",
+      "slug": "shiar-imperial-guard",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Blackthorn",
+          "slug": "blackthorn",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-shiar-imperial-guard-blackthorn.webp",
+          "abilities": [
+            "Fight: If you fought Blackthorn in the Sewers or Streets, each other player gains a Wound.",
+            "Escape: Each player gains a Wound."
+          ]
+        },
+        {
+          "name": "Gladiator",
+          "slug": "gladiator",
+          "vp": "5",
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-shiar-imperial-guard-gladiator.webp",
+          "abilities": [
+            "Ambush: Each player discards an [team:x-men] Hero or gains a Wound.",
+            "Escape: Same effect."
+          ]
+        },
+        {
+          "name": "Oracle",
+          "slug": "oracle",
+          "vp": "4",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-shiar-imperial-guard-oracle.webp",
+          "abilities": [
+            "Ambush: Each player discards the top four cards of their deck and chooses one of those cards that costs 1 to 4. Oracle [keyword:Dominates] those Heroes."
+          ]
+        },
+        {
+          "name": "Shi'ar Trial by Combat",
+          "slug": "shiar-trial-by-combat",
+          "vp": "2",
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-shiar-imperial-guard-shiar-trial-by-combat.webp",
+          "abilities": [
+            "Ambush: If the Bridge is empty, reveal the top card of the Villain Deck. If it's a Villain, put it on the Bridge.",
+            "By End of Turn: Have no Villains on the Bridge.",
+            "Or Suffer: After you draw a new hand at end of turn, each player KOs a non-grey Hero from their discard pile."
+          ]
+        },
+        {
+          "name": "Smasher",
+          "slug": "smasher",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-shiar-imperial-guard-smasher.webp",
+          "abilities": [
+            "Ambush: Each player reveals a [hc:strength] Hero or discards a card.",
+            "Fight: KO a card from your discard pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 59,
+      "name": "Sisterhood of Mutants",
+      "slug": "sisterhood-of-mutants",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Lady Deathstrike",
+          "slug": "lady-deathstrike",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-sisterhood-of-mutants-lady-deathstrike.webp",
+          "abilities": [
+            "Fight: KO one of your Heroes.",
+            "Escape: Each player reveals an [hc:instinct] Hero or gains a Wound."
+          ]
+        },
+        {
+          "name": "Lady Mastermind",
+          "slug": "lady-mastermind",
+          "vp": "5",
+          "vAttack": "7+",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-sisterhood-of-mutants-lady-mastermind.webp",
+          "abilities": [
+            "Ambush: This Villain ascends to become a [rule:new Mastermind]. She gains the ability “Master Strike: Each player simultaneously reveals a non-grey Hero.“ Lady Mastermind [keyword:Dominates] the revealed Hero with the lowest cost (and tied for lowest)."
+          ]
+        },
+        {
+          "name": "Resurrect Madelyne Pryor",
+          "slug": "resurrect-madelyne-pryor",
+          "vp": null,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-sisterhood-of-mutants-resurrect-madelyne-pryor.webp",
+          "abilities": [
+            "By End of Turn: You may pay 3[icon:recruit]. If you do, shuffle this Trap back into the Villain Deck, then play a card from the Villain Deck.",
+            "Or Suffer: This Trap becomes a Scheme Twist that takes effect immediately."
+          ]
+        },
+        {
+          "name": "Selene",
+          "slug": "selene",
+          "vp": "3",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-sisterhood-of-mutants-selene.webp",
+          "abilities": [
+            "Ambush: Selene [keyword:Dominates] all of the 0-cost Heroes from the KO pile.",
+            "Fight: KO all the Heroes Dominated by Selene.",
+            "Escape: Put one Hero Dominated by Selene into each player's discard pile."
+          ]
+        },
+        {
+          "name": "Typhoid Mary",
+          "slug": "typhoid-mary",
+          "vp": "3",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-vi-sisterhood-of-mutants-typhoid-mary.webp",
+          "abilities": [
+            "Ambush: Each player reveals their hand and chooses a 3-cost Hero from it. Typhoid Mary [keyword:Dominates] those Heroes."
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [
+    {
+      "id": 21,
+      "name": "Brood, The",
+      "slug": "brood-the",
+      "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hm-brood-the.webp",
+      "abilities": []
+    },
+    {
+      "id": 22,
+      "name": "Hellfire Cult",
+      "slug": "hellfire-cult",
+      "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hm-hellfire-cult.webp",
+      "abilities": []
+    },
+    {
+      "id": 23,
+      "name": "Sapien League",
+      "slug": "sapien-league",
+      "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hm-sapien-league.webp",
+      "abilities": []
+    },
+    {
+      "id": 24,
+      "name": "Shi'ar Death Commandos",
+      "slug": "shiar-death-commandos",
+      "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hm-shiar-death-commandos.webp",
+      "abilities": []
+    },
+    {
+      "id": 25,
+      "name": "Shi'ar Patrol Craft",
+      "slug": "shiar-patrol-craft",
+      "imageUrl": "https://images.barefootbetters.com/xmen/xmen-hm-shiar-patrol-craft.webp",
+      "abilities": []
+    }
+  ],
+  "schemes": [
+    {
+      "id": 76,
+      "name": "Alien Brood Encounters",
+      "slug": "alien-brood-encounters",
+      "imageUrl": "https://images.barefootbetters.com/xmen/xmen-sc-alien-brood-encounters.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. Add 10 Brood as extra Henchmen. No Bystanders in Villain Deck.",
+            "Special Rules: Cards are played from the Villain Deck face-down. You may spend 1[icon:attack] to “scan“ a face-down card in the city, turning it face-up and doing any Ambush effect, Twist, [rule:Trap], or Master Strike. If a face-down card would escape, scan it, and then it escapes if it's a Villain.",
+            "Twist: The player on your right gains this Twist as a “Brood Infection.“ When drawn, they KO it and gain 2 Wounds.",
+            "Evil Wins: When 3 Villains per player have escaped."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 77,
+      "name": "Anti-Mutant Hatred",
+      "slug": "anti-mutant-hatred",
+      "imageUrl": "https://images.barefootbetters.com/xmen/xmen-sc-anti-mutant-hatred.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 11 Twists. 30 Wounds.",
+            "Twist: Put this Twist into your discard pile as an “Angry Mob.“",
+            "Special Rules: At the start of your turn, for each Angry Mob in your hand, the player on your right gains a Wound and gains that Angry Mob.",
+            "Evil Wins: When the Wound Stack or Villain Deck runs out."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 78,
+      "name": "Dark Phoenix Saga, The",
+      "slug": "dark-phoenix-saga-the",
+      "imageUrl": "https://images.barefootbetters.com/xmen/xmen-sc-dark-phoenix-saga-the.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 10 Twists. Include Hellfire Club as one of the Villain Groups. Add 14 Jean Grey Hero cards to the Villain Deck.",
+            "Special Rules: Jean Grey cards in the Villain Deck are Villains with attack equal to their cost, “Ambush: Play another Villain card“ and “Fight: Gain this as a Hero.“",
+            "Twist: Shuffle all Jean Grey cards from the KO pile and from all players' hands and discard piles into the Villain Deck.",
+            "Evil Wins: When 5 Jean Grey cards have escaped."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 79,
+      "name": "Horror of Horrors",
+      "slug": "horror-of-horrors",
+      "imageUrl": "https://images.barefootbetters.com/xmen/xmen-sc-horror-of-horrors.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 6 Twists.",
+            "Twist 1-5: Play a random Horror.",
+            "Twist 6: Evil wins!"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 80,
+      "name": "Mutant-Hunting Super Sentinels",
+      "slug": "mutant-hunting-super-sentinels",
+      "imageUrl": "https://images.barefootbetters.com/xmen/xmen-sc-mutant-hunting-super-sentinels.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 9 Twists. Include 10 Sentinels as extra Henchmen (or substitute another Henchman group).",
+            "Twist: Stack this Twist next to the Scheme as a “Sentinel Upgrade.“ Shuffle all Sentinels from players' Victory Piles into the Villain Deck. Play another card from the Villain Deck.",
+            "Special Rules: All Sentinels get +1[icon:attack] for each Sentinel Upgrade next to the Scheme.",
+            "Evil Wins: When 3 Sentinels have Escaped."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 81,
+      "name": "Nuclear Armageddon",
+      "slug": "nuclear-armageddon",
+      "imageUrl": "https://images.barefootbetters.com/xmen/xmen-sc-nuclear-armageddon.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 5 Twists.",
+            "Twist: Destroy the city space closest to the Mastermind. Any Villain There escapes. Put this Twist there.",
+            "Evil Wins: When the city is destroyed."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 82,
+      "name": "Televised Deathtraps of Mojoworld",
+      "slug": "televised-deathtraps-of-mojoworld",
+      "imageUrl": "https://images.barefootbetters.com/xmen/xmen-sc-televised-deathtraps-of-mojoworld.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 11 Twists. 6 Wounds per player in Wound Stack.",
+            "Twist: Stack this Twist next to the Scheme as a “Deathtrap.“ This turn, you may pay 1[icon:attack] for each Deathtrap stacked there. If you don't, each player gains a Wound.",
+            "Evil Wins: When the Wound Stack or Villain Deck runs out."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 83,
+      "name": "X-Men Danger Room Goes Berserk",
+      "slug": "x-men-danger-room-goes-berserk",
+      "imageUrl": "https://images.barefootbetters.com/xmen/xmen-sc-x-men-danger-room-goes-berserk.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists.",
+            "Twist: [rule:Trap! By End of Turn]: You may pay 2[icon:recruit]. If you do, shuffle this Twist back into the Villain Deck, then play a card from the Villain Deck. Or Suffer: Stack this Twist next to the scheme as an “Airborne Neurotoxin.“",
+            "Evil Wins: When there are 5 Airborne Neurotoxins."
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [
+    {
+      "id": 22,
+      "name": "Cypher",
+      "slug": "cypher",
+      "vp": null,
+      "imageUrl": "https://images.barefootbetters.com/xmen/xmen-by-cypher.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "When you rescue this Bystander, gain it as a Hero.",
+            "Look at the top two cards of your deck. Draw one and discard the other."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "name": "Heartless Computer Scientist",
+      "slug": "heartless-computer-scientist",
+      "vp": null,
+      "imageUrl": "https://images.barefootbetters.com/xmen/xmen-by-heartless-computer-scientist.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "When you rescue this Bystander, gain it as a Hero.",
+            "[hc:tech]: You may KO a card from your hand or discard pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "name": "Karma",
+      "slug": "karma",
+      "vp": null,
+      "imageUrl": "https://images.barefootbetters.com/xmen/xmen-by-karma.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "When you rescue this Bystander, gain it as a Hero.",
+            "Reveal the top card of the Hero Deck. You get +[icon:attack] equal to its printed [icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "name": "Magik",
+      "slug": "magik",
+      "vp": null,
+      "imageUrl": "https://images.barefootbetters.com/xmen/xmen-by-magik.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "When you rescue this Bystander, gain it as a Hero.",
+            "[keyword:Teleport] (Instead of playing this card, you may set it aside. At the end of the turn, add it to your hand as an extra card.)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "name": "Magma",
+      "slug": "magma",
+      "vp": null,
+      "imageUrl": "https://images.barefootbetters.com/xmen/xmen-by-magma.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "When you rescue this Bystander, gain it as a Hero.",
+            "Chose one: Draw a card or you get +2[icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "name": "Martial Arts Master",
+      "slug": "martial-arts-master",
+      "vp": null,
+      "imageUrl": "https://images.barefootbetters.com/xmen/xmen-by-martial-arts-master.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "When you rescue this Bystander, gain it as a Hero.",
+            "Draw a card."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "name": "Mirage",
+      "slug": "mirage",
+      "vp": null,
+      "imageUrl": "https://images.barefootbetters.com/xmen/xmen-by-mirage.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "When you rescue this Bystander, gain it as a Hero.",
+            "Draw a card."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "name": "Sunspot",
+      "slug": "sunspot",
+      "vp": null,
+      "imageUrl": "https://images.barefootbetters.com/xmen/xmen-by-sunspot.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "When you rescue this Bystander, gain it as a Hero.",
+            "[hc:strength]: You get +1[icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "name": "Warlock",
+      "slug": "warlock",
+      "vp": null,
+      "imageUrl": "https://images.barefootbetters.com/xmen/xmen-by-warlock.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "When you rescue this Bystander, gain it as a Hero.",
+            "[hc:tech]: Draw a card."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "name": "Wolfsbane",
+      "slug": "wolfsbane",
+      "vp": null,
+      "imageUrl": "https://images.barefootbetters.com/xmen/xmen-by-wolfsbane.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "When you rescue this Bystander, gain it as a Hero.",
+            "[keyword:Berserk], [keyword:Berserk], [keyword:Berserk]"
+          ]
+        }
+      ]
+    }
+  ],
+  "wounds": [],
+  "other": []
+}

@@ -1,0 +1,692 @@
+{
+  "id": 12,
+  "abbr": "ca75",
+  "exportName": "CaptainAmerica",
+  "heroes": [
+    {
+      "id": 101,
+      "name": "Agent X-13",
+      "slug": "agent-x-13",
+      "team": "shield",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Sniper Squad",
+          "displayName": "Sniper Squad",
+          "slug": "sniper-squad",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "1",
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-hr-agent-x-13-3c1.webp",
+          "abilities": [
+            "[team:shield][team:shield][team:shield][team:shield]: [keyword:Woman Out of Time]"
+          ]
+        },
+        {
+          "name": "Paramilitary Ops",
+          "displayName": "Paramilitary Ops",
+          "slug": "paramilitary-ops",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-hr-agent-x-13-4c2.webp",
+          "abilities": [
+            "You get +1[icon:attack] for each other [team:shield] Hero you played this turn that costs 1 or more."
+          ]
+        },
+        {
+          "name": "Spy Network",
+          "displayName": "Spy Network",
+          "slug": "spy-network",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 4,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-hr-agent-x-13-4u.webp",
+          "abilities": [
+            "Choose one: Gain a S.H.I.E.L.D. Officer, or you get +2[icon:attack].",
+            "[hc:covert]: [keyword:Woman Out of Time]"
+          ]
+        },
+        {
+          "name": "Mobilize for War",
+          "displayName": "Mobilize for War",
+          "slug": "mobilize-for-war",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-hr-agent-x-13-7r.webp",
+          "abilities": [
+            "KO up to two [team:shield] Heroes from your hand and/or discard pile.",
+            "[keyword:Savior]: For each card KO'd this way, you get +1[icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 102,
+      "name": "Captain America (Falcon)",
+      "slug": "captain-america-falcon",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Aerial Catch",
+          "displayName": "Aerial Catch",
+          "slug": "aerial-catch",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-hr-captain-america-falcon-3c1.webp",
+          "abilities": [
+            "[hc:instinct]: Rescue a Bystander."
+          ]
+        },
+        {
+          "name": "Winged Salvation",
+          "displayName": "Winged Salvation",
+          "slug": "winged-salvation",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-hr-captain-america-falcon-4c2.webp",
+          "abilities": [
+            "[keyword:Savior]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Flying Shield Block",
+          "displayName": "Flying Shield Block",
+          "slug": "flying-shield-block",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 6,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-hr-captain-america-falcon-6u.webp",
+          "abilities": [
+            "Once per turn, if a player would gain a Wound, you may reveal this card and rescue a Bystander instead."
+          ]
+        },
+        {
+          "name": "Star-Spangled Hero",
+          "displayName": "Star-Spangled Hero",
+          "slug": "star-spangled-hero",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 7,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-hr-captain-america-falcon-7r.webp",
+          "abilities": [
+            "You get +2[icon:attack] for each Hero Class you have.",
+            "[keyword:Savior]: You get +2[icon:recruit] for each Hero Class you have."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 103,
+      "name": "Captain America 1941",
+      "slug": "captain-america-1941",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Devoted Patriot",
+          "displayName": "Devoted Patriot",
+          "slug": "devoted-patriot",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 3,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-hr-captain-america-1941-3c1.webp",
+          "abilities": [
+            "Draw a card.",
+            "[hc:strength]: [keyword:Man Out of Time]"
+          ]
+        },
+        {
+          "name": "Storm the Beachhead",
+          "displayName": "Storm the Beachhead",
+          "slug": "storm-the-beachhead",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 5,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-hr-captain-america-1941-5c2.webp",
+          "abilities": [
+            "You get +1[icon:attack] for each Hero class you have.",
+            "[keyword:Man Out of Time]"
+          ]
+        },
+        {
+          "name": "Liberate the Prisoners",
+          "displayName": "Liberate the Prisoners",
+          "slug": "liberate-the-prisoners",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 6,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-hr-captain-america-1941-6u.webp",
+          "abilities": [
+            "[team:avengers]: Rescue a Bystander.",
+            "[keyword:Savior]: Draw a Card."
+          ]
+        },
+        {
+          "name": "Punch Evil in the Face",
+          "displayName": "Punch Evil in the Face",
+          "slug": "punch-evil-in-the-face",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 8,
+          "attack": "5",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-hr-captain-america-1941-8r.webp",
+          "abilities": [
+            "[keyword:Savior]: [keyword:Man Out of Time]"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 104,
+      "name": "Steve Rogers, Director of S.H.I.E.L.D.",
+      "slug": "steve-rogers-director-of-shield",
+      "team": "shield",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "International Strike Force",
+          "displayName": "International Strike Force",
+          "slug": "international-strike-force",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 3,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-hr-steve-rogers-director-of-shield-3c1.webp",
+          "abilities": [
+            "You get +1[icon:recruit] for each Hero Class you have.",
+            "[keyword:Savior]: You get +1[icon:attack] for each Hero Class you have."
+          ]
+        },
+        {
+          "name": "Reassign to Civilian Duty",
+          "displayName": "Reassign to Civilian Duty",
+          "slug": "reassign-to-civilian-duty",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 5,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-hr-steve-rogers-director-of-shield-5c2.webp",
+          "abilities": [
+            "[team:shield][team:shield][team:shield]: You may KO a [team:shield] Hero that you played this turn. If you do, rescue a Bystander."
+          ]
+        },
+        {
+          "name": "Shadow of Wars Past",
+          "displayName": "Shadow of Wars Past",
+          "slug": "shadow-of-wars-past",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-hr-steve-rogers-director-of-shield-4u.webp",
+          "abilities": [
+            "[keyword:Savior]: [keyword:Man Out of Time]"
+          ]
+        },
+        {
+          "name": "Save the World",
+          "displayName": "Save the World",
+          "slug": "save-the-world",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 8,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-hr-steve-rogers-director-of-shield-8r.webp",
+          "abilities": [
+            "Rescue a Bystander.",
+            "[keyword:Savior]: You get +3[icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 105,
+      "name": "Winter Soldier",
+      "slug": "winter-soldier",
+      "team": "unaffiliated",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Bionic Arm",
+          "displayName": "Bionic Arm",
+          "slug": "bionic-arm",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-hr-winter-soldier-3c1.webp",
+          "abilities": [
+            "[hc:tech]: [keyword:Man Out of Time]"
+          ]
+        },
+        {
+          "name": "Sniper Nest",
+          "displayName": "Sniper Nest",
+          "slug": "sniper-nest",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 4,
+          "attack": null,
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-hr-winter-soldier-4c2.webp",
+          "abilities": [
+            "Draw a card.",
+            "[hc:tech]: [keyword:Man Out of Time]"
+          ]
+        },
+        {
+          "name": "KGB Training",
+          "displayName": "KGB Training",
+          "slug": "kgb-training",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 5,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-hr-winter-soldier-5u.webp",
+          "abilities": [
+            "If you played at least 7 other cards this turn you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "2>4",
+          "displayName": "2>4",
+          "slug": "2-4",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 7,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-hr-winter-soldier-7r.webp",
+          "abilities": [
+            "A Hero in your hand gains [keyword:Man Out of Time] this turn.",
+            "[hc:tech]: Another Hero in your hand gains [keyword:Man Out of Time] this turn."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 29,
+      "name": "Arnim Zola",
+      "slug": "arnim-zola",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Arnim Zola",
+          "slug": "arnim-zola",
+          "tactic": false,
+          "vAttack": "6+",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-mm-arnim-zola.webp",
+          "abilities": [
+            "[keyword:Ultimate Abomination]",
+            "Always Leads: Zola's Creations",
+            "Master Strike: For each Hero in the HQ that has less than 2 printed [icon:attack], put that Hero on the bottom of the Hero Deck, and each player discards a card of that Hero's cost."
+          ]
+        },
+        {
+          "name": "Dominate the Weak",
+          "slug": "dominate-the-weak",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-mt-arnim-zola-dominate-the-weak.webp",
+          "abilities": [
+            "Fight: The player of your choice gains a Hero from the HQ that has less than 2 printed [icon:attack]."
+          ]
+        },
+        {
+          "name": "Computer-Uploaded Genius",
+          "slug": "computer-uploaded-genius",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-mt-arnim-zola-computer-uploaded-genius.webp",
+          "abilities": [
+            "Fight: Each other player reveals a [hc:tech] Hero or discards a card."
+          ]
+        },
+        {
+          "name": "Pet Projects",
+          "slug": "pet-projects",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-mt-arnim-zola-pet-projects.webp",
+          "abilities": [
+            "Fight: Each other player reveals a Zola's Creations Villain from their Victory Pile or gains a Wound."
+          ]
+        },
+        {
+          "name": "Crush Pacifist Resistance",
+          "slug": "crush-pacifist-resistance",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-mt-arnim-zola-crush-pacifist-resistance.webp",
+          "abilities": [
+            "Fight: KO up to two of your Heroes that have less than 2 printed [icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "name": "Baron Heinrich Zemo",
+      "slug": "baron-heinrich-zemo",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Baron Heinrich Zemo",
+          "slug": "baron-heinrich-zemo",
+          "tactic": false,
+          "vAttack": "9+",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-mm-baron-heinrich-zemo.webp",
+          "abilities": [
+            "Whenever you fight a Villain, you may use 2[icon:recruit] to rescue a Bystander. Baron Zemo gets +9[icon:attack] unless you are a [keyword:Savior].",
+            "Always Leads: Masters of Evil (WWII)",
+            "Master Strike: Each player KOs a Bystander from their Victory Pile. Any player who cannot do so gains a Wound."
+          ]
+        },
+        {
+          "name": "Fallen Idols",
+          "slug": "fallen-idols",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-mt-baron-heinrich-zemo-fallen-idols.webp",
+          "abilities": [
+            "Fight: Each other player that is not a [keyword:Savior] discards a card."
+          ]
+        },
+        {
+          "name": "Finding Zemo",
+          "slug": "finding-zemo",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-mt-baron-heinrich-zemo-finding-zemo.webp",
+          "abilities": [
+            "Fight: Reveal the top five cards of the Villain Deck. If you revealed any Bystanders, KO them and each other player gains a Wound. Put the rest back in random order."
+          ]
+        },
+        {
+          "name": "Hatred for the Avengers",
+          "slug": "hatred-for-the-avengers",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-mt-baron-heinrich-zemo-hatred-for-the-avengers.webp",
+          "abilities": [
+            "Fight: For each of your [team:avengers] Heroes, rescue a Bystander."
+          ]
+        },
+        {
+          "name": "Prisoners of War",
+          "slug": "prisoners-of-war",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-mt-baron-heinrich-zemo-prisoners-of-war.webp",
+          "abilities": [
+            "Fight: Each other player reveals an [team:avengers] Hero or chooses a Bystander from their Victory Pile, and you rescue that Bystander."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 40,
+      "name": "Zola's Creations",
+      "slug": "zolas-creations",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Captain Zolandia",
+          "slug": "captain-zolandia",
+          "vp": "5",
+          "vAttack": "6+",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-vi-zolas-creations-captain-zolandia.webp",
+          "abilities": [
+            "[keyword:Abomination]",
+            "Fight: You get +1[icon:recruit] for each Hero Class you have."
+          ]
+        },
+        {
+          "name": "Doughboy",
+          "slug": "doughboy",
+          "vp": "3",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-vi-zolas-creations-doughboy.webp",
+          "abilities": [
+            "[keyword:Abomination]",
+            "Fight: KO one of your Heroes."
+          ]
+        },
+        {
+          "name": "Man-Fish",
+          "slug": "man-fish",
+          "vp": "4",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-vi-zolas-creations-man-fish.webp",
+          "abilities": [
+            "[keyword:Abomination]",
+            "Fight: If you fought Man-Fish in the Sewers or Bridge, then each other player gains a Wound.",
+            "Escape: Each player gains a Wound."
+          ]
+        },
+        {
+          "name": "Primus",
+          "slug": "primus",
+          "vp": "3",
+          "vAttack": "3",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-vi-zolas-creations-primus.webp",
+          "abilities": [
+            "To fight Primus, you must also discard a card that costs 2, 3, 5, or 7.",
+            "Escape: each player discards a Hero that costs 2, 3, 5, or 7."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 41,
+      "name": "Masters of Evil (WWII)",
+      "slug": "masters-of-evil-wwii",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Black Knight",
+          "slug": "black-knight",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-vi-masters-of-evil-wwii-black-knight.webp",
+          "abilities": [
+            "Ambush: Black Knight captures a Bystander.",
+            "Fight: [keyword:Savior]: KO one of your Heroes."
+          ]
+        },
+        {
+          "name": "Executioner",
+          "slug": "executioner",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-vi-masters-of-evil-wwii-executioner.webp",
+          "abilities": [
+            "Ambush: Executioner captures a Bystander.",
+            "Fight: [keyword:Savior]: Draw a card.",
+            "Escape: KO a Bystander from each player's Victory Pile."
+          ]
+        },
+        {
+          "name": "Melter (WWII)",
+          "slug": "melter-wwii",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-vi-masters-of-evil-wwii-melter-wwii.webp",
+          "abilities": [
+            "Ambush: Melter captures a Bystander.",
+            "Fight: [keyword:Savior]: Each player reveals the top card of their deck. For each card, you choose to KO it or put it back."
+          ]
+        },
+        {
+          "name": "Radioactive Man",
+          "slug": "radioactive-man",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-vi-masters-of-evil-wwii-radioactive-man.webp",
+          "abilities": [
+            "Ambush: Radioactive Man captures a Bystander.",
+            "Fight: Each player who is not a [keyword:Savior] gains a Wound.",
+            "Escape: Same effect."
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [],
+  "schemes": [
+    {
+      "id": 56,
+      "name": "Brainwash the Military",
+      "slug": "brainwash-the-military",
+      "imageUrl": "https://images.barefootbetters.com/ca75/ca75-sc-brainwash-the-military.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 7 Twists. Add 12 S.H.I.E.L.D. Officers to the Villain Deck.",
+            "Special Rules: S.H.I.E.L.D. Officers in the Villain Deck are Villains. Their [icon:attack] is 3 plus the number of Twists stacked next to this Scheme. When you defeat a S.H.I.E.L.D. Officer, gain it as a Hero.",
+            "Twist 1-6: Stack this Twists next to the Scheme as a “Traitor Battalion.“ Play another card from the Villain Deck.",
+            "Twist 7: All S.H.I.E.L.D. Officers in the city escape.",
+            "Evil Wins: When 5 S.H.I.E.L.D. Officers escape."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 57,
+      "name": "Change the Outcome of WWII",
+      "slug": "change-the-outcome-of-wwii",
+      "imageUrl": "https://images.barefootbetters.com/ca75/ca75-sc-change-the-outcome-of-wwii.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 7 Twists. Add an extra Villain Group.",
+            "Twist: The Axis invades a new country. Put all Villains and Bystanders from the city on the bottom of the Villain Deck. The number of city spaces changes. Play 2 cards from the Villain Deck. If any Villains escape this country, stack a Twist next to the scheme as a “conquered capital.“",
+            "Twist 1: Poland: 4 spaces.",
+            "Twist 2: France: 3 spaces.",
+            "Twist 3: USSR: 6 spaces.",
+            "Twist 4: England: 3 spaces.",
+            "Twist 5: USA: 5 spaces.",
+            "Twist 6: Australia: 2 spaces.",
+            "Twist 7: Switzerland: 1 space.",
+            "Evil Wins: When 3 capitals are conquered."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 58,
+      "name": "Go Back in Time to Slay Heroes' Ancestors",
+      "slug": "go-back-in-time-to-slay-heroes-ancestors",
+      "imageUrl": "https://images.barefootbetters.com/ca75/ca75-sc-go-back-in-time-to-slay-heroes-ancestors.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 9 Twists. 8 Heroes in Hero deck.",
+            "Twist: Put a Hero form the HQ next to the Scheme, “Purged from the Timestream.“",
+            "Special Rules: Whenever a Hero is in the HQ whose Hero Name has been Purged from the Timestream, KO that Hero.",
+            "Evil Wins: When the Hero Deck runs out."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 59,
+      "name": "Unbreakable Enigma Code, The",
+      "slug": "unbreakable-enigma-code-the",
+      "imageUrl": "https://images.barefootbetters.com/ca75/ca75-sc-unbreakable-enigma-code-the.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 6 Twists.",
+            "Twists 1-5: Put a card from the Hero Deck face down next to the scheme as part of the “Enigma Code.“ Mix up those cards face-down.",
+            "Twist 6: Evil Wins!",
+            "Special Rules: Whenever you fight a Villain, you may pay 1[icon:recruit] to look at one of the face-down Enigma Cards. When you fight the Mastermind, first guess the color of each Enigma card, and then reveal them. If you guessed them right, fight the Mastermind as normal. If not, your turn ends, and mix up the Enigma cards face-down."
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [],
+  "wounds": [],
+  "other": []
+}

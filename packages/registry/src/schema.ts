@@ -2,15 +2,40 @@
  * schema.ts — matches the actual Legendary Arena R2 data format
  *
  * Data lives at:
- *   https://images.barefootbetters.com/metadata/card-types.json  → set index
- *   https://images.barefootbetters.com/metadata/{abbr}.json      → full set
+ *   https://images.barefootbetters.com/registry-config.json      → set abbreviation list
+ *   https://images.barefootbetters.com/metadata/sets.json        → set index
+ *   https://images.barefootbetters.com/metadata/card-types.json  → card type taxonomy
+ *   https://images.barefootbetters.com/metadata/{abbr}.json      → full set card data
  *
  * Image URLs are embedded directly in each card object (imageUrl field).
+ * All imageUrl values should point to the R2 domain (images.barefootbetters.com).
+ *
+ * Schema permissiveness decisions (grounded in real data observations):
+ *
+ *   HeroSchema.id              — any int, nullable, optional:
+ *                                  3dtc has null on heroes 2-4
+ *                                  shld heroes 4-11 have no id key at all
+ *                                  msp1 uses -1 as a sentinel value
+ *   HeroCardSchema.*           — most fields optional: anni cards have only slug+imageUrl
+ *   HeroCardSchema.slot        — no upper bound: mgtg MCU Guardians has 7-card hero decks
+ *   HeroCardSchema.displayName — optional: amwp omits this field entirely
+ *   HeroCardSchema.cost        — string|number|optional: amwp Wasp has '2*', '3*' star-cost cards
+ *   MastermindCardSchema.vAttack — nullable: msmc/dstr/bkpt main card has vAttack:null
+ *   MastermindSchema.vp        — nullable: mgtg MCU Guardians masterminds have vp:null
+ *   VillainCardSchema.vp       — nullable: wpnx villain cards have vp:null
+ *   SchemeSchema.id            — nullable: transform card reverse sides have id:null
  */
 
 import { z } from "zod";
 
-// ── Set index (card-types.json) ───────────────────────────────────────────────
+// ── Registry config (registry-config.json at R2 root) ─────────────────────────
+// Simple array of set abbreviation strings. Not a source file — R2 artifact only.
+export const RegistryConfigSchema = z.array(
+  z.string().min(2).max(10)
+);
+
+// ── Set index (sets.json) ─────────────────────────────────────────────────────
+// One entry per expansion. releaseDate is ISO date string.
 export const SetIndexEntrySchema = z.object({
   id:          z.number().int().positive(),
   abbr:        z.string().min(1).max(10),
@@ -21,67 +46,133 @@ export const SetIndexEntrySchema = z.object({
   type:        z.string().min(1),
 });
 
-// ── Hero class ────────────────────────────────────────────────────────────────
+// ── Card type taxonomy (card-types.json) ──────────────────────────────────────
+// 37 entries covering all card type slugs and their 2-char image filename prefix.
+export const CardTypeEntrySchema = z.object({
+  id:          z.number().int().positive(),
+  slug:        z.string().min(1),
+  name:        z.string().min(1),
+  displayName: z.string().min(1),
+  prefix:      z.string().length(2),
+});
+
+// ── Hero classes (hero-classes.json) ──────────────────────────────────────────
+// 5 entries: covert, instinct, ranged, strength, tech
+export const HeroClassEntrySchema = z.object({
+  id:   z.number().int().min(0),
+  abbr: z.string().min(1),
+  slug: z.string().min(1),
+  name: z.string().min(1),
+});
+
+// ── Hero teams (hero-teams.json) ──────────────────────────────────────────────
+// 25 entries including id:0 for unaffiliated.
+export const HeroTeamEntrySchema = z.object({
+  id:   z.number().int().min(0),
+  slug: z.string().min(1),
+  name: z.string().min(1),
+});
+
+// ── Icons / stat symbols (icons-meta.json) ────────────────────────────────────
+// 7 entries: attack, recruit, cost, vp, focus, piercing, token.
+// The "value" field is used in [icon:X] ability markup tokens.
+export const IconEntrySchema = z.object({
+  id:    z.number().int().positive(),
+  value: z.string().min(1),
+  label: z.string().min(1),
+});
+
+// ── Mastermind leads (leads.json) ─────────────────────────────────────────────
+// Mixed entries: real mastermind entries and comment/metadata entries
+// using underscore-prefixed keys (_set, _note, _unassigned, etc.).
+// Permissive schema with catchall accepts the mixed format.
+export const LeadsEntrySchema = z.object({
+  set:           z.string().optional(),
+  mastermind:    z.string().optional(),
+  villainGroups: z.array(z.string()).optional(),
+  henchmen:      z.array(z.string()).optional(),
+}).catchall(z.unknown());
+
+// ── Hero class string enum ────────────────────────────────────────────────────
 export const HeroClassSchema = z.enum([
   "covert", "instinct", "ranged", "strength", "tech",
 ]);
 
-// ── Hero card (slot 1–4 inside a hero) ────────────────────────────────────────
+// ── Hero card (one slot inside a hero deck) ───────────────────────────────────
+// Permissiveness decisions:
+//   - Most fields are optional because some sets (e.g. anni) produce cards
+//     with only slug + imageUrl due to incomplete source data conversion.
+//   - slot has no upper bound: MCU Guardians (mgtg) has 7-card hero decks.
+//   - displayName is optional: amwp omits it entirely.
+//   - cost accepts string|number|optional: amwp Wasp has '2*', '3*' star-cost cards.
+//   - attack and recruit are strings ("2", "2+", "0+") to preserve the '+'
+//     modifier; null when not applicable for this card.
 export const HeroCardSchema = z.object({
-  name:        z.string(),
-  displayName: z.string(),
+  name:        z.string().optional(),
+  displayName: z.string().optional(),
   slug:        z.string(),
-  rarity:      z.union([z.literal(1), z.literal(2), z.literal(3)]),
-  rarityLabel: z.string(),
-  slot:        z.number().int().min(1).max(4),
-  hc:          HeroClassSchema,
-  cost:        z.number().int().min(0),
-  attack:      z.string().nullable(),
-  recruit:     z.string().nullable(),
+  rarity:      z.union([z.literal(1), z.literal(2), z.literal(3)]).optional(),
+  rarityLabel: z.string().optional(),
+  slot:        z.number().int().min(1).optional(),
+  hc:          HeroClassSchema.optional(),
+  cost:        z.union([z.number().int().min(0), z.string()]).optional(),
+  attack:      z.string().nullable().optional(),
+  recruit:     z.string().nullable().optional(),
   imageUrl:    z.string().url(),
-  abilities:   z.array(z.string()),
+  abilities:   z.array(z.string()).optional(),
 });
 
-// ── Hero ──────────────────────────────────────────────────────────────────────
+// ── Hero (a named hero deck with 3-7 cards) ───────────────────────────────────
+// id permissiveness:
+//   - 3dtc:  some heroes have null id
+//   - shld:  heroes 4-11 have no id key at all (undefined, not null)
+//   - msp1:  all heroes use -1 as a sentinel (no positive constraint)
 export const HeroSchema = z.object({
-  id:    z.number().int().positive(),
+  id:    z.number().int().nullable().optional(),
   name:  z.string(),
   slug:  z.string(),
   team:  z.string(),
   cards: z.array(HeroCardSchema),
 });
 
-// ── Mastermind card ───────────────────────────────────────────────────────────
+// ── Mastermind card (main card, epic variant, or tactic) ──────────────────────
+// vAttack is nullable: some sets (msmc, dstr, bkpt) have the main mastermind
+// card with vAttack:null — the printed attack value appears only on the epic
+// or is determined dynamically by the card's rules text.
+// vAttack may also be a string ("8+", "7") or number (8) depending on the set.
 export const MastermindCardSchema = z.object({
   name:      z.string(),
   slug:      z.string(),
   tactic:    z.boolean().optional(),
-  vAttack:   z.string(),
+  vAttack:   z.union([z.string(), z.number()]).nullable(),
   imageUrl:  z.string().url(),
   abilities: z.array(z.string()),
 });
 
-// ── Mastermind ────────────────────────────────────────────────────────────────
+// ── Mastermind (one entity with its set of cards) ─────────────────────────────
+// vp is nullable: mgtg MCU Guardians masterminds have vp:null.
 export const MastermindSchema = z.object({
   id:          z.number().int().positive(),
   name:        z.string(),
   slug:        z.string(),
   alwaysLeads: z.array(z.string()),
-  vp:          z.number().int(),
+  vp:          z.number().int().nullable(),
   cards:       z.array(MastermindCardSchema),
 });
 
 // ── Villain card ──────────────────────────────────────────────────────────────
+// vp is nullable: wpnx has villain cards with vp:null.
+// vp and vAttack may be strings or numbers in source data across different sets.
 export const VillainCardSchema = z.object({
   name:      z.string(),
   slug:      z.string(),
-  vp:        z.union([z.string(), z.number()]),
-  vAttack:   z.string(),
+  vp:        z.union([z.string(), z.number()]).nullable(),
+  vAttack:   z.union([z.string(), z.number()]).nullable(),
   imageUrl:  z.string().url(),
   abilities: z.array(z.string()),
 });
 
-// ── Villain group ─────────────────────────────────────────────────────────────
+// ── Villain group (a named collection of villain cards) ───────────────────────
 export const VillainGroupSchema = z.object({
   id:    z.number().int().positive(),
   name:  z.string(),
@@ -91,15 +182,16 @@ export const VillainGroupSchema = z.object({
 });
 
 // ── Scheme ────────────────────────────────────────────────────────────────────
+// id is nullable: scheme-transform reverse-side cards have id:null.
 export const SchemeSchema = z.object({
-  id:       z.number().int().positive(),
+  id:       z.number().int().positive().nullable(),
   name:     z.string(),
   slug:     z.string(),
   imageUrl: z.string().url(),
   cards:    z.array(z.object({ abilities: z.array(z.string()) })),
 });
 
-// ── Full set file ─────────────────────────────────────────────────────────────
+// ── Full per-set file ({abbr}.json) ───────────────────────────────────────────
 export const SetDataSchema = z.object({
   id:          z.number().int().positive(),
   abbr:        z.string(),
@@ -114,7 +206,7 @@ export const SetDataSchema = z.object({
   other:       z.array(z.unknown()),
 });
 
-// ── Search query ──────────────────────────────────────────────────────────────
+// ── Search query (for registry query() API) ───────────────────────────────────
 export const CardQuerySchema = z.object({
   setAbbr:      z.string().optional(),
   heroClass:    HeroClassSchema.optional(),

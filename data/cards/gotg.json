@@ -1,0 +1,738 @@
+{
+  "id": 7,
+  "abbr": "gotg",
+  "exportName": "GuardiansOfTheGalaxy",
+  "heroes": [
+    {
+      "id": 58,
+      "name": "Drax the Destroyer",
+      "slug": "drax-the-destroyer",
+      "team": "guardians-of-the-galaxy",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Knives of the Hunter",
+          "displayName": "Knives of the Hunter",
+          "slug": "knives-of-the-hunter",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 3,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-hr-drax-the-destroyer-3c1.webp",
+          "abilities": [
+            "[keyword:Artifact -]",
+            "Once per turn, you get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Interstellar Tracker",
+          "displayName": "Interstellar Tracker",
+          "slug": "interstellar-tracker",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-hr-drax-the-destroyer-3c2.webp",
+          "abilities": [
+            "Look at the top card of your deck. Discard it or put it back.",
+            "[hc:instinct]: You may KO the card you discarded this way."
+          ]
+        },
+        {
+          "name": "The Destroyer",
+          "displayName": "The Destroyer",
+          "slug": "the-destroyer",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 6,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-hr-drax-the-destroyer-6u.webp",
+          "abilities": [
+            "[team:guardians-of-the-galaxy]: Each other player reveals an [hc:instinct] Hero or discards an Artifact they control. For each Artifact discarded this way, you gain a [rule:Shard]."
+          ]
+        },
+        {
+          "name": "Avatar of Destruction",
+          "displayName": "Avatar of Destruction",
+          "slug": "avatar-of-destruction",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-hr-drax-the-destroyer-7r.webp",
+          "abilities": [
+            "Double the [icon:attack] you have."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 59,
+      "name": "Gamora",
+      "slug": "gamora",
+      "team": "guardians-of-the-galaxy",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Bounty Hunter",
+          "displayName": "Bounty Hunter",
+          "slug": "bounty-hunter",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 2,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-hr-gamora-2c1.webp",
+          "abilities": [
+            "A Villain gains a [rule:Shard]."
+          ]
+        },
+        {
+          "name": "Deadliest Woman in the Universe",
+          "displayName": "Deadliest Woman in the Universe",
+          "slug": "deadliest-woman-in-the-universe",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-hr-gamora-3c2.webp",
+          "abilities": [
+            "Gain two [rule:Shards].",
+            "[hc:covert]: Gain another [rule:Shard]."
+          ]
+        },
+        {
+          "name": "Galactic Assassin",
+          "displayName": "Galactic Assassin",
+          "slug": "galactic-assassin",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 5,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-hr-gamora-5u.webp",
+          "abilities": [
+            "A Villain of your choice gets no [icon:attack] from [rule:Shards] this turn.",
+            "[hc:covert][hc:covert]: The Mastermind gets no [icon:attack] from [rule:Shards] this turn."
+          ]
+        },
+        {
+          "name": "Godslayer Blade",
+          "displayName": "Godslayer Blade",
+          "slug": "godslayer-blade",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 8,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-hr-gamora-8r.webp",
+          "abilities": [
+            "[keyword:Artifact -]",
+            "Once per turn, gain two [rule:Shards].",
+            "Once per turn, you may spend 5 [rule:Shards] to get +10[icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 60,
+      "name": "Groot",
+      "slug": "groot",
+      "team": "guardians-of-the-galaxy",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Prune the Growths",
+          "displayName": "Prune the Growths",
+          "slug": "prune-the-growths",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-hr-groot-4c1.webp",
+          "abilities": [
+            "[hc:strength]: You may KO a card from your hand or discard pile. If you do, gain a [rule:Shard]."
+          ]
+        },
+        {
+          "name": "Surviving Sprig",
+          "displayName": "Surviving Sprig",
+          "slug": "surviving-sprig",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 3,
+          "attack": "1",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-hr-groot-3c2.webp",
+          "abilities": [
+            "When you draw a new hand of cards at the end of this turn, draw an extra card."
+          ]
+        },
+        {
+          "name": "Groot and Branches",
+          "displayName": "Groot and Branches",
+          "slug": "groot-and-branches",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 4,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-hr-groot-4u.webp",
+          "abilities": [
+            "Gain two [rule:Shards]. You may spend Shards to get [icon:recruit] this turn.",
+            "[hc:covert]: You may choose another player. That player gains a [rule:Shard]."
+          ]
+        },
+        {
+          "name": "I Am Groot",
+          "displayName": "I Am Groot",
+          "slug": "i-am-groot",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 8,
+          "attack": null,
+          "recruit": "5",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-hr-groot-8r.webp",
+          "abilities": [
+            "When you recruit your next Hero this turn, you gain [rule:Shards] equal to that Hero's cost."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 61,
+      "name": "Rocket Raccoon",
+      "slug": "rocket-raccoon",
+      "team": "guardians-of-the-galaxy",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Gritty Scavenger",
+          "displayName": "Gritty Scavenger",
+          "slug": "gritty-scavenger",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-hr-rocket-raccoon-3c1.webp",
+          "abilities": [
+            "You may discard a card. If you do, draw a card."
+          ]
+        },
+        {
+          "name": "Trigger Happy",
+          "displayName": "Trigger Happy",
+          "slug": "trigger-happy",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-hr-rocket-raccoon-4c2.webp",
+          "abilities": [
+            "[team:guardians-of-the-galaxy]: You gain a [rule:Shard] for each other [team:guardians-of-the-galaxy] Hero you played this turn."
+          ]
+        },
+        {
+          "name": "Incoming Detector",
+          "displayName": "Incoming Detector",
+          "slug": "incoming-detector",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-hr-rocket-raccoon-4u.webp",
+          "abilities": [
+            "[keyword:Artifact -]",
+            "Whenever a Master Strike or Villain's Ambush ability is completed, you may gain a [rule:Shard]."
+          ]
+        },
+        {
+          "name": "Vengeance is Rocket",
+          "displayName": "Vengeance is Rocket",
+          "slug": "vengeance-is-rocket",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 7,
+          "attack": "5+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-hr-rocket-raccoon-7r.webp",
+          "abilities": [
+            "[hc:tech]: You get +1[icon:attack] for each Master Strike in the KO pile and/or stacked next to the Mastermind."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 62,
+      "name": "Star-Lord",
+      "slug": "star-lord",
+      "team": "guardians-of-the-galaxy",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Element Guns",
+          "displayName": "Element Guns",
+          "slug": "element-guns",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-hr-star-lord-4c1.webp",
+          "abilities": [
+            "[keyword:Artifact -]",
+            "Once per turn, gain a [rule:Shard]."
+          ]
+        },
+        {
+          "name": "Legendary Outlaw",
+          "displayName": "Legendary Outlaw",
+          "slug": "legendary-outlaw",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-hr-star-lord-4c2.webp",
+          "abilities": [
+            "Choose an Artifact any player controls with a “once per turn“ ability. Play a copy of one of those abilities."
+          ]
+        },
+        {
+          "name": "Implanted Memory Chip",
+          "displayName": "Implanted Memory Chip",
+          "slug": "implanted-memory-chip",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 6,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-hr-star-lord-6u.webp",
+          "abilities": [
+            "[keyword:Artifact -]",
+            "Once per turn, draw a card."
+          ]
+        },
+        {
+          "name": "Sentient Starship",
+          "displayName": "Sentient Starship",
+          "slug": "sentient-starship",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 8,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-hr-star-lord-8r.webp",
+          "abilities": [
+            "[keyword:Artifact -]",
+            "Once per turn, gain a [rule:Shard] for each Artifact you control."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 18,
+      "name": "Supreme Intelligence of the Kree",
+      "slug": "supreme-intelligence-of-the-kree",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Supreme Intelligence of the Kree",
+          "slug": "supreme-intelligence-of-the-kree",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-mm-supreme-intelligence-of-the-kree.webp",
+          "abilities": [
+            "Always Leads: Kree Starforce",
+            "Master Strike: The Supreme Intelligence gains a [rule:Shard]. Then each player reveals their hand and discards each with cost equal to, and cost one higher than, the number of Shards on the Supreme Intelligence."
+          ]
+        },
+        {
+          "name": "Combined Knowledge of All Kree",
+          "slug": "combined-knowledge-of-all-kree",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-mt-supreme-intelligence-of-the-kree-combined-knowledge-of-all-kree.webp",
+          "abilities": [
+            "Fight: The Supreme Intelligence gains a [rule:Shard] for each Kree Villain in the city and/or the Escape Pile."
+          ]
+        },
+        {
+          "name": "Cosmic Omniscience",
+          "slug": "cosmic-omniscience",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-mt-supreme-intelligence-of-the-kree-cosmic-omniscience.webp",
+          "abilities": [
+            "Fight: The Supreme Intelligence gains a [rule:Shard] for each Master Strike in the KO pile."
+          ]
+        },
+        {
+          "name": "Countermeasure Protocols",
+          "slug": "countermeasure-protocols",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-mt-supreme-intelligence-of-the-kree-countermeasure-protocols.webp",
+          "abilities": [
+            "Fight: The Supreme Intelligence gains a [rule:Shard] for each Mastermind Tactic (including this one) in any player's Victory Pile."
+          ]
+        },
+        {
+          "name": "Guide Kree Evolution",
+          "slug": "guide-kree-evolution",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-mt-supreme-intelligence-of-the-kree-guide-kree-evolution.webp",
+          "abilities": [
+            "Fight: The Supreme Intelligence and Kree Villains in the city each gain a [rule:Shard]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "name": "Thanos",
+      "slug": "thanos",
+      "alwaysLeads": [],
+      "vp": 7,
+      "cards": [
+        {
+          "name": "Thanos",
+          "slug": "thanos",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-mm-thanos.webp",
+          "abilities": [
+            "Always Leads: Infinity Gems",
+            "Thanos gets -2[icon:attack] for each Infinity Gem Artifact card controlled by any player.",
+            "Master Strike: Each player reveals their hand and puts one of their non-grey Heroes next to Thanos in a “Bound Souls“ pile."
+          ]
+        },
+        {
+          "name": "Centuries of Envy",
+          "slug": "centuries-of-envy",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-mt-thanos-centuries-of-envy.webp",
+          "abilities": [
+            "Fight: Each other player discards an Infinity Gem Artifact card they control."
+          ]
+        },
+        {
+          "name": "God of Death",
+          "slug": "god-of-death",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-mt-thanos-god-of-death.webp",
+          "abilities": [
+            "Fight: Each other player reveals their hand and gains a Wound for each card that player has with the same card name as any card in Thanos' Bound Souls pile."
+          ]
+        },
+        {
+          "name": "Keeper of Souls",
+          "slug": "keeper-of-souls",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-mt-thanos-keeper-of-souls.webp",
+          "abilities": [
+            "Fight: Gain a Hero from Thanos' Bound Souls pile. Then each other player puts a non-grey Hero from their discard pile into Thanos' Bound Souls pile."
+          ]
+        },
+        {
+          "name": "The Mad Titan",
+          "slug": "the-mad-titan",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-mt-thanos-the-mad-titan.webp",
+          "abilities": [
+            "Fight: Each other player reveals their hand and discards all cards with the same card name as any card in Thanos' Bound Souls pile."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 25,
+      "name": "Kree Starforce",
+      "slug": "kree-starforce",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Captain Atlas",
+          "slug": "captain-atlas",
+          "vp": "4",
+          "vAttack": "6+",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-vi-kree-starforce-captain-atlas.webp",
+          "abilities": [
+            "Captain Atlas gets +1[icon:attack] for each [rule:Shard] on the Mastermind.",
+            "Escape: Each player loses a [rule:Shard]. Each player that cannot do so gains a Wound."
+          ]
+        },
+        {
+          "name": "Demon Druid",
+          "slug": "demon-druid",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-vi-kree-starforce-demon-druid.webp",
+          "abilities": [
+            "Ambush: Another Villain in the city gains two [rule:Shards]."
+          ]
+        },
+        {
+          "name": "Dr. Minerva",
+          "slug": "dr-minerva",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-vi-kree-starforce-dr-minerva.webp",
+          "abilities": [
+            "Ambush: Each Kree Villain in the city gains a [rule:Shard] (including this Villain)."
+          ]
+        },
+        {
+          "name": "Korath the Pursuer",
+          "slug": "korath-the-pursuer",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-vi-kree-starforce-korath-the-pursuer.webp",
+          "abilities": [
+            "Ambush: Each player may draw a card. Korath gains a [rule:Shard] for each card drawn this way.",
+            "Escape: If Korath had any [rule:Shards], each player gains a Wound."
+          ]
+        },
+        {
+          "name": "Ronan the Accuser",
+          "slug": "ronan-the-accuser",
+          "vp": "5",
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-vi-kree-starforce-ronan-the-accuser.webp",
+          "abilities": [
+            "Ambush: Each player simultaneously points their finger to accuse another player. Each player who was accused the most gains a Wound.",
+            "Escape: Same effect."
+          ]
+        },
+        {
+          "name": "Shatterax",
+          "slug": "shatterax",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-vi-kree-starforce-shatterax.webp",
+          "abilities": [
+            "Fight: Put a [rule:Shard] on each Hero in the HQ. When a player gains that Hero, they gain that [rule:Shard]. If that Hero leaves the HQ some other way, return that [rule:Shard] to the supply."
+          ]
+        },
+        {
+          "name": "Supremor",
+          "slug": "supremor",
+          "vp": "2",
+          "vAttack": "3",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-vi-kree-starforce-supremor.webp",
+          "abilities": [
+            "Ambush: Supremor and the Mastermind each gain a [rule:Shard]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "name": "Infinity Gems",
+      "slug": "infinity-gems",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Mind Gem",
+          "slug": "mind-gem",
+          "vp": "0",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-vi-infinity-gems-mind-gem.webp",
+          "abilities": [
+            "Ambush: Mind Gem gains a [rule:Shard] for each Scheme Twist in the KO pile and/or stacked next to the Scheme.",
+            "Fight: Put this into your discard pile as an Artifact.",
+            "[keyword:Artifact -] Once per turn, you get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Power Gem",
+          "slug": "power-gem",
+          "vp": "0",
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-vi-infinity-gems-power-gem.webp",
+          "abilities": [
+            "Ambush: Power Gem gains a [rule:Shard] for each Master Strike in the KO pile and/or stacked next to the Mastermind.",
+            "Fight: Put this into your discard pile as an Artifact.",
+            "[keyword:Artifact -] Once per turn, you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Reality Gem",
+          "slug": "reality-gem",
+          "vp": "0",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-vi-infinity-gems-reality-gem.webp",
+          "abilities": [
+            "Ambush: Reality Gem gains a [rule:Shard] for each Infinity Gem Villain card in the city and/or Escape pile.",
+            "Fight: Put this into your discard pile as an Artifact.",
+            "[keyword:Artifact -] Before you play a card from the Villain Deck, you may first reveal the top card of the Villain Deck. If it's not a Scheme Twist, you may put it on the bottom of the Villain Deck. If you do, gain a [rule:Shard]."
+          ]
+        },
+        {
+          "name": "Soul Gem",
+          "slug": "soul-gem",
+          "vp": "0",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-vi-infinity-gems-soul-gem.webp",
+          "abilities": [
+            "Ambush: Soul Gem gains a [rule:Shard] for each Villain in the city.",
+            "Fight: Put this into your discard pile as an Artifact.",
+            "[keyword:Artifact -] Whenever you defeat a Villain, put a [rule:Shard] on Soul Gem from the supply. Once per turn, you get +[icon:attack] equal to the number of Shards on Soul Gem."
+          ]
+        },
+        {
+          "name": "Space Gem",
+          "slug": "space-gem",
+          "vp": "0",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-vi-infinity-gems-space-gem.webp",
+          "abilities": [
+            "Ambush: Space Gem gains a [rule:Shard] for each empty space in the city.",
+            "Fight: Put this into your discard pile as an Artifact.",
+            "[keyword:Artifact -] Once per turn, you may move a Villain to another city space. If another Villain is already there, swap them. If you moved any Villains this way, gain a [rule:Shard]."
+          ]
+        },
+        {
+          "name": "Time Gem",
+          "slug": "time-gem",
+          "vp": "0",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-vi-infinity-gems-time-gem.webp",
+          "abilities": [
+            "Ambush: Play another card from the Villain Deck. Time Gem gains [rule:Shards] equal to that card's printed Victory Points.",
+            "Fight: Put this into your discard pile as an Artifact.",
+            "[keyword:Artifact -] When you play this Artifact, take another turn after this one. Use this ability only if this is the fist time any player has played the Time Gem this game."
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [],
+  "schemes": [
+    {
+      "id": 33,
+      "name": "Forge the Infinity Gauntlet",
+      "slug": "forge-the-infinity-gauntlet",
+      "imageUrl": "https://images.barefootbetters.com/gotg/gotg-sc-forge-the-infinity-gauntlet.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. Always include the Infinity Gems Villain Group.",
+            "Twist: Starting to your left and going clockwise, the first player with an Infinity Gem Artifact card in play or in their discard pile chooses on of those Infinity Gems to enter the city. Then put a [rule:Shard] on each Infinity Gem in the city.",
+            "Evil Wins: When 6 Infinity Gem Villains are in the city and/or the Escape Pile.",
+            "Evil Wins: When a player controls 4 Infinity Gem Artifacts, that player is corrupted by power. That player wins, Evil wins, and all other players lose."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "name": "Intergalactic Kree Nega-Bomb",
+      "slug": "intergalactic-kree-nega-bomb",
+      "imageUrl": "https://images.barefootbetters.com/gotg/gotg-sc-intergalactic-kree-nega-bomb.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. Make a face down 'Nega-Bomb Deck' of 6 Bystanders.",
+            "Twist: Shuffle this Twist into the Nega-Bomb Deck. Then reveal a random card from that deck. If it's a Bystander, rescue it. If it's a Twist, KO it, KO all Heroes from the HQ, and each player gains a Wound.",
+            "Evil Wins: When 16 non-grey Heroes are in the KO pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "name": "Kree-Skrull War, The",
+      "slug": "kree-skrull-war-the",
+      "imageUrl": "https://images.barefootbetters.com/gotg/gotg-sc-kree-skrull-war-the.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. Always include Kree Starforce and Skrull Villain Groups.",
+            "Twists 1-7: All Kree and Skrulls escape from the city. Then, if there are more Kree than Skrulls in the Escape Pile, stack this Twist next to the Mastermind as a Kree Conquest. If there are more Skrulls than Kree in the Escape Pile, stack this Twist next to the Villain Deck as a Skrull Conquest.",
+            "Twist 8: Stack this Twist on the side with the most Conquests.",
+            "Evil Wins: When there are 4 Kree Conquests or 4 Skrull Conquests."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "name": "Unite the Shards",
+      "slug": "unite-the-shards",
+      "imageUrl": "https://images.barefootbetters.com/gotg/gotg-sc-unite-the-shards.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 30 [rule:Shards] in the supply. Twists equal to the number of players plus 5.",
+            "Twist: Stack this Twist next to the Scheme. Then for each Twist in that stack, the Mastermind gains a [rule:Shard].",
+            "Special Rules: During your turn, any number of times, you may spend 2[icon:recruit] to gain one of the Mastermind's [rule:Shards].",
+            "Evil Wins: When the Mastermind has 10 [rule:Shards] or when there are no more [rule:Shards] in the supply."
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [],
+  "wounds": [],
+  "other": []
+}

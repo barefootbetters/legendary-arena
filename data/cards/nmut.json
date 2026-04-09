@@ -1,0 +1,748 @@
+{
+  "id": 27,
+  "abbr": "nmut",
+  "exportName": "NewMutants",
+  "heroes": [
+    {
+      "id": 203,
+      "name": "Karma",
+      "slug": "karma",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Sow Rivalry",
+          "displayName": "Sow Rivalry",
+          "slug": "sow-rivalry",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-hr-karma-3c1.webp",
+          "abilities": [
+            "[hc:covert]: Choose a Villain. You get +1[icon:attack] for each Villain adjacent to it."
+          ]
+        },
+        {
+          "name": "Temporary Possession",
+          "displayName": "Temporary Possession",
+          "slug": "temporary-possession",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-hr-karma-4c2.webp",
+          "abilities": [
+            "Guess a color. Then reveal the top card of the Hero Deck and put it back on the top or bottom of that deck. If you guessed right, you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Karmic Balance",
+          "displayName": "Karmic Balance",
+          "slug": "karmic-balance",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 6,
+          "attack": null,
+          "recruit": "4",
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-hr-karma-6u.webp",
+          "abilities": [
+            "Reveal the top card of the Hero Deck. You may recruit it this turn. If you do, you may KO one of your cards or a card from your discard pile."
+          ]
+        },
+        {
+          "name": "Control Like a Puppet",
+          "displayName": "Control Like a Puppet",
+          "slug": "control-like-a-puppet",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 8,
+          "attack": "5+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-hr-karma-8r.webp",
+          "abilities": [
+            "[team:x-men]: Choose a Villain in the city. You get +[icon:attack] equal to its VP, usable only against other Villains or the Mastermind."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 204,
+      "name": "Mirage",
+      "slug": "mirage",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Dreams Made Real",
+          "displayName": "Dreams Made Real",
+          "slug": "dreams-made-real",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-hr-mirage-3c1.webp",
+          "abilities": [
+            "[keyword:Moonlight]: You may discard a card. If you do, draw a card."
+          ]
+        },
+        {
+          "name": "Empathic Link",
+          "displayName": "Empathic Link",
+          "slug": "empathic-link",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-hr-mirage-3c2.webp",
+          "abilities": [
+            "When a card effect causes you to discard this card, set it aside. At the end of this turn, add it to your hand as an extra card."
+          ]
+        },
+        {
+          "name": "Nightmare Wolves",
+          "displayName": "Nightmare Wolves",
+          "slug": "nightmare-wolves",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 6,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-hr-mirage-6u.webp",
+          "abilities": [
+            "You may have a [keyword:Waking Nightmare]. You get +[icon:attack] equal to the cost of the card you discarded this way."
+          ]
+        },
+        {
+          "name": "Haunted By the Demon Bear",
+          "displayName": "Haunted By the Demon Bear",
+          "slug": "haunted-by-the-demon-bear",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 7,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-hr-mirage-7r.webp",
+          "abilities": [
+            "Whenever a card effect causes you to discard a card from your hand this turn, you get +2[icon:attack].",
+            "[keyword:Moonlight]: You may have a [keyword:Waking Nightmare]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 205,
+      "name": "Sunspot",
+      "slug": "sunspot",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Absorb Radiation",
+          "displayName": "Absorb Radiation",
+          "slug": "absorb-radiation",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 2,
+          "attack": null,
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-hr-sunspot-2c1.webp",
+          "abilities": [
+            "[keyword:Moonlight]: You may put a Hero from the HQ on the bottom of the Hero Deck.",
+            "[keyword:Sunlight]: Draw a card."
+          ]
+        },
+        {
+          "name": "Solar-Powered",
+          "displayName": "Solar-Powered",
+          "slug": "solar-powered",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-hr-sunspot-4c2.webp",
+          "abilities": [
+            "[keyword:Sunlight]: You may put a card from your hand on the bottom of you deck. If you do, you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Thermokinetic Fury",
+          "displayName": "Thermokinetic Fury",
+          "slug": "thermokinetic-fury",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 6,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-hr-sunspot-6u.webp",
+          "abilities": [
+            "To play this, you must put a card from your hand on the bottom of your deck.",
+            "[keyword:Sunlight]: You get +1[icon:attack] for each other [team:x-men] card you played this turn."
+          ]
+        },
+        {
+          "name": "Empyreal Force",
+          "displayName": "Empyreal Force",
+          "slug": "empyreal-force",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 8,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-hr-sunspot-8r.webp",
+          "abilities": [
+            "Choose any number of Heroes in the HQ. Put them on the bottom of the Hero Deck.",
+            "[keyword:Sunlight]: You get +1[icon:attack] for each Hero in the HQ with an even-numbered cost."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 206,
+      "name": "Warlock",
+      "slug": "warlock",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Earthling Choices",
+          "displayName": "Earthling Choices",
+          "slug": "earthling-choices",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 2,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-hr-warlock-2c1.webp",
+          "abilities": [
+            "Look at the top two cards of your deck. Draw one and discard the other."
+          ]
+        },
+        {
+          "name": "Analyze Planetary Rotation",
+          "displayName": "Analyze Planetary Rotation",
+          "slug": "analyze-planetary-rotation",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 3,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-hr-warlock-3c2.webp",
+          "abilities": [
+            "[keyword:Sunlight]: You get +2[icon:recruit].",
+            "[keyword:Moonlight]: You get +2[icon:attack].",
+            "[hc:tech]: Instead, you get both."
+          ]
+        },
+        {
+          "name": "Techno-Organic Adaptation",
+          "displayName": "Techno-Organic Adaptation",
+          "slug": "techno-organic-adaptation",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 6,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-hr-warlock-6u.webp",
+          "abilities": [
+            "[hc:tech]: The first time you defeat a Villain this turn, you may KO one of your cards or a card from your discard pile."
+          ]
+        },
+        {
+          "name": "Nanite Shapeshifter",
+          "displayName": "Nanite Shapeshifter",
+          "slug": "nanite-shapeshifter",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 7,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-hr-warlock-7r.webp",
+          "abilities": [
+            "[keyword:Sunlight]: Draw 3 cards.",
+            "[keyword:Moonlight]: You get +3[icon:recruit] and +3[icon:attack].",
+            "[team:x-men][team:x-men][team:x-men][team:x-men]: Instead, you get both."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 207,
+      "name": "Wolfsbane",
+      "slug": "wolfsbane",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Night Vision",
+          "displayName": "Night Vision",
+          "slug": "night-vision",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-hr-wolfsbane-3c1.webp",
+          "abilities": [
+            "[keyword:Moonlight]: Look at the top two cards of your deck. Discard any number of them and put the rest back in any order."
+          ]
+        },
+        {
+          "name": "Wolf Out",
+          "displayName": "Wolf Out",
+          "slug": "wolf-out",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-hr-wolfsbane-3c2.webp",
+          "abilities": [
+            "[keyword:Sunlight]: You may put a Hero from the HQ on the bottom of the Hero Deck.",
+            "[keyword:Moonlight]: Draw a card."
+          ]
+        },
+        {
+          "name": "Howl at the Moon",
+          "displayName": "Howl at the Moon",
+          "slug": "howl-at-the-moon",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 5,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-hr-wolfsbane-5u.webp",
+          "abilities": [
+            "[keyword:Moonlight]: Look at the top card of your deck. KO it or put it back."
+          ]
+        },
+        {
+          "name": "Nocturnal Savagery",
+          "displayName": "Nocturnal Savagery",
+          "slug": "nocturnal-savagery",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-hr-wolfsbane-7r.webp",
+          "abilities": [
+            "Look at the top three cards of your deck. Discard any number of them and put the rest back in any order.",
+            "[keyword:Moonlight]: You get the total printed [icon:attack] of all the cards you discarded from your deck this turn."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 69,
+      "name": "Belasco, Demon Lord of Limbo",
+      "slug": "belasco-demon-lord-of-limbo",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Belasco, Demon Lord of Limbo",
+          "slug": "belasco-demon-lord-of-limbo",
+          "tactic": false,
+          "vAttack": "9+",
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-mm-belasco-demon-lord-of-limbo.webp",
+          "abilities": [
+            "Belasco gets +[icon:attack] equal to the number of non-grey Heroes in the KO pile, divided by the number of players (round down).",
+            "Always Leads: Demons of Limbo",
+            "Master Strike: [keyword:Sunlight]: Each player KOs a non-grey Hero from their discard pile. [keyword:Moonlight]: Each player has a [keyword:Waking Nightmare]. KO Heroes discarded this way."
+          ]
+        },
+        {
+          "name": "Epic Belasco",
+          "slug": "epic-belasco",
+          "tactic": false,
+          "vAttack": "10+",
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-me-belasco-demon-lord-of-limbo.webp",
+          "abilities": [
+            "Belasco gets +[icon:attack] equal to the number of non-grey Heroes in the KO pile, divided by the number of players (round down).",
+            "Always Leads: Demons of Limbo",
+            "Master Strike: [keyword:Sunlight]: Each player KOs two non-grey Hero from their discard pile. [keyword:Moonlight]: Each player has two [keyword:Waking Nightmare]. KO Heroes discarded this way."
+          ]
+        },
+        {
+          "name": "A Demon's Mercy",
+          "slug": "a-demons-mercy",
+          "tactic": true,
+          "vAttack": 9,
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-mt-belasco-demon-lord-of-limbo-a-demons-mercy.webp",
+          "abilities": [
+            "Fight: Each other player KOs a non-grey Hero from their hand or discard pile."
+          ]
+        },
+        {
+          "name": "Bargain for Souls",
+          "slug": "bargain-for-souls",
+          "tactic": true,
+          "vAttack": 9,
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-mt-belasco-demon-lord-of-limbo-bargain-for-souls.webp",
+          "abilities": [
+            "Fight: Reveal cards from the Hero Deck equal to the number of players. Gain one of them and KO the rest."
+          ]
+        },
+        {
+          "name": "Rescue from Limbo",
+          "slug": "rescue-from-limbo",
+          "tactic": true,
+          "vAttack": 9,
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-mt-belasco-demon-lord-of-limbo-rescue-from-limbo.webp",
+          "abilities": [
+            "Fight: You may KO one of your non-grey Heroes or a non-grey Hero from your discard pile. If you do, gain a Hero from the KO pile."
+          ]
+        },
+        {
+          "name": "Cleaving Demonblade",
+          "slug": "cleaving-demonblade",
+          "tactic": true,
+          "vAttack": 9,
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-mt-belasco-demon-lord-of-limbo-cleaving-demonblade.webp",
+          "abilities": [
+            "Fight: Each player chooses a different card in the HQ. Then KO all chosen cards."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 70,
+      "name": "Emma Frost, The White Queen",
+      "slug": "emma-frost-the-white-queen",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Emma Frost, The White Queen",
+          "slug": "emma-frost-the-white-queen",
+          "tactic": false,
+          "vAttack": "8+",
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-mm-emma-frost-the-white-queen.webp",
+          "abilities": [
+            "During your turn, Emma Frost gets +1[icon:attack] for each grey Hero you have.",
+            "Always Leads: Hellions",
+            "Master Strike: Stack this Strike next to Emma Frost. Then each player has a [keyword:Waking Nightmare] for each Strike stacked here."
+          ]
+        },
+        {
+          "name": "Epic Emma Frost",
+          "slug": "epic-emma-frost",
+          "tactic": false,
+          "vAttack": "9+",
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-me-emma-frost-the-white-queen.webp",
+          "abilities": [
+            "During your turn, Emma Frost gets +2[icon:attack] for each grey Hero you have.",
+            "Always Leads: Hellions",
+            "Master Strike: Stack this Strike next to Emma Frost. Then each player has a [keyword:Waking Nightmare] for each Strike stacked here, then one more [keyword:Waking Nightmare]."
+          ]
+        },
+        {
+          "name": "Tempting Bargain",
+          "slug": "tempting-bargain",
+          "tactic": true,
+          "vAttack": 8,
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-mt-emma-frost-the-white-queen-tempting-bargain.webp",
+          "abilities": [
+            "Fight: You may play the top card of the Villain Deck. If you do, you get +5[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Psychic X-Men Link",
+          "slug": "psychic-x-men-link",
+          "tactic": true,
+          "vAttack": 8,
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-mt-emma-frost-the-white-queen-psychic-x-men-link.webp",
+          "abilities": [
+            "Fight: Each other player has a [keyword:Waking Nightmare]. Each of those players who did not discard an [team:x-men] Hero this way gains a Wound."
+          ]
+        },
+        {
+          "name": "Assume Diamond Form",
+          "slug": "assume-diamond-form",
+          "tactic": true,
+          "vAttack": 8,
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-mt-emma-frost-the-white-queen-assume-diamond-form.webp",
+          "abilities": [
+            "Fight: Emma Frost cannot be fought again until the start of your next turn."
+          ]
+        },
+        {
+          "name": "Contempt for Weaklings",
+          "slug": "contempt-for-weaklings",
+          "tactic": true,
+          "vAttack": 8,
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-mt-emma-frost-the-white-queen-contempt-for-weaklings.webp",
+          "abilities": [
+            "Fight: Put a 0-cost Hero from the KO pile on top of each other player's deck."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 88,
+      "name": "Demons of Limbo",
+      "slug": "demons-of-limbo",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Crotus",
+          "slug": "crotus",
+          "vp": "3",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-vi-demons-of-limbo-crotus.webp",
+          "abilities": [
+            "Ambush: Crotus captures a Bystander. Put an even-numbered Hero on the bottom of the Hero Deck.",
+            "[keyword:Moonlight]: Crotus gets +4[icon:attack]."
+          ]
+        },
+        {
+          "name": "N'astirh",
+          "slug": "nastirh",
+          "vp": "3",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-vi-demons-of-limbo-nastirh.webp",
+          "abilities": [
+            "[keyword:Sunlight]: To fight N'astirh, you must also spend 3[icon:recruit].",
+            "[keyword:Moonlight]: N'astirh gets +3[icon:attack].",
+            "Fight: KO one of your Heroes."
+          ]
+        },
+        {
+          "name": "S'ym",
+          "slug": "sym",
+          "vp": "5",
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-vi-demons-of-limbo-sym.webp",
+          "abilities": [
+            "Ambush: [keyword:Sunlight]: Each player reveals a [hc:strength] Hero or gains a Wound. [keyword:Moonlight]: Each player has a [keyword:Waking Nightmare].",
+            "Escape: Same effect."
+          ]
+        },
+        {
+          "name": "Demon Bear",
+          "slug": "demon-bear",
+          "vp": "5",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-vi-demons-of-limbo-demon-bear.webp",
+          "abilities": [
+            "Ambush: Each player has a [keyword:Waking Nightmare]. The Demon Bear captures one of the Heroes discarded this way that has the lowest cost. The Demon Bear gets +[icon:attack] equal to that Hero's cost.",
+            "Fight: The player of your choice gains that Hero.",
+            "Escape: KO the captured Hero."
+          ]
+        },
+        {
+          "name": "Witchfire",
+          "slug": "witchfire",
+          "vp": "4",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-vi-demons-of-limbo-witchfire.webp",
+          "abilities": [
+            "Ambush: Witchfire captures a Hero from the HQ with the lowest odd-numbered cost. [keyword:Sunlight]: Witchfire gets +2[icon:attack].",
+            "Fight: The player of your choice gains that Hero.",
+            "Escape: KO the captured Hero."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 89,
+      "name": "Hellions",
+      "slug": "hellions",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Catseye",
+          "slug": "catseye",
+          "vp": "3",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-vi-hellions-catseye.webp",
+          "abilities": [
+            "[keyword:Moonlight]: Catseye gets +2[icon:attack].",
+            "Fight: KO one of your Heroes."
+          ]
+        },
+        {
+          "name": "Thunderbird",
+          "slug": "thunderbird",
+          "vp": "4",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-vi-hellions-thunderbird.webp",
+          "abilities": [
+            "[keyword:Sunlight]: Thunderbird gets +2[icon:attack].",
+            "Fight: KO one of your Heroes."
+          ]
+        },
+        {
+          "name": "Tarot",
+          "slug": "tarot",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-vi-hellions-tarot.webp",
+          "abilities": [
+            "Ambush: Reveal the top card of the Villain Deck. If it's a...",
+            "Bystander: Rescue it.",
+            "Scheme Twist: Play it.",
+            "Master Strike: Each player gains a Wound.",
+            "Villain: Each player has a [keyword:Waking Nightmare]."
+          ]
+        },
+        {
+          "name": "Roulette",
+          "slug": "roulette",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-vi-hellions-roulette.webp",
+          "abilities": [
+            "Ambush: Reveal the top card of the Hero Deck. If it's [hc:tech] each player gains a Wound. If it's [hc:covert], you draw a card.",
+            "Fight: Same Effect.",
+            "Escape: Same Effect."
+          ]
+        },
+        {
+          "name": "Empath",
+          "slug": "empath",
+          "vp": "4",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-vi-hellions-empath.webp",
+          "abilities": [
+            "During your turn, Empath gets +1[icon:attack] for each grey Hero you have.",
+            "Ambush: Each player reveals a [hc:covert] Hero or has a [keyword:Waking Nightmare].",
+            "Escape: Same effect."
+          ]
+        },
+        {
+          "name": "Jetstream",
+          "slug": "jetstream",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/nmut/nmut-vi-hellions-jetstream.webp",
+          "abilities": [
+            "Ambush: (After this enters the Sewers) Put Jetstream on the Bridge. If there's another Villain there, swap them.",
+            "Escape: Each player discards an [team:x-men] Hero or gains a Wound."
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [],
+  "schemes": [
+    {
+      "id": 126,
+      "name": "Demon Bear Saga, The",
+      "slug": "demon-bear-saga-the",
+      "imageUrl": "https://images.barefootbetters.com/nmut/nmut-sc-demon-bear-saga-the.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. Include Demons of Limbo as one of the Villain Groups. Put the Demon Bear Villain from that groups next to the Scheme.",
+            "Twist: If the Demon Bear is in the city, it escapes. Otherwise, the Demon Bear enters the city from wherever it is. If it was in a player's Victory Pile, that player rescues 4 Bystanders.",
+            "Special Rules: Whenever the Demon Bear escapes, stack a Twist next to the Scheme as a “Dream Horror.“",
+            "Evil Wins: When there are 3 Dream Horrors."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 127,
+      "name": "Crash the Moon into the Sun",
+      "slug": "crash-the-moon-into-the-sun",
+      "imageUrl": "https://images.barefootbetters.com/nmut/nmut-sc-crash-the-moon-into-the-sun.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 11 Twists.",
+            "Twist 1,3,5,7: [keyword:Moonlight]: Stack this Twist next to the Scheme as an “Altered Orbit.“",
+            "Twist 2,4,6,8: [keyword:Sunlight]: Same effect.",
+            "Twist 9,10,11: Same effect.",
+            "Evil Wins: When there are 4 Altered Orbits."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 128,
+      "name": "Trapped in the Insane Asylum",
+      "slug": "trapped-in-the-insane-asylum",
+      "imageUrl": "https://images.barefootbetters.com/nmut/nmut-sc-trapped-in-the-insane-asylum.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 1 Twist, plus 2 Twists per player.",
+            "Twist: You face a “Sanity Test“: Either keep this Twist in front of you as a “Psychotic Break“, or discard a card and pass this Twist to the player on your left and that player faces a Sanity Test.",
+            "Special Rules: On each of your turns, before you play other cards from your hand, you must play two randomly-selected cards from your hand for each Psychotic Break you have.",
+            "Evil Wins: When a player has 3 Psychotic Breaks."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 129,
+      "name": "Superhuman Baseball Game",
+      "slug": "superhuman-baseball-game",
+      "imageUrl": "https://images.barefootbetters.com/nmut/nmut-sc-superhuman-baseball-game.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 9 Twists. Add an extra Villain Group.",
+            "Special Rules: The Bank nd the Streets do not exist. Put the Villain Deck under the HQ as “Home Plate.“ The Sewers, Rooftops, and Bridge are First, Second, and Third Base.",
+            "Twist: Play the top card of the Villain Deck. If it's a Bystander, rescue that “Cheering Fan.“ If it's a Master Strike, then after it resolves, any Villain on Third Base “Steals Home“ and Escapes. If it's a Villain, it “Hits a Double,“ pushes to Second Base (the Rooftops) and you play the top card from the Villain Deck.",
+            "Evil Wins: When Evil has 4 “runs“ (Villains in the Escape Pile) per player."
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [],
+  "wounds": [],
+  "other": []
+}

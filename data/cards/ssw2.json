@@ -1,0 +1,1966 @@
+{
+  "id": 11,
+  "abbr": "ssw2",
+  "exportName": "SecretWars2",
+  "heroes": [
+    {
+      "id": 85,
+      "name": "Agent Venom",
+      "slug": "agent-venom",
+      "team": "spider-friends",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Multi-Gun",
+          "displayName": "Multi-Gun",
+          "slug": "multi-gun",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 2,
+          "attack": "1+",
+          "recruit": "1+",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-agent-venom-2c1.webp",
+          "abilities": [
+            "[keyword:Spectrum]: You get +1[icon:recruit] and +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Government Payroll",
+          "displayName": "Government Payroll",
+          "slug": "government-payroll",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 3,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-agent-venom-3c2.webp",
+          "abilities": [
+            "[keyword:Wall-Crawl]",
+            "[keyword:Patrol the Bank]: If it's empty, you get +2[icon:recruit]. If it's not, you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Big Slimeportunity",
+          "displayName": "Big Slimeportunity",
+          "slug": "big-slimeportunity",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 6,
+          "attack": "2",
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-agent-venom-6u.webp",
+          "abilities": [
+            "[keyword:Wall-Crawl]",
+            "[keyword:Patrol the Sewers]: If it's empty, draw a card."
+          ]
+        },
+        {
+          "name": "Shapeshifting Symbiote",
+          "displayName": "Shapeshifting Symbiote",
+          "slug": "shapeshifting-symbiote",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 7,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-agent-venom-7r.webp",
+          "abilities": [
+            "[keyword:Wall-Crawl]",
+            "For each other card you played this turn with a [icon:recruit] icon, you get +1[icon:recruit].",
+            "For each other card you played this turn with a [icon:attack] icon, you get +1[icon:attack].",
+            "(If another card has both [icon:recruit] and [icon:attack], you get both bonuses.)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 86,
+      "name": "Arkon the Magnificent",
+      "slug": "arkon-the-magnificent",
+      "team": "unaffiliated",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "All-Terrain Barbarian",
+          "displayName": "All-Terrain Barbarian",
+          "slug": "all-terrain-barbarian",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-arkon-the-magnificent-3c1.webp",
+          "abilities": [
+            "[keyword:Wall-Crawl]",
+            "[keyword:Patrol the Sewers]: If it's empty, you get +1[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Quiver of Thunderbolts",
+          "displayName": "Quiver of Thunderbolts",
+          "slug": "quiver-of-thunderbolts",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-arkon-the-magnificent-3c2.webp",
+          "abilities": [
+            "[keyword:Spectrum]: Draw a card."
+          ]
+        },
+        {
+          "name": "Warlord of Open Spaces",
+          "displayName": "Warlord of Open Spaces",
+          "slug": "warlord-of-open-spaces",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 5,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-arkon-the-magnificent-5u.webp",
+          "abilities": [
+            "[keyword:Patrol two adjacent city spaces]: If they're both empty, you get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Lord of Dragons",
+          "displayName": "Lord of Dragons",
+          "slug": "lord-of-dragons",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-arkon-the-magnificent-7r.webp",
+          "abilities": [
+            "[keyword:Patrol the Rooftops]: If it's empty, you get +4[icon:recruit] and +4[icon:attack]. If it's not, defeat the Villain there for free."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 87,
+      "name": "Beast",
+      "slug": "beast",
+      "team": "illuminati",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Balanced Attack",
+          "displayName": "Balanced Attack",
+          "slug": "balanced-attack",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-beast-3c1.webp",
+          "abilities": [
+            "Reveal the top card of your deck. If it's [hc:tech] or [hc:strength], draw it."
+          ]
+        },
+        {
+          "name": "Upside-down Thinking",
+          "displayName": "Upside-down Thinking",
+          "slug": "upside-down-thinking",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-beast-4c2.webp",
+          "abilities": [
+            "[keyword:Wall-Crawl]",
+            "[keyword:Patrol any city space]: If it's empty, then the hero in the HQ space under it costs 3 less this turn."
+          ]
+        },
+        {
+          "name": "Doctor of Beatdown",
+          "displayName": "Doctor of Beatdown",
+          "slug": "doctor-of-beatdown",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-beast-6u.webp",
+          "abilities": [
+            "For each other [hc:strength] card you played this turn, you get +1[icon:attack].",
+            "For each other [hc:tech] card you played this turn, you get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Multi-Variable Smackulus",
+          "displayName": "Multi-Variable Smackulus",
+          "slug": "multi-variable-smackulus",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 8,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-beast-8r.webp",
+          "abilities": [
+            "[hc:tech][hc:tech][hc:strength][hc:strength]: Draw three cards."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 88,
+      "name": "Black Swan",
+      "slug": "black-swan",
+      "team": "cabal",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Apocalyptic Vision",
+          "displayName": "Apocalyptic Vision",
+          "slug": "apocalyptic-vision",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-black-swan-3c1.webp",
+          "abilities": [
+            "[hc:ranged]: Reveal the top card of the Villain Deck. If it's a Scheme Twist, you get +2[icon:attack]. Otherwise, put it back on the top or bottom."
+          ]
+        },
+        {
+          "name": "Witness the End",
+          "displayName": "Witness the End",
+          "slug": "witness-the-end",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 5,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-black-swan-5c2.webp",
+          "abilities": [
+            "[hc:instinct]: You may KO a card from your hand or discard pile. If you do, draw a card."
+          ]
+        },
+        {
+          "name": "Dark Foretelling",
+          "displayName": "Dark Foretelling",
+          "slug": "dark-foretelling",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 6,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-black-swan-6u.webp",
+          "abilities": [
+            "Reveal the top three cards of the Villain Deck. Rescue any Bystanders you revealed, then put the rest back in any order."
+          ]
+        },
+        {
+          "name": "Telepathic Control",
+          "displayName": "Telepathic Control",
+          "slug": "telepathic-control",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 7,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-black-swan-7r.webp",
+          "abilities": [
+            "Reveal the top five cards of the Villain Deck. You get +[icon:attack] equal to the printed [icon:piercing] of one of those cards. Put them back in any order.",
+            "[team:cabal]: Instead, you get +[icon:attack] for two of those cards."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 89,
+      "name": "Captain and the Devil, The",
+      "slug": "captain-and-the-devil-the",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Jurassic America",
+          "displayName": "Jurassic America",
+          "slug": "jurassic-america",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 2,
+          "attack": null,
+          "recruit": "1+",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-captain-and-the-devil-the-2c1.webp",
+          "abilities": [
+            "[keyword:Spectrum]: you get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Patriotic Chomp",
+          "displayName": "Patriotic Chomp",
+          "slug": "patriotic-chomp",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-captain-and-the-devil-the-4c2.webp",
+          "abilities": [
+            "[keyword:Spectrum]: you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Feeding Grounds",
+          "displayName": "Feeding Grounds",
+          "slug": "feeding-grounds",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 6,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-captain-and-the-devil-the-6u.webp",
+          "abilities": [
+            "[keyword:Patrol the Streets]: If it's empty, you may KO a card from your hand or discard pile."
+          ]
+        },
+        {
+          "name": "Dino-Roar of Triumph",
+          "displayName": "Dino-Roar of Triumph",
+          "slug": "dino-roar-of-triumph",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 8,
+          "attack": "6",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-captain-and-the-devil-the-8r.webp",
+          "abilities": [
+            "Whenever you defeat a Villain this turn, each Villain and Mastermind adjacent to it gets -2[icon:attack] this turn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 90,
+      "name": "Captain Britain",
+      "slug": "captain-britain",
+      "team": "illuminati",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Transatlantic Savior",
+          "displayName": "Transatlantic Savior",
+          "slug": "transatlantic-savior",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": null,
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-captain-britain-3c1.webp",
+          "abilities": [
+            "You get +1[icon:recruit] for each different team icon among your heroes."
+          ]
+        },
+        {
+          "name": "Combined Strength",
+          "displayName": "Combined Strength",
+          "slug": "combined-strength",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-captain-britain-4c2.webp",
+          "abilities": [
+            "You get +1[icon:attack] for each different team icon among your heroes."
+          ]
+        },
+        {
+          "name": "Raise the Union Jack",
+          "displayName": "Raise the Union Jack",
+          "slug": "raise-the-union-jack",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 5,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-captain-britain-5u.webp",
+          "abilities": [
+            "[keyword:Patrol the Rooftops]: If it's empty, reveal the top two cards of your deck. If they have different team icons, draw them. Otherwise, put them back in any order."
+          ]
+        },
+        {
+          "name": "Lead the Captain Britain Corps",
+          "displayName": "Lead the Captain Britain Corps",
+          "slug": "lead-the-captain-britain-corps",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 7,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-captain-britain-7r.webp",
+          "abilities": [
+            "When you draw a new hand of cards at the end of this turn, draw three extra cards."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 91,
+      "name": "Corvus Glaive",
+      "slug": "corvus-glaive",
+      "team": "cabal",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Let None Escape You",
+          "displayName": "Let None Escape You",
+          "slug": "let-none-escape-you",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 2,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-corvus-glaive-2c1.webp",
+          "abilities": [
+            "[keyword:Patrol the Escape Pile]: If there are Bystanders in it, you get +2[icon:attack]. Otherwise, you get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Culling Blade",
+          "displayName": "Culling Blade",
+          "slug": "culling-blade",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-corvus-glaive-3c2.webp",
+          "abilities": [
+            "KO a Bystander from the Bystander Deck. If it's a Special Bystander, you may use its Rescue effect."
+          ]
+        },
+        {
+          "name": "Rictus Grin",
+          "displayName": "Rictus Grin",
+          "slug": "rictus-grin",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-corvus-glaive-6u.webp",
+          "abilities": [
+            "[team:cabal]: KO a Bystander from the Bystander Stack. Then, you get +1[icon:attack] for every four Bystanders in the KO Pile."
+          ]
+        },
+        {
+          "name": "Atom-Splitting Glaive",
+          "displayName": "Atom-Splitting Glaive",
+          "slug": "atom-splitting-glaive",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 8,
+          "attack": "6+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-corvus-glaive-8r.webp",
+          "abilities": [
+            "[team:cabal]: You may KO a Bystander from the Escape Pile and from each player's Victory Pile. You get +1[icon:attack] for each Bystander KO'd this way."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 92,
+      "name": "Dr. Punisher, Soldier Supreme",
+      "slug": "dr-punisher-soldier-supreme",
+      "team": "marvel-knights",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Sweep the Streets of Trash",
+          "displayName": "Sweep the Streets of Trash",
+          "slug": "sweep-the-streets-of-trash",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 2,
+          "attack": null,
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-dr-punisher-soldier-supreme-2c1.webp",
+          "abilities": [
+            "[keyword:Patrol the Streets]: If it's empty, draw a card."
+          ]
+        },
+        {
+          "name": "You're a Slow Learner",
+          "displayName": "You're a Slow Learner",
+          "slug": "youre-a-slow-learner",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-dr-punisher-soldier-supreme-4c2.webp",
+          "abilities": [
+            "[hc:tech]: Reveal the top card of your deck. If it costs 0, KO it and you get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Ice Magic",
+          "displayName": "Ice Magic",
+          "slug": "ice-magic",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-dr-punisher-soldier-supreme-3u.webp",
+          "abilities": [
+            "Reveal the top card of the Villain Deck. If it's a Villain, you may fight it this turn.",
+            "[hc:ranged][hc:ranged]: You get +[icon:attack] equal to that Villain's printed [icon:piercing]."
+          ]
+        },
+        {
+          "name": "Calm Before the Storm",
+          "displayName": "Calm Before the Storm",
+          "slug": "calm-before-the-storm",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 7,
+          "attack": "5+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-dr-punisher-soldier-supreme-7r.webp",
+          "abilities": [
+            "[keyword:Patrol every city space]: For each space that's empty, you get +1[icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 93,
+      "name": "Elsa Bloodstone",
+      "slug": "elsa-bloodstone",
+      "team": "shield",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Monster Hunter",
+          "displayName": "Monster Hunter",
+          "slug": "monster-hunter",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-elsa-bloodstone-3c1.webp",
+          "abilities": [
+            "[keyword:Patrol the Sewers]: If it's empty, rescue a Bystander."
+          ]
+        },
+        {
+          "name": "Bloodstone Pendant",
+          "displayName": "Bloodstone Pendant",
+          "slug": "bloodstone-pendant",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 5,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-elsa-bloodstone-5c2.webp",
+          "abilities": [
+            "[keyword:Spectrum]: You may KO a card from your hand or discard pile. If you do, you get +1[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Defend the S.H.I.E.L.D. Wall",
+          "displayName": "Defend the S.H.I.E.L.D. Wall",
+          "slug": "defend-the-shield-wall",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 6,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-elsa-bloodstone-6u.webp",
+          "abilities": [
+            "[keyword:Wall-Crawl]",
+            "You get +1[icon:attack] for each other [team:shield] Hero you played this turn."
+          ]
+        },
+        {
+          "name": "Prodigy of Ulysses Bloodstone",
+          "displayName": "Prodigy of Ulysses Bloodstone",
+          "slug": "prodigy-of-ulysses-bloodstone",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 8,
+          "attack": "6+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-elsa-bloodstone-8r.webp",
+          "abilities": [
+            "[keyword:Spectrum]: You get +3[icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 94,
+      "name": "Phoenix Force Cyclops",
+      "slug": "phoenix-force-cyclops",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Reincarnate",
+          "displayName": "Reincarnate",
+          "slug": "reincarnate",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-phoenix-force-cyclops-3c1.webp",
+          "abilities": [
+            "KO this card. Gain a hero from the S.H.I.E.L.D. Officer stack or HQ that costs 4 or less and put it into your hand."
+          ]
+        },
+        {
+          "name": "Burn Out",
+          "displayName": "Burn Out",
+          "slug": "burn-out",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-phoenix-force-cyclops-4c2.webp",
+          "abilities": [
+            "You may KO this card. If you do, you gain +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Rise from the Ashes",
+          "displayName": "Rise from the Ashes",
+          "slug": "rise-from-the-ashes",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 6,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-phoenix-force-cyclops-6u.webp",
+          "abilities": [
+            "Gain a Hero that was KO'd this turn."
+          ]
+        },
+        {
+          "name": "Destruction Is Creation",
+          "displayName": "Destruction Is Creation",
+          "slug": "destruction-is-creation",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 8,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-phoenix-force-cyclops-8r.webp",
+          "abilities": [
+            "KO up to three cards from your hand. Draw that many cards."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 95,
+      "name": "Ruby Summers",
+      "slug": "ruby-summers",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Guerrilla Warfare",
+          "displayName": "Guerrilla Warfare",
+          "slug": "guerrilla-warfare",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-ruby-summers-3c1.webp",
+          "abilities": [
+            "When a card effect causes you to discard this card, if it is your turn, [keyword:Teleport] it instead. If it is not your turn, set it aside and add it to your hand at the end of this turn."
+          ]
+        },
+        {
+          "name": "Heir to Legends",
+          "displayName": "Heir to Legends",
+          "slug": "heir-to-legends",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 5,
+          "attack": "2",
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-ruby-summers-5c2.webp",
+          "abilities": [
+            "To play this card, you must discard a card from your hand."
+          ]
+        },
+        {
+          "name": "Form of Solid Ruby",
+          "displayName": "Form of Solid Ruby",
+          "slug": "form-of-solid-ruby",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "4",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-ruby-summers-6u.webp",
+          "abilities": [
+            "[team:x-men]: Whenever you defeat a villain or mastermind this turn, you get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Extinction Blast",
+          "displayName": "Extinction Blast",
+          "slug": "extinction-blast",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 8,
+          "attack": "10",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-ruby-summers-8r.webp",
+          "abilities": [
+            "To play this card, you must discard three cards from your hand."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 96,
+      "name": "Shang-Chi",
+      "slug": "shang-chi",
+      "team": "marvel-knights",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Shuffling Footwork",
+          "displayName": "Shuffling Footwork",
+          "slug": "shuffling-footwork",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-shang-chi-3c1.webp",
+          "abilities": [
+            "[hc:instinct]: You may shuffle your discard pile into your deck."
+          ]
+        },
+        {
+          "name": "Acrobatic Kung-Fu",
+          "displayName": "Acrobatic Kung-Fu",
+          "slug": "acrobatic-kung-fu",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-shang-chi-4c2.webp",
+          "abilities": [
+            "[keyword:Wall-Crawl]",
+            "[keyword:Patrol the Rooftops]: If it's empty, you get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Seek the Empty Mind",
+          "displayName": "Seek the Empty Mind",
+          "slug": "seek-the-empty-mind",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 5,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-shang-chi-5u.webp",
+          "abilities": [
+            "[keyword:Patrol your discard pile]: If it's empty, you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Muscle Memory",
+          "displayName": "Muscle Memory",
+          "slug": "muscle-memory",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": "5",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-shang-chi-7r.webp",
+          "abilities": [
+            "[keyword:Wall-Crawl]",
+            "Any time you are shuffling your deck with this card in it, you may set this card aside and put it on top of your deck at the end of the shuffle."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 97,
+      "name": "Silk",
+      "slug": "silk",
+      "team": "spider-friends",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Long-Range Spider-Sense",
+          "displayName": "Long-Range Spider-Sense",
+          "slug": "long-range-spider-sense",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 2,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-silk-2c1.webp",
+          "abilities": [
+            "[keyword:Spectrum]: Reveal the top card of your deck. If it costs 2 or less, draw it."
+          ]
+        },
+        {
+          "name": "Cascading Maneuver",
+          "displayName": "Cascading Maneuver",
+          "slug": "cascading-maneuver",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 2,
+          "attack": "1",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-silk-2c2.webp",
+          "abilities": [
+            "[keyword:Wall-Crawl]",
+            "[keyword:Spectrum]: Draw a card."
+          ]
+        },
+        {
+          "name": "Silk Stalking",
+          "displayName": "Silk Stalking",
+          "slug": "silk-stalking",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 2,
+          "attack": "1",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-silk-2u.webp",
+          "abilities": [
+            "[team:spider-friends]: Reveal the top card of your deck. If it costs 0, KO it. If it costs 1 or 2, draw it."
+          ]
+        },
+        {
+          "name": "Borrowed Cloaking Device",
+          "displayName": "Borrowed Cloaking Device",
+          "slug": "borrowed-cloaking-device",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 2,
+          "attack": "1",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-silk-2r.webp",
+          "abilities": [
+            "[keyword:Wall-Crawl]",
+            "[keyword:Spectrum]: Reveal the top four cards of your deck. Put any combination of those cards with a total cost of 2 or less into your hand. But the rest back in any order."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 98,
+      "name": "Soulsword Colossus",
+      "slug": "soulsword-colossus",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Invade the Inferno",
+          "displayName": "Invade the Inferno",
+          "slug": "invade-the-inferno",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-soulsword-colossus-3c1.webp",
+          "abilities": [
+            "[hc:covert]: Once this turn, you may fight the top card of the Bystander Stack as if it were a 3[icon:attack] Demon Villain with “Fight: KO one of your heroes.“"
+          ]
+        },
+        {
+          "name": "Steel Interception",
+          "displayName": "Steel Interception",
+          "slug": "steel-interception",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-soulsword-colossus-4c2.webp",
+          "abilities": [
+            "If a player would gain a Wound, you may discard this card instead. If you do, draw two cards."
+          ]
+        },
+        {
+          "name": "Possessed by the Soulsword",
+          "displayName": "Possessed by the Soulsword",
+          "slug": "possessed-by-the-soulsword",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-soulsword-colossus-6u.webp",
+          "abilities": [
+            "[hc:strength]: [keyword:Cross-Dimensional Colossus Rampage]. You get +2[icon:attack] if at least one other player didn't reveal a Colossus card."
+          ]
+        },
+        {
+          "name": "Rescue My Family from Hell",
+          "displayName": "Rescue My Family from Hell",
+          "slug": "rescue-my-family-from-hell",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": "5",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-soulsword-colossus-7r.webp",
+          "abilities": [
+            "[team:x-men]: You may gain an [team:x-men] Hero from the HQ or the KO pile to your hand."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 99,
+      "name": "Spider-Gwen",
+      "slug": "spider-gwen",
+      "team": "spider-friends",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Fateful Bridge",
+          "displayName": "Fateful Bridge",
+          "slug": "fateful-bridge",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-spider-gwen-2c1.webp",
+          "abilities": [
+            "[keyword:Patrol the Bridge]: If it's empty, reveal the top card of your deck. If that card costs 2 or less, draw it."
+          ]
+        },
+        {
+          "name": "Save the Day",
+          "displayName": "Save the Day",
+          "slug": "save-the-day",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 2,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-spider-gwen-2c2.webp",
+          "abilities": [
+            "[keyword:Patrol the Rooftops]: If it's empty, rescue a Bystander, and then you get +1[icon:attack] for every two Bystanders in your Victory Pile."
+          ]
+        },
+        {
+          "name": "First Adventure",
+          "displayName": "First Adventure",
+          "slug": "first-adventure",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 2,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-spider-gwen-2u.webp",
+          "abilities": [
+            "[keyword:Wall-Crawl]",
+            "[keyword:Patrol the Bank]: If it's empty, you get +1[icon:attack].",
+            "[keyword:Patrol your Victory Pile]: If it's empty, you get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Intertwining Webs",
+          "displayName": "Intertwining Webs",
+          "slug": "intertwining-webs",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 2,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-spider-gwen-2r.webp",
+          "abilities": [
+            "[keyword:Wall-Crawl]",
+            "Reveal the top three cards of your deck, then put them back in any order. You get +1[icon:attack] for each card you revealed that costs 2 or less."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 100,
+      "name": "Time-Traveling Jean Grey",
+      "slug": "time-traveling-jean-grey",
+      "team": "x-men",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Throw Over the Railing",
+          "displayName": "Throw Over the Railing",
+          "slug": "throw-over-the-railing",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-time-traveling-jean-grey-3c1.webp",
+          "abilities": [
+            "[hc:covert]: Choose a Villain on the Rooftops or Bridge. It gets -2[icon:attack] this turn."
+          ]
+        },
+        {
+          "name": "Bridge to a Better Future",
+          "displayName": "Bridge to a Better Future",
+          "slug": "bridge-to-a-better-future",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-time-traveling-jean-grey-4c2.webp",
+          "abilities": [
+            "[keyword:Patrol the Bridge]: If it's empty, then when you draw a new hand of cards at the end of this turn, draw an extra card."
+          ]
+        },
+        {
+          "name": "Telekinesis",
+          "displayName": "Telekinesis",
+          "slug": "telekinesis",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 5,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-time-traveling-jean-grey-5u.webp",
+          "abilities": [
+            "You may move a villain to an adjacent city space. If another Villain is already there, swap them."
+          ]
+        },
+        {
+          "name": "Change History",
+          "displayName": "Change History",
+          "slug": "change-history",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 7,
+          "attack": "5",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hr-time-traveling-jean-grey-7r.webp",
+          "abilities": [
+            "[team:x-men]: [keyword:Patrol any city space]: If it's empty, gain the hero in the HQ space under it. Put that hero on top of your deck."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 25,
+      "name": "Immortal Emperor Zheng-Zhu",
+      "slug": "immortal-emperor-zheng-zhu",
+      "alwaysLeads": [],
+      "vp": 5,
+      "cards": [
+        {
+          "name": "Immortal Emperor Zheng-Zhu",
+          "slug": "immortal-emperor-zheng-zhu",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-mm-immortal-emperor-zheng-zhu.webp",
+          "abilities": [
+            "[keyword:7th Circle of Kung-Fu]",
+            "Always Leads: K'un-Lun",
+            "Master Strike: Each player reveals a Hero that costs 7 or more, or they discard down to 3 cards."
+          ]
+        },
+        {
+          "name": "Ultimate Kung-Fu Mastery",
+          "slug": "ultimate-kung-fu-mastery",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-mt-immortal-emperor-zheng-zhu-ultimate-kung-fu-mastery.webp",
+          "abilities": [
+            "Fight: Each other player reveals a card with “[keyword:Circle of Kung-Fu]“ from their Victory Pile or gains a Wound."
+          ]
+        },
+        {
+          "name": "Emperor's Justice",
+          "slug": "emperors-justice",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-mt-immortal-emperor-zheng-zhu-emperors-justice.webp",
+          "abilities": [
+            "Fight: Each other player reveals a [team:marvel-knights] Hero or gains a Wound."
+          ]
+        },
+        {
+          "name": "Humble the Pretenders",
+          "slug": "humble-the-pretenders",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-mt-immortal-emperor-zheng-zhu-humble-the-pretenders.webp",
+          "abilities": [
+            "Fight: Each other player reveals a [team:marvel-knights] Hero or discards a card that costs less than 7."
+          ]
+        },
+        {
+          "name": "Imperial Edict",
+          "slug": "imperial-edict",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-mt-immortal-emperor-zheng-zhu-imperial-edict.webp",
+          "abilities": [
+            "Fight: Choose any number of Heroes from the HQ. Put them on the bottom of the Hero Deck in random order."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "name": "King Hyperion",
+      "slug": "king-hyperion",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "King Hyperion",
+          "slug": "king-hyperion",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-mm-king-hyperion.webp",
+          "abilities": [
+            "Always Leads: Utopolis",
+            "Master Strike: King Hyperion enters the city if he was not already there. Then, he [keyword:charges] three spaces.",
+            "Escape: Each player gains a wound. Put King Hyperion on the Mastermind space."
+          ]
+        },
+        {
+          "name": "Worshipped by Millions",
+          "slug": "worshipped-by-millions",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-mt-king-hyperion-worshipped-by-millions.webp",
+          "abilities": [
+            "Fight: If King Hyperion is in the city, put him back on the Mastermind space and shuffle this Tactic back into his Tactics. If you do, rescue six Bystanders."
+          ]
+        },
+        {
+          "name": "Royal Treasury",
+          "slug": "royal-treasury",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-mt-king-hyperion-royal-treasury.webp",
+          "abilities": [
+            "Fight: If King Hyperion is in the city, put him back on the Mastermind space and shuffle this Tactic back into his Tactics. If you do, you get +5[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Monarch of Utopolis",
+          "slug": "monarch-of-utopolis",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-mt-king-hyperion-monarch-of-utopolis.webp",
+          "abilities": [
+            "Fight: If King Hyperion is in the city, put him back on the Mastermind space and shuffle this Tactic back into his Tactics. If you do, when you drew a new hand of cards at the end of this turn, draw three extra cards."
+          ]
+        },
+        {
+          "name": "Rule with an Iron Fist",
+          "slug": "rule-with-an-iron-fist",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-mt-king-hyperion-rule-with-an-iron-fist.webp",
+          "abilities": [
+            "Fight: If King Hyperion is in the city, put him back on the Mastermind space and shuffle this Tactic back into his Tactics. If you do, you may defeat a Villain in the city for free."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "name": "Shiklah, the Demon Bride",
+      "slug": "shiklah-the-demon-bride",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Shiklah, the Demon Bride",
+          "slug": "shiklah-the-demon-bride",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-mm-shiklah-the-demon-bride.webp",
+          "abilities": [
+            "Always Leads: Monster Metropolis",
+            "Master Strike: Reveal the top three cards of the Villain Deck. Put all the Scheme Twists you revealed on top of the Villain Deck. Put the rest on the bottom of that deck in random order."
+          ]
+        },
+        {
+          "name": "Shiklah's Husband, Deadpool",
+          "slug": "shiklahs-husband-deadpool",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-mt-shiklah-the-demon-bride-shiklahs-husband-deadpool.webp",
+          "abilities": [
+            "Fight: Gain this as a Hero.",
+            "You get +1[icon:attack] for each Hero with an odd-numbered cost you played this turn. (0 is even.)"
+          ]
+        },
+        {
+          "name": "Enslavement Beam",
+          "slug": "enslavement-beam",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-mt-shiklah-the-demon-bride-enslavement-beam.webp",
+          "abilities": [
+            "Fight: [keyword:Fateful Resurrection]. If she resurrects, rescue four bystanders."
+          ]
+        },
+        {
+          "name": "Drain Life",
+          "slug": "drain-life",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-mt-shiklah-the-demon-bride-drain-life.webp",
+          "abilities": [
+            "Fight: [keyword:Fateful Resurrection]. If she resurrects, defeat a Villain in the city for free."
+          ]
+        },
+        {
+          "name": "Infernal Power",
+          "slug": "infernal-power",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-mt-shiklah-the-demon-bride-infernal-power.webp",
+          "abilities": [
+            "Fight: [keyword:Fateful Resurrection]. If she resurrects, draw two cards."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "name": "Spider-Queen",
+      "slug": "spider-queen",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Spider-Queen",
+          "slug": "spider-queen",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-mm-spider-queen.webp",
+          "abilities": [
+            "Spider-Queen gets +1[icon:attack] for each Bystander in the Escape pile.",
+            "Always Leads: Spider-Infected",
+            "Master Strike: Each player puts a Spider-Infected from their Victory Pile into an empty city space. Any player who cannot do so gains a Wound."
+          ]
+        },
+        {
+          "name": "Sonic Scream",
+          "slug": "sonic-scream",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-mt-spider-queen-sonic-scream.webp",
+          "abilities": [
+            "Fight: Reveal the top eight cards of the Villain Deck. Put all the Bystanders you revealed into the Escape pile. Put the rest on the bottom of the Villain Deck in random orders."
+          ]
+        },
+        {
+          "name": "Infect the Entire City",
+          "slug": "infect-the-entire-city",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-mt-spider-queen-infect-the-entire-city.webp",
+          "abilities": [
+            "Fight: Put a Bystander from the Bystander Deck into the Escape Pile. Then, each Spider-Infected in the city captures a Bystander."
+          ]
+        },
+        {
+          "name": "Control Arachnid Genes",
+          "slug": "control-arachnid-genes",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-mt-spider-queen-control-arachnid-genes.webp",
+          "abilities": [
+            "Fight: You may gain a [team:spider-friends] Hero from the HQ."
+          ]
+        },
+        {
+          "name": "Web the Skyscrapers",
+          "slug": "web-the-skyscrapers",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-mt-spider-queen-web-the-skyscrapers.webp",
+          "abilities": [
+            "Fight: Each other player reveals a [team:spider-friends] Hero or puts a Bystander from their Victory Pile into the Escape pile."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 34,
+      "name": "Deadpool's Secret Secret Wars",
+      "slug": "deadpools-secret-secret-wars",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Deadpool",
+          "slug": "deadpool",
+          "vp": "5",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-deadpools-secret-secret-wars-deadpool.webp",
+          "abilities": [
+            "[keyword:5th Circle of Kung-Fu]",
+            "Fight: [keyword:Fateful Resurrection]",
+            "Escape: Deadpool ascends to become a [rule:new Mastermind]. He gains the ability, “Master Strike: Each player reveals a Hero with an odd-numbered cost or gains a Wound.“ (0 is even.)"
+          ]
+        },
+        {
+          "name": "Doop",
+          "slug": "doop",
+          "vp": "2",
+          "vAttack": "2",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-deadpools-secret-secret-wars-doop.webp",
+          "abilities": [
+            "You can't fight Doop if there is a Villain in an adjacent city space."
+          ]
+        },
+        {
+          "name": "Howard the Duck",
+          "slug": "howard-the-duck",
+          "vp": "4",
+          "vAttack": "1+",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-deadpools-secret-secret-wars-howard-the-duck.webp",
+          "abilities": [
+            "Ambush: Howard the Duck captures (the heart of) a Bystander.",
+            "[keyword:7th Circle of Quack-Fu]"
+          ]
+        },
+        {
+          "name": "Pink Sphinx",
+          "slug": "pink-sphinx",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-deadpools-secret-secret-wars-pink-sphinx.webp",
+          "abilities": [
+            "Fight: [keyword:Spectrum]: KO one of your Heroes."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "name": "Guardians of Knowhere",
+      "slug": "guardians-of-knowhere",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Angela",
+          "slug": "angela",
+          "vp": "5",
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-guardians-of-knowhere-angela.webp",
+          "abilities": [
+            "Fight: [keyword:Fateful Resurrection]",
+            "Escape: Angela ascends to become a [rule:new Mastermind]. She gains the ability, “Master Strike: Each player KOs a Hero from their discard pile that costs 1 or more.“"
+          ]
+        },
+        {
+          "name": "Drax the Destroyer",
+          "slug": "drax-the-destroyer",
+          "vp": "4",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-guardians-of-knowhere-drax-the-destroyer.webp",
+          "abilities": [
+            "Fight: Reveal the top card of your deck. KO it or put it back. [keyword:Fateful Resurrection]."
+          ]
+        },
+        {
+          "name": "Gamora",
+          "slug": "gamora",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-guardians-of-knowhere-gamora.webp",
+          "abilities": [
+            "Ambush: [keyword:Charge] one space.",
+            "Fight: (After this goes to your Victory Pile) [keyword:Patrol the Sewers]: If it's empty, each other player gains a Wound.",
+            "Escape: Each player gains a Wound."
+          ]
+        },
+        {
+          "name": "Groot",
+          "slug": "groot",
+          "vp": "4",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-guardians-of-knowhere-groot.webp",
+          "abilities": [
+            "Fight: [keyword:Fateful Resurrection]. If Groot resurrects this way, then he becomes Tiny Dancing Groot with 1[icon:attack] and no abilities for the rest of the turn."
+          ]
+        },
+        {
+          "name": "Rocket Raccoon",
+          "slug": "rocket-raccoon",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-guardians-of-knowhere-rocket-raccoon.webp",
+          "abilities": [
+            "Fight: (After this goes to your Victory Pile) [keyword:Patrol the Bank]: If it's empty, draw a card. If it's not empty, KO one of your Heroes."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "name": "K'un-Lun",
+      "slug": "kun-lun",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Laughing Skull",
+          "slug": "laughing-skull",
+          "vp": "5",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-kun-lun-laughing-skull.webp",
+          "abilities": [
+            "[keyword:5th Circle of Kung-Fu]",
+            "Escape: Each player reveals a Hero that costs 5 or more, or they discard a card."
+          ]
+        },
+        {
+          "name": "Rand K'ai",
+          "slug": "rand-kai",
+          "vp": "6",
+          "vAttack": "6+",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-kun-lun-rand-kai.webp",
+          "abilities": [
+            "[keyword:6th Circle of Kung-Fu]",
+            "Escape: Each player reveals a Hero that costs 6 or more, or they gain a Wound."
+          ]
+        },
+        {
+          "name": "Razor Fist",
+          "slug": "razor-fist",
+          "vp": "3",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-kun-lun-razor-fist.webp",
+          "abilities": [
+            "[keyword:3rd Circle of Kung-Fu]",
+            "Fight: For each of your Heroes that costs 3, KO one of your Heroes."
+          ]
+        },
+        {
+          "name": "Red Sai",
+          "slug": "red-sai",
+          "vp": "4",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-kun-lun-red-sai.webp",
+          "abilities": [
+            "[keyword:4th Circle of Kung-Fu]",
+            "Fight: Draw a card for each of your Heroes that costs 4."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "name": "Monster Metropolis",
+      "slug": "monster-metropolis",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Bug, Shiklah's Dragon",
+          "slug": "bug-shiklahs-dragon",
+          "vp": "3",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-monster-metropolis-bug-shiklahs-dragon.webp",
+          "abilities": [
+            "Fight: KO a card from your discard pile.",
+            "[keyword:Fateful Resurrection]"
+          ]
+        },
+        {
+          "name": "Ghost Deadpool",
+          "slug": "ghost-deadpool",
+          "vp": "5",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-monster-metropolis-ghost-deadpool.webp",
+          "abilities": [
+            "Fight: [keyword:Fateful Resurrection]. Then, [keyword:Cross-Dimensional Deadpool Rampage].",
+            "Escape: [keyword:Cross-Dimensional Deadpool Rampage]."
+          ]
+        },
+        {
+          "name": "Man-Thing",
+          "slug": "man-thing",
+          "vp": "4",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-monster-metropolis-man-thing.webp",
+          "abilities": [
+            "Ambush: Each Monster Metropolis Villain captures a Bystander.",
+            "Fight: [keyword:Fateful Resurrection]"
+          ]
+        },
+        {
+          "name": "Marcus Symbiote Centaur",
+          "slug": "marcus-symbiote-centaur",
+          "vp": "3",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-monster-metropolis-marcus-symbiote-centaur.webp",
+          "abilities": [
+            "Ambush: [keyword:Charge] two spaces.",
+            "When in the Sewers, Rooftops or Bridge, he is in “wolf form“ and gets +3[icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "name": "Utopolis",
+      "slug": "utopolis",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Doctor Spectrum",
+          "slug": "doctor-spectrum",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-utopolis-doctor-spectrum.webp",
+          "abilities": [
+            "Ambush: [keyword:Charge] one space.",
+            "Fight: [keyword:Spectrum]: KO a card from your discard pile.",
+            "Escape: Each player who doesn't have [keyword:Spectrum] discards a card."
+          ]
+        },
+        {
+          "name": "Nighthawk",
+          "slug": "nighthawk",
+          "vp": "4",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-utopolis-nighthawk.webp",
+          "abilities": [
+            "While in the Sewers, Rooftops or Bridge, Nighthawk gains +4[icon:attack].",
+            "Escape: Nighthawk becomes a Scheme Twist that takes effect immediately."
+          ]
+        },
+        {
+          "name": "Warrior Woman",
+          "slug": "warrior-woman",
+          "vp": "6",
+          "vAttack": "8",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-utopolis-warrior-woman.webp",
+          "abilities": [
+            "Ambush: [keyword:Charge] one space.",
+            "Escape: Warrior Woman ascends to become a [rule:new Mastermind]. She gains the ability, “Master Strike: [keyword:Patrol the Bank]: If there's a Villain there, each player discards a card with a [icon:recruit] icon.“"
+          ]
+        },
+        {
+          "name": "Whizzer",
+          "slug": "whizzer",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-utopolis-whizzer.webp",
+          "abilities": [
+            "Ambush: [keyword:Charge] three spaces.",
+            "Fight: (After this goes to your Victory Pile) [keyword:Patrol the Bridge]: If there's a Villain there, each other player gains a Wound.",
+            "Escape: Each player gains a Wound."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 39,
+      "name": "X-Men '92",
+      "slug": "x-men-92",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "'92 Beast",
+          "slug": "92-beast",
+          "vp": null,
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-x-men-92-92-beast.webp",
+          "abilities": [
+            "Ambush: [keyword:Charge] one space.",
+            "Fight: Gain this as a Hero.",
+            "[hc:tech]: Draw a card."
+          ]
+        },
+        {
+          "name": "'92 Jubilee",
+          "slug": "92-jubilee",
+          "vp": null,
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-x-men-92-92-jubilee.webp",
+          "abilities": [
+            "Fight: Gain this as a Hero.",
+            "[keyword:Spectrum]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "'92 Professor X",
+          "slug": "92-professor-x",
+          "vp": "6",
+          "vAttack": "8+",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-x-men-92-92-professor-x.webp",
+          "abilities": [
+            "Escape: '92 Professor X ascends to become a [rule:new Mastermind]. He gains the ability, “Master Strike: Stack the two Heroes from the HQ with the highest cost next to '92 Professor X. He gets +1[icon:attack] for each Hero stacked there. Players can recruit the top card of the stack.“"
+          ]
+        },
+        {
+          "name": "'92 Wolverine",
+          "slug": "92-wolverine",
+          "vp": null,
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-vi-x-men-92-92-wolverine.webp",
+          "abilities": [
+            "Fight: Gain this as a Hero.",
+            "Escape: [keyword:Cross-Dimensional Wolverine Rampage]",
+            "[hc:instinct]: Draw two cards."
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [
+    {
+      "id": 16,
+      "name": "Khonshu Guardians",
+      "slug": "khonshu-guardians",
+      "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hm-khonshu-guardians.webp",
+      "abilities": []
+    },
+    {
+      "id": 17,
+      "name": "Magma Men",
+      "slug": "magma-men",
+      "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hm-magma-men.webp",
+      "abilities": []
+    },
+    {
+      "id": 18,
+      "name": "Spider-Infected",
+      "slug": "spider-infected",
+      "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-hm-spider-infected.webp",
+      "abilities": []
+    }
+  ],
+  "schemes": [
+    {
+      "id": 48,
+      "name": "Deadlands Hordes Charge the Wall",
+      "slug": "deadlands-hordes-charge-the-wall",
+      "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-sc-deadlands-hordes-charge-the-wall.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. Add an extra Villain Group.",
+            "Twist: Each Villain simultaneously [keyword:charges] two spaces. Play another card from the Villain Deck.",
+            "Evil Wins: When the number of escaped Villains equals the number of players plus 6."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 49,
+      "name": "Enthrone the Barons of Battleworld",
+      "slug": "enthrone-the-barons-of-battleworld",
+      "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-sc-enthrone-the-barons-of-battleworld.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists.",
+            "Twists 1-7: The Villain in the city or Escape Pile with the highest printed [icon:attack] ascends to become a [rule:new Mastermind]. It gets +2[icon:attack]. It gains the ability “Master Strike: Each Player discards a card with cost equal to this Mastermind's printed [icon:piercing].“ (Keep them separate from any Villains who ascend through Escape effects.)",
+            "Twist 8: The Villain in each player's Victory Pile with the highest printed [icon:attack] ascends the same way.",
+            "Evil Wins: When there are 6 Masterminds."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 50,
+      "name": "Fountain of Eternal Life, The",
+      "slug": "fountain-of-eternal-life-the",
+      "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-sc-fountain-of-eternal-life-the.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. (1 player: 4 Twists.)",
+            "Special Rules: All Villains and Mastermind Tactics have “Fight: [keyword:Fateful Resurrection].“",
+            "Twist: A Villain from your Victory Pile enters the Sewers. Put this Twist on the bottom of the Villain Deck.",
+            "Evil Wins: When the number of escaped Villains is 3 times the number of players."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 51,
+      "name": "God-Emperor of Battleworld, The",
+      "slug": "god-emperor-of-battleworld-the",
+      "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-sc-god-emperor-of-battleworld-the.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists.",
+            "Twist 1:This Scheme ascends to becomes a new 9[icon:attack] [rule:“God-Emperor“ Mastermind] worth 9[icon:piercing]. It has “Master Strike: Each player with exactly six cards in hand reveals a [hc:tech]Hero or puts two cards from their hand on top of their deck.“",
+            "Twist 2-6: Stack this Twist next to the Scheme. The God-Emperor gets another +2[icon:attack].",
+            "Twist 7: If the God-Emperor lives, it KOs all other Masterminds.",
+            "Twist 8: Evil wins! (If any Mastermind still lives.)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 52,
+      "name": "Mark of Khonshu, The",
+      "slug": "mark-of-khonshu-the",
+      "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-sc-mark-of-khonshu-the.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 10 Twists. Always include Khonshu Guardians. Add all fourteen cards for an extra Hero to the Villain Deck.",
+            "Special Rules: Heroes in the Villain Deck are “Khonshu Guardian“ Villains with [icon:attack] equal to their printed cost. While in the Sewers, Rooftops, or Bridge, they are in “wolf form“ and have double their [icon:attack]. When you defeat one, gain it as a Hero.",
+            "Twist: Play two cards from the Villain Deck.",
+            "Evil Wins: When 7 Khonshu Guardians escape (includes both Villain and Henchman)."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 53,
+      "name": "Master the Mysteries of Kung-Fu",
+      "slug": "master-the-mysteries-of-kung-fu",
+      "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-sc-master-the-mysteries-of-kung-fu.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists.",
+            "Twist: Stack this Twist next to the Scheme.",
+            "Special Rules: Villains and the Mastermind have the [keyword:Circle of Kung-Fu] matching the number of Twists stacked here.",
+            "Evil Wins: When the number of escaped Villains is double the number of players."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 54,
+      "name": "Secret Wars",
+      "slug": "secret-wars",
+      "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-sc-secret-wars.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists.",
+            "Twists 1-3: Add [rule:another random Mastermind] to the game with one Tactic.",
+            "Twist 8: Evil wins!"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 55,
+      "name": "Sinister Ambitions",
+      "slug": "sinister-ambitions",
+      "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-sc-sinister-ambitions.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 6 Twists. Add 10 random Ambition cards to the Villain Deck.",
+            "Special Rules: Ambition cards are Villains with their printed [icon:attack]. Add +1[icon:attack] for each Twist stacked next to the Scheme. They are worth 4[icon:piercing]. Whenever an Ambition Villain escapes, do its Ambition effect.",
+            "Twist 1-5: Stack this Twist next to the Scheme. Play another card from the Villain Deck.",
+            "Twist 6: Each Ambition Villain in the city escapes.",
+            "Evil Wins: When 4 Ambition Villains escape."
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [
+    {
+      "id": 16,
+      "name": "Alligator Trapper",
+      "slug": "alligator-trapper",
+      "vp": 1,
+      "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-by-alligator-trapper.webp",
+      "cards": [
+        {
+          "qtd": 3,
+          "abilities": [
+            "When you rescue this Bystander, [keyword:Patrol the Sewers:] If it's empty, you get +2[icon:recruit]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "name": "Shapeshifted Copycat",
+      "slug": "shapeshifted-copycat",
+      "vp": 1,
+      "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-by-shapeshifted-copycat.webp",
+      "cards": [
+        {
+          "qtd": 4,
+          "abilities": [
+            "When you rescue this Bystander, this card becomes a Villain with 3[icon:attack] and enters the city. It gains the ability: “Fight: KO one of your Heroes.“"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "name": "Undercover Agent",
+      "slug": "undercover-agent",
+      "vp": 1,
+      "imageUrl": "https://images.barefootbetters.com/ssw2/ssw2-by-undercover-agent.webp",
+      "cards": [
+        {
+          "qtd": 3,
+          "abilities": [
+            "When you rescue this Bystander, a player of your choice gains a S.H.I.E.L.D. Officer."
+          ]
+        }
+      ]
+    }
+  ],
+  "wounds": [],
+  "other": []
+}

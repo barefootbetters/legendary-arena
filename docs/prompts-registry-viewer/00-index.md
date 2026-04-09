@@ -31,12 +31,13 @@ or use individual prompts as reference when modifying a specific layer.
 
 | # | File | Phase | Builds On | Version | Status |
 |---|------|-------|-----------|---------|--------|
-| 00 | `00-index.md` | Meta | Nothing | v1.0 | Stable |
+| 00 | `00-index.md` | Meta | Nothing | v1.1 | Stable |
 | 01 | `01-r2-data-structure.md` | Data | Nothing — run first | v1.0 | Stable |
 | 02 | `02-registry-schema.md` | Data | 01 | v1.0 | Stable |
 | 03 | `03-registry-package.md` | Package | 01, 02 | v1.0 | Stable |
 | 04 | `04-registry-viewer-spa.md` | Frontend | 03 | v1.0 | Stable |
 | 05 | `05-cloudflare-deployment.md` | Operations | 04 | v1.0 | Stable |
+| 06 | `06-card-detail-rules-tooltips.md` | Frontend | 04 | v1.0 | Stable |
 
 ---
 
@@ -76,11 +77,18 @@ The `packages/registry/` TypeScript data access layer. Exports browser-safe
 and Node.js implementations. Zod schemas, shared types, flat card abstraction,
 query filtering, and health reporting.
 
-### Phase 2 — Frontend (Prompt 04)
+### Phase 2 — Frontend (Prompts 04, 06)
 The `apps/registry-viewer/` Vite + Vue 3 SPA. Registry client bootstrap,
 type-grouped multi-select filter, card grid, card detail panel, and
 diagnostics overlay. All card data fetched from R2 at runtime — no build-time
 data bundling.
+
+**Prompt 04** — Core SPA: layout, filters, grid, card detail panel (plain text abilities).
+
+**Prompt 06** — Card Detail rules tooltips: rich ability text rendering with
+inline token types (keyword, rule, icon, hc, team), gold keyword chips,
+native browser tooltips showing rule definitions on hover, and the
+`src/composables/useRules.ts` rules/keyword glossary.
 
 ### Phase 3 — Operations (Prompt 05)
 GitHub repo setup, Cloudflare Pages configuration, build command, and the
@@ -100,6 +108,8 @@ ongoing "upload to R2 → auto-deploy" workflow.
 | Monorepo | `C:\pcloud\BB\DEV\legendary-arena` (pnpm workspaces) |
 | GitHub repo | `https://github.com/barefootbetters/legendary-arena` |
 | Cloudflare Pages project | `legendary-arena` (auto-deploys from `main`) |
+| Rules glossary data | `data/seed_rules.sql` (18 game mechanic rules) |
+| Rules composable | `apps/registry-viewer/src/composables/useRules.ts` |
 
 ---
 
@@ -127,18 +137,29 @@ The 40+ sets span 12 years of game releases. Older sets have null IDs, missing
 more than 4 cards. The schema validates what it can and accepts the rest
 rather than rejecting entire sets on minor field variations.
 
+**Why native `title` attribute for keyword tooltips instead of a custom tooltip?**
+The detail panel's `.detail-body` uses `overflow-y: auto`, which creates a CSS
+stacking context. Any `position: fixed` custom tooltip element — even one
+teleported outside the component via Vue's `<Teleport>` — may be clipped or
+hidden by this stacking context regardless of `z-index`. The native `title`
+attribute is rendered by the browser's OS-level UI and is immune to all CSS
+stacking context issues.
+
 ---
 
 ## Recommended Execution Order
 
 **To recreate from scratch:**
-01 → 02 → 03 → 04 → 05
+01 → 02 → 03 → 04 → 05 → 06
 
 **To update the schema for a new set's data quirks:**
 02 only (update schema) → copy updated `schema.ts` into viewer → push
 
 **To add a new filter or UI feature to the viewer:**
 04 only (SPA prompt, reference the relevant component section)
+
+**To add or update keyword/rule definitions shown in tooltips:**
+06 only — update `KEYWORD_GLOSSARY` or `RULES_GLOSSARY` in `useRules.ts`
 
 **To change the deployment target:**
 05 only

@@ -1,0 +1,1095 @@
+{
+  "id": 33,
+  "abbr": "mgtg",
+  "exportName": "MSGuardiansOfTheGalaxy",
+  "heroes": [
+    {
+      "id": 240,
+      "name": "Star-Lord",
+      "slug": "star-lord",
+      "team": "guardians-of-the-galaxy",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Starship Sensors",
+          "displayName": "Starship Sensors",
+          "slug": "starship-sensors",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 2,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-star-lord-2c1.webp",
+          "abilities": [
+            "[keyword:Triggered Artifact] — The first time you play an [keyword:Artifact] each turn (including this one), you get +1[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Borrowed Nova Blaster",
+          "displayName": "Borrowed Nova Blaster",
+          "slug": "borrowed-nova-blaster",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-star-lord-3c2.webp",
+          "abilities": [
+            "[keyword:Triggered Artifact] — The first time you play an [keyword:Artifact] each turn (including this one), you get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Give",
+          "displayName": "Give",
+          "slug": "give",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-star-lord-4c3.webp",
+          "abilities": [
+            "You may discard an [keyword:Artifact] you control to get +1[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Take",
+          "displayName": "Take",
+          "slug": "take",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-star-lord-4c3.webp",
+          "abilities": [
+            "[team:guardians-of-the-galaxy]: Reveal the top card of your deck. If it's an [keyword:Artifact], draw it."
+          ]
+        },
+        {
+          "name": "Expandable Helmet",
+          "displayName": "Expandable Helmet",
+          "slug": "expandable-helmet",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 5,
+          "hc": "tech",
+          "cost": 5,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-star-lord-5u1.webp",
+          "abilities": [
+            "[keyword:Triggered Artifact] — The first time you play an [keyword:Artifact] each turn (including this one), draw a card."
+          ]
+        },
+        {
+          "name": "Don't Need that Stuff",
+          "displayName": "Don't Need that Stuff",
+          "slug": "dont-need-that-stuff",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 3",
+          "slot": 6,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-star-lord-6u2.webp",
+          "abilities": [
+            "You may discard an [keyword:Artifact] you control to get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Hadron Enforcer",
+          "displayName": "Hadron Enforcer",
+          "slug": "hadron-enforcer",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 7,
+          "hc": "ranged",
+          "cost": 8,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-star-lord-8r.webp",
+          "abilities": [
+            "[keyword:Triggered Artifact] — The first time you play an [keyword:Artifact] each turn (including this one), you get +3[icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 241,
+      "name": "Gamora",
+      "slug": "gamora",
+      "team": "guardians-of-the-galaxy",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Forgive",
+          "displayName": "Forgive",
+          "slug": "forgive",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 2,
+          "attack": null,
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-gamora-2c1.webp",
+          "abilities": [
+            "[hc:covert]: Draw a card."
+          ]
+        },
+        {
+          "name": "Resent",
+          "displayName": "Resent",
+          "slug": "resent",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-gamora-2c1.webp",
+          "abilities": [
+            "[hc:instinct]: You get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Sharpen Blades",
+          "displayName": "Sharpen Blades",
+          "slug": "sharpen-blades",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-gamora-3c2.webp",
+          "abilities": [
+            "If you control an [keyword:Artifact], draw a card."
+          ]
+        },
+        {
+          "name": "Resourceful Fugitive",
+          "displayName": "Resourceful Fugitive",
+          "slug": "resourceful-fugitive",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 4,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-gamora-4c3.webp",
+          "abilities": [
+            "To play this, you must put a card from your hand on the bottom of  your deck.",
+            "Draw two cards."
+          ]
+        },
+        {
+          "name": "Retractable Sword",
+          "displayName": "Retractable Sword",
+          "slug": "retractable-sword",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 5,
+          "hc": "instinct",
+          "cost": 5,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-gamora-5u1.webp",
+          "abilities": [
+            "[keyword:Triggered Artifact] — Whenever you draw a card during your turn, you get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Stolen Necroblaster",
+          "displayName": "Stolen Necroblaster",
+          "slug": "stolen-necroblaster",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 3",
+          "slot": 6,
+          "hc": "ranged",
+          "cost": 6,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-gamora-6u2.webp",
+          "abilities": [
+            "If you drew at least two cards this turn, you may KO a card from your hand or discard pile."
+          ]
+        },
+        {
+          "name": "Guardians Escape",
+          "displayName": "Guardians Escape",
+          "slug": "guardians-escape",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 7,
+          "hc": "tech",
+          "cost": 7,
+          "attack": "5+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-gamora-7r.webp",
+          "abilities": [
+            "If you drew at least two cards this turn, you get +2[icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 242,
+      "name": "Rocket & Groot",
+      "slug": "rocket-groot",
+      "team": "guardians-of-the-galaxy",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Passion",
+          "displayName": "Passion",
+          "slug": "passion",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 2,
+          "attack": "1",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-rocket-groot-2c1.webp",
+          "abilities": [
+            "[keyword:Excessive Violence]: Draw a card."
+          ]
+        },
+        {
+          "name": "Compassion",
+          "displayName": "Compassion",
+          "slug": "compassion",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 2,
+          "attack": null,
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-rocket-groot-2c1.webp",
+          "abilities": [
+            "[keyword:Excessive Kindness]: Draw a card."
+          ]
+        },
+        {
+          "name": "Baby Groot",
+          "displayName": "Baby Groot",
+          "slug": "baby-groot",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-rocket-groot-3c2.webp",
+          "abilities": [
+            "[keyword:Excessive Kindness]: Rescue a Bystander."
+          ]
+        },
+        {
+          "name": "Gravity Mines",
+          "displayName": "Gravity Mines",
+          "slug": "gravity-mines",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 4,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-rocket-groot-4c3.webp",
+          "abilities": [
+            "[keyword:Triggered Artifact] — Whenever you use [keyword:Excessive Violence], draw a card."
+          ]
+        },
+        {
+          "name": "Don't Press this Button",
+          "displayName": "Don't Press this Button",
+          "slug": "dont-press-this-button",
+          "rarity": 1,
+          "rarityLabel": "Common 4",
+          "slot": 5,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-rocket-groot-4u1.webp",
+          "abilities": [
+            "[hc:ranged]: You get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Press the Button",
+          "displayName": "Press the Button",
+          "slug": "press-the-button",
+          "rarity": 1,
+          "rarityLabel": "Common 5",
+          "slot": 6,
+          "hc": "tech",
+          "cost": 4,
+          "attack": null,
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-rocket-groot-4u1.webp",
+          "abilities": [
+            "[hc:tech]: You may KO a card from your hand or dicard pile."
+          ]
+        },
+        {
+          "name": "Tricky",
+          "displayName": "Tricky",
+          "slug": "tricky",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 7,
+          "hc": "tech",
+          "cost": 5,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-rocket-groot-5u2.webp",
+          "abilities": [
+            "If you have at least five different card names, you get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Simple",
+          "displayName": "Simple",
+          "slug": "simple",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 3",
+          "slot": 8,
+          "hc": "strength",
+          "cost": 5,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-rocket-groot-5u2.webp",
+          "abilities": []
+        },
+        {
+          "name": "We are Groot",
+          "displayName": "We are Groot",
+          "slug": "we-are-groot",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 9,
+          "hc": "strength",
+          "cost": 7,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-rocket-groot-7r.webp",
+          "abilities": [
+            "Reveal your hand. You get +1[icon:attack] for each different card name in your hand.",
+            "(Each [rule:Divided Card] has two different card names.)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 243,
+      "name": "Drax",
+      "slug": "drax",
+      "team": "guardians-of-the-galaxy",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Nothing Goes over my Head",
+          "displayName": "Nothing Goes over my Head",
+          "slug": "nothing-goes-over-my-head",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-drax-3c1.webp",
+          "abilities": [
+            "[keyword:Excessive Violence]: Look at the top two cards of your deck. Discard any number of them and put the rest back in any order."
+          ]
+        },
+        {
+          "name": "Dual Knives",
+          "displayName": "Dual Knives",
+          "slug": "dual-knives",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 3",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-drax-4c3.webp",
+          "abilities": [
+            "[keyword:Triggered Artifact] — Whenever you play another [hc:strength] or [hc:instinct] card, you get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "I am Invisible",
+          "displayName": "I am Invisible",
+          "slug": "i-am-invisible",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-drax-4c2.webp",
+          "abilities": [
+            "[keyword:Excessive Violence]: Reveal the top card of your deck. If it's [hc:strength] or [hc:instinct], draw it."
+          ]
+        },
+        {
+          "name": "Xandar is Invincible",
+          "displayName": "Xandar is Invincible",
+          "slug": "xandar-is-invincible",
+          "rarity": 1,
+          "rarityLabel": "Common 4",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-drax-4c2.webp",
+          "abilities": [
+            "If there are no Villains in the city, you get +1[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Prison Riot",
+          "displayName": "Prison Riot",
+          "slug": "prison-riot",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 5,
+          "hc": "strength",
+          "cost": 5,
+          "attack": "3",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-drax-5u1.webp",
+          "abilities": [
+            "[keyword:Excessive Violence]: You get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Remove his Spine",
+          "displayName": "Remove his Spine",
+          "slug": "remove-his-spine",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 6,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-drax-6u2.webp",
+          "abilities": [
+            "[keyword:Excessive Violence]: Reveal the top card of your deck. You may KO it."
+          ]
+        },
+        {
+          "name": "Also Illegal",
+          "displayName": "Also Illegal",
+          "slug": "also-illegal",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 7,
+          "hc": "instinct",
+          "cost": 6,
+          "attack": null,
+          "recruit": "3+",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-drax-6u2.webp",
+          "abilities": [
+            "[hc:instinct]: You get +1[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Revenge for my Family",
+          "displayName": "Revenge for my Family",
+          "slug": "revenge-for-my-family",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 8,
+          "hc": "strength",
+          "cost": 8,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-drax-8r.webp",
+          "abilities": [
+            "Double the [icon:attack] you have.",
+            "[keyword:Excessive Violence]: You may KO a Villain from your Victory Pile to do its Fight effect."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 244,
+      "name": "Mantis",
+      "slug": "mantis",
+      "team": "guardians-of-the-galaxy",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Empathic Bond",
+          "displayName": "Empathic Bond",
+          "slug": "empathic-bond",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-mantis-3c1.webp",
+          "abilities": [
+            "[keyword:Excessive Kindness]: Put the hero you recruited this way on top of your deck."
+          ]
+        },
+        {
+          "name": "Selfless",
+          "displayName": "Selfless",
+          "slug": "selfless",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-mantis-4c2.webp",
+          "abilities": [
+            "[hc:instinct]: Draw a card.",
+            "Another player draws a card."
+          ]
+        },
+        {
+          "name": "Selfish",
+          "displayName": "Selfish",
+          "slug": "selfish",
+          "rarity": 1,
+          "rarityLabel": "Common 3",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-mantis-5c3.webp",
+          "abilities": [
+            "[hc:ranged]: Draw a card.",
+            "Another player discards a card."
+          ]
+        },
+        {
+          "name": "Inspire Courage",
+          "displayName": "Inspire Courage",
+          "slug": "inspire-courage",
+          "rarity": 1,
+          "rarityLabel": "Common 4",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 5,
+          "attack": "0+",
+          "recruit": "3",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-mantis-5u1.webp",
+          "abilities": [
+            "[keyword:Excessive Kindness]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Sleep",
+          "displayName": "Sleep",
+          "slug": "sleep",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 5,
+          "hc": "covert",
+          "cost": 5,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-mantis-5c3.webp",
+          "abilities": [
+            "[keyword:Excessive Kindness]: You may KO one of your cards."
+          ]
+        },
+        {
+          "name": "Emotional Wave",
+          "displayName": "Emotional Wave",
+          "slug": "emotional-wave",
+          "rarity": 2,
+          "rarityLabel": "Uncommon 2",
+          "slot": 6,
+          "hc": "ranged",
+          "cost": 6,
+          "attack": "0+",
+          "recruit": "3",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-mantis-6u2.webp",
+          "abilities": [
+            "[keyword:Excessive Kindness]: you get +[icon:attack] equal to total of all printed [icon:recruit] and [icon:attack] of the Hero you recruited this way."
+          ]
+        },
+        {
+          "name": "Discover the Dead",
+          "displayName": "Discover the Dead",
+          "slug": "discover-the-dead",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 7,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-hr-mantis-7r.webp",
+          "abilities": [
+            "[keyword:Excessive Kindness]: you get +[icon:attack] equal to the cost of the Hero you recruited this way."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 83,
+      "name": "Ronan the Accuser",
+      "slug": "ronan-the-accuser",
+      "alwaysLeads": [],
+      "vp": null,
+      "cards": [
+        {
+          "name": "Ronan the Accuser",
+          "slug": "ronan-the-accuser",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-mm-ronan-the-accuser.webp",
+          "abilities": [
+            "Always Leads: Followers of Ronan",
+            "Master Strike: Each player discards a card at random. Ronan captures this Strike as a “Necrocraft Ship“ [keyword:Villainous Weapon] that gives +1[icon:attack]. When you gain a Necrocraft Ship, it becomes a [keyword:Triggered Artifact] that says “Whenever a Master Strike is completed, draw a card.“"
+          ]
+        },
+        {
+          "name": "Epic Ronan the Accuser",
+          "slug": "epic-ronan-the-accuser",
+          "tactic": false,
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-me-ronan-the-accuser.webp",
+          "abilities": [
+            "Always Leads: Followers of Ronan",
+            "Master Strike: Each player with six or more cards in hand discards two cards at random. Ronan captures this Strike as a “Necrocraft Ship“ [keyword:Villainous Weapon] that gives +2[icon:attack]. When you gain a Necrocraft Ship, it becomes a [keyword:Triggered Artifact] that says “Whenever a Master Strike is completed, draw a card.“"
+          ]
+        },
+        {
+          "name": "Ronan's Throne",
+          "slug": "ronans-throne",
+          "tactic": true,
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-mt-ronan-the-accuser-ronans-throne.webp",
+          "abilities": [
+            "Fight: KO one of your Heroes. Rescue 2 Bystanders. Ronan captures this card as a [keyword:Villainous Weapon].",
+            "[keyword:Triggered Artifact] — Whenever a Scheme Twist is completed, draw two cards."
+          ]
+        },
+        {
+          "name": "Hood of the Accuser",
+          "slug": "hood-of-the-accuser",
+          "tactic": true,
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-mt-ronan-the-accuser-hood-of-the-accuser.webp",
+          "abilities": [
+            "Fight: KO one of your Heroes. Rescue 2 Bystanders. Ronan captures this card as a [keyword:Villainous Weapon].",
+            "[keyword:Triggered Artifact] — Whenever a Master Strike is completed, you may KO one of your cards."
+          ]
+        },
+        {
+          "name": "Ancient Kree Armor",
+          "slug": "ancient-kree-armor",
+          "tactic": true,
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-mt-ronan-the-accuser-ancient-kree-armor.webp",
+          "abilities": [
+            "Fight: KO one of your Heroes. Rescue 2 Bystanders. Ronan captures this card as a [keyword:Villainous Weapon].",
+            "[keyword:Triggered Artifact] — Whenever you gain your first Wound in any turn, you may KO it."
+          ]
+        },
+        {
+          "name": "The Cosmi-Rod Warhammer",
+          "slug": "the-cosmi-rod-warhammer",
+          "tactic": true,
+          "vAttack": "6+",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-mt-ronan-the-accuser-the-cosmi-rod-warhammer.webp",
+          "abilities": [
+            "Fight: KO one of your Heroes. Rescue 2 Bystanders. Ronan captures this card as a [keyword:Villainous Weapon].",
+            "[keyword:Triggered Artifact] — Whenever you recruit a Hero from the HQ, you get +2[icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 84,
+      "name": "Ego, the Living Planet",
+      "slug": "ego-the-living-planet",
+      "alwaysLeads": [],
+      "vp": null,
+      "cards": [
+        {
+          "name": "Ego, the Living Planet",
+          "slug": "ego-the-living-planet",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-mm-ego-the-living-planet.webp",
+          "abilities": [
+            "Ego gets +1[icon:attack] for each city space. When there are no more city spaces, Good Wins.",
+            "Always Leads: Any Villain Group, plus add an additional Villain Group (even for 1 player).",
+            "Master Strike: Create an extra city space on the left side of the city. If there are at least 3 Villains in the city, each player gains a Wound. Play another card from the Villain Deck."
+          ]
+        },
+        {
+          "name": "Epic Ego, the Living Planet",
+          "slug": "epic-ego-the-living-planet",
+          "tactic": false,
+          "vAttack": "1+",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-me-ego-the-living-planet-ego-the-living-planet.webp",
+          "abilities": [
+            "Ego gets +2[icon:attack] for each city space. When there are no more city spaces, Good Wins.",
+            "Always Leads: Any Villain Group, plus add two additional Villain Groups (even for 1 player).",
+            "Master Strike: This Strike becomes an extra city space to the left side of the city. If there are at least 2 Villains in the city, each player gains a Wound. Play two cards from the Villain Deck."
+          ]
+        },
+        {
+          "name": "I'm a Celestial, Sweetheart",
+          "slug": "im-a-celestial-sweetheart",
+          "tactic": true,
+          "vAttack": 3,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-mt-ego-the-living-planet-im-a-celestial-sweetheart.webp",
+          "abilities": [
+            "Fight: When you draw a new hand of cards at the end of this turn, draw two extra cards.",
+            "Destroy the leftmost city space. Any Villain there escapes. Shuffle this Tactic back into Ego's Tactics."
+          ]
+        },
+        {
+          "name": "Cover All That Exists",
+          "slug": "cover-all-that-exists",
+          "tactic": true,
+          "vAttack": 3,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-mt-ego-the-living-planet-cover-all-that-exists.webp",
+          "abilities": [
+            "Fight: You may KO one of your Heroes. Choose a Henchman from any Victory Pile to enter the city.",
+            "Destroy the leftmost city space. Any Villain there escapes. Shuffle this Tactic back into Ego's Tactics."
+          ]
+        },
+        {
+          "name": "The Expansion is My Purpose",
+          "slug": "the-expansion-is-my-purpose",
+          "tactic": true,
+          "vAttack": 3,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-mt-ego-the-living-planet-the-expansion-is-my-purpose.webp",
+          "abilities": [
+            "Fight: You get +1[icon:recruit] for each empty city space.",
+            "Destroy the leftmost city space. Any Villain there escapes. Shuffle this Tactic back into Ego's Tactics."
+          ]
+        },
+        {
+          "name": "Until Everything is... Me!",
+          "slug": "until-everything-is-me",
+          "tactic": true,
+          "vAttack": 3,
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-mt-ego-the-living-planet-until-everything-is-me.webp",
+          "abilities": [
+            "Fight: Rescue three Bystanders.",
+            "Destroy the leftmost city space. Any Villain there escapes. Shuffle this Tactic back into Ego's Tactics."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 104,
+      "name": "Followers of Ronan",
+      "slug": "followers-of-ronan",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Exolon Attendants",
+          "slug": "exolon-attendants",
+          "vp": "2",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-vi-followers-of-ronan-exolon-attendants.webp",
+          "abilities": [
+            "Exolon Attendants gets +2[icon:attack] while another Villain is [keyword:Commanding] the Followers of Ronan.",
+            "Ambush: Reveal the top card of the Villain Deck. If it's a Villain, it enters an empty city space."
+          ]
+        },
+        {
+          "name": "Exolon Monks",
+          "slug": "exolon-monks",
+          "vp": "2",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-vi-followers-of-ronan-exolon-monks.webp",
+          "abilities": [
+            "Exolon Monks get +2[icon:attack] while another Villain is [keyword:Commanding] the Followers of Ronan.",
+            "Fight: KO one of your Heroes."
+          ]
+        },
+        {
+          "name": "Sakaaran Mercenaries",
+          "slug": "sakaaran-mercenaries",
+          "vp": "3",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-vi-followers-of-ronan-sakaaran-mercenaries.webp",
+          "abilities": [
+            "Sakaaran Mercenaries get +2[icon:attack] while another Villain is [keyword:Commanding] the Followers of Ronan.",
+            "Ambush: If another Villain is [keyword:Commanding] the Followers of Ronan, each player gains a Wound."
+          ]
+        },
+        {
+          "name": "Korath the Pursuer",
+          "slug": "korath-the-pursuer",
+          "vp": "3",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-vi-followers-of-ronan-korath-the-pursuer.webp",
+          "abilities": [
+            "Korath gets +2[icon:attack] while he [keyword:Commands] the Followers of Ronan.",
+            "Ambush: Each player may draw a card. For each player that did, reveal a card from the Villain Deck. Play a Followers of Ronan card from among the cards you revealed this way. Put the rest back in any order.",
+            "Fight: Same effect."
+          ]
+        },
+        {
+          "name": "Nebula",
+          "slug": "nebula",
+          "vp": "4",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-vi-followers-of-ronan-nebula.webp",
+          "abilities": [
+            "Nebula gets +2[icon:attack] while she [keyword:Commands] the Followers of Ronan.",
+            "Ambush: Nebula captures a [keyword:Villainous Weapon] from another Villain in the city or captures an [keyword:Artifact] from a player's control as a [keyword:Villainous Weapon]. If it doesn't already give a [keyword:Villainous Weapon] bonus, it gives +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Korath's Disrupter Rifle",
+          "slug": "koraths-disrupter-rifle",
+          "vp": "-1",
+          "vAttack": "+3",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-vi-followers-of-ronan-koraths-disrupter-rifle.webp",
+          "abilities": [
+            "[keyword:Villainous Weapon]",
+            "Ambush: If Korath is in the city, he captures this.",
+            "[keyword:Triggered Artifact] — Whenever you play a card that costs 6 or more, you get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "“The Dark Aster“ Flagship",
+          "slug": "the-dark-aster-flagship",
+          "vp": "-1",
+          "vAttack": "+4",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-vi-followers-of-ronan-the-dark-aster-flagship.webp",
+          "abilities": [
+            "[keyword:Villainous Weapon]",
+            "Ambush: If a Follower of Ronan captures this, each player gains a Wound.",
+            "[keyword:Triggered Artifact] — Whenever you defeat a Villain, you get +1[icon:recruit]."
+          ]
+        },
+        {
+          "name": "The Orb",
+          "slug": "the-orb",
+          "vp": "-1",
+          "vAttack": "+6",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-vi-followers-of-ronan-the-orb.webp",
+          "abilities": [
+            "[keyword:Villainous Weapon]",
+            "Ambush: Put all Heroes from the HQ on the bottom of the Hero Deck.",
+            "[keyword:Triggered Artifact] — When you fight the Mastermind, take another turn after this one. Don't play a card from the Villain Deck at the start of that turn. This ability can only be used once per game."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 105,
+      "name": "Ravagers",
+      "slug": "ravagers",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Gef",
+          "slug": "gef",
+          "vp": "3",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-vi-ravagers-gef.webp",
+          "abilities": [
+            "Gef gets +2[icon:attack] while he [keyword:Commands] the Ravagers.",
+            "Ambush: Swap Gef with the leftmost Ravager in the city.",
+            "Fight: If Gef was [keyword:Commanding] the Ravagers, draw a card."
+          ]
+        },
+        {
+          "name": "Tullk",
+          "slug": "tullk",
+          "vp": "3",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-vi-ravagers-tullk.webp",
+          "abilities": [
+            "Tullk gets +2[icon:attack] while he [keyword:Commands] the Ravagers.",
+            "Ambush: Swap Tullk with the leftmost Ravager in the city.",
+            "Fight: If Tullk was [keyword:Commanding] the Ravagers, KO one of your Heroes."
+          ]
+        },
+        {
+          "name": "Kraglin Obfonteri",
+          "slug": "kraglin-obfonteri",
+          "vp": "4",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-vi-ravagers-kraglin-obfonteri.webp",
+          "abilities": [
+            "Kraglin gets +2[icon:attack] while he [keyword:Commands] the Ravagers.",
+            "Ambush: Swap Kraglin with the leftmost Ravager in the city.",
+            "Fight: If Kraglin was [keyword:Commanding] the Ravagers, draw two cards."
+          ]
+        },
+        {
+          "name": "Taserface",
+          "slug": "taserface",
+          "vp": "4",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-vi-ravagers-taserface.webp",
+          "abilities": [
+            "Taserface gets +2[icon:attack] while he [keyword:Commands] the Ravagers.",
+            "Ambush: Swap Taserface with the leftmost Ravager in the city.",
+            "Fight: If Taserface was [keyword:Commanding] the Ravagers, you get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Yondu Udonta",
+          "slug": "yondu-udonta",
+          "vp": "5",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-vi-ravagers-yondu-udonta.webp",
+          "abilities": [
+            "Yondu gets +2[icon:attack] while he [keyword:Commands] the Ravagers.",
+            "Ambush: Swap Yondu with the leftmost Ravager in the city.",
+            "Fight: If Yondu was [keyword:Commanding] the Ravagers, KO up to two of your Heroes."
+          ]
+        },
+        {
+          "name": "Scavanged Blade",
+          "slug": "scavanged-blade",
+          "vp": "-1",
+          "vAttack": "+2",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-vi-ravagers-scavanged-blade.webp",
+          "abilities": [
+            "[keyword:Villainous Weapon]",
+            "Ambush: Play another card from the Villain Deck.",
+            "[keyword:Triggered Artifact] — When you play a [hc:strength] or [hc:instinct] card, you may get +2[icon:attack]. If you do, shuffle this into the Villain Deck."
+          ]
+        },
+        {
+          "name": "Ravager Starship “Eclector“",
+          "slug": "ravager-starship-eclector",
+          "vp": "-1",
+          "vAttack": "+3",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-vi-ravagers-ravager-starship-eclector.webp",
+          "abilities": [
+            "[keyword:Villainous Weapon]",
+            "Ambush: If a Ravager captures this, that Ravager swaps spaces with the leftmost Ravager in the city.",
+            "[keyword:Triggered Artifact] — Whenever you play a [hc:tech] card, you get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Yaka Arrow",
+          "slug": "yaka-arrow",
+          "vp": "-1",
+          "vAttack": "+4",
+          "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-vi-ravagers-yaka-arrow.webp",
+          "abilities": [
+            "[keyword:Villainous Weapon]",
+            "Ambush: If Yondu is in the city, he captures this. If he is in any player's Victory Pile, he enters an empty city space, then captures this.",
+            "[keyword:Triggered Artifact] — Whenever you play a [hc:covert] or [hc:ranged] card, you get +1[icon:attack]."
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [],
+  "schemes": [
+    {
+      "id": 154,
+      "name": "Inescapable “Kyln“ Space Prison",
+      "slug": "inescapable-kyln-space-prison",
+      "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-sc-inescapable-kyln-space-prison.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. Add an extra Villain Group.",
+            "Special Rules: Heroes that start in or enter the HQ are “Imprisoned“ face down, can't be recruited, and cost 0. You can spend 1[icon:attack] each to flip them face up.",
+            "Twist: Spend this amount this turn “for the escape plan“ or else after you draw your new hand, gain a Wound then Imprison and mix up all Heroes in the HQ.",
+            "Twist 1-3: 3[icon:attack] (Quarnyx Battery)",
+            "Twist 4-5: 5[icon:attack] (Prison Control Device)",
+            "Twist 6: 6[icon:recruit] (That Guy's Leg)",
+            "Twist 7: 7[icon:attack] (Cassette Player)",
+            "Twist 8: Evil wins!"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 155,
+      "name": "Provoke the Sovereign War Fleet",
+      "slug": "provoke-the-sovereign-war-fleet",
+      "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-sc-provoke-the-sovereign-war-fleet.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 11 Twists. Add an extra Villain Group.",
+            "Twist: This Twist enters the city as a 2[icon:attack] “Sovereign Omnicraft“ Villain worth 1VP with “Fight: You get +1[icon:recruit].“ Each player shuffles all Twists from their Victory Piles back into the Villain Deck. Play another card from the Villain Deck.",
+            "Evil Wins: When 3 Omnicraft escape."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 156,
+      "name": "Star-Lord's Awesome Mix Tape",
+      "slug": "star-lords-awesome-mix-tape",
+      "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-sc-star-lords-awesome-mix-tape.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 7 Twists. Use 7 Heroes including at least one [team:guardians-of-the-galaxy] Hero. Use double the normal number of Villain and Henchman Groups, but use only half the cards from each of those groups, randomly & secretly. (1 player: 2 Henchmen per group)",
+            "Twist: KO all the Heroes from HQ. Villains in the Sewers and Bridge swap spaces. Likewise Villains in the Bank and Streets.",
+            "Evil Wins: When there are 32 non-grey Heroes in the KO pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 157,
+      "name": "Unleash the Abilisk Space Monster",
+      "slug": "unleash-the-abilisk-space-monster",
+      "imageUrl": "https://images.barefootbetters.com/mgtg/mgtg-sc-unleash-the-abilisk-space-monster.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 9 Twists.",
+            "Twist 1-8: : Put this Twist next the the Scheme as an “Abilisk Tentacle“ Villain worth 4VP. It captures a non-grey Hero from your discard pile. Its [icon:attack] is 3 + the cost of that Hero. It has “Fight: KO one of your grey Heroes. A player of your choice gains the captured Hero.“ 2+ players: The player on your right plays a Tentacle from their Victory Pile, capturing from them.",
+            "Twist 9: Replay all defeated Tentacles.",
+            "Evil Wins: When there are 5 Tentacles."
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [],
+  "wounds": [],
+  "other": []
+}

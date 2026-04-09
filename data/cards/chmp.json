@@ -1,0 +1,756 @@
+{
+  "id": 18,
+  "abbr": "chmp",
+  "exportName": "Champions",
+  "heroes": [
+    {
+      "id": 152,
+      "name": "Gwenpool",
+      "slug": "gwenpool",
+      "team": "champions",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Come On, Nobody Reads Card Names",
+          "displayName": "Come On, Nobody Reads Card Names",
+          "slug": "come-on-nobody-reads-card-names",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 2,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-hr-gwenpool-2c1.webp",
+          "abilities": [
+            "[keyword:Versatile 1]",
+            "[hc:covert]: Instead, [keyword:Versatile 3]."
+          ]
+        },
+        {
+          "name": "I'll Rescue You If I Feel Like It",
+          "displayName": "I'll Rescue You If I Feel Like It",
+          "slug": "ill-rescue-you-if-i-feel-like-it",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-hr-gwenpool-3c2.webp",
+          "abilities": [
+            "Reveal the top card of the Bystander Deck. If it's a Special Bystander, rescue it. Otherwise, put it on the bottom of that deck."
+          ]
+        },
+        {
+          "name": "I Heard Keywords Are Powerful",
+          "displayName": "I Heard Keywords Are Powerful",
+          "slug": "i-heard-keywords-are-powerful",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 6,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-hr-gwenpool-6u.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:instinct]",
+            "[hc:instinct]: Draw a card.",
+            "[keyword:Cheering Crowds]"
+          ]
+        },
+        {
+          "name": "I'm the Best at Board Games",
+          "displayName": "I'm the Best at Board Games",
+          "slug": "im-the-best-at-board-games",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": "5",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-hr-gwenpool-7r.webp",
+          "abilities": [
+            "[keyword:Demolish] each other player. For each player that discards a card this way, draw a card."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 153,
+      "name": "Ms. Marvel",
+      "slug": "ms-marvel",
+      "team": "champions",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Long Arm of the Law",
+          "displayName": "Long Arm of the Law",
+          "slug": "long-arm-of-the-law",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-hr-ms-marvel-3c1.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:covert]",
+            "Draw a card.",
+            "[hc:covert]: Rescue a Bystander."
+          ]
+        },
+        {
+          "name": "Big Impact",
+          "displayName": "Big Impact",
+          "slug": "big-impact",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-hr-ms-marvel-4c2.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:strength]",
+            "[keyword:Versatile 2]"
+          ]
+        },
+        {
+          "name": "Need to Stretch My Legs",
+          "displayName": "Need to Stretch My Legs",
+          "slug": "need-to-stretch-my-legs",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 6,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-hr-ms-marvel-6u.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:covert]",
+            "[team:champions]: You may KO a card from your hand or discard pile.",
+            "[keyword:Cheering Crowds]"
+          ]
+        },
+        {
+          "name": "Rising Hope",
+          "displayName": "Rising Hope",
+          "slug": "rising-hope",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 9,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-hr-ms-marvel-9r.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:strength], [hc:covert]",
+            "[keyword:Versatile 4]",
+            "[keyword:Cheering Crowds]"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 154,
+      "name": "Nova",
+      "slug": "nova",
+      "team": "champions",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Space Cop",
+          "displayName": "Space Cop",
+          "slug": "space-cop",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 2,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-hr-nova-2c1.webp",
+          "abilities": [
+            "[keyword:Versatile 1]",
+            "[team:champions]: Rescue a Bystander."
+          ]
+        },
+        {
+          "name": "Interstellar Hero",
+          "displayName": "Interstellar Hero",
+          "slug": "interstellar-hero",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-hr-nova-4c2.webp",
+          "abilities": [
+            "[keyword:Versatile 2]",
+            "[keyword:Cheering Crowds]"
+          ]
+        },
+        {
+          "name": "Holographic Projection",
+          "displayName": "Holographic Projection",
+          "slug": "holographic-projection",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-hr-nova-5u.webp",
+          "abilities": [
+            "[hc:ranged]: [keyword:Versatile 3]."
+          ]
+        },
+        {
+          "name": "Growing Nova Force",
+          "displayName": "Growing Nova Force",
+          "slug": "growing-nova-force",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 9,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-hr-nova-9r.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:ranged], [hc:strength]",
+            "For each other card you played this turn with a [icon:recruit] icon, you get +1[icon:recruit]. For each other card you played this turn with an [icon:attack] icon, you get +1[icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 155,
+      "name": "Totally Awesome Hulk",
+      "slug": "totally-awesome-hulk",
+      "team": "champions",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Beloved Behemoth",
+          "displayName": "Beloved Behemoth",
+          "slug": "beloved-behemoth",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-hr-totally-awesome-hulk-4c1.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:strength]",
+            "[hc:strength]: The first time you defeat a Villain this turn, rescue a Bystander."
+          ]
+        },
+        {
+          "name": "Incredible Mind, Awesome Body",
+          "displayName": "Incredible Mind, Awesome Body",
+          "slug": "incredible-mind-awesome-body",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 4,
+          "attack": null,
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-hr-totally-awesome-hulk-4c2.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:tech]",
+            "Draw a card.",
+            "[keyword:Cheering Crowds]"
+          ]
+        },
+        {
+          "name": "Growing Pains",
+          "displayName": "Growing Pains",
+          "slug": "growing-pains",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-hr-totally-awesome-hulk-5u.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:strength]",
+            "If you have a Wound in your hand or discard pile, KO it and you get +2[icon:attack]. Otherwise, gain a Wound."
+          ]
+        },
+        {
+          "name": "7th Smartest Man in the World",
+          "displayName": "7th Smartest Man in the World",
+          "slug": "7th-smartest-man-in-the-world",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 9,
+          "attack": "5+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-hr-totally-awesome-hulk-9r.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:tech], [hc:strength]",
+            "You get +1[icon:attack] for each extra card you drew this turn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 156,
+      "name": "Viv Vision",
+      "slug": "viv-vision",
+      "team": "champions",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Walking Wi-Fi",
+          "displayName": "Walking Wi-Fi",
+          "slug": "walking-wi-fi",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-hr-viv-vision-3c1.webp",
+          "abilities": [
+            "[hc:tech]: Whenever you recruit a Hero from the HQ this turn, rescue a Bystander."
+          ]
+        },
+        {
+          "name": "Expanding Neural Network",
+          "displayName": "Expanding Neural Network",
+          "slug": "expanding-neural-network",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-hr-viv-vision-4c2.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:tech]",
+            "[hc:tech]: When you draw a new hand of cards at the end of this turn, draw an extra card."
+          ]
+        },
+        {
+          "name": "Crowdsourcing",
+          "displayName": "Crowdsourcing",
+          "slug": "crowdsourcing",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 6,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-hr-viv-vision-6u.webp",
+          "abilities": [
+            "[keyword:Versatile 3]",
+            "[keyword:Cheering Crowds]"
+          ]
+        },
+        {
+          "name": "Alter Molecular Density",
+          "displayName": "Alter Molecular Density",
+          "slug": "alter-molecular-density",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 9,
+          "attack": "0+",
+          "recruit": "5",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-hr-viv-vision-9r.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:tech], [hc:ranged]",
+            "Whenever you recruit a Hero this turn, you get +2[icon:attack]."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 48,
+      "name": "Fin Fang Foom",
+      "slug": "fin-fang-foom",
+      "alwaysLeads": [],
+      "vp": 7,
+      "cards": [
+        {
+          "name": "Fin Fang Foom",
+          "slug": "fin-fang-foom",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-mm-fin-fang-foom.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:strength],[hc:instinct],[hc:covert],[hc:tech],[hc:ranged]",
+            "Always Leads: Monsters Unleashed",
+            "Master Strike: [keyword:Demolish] each player, then do it again for each Monsters Unleashed Villain in the city and Escape Pile."
+          ]
+        },
+        {
+          "name": "Epic Fin Fang Foom",
+          "slug": "epic-fin-fang-foom",
+          "tactic": false,
+          "vAttack": "24",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-me-fin-fang-foom.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:strength],[hc:instinct],[hc:covert],[hc:tech],[hc:ranged]",
+            "Always Leads: Monsters Unleashed",
+            "Master Strike: [keyword:Demolish] each player, then do it again for each Monsters Unleashed Villain in the city and Escape Pile. KO all the Heroes [keyword:Demolished] this way."
+          ]
+        },
+        {
+          "name": "Alien Dragon Technology",
+          "slug": "alien-dragon-technology",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-mt-fin-fang-foom-alien-dragon-technology.webp",
+          "abilities": [
+            "Fight: A Hero in the HQ gets [keyword:Size-Changing]: [hc:strength],[hc:instinct],[hc:covert],[hc:tech],[hc:ranged] this turn."
+          ]
+        },
+        {
+          "name": "Flammable Acid Breath",
+          "slug": "flammable-acid-breath",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-mt-fin-fang-foom-flammable-acid-breath.webp",
+          "abilities": [
+            "Fight: KO the top card of the Hero Deck. Then each other player KOs a Hero of that Hero class from their discard pile ([hc:strength],[hc:instinct],[hc:covert],[hc:tech],[hc:ranged])."
+          ]
+        },
+        {
+          "name": "Multipronged Assault",
+          "slug": "multipronged-assault",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-mt-fin-fang-foom-multipronged-assault.webp",
+          "abilities": [
+            "Fight: Each other player reveals at least 3 Hero Classes ([hc:strength],[hc:instinct],[hc:covert],[hc:tech],[hc:ranged]) or gains a Wound."
+          ]
+        },
+        {
+          "name": "Supersonic Dive Attack",
+          "slug": "supersonic-dive-attack",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-mt-fin-fang-foom-supersonic-dive-attack.webp",
+          "abilities": [
+            "Fight: KO the top card of the Hero Deck. Then each other player reveals their hand and discards a Hero of that Hero Class ([hc:strength],[hc:instinct],[hc:covert],[hc:tech],[hc:ranged])."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 49,
+      "name": "Pagliacci",
+      "slug": "pagliacci",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Pagliacci",
+          "slug": "pagliacci",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-mm-pagliacci.webp",
+          "abilities": [
+            "Always Leads: Wrecking Crew",
+            "Master Strike 1, 5: This card becomes a Scheme Twist that takes effect immediately.",
+            "Master Strike 2, 3, 4: [keyword:Demolish] each player."
+          ]
+        },
+        {
+          "name": "Epic Pagliacci",
+          "slug": "epic-pagliacci",
+          "tactic": false,
+          "vAttack": "11",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-me-pagliacci.webp",
+          "abilities": [
+            "Always Leads: Wrecking Crew",
+            "Master Strike 1, 3, 5: This card becomes a Scheme Twist that takes effect immediately.",
+            "Master Strike 2, 4: [keyword:Demolish] each player."
+          ]
+        },
+        {
+          "name": "Commedia Dell'Morte",
+          "slug": "commedia-dellmorte",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-mt-pagliacci-commedia-dellmorte.webp",
+          "abilities": [
+            "Fight: Each other player may gain two Wounds. [keyword:Demolish] each of those players who does not."
+          ]
+        },
+        {
+          "name": "Creative Assassin",
+          "slug": "creative-assassin",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-mt-pagliacci-creative-assassin.webp",
+          "abilities": [
+            "Fight: You get [keyword:Versatile 3]."
+          ]
+        },
+        {
+          "name": "Insane Clown Has a Posse",
+          "slug": "insane-clown-has-a-posse",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-mt-pagliacci-insane-clown-has-a-posse.webp",
+          "abilities": [
+            "Fight: Each other player may KO a Wrecking Crew Villain from their Victory Pile. [keyword:Demolish] each of those players who does not."
+          ]
+        },
+        {
+          "name": "Jester of a Twisted Opera",
+          "slug": "jester-of-a-twisted-opera",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-mt-pagliacci-jester-of-a-twisted-opera.webp",
+          "abilities": [
+            "Fight: Each other player may KO a card from their discard pile that costs 1 or more. [keyword:Demolish] each of those players who does not."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 62,
+      "name": "Monsters Unleashed",
+      "slug": "monsters-unleashed",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Goom",
+          "slug": "goom",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-vi-monsters-unleashed-goom.webp",
+          "abilities": [
+            "Ambush: Goom captures a Bystander.",
+            "Fight: KO one of your Heroes."
+          ]
+        },
+        {
+          "name": "Groot from Planet X",
+          "slug": "groot-from-planet-x",
+          "vp": "2",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-vi-monsters-unleashed-groot-from-planet-x.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:strength], [hc:covert]",
+            "Fight: Two Bystanders from the Bystander Stack enter the city as 3[icon:attack] “Splintered Half-Groot“ Villains. When you fight one, rescue it as a Bystander."
+          ]
+        },
+        {
+          "name": "Monsteroso",
+          "slug": "monsteroso",
+          "vp": "2",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-vi-monsters-unleashed-monsteroso.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:strength], [hc:instinct]",
+            "Fight: When you draw a new hand of cards at the end of this turn, draw an extra card."
+          ]
+        },
+        {
+          "name": "Orrgo",
+          "slug": "orrgo",
+          "vp": "2",
+          "vAttack": "2",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-vi-monsters-unleashed-orrgo.webp",
+          "abilities": [
+            "You can't fight Orrgo unless you have already defeated another Villain this turn."
+          ]
+        },
+        {
+          "name": "Sporr",
+          "slug": "sporr",
+          "vp": "3",
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-vi-monsters-unleashed-sporr.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:tech], [hc:ranged]",
+            "Fight: A Hero in the HQ gains [keyword:Size-Changing]: [hc:tech], [hc:ranged] this turn."
+          ]
+        },
+        {
+          "name": "Tim Boo Ba",
+          "slug": "tim-boo-ba",
+          "vp": "5",
+          "vAttack": "12",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-vi-monsters-unleashed-tim-boo-ba.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:strength], [hc:instinct], [hc:covert], [hc:tech], [hc:ranged]",
+            "Fight: All Heroes currently in the HQ cost 1 less this turn."
+          ]
+        },
+        {
+          "name": "Trull the Unhuman",
+          "slug": "trull-the-unhuman",
+          "vp": "4",
+          "vAttack": "8",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-vi-monsters-unleashed-trull-the-unhuman.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:covert], [hc:tech]",
+            "Ambush: Trull captures a Bystander. Then [keyword:Demolish] each player."
+          ]
+        },
+        {
+          "name": "Zzutak",
+          "slug": "zzutak",
+          "vp": "5",
+          "vAttack": "9",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-vi-monsters-unleashed-zzutak.webp",
+          "abilities": [
+            "[keyword:Size-Changing]: [hc:ranged], [hc:instinct]",
+            "Escape: [keyword:Demolish] each player."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 63,
+      "name": "Wrecking Crew",
+      "slug": "wrecking-crew",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Bulldozer",
+          "slug": "bulldozer",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-vi-wrecking-crew-bulldozer.webp",
+          "abilities": [
+            "Ambush: Bulldozer moves an extra space forward. If this pushes any Villains forward, [keyword:Demolish] each player."
+          ]
+        },
+        {
+          "name": "Piledriver",
+          "slug": "piledriver",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-vi-wrecking-crew-piledriver.webp",
+          "abilities": [
+            "Fight: KO one of your Heroes.",
+            "Escape: [keyword:Demolish] each player."
+          ]
+        },
+        {
+          "name": "Thunderball",
+          "slug": "thunderball",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-vi-wrecking-crew-thunderball.webp",
+          "abilities": [
+            "Fight: If you fight Thunderball in the Sewers or Bank, [keyword:Demolish] each other player."
+          ]
+        },
+        {
+          "name": "The Wrecker",
+          "slug": "the-wrecker",
+          "vp": "5",
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/chmp/chmp-vi-wrecking-crew-the-wrecker.webp",
+          "abilities": [
+            "Ambush: For each Wrecking Crew Villain in the city (including this one), [keyword:Demolish] each player."
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [],
+  "schemes": [
+    {
+      "id": 88,
+      "name": "Clash of the Monsters Unleashed",
+      "slug": "clash-of-the-monsters-unleashed",
+      "imageUrl": "https://images.barefootbetters.com/chmp/chmp-sc-clash-of-the-monsters-unleashed.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 10 Twists. 6 Wounds per player in the Wound Stack. Shuffle 8 Monsters Unleashed Villains into a face-down “Monster Pit“ deck.",
+            "Twist 3-10: Each player chooses a Villain from their Victory Pile as their “Gladiator.“ Then the top card of the Monster Pit enteres the city. Each player whose Gladiator has a lower printed [icon:attack] than that Monster gains a Wound.",
+            "Evil Wins: When the Wound Stack or Monster Pit Deck runs out."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 89,
+      "name": "Divide and Conquer",
+      "slug": "divide-and-conquer",
+      "imageUrl": "https://images.barefootbetters.com/chmp/chmp-sc-divide-and-conquer.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup:  8 Twists. 7 Heroes. Sort the Hero Deck by Hero Class: [hc:strength],[hc:instinct],[hc:covert],[hc:tech],[hc:ranged]. (If a card has multiple Classes, break ties at random.) Put these 5 smaller, shuffled Hero Decks beneath the 5 HQ Spaces.",
+            "Special Rules: Whenever an HQ Space is empty, fill it with the top card of the Hero Deck below that space.",
+            "Twist 1-3: KO all Heroes in the HQ.",
+            "Twist 4-8: KO one of the Hero Decks.",
+            "Evil Wins: When all Hero Decks are gone."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 90,
+      "name": "Hypnotize Every Human",
+      "slug": "hypnotize-every-human",
+      "imageUrl": "https://images.barefootbetters.com/chmp/chmp-sc-hypnotize-every-human.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. Add another Henchman Villain Group. No Bystanders in the Villain Deck.",
+            "Twist 1-6: Put a Bystander from the Bystander Stack above each city space as a facedown 2[icon:attack] “Hypno-Thrall“ Villain. They don't move. When you fight one, rescue it as a Bystander. You can't fight a Villain in a city space that has any Hypno-Thralls above it.",
+            "Twist 7-8: Each player puts a Villain from their Victory Pile into the Escape pile.",
+            "Evil Wins: When 8 Villains are in the Escape pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 91,
+      "name": "Steal All Oxygen on Earth",
+      "slug": "steal-all-oxygen-on-earth",
+      "imageUrl": "https://images.barefootbetters.com/chmp/chmp-sc-steal-all-oxygen-on-earth.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. The “Oxygen Level“ starts at 8.",
+            "Twist: Stack this Twist next to the Scheme. The Oxygen Level decreases by 1. Then KO each Hero from the HQ whose cost is greater than the Oxygen Level.",
+            "Evil Wins: When 20 non-grey Heroes are KO'd."
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [],
+  "wounds": [],
+  "other": []
+}

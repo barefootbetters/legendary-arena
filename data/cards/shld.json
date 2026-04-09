@@ -1,0 +1,761 @@
+{
+  "id": 25,
+  "abbr": "shld",
+  "exportName": "Shield",
+  "heroes": [
+    {
+      "id": 194,
+      "name": "Agent Phil Coulson",
+      "slug": "agent-phil-coulson",
+      "team": "shield",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Impeccable Planning",
+          "displayName": "Impeccable Planning",
+          "slug": "impeccable-planning",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-hr-agent-phil-coulson-3c1.webp",
+          "abilities": [
+            "[keyword:S.H.I.E.L.D. Level 3]: When you draw a new hand of cards at the end of this turn, draw an extra card."
+          ]
+        },
+        {
+          "name": "Build the Strike Team",
+          "displayName": "Build the Strike Team",
+          "slug": "build-the-strike-team",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-hr-agent-phil-coulson-4c2.webp",
+          "abilities": [
+            "Reveal the top card of the S.H.I.E.L.D. Officer Stack. Gain it or put it on the bottom of the stack.",
+            "[hc:covert]: You may send it [keyword:Undercover]."
+          ]
+        },
+        {
+          "name": "Approve Orbital Strike",
+          "displayName": "Approve Orbital Strike",
+          "slug": "approve-orbital-strike",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 6,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-hr-agent-phil-coulson-6u.webp",
+          "abilities": [
+            "Choose one:",
+            "- Send a [team:shield] Hero from your hand [keyword:Undercover].",
+            "- Or you get +1[icon:attack] for each 2 [keyword:S.H.I.E.L.D. Levels] you have."
+          ]
+        },
+        {
+          "name": "Fake But Inspiring Death",
+          "displayName": "Fake But Inspiring Death",
+          "slug": "fake-but-inspiring-death",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 8,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-hr-agent-phil-coulson-8r.webp",
+          "abilities": [
+            "During any player's turn, when another [team:shield] Hero is put into the KO pile, you may discard this card to send that Hero [keyword:Undercover] in your Victory Pile instead. If you do, draw three cards.",
+            "[keyword:S.H.I.E.L.D. Level 8]: You get +4[icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 195,
+      "name": "Deathlok",
+      "slug": "deathlok",
+      "team": "shield",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Authorize Lethal Force",
+          "displayName": "Authorize Lethal Force",
+          "slug": "authorize-lethal-force",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 2,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-hr-deathlok-2c1.webp",
+          "abilities": [
+            "Draw a card.",
+            "[keyword:S.H.I.E.L.D. Level 1]: You get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Reanimate Into Service",
+          "displayName": "Reanimate Into Service",
+          "slug": "reanimate-into-service",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-hr-deathlok-4c2.webp",
+          "abilities": [
+            "[hc:tech]: You may send a [team:shield] Hero [keyword:Undercover] from your discard pile or the KO pile."
+          ]
+        },
+        {
+          "name": "Headlok",
+          "displayName": "Headlok",
+          "slug": "headlok",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 5,
+          "attack": "0+",
+          "recruit": "3",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-hr-deathlok-5u.webp",
+          "abilities": [
+            "[keyword:S.H.I.E.L.D. Level 3]: You get +3[icon:attack].",
+            "If your S.H.I.E.L.D. Level is less than 3, you may send a [team:shield] card from your discard pile [keyword:Undercover]."
+          ]
+        },
+        {
+          "name": "Behind Enemy Lines",
+          "displayName": "Behind Enemy Lines",
+          "slug": "behind-enemy-lines",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 8,
+          "attack": "5",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-hr-deathlok-8r.webp",
+          "abilities": [
+            "You may send a [team:shield] Hero from your discard pile [keyword:Undercover].",
+            "[keyword:S.H.I.E.L.D. Level 3]: You get the total printed [icon:recruit] of all the [team:shield] Heroes in your Victory Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 196,
+      "name": "Mockingbird",
+      "slug": "mockingbird",
+      "team": "shield",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Take Cover",
+          "displayName": "Take Cover",
+          "slug": "take-cover",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-hr-mockingbird-3c1.webp",
+          "abilities": [
+            "Look at the top card of your deck. Discard it or put it back.",
+            "[hc:instinct]: If that card was a [team:shield] Hero, you may send it, [keyword:Undercover]."
+          ]
+        },
+        {
+          "name": "Battle Staves",
+          "displayName": "Battle Staves",
+          "slug": "battle-staves",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-hr-mockingbird-4c2.webp",
+          "abilities": [
+            "[keyword:S.H.I.E.L.D. Level 2]: Draw a card."
+          ]
+        },
+        {
+          "name": "Spymaster",
+          "displayName": "Spymaster",
+          "slug": "spymaster",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 5,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-hr-mockingbird-5u.webp",
+          "abilities": [
+            "Choose one:",
+            "- Send a card from the S.H.I.E.L.D. Officer Stack  [keyword:Undercover].",
+            "- Or you get +1[icon:attack] for each 2 [keyword:S.H.I.E.L.D. Levels] you have."
+          ]
+        },
+        {
+          "name": "Infinity Formula",
+          "displayName": "Infinity Formula",
+          "slug": "infinity-formula",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 7,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-hr-mockingbird-7r.webp",
+          "abilities": [
+            "Draw a card.",
+            "Send two cards from the S.H.I.E.L.D. Officer Stack [keyword:Undercover].",
+            "Then you get +1[icon:recruit] and +1[icon:attack] for each 2 [keyword:S.H.I.E.L.D. Levels] you have."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 197,
+      "name": "Quake",
+      "slug": "quake",
+      "team": "shield",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Going Underground",
+          "displayName": "Going Underground",
+          "slug": "going-underground",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": null,
+          "recruit": "3",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-hr-quake-3c1.webp",
+          "abilities": [
+            "To play this, you must discard a [team:shield] Hero.",
+            "[hc:ranged]: You may send the Hero you discarded [keyword:Undercover]."
+          ]
+        },
+        {
+          "name": "Aftershock",
+          "displayName": "Aftershock",
+          "slug": "aftershock",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-hr-quake-4c2.webp",
+          "abilities": [
+            "[keyword:S.H.I.E.L.D. Level 2]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Tectonic Wave",
+          "displayName": "Tectonic Wave",
+          "slug": "tectonic-wave",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 6,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-hr-quake-6u.webp",
+          "abilities": [
+            "Whenever you fight a Villain this turn, if its [icon:attack] is higher than your [keyword:S.H.I.E.L.D. Level], you may send a [team:shield] Hero from the S.H.I.E.L.D. Officer Stack [keyword:Undercover].",
+            "[keyword:S.H.I.E.L.D. Level 4]: You get +4[icon:attack]."
+          ]
+        },
+        {
+          "name": "Roil the Earth",
+          "displayName": "Roil the Earth",
+          "slug": "roil-the-earth",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 7,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-hr-quake-7r.webp",
+          "abilities": [
+            "You may send a [team:shield] Hero from the S.H.I.E.L.D. Officer Stack [keyword:Undercover].",
+            "Then, for each [keyword:S.H.I.E.L.D. Level] you have up to 5, choose a Hero from the HQ. Put all those Heroes on the bottom of the Hero Deck and you get their total printed [icon:attack]."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Dum Dum Dugan",
+      "slug": "dum-dum-dugan",
+      "team": "shield",
+      "cards": [
+        {
+          "name": "Dum Dum Dugan",
+          "slug": "dum-dum-dugan",
+          "hc": "strength",
+          "cost": 3,
+          "attack": 1,
+          "recruit": 2,
+          "rarityLabel": "S.H.I.E.L.D. Officer Special",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-sp-dum-dum-dugan.webp",
+          "abilities": [
+            "You may send this Hero [keyword:Undercover]."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Grant Ward",
+      "slug": "grant-ward",
+      "team": "shield",
+      "cards": [
+        {
+          "name": "Grant Ward",
+          "slug": "grant-ward",
+          "hc": "tech",
+          "cost": 3,
+          "attack": null,
+          "recruit": 2,
+          "rarityLabel": "S.H.I.E.L.D. Officer Special",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-sp-grant-ward.webp",
+          "abilities": [
+            "You may send this Hero [keyword:Undercover]. If you do, KO another [team:shield] Hero from your hand."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "G.W. Bridge",
+      "slug": "gw-bridge",
+      "team": "shield",
+      "cards": [
+        {
+          "name": "G.W. Bridge",
+          "slug": "gw-bridge",
+          "hc": "strength",
+          "cost": 3,
+          "attack": null,
+          "recruit": 2,
+          "rarityLabel": "S.H.I.E.L.D. Officer Special",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-sp-gw-bridge.webp",
+          "abilities": [
+            "You may discard a card. If you do, draw a card."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Leo Fitz and Jemma Simmons",
+      "slug": "leo-fitz-and-jemma-simmons",
+      "team": "shield",
+      "cards": [
+        {
+          "name": "Leo Fitz and Jemma Simmons",
+          "slug": "leo-fitz-and-jemma-simmons",
+          "hc": "tech",
+          "cost": 3,
+          "attack": "0+",
+          "recruit": "0+",
+          "rarityLabel": "S.H.I.E.L.D. Officer Special",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-sp-leo-fitz-and-jemma-simmons.webp",
+          "abilities": [
+            "Choose one: You get +2[icon:recruit] — Or you get +1[icon:attack] and draw a card."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Melinda May",
+      "slug": "melinda-may",
+      "team": "shield",
+      "cards": [
+        {
+          "name": "Melinda May",
+          "slug": "melinda-may",
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": 2,
+          "rarityLabel": "S.H.I.E.L.D. Officer Special",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-sp-melinda-may.webp",
+          "abilities": [
+            "[team:shield][team:shield][team:shield]: Draw a card."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Sharon Carter",
+      "slug": "sharon-carter",
+      "team": "shield",
+      "cards": [
+        {
+          "name": "Sharon Carter",
+          "slug": "sharon-carter",
+          "hc": "covert",
+          "cost": 3,
+          "attack": null,
+          "recruit": 2,
+          "rarityLabel": "S.H.I.E.L.D. Officer Special",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-sp-sharon-carter.webp",
+          "abilities": [
+            "You may send this Hero [keyword:Undercover]. If you do, you get +1[icon:recruit]."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Victoria Hand",
+      "slug": "victoria-hand",
+      "team": "shield",
+      "cards": [
+        {
+          "name": "Victoria Hand",
+          "slug": "victoria-hand",
+          "hc": "covert",
+          "cost": 3,
+          "attack": null,
+          "recruit": 2,
+          "rarityLabel": "S.H.I.E.L.D. Officer Special",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-sp-victoria-hand.webp",
+          "abilities": [
+            "[team:shield][team:shield][team:shield]: You may send this Hero or a [team:shield] Hero from your hand [keyword:Undercover]."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Yo-Yo Rodriguez",
+      "slug": "yo-yo-rodriguez",
+      "team": "shield",
+      "cards": [
+        {
+          "name": "Yo-Yo Rodriguez",
+          "slug": "yo-yo-rodriguez",
+          "hc": "ranged",
+          "cost": 3,
+          "attack": null,
+          "recruit": 2,
+          "rarityLabel": "S.H.I.E.L.D. Officer Special",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-sp-yo-yo-rodriguez.webp",
+          "abilities": [
+            "[team:shield][team:shield]: You may send this Hero [keyword:Undercover] or put it on top of your deck."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 65,
+      "name": "Hydra High Council",
+      "slug": "hydra-high-council",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Red Skull",
+          "slug": "red-skull",
+          "tactic": true,
+          "vAttack": "7+",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-mt-hydra-high-council-red-skull.webp",
+          "abilities": [
+            "Red Skull gets +1[icon:attack] for each two [keyword:Hydra Levels].",
+            "Always Leads: Hydra Elite",
+            "Start Game: [rule:Adapt].",
+            "Master Strike: Each player KOs one of their non-grey Heroes. [rule:Adapt].",
+            "Fight: KO one of your grey Heroes. [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "Viper",
+          "slug": "viper",
+          "tactic": true,
+          "vAttack": "9+",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-mt-hydra-high-council-viper.webp",
+          "abilities": [
+            "Viper gets +1[icon:attack] for each Hydra Villain in the city.",
+            "Master Strike: If there are any Hydra Villains in the city, each player gains a Wound. [rule:Adapt].",
+            "Fight: Discard any number of cards, then draw that many cards. [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "Arnim Zola",
+          "slug": "arnim-zola",
+          "tactic": true,
+          "vAttack": "6+",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-mt-hydra-high-council-arnim-zola.webp",
+          "abilities": [
+            "Arnim Zola gets +[icon:attack] equal to the total printed [icon:attack] of all heroes in the HQ.",
+            "Master Strike: Each player discards two Heroes with [icon:attack] icons. [rule:Adapt].",
+            "Fight: You may gain a Hero from the HQ with an [icon:attack] icon. [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "Baron Helmut Zemo",
+          "slug": "baron-helmut-zemo",
+          "tactic": true,
+          "vAttack": "16*",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-mt-hydra-high-council-baron-helmut-zemo.webp",
+          "abilities": [
+            "Baron Helmut Zemo gets -1[icon:attack] for each Villain in your Victory Pile.",
+            "Master Strike: Each player KOs a Hydra Villain from their Victory Pile or gains a Wound. [rule:Adapt].",
+            "Fight: Each other player KOs a Hydra Villain from their Victory Pile or gains a Wound. [rule:Adapt]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 66,
+      "name": "Hydra Super-Adaptoid",
+      "slug": "hydra-super-adaptoid",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Black Widow's Bite",
+          "slug": "black-widows-bite",
+          "tactic": true,
+          "vAttack": 8,
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-mt-hydra-super-adaptoid-black-widows-bite.webp",
+          "abilities": [
+            "Always Leads: A.I.M., Hydra Offshoot",
+            "Start Game: [rule:Adapt].",
+            "Master Strike: Each player KOs two Bystanders from their Victory Pile or gains a Wound. [rule:Adapt].",
+            "Fight: For each of your [hc:covert] Heroes, rescue a Bystander. [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "Captain America's Shield",
+          "slug": "captain-americas-shield",
+          "tactic": true,
+          "vAttack": 10,
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-mt-hydra-super-adaptoid-captain-americas-shield.webp",
+          "abilities": [
+            "Master Strike: Each player reveals an [hc:instinct] Hero or discards their hand and draws four cards. [rule:Adapt].",
+            "Fight: You get +1[icon:recruit] for each color of Hero you have (including grey). [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "Iron Man's Armor",
+          "slug": "iron-mans-armor",
+          "tactic": true,
+          "vAttack": 12,
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-mt-hydra-super-adaptoid-iron-mans-armor.webp",
+          "abilities": [
+            "Master Strike: Each player reveals a [hc:tech] Hero or discards down to 3 cards. [rule:Adapt].",
+            "Fight: Count you [hc:tech] Heroes, then draw that many cards. [rule:Adapt]."
+          ]
+        },
+        {
+          "name": "Thor's Hammer",
+          "slug": "thors-hammer",
+          "tactic": true,
+          "vAttack": 14,
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-mt-hydra-super-adaptoid-thors-hammer.webp",
+          "abilities": [
+            "Master Strike: Each player reveals a [hc:ranged] Hero or gains a Wound. [rule:Adapt].",
+            "Fight: For each of your [hc:strength] Heroes, KO one of your Heroes. [rule:Adapt]."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 84,
+      "name": "A.I.M., Hydra Offshoot",
+      "slug": "a-i-m-hydra-offshoot",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Taskmaster",
+          "slug": "taskmaster",
+          "vp": "2",
+          "vAttack": "3",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-vi-aim-hydra-offshoot-taskmaster.webp",
+          "abilities": [
+            "Ambush: Put a card from the S.H.I.E.L.D. Officer Stack into the Escape Pile.",
+            "Fight: Each player must reveal as many Hero colors (including grey) as the [keyword:Hydra Level] or gain a Wound.",
+            "Escape: Same Effect."
+          ]
+        },
+        {
+          "name": "Superia",
+          "slug": "superia",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-vi-aim-hydra-offshoot-superia.webp",
+          "abilities": [
+            "Ambush: Put a card from the S.H.I.E.L.D. Officer Stack into the Escape Pile. Then each player reveals a random card from their hand. If the [keyword:Hydra Level] is higher than that card's cost, that player discards that card."
+          ]
+        },
+        {
+          "name": "Graviton",
+          "slug": "graviton",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-vi-aim-hydra-offshoot-graviton.webp",
+          "abilities": [
+            "Ambush: Put a card from the S.H.I.E.L.D. Officer Stack into the Escape Pile.  Then, for each 2 [keyword:Hydra Levels], Heroes currently in the HQ cost 1 more to recruit this turn."
+          ]
+        },
+        {
+          "name": "Mentallo",
+          "slug": "mentallo",
+          "vp": "3",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-vi-aim-hydra-offshoot-mentallo.webp",
+          "abilities": [
+            "Mentallo gets +1[icon:attack] for each Officer he has.",
+            "Ambush: Put a card from the S.H.I.E.L.D. Officer Stack into the Escape Pile.  Then Mentallo vaptures a S.H.I.E.L.D. Officer for each 2 [keyword:Hydra Levels].",
+            "Fight: Gain an Officer captured by Mentallo or send it [keyword:Undercover].  KO the rest."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 85,
+      "name": "Hydra Elite",
+      "slug": "hydra-elite",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Growing Man",
+          "slug": "growing-man",
+          "vp": "3",
+          "vAttack": "0+",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-vi-hydra-elite-growing-man.webp",
+          "abilities": [
+            "Growing Man gets +[icon:attack] equal to the Mastermind's [keyword:Hydra Level].",
+            "Ambush: Put a card from the S.H.I.E.L.D. Officer Stack into the Escape Pile."
+          ]
+        },
+        {
+          "name": "Crossbones",
+          "slug": "crossbones",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-vi-hydra-elite-crossbones.webp",
+          "abilities": [
+            "Ambush: Put a card from the S.H.I.E.L.D. Officer Stack into the Escape Pile. Then each player gains a Wound unless that player reveals at least as many [team:shield] Heroes as the [keyword:Hydra Level]."
+          ]
+        },
+        {
+          "name": "Hive",
+          "slug": "hive",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-vi-hydra-elite-hive.webp",
+          "abilities": [
+            "Ambush: Put a card form the S.H.I.E.L.D. Officer Stack into the Escape Pile. Then each player reveals their hand and discards a card with cost equal to the [keyword:Hydra Level]."
+          ]
+        },
+        {
+          "name": "Gorgon",
+          "slug": "gorgon",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/shld/shld-vi-hydra-elite-gorgon.webp",
+          "abilities": [
+            "Ambush: Put a card from the S.H.I.E.L.D. Officer Stack into the Escape Pile. Then check the [keyword:Hydra Level].  You can't play Heroes of that cost this turn."
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [],
+  "schemes": [
+    {
+      "id": 118,
+      "name": "S.H.I.E.L.D. vs. HYDRA War",
+      "slug": "shield-vs-hydra-war",
+      "imageUrl": "https://images.barefootbetters.com/shld/shld-sc-shield-vs-hydra-war.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 7 Twists. Include either the “Hydra Elite“ or “A.I.M., Hydra Offshoot“ Villain Group, but not both.",
+            "Twist: Each player puts a card from the S.H.I.E.L.D. Officer Stack face up next to the Scheme as a 3[icon:attack] “Double Agent“ Villain. If any Double Agents were already there, put one into the Escape Pile and put the rest on the bottom of the S.H.I.E.L.D. Officer Stack. You can fight any Double Agent next to the Scheme to gain it or send it [keyword:Undercover].",
+            "Evil Wins: When the [keyword:Hydra Level] is 11."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 119,
+      "name": "Hail Hydra",
+      "slug": "hail-hydra",
+      "imageUrl": "https://images.barefootbetters.com/shld/shld-sc-hail-hydra.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 11 Twists.",
+            "Twist 1-9: Choose one:",
+            "-Say “I'd never abandon S.H.I.E.L.D.“, and you can't fight this turn.",
+            "-Or whisper “Hail Hydra“, you can't recruit this turn, and a Villain captures a Bystander.",
+            "Twist 10: Evil Wins!"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 120,
+      "name": "Hydra Helicarriers Hunt Heroes",
+      "slug": "hydra-helicarriers-hunt-heroes",
+      "imageUrl": "https://images.barefootbetters.com/shld/shld-sc-hydra-helicarriers-hunt-heroes.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. Add an extra Hero.",
+            "Twist: Stack this Twist next to the Scheme. Then for each Twist stacked there, choose a different Hero Class ([hc:strength],[hc:instinct],[hc:covert],[hc:tech],[hc:ranged]), to a maximum of 5. KO each Hero from the HQ that has any of those Hero Classes.",
+            "Evil Wins: When there are 18 non-grey Heroes in the KO pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 121,
+      "name": "Secret Empire of Betrayal",
+      "slug": "secret-empire-of-betrayal",
+      "imageUrl": "https://images.barefootbetters.com/shld/shld-sc-secret-empire-of-betrayal.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 11 Twists. Randomly pick 5 cards that cost 5 or less from an additional Hero. Shuffle them to form a “Dark Loyalty“ deck.",
+            "Twist: Shuffle this Twist into the Dark Loyalty deck as a “Vicious Betrayal.“ Then reveal the top card of that deck. If it's a Hero, gain it. If it's a Vicious Betrayal, put it next to the Scheme and each other player gains a Wound.",
+            "Evil Wins: When there are 6 Vicious Betrayals next to the Scheme."
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [],
+  "wounds": [],
+  "other": []
+}

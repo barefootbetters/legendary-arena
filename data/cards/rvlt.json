@@ -1,0 +1,1390 @@
+{
+  "id": 24,
+  "abbr": "rvlt",
+  "exportName": "Revelations",
+  "heroes": [
+    {
+      "id": 185,
+      "name": "Captain Marvel, Agent of S.H.I.E.L.D.",
+      "slug": "captain-marvel-agent-of-shield",
+      "team": "shield",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "The Sword of S.H.I.E.L.D.",
+          "displayName": "The Sword of S.H.I.E.L.D.",
+          "slug": "the-sword-of-shield",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-captain-marvel-agent-of-shield-3c1.webp",
+          "abilities": [
+            "[team:shield][team:shield][team:shield][team:shield]: Draw a card."
+          ]
+        },
+        {
+          "name": "Radiant Blast",
+          "displayName": "Radiant Blast",
+          "slug": "radiant-blast",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-captain-marvel-agent-of-shield-4c2.webp",
+          "abilities": [
+            "If you drew any extra cards this turn, you get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Dominate the Battlefield",
+          "displayName": "Dominate the Battlefield",
+          "slug": "dominate-the-battlefield",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 6,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-captain-marvel-agent-of-shield-6u.webp",
+          "abilities": [
+            "[hc:ranged]: [keyword:Last Stand]"
+          ]
+        },
+        {
+          "name": "Higher, Further, Faster",
+          "displayName": "Higher, Further, Faster",
+          "slug": "higher-further-faster",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 7,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-captain-marvel-agent-of-shield-7r.webp",
+          "abilities": [
+            "Choose one: Draw three cards or [keyword:Last Stand].",
+            "[hc:strength][hc:strength]: Instead, do both."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 186,
+      "name": "Darkhawk",
+      "slug": "darkhawk",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Balance the Darkforce",
+          "displayName": "Balance the Darkforce",
+          "slug": "balance-the-darkforce",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 3,
+          "attack": "1",
+          "recruit": "1",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-darkhawk-3c1.webp",
+          "abilities": [
+            "[hc:tech]: Draw a card."
+          ]
+        },
+        {
+          "name": "Hawk Dive",
+          "displayName": "Hawk Dive",
+          "slug": "hawk-dive",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 4,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-darkhawk-4c2.webp",
+          "abilities": [
+            "Choose [icon:recruit] or [icon:attack]. Then [keyword:Hyperspeed 4] for that icon."
+          ]
+        },
+        {
+          "name": "Travel to Nullspace",
+          "displayName": "Travel to Nullspace",
+          "slug": "travel-to-nullspace",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 6,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-darkhawk-6u.webp",
+          "abilities": [
+            "If the most recent Hero you played this turn has a [icon:recruit] icon, you get +3[icon:recruit]. If it has an [icon:attack] icon, you get +3[icon:attack]. (If both, you get both.)"
+          ]
+        },
+        {
+          "name": "Warflight",
+          "displayName": "Warflight",
+          "slug": "warflight",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 7,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-darkhawk-7r.webp",
+          "abilities": [
+            "Whenever you [keyword:Hyperspeed] this turn, you get both [icon:recruit] from [icon:recruit] icons and [icon:attack] from [icon:attack] icons.",
+            "[keyword:Hyperspeed 7]",
+            "[hc:tech][hc:tech]: Instead, [keyword:Hyperspeed 9]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 187,
+      "name": "Hellcat",
+      "slug": "hellcat",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Catlike Agility",
+          "displayName": "Catlike Agility",
+          "slug": "catlike-agility",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": "1",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-hellcat-2c1.webp",
+          "abilities": [
+            "[hc:instinct]: Choose one - Draw a card or you get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Part-Time PI",
+          "displayName": "Part-Time PI",
+          "slug": "part-time-pi",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-hellcat-3c2.webp",
+          "abilities": [
+            "Reveal the top card of any deck. If it's not a Scheme Twist, you may put it on the bottom of that deck.",
+            "[hc:instinct]: Choose one - Draw a card or you get +1[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Demon Sight",
+          "displayName": "Demon Sight",
+          "slug": "demon-sight",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-hellcat-5u.webp",
+          "abilities": [
+            "Guess Villain, Bystander, Strike, or Twist. Then reveal the top card of the Villain Deck. If you guessed right, you get +2[icon:attack].",
+            "[team:avengers]: If it was a Villain, you may fight it this turn."
+          ]
+        },
+        {
+          "name": "Second Chance at Life",
+          "displayName": "Second Chance at Life",
+          "slug": "second-chance-at-life",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 8,
+          "attack": "6",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-hellcat-8r.webp",
+          "abilities": [
+            "If a Master Strike or Scheme Twist would occur, you may discard this card from your hand instead. If you do, draw three cards, then shuffle that Strike or Twist back into the Villain Deck."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 188,
+      "name": "Photon",
+      "slug": "photon",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Infrared Conversation",
+          "displayName": "Infrared Conversation",
+          "slug": "infrared-conversation",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-photon-3c1.webp",
+          "abilities": [
+            "To play this, you must discard a card. Draw two cards."
+          ]
+        },
+        {
+          "name": "Ultraviolet Radiation",
+          "displayName": "Ultraviolet Radiation",
+          "slug": "ultraviolet-radiation",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-photon-4c2.webp",
+          "abilities": [
+            "To play this, you must discard a card.",
+            "[hc:ranged]: [keyword:Hyperspeed 3]"
+          ]
+        },
+        {
+          "name": "Light the Way",
+          "displayName": "Light the Way",
+          "slug": "light-the-way",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 6,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-photon-6u.webp",
+          "abilities": [
+            "You get +1[icon:attack] for each card you discarded from your hand this turn."
+          ]
+        },
+        {
+          "name": "Coruscating Vengeance",
+          "displayName": "Coruscating Vengeance",
+          "slug": "coruscating-vengeance",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 8,
+          "attack": "6+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-photon-8r.webp",
+          "abilities": [
+            "[team:avengers][team:avengers]: [keyword:Last Stand]"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 189,
+      "name": "Quicksilver",
+      "slug": "quicksilver",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Too Fast to See",
+          "displayName": "Too Fast to See",
+          "slug": "too-fast-to-see",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-quicksilver-3c1.webp",
+          "abilities": [
+            "[keyword:Hyperspeed 3] for[icon:recruit].",
+            "[hc:instinct]: Instead, [keyword:Hyperspeed 3] for [icon:recruit] and [icon:attack]."
+          ]
+        },
+        {
+          "name": "Perpetual Motion",
+          "displayName": "Perpetual Motion",
+          "slug": "perpetual-motion",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-quicksilver-4c2.webp",
+          "abilities": [
+            "[hc:strength]: [keyword:Hyperspeed 4]"
+          ]
+        },
+        {
+          "name": "Jittery Impatience",
+          "displayName": "Jittery Impatience",
+          "slug": "jittery-impatience",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 6,
+          "attack": "2",
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-quicksilver-6u.webp",
+          "abilities": [
+            "Look at the top card of your deck. Discard it or put it back.",
+            "[hc:instinct]: You may KO the card you discarded this way."
+          ]
+        },
+        {
+          "name": "Around the World Punch",
+          "displayName": "Around the World Punch",
+          "slug": "around-the-world-punch",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 8,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-quicksilver-8r.webp",
+          "abilities": [
+            "[keyword:Hyperspeed] your entire remaining deck. (Don't reshuffle.)",
+            "[team:avengers][team:avengers][team:avengers][team:avengers]: Before you do that, put your discard pile on top of your deck."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 190,
+      "name": "Ronin",
+      "slug": "ronin",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Mysterious Identity",
+          "displayName": "Mysterious Identity",
+          "slug": "mysterious-identity",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-ronin-3c1.webp",
+          "abilities": [
+            "As you play this card, you may choose a color and/or a team icon. This card is that color and team icon this turn. (instead of [hc:covert] and [team:avengers])"
+          ]
+        },
+        {
+          "name": "Storm of Arrows",
+          "displayName": "Storm of Arrows",
+          "slug": "storm-of-arrows",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-ronin-4c2.webp",
+          "abilities": [
+            "[keyword:Hyperspeed 4]",
+            "[hc:ranged]: Draw a card."
+          ]
+        },
+        {
+          "name": "Haunted by Loss",
+          "displayName": "Haunted by Loss",
+          "slug": "haunted-by-loss",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-ronin-5u.webp",
+          "abilities": [
+            "[hc:instinct]: [keyword:Dark Memories]"
+          ]
+        },
+        {
+          "name": "Brooding Fury",
+          "displayName": "Brooding Fury",
+          "slug": "brooding-fury",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 7,
+          "attack": "3+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-ronin-7r.webp",
+          "abilities": [
+            "[keyword:Dark Memories]",
+            "[hc:strength]: [keyword:Dark Memories] again."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 191,
+      "name": "Scarlet Witch",
+      "slug": "scarlet-witch",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Hex Bolt",
+          "displayName": "Hex Bolt",
+          "slug": "hex-bolt",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 2,
+          "attack": "1",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-scarlet-witch-2c1.webp",
+          "abilities": [
+            "[hc:ranged]: Discard the top card of any player's deck. You may play a copy of that card this turn."
+          ]
+        },
+        {
+          "name": "Alter Reality",
+          "displayName": "Alter Reality",
+          "slug": "alter-reality",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 3,
+          "attack": "0+",
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-scarlet-witch-3c2.webp",
+          "abilities": [
+            "Reveal the top card of your deck. Discard it or put it back.",
+            "[hc:covert]: [keyword:Dark Memories]"
+          ]
+        },
+        {
+          "name": "Chaos Magic",
+          "displayName": "Chaos Magic",
+          "slug": "chaos-magic",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 4,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-scarlet-witch-4u.webp",
+          "abilities": [
+            "Reveal the top card of the Hero Deck. You may play a copy of that card this turn. When you do, put that card on the bottom of the Hero Deck."
+          ]
+        },
+        {
+          "name": "Warp Time and Space",
+          "displayName": "Warp Time and Space",
+          "slug": "warp-time-and-space",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 7,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-scarlet-witch-7r.webp",
+          "abilities": [
+            "Reveal the top three cards of the Hero Deck. Put one of them in your hand. Put the rest on the top or bottom of the Hero Deck in any order.",
+            "[team:avengers][team:avengers][team:avengers]: [keyword:Dark Memories]"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 192,
+      "name": "Speed",
+      "slug": "speed",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Accelerate",
+          "displayName": "Accelerate",
+          "slug": "accelerate",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-speed-2c1.webp",
+          "abilities": [
+            "[keyword:Hyperspeed 2]",
+            "[hc:instinct]: Instead, [keyword:Hyperspeed 6]"
+          ]
+        },
+        {
+          "name": "Speedy Delivery",
+          "displayName": "Speedy Delivery",
+          "slug": "speedy-delivery",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": "1",
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-speed-4c2.webp",
+          "abilities": [
+            "The next Hero you recruit this turn goes on top of your deck."
+          ]
+        },
+        {
+          "name": "Race to the Rescue",
+          "displayName": "Race to the Rescue",
+          "slug": "race-to-the-rescue",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 5,
+          "attack": "3",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-speed-5u.webp",
+          "abilities": [
+            "Choose a Hero Class. ([hc:strength],[hc:instinct],[hc:covert],[hc:tech] or [hc:ranged]) Reveal the top card of your deck. If it's the Hero Class you named, draw it. Otherwise, put it back on the top or bottom."
+          ]
+        },
+        {
+          "name": "Break the Sound Barrier",
+          "displayName": "Break the Sound Barrier",
+          "slug": "break-the-sound-barrier",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 8,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-speed-8r.webp",
+          "abilities": [
+            "Look at the top six cards of your deck, draw two of them, and put the rest back on the top or bottom in any order.",
+            "[hc:covert]: [keyword:Hyperspeed 6]"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 193,
+      "name": "War Machine",
+      "slug": "war-machine",
+      "team": "avengers",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Simulated Target Practice",
+          "displayName": "Simulated Target Practice",
+          "slug": "simulated-target-practice",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-war-machine-3c1.webp",
+          "abilities": [
+            "[hc:tech]: You may fight a Henchman from your Victory Pile this turn. If you do, KO it and rescue a Bystander. (Do that Henchman's Fight effect too.)"
+          ]
+        },
+        {
+          "name": "Military-Industrial Complex",
+          "displayName": "Military-Industrial Complex",
+          "slug": "military-industrial-complex",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 4,
+          "attack": "2",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-war-machine-4c2.webp",
+          "abilities": [
+            "Whenever you defeat a Villain this turn, you get +1[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Hypersonic Cannon",
+          "displayName": "Hypersonic Cannon",
+          "slug": "hypersonic-cannon",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 5,
+          "attack": "0+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-war-machine-5u.webp",
+          "abilities": [
+            "[keyword:Hyperspeed 5]",
+            "[hc:ranged]: You may KO a card from your discard pile."
+          ]
+        },
+        {
+          "name": "Overwhelming Firepower",
+          "displayName": "Overwhelming Firepower",
+          "slug": "overwhelming-firepower",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 8,
+          "attack": "5",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hr-war-machine-8r.webp",
+          "abilities": [
+            "Whenever you defeat a Villain or Mastermind this turn, draw a card and rescue a Bystander."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 62,
+      "name": "Grim Reaper",
+      "slug": "grim-reaper",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Grim Reaper",
+          "slug": "grim-reaper",
+          "tactic": false,
+          "vAttack": "8+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-mm-grim-reaper.webp",
+          "abilities": [
+            "Grim Reaper gets +1[icon:attack] for each [rule:Location] card in the city.",
+            "Always Leads: Lethal Legion",
+            "Master Strike: This Strike enters the city as a 7[icon:attack] “Graveyard“ [rule:Location] that says “This gets +2[icon:attack] while there's a Villain here.“ It's Worth 5VP."
+          ]
+        },
+        {
+          "name": "Epic Grim Reaper",
+          "slug": "epic-grim-reaper",
+          "tactic": false,
+          "vAttack": "9+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-me-grim-reaper.webp",
+          "abilities": [
+            "Grim Reaper gets +2[icon:attack] for each [rule:Location] card in the city.",
+            "Always Leads: Lethal Legion",
+            "Master Strike: This Strike enters the city as an 8[icon:attack] “Graveyard“ [rule:Location] that says “This gets +3[icon:attack] while there's a Villain here.“ It's worth 6VP. Then, if there are at least three Location cards in the city, each player gains a Wound."
+          ]
+        },
+        {
+          "name": "Carnival of Concussions",
+          "slug": "carnival-of-concussions",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-mt-grim-reaper-carnival-of-concussions.webp",
+          "abilities": [
+            "Fight: If this was not already a [rule:Location], draw three cards, and this card enters the city as a Location with this ability:",
+            "Whenever you fight a Villain here, each other player KOs a Bystander from their Victory Pile."
+          ]
+        },
+        {
+          "name": "Cult of Skulls",
+          "slug": "cult-of-skulls",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-mt-grim-reaper-cult-of-skulls.webp",
+          "abilities": [
+            "Fight: If this was not already a [rule:Location], KO up to two cards from your discard pile, and this card enters the city as a Location with this ability:",
+            "Whenever you fight a Villain here, each other player reveals their hand and discards a non-grey card."
+          ]
+        },
+        {
+          "name": "Maze of Bones",
+          "slug": "maze-of-bones",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-mt-grim-reaper-maze-of-bones.webp",
+          "abilities": [
+            "Fight: If this was not already a [rule:Location], look at the top four cards of your deck, KO any number of them, and put the rest back in any order. Then this card enters the city as a Location with this ability:",
+            "Whenever you fight a Villain here, each other player gains a Wound."
+          ]
+        },
+        {
+          "name": "Prison of Coffins",
+          "slug": "prison-of-coffins",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-mt-grim-reaper-prison-of-coffins.webp",
+          "abilities": [
+            "Fight: If this was not already a [rule:Location], you get +5[icon:recruit], and this card enters the city as a Location with this ability:",
+            "Whenever you fight a Villain here, each other player puts a Villain from their Victory Pile into the Escape Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 63,
+      "name": "Hood, The",
+      "slug": "hood-the",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "The Hood",
+          "slug": "the-hood",
+          "tactic": false,
+          "vAttack": "9+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-mm-hood-the.webp",
+          "abilities": [
+            "[keyword:Dark Memories]",
+            "Always Leads: Hood's Gang",
+            "Master Strike: Each player reveals the top 6 cards of their deck, discards all the non-grey Heroes revealed, and puts the rest back in any order."
+          ]
+        },
+        {
+          "name": "Epic Hood",
+          "slug": "epic-hood",
+          "tactic": false,
+          "vAttack": "10+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-me-hood-the.webp",
+          "abilities": [
+            "[keyword:Double Dark Memories]",
+            "Always Leads: Hood's Gang",
+            "Master Strike: Each player discards their deck, then shuffles 6 random grey cards from their discard pile to form their new deck."
+          ]
+        },
+        {
+          "name": "Demonic Revelation",
+          "slug": "demonic-revelation",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-mt-hood-the-demonic-revelation.webp",
+          "abilities": [
+            "Fight: Each other player reveals their hand and discards a non-grey Hero."
+          ]
+        },
+        {
+          "name": "Focus Magic Through Guns",
+          "slug": "focus-magic-through-guns",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-mt-hood-the-focus-magic-through-guns.webp",
+          "abilities": [
+            "Fight: Each other player reveals a [hc:covert] Hero or discards a card.",
+            "Then each other player reveals a [hc:tech] Hero or gains a Wound."
+          ]
+        },
+        {
+          "name": "Paean to Dormammu",
+          "slug": "paean-to-dormammu",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-mt-hood-the-paean-to-dormammu.webp",
+          "abilities": [
+            "Fight: Each other player discards their deck."
+          ]
+        },
+        {
+          "name": "The Hood's Warehouse",
+          "slug": "the-hoods-warehouse",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-mt-hood-the-the-hoods-warehouse.webp",
+          "abilities": [
+            "Fight: If this was not already a [rule:Location], rescue 4 Bystanders, and this card enters the city as a Location with this ability:",
+            "When you fight a Villain here, play another card from the Villain Deck."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 64,
+      "name": "Mandarin",
+      "slug": "mandarin",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Mandarin",
+          "slug": "mandarin",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-mm-mandarin.webp",
+          "abilities": [
+            "All Mandarin's Rings get +1[icon:attack].",
+            "Mandarin gets -1[icon:attack] for each Mandarin's Ring among all players' Victory Piles. (-3[icon:attack] for each in solo.)",
+            "Always Leads: Mandarin's Rings",
+            "Master Strike: Each player chooses a Mandarin's Ring from their Victory Pile to enter the city. Any player who didn't have a Ring gains a Wound instead."
+          ]
+        },
+        {
+          "name": "Epic Mandarin",
+          "slug": "epic-mandarin",
+          "tactic": false,
+          "vAttack": "26",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-me-mandarin.webp",
+          "abilities": [
+            "All Mandarin's Rings get +2[icon:attack].",
+            "Mandarin gets -2[icon:attack] for each Mandarin's Ring among all players' Victory Piles. (-6[icon:attack] for each in solo.)",
+            "Always Leads: Mandarin's Rings",
+            "Master Strike: Each player chooses a Mandarin's Ring from their Victory Pile to enter the city. Any player who didn't have a Ring gains a Wound to the top of their deck instead."
+          ]
+        },
+        {
+          "name": "Circles Unbroken",
+          "slug": "circles-unbroken",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-mt-mandarin-circles-unbroken.webp",
+          "abilities": [
+            "Fight: Draw a card for each Mandarin's Ring in your Victory Pile."
+          ]
+        },
+        {
+          "name": "Dragon of Heaven Spaceship",
+          "slug": "dragon-of-heaven-spaceship",
+          "tactic": true,
+          "vAttack": "9",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-mt-mandarin-dragon-of-heaven-spaceship.webp",
+          "abilities": [
+            "Fight: If this was not already a [rule:Location], KO up to two of your Heroes, and this card enters the city as a Location with this ability:",
+            "Whenever you fight a Villain here, each other player reveals their hand and KOs one of their non-grey Heroes.",
+            "Fight: KO up to two of your Heroes."
+          ]
+        },
+        {
+          "name": "Intertwining Powers",
+          "slug": "intertwining-powers",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-mt-mandarin-intertwining-powers.webp",
+          "abilities": [
+            "Fight: Each other player without at least two Mandarin's Rings in their Victory Pile gains a Wound."
+          ]
+        },
+        {
+          "name": "Rings Seek Their True Hand",
+          "slug": "rings-seek-their-true-hand",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-mt-mandarin-rings-seek-their-true-hand.webp",
+          "abilities": [
+            "Fight: Each other player reveals a [hc:tech] Hero or puts a Mandarin's Ring from their Victory Pile into the Escape Pile."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 80,
+      "name": "Army of Evil",
+      "slug": "army-of-evil",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Mister Hyde",
+          "slug": "mister-hyde",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-army-of-evil-mister-hyde.webp",
+          "abilities": [
+            "While in the Bank or Streets, this card's name is “Dr. Calvin Zabo“, and you muist spend [icon:recruit] to fight him instead of [icon:attack].",
+            "Fight: KO pne of your Heroes."
+          ]
+        },
+        {
+          "name": "Klaw",
+          "slug": "klaw",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-army-of-evil-klaw.webp",
+          "abilities": [
+            "Ambush: Klaw captures a [hc:tech] or [hc:ranged] Hero that costs 5 or less from the HQ.",
+            "Fight: Gain that Hero"
+          ]
+        },
+        {
+          "name": "Dome of Darkforce",
+          "slug": "dome-of-darkforce",
+          "vp": "5",
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-army-of-evil-dome-of-darkforce.webp",
+          "abilities": [
+            "Whenever you fight a Villain here, each other player reveals a [hc:ranged] Hero or discards a card.",
+            "Fight: Draw two cards."
+          ]
+        },
+        {
+          "name": "Count Nefaria",
+          "slug": "count-nefaria",
+          "vp": "5",
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-army-of-evil-count-nefaria.webp",
+          "abilities": [
+            "Ambush: All players reveal their hands.  Unless all those revealed cards together include [hc:strength], [hc:instinct], [hc:covert], [hc:tech], and [hc:ranged] Heroes, each player gains a Wound.",
+            "Escape: Same Effect."
+          ]
+        },
+        {
+          "name": "Blackout",
+          "slug": "blackout",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-army-of-evil-blackout.webp",
+          "abilities": [
+            "Ambush: Each player reveals a [hc:ranged] Hero or discards a card.",
+            "Fight: Draw two cards."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 81,
+      "name": "Dark Avengers",
+      "slug": "dark-avengers",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Ares",
+          "slug": "ares",
+          "vp": "6",
+          "vAttack": "6+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-dark-avengers-ares.webp",
+          "abilities": [
+            "[keyword:Last Stand]",
+            "Fight: KO one of your Heroes."
+          ]
+        },
+        {
+          "name": "Captain Marvel (Noh-Varr)",
+          "slug": "captain-marvel-noh-varr",
+          "vp": "3",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-dark-avengers-captain-marvel-noh-varr.webp",
+          "abilities": [
+            "[keyword:Last Stand]",
+            "Ambush: If any other Dark Avengers are in the city, each player gains a Wound.",
+            "Escape: Same Effect."
+          ]
+        },
+        {
+          "name": "Dark Hawkeye (Bullseye)",
+          "slug": "dark-hawkeye-bullseye",
+          "vp": "4",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-dark-avengers-dark-hawkeye-bullseye.webp",
+          "abilities": [
+            "[keyword:Last Stand]",
+            "Fight: KO one of your Heroes. Then choose one:",
+            "- Each other player KOs one of their Heroes.",
+            "- Each other player gains a 0-cost Hero from the KO pile."
+          ]
+        },
+        {
+          "name": "Dark Ms. Marvel (Moonnstone)",
+          "slug": "dark-ms-marvel-moonnstone",
+          "vp": "4",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-dark-avengers-dark-ms-marvel-moonnstone.webp",
+          "abilities": [
+            "[keyword:Last Stand]",
+            "Fight: Each other player discards two cards, then draws a card."
+          ]
+        },
+        {
+          "name": "Dark Spider-Man (Scorpion)",
+          "slug": "dark-spider-man-scorpion",
+          "vp": "2",
+          "vAttack": "2+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-dark-avengers-dark-spider-man-scorpion.webp",
+          "abilities": [
+            "[keyword:Double Last Stand]",
+            "Fight: Reveal the top two cards of your deck.  KO one of them that costs 2 or less.  Put the rest back in any order."
+          ]
+        },
+        {
+          "name": "Dark Wolverine (Daken)",
+          "slug": "dark-wolverine-daken",
+          "vp": "5",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-dark-avengers-dark-wolverine-daken.webp",
+          "abilities": [
+            "[keyword:Last Stand]",
+            "Ambush: Each player reveals an [hc:instinct] Hero or gains a Wound.",
+            "Escape: Same Effect, then shuffle Dark Wolverine back into the Villain Deck."
+          ]
+        },
+        {
+          "name": "Sentry",
+          "slug": "sentry",
+          "vp": "5",
+          "vAttack": "7+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-dark-avengers-sentry.webp",
+          "abilities": [
+            "While in the Bank or Streets, this card's name is “The Void“, it gets +5[icon:attack], and it gets “Fight: KO up to two cards from your discard pile.“",
+            "Escape: Each player gains a Wound."
+          ]
+        },
+        {
+          "name": "Sentry's Watchtower",
+          "slug": "sentrys-watchtower",
+          "vp": "5",
+          "vAttack": "8",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-dark-avengers-sentrys-watchtower.webp",
+          "abilities": [
+            "Villains here get [keyword:Last Stand]. (Villains who already have it get the bonus again.)",
+            "Fight: You gain the Hero on the HQ space under this."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 82,
+      "name": "Hood's Gang",
+      "slug": "hoods-gang",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Cancer",
+          "slug": "cancer",
+          "vp": "2",
+          "vAttack": "3+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-hoods-gang-cancer.webp",
+          "abilities": [
+            "[keyword:Dark Memories]",
+            "Ambush: Each player that has any cards in their discard pile gains a Wound.",
+            "Escape: Same effect."
+          ]
+        },
+        {
+          "name": "Chemistro",
+          "slug": "chemistro",
+          "vp": "3",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-hoods-gang-chemistro.webp",
+          "abilities": [
+            "[keyword:Dark Memories]",
+            "Fight: Exchange a card you played this turn with a card in the HQ that has the same or lower cost. (The card you gained goes to your discard pile.)"
+          ]
+        },
+        {
+          "name": "Madam Masque",
+          "slug": "madam-masque",
+          "vp": "4",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-hoods-gang-madam-masque.webp",
+          "abilities": [
+            "[keyword:Dark Memories]",
+            "Ambush: Guess Villain, Bystander, Strike, or Twist.  Then reveal the top card of the Villain Deck.  If you guessed wrong, play that card.",
+            "Fight: KO one of your Heroes."
+          ]
+        },
+        {
+          "name": "The Brothers Grimm",
+          "slug": "the-brothers-grimm",
+          "vp": "2",
+          "vAttack": "2",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-hoods-gang-the-brothers-grimm.webp",
+          "abilities": [
+            "To fight The Brothers Grimm, you must also discard two identical cards.",
+            "Fight: You may KO a card from your discard pile."
+          ]
+        },
+        {
+          "name": "The Dark Dimension",
+          "slug": "the-dark-dimension",
+          "vp": "5",
+          "vAttack": "9",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-hoods-gang-the-dark-dimension.webp",
+          "abilities": [
+            "Villains here get [keyword:Dark Memories]. (Villains who already have it get the bonus again.)",
+            "Fight: Take another turn after this one."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 83,
+      "name": "Lethal Legion",
+      "slug": "lethal-legion",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Carnival of Wonders",
+          "slug": "carnival-of-wonders",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-lethal-legion-carnival-of-wonders.webp",
+          "abilities": [
+            "Whenever you fight a Villain here, each other player chooses a Bystander from their Victory Pile to be captured by Carnival of Wonders."
+          ]
+        },
+        {
+          "name": "Laser Maze",
+          "slug": "laser-maze",
+          "vp": "5",
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-lethal-legion-laser-maze.webp",
+          "abilities": [
+            "Whenever you fight a Villain here, each other players reveals a [hc:ranged] Hero or gains a Wound."
+          ]
+        },
+        {
+          "name": "Living Laser",
+          "slug": "living-laser",
+          "vp": "5",
+          "vAttack": "6+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-lethal-legion-living-laser.webp",
+          "abilities": [
+            "Living Laser gers +3[icon:attack] while there's a “Maze“ [rule:Location] in the city.",
+            "Fight: Each player reveals a [hc:ranged] Hero or gains a Wound.",
+            "Escape: Same effect."
+          ]
+        },
+        {
+          "name": "M'Baku",
+          "slug": "mbaku",
+          "vp": "4",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-lethal-legion-mbaku.webp",
+          "abilities": [
+            "M'Baku gets +3[icon:attack] while there's a “Cult“ [rule:Location] in the city.",
+            "Fight: Each player reveals their hand and discards a [hc:tech] card.",
+            "Escape: Same effect."
+          ]
+        },
+        {
+          "name": "Power Man (Erik Josten)",
+          "slug": "power-man-erik-josten",
+          "vp": "4",
+          "vAttack": "5+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-lethal-legion-power-man-erik-josten.webp",
+          "abilities": [
+            "Power Man gets +3[icon:attack] while there's a “Prison“ [rule:Location] in the city.",
+            "Escape: Each player puts a Villain from their Victory Pile into the Escape Pile or gains a Wound."
+          ]
+        },
+        {
+          "name": "Swordsman",
+          "slug": "swordsman",
+          "vp": "3",
+          "vAttack": "4+",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-lethal-legion-swordsman.webp",
+          "abilities": [
+            "Swordsman gets +3[icon:attack] while there's a “Carnival“ [rule:Location] in the city.",
+            "Ambush: Swordsman and each [rule:Location] in the city capture a Bystander."
+          ]
+        },
+        {
+          "name": "“The Raft“ Prison",
+          "slug": "the-raft-prison",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-lethal-legion-the-raft-prison.webp",
+          "abilities": [
+            "Whenever you fight a Villain here, each other player puts a Villain from their Victory Pile into the Escape Pile or gains a Wound."
+          ]
+        },
+        {
+          "name": "White Gorilla Cult",
+          "slug": "white-gorilla-cult",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-vi-lethal-legion-white-gorilla-cult.webp",
+          "abilities": [
+            "Whenever you fight a Villain here, each other player reveals their hand and discards a [hc:tech] card."
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [
+    {
+      "id": 33,
+      "name": "HYDRA Base",
+      "slug": "hydra-base",
+      "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hm-hydra-base.webp",
+      "abilities": []
+    },
+    {
+      "id": 34,
+      "name": "Mandarin's Rings",
+      "slug": "mandarins-rings",
+      "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-hm-mandarins-rings.webp",
+      "abilities": []
+    }
+  ],
+  "schemes": [
+    {
+      "id": 114,
+      "name": "Earthquake Drains the Ocean",
+      "slug": "earthquake-drains-the-ocean",
+      "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-sc-earthquake-drains-the-ocean.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 11 Twists. Add an extra Villain Group.",
+            "Special Rules: There are two extra “Low Tide“ city spaces on the left side of the city, so the city has 7 spaces total.",
+            "Twist: The tide rushes in. This Scheme [rule:Transforms].",
+            "Evil Wins: When 3 Villains per player have escaped or the Villain Deck runs out."
+          ]
+        },
+        {
+          "abilities": [
+            "Special Rules: The Low Tide, Bridge, and Streets city spaces no longer exist. The city has 3 spaces total. Put this Scheme on the Streets to mark the edge of the city. Villains in destroyed city spaces escape, starting from the left.",
+            "Twist: The tide rushes out. This Scheme [rule:Transforms], then play another card from the Villain Deck.",
+            "Evil Wins: When 3 Villains per player have escaped or the Villain Deck runs out."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 115,
+      "name": "House of M",
+      "slug": "house-of-m",
+      "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-sc-house-of-m.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. Hero Deck is 4[team:x-men] Heroes and 2 non-[team:x-men] Heroes. (Or substitute another team for all [team:x-men] icons on both sides.) Add 14 Scarlet Witch Hero cards to the Villain Deck.",
+            "Special Rules: Each Scarlet Witch in the city is a Villain with [icon:attack] equal to its [icon:vp]+3. If you fight one, gain it as a Hero.",
+            "Twist: KO all non-[team:x-men] Heroes from the HQ. If there are at least 2 Scarlet Witch cards in the city, this Scheme [rule:Transforms]. Otherwise play another card from the Villain Deck."
+          ]
+        },
+        {
+          "abilities": [
+            "Special Rules: Each Scarlet Witch in the city is a Villain with [icon:attack] equal to its [icon:vp]+4. If you fight one, gain it as a Hero.",
+            "Twist: KO all [team:x-men] Heroes from the HQ. Play another card from the Villain Deck.",
+            "Evil Wins: When the number of non-grey Heroes in the KO pile is ten plus double the number of players."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 116,
+      "name": "Secret HYDRA Corruption",
+      "slug": "secret-hydra-corruption",
+      "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-sc-secret-hydra-corruption.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 30 Officers in the S.H.I.E.L.D. Officer stack. 1 player: 7 Twists. 2-3 players: 9 Twists. 4-5 players: 11 Twists.",
+            "Special Rules: Officers stacked next to this Scheme are “Hydra Sympathizers.“ You may pay 3[icon:recruit] to have the player of your choice gain one as a Hero.",
+            "Twist: For each Twist in the KO pile (including this one), put a card from the S.H.I.E.L.D. Officer stack next to this Scheme. Then this Scheme [rule:Transforms]."
+          ]
+        },
+        {
+          "abilities": [
+            "Special Rules: Officers next to this Scheme are 3[icon:attack] “Hydra Traitor“ Villains. When you fight one, return it to the Officer Stack and KO one of your Heroes.",
+            "Twist: For each Twist in the KO pile (including this one), put a card from the S.H.I.E.L.D. Officer stack next to this Scheme, Then if Evil hasn't won yet, this Scheme [rule:Transforms].",
+            "Evil Wins: When there are 15 Officers next to this Scheme or the S.H.I.E.L.D. Officer Stack runs out."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 117,
+      "name": "Korvac Saga, The",
+      "slug": "korvac-saga-the",
+      "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-sc-korvac-saga-the.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists.",
+            "Twist: Each player must discard down to four cards or KO a Bystander from their Victory Pile to “search for the Korvac Entity.“ This Scheme [rule:Transforms]."
+          ]
+        },
+        {
+          "abilities": [
+            "Special Rules: This Scheme counts as a 19[icon:attack] “Korvac“ Villain worth 9VP. If you defeat Korvac, KO the Mastermind and all its Tactics.",
+            "Twist: 2,4,6: Each player discards an [team:avengers] Hero or gains a Wound. This Scheme [rule:Transforms].",
+            "Twist 8: Evil Wins!"
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [
+    {
+      "id": 43,
+      "name": "Dog Show Judge",
+      "slug": "dog-show-judge",
+      "vp": 1,
+      "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-by-dog-show-judge.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "When you rescue this Bystander, each player reveals the top card of their deck. Judge one of those cards to be the “best in show.“ That player draws that card."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 44,
+      "name": "Lawyer",
+      "slug": "lawyer",
+      "vp": 1,
+      "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-by-lawyer.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "When you rescue this Bystander, reveal the top 3 cards of your deck. Draw each of them that has at least 10 words of rules text. Put the rest back in any order. (Numerals, icons, and punctuation don't count.)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 45,
+      "name": "Rocket Test Pilot",
+      "slug": "rocket-test-pilot",
+      "vp": 1,
+      "imageUrl": "https://images.barefootbetters.com/rvlt/rvlt-by-rocket-test-pilot.webp",
+      "cards": [
+        {
+          "qtd": 1,
+          "abilities": [
+            "When you rescue this Bystander, choose [icon:recruit] or [icon:attack]. Then [keyword:Hyperspeed 3] for that icon."
+          ]
+        }
+      ]
+    }
+  ],
+  "wounds": [],
+  "other": []
+}

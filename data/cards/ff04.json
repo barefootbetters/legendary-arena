@@ -1,0 +1,673 @@
+{
+  "id": 4,
+  "abbr": "ff04",
+  "exportName": "FantasticFour",
+  "heroes": [
+    {
+      "id": 33,
+      "name": "Human Torch",
+      "slug": "human-torch",
+      "team": "fantastic-four",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Call for Backup",
+          "displayName": "Call for Backup",
+          "slug": "call-for-backup",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-hr-human-torch-3c1.webp",
+          "abilities": [
+            "You may KO a Wound from your hand or discard pile. If you do, you get +1[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Hothead",
+          "displayName": "Hothead",
+          "slug": "hothead",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-hr-human-torch-4c2.webp",
+          "abilities": [
+            "You gain a Wound."
+          ]
+        },
+        {
+          "name": "Flame On!",
+          "displayName": "Flame On!",
+          "slug": "flame-on",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 6,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-hr-human-torch-6u.webp",
+          "abilities": [
+            "[keyword:Focus 6][icon:recruit]  [icon:5] You get +4 [icon:attack]."
+          ]
+        },
+        {
+          "name": "Nova Flame",
+          "displayName": "Nova Flame",
+          "slug": "nova-flame",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 8,
+          "attack": "6+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-hr-human-torch-8r.webp",
+          "abilities": [
+            "[team:fantastic-four]: You get +1[icon:attack] for each city space that contains a Villain."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "name": "Invisible Woman",
+      "slug": "invisible-woman",
+      "team": "fantastic-four",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Disappearing Act",
+          "displayName": "Disappearing Act",
+          "slug": "disappearing-act",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-hr-invisible-woman-4c1.webp",
+          "abilities": [
+            "[keyword:Focus 2][icon:recruit]  [icon:5] You may KO a card from your hand or discard pile."
+          ]
+        },
+        {
+          "name": "Four of a Kind",
+          "displayName": "Four of a Kind",
+          "slug": "four-of-a-kind",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-hr-invisible-woman-4c2.webp",
+          "abilities": [
+            "If you played any other cards that cost 4 [icon:vp] this turn, you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Unseen Rescue",
+          "displayName": "Unseen Rescue",
+          "slug": "unseen-rescue",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-hr-invisible-woman-4u.webp",
+          "abilities": [
+            "[keyword:Focus 2][icon:recruit]  [icon:5] Rescue a Bystander. You may only use this ability up to four times this turn."
+          ]
+        },
+        {
+          "name": "Invisible Barrier",
+          "displayName": "Invisible Barrier",
+          "slug": "invisible-barrier",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 7,
+          "attack": "5",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-hr-invisible-woman-7r.webp",
+          "abilities": [
+            "If an ambush effect would occur, you may reveal this card and draw two cards instead."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "name": "Mr. Fantastic",
+      "slug": "mr-fantastic",
+      "team": "fantastic-four",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Twisting Equations",
+          "displayName": "Twisting Equations",
+          "slug": "twisting-equations",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-hr-mr-fantastic-3c1.webp",
+          "abilities": [
+            "[keyword:Focus 2][icon:recruit]  [icon:5] When you draw a new hand of cards at the end of this turn, draw an extra card."
+          ]
+        },
+        {
+          "name": "Unstable Molecules",
+          "displayName": "Unstable Molecules",
+          "slug": "unstable-molecules",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 5,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-hr-mr-fantastic-5c2.webp",
+          "abilities": [
+            "Draw two cards."
+          ]
+        },
+        {
+          "name": "One Gigantic Hand",
+          "displayName": "One Gigantic Hand",
+          "slug": "one-gigantic-hand",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 5,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-hr-mr-fantastic-5u.webp",
+          "abilities": [
+            "[team:fantastic-four]: You get +1[icon:attack] for each card in your hand."
+          ]
+        },
+        {
+          "name": "Ultimate Nullifier",
+          "displayName": "Ultimate Nullifier",
+          "slug": "ultimate-nullifier",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 7,
+          "attack": "4+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-hr-mr-fantastic-7r.webp",
+          "abilities": [
+            "If an Enemy you fight this turn would have a fight effect, you may cancel that effect instead.",
+            "[keyword:Focus 1][icon:recruit]  [icon:5] You get +1[icon:attack] usable only against the Mastermind."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "name": "Silver Surfer",
+      "slug": "silver-surfer",
+      "team": "unaffiliated",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "Warp Speed",
+          "displayName": "Warp Speed",
+          "slug": "warp-speed",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-hr-silver-surfer-3c1.webp",
+          "abilities": [
+            "[keyword:Focus 2][icon:recruit]  [icon:5] Draw a card."
+          ]
+        },
+        {
+          "name": "Epic Destiny",
+          "displayName": "Epic Destiny",
+          "slug": "epic-destiny",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-hr-silver-surfer-4c2.webp",
+          "abilities": [
+            "[keyword:Focus 6][icon:recruit]  [icon:5] Defeat a Villain of 5 [icon:attack] or 6 [icon:attack]."
+          ]
+        },
+        {
+          "name": "The Power Cosmic",
+          "displayName": "The Power Cosmic",
+          "slug": "the-power-cosmic",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 6,
+          "attack": "0+",
+          "recruit": "3",
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-hr-silver-surfer-6u.webp",
+          "abilities": [
+            "[keyword:Focus 9][icon:recruit]  [icon:5] You get +9 [icon:attack]."
+          ]
+        },
+        {
+          "name": "Energy Surge",
+          "displayName": "Energy Surge",
+          "slug": "energy-surge",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 7,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-hr-silver-surfer-7r.webp",
+          "abilities": [
+            "Double the [icon:recruit] you have."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "name": "Thing",
+      "slug": "thing",
+      "team": "fantastic-four",
+      "cardCounts": null,
+      "cards": [
+        {
+          "name": "It Started on Yancy Street",
+          "displayName": "It Started on Yancy Street",
+          "slug": "it-started-on-yancy-street",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-hr-thing-3c1.webp",
+          "abilities": [
+            "[team:fantastic-four]: You get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Knuckle Sandwich",
+          "displayName": "Knuckle Sandwich",
+          "slug": "knuckle-sandwich",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 5,
+          "attack": "0+",
+          "recruit": "3",
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-hr-thing-5c2.webp",
+          "abilities": [
+            "[keyword:Focus 3][icon:recruit]  [icon:5] You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Crime Stopper",
+          "displayName": "Crime Stopper",
+          "slug": "crime-stopper",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "4",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-hr-thing-6u.webp",
+          "abilities": [
+            "Whenever you defeat a Villain in the Bank this turn, rescue a Bystander.",
+            "[keyword:Focus 1][icon:recruit]  [icon:5] Move a Villain to an adjacent city space. If another Villain is already there, swap them."
+          ]
+        },
+        {
+          "name": "It's Clobberin' Time!",
+          "displayName": "It's Clobberin' Time!",
+          "slug": "its-clobberin-time",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 8,
+          "attack": "5+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-hr-thing-8r.webp",
+          "abilities": [
+            "[hc:strength]: You get +3[icon:attack]for each other [hc:strength]card you played this turn."
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 10,
+      "name": "Galactus",
+      "slug": "galactus",
+      "alwaysLeads": [],
+      "vp": 7,
+      "cards": [
+        {
+          "name": "Galactus",
+          "slug": "galactus",
+          "tactic": false,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-mm-galactus.webp",
+          "abilities": [
+            "[keyword:Cosmic Threat]: [hc:strength][hc:instinct][hc:covert][hc:tech][hc:ranged]",
+            "Always Leads: Heralds of Galactus",
+            "Master Strike: Destroy the city space closest to Galactus. Any Villain there escapes. Put this Master Strike there.",
+            "Galactus Wins: When the city is destroyed."
+          ]
+        },
+        {
+          "name": "Cosmic Entity",
+          "slug": "cosmic-entity",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-mt-galactus-cosmic-entity.webp",
+          "abilities": [
+            "Fight: Choose [hc:strength], [hc:instinct], [hc:covert], [hc:tech] or [hc:ranged]. Each player reveals any number of cards of that class, then draws that many cards."
+          ]
+        },
+        {
+          "name": "Force of Eternity",
+          "slug": "force-of-eternity",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-mt-galactus-force-of-eternity.webp",
+          "abilities": [
+            "Fight: When you draw a new hand of cards at the end of this turn, draw six extra cards, then discard six cards."
+          ]
+        },
+        {
+          "name": "Panicked Mobs",
+          "slug": "panicked-mobs",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-mt-galactus-panicked-mobs.webp",
+          "abilities": [
+            "Fight: Choose [hc:strength], [hc:instinct], [hc:covert], [hc:tech] or [hc:ranged]. Each player reveals any number of cards of that class, then rescues that many Bystanders."
+          ]
+        },
+        {
+          "name": "Sunder the Earth",
+          "slug": "sunder-the-earth",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-mt-galactus-sunder-the-earth.webp",
+          "abilities": [
+            "Fight: Each other player KOs all Heroes from their discard pile with the same card name as a Hero in the HQ."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "name": "Mole Man",
+      "slug": "mole-man",
+      "alwaysLeads": [],
+      "vp": 6,
+      "cards": [
+        {
+          "name": "Mole Man",
+          "slug": "mole-man",
+          "tactic": false,
+          "vAttack": "7+",
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-mm-mole-man.webp",
+          "abilities": [
+            "Mole Man gets +1[icon:attack] for each Subterranea Villain that has escaped.",
+            "Always Leads: Subterranea",
+            "Master Strike: All Subterranea Villains in the city escape. If any Villains escaped this way, each player gains a Wound."
+          ]
+        },
+        {
+          "name": "Dig to Freedom",
+          "slug": "dig-to-freedom",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-mt-mole-man-dig-to-freedom.webp",
+          "abilities": [
+            "Fight: Each other player chooses a Subterranea Villain in their Victory Pile and puts it into the Escaped Villains pile."
+          ]
+        },
+        {
+          "name": "Master of Monsters",
+          "slug": "master-of-monsters",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-mt-mole-man-master-of-monsters.webp",
+          "abilities": [
+            "Fight: If this is not the final Tactic, reveal the top six cards of the Villain Deck. Play all the Subterranea Villains you revealed. Put the rest on the bottom of the Villain Deck in random order."
+          ]
+        },
+        {
+          "name": "Secret Tunnel",
+          "slug": "secret-tunnel",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-mt-mole-man-secret-tunnel.webp",
+          "abilities": [
+            "Fight: You get +6[icon:attack] usable only against Villains in the Streets."
+          ]
+        },
+        {
+          "name": "Underground Riches",
+          "slug": "underground-riches",
+          "tactic": true,
+          "vAttack": null,
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-mt-mole-man-underground-riches.webp",
+          "abilities": [
+            "Fight: You get +6[icon:recruit] usable only to recruit Heroes in the HQ space under the Streets."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 14,
+      "name": "Heralds of Galactus",
+      "slug": "heralds-of-galactus",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Firelord",
+          "slug": "firelord",
+          "vp": "4",
+          "vAttack": "9",
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-vi-heralds-of-galactus-firelord.webp",
+          "abilities": [
+            "[keyword:Cosmic Threat]: [hc:ranged]",
+            "Fight: Each player reveals a [hc:ranged] Hero or gains a Wound.",
+            "Escape: Same effect."
+          ]
+        },
+        {
+          "name": "Morg",
+          "slug": "morg",
+          "vp": "6",
+          "vAttack": "12",
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-vi-heralds-of-galactus-morg.webp",
+          "abilities": [
+            "[keyword:Cosmic Threat]: [hc:instinct]",
+            "Ambush: Put each non-[hc:instinct] Hero from the HQ on the bottom of the Hero Deck."
+          ]
+        },
+        {
+          "name": "Stardust",
+          "slug": "stardust",
+          "vp": "5",
+          "vAttack": "10",
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-vi-heralds-of-galactus-stardust.webp",
+          "abilities": [
+            "[keyword:Cosmic Threat]: [hc:covert]",
+            "Fight: Choose one of your [hc:covert] Heroes. When you draw a new hand of cards at the end of this turn, add that Hero to your hand as a seventh card."
+          ]
+        },
+        {
+          "name": "Terrax the Tamer",
+          "slug": "terrax-the-tamer",
+          "vp": "5",
+          "vAttack": "11",
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-vi-heralds-of-galactus-terrax-the-tamer.webp",
+          "abilities": [
+            "[keyword:Cosmic Threat]: [hc:strength]",
+            "Ambush: For each [hc:strength] Hero in the HQ, Terrax captures a Bystander."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "name": "Subterranea",
+      "slug": "subterranea",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Giganto",
+          "slug": "giganto",
+          "vp": "4",
+          "vAttack": "7",
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-vi-subterranea-giganto.webp",
+          "abilities": [
+            "Fight: When you draw a new hand of cards at the end of this turn, draw two extra cards.",
+            "[keyword:Burrow]"
+          ]
+        },
+        {
+          "name": "Megataur",
+          "slug": "megataur",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-vi-subterranea-megataur.webp",
+          "abilities": [
+            "Ambush: Megataur captures two Bystanders.",
+            "[keyword:Burrow]"
+          ]
+        },
+        {
+          "name": "Moloids",
+          "slug": "moloids",
+          "vp": "2",
+          "vAttack": "3",
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-vi-subterranea-moloids.webp",
+          "abilities": [
+            "Fight: KO one of your Heroes.",
+            "[keyword:Burrow]"
+          ]
+        },
+        {
+          "name": "Ra'ktar the Molan King",
+          "slug": "raktar-the-molan-king",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.barefootbetters.com/ff04/ff04-vi-subterranea-raktar-the-molan-king.webp",
+          "abilities": [
+            "Ambush: Any Villain in the Streets moves to the Bridge, pushing any Villain already there to escape.",
+            "[keyword:Burrow]"
+          ]
+        }
+      ]
+    }
+  ],
+  "henchmen": [],
+  "schemes": [
+    {
+      "id": 17,
+      "name": "Bathe the Earth in Cosmic Rays",
+      "slug": "bathe-the-earth-in-cosmic-rays",
+      "imageUrl": "https://images.barefootbetters.com/ff04/ff04-sc-bathe-the-earth-in-cosmic-rays.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 6 Twists.",
+            "Twist: Each player in turn does the following: Reveal your hand. KO one of your non-grey Heroes. Choose a Hero from the HQ with the same or lower cost and put it into your hand.",
+            "Evil Wins: When the number of non-grey Heroes in the KO pile is six times the number of players."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "name": "Flood the Planet with Melted Glaciers",
+      "slug": "flood-the-planet-with-melted-glaciers",
+      "imageUrl": "https://images.barefootbetters.com/ff04/ff04-sc-flood-the-planet-with-melted-glaciers.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists.",
+            "Twist: Stack the Twist next to the Scheme as “Rising Waters.“ Then KO each Hero from the HQ whose cost is less than or equal to the number of Rising Waters in that stack.",
+            "Evil Wins: When 20 non-grey Heroes are KO'd."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "name": "Invincible Force Field",
+      "slug": "invincible-force-field",
+      "imageUrl": "https://images.barefootbetters.com/ff04/ff04-sc-invincible-force-field.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 7 Twists.",
+            "Twist: Stack this Twist next to the Mastermind as a “Force Field.“",
+            "Special Rules: To fight the Mastermind, you must also spend 1[icon:recruit] or 1[icon:attack] for each Force Field next to them.",
+            "Twist 7: Evil Wins!"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "name": "Pull Reality Into the Negative Zone",
+      "slug": "pull-reality-into-the-negative-zone",
+      "imageUrl": "https://images.barefootbetters.com/ff04/ff04-sc-pull-reality-into-the-negative-zone.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists.",
+            "Twist 2, 4, and 6: Until the next Twist, Enemies cost [icon:recruit] to fight and Heroes cost [icon:attack] to recruit.",
+            "Twist 7: Evil Wins!"
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [],
+  "wounds": [],
+  "other": []
+}
