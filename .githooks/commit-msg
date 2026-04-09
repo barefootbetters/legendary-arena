@@ -1,0 +1,138 @@
+#!/bin/sh
+# commit-msg hook — EC Mode commit message hygiene
+# Enforces: message format, forbidden patterns, EC reference validation,
+# and code-path-requires-EC-### cross-check.
+#
+# This hook receives the commit message file as $1.
+
+RED='\033[0;31m'
+YELLOW='\033[0;33m'
+NC='\033[0m'
+
+MSG_FILE="$1"
+if [ ! -f "$MSG_FILE" ]; then
+  echo "${RED}COMMIT-MSG ERROR:${NC} No commit message file provided."
+  exit 1
+fi
+
+# Read the subject line (first non-comment, non-empty line)
+SUBJECT=$(grep -v '^#' "$MSG_FILE" | grep -v '^$' | head -n 1)
+
+if [ -z "$SUBJECT" ]; then
+  echo ""
+  echo "${RED}COMMIT BLOCKED:${NC} Empty commit message."
+  echo "Allowed formats:"
+  echo "  EC-###: <present-tense summary>"
+  echo "  SPEC: <summary>"
+  echo "  INFRA: <summary>"
+  echo ""
+  exit 1
+fi
+
+# --- Rule 1: Forbidden patterns ---
+FORBIDDEN="WIP|wip|fix stuff|misc|tmp|updates|changes|debug"
+echo "$SUBJECT" | grep -qiE "$FORBIDDEN" && {
+  echo ""
+  echo "${RED}COMMIT BLOCKED:${NC} Subject contains a forbidden pattern."
+  echo "Rejected subject: $SUBJECT"
+  echo "Forbidden words: WIP, fix stuff, misc, tmp, updates, changes, debug"
+  echo "Use a specific, present-tense description instead."
+  echo ""
+  exit 1
+}
+
+# --- Rule 2: Must match an allowed prefix ---
+IS_EC=$(echo "$SUBJECT" | grep -cE '^EC-[0-9]+[A-Z]?:')
+IS_SPEC=$(echo "$SUBJECT" | grep -cE '^SPEC:')
+IS_INFRA=$(echo "$SUBJECT" | grep -cE '^INFRA:')
+
+if [ "$IS_EC" -eq 0 ] && [ "$IS_SPEC" -eq 0 ] && [ "$IS_INFRA" -eq 0 ]; then
+  echo ""
+  echo "${RED}COMMIT BLOCKED:${NC} Subject does not match an allowed prefix."
+  echo "Rejected subject: $SUBJECT"
+  echo "Allowed formats:"
+  echo "  EC-###: <present-tense summary>"
+  echo "  SPEC: <summary>"
+  echo "  INFRA: <summary>"
+  echo ""
+  exit 1
+fi
+
+# --- Rule 3: Subject must be meaningful (>= 12 chars after prefix) ---
+AFTER_PREFIX=$(echo "$SUBJECT" | sed -E 's/^(EC-[0-9]+[A-Z]?|SPEC|INFRA):[[:space:]]*//')
+AFTER_LEN=$(echo -n "$AFTER_PREFIX" | wc -c | tr -d ' ')
+
+if [ "$AFTER_LEN" -lt 12 ]; then
+  echo ""
+  echo "${RED}COMMIT BLOCKED:${NC} Subject too short after prefix ($AFTER_LEN chars, need >= 12)."
+  echo "Rejected subject: $SUBJECT"
+  echo "Write a specific, present-tense description of what changed."
+  echo ""
+  exit 1
+fi
+
+# --- Rule 4: EC-### commits must reference an existing EC ---
+if [ "$IS_EC" -gt 0 ]; then
+  EC_NUM=$(echo "$SUBJECT" | sed -E 's/^EC-([0-9]+[A-Z]?).*/\1/')
+
+  # Check EC file exists
+  EC_FILE=$(find docs/ai/execution-checklists -name "EC-${EC_NUM}-*.checklist.md" 2>/dev/null | head -n 1)
+  if [ -z "$EC_FILE" ]; then
+    echo ""
+    echo "${RED}COMMIT BLOCKED:${NC} No EC file found for EC-${EC_NUM}."
+    echo "Expected: docs/ai/execution-checklists/EC-${EC_NUM}-*.checklist.md"
+    echo "Create the EC first, or use INFRA: for non-EC work."
+    echo ""
+    exit 1
+  fi
+
+  # Check EC appears in EC_INDEX.md
+  EC_INDEX="docs/ai/execution-checklists/EC_INDEX.md"
+  if [ -f "$EC_INDEX" ]; then
+    grep -q "EC-${EC_NUM}" "$EC_INDEX" 2>/dev/null
+    if [ $? -ne 0 ]; then
+      echo ""
+      echo "${YELLOW}WARNING:${NC} EC-${EC_NUM} not found in EC_INDEX.md."
+      echo "The EC file exists but is not registered in the index."
+      echo "Consider adding it to EC_INDEX.md."
+      echo ""
+      # Warning only, not blocking — the EC file existing is sufficient
+    fi
+  fi
+fi
+
+# --- Rule 5: Code changes require EC-### prefix ---
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null)
+HAS_CODE=0
+if [ -n "$STAGED" ]; then
+  HAS_CODE=$(echo "$STAGED" | grep -cE '^(packages/|apps/)' || true)
+fi
+
+if [ "$HAS_CODE" -gt 0 ] && [ "$IS_EC" -eq 0 ]; then
+  echo ""
+  echo "${RED}COMMIT BLOCKED:${NC} Code changes detected but commit is not EC-scoped."
+  echo "Staged code files under packages/ or apps/ require an EC-###: prefix."
+  echo "Rejected prefix: $(echo "$SUBJECT" | sed -E 's/:.*/:/')"
+  echo ""
+  echo "If this is genuinely infrastructure (hooks, scripts, config):"
+  echo "  Move code files out of staging, or use EC-###: prefix."
+  echo ""
+  exit 1
+fi
+
+# --- Rule 6: EC governance file changes require SPEC or INFRA prefix ---
+HAS_EC_GOV=0
+if [ -n "$STAGED" ]; then
+  HAS_EC_GOV=$(echo "$STAGED" | grep -cE 'EC_INDEX\.md|EC-TEMPLATE\.md' || true)
+fi
+
+if [ "$HAS_EC_GOV" -gt 0 ] && [ "$IS_EC" -gt 0 ]; then
+  echo ""
+  echo "${YELLOW}WARNING:${NC} EC governance files (EC_INDEX.md, EC-TEMPLATE.md) staged"
+  echo "with an EC-### commit. These files are usually changed via SPEC: or INFRA: commits."
+  echo "Proceeding, but verify this is intentional."
+  echo ""
+  # Warning only — there are valid cases (e.g., updating index after completing a WP)
+fi
+
+exit 0

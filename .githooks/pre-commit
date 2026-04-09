@@ -1,0 +1,43 @@
+#!/bin/sh
+# pre-commit hook — EC Mode staged-file hygiene
+# Enforces: no secrets, no node_modules, no build artifacts in commits.
+# Message-based checks live in commit-msg (pre-commit has no message access).
+
+RED='\033[0;31m'
+NC='\033[0m'
+
+fail() {
+  echo ""
+  echo "${RED}PRE-COMMIT BLOCKED:${NC} $1"
+  echo ""
+  exit 1
+}
+
+# Get staged files (added, modified, copied, renamed)
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null)
+
+if [ -z "$STAGED" ]; then
+  exit 0
+fi
+
+# Rule 1: No .env files (may contain secrets)
+echo "$STAGED" | grep -qE '\.env$|\.env\.' && \
+  fail "Staged .env file detected. Remove it from staging: git reset HEAD <file>"
+
+# Rule 2: No node_modules
+echo "$STAGED" | grep -q 'node_modules/' && \
+  fail "Staged node_modules/ files detected. Add node_modules/ to .gitignore."
+
+# Rule 3: No dist/build output
+echo "$STAGED" | grep -qE '^(packages|apps)/[^/]+/dist/' && \
+  fail "Staged build output (dist/) detected. Add dist/ to .gitignore."
+
+# Rule 4: No credentials files
+echo "$STAGED" | grep -qiE 'credentials\.json|secrets\.json|\.pem$|\.key$' && \
+  fail "Staged credentials or key file detected. Do not commit secrets."
+
+# Rule 5: No .test.mjs files (project convention: .test.ts only)
+echo "$STAGED" | grep -qE '\.test\.mjs$' && \
+  fail "Staged .test.mjs file detected. Project convention requires .test.ts extension."
+
+exit 0

@@ -64,6 +64,7 @@ rule) is defined in `docs/ai/REFERENCE/01.1-how-to-use-ecs-while-coding.md`.
 - `docs/ai/execution-checklists/EC_INDEX.md` — index and status tracking
 - `docs/ai/REFERENCE/01.1-how-to-use-ecs-while-coding.md` — usage workflow
 - `docs/ai/REFERENCE/01.2-bug-handling-under-ec-mode.md` — clause-driven debugging
+- `docs/ai/REFERENCE/01.3-commit-hygiene-under-ec-mode.md` — commit message format and hooks
 
 ## Lint Gate (Mandatory for Work Packet Actions)
 
