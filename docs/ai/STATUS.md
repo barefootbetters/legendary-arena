@@ -45,3 +45,39 @@
 - `[object Object]` abilities in msmc, bkpt, msis sets
 - Missing `vp` field on 2 masterminds in mgtg set
 - 1 hero card missing `cost` and `hc` in anni set
+
+### Foundation Prompt 01 — Render.com Backend Setup (2026-04-09)
+
+**What exists now:**
+- `apps/server/` — new pnpm workspace package (`@legendary-arena/server`)
+  - `src/rules/loader.mjs` — loads `legendary.rules` and `legendary.rule_docs`
+    from PostgreSQL at startup, caches in memory, exports `loadRules()` and
+    `getRules()`
+  - `src/game/legendary.mjs` — minimal boardgame.io `Game()` definition wired
+    to the rules cache. Placeholder move (`playCard`) and endgame condition.
+    No real game logic — that belongs in `packages/game-engine/` (WP-002+).
+  - `src/server.mjs` — boardgame.io `Server()` with CORS (production SPA +
+    localhost:5173), `/health` endpoint on koa router, rules count logging
+  - `src/index.mjs` — process entrypoint with SIGTERM graceful shutdown
+- `data/schema-server.sql` — rules-engine DDL subset (sets, masterminds,
+  villain_groups, schemes, rules, rule_docs) in `legendary.*` namespace.
+  All tables use `bigserial` PKs, `IF NOT EXISTS`, indexed.
+- `data/seed-server.sql` — seed data with complete Galactus (Core Set)
+  example: set, mastermind (strike 5, vp 6), Heralds of Galactus villain
+  group, Brotherhood, two schemes. Wrapped in a transaction.
+- `render.yaml` — Render infrastructure-as-code provisioning web service
+  + managed PostgreSQL (starter plan) in one deploy
+
+**What a developer can do:**
+- `pnpm install` detects the new server workspace and installs deps
+- `node --env-file=.env apps/server/src/server.mjs` starts the server
+- `GET /health` returns `{ "status": "ok" }` for Render and pnpm check
+- `psql $DATABASE_URL -f data/schema-server.sql` creates rules-engine tables
+- `psql $DATABASE_URL -f data/seed-server.sql` seeds Galactus example
+- `render deploy` provisions both services from `render.yaml`
+
+**Known gaps (expected at this stage):**
+- No real game logic — `LegendaryGame` is a placeholder (WP-002)
+- No card registry loading at startup (WP-003 registry package needed)
+- No authentication (separate WP)
+- No lobby/match creation CLI scripts (WP-011/012)

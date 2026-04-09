@@ -1,0 +1,30 @@
+# Legendary Arena — Render.com Infrastructure
+# Run: render deploy  (or commit to main — Render auto-deploys)
+
+services:
+  # Game server — boardgame.io authoritative WebSocket server
+  - type: web
+    name: legendary-arena-server
+    runtime: node
+    buildCommand: pnpm install
+    startCommand: node apps/server/src/index.mjs
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: legendary-arena-db
+          property: connectionString
+      # JWT_SECRET must be set manually in the Render dashboard.
+      # Generate with:
+      # node --input-type=module -e "import { randomBytes } from 'node:crypto'; console.log(randomBytes(32).toString('hex'))"
+      - key: JWT_SECRET
+        sync: false
+
+databases:
+  # Managed PostgreSQL — rules engine backing store
+  - name: legendary-arena-db
+    plan: starter
+    # why: starter plan is sufficient for <100 concurrent games at launch.
+    # The rules cache is loaded at startup; ongoing DB queries are minimal.

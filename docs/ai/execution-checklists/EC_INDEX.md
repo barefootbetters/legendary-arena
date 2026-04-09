@@ -26,6 +26,14 @@ is active. See 01.2 for the clause-driven diagnosis sequence.
 
 ---
 
+## Foundation Prompts
+
+| EC      | Source    | Layer                  | Execution Scope                                      | Status |
+|---------|-----------|------------------------|------------------------------------------------------|--------|
+| EC-FP01 | FP-01     | Server / Infrastructure | Render.com backend, rules loader, schema, render.yaml | Done   |
+
+---
+
 ## Phase 0 — Coordination & Contracts
 
 | EC     | Source WP | Layer                          | Execution Scope                                      | Status |

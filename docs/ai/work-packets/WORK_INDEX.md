@@ -44,7 +44,7 @@ environment that all Work Packets build on top of. Run them in the order shown.
 |--------|-------------|--------|
 | `00.4` | Connection & environment health check | ✅ complete 2026-04-09 |
 | `00.5` | R2 data & image validation | ✅ complete 2026-04-09 |
-| `01` | Render.com backend — server, schema, `render.yaml` | ⬜ pending |
+| `01` | Render.com backend — server, schema, `render.yaml` | ✅ complete 2026-04-09 |
 | `02` | Database migration runner + `data/migrations/` | ⬜ pending |
 
 Run `00.4` first. Fix any failures before proceeding. Then run `00.5`, `01`, `02`

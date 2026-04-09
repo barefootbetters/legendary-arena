@@ -1,0 +1,18 @@
+{
+  "name": "@legendary-arena/server",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Legendary Arena boardgame.io game server — wiring layer only",
+  "main": "src/server.mjs",
+  "scripts": {
+    "start": "node src/index.mjs"
+  },
+  "dependencies": {
+    "boardgame.io": "^0.50.0",
+    "pg": "^8.13.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
