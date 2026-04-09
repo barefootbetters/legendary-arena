@@ -37,6 +37,7 @@ echo "$SUBJECT" | grep -qiE "$FORBIDDEN" && {
   echo "Rejected subject: $SUBJECT"
   echo "Forbidden words: WIP, fix stuff, misc, tmp, updates, changes, debug"
   echo "Use a specific, present-tense description instead."
+  echo "Hint: EC-###: / SPEC: / INFRA: <description>"
   echo ""
   exit 1
 }
@@ -67,6 +68,7 @@ if [ "$AFTER_LEN" -lt 12 ]; then
   echo "${RED}COMMIT BLOCKED:${NC} Subject too short after prefix ($AFTER_LEN chars, need >= 12)."
   echo "Rejected subject: $SUBJECT"
   echo "Write a specific, present-tense description of what changed."
+  echo "Hint: EC-###: / SPEC: / INFRA: <description>"
   echo ""
   exit 1
 fi

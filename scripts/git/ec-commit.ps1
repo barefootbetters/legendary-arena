@@ -28,11 +28,15 @@
 
     # Stage specific files
     pwsh scripts/git/ec-commit.ps1 -Files "src/endgame/endgame.types.ts","src/endgame/endgame.evaluate.ts" -Message "EC-010: add endgame types and evaluator"
+
+    # Dry-run (validate without committing)
+    pwsh scripts/git/ec-commit.ps1 -Check -Message "EC-010: wire endIf to evaluateEndgame"
 #>
 
 param(
     [string]$Message,
     [switch]$All,
+    [switch]$Check,
     [string[]]$Files
 )
 
@@ -109,6 +113,25 @@ if (-not $Message) {
         Write-Error "Empty commit message. Aborting."
         exit 1
     }
+}
+
+# Dry-run mode: validate via hook without committing
+if ($Check) {
+    Write-Host ""
+    Write-Host "DRY RUN — validating commit message..." -ForegroundColor Cyan
+    $tempFile = [System.IO.Path]::GetTempFileName()
+    Set-Content -Path $tempFile -Value $Message
+    $hookPath = Join-Path $repoRoot '.githooks/commit-msg'
+    & bash $hookPath $tempFile 2>&1
+    $hookExit = $LASTEXITCODE
+    Remove-Item $tempFile -ErrorAction SilentlyContinue
+
+    if ($hookExit -eq 0) {
+        Write-Host "Validation passed. This message would be accepted." -ForegroundColor Green
+    } else {
+        Write-Host "Validation failed. See errors above." -ForegroundColor Red
+    }
+    exit $hookExit
 }
 
 # Attempt the commit — hooks will enforce rules
