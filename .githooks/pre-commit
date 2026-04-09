@@ -20,9 +20,11 @@ if [ -z "$STAGED" ]; then
   exit 0
 fi
 
-# Rule 1: No .env files (may contain secrets)
-echo "$STAGED" | grep -qE '\.env$|\.env\.' && \
-  fail "Staged .env file detected. Remove it from staging: git reset HEAD <file>"
+# Rule 1: No .env files (may contain secrets) — .env.example is allowed
+echo "$STAGED" | grep -E '\.env$|\.env\.' | grep -vq '\.env\.example$'
+if [ $? -eq 0 ]; then
+  fail "Staged .env file detected (not .env.example). Remove it from staging: git reset HEAD <file>"
+fi
 
 # Rule 2: No node_modules
 echo "$STAGED" | grep -q 'node_modules/' && \

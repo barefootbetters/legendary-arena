@@ -10,6 +10,9 @@
     "viewer:dev":           "pnpm --filter registry-viewer dev",
     "viewer:build":         "pnpm --filter registry-viewer build",
 
+    "check":                "node --env-file=.env scripts/check-connections.mjs",
+    "check:env":            "pwsh scripts/Check-Env.ps1",
+
     "validate":             "pwsh scripts/Validate-R2.ps1",
     "validate:r2":          "pwsh scripts/Validate-R2.ps1 -R2Mode",
     "validate:r2:fast":     "pwsh scripts/Validate-R2.ps1 -R2Mode -SkipImages"
