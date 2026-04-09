@@ -43,7 +43,7 @@ environment that all Work Packets build on top of. Run them in the order shown.
 | Prompt | Description | Status |
 |--------|-------------|--------|
 | `00.4` | Connection & environment health check | ✅ complete 2026-04-09 |
-| `00.5` | R2 data & image validation | ⬜ pending |
+| `00.5` | R2 data & image validation | ✅ complete 2026-04-09 |
 | `01` | Render.com backend — server, schema, `render.yaml` | ⬜ pending |
 | `02` | Database migration runner + `data/migrations/` | ⬜ pending |
 

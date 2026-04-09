@@ -27,3 +27,21 @@
 - No .env file yet (must be created from .env.example)
 - boardgame.io and zod not installed (no game-engine package yet)
 - PostgreSQL and game server connections will fail until Foundation Prompt 01
+
+### Foundation Prompt 00.5 — R2 Data & Image Validation (2026-04-09)
+
+**What exists now:**
+- `scripts/validate-r2.mjs` — Node.js ESM R2 validation with 4 phases:
+  Phase 1: registry check (sets.json), Phase 2: per-set metadata validation,
+  Phase 3: image spot-checks (HEAD only), Phase 4: cross-set slug deduplication
+- `pnpm validate` runs the full validation against live R2 (no .env needed)
+
+**Live validation results (2026-04-09):**
+- 40 sets validated, 0 errors, 74 warnings (known data quality issues)
+- 6 missing images (URL pattern mismatches on specific sets)
+- 43 cross-set duplicate slugs (expected — same heroes appear in multiple sets)
+
+**Known data quality issues (per 00.2 §12):**
+- `[object Object]` abilities in msmc, bkpt, msis sets
+- Missing `vp` field on 2 masterminds in mgtg set
+- 1 hero card missing `cost` and `hc` in anni set
