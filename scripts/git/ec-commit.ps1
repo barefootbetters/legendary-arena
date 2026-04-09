@@ -51,7 +51,7 @@ if (-not $repoRoot) {
 
 # Verify hooks are installed
 $hooksPath = git config core.hooksPath 2>$null
-if ($hooksPath -ne '.githooks') {
+if ($hooksPath -notmatch '^\.githooks$') {
     Write-Host ""
     Write-Host "EC-mode hooks are not installed." -ForegroundColor Yellow
     Write-Host "Run: pwsh scripts/git/install-ec-hooks.ps1" -ForegroundColor Yellow
@@ -127,7 +127,13 @@ if ($Check) {
     $tempFile = [System.IO.Path]::GetTempFileName()
     Set-Content -Path $tempFile -Value $Message
     $hookPath = Join-Path $repoRoot '.githooks/commit-msg'
-    & bash $hookPath $tempFile 2>&1
+    $bash = Get-Command bash -ErrorAction SilentlyContinue
+    if (-not $bash) {
+        Remove-Item $tempFile -ErrorAction SilentlyContinue
+        Write-Error "bash not found. Dry-run requires Git Bash or WSL."
+        exit 1
+    }
+    & $bash.Source $hookPath $tempFile 2>&1
     $hookExit = $LASTEXITCODE
     Remove-Item $tempFile -ErrorAction SilentlyContinue
 
@@ -143,7 +149,7 @@ if ($Check) {
 Write-Host ""
 Write-Host "Committing..." -ForegroundColor Cyan
 try {
-    git commit -m $Message
+    git commit -m "$Message"
     Write-Host ""
     Write-Host "Commit successful." -ForegroundColor Green
     git log --oneline -1
