@@ -10,6 +10,15 @@
 
 import type { MatchSetupConfig } from './matchSetup.types.js';
 
+// why: Turn phase types (MatchPhase, TurnStage, TurnPhaseError) are defined
+// canonically in src/turn/turnPhases.types.ts (WP-007A). They are re-exported
+// here so that consumers importing from './types.js' have access.
+export type {
+  MatchPhase,
+  TurnStage,
+  TurnPhaseError,
+} from './turn/turnPhases.types.js';
+
 // why: Zone types (CardExtId, PlayerZones, GlobalPiles) were originally
 // defined inline in this file during WP-005B. WP-006A consolidated them
 // into src/state/zones.types.ts as the canonical source. They are

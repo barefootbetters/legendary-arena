@@ -265,7 +265,7 @@ These packets define *what* a match is before implementing *how* it plays.
 
 These packets create the first playable (but incomplete) game loop.
 
-- [ ] WP-007A — Turn Structure & Phases Contracts ✅ Reviewed
+- [x] WP-007A — Turn Structure & Phases Contracts ✅ Reviewed (completed 2026-04-10)
   Dependencies: WP-006B
   Notes: Locks the lifecycle-to-phase mapping from 00.2 §8.2 (Lobby→`lobby`,
   Setup→`setup`, In Progress→`play`, Completed→`end`) — do not invent alternate

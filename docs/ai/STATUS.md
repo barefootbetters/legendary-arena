@@ -299,6 +299,41 @@
 - No villain deck construction — WP-014/015
 - No gameplay moves beyond stubs — WP-008A/B
 
+### WP-007A — Turn Structure & Phases Contracts (2026-04-10)
+
+**What changed:**
+- `packages/game-engine/src/turn/turnPhases.types.ts` — **new** — defines
+  `MatchPhase` (4 values), `TurnStage` (3 values), canonical arrays
+  `MATCH_PHASES` and `TURN_STAGES`, and `TurnPhaseError` error shape
+- `packages/game-engine/src/turn/turnPhases.logic.ts` — **new** — pure
+  transition helpers: `getNextTurnStage`, `isValidTurnStageTransition`,
+  `isValidMatchPhase`, `isValidTurnStage`. No boardgame.io imports.
+- `packages/game-engine/src/turn/turnPhases.validate.ts` — **new** —
+  `validateTurnStageTransition(from, to)` validates both inputs and transition
+  legality. Returns structured results, never throws.
+- `packages/game-engine/src/turn/turnPhases.contracts.test.ts` — **new** —
+  7 contract tests: 2 valid transitions, 2 invalid transitions,
+  `getNextTurnStage('cleanup')` returns null, 2 drift-detection tests
+- `packages/game-engine/src/types.ts` — **modified** — re-exports
+  `MatchPhase`, `TurnStage`, `TurnPhaseError` from turn types
+- `packages/game-engine/src/index.ts` — **modified** — exports all new types,
+  canonical arrays, transition helpers, type guards, and validator
+
+**What a subsequent session can rely on:**
+- `MatchPhase` and `TurnStage` are the canonical union types for phases and stages
+- `MATCH_PHASES` and `TURN_STAGES` are the single source of truth arrays
+- `getNextTurnStage` defines stage ordering — WP-007B must use it
+- `isValidTurnStageTransition` checks forward-adjacent transitions only
+- Type guards (`isValidMatchPhase`, `isValidTurnStage`) use array membership
+- `validateTurnStageTransition` validates unknown inputs before checking legality
+- `TurnPhaseError` uses `{ code, message, path }` — distinct from `ZoneValidationError`
+- All 63 tests passing (56 from WP-006B + 7 new)
+
+**Known gaps (expected at this stage):**
+- No `G.currentStage` field — that is WP-007B
+- No turn advancement logic — that is WP-007B
+- No moves, stage gating, or boardgame.io wiring — WP-008A/B
+
 ### WP-003 — Card Registry Verification & Defect Correction (2026-04-09)
 
 **What was fixed:**

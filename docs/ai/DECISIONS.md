@@ -567,6 +567,40 @@ pattern with a `starting-` prefix.
 
 ---
 
+## Turn Structure Decisions
+
+### D-1219 — TurnStage Is Defined Separately from boardgame.io's Stage Concept
+**Decision:** `TurnStage` (`'start' | 'main' | 'cleanup'`) is a Legendary Arena
+engine concept defined in `turnPhases.types.ts`. It is not the same as
+boardgame.io's built-in stage system (`ctx.activePlayers`, `setStage`, etc.).
+**Rationale:** boardgame.io's stage system is designed for simultaneous player
+actions and does not expose inner stage to move functions via `ctx`. Legendary
+Arena needs a per-turn phase cycle (start -> main -> cleanup) that moves can
+read from `G.currentStage` to enforce stage gating. Storing this in `G` ensures
+it is JSON-serializable, deterministically observable, and available to all move
+functions without framework coupling. The turn stage cycle is defined once in
+`turnPhases.logic.ts` — no other file may re-encode stage ordering.
+**Introduced:** WP-007A
+**Status:** Immutable
+
+---
+
+### D-1220 — getNextTurnStage Returns null After Cleanup Instead of Cycling
+**Decision:** `getNextTurnStage('cleanup')` returns `null` rather than cycling
+back to `'start'`.
+**Rationale:** Returning `null` explicitly signals that the turn should end.
+The caller (WP-007B's turn loop) interprets `null` as the trigger to call
+`ctx.events.endTurn()`. Cycling back to `'start'` would conflate two distinct
+events — turn restart and stage advancement — into a single function. Turn
+restart is managed by the play phase `onBegin` hook which resets
+`G.currentStage = 'start'` on each new turn. Keeping these concerns separate
+prevents accidental infinite loops and makes the turn boundary explicitly
+observable.
+**Introduced:** WP-007A
+**Status:** Immutable
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision

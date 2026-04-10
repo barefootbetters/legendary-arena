@@ -33,3 +33,16 @@ export {
 export { shuffleDeck } from './setup/shuffle.js';
 export type { ShuffleProvider } from './setup/shuffle.js';
 export { validateGameStateShape, validatePlayerStateShape } from './state/zones.validate.js';
+export type {
+  MatchPhase,
+  TurnStage,
+  TurnPhaseError,
+} from './turn/turnPhases.types.js';
+export { MATCH_PHASES, TURN_STAGES } from './turn/turnPhases.types.js';
+export {
+  getNextTurnStage,
+  isValidTurnStageTransition,
+  isValidMatchPhase,
+  isValidTurnStage,
+} from './turn/turnPhases.logic.js';
+export { validateTurnStageTransition } from './turn/turnPhases.validate.js';
