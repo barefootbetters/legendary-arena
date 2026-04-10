@@ -46,3 +46,5 @@ export {
   isValidTurnStage,
 } from './turn/turnPhases.logic.js';
 export { validateTurnStageTransition } from './turn/turnPhases.validate.js';
+export { advanceTurnStage } from './turn/turnLoop.js';
+export type { TurnLoopContext, TurnLoopState } from './turn/turnLoop.js';

@@ -96,12 +96,12 @@ describe('LegendaryGame', () => {
     );
   });
 
-  it('defines move stubs: playCard and endTurn', () => {
+  it('defines moves: advanceStage, playCard, and endTurn', () => {
     const moveNames = Object.keys(LegendaryGame.moves ?? {});
     assert.deepStrictEqual(
       moveNames.sort(),
-      ['endTurn', 'playCard'],
-      'LegendaryGame must define exactly 2 move stubs: playCard and endTurn',
+      ['advanceStage', 'endTurn', 'playCard'],
+      'LegendaryGame must define exactly 3 moves: advanceStage, endTurn, and playCard',
     );
   });
 });

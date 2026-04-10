@@ -34,6 +34,7 @@ export type {
   GameStateShape,
 } from './state/zones.types.js';
 
+import type { TurnStage } from './turn/turnPhases.types.js';
 import type { CardExtId, PlayerZones, GlobalPiles } from './state/zones.types.js';
 
 // why: MatchConfiguration (WP-002) and MatchSetupConfig (WP-005A) have
@@ -113,6 +114,14 @@ export interface LegendaryGameState {
   // selection holds just the scheme, mastermind, and group ext_ids.
   /** Resolved match selection metadata (scheme, mastermind, groups, heroes). */
   readonly selection: MatchSelection;
+
+  // why: boardgame.io's ctx does not expose the inner turn stage in a form
+  // that move functions can read. Storing currentStage in G makes it observable
+  // to moves (for stage gating) and JSON-serializable (for replay and snapshots).
+  // Reset to the first TURN_STAGES entry on each new turn by the play phase
+  // onBegin hook.
+  /** Current turn stage within the play phase (start, main, cleanup). */
+  currentStage: TurnStage;
 
   // why: playerZones is keyed by player ID string (boardgame.io uses "0", "1",
   // etc.). Each player has exactly 5 zone arrays. Only deck is non-empty after

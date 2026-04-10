@@ -2,6 +2,8 @@ import type { Ctx, FnContext, Game, PlayerID } from 'boardgame.io';
 import type { MatchConfiguration, LegendaryGameState } from './types.js';
 import { validateMatchSetup, type CardRegistryReader } from './matchSetup.validate.js';
 import { buildInitialGameState } from './setup/buildInitialGameState.js';
+import { TURN_STAGES } from './turn/turnPhases.types.js';
+import { advanceTurnStage } from './turn/turnLoop.js';
 
 // why: The registry must be available to Game.setup() for ext_id validation,
 // but boardgame.io's setup function signature does not include a registry
@@ -68,6 +70,19 @@ function playCard(_context: MoveContext): void {
 function endTurn(_context: MoveContext): void {
   // why: move stubs return void per the Immer mutation model. Turn-end logic
   // (cleanup stage, discard, draw) will be added by subsequent Work Packets.
+}
+
+/**
+ * Advances the current turn stage to the next stage in the canonical
+ * sequence (start -> main -> cleanup -> turn ends).
+ *
+ * Delegates entirely to advanceTurnStage from turnLoop.ts, which uses
+ * getNextTurnStage for ordering — no stage strings are hardcoded here.
+ *
+ * @param context - boardgame.io move context with G and events.
+ */
+function advanceStage({ G, events }: MoveContext): void {
+  advanceTurnStage(G, { events: { endTurn: () => events.endTurn() } });
 }
 
 /**
@@ -161,6 +176,7 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
   moves: {
     playCard,
     endTurn,
+    advanceStage,
   },
 
   // why: phase `next` fields declare the intended linear progression
@@ -177,6 +193,17 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     },
     play: {
       next: 'end',
+      turn: {
+        // why: Each new turn must begin at the first canonical turn stage.
+        // TURN_STAGES[0] is used instead of a hardcoded string to prevent
+        // drift if stage names ever change in turnPhases.types.ts.
+        onBegin: ({ G }) => {
+          // why: TURN_STAGES is a readonly array with known contents. The
+          // non-null assertion is safe because TURN_STAGES always has at
+          // least one element (enforced by drift-detection tests in WP-007A).
+          G.currentStage = TURN_STAGES[0]!;
+        },
+      },
     },
     end: {},
   },

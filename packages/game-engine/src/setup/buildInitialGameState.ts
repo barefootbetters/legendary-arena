@@ -16,6 +16,7 @@ import type {
   MatchSelection,
   CardExtId,
 } from '../types.js';
+import { TURN_STAGES } from '../turn/turnPhases.types.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
 import { buildPlayerState } from './playerInit.js';
@@ -137,6 +138,14 @@ export function buildInitialGameState(
   return {
     matchConfiguration: config,
     selection,
+    // why: currentStage is initialized to the first canonical turn stage.
+    // The play phase onBegin hook resets it on each new turn. During setup
+    // and lobby phases, currentStage is not meaningful but must be present
+    // because LegendaryGameState requires it for JSON-serializability.
+    // why: TURN_STAGES is a readonly array with known contents. The non-null
+    // assertion is safe because TURN_STAGES always has at least one element
+    // (enforced by drift-detection tests in WP-007A).
+    currentStage: TURN_STAGES[0]!,
     playerZones,
     piles,
   };
