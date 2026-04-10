@@ -25,7 +25,7 @@ export function flattenSet(set: SetData, setName: string): FlatCard[] {
         cardType:     "hero",
         setAbbr:      abbr,
         setName,
-        name:         card.name,
+        name:         card.name ?? card.slug,
         slug:         card.slug,
         imageUrl:     card.imageUrl,
         heroName:     hero.name,
@@ -37,7 +37,7 @@ export function flattenSet(set: SetData, setName: string): FlatCard[] {
         cost:         card.cost,
         attack:       card.attack,
         recruit:      card.recruit,
-        abilities:    card.abilities,
+        abilities:    card.abilities ?? [],
       });
     }
   }

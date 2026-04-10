@@ -62,12 +62,16 @@ export interface FlatCard {
   imageUrl:  string;
 
   // ── Hero-only fields (undefined for non-hero card types) ───────────────
-  heroName?:    string;
-  team?:        string;
-  hc?:          HeroClass;
-  rarity?:      1 | 2 | 3;
-  rarityLabel?: string;
-  slot?:        number;
+  // why: These fields include `| undefined` in their types because
+  // HeroCardSchema marks them as optional (z.string().optional()), and
+  // exactOptionalPropertyTypes requires explicit undefined in the type
+  // when assigning schema-inferred values to optional properties.
+  heroName?:    string | undefined;
+  team?:        string | undefined;
+  hc?:          HeroClass | undefined;
+  rarity?:      1 | 2 | 3 | undefined;
+  rarityLabel?: string | undefined;
+  slot?:        number | undefined;
 
   /**
    * Hero card recruit cost. Accepts both integers (3) and star-cost strings
@@ -77,13 +81,13 @@ export interface FlatCard {
    *
    * Hero-only — undefined for non-hero card types.
    */
-  cost?:      string | number;
+  cost?:      string | number | undefined;
 
   /** Hero-only. Nullable: null when the card has no printed attack value. */
-  attack?:    string | null;
+  attack?:    string | null | undefined;
 
   /** Hero-only. Nullable: null when the card has no printed recruit value. */
-  recruit?:   string | null;
+  recruit?:   string | null | undefined;
 
   /** Card ability text lines. Present on all card types. */
   abilities:  string[];

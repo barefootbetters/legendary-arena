@@ -706,6 +706,42 @@ violations.
 
 ---
 
+## Registry Build Fix Decisions
+
+### D-1227 — FlatCard Hero-Only Optional Fields Include Explicit undefined
+**Decision:** All hero-only optional fields on `FlatCard` in `types/index.ts`
+(`heroName`, `team`, `hc`, `rarity`, `rarityLabel`, `slot`, `cost`, `attack`,
+`recruit`) are typed as `T | undefined` rather than plain `T` with `?:`.
+**Rationale:** The tsconfig enables `exactOptionalPropertyTypes: true`, which
+distinguishes between "property absent" (`prop?: T`) and "property present but
+undefined" (`prop?: T | undefined`). `HeroCardSchema` marks these fields as
+`z.string().optional()`, so the Zod-inferred types produce `T | undefined`.
+Assigning schema-inferred values to `FlatCard` optional properties without the
+explicit `| undefined` causes TS2379 errors under this strict flag. Adding
+`| undefined` is semantically correct — these fields genuinely can be undefined
+when card data is incomplete (e.g., anni set). This does not weaken the type
+contract for non-hero card types (which never set these fields at all).
+**Introduced:** INFRA fix (registry build repair)
+**Status:** Immutable
+
+---
+
+### D-1228 — shared.ts Hero Card Defaults for name and abilities
+**Decision:** `flattenSet()` in `shared.ts` provides defaults for two
+optional `HeroCardSchema` fields: `card.name ?? card.slug` and
+`card.abilities ?? []`.
+**Rationale:** `HeroCardSchema.name` and `HeroCardSchema.abilities` are
+optional because some sets (e.g., anni) produce cards with incomplete data.
+`FlatCard.name` and `FlatCard.abilities` are required fields. Under
+`exactOptionalPropertyTypes`, assigning `string | undefined` to `string`
+is a type error. Defaulting to `card.slug` for name (always present) and
+`[]` for abilities is safe — slug is a meaningful fallback, and an empty
+abilities array correctly represents "no printed abilities."
+**Introduced:** INFRA fix (registry build repair)
+**Status:** Immutable
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision
