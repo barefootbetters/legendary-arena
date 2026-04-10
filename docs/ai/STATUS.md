@@ -142,6 +142,36 @@
 - No lobby/match creation CLI scripts yet (WP-011/012)
 - No authentication (separate WP)
 
+### WP-005A — Match Setup Contracts (2026-04-10)
+
+**What changed:**
+- `packages/game-engine/src/matchSetup.types.ts` — **new** — defines the
+  canonical `MatchSetupConfig` (9 locked fields), `MatchSetupError`
+  (`{ field, message }`), and `ValidateMatchSetupResult` (discriminated union)
+- `packages/game-engine/src/matchSetup.validate.ts` — **new** —
+  `validateMatchSetup(input, registry)` checks both shape and registry ext_id
+  existence; never throws; returns structured result. Defines
+  `CardRegistryReader` interface to respect the layer boundary.
+- `packages/game-engine/src/types.ts` — **modified** — `MatchConfiguration` is
+  now a type alias for `MatchSetupConfig` (both had identical 9-field shapes)
+- `packages/game-engine/src/index.ts` — **modified** — exports
+  `MatchSetupConfig`, `MatchSetupError`, `ValidateMatchSetupResult`,
+  `validateMatchSetup`, and `CardRegistryReader`
+- `packages/game-engine/src/matchSetup.contracts.test.ts` — **new** — 4 contract
+  tests using inline mock registry (no boardgame.io imports)
+
+**What a subsequent session can rely on:**
+- `@legendary-arena/game-engine` exports the canonical match setup contract types
+- `validateMatchSetup` validates both shape and ext_id existence
+- `MatchConfiguration` is a type alias for `MatchSetupConfig` — both work
+- The validator never throws — `Game.setup()` decides whether to throw
+- `CardRegistryReader` is the minimal interface the validator needs from a registry
+
+**Known gaps (expected at this stage):**
+- No deterministic shuffling or deck construction — that is WP-005B
+- No changes to `Game.setup()` — that is WP-005B
+- No gameplay moves, rules, or phases
+
 ### WP-003 — Card Registry Verification & Defect Correction (2026-04-09)
 
 **What was fixed:**

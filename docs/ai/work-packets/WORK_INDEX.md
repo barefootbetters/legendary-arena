@@ -208,7 +208,7 @@ These packets establish the repo-as-memory system and lock contracts before code
 
 These packets define *what* a match is before implementing *how* it plays.
 
-- [ ] WP-005A — Match Setup Contracts ✅ Reviewed
+- [x] WP-005A — Match Setup Contracts ✅ Complete (2026-04-10)
   Dependencies: WP-002, WP-003
   Notes: Defines `MatchSetupConfig` (9 fields, locked names from 00.2 §8.1:
   `schemeId`, `mastermindId`, `villainGroupIds`, `henchmanGroupIds`, `heroDeckIds`,

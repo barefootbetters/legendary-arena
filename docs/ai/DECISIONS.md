@@ -385,6 +385,51 @@ all other imports use standard ESM.
 
 ---
 
+## Match Setup Contract Decisions
+
+### D-1207 — MatchSetupConfig Is Canonical, MatchConfiguration Is an Alias
+**Decision:** `MatchSetupConfig` (defined in `matchSetup.types.ts`) is the
+canonical 9-field match setup type. The original `MatchConfiguration` (from
+WP-002) is now a type alias for `MatchSetupConfig` in `types.ts`.
+**Rationale:** Both types had identical fields. `MatchSetupConfig` has full
+validation support via `validateMatchSetup` and is the contract that all future
+setup and gameplay packets depend on. Retaining `MatchConfiguration` as an alias
+preserves backward compatibility with `game.ts` and existing tests without
+maintaining two identical type definitions.
+**Introduced:** WP-005A
+**Status:** Immutable
+
+---
+
+### D-1208 — MatchSetupError Uses { field, message }, Not MoveError
+**Decision:** `MatchSetupError` uses `{ field: string; message: string }` as its
+error shape. It does not reference or extend `MoveError` (which uses
+`{ code, message, path }` and is defined in WP-008A).
+**Rationale:** Setup validation and move validation serve different purposes.
+Setup validation identifies which configuration field failed and why (field +
+message). Move validation identifies which game rule was violated (code +
+message + path). Reusing `MoveError` for setup would couple the setup contract
+to the move contract and add unused fields (`code`, `path`). Each domain gets
+its own error shape sized to its needs.
+**Introduced:** WP-005A
+**Status:** Immutable
+
+---
+
+### D-1209 — CardRegistryReader Interface Preserves Layer Boundary
+**Decision:** `matchSetup.validate.ts` defines a minimal `CardRegistryReader`
+interface (`{ listCards(): Array<{ key: string }> }`) instead of importing
+`CardRegistry` from `@legendary-arena/registry`.
+**Rationale:** The architecture layer boundary forbids game-engine from importing
+registry. The real `CardRegistry` satisfies `CardRegistryReader` via TypeScript
+structural typing, so the server can pass one in at setup time without creating
+a compile-time dependency. This preserves the unidirectional dependency direction
+(Registry -> Game Engine -> Server) defined in ARCHITECTURE.md.
+**Introduced:** WP-005A
+**Status:** Immutable
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision
