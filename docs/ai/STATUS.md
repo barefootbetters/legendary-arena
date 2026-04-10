@@ -110,3 +110,33 @@
 - No rollback mechanism (manual recovery via `psql` if needed)
 - No real game logic — game_sessions table is created but not yet used
 - Card registry not loaded at startup (WP-003 needed)
+
+### WP-002 — boardgame.io Game Skeleton (2026-04-09)
+
+**What exists now:**
+- `packages/game-engine/` — new pnpm workspace package (`@legendary-arena/game-engine`)
+  - `src/types.ts` — `MatchConfiguration` (9 locked fields from 00.2 §8.1)
+    and `LegendaryGameState` (initial G shape)
+  - `src/game.ts` — `LegendaryGame` created with boardgame.io `Game()`,
+    4 phases (`lobby`, `setup`, `play`, `end`), 2 move stubs (`playCard`,
+    `endTurn`), and a `setup()` function that accepts `MatchConfiguration`
+  - `src/index.ts` — named exports: `LegendaryGame`, `MatchConfiguration`,
+    `LegendaryGameState`
+  - `src/game.test.ts` — JSON-serializability test, field verification,
+    phase/move assertions (5 tests, all passing)
+
+**What a subsequent session can rely on:**
+- `@legendary-arena/game-engine` is importable as a workspace package
+- `LegendaryGame` is a valid boardgame.io 0.50.x `Game()` object
+- `LegendaryGame.setup()` accepts `MatchConfiguration` and returns
+  `LegendaryGameState` (JSON-serializable)
+- Phase names are locked: `lobby`, `setup`, `play`, `end`
+- Move stubs exist: `playCard`, `endTurn` (void, no side effects)
+- `MatchConfiguration` has exactly 9 fields matching 00.2 §8.1
+
+**Known gaps (expected at this stage):**
+- Move stubs have no logic — gameplay implementation starts in WP-005B+
+- `LegendaryGameState` contains only `matchConfiguration` — zones, piles,
+  counters, and other G fields will be added by subsequent Work Packets
+- No card registry integration — engine does not import registry (by design)
+- No server wiring — `apps/server/` still uses its own placeholder Game()

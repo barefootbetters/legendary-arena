@@ -1,0 +1,28 @@
+{
+  "name": "@legendary-arena/game-engine",
+  "version": "1.0.0",
+  "description": "boardgame.io Game Engine for Legendary Arena",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "node --import tsx --test src/**/*.test.ts"
+  },
+  "dependencies": {
+    "boardgame.io": "^0.50.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.15.7",
+    "typescript": "^5.4.5"
+  }
+}

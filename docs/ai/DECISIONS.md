@@ -312,6 +312,18 @@ match records. Per 00.2 §4.4: use ext_id for cross-service card references.
 **Introduced:** FP-02
 **Status:** Immutable
 
+### D-1202 — MatchConfiguration Uses ext_id String References, Not Numeric IDs
+**Decision:** All card references in `MatchConfiguration` (schemeId, mastermindId,
+villainGroupIds, henchmanGroupIds, heroDeckIds) use `ext_id` text strings from
+the card registry, not numeric database IDs.
+**Rationale:** Extends D-1201 to the game engine layer. ext_id values are stable
+across database re-seeds. Using numeric IDs would couple match configurations to
+seeding order and break saved configurations or replays when the database is
+re-seeded. Per 00.2 §4.4 and §8.1, ext_id is the canonical cross-service card
+reference format.
+**Introduced:** WP-002
+**Status:** Immutable
+
 ---
 
 ## Change Management

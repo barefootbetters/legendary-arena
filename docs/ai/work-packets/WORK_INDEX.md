@@ -85,7 +85,7 @@ These packets establish the repo-as-memory system and lock contracts before code
   WORK_INDEX created with Foundation Prompts table, phase structure, dependency
   chain, and procedure for adding new Work Packets.
 
-- [ ] WP-002 — boardgame.io Game Skeleton (Contracts Only) ✅ Reviewed
+- [x] WP-002 — boardgame.io Game Skeleton (Contracts Only) ✅ Reviewed — completed 2026-04-09
   Dependencies: WP-001, Foundation Prompts (01, 02)
   Notes: Creates `packages/game-engine/` from scratch using boardgame.io
   `^0.50.0` — this version is locked; do not upgrade without a DECISIONS.md
