@@ -301,7 +301,7 @@ These packets create the first playable (but incomplete) game loop.
   drift-detection test for `CORE_MOVE_NAMES`; all validators never throw;
   see ARCHITECTURE.md §Section 4 for The Move Validation Contract
 
-- [ ] WP-008B — Core Moves Implementation (Draw, Play, End Turn) ✅ Reviewed
+- [x] WP-008B — Core Moves Implementation (Draw, Play, End Turn) ✅ Reviewed — Completed 2026-04-10
   Dependencies: WP-008A
   Notes: Three-step move ordering — validate args → check stage gate → mutate G;
   if either guard fails, return without mutation (never throw);

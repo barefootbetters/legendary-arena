@@ -4,6 +4,7 @@ import { validateMatchSetup, type CardRegistryReader } from './matchSetup.valida
 import { buildInitialGameState } from './setup/buildInitialGameState.js';
 import { TURN_STAGES } from './turn/turnPhases.types.js';
 import { advanceTurnStage } from './turn/turnLoop.js';
+import { drawCards, playCard, endTurn } from './moves/coreMoves.impl.js';
 
 // why: The registry must be available to Game.setup() for ext_id validation,
 // but boardgame.io's setup function signature does not include a registry
@@ -44,33 +45,6 @@ const EMPTY_REGISTRY: CardRegistryReader = {
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
-
-/**
- * Play a card from the active player's hand.
- *
- * Stub move -- no side effects. Future Work Packets will implement card
- * resolution, attack/recruit accumulation, and rule hook triggers.
- *
- * @param _context - boardgame.io move context (unused in skeleton)
- */
-function playCard(_context: MoveContext): void {
-  // why: move stubs return void per the Immer mutation model (boardgame.io
-  // 0.50.x). Moves mutate the draft of G directly and must not return a new
-  // G object. Logic will be added by subsequent Work Packets.
-}
-
-/**
- * End the current player's turn.
- *
- * Stub move -- no side effects. Future Work Packets will implement cleanup,
- * discard, and draw steps before advancing the turn.
- *
- * @param _context - boardgame.io move context (unused in skeleton)
- */
-function endTurn(_context: MoveContext): void {
-  // why: move stubs return void per the Immer mutation model. Turn-end logic
-  // (cleanup stage, discard, draw) will be added by subsequent Work Packets.
-}
 
 /**
  * Advances the current turn stage to the next stage in the canonical
@@ -174,6 +148,7 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
   },
 
   moves: {
+    drawCards,
     playCard,
     endTurn,
     advanceStage,

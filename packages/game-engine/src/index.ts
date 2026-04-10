@@ -64,3 +64,5 @@ export {
   validateEndTurnArgs,
   validateMoveAllowedInStage,
 } from './moves/coreMoves.validate.js';
+export { moveCardFromZone, moveAllCards } from './moves/zoneOps.js';
+export type { MoveCardResult, MoveAllResult } from './moves/zoneOps.js';

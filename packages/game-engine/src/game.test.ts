@@ -96,12 +96,12 @@ describe('LegendaryGame', () => {
     );
   });
 
-  it('defines moves: advanceStage, playCard, and endTurn', () => {
+  it('defines moves: advanceStage, drawCards, playCard, and endTurn', () => {
     const moveNames = Object.keys(LegendaryGame.moves ?? {});
     assert.deepStrictEqual(
       moveNames.sort(),
-      ['advanceStage', 'endTurn', 'playCard'],
-      'LegendaryGame must define exactly 3 moves: advanceStage, endTurn, and playCard',
+      ['advanceStage', 'drawCards', 'endTurn', 'playCard'],
+      'LegendaryGame must define exactly 4 moves: advanceStage, drawCards, endTurn, and playCard',
     );
   });
 });

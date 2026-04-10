@@ -418,6 +418,52 @@
 - No card rules, costs, or keyword logic — future WPs
 - No villain deck, city, or HQ logic — WP-014/015
 
+### WP-008B — Core Moves Implementation (2026-04-10)
+
+**What changed:**
+- `packages/game-engine/src/moves/zoneOps.ts` — **new** — pure zone mutation
+  helpers: `moveCardFromZone(from, to, cardId)` returns `{ from, to, found }`;
+  `moveAllCards(from, to)` returns `{ from, to }`. Both return new arrays,
+  never mutate inputs. No boardgame.io imports. No `Math.random()`.
+- `packages/game-engine/src/moves/coreMoves.impl.ts` — **new** — three move
+  implementations (`drawCards`, `playCard`, `endTurn`) following three-step
+  ordering: validate args, check stage gate, mutate G. Imports validators and
+  gating from WP-008A. Uses `shuffleDeck` for reshuffle in `drawCards`.
+- `packages/game-engine/src/game.ts` — **modified** — replaced `playCard` and
+  `endTurn` stubs with imports from `coreMoves.impl.ts`; added `drawCards` as
+  a new move. `advanceStage` remains untouched.
+- `packages/game-engine/src/index.ts` — **modified** — exports
+  `moveCardFromZone`, `moveAllCards`, `MoveCardResult`, `MoveAllResult`
+- `packages/game-engine/src/game.test.ts` — **modified** — updated move-count
+  assertion from 3 to 4 (runtime wiring allowance for adding `drawCards`)
+- `packages/game-engine/src/moves/coreMoves.integration.test.ts` — **new** —
+  9 integration tests covering all three moves, stage gating, reshuffle, and
+  JSON serializability
+
+**What a running match can now do:**
+- `drawCards`: draws N cards from deck to hand; reshuffles discard into deck
+  when deck is exhausted mid-draw (deterministic via `ctx.random`)
+- `playCard`: moves a card from hand to inPlay
+- `endTurn`: moves all inPlay and hand cards to discard, then calls
+  `ctx.events.endTurn()` to advance to the next player
+- All three moves enforce stage gating via `MOVE_ALLOWED_STAGES`
+- A match can now execute a full turn cycle: draw cards (start/main stage),
+  play cards (main stage), end turn (cleanup stage), rotate to next player
+
+**What a subsequent session can rely on:**
+- `@legendary-arena/game-engine` exports functional move implementations
+- `zoneOps.ts` exports `moveCardFromZone` and `moveAllCards` for reuse in
+  future moves (villain deck, recruit, fight)
+- WP-008A contracts were NOT modified — all validators, gating, and types
+  remain locked
+- All 89 tests passing (80 from WP-008A + 9 new)
+
+**Known gaps (expected at this stage):**
+- No card effects (attack, recruit, keywords, costs) — future WPs
+- No HQ, city, KO zone, or villain deck logic — WP-014/015
+- No buying or fighting mechanics — future WPs
+- No win/loss conditions — WP-010
+
 ### WP-003 — Card Registry Verification & Defect Correction (2026-04-09)
 
 **What was fixed:**

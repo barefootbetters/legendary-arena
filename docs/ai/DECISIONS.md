@@ -671,6 +671,41 @@ contract.
 
 ---
 
+## Zone Operation Decisions
+
+### D-1225 — zoneOps.ts Helpers Return New Arrays Rather Than Mutating G Directly
+**Decision:** `moveCardFromZone` and `moveAllCards` in `zoneOps.ts` return new
+arrays (`{ from, to }`) rather than mutating the zone arrays in `G` directly.
+The calling move function assigns the returned arrays back to zone properties
+on the Immer draft of `G`.
+**Rationale:** Returning new arrays keeps the helpers pure, independently testable,
+and free of boardgame.io dependencies. Pure helpers can be tested without an Immer
+draft, making tests simpler and faster. The move function is responsible for
+assigning returned arrays to `G` properties — Immer tracks the property assignment
+automatically. This separation also keeps each move function under 30 lines
+(code-style Rule 5) by extracting zone mutation logic into reusable helpers.
+**Introduced:** WP-008B
+**Status:** Immutable
+
+---
+
+### D-1226 — Moves Return void on Validation Failure Rather Than Throwing
+**Decision:** When a move's args validation or stage gate check fails, the move
+function returns `void` immediately without mutating `G`. Moves never throw
+exceptions.
+**Rationale:** boardgame.io 0.50.x uses Immer — moves mutate a draft of `G` and
+return `void`. Throwing inside a move function would crash the boardgame.io server
+process rather than gracefully rejecting the invalid action. Returning `void` on
+invalid input leaves `G` unchanged, which boardgame.io interprets as a no-op. This
+is consistent with the engine-wide convention that only `Game.setup()` may throw
+(D-0102 clarification). Invalid move attempts are expected during normal gameplay
+(e.g., a client submitting a move in the wrong stage) and are not invariant
+violations.
+**Introduced:** WP-008B
+**Status:** Immutable
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision
