@@ -334,6 +334,52 @@
 - No turn advancement logic — that is WP-007B
 - No moves, stage gating, or boardgame.io wiring — WP-008A/B
 
+### WP-007B — Turn Loop Implementation (2026-04-10)
+
+**What changed:**
+- `packages/game-engine/src/turn/turnLoop.ts` — **new** — `advanceTurnStage(G, ctx)`
+  advances `G.currentStage` through the canonical turn stage cycle. Uses
+  `getNextTurnStage` from WP-007A for ordering — no hardcoded stage strings.
+  Calls `ctx.events.endTurn()` when `getNextTurnStage` returns `null` (after
+  cleanup). Defines `TurnLoopContext` and `TurnLoopState` interfaces locally
+  to avoid importing boardgame.io.
+- `packages/game-engine/src/types.ts` — **modified** — added
+  `currentStage: TurnStage` to `LegendaryGameState` with `// why:` comment
+  explaining storage in G rather than ctx
+- `packages/game-engine/src/game.ts` — **modified** — wired `play` phase with
+  `turn.onBegin` (resets `G.currentStage` to `TURN_STAGES[0]` each turn) and
+  added `advanceStage` move that delegates to `advanceTurnStage`
+- `packages/game-engine/src/index.ts` — **modified** — exports
+  `advanceTurnStage`, `TurnLoopContext`, `TurnLoopState`
+- `packages/game-engine/src/setup/buildInitialGameState.ts` — **modified** —
+  returns `currentStage: TURN_STAGES[0]` in initial G (required by updated
+  `LegendaryGameState` type)
+- `packages/game-engine/src/game.test.ts` — **modified** — updated move
+  assertion to include `advanceStage` (3 moves instead of 2)
+- `packages/game-engine/src/turn/turnLoop.integration.test.ts` — **new** —
+  4 integration tests: start->main, main->cleanup, cleanup->endTurn called,
+  JSON-serializability after each transition
+
+**What a running match can now do:**
+- The `play` phase has a functional turn stage cycle: `start -> main -> cleanup`
+- Each new turn resets `G.currentStage` to the first canonical stage
+- `advanceStage` move advances the stage forward or ends the turn
+- `ctx.events.endTurn()` handles player rotation — manual rotation forbidden
+- `G.currentStage` is observable to all moves for future stage gating (WP-008A)
+
+**What a subsequent session can rely on:**
+- `LegendaryGameState` has `currentStage: TurnStage` — always present in G
+- `advanceTurnStage` is exported and uses `getNextTurnStage` exclusively
+- `advanceStage` is registered as a move on `LegendaryGame`
+- The play phase `turn.onBegin` hook resets stage on each turn
+- All 67 tests passing (63 from WP-007A + 4 new)
+
+**Known gaps (expected at this stage):**
+- No stage gating on moves — WP-008A defines which moves run in which stages
+- No gameplay moves (draw, recruit, fight) — WP-008A/B
+- No win/loss conditions — WP-010
+- No villain deck or city logic — WP-014/015
+
 ### WP-003 — Card Registry Verification & Defect Correction (2026-04-09)
 
 **What was fixed:**

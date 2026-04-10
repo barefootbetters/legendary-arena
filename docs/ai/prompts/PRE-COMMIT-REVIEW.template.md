@@ -86,7 +86,21 @@ Perform a **final checkpoint review** focused strictly on the following axes:
 - Drift-detection tests (if required) genuinely pin contracts
 - No over-testing or under-testing
 
-### 5. Governance & EC-Mode Alignment
+### 5. Runtime Boundary Check
+
+- Were any files outside the original WP allowlist modified?
+  - If yes:
+    - Are the changes structurally required by new types or contracts?
+    - Do they introduce any new gameplay or branching logic?
+    - Are they limited to wiring or test adaptation?
+
+If all answers are acceptable, changes may be approved.
+Otherwise, the WP must be split or retried.
+
+If allowlist exceptions were exercised, summarize them explicitly
+and state: **Approved** / **Not Approved** under runtime wiring allowance.
+
+### 6. Governance & EC-Mode Alignment
 
 - Decisions are documented rather than implied
 - Architecture rules are respected
@@ -102,7 +116,8 @@ Treat an issue as **BLOCKING** only if one or more of the following is true:
 - The implementation violates the declared scope of the Work Packet
 - A locked contract, type, transition, or rule is incorrect or ambiguous
 - Forbidden behavior is introduced (runtime logic, mutation, framework bleed-through, throws, etc.)
-- Files outside the WP's allowlist were modified
+- Files outside the WP's allowlist were modified — unless explicitly
+  justified under `docs/ai/REFERENCE/01.5-runtime-wiring-allowance.md`
 - Required governance documentation is missing or incorrect
 
 All other observations — including stylistic notes, polish, or hypothetical
@@ -128,7 +143,27 @@ You must answer **exactly one** of the following and nothing else in this sectio
 - **NOT safe to commit**
 
 Then provide a **brief justification (2-4 sentences)** grounded strictly in
-scope, contracts, and governance rules.
+scope, contracts, and governance rules. Conclude with a single sentence
+summarizing why the WP is (or is not) safe to commit.
+
+---
+
+### Review Axis Assessment (Optional but Recommended)
+
+For complex WPs, reviewers may assess each axis separately before
+delivering the verdict. Each axis should conclude with
+**Pass** / **Concern** / **Blocked**.
+
+1. Scope Discipline
+2. Contract & Type Correctness
+3. Boundary Integrity
+4. Test Integrity
+5. Runtime Boundary Check
+6. Governance & EC-Mode Alignment
+
+This section is recommended when the WP touches multiple files, exercises
+the runtime wiring allowance, or introduces new contracts. It may be
+omitted for straightforward, single-file WPs.
 
 ---
 
@@ -208,3 +243,13 @@ If the Work Packet meets its contract:
 
 **Affirm readiness to commit and conclude the review.**
 Do not invent work.
+
+---
+
+## Template Success Criteria
+
+This template is considered successful if:
+
+- A reviewer can determine commit readiness without inspecting code
+- Runtime wiring exceptions are explicit, justified, and limited
+- No future scope is argued into the review

@@ -277,7 +277,7 @@ These packets create the first playable (but incomplete) game loop.
   `turnPhases.logic.ts` has no boardgame.io imports (pure helper);
   see ARCHITECTURE.md §Section 4 for The Turn Stage Cycle and Phase Sequence
 
-- [ ] WP-007B — Turn Loop Implementation ✅ Reviewed
+- [x] WP-007B — Turn Loop Implementation ✅ Reviewed (completed 2026-04-10)
   Dependencies: WP-007A
   Notes: `currentStage: TurnStage` stored in `G` (not `ctx`) — boardgame.io's
   `ctx` does not expose inner stage to move functions; `// why:` comment required;

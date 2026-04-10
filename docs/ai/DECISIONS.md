@@ -599,6 +599,36 @@ observable.
 **Introduced:** WP-007A
 **Status:** Immutable
 
+### D-1221 — G.currentStage Stored in G, Not ctx
+**Decision:** The per-turn stage (`'start' | 'main' | 'cleanup'`) is stored in
+`G.currentStage`, not in boardgame.io's `ctx` object.
+**Rationale:** boardgame.io's `ctx` does not expose an inner turn stage concept
+in a form that move functions can read. Storing `currentStage` in `G` makes it:
+(1) observable to move functions for stage gating (e.g., `playCard` only in
+`main`), (2) JSON-serializable for replay and snapshot support, and
+(3) resettable on each new turn via the play phase `onBegin` hook.
+boardgame.io's built-in stage system (`ctx.activePlayers`, `setStage`) is
+designed for simultaneous player actions and does not serve the same purpose.
+See also D-1219.
+**Introduced:** WP-007B
+**Status:** Immutable
+
+---
+
+### D-1222 — Integration Tests Call Functions Directly, Not boardgame.io/testing
+**Decision:** Turn loop integration tests call `advanceTurnStage` directly with
+a minimal mock context, rather than using `boardgame.io/testing` or running a
+live boardgame.io server.
+**Rationale:** `turnLoop.ts` is a pure helper with no boardgame.io imports.
+Testing it through boardgame.io/testing would add framework coupling to code
+that is intentionally framework-independent. Direct function calls with a mock
+context provide faster, more focused tests that verify the exact contract
+(`getNextTurnStage` ordering, `endTurn` invocation, JSON serializability)
+without framework overhead. This also follows the convention established in
+WP-005B where `makeMockCtx` was introduced for framework-free testing.
+**Introduced:** WP-007B
+**Status:** Immutable
+
 ---
 
 ## Change Management
