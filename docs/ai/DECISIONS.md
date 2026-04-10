@@ -326,6 +326,36 @@ reference format.
 
 ---
 
+## Registry & Card Data Decisions
+
+### D-1203 — sets.json and card-types.json Are Incompatible Shapes
+**Decision:** `sets.json` is the set index (`{ id, abbr, pkgId, slug, name,
+releaseDate, type }`) and must be used by all loaders to enumerate sets.
+`card-types.json` is the card type taxonomy (`{ id, slug, name, displayName,
+prefix }`) and must never be used where a set index is expected.
+**Rationale:** The two files have completely different shapes. Fetching
+`card-types.json` where `sets.json` is expected causes a silent failure:
+entries lack `abbr` and `releaseDate`, so every entry fails
+`SetIndexEntrySchema` validation silently, producing zero sets with no error.
+This was the confirmed Defect 1 in `httpRegistry.ts` fixed by WP-003.
+**Introduced:** WP-003
+**Status:** Immutable
+
+---
+
+### D-1204 — FlatCard.cost Must Be string | number | undefined
+**Decision:** `FlatCard.cost` is typed as `string | number | undefined`, matching
+`HeroCardSchema.cost` which accepts both integers and star-cost strings.
+**Rationale:** Real card data includes star-cost strings like `"2*"` (amwp Wasp)
+and `"3*"`. The previous type `number | undefined` rejected valid card data
+silently. The schema (`z.union([z.number().int().min(0), z.string()]).optional()`)
+already accepted strings — the TypeScript interface must match. Narrowing this
+type back to `number | undefined` is forbidden.
+**Introduced:** WP-003
+**Status:** Immutable
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision

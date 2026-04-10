@@ -107,7 +107,7 @@ These packets establish the repo-as-memory system and lock contracts before code
   see ARCHITECTURE.md §Section 4 "The LegendaryGame Object" for version and
   mutation model details
 
-- [ ] WP-003 — Card Registry Verification & Defect Correction ✅ Reviewed
+- [x] WP-003 — Card Registry Verification & Defect Correction — Completed 2026-04-09 ✅ Reviewed
   Dependencies: WP-001
   Notes: `packages/registry/` already exists — fixes two confirmed defects and
   adds a smoke test. Does NOT create the registry from scratch.

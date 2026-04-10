@@ -111,6 +111,40 @@
 - No real game logic — game_sessions table is created but not yet used
 - Card registry not loaded at startup (WP-003 needed)
 
+### WP-003 — Card Registry Verification & Defect Correction (2026-04-09)
+
+**What was fixed:**
+- **Defect 1:** `httpRegistry.ts` was fetching `card-types.json` (card type
+  taxonomy) instead of `sets.json` (set index). The Zod parse silently
+  produced zero sets because `card-types.json` entries lack `abbr` and
+  `releaseDate` fields. Fixed to fetch `sets.json` with a `// why:` comment
+  explaining the distinction.
+- **Defect 2:** `FlatCard.cost` in `types/index.ts` was typed as
+  `number | undefined` but real card data includes star-cost strings like
+  `"2*"` (amwp Wasp). Widened to `string | number | undefined` to match
+  `HeroCardSchema.cost`.
+- Stale JSDoc references to `card-types.json` corrected to `sets.json` in
+  `CardRegistry.listSets()` and `HttpRegistryOptions.eagerLoad`.
+
+**What was added:**
+- `src/registry.smoke.test.ts` — smoke test using `node:test` confirming
+  the local registry loads sets and cards without blocking parse errors
+- `test` script in `package.json` for `pnpm --filter @legendary-arena/registry test`
+- `tsconfig.build.json` excludes `*.test.ts` from build output
+
+**What is confirmed working:**
+- Local registry loads 40 sets (38 parse fully, 2 have known schema issues)
+- `listSets().length > 0` and `listCards().length > 0` pass
+- Immutable files (`schema.ts`, `shared.ts`, `localRegistry.ts`) were not modified
+
+**Known remaining build errors (pre-existing, out of scope):**
+- `localRegistry.ts` — missing `@types/node` type declarations for
+  `node:fs/promises` and `node:path`; implicit `any` parameter
+- `shared.ts` — `exactOptionalPropertyTypes` strictness (optional fields
+  assigned to required fields in `FlatCard`)
+- These require modifications to immutable files or adding `@types/node` —
+  flagged for a follow-up work packet
+
 ### WP-002 — boardgame.io Game Skeleton (2026-04-09)
 
 **What exists now:**

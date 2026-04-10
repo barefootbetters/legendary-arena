@@ -16,6 +16,7 @@
     "docs"
   ],
   "scripts": {
+    "test":            "node --import tsx --test src/**/*.test.ts",
     "build":           "tsc -p tsconfig.build.json && node scripts/build-dist.mjs",
     "validate":        "tsx scripts/validate.ts",
     "normalize":       "tsx scripts/normalize-cards.ts",

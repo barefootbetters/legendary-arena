@@ -1,5 +1,12 @@
 /**
- * types/index.ts — all public TypeScript types inferred from the real schema
+ * types/index.ts — all public TypeScript types for the card registry
+ *
+ * Domain types (SetIndexEntry, HeroCard, etc.) are inferred from Zod schemas
+ * in schema.ts. Those schemas are the single source of truth for field shapes.
+ * Do not duplicate or re-derive field definitions here — use z.infer only.
+ *
+ * FlatCard and the registry interfaces are hand-authored contracts that the
+ * loaders populate. Changes to FlatCard field types require a DECISIONS.md entry.
  */
 
 import type { z } from "zod";
@@ -17,7 +24,7 @@ import type {
   CardQuerySchema,
 } from "../schema.js";
 
-// ── Domain types ──────────────────────────────────────────────────────────────
+// ── Domain types (Zod-inferred — do not hand-edit) ───────────────────────────
 export type SetIndexEntry   = z.infer<typeof SetIndexEntrySchema>;
 export type SetData         = z.infer<typeof SetDataSchema>;
 export type Hero            = z.infer<typeof HeroSchema>;
@@ -31,8 +38,21 @@ export type Scheme          = z.infer<typeof SchemeSchema>;
 export type CardQuery       = z.infer<typeof CardQuerySchema>;
 
 // ── Flat "search result" card — useful for the viewer grid ───────────────────
+//
+// A FlatCard is a denormalized record produced by flattenSet() in shared.ts.
+// It merges hero, mastermind, villain, and scheme cards into a single shape
+// so the viewer grid and search can iterate one flat list.
+//
+// Fields marked "hero-only" are present only when cardType is "hero".
+// Fields present on all card types are always populated by flattenSet().
 export interface FlatCard {
-  /** Unique key: "{setAbbr}-{cardType}-{slug}"  */
+  /**
+   * Unique key whose format varies by cardType:
+   *   hero:       "{setAbbr}-hero-{heroSlug}-{slot}"
+   *   mastermind: "{setAbbr}-mastermind-{groupSlug}-{cardSlug}"
+   *   villain:    "{setAbbr}-villain-{groupSlug}-{cardSlug}"
+   *   scheme:     "{setAbbr}-scheme-{schemeSlug}"
+   */
   key:       string;
   cardType:  "hero" | "mastermind" | "villain" | "scheme";
   setAbbr:   string;
@@ -40,29 +60,47 @@ export interface FlatCard {
   name:      string;
   slug:      string;
   imageUrl:  string;
-  /** Hero-only fields */
-  heroName?:  string;
-  team?:      string;
-  hc?:        HeroClass;
-  rarity?:    1 | 2 | 3;
+
+  // ── Hero-only fields (undefined for non-hero card types) ───────────────
+  heroName?:    string;
+  team?:        string;
+  hc?:          HeroClass;
+  rarity?:      1 | 2 | 3;
   rarityLabel?: string;
-  slot?:      number;
-  cost?:      number;
+  slot?:        number;
+
+  /**
+   * Hero card recruit cost. Accepts both integers (3) and star-cost strings
+   * ("2*"). Widened from `number` to `string | number` by WP-003 / D-1204
+   * because real card data (amwp Wasp) contains star-cost modifiers.
+   * Must never be narrowed back to `number | undefined`.
+   *
+   * Hero-only — undefined for non-hero card types.
+   */
+  cost?:      string | number;
+
+  /** Hero-only. Nullable: null when the card has no printed attack value. */
   attack?:    string | null;
+
+  /** Hero-only. Nullable: null when the card has no printed recruit value. */
   recruit?:   string | null;
+
+  /** Card ability text lines. Present on all card types. */
   abilities:  string[];
 }
 
-// ── Registry info ─────────────────────────────────────────────────────────────
+// ── Registry info (read-only snapshot) ───────────────────────────────────────
+/** Counts and metadata returned by CardRegistry.info(). */
 export interface RegistryInfo {
-  totalSets:      number;
-  totalHeroes:    number;
-  totalCards:     number;
-  loadedSetAbbrs: string[];
+  totalSets:       number;
+  totalHeroes:     number;
+  totalCards:      number;
+  loadedSetAbbrs:  string[];
   metadataBaseUrl: string;
 }
 
-// ── Health report ─────────────────────────────────────────────────────────────
+// ── Health report (read-only snapshot) ───────────────────────────────────────
+/** Validation summary returned by CardRegistry.validate(). */
 export interface HealthReport {
   generatedAt: string;
   summary: {
@@ -80,41 +118,49 @@ export interface HealthReport {
 }
 
 // ── Registry interface ────────────────────────────────────────────────────────
+/**
+ * Read-only card registry populated by one of the factory functions
+ * (createRegistryFromLocalFiles or createRegistryFromHttp).
+ *
+ * All returned arrays are fresh copies — callers may mutate them without
+ * affecting the registry's internal state.
+ */
 export interface CardRegistry {
-  /** High-level counts */
+  /** High-level counts for the registry. */
   info(): RegistryInfo;
 
-  /** All set index entries (from card-types.json) */
+  /** All set index entries loaded from sets.json. */
   listSets(): SetIndexEntry[];
 
-  /** Full data for one set. Returns undefined if not loaded. */
+  /** Full data for one set. Returns undefined if the set was not loaded. */
   getSet(abbr: string): SetData | undefined;
 
-  /** All heroes across all loaded sets */
+  /** All heroes across all loaded sets. */
   listHeroes(): Hero[];
 
   /**
-   * Flat list of all cards across all loaded sets.
+   * Flat list of every card across all loaded sets.
    * Each individual hero card, mastermind card, villain card, and scheme
-   * becomes its own FlatCard — good for search/grid display.
+   * becomes its own FlatCard.
    */
   listCards(): FlatCard[];
 
-  /** Query / filter flat cards */
+  /** Filter flat cards by the given query parameters. */
   query(q: CardQuery): FlatCard[];
 
-  /** Health / validation report */
+  /** Validation report including any schema parse errors from loading. */
   validate(): HealthReport;
 }
 
-// ── Factory options ───────────────────────────────────────────────────────────
+// ── Factory options ──────────────────────────────────────────────────────────
+/** Options for createRegistryFromHttp. */
 export interface HttpRegistryOptions {
-  /** Base URL — everything lives under {metadataBaseUrl}/metadata/ */
+  /** Base URL for the R2 metadata endpoint (without trailing slash). */
   metadataBaseUrl: string;
   /**
-   * Which set abbrs to eagerly load.
-   * Pass ["*"] to load all sets listed in card-types.json (slow — many fetches).
-   * Default: load index only, sets are loaded lazily via getSet().
+   * Which set abbreviations to eagerly load at construction time.
+   * Pass ["*"] to load all sets listed in sets.json (slow — many fetches).
+   * Default: index only; individual sets are loaded lazily via getSet().
    */
   eagerLoad?: string[];
 }
