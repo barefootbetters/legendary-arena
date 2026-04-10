@@ -1,0 +1,29 @@
+-- 001_server_schema.sql
+-- Creates the legendary.* schema namespace and the rules-engine tables
+-- required by the game server at startup.
+-- Source of truth: data/schema-server.sql (produced by Foundation Prompt 01).
+--
+-- Objects created (all in the legendary schema):
+--   Schema:  legendary
+--   Tables:  source_files, sets, masterminds, villain_groups, schemes,
+--            rules, rule_docs (+ search_tsv generated column)
+--   Indexes: source_files_kind_idx, sets_set_code_idx, masterminds_set_id_idx,
+--            villain_groups_set_id_idx, schemes_set_id_idx, rules_code_idx,
+--            rule_docs_search_idx (GIN)
+--
+-- Primary keys use bigserial except rules and rule_docs which use int
+-- (rule_id values are assigned by the seed data, not auto-generated).
+--
+-- Precondition: none. This is the first migration — it creates the legendary
+-- schema itself. Migrations 002 and 003 depend on this having run first.
+--
+-- Idempotent: all CREATE SCHEMA, CREATE TABLE, CREATE INDEX, and ALTER TABLE
+-- statements use IF NOT EXISTS. Safe to re-run against an existing schema.
+--
+-- Transaction handling: data/schema-server.sql contains no BEGIN/COMMIT
+-- wrapper. The migration runner wraps the entire file in a single transaction
+-- so that a partial failure rolls back cleanly.
+--
+-- Path resolution: \i paths are resolved relative to the project root by
+-- the migration runner, not relative to this file's directory.
+\i data/schema-server.sql

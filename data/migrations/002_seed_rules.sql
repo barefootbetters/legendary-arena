@@ -1,0 +1,23 @@
+-- 002_seed_rules.sql
+-- Seeds legendary.rules, legendary.rule_docs, and legendary.source_files
+-- from the canonical seed file.
+-- Source of truth: data/seed_rules.sql (do not duplicate its content here).
+--
+-- Precondition: 001_server_schema.sql must have run first. This migration
+-- inserts into tables created by that migration (legendary.rules,
+-- legendary.rule_docs, legendary.source_files).
+--
+-- Idempotency: rules and rule_docs inserts use ON CONFLICT DO UPDATE.
+-- source_files inserts (audit/provenance rows) lack a unique constraint
+-- and will append duplicate rows on re-run. This is acceptable because
+-- the migration runner tracks applied filenames in schema_migrations and
+-- will not re-execute this file once recorded.
+--
+-- Transaction handling: data/seed_rules.sql contains its own BEGIN/COMMIT
+-- wrapper. The migration runner (scripts/migrate.mjs) strips these before
+-- execution so it can manage the transaction boundary itself, ensuring the
+-- seed data and the schema_migrations record commit atomically.
+--
+-- Path resolution: \i paths are resolved relative to the project root by
+-- the migration runner, not relative to this file's directory.
+\i data/seed_rules.sql

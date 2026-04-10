@@ -2,7 +2,9 @@
   "name": "legendary-arena",
   "private": true,
   "version": "0.0.0",
+  "type": "module",
   "description": "Legendary Arena monorepo — card registry, viewer, and tooling",
+  "packageManager": "pnpm@10.32.1",
   "scripts": {
     "registry:validate":    "pnpm --filter @legendary-arena/registry validate",
     "registry:build":       "pnpm --filter @legendary-arena/registry build",
@@ -10,7 +12,10 @@
     "viewer:dev":           "pnpm --filter registry-viewer dev",
     "viewer:build":         "pnpm --filter registry-viewer build",
 
+    "migrate":              "node --env-file=.env scripts/migrate.mjs",
+
     "check":                "node --env-file=.env scripts/check-connections.mjs",
+    "check:ec":             "node --env-file=.env scripts/ec/health-check.ec.mjs",
     "check:env":            "pwsh scripts/Check-Env.ps1",
 
     "validate":             "node scripts/validate-r2.mjs",
@@ -26,7 +31,7 @@
     "typescript": "^5.4.5"
   },
   "engines": {
-    "node": ">=18",
-    "pnpm": ">=9"
+    "node": ">=22",
+    "pnpm": ">=10"
   }
 }

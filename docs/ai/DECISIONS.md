@@ -298,6 +298,22 @@ runtime state contracts.
 
 ---
 
+## Infrastructure & Schema Decisions
+
+### D-1201 — game_sessions Uses ext_id Text References, Not bigint FKs
+**Decision:** The `game_sessions` table references cards (mastermind, scheme)
+via `text` columns (`mastermind_ext_id`, `scheme_ext_id`) that match
+`legendary.cards.ext_id`, rather than `bigint` foreign keys to
+`legendary.masterminds` or `legendary.schemes`.
+**Rationale:** ext_id values are stable across re-seeds and schema changes.
+Using bigint FKs would couple game_sessions to the card seeding order and
+make re-seeding (which drops and re-creates rows with new IDs) break existing
+match records. Per 00.2 §4.4: use ext_id for cross-service card references.
+**Introduced:** FP-02
+**Status:** Immutable
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision

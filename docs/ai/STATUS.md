@@ -81,3 +81,32 @@
 - No card registry loading at startup (WP-003 registry package needed)
 - No authentication (separate WP)
 - No lobby/match creation CLI scripts (WP-011/012)
+
+### Foundation Prompt 02 — Database Migrations (2026-04-09)
+
+**What exists now:**
+- `scripts/migrate.mjs` — zero-dependency ESM migration runner using `pg` only.
+  Reads `.sql` files from `data/migrations/`, applies them in filename order,
+  tracks applied migrations in `public.schema_migrations`. Resolves `\i`
+  directives (psql includes) by inlining referenced files. Strips embedded
+  `BEGIN`/`COMMIT` wrappers to avoid nested transaction issues.
+- `data/migrations/001_server_schema.sql` — includes `data/schema-server.sql`
+  (rules-engine DDL: legendary.source_files, sets, masterminds, villain_groups,
+  schemes, rules, rule_docs)
+- `data/migrations/002_seed_rules.sql` — includes `data/seed_rules.sql`
+  (rules index + rule_docs glossary + source_files audit records)
+- `data/migrations/003_game_sessions.sql` — creates `public.game_sessions`
+  table for match tracking (match_id, status, player_count, mastermind_ext_id,
+  scheme_ext_id). Uses `text` ext_id references, not bigint FKs.
+- `render.yaml` buildCommand updated to run migrations before server start
+- `pnpm migrate` script entry in root package.json
+
+**What a developer can do:**
+- `pnpm migrate` applies pending migrations against local PostgreSQL
+- Running twice is safe — idempotent (0 applied, 3 skipped on second run)
+- `render deploy` runs migrations automatically in the build step
+
+**Known gaps (expected at this stage):**
+- No rollback mechanism (manual recovery via `psql` if needed)
+- No real game logic — game_sessions table is created but not yet used
+- Card registry not loaded at startup (WP-003 needed)
