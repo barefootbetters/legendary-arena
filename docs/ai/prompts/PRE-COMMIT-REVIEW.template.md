@@ -63,6 +63,8 @@ Perform a **final checkpoint review** focused strictly on the following axes:
 - No leakage into future or adjacent WPs
 - No speculative or convenience-driven additions
 - No implicit runtime behavior if the WP is declarative
+- For declarative WPs, explicitly confirm that no runtime behavior or
+  state mutation was introduced
 
 ### 2. Contract & Type Correctness
 
@@ -84,7 +86,9 @@ Perform a **final checkpoint review** focused strictly on the following axes:
 - Tests match the WP's required count and intent
 - Tests are atomic and understandable
 - Drift-detection tests (if required) genuinely pin contracts
-- No over-testing or under-testing
+- No over-testing that expands scope or introduces new behavior
+- Additional tests are permitted when they strengthen validation or
+  drift-detection within the WP's declared intent
 
 ### 5. Runtime Boundary Check
 
@@ -99,6 +103,9 @@ Otherwise, the WP must be split or retried.
 
 If allowlist exceptions were exercised, summarize them explicitly
 and state: **Approved** / **Not Approved** under runtime wiring allowance.
+
+If no allowlist exceptions were exercised, explicitly state that the
+runtime wiring allowance was not used.
 
 ### 6. Governance & EC-Mode Alignment
 
@@ -164,6 +171,10 @@ delivering the verdict. Each axis should conclude with
 This section is recommended when the WP touches multiple files, exercises
 the runtime wiring allowance, or introduces new contracts. It may be
 omitted for straightforward, single-file WPs.
+
+Each axis may be assessed with a short statement (e.g., "Pass") or a
+brief paragraph when justification is helpful. Brevity is preferred
+when no issues are present.
 
 ---
 
@@ -253,3 +264,5 @@ This template is considered successful if:
 - A reviewer can determine commit readiness without inspecting code
 - Runtime wiring exceptions are explicit, justified, and limited
 - No future scope is argued into the review
+- The review stands on its own as an auditable artifact without requiring
+  re-reading the execution transcript

@@ -1,301 +1,149 @@
-**Here is the fully updated and improved `docs/ai/ARCHITECTURE.md` with the complete update history restored and professionally formatted.**
+# Legendary Arena -- Architecture Overview
 
-```markdown
-# Legendary Arena — System Architecture
-
-> **This document is referenced by every Work Packet in `docs/ai/work-packets/`.**  
-> It is the **authoritative source** for package boundaries, data flow, persistence rules, and dependency constraints.  
-> If this document and any Work Packet conflict, **this document wins**.
-
-**Document override hierarchy** (established in WP-001):
-
-1. `docs/ai/REFERENCE/00.1-master-coordination-prompt.md` — highest authority (coordination system itself; non-negotiable constraints and session protocol)  
-2. `docs/ai/ARCHITECTURE.md` (this file) — architectural decisions and boundaries  
-3. Individual Work Packets (`docs/ai/work-packets/WP-NNN-*.md`)  
-4. Active conversation context — lowest authority  
-
-Higher entries always win in any conflict. A Work Packet may **never** override this document or `00.1`. If a conflict appears, stop and re-read this document + `00.1` before proceeding.
+> Human-facing summary of the system architecture.
+> The **authoritative source** is [`docs/ai/ARCHITECTURE.md`](ai/ARCHITECTURE.md).
+> If this file and the authoritative source conflict, the authoritative source wins.
+>
+> **Last updated:** 2026-04-09 (after WP-004)
 
 ---
 
-## Update History
+## System Layers
 
-| Date / Work Packet       | Update Summary |
-|--------------------------|----------------|
-| **Created**              | WP-013 — Persistence Boundaries & Snapshots |
-| WP-014 review            | Villain deck reveal pipeline and `RevealedCardType` conventions |
-| WP-014                   | Villain Deck & Reveal Pipeline |
-| WP-011 review            | Lobby phase flow and `G.lobby` observability pattern |
-| WP-010 review            | `endIf` contract and `G.counters` key conventions |
-| WP-009A/009B review      | Rule execution pipeline and `ImplementationMap` pattern |
-| WP-008A/008B review      | Move validation contract and zone mutation rules |
-| WP-007A/007B review      | Turn stage cycle, lifecycle-to-phase mapping |
-| WP-006A/006B review      | Zone/pile structure and initialization rules |
-| WP-005A/005B review      | Setup validation contract and throwing convention |
-| WP-004 review            | Server layer boundary and startup sequence |
-| WP-003 review            | Registry metadata file shapes and card field data quality |
-| WP-002 review            | boardgame.io version lock and `LegendaryGame` contract |
-| WP-001 review            | Override hierarchy and `legendary.*` namespace convention |
-
-**Last updated:** WP-014 review — villain deck reveal pipeline and `RevealedCardType` conventions
+```
+                    +-----------------------+
+                    |   Client UI (future)  |
+                    |   intents only        |
+                    +-----------+-----------+
+                                |
+                    +-----------v-----------+
+                    |   apps/server/        |
+                    |   Wiring layer only   |
+                    |   boardgame.io Server()|
+                    +-----------+-----------+
+                                |
+              +-----------------+------------------+
+              |                                    |
+  +-----------v-----------+          +-------------v-----------+
+  |  packages/game-engine |          |  packages/registry      |
+  |  ALL game logic       |          |  Card data loading      |
+  |  LegendaryGame        |          |  Zod validation         |
+  |  boardgame.io ^0.50.0 |          |  Immutable CardRegistry |
+  +----------+------------+          +-------------+-----------+
+             |                                     |
+             |  setup-time only                    |
+             +-------------------------------------+
+                                |
+                    +-----------v-----------+
+                    |   data/               |
+                    |   Card JSON + metadata|
+                    |   PostgreSQL schema   |
+                    +-----------------------+
+```
 
 ---
 
-## Table of Contents
-- [Architectural Principles](#architectural-principles)
-- [Section 1 — Monorepo Package Boundaries](#section-1--monorepo-package-boundaries)
-- [Section 2 — Data Flow](#section-2--data-flow)
-- [Section 3 — Persistence Boundaries](#section-3--persistence-boundaries)
-- [Section 4 — boardgame.io Runtime Model](#section-4--boardgameio-runtime-model)
-- [Section 5 — Package Dependency Rules](#section-5--package-dependency-rules)
-- [High-Level System Diagram](#high-level-system-diagram)
-- [Execution Mode & MVP Invariants](#execution-mode--mvp-gameplay-invariants)
+## Package Boundaries
+
+| Package | Responsibility | May Import | Must NOT Import |
+|---------|---------------|------------|-----------------|
+| `game-engine` | All gameplay logic (phases, moves, rules, endgame) | Node built-ins only | registry, server, pg |
+| `registry` | Card data loading and Zod validation | Node built-ins, zod | game-engine, server, pg |
+| `apps/server` | Wiring: loads registry + rules, runs Server() | game-engine, registry, pg | UI packages, browser APIs |
+| `apps/registry-viewer` | Read-only card browser SPA | registry, Vue | game-engine, server, pg |
+
+**Violations are bugs.** Dependencies flow strictly downward. No layer may reach upward or sideways.
+
+---
+
+## Server Startup (implemented in WP-004)
+
+Two independent tasks must both succeed before the server accepts requests:
+
+1. **Card Registry** -- `createRegistryFromLocalFiles({ metadataDir, cardsDir })`
+   - Loads `data/metadata/sets.json` + `data/cards/*.json`
+   - Validates against Zod schemas
+   - Returns immutable `CardRegistry`
+   - Log: `[server] registry loaded: 40 sets, 288 heroes, 2620 cards`
+
+2. **Rules Text** -- `loadRules()` from `apps/server/src/rules/loader.mjs`
+   - Reads from PostgreSQL `legendary.rules` table
+   - Caches in memory via `getRules()`
+   - Log: `[server] rules loaded: N rules`
+
+If either fails, the server exits. The server uses `createRequire` to bridge boardgame.io's CJS-only server bundle (D-1206).
 
 ---
 
 ## Architectural Principles
 
-### 1. Determinism Is Non-Negotiable
-Every game must be **fully reproducible** from:
-- initial seed
-- setup configuration
-- ordered list of player actions
-
-No hidden state, no implicit randomness, no time-dependent behaviour.  
-All randomness uses `ctx.random.*` exclusively — **never** `Math.random()`.
-
-### 2. The Engine Owns Truth
-- The engine is the **sole source of truth** for all game state.
-- Clients submit **intents**, never outcomes.
-- UI consumes **read-only projections** of engine state (never `G` or `ctx` directly).
-- Invalid or out-of-order actions are rejected deterministically engine-side.
-
-### 3. Data Outlives Code
-All persisted artefacts (replays, saves, campaign state, snapshots) are:
-- explicitly versioned
-- migrated deterministically
-- rejected loudly if incompatible with the current engine version
-
-Live runtime state (`G`, `ctx`) is **never** persisted.
-
-### 4. Growth Is Constrained, Not Free
-Growth happens within explicit boundaries:
-- immutable surfaces are protected by versioning
-- change budgets control release velocity
-- balance changes are validated via simulation before shipping
-
-Success is allowed. Entropy is not.
+1. **Determinism is non-negotiable** -- all randomness via `ctx.random.*`, never `Math.random()`
+2. **Engine owns truth** -- clients send intents, never outcomes
+3. **Data outlives code** -- persisted data is versioned and migrated explicitly
+4. **Growth is constrained** -- immutable surfaces protected by versioning
 
 ---
 
-## Section 1 — Monorepo Package Boundaries
+## Game State (`G`)
 
-The repository is a **pnpm monorepo**. Every package has a single, bounded responsibility.
-
-```mermaid
-flowchart TD
-    root[legendary-arena/]
-    packages[packages/]
-    apps[apps/]
-    data[data/]
-    docs[docs/ai/]
-
-    root --> packages
-    root --> apps
-    root --> data
-    root --> docs
-
-    subgraph packages
-        engine[game-engine/<br>@legendary-arena/game-engine<br><small>ALL game logic • boardgame.io ^0.50.0</small>]
-        registry[registry/<br>@legendary-arena/registry<br><small>card data loading + validation ONLY</small>]
-    end
-
-    subgraph apps
-        server[server/<br><small>wiring layer • Server() runtime • CLI scripts</small>]
-        viewer[registry-viewer/<br><small>read-only card browser SPA</small>]
-    end
-```
-
-### Package Import Rules (Hard Constraints)
-
-| Package                  | May import                                      | Must NOT import                                      |
-|--------------------------|-------------------------------------------------|------------------------------------------------------|
-| `game-engine`            | Node built-ins only                             | `registry`, `server`, any `apps/*`, `pg`            |
-| `registry`               | Node built-ins, `zod`                           | `game-engine`, `server`, any `apps/*`, `pg`         |
-| `apps/server`            | `game-engine`, `registry`, `pg`, Node built-ins | UI packages, browser APIs                            |
-| `apps/registry-viewer`   | `registry`, UI framework                        | `game-engine`, `server`, `pg`                        |
-
-Violations are bugs. TypeScript `paths` restrictions in each `tsconfig.json` enforce this at build time.
+- JSON-serializable at all times (no functions, Maps, Sets, classes)
+- Mutated via Immer drafts (boardgame.io 0.50.x) -- moves return void
+- **Never persisted** to any database, file, or cache
+- Managed entirely by boardgame.io in memory
 
 ---
 
-## Section 2 — Data Flow
+## Persistence Classes
 
-### Server Startup Sequence
-
-```mermaid
-flowchart TD
-    A[Server starts] --> B{Task 1: Card Registry}
-    A --> C{Task 2: Rules from PostgreSQL}
-    B --> D[createRegistryFromLocalFiles or createRegistryFromHttp]
-    D --> E[Load sets.json + per-set JSON + Zod validation]
-    E --> F[Immutable CardRegistry]
-    C --> G[loadRules() → legendary.rules table]
-    G --> H[getRules() in-memory]
-    F & H --> I[Both tasks complete]
-    I --> J[Server() starts]
-    J --> K[Ready]
-```
-
-**Why two separate tasks?** Card data (immutable release data from R2/local files) and rules text (seeded at deploy time) have different update cadences.
-
-### Registry Metadata File Shapes
-
-**`data/metadata/sets.json`** — the **set index** (used by `createRegistryFrom*`):
-
-```json
-{ "id": string, "abbr": string, "slug": string, "name": string, ... }
-```
-
-**`data/metadata/card-types.json`** — the **card type taxonomy** (37 entries, **never** used as a set index):
-
-```json
-{ "id": string, "slug": string, "name": string, "displayName": string, "prefix": string }
-```
-
-See `packages/registry/src/schema.ts` for authoritative Zod schemas and data quirks.
-
-### Card Field Data Quality
-
-Hero/mastermind numeric fields are often `string` in raw data:
-
-| Field       | Real examples     | Parsing rule (WP-018)                  |
-|-------------|-------------------|----------------------------------------|
-| `cost`      | `0`, `3`, `"2*"`  | Strip `+`/` *` → base integer or 0    |
-| `attack`    | `0`, `3`, `"2+"`  | Same as above                          |
-| `recruit`   | `0`, `2`, `"1+"`  | Same as above                          |
-| `vAttack`   | `8`, `"8+"`       | Same as above                          |
-
-### Match Lifecycle (from Config → Game State)
-
-1. Caller builds `MatchSetupConfig` (9 locked fields — see 00.2 §8.1)
-2. POST `/games/legendary-arena/create`
-3. `Game.setup()` → `validateMatchSetup()` (throws on invalid ext_id) → `buildInitialGameState()`
-4. Players join → lobby phase → readiness → `startMatchIfReady()` → `setup` → `play`
-5. Moves in `play` phase (stage-gated)
-6. `endIf(G, ctx)` → `evaluateEndgame(G)` after every move
+| Class | Examples | Persist? |
+|-------|----------|----------|
+| **Runtime** (never persist) | `G`, `ctx`, `ImplementationMap`, socket data | No |
+| **Configuration** (safe) | `MatchSetupConfig`, player names, timestamps | Yes |
+| **Snapshot** (immutable records) | `MatchSnapshot` (zone counts only, never contents) | Yes |
 
 ---
 
-## Section 3 — Persistence Boundaries
+## Phases and Turn Stages
 
-### The Three Data Classes
-
-#### Class 1 — Runtime State (NEVER persist)
-- `G` (entire object)
-- `ctx`
-- `ImplementationMap` (contains functions)
-- `G.hookRegistry`, `G.currentStage`, `G.villainDeckCardTypes`, etc.
-
-#### Class 2 — Configuration State (SAFE to persist)
-- `MatchSetupConfig`
-- Player names / seat assignments
-- Match creation timestamp
-
-#### Class 3 — Snapshot State (SAFE as immutable records)
-- `MatchSnapshot` (zone **counts only**, never full `ext_id` arrays)
-- Must never be re-hydrated into a live `G`
-
-### What Lives Where (Summary)
-
-| Data                        | Location                          | Mutable | Persist? |
-|-----------------------------|-----------------------------------|---------|----------|
-| Card metadata & images      | R2 / `data/`                      | No      | No       |
-| Live game state (`G`)       | boardgame.io in-memory            | Yes     | **Never**|
-| Rules text                  | PostgreSQL (`legendary.rules`)    | No      | Seeded   |
-| Card registry               | Server in-memory (`CardRegistry`) | No      | No       |
-| Snapshots                   | Application layer (future)        | No      | Yes      |
-
----
-
-## Section 4 — boardgame.io Runtime Model
-
-### Key Contracts (Locked)
-- `LegendaryGame` — single `Game()` object in `packages/game-engine` (boardgame.io `^0.50.0` locked)
-- `G` — JSON-serializable, Immer-mutated, **never** persisted
-- `ctx` — boardgame.io metadata only
-- Phases: `lobby` → `setup` → `play` → `end` (locked)
-- Turn stages inside `play`: `start` → `main` → `cleanup` (stored in `G.currentStage`)
-
-### Move Validation Contract (every move)
-
-```ts
-moveFunction(G, ctx, args) {
-  // 1. Validate args → return early if invalid
-  // 2. Check stage gate → return early if blocked
-  // 3. Mutate G via zoneOps.ts helpers only
-  //    (return void — Immer draft)
-}
+```
+Phases:   lobby -> setup -> play -> end     (locked names)
+Stages:   start -> main -> cleanup          (within play phase only)
 ```
 
-Moves **never throw**. Only `Game.setup()` may throw.
-
-### Rule Execution Pipeline (core subsystem)
-- `G.hookRegistry` (data-only, JSON-serializable)
-- `ImplementationMap` (functions, outside `G`)
-- Two-step: `executeRuleHooks()` (collect) → `applyRuleEffects()` (apply)
+- Phase transitions via `ctx.events.setPhase()` only (with `// why:` comment)
+- Turn transitions via `ctx.events.endTurn()` only (with `// why:` comment)
+- `G.currentStage` tracks turn stage in `G`, not `ctx`
 
 ---
 
-## Section 5 — Package Dependency Rules
+## Move Contract
 
-```mermaid
-flowchart LR
-    registry[registry] -.-> engine[game-engine]:::forbidden
-    engine -.-> registry:::forbidden
-    server[apps/server] --> engine
-    server --> registry
-    viewer[apps/registry-viewer] --> registry
-    classDef forbidden stroke:#ef4444,stroke-dasharray: 5 5
-```
+Every move follows this exact sequence:
+1. **Validate args** -- return void if invalid (never throw)
+2. **Check stage gate** -- return void if blocked
+3. **Mutate G** -- via `zoneOps.ts` helpers, return void
+
+Only `Game.setup()` may throw. Moves never throw.
 
 ---
 
-## High-Level System Diagram
+## Key Data Locations
 
-```mermaid
-flowchart TD
-    Client[Client UI\nintents] --> Network[Network Boundary\napps/server]
-    Network --> Engine[Game Engine\npackages/game-engine\nLegendaryGame + Rule Pipeline]
-    Engine --> Registry[Card Registry\npackages/registry\nZod-validated R2 data]
-    Registry --> R2[R2 / local files\nimmutable card data]
-    Engine --> Persistence[Determinism Layer\nreplays + snapshots]
-    Persistence --> Ops[Analytics & Ops\nmetrics + AI playtesting]
-```
+| Data | Location | Mutable |
+|------|----------|---------|
+| Card metadata & images | R2 / `data/` local files | No |
+| Live game state (`G`) | boardgame.io in-memory | Yes (moves only) |
+| Rules text | PostgreSQL `legendary.rules` | No (seeded at deploy) |
+| Card registry | Server in-memory | No (read-only after load) |
+| Match setup config | boardgame.io matchData | No (input) |
 
 ---
 
-## Execution Mode & MVP Gameplay Invariants
+## For Full Details
 
-**Execution Checklists (ECs) are active.**  
-No code changes unless the corresponding EC exists and all clauses are satisfied.
+- **Authoritative architecture:** [`docs/ai/ARCHITECTURE.md`](ai/ARCHITECTURE.md)
+- **Layer enforcement rules:** `.claude/rules/*.md` (7 files)
+- **Decisions log:** [`docs/ai/DECISIONS.md`](ai/DECISIONS.md) (26 decisions)
+- **Data contracts:** [`docs/ai/REFERENCE/00.2-data-requirements.md`](ai/REFERENCE/00.2-data-requirements.md)
 
-**MVP Invariants (WP-010–WP-020)** — locked and non-negotiable:
-- All endgame logic via `G.counters` + `ENDGAME_CONDITIONS`
-- Registry available **only** during `Game.setup()`
-- Zones store **only** `CardExtId` strings
-- Moves follow the 3-step contract (validate → gate → mutate)
-- `G` must remain JSON-serializable at all times
-- No `.reduce()` in zone operations — explicit `for…of` loops only
-
----
-
-*Maintained by the human developer. Update this file whenever package boundaries or data-flow decisions change. Work Packets may never alter the content of this document without also updating it.*
-```
-
-**What changed:**
-- Full chronological update history is now a clean, readable table (most recent first).
-- “Created” and “Last updated” are prominently displayed.
-- The rest of the document remains clean, scannable, and consistent with the previous improvements.
-
-You can copy-paste this directly into `docs/ai/ARCHITECTURE.md`. Let me know if you want a similar history table added to any other document (roadmap, etc.).
+*Last updated: 2026-04-09 (after WP-004)*

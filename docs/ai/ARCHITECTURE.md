@@ -16,20 +16,23 @@
 > document or `00.1`. If a Work Packet appears to conflict with either, stop
 > and re-read this document and `00.1` before proceeding.
 >
-> Created: WP-013 — Persistence Boundaries & Snapshots
-> Updated: WP-014 review — villain deck reveal pipeline and RevealedCardType conventions
-> Updated: WP-014 — Villain Deck & Reveal Pipeline
-> Updated: WP-011 review — Lobby phase flow and G.lobby observability pattern
-> Updated: WP-010 review — endIf contract and G.counters key conventions
-> Updated: WP-009A/009B review — rule execution pipeline and ImplementationMap pattern
-> Updated: WP-008A/008B review — move validation contract and zone mutation rules
-> Updated: WP-007A/007B review — turn stage cycle, lifecycle-to-phase mapping
-> Updated: WP-006A/006B review — zone/pile structure and initialization rules
-> Updated: WP-005A/005B review — setup validation contract and throwing convention
-> Updated: WP-004 review — server layer boundary and startup sequence
-> Updated: WP-003 review — registry metadata file shapes and card field data quality
-> Updated: WP-002 review — boardgame.io version lock and LegendaryGame contract
-> Updated: WP-001 review — override hierarchy and legendary.* namespace convention
+> Created: WP-013 -- Persistence Boundaries & Snapshots
+> Updated: WP-014 review -- villain deck reveal pipeline and RevealedCardType conventions
+> Updated: WP-014 -- Villain Deck & Reveal Pipeline
+> Updated: WP-011 review -- Lobby phase flow and G.lobby observability pattern
+> Updated: WP-010 review -- endIf contract and G.counters key conventions
+> Updated: WP-009A/009B review -- rule execution pipeline and ImplementationMap pattern
+> Updated: WP-008A/008B review -- move validation contract and zone mutation rules
+> Updated: WP-007A/007B review -- turn stage cycle, lifecycle-to-phase mapping
+> Updated: WP-006A/006B review -- zone/pile structure and initialization rules
+> Updated: WP-005A/005B review -- setup validation contract and throwing convention
+> Updated: WP-004 review -- server layer boundary and startup sequence
+> Updated: WP-004 execution -- server bootstrap complete; LegendaryGame wired with
+>   minPlayers/maxPlayers, validateSetupData; registry loaded via createRegistryFromLocalFiles;
+>   createRequire bridge for boardgame.io CJS server bundle (D-1205, D-1206)
+> Updated: WP-003 review -- registry metadata file shapes and card field data quality
+> Updated: WP-002 review -- boardgame.io version lock and LegendaryGame contract
+> Updated: WP-001 review -- override hierarchy and legendary.* namespace convention
 
 ---
 
