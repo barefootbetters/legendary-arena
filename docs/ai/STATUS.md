@@ -229,6 +229,41 @@
   (server not yet updated — that is a future integration task)
 - Starting deck ext_ids are well-known constants, not resolved from registry
 
+### WP-006A — Player State & Zones Contracts (2026-04-10)
+
+**What changed:**
+- `packages/game-engine/src/state/zones.types.ts` — **new** — canonical zone
+  and player state contracts: `CardExtId`, `Zone`, `PlayerZones`, `PlayerState`,
+  `GlobalPiles`, `ZoneValidationError`, `GameStateShape`
+- `packages/game-engine/src/state/zones.validate.ts` — **new** — pure runtime
+  shape validators: `validateGameStateShape(input)` and
+  `validatePlayerStateShape(input)`. Return structured results, never throw.
+  No boardgame.io imports.
+- `packages/game-engine/src/state/zones.shape.test.ts` — **new** — 4 structural
+  tests (2 passing, 2 `{ ok: false }` cases) using `node:test` and `node:assert`
+- `packages/game-engine/src/types.ts` — **modified** — `CardExtId`, `PlayerZones`,
+  `GlobalPiles` now re-exported from `state/zones.types.ts`. New types `Zone`,
+  `PlayerState`, `ZoneValidationError`, `GameStateShape` also re-exported.
+  `LegendaryGameState` uses canonical types from `zones.types.ts`.
+- `packages/game-engine/src/index.ts` — **modified** — exports new types and
+  validators from `state/zones.types.ts` and `state/zones.validate.ts`
+
+**What a subsequent session can rely on:**
+- `@legendary-arena/game-engine` exports canonical zone contracts (`CardExtId`,
+  `Zone`, `PlayerZones`, `PlayerState`, `GlobalPiles`)
+- `ZoneValidationError` is `{ field, message }` — distinct from `MoveError`
+- `validateGameStateShape` and `validatePlayerStateShape` are pure helpers
+  that check structural shape only — no registry lookups, no throws
+- `GameStateShape` is the minimal interface for zone validation
+- All 48 tests passing (38 from WP-005B + 10 zone shape tests)
+
+**Known gaps (expected at this stage):**
+- No gameplay moves beyond stubs — WP-008A/B
+- No hero deck (HQ) or villain deck construction — future WPs
+- `PlayerState` is defined but not yet used in `LegendaryGameState` (G uses
+  `Record<string, PlayerZones>` directly — `PlayerState` is available for
+  move validation in future WPs)
+
 ### WP-003 — Card Registry Verification & Defect Correction (2026-04-09)
 
 **What was fixed:**

@@ -483,6 +483,56 @@ engine layer where it belongs.
 
 ---
 
+## Zone Contract Decisions
+
+### D-1214 — Zones Store ext_id Strings, Not Full Card Objects
+**Decision:** All zone and pile types (`Zone = CardExtId[]`) store `ext_id`
+strings exclusively. No zone type may contain full card objects, display data,
+images, or database IDs.
+**Rationale:** G must remain JSON-serializable and small. Card display data
+(images, text, costs) is resolved by the UI via the card registry at render
+time. Storing full card objects would bloat G, break serialization guarantees,
+create redundant data that could drift from the registry, and violate the
+architectural invariant that zones contain CardExtId strings only. This also
+enables replay reproducibility — the same ext_id strings always refer to the
+same cards regardless of registry version changes. See also D-1210.
+**Introduced:** WP-006A
+**Status:** Immutable
+
+---
+
+### D-1215 — ZoneValidationError Uses { field, message }, Not MoveError
+**Decision:** `ZoneValidationError` uses `{ field: string; message: string }` as
+its error shape. It does not reference or extend `MoveError` (which uses
+`{ code, message, path }` and is defined in WP-008A).
+**Rationale:** Zone validation and move validation serve different purposes.
+Zone validation identifies which structural field is malformed and describes the
+problem (field + message). Move validation identifies which game rule was
+violated (code + message + path). Reusing `MoveError` for zone shape errors
+would couple the zone contract to the move contract and add unused fields
+(`code`, `path`). This parallels D-1208 (MatchSetupError). Each validation
+domain gets its own error shape sized to its needs.
+**Introduced:** WP-006A
+**Status:** Immutable
+
+---
+
+### D-1216 — LegendaryGameState Consolidated with Canonical Zone Types Post-WP-005B
+**Decision:** After WP-005B defined `PlayerZones`, `GlobalPiles`, and `CardExtId`
+inline in `types.ts`, WP-006A moved these definitions to
+`src/state/zones.types.ts` as the canonical source. `types.ts` now re-exports
+them for backward compatibility. `LegendaryGameState` uses the canonical types
+from `zones.types.ts` — no duplicate zone type definitions exist.
+**Rationale:** WP-005B needed the types to implement setup, but defining them
+inline created duplication risk. WP-006A consolidates them into a single
+canonical location (`zones.types.ts`) that all future WPs import from. The
+re-export in `types.ts` ensures existing imports from WP-005B code continue
+to work without modification.
+**Introduced:** WP-006A
+**Status:** Immutable
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision

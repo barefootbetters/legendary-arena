@@ -235,7 +235,7 @@ These packets define *what* a match is before implementing *how* it plays.
   `G` stores `ext_id` strings only — no full card objects;
   see ARCHITECTURE.md §Section 4 for the setup vs moves throwing distinction
 
-- [ ] WP-006A — Player State & Zones Contracts ✅ Reviewed
+- [x] WP-006A — Player State & Zones Contracts — Completed 2026-04-10 ✅ Reviewed
   Dependencies: WP-005B
   Notes: Locks `PlayerZones` (5 zones: `deck`, `hand`, `discard`, `inPlay`,
   `victory`), `GlobalPiles` (4 piles: `bystanders`, `wounds`, `officers`,

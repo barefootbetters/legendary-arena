@@ -3,9 +3,29 @@
  *
  * LegendaryGameState is the shape of boardgame.io game state (G).
  * MatchConfiguration is the match setup payload passed to Game.setup().
+ *
+ * Zone and player state types are defined canonically in
+ * src/state/zones.types.ts and re-exported here for backward compatibility.
  */
 
 import type { MatchSetupConfig } from './matchSetup.types.js';
+
+// why: Zone types (CardExtId, PlayerZones, GlobalPiles) were originally
+// defined inline in this file during WP-005B. WP-006A consolidated them
+// into src/state/zones.types.ts as the canonical source. They are
+// re-exported here so that existing imports from './types.js' continue
+// to work without modification.
+export type {
+  CardExtId,
+  Zone,
+  PlayerZones,
+  PlayerState,
+  GlobalPiles,
+  ZoneValidationError,
+  GameStateShape,
+} from './state/zones.types.js';
+
+import type { CardExtId, PlayerZones, GlobalPiles } from './state/zones.types.js';
 
 // why: MatchConfiguration (WP-002) and MatchSetupConfig (WP-005A) have
 // identical 9-field shapes. MatchSetupConfig in matchSetup.types.ts is now
@@ -25,14 +45,6 @@ import type { MatchSetupConfig } from './matchSetup.types.js';
  * are locked by 00.2 section 8.1 — do not rename, abbreviate, or reorder.
  */
 export type MatchConfiguration = MatchSetupConfig;
-
-/**
- * Named type alias for card ext_id strings stored in zones and piles.
- *
- * All zones in G store CardExtId strings exclusively — never full card
- * objects, display names, or database IDs.
- */
-export type CardExtId = string;
 
 /**
  * Minimal setup-time context interface for deterministic operations.
@@ -55,40 +67,6 @@ export interface SetupContext {
   ctx: { numPlayers: number };
   /** Deterministic RNG provided by boardgame.io's random plugin. */
   random: { Shuffle: <T>(deck: T[]) => T[] };
-}
-
-/**
- * Per-player card zones. All arrays contain CardExtId strings only.
- *
- * After setup, only `deck` is non-empty. Cards enter other zones
- * exclusively through game moves — never through setup initialization.
- */
-export interface PlayerZones {
-  /** The player's draw pile. Shuffled at setup. */
-  deck: CardExtId[];
-  /** Cards in the player's hand. Empty at setup. */
-  hand: CardExtId[];
-  /** The player's discard pile. Empty at setup. */
-  discard: CardExtId[];
-  /** Cards currently in play this turn. Empty at setup. */
-  inPlay: CardExtId[];
-  /** Defeated villains and rescued bystanders. Empty at setup. */
-  victory: CardExtId[];
-}
-
-/**
- * Shared global card piles. Sizes come from MatchSetupConfig count fields.
- * All arrays contain CardExtId strings only.
- */
-export interface GlobalPiles {
-  /** Bystander cards. Size equals config.bystandersCount. */
-  bystanders: CardExtId[];
-  /** Wound cards. Size equals config.woundsCount. */
-  wounds: CardExtId[];
-  /** S.H.I.E.L.D. Officer cards. Size equals config.officersCount. */
-  officers: CardExtId[];
-  /** Sidekick cards. Size equals config.sidekicksCount. */
-  sidekicks: CardExtId[];
 }
 
 /**

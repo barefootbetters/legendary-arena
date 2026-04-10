@@ -9,6 +9,12 @@ export type {
   MatchSelection,
 } from './types.js';
 export type {
+  Zone,
+  PlayerState,
+  ZoneValidationError,
+  GameStateShape,
+} from './state/zones.types.js';
+export type {
   MatchSetupConfig,
   MatchSetupError,
   ValidateMatchSetupResult,
@@ -26,3 +32,4 @@ export {
 } from './setup/buildInitialGameState.js';
 export { shuffleDeck } from './setup/shuffle.js';
 export type { ShuffleProvider } from './setup/shuffle.js';
+export { validateGameStateShape, validatePlayerStateShape } from './state/zones.validate.js';
