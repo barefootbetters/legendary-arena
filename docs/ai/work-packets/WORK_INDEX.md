@@ -220,7 +220,7 @@ These packets define *what* a match is before implementing *how* it plays.
   shape-only); returns structured result, never throws;
   reconciles `MatchSetupConfig` with `MatchConfiguration` type from WP-002
 
-- [ ] WP-005B — Deterministic Setup Implementation ✅ Reviewed
+- [x] WP-005B — Deterministic Setup Implementation — Completed 2026-04-10 ✅ Reviewed
   Dependencies: WP-005A
   Notes: `shuffleDeck(cards, ctx): string[]` returns a new array via
   `ctx.random.Shuffle` — never `Math.random()`, never mutates input;

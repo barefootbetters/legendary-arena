@@ -172,6 +172,63 @@
 - No changes to `Game.setup()` — that is WP-005B
 - No gameplay moves, rules, or phases
 
+### WP-005B — Deterministic Setup Implementation (2026-04-10)
+
+**What changed:**
+- `packages/game-engine/src/types.ts` — **modified** — expanded
+  `LegendaryGameState` with `CardExtId`, `SetupContext`, `PlayerZones`,
+  `GlobalPiles`, `MatchSelection` types. G now has `selection`, `playerZones`,
+  and `piles` fields.
+- `packages/game-engine/src/setup/shuffle.ts` — **new** — `shuffleDeck(cards, context)`
+  uses `context.random.Shuffle` exclusively for deterministic shuffling
+- `packages/game-engine/src/test/mockCtx.ts` — **new** — `makeMockCtx(overrides?)`
+  returns a `SetupContext` with `Shuffle` that reverses arrays (proves shuffle ran)
+- `packages/game-engine/src/setup/buildInitialGameState.ts` — **new** —
+  builds initial G from validated config: per-player zones (12-card starting
+  decks of 8 agents + 4 troopers), global piles sized from config counts,
+  selection metadata
+- `packages/game-engine/src/game.ts` — **modified** — `setup()` now calls
+  `validateMatchSetup` (when registry configured) then `buildInitialGameState`.
+  Exports `setRegistryForSetup()` for server-side registry configuration.
+- `packages/game-engine/src/index.ts` — **modified** — exports new types,
+  `buildInitialGameState`, `shuffleDeck`, well-known ext_id constants,
+  `setRegistryForSetup`
+- `packages/game-engine/src/game.test.ts` — **modified** — updated to use
+  `makeMockCtx` for proper boardgame.io 0.50.x context shape
+- Shape test and determinism test — **new** — 17 new tests
+
+**Revision pass (same session):**
+- `shuffle.ts` — narrowed parameter type from `SetupContext` to new
+  `ShuffleProvider` interface (`{ random: { Shuffle } }`) for future reuse
+  in move contexts. Zero behavior change.
+- `game.ts` — added `clearRegistryForSetup()` test-only reset hook to
+  prevent module-level registry pollution across tests
+- `types.ts` — expanded `SetupContext` JSDoc explaining boardgame.io 0.50.x
+  `ctx` nesting rationale
+- `index.ts` — exports `clearRegistryForSetup` and `ShuffleProvider`
+- Shape tests — added 3 invariant tests: starting deck composition
+  (8 agents + 4 troopers), selection/matchConfiguration field consistency,
+  selection array reference isolation
+- Determinism tests — added shuffleDeck immutability test
+- Test count: 34 → 38 (4 new invariant tests)
+
+**What a subsequent session can rely on:**
+- `@legendary-arena/game-engine` exports a fully functional `buildInitialGameState`
+- `shuffleDeck` provides deterministic shuffling via `context.random.Shuffle`;
+  accepts any `ShuffleProvider` (not just `SetupContext`)
+- `makeMockCtx` is the shared test helper for all future game engine tests
+- `Game.setup()` validates config (when registry set) then builds full initial G
+- Determinism guaranteed: same inputs + same RNG → identical G
+- All 38 tests passing (17 from WP-005A + 21 new)
+
+**Known gaps (expected at this stage):**
+- No hero deck (HQ) construction from registry data — future WP
+- No villain deck construction — WP-014/015
+- No gameplay moves beyond stubs — WP-008A/B
+- `setRegistryForSetup` must be called by the server before creating matches
+  (server not yet updated — that is a future integration task)
+- Starting deck ext_ids are well-known constants, not resolved from registry
+
 ### WP-003 — Card Registry Verification & Defect Correction (2026-04-09)
 
 **What was fixed:**

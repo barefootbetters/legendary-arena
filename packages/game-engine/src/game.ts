@@ -1,5 +1,44 @@
 import type { Ctx, FnContext, Game, PlayerID } from 'boardgame.io';
 import type { MatchConfiguration, LegendaryGameState } from './types.js';
+import { validateMatchSetup, type CardRegistryReader } from './matchSetup.validate.js';
+import { buildInitialGameState } from './setup/buildInitialGameState.js';
+
+// why: The registry must be available to Game.setup() for ext_id validation,
+// but boardgame.io's setup function signature does not include a registry
+// parameter. This module-level holder allows the server to configure the
+// registry at startup (via setRegistryForSetup) before any matches are
+// created. Tests that bypass registry validation do not set this.
+let gameRegistry: CardRegistryReader | undefined;
+
+/**
+ * Configures the card registry used by Game.setup() for match validation
+ * and initial state construction. Must be called by the server at startup
+ * before creating any matches.
+ *
+ * @param registry - The card registry for ext_id existence checks.
+ */
+export function setRegistryForSetup(registry: CardRegistryReader): void {
+  gameRegistry = registry;
+}
+
+/**
+ * Clears the registry previously set by setRegistryForSetup. Test-only —
+ * never call in production server code.
+ *
+ * Without this, a test that calls setRegistryForSetup would leave the
+ * registry set for all subsequent tests in the same process, causing
+ * test pollution.
+ */
+export function clearRegistryForSetup(): void {
+  gameRegistry = undefined;
+}
+
+// why: No-op registry satisfies the CardRegistryReader interface when the
+// real registry has not been configured. Used only in test contexts where
+// setup validation is intentionally skipped.
+const EMPTY_REGISTRY: CardRegistryReader = {
+  listCards: () => [],
+};
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -77,12 +116,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
    * @param context - boardgame.io setup context (ctx, events, random, log)
    * @param matchConfiguration - the match setup payload with card ext_ids and counts
    * @returns the initial LegendaryGameState
-   * @throws {Error} if matchConfiguration is not provided
+   * @throws {Error} if matchConfiguration is not provided or validation fails
    */
   // why: setup() accepts MatchConfiguration so the server can pass in the
   // match parameters chosen during lobby/matchmaking. This is the only point
   // where external configuration enters the engine.
-  setup: (_context: { ctx: Ctx }, matchConfiguration?: MatchConfiguration): LegendaryGameState => {
+  setup: (context, matchConfiguration?: MatchConfiguration): LegendaryGameState => {
     // why: validateSetupData guards this at the lobby API layer, but setup()
     // can also be called directly in tests or by boardgame.io internals
     // (e.g. rematch). This check is a belt-and-suspenders safety net.
@@ -93,9 +132,30 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
       );
     }
 
-    return {
-      matchConfiguration,
-    };
+    // why: When a registry is available (set by the server via
+    // setRegistryForSetup), validate the config against the registry before
+    // building state. This catches invalid ext_ids at match creation time.
+    // Game.setup() is the ONLY place in the engine where throwing is correct
+    // — an invalid config must abort match creation immediately.
+    if (gameRegistry) {
+      const result = validateMatchSetup(matchConfiguration, gameRegistry);
+      if (!result.ok) {
+        const firstError = result.errors[0];
+        const errorMessage = firstError
+          ? firstError.message
+          : 'Match setup validation failed with an unknown error.';
+        throw new Error(errorMessage);
+      }
+    }
+
+    // why: The registry parameter allows buildInitialGameState to resolve
+    // card data in future Work Packets (hero deck, villain deck construction).
+    // For WP-005B, starting decks and piles use well-known ext_ids that do
+    // not require registry lookup. EMPTY_REGISTRY is used when the server has
+    // not configured a registry (e.g., in unit tests).
+    const registryForSetup = gameRegistry ?? EMPTY_REGISTRY;
+
+    return buildInitialGameState(matchConfiguration, registryForSetup, context);
   },
 
   moves: {

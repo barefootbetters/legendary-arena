@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { LegendaryGame } from './game.js';
 import type { MatchConfiguration } from './types.js';
+import { makeMockCtx } from './test/mockCtx.js';
 
 /**
  * Creates a valid mock MatchConfiguration for testing.
@@ -28,11 +29,12 @@ describe('LegendaryGame', () => {
   it('setup() returns a JSON-serializable game state', () => {
     const mockConfiguration = createMockMatchConfiguration();
 
-    // why: boardgame.io 0.50.x setup receives (ctx, setupData). We pass a
-    // minimal context-like object and the MatchConfiguration. The test does
-    // not import from boardgame.io — it exercises the setup function directly.
+    // why: boardgame.io 0.50.x setup receives (context, setupData) where
+    // context includes { ctx, random, events, log }. makeMockCtx provides
+    // the minimal shape needed by buildInitialGameState.
+    const mockContext = makeMockCtx({ numPlayers: 2 });
     const gameState = LegendaryGame.setup!(
-      { numPlayers: 2 } as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
+      mockContext as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
       mockConfiguration,
     );
 
@@ -53,8 +55,9 @@ describe('LegendaryGame', () => {
   it('setup() includes all 9 MatchConfiguration fields in the returned state', () => {
     const mockConfiguration = createMockMatchConfiguration();
 
+    const mockContext = makeMockCtx({ numPlayers: 2 });
     const gameState = LegendaryGame.setup!(
-      { numPlayers: 2 } as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
+      mockContext as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
       mockConfiguration,
     );
 
@@ -70,10 +73,11 @@ describe('LegendaryGame', () => {
   });
 
   it('setup() throws when matchConfiguration is not provided', () => {
+    const mockContext = makeMockCtx({ numPlayers: 2 });
     assert.throws(
       () => {
         LegendaryGame.setup!(
-          { numPlayers: 2 } as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
+          mockContext as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
           undefined,
         );
       },

@@ -428,6 +428,59 @@ a compile-time dependency. This preserves the unidirectional dependency directio
 **Introduced:** WP-005A
 **Status:** Immutable
 
+### D-1210 — Player Starting Decks Use ext_id Strings in G, Not Full Card Objects
+**Decision:** Player starting decks in `G.playerZones[id].deck` store `CardExtId`
+strings (e.g., `'starting-shield-agent'`, `'starting-shield-trooper'`) — not full
+card objects with names, costs, abilities, or image URLs.
+**Rationale:** G must be JSON-serializable, minimal, and deterministic. Storing full
+card objects would bloat the game state, create redundant data that could drift from
+the registry, and violate the architectural invariant that zones contain CardExtId
+strings only. Card display data is resolved by the UI via the registry separately.
+This also enables replay reproducibility — the same ext_id strings always refer to
+the same cards regardless of registry version changes.
+**Introduced:** WP-005B
+**Status:** Immutable
+
+---
+
+### D-1211 — makeMockCtx Reverses Arrays Instead of Identity Shuffle
+**Decision:** `makeMockCtx().random.Shuffle` reverses arrays rather than returning
+them unchanged (identity).
+**Rationale:** An identity shuffle would not prove that `shuffleDeck` actually called
+`context.random.Shuffle`. A test could pass even if the shuffle step was accidentally
+skipped or short-circuited. Reversing produces a predictable, deterministic
+reordering that confirms the shuffle path executed. This makes mock tests meaningful
+rather than vacuous.
+**Introduced:** WP-005B
+**Status:** Immutable
+
+---
+
+### D-1212 — Global Piles Use G.piles Container, Not Flat Top-Level Keys
+**Decision:** Global piles (bystanders, wounds, officers, sidekicks) are stored
+under `G.piles` as a `GlobalPiles` object, not as flat top-level keys on G.
+**Rationale:** ARCHITECTURE.md §Zone & Pile Structure and the game-engine rules
+Key G Fields table both specify `G.piles` as the container. WP-005B's scope
+section listed them as flat keys, but per the authority hierarchy
+(ARCHITECTURE.md > individual Work Packets), the nested structure is correct.
+**Introduced:** WP-005B
+**Status:** Immutable
+
+---
+
+### D-1213 — Game.setup() Uses Module-Level Registry Holder Pattern
+**Decision:** `game.ts` exposes `setRegistryForSetup(registry)` to configure the
+registry used by `Game.setup()`. When set, setup validates the config against the
+registry before building state. When not set (e.g., in unit tests), validation is
+skipped and an empty registry is passed to `buildInitialGameState`.
+**Rationale:** boardgame.io's `setup()` function signature does not include a
+registry parameter — it only receives `(context, setupData)`. The server must
+configure the registry at startup before any matches are created. This pattern
+avoids modifying the boardgame.io Game type while keeping validation in the
+engine layer where it belongs.
+**Introduced:** WP-005B
+**Status:** Active — may be superseded by a factory pattern in a future WP
+
 ---
 
 ## Change Management
