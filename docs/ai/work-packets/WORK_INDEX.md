@@ -247,7 +247,7 @@ These packets define *what* a match is before implementing *how* it plays.
   `zones.validate.ts` has no boardgame.io import (pure helper);
   see ARCHITECTURE.md §Section 2 for Zone & Pile Structure
 
-- [ ] WP-006B — Player State Initialization (Align to Zone Contracts) ✅ Reviewed
+- [x] WP-006B — Player State Initialization (Align to Zone Contracts) — Completed 2026-04-10 ✅ Reviewed
   Dependencies: WP-006A
   Notes: `buildPlayerState(playerId, startingDeck, ctx): PlayerState` — deck
   is shuffled starting deck, all other zones start `[]`; `// why:` comment

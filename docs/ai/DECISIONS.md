@@ -533,6 +533,40 @@ to work without modification.
 
 ---
 
+## Setup Initialization Decisions
+
+### D-1217 — buildPlayerState and buildGlobalPiles Extracted from buildInitialGameState
+**Decision:** Player zone construction (`buildPlayerState`) and global pile
+construction (`buildGlobalPiles`) are extracted into dedicated helper files
+(`playerInit.ts`, `pilesInit.ts`) rather than remaining inline in
+`buildInitialGameState`.
+**Rationale:** `buildInitialGameState` exceeded the 30-line function limit
+(code-style Rule 5) and mixed per-player, per-pile, and orchestration
+concerns in a single function. Extracting helpers improves testability — each
+helper has its own shape tests — and makes the orchestration function readable
+at a glance. The extracted helpers are internal only (not exported from
+`index.ts`) to avoid expanding the public API surface.
+**Introduced:** WP-006B
+**Status:** Immutable
+
+---
+
+### D-1218 — Global Piles Use Token ext_ids Rather Than Registry ext_ids
+**Decision:** Global pile cards (bystanders, wounds, officers, sidekicks) use
+well-known token ext_ids (`pile-bystander`, `pile-wound`, `pile-shield-officer`,
+`pile-sidekick`) rather than ext_ids resolved from the card registry.
+**Rationale:** These are generic game components — each pile contains identical
+copies of a single token type. They exist in every Legendary game and are not
+set-specific cards. Using registry ext_ids would require the registry at setup
+time for components that have no meaningful card data to look up. The `pile-`
+prefix convention distinguishes game tokens from set-specific cards. Starting
+cards (`starting-shield-agent`, `starting-shield-trooper`) follow the same
+pattern with a `starting-` prefix.
+**Introduced:** WP-005B, formalized WP-006B
+**Status:** Immutable
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision

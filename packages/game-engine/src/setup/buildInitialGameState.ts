@@ -13,13 +13,24 @@ import type {
   LegendaryGameState,
   SetupContext,
   PlayerZones,
-  GlobalPiles,
   MatchSelection,
   CardExtId,
 } from '../types.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
-import { shuffleDeck } from './shuffle.js';
+import { buildPlayerState } from './playerInit.js';
+import {
+  buildGlobalPiles,
+  BYSTANDER_EXT_ID,
+  WOUND_EXT_ID,
+  SHIELD_OFFICER_EXT_ID,
+  SIDEKICK_EXT_ID,
+} from './pilesInit.js';
+
+// why: Pile ext_id constants are re-exported from pilesInit.ts for backward
+// compatibility. The canonical definitions live in pilesInit.ts — importing
+// them here prevents silent drift from duplicate string literals.
+export { BYSTANDER_EXT_ID, WOUND_EXT_ID, SHIELD_OFFICER_EXT_ID, SIDEKICK_EXT_ID };
 
 // ── Well-known ext_ids for generic game component cards ─────────────────────
 
@@ -33,22 +44,6 @@ export const SHIELD_AGENT_EXT_ID: CardExtId = 'starting-shield-agent';
 
 /** Well-known ext_id for S.H.I.E.L.D. Trooper starting cards. */
 export const SHIELD_TROOPER_EXT_ID: CardExtId = 'starting-shield-trooper';
-
-// why: Global pile cards (bystanders, wounds, officers, sidekicks) are
-// generic game components. Each pile contains identical copies of a single
-// card type, sized from the config count fields.
-
-/** Well-known ext_id for Bystander pile cards. */
-export const BYSTANDER_EXT_ID: CardExtId = 'pile-bystander';
-
-/** Well-known ext_id for Wound pile cards. */
-export const WOUND_EXT_ID: CardExtId = 'pile-wound';
-
-/** Well-known ext_id for S.H.I.E.L.D. Officer pile cards. */
-export const SHIELD_OFFICER_EXT_ID: CardExtId = 'pile-shield-officer';
-
-/** Well-known ext_id for Sidekick pile cards. */
-export const SIDEKICK_EXT_ID: CardExtId = 'pile-sidekick';
 
 // ── Starting deck composition ───────────────────────────────────────────────
 
@@ -81,76 +76,6 @@ function buildStartingDeckCards(): CardExtId[] {
 }
 
 /**
- * Builds the initial PlayerZones for one player with a shuffled starting deck.
- *
- * @param context - Setup context with deterministic RNG.
- * @returns PlayerZones with shuffled deck and empty hand/discard/inPlay/victory.
- */
-function buildPlayerZones(context: SetupContext): PlayerZones {
-  const unshuffledDeck = buildStartingDeckCards();
-  const shuffledDeck = shuffleDeck(unshuffledDeck, context);
-
-  return {
-    deck: shuffledDeck,
-    hand: [],
-    discard: [],
-    inPlay: [],
-    victory: [],
-  };
-}
-
-/**
- * Creates an array of identical CardExtId entries.
- *
- * @param extId - The ext_id string to repeat.
- * @param count - How many copies to create.
- * @returns Array of `count` copies of `extId`.
- */
-function createPileCards(extId: CardExtId, count: number): CardExtId[] {
-  const cards: CardExtId[] = [];
-
-  for (let i = 0; i < count; i++) {
-    cards.push(extId);
-  }
-
-  return cards;
-}
-
-/**
- * Builds the global piles from config count fields.
- *
- * @param config - Validated match setup config with count fields.
- * @param context - Setup context with deterministic RNG.
- * @returns GlobalPiles with shuffled arrays of CardExtId strings.
- */
-function buildGlobalPiles(
-  config: MatchSetupConfig,
-  context: SetupContext,
-): GlobalPiles {
-  // why: Each pile is shuffled for determinism consistency, even though
-  // all cards in a given pile share the same ext_id. This ensures the
-  // shuffle path is always exercised and the RNG state advances uniformly.
-  return {
-    bystanders: shuffleDeck(
-      createPileCards(BYSTANDER_EXT_ID, config.bystandersCount),
-      context,
-    ),
-    wounds: shuffleDeck(
-      createPileCards(WOUND_EXT_ID, config.woundsCount),
-      context,
-    ),
-    officers: shuffleDeck(
-      createPileCards(SHIELD_OFFICER_EXT_ID, config.officersCount),
-      context,
-    ),
-    sidekicks: shuffleDeck(
-      createPileCards(SIDEKICK_EXT_ID, config.sidekicksCount),
-      context,
-    ),
-  };
-}
-
-/**
  * Extracts the match selection metadata from a validated config.
  *
  * @param config - Validated match setup config.
@@ -166,11 +91,13 @@ function buildMatchSelection(config: MatchSetupConfig): MatchSelection {
   };
 }
 
+// ── Main orchestrator ───────────────────────────────────────────────────────
+
 /**
  * Builds the complete initial LegendaryGameState from a validated config.
  *
- * This is the primary setup function. It constructs all zones, piles, and
- * selection metadata that constitute the initial game state (G).
+ * Delegates player zone construction to buildPlayerState and global pile
+ * construction to buildGlobalPiles.
  *
  * @param config - Validated MatchSetupConfig (all 9 fields).
  * @param _registry - Card registry for resolving ext_ids. Accepted for API
@@ -185,14 +112,20 @@ export function buildInitialGameState(
   _registry: CardRegistryReader,
   context: SetupContext,
 ): LegendaryGameState {
+  // why: Helpers were extracted from this function to satisfy the 30-line
+  // function limit (code-style Rule 5) and to improve testability. Each
+  // helper is independently testable with its own shape tests.
+
   const numPlayers = context.ctx.numPlayers;
 
-  // Build per-player zones with shuffled starting decks
+  // Build per-player state with shuffled starting decks
   const playerZones: Record<string, PlayerZones> = {};
 
   for (let playerIndex = 0; playerIndex < numPlayers; playerIndex++) {
     const playerId = String(playerIndex);
-    playerZones[playerId] = buildPlayerZones(context);
+    const startingDeck = buildStartingDeckCards();
+    const playerState = buildPlayerState(playerId, startingDeck, context);
+    playerZones[playerId] = playerState.zones;
   }
 
   // Build global piles sized from config count fields

@@ -264,6 +264,41 @@
   `Record<string, PlayerZones>` directly — `PlayerState` is available for
   move validation in future WPs)
 
+### WP-006B — Player State Initialization (2026-04-10)
+
+**What changed:**
+- `packages/game-engine/src/setup/playerInit.ts` — **new** —
+  `buildPlayerState(playerId, startingDeck, context)` returns a typed
+  `PlayerState` with shuffled deck and 4 empty zones. Uses `ShuffleProvider`
+  for the context parameter.
+- `packages/game-engine/src/setup/pilesInit.ts` — **new** —
+  `buildGlobalPiles(config, context)` returns a typed `GlobalPiles` from
+  `MatchSetupConfig` count fields. Contains `createPileCards` helper and
+  well-known pile ext_id constants.
+- `packages/game-engine/src/setup/buildInitialGameState.ts` — **modified** —
+  delegates player creation to `buildPlayerState` and pile creation to
+  `buildGlobalPiles`. Retains `buildStartingDeckCards`, `buildMatchSelection`,
+  and well-known starting card ext_id constants.
+- `packages/game-engine/src/setup/playerInit.shape.test.ts` — **new** — 3 shape
+  tests: all zones present, deck reversed (proves shuffle), broken player rejected
+- `packages/game-engine/src/setup/validators.integration.test.ts` — **new** — 3
+  integration tests: `validateGameStateShape` ok, `validatePlayerStateShape` ok
+  for all players, `JSON.stringify(G)` does not throw
+
+**What is now fully initialized and validator-confirmed:**
+- `buildInitialGameState` produces a `G` that passes `validateGameStateShape`
+- Every player in `G` passes `validatePlayerStateShape`
+- Player state construction is isolated in `buildPlayerState` — independently
+  testable with its own shape tests
+- Global pile construction is isolated in `buildGlobalPiles` — typed against
+  canonical `GlobalPiles` from WP-006A
+- All 56 tests passing (48 from WP-006A + 8 new)
+
+**Known gaps (expected at this stage):**
+- No hero deck (HQ) construction from registry data — future WP
+- No villain deck construction — WP-014/015
+- No gameplay moves beyond stubs — WP-008A/B
+
 ### WP-003 — Card Registry Verification & Defect Correction (2026-04-09)
 
 **What was fixed:**
