@@ -1,9 +1,15 @@
 /**
- * Legendary Arena — Process Entrypoint
+ * Legendary Arena -- Process Entrypoint
  *
  * Starts the game server and handles graceful shutdown on SIGTERM.
  * This is the file referenced in render.yaml startCommand.
  */
+
+// why: index.mjs is the process entrypoint -- it owns process lifecycle
+// (startup, shutdown, error handling). server.mjs is the configuration
+// module -- it assembles the boardgame.io Server() with the correct game,
+// registry, and middleware. Separating the two keeps server.mjs testable
+// without triggering process-level side effects.
 
 import { startServer } from './server.mjs';
 
@@ -16,9 +22,12 @@ async function main() {
   try {
     httpServer = await startServer();
   } catch (error) {
+    // why: startServer() may throw non-Error values (e.g. from boardgame.io
+    // or pg internals). Coercing to String avoids logging "undefined".
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(
       `[server] Failed to start the Legendary Arena server. ` +
-      `Error: ${error.message}. ` +
+      `Error: ${errorMessage}. ` +
       `Check that DATABASE_URL is set and PostgreSQL is reachable.`
     );
     process.exit(1);
@@ -28,7 +37,7 @@ async function main() {
   // Graceful shutdown lets in-flight WebSocket frames complete and database
   // connections close cleanly, preventing client-side errors during deploys.
   process.on('SIGTERM', () => {
-    console.log('[server] SIGTERM received — shutting down gracefully.');
+    console.log('[server] SIGTERM received -- shutting down gracefully.');
     httpServer.close(() => {
       console.log('[server] HTTP server closed. Exiting.');
       process.exit(0);

@@ -138,7 +138,7 @@ These packets establish the repo-as-memory system and lock contracts before code
   canonical shapes of `sets.json` vs `card-types.json` and why confusing
   them causes a silent failure.
 
-- [ ] WP-004 — Server Bootstrap (Game Engine + Registry Integration) ✅ Reviewed
+- [x] WP-004 — Server Bootstrap (Game Engine + Registry Integration) ✅ Reviewed — completed 2026-04-09
   Dependencies: WP-002, WP-003
   Notes: Server is a **wiring layer only** — it must never contain game logic,
   implement rules, or define a boardgame.io `Game()` directly;

@@ -39,6 +39,12 @@ importers:
 
   apps/server:
     dependencies:
+      '@legendary-arena/game-engine':
+        specifier: workspace:*
+        version: link:../../packages/game-engine
+      '@legendary-arena/registry':
+        specifier: workspace:*
+        version: link:../../packages/registry
       boardgame.io:
         specifier: ^0.50.0
         version: 0.50.2

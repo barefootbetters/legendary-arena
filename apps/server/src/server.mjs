@@ -1,16 +1,24 @@
 /**
- * Legendary Arena — boardgame.io Game Server
+ * Legendary Arena -- boardgame.io Game Server
  *
- * Wiring layer: loads rules, creates the boardgame.io Server(), configures
- * CORS, exposes a /health endpoint, and listens on the configured port.
+ * Wiring layer: loads the card registry and rules, creates the boardgame.io
+ * Server(), configures CORS, exposes a /health endpoint, and listens on the
+ * configured port.
  *
- * This file must not contain game logic. It connects pieces — it does not
+ * This file must not contain game logic. It connects pieces -- it does not
  * decide what happens in the game.
  */
 
-import { Server } from 'boardgame.io/server';
+import { createRequire } from 'node:module';
+import { createRegistryFromLocalFiles } from '@legendary-arena/registry';
 import { loadRules, getRules } from './rules/loader.mjs';
-import { LegendaryGame } from './game/legendary.mjs';
+import { LegendaryGame } from '@legendary-arena/game-engine';
+
+// why: boardgame.io v0.50 only ships a CJS server bundle (dist/cjs/server.js)
+// with no ESM entrypoint. Node v22+ ESM does not resolve CJS-only subpackage
+// directory imports. createRequire bridges this gap without adding a bundler.
+const require = createRequire(import.meta.url);
+const { Server } = require('boardgame.io/server');
 
 /**
  * Registers the /health endpoint on the boardgame.io koa router.
@@ -25,13 +33,52 @@ function registerHealthRoute(router) {
 }
 
 /**
- * Starts the boardgame.io server after loading rules from PostgreSQL.
- * On failure, logs a full-sentence error and exits.
+ * Loads the card registry from local JSON files in data/metadata/ and
+ * data/cards/. Logs a summary on success. On failure, logs a full-sentence
+ * error and exits the process.
+ *
+ * @returns {Promise<import('@legendary-arena/registry').CardRegistry>}
+ */
+async function loadRegistry() {
+  try {
+    // why: The server loads card data from local files at startup, not via
+    // the HTTP/R2 loader. The HTTP loader is for browser clients that fetch
+    // card data from Cloudflare R2. The server has direct filesystem access
+    // to data/, so local loading is simpler and avoids a network round-trip.
+    const registry = await createRegistryFromLocalFiles({
+      metadataDir: 'data/metadata',
+      cardsDir: 'data/cards',
+    });
+
+    const registryInfo = registry.info();
+    console.log(
+      `[server] registry loaded: ${registryInfo.totalSets} sets, ` +
+      `${registryInfo.totalHeroes} heroes, ${registryInfo.totalCards} cards`
+    );
+
+    return registry;
+  } catch (error) {
+    console.error(
+      `[server] Failed to load card registry from local files. ` +
+      `Check that data/metadata/sets.json and data/cards/ exist. ` +
+      `Error: ${error.message}`
+    );
+    process.exit(1);
+  }
+}
+
+/**
+ * Starts the boardgame.io server after loading the card registry and rules
+ * from PostgreSQL. Both startup tasks must succeed before the server accepts
+ * requests. On failure, logs a full-sentence error and exits.
  *
  * @returns {Promise<import('http').Server>} The running HTTP server instance.
  */
 export async function startServer() {
-  await loadRules();
+  await Promise.all([
+    loadRegistry(),
+    loadRules(),
+  ]);
 
   const rules = getRules();
   const rulesCount = Object.keys(rules.rules).length;
@@ -39,7 +86,7 @@ export async function startServer() {
   // why: boardgame.io Server() is the authoritative game server. On Render,
   // it handles both HTTP (health checks, lobby API) and WebSocket (real-time
   // game state sync) traffic on a single port. Render's load balancer
-  // upgrades WebSocket connections automatically — no separate WS port needed.
+  // upgrades WebSocket connections automatically -- no separate WS port needed.
   const server = Server({
     games: [LegendaryGame],
     // why: CORS origins are written as a literal array per code style Rule 7.
@@ -53,14 +100,14 @@ export async function startServer() {
   registerHealthRoute(server.router);
 
   // why: Render.com injects PORT automatically. The fallback 8000 is for
-  // local development only. Do not set PORT in the Render dashboard —
+  // local development only. Do not set PORT in the Render dashboard --
   // Render will override it anyway and double-setting causes confusion.
   const port = process.env.PORT ?? '8000';
 
   const { appServer } = await server.run({ port: Number(port) });
 
   console.log(
-    `[server] Legendary Arena server listening on port ${port} ` +
+    `[server] listening on port ${port} ` +
     `(${rulesCount} rules loaded, NODE_ENV=${process.env.NODE_ENV ?? 'development'})`
   );
 

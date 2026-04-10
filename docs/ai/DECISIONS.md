@@ -354,6 +354,35 @@ type back to `number | undefined` is forbidden.
 **Introduced:** WP-003
 **Status:** Immutable
 
+### D-1205 — Server Uses createRegistryFromLocalFiles at Startup
+**Decision:** The server loads card data at startup via
+`createRegistryFromLocalFiles({ metadataDir: 'data/metadata', cardsDir: 'data/cards' })`
+from `@legendary-arena/registry`, not via the HTTP/R2 loader
+(`createRegistryFromHttp`).
+**Rationale:** The server has direct filesystem access to the `data/` directory.
+Using the HTTP/R2 loader would add an unnecessary network round-trip to
+Cloudflare R2 and introduce a dependency on external infrastructure at startup.
+The HTTP/R2 loader is designed for browser clients that cannot read the local
+filesystem. Both loaders produce an identical immutable `CardRegistry` — only
+the data source differs.
+**Introduced:** WP-004
+**Status:** Immutable
+
+---
+
+### D-1206 — boardgame.io Server Import Uses createRequire Bridge
+**Decision:** `apps/server/src/server.mjs` uses `createRequire(import.meta.url)`
+from `node:module` to import `boardgame.io/server` instead of a standard ESM
+import.
+**Rationale:** boardgame.io v0.50 only ships a CJS server bundle
+(`dist/cjs/server.js`) with no ESM entrypoint. Node v22+ ESM does not resolve
+CJS-only subpackage directory imports. The `createRequire` bridge is the
+standard Node.js mechanism for consuming CJS packages from ESM without adding
+a bundler. This decision is scoped to the `boardgame.io/server` import only —
+all other imports use standard ESM.
+**Introduced:** WP-004
+**Status:** Active (revisit if boardgame.io adds ESM server exports)
+
 ---
 
 ## Change Management

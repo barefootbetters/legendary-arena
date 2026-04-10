@@ -9,6 +9,8 @@
     "start": "node src/index.mjs"
   },
   "dependencies": {
+    "@legendary-arena/game-engine": "workspace:*",
+    "@legendary-arena/registry": "workspace:*",
     "boardgame.io": "^0.50.0",
     "pg": "^8.13.0"
   },

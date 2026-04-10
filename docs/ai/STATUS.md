@@ -111,6 +111,37 @@
 - No real game logic — game_sessions table is created but not yet used
 - Card registry not loaded at startup (WP-003 needed)
 
+### WP-004 — Server Bootstrap: Game Engine + Registry Integration (2026-04-09)
+
+**What changed:**
+- `apps/server/src/game/legendary.mjs` — replaced placeholder `Game()` definition
+  with a thin re-export of `LegendaryGame` from `@legendary-arena/game-engine`
+- `apps/server/src/server.mjs` — imports `LegendaryGame` from
+  `@legendary-arena/game-engine` and `createRegistryFromLocalFiles` from
+  `@legendary-arena/registry`. Loads registry at startup alongside rules.
+  Uses `createRequire` to bridge boardgame.io's CJS-only server bundle.
+- `apps/server/package.json` — added `@legendary-arena/game-engine` and
+  `@legendary-arena/registry` as workspace dependencies
+- `apps/server/src/index.mjs` — added `// why:` comment explaining entrypoint
+  vs configuration module separation
+- `render.yaml` — already had correct `startCommand`, no change needed
+
+**What a developer can do:**
+- `node --env-file=.env apps/server/src/index.mjs` starts the server with
+  real game engine and card registry
+- Server logs show both startup tasks:
+  - `[server] registry loaded: 40 sets, 288 heroes, 2620 cards`
+  - `[server] rules loaded: 19 rules, 18 rule docs`
+- `GET /health` returns `{"status":"ok"}`
+- `POST /games/legendary-arena/create` with `setupData` returns a `matchID`
+- Missing `setupData` returns HTTP 400 with a descriptive message (not 500)
+- `numPlayers` outside 1-5 returns HTTP 400 (`minPlayers: 1`, `maxPlayers: 5`
+  on `LegendaryGame`, enforced by boardgame.io lobby)
+
+**Known gaps (expected at this stage):**
+- No lobby/match creation CLI scripts yet (WP-011/012)
+- No authentication (separate WP)
+
 ### WP-003 — Card Registry Verification & Defect Correction (2026-04-09)
 
 **What was fixed:**
