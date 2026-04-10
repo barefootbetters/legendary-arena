@@ -289,7 +289,7 @@ These packets create the first playable (but incomplete) game loop.
   WP-007A contract files must not be modified;
   see ARCHITECTURE.md §Section 4 for The Turn Stage Cycle
 
-- [ ] WP-008A — Core Moves Contracts (Draw, Play, End Turn) ✅ Reviewed
+- [x] WP-008A — Core Moves Contracts (Draw, Play, End Turn) ✅ Reviewed — Completed 2026-04-10
   Dependencies: WP-007B
   Notes: `MoveResult`/`MoveError` are the **engine-wide result contract** —
   every move validator in every future packet must return `MoveResult` (imported

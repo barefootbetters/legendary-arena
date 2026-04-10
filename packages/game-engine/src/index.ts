@@ -48,3 +48,19 @@ export {
 export { validateTurnStageTransition } from './turn/turnPhases.validate.js';
 export { advanceTurnStage } from './turn/turnLoop.js';
 export type { TurnLoopContext, TurnLoopState } from './turn/turnLoop.js';
+export type {
+  CoreMoveName,
+  DrawCardsArgs,
+  PlayCardArgs,
+  EndTurnArgs,
+  MoveError,
+  MoveResult,
+} from './moves/coreMoves.types.js';
+export { CORE_MOVE_NAMES } from './moves/coreMoves.types.js';
+export { MOVE_ALLOWED_STAGES, isMoveAllowedInStage } from './moves/coreMoves.gating.js';
+export {
+  validateDrawCardsArgs,
+  validatePlayCardArgs,
+  validateEndTurnArgs,
+  validateMoveAllowedInStage,
+} from './moves/coreMoves.validate.js';

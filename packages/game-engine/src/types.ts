@@ -19,6 +19,15 @@ export type {
   TurnPhaseError,
 } from './turn/turnPhases.types.js';
 
+// why: Move contracts (MoveResult, MoveError, CoreMoveName) are the engine-wide
+// result contract defined canonically in src/moves/coreMoves.types.ts (WP-008A).
+// Re-exported here so that consumers importing from './types.js' have access.
+export type {
+  MoveResult,
+  MoveError,
+  CoreMoveName,
+} from './moves/coreMoves.types.js';
+
 // why: Zone types (CardExtId, PlayerZones, GlobalPiles) were originally
 // defined inline in this file during WP-005B. WP-006A consolidated them
 // into src/state/zones.types.ts as the canonical source. They are

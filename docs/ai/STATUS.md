@@ -380,6 +380,44 @@
 - No win/loss conditions — WP-010
 - No villain deck or city logic — WP-014/015
 
+### WP-008A — Core Moves Contracts (2026-04-10)
+
+**What changed:**
+- `packages/game-engine/src/moves/coreMoves.types.ts` — **new** — defines
+  `CoreMoveName` (3 values), `CORE_MOVE_NAMES` canonical array,
+  `DrawCardsArgs`, `PlayCardArgs` (uses `CardExtId`), `EndTurnArgs`,
+  and the engine-wide `MoveError`/`MoveResult` result contract
+- `packages/game-engine/src/moves/coreMoves.gating.ts` — **new** —
+  `MOVE_ALLOWED_STAGES` map and `isMoveAllowedInStage` helper. No
+  boardgame.io imports.
+- `packages/game-engine/src/moves/coreMoves.validate.ts` — **new** — four
+  pure validators: `validateDrawCardsArgs`, `validatePlayCardArgs`,
+  `validateEndTurnArgs`, `validateMoveAllowedInStage`. All return `MoveResult`,
+  never throw. No mutation, no normalization, no coercion.
+- `packages/game-engine/src/moves/coreMoves.contracts.test.ts` — **new** —
+  13 tests: 3 drawCards, 2 playCard, 3 stage gating, 2 drift-detection,
+  2 validateMoveAllowedInStage error cases, 1 endTurn
+- `packages/game-engine/src/types.ts` — **modified** — re-exports
+  `MoveResult`, `MoveError`, `CoreMoveName`
+- `packages/game-engine/src/index.ts` — **modified** — exports all new types,
+  constants, gating helpers, and validators
+
+**What a subsequent session can rely on:**
+- `@legendary-arena/game-engine` exports the canonical move contracts
+- `MoveResult`/`MoveError` are the engine-wide result contract — no future
+  packet may redefine or shadow these types
+- `CORE_MOVE_NAMES` is the canonical array for drift-detection
+- `MOVE_ALLOWED_STAGES` is the sole source of truth for stage gating
+- `isMoveAllowedInStage` derives answers from the map only
+- All four validators are pure (no throw, no mutation, no boardgame.io)
+- `PlayCardArgs.cardId` is typed as `CardExtId` (not plain string)
+- All 80 tests passing (67 from WP-007B + 13 new)
+
+**Known gaps (expected at this stage):**
+- No move implementations that mutate G — WP-008B
+- No card rules, costs, or keyword logic — future WPs
+- No villain deck, city, or HQ logic — WP-014/015
+
 ### WP-003 — Card Registry Verification & Defect Correction (2026-04-09)
 
 **What was fixed:**

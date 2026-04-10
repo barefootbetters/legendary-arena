@@ -631,6 +631,46 @@ WP-005B where `makeMockCtx` was introduced for framework-free testing.
 
 ---
 
+## Move Contract Decisions
+
+### D-1223 — MOVE_ALLOWED_STAGES Stage Assignments for Core Moves
+**Decision:** The three core moves have the following stage gating assignments:
+- `drawCards`: allowed in `['start', 'main']`
+- `playCard`: allowed in `['main']`
+- `endTurn`: allowed in `['cleanup']`
+
+**Rationale:**
+- `drawCards` is allowed in `start` because the player draws cards at the
+  beginning of their turn (start phase), and in `main` because card effects
+  during the main action phase may grant additional draws.
+- `playCard` is restricted to `main` because playing cards is the primary
+  action during a player's turn. Cards cannot be played during the draw phase
+  (start) or after actions are complete (cleanup).
+- `endTurn` is restricted to `cleanup` because a player must complete all
+  actions and resolve all effects before ending their turn. Allowing endTurn
+  earlier would skip mandatory cleanup steps (discard hand, draw new hand).
+
+**Introduced:** WP-008A
+**Status:** Immutable
+
+---
+
+### D-1224 — MoveResult/MoveError Is the Engine-Wide Result Contract
+**Decision:** `MoveResult` (`{ ok: true } | { ok: false; errors: MoveError[] }`)
+and `MoveError` (`{ code: string; message: string; path: string }`) are the
+engine-wide result contract. Every move validator in every future packet must
+import and return these types. No future packet may define a parallel error type
+for move validation.
+**Rationale:** A single, consistent error shape across all validation boundaries
+enables uniform error handling, logging, and UI error display. The only exception
+is `ZoneValidationError` (D-1215) and `MatchSetupError` (D-1208), which serve
+distinct structural and setup validation purposes respectively and predate this
+contract.
+**Introduced:** WP-008A
+**Status:** Immutable
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision
