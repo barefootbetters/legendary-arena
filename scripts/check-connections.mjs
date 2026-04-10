@@ -9,9 +9,42 @@
 
 import { execSync } from 'node:child_process';
 import { readFileSync, existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { env, version as nodeVersion, platform } from 'node:process';
 import { hostname } from 'node:os';
+
+// ---------------------------------------------------------------------------
+// Shared constants — single source of truth for magic numbers and URLs
+// ---------------------------------------------------------------------------
+
+// why: All network checks use the same timeout so that a single slow service
+// does not dominate total check time. 5 seconds is generous for a health probe
+// but short enough to keep the full suite under ~10 seconds.
+const CONNECTION_TIMEOUT_MS = 5000;
+
+// why: rclone bucket listing is slower than HTTP fetches because it enumerates
+// S3-compatible storage. 10 seconds prevents false failures on cold starts.
+const RCLONE_TIMEOUT_MS = 10000;
+
+// why: Centralised so that repo renames or ownership transfers require a
+// single edit instead of hunting through remediation strings.
+const GITHUB_REPO_SLUG = 'barefootbetters/legendary-arena';
+const GITHUB_REPO_URL = `https://github.com/${GITHUB_REPO_SLUG}`;
+const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO_SLUG}`;
+
+// why: Must match the route registered in apps/server/src/server.mjs and
+// the healthCheckPath in render.yaml.
+const HEALTH_CHECK_PATH = '/health';
+
+// why: Appears in multiple remediation messages for server-related failures.
+const RENDER_DASHBOARD_URL = 'https://dashboard.render.com';
+
+// why: Enforced baseline — scripts, server, and CI all require Node 22+.
+const MIN_NODE_MAJOR_VERSION = 22;
+
+// why: pnpm 8+ is required for workspace protocol support.
+const MIN_PNPM_MAJOR_VERSION = 8;
 
 // ---------------------------------------------------------------------------
 // Required environment variables — grouped by service
@@ -44,11 +77,11 @@ const REQUIRED_VARS = {
 // ---------------------------------------------------------------------------
 
 const PLACEHOLDER_PATTERNS = [
-  /^your-/i,
-  /^change-me$/i,
-  /^REPLACE_/i,
-  /^<.*>$/,
-  /^$/,
+  /^your-/i,       // why: catches .env.example defaults like "your-32-byte-hex-string-here"
+  /^change-me$/i,  // why: catches common placeholder sentinel
+  /^REPLACE_/i,    // why: catches "REPLACE_ME" or "REPLACE_WITH_REAL_VALUE"
+  /^<.*>$/,        // why: catches angle-bracket placeholders like "<your-api-key>"
+  /^$/,            // why: catches empty string (variable set but no value)
 ];
 
 // ---------------------------------------------------------------------------
@@ -69,9 +102,6 @@ let warningCount = 0;
  * @param {'warn'|undefined} [level] - Set to 'warn' for non-blocking issues
  */
 function recordResult(section, checkName, passed, message, remediation, level) {
-  const icon = passed ? '✓' : '✗';
-  const color = passed ? '' : '';
-
   if (!passed && level === 'warn') {
     warningCount++;
     console.log(`  ⚠ ${checkName} : ${message}`);
@@ -85,20 +115,86 @@ function recordResult(section, checkName, passed, message, remediation, level) {
   results.push({ section, checkName, passed, message, remediation, level });
 }
 
+/**
+ * Records a non-blocking warning. Convenience wrapper around recordResult
+ * that avoids the easy-to-misread trailing 'warn' argument at every call site.
+ * @param {string} section - The section header
+ * @param {string} checkName - Name of the individual check
+ * @param {string} message - Human-readable result message
+ * @param {string} [remediation] - What to do about the warning
+ */
+function recordWarning(section, checkName, message, remediation) {
+  recordResult(section, checkName, false, message, remediation, 'warn');
+}
+
+// ---------------------------------------------------------------------------
+// Parsing helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Parses a version string's leading segment as an integer major version.
+ * Returns NaN if the string is missing or unparseable.
+ * @param {string} versionString - e.g. "v22.1.0" or "10.32.1"
+ * @returns {number} The major version number, or NaN.
+ */
+function parseMajorVersion(versionString) {
+  if (!versionString || typeof versionString !== 'string') {
+    return NaN;
+  }
+  // Strip leading 'v' if present, then take the first dot-separated segment.
+  return parseInt(versionString.replace(/^v/, '').split('.')[0], 10);
+}
+
+// why: pnpm workspaces hoist dependencies into workspace-specific node_modules
+// directories (e.g., apps/server/node_modules/boardgame.io) rather than always
+// placing them at the monorepo root. This helper searches root first, then
+// known workspace paths, so package checks work regardless of hoisting.
+// why: process.cwd() is used to build absolute paths because createRequire()
+// needs an absolute path, not a relative one.
+const WORKSPACE_NODE_MODULES = [
+  join(process.cwd(), 'node_modules'),
+  join(process.cwd(), 'apps', 'server', 'node_modules'),
+  join(process.cwd(), 'apps', 'registry-viewer', 'node_modules'),
+  join(process.cwd(), 'packages', 'registry', 'node_modules'),
+];
+
+/**
+ * Finds a package's package.json across root and workspace node_modules.
+ * Returns the first path that exists, or null if not found anywhere.
+ * @param {string} packageName - The npm package name (e.g., 'boardgame.io')
+ * @returns {string | null} The resolved path, or null.
+ */
+function findPackageJson(packageName) {
+  for (const nodeModulesPath of WORKSPACE_NODE_MODULES) {
+    const candidatePath = join(nodeModulesPath, packageName, 'package.json');
+    if (existsSync(candidatePath)) {
+      return candidatePath;
+    }
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // Tool checks
 // ---------------------------------------------------------------------------
 
 /**
- * Verifies Node.js version is 22+.
+ * Verifies Node.js version meets the project minimum.
  */
 function checkNodeVersion() {
-  const majorVersion = parseInt(nodeVersion.slice(1).split('.')[0], 10);
+  const majorVersion = parseMajorVersion(nodeVersion);
 
-  if (majorVersion < 22) {
+  if (Number.isNaN(majorVersion)) {
     recordResult('TOOLS', 'Node.js', false,
-      `${nodeVersion} — major version ${majorVersion} is below required v22`,
-      'Install Node.js v22+ from https://nodejs.org');
+      `Could not parse Node.js version from "${nodeVersion}".`,
+      `Ensure Node.js v${MIN_NODE_MAJOR_VERSION}+ is installed from https://nodejs.org`);
+    return;
+  }
+
+  if (majorVersion < MIN_NODE_MAJOR_VERSION) {
+    recordResult('TOOLS', 'Node.js', false,
+      `${nodeVersion} — major version ${majorVersion} is below required v${MIN_NODE_MAJOR_VERSION}.`,
+      `Install Node.js v${MIN_NODE_MAJOR_VERSION}+ from https://nodejs.org`);
     return;
   }
 
@@ -106,16 +202,23 @@ function checkNodeVersion() {
 }
 
 /**
- * Verifies pnpm is installed and version is 8+.
+ * Verifies pnpm is installed and meets the minimum version.
  */
 function checkPnpmVersion() {
   try {
     const pnpmVersion = execSync('pnpm --version', { encoding: 'utf8' }).trim();
-    const majorVersion = parseInt(pnpmVersion.split('.')[0], 10);
+    const majorVersion = parseMajorVersion(pnpmVersion);
 
-    if (majorVersion < 8) {
+    if (Number.isNaN(majorVersion)) {
       recordResult('TOOLS', 'pnpm', false,
-        `v${pnpmVersion} — below required v8`,
+        `Could not parse pnpm version from "${pnpmVersion}".`,
+        'Run: npm install -g pnpm');
+      return;
+    }
+
+    if (majorVersion < MIN_PNPM_MAJOR_VERSION) {
+      recordResult('TOOLS', 'pnpm', false,
+        `v${pnpmVersion} — below required v${MIN_PNPM_MAJOR_VERSION}.`,
         'Run: npm install -g pnpm');
       return;
     }
@@ -123,7 +226,7 @@ function checkPnpmVersion() {
     recordResult('TOOLS', 'pnpm', true, `v${pnpmVersion}`);
   } catch {
     recordResult('TOOLS', 'pnpm', false,
-      'NOT FOUND on PATH',
+      'NOT FOUND on PATH.',
       'Run: npm install -g pnpm');
   }
 }
@@ -155,15 +258,14 @@ function checkDotenvCli() {
       try {
         execSync('dotenv -e .env -- node -e ""', { encoding: 'utf8', stdio: 'pipe' });
       } catch {
-        recordResult('TOOLS', 'dotenv-cli (.env parse)', false,
+        recordWarning('TOOLS', 'dotenv-cli (.env parse)',
           '.env file exists but dotenv cannot parse it. Check for BOM encoding or unquoted special characters.',
-          'Re-create .env from .env.example with UTF-8 encoding (no BOM).',
-          'warn');
+          'Re-create .env from .env.example with UTF-8 encoding (no BOM).');
       }
     }
   } catch {
     recordResult('TOOLS', 'dotenv-cli', false,
-      'NOT FOUND on PATH — dotenv-cli is required for scripts that cannot use --env-file',
+      'NOT FOUND on PATH — dotenv-cli is required for scripts that cannot use --env-file.',
       'Run: npm install -g dotenv-cli');
   }
 }
@@ -172,11 +274,11 @@ function checkDotenvCli() {
  * Verifies boardgame.io is installed and is the correct 0.50.x version.
  */
 function checkBoardgameioPackage() {
-  const packageJsonPath = join('node_modules', 'boardgame.io', 'package.json');
+  const packageJsonPath = findPackageJson('boardgame.io');
 
-  if (!existsSync(packageJsonPath)) {
+  if (!packageJsonPath) {
     recordResult('TOOLS', 'boardgame.io', false,
-      'Not found in node_modules. pnpm install may not have been run, or boardgame.io is not yet a dependency.',
+      'Not found in any node_modules. pnpm install may not have been run, or boardgame.io is not yet a dependency.',
       'Run: pnpm install (once game-engine package exists)');
     return;
   }
@@ -184,9 +286,17 @@ function checkBoardgameioPackage() {
   try {
     const packageData = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
     const installedVersion = packageData.version;
+
+    if (!installedVersion || typeof installedVersion !== 'string') {
+      recordResult('TOOLS', 'boardgame.io', false,
+        'Installed but version field is missing or invalid in package.json.',
+        'Run: pnpm install to reinstall the package.');
+      return;
+    }
+
     const versionParts = installedVersion.split('.');
 
-    if (versionParts[0] !== '0' || versionParts[1] !== '50') {
+    if (versionParts.length < 3 || versionParts[0] !== '0' || versionParts[1] !== '50') {
       recordResult('TOOLS', 'boardgame.io', false,
         `v${installedVersion} — expected 0.50.x. This project locks boardgame.io to ^0.50.0.`,
         'Run: pnpm add boardgame.io@0.50');
@@ -196,7 +306,9 @@ function checkBoardgameioPackage() {
     // why: boardgame.io ships its server module in CommonJS format even though
     // this project is ESM-only. The CJS entrypoint is what boardgame.io exposes
     // for server-side use. Its presence confirms the package installed correctly.
-    const serverEntrypoint = join('node_modules', 'boardgame.io', 'dist', 'cjs', 'server.js');
+    // Resolve relative to the found package.json, not hardcoded to root node_modules.
+    const packageDir = packageJsonPath.replace(/[/\\]package\.json$/, '');
+    const serverEntrypoint = join(packageDir, 'dist', 'cjs', 'server.js');
     if (!existsSync(serverEntrypoint)) {
       recordResult('TOOLS', 'boardgame.io', false,
         `v${installedVersion} installed but server CJS entrypoint missing at ${serverEntrypoint}.`,
@@ -216,9 +328,9 @@ function checkBoardgameioPackage() {
  * Verifies zod is installed in node_modules.
  */
 function checkZodPackage() {
-  const packageJsonPath = join('node_modules', 'zod', 'package.json');
+  const packageJsonPath = findPackageJson('zod');
 
-  if (!existsSync(packageJsonPath)) {
+  if (!packageJsonPath) {
     recordResult('TOOLS', 'zod', false,
       'Not found in node_modules.',
       'Run: pnpm add zod');
@@ -290,10 +402,9 @@ function checkDotenvFile() {
   }
 
   if (placeholderVars.length > 0) {
-    recordResult('ENVIRONMENT', '.env placeholders', false,
+    recordWarning('ENVIRONMENT', '.env placeholders',
       `.env contains placeholder values: ${placeholderVars.join(', ')}`,
-      'Replace placeholder values in .env with real configuration.',
-      'warn');
+      'Replace placeholder values in .env with real configuration.');
   }
 }
 
@@ -305,7 +416,7 @@ function checkRequiredEnvironmentVariables() {
   let totalMissing = 0;
 
   console.log('');
-  console.log(`REQUIRED VARIABLES`);
+  console.log('REQUIRED VARIABLES');
 
   for (const groupName of Object.keys(REQUIRED_VARS)) {
     const variableNames = REQUIRED_VARS[groupName];
@@ -357,12 +468,33 @@ async function checkPostgresConnection() {
   }
 
   try {
-    // Dynamic import — pg may not be installed yet
-    const pgModule = await import('pg');
+    // why: pg is a dependency of apps/server, not the monorepo root. Node's
+    // ESM import() resolves from the script's location, which cannot see
+    // apps/server/node_modules. Use createRequire to resolve pg from the
+    // workspace that declares it as a dependency.
+    const pgPackagePath = findPackageJson('pg');
+    let pgModule;
+    if (pgPackagePath) {
+      const workspaceRequire = createRequire(pgPackagePath);
+      pgModule = workspaceRequire('pg');
+    } else {
+      pgModule = await import('pg');
+    }
     const Pool = pgModule.default?.Pool || pgModule.Pool;
+
+    // why: Guard against pg exporting an unexpected shape. Without this,
+    // a broken import would produce a confusing "Pool is not a constructor"
+    // error instead of a clear diagnostic.
+    if (typeof Pool !== 'function') {
+      recordResult('CONNECTIONS', 'PostgreSQL', false,
+        'pg module imported but Pool constructor not found. The pg package may be corrupted.',
+        'Run: pnpm install to reinstall pg.');
+      return;
+    }
+
     const pool = new Pool({
       connectionString: databaseUrl,
-      connectionTimeoutMillis: 5000,
+      connectionTimeoutMillis: CONNECTION_TIMEOUT_MS,
     });
 
     const startTime = Date.now();
@@ -406,24 +538,24 @@ async function checkBoardgameioServer() {
 
   try {
     const startTime = Date.now();
-    const response = await fetch(`${serverUrl}/health`, {
-      signal: AbortSignal.timeout(5000),
+    const response = await fetch(`${serverUrl}${HEALTH_CHECK_PATH}`, {
+      signal: AbortSignal.timeout(CONNECTION_TIMEOUT_MS),
     });
     const elapsedMilliseconds = Date.now() - startTime;
 
     if (!response.ok) {
       recordResult('CONNECTIONS', 'boardgame.io server', false,
-        `/health returned HTTP ${response.status} (expected 200).`,
-        'Is the Render service running? Check https://dashboard.render.com');
+        `${HEALTH_CHECK_PATH} returned HTTP ${response.status} (expected 200).`,
+        `Is the Render service running? Check ${RENDER_DASHBOARD_URL}`);
       return;
     }
 
     recordResult('CONNECTIONS', 'boardgame.io server', true,
-      `/health → ${response.status} OK  (${elapsedMilliseconds}ms)`);
+      `${HEALTH_CHECK_PATH} → ${response.status} OK  (${elapsedMilliseconds}ms)`);
   } catch (fetchError) {
     recordResult('CONNECTIONS', 'boardgame.io server', false,
       `Connection failed: ${fetchError.message}`,
-      'Is the Render service running? Check https://dashboard.render.com');
+      `Is the Render service running? Check ${RENDER_DASHBOARD_URL}`);
   }
 }
 
@@ -445,7 +577,7 @@ async function checkCloudflareR2() {
     // why: metadata/sets.json is the authoritative registry manifest in R2.
     // No registry-config.json exists — that was an incorrect assumption.
     const response = await fetch(`${publicUrl}/metadata/sets.json`, {
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(CONNECTION_TIMEOUT_MS),
     });
     const elapsedMilliseconds = Date.now() - startTime;
     const contentType = response.headers.get('content-type') || 'unknown';
@@ -482,7 +614,7 @@ async function checkCloudflarePages() {
   try {
     const startTime = Date.now();
     const response = await fetch(pagesUrl, {
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(CONNECTION_TIMEOUT_MS),
     });
     const elapsedMilliseconds = Date.now() - startTime;
 
@@ -508,8 +640,8 @@ async function checkCloudflarePages() {
 async function checkGithubReachability() {
   try {
     const startTime = Date.now();
-    const response = await fetch('https://api.github.com/repos/barefootbetters/legendary-arena', {
-      signal: AbortSignal.timeout(5000),
+    const response = await fetch(GITHUB_API_URL, {
+      signal: AbortSignal.timeout(CONNECTION_TIMEOUT_MS),
     });
     const elapsedMilliseconds = Date.now() - startTime;
 
@@ -520,7 +652,7 @@ async function checkGithubReachability() {
     } else {
       recordResult('CONNECTIONS', 'GitHub API', false,
         `API returned HTTP ${response.status}. Repository may be private or rate-limited.`,
-        'Verify the repository exists at https://github.com/barefootbetters/legendary-arena');
+        `Verify the repository exists at ${GITHUB_REPO_URL}`);
     }
   } catch (fetchError) {
     recordResult('CONNECTIONS', 'GitHub API', false,
@@ -531,19 +663,18 @@ async function checkGithubReachability() {
   // Verify local Git remote
   try {
     const remoteUrl = execSync('git remote get-url origin', { encoding: 'utf8' }).trim();
-    const expectedUrl = 'https://github.com/barefootbetters/legendary-arena';
 
-    if (remoteUrl.includes('barefootbetters/legendary-arena')) {
+    if (remoteUrl.includes(GITHUB_REPO_SLUG)) {
       recordResult('CONNECTIONS', 'Git remote', true, `origin → ${remoteUrl}`);
     } else {
       recordResult('CONNECTIONS', 'Git remote', false,
-        `origin is ${remoteUrl}, expected ${expectedUrl}.`,
-        `Run: git remote set-url origin ${expectedUrl}`);
+        `origin is ${remoteUrl}, expected ${GITHUB_REPO_URL}.`,
+        `Run: git remote set-url origin ${GITHUB_REPO_URL}`);
     }
   } catch {
     recordResult('CONNECTIONS', 'Git remote', false,
       'Could not read git remote origin.',
-      'Run: git remote add origin https://github.com/barefootbetters/legendary-arena');
+      `Run: git remote add origin ${GITHUB_REPO_URL}`);
   }
 }
 
@@ -557,10 +688,9 @@ function checkRclone() {
   const rcloneConfigPath = join(env.APPDATA || '', 'rclone', 'rclone.conf');
 
   if (!existsSync(rcloneConfigPath)) {
-    recordResult('CONNECTIONS', 'rclone config', false,
+    recordWarning('CONNECTIONS', 'rclone config',
       `Config not found at ${rcloneConfigPath}.`,
-      'Run: rclone config  (see docs/rclone-setup.md)',
-      'warn');
+      'Run: rclone config  (see docs/rclone-setup.md)');
   } else {
     recordResult('CONNECTIONS', 'rclone config', true,
       `Config found at ${rcloneConfigPath}`);
@@ -580,7 +710,10 @@ function checkRclone() {
 
   // List R2 bucket root
   try {
-    const listOutput = execSync('rclone lsd r2:', { encoding: 'utf8', timeout: 10000 });
+    const listOutput = execSync('rclone lsd r2:', {
+      encoding: 'utf8',
+      timeout: RCLONE_TIMEOUT_MS,
+    });
     const folderCount = listOutput.split('\n').filter(line => line.trim()).length;
 
     if (folderCount === 0) {

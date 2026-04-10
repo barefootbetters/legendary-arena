@@ -4,9 +4,10 @@
 >
 > **Last updated:** 2026-04-09
 >
-> **Current project state:** Foundation infrastructure (environment checks,
-> R2 validation). The game engine and server do not exist yet — they are
-> created by Work Packets starting with WP-002.
+> **Current project state:** Foundation infrastructure complete through FP-01.
+> The game server (`apps/server/`) exists with a minimal boardgame.io
+> Game definition, rules loader, and /health endpoint. The game engine
+> (`packages/game-engine/`) does not exist yet — created by WP-002.
 
 ---
 
@@ -79,11 +80,97 @@ PostgreSQL, only these matter:
 | `CF_PAGES_URL` | `https://cards.barefootbetters.com` |
 | `VITE_GAME_SERVER_URL` | `http://localhost:8000` |
 
-The remaining variables (`DATABASE_URL`, `EXPECTED_DB_NAME`, `JWT_SECRET`,
-`GAME_SERVER_URL`) are needed only when running the full server stack
-(Foundation Prompt 01+).
+The remaining variables are needed when running the full server stack
+(see Section 3a below).
 
-### Step 3 — External connections
+### Step 3a — PostgreSQL (required for game server)
+
+# https://www.postgresql.org/download/windowws/ 
+Install PostgreSQL 16+ locally. On Windows, use the
+[EDB installer](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads)
+or `winget install PostgreSQL.PostgreSQL`.
+Install in the default directory
+Components 1-PostgreSQL Server, 2-pgAdmin 4, 3-Command Line Tools
+Data Directory: default
+Password: web is the postgres superuser
+Port: 5432 (default)
+Locale: default
+Stack Builder: optional, skip
+Once PostgreSQL is running, create the database and apply schemas:
+
+Verify PostgreSQL is running
+Get-Service | Where-Object Name -match "postgres"
+should see something like
+tatus   Name               DisplayName
+------   ----               -----------
+Running  postgresql-x64-18  postgresql-x64-18
+
+run sysdm.cpl -> Advanced tab -> Environment Variables
+System variables -> Path -> Edit...
+Browse -> C:\Program Files\PostgreSQL\18\bin\
+
+check with psql
+psql --version
+should see something like
+psql (PostgreSQL) 18.3
+
+Connect to the database
+psql -h localhost -U postgres
+Enter the password, then run:
+postgres=# SELECT version();
+                                 version                                            
+-------------------------------------------------------------------------
+ PostgreSQL 18.3 on x86_64-windows, compiled by msvc-19.44.35223, 64-bit
+(1 row)
+
+```pwsh
+# Create the database (from any psql connection)
+psql -U postgres -c "CREATE DATABASE legendary_arena ENCODING 'UTF8' LC_COLLATE 'English_United States.1252' LC_CTYPE 'English_United States.1252' TEMPLATE template0;"
+
+# set psql client environment variable
+$env:PGCLIENTENCODING = "UTF8"
+
+# Apply the rules-engine schema (6 tables in the legendary namespace)
+psql -U postgres -d legendary_arena -f data/schema-server.sql
+
+# Seed the rules glossary (15 rules with full documentation)
+psql -U postgres -d legendary_arena -f data/seed_rules.sql
+
+# Seed the Galactus example (demonstrates FK relationships)
+psql -U postgres -d legendary_arena -f data/seed-server.sql
+```
+
+Then update `.env` with your local connection:
+
+```ini
+DATABASE_URL=postgresql://postgres:your_password@localhost:5432/legendary_arena
+EXPECTED_DB_NAME=legendary_arena
+JWT_SECRET=<generate with: node --input-type=module -e "import { randomBytes } from 'node:crypto'; console.log(randomBytes(32).toString('hex'))">
+GAME_SERVER_URL=http://localhost:8000
+```
+
+To verify the schema applied correctly:
+
+```pwsh
+psql -U postgres -d legendary_arena -c "SELECT count(*) FROM legendary.rules;"
+# Expected: 16 (15 rules + 1 "none" entry)
+```
+
+### Step 3b — Start the game server locally
+
+```pwsh
+node --env-file=.env apps/server/src/server.mjs
+```
+
+The server should log: port, rules count, and NODE_ENV. Verify the
+health endpoint in a second terminal:
+
+```pwsh
+curl http://localhost:8000/health
+# Expected: {"status":"ok"}
+```
+
+### Step 3c — External connections
 
 ```pwsh
 pnpm check
@@ -127,11 +214,13 @@ Scripts that exist and work today:
 | `pnpm registry:validate` | Registry package validation | After modifying card schemas |
 | `pnpm registry:build` | Build the registry package | After modifying registry code |
 
+| `pnpm check:ec` | EC health check (with contract IDs) | After modifying health checks |
+| `node --env-file=.env apps/server/src/server.mjs` | Start boardgame.io server locally | After PostgreSQL setup |
+
 Scripts that do NOT exist yet (created by future Work Packets):
 
 | Command | Created by | Purpose |
 |---|---|---|
-| `pnpm dev:server` | FP-01 | Start boardgame.io server locally |
 | `pnpm test` | WP-002 | Run game engine test suite |
 | `pnpm build` | WP-002 | Build all packages |
 
@@ -188,7 +277,8 @@ legendary-arena/
 ├── .claude/          # AI governance (CLAUDE.md, 7 rules files)
 ├── .githooks/        # Commit hooks (pre-commit, commit-msg)
 ├── apps/
-│   └── registry-viewer/  # Card browser SPA (Vue)
+│   ├── registry-viewer/  # Card browser SPA (Vue)
+│   └── server/           # boardgame.io game server (FP-01)
 ├── packages/
 │   └── registry/     # @legendary-arena/registry (Zod schemas, loaders)
 ├── data/
@@ -210,7 +300,8 @@ complete directory reference.
 | Issue | Cause | Fix |
 |---|---|---|
 | `pnpm check:env` shows dotenv "below required v16" | dotenv-cli v11+ removed `--version` flag | Ignore — the script detects version via `npm list` |
-| `pnpm check` fails on PostgreSQL/game server | Server doesn't exist yet (FP-01) | Expected — other checks should pass |
+| `pnpm check` fails on PostgreSQL | PostgreSQL not running or DATABASE_URL wrong | See Section 3a for setup |
+| `pnpm check` fails on game server /health | Server not running locally | Start with `node --env-file=.env apps/server/src/server.mjs` |
 | `pnpm validate` shows `[object Object]` warnings | R2 metadata has serialization artifacts | Known issue in msmc/bkpt/msis sets — warnings only |
 | Commit rejected: "Subject does not match allowed prefix" | Missing EC-###/SPEC/INFRA prefix | See commit format in Section 6 |
 | Commit rejected: "No EC file found" | Referenced EC doesn't exist | Create the EC first, or use INFRA: |

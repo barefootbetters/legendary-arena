@@ -10,6 +10,26 @@
 create schema if not exists legendary;
 
 -- ----------
+-- Why this table exists: Audit trail for ingested JSON source files. The rules
+-- seed script (data/seed_rules.sql) stores the raw rules JSON here for
+-- provenance tracking. Referenced by seed scripts, not by the game server
+-- at runtime.
+-- ----------
+create table if not exists legendary.source_files (
+  source_id      bigserial primary key,
+  source_name    text not null,
+  source_kind    text not null,
+  source_sha256  text null,
+  ingested_at    timestamptz not null default now(),
+  payload        jsonb not null
+);
+
+-- Why this index: Seed scripts look up source files by kind to check
+-- whether a file has already been ingested.
+create index if not exists source_files_kind_idx
+  on legendary.source_files (source_kind);
+
+-- ----------
 -- Why this table exists: Set lookup used by masterminds, villain groups, and
 -- schemes to reference which expansion they belong to. The server uses this
 -- at startup to resolve FK relationships in rules data.
