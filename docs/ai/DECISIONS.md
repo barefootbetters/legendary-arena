@@ -817,6 +817,43 @@ distinction parallels D-1401 (prompt lint checklist remains REFERENCE).
 
 ---
 
+### D-1403 — R2 Validation Gate Remains a REFERENCE Document; R2 Validation vs Lint Gate Distinction
+**Decision:** `docs/ai/REFERENCE/00.5-validation.md` remains a standalone
+REFERENCE document (reusable Foundation Prompt prerequisite gate). It is not
+merged into `.claude/rules/` or replaced by a rules file. The R2 validation
+gate and the Prompt Lint Checklist (`00.3`) are distinct gates that serve
+different purposes at different times:
+- **R2 validation (00.5):** Foundation Prompt prerequisite — runs **once** after
+  00.4 (connection health) and before Foundation Prompts 01 and 02. Validates
+  R2 card data, metadata, images, and cross-set slugs. Error-level failures
+  block all subsequent Foundation Prompts and Work Packets depending on R2
+  data. Warnings alone do not block execution.
+- **Lint Gate (00.3):** Per-WP quality gate — runs **before each** Work Packet
+  execution. Validates packet structure and constraints.
+The two gates must not be confused. The R2 validation is not a per-WP gate; the
+Lint Gate is not a Foundation Prompt prerequisite.
+**Additional distinctions:**
+- R2 validation (00.5) is a reusable preflight script producing
+  `scripts/validate-r2.mjs`. For operational deployment checklists (uploading
+  sets, re-seeding), see WP-042.
+- R2 data validation is a registry/data-layer concern per the Layer Boundary
+  (`.claude/rules/architecture.md`). Validation script changes are informed by
+  `.claude/rules/registry.md` for data shape conventions.
+- Position in Foundation Prompts sequence: `00.4 -> 00.5 -> 01 -> 02`. Each
+  step depends on the prior step completing successfully.
+**Rationale:** The R2 validation gate verifies that card data in Cloudflare R2
+is structurally correct, images are reachable, and no cross-set slug collisions
+exist. It runs once in the Foundation Prompt sequence and blocks downstream
+prompts and Work Packets on error-level failure. Merging it into
+`.claude/rules/` would conflate data validation (one-time prerequisite) with
+runtime enforcement (loaded every session). The distinction parallels D-1401
+(prompt lint checklist remains REFERENCE) and D-1402 (connection health check
+remains REFERENCE).
+**Introduced:** WP-046
+**Status:** Immutable
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision

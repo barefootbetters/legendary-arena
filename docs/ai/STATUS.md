@@ -7,6 +7,40 @@
 
 ## Current State
 
+### WP-046 — R2 Validation Governance Alignment (2026-04-10)
+
+**What changed:**
+- `docs/ai/REFERENCE/00.5-validation.md` — **modified** — added
+  subordination clause in header (document is subordinate to ARCHITECTURE.md
+  and `.claude/rules/*.md`); added Foundation Prompt vs Lint Gate distinction;
+  added Layer Boundary note identifying registry/data layer with reference to
+  `.claude/rules/registry.md`; added WP-042 distinction (reusable preflight
+  vs operational deployment checklists); added Execution Gate section with
+  stop-on-failure semantics naming Foundation Prompts 01, 02 as blocked on
+  error (warnings alone do not block)
+- `docs/ai/DECISIONS.md` — added D-1403 (R2 validation gate remains REFERENCE
+  document; R2 validation vs Lint Gate distinction; warnings vs errors;
+  position in Foundation Prompts sequence)
+
+**What exists now:**
+- The R2 validation gate explicitly declares subordination to ARCHITECTURE.md
+  and `.claude/rules/*.md`
+- The R2 validation vs Lint Gate distinction is documented: R2 validation is a
+  Foundation Prompt prerequisite (runs once after 00.4); Lint Gate is a per-WP
+  quality gate (runs before each WP)
+- Layer Boundary note identifies the document as registry/data-layer validation,
+  referencing `.claude/rules/architecture.md` ("Layer Boundary (Authoritative)")
+  and `.claude/rules/registry.md` for data shape conventions
+- WP-042 distinction documented: 00.5 is a reusable preflight script; WP-042
+  documents operational deployment procedures
+- Execution Gate section makes stop-on-failure semantics explicit: if any
+  error-level check fails, Foundation Prompts 01/02 and all Work Packets
+  depending on R2 data are blocked; warnings alone do not block
+- No existing validation checks removed or weakened
+- No scripts modified
+
+**Known gaps:** None — documentation-only packet.
+
 ### WP-045 — Connection Health Check Governance Alignment (2026-04-10)
 
 **What changed:**

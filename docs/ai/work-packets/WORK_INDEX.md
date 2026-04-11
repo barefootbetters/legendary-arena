@@ -183,7 +183,7 @@ These packets establish the repo-as-memory system and lock contracts before code
   health checks added or removed; no script modifications; the legacy prompt
   version at `docs/prompts-legendary-area-game/00.4-*` is superseded
 
-- [ ] WP-046 — R2 Validation Governance Alignment ✅ Reviewed
+- [x] WP-046 — R2 Validation Governance Alignment ✅ Reviewed (2026-04-10)
   Dependencies: WP-001, WP-045
   Notes: Updates governed `docs/ai/REFERENCE/00.5-validation.md` with
   subordination clause, Layer Boundary note (registry/data layer), and
