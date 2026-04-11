@@ -7,6 +7,31 @@
 
 ## Current State
 
+### WP-043 — Data Contracts Reference (2026-04-10)
+
+**What changed:**
+- `docs/ai/REFERENCE/00.2-data-requirements.md` — **replaced** — legacy 755-line
+  document (13 sections including UI concerns) replaced with governed 8-section
+  data contracts reference covering card shapes, metadata lookups, image
+  conventions, PostgreSQL schema, ability text markup, mastermind-villain
+  relationships, match configuration, and authority notes
+- `docs/ai/ARCHITECTURE.md` — cross-reference already adequate at line 136;
+  no modification needed
+- `docs/ai/DECISIONS.md` — added D-1301 (legacy section exclusion rationale)
+  and D-1302 (subordination to schema.ts rationale)
+
+**What exists now:**
+- `docs/ai/REFERENCE/00.2-data-requirements.md` is the governed data contracts
+  reference, subordinate to `schema.ts` and `ARCHITECTURE.md`
+- Legacy 00.2 content archived at `docs/archive prompts-legendary-area-game/`
+- All card data shapes, metadata lookup shapes, image URL construction rules,
+  ability text markup tokens, and PostgreSQL table inventory are documented with
+  real JSON examples and field reference tables
+- Legacy sections §7 (user deck data), §9 (search/filter), §10 (preferences),
+  §11 (app config), §12 (export) excluded as UI-layer concerns (D-1301)
+
+**Known gaps:** None — documentation-only packet.
+
 ### Foundation Prompt 00.4 — Connection & Environment Health Check (2026-04-09)
 
 **What exists now:**

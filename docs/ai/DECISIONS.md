@@ -742,6 +742,36 @@ abilities array correctly represents "no printed abilities."
 
 ---
 
+## Data Contracts & Documentation Decisions
+
+### D-1301 — Legacy 00.2 Sections 7/9/10/11/12 Excluded from Governed Document
+**Decision:** The governed `docs/ai/REFERENCE/00.2-data-requirements.md` excludes
+legacy sections §7 (User Deck Data), §9 (Search/Filter), §10 (User Preferences),
+§11 (App Configuration/Feature Flags), and §12 (Export/Interoperability).
+**Rationale:** These sections describe UI-layer concerns (localStorage, feature
+flags, search/filter logic, user preferences). Per the Layer Boundary
+(ARCHITECTURE.md), the data contracts reference documents registry-layer data
+shapes only. UI implementation details belong in future UI-layer Work Packets,
+not in a data contracts reference subordinate to `schema.ts`.
+**Introduced:** WP-043
+**Status:** Immutable
+
+---
+
+### D-1302 — 00.2 Is a Human-Readable Reference Subordinate to schema.ts
+**Decision:** `docs/ai/REFERENCE/00.2-data-requirements.md` is a human-readable
+data contracts reference, not a replacement for `packages/registry/src/schema.ts`.
+If the two documents conflict on field types, shapes, or constraints, `schema.ts`
+wins unconditionally.
+**Rationale:** `schema.ts` is machine-enforced via Zod and validated against real
+data at runtime. A markdown reference document cannot enforce constraints. Keeping
+the reference document subordinate prevents drift where human-readable docs
+contradict the actual validation layer.
+**Introduced:** WP-043
+**Status:** Immutable
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision

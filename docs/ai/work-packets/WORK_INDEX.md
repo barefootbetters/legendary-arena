@@ -155,7 +155,7 @@ These packets establish the repo-as-memory system and lock contracts before code
   see ARCHITECTURE.md §Section 1 for server layer constraints and
   §Section 2 "Server Startup Sequence" for the startup flow
 
-- [ ] WP-043 — Data Contracts Reference (Canonical Card & Metadata Shapes) ✅ Reviewed
+- [x] WP-043 — Data Contracts Reference (Canonical Card & Metadata Shapes) ✅ Complete (2026-04-10)
   Dependencies: WP-003
   Notes: Migrates legacy `00.2-data-requirements.md` into governed
   `docs/ai/REFERENCE/00.2-data-requirements.md`; documents card data shapes,
