@@ -335,8 +335,69 @@ pipeline. They are not part of the production data flow.
 
 ---
 
+## PAR Artifact Pipeline
+
+PAR artifacts are a separate data pipeline from card data. They flow from
+simulation tooling to immutable storage to server enforcement.
+
+```
+Simulation (WP-049)      Artifact Storage (WP-050)      Server (WP-051)
+─────────────────        ────────────────────────        ────────────────
+generateScenarioPar  ──► writeParArtifact           ──► loadParIndex
+  (T2 heuristic AI)       data/par/v1/scenarios/         (read-only)
+  (N=500-2000 games)                                  ──► checkParPublished
+                     ──► buildParIndex                    (index-only lookup)
+                          data/par/v1/index.json
+                                                     ──► Competitive gate
+                     ──► validateParStore                 (reject if no PAR)
+                          (CI only — never runtime)
+```
+
+### Source of truth
+
+PAR artifacts live under `data/par/v{N}/` with one JSON file per scenario,
+sharded by scheme slug prefix. The `index.json` is the canonical oracle for
+PAR existence — the server uses it for the pre-release competitive gate.
+
+### Validation placement
+
+`validateParStore` runs in **CI only**, never at server runtime:
+
+| Environment | Validation | Purpose |
+|---|---|---|
+| CI (artifact pipeline) | Full `validateParStore` | Enforces immutability, hash integrity, index correctness before publish |
+| CI (server build) | Index presence check only | Prevents deploying competitive features without PAR |
+| Server runtime | None | Server assumes artifacts validated upstream; only loads index |
+
+**The server never recomputes hashes, scans artifact files, or repairs data.**
+Trust is established in CI; the server respects it.
+
+### Pipeline: adding PAR for a new content set
+
+1. Run simulation (WP-049) — generates `ParSimulationResult` for each scenario
+2. Write artifacts (WP-050) — `writeParArtifact` to `data/par/v{N}/scenarios/`
+3. Build index — `buildParIndex` produces sorted `index.json`
+4. Validate — `validateParStore` confirms integrity (hash, completeness, T2-only)
+5. If validation fails — **STOP**, do not publish or deploy
+6. Commit / upload artifacts
+7. Deploy server with updated `data/par/`
+
+PAR must be published before competitive leaderboard entries are accepted
+for any scenario in the new content set.
+
+### Strict boundaries
+
+- PAR artifacts are **immutable** — once published under `v{N}`, never modified
+- Updates create a **new version directory** (`v{N+1}`)
+- The game engine never reads PAR artifacts — PAR is consumed by the server only
+- Historical leaderboard entries retain the PAR version used at submission
+- See `docs/12.1-PAR-ARTIFACT-INTEGRITY.md` for the trust model
+
+---
+
 **See also:**
 - [01-REPO-FOLDER-STRUCTURE.md](01-REPO-FOLDER-STRUCTURE.md) — where data files live
 - [08-DEPLOYMENT.md](08-DEPLOYMENT.md) — R2 upload process and env vars
 - [07-CLI-REFERENCE.md](07-CLI-REFERENCE.md) — `pnpm validate` reference
 - `packages/registry/src/schema.ts` — authoritative Zod schemas
+- [12.1-PAR-ARTIFACT-INTEGRITY.md](12.1-PAR-ARTIFACT-INTEGRITY.md) — PAR hashing trust model

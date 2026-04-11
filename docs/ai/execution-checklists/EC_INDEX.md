@@ -126,6 +126,7 @@ is active. See 01.2 for the clause-driven diagnosis sequence.
 | EC-034 | WP-034    | Game Engine / Versioning | 3 version axes, VersionedArtifact, migrations        | Draft  |
 | EC-035 | WP-035    | Operations / Release     | Release artifacts, 4 environments, rollback          | Draft  |
 | EC-042 | WP-042    | Server / Operations      | Deployment checklists (R2, PostgreSQL, infra)        | Draft  |
+| EC-048 | WP-048    | Engine Scoring + Server  | PAR scoring, ScenarioKey, LeaderboardEntry contract  | Draft  |
 
 ---
 
@@ -139,6 +140,9 @@ is active. See 01.2 for the clause-driven diagnosis sequence.
 | EC-039 | WP-039    | Operations / Observability | MetricEntry type, 4 metric categories              | Draft  |
 | EC-040 | WP-040    | Product Governance       | 5 change categories, ChangeBudget type               | Draft  |
 | EC-041 | WP-041    | Core Architecture (Docs) | Field Classification audit, authority hierarchy      | Draft  |
+| EC-049 | WP-049    | Tooling / Simulation     | T2 CompetentHeuristic, PAR aggregation, policy tiers | Draft  |
+| EC-050 | WP-050    | Tooling / Data           | PAR artifact storage, indexing, immutable versioning | Draft  |
+| EC-051 | WP-051    | Server / Enforcement     | PAR publication gate, index loading, fail-closed     | Draft  |
 
 ---
 
@@ -147,9 +151,9 @@ is active. See 01.2 for the clause-driven diagnosis sequence.
 | Status   | Count |
 |----------|-------|
 | Done     | 1     |
-| Draft    | 50    |
+| Draft    | 54    |
 | Blocked  | 0     |
-| **Total**| **51**|
+| **Total**| **55**|
 
 ---
 

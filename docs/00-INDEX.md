@@ -51,12 +51,14 @@ mindmap
 | 00 | [INDEX](00-INDEX.md) | This landing page |
 | 01 | [REPO-FOLDER-STRUCTURE](01-REPO-FOLDER-STRUCTURE.md) | Full directory layout |
 | 02 | [ARCHITECTURE](02-ARCHITECTURE.md) | Authoritative package boundaries, data flow, persistence rules |
-| 03 | [DATA-PIPELINE](03-DATA-PIPELINE.md) | R2 → metadata → validation → PostgreSQL flow |
+| 03 | [DATA-PIPELINE](03-DATA-PIPELINE.md) | R2 → metadata → validation → PostgreSQL + PAR artifact pipeline |
 | 04 | [DEVELOPMENT-SETUP](04-DEVELOPMENT-SETUP.md) | Local development guide (you are here) |
 | 05 | [ROADMAP](05-ROADMAP.md) | Current Work Packets & phases |
 | 05M | [ROADMAP-MINDMAP](05-ROADMAP-MINDMAP.md) | Visual overview |
 | — | [devlog/](devlog/) | Weekly development journal |
 | — | [screenshots/](screenshots/) | All UI & validation screenshots |
+| 12 | [SCORING-REFERENCE](12-SCORING-REFERENCE.md) | PAR-based scoring formula & leaderboard rules |
+| 12.1 | [PAR-ARTIFACT-INTEGRITY](12.1-PAR-ARTIFACT-INTEGRITY.md) | Why PAR artifacts are hashed (rationale) |
 | — | [ai/](ai/) | AI coordination system, Work Packets, ECs |
 
 ---
@@ -69,7 +71,7 @@ mindmap
 
 ---
 
-**Last updated:** 2026-04-09  
+**Last updated:** 2026-04-11
 **Maintained by:** Human developer
 
 *This index is the single source of truth for navigating the project documentation.*

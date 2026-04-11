@@ -86,6 +86,7 @@ For full rationale, see `DECISIONS.md`.
 |------------|---------|---------------|--------------|
 | D‑0701 | AI is tooling, not gameplay | WP‑036 | WP‑040 |
 | D‑0702 | Balance requires simulation | WP‑036 | WP‑047 |
+| D‑0703 | Difficulty declared before competition | WP‑049/050/051 | — |
 
 ---
 

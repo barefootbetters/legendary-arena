@@ -645,11 +645,56 @@ These packets make the game safe to ship.
   legacy Checklist C (Konva.js canvas UI) excluded — UI implementation is
   not a deployment concern per Layer Boundary
 
+- [ ] WP-048 — PAR Scenario Scoring & Leaderboards ⚠️ Needs review
+  Dependencies: WP-020, WP-027, WP-030
+  Notes: Extends VP scoring (WP-020) into PAR-based scenario scoring per
+  `docs/12-SCORING-REFERENCE.md`; `ScenarioKey` and `TeamKey` stable identity
+  strings; `ScenarioScoringConfig` versioned per-scenario weights, caps, PAR
+  baseline, penalty event mappings; `deriveScoringInputs` extracts R/VP/BP/E
+  from replay log; integer arithmetic (centesimal) for determinism; monotonicity
+  invariant enforced by config validation; `LeaderboardEntry` contract defined
+  in engine, storage is server-only; anti-exploit controls (bystander cap, VP
+  cap, round cost, escape penalty); does NOT modify WP-020 or WP-027 contracts;
+  implements Vision goals 20-25
+
 ---
 
 ## Phase 7 — Beta, Launch & Live Ops
 
 These packets ship the game and keep it running.
+
+- [ ] WP-049 — PAR Simulation Engine ⚠️ Needs review
+  Dependencies: WP-036, WP-048
+  Notes: Implements T2 Competent Heuristic AI policy (5 behavioral heuristics
+  modeling experienced human play) and PAR aggregation pipeline (55th percentile
+  of simulated Raw Scores); `generateScenarioPar` orchestrates simulation ->
+  scoring -> PAR for any scenario; AI policy tier taxonomy (T0-T4) documented
+  with T2 as sole PAR authority; minimum 500 simulated games per scenario;
+  deterministic, replayable, versioned; does NOT modify engine, WP-036, or
+  WP-048 contracts; implements Phase 2 of PAR derivation pipeline per
+  `docs/12-SCORING-REFERENCE.md`
+
+- [ ] WP-051 — PAR Publication & Server Gate Contract ⚠️ Needs review
+  Dependencies: WP-050, WP-004
+  Notes: Server-layer enforcement of the pre-release PAR gate; loads PAR
+  index at startup (non-blocking — casual play continues without PAR);
+  `checkParPublished` is index-only lookup (no filesystem probing);
+  competitive submissions rejected when PAR is missing (fail closed);
+  server is read-only for PAR data; does NOT implement leaderboard endpoint
+  (future work); does NOT modify engine or WP-050 contracts; server files
+  use `.mjs` extension per WP-004; closes the chain from simulation →
+  artifact → enforcement
+
+- [ ] WP-050 — PAR Artifact Storage & Indexing ⚠️ Needs review
+  Dependencies: WP-049, WP-048
+  Notes: Defines how PAR simulation results are stored, indexed, versioned,
+  and accessed as immutable file-based artifacts; content-addressed by
+  ScenarioKey with sharded directory layout; deterministic sorted-key JSON
+  serialization for bit-for-bit reproducibility; `index.json` manifest for
+  fast existence checks (server pre-release gate); PAR version directories
+  (`v1/`, `v2/`) immutable once published; calibration updates create new
+  versions, never in-place edits; scales to 10k-100k scenarios; works on
+  local filesystem, R2/S3, or CDN; does NOT modify engine, WP-049, or WP-048
 
 - [ ] WP-036 — AI Playtesting & Balance Simulation ✅ Reviewed
   Dependencies: WP-035
@@ -739,9 +784,13 @@ WP-001 (coordination — complete)        │
                     WP-021 → WP-022 → WP-023 → WP-024 → WP-025 → WP-026
                                                                         │
                     WP-027 → WP-028 → WP-029 → WP-030
+                       │                            │
+                       └──── WP-048 (+ WP-020) ─────┘
                                             │
                     WP-031 → WP-032 → WP-033 → WP-034 → WP-035
                                                               │
+                    WP-036 ──────────→ WP-049 (+ WP-048) → WP-050 → WP-051
+                       │
                     WP-036 → WP-037 → WP-038 → WP-039 → WP-040
 ```
 

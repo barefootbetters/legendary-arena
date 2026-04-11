@@ -218,6 +218,21 @@ runtime state contracts.
 
 ---
 
+### D‑0703 — Difficulty Is Declared Before Competition
+**Decision:** Competitive play is never evaluated against retroactive,
+provisional, or undeclared difficulty benchmarks. Scenario difficulty (PAR) must
+be published before competitive results are accepted. Once declared, PAR
+baselines are immutable for the purpose of competition — refinements create new
+versions, never retroactive adjustments.  
+**Rationale:** Allowing competition against an undefined or later-adjusted
+baseline destroys trust and enables hindsight bias. Difficulty must be declared
+first so that skill — not post-hoc calibration — is measured. This justifies the
+server fail-closed gate (WP-051) and the immutable artifact store (WP-050).  
+**Introduced:** WP‑049 / WP‑050 / WP‑051  
+**Status:** Immutable
+
+---
+
 ## Versioning & Migration Decisions
 
 ### D‑0801 — Explicit Version Axes
