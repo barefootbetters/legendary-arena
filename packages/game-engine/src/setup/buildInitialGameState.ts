@@ -27,6 +27,7 @@ import {
   SHIELD_OFFICER_EXT_ID,
   SIDEKICK_EXT_ID,
 } from './pilesInit.js';
+import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
 
 // why: Pile ext_id constants are re-exported from pilesInit.ts for backward
 // compatibility. The canonical definitions live in pilesInit.ts — importing
@@ -148,5 +149,8 @@ export function buildInitialGameState(
     currentStage: TURN_STAGES[0]!,
     playerZones,
     piles,
+    messages: [],
+    counters: {},
+    hookRegistry: buildDefaultHookDefinitions(config),
   };
 }

@@ -85,3 +85,7 @@ export {
   validateHookDefinition,
 } from './rules/ruleHooks.validate.js';
 export { createHookRegistry, getHooksForTrigger } from './rules/ruleHooks.registry.js';
+export type { ImplementationMap } from './rules/ruleRuntime.execute.js';
+export { executeRuleHooks } from './rules/ruleRuntime.execute.js';
+export { applyRuleEffects } from './rules/ruleRuntime.effects.js';
+export { buildDefaultHookDefinitions } from './rules/ruleRuntime.impl.js';

@@ -7,6 +7,63 @@
 
 ## Current State
 
+### WP-009B — Scheme & Mastermind Rule Execution Minimal MVP (2026-04-11)
+
+**What changed:**
+- `packages/game-engine/src/rules/ruleRuntime.execute.ts` — **new** — defines
+  `ImplementationMap` type (handler functions keyed by hook `id`, no boardgame.io
+  import), `executeRuleHooks` (reads `G`, calls `getHooksForTrigger`, accumulates
+  `RuleEffect[]`, returns without modifying `G`)
+- `packages/game-engine/src/rules/ruleRuntime.effects.ts` — **new** — defines
+  `applyRuleEffects` (applies effects using `for...of`: `queueMessage` pushes to
+  `G.messages`, `modifyCounter` updates `G.counters`, `drawCards` draws using
+  zoneOps helpers, `discardHand` uses `moveAllCards`, unknown types push warning
+  — never throws)
+- `packages/game-engine/src/rules/ruleRuntime.impl.ts` — **new** — default stub
+  implementations: `defaultSchemeImplementation` (onTurnStart → "Scheme: turn
+  started."), `defaultMastermindImplementation` (onTurnEnd → "Mastermind: turn
+  ended."), `DEFAULT_IMPLEMENTATION_MAP`, `buildDefaultHookDefinitions`
+- `packages/game-engine/src/rules/ruleRuntime.ordering.test.ts` — **new** —
+  3 ordering tests (priority ordering, id tiebreak, missing handler graceful skip)
+- `packages/game-engine/src/rules/ruleRuntime.integration.test.ts` — **new** —
+  6 integration tests (onTurnStart message, onTurnEnd message, JSON round-trip,
+  executeRuleHooks read-only, modifyCounter, unknown effect warning)
+- `packages/game-engine/src/types.ts` — **modified** — added `messages: string[]`,
+  `counters: Record<string, number>`, `hookRegistry: HookDefinition[]` to
+  `LegendaryGameState`
+- `packages/game-engine/src/game.ts` — **modified** — wired `onTurnStart` trigger
+  in `play` phase `turn.onBegin`, added `turn.onEnd` with `onTurnEnd` trigger;
+  both use `executeRuleHooks` → `applyRuleEffects` pipeline with
+  `DEFAULT_IMPLEMENTATION_MAP`
+- `packages/game-engine/src/index.ts` — **modified** — exports `ImplementationMap`,
+  `executeRuleHooks`, `applyRuleEffects`, `buildDefaultHookDefinitions`
+- `docs/ai/DECISIONS.md` — added D-1232 (ImplementationMap pattern), D-1233
+  (two-step execute/apply), D-1234 (graceful unknown effect handling)
+
+**Runtime Wiring Allowance (01.5):** Exercised for
+`packages/game-engine/src/setup/buildInitialGameState.ts` — added `messages: []`,
+`counters: {}`, `hookRegistry: buildDefaultHookDefinitions(config)` to the return
+object. Import of `buildDefaultHookDefinitions` added. No new behavior introduced.
+
+**What exists now:**
+- The complete two-step rule execution pipeline is operational:
+  `executeRuleHooks` → `applyRuleEffects`
+- `LegendaryGameState` includes `messages`, `counters`, and `hookRegistry`
+- On each turn start in the play phase, the default scheme hook fires and
+  `G.messages` receives `'Scheme: turn started.'`
+- On each turn end in the play phase, the default mastermind hook fires and
+  `G.messages` receives `'Mastermind: turn ended.'`
+- `ImplementationMap` handler functions live outside `G` — never in state
+- Unknown effect types degrade gracefully (warning in `G.messages`, no throw)
+- No `.reduce()` in effect application; no `.sort()` in `executeRuleHooks`
+- No `boardgame.io` imports in any `src/rules/` file
+- WP-009A contract files (`ruleHooks.types.ts`, `ruleHooks.validate.ts`,
+  `ruleHooks.registry.ts`) untouched
+- 108 tests pass (99 prior + 9 new), 0 fail
+- Build exits 0
+
+---
+
 ### WP-009A — Scheme & Mastermind Rule Hooks Contracts (2026-04-11)
 
 **What changed:**

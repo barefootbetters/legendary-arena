@@ -334,7 +334,7 @@ These packets complete the minimum viable multiplayer loop.
   no `boardgame.io` import in any file under `src/rules/`;
   was previously incomplete — now complete
 
-- [ ] WP-009B — Scheme & Mastermind Rule Execution (Minimal MVP) ✅ Reviewed
+- [x] WP-009B — Scheme & Mastermind Rule Execution (Minimal MVP) ✅ Reviewed (2026-04-11)
   Dependencies: WP-009A
   Notes: Introduces `ImplementationMap` (`Record<hookId, handler>`) — handler
   functions live outside `G`, never stored in state;

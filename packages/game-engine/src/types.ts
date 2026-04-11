@@ -56,6 +56,7 @@ export type {
 
 import type { TurnStage } from './turn/turnPhases.types.js';
 import type { CardExtId, PlayerZones, GlobalPiles } from './state/zones.types.js';
+import type { HookDefinition } from './rules/ruleHooks.types.js';
 
 // why: MatchConfiguration (WP-002) and MatchSetupConfig (WP-005A) have
 // identical 9-field shapes. MatchSetupConfig in matchSetup.types.ts is now
@@ -154,4 +155,23 @@ export interface LegendaryGameState {
   // game moves (e.g., gaining a wound, rescuing a bystander).
   /** Shared global card piles (bystanders, wounds, officers, sidekicks). */
   piles: GlobalPiles;
+
+  // why: messages is a deterministic event log that records rule effects,
+  // warnings, and diagnostic entries. It is append-only during gameplay and
+  // supports replay inspection and debugging.
+  /** Deterministic event log populated by rule effects. */
+  messages: string[];
+
+  // why: counters tracks named numeric values used by endgame conditions and
+  // scheme/mastermind rules. Counters are modified by modifyCounter effects
+  // and read by evaluateEndgame.
+  /** Named numeric counters for endgame conditions and rule tracking. */
+  counters: Record<string, number>;
+
+  // why: hookRegistry stores data-only HookDefinition entries that describe
+  // which triggers each hook subscribes to and its execution priority. Handler
+  // functions live in the ImplementationMap outside of G — they are never
+  // stored here. This keeps G JSON-serializable.
+  /** Data-only rule hook definitions (no functions). */
+  hookRegistry: HookDefinition[];
 }

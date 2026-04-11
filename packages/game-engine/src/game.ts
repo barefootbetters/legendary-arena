@@ -5,6 +5,9 @@ import { buildInitialGameState } from './setup/buildInitialGameState.js';
 import { TURN_STAGES } from './turn/turnPhases.types.js';
 import { advanceTurnStage } from './turn/turnLoop.js';
 import { drawCards, playCard, endTurn } from './moves/coreMoves.impl.js';
+import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
+import { applyRuleEffects } from './rules/ruleRuntime.effects.js';
+import { DEFAULT_IMPLEMENTATION_MAP } from './rules/ruleRuntime.impl.js';
 
 // why: The registry must be available to Game.setup() for ext_id validation,
 // but boardgame.io's setup function signature does not include a registry
@@ -172,11 +175,39 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
         // why: Each new turn must begin at the first canonical turn stage.
         // TURN_STAGES[0] is used instead of a hardcoded string to prevent
         // drift if stage names ever change in turnPhases.types.ts.
-        onBegin: ({ G }) => {
+        onBegin: ({ G, ctx }) => {
           // why: TURN_STAGES is a readonly array with known contents. The
           // non-null assertion is safe because TURN_STAGES always has at
           // least one element (enforced by drift-detection tests in WP-007A).
           G.currentStage = TURN_STAGES[0]!;
+
+          // why: trigger -> collect effects -> apply effects pipeline.
+          // onTurnStart fires at the beginning of each player's turn so
+          // scheme hooks can react to the new turn.
+          const turnStartEffects = executeRuleHooks(
+            G,
+            ctx,
+            'onTurnStart',
+            { currentPlayerId: ctx.currentPlayer },
+            G.hookRegistry,
+            DEFAULT_IMPLEMENTATION_MAP,
+          );
+          applyRuleEffects(G, ctx, turnStartEffects);
+        },
+
+        onEnd: ({ G, ctx }) => {
+          // why: trigger -> collect effects -> apply effects pipeline.
+          // onTurnEnd fires at the end of each player's turn so mastermind
+          // hooks can react to the turn ending.
+          const turnEndEffects = executeRuleHooks(
+            G,
+            ctx,
+            'onTurnEnd',
+            { currentPlayerId: ctx.currentPlayer },
+            G.hookRegistry,
+            DEFAULT_IMPLEMENTATION_MAP,
+          );
+          applyRuleEffects(G, ctx, turnEndEffects);
         },
       },
     },

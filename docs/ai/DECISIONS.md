@@ -801,6 +801,47 @@ designers can control (via priority) with a tiebreaker that prevents ambiguity.
 
 ---
 
+### D-1232 — ImplementationMap Pattern: Handler Functions Separate from HookDefinition
+**Decision:** Handler functions are stored in an `ImplementationMap`
+(`Record<string, handler>`) that lives outside `G`, keyed by hook `id`. They are
+never stored in `HookDefinition` or any field of `G`.
+**Rationale:** `G` must be JSON-serializable at all times (D-0002, ARCHITECTURE.md).
+Functions cannot be serialized. Separating the data-only `HookDefinition` (stored
+in `G.hookRegistry`) from handler functions (in the `ImplementationMap`) preserves
+the serialization invariant while allowing swappable logic. The `ImplementationMap`
+is built once at startup and passed to lifecycle hooks via closure.
+**Introduced:** WP-009B
+**Status:** Immutable
+
+---
+
+### D-1233 — Two-Step Execute/Apply Pipeline for Rule Effects
+**Decision:** Rule execution is split into two functions: `executeRuleHooks`
+(collects `RuleEffect[]` without modifying `G`) and `applyRuleEffects` (applies
+effects to `G` using `for...of`).
+**Rationale:** Separating collection from application enables tests to assert what
+effects would be produced without modifying state. It also allows callers to
+inspect, filter, or replay the effect list before committing mutations. This
+matches the architectural pattern where intent is declared as data and then
+applied deterministically.
+**Introduced:** WP-009B
+**Status:** Immutable
+
+---
+
+### D-1234 — Unknown Effect Types Handled Gracefully, Not Thrown
+**Decision:** When `applyRuleEffects` encounters an unknown effect `type`, it
+pushes a structured warning to `G.messages` and continues. It never throws.
+**Rationale:** Later Work Packets will add new effect types. If a newer hook
+returns an effect type that the current runtime does not recognize, crashing would
+abort the entire turn. Graceful degradation (warning + continue) preserves game
+state integrity and provides diagnostic visibility via `G.messages` while allowing
+the game to proceed.
+**Introduced:** WP-009B
+**Status:** Immutable
+
+---
+
 ### D-1301 — Legacy 00.2 Sections 7/9/10/11/12 Excluded from Governed Document
 **Decision:** The governed `docs/ai/REFERENCE/00.2-data-requirements.md` excludes
 legacy sections §7 (User Deck Data), §9 (Search/Filter), §10 (User Preferences),
