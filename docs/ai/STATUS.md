@@ -7,6 +7,31 @@
 
 ## Current State
 
+### WP-044 — Prompt Lint Governance Alignment (2026-04-10)
+
+**What changed:**
+- `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md` — **modified** — added
+  subordination clause in header (checklist is subordinate to ARCHITECTURE.md
+  and `.claude/rules/*.md`); added Layer Boundary context check in §4; added
+  governance note and Layer Boundary violation check in §8; added code style
+  companion note in §16
+- `docs/ai/DECISIONS.md` — added D-1401 (checklist remains REFERENCE, not
+  merged into rules)
+
+**What exists now:**
+- The prompt lint checklist explicitly declares subordination to ARCHITECTURE.md
+  and `.claude/rules/*.md`
+- §4 requires Layer Boundary reference in Context when packets touch layer
+  boundaries or package imports
+- §8 opens with authoritative governance note citing ARCHITECTURE.md Section 1
+  & 5 and `.claude/rules/architecture.md` "Layer Boundary (Authoritative)"
+- §16 opens with companion note citing `00.6-code-style.md` and
+  `.claude/rules/code-style.md`
+- Checkbox count: 142 (was 139; +2 in §4, +1 in §8)
+- No existing lint rules removed or weakened
+
+**Known gaps:** None — documentation-only packet.
+
 ### WP-043 — Data Contracts Reference (2026-04-10)
 
 **What changed:**

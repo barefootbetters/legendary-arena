@@ -164,7 +164,7 @@ These packets establish the repo-as-memory system and lock contracts before code
   excludes UI concerns (search/filter, preferences, feature flags) per Layer
   Boundary; does not modify any code — reference document only
 
-- [ ] WP-044 — Prompt Lint Governance Alignment ✅ Reviewed
+- [x] WP-044 — Prompt Lint Governance Alignment ✅ Reviewed (2026-04-10)
   Dependencies: WP-001
   Notes: Updates governed `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md`
   with subordination clause, Layer Boundary references in §4/§8/§16, and

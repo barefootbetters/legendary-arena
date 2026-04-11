@@ -772,6 +772,26 @@ contradict the actual validation layer.
 
 ---
 
+## Governance & Coordination Decisions
+
+### D-1401 — Prompt Lint Checklist Remains a REFERENCE Document, Not Merged into .claude/rules/
+**Decision:** `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md` remains a
+standalone REFERENCE document (reusable pre-execution quality gate). It is not
+merged into `.claude/rules/` or replaced by a rules file.
+**Rationale:** The checklist and `.claude/rules/*.md` serve different purposes
+at different times. The checklist gates Work Packet quality **before**
+execution — it validates that a packet is well-formed, scoped, and complete
+before Claude Code runs it. The `.claude/rules/*.md` files enforce constraints
+**during** execution — they are loaded automatically by Claude Code and govern
+real-time behavior. Merging them would conflate pre-execution review (human
+responsibility) with runtime enforcement (tool responsibility). The checklist
+is subordinate to `ARCHITECTURE.md` and `.claude/rules/*.md` — if it conflicts
+with either, the checklist must be updated to match.
+**Introduced:** WP-044
+**Status:** Immutable
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision
