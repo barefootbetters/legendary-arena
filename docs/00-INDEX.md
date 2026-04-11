@@ -59,6 +59,7 @@ mindmap
 | — | [screenshots/](screenshots/) | All UI & validation screenshots |
 | 12 | [SCORING-REFERENCE](12-SCORING-REFERENCE.md) | PAR-based scoring formula & leaderboard rules |
 | 12.1 | [PAR-ARTIFACT-INTEGRITY](12.1-PAR-ARTIFACT-INTEGRITY.md) | Why PAR artifacts are hashed (rationale) |
+| 13 | [REPLAYS-REFERENCE](13-REPLAYS-REFERENCE.md) | Replay & game saving system (governance reference) |
 | — | [ai/](ai/) | AI coordination system, Work Packets, ECs |
 
 ---
