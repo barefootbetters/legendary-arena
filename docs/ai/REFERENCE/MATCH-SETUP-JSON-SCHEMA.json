@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://legendaryarena.dev/schemas/match-setup.schema.json",
+  "title": "Legendary Arena Match Setup",
+  "description": "Deterministic, versioned configuration for initializing a single Legendary Arena match. The composition block is passed verbatim as boardgame.io setupData (MatchSetupConfig). Envelope fields (schemaVersion, setupId, etc.) are consumed by the server before reaching the engine.",
+  "type": "object",
+  "additionalProperties": false,
+
+  "required": [
+    "schemaVersion",
+    "setupId",
+    "createdAt",
+    "createdBy",
+    "seed",
+    "playerCount",
+    "expansions",
+    "composition"
+  ],
+
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "description": "Semantic version of the match setup schema.",
+      "enum": ["1.0"]
+    },
+
+    "setupId": {
+      "type": "string",
+      "description": "Globally unique identifier for this match setup instance.",
+      "minLength": 1
+    },
+
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp when this match setup was created."
+    },
+
+    "createdBy": {
+      "type": "string",
+      "description": "Source that created this setup.",
+      "enum": ["player", "system", "simulation"]
+    },
+
+    "seed": {
+      "type": "string",
+      "description": "Deterministic random seed. Intended root of all randomness for setup, replay, and simulation. NOTE: boardgame.io manages its own internal PRNG; wiring this seed into ctx.random is a future integration concern.",
+      "minLength": 1
+    },
+
+    "playerCount": {
+      "type": "integer",
+      "description": "Exact number of players for the match. Must respect LegendaryGame.minPlayers (1) and maxPlayers (5).",
+      "minimum": 1,
+      "maximum": 5
+    },
+
+    "themeId": {
+      "type": "string",
+      "description": "Optional theme identifier providing narrative intent (non-authoritative). References a THEME-SCHEMA entry.",
+      "minLength": 1,
+      "pattern": "^[a-z0-9-]+$"
+    },
+
+    "expansions": {
+      "type": "array",
+      "description": "Enabled content expansions. Defines the total content pool available to this match. Must include at least one (e.g. 'base').",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[a-z0-9-]+$"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+
+    "composition": {
+      "type": "object",
+      "description": "Authoritative component selection for this match. Maps 1:1 to MatchSetupConfig (the engine's 9-field contract). Frozen once the match begins. Passed as boardgame.io setupData.",
+      "additionalProperties": false,
+      "required": [
+        "schemeId",
+        "mastermindId",
+        "villainGroupIds",
+        "henchmanGroupIds",
+        "heroDeckIds",
+        "bystandersCount",
+        "woundsCount",
+        "officersCount",
+        "sidekicksCount"
+      ],
+
+      "properties": {
+        "schemeId": {
+          "type": "string",
+          "description": "Scheme ext_id selected for this match.",
+          "minLength": 1,
+          "pattern": "^[a-z0-9-]+$"
+        },
+
+        "mastermindId": {
+          "type": "string",
+          "description": "Mastermind ext_id selected for this match.",
+          "minLength": 1,
+          "pattern": "^[a-z0-9-]+$"
+        },
+
+        "villainGroupIds": {
+          "type": "array",
+          "description": "Villain group ext_ids included in the villain deck.",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+
+        "henchmanGroupIds": {
+          "type": "array",
+          "description": "Henchman group ext_ids included in the villain deck.",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+
+        "heroDeckIds": {
+          "type": "array",
+          "description": "Hero deck ext_ids available in the HQ and player decks.",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+
+        "bystandersCount": {
+          "type": "integer",
+          "description": "Number of bystander cards in the game.",
+          "minimum": 0
+        },
+
+        "woundsCount": {
+          "type": "integer",
+          "description": "Number of wound cards in the game.",
+          "minimum": 0
+        },
+
+        "officersCount": {
+          "type": "integer",
+          "description": "Number of S.H.I.E.L.D. Officer cards in the game.",
+          "minimum": 0
+        },
+
+        "sidekicksCount": {
+          "type": "integer",
+          "description": "Number of Sidekick cards in the game.",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

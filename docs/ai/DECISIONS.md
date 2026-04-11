@@ -1061,6 +1061,193 @@ No additional authentication mechanism is needed at the lobby level.
 
 ---
 
+### D-1241 — CLI Scripts Use boardgame.io Built-In Lobby Endpoints
+**Decision:** `list-matches.mjs` and `join-match.mjs` use boardgame.io's
+default lobby REST endpoints (`GET /games/legendary-arena` and
+`POST /games/legendary-arena/<matchID>/join`) rather than custom REST routes.
+**Rationale:** boardgame.io already exposes a full lobby API. Adding custom
+routes would duplicate functionality, increase surface area for bugs, and
+violate the server-as-wiring-only principle. The built-in endpoints handle
+seat assignment, credential issuance, and match state tracking natively.
+**Introduced:** WP-012
+**Status:** Active
+
+---
+
+### D-1242 — Unit Tests Stub fetch Rather Than Spinning Up a Test Server
+**Decision:** `list-matches.test.ts` and `join-match.test.ts` stub
+`globalThis.fetch` to test CLI script logic without a running server.
+**Rationale:** CLI scripts are thin HTTP clients — their testable surface is
+argument parsing, error message formatting, and exit code behavior. Spinning
+up a real boardgame.io server for these tests would introduce startup latency,
+port conflicts, and flaky teardown issues. The stubbed approach isolates the
+unit under test and runs in milliseconds.
+**Introduced:** WP-012
+**Status:** Active
+
+---
+
+### D-1243 — Credentials Printed to stdout, Never Stored to Disk
+**Decision:** `join-match.mjs` prints `{ matchID, playerID, credentials }`
+to stdout. Credentials are never written to a file, environment variable,
+or any persistent storage by the script.
+**Rationale:** Credential persistence is a security concern that belongs in
+a dedicated authentication layer, not in a CLI utility script. Printing to
+stdout lets the caller decide how to handle credentials (pipe to a file,
+store in a session, or discard). This follows the Unix principle of composable
+tools and avoids creating accidental credential stores.
+**Introduced:** WP-012
+**Status:** Active
+
+### Audit: Match Setup Schema and Validation Alignment (2026-04-11)
+
+**Scope:** Match Setup, Engine Initialization, Replay Determinism, Simulation, PAR
+**Related Artifacts:** `MATCH-SETUP-JSON-SCHEMA.json`, `MATCH-SETUP-SCHEMA.md`,
+`MATCH-SETUP-VALIDATION.md`, `matchSetup.types.ts`, `game.ts`,
+`13-REPLAYS-REFERENCE.md`
+
+An audit identified that the prior Match Setup schema was structurally valid
+but **incomplete relative to engine requirements**, creating a risk of implicit
+defaults or runtime inference during engine initialization. Such schema-engine
+drift is incompatible with deterministic replay, simulation correctness, and
+competitive/PAR verification guarantees. Additionally, responsibilities between
+server-side envelope validation and engine-side composition validation were
+insufficiently documented.
+
+The following corrective decisions (D-1244 through D-1248) were adopted to
+establish Match Setup as a deterministic, engine-aligned, governance-enforced
+configuration boundary. The Match Setup pipeline is now engine-aligned,
+replay-safe, simulation-correct, and governance-compliant.
+
+> *Match setup defines the board.
+> The engine enforces the game.
+> Determinism begins before a match exists.*
+
+---
+
+### D-1244 — Match Setup Composition Maps 1:1 to MatchSetupConfig
+**Decision:** The `composition` block in MATCH-SETUP-JSON-SCHEMA.json contains
+exactly the 9 locked fields defined by `MatchSetupConfig` in
+`matchSetup.types.ts` (lines 29-56). Field names, types, and cardinality
+match the engine contract precisely. The prior schema used `heroIds` (wrong)
+and omitted `henchmanGroupIds`, `bystandersCount`, `woundsCount`,
+`officersCount`, and `sidekicksCount`.
+**Rationale:** Match Setup must be consumable by the engine without defaults,
+inference, mutation, or interpretation. Schema-engine drift is a stop-ship
+class risk for replay determinism, PAR simulation, and competitive
+verification. Composition is now authoritative, explicit, and frozen.
+**Related Artifacts:** `MATCH-SETUP-JSON-SCHEMA.json`, `MATCH-SETUP-SCHEMA.md`,
+`matchSetup.types.ts`, 00.2 section 8.1
+**Introduced:** Schema audit (2026-04-11)
+**Status:** Active
+
+---
+
+### D-1245 — Match Setup playerCount Maximum Aligned to Engine maxPlayers
+**Decision:** The schema's `playerCount` maximum was corrected from 10 to 5,
+matching `LegendaryGame.maxPlayers` in `game.ts` (line 81). Minimum remains 1,
+matching `LegendaryGame.minPlayers`.
+**Rationale:** Prevents creation of structurally valid setups that the engine
+would reject. Schema constraints must not be looser than engine constraints.
+**Related Artifacts:** `MATCH-SETUP-JSON-SCHEMA.json`, `game.ts`
+**Introduced:** Schema audit (2026-04-11)
+**Status:** Active
+
+---
+
+### D-1246 — Match Setup Uses additionalProperties:false, Not Explicit Field Bans
+**Decision:** Unknown fields are rejected via `additionalProperties: false` at
+all object levels in the JSON Schema. A prior `not/anyOf` clause explicitly
+banning `parOverride`, `scoreModifier`, `ruleOverrides`, and
+`runtimeDirectives` was removed as redundant.
+**Rationale:** `additionalProperties: false` already enforces fail-closed
+behavior structurally. Maintaining a parallel ban list duplicates logic without
+adding enforcement value and creates a false impression that only listed fields
+are banned.
+**Related Artifacts:** `MATCH-SETUP-JSON-SCHEMA.json`
+**Introduced:** Schema audit (2026-04-11)
+**Status:** Active
+
+---
+
+### D-1247 — Match Setup Two-Layer Structure: Envelope and Composition
+**Decision:** A Match Setup document has two conceptual layers: (1) the
+*envelope* (`schemaVersion`, `setupId`, `createdAt`, `createdBy`, `seed`,
+`playerCount`, `themeId`, `expansions`) consumed by the server, and (2) the
+*composition* block passed verbatim as boardgame.io `setupData` to the engine.
+**Rationale:** The engine's `Game.setup()` accepts `MatchSetupConfig` (the
+9-field composition), not the full envelope. Versioning, identity, seed, and
+content pool resolution are server concerns. This separation keeps the engine
+layer clean and aligns with the existing layer boundary (server wires, engine
+decides).
+**Related Artifacts:** `MATCH-SETUP-SCHEMA.md`, `game.ts`, `matchSetup.types.ts`
+**Introduced:** Schema audit (2026-04-11)
+**Status:** Active
+
+---
+
+### D-1248 — Match Setup Seed Is an Archival Identifier Until PRNG Wiring Exists
+**Decision:** The `seed` field in Match Setup is mandatory and recorded with
+every match, but boardgame.io currently manages its own internal PRNG via
+`ctx.random`. There is no direct wiring path from schema seed to engine PRNG
+at this time. This is accepted as a known integration gap, not a schema or
+validation defect.
+**Rationale:** Recording the seed now establishes the deterministic contract
+for replay archival and simulation matching. Wiring it into boardgame.io's
+random plugin requires a separate architectural decision and implementation
+packet. Documenting the gap prevents false assumptions.
+**Related Artifacts:** `MATCH-SETUP-SCHEMA.md`, `MATCH-SETUP-JSON-SCHEMA.json`,
+`13-REPLAYS-REFERENCE.md`
+**Introduced:** Schema audit (2026-04-11)
+**Status:** Active (gap accepted, future wiring deferred)
+
+---
+
+## Lessons Learned
+
+Audit findings distilled into reusable principles. These are not decisions
+themselves but patterns observed during decision-making that should inform
+future work.
+
+### Match Setup Schema and Validation Alignment (2026-04-11)
+
+- **Schema-engine drift is a high-risk failure mode.**
+  Schemas that are "reasonable" in isolation can still violate determinism
+  if they do not map 1:1 to the engine's authoritative setup contract.
+  Engine alignment must be validated explicitly, not assumed.
+
+- **Implicit defaults break replay guarantees.**
+  Any missing setup field that requires inference, defaulting, or mutation
+  at runtime is incompatible with deterministic replay, simulation, and
+  competitive verification.
+
+- **Fail-closed schemas reduce governance complexity.**
+  Enforcing `additionalProperties: false` at all relevant levels eliminated
+  the need for ad-hoc exclusion rules and prevented configuration creep.
+
+- **Validation responsibilities must be layered and documented.**
+  Structural validation, semantic validation, and governance validation
+  serve different purposes and must be treated as distinct steps with
+  clear boundaries.
+
+- **Hard engine limits belong in the schema.**
+  Allowing values the engine cannot support (e.g., player count) creates
+  delayed failures that are harder to diagnose and audit.
+
+- **Known gaps should be documented, not hidden.**
+  Explicitly recording the seed-to-PRNG wiring gap preserved trust in the
+  system and avoided false assumptions about determinism completeness.
+
+- **Configuration must never encode rules.**
+  Treating match setup strictly as configuration -- not as a balance lever
+  or rule surface -- simplifies validation and preserves long-term correctness.
+
+**Applies when:** setup schemas, deterministic configuration artifacts,
+registries, replay/simulation inputs, or any pre-engine initialization
+boundary is introduced or modified.
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision

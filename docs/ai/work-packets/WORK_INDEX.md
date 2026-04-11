@@ -333,6 +333,9 @@ These packets complete the minimum viable multiplayer loop.
   `MoveError` reused from WP-008A — no new error type;
   no `boardgame.io` import in any file under `src/rules/`;
   was previously incomplete — now complete
+  Governance: Rule hooks consume validated, frozen composition (D-1244);
+  hooks may read setup composition but must not modify it; no hook may
+  infer missing setup fields or introduce defaults
 
 - [x] WP-009B — Scheme & Mastermind Rule Execution (Minimal MVP) ✅ Reviewed (2026-04-11)
   Dependencies: WP-009A
@@ -374,7 +377,7 @@ These packets complete the minimum viable multiplayer loop.
   `create-match.mjs` CLI uses Node built-in `fetch`; `MoveResult`/`MoveError`
   reused from WP-008A; see ARCHITECTURE.md §Section 4 for the observability pattern
 
-- [ ] WP-012 — Match Listing, Join & Reconnect (Minimal MVP) ✅ Reviewed
+- [x] WP-012 — Match Listing, Join & Reconnect (Minimal MVP) ✅ Reviewed — **Complete 2026-04-11**
   Dependencies: WP-011
   Notes: Two CLI scripts (`list-matches.mjs`, `join-match.mjs`) using Node
   built-in `fetch` — no axios; unit tests stub `fetch` (no live server needed
@@ -549,6 +552,12 @@ These packets make the game safe to ship.
   Class 2 (Configuration) data — safe to persist; harness uses `makeMockCtx`
   not `boardgame.io/testing`; does NOT modify gameplay; was truncated at
   63 lines — normalized to full PACKET-TEMPLATE
+  Governance: Replay correctness assumes match setup is engine-aligned,
+  immutable, and fully validated before match creation (D-1244, D-1247);
+  (match setup + move log) is the complete deterministic input set;
+  replays referencing invalid setups must be rejected; no replay path
+  may re-interpret or normalize setup data; seed wiring gap documented
+  in D-1248
 
 - [ ] WP-028 — UI State Contract (Authoritative View Model) ✅ Reviewed
   Dependencies: WP-027
@@ -673,6 +682,10 @@ These packets ship the game and keep it running.
   deterministic, replayable, versioned; does NOT modify engine, WP-036, or
   WP-048 contracts; implements Phase 2 of PAR derivation pipeline per
   `docs/12-SCORING-REFERENCE.md`
+  Governance: PAR simulations consume match setup as their sole configuration
+  input (D-1244); must reject invalid setups rather than correcting them;
+  no simulation may derive or mutate setup composition; seed-to-PRNG wiring
+  limitations documented in D-1248 and must not be masked
 
 - [ ] WP-051 — PAR Publication & Server Gate Contract ⚠️ Needs review
   Dependencies: WP-050, WP-004
@@ -889,6 +902,36 @@ Sessions must not relitigate settled choices without updating DECISIONS.md first
 | Snapshots use zone counts only — no `ext_id` arrays | WP-013 | `MatchSnapshot` is not a copy of `G` |
 | Card type classification stored in `G` at setup — moves never import registry | WP-014 | ARCHITECTURE.md §Section 5 |
 | `REVEALED_CARD_TYPES` is a canonical array — drift-detection test required; slugs use hyphens not underscores | WP-014 | same drift-detection pattern |
+
+---
+
+## Cross-Cutting Governance Decisions
+
+Decisions that affect multiple phases or span the full pipeline.
+Full details are in `DECISIONS.md`; this section provides searchable summaries.
+
+### Match Setup Schema and Validation Alignment (2026-04-11)
+
+Formal audit and correction of the Match Setup schema and validation model
+to ensure 1:1 alignment with the engine's authoritative `MatchSetupConfig`.
+
+**Outcomes:**
+- Composition schema corrected to match engine contract (9 required fields;
+  `heroDeckIds` not `heroIds`; added `henchmanGroupIds` and all 4 count fields)
+- `playerCount` constrained to engine limit (1-5, per `game.ts` maxPlayers)
+- Redundant `not/anyOf` exclusions removed; fail-closed via `additionalProperties: false`
+- Identifier format aligned to content registry (kebab-case `^[a-z0-9-]+$`)
+- Two-layer structure documented: envelope (server) vs composition (engine setupData)
+- Seed-to-PRNG integration gap documented as future task (D-1248)
+
+**Artifacts:**
+- `docs/ai/REFERENCE/MATCH-SETUP-JSON-SCHEMA.json`
+- `docs/ai/REFERENCE/MATCH-SETUP-SCHEMA.md`
+- `docs/ai/REFERENCE/MATCH-SETUP-VALIDATION.md`
+- `DECISIONS.md` entries D-1244 through D-1248
+
+**Impact:** Locks Match Setup as a deterministic, engine-aligned, governance-enforced
+configuration boundary for game creation, replays, simulation, and competitive integrity.
 
 ---
 
