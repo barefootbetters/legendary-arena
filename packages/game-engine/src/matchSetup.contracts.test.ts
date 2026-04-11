@@ -247,6 +247,61 @@ describe('validateMatchSetup — CardRegistryReader boundary', () => {
   });
 });
 
+describe('validateMatchSetup — determinism', () => {
+  it('returns identical validated config on repeated calls with the same input', () => {
+    const registry = createMockRegistry(ALL_KNOWN_EXT_IDS);
+    const input1 = createValidInput();
+    const input2 = createValidInput();
+
+    const result1 = validateMatchSetup(input1, registry);
+    const result2 = validateMatchSetup(input2, registry);
+
+    assert.equal(result1.ok, true);
+    assert.equal(result2.ok, true);
+    if (result1.ok && result2.ok) {
+      assert.deepEqual(result1.value, result2.value,
+        'Expected deterministic validated output on repeated calls.');
+    }
+  });
+});
+
+describe('validateMatchSetup — empty string fields', () => {
+  it('returns ok: false when a string field is an empty string', () => {
+    const registry = createMockRegistry(ALL_KNOWN_EXT_IDS);
+    const input = createValidInput();
+    input.schemeId = '';
+
+    const result = validateMatchSetup(input, registry);
+
+    // why: Empty strings pass typeof === 'string' but fail ext_id lookup.
+    // The validator catches this at the registry check stage — the empty
+    // string does not match any known ext_id.
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      const schemeError = result.errors.find((error) => error.field === 'schemeId');
+      assert.ok(schemeError, 'Expected an error for the schemeId field.');
+    }
+  });
+});
+
+describe('validateMatchSetup — extra fields on input', () => {
+  it('ignores extra fields on the input object (JSON Schema enforces additionalProperties)', () => {
+    const registry = createMockRegistry(ALL_KNOWN_EXT_IDS);
+    const input = createValidInput();
+    // why: The engine-layer validator checks the 9 required fields but does
+    // not reject unknown fields — that is the JSON Schema's responsibility
+    // (additionalProperties: false at the server layer, per D-1246).
+    // This test documents the current behavior.
+    (input as Record<string, unknown>).parOverride = 123;
+    (input as Record<string, unknown>).ruleOverrides = { something: true };
+
+    const result = validateMatchSetup(input, registry);
+
+    assert.equal(result.ok, true,
+      'Engine validator accepts extra fields — JSON Schema rejects them at the server layer.');
+  });
+});
+
 describe('validateMatchSetup — error accumulation', () => {
   it('accumulates multiple shape errors instead of failing on the first one', () => {
     const registry = createMockRegistry(ALL_KNOWN_EXT_IDS);
