@@ -852,6 +852,32 @@ remains REFERENCE).
 **Introduced:** WP-046
 **Status:** Immutable
 
+### D-1404 — Code Style Reference Is Descriptive; .claude/rules/code-style.md Is Enforcement; Three-Artifact Relationship
+**Decision:** `docs/ai/REFERENCE/00.6-code-style.md` remains the descriptive
+code style reference (human-readable rules with examples, rationale, and the
+enforcement mapping to 00.3 §16). `.claude/rules/code-style.md` is the runtime
+enforcement companion (distilled constraints loaded automatically by Claude Code
+during execution). `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §16` is the
+pre-execution quality gate that checks Work Packet output against the style
+rules before execution begins. Three artifacts, three audiences, three times:
+- **00.6** — descriptive reference for humans and AI context (read any time)
+- **.claude/rules/code-style.md** — enforcement rules for Claude Code (loaded
+  automatically at execution time)
+- **00.3 §16** — quality gate for Work Packet output (checked before each WP)
+Neither the REFERENCE document nor the rules file is redundant. The REFERENCE
+provides the examples and rationale that justify each rule; the rules file
+distills these into enforceable constraints without examples; the lint checklist
+maps rules to checkable items. This parallels D-1401 (prompt lint checklist),
+D-1402 (connection health check), and D-1403 (R2 validation gate).
+**Rationale:** Merging the descriptive reference into `.claude/rules/` would
+bloat the enforcement file with examples and rationale that Claude Code does not
+need at runtime. Merging the enforcement file into the REFERENCE document would
+lose the automatic loading behavior. Keeping them separate preserves each
+artifact's role while the subordination clause in 00.6's header ensures they
+never contradict.
+**Introduced:** WP-047
+**Status:** Immutable
+
 ---
 
 ## Change Management

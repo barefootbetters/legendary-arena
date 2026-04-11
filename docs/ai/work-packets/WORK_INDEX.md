@@ -192,7 +192,7 @@ These packets establish the repo-as-memory system and lock contracts before code
   no validation checks added or removed; no script modifications; the legacy
   prompt version at `docs/prompts-legendary-area-game/00.5-*` is superseded
 
-- [ ] WP-047 — Code Style Reference Governance Alignment ✅ Reviewed
+- [x] WP-047 — Code Style Reference Governance Alignment ✅ Reviewed (2026-04-10)
   Dependencies: WP-001
   Notes: Updates governed `docs/ai/REFERENCE/00.6-code-style.md` header with
   subordination clause (ARCHITECTURE.md and `.claude/rules/code-style.md`),

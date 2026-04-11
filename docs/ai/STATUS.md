@@ -7,6 +7,36 @@
 
 ## Current State
 
+### WP-047 — Code Style Reference Governance Alignment (2026-04-10)
+
+**What changed:**
+- `docs/ai/REFERENCE/00.6-code-style.md` — **modified** — replaced header
+  blockquote with Authority & Scope section declaring subordination to
+  ARCHITECTURE.md and `.claude/rules/code-style.md`; documented three
+  complementary code-style artifacts (00.6 descriptive reference,
+  `.claude/rules/code-style.md` enforcement, 00.3 §16 quality gate);
+  preserved scope statement, enforcement mapping, and change policy
+- `docs/ai/DECISIONS.md` — added D-1404 (code style reference is descriptive
+  while rules file is enforcement; three-artifact relationship; parallels
+  D-1401/D-1402/D-1403)
+
+**What exists now:**
+- The code style reference explicitly declares subordination to ARCHITECTURE.md
+  and `.claude/rules/code-style.md`
+- Style rules never override architectural constraints or layer boundaries
+- The three-artifact relationship is documented: 00.6 (descriptive with
+  examples), `.claude/rules/code-style.md` (enforcement), 00.3 §16 (quality
+  gate)
+- All 15 existing rules preserved exactly — no rules added, removed, or weakened
+- All code examples preserved
+- Enforcement mapping table (18 §16.* entries) preserved
+- Change policy preserved
+- No `.claude/rules/` files modified
+- No scripts modified
+- No TypeScript code produced
+
+---
+
 ### WP-046 — R2 Validation Governance Alignment (2026-04-10)
 
 **What changed:**
