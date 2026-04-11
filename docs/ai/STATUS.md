@@ -7,6 +7,51 @@
 
 ## Current State
 
+### WP-010 — Victory & Loss Conditions (Minimal MVP) (2026-04-11)
+
+**What changed:**
+- `packages/game-engine/src/endgame/endgame.types.ts` — **new** — defines
+  `EndgameOutcome` (`'heroes-win' | 'scheme-wins'`), `EndgameResult` interface,
+  `ENDGAME_CONDITIONS` (3 canonical counter key constants: `escapedVillains`,
+  `schemeLoss`, `mastermindDefeated`), `ESCAPE_LIMIT = 8`
+- `packages/game-engine/src/endgame/endgame.evaluate.ts` — **new** — pure
+  `evaluateEndgame(G)` function that checks 3 MVP conditions in fixed priority
+  order using `if/else if/else` (loss before victory)
+- `packages/game-engine/src/endgame/endgame.evaluate.test.ts` — **new** —
+  6 tests: null when no conditions, scheme-wins on escape/schemeLoss,
+  heroes-win on mastermindDefeated, loss-before-victory priority, JSON
+  serializability
+- `packages/game-engine/src/game.ts` — **modified** — added `endIf` to `play`
+  phase delegating entirely to `evaluateEndgame(G) ?? undefined`
+- `packages/game-engine/src/types.ts` — **modified** — re-exports
+  `EndgameResult`, `EndgameOutcome`, `ENDGAME_CONDITIONS`
+- `packages/game-engine/src/index.ts` — **modified** — exports
+  `evaluateEndgame`, `EndgameResult`, `EndgameOutcome`, `ENDGAME_CONDITIONS`,
+  `ESCAPE_LIMIT`
+- `docs/ai/DECISIONS.md` — added D-1235, D-1236, D-1237
+
+**What exists now:**
+- A match can now conclusively end. Three MVP conditions are evaluated on every
+  state change in the `play` phase via boardgame.io's `endIf`:
+  1. **Loss — Too Many Escapes:** `escapedVillains >= 8` → `scheme-wins`
+  2. **Loss — Scheme Triggered:** `schemeLoss >= 1` → `scheme-wins`
+  3. **Victory — Mastermind Defeated:** `mastermindDefeated >= 1` → `heroes-win`
+- To trigger in a test: set `G.counters['escapedVillains'] = 8` (or
+  `'schemeLoss' = 1`, `'mastermindDefeated' = 1`) before calling
+  `evaluateEndgame(G)`. The function returns `EndgameResult | null`.
+- If no conditions are met (or counters are absent), `evaluateEndgame` returns
+  `null` and the game continues.
+- Loss conditions are always checked before victory — simultaneous triggers
+  resolve as `scheme-wins`.
+- `ENDGAME_CONDITIONS` constants are the canonical counter key names — all future
+  packets must import and use these constants, never string literals.
+- No new fields added to `LegendaryGameState`. No `boardgame.io` imports in
+  endgame files. `evaluateEndgame` is pure (no side effects, no throw).
+- 114 tests pass (108 prior + 6 new), 0 fail
+- Build exits 0
+
+---
+
 ### WP-009B — Scheme & Mastermind Rule Execution Minimal MVP (2026-04-11)
 
 **What changed:**

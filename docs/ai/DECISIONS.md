@@ -978,6 +978,51 @@ never contradict.
 
 ---
 
+## Endgame Decisions
+
+### D-1235 — Loss Before Victory Evaluation Order
+**Decision:** When evaluating endgame conditions, loss conditions are always
+checked before victory conditions. If both a loss condition (`schemeLoss >= 1`)
+and a victory condition (`mastermindDefeated >= 1`) are met simultaneously,
+the result is `scheme-wins`.
+**Rationale:** Matches Legendary rulebook precedence — the scheme completing
+represents an immediate catastrophic failure that supersedes individual
+mastermind defeat. This prevents edge cases where a last-turn mastermind
+defeat could override a scheme that already triggered.
+**Introduced:** WP-010
+**Status:** Immutable
+
+---
+
+### D-1236 — Numeric Counters Instead of Boolean Fields
+**Decision:** Endgame conditions use numeric counters in `G.counters`
+(`>= 1` for truthy events, `>= ESCAPE_LIMIT` for thresholds) rather than
+separate boolean fields in `LegendaryGameState`.
+**Rationale:** Boolean fields would require schema changes for each new
+condition and cannot support threshold-based conditions (e.g., escape count).
+Numeric counters are extensible via the existing `modifyCounter` effect type,
+keep `G` flat, and support both boolean-equivalent events (`>= 1`) and
+threshold events (`>= 8`) with the same mechanism. Missing keys default to
+`0` via `?? 0`.
+**Introduced:** WP-010
+**Status:** Immutable
+
+---
+
+### D-1237 — ESCAPE_LIMIT as Hardcoded MVP Constant
+**Decision:** `ESCAPE_LIMIT = 8` is a hardcoded constant in
+`endgame.types.ts` for MVP, rather than a field in `MatchSetupConfig`.
+**Rationale:** The standard Legendary base set uses 8 as the universal escape
+limit. Scheme-specific limits (e.g., 5 for certain schemes) are a future
+enhancement that requires `MatchSetupConfig` schema changes and setup
+validation updates. Hardcoding for MVP avoids premature config complexity
+while establishing the constant that future packets will import.
+**Introduced:** WP-010
+**Status:** Active — will migrate to `MatchSetupConfig` when scheme-specific
+limits are implemented
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision

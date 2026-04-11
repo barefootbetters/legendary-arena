@@ -351,7 +351,7 @@ These packets complete the minimum viable multiplayer loop.
   WP-009A contract files (`ruleHooks.*.ts`) must not be modified;
   see ARCHITECTURE.md §Section 4 for the full pipeline explanation
 
-- [ ] WP-010 — Victory & Loss Conditions (Minimal MVP) ✅ Reviewed
+- [x] WP-010 — Victory & Loss Conditions (Minimal MVP) ✅ Reviewed (2026-04-11)
   Dependencies: WP-009B
   Notes: Three conditions: `escapedVillains >= 8`, `schemeLoss >= 1`,
   `mastermindDefeated >= 1`; all read from `G.counters` using `ENDGAME_CONDITIONS`

@@ -8,6 +8,7 @@ import { drawCards, playCard, endTurn } from './moves/coreMoves.impl.js';
 import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
 import { applyRuleEffects } from './rules/ruleRuntime.effects.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from './rules/ruleRuntime.impl.js';
+import { evaluateEndgame } from './endgame/endgame.evaluate.js';
 
 // why: The registry must be available to Game.setup() for ext_id validation,
 // but boardgame.io's setup function signature does not include a registry
@@ -171,6 +172,16 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     },
     play: {
       next: 'end',
+      // why: endIf must be pure -- all endgame state is read from G.counters
+      // which the rule pipeline maintains via applyRuleEffects. Delegates
+      // entirely to evaluateEndgame; no inline counter logic here.
+      // boardgame.io stores any truthy endIf return as ctx.gameover at runtime;
+      // the phase-level type definition is narrower than what it accepts, so
+      // we assert the return to satisfy the compiler.
+      endIf: ({ G }) => {
+        const result = evaluateEndgame(G);
+        return (result ?? undefined) as unknown as boolean | void;
+      },
       turn: {
         // why: Each new turn must begin at the first canonical turn stage.
         // TURN_STAGES[0] is used instead of a hardcoded string to prevent

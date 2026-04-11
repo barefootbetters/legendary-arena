@@ -39,6 +39,16 @@ export type {
   HookRegistry,
 } from './rules/ruleHooks.types.js';
 
+// why: Endgame types (EndgameResult, EndgameOutcome) are defined canonically
+// in src/endgame/endgame.types.ts (WP-010). Re-exported here so that
+// consumers importing from './types.js' have access. ENDGAME_CONDITIONS is
+// a value export (const), not a type, so it uses a separate export statement.
+export type {
+  EndgameResult,
+  EndgameOutcome,
+} from './endgame/endgame.types.js';
+export { ENDGAME_CONDITIONS } from './endgame/endgame.types.js';
+
 // why: Zone types (CardExtId, PlayerZones, GlobalPiles) were originally
 // defined inline in this file during WP-005B. WP-006A consolidated them
 // into src/state/zones.types.ts as the canonical source. They are
