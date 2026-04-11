@@ -174,7 +174,7 @@ These packets establish the repo-as-memory system and lock contracts before code
   prompt version at `docs/prompts-legendary-area-game/00.3-*` is superseded
   but not deleted
 
-- [ ] WP-045 — Connection Health Check Governance Alignment ✅ Reviewed
+- [x] WP-045 — Connection Health Check Governance Alignment ✅ Reviewed (2026-04-10)
   Dependencies: WP-001
   Notes: Updates governed `docs/ai/REFERENCE/00.4-connection-health-check.md`
   with subordination clause, Layer Boundary note (server/ops layer), and

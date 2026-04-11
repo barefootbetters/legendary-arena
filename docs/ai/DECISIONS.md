@@ -792,6 +792,31 @@ with either, the checklist must be updated to match.
 
 ---
 
+### D-1402 — Connection Health Check Remains a REFERENCE Document; Health Check vs Lint Gate Distinction
+**Decision:** `docs/ai/REFERENCE/00.4-connection-health-check.md` remains a
+standalone REFERENCE document (reusable Foundation Prompt prerequisite gate).
+It is not merged into `.claude/rules/` or replaced by a rules file. The health
+check and the Prompt Lint Checklist (`00.3`) are distinct gates that serve
+different purposes at different times:
+- **Health check (00.4):** Foundation Prompt prerequisite — runs **once** before
+  any Work Packet execution begins. Produces developer tooling scripts.
+- **Lint Gate (00.3):** Per-WP quality gate — runs **before each** Work Packet
+  execution. Validates packet structure and constraints.
+The two gates must not be confused. The health check is not a per-WP gate; the
+Lint Gate is not a Foundation Prompt prerequisite.
+**Rationale:** The health check verifies that external infrastructure (database,
+R2, rclone, tooling) is reachable and correctly configured. It runs once at
+the start of the Foundation Prompt sequence (`00.4 -> 00.5 -> 01 -> 02`) and
+blocks all subsequent prompts and Work Packets on failure. The Lint Gate
+validates individual Work Packet quality before each session. Merging the
+health check into `.claude/rules/` would conflate infrastructure verification
+(one-time prerequisite) with runtime enforcement (loaded every session). The
+distinction parallels D-1401 (prompt lint checklist remains REFERENCE).
+**Introduced:** WP-045
+**Status:** Immutable
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision

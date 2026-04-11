@@ -7,6 +7,35 @@
 
 ## Current State
 
+### WP-045 — Connection Health Check Governance Alignment (2026-04-10)
+
+**What changed:**
+- `docs/ai/REFERENCE/00.4-connection-health-check.md` — **modified** — added
+  subordination clause in header (document is subordinate to ARCHITECTURE.md
+  and `.claude/rules/*.md`); added Foundation Prompt vs Lint Gate distinction;
+  added Layer Boundary note identifying server/ops layer with reference to
+  `.claude/rules/server.md`; added Execution Gate section with stop-on-failure
+  semantics naming Foundation Prompts 00.5, 01, 02 as blocked on failure
+- `docs/ai/DECISIONS.md` — added D-1402 (health check remains REFERENCE
+  document; health check vs Lint Gate distinction)
+
+**What exists now:**
+- The connection health check explicitly declares subordination to
+  ARCHITECTURE.md and `.claude/rules/*.md`
+- The health check vs Lint Gate distinction is documented: health check is a
+  Foundation Prompt prerequisite (runs once); Lint Gate is a per-WP quality
+  gate (runs before each WP)
+- Layer Boundary note identifies the document as server/ops layer tooling,
+  referencing `.claude/rules/architecture.md` ("Layer Boundary (Authoritative)")
+  and `.claude/rules/server.md` for script governance
+- Execution Gate section makes stop-on-failure semantics explicit: if any
+  health check fails, Foundation Prompts 00.5/01/02 and all Work Packets
+  are blocked
+- No existing health checks removed or weakened
+- No scripts modified
+
+**Known gaps:** None — documentation-only packet.
+
 ### WP-044 — Prompt Lint Governance Alignment (2026-04-10)
 
 **What changed:**
