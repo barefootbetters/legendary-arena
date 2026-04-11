@@ -320,7 +320,7 @@ These packets create the first playable (but incomplete) game loop.
 
 These packets complete the minimum viable multiplayer loop.
 
-- [ ] WP-009A — Scheme & Mastermind Rule Hooks (Contracts) ✅ Reviewed
+- [x] WP-009A — Scheme & Mastermind Rule Hooks (Contracts) ✅ Reviewed — Completed 2026-04-11
   Dependencies: WP-008B
   Notes: Defines 5 trigger names (`onTurnStart`, `onTurnEnd`, `onCardRevealed`,
   `onSchemeTwistRevealed`, `onMastermindStrikeRevealed`) and 4 effect types
@@ -685,6 +685,46 @@ These packets ship the game and keep it running.
   use `.mjs` extension per WP-004; closes the chain from simulation →
   artifact → enforcement
 
+- [ ] WP-052 — Player Identity, Replay Ownership & Access Control ⚠️ Needs review
+  Dependencies: WP-051, WP-004, WP-027
+  Notes: Introduces `PlayerId` (branded string, UUID v4), `PlayerAccount`,
+  `GuestIdentity`, `PlayerIdentity` discriminated union; `ReplayOwnership`
+  contracts with `ReplayVisibility` (`private` | `link` | `public`),
+  defaulting to `private`; guest players can play and export replays without
+  an account — core gameplay is never gated; account players unlock
+  server-side replay persistence, leaderboard submission, and shareable
+  links; PostgreSQL tables `legendary.players` and `legendary.replay_ownership`;
+  identity affects access and visibility only — never gameplay, RNG, scoring,
+  or engine execution; identity types live in `apps/server/` — never in
+  `packages/game-engine/`; GDPR-compliant deletion; 30-day minimum retention
+  per `13-REPLAYS-REFERENCE.md`; does NOT modify WP-027 or WP-051 contracts
+
+- [ ] WP-053 — Competitive Score Submission & Verification ⚠️ Needs review
+  Dependencies: WP-048, WP-051, WP-052, WP-027, WP-004
+  Notes: Keystone trust surface for competition — every competitive score is
+  replay-verified; server re-executes replays via `replayGame`, recomputes
+  scores via WP-048 engine contracts (`deriveScoringInputs`, `computeRawScore`,
+  `computeFinalScore`, `buildScoreBreakdown`); client-reported values never
+  trusted; PAR publication enforced via `checkParPublished`; `CompetitiveScoreRecord`
+  is immutable once created; idempotent via `UNIQUE (player_id, replay_hash)`;
+  guest identities cannot submit competitively; private replays not eligible
+  until visibility changed; server is enforcer, not calculator — delegates
+  scoring to engine; PostgreSQL table `legendary.competitive_scores`;
+  does NOT modify WP-048, WP-051, WP-052, or WP-027 contracts
+
+- [ ] WP-054 — Public Leaderboards & Read-Only Web Access ⚠️ Needs review
+  Dependencies: WP-053, WP-052, WP-051, WP-004
+  Notes: Read-only public access to verified competitive results;
+  scenario-scoped leaderboards sorted by `finalScore` ascending,
+  `createdAt` ascending tie-break; only scores with `visibility IN
+  ('link', 'public')` included — private replays never exposed; PAR-missing
+  scenarios return empty results (fail closed); no authentication required
+  for public queries; `PublicLeaderboardEntry` strips sensitive fields
+  (`playerId`, `email`, `replayHash`, `stateHash`, `scoreBreakdown`);
+  no new database tables — query projections of existing tables; no SQL
+  write operations; no engine imports; no scoring logic; does NOT modify
+  WP-053 or WP-052 contracts
+
 - [ ] WP-050 — PAR Artifact Storage & Indexing ⚠️ Needs review
   Dependencies: WP-049, WP-048
   Notes: Defines how PAR simulation results are stored, indexed, versioned,
@@ -790,7 +830,13 @@ WP-001 (coordination — complete)        │
                     WP-031 → WP-032 → WP-033 → WP-034 → WP-035
                                                               │
                     WP-036 ──────────→ WP-049 (+ WP-048) → WP-050 → WP-051
+                                                                        │
+                    WP-052 (+ WP-004, WP-027) ←─────────────────────────┘
                        │
+                    WP-053 (+ WP-048, WP-027) ←── WP-052
+                       │
+                    WP-054 (+ WP-052, WP-051) ←── WP-053
+                    
                     WP-036 → WP-037 → WP-038 → WP-039 → WP-040
 ```
 

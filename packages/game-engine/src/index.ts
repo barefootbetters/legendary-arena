@@ -66,3 +66,22 @@ export {
 } from './moves/coreMoves.validate.js';
 export { moveCardFromZone, moveAllCards } from './moves/zoneOps.js';
 export type { MoveCardResult, MoveAllResult } from './moves/zoneOps.js';
+export type {
+  RuleTriggerName,
+  RuleEffect,
+  HookDefinition,
+  HookRegistry,
+  OnTurnStartPayload,
+  OnTurnEndPayload,
+  OnCardRevealedPayload,
+  OnSchemeTwistRevealedPayload,
+  OnMastermindStrikeRevealedPayload,
+  TriggerPayloadMap,
+} from './rules/ruleHooks.types.js';
+export { RULE_TRIGGER_NAMES, RULE_EFFECT_TYPES } from './rules/ruleHooks.types.js';
+export {
+  validateTriggerPayload,
+  validateRuleEffect,
+  validateHookDefinition,
+} from './rules/ruleHooks.validate.js';
+export { createHookRegistry, getHooksForTrigger } from './rules/ruleHooks.registry.js';

@@ -759,6 +759,48 @@ abilities array correctly represents "no printed abilities."
 
 ## Data Contracts & Documentation Decisions
 
+### D-1229 — HookDefinition Is Data-Only With No Handler Functions
+**Decision:** `HookDefinition` is a plain data interface (id, kind, sourceId,
+triggers, priority) with no handler functions, closures, or class instances.
+Handler logic lives in `ImplementationMap` (WP-009B), which is stored outside
+`G` at runtime.
+**Rationale:** `G` must be JSON-serializable at all times (D-0002, ARCHITECTURE.md).
+Functions cannot live in `G`. Separating the data declaration (what a rule
+responds to) from the execution logic (how it responds) ensures that
+`G.hookRegistry` remains serializable and that rule hooks can be replayed
+deterministically from the data alone.
+**Introduced:** WP-009A
+**Status:** Immutable
+
+---
+
+### D-1230 — Rule Effects Are a Tagged Data Union, Not Callback Functions
+**Decision:** `RuleEffect` is a tagged union of plain data objects
+(`queueMessage`, `modifyCounter`, `drawCards`, `discardHand`). Each variant
+describes *what should happen*; the executor (WP-009B) applies them
+deterministically. Effects contain no functions.
+**Rationale:** Keeping effects as data preserves JSON serializability and
+enables deterministic replay. The executor can apply effects in a `for...of`
+loop without closures or callbacks. Unknown effect types push a warning to
+`G.messages` and continue — they never throw — ensuring forward compatibility.
+**Introduced:** WP-009A
+**Status:** Immutable
+
+---
+
+### D-1231 — Hook Execution Order: Priority Ascending, Then ID Lexically
+**Decision:** `getHooksForTrigger` returns hooks sorted by `priority` ascending,
+then by `id` lexically for ties. This ordering is the sole determinant of hook
+execution sequence.
+**Rationale:** Deterministic ordering is required for replay correctness (D-0002).
+Given the same `G.hookRegistry`, identical trigger sequences must always produce
+identical effects. Priority-then-id provides a stable, predictable sort that
+designers can control (via priority) with a tiebreaker that prevents ambiguity.
+**Introduced:** WP-009A
+**Status:** Immutable
+
+---
+
 ### D-1301 — Legacy 00.2 Sections 7/9/10/11/12 Excluded from Governed Document
 **Decision:** The governed `docs/ai/REFERENCE/00.2-data-requirements.md` excludes
 legacy sections §7 (User Deck Data), §9 (Search/Filter), §10 (User Preferences),

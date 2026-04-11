@@ -28,6 +28,17 @@ export type {
   CoreMoveName,
 } from './moves/coreMoves.types.js';
 
+// why: Rule hook contracts (RuleTriggerName, RuleEffect, HookDefinition,
+// HookRegistry) are defined canonically in src/rules/ruleHooks.types.ts
+// (WP-009A). Re-exported here so that consumers importing from './types.js'
+// have access.
+export type {
+  RuleTriggerName,
+  RuleEffect,
+  HookDefinition,
+  HookRegistry,
+} from './rules/ruleHooks.types.js';
+
 // why: Zone types (CardExtId, PlayerZones, GlobalPiles) were originally
 // defined inline in this file during WP-005B. WP-006A consolidated them
 // into src/state/zones.types.ts as the canonical source. They are

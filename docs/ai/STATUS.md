@@ -7,6 +7,50 @@
 
 ## Current State
 
+### WP-009A — Scheme & Mastermind Rule Hooks Contracts (2026-04-11)
+
+**What changed:**
+- `packages/game-engine/src/rules/ruleHooks.types.ts` — **new** — defines
+  `RuleTriggerName` (5-value union), `RULE_TRIGGER_NAMES` canonical array,
+  5 trigger payload interfaces (`OnTurnStartPayload`, `OnTurnEndPayload`,
+  `OnCardRevealedPayload`, `OnSchemeTwistRevealedPayload`,
+  `OnMastermindStrikeRevealedPayload`), `TriggerPayloadMap`,
+  `RuleEffect` (4-variant tagged union), `RULE_EFFECT_TYPES` canonical array,
+  `HookDefinition` (data-only, 5 fields), `HookRegistry` type alias
+- `packages/game-engine/src/rules/ruleHooks.validate.ts` — **new** — three
+  validators (`validateTriggerPayload`, `validateRuleEffect`,
+  `validateHookDefinition`); all return `MoveResult`; none throw
+- `packages/game-engine/src/rules/ruleHooks.registry.ts` — **new** —
+  `createHookRegistry` (validates and stores; throws on invalid),
+  `getHooksForTrigger` (returns hooks sorted by priority asc, then id lexically)
+- `packages/game-engine/src/rules/ruleHooks.contracts.test.ts` — **new** —
+  10 tests including 2 drift-detection tests for `RULE_TRIGGER_NAMES` and
+  `RULE_EFFECT_TYPES`
+- `packages/game-engine/src/types.ts` — **modified** — re-exports
+  `RuleTriggerName`, `RuleEffect`, `HookDefinition`, `HookRegistry`
+- `packages/game-engine/src/index.ts` — **modified** — exports all new public
+  types, constants, validators, and registry helpers
+- `docs/ai/DECISIONS.md` — added D-1229 (HookDefinition is data-only),
+  D-1230 (effects are tagged data union), D-1231 (priority-then-id ordering)
+
+**What exists now:**
+- `@legendary-arena/game-engine` exports the complete rule hook contract surface:
+  trigger names, payload shapes, effect types, hook definitions, validators,
+  and registry helpers
+- All rule hook types are JSON-serializable (no functions, Maps, Sets, or classes)
+- `MoveError` from WP-008A is reused for all validator errors — no new error types
+- `CardExtId` used for all card references in trigger payloads
+- No `boardgame.io` imports in any `src/rules/` file
+- Drift-detection tests prevent silent additions to trigger names or effect types
+- 99 tests pass (89 prior + 10 new), 0 fail
+- Build exits 0
+
+**Runtime Wiring Allowance:** Not exercised. No files outside the WP allowlist
+were modified. Adding re-exports to `types.ts` and `index.ts` did not break
+any existing structural assertions.
+
+---
+
 ### WP-047 — Code Style Reference Governance Alignment (2026-04-10)
 
 **What changed:**
