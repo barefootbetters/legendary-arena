@@ -92,3 +92,5 @@ export { buildDefaultHookDefinitions } from './rules/ruleRuntime.impl.js';
 export type { EndgameResult, EndgameOutcome } from './endgame/endgame.types.js';
 export { ENDGAME_CONDITIONS, ESCAPE_LIMIT } from './endgame/endgame.types.js';
 export { evaluateEndgame } from './endgame/endgame.evaluate.js';
+export type { LobbyState, SetPlayerReadyArgs } from './lobby/lobby.types.js';
+export { validateSetPlayerReadyArgs, validateCanStartMatch } from './lobby/lobby.validate.js';

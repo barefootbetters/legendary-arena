@@ -9,6 +9,7 @@ import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
 import { applyRuleEffects } from './rules/ruleRuntime.effects.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from './rules/ruleRuntime.impl.js';
 import { evaluateEndgame } from './endgame/endgame.evaluate.js';
+import { setPlayerReady, startMatchIfReady } from './lobby/lobby.moves.js';
 
 // why: The registry must be available to Game.setup() for ext_id validation,
 // but boardgame.io's setup function signature does not include a registry
@@ -166,6 +167,10 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     lobby: {
       start: true,
       next: 'setup',
+      moves: {
+        setPlayerReady,
+        startMatchIfReady,
+      },
     },
     setup: {
       next: 'play',

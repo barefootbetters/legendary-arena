@@ -1023,6 +1023,44 @@ limits are implemented
 
 ---
 
+### D-1238 — G.lobby.started as a Boolean Flag in G
+**Decision:** `G.lobby.started` is a boolean flag stored in `G` rather than
+relying on `ctx.phase` alone to determine whether the lobby has completed.
+**Rationale:** The UI may read `G` at any point during a phase transition.
+By setting `G.lobby.started = true` before calling `ctx.events.setPhase('setup')`,
+the UI can observe lobby completion regardless of read timing relative to the
+framework's phase transition mechanics. This is the "observability pattern"
+defined in ARCHITECTURE.md Section 4.
+**Introduced:** WP-011
+**Status:** Active
+
+---
+
+### D-1239 — startMatchIfReady Transitions to Setup, Not Directly to Play
+**Decision:** `startMatchIfReady` transitions to the `setup` phase, not
+directly to the `play` phase.
+**Rationale:** The phase sequence `lobby -> setup -> play -> end` is a locked
+architectural invariant. The `setup` phase is responsible for deterministic
+deck and state construction that must complete before gameplay begins. Skipping
+`setup` would violate the phase lifecycle and leave the game in an incomplete
+state.
+**Introduced:** WP-011
+**Status:** Active
+
+---
+
+### D-1240 — ctx.currentPlayer as the Lobby Ready-Map Key
+**Decision:** `ctx.currentPlayer` is used as the key in `G.lobby.ready` to
+track which players have signaled readiness.
+**Rationale:** boardgame.io passes the authenticated player ID through
+`ctx.currentPlayer`. Using this as the ready-map key ensures each player can
+only set their own readiness status — they cannot impersonate another player.
+No additional authentication mechanism is needed at the lobby level.
+**Introduced:** WP-011
+**Status:** Active
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision

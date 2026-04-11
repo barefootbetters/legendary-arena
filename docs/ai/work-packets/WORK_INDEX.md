@@ -362,7 +362,7 @@ These packets complete the minimum viable multiplayer loop.
   logic in `endIf`); was previously truncated — now complete;
   see ARCHITECTURE.md §Section 4 for the full endIf contract
 
-- [ ] WP-011 — Match Creation & Lobby Flow (Minimal MVP) ✅ Reviewed
+- [x] WP-011 — Match Creation & Lobby Flow (Minimal MVP) ✅ Reviewed (2026-04-11)
   Dependencies: WP-010
   Notes: Adds `G.lobby` (`LobbyState: { requiredPlayers, ready, started }`);
   `requiredPlayers` comes from `ctx.numPlayers` — not from `MatchSetupConfig`;

@@ -10,6 +10,10 @@
 
 import type { MatchSetupConfig } from './matchSetup.types.js';
 
+// why: LobbyState is defined canonically in src/lobby/lobby.types.ts (WP-011).
+// Re-exported here so that consumers importing from './types.js' have access.
+export type { LobbyState, SetPlayerReadyArgs } from './lobby/lobby.types.js';
+
 // why: Turn phase types (MatchPhase, TurnStage, TurnPhaseError) are defined
 // canonically in src/turn/turnPhases.types.ts (WP-007A). They are re-exported
 // here so that consumers importing from './types.js' have access.
@@ -67,6 +71,7 @@ export type {
 import type { TurnStage } from './turn/turnPhases.types.js';
 import type { CardExtId, PlayerZones, GlobalPiles } from './state/zones.types.js';
 import type { HookDefinition } from './rules/ruleHooks.types.js';
+import type { LobbyState } from './lobby/lobby.types.js';
 
 // why: MatchConfiguration (WP-002) and MatchSetupConfig (WP-005A) have
 // identical 9-field shapes. MatchSetupConfig in matchSetup.types.ts is now
@@ -184,4 +189,9 @@ export interface LegendaryGameState {
   // stored here. This keeps G JSON-serializable.
   /** Data-only rule hook definitions (no functions). */
   hookRegistry: HookDefinition[];
+
+  // why: lobby state is stored in G so the UI can observe lobby completion
+  // and readiness status. Initialized at setup time from ctx.numPlayers.
+  /** Lobby phase state (player readiness and match start flag). */
+  lobby: LobbyState;
 }

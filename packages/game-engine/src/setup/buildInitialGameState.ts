@@ -15,6 +15,7 @@ import type {
   PlayerZones,
   MatchSelection,
   CardExtId,
+  LobbyState,
 } from '../types.js';
 import { TURN_STAGES } from '../turn/turnPhases.types.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
@@ -152,5 +153,13 @@ export function buildInitialGameState(
     messages: [],
     counters: {},
     hookRegistry: buildDefaultHookDefinitions(config),
+    // why: lobby state initialized at setup time from ctx.numPlayers. All
+    // players start as not ready. G.lobby.started is false until
+    // startMatchIfReady succeeds.
+    lobby: {
+      requiredPlayers: context.ctx.numPlayers,
+      ready: {},
+      started: false,
+    } satisfies LobbyState,
   };
 }

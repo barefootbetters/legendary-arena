@@ -7,6 +7,54 @@
 
 ## Current State
 
+### WP-011 — Match Creation & Lobby Flow (Minimal MVP) (2026-04-11)
+
+**What changed:**
+- `packages/game-engine/src/lobby/lobby.types.ts` — **new** — defines
+  `LobbyState` (3 fields: `requiredPlayers`, `ready`, `started`),
+  `SetPlayerReadyArgs`, re-exports `MoveResult`/`MoveError`
+- `packages/game-engine/src/lobby/lobby.validate.ts` — **new** —
+  `validateSetPlayerReadyArgs` and `validateCanStartMatch` (both return
+  `MoveResult`, never throw)
+- `packages/game-engine/src/lobby/lobby.moves.ts` — **new** —
+  `setPlayerReady` and `startMatchIfReady` (boardgame.io move functions
+  wired into the `lobby` phase)
+- `packages/game-engine/src/lobby/lobby.moves.test.ts` — **new** — 6 tests
+  covering readiness toggling, invalid args rejection, match start gating,
+  observability ordering, and JSON serializability
+- `packages/game-engine/src/types.ts` — **modified** — added
+  `lobby: LobbyState` to `LegendaryGameState`
+- `packages/game-engine/src/game.ts` — **modified** — wired `setPlayerReady`
+  and `startMatchIfReady` into the `lobby` phase `moves` block
+- `packages/game-engine/src/setup/buildInitialGameState.ts` — **modified**
+  (01.5 wiring) — added `lobby` field to return object
+- `packages/game-engine/src/index.ts` — **modified** — exports `LobbyState`,
+  `SetPlayerReadyArgs`, `validateSetPlayerReadyArgs`, `validateCanStartMatch`
+- `apps/server/scripts/create-match.mjs` — **new** — CLI match creation
+  script using Node v22 built-in `fetch`
+- `docs/ai/DECISIONS.md` — added D-1238, D-1239, D-1240
+
+**What exists now:**
+- A match can now be created and players can join, ready up, and transition
+  into gameplay via the lobby phase.
+- `G.lobby` stores lobby state: `requiredPlayers` (from `ctx.numPlayers`),
+  `ready` (Record keyed by player ID), and `started` (boolean flag).
+- `setPlayerReady` allows each player to toggle their readiness status.
+  `ctx.currentPlayer` is used as the ready-map key.
+- `startMatchIfReady` validates all players are ready, sets
+  `G.lobby.started = true` (observability flag), then calls
+  `ctx.events.setPhase('setup')`. The flag-before-transition ordering is
+  non-negotiable for UI observability.
+- Lobby moves are wired inside the `lobby` phase `moves` block (not
+  top-level) — boardgame.io enforces phase isolation.
+- `create-match.mjs` enables CLI match creation against the running server.
+- No new error types — `MoveResult`/`MoveError` reused from WP-008A.
+- No `boardgame.io` imports in lobby type or validate files.
+- 120 tests pass (114 prior + 6 new), 0 fail
+- Build exits 0
+
+---
+
 ### WP-010 — Victory & Loss Conditions (Minimal MVP) (2026-04-11)
 
 **What changed:**
