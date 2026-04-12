@@ -55,6 +55,28 @@ Testing follows the same invariants as the game engine:
 
 ---
 
+## Snapshot Test Philosophy (WP-013)
+
+Snapshot tests verify that persistence does not weaken determinism.
+
+A snapshot is not a backup of runtime state. It is a **contractual
+projection** of state that must:
+
+- contain no derived values
+- contain no UI or client state
+- contain no transient counters or caches
+- be sufficient to reconstruct gameplay deterministically
+- round-trip without mutation
+
+Snapshot tests exist to prove that:
+
+> Persistence is observational, not participatory.
+
+If restoring from a snapshot changes the future evolution of the game,
+the snapshot is invalid.
+
+---
+
 ## Mock Context (`makeMockCtx`)
 
 All game engine tests use `makeMockCtx` from
@@ -99,6 +121,10 @@ architectural invariants, not implementation details.
 | Drift Detection | inline in test files | Canonical arrays match union types | WP-007A+ |
 | CLI Scripts | `scripts/*.test.ts` | Argument parsing, error handling, fetch stubs | WP-012 |
 | Replay | `replay/*.test.ts` | Full game replay from recorded moves | WP-027 |
+
+Snapshot tests must prove equivalence, not similarity. The restored game
+must evolve identically to the original game under the same sequence of
+intents.
 
 ---
 
@@ -148,6 +174,39 @@ Every EC that produces tests enforces these rules:
 - [ ] Tests run without a live boardgame.io server
 - [ ] Each test has a descriptive name explaining what it proves
 - [ ] `// why:` comments on non-obvious assertions
+
+---
+
+## Snapshot Test Rules (WP-013)
+
+All snapshot tests must enforce the following:
+
+- [ ] Snapshots are JSON-serializable without transformation
+- [ ] Snapshots contain only zone counts and stable identifiers
+      (no `CardExtId[]` arrays, no derived values)
+- [ ] Snapshot creation is a pure function
+      (`createSnapshot(G, ctx, matchId)` does not mutate `G`)
+- [ ] No snapshot test relies on object identity
+      (only deep structural equality or invariant checks)
+- [ ] Snapshot format is validated before use
+      (`validateSnapshotShape` returns structured results)
+
+Forbidden in snapshot tests:
+
+- storing full card lists (`CardExtId[]` arrays)
+- storing UI or client metadata
+- storing derived counters not in `G.counters`
+- storing framework-internal state (boardgame.io internals)
+
+### Canonical Snapshot Test Pattern
+
+1. Initialize game via `Game.setup()`
+2. Apply a fixed sequence of valid moves
+3. Create snapshot at a known turn stage
+4. Verify snapshot is JSON-serializable and contains zone counts only
+5. Verify two snapshots of the same state are deeply equal (determinism)
+
+If step 5 fails, the snapshot contract is broken.
 
 ---
 
@@ -202,6 +261,9 @@ Server tests live in `apps/server/scripts/**/*.test.ts`.
 | Direct `G.field = value` mutation | Bypasses move contract | Call the move function |
 | `require('node:test')` | Project is ESM-only | `import { describe, it } from 'node:test'` |
 | Snapshot tests using object identity | Breaks determinism | Compare serialized output or derived invariants |
+| Snapshot stores full card arrays | Breaks replay determinism | Store counts only |
+| Snapshot restore calls registry | Violates setup-only rule | Registry allowed only in `Game.setup()` |
+| Snapshot includes `hookRegistry` or `lobby` | Transient runtime state | Exclude from `MatchSnapshot` (WP-013) |
 
 ---
 
