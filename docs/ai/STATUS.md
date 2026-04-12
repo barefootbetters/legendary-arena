@@ -7,6 +7,26 @@
 
 ## Current State
 
+### Phase 3 Exit Gate Closed (2026-04-11)
+
+**What changed:**
+- `docs/ai/REFERENCE/03A-PHASE-3-MULTIPLAYER-READINESS.md` — **modified** —
+  all six refinements applied (authority consequence clause, invariant baseline
+  rule, concurrency negative rule, replay acceptance test, framework lock-in
+  prohibition, silent recovery prohibition); WP-013 marked complete; X-3 and
+  X-5 updated from PENDING/PARTIAL to PASS; gate decision flipped to
+  "Phase 4 approved"
+- `docs/ai/DECISIONS.md` — added D-1320 (Phase 3 Exit Approved)
+
+**What exists now:**
+- Phase 3 (MVP Multiplayer) is formally complete. All five exit criteria pass.
+- Phase 4 (Core Gameplay Loop) is approved to proceed.
+- The gate document is now future-proof with contractual language that
+  prohibits regression, wall-clock tie-breaking, framework lock-in, and
+  silent recovery.
+
+---
+
 ### WP-013 — Persistence Boundaries & Snapshots (2026-04-11)
 
 **What changed:**

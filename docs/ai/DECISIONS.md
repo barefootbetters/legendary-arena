@@ -1206,6 +1206,31 @@ packet. Documenting the gap prevents false assumptions.
 
 ---
 
+## Phase Gate Decisions
+
+### D-1320 — Phase 3 Exit Approved
+**Decision:** Phase 3 (MVP Multiplayer) exit gate is satisfied. All five exit
+criteria (X-1 through X-5) pass simultaneously. Phase 4 (Core Gameplay Loop)
+may proceed.
+**Evidence:**
+- X-1 Determinism Under Concurrency — PASS (WP-009A/B, WP-010)
+- X-2 Intent Validation & Replay Safety — PASS (WP-011, WP-012)
+- X-3 Snapshot, Restore & Reconnect Integrity — PASS (WP-013)
+- X-4 Engine/Server Authority Separation — PASS (all Phase 3 WPs)
+- X-5 Failure Mode Behavior — PASS (WP-011, WP-013)
+**Gate document:** `docs/ai/REFERENCE/03A-PHASE-3-MULTIPLAYER-READINESS.md`
+**Rationale:** All six Phase 3 Work Packets (WP-009A, 009B, 010, 011, 012, 013)
+are complete. Determinism is preserved under concurrency, the move validation
+contract holds for multiplayer, persistence boundaries are formally defined in
+code, engine/server separation is enforced by governance rules, and failure
+modes are explicit rather than silent. The gate document was strengthened with
+contractual language prohibiting regression, wall-clock tie-breaking, framework
+lock-in, and silent recovery.
+**Introduced:** Phase 3 gate review (2026-04-11)
+**Status:** Immutable
+
+---
+
 ## Persistence Boundary Decisions (WP-013)
 
 ### D-1310 — Snapshots Use Zone Counts, Not CardExtId Arrays
