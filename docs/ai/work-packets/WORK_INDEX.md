@@ -424,6 +424,15 @@ These packets make the game play like Legendary for the first time.
   SharePoint links removed; test files use `.test.ts` not `.test.mjs`; normalized
   to PACKET-TEMPLATE structure
 
+- [x] WP-015A — Reveal Safety Fixes (Stage Gate + No-Card-Drop) ✅ Complete (2026-04-11)
+  Dependencies: WP-015
+  Notes: Patch packet. Adds internal stage gating to `revealVillainCard`
+  (allowed in `start` stage only, per tabletop Legendary semantics and
+  non-core move model from EC-014A). Fixes malformed city card-drop bug
+  where deck removal occurred before city validation — card was silently
+  lost. Defers deck removal until placement destination is confirmed.
+  1 new test (stage gating); 1 updated test (malformed city deck assertion).
+
 - [ ] WP-016 — Fight First, Then Recruit (Minimal MVP) ✅ Reviewed
   Dependencies: WP-015
   Notes: Adds `fightVillain({ cityIndex })` and `recruitHero({ hqIndex })`

@@ -107,6 +107,20 @@ deferred to WP-014B.
 - The move **must return void**
 - The move **must never return a new state object**
 
+### Stage Gating (Non-Core Move Contract)
+
+`revealVillainCard` is allowed in **`start` stage only** (engine-driven,
+tabletop Legendary semantics: villain reveal occurs at the start of each
+turn, before the main action window).
+
+The move must early-return with **no side effects** (no messages, no
+mutations, no trigger emission) unless `G.currentStage === 'start'`. This
+check is the first line of the move body, before any other logic.
+
+If future card effects trigger extra reveals during other stages (e.g.,
+WP-022), those packets must explicitly authorize additional allowed stages
+via a DECISIONS.md entry.
+
 ### Top-of-Deck Convention
 
 The "top" card is always `deck[0]`. Draw removes from the front.
@@ -202,6 +216,9 @@ Ordering" for how non-core moves compose across packets.
   rules are defined in WP-014B. Any attempt to infer, stub, or implement
   composition rules (ext_id conventions, card counts, registry resolution)
   in this session is invalid.
+- `revealVillainCard` must early-return unless `G.currentStage === 'start'`.
+  The stage check must be the first line of the move body, before any other
+  logic including empty-deck checks.
 - Discard routing for villain/henchman cards is intentional and temporary.
   Any change before WP-015 is a contract violation.
 - Adding a move to `CoreMoveName`, `CORE_MOVE_NAMES`, or
@@ -228,6 +245,8 @@ The following comments are mandatory and enforcement-checked:
   `// why: failure means union/array mismatch -- silently breaks trigger emission`
 - Empty defaults in `buildInitialGameState`:
   `// why: WP-014B will populate from registry`
+- Stage gating early-return in `revealVillainCard`:
+  `// why: villain reveal is a start-of-turn action per tabletop Legendary`
 
 ---
 
@@ -240,7 +259,7 @@ The following comments are mandatory and enforcement-checked:
 | Create | `src/villainDeck/villainDeck.types.ts` | `RevealedCardType`, `REVEALED_CARD_TYPES`, `VillainDeckState` |
 | Create | `src/villainDeck/villainDeck.reveal.ts` | `revealVillainCard` move implementation |
 | Create | `src/villainDeck/villainDeck.types.test.ts` | Drift-detection + serialization (2 tests, types only) |
-| Create | `src/villainDeck/villainDeck.reveal.test.ts` | Reveal pipeline tests (10 tests) |
+| Create | `src/villainDeck/villainDeck.reveal.test.ts` | Reveal pipeline tests (11 tests) |
 | Modify | `src/types.ts` | Add `villainDeck` and `villainDeckCardTypes` to `LegendaryGameState` |
 | Modify | `src/game.ts` | Add `revealVillainCard` to top-level moves |
 | Modify | `src/index.ts` | Export new public API |
@@ -276,9 +295,10 @@ Required tests (types -- `villainDeck.types.test.ts`):
 
 Required tests (reveal -- `villainDeck.reveal.test.ts`):
 
+- [ ] Stage gating: no-op (no side effects) when `G.currentStage !== 'start'`
 - [ ] Draw from `deck[0]`
-- [ ] Card moves to discard
-- [ ] `onCardRevealed` fires with correct `cardId` and `cardTypeSlug`
+- [ ] Card moves to discard *(routing for villain/henchman superseded by
+      WP-015 -- see Supersession Awareness in WP-014A)*
 - [ ] `onSchemeTwistRevealed` fires only for `'scheme-twist'` cards
 - [ ] `onSchemeTwistRevealed` does NOT fire for `'villain'` cards
 - [ ] `onMastermindStrikeRevealed` fires only for `'mastermind-strike'` cards
@@ -304,6 +324,8 @@ Any of the following is an instant failure:
 - Creating `villainDeck.setup.ts` or any `buildVillainDeck` implementation
 - Refactoring reveal logic to inline trigger checks instead of using the
   rule pipeline -- violates WP-009B authority and breaks extensibility
+- Missing stage gate (no `G.currentStage === 'start'` check as first line)
+- Stage gate that produces side effects on mismatch (must be silent return)
 
 ---
 
@@ -327,6 +349,43 @@ Any of the following is an instant failure:
 
 ---
 
+## Supersession Awareness (Pre-Flight Audit Guidance)
+
+Later packets intentionally supersede specific WP-014A behaviors. When
+auditing WP-014A invariants against an evolved codebase (Mode B audit),
+the superseded behaviors listed below must NOT be treated as blockers or
+regressions. See WP-014A "Supersession Awareness" for the full
+explanation of Mode A vs Mode B.
+
+### Superseded by WP-014B
+
+- `buildInitialGameState` providing empty defaults -- WP-014B replaces
+  with real `buildVillainDeck` call
+
+### Superseded by WP-015
+
+- Villain/henchman discard routing -- WP-015 routes to City instead
+  (D-1408 documents this supersession)
+- Tests referencing `city`/`hq` fields in mock G states -- required by
+  current `LegendaryGameState` shape
+- Test 2 routing assertion -- must match current routing behavior on
+  an evolved codebase
+
+### Active Invariants (Must Hold Regardless of Later Packets)
+
+- `RevealedCardType` union and `REVEALED_CARD_TYPES` array match exactly
+- Classification in `G.villainDeckCardTypes`; moves never import registry
+- Top-of-deck convention; trigger emission contract; fail-closed; reshuffle
+- Stage gating: early-return unless `G.currentStage === 'start'`
+- No `.reduce()`, `Math.random()`, `require()`, or registry imports
+
+### Pre-Flight Rule
+
+Pre-flight must ask "Are WP-014A invariants still true?" -- not "Can we
+recreate WP-014A as if later packets never happened?"
+
+---
+
 ## Definition of Done
 
 WP-014A is complete **only when**:
@@ -335,6 +394,7 @@ WP-014A is complete **only when**:
 - No deck composition logic exists
 - Reveal logic is deterministic, auditable, and replay-safe
 - Deck construction remains explicitly deferred to WP-014B
+- Stage gating enforced: early-return unless `G.currentStage === 'start'`
 
 ---
 

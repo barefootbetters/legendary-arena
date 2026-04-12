@@ -184,7 +184,7 @@ Rules:
 |---|---|---|
 | drawCards | start, main | Cards drawn before and during action |
 | playCard | main | Actions only during action window |
-| revealVillainCard | main | Villain reveal is a main-phase action |
+| revealVillainCard | start | Villain reveal occurs at start of turn (tabletop Legendary semantics) |
 | endTurn | cleanup | Turn ends only after cleanup |
 
 Rules:
