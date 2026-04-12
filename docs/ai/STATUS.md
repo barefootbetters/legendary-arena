@@ -7,6 +7,40 @@
 
 ## Current State
 
+### WP-016 — Fight First, Then Recruit (Minimal MVP) (2026-04-11)
+
+**What changed:**
+- `packages/game-engine/src/moves/fightVillain.ts` — **new** —
+  `fightVillain` move: removes villain from City space, places in player's
+  victory pile. Three-step validation contract. Internal stage gating
+  (`main` only). MVP: no attack point check (WP-018 adds economy).
+- `packages/game-engine/src/moves/recruitHero.ts` — **new** —
+  `recruitHero` move: removes hero from HQ slot, places in player's discard
+  pile. Three-step validation contract. Internal stage gating (`main` only).
+  MVP: no recruit point check (WP-018 adds economy).
+- `packages/game-engine/src/moves/fightVillain.test.ts` — **new** — 7 tests
+- `packages/game-engine/src/moves/recruitHero.test.ts` — **new** — 7 tests
+- `packages/game-engine/src/game.ts` — **modified** — registered
+  `fightVillain` and `recruitHero` in play phase moves
+- `packages/game-engine/src/index.ts` — **modified** — exports for new moves
+- `packages/game-engine/src/game.test.ts` — **modified** (01.5 wiring) —
+  move-count assertion updated (5 -> 7)
+
+**What's true now:**
+- Players can fight villains/henchmen in the City and recruit heroes from HQ
+- Both moves gate to `main` stage (non-core internal gating pattern)
+- Fight-first is a documented policy preference (D-1602), not engine-enforced
+- MVP: no resource checking — any target can be fought/recruited without
+  spending points. WP-018 adds the economy.
+- Recruited heroes go to discard (D-1604), matching tabletop rules
+- 184 tests passing, 0 failures
+
+**What's next:**
+- WP-017 — KO, Wounds & Bystander Capture
+- WP-018 — Attack & Recruit Economy (resource gating for fight/recruit)
+
+---
+
 ### WP-015 — City & HQ Zones (Villain Movement + Escapes) (2026-04-11)
 
 **What changed:**

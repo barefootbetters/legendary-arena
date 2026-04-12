@@ -1793,6 +1793,44 @@ engine changes.
 
 ---
 
+### D-1603 — MVP Fight and Recruit Have No Resource Checking
+
+**Unlocks:** WP-016 minimal implementation
+
+**Decision:** In WP-016, `fightVillain` and `recruitHero` do not check
+attack or recruit points before executing. Any player can fight any
+occupied City space or recruit any occupied HQ slot without resource
+validation. WP-018 introduces `G.turnEconomy` and enforces resource costs.
+
+**Rationale:** Separating the move mechanics (target validation, zone
+transfer) from the economy (resource costs) allows incremental delivery.
+WP-016 proves the moves work correctly in isolation; WP-018 layers resource
+gating on top without modifying the move contracts.
+
+**Introduced:** WP-016
+**Status:** Accepted (superseded by WP-018 when economy is implemented)
+
+---
+
+### D-1604 — Recruited Heroes Go to Player Discard, Not Hand
+
+**Unlocks:** WP-016 recruit destination
+
+**Decision:** When a player recruits a hero from the HQ, the card is placed
+in the player's `discard` zone, not their `hand`. This matches the physical
+Legendary tabletop rules where recruited cards go to the discard pile and
+are drawn in future turns.
+
+**Rationale:** Placing recruited heroes directly in hand would give an
+immediate play advantage not present in the physical game. The discard
+destination preserves the deck-building cycle: recruit → discard → shuffle
+→ draw → play.
+
+**Introduced:** WP-016
+**Status:** Accepted
+
+---
+
 **Related packets:**
 - WP-014A — Villain Reveal & Trigger Pipeline (non-core move precedent)
 - WP-016 — Fight First, Then Recruit

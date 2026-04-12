@@ -433,14 +433,14 @@ These packets make the game play like Legendary for the first time.
   lost. Defers deck removal until placement destination is confirmed.
   1 new test (stage gating); 1 updated test (malformed city deck assertion).
 
-- [ ] WP-016 — Fight First, Then Recruit (Minimal MVP) ✅ Reviewed
+- [x] WP-016 — Fight First, Then Recruit (Minimal MVP) ✅ Reviewed ✅ Complete (2026-04-11)
   Dependencies: WP-015
   Notes: Adds `fightVillain({ cityIndex })` and `recruitHero({ hqIndex })`
   moves, both `main` stage only, both follow three-step validation contract;
-  fight-first is a **policy** (not a hard lockout) — documented in DECISIONS.md;
-  MVP: no attack/recruit point checking (WP-018), no card text effects (WP-022),
-  no bystander rescue (WP-017); was previously truncated at 60 lines —
-  normalized to full PACKET-TEMPLATE structure
+  fight-first is a **policy** (not a hard lockout) — documented in DECISIONS.md
+  (D-1601 through D-1604); MVP: no attack/recruit point checking (WP-018),
+  no card text effects (WP-022), no bystander rescue (WP-017); 14 new tests
+  (7 per move); game.test.ts 01.5 wiring (5->7 moves)
 
 - [ ] WP-017 — KO, Wounds & Bystander Capture (Minimal MVP) ✅ Reviewed
   Dependencies: WP-016
