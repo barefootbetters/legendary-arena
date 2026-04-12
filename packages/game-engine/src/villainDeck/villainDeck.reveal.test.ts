@@ -449,4 +449,37 @@ describe('revealVillainCard', () => {
       'A message mentioning the missing card must be appended',
     );
   });
+
+  it('stage gating: no-op when G.currentStage is not start', () => {
+    const gameState = createMockGameState({
+      deck: ['card-a', 'card-b'],
+      discard: [],
+      cardTypes: { 'card-a': 'villain', 'card-b': 'villain' },
+    });
+
+    // Set stage to 'main' — reveal should be gated out
+    gameState.currentStage = 'main';
+
+    const moveContext = createMockMoveContext(gameState);
+    const deckBefore = [...moveContext.G.villainDeck.deck];
+    const messagesBefore = moveContext.G.messages.length;
+
+    revealVillainCard(moveContext);
+
+    assert.deepStrictEqual(
+      moveContext.G.villainDeck.deck,
+      deckBefore,
+      'Deck must remain unchanged when stage is not start',
+    );
+    assert.equal(
+      moveContext.G.villainDeck.discard.length,
+      0,
+      'Discard must remain empty when stage is not start',
+    );
+    assert.equal(
+      moveContext.G.messages.length,
+      messagesBefore,
+      'No messages appended when stage gate blocks (silent return)',
+    );
+  });
 });

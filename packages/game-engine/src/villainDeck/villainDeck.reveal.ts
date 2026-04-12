@@ -40,6 +40,10 @@ type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
  * @param context - boardgame.io move context with G, ctx, random, playerID.
  */
 export function revealVillainCard({ G, ctx, ...context }: MoveContext): void {
+  // Step 0: Stage gate (non-core move contract)
+  // why: villain reveal is a start-of-turn action per tabletop Legendary
+  if (G.currentStage !== 'start') return;
+
   const deck = G.villainDeck.deck;
   const discard = G.villainDeck.discard;
 
@@ -80,21 +84,24 @@ export function revealVillainCard({ G, ctx, ...context }: MoveContext): void {
     return;
   }
 
-  // Step 4: Remove card from deck (new array assignment, not in-place mutation)
-  G.villainDeck.deck = G.villainDeck.deck.slice(1);
-
-  // Step 4b: City routing for villain and henchman cards
+  // Step 4: City routing for villain and henchman cards
   // why: City placement before triggers so hooks observe post-placement state.
   // This ordering is contractual — rule hooks see the physical board state that
   // players would see immediately after a reveal (Legendary tabletop semantics).
+  // why: Deck removal is deferred until placement destination is confirmed.
+  // If city validation fails, the card must remain on top of the deck — removing
+  // it before validation would silently lose the card (WP-015A fix).
   if (cardType === 'villain' || cardType === 'henchman') {
     const cityValidation = validateCityShape(G.city);
     if (!cityValidation.ok) {
       G.messages.push(
-        `Villain city placement skipped: G.city is malformed. Card "${cardId}" not placed.`,
+        `Villain city placement skipped: G.city is malformed. Card "${cardId}" remains in deck.`,
       );
       return;
     }
+
+    // Remove card from deck only after city validation succeeds
+    G.villainDeck.deck = G.villainDeck.deck.slice(1);
 
     const pushResult = pushVillainIntoCity(G.city, cardId);
     G.city = pushResult.city;
@@ -109,6 +116,9 @@ export function revealVillainCard({ G, ctx, ...context }: MoveContext): void {
         `Villain "${pushResult.escapedCard}" escaped from the city.`,
       );
     }
+  } else {
+    // Non-city card types: remove from deck before trigger/discard routing
+    G.villainDeck.deck = G.villainDeck.deck.slice(1);
   }
 
   // Step 5: Collect rule effects via the WP-009B pipeline

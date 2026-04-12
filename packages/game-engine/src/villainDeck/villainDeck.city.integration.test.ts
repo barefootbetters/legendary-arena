@@ -271,7 +271,7 @@ describe('revealVillainCard — City integration', () => {
     );
   });
 
-  it('malformed G.city causes safe failure: no mutation, no counter increment, no throw', () => {
+  it('malformed G.city causes safe failure: card remains in deck, no counter increment, no throw', () => {
     const gameState = createMockGameState({
       deck: ['villain-card-001'],
       discard: [],
@@ -283,10 +283,21 @@ describe('revealVillainCard — City integration', () => {
 
     const moveContext = createMockMoveContext(gameState);
     const counterBefore = moveContext.G.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] ?? 0;
+    const deckBefore = [...moveContext.G.villainDeck.deck];
 
     // Should not throw
     revealVillainCard(moveContext);
 
+    assert.deepStrictEqual(
+      moveContext.G.villainDeck.deck,
+      deckBefore,
+      'Deck must remain unchanged when city is malformed (card stays on top)',
+    );
+    assert.equal(
+      moveContext.G.villainDeck.discard.length,
+      0,
+      'Discard must remain empty when city is malformed',
+    );
     assert.equal(
       moveContext.G.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] ?? 0,
       counterBefore,
