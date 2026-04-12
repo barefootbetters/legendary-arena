@@ -11,6 +11,8 @@ import { DEFAULT_IMPLEMENTATION_MAP } from './rules/ruleRuntime.impl.js';
 import { evaluateEndgame } from './endgame/endgame.evaluate.js';
 import { setPlayerReady, startMatchIfReady } from './lobby/lobby.moves.js';
 import { revealVillainCard } from './villainDeck/villainDeck.reveal.js';
+import { fightVillain } from './moves/fightVillain.js';
+import { recruitHero } from './moves/recruitHero.js';
 
 // why: The registry must be available to Game.setup() for ext_id validation,
 // but boardgame.io's setup function signature does not include a registry
@@ -159,6 +161,8 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     endTurn,
     advanceStage,
     revealVillainCard,
+    fightVillain,
+    recruitHero,
   },
 
   // why: phase `next` fields declare the intended linear progression

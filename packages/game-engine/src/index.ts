@@ -104,6 +104,8 @@ export { PERSISTENCE_CLASSES } from './persistence/persistence.types.js';
 export type { VillainDeckState, RevealedCardType } from './villainDeck/villainDeck.types.js';
 export { REVEALED_CARD_TYPES } from './villainDeck/villainDeck.types.js';
 export { revealVillainCard } from './villainDeck/villainDeck.reveal.js';
+export { fightVillain } from './moves/fightVillain.js';
+export { recruitHero } from './moves/recruitHero.js';
 export { buildVillainDeck } from './villainDeck/villainDeck.setup.js';
 export type { VillainDeckRegistryReader } from './villainDeck/villainDeck.setup.js';
 export type { CityZone, CitySpace, HqZone, HqSlot } from './board/city.types.js';
