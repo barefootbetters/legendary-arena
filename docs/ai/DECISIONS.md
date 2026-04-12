@@ -1119,6 +1119,9 @@ establish Match Setup as a deterministic, engine-aligned, governance-enforced
 configuration boundary. The Match Setup pipeline is now engine-aligned,
 replay-safe, simulation-correct, and governance-compliant.
 
+See `SAFE-KNOBS.md` for the list of configuration surfaces explicitly
+intended to change in response to customer feedback without engine changes.
+
 > *Match setup defines the board.
 > The engine enforces the game.
 > Determinism begins before a match exists.*
