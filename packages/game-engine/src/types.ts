@@ -32,6 +32,11 @@ export type { LobbyState, SetPlayerReadyArgs } from './lobby/lobby.types.js';
 export type { VillainDeckState, RevealedCardType } from './villainDeck/villainDeck.types.js';
 export { REVEALED_CARD_TYPES } from './villainDeck/villainDeck.types.js';
 
+// why: City and HQ zone types are defined canonically in
+// src/board/city.types.ts (WP-015). Re-exported here so that consumers
+// importing from './types.js' have access.
+export type { CityZone, CitySpace, HqZone, HqSlot } from './board/city.types.js';
+
 // why: Turn phase types (MatchPhase, TurnStage, TurnPhaseError) are defined
 // canonically in src/turn/turnPhases.types.ts (WP-007A). They are re-exported
 // here so that consumers importing from './types.js' have access.
@@ -91,6 +96,7 @@ import type { CardExtId, PlayerZones, GlobalPiles } from './state/zones.types.js
 import type { HookDefinition } from './rules/ruleHooks.types.js';
 import type { LobbyState } from './lobby/lobby.types.js';
 import type { VillainDeckState, RevealedCardType } from './villainDeck/villainDeck.types.js';
+import type { CityZone, HqZone } from './board/city.types.js';
 
 // why: MatchConfiguration (WP-002) and MatchSetupConfig (WP-005A) have
 // identical 9-field shapes. MatchSetupConfig in matchSetup.types.ts is now
@@ -217,6 +223,17 @@ export interface LegendaryGameState {
   villainDeck: VillainDeckState;
   /** Card type classification for O(1) lookup during reveal. */
   villainDeckCardTypes: Record<CardExtId, RevealedCardType>;
+
+  // why: City is a 5-space row where revealed villains and henchmen are placed
+  // via pushVillainIntoCity. Cards shift rightward; space 4 is the escape edge.
+  // Initialized to all nulls at setup; populated during play by revealVillainCard.
+  /** City zone: 5 spaces for villain/henchman cards. */
+  city: CityZone;
+
+  // why: HQ is a 5-slot row for hero recruit cards. Initialized empty at setup;
+  // recruit slot population is WP-016 scope.
+  /** HQ zone: 5 hero recruit slots. */
+  hq: HqZone;
 
   // why: lobby state is stored in G so the UI can observe lobby completion
   // and readiness status. Initialized at setup time from ctx.numPlayers.

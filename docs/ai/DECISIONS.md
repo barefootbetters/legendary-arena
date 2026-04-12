@@ -1600,6 +1600,70 @@ supersedes this one.
 
 ---
 
+### D-1501 — City and HQ Use Fixed 5-Tuples
+
+**Unlocks:** WP-015 city/HQ zone implementation
+
+**Decision:** The City and HQ zones are modelled as **fixed 5-element tuples**
+(`[CardExtId | null, ...]`), not variable-length arrays. The City has exactly
+5 spaces and the HQ has exactly 5 hero slots, matching the physical Legendary
+board layout.
+
+**Rationale:** Fixed-size tuples enforce the board layout at the type level.
+Variable-length arrays would allow invalid states (e.g., a 6-space city or
+0-space city) that could silently corrupt gameplay. The 5-space constraint is
+fundamental to Legendary's game design and is not configurable.
+
+**Introduced:** WP-015
+**Status:** Accepted
+
+---
+
+### D-1502 — City Push Inserts at Space 0
+
+**Unlocks:** WP-015 villain movement
+
+**Decision:** New villains and henchmen always enter the City at **space 0**.
+All existing cards shift rightward toward space 4 (the escape edge). The card
+that escapes is always the card previously occupying space 4, never the newly
+revealed card.
+
+**Rationale:** This matches the physical Legendary board's left-to-right flow.
+The leftmost space is the entry point; the rightmost space is the escape edge.
+The push-from-zero convention is deterministic, unambiguous, and matches every
+published Legendary rulebook.
+
+**Introduced:** WP-015
+**Status:** Accepted
+
+---
+
+### D-1503 — Bystander MVP: Discard, Not Capture
+
+**Unlocks:** WP-015 reveal routing
+
+**Decision:** In WP-015, revealed bystanders go to `G.villainDeck.discard`
+with a message logged to `G.messages`. Bystander capture rules (rescuing
+bystanders for VP) are deferred to WP-017.
+
+**Rationale:** WP-015 focuses on City placement and villain movement. Adding
+bystander capture would require the KO pile, bystander attachment tracking,
+and rescue move — all of which are WP-017 scope. The discard + message
+approach preserves the reveal pipeline's completeness while keeping WP-015
+focused.
+
+**Introduced:** WP-015
+**Status:** Accepted (temporary — WP-017 replaces with capture rules)
+
+---
+
+**Related packets:**
+- WP-015 — City & HQ Zones (Villain Movement + Escapes)
+- WP-016 — Fight First, Then Recruit
+- WP-017 — Bystander Mechanics
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision

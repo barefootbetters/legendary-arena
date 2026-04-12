@@ -66,6 +66,10 @@ function buildMockGameState(): LegendaryGameState {
     messages: ['Turn 1 started.', 'Player 0 drew 6 cards.'],
     counters: { escapedVillains: 2, schemeLoss: 0, mastermindDefeated: 0 },
     hookRegistry: [],
+    villainDeck: { deck: [], discard: [] },
+    villainDeckCardTypes: {},
+    city: [null, null, null, null, null],
+    hq: [null, null, null, null, null],
     lobby: { requiredPlayers: 2, ready: { '0': true, '1': true }, started: true },
   };
 }

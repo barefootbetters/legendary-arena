@@ -19,6 +19,9 @@ import { executeRuleHooks } from '../rules/ruleRuntime.execute.js';
 import { applyRuleEffects } from '../rules/ruleRuntime.effects.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from '../rules/ruleRuntime.impl.js';
 import { shuffleDeck } from '../setup/shuffle.js';
+import { pushVillainIntoCity } from '../board/city.logic.js';
+import { validateCityShape } from '../board/city.validate.js';
+import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -26,7 +29,8 @@ type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
 /**
  * Reveals the top card from the villain deck.
  *
- * Pipeline: draw → classify → trigger → apply effects → route to discard.
+ * Pipeline: draw → classify → City routing (villain/henchman) → trigger →
+ * apply effects → discard routing (bystander/scheme-twist/mastermind-strike).
  *
  * Handles edge cases:
  * - Empty deck + non-empty discard: reshuffles discard into deck first.
@@ -79,6 +83,34 @@ export function revealVillainCard({ G, ctx, ...context }: MoveContext): void {
   // Step 4: Remove card from deck (new array assignment, not in-place mutation)
   G.villainDeck.deck = G.villainDeck.deck.slice(1);
 
+  // Step 4b: City routing for villain and henchman cards
+  // why: City placement before triggers so hooks observe post-placement state.
+  // This ordering is contractual — rule hooks see the physical board state that
+  // players would see immediately after a reveal (Legendary tabletop semantics).
+  if (cardType === 'villain' || cardType === 'henchman') {
+    const cityValidation = validateCityShape(G.city);
+    if (!cityValidation.ok) {
+      G.messages.push(
+        `Villain city placement skipped: G.city is malformed. Card "${cardId}" not placed.`,
+      );
+      return;
+    }
+
+    const pushResult = pushVillainIntoCity(G.city, cardId);
+    G.city = pushResult.city;
+
+    if (pushResult.escapedCard !== null) {
+      // why: ENDGAME_CONDITIONS.ESCAPED_VILLAINS is the canonical counter key
+      // for escape tracking. evaluateEndgame reads this counter to determine
+      // scheme-wins loss condition.
+      const currentEscaped = G.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] ?? 0;
+      G.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] = currentEscaped + 1;
+      G.messages.push(
+        `Villain "${pushResult.escapedCard}" escaped from the city.`,
+      );
+    }
+  }
+
   // Step 5: Collect rule effects via the WP-009B pipeline
   const allEffects: RuleEffect[] = [];
 
@@ -130,8 +162,19 @@ export function revealVillainCard({ G, ctx, ...context }: MoveContext): void {
   // Step 6: Apply all collected effects
   applyRuleEffects(G, ctx, allEffects);
 
-  // Step 7: Route card to discard
-  // why: WP-015 will modify routing for villain and henchman cards to the City.
-  // Until then, all revealed cards go to discard regardless of type.
-  G.villainDeck.discard = [...G.villainDeck.discard, cardId];
+  // Step 7: Route card to final destination based on type
+  // Villain and henchman cards are already in the City (step 4b above).
+  // All other card types go to discard.
+  if (cardType === 'villain' || cardType === 'henchman') {
+    // Already placed in City in step 4b — do not also place in discard
+  } else if (cardType === 'bystander') {
+    // why: bystander capture rules are WP-017; MVP discards
+    G.villainDeck.discard = [...G.villainDeck.discard, cardId];
+    G.messages.push(
+      `Bystander "${cardId}" revealed and placed in villain deck discard.`,
+    );
+  } else {
+    // scheme-twist and mastermind-strike go to discard (existing behavior)
+    G.villainDeck.discard = [...G.villainDeck.discard, cardId];
+  }
 }

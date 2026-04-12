@@ -413,7 +413,7 @@ These packets make the game play like Legendary for the first time.
   replaces empty defaults in `buildInitialGameState` with real data;
   D-1412 amended with bystander ext_id format
 
-- [ ] WP-015 — City & HQ Zones (Villain Movement + Escapes) ✅ Reviewed
+- [x] WP-015 — City & HQ Zones (Villain Movement + Escapes) ✅ Reviewed ✅ Complete (2026-04-11)
   Dependencies: WP-014A
   Notes: `G.city` (5-tuple of `CardExtId | null`) and `G.hq` (5-tuple);
   `pushVillainIntoCity` is a pure helper (no boardgame.io import, no `.reduce()`);

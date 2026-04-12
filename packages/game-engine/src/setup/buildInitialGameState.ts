@@ -30,6 +30,7 @@ import {
 } from './pilesInit.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
 import { buildVillainDeck } from '../villainDeck/villainDeck.setup.js';
+import { initializeCity, initializeHq } from '../board/city.logic.js';
 
 // why: Pile ext_id constants are re-exported from pilesInit.ts for backward
 // compatibility. The canonical definitions live in pilesInit.ts — importing
@@ -167,6 +168,10 @@ export function buildInitialGameState(
     // through D-1413 for ext_id conventions and composition rules.
     villainDeck: villainDeckResult.state,
     villainDeckCardTypes: villainDeckResult.cardTypes,
+    // why: City initialized empty; villains enter via revealVillainCard (WP-015)
+    city: initializeCity(),
+    // why: HQ initialized empty; recruit slot population is WP-016 scope
+    hq: initializeHq(),
     // why: lobby state initialized at setup time from ctx.numPlayers. All
     // players start as not ready. G.lobby.started is false until
     // startMatchIfReady succeeds.

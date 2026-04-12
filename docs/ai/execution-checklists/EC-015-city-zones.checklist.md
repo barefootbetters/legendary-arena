@@ -47,6 +47,11 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 - WP-014 contract files (`villainDeck.types.ts`) must NOT be modified
 - HQ initialized but not used for buying -- WP-016 adds recruit logic
 - Bystander MVP: revealed bystanders go to discard (existing WP-014 behavior)
+- City placement occurs BEFORE trigger emission -- rule hooks observe
+  post-placement board state (matching Legendary tabletop semantics).
+  Violation of this ordering is a breaking change requiring DECISIONS.md entry.
+- City mutation in WP-015 occurs only during `revealVillainCard`. No other
+  helper, move, or test may mutate `G.city` directly.
 
 ---
 
@@ -69,7 +74,7 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 - `src/types.ts` -- **modified** -- add `city: CityZone`, `hq: HqZone`
 - `src/index.ts` -- **modified** -- export new public API
 - `src/board/city.logic.test.ts` -- **new** -- 7 city push unit tests
-- `src/villainDeck/villainDeck.city.integration.test.ts` -- **new** -- 6 integration tests
+- `src/villainDeck/villainDeck.city.integration.test.ts` -- **new** -- 8 integration tests
 
 ---
 
@@ -81,6 +86,10 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
   -> endgame evaluator will not detect escapes
 - `villainDeck.types.ts` modified
   -> WP-014 contract violation
+- Trigger emission occurs before City placement
+  -> ordering contract violation; hooks must observe post-placement state
+- City mutated outside `revealVillainCard`
+  -> only the reveal move may mutate G.city in WP-015
 
 ---
 

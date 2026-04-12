@@ -24,6 +24,7 @@ import { makeMockCtx } from '../test/mockCtx.js';
 import { TURN_STAGES } from '../turn/turnPhases.types.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from '../rules/ruleRuntime.impl.js';
+import { initializeCity, initializeHq } from '../board/city.logic.js';
 
 // ---------------------------------------------------------------------------
 // Test hook infrastructure
@@ -133,6 +134,8 @@ function createMockGameState(options: {
       discard: options.discard,
     },
     villainDeckCardTypes: options.cardTypes,
+    city: initializeCity(),
+    hq: initializeHq(),
     lobby: {
       requiredPlayers: 1,
       ready: {},
@@ -189,7 +192,7 @@ describe('revealVillainCard', () => {
     );
   });
 
-  it('places the revealed card in G.villainDeck.discard', () => {
+  it('places the revealed villain card in G.city[0], not discard', () => {
     const gameState = createMockGameState({
       deck: ['card-a', 'card-b'],
       discard: [],
@@ -199,9 +202,14 @@ describe('revealVillainCard', () => {
     const moveContext = createMockMoveContext(gameState);
     revealVillainCard(moveContext);
 
+    assert.equal(
+      moveContext.G.city[0],
+      'card-a',
+      'card-a must be in city space 0 after reveal',
+    );
     assert.ok(
-      moveContext.G.villainDeck.discard.includes('card-a'),
-      'card-a must be in discard after reveal',
+      !moveContext.G.villainDeck.discard.includes('card-a'),
+      'card-a must NOT be in discard (villain cards go to City)',
     );
   });
 
@@ -352,19 +360,20 @@ describe('revealVillainCard', () => {
     const moveContext = createMockMoveContext(gameState);
     revealVillainCard(moveContext);
 
-    assert.ok(
-      moveContext.G.villainDeck.discard.length > 0,
-      'After reshuffle + reveal, discard must contain the revealed card',
-    );
-    // makeMockCtx reverses arrays, so the reshuffled deck order is reversed
-    // The total cards across deck + discard must equal the original 3
+    // makeMockCtx reverses arrays, so deck becomes ['card-z','card-y','card-x'].
+    // Top card 'card-z' is a bystander and goes to discard. Villain/henchman
+    // would go to City. Total cards across deck + discard + city must equal 3.
+    const cityCards = moveContext.G.city.filter(
+      (space: string | null) => space !== null,
+    ).length;
     const totalCards =
       moveContext.G.villainDeck.deck.length +
-      moveContext.G.villainDeck.discard.length;
+      moveContext.G.villainDeck.discard.length +
+      cityCards;
     assert.equal(
       totalCards,
       3,
-      'Total cards across deck + discard must remain 3 after reshuffle + reveal',
+      'Total cards across deck + discard + city must remain 3 after reshuffle + reveal',
     );
   });
 

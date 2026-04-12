@@ -67,6 +67,14 @@ function makeTestGameState(
       officers: [],
       sidekicks: [],
     },
+    messages: [],
+    counters: {},
+    hookRegistry: [],
+    villainDeck: { deck: [], discard: [] },
+    villainDeckCardTypes: {},
+    city: [null, null, null, null, null],
+    hq: [null, null, null, null, null],
+    lobby: { requiredPlayers: 1, ready: {}, started: false },
   };
 }
 

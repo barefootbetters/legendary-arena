@@ -7,6 +7,57 @@
 
 ## Current State
 
+### WP-015 — City & HQ Zones (Villain Movement + Escapes) (2026-04-11)
+
+**What changed:**
+- `packages/game-engine/src/board/city.types.ts` — **new** — `CityZone`,
+  `HqZone`, `CitySpace`, `HqSlot` (fixed 5-tuples)
+- `packages/game-engine/src/board/city.logic.ts` — **new** —
+  `pushVillainIntoCity`, `initializeCity`, `initializeHq` (pure helpers)
+- `packages/game-engine/src/board/city.validate.ts` — **new** —
+  `validateCityShape` runtime safety check
+- `packages/game-engine/src/board/city.logic.test.ts` — **new** — 9 city
+  push unit tests (push, shift, escape, identity, tuple invariant, JSON)
+- `packages/game-engine/src/villainDeck/villainDeck.city.integration.test.ts`
+  — **new** — 8 integration tests (routing, escape counter, HQ immutability,
+  malformed city safety)
+- `packages/game-engine/src/villainDeck/villainDeck.reveal.ts` — **modified**
+  — City routing for villain/henchman (push into City space 0), conditional
+  discard for bystander/scheme-twist/mastermind-strike, escape counter via
+  `ENDGAME_CONDITIONS.ESCAPED_VILLAINS`
+- `packages/game-engine/src/types.ts` — **modified** — added `city: CityZone`
+  and `hq: HqZone` to `LegendaryGameState`
+- `packages/game-engine/src/setup/buildInitialGameState.ts` — **modified** —
+  initialize `G.city` and `G.hq` from `initializeCity()` and `initializeHq()`
+- `packages/game-engine/src/index.ts` — **modified** — exports for city types,
+  logic, and validation
+- `packages/game-engine/src/villainDeck/villainDeck.reveal.test.ts` — **modified**
+  (01.5 wiring) — added `city`/`hq` to mock G; updated villain routing
+  assertion from discard to City
+- `packages/game-engine/src/moves/coreMoves.integration.test.ts` — **modified**
+  (01.5 wiring) — added missing fields to mock G for type completeness
+- `packages/game-engine/src/persistence/snapshot.create.test.ts` — **modified**
+  (01.5 wiring) — added missing fields to mock G for type completeness
+
+**What exists now:**
+- City zone: 5 ordered spaces, each `CardExtId | null`
+- HQ zone: 5 ordered slots, each `CardExtId | null` (empty — WP-016 populates)
+- Revealed villains and henchmen enter City space 0 via push logic
+- Existing cards shift rightward; space 4 card escapes
+- Escapes increment `G.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS]`
+- Scheme-twists and mastermind-strikes trigger only (existing WP-014 behavior)
+- Bystanders go to discard + message (MVP; WP-017 adds capture)
+- City placement occurs BEFORE trigger emission (contractual ordering)
+- All 169 tests passing (152 existing + 17 new)
+
+**Known gaps (expected at this stage):**
+- HQ is empty — WP-016 adds recruit slot population
+- No fight/attack/recruit mechanics — WP-016
+- No bystander capture — WP-017
+- No KO pile — WP-017
+
+---
+
 ### WP-014B — Villain Deck Composition Rules & Registry Integration (2026-04-11)
 
 **What changed:**

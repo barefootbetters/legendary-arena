@@ -129,6 +129,8 @@ Before writing a single line:
 - Tests use `makeMockCtx` from `src/test/mockCtx.ts` — do not import from
   `boardgame.io`
 - No `.reduce()` in city push logic — use explicit `for` or `for...of` loops
+- City mutation in WP-015 occurs only during `revealVillainCard`. No other
+  helper, move, or test may mutate `G.city` directly.
 
 **Session protocol:**
 - If any contract, field name, or reference is unclear, stop and ask the human
@@ -177,6 +179,9 @@ Before writing a single line:
 
 ### B) `src/board/city.logic.ts` — new
 
+**Terminology:** "push" means insert at space 0 and shift toward space 4.
+"Escape" refers only to the card shifted out of space 4.
+
 - `pushVillainIntoCity(city: CityZone, cardId: CardExtId): { city: CityZone; escapedCard: CardExtId | null }`
   — pure function:
   1. If space 4 is occupied, that card escapes (`escapedCard = city[4]`)
@@ -207,8 +212,11 @@ Before writing a single line:
 
 - After step 4 (type lookup), before step 5 (trigger emission).
   **Ordering guarantee:** City placement occurs before rule effects are applied,
-  so rule hooks observe the post-placement City state. This ordering is
-  contractual and must not be reversed without a DECISIONS.md entry.
+  so rule hooks observe the post-placement City state. This ensures rule hooks
+  observe the physical board state that players would see immediately after a
+  reveal, matching Legendary's tabletop semantics. This ordering is
+  contractual and must not be reversed without a DECISIONS.md entry. Violation
+  of this ordering is a breaking change to the rules engine.
   - If card type is `'villain'` or `'henchman'`:
     - Call `pushVillainIntoCity(G.city, cardId)`
     - Update `G.city` with the returned city
@@ -260,7 +268,8 @@ Before writing a single line:
   5. Escape increments `G.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS]`
   6. `JSON.stringify(G)` succeeds after reveal + city placement
   7. `G.hq` remains unchanged (all null) after villain reveals
-  8. If `G.city` is malformed at move time, the move fails safely (no mutation)
+  8. If `G.city` is malformed at move time, the move fails safely: no
+     mutation to `G.city`, no counter increment, no throw (move returns early)
 
 ---
 
