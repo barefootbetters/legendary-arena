@@ -7,6 +7,41 @@
 
 ## Current State
 
+### WP-012 — Match Listing, Join & Reconnect (Minimal MVP) (2026-04-11)
+
+**What changed:**
+- `apps/server/scripts/list-matches.mjs` — **new** — CLI script to list
+  available matches from the boardgame.io lobby API using built-in `fetch`
+- `apps/server/scripts/join-match.mjs` — **new** — CLI script to join a
+  match by ID using built-in `fetch`; prints `{ matchID, playerID, credentials }`
+  to stdout
+- `apps/server/scripts/list-matches.test.ts` — **new** — 3 tests covering
+  `--server` flag override, network failure error messages, and exit code
+- `apps/server/scripts/join-match.test.ts` — **new** — 3 tests covering
+  missing `--match` flag, missing `--name` flag, and HTTP 409 error handling
+- `apps/server/package.json` — **modified** — added `test` script
+  (`node --import tsx --test scripts/**/*.test.ts`) and `tsx` devDependency
+- `docs/ai/DECISIONS.md` — added D-1241, D-1242, D-1243
+
+**What exists now:**
+- The minimum viable multiplayer loop is now complete:
+  **create → list → join → ready → play**
+- `list-matches.mjs` fetches `GET /games/legendary-arena` and prints a JSON
+  summary of available matches (matchID, player count, setupData presence,
+  gameover status). Accepts `--server <url>` flag (default `http://localhost:8000`).
+- `join-match.mjs` POSTs to `/games/legendary-arena/<matchID>/join` with
+  `{ playerName }` body. Prints `{ matchID, playerID, credentials }` to stdout.
+  Credentials are never stored to disk. Accepts `--match`, `--name`, and
+  `--server` flags.
+- Both scripts use Node v22 built-in `fetch` — no axios, no node-fetch.
+- Both scripts exit 1 on failure with full-sentence error messages to stderr.
+- Both scripts export testable functions for unit testing without a live server.
+- Server package now has a working `test` script — 6 tests pass, 0 fail.
+- No game engine files were modified. No `apps/server/src/` files were modified.
+- `create-match.mjs` was not modified.
+
+---
+
 ### WP-011 — Match Creation & Lobby Flow (Minimal MVP) (2026-04-11)
 
 **What changed:**

@@ -6,13 +6,17 @@
   "description": "Legendary Arena boardgame.io game server — wiring layer only",
   "main": "src/server.mjs",
   "scripts": {
-    "start": "node src/index.mjs"
+    "start": "node src/index.mjs",
+    "test": "node --import tsx --test scripts/**/*.test.ts"
   },
   "dependencies": {
     "@legendary-arena/game-engine": "workspace:*",
     "@legendary-arena/registry": "workspace:*",
     "boardgame.io": "^0.50.0",
     "pg": "^8.13.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.15.7"
   },
   "engines": {
     "node": ">=22"
