@@ -4,14 +4,16 @@
 > Determinism-first, replay-verifiable, tightly coupled to architectural
 > invariants.
 >
-> **Last updated:** 2026-04-09
+> **Last updated:** 2026-04-11
 >
-> **Current state:** No game engine tests exist yet. The game engine
-> package (`packages/game-engine/`) is created by WP-002. This document
-> defines the testing standards that all future tests must follow.
->
-> The only existing test is `packages/registry/src/registry.smoke.test.ts`
-> (created by WP-003's predecessor work).
+> **Current state:** 132 tests passing across all packages (123 engine,
+> 6 server, 3 registry). Test coverage spans setup validation, moves,
+> rule pipeline, endgame, lobby, drift detection, persistence contracts,
+> and CLI scripts.
+
+Testing in Legendary Arena is part of the architecture.
+If a test contradicts an architectural invariant, the test is wrong.
+Architecture is authoritative.
 
 ---
 
@@ -40,12 +42,15 @@ Testing follows the same invariants as the game engine:
 - **Determinism is non-negotiable** — tests never use `Math.random()`,
   real time, or external services. All randomness comes from
   `ctx.random.*` with seeded values.
-- **Moves never throw** — tests assert silent failure via `MoveResult`,
-  not try/catch.
+- **Moves must not throw due to invalid player input** — tests assert
+  failure through `MoveResult`, not via exceptions. Invariant violations
+  or programmer errors may still throw.
 - **`G` must remain JSON-serializable** — every test that mutates `G`
-  should verify `JSON.stringify(G)` succeeds.
-- **Registry is only available during `Game.setup()`** — no test may
-  call registry methods from within a move.
+  should verify `JSON.stringify(G)` succeeds. If a state cannot be
+  JSON-serialized, it cannot be persisted or replayed and is therefore
+  an invalid game state.
+- **Registry access is forbidden outside `Game.setup()`** — any test
+  that accesses registry methods during moves is invalid.
 - **Zones store only `CardExtId` strings** — never full card objects.
 
 ---
@@ -77,20 +82,22 @@ describe('evaluateEndgame', () => {
 
 ---
 
-## Test Types (Planned)
+## Test Types (Defined by Architecture)
 
-These test categories will be created as Work Packets are executed.
-Each WP's EC specifies the exact tests required.
+Each WP's EC specifies the exact tests required. Tests enforce
+architectural invariants, not implementation details.
 
-| Type | File pattern | What it tests | Created by |
+| Type | File pattern | Purpose | Created by |
 |---|---|---|---|
-| Unit | `*.logic.test.ts` | Pure functions (zoneOps, parsers, validators) | WP-005B+ |
-| Contract | `*.validate.test.ts` | Type shapes, field presence | WP-005A+ |
+| Unit | `*.logic.test.ts` | Pure function correctness (zoneOps, parsers, validators) | WP-005B+ |
+| Contract | `*.validate.test.ts` | Type shapes, field presence, error accumulation | WP-005A+ |
 | Move | `moves/*.test.ts` | Move validation + stage gating | WP-008B |
 | Setup | `setup/*.test.ts` | `Game.setup()`, `validateMatchSetup` | WP-005B |
 | Rule Pipeline | `rules/*.test.ts` | Hook execution + effect application | WP-009B |
 | Endgame | `endgame/*.test.ts` | Victory/loss condition evaluation | WP-010 |
+| Persistence | `persistence/*.test.ts` | Snapshot purity, JSON-serializability, zone counts | WP-013 |
 | Drift Detection | inline in test files | Canonical arrays match union types | WP-007A+ |
+| CLI Scripts | `scripts/*.test.ts` | Argument parsing, error handling, fetch stubs | WP-012 |
 | Replay | `replay/*.test.ts` | Full game replay from recorded moves | WP-027 |
 
 ---
@@ -164,15 +171,22 @@ Every EC that produces tests enforces these rules:
 6. **Keep tests under 30 lines** — break complex scenarios into
    named setup helpers.
 
+7. **Tests must explain what invariant they protect** — if violating
+   the invariant would be catastrophic for replay or multiplayer
+   correctness, say so in a `// why:` comment.
+
 ---
 
-## Existing Tests
+## Test Inventory (as of 2026-04-11)
 
-| Package | File | Tests | Created by |
+| Package | Test count | Suites | Key coverage areas |
 |---|---|---|---|
-| `@legendary-arena/registry` | `src/registry.smoke.test.ts` | `listSets().length > 0`, `listCards().length > 0` | WP-003 (predecessor) |
+| `@legendary-arena/game-engine` | 123 | 39 | Setup validation, moves, rules, endgame, lobby, drift detection, persistence |
+| `@legendary-arena/server` | 6 | 2 | CLI script argument parsing, fetch stubs, error handling |
+| `@legendary-arena/registry` | 3 | 1 | Registry smoke test (sets, cards) |
 
-All future tests will live in `packages/game-engine/src/**/*.test.ts`.
+Engine tests live in `packages/game-engine/src/**/*.test.ts`.
+Server tests live in `apps/server/scripts/**/*.test.ts`.
 
 ---
 
@@ -187,6 +201,7 @@ All future tests will live in `packages/game-engine/src/**/*.test.ts`.
 | `.test.mjs` file extension | Project convention | Use `.test.ts` |
 | Direct `G.field = value` mutation | Bypasses move contract | Call the move function |
 | `require('node:test')` | Project is ESM-only | `import { describe, it } from 'node:test'` |
+| Snapshot tests using object identity | Breaks determinism | Compare serialized output or derived invariants |
 
 ---
 
