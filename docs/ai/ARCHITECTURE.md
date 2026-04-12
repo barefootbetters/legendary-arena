@@ -892,6 +892,23 @@ Related Work Packets:
 - WP-014B — Villain Deck Composition Rules & Registry Integration
 - WP-015 — City & HQ Zones
 
+#### Deck Composition Contract (WP-014B)
+
+The villain deck is composed at setup time by `buildVillainDeck` using these
+conventions (D-1410 through D-1413):
+
+| Card Type | Source | ext_id Format | Count |
+|---|---|---|---|
+| Villain | `listCards()` FlatCard keys | `{setAbbr}-villain-{groupSlug}-{cardSlug}` | All cards in selected groups |
+| Henchman | Virtual instancing from `SetData.henchmen[].slug` | `henchman-{groupSlug}-{index}` (zero-padded) | 10 per group |
+| Scheme Twist | Virtual, scheme-scoped | `scheme-twist-{schemeSlug}-{index}` (zero-padded) | 8 per scheme |
+| Bystander | Virtual, player-count derived | `bystander-villain-deck-{index}` (zero-padded) | 1 per player |
+| Mastermind Strike | `SetData.masterminds[].cards` where `tactic !== true` | `{setAbbr}-mastermind-{mmSlug}-{cardSlug}` | From mastermind data |
+
+Pre-shuffle lexical sort of the combined deck is mandatory — registry list
+ordering may vary. Virtual cards have no intrinsic metadata; all behaviour
+derives from rule triggers and game context.
+
 ### The `G.lobby.started` Observability Pattern
 
 `G.lobby.started` is a boolean flag set to `true` by `startMatchIfReady()` before

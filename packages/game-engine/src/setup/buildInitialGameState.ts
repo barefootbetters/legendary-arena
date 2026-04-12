@@ -16,8 +16,6 @@ import type {
   MatchSelection,
   CardExtId,
   LobbyState,
-  VillainDeckState,
-  RevealedCardType,
 } from '../types.js';
 import { TURN_STAGES } from '../turn/turnPhases.types.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
@@ -31,6 +29,7 @@ import {
   SIDEKICK_EXT_ID,
 } from './pilesInit.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
+import { buildVillainDeck } from '../villainDeck/villainDeck.setup.js';
 
 // why: Pile ext_id constants are re-exported from pilesInit.ts for backward
 // compatibility. The canonical definitions live in pilesInit.ts — importing
@@ -105,16 +104,16 @@ function buildMatchSelection(config: MatchSetupConfig): MatchSelection {
  * construction to buildGlobalPiles.
  *
  * @param config - Validated MatchSetupConfig (all 9 fields).
- * @param _registry - Card registry for resolving ext_ids. Accepted for API
- *   consistency with future Work Packets (hero deck and villain deck
- *   construction). Currently unused in WP-005B because starting decks and
- *   global piles use well-known card ext_ids.
+ * @param registry - Card registry for resolving ext_ids. Used by
+ *   buildVillainDeck (WP-014B) to resolve villain, henchman, scheme, and
+ *   mastermind data at setup time. Satisfies VillainDeckRegistryReader
+ *   structurally.
  * @param context - Setup context with ctx.numPlayers and random.Shuffle.
  * @returns The fully populated initial LegendaryGameState.
  */
 export function buildInitialGameState(
   config: MatchSetupConfig,
-  _registry: CardRegistryReader,
+  registry: CardRegistryReader,
   context: SetupContext,
 ): LegendaryGameState {
   // why: Helpers were extracted from this function to satisfy the 30-line
@@ -139,6 +138,15 @@ export function buildInitialGameState(
   // Build selection metadata from config
   const selection = buildMatchSelection(config);
 
+  // Build villain deck from registry data
+  // why: villain deck built from registry data at setup time; see D-1410
+  // through D-1413 for ext_id conventions and composition rules. The real
+  // CardRegistry satisfies VillainDeckRegistryReader structurally. Test mocks
+  // that only implement CardRegistryReader (listCards with {key} only) will
+  // lack listSets/getSet — buildVillainDeck handles this gracefully by
+  // producing an empty deck, which the reveal pipeline already supports.
+  const villainDeckResult = buildVillainDeck(config, registry, context);
+
   return {
     matchConfiguration: config,
     selection,
@@ -155,10 +163,10 @@ export function buildInitialGameState(
     messages: [],
     counters: {},
     hookRegistry: buildDefaultHookDefinitions(config),
-    // why: WP-014B will populate from registry. Empty defaults are correct
-    // for WP-014A — the reveal pipeline handles empty deck gracefully.
-    villainDeck: { deck: [], discard: [] } satisfies VillainDeckState,
-    villainDeckCardTypes: {} as Record<CardExtId, RevealedCardType>,
+    // why: villain deck built from registry data at setup time; see D-1410
+    // through D-1413 for ext_id conventions and composition rules.
+    villainDeck: villainDeckResult.state,
+    villainDeckCardTypes: villainDeckResult.cardTypes,
     // why: lobby state initialized at setup time from ctx.numPlayers. All
     // players start as not ready. G.lobby.started is false until
     // startMatchIfReady succeeds.

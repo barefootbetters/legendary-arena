@@ -1541,6 +1541,10 @@ from scheme rules, mastermind rules, and fixed game invariants.
 - Bystanders in villain deck: derived from `context.ctx.numPlayers` (1 per
   player, standard Legendary rule). This is **separate** from
   `config.bystandersCount` which sizes the bystander pile (supply).
+- **Bystander ext_id format (amended WP-014B):** `bystander-villain-deck-{index}`
+  zero-padded (e.g., `bystander-villain-deck-00`). Indexed format chosen for
+  consistency with henchman and scheme twist patterns and to enable replay
+  targeting of individual bystander reveal events.
 - Mastermind strikes: all non-tactic cards from the selected mastermind's
   cards array (count determined by mastermind data, not a fixed constant).
 

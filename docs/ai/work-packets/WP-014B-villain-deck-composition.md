@@ -227,6 +227,13 @@ parameterized without a new DECISIONS.md entry):**
 **Required DECISIONS.md entry:** count derivation rule, whether to use indexed
 ext_ids or reuse `BYSTANDER_EXT_ID`, relationship to `config.bystandersCount`.
 
+**Note:** D-1412 locks the *count* of bystanders in the villain deck (1 per
+player). If the ext_id format is not explicitly specified in D-1412, Phase 1
+of WP-014B confirms the ext_id convention before implementation and records
+a D-1412 amendment if required. This step confirms whether D-1412 already
+specifies the ext_id format. It is not an opportunity to redesign the rule,
+only to record an explicit amendment if the format is missing.
+
 ### D) Mastermind Strike Identification Contract
 
 Mastermind strikes are identified exclusively by the `tactic !== true`
@@ -266,9 +273,25 @@ Copy-count constants live in the game-engine setup layer (e.g., in
 Player-count-dependent values are derived from `context.ctx.numPlayers` at
 setup time.
 
+### Config-to-Registry Mapping (Required Before Implementation)
+
+Before any code is written, the executor must verify and document a 1:1
+mapping statement for each config field to its registry data source:
+- `villainGroupIds` -> `SetData.villains[].slug`
+- `henchmanGroupIds` -> `SetData.henchmen[].slug`
+- `schemeId` -> `SetData.schemes[].slug`
+- `mastermindId` -> `SetData.masterminds[].slug`
+
+The mapping statement must be written before any code appears in the diff.
+If the mapping statement cannot be written unambiguously, STOP.
+
 ---
 
 ## Scope — Implementation (Phase 2 + 3)
+
+At the start of Phase 2, all decisions are considered closed. No further
+interpretation or invention is permitted. Implementation is a direct
+translation of the adopted conventions into code.
 
 ### F) `VillainDeckRegistryReader` interface — new
 
@@ -282,12 +305,19 @@ Define a wider setup-time registry interface local to `game-engine` that
   mastermind
 
 Read `packages/registry/src/types/index.ts` (`CardRegistry` interface) to
-determine the exact method subset. Likely candidates:
-- `listSets(): Array<{ abbr: string }>` — enumerate set abbreviations
-- `getSet(abbr: string): SetData | undefined` — access per-set data
+determine the exact method subset. Required methods:
+- `listCards(): Array<{ key: string; cardType: string; slug: string; setAbbr: string }>`
+  — for villain card ext_ids, since `FlatCard.key` already encodes the
+  canonical ext_id format `{setAbbr}-villain-{groupSlug}-{cardSlug}`.
+  Prefer this over manually reconstructing keys from SetData.
+- `listSets(): Array<{ abbr: string }>` — enumerate loaded sets
+- `getSet(abbr: string): unknown` — access per-set data for traversal of
+  henchmen, schemes, and masterminds (where FlatCard is insufficient)
 
-The `SetData` type must also be defined locally (or a structural subset of
-it) to avoid importing from the registry package.
+The `SetData` return from `getSet` must be handled structurally (cast or
+validate at runtime) since game-engine cannot import the registry's types.
+Define minimal structural types locally for the fields you traverse
+(henchmen, masterminds and their cards, schemes).
 
 ### G) `src/villainDeck/villainDeck.setup.ts` — new
 
@@ -302,8 +332,14 @@ it) to avoid importing from the registry package.
    — tags each as `'bystander'`
 5. Resolves mastermind strike cards from `config.mastermindId` via registry
    — filters by `tactic !== true`, tags each as `'mastermind-strike'`
-6. Shuffles the combined deck using `shuffleDeck(deck, context)`
-7. Returns `{ state: { deck: shuffled, discard: [] }, cardTypes }`
+6. Combines all cards into one deck array, then sorts lexically before
+   shuffling — registry list ordering may vary depending on load order;
+   stable pre-shuffle ordering ensures the same inputs always generate the
+   same pre-shuffle sequence, making `shuffleDeck` fully deterministic
+7. Shuffles the sorted deck using `shuffleDeck(sortedDeck, context)`.
+   This shuffle step MUST be preceded by the explicit lexical sort in step 6.
+   Relying on registry iteration order is forbidden.
+8. Returns `{ state: { deck: shuffled, discard: [] }, cardTypes }`
 
 - Uses `for...of` loops — no `.reduce()`
 - `// why:` comments on shuffle, tactic filter, and count constants

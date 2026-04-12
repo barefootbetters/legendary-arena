@@ -404,13 +404,14 @@ These packets make the game play like Legendary for the first time.
   `buildVillainDeck` deferred to WP-014B; discard routing temporary (WP-015
   changes to City)
 
-- [ ] WP-014B — Villain Deck Composition Rules & Registry Integration ✅ Reviewed
+- [x] WP-014B — Villain Deck Composition Rules & Registry Integration ✅ Reviewed ✅ Complete (2026-04-11)
   Dependencies: WP-014A
   Notes: Implements `buildVillainDeck` using decisions D-1410 through D-1413;
   virtual card instancing for henchmen and scheme twists; ext_id conventions
   locked; composition counts are rules-driven (10 henchmen/group, 8 twists,
   1 bystander/player); defines `VillainDeckRegistryReader` interface;
-  replaces empty defaults in `buildInitialGameState` with real data
+  replaces empty defaults in `buildInitialGameState` with real data;
+  D-1412 amended with bystander ext_id format
 
 - [ ] WP-015 — City & HQ Zones (Villain Movement + Escapes) ✅ Reviewed
   Dependencies: WP-014A

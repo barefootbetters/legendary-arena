@@ -7,6 +7,42 @@
 
 ## Current State
 
+### WP-014B — Villain Deck Composition Rules & Registry Integration (2026-04-11)
+
+**What changed:**
+- `packages/game-engine/src/villainDeck/villainDeck.setup.ts` — **new** —
+  `buildVillainDeck`, `VillainDeckRegistryReader`, count constants,
+  local structural types for registry traversal
+- `packages/game-engine/src/villainDeck/villainDeck.setup.test.ts` — **new** —
+  10 tests (composition, counts, ext_id formats, serialization)
+- `packages/game-engine/src/setup/buildInitialGameState.ts` — **modified** —
+  replaced empty defaults with real `buildVillainDeck` call; renamed
+  `_registry` to `registry`
+- `packages/game-engine/src/index.ts` — **modified** — exports for
+  `buildVillainDeck` and `VillainDeckRegistryReader`
+
+**What exists now:**
+- Villain deck fully populated from registry at setup time
+- 5 card types represented: villain (FlatCard keys), henchman (virtual
+  `henchman-{slug}-{index}`), scheme-twist (virtual
+  `scheme-twist-{slug}-{index}`), bystander (virtual
+  `bystander-villain-deck-{index}`), mastermind-strike (FlatCard keys,
+  `tactic !== true`)
+- Count rules: 10 henchmen/group, 8 scheme twists, 1 bystander/player,
+  mastermind strikes from data
+- Pre-shuffle lexical sort ensures deterministic deck order
+- `VillainDeckRegistryReader` structural interface (no registry imports)
+- Runtime type guard gracefully handles narrow test mocks (empty deck)
+- D-1412 amended with bystander ext_id format
+- All 152 tests passing (142 existing + 10 new)
+
+**Known gaps (expected at this stage):**
+- City routing not yet implemented — WP-015 will change villain/henchman
+  routing from discard to City
+- No hero deck (HQ) construction — future WP
+
+---
+
 ### WP-014A — Villain Reveal & Trigger Pipeline (2026-04-11)
 
 **What changed:**
