@@ -11,7 +11,7 @@ mindmap
         ["FP-01 ✅\nRender.com Backend"]
         ["FP-02 ✅\nDatabase Migrations"]
 
-      Phase 0 -- Coordination
+      Phase 0 -- Coordination ✅
         ["WP-001 ✅\nCoordination System"]
         ["WP-002 ✅\nGame Skeleton"]
         ["WP-003 ✅\nCard Registry"]
@@ -27,10 +27,12 @@ mindmap
         ["WP-008A ✅\nCore Moves Contracts"]
         ["WP-008B ✅\nCore Moves Implementation"]
 
-      Phase 3 -- MVP Multiplayer
-        ["WP-009A/B ⬜\nRule Hooks"]
-        ["WP-010 ⬜\nVictory & Loss"]
-        ["WP-011..013 ⬜\nLobby + Persistence"]
+      Phase 3 -- MVP Multiplayer ✅
+        ["WP-009A/B ✅\nRule Hooks & Execution"]
+        ["WP-010 ✅\nVictory & Loss"]
+        ["WP-011 ✅\nLobby Flow"]
+        ["WP-012 ✅\nMatch List & Join"]
+        ["WP-013 ✅\nPersistence Boundaries"]
 
       Phase 4 -- Core Gameplay Loop
         ["WP-014..020 ⬜\nVillain / City / Fight\nEconomy / VP (7)"]
@@ -58,6 +60,7 @@ mindmap
         ["55 Execution Checklists\n1 Done, 54 Draft"]
         ["7 Rule Files\n(.claude/rules/)"]
         ["Immutable Decisions\nDECISIONS.md"]
+        ["Phase 3 Gate\nClosed (D-1320)"]
 ```
 
 ## Progress Summary
@@ -68,13 +71,13 @@ mindmap
 | Phase 0 | WP-001..004, 043..047 | 9/9 | -- |
 | Phase 1 | WP-005A/B, 006A/B | 4/4 | -- |
 | Phase 2 | WP-007A/B, 008A/B | 4/4 | -- |
-| Phase 3 | WP-009A/B, 010..013 | 0/6 | |
-| Phase 4 | WP-014..020 | 0/7 | |
-| Phase 5 | WP-021..026 | 0/6 | |
-| Phase 6 | WP-027..035, 042, 048 | 0/11 | |
-| Phase 7 | WP-036..041, 049..051 | 0/9 | |
-| **Total** | | **21/56** | **35** |
+| Phase 3 | WP-009A/B, 010..013 | 6/6 | -- |
+| Phase 4 | WP-014..020 | 0/7 | ⬜ |
+| Phase 5 | WP-021..026 | 0/6 | ⬜ |
+| Phase 6 | WP-027..035, 042, 048 | 0/11 | ⬜ |
+| Phase 7 | WP-036..041, 049..051 | 0/9 | ⬜ |
+| **Total** | | **27/56** | **29** |
 
-**Next unblocked:** WP-009A (Rule Hooks Contracts)
+**Next unblocked:** WP-014 (Villain Deck & Reveal Pipeline)
 
-*Last updated: 2026-04-11 (after scoring & PAR pipeline)*
+*Last updated: 2026-04-11 (Phase 3 complete, Phase 4 approved)*

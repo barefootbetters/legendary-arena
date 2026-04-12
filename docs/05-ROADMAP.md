@@ -3,7 +3,7 @@
 > A modern multiplayer evolution of the Marvel Legendary deck-building card game.
 > Built with **boardgame.io**, **TypeScript**, and **Cloudflare R2**.
 
-**Last updated:** 2026-04-11 (after scoring & PAR pipeline) -- **Authoritative source:** [`docs/ai/work-packets/WORK_INDEX.md`](ai/work-packets/WORK_INDEX.md)
+**Last updated:** 2026-04-11 (Phase 3 complete, Phase 4 approved) -- **Authoritative source:** [`docs/ai/work-packets/WORK_INDEX.md`](ai/work-packets/WORK_INDEX.md)
 
 ---
 
@@ -13,10 +13,10 @@
 `00.4` ✅ `00.5` ✅ `01` ✅ `02` ✅
 
 **Work Packets**
-`WP-001` ✅ `WP-002` ✅ `WP-003` ✅ `WP-004` ✅ `WP-005A` ✅ `WP-005B` ✅ `WP-006A` ✅ `WP-006B` ✅ `WP-007A` ✅ `WP-007B` ✅ `WP-008A` ✅ `WP-008B` ✅ `WP-043` ✅ `WP-044` ✅ `WP-045` ✅ `WP-046` ✅ `WP-047` ✅ -- **WP-009A..051** ⬜
+`WP-001` ✅ `WP-002` ✅ `WP-003` ✅ `WP-004` ✅ `WP-005A` ✅ `WP-005B` ✅ `WP-006A` ✅ `WP-006B` ✅ `WP-007A` ✅ `WP-007B` ✅ `WP-008A` ✅ `WP-008B` ✅ `WP-009A` ✅ `WP-009B` ✅ `WP-010` ✅ `WP-011` ✅ `WP-012` ✅ `WP-013` ✅ `WP-043` ✅ `WP-044` ✅ `WP-045` ✅ `WP-046` ✅ `WP-047` ✅ -- **WP-014..051** ⬜
 
 **Overall Progress**
-21 / 56 items complete (4 FPs + 17 WPs) -- **Next up:** WP-009A (Rule Hooks Contracts)
+27 / 56 items complete (4 FPs + 23 WPs) -- **Next up:** WP-014 (Villain Deck & Reveal Pipeline)
 
 ---
 
@@ -33,7 +33,7 @@ Infrastructure that everything else builds on.
 
 ---
 
-## Phase 0 -- Coordination & Contracts
+## Phase 0 -- Coordination & Contracts ✅
 
 Establishes repo-as-memory system and locks contracts.
 
@@ -70,15 +70,20 @@ First playable (but incomplete) game loop.
 
 ---
 
-## Phase 3 -- MVP Multiplayer Infrastructure
+## Phase 3 -- MVP Multiplayer Infrastructure ✅
 
-Minimum viable multiplayer loop.
+Minimum viable multiplayer loop. Phase 3 exit gate closed 2026-04-11
+(D-1320). All five exit criteria pass: determinism under concurrency,
+intent validation, snapshot integrity, engine/server separation, and
+failure mode behavior.
 
-| WP      | Name                       | Layer   | What It Produces                            |
-|---------|----------------------------|---------|----------------------------------------------|
-| 009A/B  | Rule Hooks                 | Engine  | 5 triggers, 4 effect types                   |
-| 010     | Victory & Loss Conditions  | Engine  | `evaluateEndgame`                             |
-| 011-013 | Lobby, Join, Persistence   | Server  | Match creation, list, reconnect, snapshots    |
+| WP      | Name                       | Layer   | What It Produces                            | Status      |
+|---------|----------------------------|---------|----------------------------------------------|-------------|
+| 009A/B  | Rule Hooks                 | Engine  | 5 triggers, 4 effect types, execution pipeline | ✅ Complete |
+| 010     | Victory & Loss Conditions  | Engine  | `evaluateEndgame`, `ENDGAME_CONDITIONS`       | ✅ Complete |
+| 011     | Match Creation & Lobby     | Engine  | `LobbyState`, `setPlayerReady`, `startMatchIfReady` | ✅ Complete |
+| 012     | Match Listing & Join       | Server  | `list-matches.mjs`, `join-match.mjs` CLI scripts | ✅ Complete |
+| 013     | Persistence Boundaries     | Engine  | `PERSISTENCE_CLASSES`, `MatchSnapshot`, `createSnapshot` | ✅ Complete |
 
 ---
 
@@ -159,7 +164,7 @@ flowchart TD
     WP003 --> WP004
     WP004 --> Phase1["Phase 1 ✅\nGame Setup"]
     Phase1 --> Phase2["Phase 2 ✅\nTurn Engine"]
-    Phase2 --> Phase3["Phase 3\nMVP Multiplayer"]
+    Phase2 --> Phase3["Phase 3 ✅\nMVP Multiplayer"]
     Phase3 --> Phase4["Phase 4\nCore Gameplay"]
     Phase4 --> Phase5["Phase 5\nCard Abilities"]
     Phase5 --> Phase6["Phase 6\nProduction"]
@@ -176,6 +181,7 @@ flowchart TD
     style WP004 fill:#10b981,color:#fff
     style Phase1 fill:#10b981,color:#fff
     style Phase2 fill:#10b981,color:#fff
+    style Phase3 fill:#10b981,color:#fff
 ```
 
 **Parallel-safe packets:** WP-003 (alongside 002), WP-005A/B (no dep on 004), WP-030 (parallel to 031).
@@ -206,5 +212,6 @@ flowchart TD
 | `docs/ai/execution-checklists/EC-*.md` | 55 execution contracts (1 Done, 54 Draft) |
 | `docs/ai/DECISIONS.md` | Immutable decisions |
 | `docs/12-SCORING-REFERENCE.md` | PAR scoring formula & leaderboard rules |
+| `docs/ai/REFERENCE/03A-PHASE-3-MULTIPLAYER-READINESS.md` | Phase 3 exit gate (closed) |
 
-*Last updated: 2026-04-11 (after scoring & PAR pipeline)*
+*Last updated: 2026-04-11 (Phase 3 complete, Phase 4 approved)*
