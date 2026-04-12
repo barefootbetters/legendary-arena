@@ -7,6 +7,48 @@
 
 ## Current State
 
+### WP-017 — KO, Wounds & Bystander Capture (Minimal MVP) (2026-04-12)
+
+**What changed:**
+- `packages/game-engine/src/board/ko.logic.ts` — **new** — `koCard`
+  destination-only append helper for KO pile
+- `packages/game-engine/src/board/wounds.logic.ts` — **new** — `gainWound`
+  helper moves top wound from supply to player discard
+- `packages/game-engine/src/board/bystanders.logic.ts` — **new** —
+  `attachBystanderToVillain`, `awardAttachedBystanders`,
+  `resolveEscapedBystanders` pure helpers for bystander lifecycle
+- `packages/game-engine/src/villainDeck/villainDeck.reveal.ts` — **modified**
+  — on villain/henchman City entry: attach 1 bystander from supply;
+  on escape: gain wound for current player + resolve attached bystanders
+  (return to supply)
+- `packages/game-engine/src/moves/fightVillain.ts` — **modified** — on
+  villain defeat: award attached bystanders to player's victory zone
+- `packages/game-engine/src/types.ts` — **modified** — added `ko: CardExtId[]`
+  and `attachedBystanders: Record<CardExtId, CardExtId[]>` to
+  `LegendaryGameState`
+- `packages/game-engine/src/index.ts` — **modified** — exports for new helpers
+- `packages/game-engine/src/setup/buildInitialGameState.ts` — **modified**
+  (01.5 wiring) — initialize `ko: []` and `attachedBystanders: {}`
+- 4 new test files: ko (3), wounds (4), bystanders (8), integration (7) = 22
+- 7 existing test files updated (01.5 wiring: added `ko`/`attachedBystanders`
+  to mock game state objects)
+
+**What's true now:**
+- `G.ko` exists as a KO pile for cards removed from the game
+- `G.attachedBystanders` tracks bystanders attached to villains in the City
+- Villains/henchmen entering City get 1 bystander attached (MVP simplified)
+- Fighting a villain awards attached bystanders to player's victory zone
+- Villain escape causes current player to gain 1 wound
+- Escaped villain's attached bystanders return to supply pile (no leak)
+- All zone operations are pure helpers with no boardgame.io imports
+- Supply pile convention: `pile[0]` is top-of-pile (locked)
+- 206 tests passing, 0 failures
+
+**What's next:**
+- WP-018 — Attack & Recruit Economy (resource gating for fight/recruit)
+
+---
+
 ### WP-016 — Fight First, Then Recruit (Minimal MVP) (2026-04-11)
 
 **What changed:**

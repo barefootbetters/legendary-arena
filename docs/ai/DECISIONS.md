@@ -1831,9 +1831,103 @@ destination preserves the deck-building cycle: recruit → discard → shuffle
 
 ---
 
+### D-1701 — MVP Attaches Exactly 1 Bystander per Villain Entering City
+
+**Unlocks:** WP-017 bystander capture
+
+**Decision:** When a villain or henchman enters the City via
+`revealVillainCard`, exactly one bystander is attached from
+`G.piles.bystanders` (taking `pile[0]`). This is a simplified MVP rule.
+Full Legendary rules allow variable bystander counts based on card text
+and game effects.
+
+**Rationale:** The 1-bystander-per-villain rule covers the core mechanic
+without requiring card text parsing or effect resolution. Future WPs can
+extend this to support variable counts.
+
+**Introduced:** WP-017
+**Status:** Accepted
+
+---
+
+### D-1702 — Escape Causes Wound (MVP Player Penalty)
+
+**Unlocks:** WP-017 escape side effects
+
+**Decision:** When a villain escapes the City (pushed past space 4), the
+current player gains 1 wound from `G.piles.wounds` into their discard zone.
+If the wounds pile is empty, no wound is gained (deterministic no-op).
+
+**Rationale:** This links escapes to a tangible player penalty beyond the
+endgame counter increment. In tabletop Legendary, escapes have various
+penalties; the wound rule is a reasonable MVP default that makes escapes
+feel consequential during gameplay.
+
+**Introduced:** WP-017
+**Status:** Accepted
+
+---
+
+### D-1703 — G.attachedBystanders Is a Plain Record, Not a Map
+
+**Unlocks:** WP-017 state shape
+
+**Decision:** `G.attachedBystanders` is typed as
+`Record<CardExtId, CardExtId[]>` — a plain JavaScript object, not a `Map`
+or `Set`. Entries are created on City entry and removed on defeat (award)
+or escape (return to supply).
+
+**Rationale:** `G` must be JSON-serializable at all times (engine-wide
+invariant). `Map` and `Set` do not survive `JSON.stringify/parse`
+round-trips. A plain object with string keys satisfies the serializability
+constraint while providing O(1) lookup by card ID.
+
+**Introduced:** WP-017
+**Status:** Accepted
+
+---
+
+### D-1704 — Escaped Bystanders Return to Supply Pile, Not KO
+
+**Unlocks:** WP-017 escape bystander resolution
+
+**Decision:** When a villain escapes the City, any bystanders attached to
+the escaped card are returned to the end of `G.piles.bystanders` (supply
+pile), not placed in `G.ko`.
+
+**Rationale:** Returning bystanders to supply prevents bystander depletion
+artifacts where repeated escapes would permanently remove bystanders from
+the game. This preserves the total bystander count and matches the
+tabletop Legendary convention where escaped bystanders are not destroyed.
+
+**Introduced:** WP-017
+**Status:** Accepted
+
+---
+
+### D-1705 — Supply Pile pile[0] Is Top-of-Pile Convention
+
+**Unlocks:** WP-017 pile consumption
+
+**Decision:** For all supply piles (`G.piles.bystanders`, `G.piles.wounds`,
+etc.), `pile[0]` is the top of the pile — the card consumed next. Removal
+uses `pile.slice(1)`. This is consistent with the villain deck convention
+where `deck[0]` is the top card.
+
+**Rationale:** A consistent top-of-pile convention across all array-based
+card zones prevents confusion and off-by-one errors. `pile[0]` + `.slice(1)`
+is deterministic, immutable-friendly, and matches the existing deck
+convention established in WP-014A.
+
+**Introduced:** WP-017
+**Status:** Accepted
+
+---
+
 **Related packets:**
 - WP-014A — Villain Reveal & Trigger Pipeline (non-core move precedent)
 - WP-016 — Fight First, Then Recruit
+- WP-017 — KO, Wounds & Bystander Capture (Minimal MVP)
 - WP-018 — Attack & Recruit Economy
 
 ---

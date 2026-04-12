@@ -442,15 +442,16 @@ These packets make the game play like Legendary for the first time.
   no card text effects (WP-022), no bystander rescue (WP-017); 14 new tests
   (7 per move); game.test.ts 01.5 wiring (5->7 moves)
 
-- [ ] WP-017 — KO, Wounds & Bystander Capture (Minimal MVP) ✅ Reviewed
+- [x] WP-017 — KO, Wounds & Bystander Capture (Minimal MVP) ✅ Reviewed ✅ Complete (2026-04-12)
   Dependencies: WP-016
   Notes: Adds `G.ko: CardExtId[]` and `G.attachedBystanders: Record<CardExtId,
   CardExtId[]>`; MVP: 1 bystander per villain entering City (simplified);
   escape causes current player to gain 1 wound (links WP-015 escapes to
   penalty); `koCard`, `gainWound`, `attachBystanderToVillain`,
-  `awardAttachedBystanders` are pure helpers (no boardgame.io import, no
-  `.reduce()`); modifies `fightVillain.ts` and `city.logic.ts`; SharePoint
-  links removed; test files use `.test.ts`; normalized to PACKET-TEMPLATE
+  `awardAttachedBystanders`, `resolveEscapedBystanders` are pure helpers
+  (no boardgame.io import, no `.reduce()`); modifies `fightVillain.ts` and
+  `villainDeck.reveal.ts`; `city.logic.ts` NOT modified (pure helper
+  boundary); 22 new tests; test files use `.test.ts`
 
 - [ ] WP-018 — Attack & Recruit Point Economy (Minimal MVP) ✅ Reviewed
   Dependencies: WP-017
