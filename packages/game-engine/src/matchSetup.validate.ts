@@ -120,6 +120,9 @@ export function validateMatchSetup(
   }
 
   // --- Shape validation: string fields ---
+  // why: Empty strings pass this type check intentionally. Registry ext_id
+  // lookup in Stage 2 below will fail for empty strings since no card has
+  // an empty ext_id. JSON Schema enforces minLength: 1 at the server layer.
   for (const fieldName of STRING_FIELDS) {
     if (typeof input[fieldName] !== 'string') {
       errors.push({

@@ -125,7 +125,7 @@ Changing the meaning of a schema version requires a
 
   "seed": "9b4a4e2d6e1c43c2",
 
-  "playerCount": 4,
+  "playerCount": 2,
 
   "themeId": "dark-phoenix-saga",
 

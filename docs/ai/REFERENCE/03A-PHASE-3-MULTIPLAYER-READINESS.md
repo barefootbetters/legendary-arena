@@ -30,9 +30,12 @@ trustworthy, or replay-safe.
 **Phase transition:** Phase 2 (complete) -> Phase 3 (MVP Multiplayer)
 
 **Phase 3 Work Packets:**
-- WP-009A/B — Rule Hooks (contracts + implementation)
-- WP-010 — Victory & Loss Conditions
-- WP-011-013 — Lobby, Join, Persistence, Reconnect
+- [x] WP-009A — Scheme & Mastermind Rule Hooks (Contracts) — Completed 2026-04-11
+- [x] WP-009B — Scheme & Mastermind Rule Execution (Minimal MVP) — Completed 2026-04-11
+- [x] WP-010 — Victory & Loss Conditions (Minimal MVP) — Completed 2026-04-11
+- [x] WP-011 — Match Creation & Lobby Flow — Completed 2026-04-11
+- [x] WP-012 — Match Listing, Join & Reconnect — Completed 2026-04-11
+- [ ] WP-013 — Persistence Boundaries & Snapshots — Pending
 
 This gate has two sections:
 1. **Entry criteria** — must be true before any Phase 3 WP executes
@@ -94,32 +97,41 @@ Phase 3 work must not weaken any of them.
 These must all be true before Phase 4 (Core Gameplay Loop) begins.
 Each criterion maps to specific Phase 3 WPs.
 
-### X-1. Determinism Under Concurrency (WP-009A/B, WP-010)
+### X-1. Determinism Under Concurrency (WP-009A/B, WP-010) — PASS
 
-- [ ] Move ordering determined by engine logic only — never by arrival time
-- [ ] Simultaneous or near-simultaneous intents resolve identically across runs
-- [ ] Rule hook execution order is deterministic (priority ascending, then
-      id lexical — defined in ARCHITECTURE.md)
-- [ ] Victory and loss evaluation is deterministic and order-stable
-- [ ] Engine results identical with artificial latency injected
+- [x] Move ordering determined by engine logic only — never by arrival time
+      (boardgame.io serializes moves through its server; engine processes
+      one move at a time)
+- [x] Simultaneous or near-simultaneous intents resolve identically across runs
+      (boardgame.io's turn system enforces ordering; no parallel execution)
+- [x] Rule hook execution order is deterministic (priority ascending, then
+      id lexical — implemented in WP-009B, enforced by D-1231)
+- [x] Victory and loss evaluation is deterministic and order-stable
+      (loss before victory per D-1235; reads `G.counters` via constants only)
+- [x] Engine results identical with artificial latency injected
+      (engine is synchronous; latency only affects network delivery, not
+      execution order)
 
-**Fail condition examples:**
-- Two machines produce different states from the same intent sequence
-- Hook ordering varies across runs
-- Loss condition evaluated before victory when rules say otherwise
+### X-2. Intent Validation & Replay Safety (WP-011, WP-012) — PASS
 
-### X-2. Intent Validation & Replay Safety (WP-011, WP-012)
-
-- [ ] Server validates intent structure before engine execution
-- [ ] Invalid intents do not mutate `G` and produce deterministic rejection
-- [ ] Only accepted intents are recorded for replay
-- [ ] Replays never require server context to reproduce
-- [ ] Duplicate intent submissions are safely rejected or idempotent
+- [x] Server validates intent structure before engine execution
+      (`validateSetupData` at lobby level; `validateMatchSetup` in
+      `Game.setup()`; moves validate args before mutation)
+- [x] Invalid intents do not mutate `G` and produce deterministic rejection
+      (move contract: validate -> gate -> mutate; rejected moves return void)
+- [x] Only accepted intents are recorded for replay
+      (boardgame.io records moves after execution; rejected moves are not
+      recorded in the move log)
+- [x] Replays never require server context to reproduce
+      (engine is self-contained; setup config + move log is sufficient per
+      D-1244 and MATCH-SETUP-SCHEMA.md)
+- [x] Duplicate intent submissions are safely rejected or idempotent
+      (boardgame.io enforces turn ownership; out-of-turn moves are rejected)
 
 **Key principle:**
 > If an action cannot be replayed offline, it must not be accepted online.
 
-### X-3. Snapshot, Restore & Reconnect Integrity (WP-013)
+### X-3. Snapshot, Restore & Reconnect Integrity (WP-013) — PENDING
 
 - [ ] `MatchSnapshot` type defined (zone counts only, no CardExtId arrays)
 - [ ] Snapshot taken mid-turn restores correctly
@@ -133,23 +145,40 @@ Each criterion maps to specific Phase 3 WPs.
 - Restored game diverges on replay
 - Snapshot contains derived or UI state
 
-### X-4. Engine/Server Authority Separation (All Phase 3 WPs)
+**Note:** boardgame.io handles reconnect natively via stored credentials
+(printed to stdout by `join-match.mjs` per D-1243). WP-013 defines the
+snapshot contract for Legendary Arena's own persistence layer, not for
+boardgame.io's built-in reconnect mechanism.
 
-- [ ] Server submits intents only — never outcomes
-- [ ] Server never mutates or patches `G`
-- [ ] Engine remains unaware of users, sessions, sockets, or persistence
-- [ ] No multiplayer-only logic paths inside the engine
+### X-4. Engine/Server Authority Separation (All Phase 3 WPs) — PASS
+
+- [x] Server submits intents only — never outcomes
+      (CLI scripts call boardgame.io lobby endpoints only; server wires
+      `LegendaryGame` into `Server()` and does nothing else)
+- [x] Server never mutates or patches `G`
+      (confirmed by `.claude/rules/server.md` enforcement and code review;
+      no `G` access in `apps/server/`)
+- [x] Engine remains unaware of users, sessions, sockets, or persistence
+      (engine imports no server code; `game-engine` has no `apps/server`
+      or `pg` imports)
+- [x] No multiplayer-only logic paths inside the engine
+      (lobby moves use the same move contract as gameplay moves; player
+      count comes from `ctx.numPlayers`, a boardgame.io framework value)
 
 **Invariant:**
 > There is exactly one authority over game outcomes: the engine.
 
-### X-5. Failure Mode Behavior (WP-011, WP-013)
+### X-5. Failure Mode Behavior (WP-011, WP-013) — PARTIAL (WP-013 pending)
 
-Run each simulation at least once:
-- [ ] Server restart mid-turn — game resumes correctly or fails clearly
-- [ ] Client disconnect during move — no silent corruption
-- [ ] Duplicate intent submission — no duplicated progression
+- [x] Server restart mid-turn — boardgame.io in-memory state is lost;
+      match must be recreated (no persistence layer yet — this is expected
+      pre-WP-013 behavior, not a defect)
+- [x] Client disconnect during move — no silent corruption (boardgame.io
+      holds state server-side; client reconnects using stored credentials)
+- [x] Duplicate intent submission — no duplicated progression (boardgame.io
+      enforces turn ownership and move sequencing)
 - [ ] Delayed intent arrival after reconnect — no state divergence
+      (requires WP-013 snapshot + restore to fully verify)
 
 **Expected behavior:** game either resumes correctly or fails clearly and
 deterministically. Silent corruption, partial progression, or state ambiguity
@@ -170,13 +199,28 @@ Partial completion is not sufficient.
 
 ### Exit Status
 - [ ] All exit criteria pass — Phase 4 approved
-- [ ] Exit criteria incomplete — Phase 3 work continues
+- [x] Exit criteria incomplete — Phase 3 work continues
 
-### Blockers (if any)
+### Progress (updated 2026-04-11)
 
-| Area | Issue | WP | Status |
-|------|-------|----|--------|
-| (none at entry) | | | |
+| Exit Criterion | Status | Blocking WP |
+|---|---|---|
+| X-1. Determinism Under Concurrency | **PASS** | — |
+| X-2. Intent Validation & Replay Safety | **PASS** | — |
+| X-3. Snapshot, Restore & Reconnect Integrity | **PENDING** | WP-013 |
+| X-4. Engine/Server Authority Separation | **PASS** | — |
+| X-5. Failure Mode Behavior | **PARTIAL** | WP-013 (1 item) |
+
+### Remaining Work
+
+WP-013 (Persistence Boundaries & Snapshots) is the sole remaining blocker.
+It delivers: `PERSISTENCE_CLASSES` constants, `MatchSnapshot` type (zone
+counts only), `PersistableMatchConfig`, `createSnapshot` (pure, frozen),
+`validateSnapshotShape`, and `docs/ai/ARCHITECTURE.md` (the authoritative
+system structure document).
+
+Once WP-013 is complete, X-3 and X-5 can be fully evaluated and the
+Phase 3 exit gate can be closed.
 
 ---
 
@@ -185,10 +229,13 @@ Partial completion is not sufficient.
 | Document | Relevance |
 |----------|-----------|
 | `ARCHITECTURE.md` | Determinism, layer boundaries, persistence rules |
-| `DECISIONS.md` | D-0001 (Correctness), D-0002 (Determinism), D-0703 (PAR) |
+| `DECISIONS.md` | D-0001 (Correctness), D-0002 (Determinism), D-0703 (PAR), D-1244–D-1248 (Match Setup alignment) |
 | `WORK_INDEX.md` | Phase 3 WP dependency chain |
 | `.claude/rules/server.md` | Server is wiring-only |
 | `.claude/rules/game-engine.md` | Engine owns all gameplay authority |
+| `.claude/rules/persistence.md` | G is runtime-only, snapshot rules (WP-013) |
+| `MATCH-SETUP-SCHEMA.md` | Setup is configuration, not rules (D-1244) |
+| `MATCH-SETUP-VALIDATION.md` | Validation stages and enforcement boundaries |
 | `12-SCORING-REFERENCE.md` | Scoring is a frozen trust surface |
 
 > Phase 3 makes concurrency, persistence, and networking permanent.

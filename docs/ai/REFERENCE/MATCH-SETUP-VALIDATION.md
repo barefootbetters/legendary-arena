@@ -182,8 +182,10 @@ Validate that `playerCount` is compatible with:
 This stage must **only validate**. It must **not** mutate setup or
 auto-adjust composition.
 
-**Status:** Not yet implemented. Current games accept any player count
-within the 1-5 range regardless of composition.
+**Status:** Not yet implemented. Basic range validation (1-5) is already
+enforced by the JSON Schema's `minimum`/`maximum` constraints on
+`playerCount`. Only scheme-specific or mastermind-specific player count
+rules are deferred to this stage.
 
 ---
 
