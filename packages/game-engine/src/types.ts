@@ -235,6 +235,19 @@ export interface LegendaryGameState {
   /** HQ zone: 5 hero recruit slots. */
   hq: HqZone;
 
+  // why: KO pile stores cards permanently removed from the game. Destination-only
+  // zone — cards enter via koCard helper and never return in MVP. Initialized
+  // empty at setup.
+  /** Cards removed from the game (knocked out). Destination-only zone. */
+  ko: CardExtId[];
+
+  // why: attachedBystanders maps villains/henchmen in the City to their captured
+  // bystanders. Plain Record (not Map) for JSON serializability. Entries are
+  // created on City entry and removed on defeat (award) or escape (return to
+  // supply). See D-1703.
+  /** Bystanders attached to villains/henchmen currently in the City. */
+  attachedBystanders: Record<CardExtId, CardExtId[]>;
+
   // why: lobby state is stored in G so the UI can observe lobby completion
   // and readiness status. Initialized at setup time from ctx.numPlayers.
   /** Lobby phase state (player readiness and match start flag). */

@@ -72,6 +72,8 @@ function makeTestGameState(
     hookRegistry: [],
     villainDeck: { deck: [], discard: [] },
     villainDeckCardTypes: {},
+    ko: [],
+    attachedBystanders: {},
     city: [null, null, null, null, null],
     hq: [null, null, null, null, null],
     lobby: { requiredPlayers: 1, ready: {}, started: false },

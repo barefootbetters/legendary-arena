@@ -168,6 +168,10 @@ export function buildInitialGameState(
     // through D-1413 for ext_id conventions and composition rules.
     villainDeck: villainDeckResult.state,
     villainDeckCardTypes: villainDeckResult.cardTypes,
+    // why: KO pile starts empty; cards enter via koCard helper (WP-017)
+    ko: [],
+    // why: no bystanders attached at game start; populated during reveals (WP-017)
+    attachedBystanders: {},
     // why: City initialized empty; villains enter via revealVillainCard (WP-015)
     city: initializeCity(),
     // why: HQ initialized empty; recruit slot population is WP-016 scope

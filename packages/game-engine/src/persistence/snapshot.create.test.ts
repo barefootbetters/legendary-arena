@@ -68,6 +68,8 @@ function buildMockGameState(): LegendaryGameState {
     hookRegistry: [],
     villainDeck: { deck: [], discard: [] },
     villainDeckCardTypes: {},
+    ko: [],
+    attachedBystanders: {},
     city: [null, null, null, null, null],
     hq: [null, null, null, null, null],
     lobby: { requiredPlayers: 2, ready: { '0': true, '1': true }, started: true },

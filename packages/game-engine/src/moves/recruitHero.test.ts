@@ -72,6 +72,8 @@ function createMockGameState(options?: {
     hookRegistry: buildDefaultHookDefinitions(config),
     villainDeck: { deck: [], discard: [] },
     villainDeckCardTypes: {},
+    ko: [],
+    attachedBystanders: {},
     city: initializeCity(),
     hq: options?.hq ?? initializeHq(),
     lobby: {

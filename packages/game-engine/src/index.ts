@@ -113,6 +113,19 @@ export { pushVillainIntoCity, initializeCity, initializeHq } from './board/city.
 export type { PushVillainResult } from './board/city.logic.js';
 export { validateCityShape } from './board/city.validate.js';
 export type { ValidateCityShapeResult } from './board/city.validate.js';
+export { koCard } from './board/ko.logic.js';
+export { gainWound } from './board/wounds.logic.js';
+export type { GainWoundResult } from './board/wounds.logic.js';
+export {
+  attachBystanderToVillain,
+  awardAttachedBystanders,
+  resolveEscapedBystanders,
+} from './board/bystanders.logic.js';
+export type {
+  AttachBystanderResult,
+  AwardBystandersResult,
+  ResolveEscapedBystandersResult,
+} from './board/bystanders.logic.js';
 export { createSnapshot } from './persistence/snapshot.create.js';
 export type { SnapshotContext } from './persistence/snapshot.create.js';
 export { validateSnapshotShape } from './persistence/snapshot.validate.js';

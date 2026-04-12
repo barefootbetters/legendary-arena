@@ -134,6 +134,8 @@ function createMockGameState(options: {
       discard: options.discard,
     },
     villainDeckCardTypes: options.cardTypes,
+    ko: [],
+    attachedBystanders: {},
     city: initializeCity(),
     hq: initializeHq(),
     lobby: {

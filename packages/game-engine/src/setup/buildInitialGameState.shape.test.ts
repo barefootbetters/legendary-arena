@@ -70,6 +70,14 @@ describe('buildInitialGameState — shape', () => {
       gameState.piles !== undefined,
       'G must have piles',
     );
+    assert.ok(
+      Array.isArray(gameState.ko),
+      'G must have ko array',
+    );
+    assert.ok(
+      gameState.attachedBystanders !== undefined,
+      'G must have attachedBystanders',
+    );
   });
 
   it('G.playerZones has one entry per player with all 5 zone arrays', () => {

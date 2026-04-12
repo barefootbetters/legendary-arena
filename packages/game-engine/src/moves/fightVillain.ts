@@ -14,6 +14,7 @@
 
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
+import { awardAttachedBystanders } from '../board/bystanders.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -63,7 +64,23 @@ export function fightVillain(
   // can fight any occupied City space without spending attack points.
   G.city[cityIndex] = null;
   G.playerZones[ctx.currentPlayer]!.victory.push(cardId);
+
+  // Step 3b: Award attached bystanders to player's victory zone (WP-017)
+  const victoryBefore = G.playerZones[ctx.currentPlayer]!.victory.length;
+  const awardResult = awardAttachedBystanders(
+    cardId,
+    G.attachedBystanders,
+    G.playerZones[ctx.currentPlayer]!.victory,
+  );
+  G.attachedBystanders = awardResult.attachedBystanders;
+  G.playerZones[ctx.currentPlayer]!.victory = awardResult.playerVictory;
+
   G.messages.push(
     `Player ${ctx.currentPlayer} fought "${cardId}" at city space ${cityIndex}.`,
   );
+  if (awardResult.playerVictory.length > victoryBefore) {
+    G.messages.push(
+      `Player ${ctx.currentPlayer} rescued ${awardResult.playerVictory.length - victoryBefore} bystander(s) from "${cardId}".`,
+    );
+  }
 }

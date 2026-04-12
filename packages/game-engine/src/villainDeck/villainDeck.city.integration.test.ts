@@ -62,7 +62,15 @@ function createMockGameState(options: {
       heroDeckIds: [...config.heroDeckIds],
     },
     currentStage: TURN_STAGES[0]!,
-    playerZones: {},
+    playerZones: {
+      '0': {
+        deck: [],
+        hand: [],
+        discard: [],
+        inPlay: [],
+        victory: [],
+      },
+    },
     piles: {
       bystanders: [],
       wounds: [],
@@ -77,6 +85,8 @@ function createMockGameState(options: {
       discard: options.discard,
     },
     villainDeckCardTypes: options.cardTypes,
+    ko: [],
+    attachedBystanders: {},
     city: options.city ?? initializeCity(),
     hq: initializeHq(),
     lobby: {

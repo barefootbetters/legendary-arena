@@ -22,6 +22,11 @@ import { shuffleDeck } from '../setup/shuffle.js';
 import { pushVillainIntoCity } from '../board/city.logic.js';
 import { validateCityShape } from '../board/city.validate.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
+import { gainWound } from '../board/wounds.logic.js';
+import {
+  attachBystanderToVillain,
+  resolveEscapedBystanders,
+} from '../board/bystanders.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -115,7 +120,48 @@ export function revealVillainCard({ G, ctx, ...context }: MoveContext): void {
       G.messages.push(
         `Villain "${pushResult.escapedCard}" escaped from the city.`,
       );
+
+      // why: escape causes wound — MVP rule linking escapes to player penalty.
+      // Current player gains 1 wound when a villain escapes the City.
+      const woundPileBefore = G.piles.wounds.length;
+      const woundResult = gainWound(
+        G.piles.wounds,
+        G.playerZones[ctx.currentPlayer]!.discard,
+      );
+      G.piles.wounds = woundResult.woundsPile;
+      G.playerZones[ctx.currentPlayer]!.discard = woundResult.playerDiscard;
+      if (woundPileBefore > 0) {
+        G.messages.push(
+          `Player ${ctx.currentPlayer} gained a wound from villain escape.`,
+        );
+      }
+
+      // why: escaped villain releases bystanders back to supply to prevent
+      // memory leaks and bystander depletion
+      const bystanderPileBefore = G.piles.bystanders.length;
+      const escapeBystanderResult = resolveEscapedBystanders(
+        pushResult.escapedCard,
+        G.attachedBystanders,
+        G.piles.bystanders,
+      );
+      G.attachedBystanders = escapeBystanderResult.attachedBystanders;
+      G.piles.bystanders = escapeBystanderResult.bystandersPile;
+      if (escapeBystanderResult.bystandersPile.length > bystanderPileBefore) {
+        G.messages.push(
+          `Bystanders from escaped villain "${pushResult.escapedCard}" returned to supply.`,
+        );
+      }
     }
+
+    // why: bystander appears with villain on City entry; rule hooks must
+    // observe post-attachment state (tabletop Legendary semantics)
+    const attachResult = attachBystanderToVillain(
+      G.piles.bystanders,
+      cardId,
+      G.attachedBystanders,
+    );
+    G.piles.bystanders = attachResult.bystandersPile;
+    G.attachedBystanders = attachResult.attachedBystanders;
   } else {
     // Non-city card types: remove from deck before trigger/discard routing
     G.villainDeck.deck = G.villainDeck.deck.slice(1);
