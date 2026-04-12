@@ -10,6 +10,18 @@
 
 import type { MatchSetupConfig } from './matchSetup.types.js';
 
+// why: Persistence boundary types (PERSISTENCE_CLASSES, MatchSnapshot,
+// PersistableMatchConfig) are defined canonically in
+// src/persistence/persistence.types.ts (WP-013). Re-exported here so that
+// consumers importing from './types.js' have access.
+export type {
+  MatchSnapshot,
+  MatchSnapshotPlayer,
+  MatchSnapshotOutcome,
+  PersistableMatchConfig,
+} from './persistence/persistence.types.js';
+export { PERSISTENCE_CLASSES } from './persistence/persistence.types.js';
+
 // why: LobbyState is defined canonically in src/lobby/lobby.types.ts (WP-011).
 // Re-exported here so that consumers importing from './types.js' have access.
 export type { LobbyState, SetPlayerReadyArgs } from './lobby/lobby.types.js';

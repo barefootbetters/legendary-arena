@@ -383,13 +383,12 @@ These packets complete the minimum viable multiplayer loop.
   built-in `fetch` — no axios; unit tests stub `fetch` (no live server needed
   for tests); full end-to-end verified manually; no game logic changes
 
-- [ ] WP-013 — Persistence Boundaries & Snapshots ✅ Reviewed
+- [x] WP-013 — Persistence Boundaries & Snapshots ✅ Reviewed ✅ Complete (2026-04-11)
   Dependencies: WP-012
   Notes: Creates `PERSISTENCE_CLASSES` constants, `MatchSnapshot` (zone counts
   only — no ext_id arrays), `PersistableMatchConfig`, `createSnapshot` (pure,
-  frozen), `validateSnapshotShape`; also creates `docs/ai/ARCHITECTURE.md`
-  (the long-missing system structure doc — 5 required sections); was previously
-  truncated — now complete
+  frozen), `validateSnapshotShape`; ARCHITECTURE.md Section 3 already existed
+  with three-class model and field table — no update needed; 130 tests pass
 
 ---
 

@@ -94,3 +94,13 @@ export { ENDGAME_CONDITIONS, ESCAPE_LIMIT } from './endgame/endgame.types.js';
 export { evaluateEndgame } from './endgame/endgame.evaluate.js';
 export type { LobbyState, SetPlayerReadyArgs } from './lobby/lobby.types.js';
 export { validateSetPlayerReadyArgs, validateCanStartMatch } from './lobby/lobby.validate.js';
+export type {
+  MatchSnapshot,
+  MatchSnapshotPlayer,
+  MatchSnapshotOutcome,
+  PersistableMatchConfig,
+} from './persistence/persistence.types.js';
+export { PERSISTENCE_CLASSES } from './persistence/persistence.types.js';
+export { createSnapshot } from './persistence/snapshot.create.js';
+export type { SnapshotContext } from './persistence/snapshot.create.js';
+export { validateSnapshotShape } from './persistence/snapshot.validate.js';

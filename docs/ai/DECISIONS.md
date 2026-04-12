@@ -1206,6 +1206,59 @@ packet. Documenting the gap prevents false assumptions.
 
 ---
 
+## Persistence Boundary Decisions (WP-013)
+
+### D-1310 — Snapshots Use Zone Counts, Not CardExtId Arrays
+**Decision:** `MatchSnapshot` records the number of cards in each zone
+(`deckCount`, `handCount`, etc.) rather than the actual `CardExtId[]` arrays.
+**Rationale:** Storing zone contents would make the snapshot a second source of
+truth about card positions. The live `G` is the sole authority on card locations;
+snapshots are audit records only. Zone counts are sufficient for debugging and
+auditing without creating data consistency risks.
+**Introduced:** WP-013
+**Status:** Immutable
+
+---
+
+### D-1311 — createSnapshot Is a Pure Function, Not an Async DB Write
+**Decision:** `createSnapshot` is a synchronous pure function that returns a
+frozen `Readonly<MatchSnapshot>`. It does not write to any database.
+**Rationale:** Snapshot creation belongs in the game-engine layer as a pure
+derivation from `G` and `ctx`. Database persistence is an application-layer
+concern and will be handled by a future packet. Keeping `createSnapshot` pure
+maintains the engine's no-I/O invariant and ensures snapshots are testable
+without infrastructure.
+**Introduced:** WP-013
+**Status:** Immutable
+
+---
+
+### D-1312 — PersistableMatchConfig Excludes G and ctx
+**Decision:** `PersistableMatchConfig` contains only `matchId`, `setupConfig`
+(MatchSetupConfig), `playerNames`, and `createdAt`. It never contains `G`,
+`ctx`, or any runtime state.
+**Rationale:** `G` and `ctx` are runtime-only objects managed by boardgame.io.
+Persisting them would bypass boardgame.io's state integrity guarantees and
+violate the engine's persistence boundary. `PersistableMatchConfig` captures
+only the deterministic inputs that are safe to store independently of the
+runtime.
+**Introduced:** WP-013
+**Status:** Immutable
+
+---
+
+### D-1313 — Endgame Outcome Derived via evaluateEndgame, Not Stored on G
+**Decision:** `createSnapshot` derives the `outcome` field by calling
+`evaluateEndgame(G)` rather than reading a persisted field on `G`.
+**Rationale:** `LegendaryGameState` does not have an `endgameResult` field;
+boardgame.io's `endIf` mechanism returns the result through the framework,
+not by storing it in `G`. `evaluateEndgame` is a pure function that reads
+only `G.counters`, so calling it from `createSnapshot` is safe and deterministic.
+**Introduced:** WP-013
+**Status:** Immutable
+
+---
+
 ## Lessons Learned
 
 Audit findings distilled into reusable principles. These are not decisions

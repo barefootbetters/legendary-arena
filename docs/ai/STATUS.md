@@ -7,6 +7,46 @@
 
 ## Current State
 
+### WP-013 — Persistence Boundaries & Snapshots (2026-04-11)
+
+**What changed:**
+- `packages/game-engine/src/persistence/persistence.types.ts` — **new** —
+  `PERSISTENCE_CLASSES` (3 canonical data class constants), `MatchSnapshot`,
+  `MatchSnapshotPlayer`, `MatchSnapshotOutcome`, `PersistableMatchConfig`
+- `packages/game-engine/src/persistence/snapshot.create.ts` — **new** —
+  `createSnapshot` pure function returning `Readonly<MatchSnapshot>` via
+  `Object.freeze()`; `SnapshotContext` minimal interface
+- `packages/game-engine/src/persistence/snapshot.validate.ts` — **new** —
+  `validateSnapshotShape` returning structured `MoveError[]` results (never throws)
+- `packages/game-engine/src/persistence/snapshot.create.test.ts` — **new** —
+  7 tests: zone counts, JSON serialization, excluded keys, determinism,
+  valid/invalid validation
+- `packages/game-engine/src/types.ts` — **modified** — re-exports persistence
+  types (`MatchSnapshot`, `PersistableMatchConfig`, `PERSISTENCE_CLASSES`)
+- `packages/game-engine/src/index.ts` — **modified** — exports persistence
+  public API (`createSnapshot`, `validateSnapshotShape`, types)
+- `docs/ai/DECISIONS.md` — added D-1310 through D-1313
+
+**What exists now:**
+- `@legendary-arena/game-engine` exports `PERSISTENCE_CLASSES` with exactly
+  3 canonical class names: `runtime`, `configuration`, `snapshot`
+- `MatchSnapshot` has exactly 9 top-level keys (matchId, snapshotAt, turn,
+  phase, activePlayer, players, counters, messages, outcome?) with zone
+  **counts** only — no `CardExtId[]` arrays
+- `PersistableMatchConfig` has 4 fields (matchId, setupConfig, playerNames,
+  createdAt) — no G, no ctx
+- `createSnapshot` is a pure function that derives outcome via
+  `evaluateEndgame(G)`, never throws, returns `Object.freeze()` result
+- `validateSnapshotShape` imports `MoveError` from `coreMoves.types.ts`,
+  never throws, returns structured results
+- `docs/ai/ARCHITECTURE.md` Section 3 already contained the three-class
+  data model and field-to-class mapping table — no update was needed
+- 130 tests passing (123 existing + 7 new), 0 failing
+- No changes to `game.ts`, no boardgame.io imports in persistence files,
+  no `require()`, ESM only
+
+---
+
 ### WP-012 — Match Listing, Join & Reconnect (Minimal MVP) (2026-04-11)
 
 **What changed:**
