@@ -67,6 +67,10 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 
 Before writing a single line:
 
+- `docs/ai/ARCHITECTURE.md §Section 4` — read "Canonical Reveal → Fight →
+  Side-Effect Ordering". WP-018 economy logic must not violate this ordering.
+  Economy accumulation happens during player actions (playCard) only — never
+  during reveal-time operations.
 - `docs/ai/ARCHITECTURE.md §Section 2` — read "Card Field Data Quality". Hero
   card numeric fields (`cost`, `attack`, `recruit`) are `string | number | undefined`.
   The parser in this packet must handle `"2+"`, `"2*"`, integers, and null.
@@ -93,8 +97,12 @@ Before writing a single line:
 **Critical design note — registry boundary:**
 Moves receive only `(G, ctx, args)`. The registry is loaded at server startup
 and passed into `Game.setup()`. To make card stats available at move time,
-this packet builds a `G.cardStats: Record<CardExtId, { attack: number; recruit: number; cost: number }>` lookup during setup — the same pattern as
-`G.villainDeckCardTypes`. Moves read from `G.cardStats`, never from the registry.
+this packet builds a `G.cardStats: Record<CardExtId, CardStatEntry>` lookup
+during setup — the same pattern as `G.villainDeckCardTypes`. Moves read from
+`G.cardStats`, never from the registry. `buildCardStats` accepts a
+`CardStatsRegistryReader` (locally-defined structural interface, same pattern
+as `VillainDeckRegistryReader` in WP-014B) — it must NOT import `CardRegistry`
+from `@legendary-arena/registry`.
 
 ---
 
@@ -120,21 +128,33 @@ this packet builds a `G.cardStats: Record<CardExtId, { attack: number; recruit: 
   as `G.villainDeckCardTypes` (WP-014).
 - Economy parser is a **pure helper** — no boardgame.io import in
   `economy.logic.ts`
-- Parser never throws: unexpected input returns `0` and emits a deterministic
-  warning to `G.messages`
+- Parser never throws: unexpected input returns `0`. The parser must not
+  mutate `G` or emit messages directly — it is a pure function. Any warnings
+  about unparseable values are the responsibility of the caller (setup-time
+  code in `buildCardStats`), not the parser itself.
 - `G.turnEconomy` values are integers >= 0
-- Economy resets at start of each player turn (wired into `play` phase
-  `onBegin` or turn start lifecycle)
+- Economy resets once per player turn, at the start of the turn, before any
+  main-stage actions. Wired into `play` phase `turn.onBegin`. Economy reset
+  must not occur during `revealVillainCard` or other reveal-time operations.
 - `MoveResult` / `MoveError` reused from WP-008A — no new error types
 - Insufficient resources = move returns void silently (not a thrown error)
 - No `.reduce()` in economy calculations — use explicit loops
 - No conditional bonuses, no keyword effects, no `"+"` modifier logic beyond
   stripping the `+` character — base integer only
 - `vAttack` parsing for villain fight requirements uses the same parser; villain
-  `vAttack` values are resolved at setup time into `G.cardStats`
+  `vAttack` values are resolved at setup time into `G.cardStats[].fightCost`.
+  Hero cards have `fightCost: 0`. The `attack` field on `CardStatEntry` is
+  exclusively for hero attack generation — never for villain fight cost.
 - WP-016 and WP-017 contract files (`fightVillain.ts`, `recruitHero.ts`) are
   modified, not replaced — the three-step validation contract is preserved with
   resource checking added to step 1
+- If `G.cardStats[cardId]` is missing when `playCard` runs, the card
+  contributes 0 attack and 0 recruit. This handles non-hero cards (sidekicks,
+  wounds) that may not have stat entries. No throw, no error — fail-closed
+  with zero contribution.
+- Reveal-time triggers must not mutate `G.turnEconomy`. Only `playCard` (and
+  later keyword systems in WP-022) may change economy values. This preserves
+  the canonical ordering contract.
 - Tests use `makeMockCtx` — no `boardgame.io` imports in test files
 
 **Session protocol:**
@@ -155,7 +175,7 @@ this packet builds a `G.cardStats: Record<CardExtId, { attack: number; recruit: 
 
 - **New LegendaryGameState fields:**
   `turnEconomy: { attack: number; recruit: number; spentAttack: number; spentRecruit: number }`
-  `cardStats: Record<CardExtId, { attack: number; recruit: number; cost: number }>`
+  `cardStats: Record<CardExtId, { attack: number; recruit: number; cost: number; fightCost: number }>`
 
 ---
 
@@ -164,7 +184,15 @@ this packet builds a `G.cardStats: Record<CardExtId, { attack: number; recruit: 
 ### A) `src/economy/economy.types.ts` — new
 
 - `interface TurnEconomy { attack: number; recruit: number; spentAttack: number; spentRecruit: number }`
-- `interface CardStatEntry { attack: number; recruit: number; cost: number }`
+- `interface CardStatEntry { attack: number; recruit: number; cost: number; fightCost: number }`
+  - `attack`: hero printed attack base (used by `playCard` to add resources)
+  - `recruit`: hero printed recruit base (used by `playCard` to add resources)
+  - `cost`: hero recruit cost (used by `recruitHero` to validate spend)
+  - `fightCost`: villain/henchman fight requirement (parsed from `vAttack`;
+    used by `fightVillain` to validate spend). For hero cards, `fightCost`
+    is `0`. This field avoids conflating hero attack generation with villain
+    fight requirements — they are semantically distinct even though both
+    derive from numeric card fields.
 - `// why:` comment on `CardStatEntry`: resolved at setup time from registry
   so moves can read card stats without registry access
 
@@ -179,15 +207,25 @@ this packet builds a `G.cardStats: Record<CardExtId, { attack: number; recruit: 
   - Never throws
   - `// why:` comment referencing ARCHITECTURE.md "Card Field Data Quality"
 
-- `buildCardStats(registry: CardRegistry, matchConfig: MatchSetupConfig): Record<CardExtId, CardStatEntry>`
+- `buildCardStats(registry: CardStatsRegistryReader, matchConfig: MatchSetupConfig): Record<CardExtId, CardStatEntry>`
   — called during `Game.setup()`:
   - Iterates all hero cards in selected hero decks
   - Iterates all villain/henchman cards in selected groups
   - Parses `attack`, `recruit`, `cost`, `vAttack` using `parseCardStatValue`
+  - For villain/henchman cards, stores the parsed `vAttack` value in the
+    `fightCost` field of `CardStatEntry` (not `attack` — see type definition)
   - Returns a flat lookup keyed by `CardExtId`
   - Uses `for...of` loops (no `.reduce()`)
+  - If `parseCardStatValue` returns `0` for an unexpected input, the caller
+    may optionally append a warning message to `G.messages` during setup
   - `// why:` comment: same pattern as `G.villainDeckCardTypes` — registry
     data resolved at setup so moves never query registry
+
+  `CardStatsRegistryReader` is a locally-defined structural interface
+  (same pattern as `VillainDeckRegistryReader` in WP-014B and
+  `CardRegistryReader` in WP-005A). It must NOT import `CardRegistry`
+  from `@legendary-arena/registry`. The real `CardRegistry` satisfies it
+  structurally.
 
 - `getAvailableAttack(economy: TurnEconomy): number`
   — returns `economy.attack - economy.spentAttack`
@@ -213,6 +251,8 @@ this packet builds a `G.cardStats: Record<CardExtId, { attack: number; recruit: 
 
 - After existing playCard logic places the card in `inPlay`:
   - Look up card stats via `G.cardStats[cardId]`
+  - If stats not found: treat as 0 attack, 0 recruit (fail-closed for
+    non-hero cards like sidekicks, wounds, or cards without stat entries)
   - Call `addResources(G.turnEconomy, stats.attack, stats.recruit)`
   - Update `G.turnEconomy`
   - `// why:` comment: MVP adds base values only; conditional bonuses are WP-022
@@ -220,13 +260,13 @@ this packet builds a `G.cardStats: Record<CardExtId, { attack: number; recruit: 
 ### D) `src/moves/fightVillain.ts` — modified
 
 - In step 1 (validate args), after existing checks:
-  - Look up villain's required attack via `G.cardStats[villainCardId]?.attack`
+  - Look up villain's fight requirement via `G.cardStats[villainCardId]?.fightCost`
     (default to 0 if not found)
-  - Check `getAvailableAttack(G.turnEconomy) >= requiredAttack`
+  - Check `getAvailableAttack(G.turnEconomy) >= requiredFightCost`
   - If insufficient: return void (never throw)
   - `// why:` comment on structured error message for insufficient attack
 - In step 3 (mutate G), after existing fight logic:
-  - Call `spendAttack(G.turnEconomy, requiredAttack)`
+  - Call `spendAttack(G.turnEconomy, requiredFightCost)`
   - Update `G.turnEconomy`
 
 ### E) `src/moves/recruitHero.ts` — modified
@@ -276,14 +316,17 @@ this packet builds a `G.cardStats: Record<CardExtId, { attack: number; recruit: 
 
 - Uses `node:test` and `node:assert` only; uses `makeMockCtx`; no boardgame.io
   import
-- Seven tests:
+- Nine tests:
   1. Playing a hero card increases `G.turnEconomy.attack` and `.recruit`
   2. Fight with sufficient attack succeeds and increments `spentAttack`
-  3. Fight with insufficient attack: no G mutation
+  3. Fight with insufficient attack: no G mutation, `spentAttack` unchanged
   4. Recruit with sufficient recruit succeeds and increments `spentRecruit`
-  5. Recruit with insufficient recruit: no G mutation
+  5. Recruit with insufficient recruit: no G mutation, `spentRecruit` unchanged
   6. Turn reset clears all economy values
   7. `JSON.stringify(G)` succeeds after play + fight + recruit cycle
+  8. Reveal does not mutate economy: call `revealVillainCard` with non-zero
+     economy values, assert `G.turnEconomy` unchanged
+  9. Playing a card not in `G.cardStats` contributes 0/0 (non-hero edge case)
 
 ---
 

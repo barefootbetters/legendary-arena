@@ -11,6 +11,7 @@ These decisions define:
 - growth governance rules
 
 All future work **must conform** to the decisions recorded here.
+This document is authoritative over all Work Packets.
 Deviations require an explicit new decision entry.
 
 ---
@@ -65,7 +66,9 @@ missing targets. Unmet gameplay conditions are expected during normal play
 and are handled by returning void (moves) or producing no effect (helpers).
 The distinction: an invariant violation means the system is in an invalid
 state; an unmet gameplay condition means the game is in a valid state where
-the requested action is not possible.
+the requested action is not possible. Fail-closed behavior (returning void
+with no mutation) is the expected outcome for invalid player actions during
+normal gameplay.
 
 ---
 
@@ -400,6 +403,29 @@ all other imports use standard ESM.
 
 ---
 
+### D-1249 — boardgame.io Version Locked at ^0.50.0
+
+**Decision:** The boardgame.io dependency is locked at `^0.50.0` in
+`packages/game-engine/package.json`. Any upgrade requires a DECISIONS.md
+entry with impact analysis before proceeding.
+
+**Rationale:** The `Game()` API, Immer-based G mutation model, `ctx` shape,
+`Server()` integration, and `FnContext` move signatures are all
+version-specific in boardgame.io 0.50.x. An unintentional upgrade could
+silently change how G mutations work, break move signatures, or alter phase
+lifecycle hooks. The CJS server bundle workaround (D-1206) is also
+version-specific.
+
+**Consequences:** `pnpm update` must not automatically bump boardgame.io.
+CI should verify the locked version. Any future upgrade must document:
+which APIs changed, whether the Immer mutation model is preserved, and
+whether ctx shape is backward-compatible.
+
+**Introduced:** WP-002 (implicit), formalized during consistency audit
+**Status:** Immutable
+
+---
+
 ## Match Setup Contract Decisions
 
 ### D-1207 — MatchSetupConfig Is Canonical, MatchConfiguration Is an Alias
@@ -442,6 +468,30 @@ a compile-time dependency. This preserves the unidirectional dependency directio
 (Registry -> Game Engine -> Server) defined in ARCHITECTURE.md.
 **Introduced:** WP-005A
 **Status:** Immutable
+
+---
+
+### D-1251 — Package Import Matrix Is an Architectural Invariant
+
+**Decision:** The package import rules table in ARCHITECTURE.md Section 1
+("Package Import Rules — Hard Constraints") is an immutable enforcement
+boundary. Any new cross-package import that violates the table is a bug.
+
+**Rationale:** The import matrix enforces unidirectional dependency flow
+(Registry -> Game Engine -> Server -> Client). Violations compound silently
+and are expensive to unwind. The table is declared "Hard Constraints" with
+violations explicitly called bugs in ARCHITECTURE.md. D-1209 documents
+the `CardRegistryReader` structural-typing workaround that enables the
+engine to consume registry data without importing the registry package.
+
+**Consequences:** Adding a new cross-package import requires verifying
+compliance with the import matrix. If the import would violate the table,
+a new DECISIONS.md entry must justify the exception before proceeding.
+
+**Introduced:** WP-001 (implicit), formalized during consistency audit
+**Status:** Immutable
+
+---
 
 ### D-1210 — Player Starting Decks Use ext_id Strings in G, Not Full Card Objects
 **Decision:** Player starting decks in `G.playerZones[id].deck` store `CardExtId`
@@ -1046,6 +1096,28 @@ deck and state construction that must complete before gameplay begins. Skipping
 state.
 **Introduced:** WP-011
 **Status:** Active
+
+---
+
+### D-1250 — Phase Names Are Locked to lobby/setup/play/end
+
+**Decision:** The four boardgame.io phase names (`lobby`, `setup`, `play`,
+`end`) are immutable. They must not be renamed, reordered, or supplemented
+without updating both `LegendaryGame` in `game.ts` and `MATCH_PHASES` in
+`turnPhases.types.ts` simultaneously.
+
+**Rationale:** Phase names are scaffolded in WP-002 and formalized in WP-007A.
+They appear in `ctx.phase`, in `setPhase()` calls, in `MATCH_PHASES`
+drift-detection tests, and in ARCHITECTURE.md's lifecycle mapping. Renaming
+a phase would break the framework integration, invalidate replays, and require
+coordinated changes across multiple files and tests.
+
+**Consequences:** Adding a new phase (e.g., a pre-lobby phase) requires a new
+DECISIONS.md entry, updates to `MATCH_PHASES`, `LegendaryGame`, and
+ARCHITECTURE.md Section 4.
+
+**Introduced:** WP-002 (scaffolded), WP-007A (formalized), audit (recorded)
+**Status:** Immutable
 
 ---
 
@@ -1661,6 +1733,121 @@ focused.
 - WP-015 — City & HQ Zones (Villain Movement + Escapes)
 - WP-016 — Fight First, Then Recruit
 - WP-017 — Bystander Mechanics
+
+---
+
+### D-1601 — CoreMoveName and MOVE_ALLOWED_STAGES Are a Closed Set
+
+**Unlocks:** WP-016 non-core move pattern; all future domain moves
+
+**Decision:** `CoreMoveName`, `CORE_MOVE_NAMES`, and `MOVE_ALLOWED_STAGES` are
+**closed** to the three original lifecycle moves (`drawCards`, `playCard`,
+`endTurn`). Domain actions (`revealVillainCard`, `fightVillain`, `recruitHero`,
+and all future gameplay moves) are **non-core moves** that must enforce stage
+gating internally by checking `G.currentStage` directly within the move body.
+Non-core moves must not be added to `CoreMoveName`, `CORE_MOVE_NAMES`, or
+`MOVE_ALLOWED_STAGES`.
+
+**Rationale:** Keeps core lifecycle logic stable as the game grows. Prevents
+repeated modifications to core contract files (`coreMoves.types.ts`,
+`coreMoves.gating.ts`) every time a new move is added. Preserves static
+analyzability of move-stage legality and replay determinism. The non-core
+internal gating pattern was established by `revealVillainCard` (WP-014A) and
+formalized in EC-014A's "Core vs Non-Core Move Model" section.
+
+**Consequences:** Any WP that introduces a new move must gate it internally.
+Expanding `CoreMoveName` requires an explicit architecture-level decision
+recorded in `DECISIONS.md` and referenced from `ARCHITECTURE.md`. This
+decision complements D-1223, which assigns stage gating only for core
+lifecycle moves; domain moves intentionally bypass `MOVE_ALLOWED_STAGES`.
+
+**Introduced:** WP-014A (precedent), formalized WP-016 (decision)
+**Status:** Accepted
+
+---
+
+### D-1602 — Fight and Recruit Ordering Is Player-Controlled
+
+**Unlocks:** WP-016 fight/recruit move ordering
+
+**Decision:** Players may fight or recruit in any order during the `main` stage
+of their turn. The engine enforces legality only (target exists, correct stage),
+not ordering. Both `fightVillain` and `recruitHero` are valid in `main`
+simultaneously.
+
+"Fight-first" is recorded as a **policy preference** for UI/AI guidance only,
+not a rules constraint enforced by the engine. The engine does not reject a
+recruit move when a fight target is available.
+
+**Rationale:** In physical Legendary (tabletop rules), the active player may
+fight or recruit in any order during their turn, choosing whichever action best
+suits their strategy. This behavior is preserved intentionally in the engine.
+Fight-first is a recommended strategy, not a rule enforced by the game. Enforcing it in the
+engine would require inspecting City state during recruit validation, which
+creates cross-zone coupling and complicates future rule exceptions. Future
+enforcement layers (AI hints, UI suggestions) may reference this policy without
+engine changes.
+
+**Introduced:** WP-016
+**Status:** Accepted
+
+---
+
+**Related packets:**
+- WP-014A — Villain Reveal & Trigger Pipeline (non-core move precedent)
+- WP-016 — Fight First, Then Recruit
+- WP-018 — Attack & Recruit Economy
+
+---
+
+## Engine-Wide Gameplay Invariants
+
+### D-1801 — Economy and Scoring Are Separate Concerns
+
+**Decision:** The attack/recruit economy (`G.turnEconomy`) determines what
+actions are allowed during play and resets each turn. VP scoring
+(`computeFinalScores`, WP-020) determines final results only and is computed
+at match end. These two systems are strictly separate and must never be
+conflated.
+
+**Rationale:** Economy governs action legality during gameplay; scoring governs
+outcome evaluation after gameplay. Conflating them (e.g., VP affecting action
+legality, or economy state persisting into scoring) would create feedback loops
+that break determinism and complicate balance testing. Endgame detection
+(WP-010) and VP scoring (WP-020) are also separate: endgame uses `G.counters`,
+scoring uses zone contents.
+
+**Consequences:** No WP may introduce mechanics where VP affects action
+legality or where turn economy influences final scoring. Economy state
+(`G.turnEconomy`) must never appear in `computeFinalScores` logic.
+
+**Introduced:** WP-018 (implicit), formalized during consistency audit
+**Status:** Immutable
+
+---
+
+### D-1802 — Debuggability Via Deterministic Reproduction Only
+
+**Decision:** All engine behavior must be debuggable via deterministic
+reproduction and state inspection — not runtime logging, breakpoints, or
+printf debugging.
+
+**Rationale:** The engine is designed for full replay reproducibility (D-0002).
+Given identical setup config, identical RNG seed, and identical ordered moves,
+execution must produce identical results. This means bugs can always be
+reproduced deterministically. Relying on runtime logging or breakpoints would
+create debugging approaches that cannot be replayed, shared, or automated.
+`G.messages` provides deterministic observability for rule effects and
+diagnostics.
+
+**Consequences:** No state mutation may be introduced that cannot be inspected
+post-execution or validated via tests or replay analysis. After execution,
+runtime state must remain JSON-serializable with no invalid entries. When
+execution performs non-obvious behavior, a human-readable entry should be
+appended to `G.messages`.
+
+**Introduced:** WP-010 (implicit), formalized during consistency audit
+**Status:** Immutable
 
 ---
 

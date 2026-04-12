@@ -48,8 +48,8 @@ ordering policy. After this session:
   - `G.city` and `G.hq` exist in `LegendaryGameState` (WP-015)
   - `packages/game-engine/src/moves/coreMoves.types.ts` exports `MoveResult`,
     `MoveError` (WP-008A)
-  - `packages/game-engine/src/moves/coreMoves.gating.ts` exports
-    `MOVE_ALLOWED_STAGES`, `isMoveAllowedInStage` (WP-008A)
+  - `G.currentStage` exists as `'start' | 'main' | 'cleanup'` (WP-007A) —
+    used for internal gating in non-core moves
   - `packages/game-engine/src/state/zones.types.ts` exports `CardExtId` (WP-006A)
   - `packages/game-engine/src/test/mockCtx.ts` exports `makeMockCtx` (WP-005B)
   - `pnpm --filter @legendary-arena/game-engine build` exits 0
@@ -65,6 +65,10 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 
 Before writing a single line:
 
+- `docs/ai/ARCHITECTURE.md §Section 4` — read "Canonical Reveal → Fight →
+  Side-Effect Ordering". This diagram is the authoritative ordering contract
+  for how WP-016 fight logic interacts with WP-015 reveal and WP-017
+  side-effects.
 - `docs/ai/ARCHITECTURE.md §Section 4` — read "The Move Validation Contract".
   Both new moves must follow the exact three-step sequence: validate args,
   check stage gate, mutate G. Moves never throw.
@@ -72,24 +76,32 @@ Before writing a single line:
   a card from City or HQ and placing it in a player zone uses the same pure
   helper pattern as all other zone operations.
 - `docs/ai/ARCHITECTURE.md §Section 4` — read "Stage Gating". Both `fightVillain`
-  and `recruitHero` are `main` stage moves. The gating table must be extended.
+  and `recruitHero` are `main` stage moves. Both moves gate internally (non-core pattern from WP-014A) and must NOT be
+  added to the gating table.
 - `docs/ai/ARCHITECTURE.md — "Layer Boundary (Authoritative)"` — fight and
   recruit logic is game-engine layer only. The engine decides outcomes. No UI
   ordering assumptions, no server involvement, no registry queries at move time.
-- `packages/game-engine/src/moves/coreMoves.gating.ts` — read the existing
-  `MOVE_ALLOWED_STAGES` map. This packet adds two new entries.
+- `docs/ai/execution-checklists/EC-014A-*.md` — read "Core vs Non-Core Move
+  Model". `fightVillain` and `recruitHero` are non-core moves that gate
+  internally. `MOVE_ALLOWED_STAGES` is not modified.
 - `packages/game-engine/src/board/city.types.ts` — read CityZone and HqZone
   types from WP-015. Fight removes from City; recruit removes from HQ.
 - `docs/ai/REFERENCE/00.6-code-style.md` — key rules: Rule 4 (no abbreviations
   — `cityIndex` not `ci`), Rule 6 (`// why:` on the fight-first policy), Rule 8
   (no `.reduce()`), Rule 11 (full-sentence error messages), Rule 13 (ESM only).
 
-**Critical policy note — fight-first ordering:**
-The "fight before recruit" rule is a **policy** (documented ordering preference),
-not a **hard lockout** (the engine does not reject a recruit if a fight is
-available). Both moves are allowed in the `main` stage. The policy is documented
-in DECISIONS.md for future enforcement layers (AI hints, UI suggestions) to
-reference. This packet does NOT implement enforcement — only documentation.
+**Critical policy note — fight and recruit ordering:**
+Players may fight or recruit in either order during their turn, choosing the
+sequence that best suits their strategy. This matches Legendary's tabletop
+rules where fight-first is recommended but never required.
+
+The "fight-first" rule is a **policy preference**, not a hard rule: the engine
+does not reject a recruit if a fight is available. Both moves are allowed in
+the `main` stage simultaneously. Fight-first ordering is recorded in
+DECISIONS.md as a **policy decision** (D-1602), not a rules lock enforced by
+the engine. Future packets may reference this policy for UI hints or AI
+suggestions, but the engine itself does not enforce ordering between fight
+and recruit.
 
 ---
 
@@ -112,7 +124,11 @@ reference. This packet does NOT implement enforcement — only documentation.
 **Packet-specific:**
 - Both moves follow the three-step validation contract exactly (validate args,
   check stage gate, mutate G)
-- Both moves are `main` stage only — add to `MOVE_ALLOWED_STAGES`
+- Both moves are `main` stage only — gated internally via
+  `G.currentStage === 'main'` (non-core move pattern)
+- **Non-core gating pattern:** `fightVillain` and `recruitHero` must NOT
+  modify `CoreMoveName`, `CORE_MOVE_NAMES`, or `MOVE_ALLOWED_STAGES`. They
+  gate internally, matching the `revealVillainCard` precedent (WP-014A).
 - Fight-first is a **policy** — the engine does NOT reject recruit when fight
   is available. Both are valid in `main` stage simultaneously.
 - MVP: no attack/recruit point validation — a player can fight or recruit
@@ -121,11 +137,25 @@ reference. This packet does NOT implement enforcement — only documentation.
 - MVP: no bystander rescue on villain defeat — WP-017 adds that
 - `MoveResult` / `MoveError` reused from WP-008A — no new error types
 - WP-015 contract files (`city.types.ts`) must not be modified
-- WP-008A contract files (`coreMoves.types.ts`, `coreMoves.validate.ts`) must
-  not be modified (gating file IS modified to add new entries)
+- WP-008A contract files (`coreMoves.types.ts`, `coreMoves.validate.ts`,
+  `coreMoves.gating.ts`) must not be modified. `fightVillain` and
+  `recruitHero` gate internally (non-core move pattern).
 - Tests use `makeMockCtx` — no `boardgame.io` imports in test files
 - `// why:` comment on the fight-first policy wherever it affects code or
   documentation
+- `fightVillain` does not inspect, modify, or clean up any auxiliary mappings
+  attached to a villain (e.g., `G.attachedBystanders`). WP-016 never reads
+  `G.attachedBystanders`. Cleanup and awards are the exclusive responsibility
+  of WP-017, which extends `fightVillain` after the villain removal step.
+- `fightVillain` must not read or mutate `G.hq`. City and HQ are independent
+  zones; cross-zone side effects are prohibited in this packet.
+- Escape penalties (wounds, bystander resolution) are reveal-time only
+  (WP-015/WP-017). `fightVillain` must not inspect escape counters, apply
+  penalties, or modify endgame state.
+- Messages added by `fightVillain` and `recruitHero` must be informational only
+  (e.g., "Player 0 fought villain-card-001 at city space 2"). No rule text,
+  effect descriptions, or bystander references. Keep messages minimal and
+  stable to avoid brittle test assertions.
 
 **Session protocol:**
 - If any contract, field name, or reference is unclear, stop and ask the human
@@ -143,9 +173,10 @@ reference. This packet does NOT implement enforcement — only documentation.
 - **PlayerZones keys** (fight places in victory, recruit places in discard):
   `deck` | `hand` | `discard` | `inPlay` | `victory`
 
-- **New stage gating entries:**
-  `fightVillain`: `main` — fighting happens during the action window
-  `recruitHero`: `main` — recruiting happens during the action window
+- **Non-core move gating:** `fightVillain` and `recruitHero` gate internally
+  via `G.currentStage === 'main'`. They are NOT added to `CoreMoveName`,
+  `CORE_MOVE_NAMES`, or `MOVE_ALLOWED_STAGES`. Same pattern as
+  `revealVillainCard` (WP-014A).
 
 ---
 
@@ -155,8 +186,11 @@ reference. This packet does NOT implement enforcement — only documentation.
 
 - `fightVillain(G, ctx, { cityIndex: number }): void`
   — move implementation following three-step contract:
-  1. Validate args: `cityIndex` is 0-4 and `G.city[cityIndex]` is not null
-  2. Check stage gate: `isMoveAllowedInStage('fightVillain', G.currentStage)`
+  1. Validate args: `cityIndex` must be a finite integer in the inclusive
+     range 0-4, and `G.city[cityIndex]` is not null. Reject negative values,
+     non-integers, NaN, and out-of-range values silently (return void).
+  2. Check stage gate: if `G.currentStage !== 'main'`, return void immediately
+     (internal gating — non-core move, same pattern as `revealVillainCard`)
   3. Mutate G:
      - Remove card from `G.city[cityIndex]` (set to null)
      - Place card in `G.playerZones[ctx.currentPlayer].victory`
@@ -168,8 +202,11 @@ reference. This packet does NOT implement enforcement — only documentation.
 
 - `recruitHero(G, ctx, { hqIndex: number }): void`
   — move implementation following three-step contract:
-  1. Validate args: `hqIndex` is 0-4 and `G.hq[hqIndex]` is not null
-  2. Check stage gate: `isMoveAllowedInStage('recruitHero', G.currentStage)`
+  1. Validate args: `hqIndex` must be a finite integer in the inclusive
+     range 0-4, and `G.hq[hqIndex]` is not null. Reject negative values,
+     non-integers, NaN, and out-of-range values silently (return void).
+  2. Check stage gate: if `G.currentStage !== 'main'`, return void immediately
+     (internal gating — non-core move, same pattern as `revealVillainCard`)
   3. Mutate G:
      - Remove card from `G.hq[hqIndex]` (set to null)
      - Place card in `G.playerZones[ctx.currentPlayer].discard`
@@ -177,13 +214,15 @@ reference. This packet does NOT implement enforcement — only documentation.
   - `// why:` comment: MVP — no recruit point check; WP-018 adds economy
   - Returns void; never throws
 
-### C) `src/moves/coreMoves.gating.ts` — modified
+### C) Stage gating (internal, non-core moves) — no changes to coreMoves.types.ts or coreMoves.gating.ts
 
-- Add `fightVillain` and `recruitHero` to `MOVE_ALLOWED_STAGES`:
-  - `fightVillain: ['main']` — `// why: fighting happens during action window`
-  - `recruitHero: ['main']` — `// why: recruiting happens during action window`
-- Update `CORE_MOVE_NAMES` array to include `'fightVillain'` and `'recruitHero'`
-- Drift-detection test for `CORE_MOVE_NAMES` must be updated
+`fightVillain` and `recruitHero` are **non-core moves** and must not be added
+to `CoreMoveName`, `CORE_MOVE_NAMES`, or `MOVE_ALLOWED_STAGES`. Each move
+performs its own gating by checking `G.currentStage === 'main'`. If stage is
+not `main`, the move returns immediately with no mutation. This matches the
+existing precedent established by `revealVillainCard` (WP-014A), which also
+gates internally without being in the core move registry. This matches the
+Core vs Non-Core move model established by EC-014A.
 
 ### D) `src/game.ts` — modified
 
@@ -197,30 +236,29 @@ reference. This packet does NOT implement enforcement — only documentation.
 
 - Uses `node:test` and `node:assert` only; uses `makeMockCtx`; does not import
   from `boardgame.io`
-- Six tests:
+- Seven tests:
   1. `fightVillain` removes card from `G.city[cityIndex]`
   2. Removed card appears in player's `victory` zone
   3. Invalid `cityIndex` (out of range): no mutation
   4. Empty city space (null): no mutation
   5. Wrong stage (`start`): no mutation
   6. `JSON.stringify(G)` succeeds after fight
+  7. Idempotence: calling `fightVillain` twice on the same index does nothing
+     the second time (proves fail-closed on null space)
 
 ### G) Tests — `src/moves/recruitHero.test.ts` — new
 
 - Uses `node:test` and `node:assert` only; uses `makeMockCtx`; does not import
   from `boardgame.io`
-- Six tests:
+- Seven tests:
   1. `recruitHero` removes card from `G.hq[hqIndex]`
   2. Removed card appears in player's `discard` zone
   3. Invalid `hqIndex` (out of range): no mutation
   4. Empty HQ slot (null): no mutation
   5. Wrong stage (`cleanup`): no mutation
   6. `JSON.stringify(G)` succeeds after recruit
-
-### H) Tests — `src/moves/coreMoves.gating.test.ts` — modified
-
-- Update drift-detection test: `CORE_MOVE_NAMES` now includes `'fightVillain'`
-  and `'recruitHero'`
+  7. Idempotence: calling `recruitHero` twice on the same index does nothing
+     the second time (proves fail-closed on null slot)
 
 ---
 
@@ -232,6 +270,9 @@ reference. This packet does NOT implement enforcement — only documentation.
 - **No KO pile interaction** — WP-017
 - **No mastermind fight** — WP-019
 - **No HQ refill after recruit** — WP-018 or later; MVP leaves empty slots
+- **No escape handling in fightVillain** — escape effects (counter increment,
+  wound gain) are reveal-time only (WP-015/WP-017). `fightVillain` removes a
+  villain from the City; it does not handle escaped villains.
 - **No hard lockout of recruit-before-fight** — the policy is documented, not
   enforced by the engine in this packet
 - **No UI ordering hints** — UI is a separate layer; this packet is engine-only
@@ -248,8 +289,6 @@ reference. This packet does NOT implement enforcement — only documentation.
   move implementation
 - `packages/game-engine/src/moves/recruitHero.ts` — **new** — recruitHero
   move implementation
-- `packages/game-engine/src/moves/coreMoves.gating.ts` — **modified** — add
-  fightVillain and recruitHero to MOVE_ALLOWED_STAGES and CORE_MOVE_NAMES
 - `packages/game-engine/src/game.ts` — **modified** — register new moves in
   play phase
 - `packages/game-engine/src/index.ts` — **modified** — export new moves
@@ -257,8 +296,6 @@ reference. This packet does NOT implement enforcement — only documentation.
   move unit tests
 - `packages/game-engine/src/moves/recruitHero.test.ts` — **new** — recruit
   move unit tests
-- `packages/game-engine/src/moves/coreMoves.gating.test.ts` — **modified** —
-  update CORE_MOVE_NAMES drift-detection test
 
 No other files may be modified.
 
@@ -270,31 +307,38 @@ All items must be binary pass/fail. No partial credit.
 
 ### Fight Move
 - [ ] `fightVillain` follows three-step contract (validate, gate, mutate)
+- [ ] `fightVillain` validates `cityIndex` is a finite integer in 0-4
 - [ ] `fightVillain` removes card from `G.city[cityIndex]` and places in
       player's `victory` zone
+- [ ] `fightVillain` does not inspect or modify auxiliary mappings (bystanders)
+- [ ] `fightVillain` does not read or mutate `G.hq`
 - [ ] `fightVillain` returns void on invalid args (never throws)
 - [ ] `fightVillain` is gated to `main` stage only
 - [ ] `// why:` comment noting MVP has no attack point check
 
 ### Recruit Move
 - [ ] `recruitHero` follows three-step contract (validate, gate, mutate)
+- [ ] `recruitHero` validates `hqIndex` is a finite integer in 0-4
 - [ ] `recruitHero` removes card from `G.hq[hqIndex]` and places in
       player's `discard` zone
 - [ ] `recruitHero` returns void on invalid args (never throws)
 - [ ] `recruitHero` is gated to `main` stage only
 - [ ] `// why:` comment noting MVP has no recruit point check
 
-### Stage Gating
-- [ ] `MOVE_ALLOWED_STAGES` includes `fightVillain: ['main']` and
-      `recruitHero: ['main']`
-- [ ] Both entries have `// why:` comments
-- [ ] `CORE_MOVE_NAMES` includes `'fightVillain'` and `'recruitHero'`
-- [ ] Drift-detection test for `CORE_MOVE_NAMES` updated
+### Stage Gating (Internal)
+- [ ] `fightVillain` returns early with no mutation when
+      `G.currentStage !== 'main'`
+- [ ] `recruitHero` returns early with no mutation when
+      `G.currentStage !== 'main'`
+- [ ] Stage gating occurs before any mutation or message (early return with
+      no side effects)
+- [ ] No changes made to `coreMoves.types.ts`, `coreMoves.gating.ts`, or
+      `coreMoves.gating.test.ts`
 
 ### Policy Documentation
 - [ ] Fight-first ordering policy is documented in code via `// why:` comment
-- [ ] DECISIONS.md entry required explaining that fight-first is a policy, not
-      a hard lockout
+- [ ] DECISIONS.md entry explains that fight-first is a policy decision
+      (WP-016), not a rules lock enforced by the engine
 
 ### Tests
 - [ ] `pnpm --filter @legendary-arena/game-engine test` exits 0 (all test files)
@@ -307,8 +351,8 @@ All items must be binary pass/fail. No partial credit.
 ### Scope Enforcement
 - [ ] WP-015 contract files (`city.types.ts`) not modified
       (confirmed with `git diff --name-only`)
-- [ ] WP-008A contract files (`coreMoves.types.ts`, `coreMoves.validate.ts`)
-      not modified (confirmed with `git diff --name-only`)
+- [ ] WP-008A contract files (`coreMoves.types.ts`, `coreMoves.validate.ts`,
+      `coreMoves.gating.ts`) not modified (confirmed with `git diff --name-only`)
 - [ ] No `require()` in any generated file (confirmed with `Select-String`)
 - [ ] No files outside `## Files Expected to Change` were modified
       (confirmed with `git diff --name-only`)
@@ -338,12 +382,12 @@ Select-String -Path "packages\game-engine\src\moves\fightVillain.ts","packages\g
 Select-String -Path "packages\game-engine\src\moves\fightVillain.ts","packages\game-engine\src\moves\recruitHero.ts" -Pattern "throw "
 # Expected: no output
 
-# Step 6 — confirm CORE_MOVE_NAMES drift test updated
-Select-String -Path "packages\game-engine\src\moves\coreMoves.gating.test.ts" -Pattern "fightVillain"
-# Expected: at least one match
+# Step 6 — confirm core move contract files unchanged
+git diff --name-only packages/game-engine/src/moves/coreMoves.types.ts packages/game-engine/src/moves/coreMoves.gating.ts packages/game-engine/src/moves/coreMoves.validate.ts
+# Expected: no output
 
-# Step 7 — confirm WP-015 and WP-008A contracts not modified
-git diff --name-only packages/game-engine/src/board/city.types.ts packages/game-engine/src/moves/coreMoves.types.ts packages/game-engine/src/moves/coreMoves.validate.ts
+# Step 7 — confirm WP-015 contract files not modified
+git diff --name-only packages/game-engine/src/board/city.types.ts
 # Expected: no output
 
 # Step 8 — confirm no require() in generated files
@@ -353,6 +397,10 @@ Select-String -Path "packages\game-engine\src\moves\fightVillain.ts","packages\g
 # Step 9 — confirm no files outside scope were changed
 git diff --name-only
 # Expected: only files listed in ## Files Expected to Change
+
+# Step 10 — confirm no accidental core gating references in new move files
+Select-String -Path "packages\game-engine\src\moves\fightVillain.ts","packages\game-engine\src\moves\recruitHero.ts" -Pattern "MOVE_ALLOWED_STAGES|isMoveAllowedInStage|CORE_MOVE_NAMES|CoreMoveName"
+# Expected: no matches (non-core moves gate internally)
 ```
 
 ---
@@ -374,8 +422,10 @@ This packet is complete when ALL of the following are true:
       (confirmed with `Select-String`)
 - [ ] No `Math.random` in any new file (confirmed with `Select-String`)
 - [ ] No `require()` in any generated file (confirmed with `Select-String`)
-- [ ] WP-015 and WP-008A contract files not modified
+- [ ] WP-015 contract files (`city.types.ts`) not modified
       (confirmed with `git diff --name-only`)
+- [ ] WP-008A contract files (`coreMoves.types.ts`, `coreMoves.validate.ts`,
+      `coreMoves.gating.ts`) not modified (confirmed with `git diff --name-only`)
 - [ ] No files outside `## Files Expected to Change` were modified
       (confirmed with `git diff --name-only`)
 - [ ] `docs/ai/STATUS.md` updated — fight and recruit moves exist; players

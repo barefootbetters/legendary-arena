@@ -120,6 +120,74 @@ occurs).
 
 ---
 
+## Core vs Non-Core Move Model (Authoritative Clarification)
+
+WP-014A establishes two classes of moves in the engine:
+
+### Core Moves
+
+Core moves are lifecycle and turn-control moves. They are:
+
+- Represented in the `CoreMoveName` union type
+- Governed by `MOVE_ALLOWED_STAGES` (centralized gating)
+- Subject to drift-detection via `CORE_MOVE_NAMES` canonical array
+
+The three core moves are: `drawCards`, `playCard`, `endTurn`.
+
+The `CoreMoveName` union and `MOVE_ALLOWED_STAGES` are intentionally
+**closed**. They must not be expanded without an explicit architecture-level
+decision recorded in `DECISIONS.md` and referenced from `ARCHITECTURE.md`.
+
+This invariant exists to ensure that:
+- move-stage legality remains statically analyzable
+- replay determinism is preserved across engine versions
+- domain growth does not force repeated edits to core contracts
+
+Example violation: adding `fightVillain` or `revealVillainCard` to
+`CORE_MOVE_NAMES` to "simplify gating" would violate this invariant and
+silently destabilize core move typing and drift-detection tests.
+
+### Non-Core Moves
+
+Non-core moves are game-specific domain actions. They may be engine-driven
+(automatic, not subject to player choice) or player-driven (explicit player
+actions). `revealVillainCard` is engine-driven. They are:
+
+- NOT added to `CoreMoveName`
+- NOT added to `CORE_MOVE_NAMES`
+- NOT added to `MOVE_ALLOWED_STAGES`
+- Required to enforce stage gating **internally** within the move body
+
+The first non-core move is `revealVillainCard` (WP-014A). It is registered
+in `game.ts` top-level moves but gates itself internally. All subsequent
+domain moves must follow this same pattern.
+
+Internal stage gating for non-core moves must be implemented as an early
+return with no side effects (no messages, no mutations, no trigger emission)
+before any other logic executes. The check occurs at the top of the move
+implementation by testing `G.currentStage` against allowed stages and
+returning immediately on mismatch. Gating after partial logic execution
+violates the validate -> gate -> mutate contract.
+
+Example non-core moves added after WP-014A:
+- `fightVillain` (WP-016)
+- `recruitHero` (WP-016)
+
+Neither is added to `CoreMoveName` or `MOVE_ALLOWED_STAGES`.
+
+This separation is intentional and required to:
+- Keep core lifecycle logic stable across all future packets
+- Prevent drift in `CoreMoveName` typing and drift-detection tests
+- Allow domain moves to evolve without modifying core contract files
+
+All future execution checklists that introduce new moves must conform to
+this model unless explicitly superseded by an architecture decision.
+
+See also `ARCHITECTURE.md` — "Canonical Reveal -> Fight -> Side-Effect
+Ordering" for how non-core moves compose across packets.
+
+---
+
 ## Guardrails (Hard Stops)
 
 - No registry lookup inside any move
@@ -136,6 +204,11 @@ occurs).
   in this session is invalid.
 - Discard routing for villain/henchman cards is intentional and temporary.
   Any change before WP-015 is a contract violation.
+- Adding a move to `CoreMoveName`, `CORE_MOVE_NAMES`, or
+  `MOVE_ALLOWED_STAGES` without a dedicated architecture decision recorded
+  in `DECISIONS.md` and referenced from `ARCHITECTURE.md` is a contract
+  violation. Domain moves must gate internally (see "Core vs Non-Core Move
+  Model" above).
 
 Violation of any guardrail is a **failed execution**.
 

@@ -2,7 +2,7 @@
 
 **Status:** Ready
 **Primary Layer:** Game Engine / Board Zones
-**Dependencies:** WP-014
+**Dependencies:** WP-014A, WP-014B
 
 ---
 
@@ -12,8 +12,11 @@ WP-014 introduced the villain deck and reveal pipeline: `revealVillainCard`
 draws the top card, classifies it via `G.villainDeckCardTypes`, emits triggers
 through the rule pipeline, and places the card in discard. This packet modifies
 that routing so that revealed villains and henchmen enter the City instead of
-going directly to discard. WP-016 will add fight and recruit mechanics; this
-packet handles placement and movement only.
+going directly to discard. This supersedes the temporary discard routing
+established in WP-014A (step 11 of revealVillainCard) for villain and
+henchman cards only; all other card types retain their WP-014A routing.
+WP-016 will add fight and recruit mechanics; this packet handles placement
+and movement only.
 
 ---
 
@@ -131,6 +134,9 @@ Before writing a single line:
 - No `.reduce()` in city push logic — use explicit `for` or `for...of` loops
 - City mutation in WP-015 occurs only during `revealVillainCard`. No other
   helper, move, or test may mutate `G.city` directly.
+- No module-scope import of `@legendary-arena/registry` in any new file —
+  city routing uses `G.villainDeckCardTypes` (setup-time data), not live
+  registry
 
 **Session protocol:**
 - If any contract, field name, or reference is unclear, stop and ask the human

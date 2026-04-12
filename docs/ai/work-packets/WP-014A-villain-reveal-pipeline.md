@@ -35,6 +35,10 @@ that draws cards from the deck, looks up their classification, emits the
 correct rule triggers through the WP-009B runtime, and applies the resulting
 effects to `G`.
 
+`revealVillainCard` is an engine-driven move. It is not player-invoked and
+must not consume player resources, validate player intent, or depend on
+player input. It exists solely to advance the game state deterministically.
+
 After this session:
 - `G.villainDeck` exists with `deck` and `discard` arrays of `CardExtId`
   strings (empty after setup until WP-014B populates them)
@@ -49,8 +53,12 @@ The reveal pipeline must function correctly even when the villain deck is
 empty or unpopulated.
 
 WP-014B will implement `buildVillainDeck` to populate these fields from
-registry data at setup time. WP-015 will modify where villain and henchman
-cards are routed after reveal (into the City).
+registry data at setup time.
+
+This packet intentionally routes all revealed cards to discard. WP-015
+supersedes this behavior for villain and henchman cards by introducing
+City placement. The discard routing in WP-014A is correct and must not
+be changed before WP-015.
 
 ---
 
@@ -114,6 +122,11 @@ available at move time — it is loaded at server startup and passed into
 means `revealVillainCard` can look up a card's type in O(1) without registry
 access. This is the correct pattern per ARCHITECTURE.md §Section 5.
 
+Anti-pattern (forbidden): looking up card type via `FlatCard.cardType`,
+`card-types.json`, or any registry data inside `revealVillainCard` or
+trigger handlers. Classification is resolved once at setup and consumed
+from `G` thereafter.
+
 ---
 
 ## Non-Negotiable Constraints
@@ -137,8 +150,9 @@ access. This is the correct pattern per ARCHITECTURE.md §Section 5.
   passed during setup
 - Trigger emission uses `executeRuleHooks` from WP-009B — no inline effect
   logic inside `revealVillainCard`
-- `revealVillainCard` assigns new arrays to G fields (immutability by
-  replacement); it must not mutate existing arrays in place
+- `revealVillainCard` must treat `deck` and `discard` as immutable: never
+  mutate in place, always assign new arrays back into G. This is required
+  for replay safety and test determinism.
 - Discard routing for villain and henchman cards is intentional and temporary.
   Any change to this behaviour before WP-015 is a contract violation.
 - No `.reduce()` in any new code — use `for...of` loops
@@ -218,6 +232,10 @@ access. This is the correct pattern per ARCHITECTURE.md §Section 5.
   10. Apply all collected effects via `applyRuleEffects`
   11. Place card in `G.villainDeck.discard` — `// why:` comment noting WP-015
       will modify this routing for villain and henchman cards to the City
+
+  **Ordering invariant:** Card classification lookup (`villainDeckCardTypes`)
+  MUST occur before any trigger emission. Triggers observe classification;
+  they must not be used to infer or derive card type.
 
 ### C) `src/game.ts` — modified
 - `play` phase top-level `moves`: add `revealVillainCard` imported from

@@ -38,7 +38,7 @@
 
 ## Architectural Principles
 
-### 1. Determinism Is Non‑Negotiable
+### 1. Determinism Is Non‑Negotiable (D‑0002)
 
 Every game must be fully reproducible from:
 - initial seed
@@ -402,7 +402,9 @@ to real cards in the registry. Registry ext_id existence is validated by
 ## Section 3 — Persistence Boundaries
 
 This is the most important section. Every engineer must know it before writing
-any storage code.
+any storage code. Serialization invariants enforced by: D-0002 (determinism),
+D-1214 (zones store ext_id strings only), D-1229 (HookDefinition is data-only),
+D-1232 (ImplementationMap outside G), D-1310 through D-1313 (data classes).
 
 ### The Three Data Classes
 
@@ -592,7 +594,7 @@ stage they are in to enforce gating. Storing `currentStage` in `G` makes it:
 - JSON-serializable (replay and snapshot support)
 - Resettable on each turn (`play` phase `onBegin` sets `G.currentStage = 'start'`)
 
-This is a hard rule: **stage tracking belongs in `G`, never in `ctx`**.
+This is a hard rule: **stage tracking belongs in `G`, never in `ctx`** (D-1221).
 
 **The advancement flow:**
 
@@ -692,6 +694,13 @@ intentional:
 
 Any deviation from these assignments must be recorded in `DECISIONS.md`. Stage
 gating uses `TurnStage` constants — never hardcoded string literals.
+
+`MOVE_ALLOWED_STAGES` applies only to **CoreMoveName** moves (the original
+three core moves). Non-core moves (e.g., `revealVillainCard`, `fightVillain`,
+`recruitHero`) must enforce gating internally by checking `G.currentStage`
+directly within the move body. This pattern was established by WP-014A and
+confirmed by WP-016 (D-1601). Non-core moves must not expand `CoreMoveName`,
+`CORE_MOVE_NAMES`, or `MOVE_ALLOWED_STAGES`.
 
 ### Zone Mutation Rules
 
@@ -909,6 +918,106 @@ Pre-shuffle lexical sort of the combined deck is mandatory — registry list
 ordering may vary. Virtual cards have no intrinsic metadata; all behaviour
 derives from rule triggers and game context.
 
+### Canonical Reveal → Fight → Side-Effect Ordering (WP-015 / WP-016 / WP-017)
+
+```text
+┌────────────────────────────────────────────────────────────────────┐
+│                        TURN-LEVEL FLOW (CANONICAL)                 │
+└────────────────────────────────────────────────────────────────────┘
+
+A) Villain Reveal (Engine-Driven)
+─────────────────────────────────────────────────────────────────────
+revealVillainCard
+  │
+  │ 1. Identify revealed CardExtId + RevealedCardType
+  │
+  │ 2. If type = 'villain' | 'henchman'
+  │     ┌──────────────────────────────────────────────────────────┐
+  │     │ City placement (WP-015)                                   │
+  │     │ - insert at City[0]                                       │
+  │     │ - shift toward City[4]                                   │
+  │     │ - if City[4] overflows → escapedCard                     │
+  │     └──────────────────────────────────────────────────────────┘
+  │
+  │     If escapedCard != null:
+  │       - increment ENDGAME_CONDITIONS.ESCAPED_VILLAINS   (WP-015)
+  │       - apply escape penalty (gainWound)               (WP-017)
+  │       - resolve attached bystanders on escape          (WP-017)
+  │
+  │     - attach 1 bystander (if available) to this card  (WP-017)
+  │
+  │ 3. Emit reveal triggers / rule hooks                  (WP-014A)
+  │
+  │ 4. For non-City cards:
+  │     - scheme-twist → trigger only
+  │     - mastermind-strike → trigger only
+  │     - bystander → discard (MVP; WP-017)
+  │
+  ▼
+
+B) Player Action Phase — Fight (Player-Driven)
+─────────────────────────────────────────────────────────────────────
+fightVillain
+  │
+  │ 1. Validate args + stage gate                     (WP-016)
+  │
+  │ 2. Remove villain from City                       (WP-016)
+  │
+  │ 3. Place villain card in player.victory           (WP-016)
+  │
+  │ 4. Award attached bystanders to player.victory    (WP-017)
+  │
+  │ 5. Remove attachedBystanders entry for that card  (WP-017)
+  │
+  │ 6. Push informational message
+  │
+  ▼
+
+C) Player Action Phase — Recruit (Player-Driven)
+─────────────────────────────────────────────────────────────────────
+recruitHero
+  │
+  │ 1. Validate args + stage gate                     (WP-016)
+  │
+  │ 2. Remove hero from HQ                            (WP-016)
+  │
+  │ 3. Place hero card in player.discard              (WP-016)
+  │
+  │ 4. Push informational message
+  │
+  ▼
+
+─────────────────────────────────────────────────────────────────────
+Boundary Rules (Non-Negotiable)
+─────────────────────────────────────────────────────────────────────
+- City placement ALWAYS occurs before trigger emission.
+- WP-016 does not inspect or clean up attached state.
+- WP-017 does not decide when fights occur.
+- Escape penalties are reveal-time only.
+- Attached bystanders are resolved exactly once:
+    • on fight defeat, or
+    • on escape (per MVP rule).
+- Within the main stage, the player may choose to fight or recruit in
+  any order. The engine does not impose an action sequence constraint
+  (D-1602).
+```
+
+**Why this diagram exists**
+
+This diagram is the authoritative ordering contract for villain reveal,
+player combat, and secondary side-effects across WP-015, WP-016, and
+WP-017.
+
+It exists to prevent:
+- duplicate application of escape penalties,
+- premature or repeated awarding of bystanders,
+- helper functions mutating `G` outside their layer,
+- future packets re-ordering reveal, fight, and side-effect logic.
+
+Any change to this ordering requires a new DECISIONS.md entry. Related
+decisions: D-1405 through D-1409 (reveal pipeline), D-1601 (non-core
+gating), D-1602 (player-controlled fight/recruit ordering).
+
 ### The `G.lobby.started` Observability Pattern
 
 `G.lobby.started` is a boolean flag set to `true` by `startMatchIfReady()` before
@@ -1014,7 +1123,7 @@ invariant below is an architectural bug, even if the code compiles.
 - All code that affects endgame state must use `ENDGAME_CONDITIONS` constants
   — never string literals.
 
-### Registry & Runtime Boundary
+### Registry & Runtime Boundary (D-1405)
 
 - The registry is available **only during `Game.setup()`**.
 - No move, rule hook, or scorer may query the registry at runtime.
