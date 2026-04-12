@@ -101,6 +101,9 @@ export type {
   PersistableMatchConfig,
 } from './persistence/persistence.types.js';
 export { PERSISTENCE_CLASSES } from './persistence/persistence.types.js';
+export type { VillainDeckState, RevealedCardType } from './villainDeck/villainDeck.types.js';
+export { REVEALED_CARD_TYPES } from './villainDeck/villainDeck.types.js';
+export { revealVillainCard } from './villainDeck/villainDeck.reveal.js';
 export { createSnapshot } from './persistence/snapshot.create.js';
 export type { SnapshotContext } from './persistence/snapshot.create.js';
 export { validateSnapshotShape } from './persistence/snapshot.validate.js';

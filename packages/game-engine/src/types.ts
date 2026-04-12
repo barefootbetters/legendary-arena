@@ -26,6 +26,12 @@ export { PERSISTENCE_CLASSES } from './persistence/persistence.types.js';
 // Re-exported here so that consumers importing from './types.js' have access.
 export type { LobbyState, SetPlayerReadyArgs } from './lobby/lobby.types.js';
 
+// why: Villain deck types (VillainDeckState, RevealedCardType) are defined
+// canonically in src/villainDeck/villainDeck.types.ts (WP-014A). Re-exported
+// here so that consumers importing from './types.js' have access.
+export type { VillainDeckState, RevealedCardType } from './villainDeck/villainDeck.types.js';
+export { REVEALED_CARD_TYPES } from './villainDeck/villainDeck.types.js';
+
 // why: Turn phase types (MatchPhase, TurnStage, TurnPhaseError) are defined
 // canonically in src/turn/turnPhases.types.ts (WP-007A). They are re-exported
 // here so that consumers importing from './types.js' have access.
@@ -84,6 +90,7 @@ import type { TurnStage } from './turn/turnPhases.types.js';
 import type { CardExtId, PlayerZones, GlobalPiles } from './state/zones.types.js';
 import type { HookDefinition } from './rules/ruleHooks.types.js';
 import type { LobbyState } from './lobby/lobby.types.js';
+import type { VillainDeckState, RevealedCardType } from './villainDeck/villainDeck.types.js';
 
 // why: MatchConfiguration (WP-002) and MatchSetupConfig (WP-005A) have
 // identical 9-field shapes. MatchSetupConfig in matchSetup.types.ts is now
@@ -201,6 +208,15 @@ export interface LegendaryGameState {
   // stored here. This keeps G JSON-serializable.
   /** Data-only rule hook definitions (no functions). */
   hookRegistry: HookDefinition[];
+
+  // why: classification stored at setup so moves never access registry at runtime.
+  // G.villainDeckCardTypes maps each card in the villain deck to its
+  // RevealedCardType. Populated by buildVillainDeck (WP-014B) at setup time;
+  // revealVillainCard reads it in O(1) without registry access.
+  /** Villain deck zone (deck + discard). */
+  villainDeck: VillainDeckState;
+  /** Card type classification for O(1) lookup during reveal. */
+  villainDeckCardTypes: Record<CardExtId, RevealedCardType>;
 
   // why: lobby state is stored in G so the UI can observe lobby completion
   // and readiness status. Initialized at setup time from ctx.numPlayers.

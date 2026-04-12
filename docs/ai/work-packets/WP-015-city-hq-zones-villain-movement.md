@@ -119,10 +119,12 @@ Before writing a single line:
   escape edge
 - HQ is initialized but not yet used for buying — MVP only; WP-016 adds
   recruit logic
-- Bystander MVP handling must be the simplest deterministic rule: revealed
+- Bystander handling is intentionally temporary in WP-015. Discard + message
+  is a placeholder invariant until WP-017 introduces capture rules. Revealed
   bystanders go to `G.villainDeck.discard` (existing behavior from WP-014)
-  and a message is logged to `G.messages`. If a different approach is chosen,
-  log the decision in DECISIONS.md.
+  and a message is logged to `G.messages`. All bystander handling code must
+  include a `// why: bystander capture rules are WP-017` comment. If a
+  different approach is chosen, log the decision in DECISIONS.md.
 - WP-014 contract files (`villainDeck.types.ts`) must not be modified
 - Tests use `makeMockCtx` from `src/test/mockCtx.ts` — do not import from
   `boardgame.io`
@@ -141,11 +143,23 @@ Before writing a single line:
 - **RevealedCardType values** (routing uses these — hyphens not underscores):
   `'villain'` | `'henchman'` | `'bystander'` | `'scheme-twist'` | `'mastermind-strike'`
 
+- **City insertion rule:** new villains/henchmen always enter at City space 0.
+  All existing cards shift toward space 4.
+
+- **City escape identity:** the card that escapes is always the card previously
+  occupying City space 4, never the newly revealed card.
+
+- **City size invariant:** CityZone must always remain length 5 at runtime.
+  Any deviation is an invalid state.
+
 - **City routing rules:**
   `'villain'` and `'henchman'` -> enter City (push logic)
   `'scheme-twist'` -> trigger only (WP-014 existing)
   `'mastermind-strike'` -> trigger only (WP-014 existing)
   `'bystander'` -> discard + message (MVP; no capture rules yet)
+
+- **HQ immutability in WP-015:** no move in WP-015 may mutate `G.hq` after
+  initialization. HQ mutation begins in WP-016.
 
 ---
 
@@ -191,7 +205,10 @@ Before writing a single line:
 
 ### E) `src/villainDeck/villainDeck.reveal.ts` — modified
 
-- After step 4 (type lookup), before step 5 (trigger emission):
+- After step 4 (type lookup), before step 5 (trigger emission).
+  **Ordering guarantee:** City placement occurs before rule effects are applied,
+  so rule hooks observe the post-placement City state. This ordering is
+  contractual and must not be reversed without a DECISIONS.md entry.
   - If card type is `'villain'` or `'henchman'`:
     - Call `pushVillainIntoCity(G.city, cardId)`
     - Update `G.city` with the returned city
@@ -225,21 +242,25 @@ Before writing a single line:
   2. `pushVillainIntoCity` shifts existing cards forward
   3. `pushVillainIntoCity` with all 5 spaces full: space 4 card escapes
   4. Escaped card is returned as `escapedCard`; non-escape returns `null`
-  5. City remains a 5-element tuple after push (no growth)
-  6. `JSON.stringify(city)` succeeds after push
-  7. `initializeCity()` returns all nulls
+  5. Escaped card identity: `escapedCard === oldCity[4]` (never the newly
+     revealed card)
+  6. City remains a 5-element tuple after push (`assert.equal(city.length, 5)`)
+  7. `JSON.stringify(city)` succeeds after push
+  8. `initializeCity()` returns all nulls
 
 ### I) Tests — `src/villainDeck/villainDeck.city.integration.test.ts` — new
 
 - Uses `node:test` and `node:assert` only; uses `makeMockCtx`; does not import
   from `boardgame.io`
-- Six tests:
+- Eight tests:
   1. Reveal of villain card places it in `G.city[0]`
   2. Reveal of henchman card places it in `G.city[0]`
   3. Reveal of scheme-twist does NOT modify `G.city`
   4. Reveal of mastermind-strike does NOT modify `G.city`
   5. Escape increments `G.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS]`
   6. `JSON.stringify(G)` succeeds after reveal + city placement
+  7. `G.hq` remains unchanged (all null) after villain reveals
+  8. If `G.city` is malformed at move time, the move fails safely (no mutation)
 
 ---
 
@@ -296,6 +317,9 @@ All items must be binary pass/fail. No partial credit.
       (confirmed with `Select-String`)
 - [ ] Push inserts at space 0 and shifts existing cards toward space 4
 - [ ] Card at space 4 is returned as `escapedCard` when pushed out
+- [ ] Escaped card is always the card previously at space 4, never the newly
+      revealed card (asserted in tests)
+- [ ] City remains length 5 after every push (asserted in tests)
 - [ ] No `.reduce()` in city logic (confirmed with `Select-String`)
 
 ### Escape Counter
@@ -307,8 +331,10 @@ All items must be binary pass/fail. No partial credit.
 ### Reveal Routing
 - [ ] Villain and henchman revealed cards enter `G.city[0]`
 - [ ] Scheme-twist and mastermind-strike do NOT enter City
-- [ ] Bystander goes to discard with message (MVP handling)
-- [ ] `// why:` comment on bystander MVP decision exists
+- [ ] Bystander goes to discard with message (temporary MVP handling)
+- [ ] `// why:` comment on bystander MVP decision references WP-017
+- [ ] City placement occurs before rule effects are applied, so rule hooks
+      observe the post-placement City state
 
 ### No Registry Import
 - [ ] `src/board/city.logic.ts` contains no import from `@legendary-arena/registry`
@@ -316,10 +342,16 @@ All items must be binary pass/fail. No partial credit.
 - [ ] `src/board/city.types.ts` contains no import from `@legendary-arena/registry`
       (confirmed with `Select-String`)
 
+### HQ Immutability
+- [ ] No move in WP-015 mutates `G.hq` after initialization
+- [ ] Integration test asserts `G.hq` remains all null after villain reveals
+
 ### Tests
 - [ ] `pnpm --filter @legendary-arena/game-engine test` exits 0 (all test files)
 - [ ] City push test confirms escape returns the displaced card
+- [ ] City push test asserts `escapedCard === oldCity[4]` (escape identity)
 - [ ] Integration test confirms villain enters city, scheme-twist does not
+- [ ] Integration test asserts malformed `G.city` causes safe failure (no mutation)
 - [ ] Both test files use `makeMockCtx` and do not import from `boardgame.io`
       (confirmed with `Select-String`)
 - [ ] Both test files use `node:test` and `node:assert` only

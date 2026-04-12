@@ -89,7 +89,7 @@ is active. See 01.2 for the clause-driven diagnosis sequence.
 
 | EC     | Source WP | Layer                    | Execution Scope                                      | Status |
 |--------|-----------|--------------------------|------------------------------------------------------|--------|
-| EC-014 | WP-014    | Game Engine / Core Gameplay | Villain deck, reveal pipeline, REVEALED_CARD_TYPES   | Draft  |
+| EC-014A | WP-014A  | Game Engine / Core Gameplay | Reveal pipeline, trigger emission, REVEALED_CARD_TYPES (no deck construction) | Draft  |
 | EC-015 | WP-015    | Game Engine / Board Zones| G.city, G.hq, villain movement, escapes              | Draft  |
 | EC-016 | WP-016    | Game Engine / Core Actions | fightVillain, recruitHero moves                      | Draft  |
 | EC-017 | WP-017    | Game Engine / Zones + Effects | G.ko, G.attachedBystanders, wounds                 | Draft  |

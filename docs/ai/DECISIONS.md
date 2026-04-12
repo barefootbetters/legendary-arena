@@ -1327,6 +1327,273 @@ future work.
 registries, replay/simulation inputs, or any pre-engine initialization
 boundary is introduced or modified.
 
+## WP-014 — Villain Deck Architecture (Authority Boundary)
+
+WP-014 was intentionally split into two packets:
+
+- **WP-014A** — Villain Reveal & Trigger Pipeline
+  Owns runtime behaviour: reveal order, trigger emission, fail-closed handling,
+  and deterministic routing. Decisions D-1405 through D-1409.
+
+- **WP-014B** — Villain Deck Composition Rules & Registry Integration
+  Owns metadata decisions: card instancing, ext_id conventions, and
+  rules-based deck composition counts. Decisions D-1410 through D-1413.
+
+No packet may cross this boundary. Reveal logic must never depend on registry
+shape or deck composition strategy.
+
+---
+
+### D-1405 — Store Revealed Card Classification in Game State
+
+**Decision:** The classification of villain-deck cards (`RevealedCardType`) is
+stored in `G.villainDeckCardTypes: Record<CardExtId, RevealedCardType>` at
+**setup time**, and all reveal logic reads from this game-state map. Reveal
+moves must **never** query the registry or infer card types at runtime.
+
+**Rationale:** boardgame.io move functions receive only `(G, ctx, args)` and
+have no access to the registry. Runtime registry access would violate
+determinism, complicate replays, and break offline simulation. Storing
+classification in `G` yields O(1) lookup and a fully deterministic reveal
+pipeline. Classification is a structural property of deck composition, not a
+runtime behaviour.
+
+**Consequences:** `revealVillainCard` relies exclusively on
+`G.villainDeckCardTypes`. Tests inject mock classifications directly into `G`,
+enabling isolated verification of reveal behaviour. Registry schema changes do
+not require changes to reveal logic as long as setup populates
+`villainDeckCardTypes` correctly.
+
+**Introduced:** WP-014A
+**Status:** Immutable
+
+---
+
+### D-1406 — Reveal Pipeline Is Independent of Deck Construction
+
+**Decision:** The villain reveal pipeline (draw, classify, trigger, resolve,
+route) is implemented **without** any knowledge of how the villain deck is
+built. `buildVillainDeck` is **explicitly deferred** to WP-014B and is not
+stubbed, guessed, or partially implemented in WP-014A.
+
+**Rationale:** The current registry schema does not define henchman card
+instances, scheme-twist card identifiers, or per-scheme/per-player deck
+composition counts. Attempting to infer these would embed unverified
+assumptions into game logic. Separating reveal mechanics from deck composition
+allows Phase 4 to proceed while preserving long-term correctness.
+
+**Consequences:** `buildInitialGameState` initializes empty defaults
+(`villainDeck: { deck: [], discard: [] }`, `villainDeckCardTypes: {}`).
+`revealVillainCard` handles empty deck + empty discard deterministically
+(logs a message and returns). WP-014A remains valid even if the deck is
+permanently unpopulated. WP-014B becomes the sole authority for deck
+composition rules.
+
+**Introduced:** WP-014A
+**Status:** Active (deferred scope resolved by WP-014B)
+
+---
+
+### D-1407 — Fail-Closed Behaviour for Missing Card Classification
+
+**Decision:** If a revealed card does not have an entry in
+`G.villainDeckCardTypes`, the reveal move must **fail closed**: append a
+message to `G.messages`, perform **no removal** or reshuffle, emit **no
+triggers**, and return immediately.
+
+**Rationale:** An undefined card type would otherwise produce undefined
+trigger payloads, leading to silent logic failures. Fail-closed behaviour
+preserves determinism and makes configuration errors visible without
+corrupting game state. This mirrors input-validation rules used elsewhere in
+the engine.
+
+**Consequences:** Reveal logic validates classification before mutating state.
+Tests explicitly cover and enforce this behaviour. Partial or corrupted deck
+setups do not cascade into undefined gameplay.
+
+**Introduced:** WP-014A
+**Status:** Immutable
+
+---
+
+### D-1408 — Discard Routing Is Correct and Temporary
+
+**Decision:** All revealed cards are placed into `G.villainDeck.discard` after
+reveal resolution in WP-014A. This includes villains and henchmen. City
+routing is **intentionally deferred** to WP-015.
+
+**Rationale:** WP-014A establishes reveal correctness and trigger semantics
+only. Introducing City logic earlier would couple deck reveal with board
+topology. Deferring routing makes WP-015 a clean, focused packet.
+
+**Consequences:** Reveal behaviour remains simple and deterministic. Tests
+assert discard routing explicitly. Any change to routing before WP-015 is
+considered a contract violation.
+
+**Introduced:** WP-014A
+**Status:** Active (superseded by WP-015 when City routing is implemented)
+
+---
+
+### D-1409 — Canonical RevealedCardType Set Is Closed and Drift-Checked
+
+**Decision:** The set of revealed card types is **fixed and closed**:
+`'villain' | 'henchman' | 'bystander' | 'scheme-twist' | 'mastermind-strike'`.
+A canonical array `REVEALED_CARD_TYPES` must always enumerate exactly these
+values, and a drift-detection test is mandatory.
+
+**Rationale:** Trigger emission depends on exact string matching. Adding a new
+type without updating the canonical set would silently break game rules. Drift
+detection enforces alignment between types, constants, and tests.
+
+**Consequences:** Any future change to revealed card taxonomy requires an
+explicit decision. Tests fail early if union/array mismatch occurs. Replay
+determinism is preserved across versions.
+
+**Introduced:** WP-014A
+**Status:** Immutable
+
+---
+
+**Related packets:**
+- WP-014A — Reveal & Trigger Pipeline
+- WP-014B — Villain Deck Composition Rules & Registry Integration
+- WP-015 — City & HQ Zones
+
+---
+
+### D-1410 — Henchmen Are Virtual, Instanced Cards
+
+**Unlocks:** `buildVillainDeck` (WP-014B)
+
+**Decision:** Henchmen are treated as **virtual card instances**, not
+registry-defined per-card entries. For each henchman group selected in
+`MatchSetupConfig.henchmanGroupIds`, the group contributes a fixed number of
+identical cards to the villain deck. Each copy is represented by a distinct
+`CardExtId` string generated deterministically at setup time.
+
+**Canonical ext_id convention:** `henchman-{groupSlug}-{index}`
+where `{index}` is zero-padded (e.g., `henchman-doombot-legion-00` through
+`henchman-doombot-legion-09`). Hyphens throughout — no colons, no underscores.
+
+**Rationale:** The registry models henchmen at group level only, not card
+level. Physical Legendary decks contain multiple identical henchmen cards.
+Treating henchmen as virtual instances preserves determinism and replay
+accuracy without inflating the registry schema. Distinct ext_ids are required
+so that cards can move independently, escapes and KOs are attributable, and
+replays remain lossless.
+
+**Consequences:** `buildVillainDeck` is responsible for instancing henchman
+ext_ids. Game logic never inspects the `{index}` portion of the ext_id. All
+henchman instances share `RevealedCardType = 'henchman'`.
+
+**Introduced:** WP-014B
+**Status:** Accepted
+
+---
+
+### D-1411 — Scheme Twists Are Virtual, Scheme-Scoped Cards
+
+**Unlocks:** `buildVillainDeck` (WP-014B)
+
+**Decision:** Scheme twists are modelled as **virtual cards scoped to the
+active scheme**. They are not registry cards and not generic cards shared
+across schemes.
+
+**Canonical ext_id convention:** `scheme-twist-{schemeSlug}-{index}`
+where `{index}` is zero-padded (e.g., `scheme-twist-midtown-bank-robbery-00`
+through `scheme-twist-midtown-bank-robbery-07`). Hyphens throughout.
+
+**Count rule:** The number of scheme twists added to the villain deck is
+defined by the scheme definition itself, not by `MatchSetupConfig`. If the
+registry scheme metadata does not yet expose a twist count, WP-014B defines a
+default of **8** and records it as a game-engine constant. Any deviation from
+the default must be encoded in scheme metadata later, not inferred in engine
+logic.
+
+**Rationale:** In Legendary, scheme twists are mechanically distinct but
+visually identical. Their meaning comes from the active scheme, not from card
+text. Scheme-scoped virtual cards allow deterministic reveal, correct trigger
+emission, and scheme-specific replay auditing.
+
+**Consequences:** Reveal logic treats all scheme-twist cards uniformly. The
+`{index}` exists only to uniquely identify an instance. No runtime logic keys
+off the ext_id shape beyond type classification.
+
+**Introduced:** WP-014B
+**Status:** Accepted
+
+---
+
+### D-1412 — Villain Deck Composition Counts Come From Rules, Not Config
+
+**Unlocks:** `buildVillainDeck` (WP-014B)
+
+**Decision:** Villain deck composition counts are **rules-driven**, not
+user-configured. `MatchSetupConfig` does not contain henchman copy counts,
+scheme-twist counts, or mastermind strike counts. These quantities are derived
+from scheme rules, mastermind rules, and fixed game invariants.
+
+**Specific count sources:**
+- Henchman copies per group: **10** (standard Legendary rule; game-engine
+  constant). Future expansion support may make this configurable per scheme.
+- Scheme twist count: **8** (default; future: per-scheme metadata).
+- Bystanders in villain deck: derived from `context.ctx.numPlayers` (1 per
+  player, standard Legendary rule). This is **separate** from
+  `config.bystandersCount` which sizes the bystander pile (supply).
+- Mastermind strikes: all non-tactic cards from the selected mastermind's
+  cards array (count determined by mastermind data, not a fixed constant).
+
+**Rationale:** These counts are not tuning knobs; they are rule invariants.
+Exposing them in setup config would fracture game rules, complicate
+matchmaking, and undermine replay comparability.
+
+**Consequences:** `buildVillainDeck` derives counts from scheme definition,
+mastermind definition, and fixed constants. Any future rule that modifies deck
+counts must be recorded as a new decision, not silently modify setup config.
+
+**Introduced:** WP-014B
+**Status:** Accepted
+
+---
+
+### D-1413 — Mastermind Strikes Identified by tactic Field, Not Heuristically
+
+**Unlocks:** `buildVillainDeck` (WP-014B)
+
+**Decision:** Mastermind strike cards are identified by the `tactic` boolean
+field on `MastermindCard` in the registry schema. A card is a **strike** when
+`tactic !== true` (i.e., `tactic` is `false`, `undefined`, or absent). This is
+treated as a **registry schema contract**, not an inference heuristic.
+
+**Ext_id convention:** Mastermind strike ext_ids use the existing FlatCard key
+format: `{setAbbr}-mastermind-{mastermindSlug}-{cardSlug}`. No virtual
+instancing is needed because mastermind cards already have individual
+identities in the registry.
+
+**Rationale:** The `tactic` boolean is the only structural marker distinguishing
+strikes from tactics in the current registry schema (`MastermindCardSchema` in
+`schema.ts`). Rather than adding a new field, we formalise the existing field
+as the contract. This is auditable and deterministic. WP-019 (tactics deck)
+depends on this same field for the inverse selection.
+
+**Consequences:** `buildVillainDeck` filters mastermind cards using
+`tactic !== true`. Reveal logic does not care how a card was identified as a
+strike — only that its `RevealedCardType` is `'mastermind-strike'`. If a
+future registry change adds richer strike/tactic metadata, a new decision
+supersedes this one.
+
+**Introduced:** WP-014B
+**Status:** Accepted
+
+---
+
+**Related packets:**
+- WP-014B — Villain Deck Composition Rules & Registry Integration
+- WP-015 — City & HQ Zones
+- WP-017 — Bystander Mechanics
+- WP-019 — Mastermind Tactics
+
 ---
 
 ## Change Management

@@ -16,6 +16,8 @@ import type {
   MatchSelection,
   CardExtId,
   LobbyState,
+  VillainDeckState,
+  RevealedCardType,
 } from '../types.js';
 import { TURN_STAGES } from '../turn/turnPhases.types.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
@@ -153,6 +155,10 @@ export function buildInitialGameState(
     messages: [],
     counters: {},
     hookRegistry: buildDefaultHookDefinitions(config),
+    // why: WP-014B will populate from registry. Empty defaults are correct
+    // for WP-014A — the reveal pipeline handles empty deck gracefully.
+    villainDeck: { deck: [], discard: [] } satisfies VillainDeckState,
+    villainDeckCardTypes: {} as Record<CardExtId, RevealedCardType>,
     // why: lobby state initialized at setup time from ctx.numPlayers. All
     // players start as not ready. G.lobby.started is false until
     // startMatchIfReady succeeds.

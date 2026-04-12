@@ -396,19 +396,24 @@ These packets complete the minimum viable multiplayer loop.
 
 These packets make the game play like Legendary for the first time.
 
-- [ ] WP-014 — Villain Deck & Reveal Pipeline (Minimal MVP) ✅ Reviewed
+- [x] WP-014A — Villain Reveal & Trigger Pipeline ✅ Reviewed ✅ Complete (2026-04-11)
   Dependencies: WP-013
-  Notes: Creates `G.villainDeck` (`deck`/`discard`) and `G.villainDeckCardTypes`
-  (built at setup time from registry — moves never query registry directly);
-  `revealVillainCard` move draws top card, classifies, emits `onCardRevealed`
-  + specific sub-triggers, applies effects via WP-009B, places in discard;
-  `REVEALED_CARD_TYPES` is a canonical array — drift-detection test required
-  (setup test file, test 6); slugs use hyphens not underscores;
-  WP-015 will modify routing for villain/henchman cards to City; was previously
-  truncated — now complete; also updates `docs/ai/ARCHITECTURE.md`
+  Notes: Types (`RevealedCardType`, `VillainDeckState`, `REVEALED_CARD_TYPES`),
+  `revealVillainCard` move (draw, classify, trigger, apply, discard), 12 new
+  tests with mock deck fixtures, empty defaults in `buildInitialGameState`;
+  `buildVillainDeck` deferred to WP-014B; discard routing temporary (WP-015
+  changes to City)
+
+- [ ] WP-014B — Villain Deck Composition Rules & Registry Integration ✅ Reviewed
+  Dependencies: WP-014A
+  Notes: Implements `buildVillainDeck` using decisions D-1410 through D-1413;
+  virtual card instancing for henchmen and scheme twists; ext_id conventions
+  locked; composition counts are rules-driven (10 henchmen/group, 8 twists,
+  1 bystander/player); defines `VillainDeckRegistryReader` interface;
+  replaces empty defaults in `buildInitialGameState` with real data
 
 - [ ] WP-015 — City & HQ Zones (Villain Movement + Escapes) ✅ Reviewed
-  Dependencies: WP-014
+  Dependencies: WP-014A
   Notes: `G.city` (5-tuple of `CardExtId | null`) and `G.hq` (5-tuple);
   `pushVillainIntoCity` is a pure helper (no boardgame.io import, no `.reduce()`);
   revealed villains/henchmen route to City instead of discard; cards pushed past

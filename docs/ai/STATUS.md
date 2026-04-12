@@ -7,6 +7,51 @@
 
 ## Current State
 
+### WP-014A — Villain Reveal & Trigger Pipeline (2026-04-11)
+
+**What changed:**
+- `packages/game-engine/src/villainDeck/villainDeck.types.ts` — **new** —
+  `RevealedCardType` (5 canonical values), `REVEALED_CARD_TYPES` canonical
+  array, `VillainDeckState` interface
+- `packages/game-engine/src/villainDeck/villainDeck.reveal.ts` — **new** —
+  `revealVillainCard` move (draw, classify, trigger, apply effects, discard)
+- `packages/game-engine/src/villainDeck/villainDeck.types.test.ts` — **new** —
+  2 tests (drift-detection + serialization)
+- `packages/game-engine/src/villainDeck/villainDeck.reveal.test.ts` — **new** —
+  10 tests (reveal pipeline with mock deck fixtures)
+- `packages/game-engine/src/types.ts` — **modified** — added `villainDeck`
+  and `villainDeckCardTypes` to `LegendaryGameState`
+- `packages/game-engine/src/game.ts` — **modified** — added
+  `revealVillainCard` to top-level moves
+- `packages/game-engine/src/index.ts` — **modified** — exports for new types
+  and move
+- `packages/game-engine/src/setup/buildInitialGameState.ts` — **modified**
+  (01.5 wiring) — empty-default villain deck fields
+- `packages/game-engine/src/game.test.ts` — **modified** (01.5 wiring) —
+  move count assertion 4 -> 5
+
+**What exists now:**
+- Villain deck type contracts: `RevealedCardType`, `VillainDeckState`,
+  `REVEALED_CARD_TYPES` canonical array with drift-detection test
+- Reveal pipeline: `revealVillainCard` draws top card, looks up classification
+  in `G.villainDeckCardTypes`, emits `onCardRevealed` (always),
+  `onSchemeTwistRevealed` (scheme twists), `onMastermindStrikeRevealed`
+  (mastermind strikes), applies effects via the WP-009B pipeline, routes to
+  discard
+- Fail-closed: missing card type prevents removal and triggers
+- Reshuffle: empty deck + non-empty discard reshuffles before draw
+- Empty defaults in `buildInitialGameState` (WP-014B populates from registry)
+- All 142 tests passing (130 existing + 12 new)
+
+**Known gaps (expected at this stage):**
+- No `buildVillainDeck` — deferred to WP-014B pending registry schema
+  decisions for henchman instancing, scheme twist identifiers, and composition
+  counts (DECISIONS.md D-1410 through D-1413 define the conventions)
+- Discard routing is temporary — WP-015 will route villain/henchman to City
+- No City, HQ, or KO zone logic — WP-015/017
+
+---
+
 ### Phase 3 Exit Gate Closed (2026-04-11)
 
 **What changed:**

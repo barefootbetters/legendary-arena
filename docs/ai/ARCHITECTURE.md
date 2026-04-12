@@ -463,9 +463,9 @@ The canonical shape is `MatchSnapshot` in `src/persistence/persistence.types.ts`
 | `G.lobby` | Runtime | Transient phase state; see Section 4 |
 | `G.lobby.started` | Runtime | UI observability flag; not a persistence record |
 | `G.currentStage` | Runtime | Game engine's inner stage (`start`/`main`/`cleanup`) — in `G`, not `ctx`; reset to `'start'` on each turn |
-| `G.villainDeck.deck` | Snapshot → count only | Zone contents are Runtime |
-| `G.villainDeck.discard` | Snapshot → count only | Zone contents are Runtime |
-| `G.villainDeckCardTypes` | Runtime | Derived from registry at setup; not persisted |
+| `G.villainDeck.deck` | Snapshot → count only | Ordered stack; reveal logic assumes correct composition but does not validate it; zone contents are Runtime |
+| `G.villainDeck.discard` | Snapshot → count only | Revealed cards after pipeline resolution; zone contents are Runtime |
+| `G.villainDeckCardTypes` | Runtime | `Record<CardExtId, RevealedCardType>`; populated at setup, consumed by reveal moves; exists specifically to prevent runtime registry access |
 | `G.selection` | Runtime | Match setup selection state; introduced WP-005B |
 | `G.city` | Runtime | 5-tuple of `CardExtId \| null`; villain movement zone; introduced WP-015 |
 | `G.hq` | Runtime | 5-tuple of `CardExtId \| null`; hero recruitment zone; introduced WP-015 |
@@ -851,6 +851,46 @@ value must use `REVEALED_CARD_TYPES` constants — never inline string literals.
 A drift-detection test in `villainDeck.setup.test.ts` guards this: failure means
 a type string was added to the `RevealedCardType` union but not the canonical
 array, or vice versa.
+
+### Villain Deck Authority Boundary
+
+The villain deck is governed by two strictly separate concerns:
+
+1. **Deck Construction (Setup-Time Authority)**
+   - Defines *what cards exist* in the villain deck
+   - Defines *how many copies* of each card exist
+   - Defines *CardExtId conventions* (virtual instancing)
+   - May access registry data via function argument
+   - Executes only during `Game.setup()`
+
+2. **Reveal & Runtime Behaviour (Move-Time Authority)**
+   - Defines *how cards are revealed*
+   - Defines *which rule triggers fire*
+   - Defines *where cards are routed after reveal*
+   - Must not access registry data
+   - Operates only on data stored in `G`
+
+These concerns must never be combined in the same function or module.
+
+#### Registry Access Rule (Non-Negotiable)
+
+- Registry data may be accessed **only** during setup-time composition
+  (e.g., villain deck construction in `buildVillainDeck`).
+- Registry data must **never** be accessed during move execution
+  (reveal, fight, recruit, escape, scoring).
+
+Violation of this rule breaks determinism, replay safety, and offline
+simulation.
+
+#### Reveal Independence Invariant
+
+Reveal logic must remain correct even if the villain deck is empty or
+malformed. It must not attempt to repair, infer, or construct deck contents.
+
+Related Work Packets:
+- WP-014A — Villain Reveal & Trigger Pipeline
+- WP-014B — Villain Deck Composition Rules & Registry Integration
+- WP-015 — City & HQ Zones
 
 ### The `G.lobby.started` Observability Pattern
 
