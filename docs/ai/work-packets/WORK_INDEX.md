@@ -933,6 +933,20 @@ to ensure 1:1 alignment with the engine's authoritative `MatchSetupConfig`.
 **Impact:** Locks Match Setup as a deterministic, engine-aligned, governance-enforced
 configuration boundary for game creation, replays, simulation, and competitive integrity.
 
+### Customer-Safe Configuration Knobs (2026-04-11)
+
+Defines which match setup fields may be adjusted in response to customer
+feedback without requiring engine changes, and which surfaces are explicitly
+non-configurable.
+
+**Artifact:** `docs/ai/REFERENCE/SAFE-KNOBS.md`
+
+**Key policy:** Safe knobs are data-only configuration parameters expressible
+in match setup or its envelope. Runtime switches, conditional logic, and
+rule modifications are not safe knobs. Knobs are tiered by risk (Tier 1
+fully safe, Tier 2 guarded, Tier 3 gated/future). No knob may move to a
+higher tier without a documented decision.
+
 ---
 
 ## Adding a New Work Packet

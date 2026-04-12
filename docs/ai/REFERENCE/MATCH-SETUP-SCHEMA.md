@@ -178,6 +178,10 @@ These field names are **locked**. Do not rename, abbreviate, or reorder.
 If a field name appears wrong, STOP -- raise it as a question, update
 00.2 first with a `DECISIONS.md` entry, then update code.
 
+Some composition fields are intended to be customer-tunable ("safe knobs").
+See `SAFE-KNOBS.md` for policy-level constraints on which fields may be
+adjusted in response to customer feedback without engine changes.
+
 ---
 
 ## Field Semantics (Normative)
