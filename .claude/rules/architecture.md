@@ -138,6 +138,7 @@ Enforcement of these boundaries is implemented in the corresponding
 |---|---|---|---|
 | Registry | `packages/registry/**` | Card data loading & validation | `.claude/rules/registry.md` |
 | Game Engine | `packages/game-engine/**` | Gameplay rules & state transitions | `.claude/rules/game-engine.md` |
+| Pre-Planning | `packages/preplan/**` | Speculative planning for waiting players (non-authoritative) | `DESIGN-PREPLANNING.md` |
 | Server | `apps/server/**` | Wiring, startup, networking | `.claude/rules/server.md` |
 | Persistence (cross-cutting) | engine / app boundary | Data lifecycle & storage rules | `.claude/rules/persistence.md` |
 
@@ -148,10 +149,11 @@ No layer may reach upward or sideways.
 
 | Package | May import | Must NOT import |
 |---|---|---|
-| `game-engine` | Node built-ins only | `registry`, `server`, any `apps/*`, `pg` |
-| `registry` | Node built-ins, `zod` | `game-engine`, `server`, any `apps/*`, `pg` |
-| `apps/server` | `game-engine`, `registry`, `pg`, Node built-ins | UI packages, browser APIs |
-| `apps/registry-viewer` | `registry`, UI framework | `game-engine`, `server`, `pg` |
+| `game-engine` | Node built-ins only | `registry`, `preplan`, `server`, any `apps/*`, `pg` |
+| `registry` | Node built-ins, `zod` | `game-engine`, `preplan`, `server`, any `apps/*`, `pg` |
+| `preplan` | `game-engine` (types only), Node built-ins | `game-engine` (runtime), `registry`, `server`, any `apps/*`, `pg`, `boardgame.io` |
+| `apps/server` | `game-engine`, `registry`, `pg`, Node built-ins | `preplan`, UI packages, browser APIs |
+| `apps/registry-viewer` | `registry`, UI framework | `game-engine`, `preplan`, `server`, `pg` |
 
 Pure helpers must NOT import boardgame.io.
 
@@ -207,6 +209,35 @@ The server never does.
 
 Enforcement: `.claude/rules/game-engine.md`
 
+### Pre-Planning Layer (Non-Authoritative, Per-Client)
+
+**Purpose:**
+- Provide speculative turn planning for waiting players
+- Track speculative reveals for deterministic rewind
+- Detect disruptions and produce invalidation events
+
+**May:**
+- Import engine type definitions (`import type` only, e.g., `CardExtId`)
+- Read engine state projections (read-only snapshots)
+- Use a client-local seedable PRNG for speculative deck shuffling
+- Maintain disposable sandbox state
+
+**Must NEVER:**
+- Write to `G`, `ctx`, or any authoritative game state
+- Import `boardgame.io`
+- Import engine runtime code (functions, constants, helpers)
+- Import `registry`, `server`, or any `apps/*` package
+- Use `ctx.random.*` or depend on engine randomness
+- Persist state to any storage
+
+**Direction:** Game Engine -> Pre-Planning (read-only types)
+
+The engine **does not know** pre-planning exists.
+Pre-planning observes the engine; it never influences it.
+
+Design docs: `docs/ai/DESIGN-CONSTRAINTS-PREPLANNING.md`,
+`docs/ai/DESIGN-PREPLANNING.md`
+
 ### Server Layer (Wiring Only)
 
 **Purpose:**
@@ -239,6 +270,8 @@ Enforcement: `.claude/rules/server.md`
 
 ```
 Registry -> Game Engine -> Server -> Client / CLI
+                    |
+                    └-> Pre-Planning (types only, read-only)
 ```
 
 Forbidden examples:
@@ -246,6 +279,9 @@ Forbidden examples:
 - Engine importing server utilities (rules loader, DB access)
 - Runtime engine code querying registry
 - Registry importing engine types
+- Pre-planning importing engine runtime code (type-only permitted)
+- Engine importing pre-planning (engine does not know it exists)
+- Pre-planning writing to G, ctx, or any authoritative state
 
 ### Persistence Boundary (Cross-Layer)
 
@@ -264,6 +300,7 @@ If unsure where code belongs:
 
 - **If it decides gameplay** -> Game Engine
 - **If it loads or validates data** -> Registry
+- **If it speculatively plans a future turn** -> Pre-Planning
 - **If it wires components or handles process concerns** -> Server
 - **If it stores anything** -> re-check Persistence rules
 
@@ -274,6 +311,7 @@ Layer violations compound silently and are expensive to unwind later.
 
 **Registry provides data.**
 **Engine decides outcomes.**
+**Pre-planning speculates privately.**
 **Server connects pieces.**
 
 If a layer starts doing another layer's job, the architecture is already broken.

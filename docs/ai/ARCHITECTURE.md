@@ -93,11 +93,23 @@ C:\pcloud\BB\DEV\legendary-arena\
 │   │             version-specific)
 │   │   Must NOT import: server, registry, any app package, pg, axios
 │   │
-│   └── registry/             @legendary-arena/registry
-│       Responsibility: card data loading and validation ONLY
-│       Contains: createRegistryFromHttp, createRegistryFromLocalFiles,
-│                 Zod schemas, CardRegistry interface
-│       Must NOT import: game-engine, server, any app package, pg
+│   ├── registry/             @legendary-arena/registry
+│   │   Responsibility: card data loading and validation ONLY
+│   │   Contains: createRegistryFromHttp, createRegistryFromLocalFiles,
+│   │             Zod schemas, CardRegistry interface
+│   │   Must NOT import: game-engine, preplan, server, any app package, pg
+│   │
+│   └── preplan/              @legendary-arena/preplan
+│       Responsibility: speculative pre-planning state for waiting players
+│       Contains: PrePlan types, sandbox creation, speculative operations,
+│                 disruption detection, invalidation, source restoration
+│       Non-authoritative: never writes to G, ctx, or engine state
+│       All randomness uses a client-local seedable PRNG, never ctx.random.*
+│       Must NOT import: boardgame.io, game-engine runtime code, server,
+│                        registry, any app package, pg
+│       May import: game-engine type definitions only (e.g., CardExtId)
+│       Design docs: docs/ai/DESIGN-CONSTRAINTS-PREPLANNING.md,
+│                    docs/ai/DESIGN-PREPLANNING.md
 │
 ├── apps/
 │   ├── server/
@@ -148,10 +160,11 @@ C:\pcloud\BB\DEV\legendary-arena\
 
 | Package | May import | Must NOT import |
 |---|---|---|
-| `game-engine` | Node built-ins only | `registry`, `server`, any `apps/*`, `pg` |
-| `registry` | Node built-ins, `zod` | `game-engine`, `server`, any `apps/*`, `pg` |
-| `apps/server` | `game-engine`, `registry`, `pg`, Node built-ins | UI packages, browser APIs |
-| `apps/registry-viewer` | `registry`, UI framework | `game-engine`, `server`, `pg` |
+| `game-engine` | Node built-ins only | `registry`, `preplan`, `server`, any `apps/*`, `pg` |
+| `registry` | Node built-ins, `zod` | `game-engine`, `preplan`, `server`, any `apps/*`, `pg` |
+| `preplan` | `game-engine` (types only), Node built-ins | `game-engine` (runtime), `registry`, `server`, any `apps/*`, `pg`, `boardgame.io` |
+| `apps/server` | `game-engine`, `registry`, `pg`, Node built-ins | `preplan`, UI packages, browser APIs |
+| `apps/registry-viewer` | `registry`, UI framework | `game-engine`, `preplan`, `server`, `pg` |
 
 Violations of these rules are bugs. The TypeScript build should catch them via
 `"paths"` restrictions in `tsconfig.json`.
@@ -1190,6 +1203,7 @@ invariant below is an architectural bug, even if the code compiles.
 ```
 packages/game-engine  ←── (no game-engine imports from here)
 packages/registry     ←── (no registry imports from game-engine)
+packages/preplan      ──→ game-engine (types only)
 apps/server           ──→ game-engine, registry
 apps/registry-viewer  ──→ registry
 ```
@@ -1219,8 +1233,26 @@ apps/registry-viewer  ──→ registry
 
 **`packages/registry` may NOT import:**
 - `@legendary-arena/game-engine` — the registry knows nothing about game rules
+- `@legendary-arena/preplan` — the registry knows nothing about planning
 - `pg` — the registry reads from R2/filesystem, not PostgreSQL
 - Any `apps/*` package
+
+**`packages/preplan` may NOT import:**
+- `@legendary-arena/game-engine` at runtime — type-only imports (`import type`)
+  are permitted for shared types like `CardExtId`. Runtime imports (functions,
+  classes, constants) are prohibited.
+- `boardgame.io` — the preplan package is not part of the boardgame.io lifecycle
+- `@legendary-arena/registry` — pre-planning does not load or validate card data
+- `pg` or any database driver — pre-planning is client-side, non-persistent
+- Any `apps/*` package
+
+**`packages/preplan` is non-authoritative:**
+- It never writes to `G`, `ctx`, or any engine state
+- It operates on read-only snapshots of player state
+- All randomness uses a client-local seedable PRNG (never `ctx.random.*`)
+- Speculative state is disposable and may be destroyed at any time
+- Design docs: `docs/ai/DESIGN-CONSTRAINTS-PREPLANNING.md`,
+  `docs/ai/DESIGN-PREPLANNING.md`
 
 **`apps/server` may NOT:**
 - Implement game logic, rules, or gameplay — the server is a wiring layer only

@@ -9,6 +9,9 @@ dist/
 packages/registry/dist/
 apps/registry-viewer/dist/
 
+# Claude Code local settings (per-machine, not shared)
+.claude/settings.local.json
+
 # Images after standardization (large binary files)
 # Commit images/raw/ as source of truth; images/standard/ is generated
 images/standard/
