@@ -218,6 +218,16 @@ These packets establish the repo-as-memory system and lock contracts before code
   deferred to consumer WPs as scope items — not standalone packets (design
   review decision 2026-04-12); parallel-safe with Phase 2+
 
+- [ ] WP-060 — Keyword & Rule Glossary Data Migration — pending
+  Dependencies: WP-003
+  Notes: Migrates `keywords-full.json` (102 keywords with definitions) and
+  `rules-full.json` (18 rules with definitions) from external
+  `modern-master-strike` project into `data/metadata/`; uploads to R2;
+  updates registry viewer to fetch glossary data at runtime instead of
+  hardcoding 200+ lines of definitions in `useRules.ts`; display-only
+  content — no Zod schema, no engine integration; non-blocking fetch
+  (card view works if glossary load fails); parallel-safe with Phase 2+
+
 ---
 
 ## Phase 1 — Game Setup Contracts & Determinism
