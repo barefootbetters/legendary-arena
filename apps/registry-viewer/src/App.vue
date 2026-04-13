@@ -2,8 +2,12 @@
 import { ref, computed, onMounted } from "vue";
 import type { FlatCard, CardQueryExtended, HealthReport, CardRegistry, SetIndexEntry, FlatCardType } from "./registry/browser";
 import { getRegistry } from "./lib/registryClient";
+import { getThemes } from "./lib/themeClient";
+import type { ThemeDefinition } from "./lib/themeClient";
 import CardGrid    from "./components/CardGrid.vue";
 import CardDetail  from "./components/CardDetail.vue";
+import ThemeGrid   from "./components/ThemeGrid.vue";
+import ThemeDetail from "./components/ThemeDetail.vue";
 import HealthPanel from "./components/HealthPanel.vue";
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -21,6 +25,16 @@ const searchText    = ref("");
 const filterSet     = ref("");
 const filterHC      = ref("");
 const HC_OPTIONS    = ["covert","instinct","ranged","strength","tech"];
+
+// ── View toggle ──────────────────────────────────────────────────────────────
+type ActiveView = "cards" | "themes";
+const activeView = ref<ActiveView>("cards");
+
+// ── Theme state ──────────────────────────────────────────────────────────────
+const allThemes       = ref<ThemeDefinition[]>([]);
+const filteredThemes  = ref<ThemeDefinition[]>([]);
+const selectedTheme   = ref<ThemeDefinition | null>(null);
+const themeSearchText = ref("");
 
 // ── Card type groups ──────────────────────────────────────────────────────────
 interface TypeGroup {
@@ -104,10 +118,15 @@ function clearTypes() {
   applyFilters();
 }
 
-// ── Load registry ─────────────────────────────────────────────────────────────
+// ── Load registry + themes ────────────────────────────────────────────────────
 onMounted(async () => {
   try {
     loadStatus.value = "Fetching set index from R2…";
+    const configResponse = await fetch("/registry-config.json");
+    if (!configResponse.ok) throw new Error(`Cannot load registry-config.json: ${configResponse.status}`);
+    const config = await configResponse.json();
+    const metadataBaseUrl = config.metadataBaseUrl as string;
+
     const reg = await getRegistry();
     loadStatus.value = "Parsing card data…";
     registry.value      = reg;
@@ -115,6 +134,16 @@ onMounted(async () => {
     allCards.value      = reg.listCards();
     filteredCards.value = allCards.value;
     healthReport.value  = reg.validate();
+
+    // Load themes in parallel (non-blocking — card view works even if themes fail)
+    loadStatus.value = "Loading themes…";
+    try {
+      const themes = await getThemes(metadataBaseUrl);
+      allThemes.value = themes;
+      filteredThemes.value = themes;
+    } catch (themeError) {
+      console.warn("[Themes] Load failed (non-blocking):", themeError);
+    }
   } catch (err) {
     loadError.value = err instanceof Error ? err.message : String(err);
     console.error("[Registry] Load failed:", err);
@@ -136,6 +165,37 @@ function applyFilters() {
 }
 
 const activeTypeCount = computed(() => selectedTypes.value.size);
+
+// ── Theme filtering ──────────────────────────────────────────────────────────
+function applyThemeFilters() {
+  const needle = themeSearchText.value.toLowerCase().trim();
+  if (!needle) {
+    filteredThemes.value = allThemes.value;
+    return;
+  }
+  filteredThemes.value = allThemes.value.filter((theme) => {
+    const searchable = [
+      theme.name,
+      theme.description,
+      theme.setupIntent.mastermindId,
+      theme.setupIntent.schemeId,
+      ...(theme.tags ?? []),
+      ...(theme.setupIntent.heroDeckIds ?? []),
+    ].join(" ").toLowerCase();
+    return searchable.includes(needle);
+  });
+  selectedTheme.value = null;
+}
+
+/** Cross-link: navigate from theme detail to the card view with a filter. */
+function navigateToCard(slug: string, cardType: string) {
+  activeView.value = "cards";
+  searchText.value = slug;
+  selectedTypes.value = new Set();
+  filterSet.value = "";
+  filterHC.value = "";
+  applyFilters();
+}
 </script>
 
 <template>
@@ -161,6 +221,35 @@ const activeTypeCount = computed(() => selectedTypes.value.size);
 
     <template v-else>
       <HealthPanel v-if="showDiag && healthReport" :report="healthReport" :info="registry!.info()" @close="showDiag = false" />
+
+      <!-- ── View tabs ──────────────────────────────────────────────────────── -->
+      <div class="view-tabs">
+        <button class="view-tab" :class="{ active: activeView === 'cards' }" @click="activeView = 'cards'">
+          🃏 Cards <span class="tab-count">{{ allCards.length }}</span>
+        </button>
+        <button class="view-tab" :class="{ active: activeView === 'themes' }" @click="activeView = 'themes'">
+          🎭 Themes <span class="tab-count">{{ allThemes.length }}</span>
+        </button>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════════════════ -->
+      <!-- ── THEMES VIEW ─────────────────────────────────────────────────────── -->
+      <!-- ══════════════════════════════════════════════════════════════════════ -->
+      <template v-if="activeView === 'themes'">
+        <div class="filter-bar">
+          <input v-model="themeSearchText" class="search" placeholder="Search themes by name, tag, hero…" @input="applyThemeFilters" />
+          <span class="count">{{ filteredThemes.length }} themes</span>
+        </div>
+        <div class="body">
+          <ThemeGrid :themes="filteredThemes" :selected-id="selectedTheme?.themeId" @select="selectedTheme = $event" />
+          <ThemeDetail v-if="selectedTheme" :theme="selectedTheme" @close="selectedTheme = null" @navigate-to-card="navigateToCard" />
+        </div>
+      </template>
+
+      <!-- ══════════════════════════════════════════════════════════════════════ -->
+      <!-- ── CARDS VIEW ──────────────────────────────────────────────────────── -->
+      <!-- ══════════════════════════════════════════════════════════════════════ -->
+      <template v-if="activeView === 'cards'">
 
       <!-- ── Search + Set + Class filters ───────────────────────────────────── -->
       <div class="filter-bar">
@@ -221,6 +310,8 @@ const activeTypeCount = computed(() => selectedTypes.value.size);
         <CardGrid :cards="filteredCards" :selected-key="selectedCard?.key" @select="selectedCard = $event" />
         <CardDetail v-if="selectedCard" :card="selectedCard" @close="selectedCard = null" />
       </div>
+
+      </template><!-- end cards view -->
     </template>
   </div>
 </template>
@@ -285,6 +376,32 @@ select { padding: 0.4rem 0.6rem; background: #22222e; border: 1px solid #33334a;
 .pill { background: #161620; border: 1px solid #2a2a38; color: #66669a; padding: 0.15rem 0.45rem; border-radius: 3px; font-size: 0.67rem; cursor: pointer; }
 .pill:hover  { background: #22223a; color: #aaaadd; }
 .pill.active { background: #22225a; border-color: #5555aa; color: #9999ff; }
+
+/* ── View tabs ──────────────────────────────────────────────────────────── */
+.view-tabs {
+  display: flex;
+  gap: 0;
+  background: #1a1a24;
+  border-bottom: 1px solid #2e2e42;
+  flex-shrink: 0;
+}
+.view-tab {
+  flex: 1;
+  background: #15151e;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #6666aa;
+  padding: 0.6rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.view-tab:hover { background: #1e1e2e; color: #9999dd; }
+.view-tab.active { background: #1a1a24; border-bottom-color: #7070e0; color: #c0c0ff; }
+.tab-count { font-size: 0.7rem; color: #44445a; margin-left: 0.35rem; font-weight: 400; }
+.view-tab.active .tab-count { color: #7070e0; }
 
 .body { display: flex; flex: 1; overflow: hidden; }
 </style>
