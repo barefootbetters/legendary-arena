@@ -76,6 +76,11 @@ export type {
 } from './endgame/endgame.types.js';
 export { ENDGAME_CONDITIONS } from './endgame/endgame.types.js';
 
+// why: Economy types (TurnEconomy, CardStatEntry) are defined canonically
+// in src/economy/economy.types.ts (WP-018). Re-exported here so that
+// consumers importing from './types.js' have access.
+export type { TurnEconomy, CardStatEntry } from './economy/economy.types.js';
+
 // why: Zone types (CardExtId, PlayerZones, GlobalPiles) were originally
 // defined inline in this file during WP-005B. WP-006A consolidated them
 // into src/state/zones.types.ts as the canonical source. They are
@@ -93,6 +98,7 @@ export type {
 
 import type { TurnStage } from './turn/turnPhases.types.js';
 import type { CardExtId, PlayerZones, GlobalPiles } from './state/zones.types.js';
+import type { TurnEconomy, CardStatEntry } from './economy/economy.types.js';
 import type { HookDefinition } from './rules/ruleHooks.types.js';
 import type { LobbyState } from './lobby/lobby.types.js';
 import type { VillainDeckState, RevealedCardType } from './villainDeck/villainDeck.types.js';
@@ -247,6 +253,18 @@ export interface LegendaryGameState {
   // supply). See D-1703.
   /** Bystanders attached to villains/henchmen currently in the City. */
   attachedBystanders: Record<CardExtId, CardExtId[]>;
+
+  // why: per-turn attack/recruit point accumulation and spend tracking.
+  // Reset at start of each player turn. Values are integers >= 0.
+  /** Per-turn economy tracking (attack/recruit points accumulated and spent). */
+  turnEconomy: TurnEconomy;
+
+  // why: card stat values resolved at setup time from registry so moves
+  // can look up attack, recruit, cost, and fightCost without registry
+  // access — same pattern as G.villainDeckCardTypes (WP-014).
+  // Read-only after setup.
+  /** Card stat lookup keyed by CardExtId. Built at setup, read-only at runtime. */
+  cardStats: Record<CardExtId, CardStatEntry>;
 
   // why: lobby state is stored in G so the UI can observe lobby completion
   // and readiness status. Initialized at setup time from ctx.numPlayers.

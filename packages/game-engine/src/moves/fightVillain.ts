@@ -15,6 +15,7 @@
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
 import { awardAttachedBystanders } from '../board/bystanders.logic.js';
+import { getAvailableAttack, spendAttack } from '../economy/economy.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -54,6 +55,14 @@ export function fightVillain(
     return;
   }
 
+  // why: silent failure preserves deterministic move contract — insufficient
+  // attack points means the fight cannot proceed
+  const requiredFightCost = G.cardStats[cardId]?.fightCost ?? 0;
+  const availableAttack = getAvailableAttack(G.turnEconomy);
+  if (availableAttack < requiredFightCost) {
+    return;
+  }
+
   // Step 2: Stage gate (non-core move, internal gating)
   // why: fighting happens during the main action window; non-core moves
   // gate internally per the WP-014A precedent
@@ -74,6 +83,8 @@ export function fightVillain(
   );
   G.attachedBystanders = awardResult.attachedBystanders;
   G.playerZones[ctx.currentPlayer]!.victory = awardResult.playerVictory;
+
+  G.turnEconomy = spendAttack(G.turnEconomy, requiredFightCost);
 
   G.messages.push(
     `Player ${ctx.currentPlayer} fought "${cardId}" at city space ${cityIndex}.`,

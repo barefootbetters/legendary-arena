@@ -14,6 +14,7 @@
 
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
+import { getAvailableRecruit, spendRecruit } from '../economy/economy.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -53,6 +54,14 @@ export function recruitHero(
     return;
   }
 
+  // why: silent failure preserves deterministic move contract — insufficient
+  // recruit points means the recruit cannot proceed
+  const requiredCost = G.cardStats[cardId]?.cost ?? 0;
+  const availableRecruit = getAvailableRecruit(G.turnEconomy);
+  if (availableRecruit < requiredCost) {
+    return;
+  }
+
   // Step 2: Stage gate (non-core move, internal gating)
   // why: recruiting happens during the main action window; non-core moves
   // gate internally per the WP-014A precedent
@@ -63,6 +72,7 @@ export function recruitHero(
   // player can recruit any occupied HQ slot without spending recruit points.
   G.hq[hqIndex] = null;
   G.playerZones[ctx.currentPlayer]!.discard.push(cardId);
+  G.turnEconomy = spendRecruit(G.turnEconomy, requiredCost);
   G.messages.push(
     `Player ${ctx.currentPlayer} recruited "${cardId}" from HQ slot ${hqIndex}.`,
   );

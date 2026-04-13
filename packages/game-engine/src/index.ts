@@ -126,6 +126,18 @@ export type {
   AwardBystandersResult,
   ResolveEscapedBystandersResult,
 } from './board/bystanders.logic.js';
+export type { TurnEconomy, CardStatEntry } from './economy/economy.types.js';
+export {
+  parseCardStatValue,
+  buildCardStats,
+  getAvailableAttack,
+  getAvailableRecruit,
+  addResources,
+  spendAttack,
+  spendRecruit,
+  resetTurnEconomy,
+} from './economy/economy.logic.js';
+export type { CardStatsRegistryReader, CardStatsFlatCard } from './economy/economy.logic.js';
 export { createSnapshot } from './persistence/snapshot.create.js';
 export type { SnapshotContext } from './persistence/snapshot.create.js';
 export { validateSnapshotShape } from './persistence/snapshot.validate.js';

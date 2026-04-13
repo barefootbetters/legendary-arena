@@ -16,6 +16,7 @@ import type { DrawCardsArgs, PlayCardArgs } from './coreMoves.types.js';
 import { validateDrawCardsArgs, validatePlayCardArgs, validateMoveAllowedInStage } from './coreMoves.validate.js';
 import { moveCardFromZone, moveAllCards } from './zoneOps.js';
 import { shuffleDeck } from '../setup/shuffle.js';
+import { addResources } from '../economy/economy.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -107,6 +108,12 @@ export function playCard({ G, playerID }: MoveContext, args: PlayCardArgs): void
 
   playerZones.hand = result.from;
   playerZones.inPlay = result.to;
+
+  // why: MVP adds base values only; conditional bonuses are WP-022
+  const cardStats = G.cardStats[args.cardId];
+  const heroAttack = cardStats ? cardStats.attack : 0;
+  const heroRecruit = cardStats ? cardStats.recruit : 0;
+  G.turnEconomy = addResources(G.turnEconomy, heroAttack, heroRecruit);
 }
 
 /**

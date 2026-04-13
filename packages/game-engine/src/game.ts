@@ -13,6 +13,7 @@ import { setPlayerReady, startMatchIfReady } from './lobby/lobby.moves.js';
 import { revealVillainCard } from './villainDeck/villainDeck.reveal.js';
 import { fightVillain } from './moves/fightVillain.js';
 import { recruitHero } from './moves/recruitHero.js';
+import { resetTurnEconomy } from './economy/economy.logic.js';
 
 // why: The registry must be available to Game.setup() for ext_id validation,
 // but boardgame.io's setup function signature does not include a registry
@@ -202,6 +203,10 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // non-null assertion is safe because TURN_STAGES always has at
           // least one element (enforced by drift-detection tests in WP-007A).
           G.currentStage = TURN_STAGES[0]!;
+
+          // why: economy resets at start of each player turn — accumulated
+          // and spent values from previous turn are cleared
+          G.turnEconomy = resetTurnEconomy();
 
           // why: trigger -> collect effects -> apply effects pipeline.
           // onTurnStart fires at the beginning of each player's turn so

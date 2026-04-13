@@ -74,6 +74,8 @@ function makeTestGameState(
     villainDeckCardTypes: {},
     ko: [],
     attachedBystanders: {},
+    turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+    cardStats: {},
     city: [null, null, null, null, null],
     hq: [null, null, null, null, null],
     lobby: { requiredPlayers: 1, ready: {}, started: false },

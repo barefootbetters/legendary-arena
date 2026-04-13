@@ -31,6 +31,7 @@ import {
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
 import { buildVillainDeck } from '../villainDeck/villainDeck.setup.js';
 import { initializeCity, initializeHq } from '../board/city.logic.js';
+import { buildCardStats, resetTurnEconomy } from '../economy/economy.logic.js';
 
 // why: Pile ext_id constants are re-exported from pilesInit.ts for backward
 // compatibility. The canonical definitions live in pilesInit.ts — importing
@@ -176,6 +177,16 @@ export function buildInitialGameState(
     city: initializeCity(),
     // why: HQ initialized empty; recruit slot population is WP-016 scope
     hq: initializeHq(),
+    // why: card stats resolved at setup from registry so moves never query
+    // registry at runtime — same pattern as G.villainDeckCardTypes (WP-014).
+    // Read-only after setup.
+    // why: buildCardStats accepts unknown (same pattern as buildVillainDeck)
+    // because CardRegistryReader is narrower than CardStatsRegistryReader.
+    // The real CardRegistry satisfies both structurally; narrow test mocks
+    // produce an empty record, which moves handle gracefully (0/0 contribution).
+    cardStats: buildCardStats(registry as unknown, config),
+    // why: economy starts at zero; reset again at each turn start
+    turnEconomy: resetTurnEconomy(),
     // why: lobby state initialized at setup time from ctx.numPlayers. All
     // players start as not ready. G.lobby.started is false until
     // startMatchIfReady succeeds.
