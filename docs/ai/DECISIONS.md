@@ -2080,6 +2080,90 @@ implements refill logic.
 
 ---
 
+### D-1901 — MVP Defeats Exactly 1 Tactic per Successful Fight
+
+**Decision:** `fightMastermind` defeats the top tactic card (index 0) from the
+tactics deck on each successful fight. Multi-tactic defeat and conditional
+defeat logic are deferred to WP-024 (tactic text effects).
+
+**Rationale:** The MVP mastermind fight is purely mechanical — validate attack
+points, spend them, remove a tactic, check for victory. Tactic cards have no
+text effects in MVP. Implementing multi-defeat or conditional logic would couple
+the fight move to a keyword system that does not yet exist.
+
+**Consequences:** Each mastermind fight costs attack points but only defeats one
+tactic regardless of excess attack. Players must fight the mastermind multiple
+times to win.
+
+**Introduced:** WP-019
+**Status:** Accepted (MVP simplification)
+
+---
+
+### D-1902 — Mastermind vAttack Stored as fightCost via buildMastermindState
+
+**Decision:** The mastermind's `vAttack` is parsed at setup time by
+`buildMastermindState` using WP-018's `parseCardStatValue` and stored as
+`fightCost` in `G.cardStats[baseCardId]`. `buildMastermindState` is the **sole
+place** the mastermind base card enters `G.cardStats` — WP-018's
+`buildCardStats` does not include masterminds.
+
+**Rationale:** `fightCost` is the semantic field for fight requirements per
+D-1805. `CardStatEntry.attack` is for hero attack generation only. Using the
+same field and pattern as villains/henchmen ensures consistency across all card
+types that have fight requirements.
+
+**Consequences:** `buildMastermindState` must execute **after** `buildCardStats`
+so the `cardStats` record exists. The mastermind base card entry has
+`attack: 0, recruit: 0, cost: 0` (masterminds do not generate resources).
+
+**Introduced:** WP-019
+**Status:** Accepted
+
+---
+
+### D-1903 — No Tactic Text Effects in MVP
+
+**Decision:** Tactic cards in MVP are defeated and moved to `tacticsDefeated`
+with no additional effects. Tactic abilities (text effects, conditional triggers)
+are deferred to WP-024.
+
+**Rationale:** The MVP mastermind fight validates the boss-fight loop
+(play -> fight -> defeat tactics -> win) without requiring the keyword/ability
+system. Implementing tactic effects before the keyword system exists would
+create throwaway code.
+
+**Consequences:** Tactic cards have no mechanical impact beyond being the defeat
+counter. Their `vAttack` values are not used (only the base card's `vAttack`
+determines fight cost).
+
+**Introduced:** WP-019
+**Status:** Accepted (MVP limitation)
+
+---
+
+### D-1904 — buildMastermindState Adds Mastermind Base Card to cardStats Separately
+
+**Decision:** `buildMastermindState` adds the mastermind base card to the
+`cardStats` record passed to it as a parameter. This is separate from
+`buildCardStats` (WP-018), which only processes heroes, villains, and henchmen.
+
+**Rationale:** WP-018's `buildCardStats` iterates `heroDeckIds`,
+`villainGroupIds`, and `henchmanGroupIds` from the match config. Masterminds
+are a distinct entity type selected via `mastermindId` and resolved through
+a different registry path (`setData.masterminds`). Adding mastermind processing
+to `buildCardStats` would blur the separation between WP-018 and WP-019 scope.
+
+**Consequences:** The ordering invariant (`buildMastermindState` after
+`buildCardStats`) must be maintained. If future WPs add more entity types
+to `G.cardStats`, they should follow this same pattern of adding entries in
+their own setup function.
+
+**Introduced:** WP-019
+**Status:** Accepted
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision

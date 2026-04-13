@@ -29,8 +29,9 @@ fight action. After this session:
 - Tactics deck is constructed and shuffled deterministically at setup from
   registry data (same pattern as `G.villainDeckCardTypes` and `G.cardStats`)
 - `fightMastermind` move validates available attack points against the
-  mastermind's `vAttack` requirement (from `G.cardStats`), defeats the top
-  tactic, and checks for victory
+  mastermind's fight requirement (`G.cardStats[baseCardId].fightCost`,
+  derived from `vAttack` at setup), defeats the top tactic, and checks
+  for victory
 - When all tactics are defeated,
   `G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED]` is set to 1,
   triggering the endgame evaluator from WP-010
@@ -46,8 +47,11 @@ fight action. After this session:
   - `packages/game-engine/src/economy/economy.types.ts` exports `TurnEconomy`,
     `CardStatEntry` (WP-018)
   - `G.turnEconomy` and `G.cardStats` exist in `LegendaryGameState` (WP-018)
-  - `G.cardStats` includes parsed `attack` values for all cards resolved at
-    setup — mastermind `vAttack` is stored as `G.cardStats[mastermindCardId].attack`
+  - `G.cardStats` includes parsed stat values for heroes, villains, and
+    henchmen resolved at setup (WP-018). **Mastermind cards are NOT yet in
+    `G.cardStats`** — WP-019's `buildMastermindState` must add the mastermind
+    base card entry during setup so that `fightMastermind` can read
+    `G.cardStats[baseCardId].fightCost`
   - `packages/game-engine/src/endgame/endgame.types.ts` exports
     `ENDGAME_CONDITIONS` with `MASTERMIND_DEFEATED` key (WP-010)
   - `packages/game-engine/src/moves/coreMoves.types.ts` exports `MoveResult`,
@@ -78,8 +82,9 @@ Before writing a single line:
   Mastermind `vAttack` values like `"8+"` parse to base integer `8`.
 - `docs/ai/ARCHITECTURE.md §Section 2` — read "Card Data Flow: Registry into
   Game Engine". Mastermind card data is resolved at setup time. The mastermind's
-  `vAttack` is stored in `G.cardStats` via WP-018's `buildCardStats`. Moves
-  read `G.cardStats`, never the registry.
+  `vAttack` is parsed by `parseCardStatValue` and stored in `G.cardStats` as
+  `fightCost` by `buildMastermindState` (same pattern as `buildCardStats` for
+  villains). Moves read `G.cardStats`, never the registry.
 - `docs/ai/ARCHITECTURE.md §Section 4` — read "The Move Validation Contract".
   `fightMastermind` follows the exact three-step sequence: validate args, check
   stage gate, mutate G. Never throws.
@@ -122,9 +127,12 @@ Before writing a single line:
   `@legendary-arena/registry` at module scope. Registry data is provided to setup
   as a parameter (`matchData`) and is used only during setup-time helpers such as
   `buildMastermindState`. Moves must never query the registry.
-- Mastermind `vAttack` requirement is read from `G.cardStats[mastermindCardId].attack`
-  — resolved at setup time by WP-018's `buildCardStats`. Do NOT create a
-  separate parser or store `currentAttack` in `G.mastermind`.
+- Mastermind `vAttack` requirement is read from
+  `G.cardStats[G.mastermind.baseCardId].fightCost` — the mastermind base card
+  entry is added to `G.cardStats` by `buildMastermindState` at setup time using
+  WP-018's `parseCardStatValue`. The `fightCost` field (not `attack`) is used
+  because `vAttack` is a fight requirement, per WP-018 D-1805. Do NOT create a
+  separate parser or store `requiredAttack` in `G.mastermind`.
 - Victory counter uses `ENDGAME_CONDITIONS.MASTERMIND_DEFEATED` constant —
   never the string literal `'mastermindDefeated'`
 - `fightMastermind` follows the three-step validation contract exactly
@@ -190,8 +198,8 @@ Before writing a single line:
   - `id` is the mastermind identity selected in `MatchSetupConfig` and is used
     for configuration and reference only.
   - `baseCardId` is the ONLY card ID used to look up stats in `G.cardStats`
-    (e.g., `vAttack`). All combat validation reads
-    `G.cardStats[baseCardId].attack`.
+    (e.g., fight requirement). All combat validation reads
+    `G.cardStats[baseCardId].fightCost` (per WP-018 D-1805).
   - Tactic card IDs in `tacticsDeck` / `tacticsDefeated` NEVER participate in
     stat lookup and never carry combat values in MVP.
   - `tacticsDeck` is drawn from index 0; `tacticsDefeated` is append-only.
@@ -199,18 +207,29 @@ Before writing a single line:
 
 ### B) `src/mastermind/mastermind.setup.ts` — new
 
-- `buildMastermindState(mastermindId: CardExtId, registry: CardRegistry, ctx: Ctx): MastermindState`
+- `buildMastermindState(mastermindId: CardExtId, registry: unknown, ctx: SetupContext, cardStats: Record<CardExtId, CardStatEntry>): MastermindState`
   — called during `Game.setup()`:
-  1. Resolve mastermind from registry using `mastermindId`
+  1. Resolve mastermind from registry using `mastermindId` (via `getSet()`,
+     same pattern as `buildVillainDeck` and `buildCardStats`)
   2. Identify exactly one base card (`tactic === false`). This base card's
      `ext_id` is stored as `baseCardId` and is the sole key used later for stat
-     lookup via `G.cardStats[baseCardId]`. Tactic cards (`tactic === true`) are
-     collected ONLY for `tacticsDeck` ordering and defeat tracking; they never
-     participate in stat lookup.
-  3. Build `tacticsDeck` from tactic ext_ids, shuffle via `shuffleDeck(tacticExtIds, ctx)`
-  4. Return `{ id: mastermindId, baseCardId, tacticsDeck: shuffled, tacticsDefeated: [] }`
+     lookup via `G.cardStats[baseCardId].fightCost`. Tactic cards
+     (`tactic === true`) are collected ONLY for `tacticsDeck` ordering and
+     defeat tracking; they never participate in stat lookup.
+  3. **Add mastermind base card to `cardStats`** — parse the base card's
+     `vAttack` via `parseCardStatValue` and store as:
+     `cardStats[baseCardId] = { attack: 0, recruit: 0, cost: 0, fightCost: parsedVAttack }`
+     — same semantics as villains/henchmen in WP-018 (D-1805: `fightCost`
+     is for fight requirements, not attack generation)
+  4. Build `tacticsDeck` from tactic ext_ids, shuffle via `shuffleDeck(tacticExtIds, ctx)`
+  5. Return `{ id: mastermindId, baseCardId, tacticsDeck: shuffled, tacticsDefeated: [] }`
   - Uses `for...of` to classify cards (no `.reduce()`)
   - `// why:` comment on shuffle call
+  - `// why:` comment on cardStats addition: mastermind fight cost resolved at
+    setup so fightMastermind can read G.cardStats[baseCardId].fightCost
+    without registry access
+  - Accepts `registry: unknown` with runtime type guard (same pattern as
+    `buildVillainDeck` and `buildCardStats`)
 
 ### C) `src/mastermind/mastermind.logic.ts` — new
 
@@ -231,14 +250,18 @@ Before writing a single line:
 - `fightMastermind(G, ctx): void`
   — move implementation following three-step contract:
   1. **Validate**: check `G.mastermind.tacticsDeck.length > 0` (tactics remain);
-     look up mastermind `vAttack` via `G.cardStats[G.mastermind.baseCardId].attack`
-     — `// why:` `baseCardId` is the canonical stats key; never use `G.mastermind.id`
+     look up mastermind fight cost via
+     `G.cardStats[G.mastermind.baseCardId]?.fightCost ?? 0`
+     — `// why:` `baseCardId` is the canonical stats key; `fightCost` is the
+     fight requirement field per WP-018 D-1805; never use `G.mastermind.id`
      or any tactic card ID for stat lookup;
-     check `getAvailableAttack(G.turnEconomy) >= requiredAttack`
-  2. **Stage gate**: `isMoveAllowedInStage('fightMastermind', G.currentStage)`
+     check `getAvailableAttack(G.turnEconomy) >= requiredFightCost`
+  2. **Stage gate**: `if (G.currentStage !== 'main') return;`
+     — internal gating, same pattern as `fightVillain` and `recruitHero`
+     (non-core moves gate internally per WP-014A precedent)
   3. **Mutate G**:
      - `G.mastermind = defeatTopTactic(G.mastermind)`
-     - `G.turnEconomy = spendAttack(G.turnEconomy, requiredAttack)`
+     - `G.turnEconomy = spendAttack(G.turnEconomy, requiredFightCost)`
      - Push message to `G.messages`
      - If `areAllTacticsDefeated(G.mastermind)`:
        `G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED] = 1`
@@ -247,35 +270,28 @@ Before writing a single line:
   - `// why:` comment: MVP defeats exactly 1 tactic per fight; multi-tactic
     defeat and tactic text effects are WP-024
 
-### E) `src/moves/coreMoves.gating.ts` — modified
+### E) `src/setup/buildInitialGameState.ts` — modified
 
-- Add `fightMastermind` to `MOVE_ALLOWED_STAGES`:
-  `fightMastermind: ['main']` — `// why: boss fight happens during action window`
-- Do NOT add `fightMastermind` to `CORE_MOVE_NAMES`. CORE moves remain the
-  minimal draw/play/endTurn set. If a separate canonical "all move names"
-  union/array exists, update that instead; otherwise no move-name array
-  changes are required.
+- Call `buildMastermindState(config.mastermindId, registry, context, cardStats)`
+  **after** `buildCardStats` (so the existing `cardStats` record is passed in
+  and the mastermind base card entry is added to it)
+- Store result as `G.mastermind`
 
-### F) `src/setup/buildInitialGameState.ts` — modified
-
-- Call `buildMastermindState(config.mastermindId, registry, ctx)` and store
-  as `G.mastermind`
-
-### G) `src/game.ts` — modified
+### F) `src/game.ts` — modified
 
 - Register `fightMastermind` in the `play` phase moves
 
-### H) `src/types.ts` — modified
+### G) `src/types.ts` — modified
 
 - Add `mastermind: MastermindState` to `LegendaryGameState`
 - Re-export `MastermindState`
 
-### I) `src/index.ts` — modified
+### H) `src/index.ts` — modified
 
 - Export `MastermindState`, `buildMastermindState`, `defeatTopTactic`,
   `areAllTacticsDefeated`, `fightMastermind`
 
-### J) Tests — `src/mastermind/mastermind.setup.test.ts` — new
+### I) Tests — `src/mastermind/mastermind.setup.test.ts` — new
 
 - Uses `node:test` and `node:assert` only; uses `makeMockCtx`; no boardgame.io
   import
@@ -286,7 +302,7 @@ Before writing a single line:
   4. `tacticsDeck` is shuffled (makeMockCtx reverses — order differs from input)
   5. `JSON.stringify(mastermindState)` succeeds
 
-### K) Tests — `src/mastermind/mastermind.logic.test.ts` — new
+### J) Tests — `src/mastermind/mastermind.logic.test.ts` — new
 
 - Uses `node:test` and `node:assert` only; no boardgame.io import
 - Five tests:
@@ -297,11 +313,11 @@ Before writing a single line:
   4. `areAllTacticsDefeated` returns `false` when deck has cards
   5. `defeatTopTactic` returns new object (input not mutated)
 
-### L) Tests — `src/moves/fightMastermind.test.ts` — new
+### K) Tests — `src/moves/fightMastermind.test.ts` — new
 
 - Uses `node:test` and `node:assert` only; uses `makeMockCtx`; no boardgame.io
   import
-- Seven tests:
+- Six tests:
   1. Successful fight defeats top tactic and spends attack
   2. Insufficient attack: no G mutation
   3. No tactics remaining: no G mutation
@@ -338,9 +354,7 @@ Before writing a single line:
 - `packages/game-engine/src/mastermind/mastermind.logic.ts` — **new** —
   defeatTopTactic, areAllTacticsDefeated
 - `packages/game-engine/src/moves/fightMastermind.ts` — **new** —
-  fightMastermind move
-- `packages/game-engine/src/moves/coreMoves.gating.ts` — **modified** — add
-  fightMastermind to MOVE_ALLOWED_STAGES
+  fightMastermind move (internal stage gating, same pattern as fightVillain)
 - `packages/game-engine/src/setup/buildInitialGameState.ts` — **modified** —
   build mastermind state at setup
 - `packages/game-engine/src/game.ts` — **modified** — register fightMastermind
@@ -379,7 +393,7 @@ All items must be binary pass/fail. No partial credit.
 
 ### fightMastermind Move
 - [ ] Follows three-step contract (validate, gate, mutate)
-- [ ] Validates available attack against `G.cardStats[baseCardId].attack`
+- [ ] Validates available attack against `G.cardStats[baseCardId].fightCost`
 - [ ] Insufficient attack: returns void (no throw, no mutation)
 - [ ] Gated to `main` stage only
 - [ ] On success: defeats tactic, spends attack, pushes message
@@ -389,8 +403,10 @@ All items must be binary pass/fail. No partial credit.
 - [ ] `// why:` comment on 1-tactic-per-fight MVP simplification
 
 ### Stage Gating
-- [ ] `MOVE_ALLOWED_STAGES` includes `fightMastermind: ['main']` with
-      `// why:` comment
+- [ ] `fightMastermind` uses internal stage gating:
+      `if (G.currentStage !== 'main') return;` with `// why:` comment
+      (same pattern as `fightVillain` and `recruitHero`)
+- [ ] `coreMoves.gating.ts` NOT modified (non-core moves gate internally)
 - [ ] No `CORE_MOVE_NAMES` update required for `fightMastermind`
 
 ### Pure Helpers
@@ -447,9 +463,13 @@ Select-String -Path "packages\game-engine\src\mastermind" -Pattern "\.reduce\(" 
 Select-String -Path "packages\game-engine\src\mastermind" -Pattern "Math.random" -Recurse
 # Expected: no output
 
-# Step 7 — confirm stage gating includes fightMastermind
-Select-String -Path "packages\game-engine\src\moves\coreMoves.gating.ts" -Pattern "fightMastermind"
+# Step 7 — confirm internal stage gating in fightMastermind
+Select-String -Path "packages\game-engine\src\moves\fightMastermind.ts" -Pattern "currentStage.*main"
 # Expected: at least one match
+
+# Step 7b — confirm coreMoves.gating.ts NOT modified
+git diff --name-only packages/game-engine/src/moves/coreMoves.gating.ts
+# Expected: no output
 
 # Step 8 — confirm WP-018 contracts not modified
 git diff --name-only packages/game-engine/src/economy/economy.types.ts packages/game-engine/src/economy/economy.logic.ts

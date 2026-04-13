@@ -479,7 +479,7 @@ These packets make the game play like Legendary for the first time.
   gated by available recruit; no conditional bonuses (WP-022); PowerBI links
   removed; test files `.test.ts`; normalized to PACKET-TEMPLATE
 
-- [ ] WP-019 — Mastermind Fight & Tactics (Minimal MVP) ✅ Reviewed
+- [x] WP-019 — Mastermind Fight & Tactics (Minimal MVP) ✅ Reviewed ✅ Complete (2026-04-12)
   Dependencies: WP-018
   Notes: `G.mastermind: MastermindState` with `id`, `baseCardId`,
   `tacticsDeck`, `tacticsDefeated`; `fightMastermind` move validates attack

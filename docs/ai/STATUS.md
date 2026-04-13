@@ -7,6 +7,50 @@
 
 ## Current State
 
+### WP-019 — Mastermind Fight & Tactics (Minimal MVP) (2026-04-12)
+
+**What changed:**
+- `packages/game-engine/src/mastermind/mastermind.types.ts` — **new** —
+  `MastermindState` interface
+- `packages/game-engine/src/mastermind/mastermind.setup.ts` — **new** —
+  `buildMastermindState` (resolves mastermind from registry, adds base card
+  fightCost to G.cardStats, shuffles tactics deck)
+- `packages/game-engine/src/mastermind/mastermind.logic.ts` — **new** —
+  `defeatTopTactic`, `areAllTacticsDefeated` pure helpers
+- `packages/game-engine/src/moves/fightMastermind.ts` — **new** — boss fight
+  move with internal stage gating, attack validation, tactic defeat, and
+  victory counter
+- `packages/game-engine/src/setup/buildInitialGameState.ts` — **modified** —
+  calls `buildMastermindState` after `buildCardStats`; cardStats extracted
+  to local variable for ordering
+- `packages/game-engine/src/game.ts` — **modified** — `fightMastermind`
+  registered in play phase moves
+- `packages/game-engine/src/types.ts` — **modified** — added
+  `mastermind: MastermindState` to `LegendaryGameState`
+- `packages/game-engine/src/index.ts` — **modified** — exports for mastermind
+  types and helpers
+- 3 new test files: setup (5), logic (5), move (6) = 16 new tests
+- 6 existing test files updated (01.5 wiring: added `mastermind` to mock
+  game state objects + move list assertion)
+
+**What's true now:**
+- `G.mastermind` exists with id, baseCardId, tacticsDeck, tacticsDefeated
+- Tactics deck is shuffled deterministically at setup from registry data
+- `fightMastermind` validates attack against `G.cardStats[baseCardId].fightCost`
+- Each successful fight defeats exactly 1 tactic (MVP) and spends attack
+- When all tactics defeated: `G.counters[MASTERMIND_DEFEATED] = 1` triggers
+  the endgame evaluator (WP-010)
+- Full MVP combat loop is functional: play cards -> fight villains ->
+  fight mastermind -> win
+- `buildMastermindState` is sole source for mastermind in G.cardStats
+- Internal stage gating (same pattern as fightVillain/recruitHero)
+- 239 tests passing, 0 failures
+
+**What's next:**
+- WP-020 — VP Scoring & Win Summary
+
+---
+
 ### WP-018 — Attack & Recruit Point Economy (Minimal MVP) (2026-04-12)
 
 **What changed:**
