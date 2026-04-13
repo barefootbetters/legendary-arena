@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "weapon-x-program",
+  "name": "Weapon X Program",
+  "description": "The shadowy Weapon X program abducts mutants and forges them into living weapons through brutal experimentation. Wolverine was just the beginning—now Romulus pulls the strings behind an entire lineage of weaponized killers.",
+  "setupIntent": {
+    "mastermindId": "romulus",
+    "schemeId": "condition-logan-into-weapon-x",
+    "villainGroupIds": ["weapon-plus", "berserkers"],
+    "heroDeckIds": ["weapon-x-wolverine", "fantomex", "marrow", "weapon-h"]
+  },
+  "playerCount": {
+    "recommended": [2, 3],
+    "min": 1,
+    "max": 6
+  },
+  "tags": ["deep-cut", "weapon-x", "wolverine", "black-ops", "1990s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Marvel Comics Presents #72–84",
+      "year": 1991,
+      "externalUrl": "https://marvel.fandom.com/wiki/Weapon_X_(Project)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/weapon-x/4060-42020/"
+      ]
+    }
+  },
+  "flavorText": "They made him a weapon. They forgot he was also a man."
+}

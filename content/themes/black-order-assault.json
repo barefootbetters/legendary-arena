@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "black-order-assault",
+  "name": "Black Order Assault",
+  "description": "Thanos dispatches his Black Order—Ebony Maw, Proxima Midnight, Corvus Glaive, and the rest—to Earth as heralds of destruction. While the Avengers are scattered across the galaxy, Earth's remaining defenders face an enemy designed to break them.",
+  "setupIntent": {
+    "mastermindId": "ebony-maw",
+    "schemeId": "halve-all-life-in-the-universe",
+    "villainGroupIds": ["children-of-thanos", "black-order-of-thanos"],
+    "heroDeckIds": ["doctor-strange", "captain-marvel", "black-panther", "bruce-banner", "wanda-vision"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["cosmic", "thanos", "black-order", "mcu", "2010s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Infinity #1–6",
+      "year": 2013,
+      "externalUrl": "https://marvel.fandom.com/wiki/Infinity_(Event)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/infinity/4045-56569/"
+      ]
+    }
+  },
+  "flavorText": "The Black Order does not negotiate. They arrive, and worlds end."
+}

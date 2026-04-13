@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "house-of-m",
+  "name": "House of M",
+  "description": "The Scarlet Witch reshapes reality into a world where mutants rule and Magneto's family sits atop a global dynasty. When heroes begin to remember the real world, they must confront Wanda before her three words erase mutantkind forever.",
+  "setupIntent": {
+    "mastermindId": "mandarin",
+    "schemeId": "house-of-m",
+    "villainGroupIds": ["dark-avengers", "army-of-evil"],
+    "henchmanGroupIds": ["hydra-base"],
+    "heroDeckIds": ["scarlet-witch", "quicksilver", "photon", "speed", "darkhawk", "hellcat"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["avengers", "x-men", "scarlet-witch", "alternate-reality", "2000s"],
+  "references": {
+    "primaryStory": {
+      "issue": "House of M #1–8",
+      "year": 2005,
+      "externalUrl": "https://marvel.fandom.com/wiki/House_of_M_(Event)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/house-of-m/4045-40991/"
+      ]
+    }
+  },
+  "flavorText": "No more mutants."
+}

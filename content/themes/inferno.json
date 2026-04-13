@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "inferno",
+  "name": "Inferno",
+  "description": "Demons from Limbo pour through portals into New York as Madelyne Pryor embraces her destiny as the Goblin Queen. The city itself turns hostile—mailboxes bite, buildings come alive—and the X-Men must seal the breach before Manhattan is consumed.",
+  "setupIntent": {
+    "mastermindId": "mephisto",
+    "schemeId": "transform-citizens-into-demons",
+    "villainGroupIds": ["emissaries-of-evil", "underworld"],
+    "henchmanGroupIds": ["maggia-goons"],
+    "heroDeckIds": ["cyclops", "jean-grey", "wolverine", "colossus", "storm", "angel"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["x-men", "demons", "inferno", "goblin-queen", "1980s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Uncanny X-Men #240–243 / X-Factor #36–39",
+      "year": 1989,
+      "externalUrl": "https://marvel.fandom.com/wiki/Inferno_(Event)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/inferno/4045-41408/"
+      ]
+    }
+  },
+  "flavorText": "The city is alive. The city is hungry. The city is Hell."
+}

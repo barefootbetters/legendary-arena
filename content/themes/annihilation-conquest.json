@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "annihilation-conquest",
+  "name": "Annihilation: Conquest",
+  "description": "In the aftermath of the Annihilation Wave, the Phalanx seize control of Kree space using the weakened defenses as an entry point. A ragtag team of cosmic outcasts must break through the technorganic barrier before the entire galaxy is assimilated.",
+  "setupIntent": {
+    "mastermindId": "magus",
+    "schemeId": "annihilation-conquest",
+    "villainGroupIds": ["from-beyond", "celestials"],
+    "henchmanGroupIds": ["sidera-maris-bridge-builders"],
+    "heroDeckIds": ["adam-warlock", "phyla-vell", "nebula", "ronan-the-accuser", "yondu"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["cosmic", "phalanx", "kree", "annihilation", "2000s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Annihilation: Conquest #1–6",
+      "year": 2008,
+      "externalUrl": "https://marvel.fandom.com/wiki/Annihilation:_Conquest",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/annihilation-conquest/4045-44982/"
+      ]
+    }
+  },
+  "flavorText": "Resistance is not futile. Resistance is all we have left."
+}

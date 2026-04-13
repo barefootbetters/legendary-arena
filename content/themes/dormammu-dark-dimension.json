@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "dormammu-dark-dimension",
+  "name": "Dormammu's Dark Dimension",
+  "description": "Dormammu, the Dread One, breaches the barriers between dimensions to consume Earth. Doctor Strange and his mystic allies must hold the line at the Sanctum Sanctorum while reality itself warps under the Dark Dimension's influence.",
+  "setupIntent": {
+    "mastermindId": "dormammu",
+    "schemeId": "claim-souls-for-demons",
+    "villainGroupIds": ["lords-of-the-netherworld", "fear-lords"],
+    "heroDeckIds": ["doctor-strange", "clea", "doctor-voodoo", "ancient-one-the", "vishanti-the"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["horror", "supernatural", "dormammu", "doctor-strange", "mystic"],
+  "references": {
+    "primaryStory": {
+      "issue": "Strange Tales #126–127",
+      "year": 1964,
+      "externalUrl": "https://marvel.fandom.com/wiki/Dormammu_(Earth-616)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/dormammu/4005-2181/"
+      ]
+    }
+  },
+  "flavorText": "Dormammu comes. And the Dark Dimension follows."
+}

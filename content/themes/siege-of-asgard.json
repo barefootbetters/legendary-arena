@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "siege-of-asgard",
+  "name": "Siege of Asgard",
+  "description": "Asgard hovers above Broxton, Oklahoma—and Norman Osborn sees it as a threat to national security. His forces lay siege to the realm eternal, and only the reunited Avengers can break the assault before Asgard falls.",
+  "setupIntent": {
+    "mastermindId": "hela-goddess-of-death",
+    "schemeId": "ragnarok-twilight-of-the-gods",
+    "villainGroupIds": ["dark-council", "omens-of-ragnarok"],
+    "heroDeckIds": ["thor", "beta-ray-bill", "lady-sif", "valkyrie", "warriors-three-the"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["avengers", "asgard", "siege", "hela", "2010s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Siege #1–4",
+      "year": 2010,
+      "externalUrl": "https://marvel.fandom.com/wiki/Siege_(Event)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/siege/4045-55985/"
+      ]
+    }
+  },
+  "flavorText": "Asgard endures. But even gods can bleed."
+}

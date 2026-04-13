@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "negative-zone-breakout",
+  "name": "Negative Zone Breakout",
+  "description": "The barrier between Earth and the Negative Zone fractures, allowing Annihilus and his forces to pour through. The Fantastic Four must seal the breach before anti-matter annihilation engulfs both dimensions.",
+  "setupIntent": {
+    "mastermindId": "annihilus",
+    "schemeId": "pull-reality-into-the-negative-zone",
+    "villainGroupIds": ["annihilation-wave"],
+    "heroDeckIds": ["mr-fantastic", "invisible-woman", "human-torch", "thing", "silver-surfer"]
+  },
+  "playerCount": {
+    "recommended": [2, 3],
+    "min": 1,
+    "max": 6
+  },
+  "tags": ["fantastic-four", "negative-zone", "annihilus", "classic"],
+  "references": {
+    "primaryStory": {
+      "issue": "Fantastic Four #251–256",
+      "year": 1983,
+      "externalUrl": "https://marvel.fandom.com/wiki/Negative_Zone",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/negative-zone/4020-56059/"
+      ]
+    }
+  },
+  "flavorText": "Beyond the barrier, nothing lives. And the barrier is falling."
+}

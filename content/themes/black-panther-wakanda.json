@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "black-panther-wakanda",
+  "name": "Black Panther of Wakanda",
+  "description": "King T'Challa defends Wakanda from Killmonger's relentless campaign to seize the throne and plunder the nation's vibranium. With General Okoye, Princess Shuri, and the Dora Milaje at his side, the Black Panther must protect his people and their legacy.",
+  "setupIntent": {
+    "mastermindId": "killmonger",
+    "schemeId": "plunder-wakandas-vibranium",
+    "villainGroupIds": ["killmongers-league", "enemies-of-wakanda"],
+    "heroDeckIds": ["king-black-panther", "queen-storm-of-wakanda", "princess-shuri", "general-okoye", "white-wolf"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["deep-cut", "black-panther", "wakanda", "killmonger", "vibranium"],
+  "references": {
+    "primaryStory": {
+      "issue": "Black Panther Vol 4 #1–41",
+      "year": 2005,
+      "externalUrl": "https://marvel.fandom.com/wiki/T%27Challa_(Earth-616)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/black-panther/4005-1477/"
+      ]
+    }
+  },
+  "flavorText": "Wakanda forever."
+}

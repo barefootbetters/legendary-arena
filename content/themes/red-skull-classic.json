@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "red-skull-classic",
+  "name": "Red Skull (Classic)",
+  "description": "Johann Schmidt, the Red Skull, has endured since World War II as Captain America's most dangerous nemesis. With Arnim Zola's twisted science and Baron Zemo's aristocratic cruelty at his side, the Skull plots to reshape the world in HYDRA's image.",
+  "setupIntent": {
+    "mastermindId": "arnim-zola",
+    "schemeId": "change-the-outcome-of-wwii",
+    "villainGroupIds": ["zolas-creations", "masters-of-evil-wwii"],
+    "heroDeckIds": ["captain-america-1941", "agent-x-13", "winter-soldier", "captain-america-falcon", "steve-rogers-director-of-shield"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["espionage", "red-skull", "wwii", "captain-america", "classic"],
+  "references": {
+    "primaryStory": {
+      "issue": "Captain America Comics #1",
+      "year": 1941,
+      "externalUrl": "https://marvel.fandom.com/wiki/Red_Skull_(Johann_Shmidt)_(Earth-616)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/red-skull/4005-2188/"
+      ]
+    }
+  },
+  "flavorText": "The Skull endures. Empires fall, but hate lives forever."
+}

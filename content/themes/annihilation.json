@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "annihilation",
+  "name": "Annihilation",
+  "description": "Annihilus breaches the Negative Zone barrier with an unstoppable Annihilation Wave, obliterating everything in its path across the cosmos. The surviving heroes of the galaxy must unite or watch the universe be consumed.",
+  "setupIntent": {
+    "mastermindId": "annihilus",
+    "schemeId": "pulse-waves-from-the-negative-zone",
+    "villainGroupIds": ["annihilation-wave", "timelines-of-kang"],
+    "heroDeckIds": ["super-skrull", "heralds-of-galactus", "brainstorm", "psi-lord", "fantastic-four-united"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["cosmic", "annihilation", "negative-zone", "annihilus", "2000s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Annihilation #1–6",
+      "year": 2006,
+      "externalUrl": "https://marvel.fandom.com/wiki/Annihilation",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/annihilation/4045-41287/"
+      ]
+    }
+  },
+  "flavorText": "The wave is coming. Nothing survives in its wake."
+}

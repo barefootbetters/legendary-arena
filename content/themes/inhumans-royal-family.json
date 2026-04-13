@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "inhumans-royal-family",
+  "name": "Inhumans Royal Family",
+  "description": "Maximus the Mad stages a coup against his brother Black Bolt, plunging Attilan into civil war. The Inhuman Royal Family must reclaim their throne while Terrigen Mists reshape the political landscape of their hidden civilization.",
+  "setupIntent": {
+    "mastermindId": "maximus-the-mad",
+    "schemeId": "devolve-with-xerogen-crystals",
+    "villainGroupIds": ["inhuman-rebellion"],
+    "heroDeckIds": ["black-bolt", "medusa", "crystal", "karnak", "gorgon"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["inhumans", "royal-family", "terrigen", "attilan", "classic"],
+  "references": {
+    "primaryStory": {
+      "issue": "Inhumans #1–12",
+      "year": 1975,
+      "externalUrl": "https://marvel.fandom.com/wiki/Inhumans_(Royal_Family)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/inhumans/4060-57054/"
+      ]
+    }
+  },
+  "flavorText": "The throne of Attilan is not inherited. It is defended."
+}

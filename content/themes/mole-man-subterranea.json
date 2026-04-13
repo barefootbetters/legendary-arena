@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "mole-man-subterranea",
+  "name": "Mole Man's Subterranea",
+  "description": "The Mole Man commands an army of subterranean monsters from Monster Island, launching attacks on the surface world that rejected him. The Fantastic Four must descend into his underground kingdom to stop the seismic assaults before entire cities collapse.",
+  "setupIntent": {
+    "mastermindId": "mole-man",
+    "schemeId": "flood-the-planet-with-melted-glaciers",
+    "villainGroupIds": ["subterranea"],
+    "heroDeckIds": ["mr-fantastic", "invisible-woman", "human-torch", "thing"]
+  },
+  "playerCount": {
+    "recommended": [2, 3],
+    "min": 1,
+    "max": 6
+  },
+  "tags": ["fantastic-four", "mole-man", "subterranea", "monsters", "1960s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Fantastic Four #1",
+      "year": 1961,
+      "externalUrl": "https://marvel.fandom.com/wiki/Mole_Man_(Harvey_Elder)_(Earth-616)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/mole-man/4005-2183/"
+      ]
+    }
+  },
+  "flavorText": "The surface world cast me out. Now the earth itself rises against them."
+}

@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "mutant-massacre",
+  "name": "Mutant Massacre",
+  "description": "Mr. Sinister's Marauders descend into the Morlock Tunnels and systematically slaughter the mutant outcasts living beneath New York. The X-Men arrive to find carnage—and a trap that will cost them dearly.",
+  "setupIntent": {
+    "mastermindId": "mr-sinister",
+    "schemeId": "save-humanity",
+    "villainGroupIds": ["marauders", "emissaries-of-evil"],
+    "henchmanGroupIds": ["phalanx"],
+    "heroDeckIds": ["wolverine", "colossus", "nightcrawler", "angel", "jean-grey", "psylocke"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["x-men", "marauders", "mr-sinister", "dark", "1980s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Uncanny X-Men #210–213",
+      "year": 1986,
+      "externalUrl": "https://marvel.fandom.com/wiki/Mutant_Massacre",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/mutant-massacre/4045-41407/"
+      ]
+    }
+  },
+  "flavorText": "The tunnels run red. The Marauders show no mercy."
+}

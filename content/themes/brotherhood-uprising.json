@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "brotherhood-uprising",
+  "name": "Brotherhood Uprising",
+  "description": "Magneto and his Brotherhood of Evil Mutants wage war on humanity while the Legacy Virus threatens mutant and human alike. The X-Men must stop the contagion and Magneto's crusade before both species are consumed.",
+  "setupIntent": {
+    "mastermindId": "magneto",
+    "schemeId": "legacy-virus-the",
+    "villainGroupIds": ["brotherhood", "radiation"],
+    "henchmanGroupIds": ["savage-land-mutates"],
+    "heroDeckIds": ["cyclops", "wolverine", "storm", "emma-frost", "rogue", "gambit"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["x-men", "magneto", "brotherhood", "classic", "1990s"],
+  "references": {
+    "primaryStory": {
+      "issue": "X-Men Vol 2 #25",
+      "year": 1993,
+      "externalUrl": "https://marvel.fandom.com/wiki/Legacy_Virus",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/legacy-virus/4045-55946/"
+      ]
+    }
+  },
+  "flavorText": "Mutants are the future, Charles. You just refuse to see it."
+}

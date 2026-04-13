@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "midnight-sons-rising",
+  "name": "Midnight Sons Rising",
+  "description": "Lilith, Mother of Demons, has returned to unleash her Lilin spawn upon the world. Blade, Morbius, and the supernatural defenders of Earth must unite as the Midnight Sons to drive the demonic horde back into the darkness.",
+  "setupIntent": {
+    "mastermindId": "lilith-mother-of-demons",
+    "schemeId": "midnight-massacre",
+    "villainGroupIds": ["lilin", "fallen"],
+    "heroDeckIds": ["blade-daywalker", "morbius", "werewolf-by-night", "elsa-bloodstone", "wong-master-of-the-mystic-arts"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["horror", "supernatural", "midnight-sons", "demons", "1990s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Ghost Rider Vol 3 #28 / Midnight Sons crossover",
+      "year": 1992,
+      "externalUrl": "https://marvel.fandom.com/wiki/Midnight_Sons_(Earth-616)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/midnight-sons/4060-56727/"
+      ]
+    }
+  },
+  "flavorText": "When the sun sets, we rise."
+}

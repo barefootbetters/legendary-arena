@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "cosmic-cube-crisis",
+  "name": "Cosmic Cube Crisis",
+  "description": "Red Skull has obtained the Cosmic Cube, an artifact capable of reshaping reality at the wielder's will. Earth's mightiest heroes must recover it before Skull's vision of a HYDRA-dominated world becomes permanent.",
+  "setupIntent": {
+    "mastermindId": "red-skull",
+    "schemeId": "unleash-the-power-of-the-cosmic-cube",
+    "villainGroupIds": ["hydra", "masters-of-evil"],
+    "henchmanGroupIds": ["sentinel"],
+    "heroDeckIds": ["captain-america", "iron-man", "thor", "nick-fury", "black-widow"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["avengers", "cosmic-cube", "red-skull", "hydra", "classic"],
+  "references": {
+    "primaryStory": {
+      "issue": "Tales of Suspense #79–81",
+      "year": 1966,
+      "externalUrl": "https://marvel.fandom.com/wiki/Cosmic_Cube",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/cosmic-cube/4055-56379/"
+      ]
+    }
+  },
+  "flavorText": "With the Cube in my hand, I hold the power of a god."
+}

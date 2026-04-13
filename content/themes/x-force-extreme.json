@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "x-force-extreme",
+  "name": "X-Force (Extreme)",
+  "description": "Cable's black-ops mutant strike team operates outside Xavier's rules of engagement. When diplomacy fails and the X-Men can't get their hands dirty, X-Force goes in—loud, lethal, and unapologetic.",
+  "setupIntent": {
+    "mastermindId": "stryfe",
+    "schemeId": "capture-baby-hope",
+    "villainGroupIds": ["mutant-liberation-front", "marauders"],
+    "henchmanGroupIds": ["phalanx"],
+    "heroDeckIds": ["cable", "domino", "colossus", "forge", "wolverine", "bishop"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["x-force", "cable", "military", "black-ops", "1990s"],
+  "references": {
+    "primaryStory": {
+      "issue": "X-Force #1–40",
+      "year": 1991,
+      "externalUrl": "https://marvel.fandom.com/wiki/X-Force_(Earth-616)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/x-force/4060-27862/"
+      ]
+    }
+  },
+  "flavorText": "We don't ask permission. We don't apologize. We get results."
+}

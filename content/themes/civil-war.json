@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "civil-war",
+  "name": "Civil War",
+  "description": "The Superhuman Registration Act tears the hero community apart. Iron Man enforces the law while Captain America leads the resistance, splitting friendships and alliances down the middle in a war where every hero must choose a side.",
+  "setupIntent": {
+    "mastermindId": "authoritarian-iron-man",
+    "schemeId": "epic-super-hero-civil-war",
+    "villainGroupIds": ["registration-enforcers", "thunderbolts"],
+    "henchmanGroupIds": ["cape-killers"],
+    "heroDeckIds": ["captain-america-secret-avenger", "falcon", "luke-cage", "cloak-dagger", "hercules", "goliath"]
+  },
+  "playerCount": {
+    "recommended": [4, 5],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["civil-war", "avengers", "political", "registration", "2000s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Civil War #1–7",
+      "year": 2006,
+      "externalUrl": "https://marvel.fandom.com/wiki/Civil_War_(Event)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/civil-war/4045-40615/"
+      ]
+    }
+  },
+  "flavorText": "Whose side are you on?"
+}

@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "onslaught-unleashed",
+  "name": "Onslaught Unleashed",
+  "description": "The dark psychic entity born from the combined consciousness of Professor X and Magneto manifests as Onslaught—a being of near-limitless power that threatens to reshape reality. Every hero must unite to stop the monster within.",
+  "setupIntent": {
+    "mastermindId": "onslaught",
+    "schemeId": "horror-of-horrors",
+    "villainGroupIds": ["dark-descendants", "shadow-x"],
+    "henchmanGroupIds": ["sapien-league"],
+    "heroDeckIds": ["cyclops", "phoenix", "storm", "wolverine", "psylocke", "beast"]
+  },
+  "playerCount": {
+    "recommended": [4, 5],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["x-men", "avengers", "onslaught", "psychic", "1990s"],
+  "references": {
+    "primaryStory": {
+      "issue": "X-Men Vol 2 #53–54 / Onslaught crossover",
+      "year": 1996,
+      "externalUrl": "https://marvel.fandom.com/wiki/Onslaught_(Event)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/onslaught/4045-43814/"
+      ]
+    }
+  },
+  "flavorText": "I am everything you feared. I am everything you created."
+}

@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "venom-lethal-protector",
+  "name": "Venom: Lethal Protector",
+  "description": "Eddie Brock and the Venom symbiote have relocated to San Francisco, seeking redemption as a lethal protector of the innocent. But the Life Foundation has other plans—spawning new symbiotes to weaponize, forcing Venom to confront twisted reflections of himself.",
+  "setupIntent": {
+    "mastermindId": "hybrid",
+    "schemeId": "invasion-of-the-venom-symbiotes",
+    "villainGroupIds": ["life-foundation", "poisons"],
+    "heroDeckIds": ["venom", "carnage", "venompool", "venom-rocket", "venomized-dr-strange"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["spider-man", "symbiotes", "venom", "anti-hero", "1990s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Venom: Lethal Protector #1–6",
+      "year": 1993,
+      "externalUrl": "https://marvel.fandom.com/wiki/Venom:_Lethal_Protector_Vol_1",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/venom-lethal-protector/4050-13658/"
+      ]
+    }
+  },
+  "flavorText": "We are Venom. And we protect the innocent—by any means necessary."
+}

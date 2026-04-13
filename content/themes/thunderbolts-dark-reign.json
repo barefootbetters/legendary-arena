@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "thunderbolts-dark-reign",
+  "name": "Thunderbolts (Dark Reign)",
+  "description": "Under Norman Osborn's Dark Reign, the Thunderbolts are reformed as a black-ops strike team of barely controlled villains. Tasked with hunting unregistered heroes, the team teeters between obedience and betrayal.",
+  "setupIntent": {
+    "mastermindId": "baron-helmut-zemo",
+    "schemeId": "dark-reign-of-h-a-m-m-e-r-officers",
+    "villainGroupIds": ["thunderbolts", "registration-enforcers"],
+    "henchmanGroupIds": ["cape-killers"],
+    "heroDeckIds": ["speedball", "patriot", "hulkling", "wiccan", "stature", "vision"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["avengers", "thunderbolts", "dark-reign", "villain-team", "2000s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Thunderbolts Vol 2 (Dark Reign era)",
+      "year": 2009,
+      "externalUrl": "https://marvel.fandom.com/wiki/Thunderbolts_(Dark_Reign)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/thunderbolts/4060-41087/"
+      ]
+    }
+  },
+  "flavorText": "They were villains. Now they hunt heroes. Nothing has changed."
+}

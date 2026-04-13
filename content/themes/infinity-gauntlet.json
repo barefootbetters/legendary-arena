@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "infinity-gauntlet",
+  "name": "Infinity Gauntlet",
+  "description": "Thanos has assembled the six Infinity Gems into a single gauntlet of godlike power, erasing half of all life in the universe with a snap of his fingers. The Guardians of the Galaxy and cosmic heroes must challenge the Mad Titan before existence itself unravels.",
+  "setupIntent": {
+    "mastermindId": "thanos",
+    "schemeId": "forge-the-infinity-gauntlet",
+    "villainGroupIds": ["infinity-gems", "kree-starforce"],
+    "heroDeckIds": ["drax-the-destroyer", "gamora", "groot", "rocket-raccoon", "star-lord"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["guardians", "cosmic", "thanos", "infinity-gems", "1990s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Infinity Gauntlet #1–6",
+      "year": 1991,
+      "externalUrl": "https://marvel.fandom.com/wiki/Infinity_Gauntlet",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/the-infinity-gauntlet/4045-42233/"
+      ]
+    }
+  },
+  "flavorText": "Fine. I'll do it myself."
+}

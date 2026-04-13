@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "messiah-complex",
+  "name": "Messiah Complex",
+  "description": "The first mutant birth since M-Day sends every faction scrambling. The Purifiers want the child dead, Sinister wants to control her, and the X-Men will do anything to protect the mutant messiah—Hope Summers.",
+  "setupIntent": {
+    "mastermindId": "bastion-fused-sentinel",
+    "schemeId": "control-the-mutant-messiah",
+    "villainGroupIds": ["purifiers", "reavers"],
+    "henchmanGroupIds": ["mr-sinister-clones", "sentinel-squad-o-n-e"],
+    "heroDeckIds": ["cable", "bishop", "multiple-man", "warpath", "siryn", "rictor"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["x-men", "messiah-trilogy", "hope-summers", "2000s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Messiah CompleX crossover",
+      "year": 2007,
+      "externalUrl": "https://marvel.fandom.com/wiki/X-Men:_Messiah_Complex",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/messiah-complex/4045-48995/"
+      ]
+    }
+  },
+  "flavorText": "One child. Every faction. The fate of an entire species."
+}

@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "doctor-strange-sorcerer",
+  "name": "Doctor Strange, Sorcerer Supreme",
+  "description": "As Earth's Sorcerer Supreme, Stephen Strange stands as the last line of defense against extradimensional threats. When Nightmare invades the Dream Dimension, Strange must navigate realms where the laws of physics are merely suggestions.",
+  "setupIntent": {
+    "mastermindId": "nightmare",
+    "schemeId": "war-for-the-dream-dimension",
+    "villainGroupIds": ["fear-lords", "lords-of-the-netherworld"],
+    "heroDeckIds": ["doctor-strange", "clea", "doctor-voodoo", "ancient-one-the", "vishanti-the"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["deep-cut", "doctor-strange", "mystic", "nightmare", "sorcerer-supreme"],
+  "references": {
+    "primaryStory": {
+      "issue": "Doctor Strange, Sorcerer Supreme #1–90",
+      "year": 1988,
+      "externalUrl": "https://marvel.fandom.com/wiki/Stephen_Strange_(Earth-616)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/doctor-strange/4005-1456/"
+      ]
+    }
+  },
+  "flavorText": "By the Vishanti—the mystic arts will not be silenced."
+}

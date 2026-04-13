@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "noir-underworld",
+  "name": "Noir Underworld",
+  "description": "In 1930s New York, costumed vigilantes stalk the rain-slicked streets, fighting corruption and organized crime in a world without superpowers. The Goblin rules the underworld with terror, and only a handful of brave souls dare to challenge him.",
+  "setupIntent": {
+    "mastermindId": "the-goblin-underworld-boss",
+    "schemeId": "five-families-of-crime",
+    "villainGroupIds": ["goblins-freak-show", "x-men-noir"],
+    "heroDeckIds": ["spider-man-noir", "daredevil-noir", "luke-cage-noir", "iron-man-noir", "angel-noir"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["noir", "street-level", "1930s", "crime", "alternate-reality"],
+  "references": {
+    "primaryStory": {
+      "issue": "Spider-Man Noir #1–4",
+      "year": 2009,
+      "externalUrl": "https://marvel.fandom.com/wiki/Marvel_Noir",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/spider-man-noir/4050-26834/"
+      ]
+    }
+  },
+  "flavorText": "In this city, the shadows have teeth."
+}

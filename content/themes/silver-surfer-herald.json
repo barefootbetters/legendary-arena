@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "silver-surfer-herald",
+  "name": "Silver Surfer: Herald of Galactus",
+  "description": "Norrin Radd sacrificed his freedom to save his homeworld, becoming the Silver Surfer—herald of Galactus. Now trapped on Earth after defying his master, the Surfer must protect the planet from cosmic threats while seeking redemption.",
+  "setupIntent": {
+    "mastermindId": "galactus",
+    "schemeId": "flood-the-planet-with-melted-glaciers",
+    "villainGroupIds": ["heralds-of-galactus"],
+    "heroDeckIds": ["silver-surfer", "mr-fantastic", "invisible-woman", "human-torch", "thing"]
+  },
+  "playerCount": {
+    "recommended": [2, 3],
+    "min": 1,
+    "max": 6
+  },
+  "tags": ["cosmic", "silver-surfer", "galactus", "fantastic-four", "1960s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Silver Surfer Vol 1 #1–18",
+      "year": 1968,
+      "externalUrl": "https://marvel.fandom.com/wiki/Silver_Surfer_(Norrin_Radd)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/silver-surfer/4005-2548/"
+      ]
+    }
+  },
+  "flavorText": "I was his herald. Now I am his enemy."
+}

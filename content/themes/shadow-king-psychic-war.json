@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "shadow-king-psychic-war",
+  "name": "Shadow King's Psychic War",
+  "description": "The Shadow King, an ancient psychic parasite from the Astral Plane, wages invisible war against Charles Xavier and the X-Men. The battlefield is the mind itself, where defeat means possession and enslavement.",
+  "setupIntent": {
+    "mastermindId": "shadow-king",
+    "schemeId": "anti-mutant-hatred",
+    "villainGroupIds": ["shadow-x", "dark-descendants"],
+    "henchmanGroupIds": ["hellfire-cult"],
+    "heroDeckIds": ["psylocke", "phoenix", "storm", "cyclops", "legion", "kitty-pryde"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["x-men", "psychic", "shadow-king", "astral-plane", "1970s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Uncanny X-Men #117",
+      "year": 1979,
+      "externalUrl": "https://marvel.fandom.com/wiki/Shadow_King_(Earth-616)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/shadow-king/4005-14605/"
+      ]
+    }
+  },
+  "flavorText": "You cannot fight what lives inside your own mind."
+}

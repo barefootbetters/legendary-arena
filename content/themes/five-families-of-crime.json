@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "five-families-of-crime",
+  "name": "Five Families of Crime",
+  "description": "New York's five crime families wage a brutal turf war for control of the city's underworld. With the Kingpin consolidating power and the streets running red, the Marvel Knights must dismantle the syndicate from within.",
+  "setupIntent": {
+    "mastermindId": "kingpin",
+    "schemeId": "steal-the-weaponized-plutonium",
+    "villainGroupIds": ["streets-of-new-york", "underworld"],
+    "henchmanGroupIds": ["maggia-goons"],
+    "heroDeckIds": ["daredevil", "punisher", "elektra", "iron-fist", "blade"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["street-level", "crime", "kingpin", "marvel-knights", "dark-city"],
+  "references": {
+    "primaryStory": {
+      "issue": "Daredevil Vol 2 #56–60",
+      "year": 2003,
+      "externalUrl": "https://marvel.fandom.com/wiki/Maggia_(Earth-616)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/kingpin/4005-2308/"
+      ]
+    }
+  },
+  "flavorText": "Five families. One throne. Blood is the only currency."
+}

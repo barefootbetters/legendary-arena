@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "maximum-carnage",
+  "name": "Maximum Carnage",
+  "description": "Carnage escapes Ravencroft and assembles a twisted family of killers, unleashing a city-wide massacre across Manhattan. Spider-Man and his allies must stop the symbiote-fueled rampage before New York drowns in chaos.",
+  "setupIntent": {
+    "mastermindId": "carnage",
+    "schemeId": "splice-humans-with-spider-dna",
+    "villainGroupIds": ["maximum-carnage", "sinister-six"],
+    "heroDeckIds": ["symbiote-spider-man", "scarlet-spider", "spider-woman", "black-cat", "moon-knight"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["spider-man", "symbiotes", "carnage", "street-level", "1990s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Amazing Spider-Man #378–380 / Spider-Man Unlimited #1–2",
+      "year": 1993,
+      "externalUrl": "https://marvel.fandom.com/wiki/Maximum_Carnage",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/maximum-carnage/4045-41409/"
+      ]
+    }
+  },
+  "flavorText": "There's no law. There's no order. There's only Carnage."
+}

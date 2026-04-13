@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "champions-young-heroes",
+  "name": "Champions: Young Heroes",
+  "description": "A new generation of heroes—Ms. Marvel, Nova, Spider-Man (Miles Morales), and more—form the Champions, determined to be better than the adults who failed them. When monsters are unleashed across the globe, the young team faces their biggest test.",
+  "setupIntent": {
+    "mastermindId": "fin-fang-foom",
+    "schemeId": "clash-of-the-monsters-unleashed",
+    "villainGroupIds": ["monsters-unleashed", "wrecking-crew"],
+    "heroDeckIds": ["ms-marvel", "nova", "gwenpool", "totally-awesome-hulk", "viv-vision"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["deep-cut", "champions", "young-heroes", "ms-marvel", "2010s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Champions #1–27",
+      "year": 2016,
+      "externalUrl": "https://marvel.fandom.com/wiki/Champions_(Earth-616)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/champions/4060-58547/"
+      ]
+    }
+  },
+  "flavorText": "We're not sidekicks. We're not junior Avengers. We're Champions."
+}

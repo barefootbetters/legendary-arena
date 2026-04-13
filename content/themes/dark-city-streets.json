@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "dark-city-streets",
+  "name": "Dark City Streets",
+  "description": "The Kingpin tightens his iron grip on New York's criminal underworld, commanding the streets through fear and corruption. The city's street-level vigilantes must fight to keep the darkness at bay before organized crime swallows every borough.",
+  "setupIntent": {
+    "mastermindId": "kingpin",
+    "schemeId": "organized-crime-wave",
+    "villainGroupIds": ["streets-of-new-york", "underworld"],
+    "henchmanGroupIds": ["maggia-goons"],
+    "heroDeckIds": ["daredevil", "elektra", "punisher", "iron-fist", "ghost-rider", "blade"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["marvel-knights", "street-level", "dark-city", "noir", "kingpin"],
+  "references": {
+    "primaryStory": {
+      "issue": "Daredevil #170–172",
+      "year": 1981,
+      "externalUrl": "https://marvel.fandom.com/wiki/Wilson_Fisk_(Earth-616)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/kingpin/4005-2308/"
+      ]
+    }
+  },
+  "flavorText": "This city belongs to me. Every shadow. Every alley. Every soul."
+}

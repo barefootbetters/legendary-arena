@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "dark-reign",
+  "name": "Dark Reign",
+  "description": "Norman Osborn has parlayed his defeat of the Skrulls into political power, replacing S.H.I.E.L.D. with H.A.M.M.E.R. and assembling his own Dark Avengers. The Hood's criminal empire expands under Osborn's protection while the real heroes are driven underground.",
+  "setupIntent": {
+    "mastermindId": "hood-the",
+    "schemeId": "secret-hydra-corruption",
+    "villainGroupIds": ["dark-avengers", "hoods-gang"],
+    "henchmanGroupIds": ["hydra-base"],
+    "heroDeckIds": ["ronin", "scarlet-witch", "quicksilver", "war-machine", "darkhawk", "photon"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["avengers", "dark-reign", "norman-osborn", "hood", "2000s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Dark Reign status quo (2008–2009)",
+      "year": 2008,
+      "externalUrl": "https://marvel.fandom.com/wiki/Dark_Reign_(Event)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/dark-reign/4045-55707/"
+      ]
+    }
+  },
+  "flavorText": "The villains won. And now they're running the country."
+}

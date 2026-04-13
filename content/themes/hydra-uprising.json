@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "hydra-uprising",
+  "name": "HYDRA Uprising",
+  "description": "The HYDRA High Council activates sleeper cells embedded across every level of government and military. S.H.I.E.L.D. agents must root out the infiltrators before the serpent's grip becomes unbreakable.",
+  "setupIntent": {
+    "mastermindId": "hydra-high-council",
+    "schemeId": "hail-hydra",
+    "villainGroupIds": ["hydra-elite", "a-i-m-hydra-offshoot"],
+    "heroDeckIds": ["agent-phil-coulson", "quake", "mockingbird", "deathlok", "melinda-may", "sharon-carter"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["espionage", "hydra", "shield", "infiltration", "classic"],
+  "references": {
+    "primaryStory": {
+      "issue": "Various HYDRA storylines",
+      "year": 1965,
+      "externalUrl": "https://marvel.fandom.com/wiki/Hydra_(Earth-616)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/hydra/4060-40501/"
+      ]
+    }
+  },
+  "flavorText": "Cut off one head, two more shall take its place. Hail HYDRA."
+}

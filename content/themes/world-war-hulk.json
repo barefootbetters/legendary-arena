@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "world-war-hulk",
+  "name": "World War Hulk",
+  "description": "Betrayed and exiled to the planet Sakaar by the Illuminati, the Hulk returns to Earth with his Warbound allies seeking vengeance against those who sent him away. Manhattan becomes a gladiatorial arena as the World Breaker demands justice.",
+  "setupIntent": {
+    "mastermindId": "king-hulk-sakaarson",
+    "schemeId": "world-war-hulk",
+    "villainGroupIds": ["warbound", "sakaar-imperial-guard"],
+    "henchmanGroupIds": ["sakaaran-hivelings"],
+    "heroDeckIds": ["hulkbuster-iron-man", "she-hulk", "sentry", "amadeus-cho", "rick-jones"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["hulk", "cosmic", "revenge", "sakaar", "2000s"],
+  "references": {
+    "primaryStory": {
+      "issue": "World War Hulk #1–5",
+      "year": 2007,
+      "externalUrl": "https://marvel.fandom.com/wiki/World_War_Hulk",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/world-war-hulk/4045-42294/"
+      ]
+    }
+  },
+  "flavorText": "I didn't come here for a whisper. I want to hear you scream."
+}

@@ -128,6 +128,28 @@ function recordWarning(section, checkName, message, remediation) {
 }
 
 // ---------------------------------------------------------------------------
+// Timeout helpers
+// ---------------------------------------------------------------------------
+
+// why: AbortSignal.timeout() is standard in Node 22 but older patch builds on
+// Windows have behaved inconsistently. This helper provides a safe fallback
+// using AbortController when the static method is unavailable.
+
+/**
+ * Creates an AbortSignal that fires after the given timeout in milliseconds.
+ * @param {number} timeoutMilliseconds
+ * @returns {AbortSignal}
+ */
+function createTimeoutSignal(timeoutMilliseconds) {
+  if (typeof AbortSignal.timeout === 'function') {
+    return AbortSignal.timeout(timeoutMilliseconds);
+  }
+  const controller = new AbortController();
+  setTimeout(() => controller.abort(), timeoutMilliseconds);
+  return controller.signal;
+}
+
+// ---------------------------------------------------------------------------
 // Parsing helpers
 // ---------------------------------------------------------------------------
 
@@ -437,7 +459,9 @@ function checkRequiredEnvironmentVariables() {
       }
     }
 
-    console.log(`  ${groupName.padEnd(14)} ${groupResults.join('  ')}`);
+    // why: 18 characters accommodates the longest current group name
+    // ("Frontend (Vite)") with room for growth without breaking alignment.
+    console.log(`  ${groupName.padEnd(18)} ${groupResults.join('  ')}`);
   }
 
   if (totalMissing > 0) {
@@ -506,10 +530,12 @@ async function checkPostgresConnection() {
     const databaseVersion = queryResult.rows[0].version.split(' ').slice(0, 2).join(' ');
     const expectedDatabaseName = env.EXPECTED_DB_NAME;
 
+    // why: EXPECTED_DB_NAME is optional — it exists for safety on teams where
+    // multiple databases share a host. If unset, this check is skipped entirely.
     if (expectedDatabaseName && currentDatabase !== expectedDatabaseName) {
       recordResult('CONNECTIONS', 'PostgreSQL', false,
-        `Connected to "${currentDatabase}" but expected "${expectedDatabaseName}". Check DATABASE_URL points to the correct database.`,
-        `Update DATABASE_URL in .env to point to the "${expectedDatabaseName}" database.`);
+        `Connected to "${currentDatabase}" but expected "${expectedDatabaseName}" (EXPECTED_DB_NAME is optional — remove it from .env to skip this check).`,
+        `Update DATABASE_URL to point to "${expectedDatabaseName}", or remove EXPECTED_DB_NAME from .env if the connected database is correct.`);
       return;
     }
 
@@ -539,7 +565,7 @@ async function checkBoardgameioServer() {
   try {
     const startTime = Date.now();
     const response = await fetch(`${serverUrl}${HEALTH_CHECK_PATH}`, {
-      signal: AbortSignal.timeout(CONNECTION_TIMEOUT_MS),
+      signal: createTimeoutSignal(CONNECTION_TIMEOUT_MS),
     });
     const elapsedMilliseconds = Date.now() - startTime;
 
@@ -577,7 +603,7 @@ async function checkCloudflareR2() {
     // why: metadata/sets.json is the authoritative registry manifest in R2.
     // No registry-config.json exists — that was an incorrect assumption.
     const response = await fetch(`${publicUrl}/metadata/sets.json`, {
-      signal: AbortSignal.timeout(CONNECTION_TIMEOUT_MS),
+      signal: createTimeoutSignal(CONNECTION_TIMEOUT_MS),
     });
     const elapsedMilliseconds = Date.now() - startTime;
     const contentType = response.headers.get('content-type') || 'unknown';
@@ -614,7 +640,7 @@ async function checkCloudflarePages() {
   try {
     const startTime = Date.now();
     const response = await fetch(pagesUrl, {
-      signal: AbortSignal.timeout(CONNECTION_TIMEOUT_MS),
+      signal: createTimeoutSignal(CONNECTION_TIMEOUT_MS),
     });
     const elapsedMilliseconds = Date.now() - startTime;
 
@@ -641,7 +667,7 @@ async function checkGithubReachability() {
   try {
     const startTime = Date.now();
     const response = await fetch(GITHUB_API_URL, {
-      signal: AbortSignal.timeout(CONNECTION_TIMEOUT_MS),
+      signal: createTimeoutSignal(CONNECTION_TIMEOUT_MS),
     });
     const elapsedMilliseconds = Date.now() - startTime;
 
@@ -649,9 +675,25 @@ async function checkGithubReachability() {
       const responseBody = await response.json();
       recordResult('CONNECTIONS', 'GitHub API', true,
         `${responseBody.full_name} found  (${elapsedMilliseconds}ms)`);
+    } else if (response.status === 403) {
+      // why: GitHub anonymous API rate limits (60 req/hour) are easy to hit on
+      // CI or shared networks. A 403 with exhausted rate limit is a transient
+      // condition, not a configuration error. The local Git remote check below
+      // already proves repo identity, so downgrading to a warning avoids false
+      // negatives.
+      const rateLimitRemaining = response.headers.get('x-ratelimit-remaining');
+      if (rateLimitRemaining === '0') {
+        recordWarning('CONNECTIONS', 'GitHub API',
+          `Rate-limited (HTTP 403, x-ratelimit-remaining: 0). Git remote check below confirms repo identity.`,
+          'Wait for rate limit to reset, or set a GITHUB_TOKEN for higher limits.');
+      } else {
+        recordResult('CONNECTIONS', 'GitHub API', false,
+          `API returned HTTP 403. Repository may be private or access is denied.`,
+          `Verify the repository exists at ${GITHUB_REPO_URL}`);
+      }
     } else {
       recordResult('CONNECTIONS', 'GitHub API', false,
-        `API returned HTTP ${response.status}. Repository may be private or rate-limited.`,
+        `API returned HTTP ${response.status}. Repository may be private or unavailable.`,
         `Verify the repository exists at ${GITHUB_REPO_URL}`);
     }
   } catch (fetchError) {
@@ -739,6 +781,8 @@ function checkRclone() {
  * Runs all health checks in order and prints a final summary.
  */
 async function main() {
+  const suiteStartTime = Date.now();
+
   console.log('');
   console.log('=== Legendary Arena — Connection Health Check ===');
   console.log(`Run at: ${new Date().toISOString()}`);
@@ -780,10 +824,12 @@ async function main() {
   console.log('');
   console.log('===');
 
+  const totalElapsedMilliseconds = Date.now() - suiteStartTime;
+
   if (failureCount === 0 && warningCount === 0) {
-    console.log('SUMMARY: All checks passed.');
+    console.log(`SUMMARY: All checks passed.  (${totalElapsedMilliseconds}ms)`);
   } else {
-    console.log(`SUMMARY: ${failureCount} failure(s), ${warningCount} warning(s)`);
+    console.log(`SUMMARY: ${failureCount} failure(s), ${warningCount} warning(s)  (${totalElapsedMilliseconds}ms)`);
   }
 
   const failedResults = results.filter(result => !result.passed && result.level !== 'warn');
@@ -804,6 +850,10 @@ async function main() {
 
   console.log('');
 
+  // why: warnings indicate degraded or partial configuration but do not
+  // prevent developers from continuing work. Only failures affect the exit
+  // code. Do not "fix" this to exit(1) on warnings — that breaks local dev
+  // workflows where optional services (rclone, Pages) may not be configured.
   if (failureCount > 0) {
     console.log('Fix failures before running other scripts.');
     process.exit(1);

@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "kree-skrull-war",
+  "name": "Kree-Skrull War",
+  "description": "Two ancient alien empires—the Kree and the Skrulls—bring their millennia-old conflict to Earth. Caught in the crossfire, the Avengers and cosmic heroes must prevent humanity from becoming collateral damage in a war between stars.",
+  "setupIntent": {
+    "mastermindId": "supreme-intelligence-of-the-kree",
+    "schemeId": "kree-skrull-war-the",
+    "villainGroupIds": ["kree-starforce", "infinity-gems"],
+    "heroDeckIds": ["captain-mar-vell", "drax-the-destroyer", "gamora", "rocket-raccoon", "star-lord"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["cosmic", "kree", "skrulls", "avengers", "1970s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Avengers #89–97",
+      "year": 1971,
+      "externalUrl": "https://marvel.fandom.com/wiki/Kree-Skrull_War",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/kree-skrull-war/4045-55836/"
+      ]
+    }
+  },
+  "flavorText": "Two empires. One planet. No negotiation."
+}

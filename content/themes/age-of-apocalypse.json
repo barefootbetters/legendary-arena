@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "age-of-apocalypse",
+  "name": "Age of Apocalypse",
+  "description": "In a world where Charles Xavier was murdered before founding the X-Men, Apocalypse rose to conquer North America. Magneto leads a ragged band of mutant survivors against the ancient tyrant's Four Horsemen.",
+  "setupIntent": {
+    "mastermindId": "apocalypse",
+    "schemeId": "nuclear-armageddon",
+    "villainGroupIds": ["four-horsemen", "marauders"],
+    "henchmanGroupIds": ["phalanx"],
+    "heroDeckIds": ["bishop", "jean-grey", "nightcrawler", "wolverine", "storm", "gambit"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["x-men", "alternate-reality", "apocalypse", "1990s"],
+  "references": {
+    "primaryStory": {
+      "issue": "X-Men Alpha #1 + tie-ins",
+      "year": 1995,
+      "externalUrl": "https://marvel.fandom.com/wiki/Age_of_Apocalypse",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/age-of-apocalypse/4045-40752/"
+      ]
+    }
+  },
+  "flavorText": "In the Age of Apocalypse, only the strong survive."
+}

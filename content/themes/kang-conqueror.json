@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "kang-conqueror",
+  "name": "Kang the Conqueror",
+  "description": "Kang the Conqueror arrives from the future with armies drawn from a thousand timelines. His mastery of temporal technology makes him nearly impossible to defeat permanently—every victory against Kang may simply be another step in his grand design.",
+  "setupIntent": {
+    "mastermindId": "kang-the-conqueror",
+    "schemeId": "breach-parallel-dimensions",
+    "villainGroupIds": ["timelines-of-kang", "annihilation-wave"],
+    "heroDeckIds": ["fantastic-four-united", "brainstorm", "psi-lord", "super-skrull", "heralds-of-galactus"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["fantastic-four", "kang", "time-travel", "classic", "avengers"],
+  "references": {
+    "primaryStory": {
+      "issue": "Avengers #8",
+      "year": 1964,
+      "externalUrl": "https://marvel.fandom.com/wiki/Nathaniel_Richards_(Kang)_(Earth-6311)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/kang/4005-2366/"
+      ]
+    }
+  },
+  "flavorText": "You cannot defeat me. I have already won—in every timeline that matters."
+}

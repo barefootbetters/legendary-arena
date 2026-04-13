@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "defenders-classic",
+  "name": "Defenders (Classic)",
+  "description": "The non-team team—Doctor Strange, Hulk, Namor, and other misfits who never wanted to be Avengers—assembles when threats too strange for conventional heroes emerge. Disorganized but devastatingly powerful.",
+  "setupIntent": {
+    "mastermindId": "odin",
+    "schemeId": "crown-thor-king-of-asgard",
+    "villainGroupIds": ["defenders", "avengers"],
+    "henchmanGroupIds": ["asgardian-warriors"],
+    "heroDeckIds": ["loki", "enchantress", "magneto", "mystique", "juggernaut", "ultron"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["team-up", "defenders", "classic", "non-team", "1970s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Defenders #1–152",
+      "year": 1972,
+      "externalUrl": "https://marvel.fandom.com/wiki/Defenders_(Earth-616)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/the-defenders/4060-27084/"
+      ]
+    }
+  },
+  "flavorText": "We're not a team. We just keep ending up in the same room."
+}

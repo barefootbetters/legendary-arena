@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "aim-modok",
+  "name": "A.I.M. and M.O.D.O.K.",
+  "description": "Advanced Idea Mechanics has created M.O.D.O.K.—a Mental Organism Designed Only for Killing—and the weaponized intellect now commands A.I.M.'s arsenal of superscience. S.H.I.E.L.D. agents must shut down the beekeepers before their next invention destroys the world.",
+  "setupIntent": {
+    "mastermindId": "hydra-high-council",
+    "schemeId": "hydra-helicarriers-hunt-heroes",
+    "villainGroupIds": ["a-i-m-hydra-offshoot", "hydra-elite"],
+    "heroDeckIds": ["agent-phil-coulson", "mockingbird", "quake", "deathlok", "gw-bridge"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["classic-villains", "aim", "modok", "superscience", "shield"],
+  "references": {
+    "primaryStory": {
+      "issue": "Strange Tales #146",
+      "year": 1966,
+      "externalUrl": "https://marvel.fandom.com/wiki/Advanced_Idea_Mechanics_(Earth-616)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/aim/4060-40441/"
+      ]
+    }
+  },
+  "flavorText": "Science without conscience is the weapon of tyrants."
+}

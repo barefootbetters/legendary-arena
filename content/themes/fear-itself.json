@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "fear-itself",
+  "name": "Fear Itself",
+  "description": "The Serpent, Odin's forgotten brother, awakens and empowers the Worthy—mortal vessels wielding enchanted Uru hammers that spread terror across the globe. As fear itself becomes a weapon, the Avengers must face gods reborn in the bodies of their enemies.",
+  "setupIntent": {
+    "mastermindId": "uru-enchanted-iron-man",
+    "schemeId": "fear-itself",
+    "villainGroupIds": ["mighty-the"],
+    "heroDeckIds": ["greithoth-breaker-of-wills", "kuurth-breaker-of-stone", "nerkkod-breaker-of-oceans", "nul-breaker-of-worlds", "skadi"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["avengers", "asgard", "fear-itself", "worthy", "2010s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Fear Itself #1–7",
+      "year": 2011,
+      "externalUrl": "https://marvel.fandom.com/wiki/Fear_Itself_(Event)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/fear-itself/4045-56288/"
+      ]
+    }
+  },
+  "flavorText": "The Worthy have risen. Fear is their weapon. The world is their battlefield."
+}

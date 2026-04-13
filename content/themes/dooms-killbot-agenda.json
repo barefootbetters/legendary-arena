@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "dooms-killbot-agenda",
+  "name": "Doom's Killbot Agenda",
+  "description": "Dr. Doom deploys an army of robotic duplicates to replace world leaders, seizing control of global governments from his Latverian stronghold. The Avengers must dismantle the conspiracy before Doom's puppet states become permanent.",
+  "setupIntent": {
+    "mastermindId": "dr-doom",
+    "schemeId": "replace-earths-leaders-with-killbots",
+    "villainGroupIds": ["masters-of-evil"],
+    "henchmanGroupIds": ["doombot-legion"],
+    "heroDeckIds": ["captain-america", "iron-man", "spider-man", "hulk", "hawkeye"]
+  },
+  "playerCount": {
+    "recommended": [2, 3],
+    "min": 1,
+    "max": 6
+  },
+  "tags": ["avengers", "dr-doom", "robots", "classic"],
+  "references": {
+    "primaryStory": {
+      "issue": "Fantastic Four #196–200",
+      "year": 1978,
+      "externalUrl": "https://marvel.fandom.com/wiki/Victor_von_Doom_(Earth-616)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/doctor-doom/4005-1468/"
+      ]
+    }
+  },
+  "flavorText": "Doom does as he pleases."
+}

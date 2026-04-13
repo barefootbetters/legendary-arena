@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "kang-variants",
+  "name": "Kang Variants",
+  "description": "Multiple versions of Kang from across the timestream converge on the present, each pursuing their own agenda. Immortus, Rama-Tut, the Scarlet Centurion—when Kang fights Kang, every timeline is at risk.",
+  "setupIntent": {
+    "mastermindId": "kang-the-conqueror",
+    "schemeId": "sneak-attack-the-heroes-homes",
+    "villainGroupIds": ["timelines-of-kang"],
+    "heroDeckIds": ["fantastic-four-united", "brainstorm", "psi-lord", "super-skrull"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["deep-cut", "kang", "time-travel", "variants", "multiverse"],
+  "references": {
+    "primaryStory": {
+      "issue": "Avengers Forever #1–12",
+      "year": 1998,
+      "externalUrl": "https://marvel.fandom.com/wiki/Avengers_Forever_Vol_1",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/avengers-forever/4045-41456/"
+      ]
+    }
+  },
+  "flavorText": "There is always another Kang. There is always another war."
+}

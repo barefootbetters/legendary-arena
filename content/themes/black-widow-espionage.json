@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "black-widow-espionage",
+  "name": "Black Widow: Espionage",
+  "description": "Natasha Romanoff's past in the Red Room comes back to haunt her as the Taskmaster orchestrates a conspiracy targeting current and former Black Widow operatives. Trust is a liability, and every ally could be a weapon turned against you.",
+  "setupIntent": {
+    "mastermindId": "taskmaster",
+    "schemeId": "frame-heroes-for-murder",
+    "villainGroupIds": ["elite-assassins", "taskmasters-thunderbolts"],
+    "heroDeckIds": ["black-widow", "yelena-belova", "red-guardian", "white-tiger", "falcon-winter-soldier"]
+  },
+  "playerCount": {
+    "recommended": [2, 3],
+    "min": 1,
+    "max": 6
+  },
+  "tags": ["espionage", "black-widow", "red-room", "taskmaster", "spy"],
+  "references": {
+    "primaryStory": {
+      "issue": "Black Widow Vol 6",
+      "year": 2016,
+      "externalUrl": "https://marvel.fandom.com/wiki/Natalia_Romanova_(Earth-616)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/black-widow/4005-3701/"
+      ]
+    }
+  },
+  "flavorText": "In espionage, the truth is the most dangerous weapon of all."
+}

@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "x-cutioners-song",
+  "name": "X-Cutioner's Song",
+  "description": "Stryfe, the dark clone of Cable, orchestrates an assassination attempt on Professor X and unleashes the Legacy Virus. The X-Men and X-Force must untangle a web of time-displaced identities to stop him.",
+  "setupIntent": {
+    "mastermindId": "stryfe",
+    "schemeId": "x-cutioners-song",
+    "villainGroupIds": ["mutant-liberation-front", "four-horsemen"],
+    "henchmanGroupIds": ["phalanx"],
+    "heroDeckIds": ["cable", "cyclops", "jean-grey", "wolverine", "bishop", "forge"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["x-men", "x-force", "stryfe", "cable", "1990s"],
+  "references": {
+    "primaryStory": {
+      "issue": "X-Cutioner's Song crossover",
+      "year": 1992,
+      "externalUrl": "https://marvel.fandom.com/wiki/X-Cutioner%27s_Song",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/x-cutioners-song/4045-42178/"
+      ]
+    }
+  },
+  "flavorText": "The sins of the future are paid in the present."
+}

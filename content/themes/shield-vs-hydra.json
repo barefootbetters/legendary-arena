@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "shield-vs-hydra",
+  "name": "S.H.I.E.L.D. vs HYDRA",
+  "description": "The shadow war between S.H.I.E.L.D. and HYDRA erupts into open conflict as the Super-Adaptoid leads HYDRA's forces against the spy agency's best agents. Helicarriers clash in the sky while moles are exposed on every side.",
+  "setupIntent": {
+    "mastermindId": "hydra-super-adaptoid",
+    "schemeId": "shield-vs-hydra-war",
+    "villainGroupIds": ["hydra-elite", "a-i-m-hydra-offshoot"],
+    "heroDeckIds": ["agent-phil-coulson", "mockingbird", "quake", "dum-dum-dugan", "victoria-hand", "yo-yo-rodriguez"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["espionage", "shield", "hydra", "spy-war", "faction-war"],
+  "references": {
+    "primaryStory": {
+      "issue": "S.H.I.E.L.D. Vol 3",
+      "year": 2014,
+      "externalUrl": "https://marvel.fandom.com/wiki/S.H.I.E.L.D._(Earth-616)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/shield/4060-55933/"
+      ]
+    }
+  },
+  "flavorText": "Trust no one. Verify everything. The war never ends."
+}

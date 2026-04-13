@@ -1,0 +1,26 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "spider-friends-unite",
+  "name": "Spider-Friends Unite",
+  "description": "When a threat too large for any single spider to handle emerges, the extended Spider-family rallies together. Spider-Man, Scarlet Spider, Spider-Woman, and their allies must combine their abilities to protect New York from all sides.",
+  "setupIntent": {
+    "mastermindId": "carnage",
+    "schemeId": "invade-the-daily-bugle-news-hq",
+    "villainGroupIds": ["sinister-six", "maximum-carnage"],
+    "heroDeckIds": ["spider-man", "symbiote-spider-man", "scarlet-spider", "spider-woman", "black-cat"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["spider-man", "spider-verse", "team-up", "spider-friends"],
+  "references": {
+    "primaryStory": {
+      "issue": "Various Spider-verse stories",
+      "year": 1990,
+      "externalUrl": "https://marvel.fandom.com/wiki/Spider-Friends_(Earth-616)"
+    }
+  },
+  "flavorText": "One spider can be trapped. A whole web? That's a different story."
+}

@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "mojoworld-deathtraps",
+  "name": "Mojoworld Deathtraps",
+  "description": "The X-Men are abducted into the Mojoverse, a dimension ruled by the grotesque media mogul Mojo. Forced to perform in televised gladiatorial games, the mutants must fight for their freedom while the ratings soar.",
+  "setupIntent": {
+    "mastermindId": "mojo",
+    "schemeId": "televised-deathtraps-of-mojoworld",
+    "villainGroupIds": ["mojoverse", "murderworld"],
+    "henchmanGroupIds": ["brood-the"],
+    "heroDeckIds": ["longshot", "dazzler", "wolverine", "psylocke", "jubilee", "havok"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["x-men", "mojoverse", "mojo", "gladiatorial", "1980s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Longshot #1–6 / Uncanny X-Men Annual #10",
+      "year": 1985,
+      "externalUrl": "https://marvel.fandom.com/wiki/Mojoverse",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/mojo/4005-3573/"
+      ]
+    }
+  },
+  "flavorText": "Ratings are everything. Your suffering is prime time."
+}

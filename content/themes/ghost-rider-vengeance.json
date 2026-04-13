@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "ghost-rider-vengeance",
+  "name": "Ghost Rider: Spirit of Vengeance",
+  "description": "Zarathos, the demon bound to the Ghost Rider, threatens to consume his host entirely. Caught between demonic servitude and the burning need for justice, the Spirit of Vengeance rides through Hell's own streets.",
+  "setupIntent": {
+    "mastermindId": "zarathos",
+    "schemeId": "ritual-sacrifice-to-summon-chthon",
+    "villainGroupIds": ["lilin", "fallen"],
+    "heroDeckIds": ["ghost-rider", "blade", "blade-daywalker", "morbius", "werewolf-by-night"]
+  },
+  "playerCount": {
+    "recommended": [2, 3],
+    "min": 1,
+    "max": 6
+  },
+  "tags": ["horror", "supernatural", "ghost-rider", "zarathos", "demonic"],
+  "references": {
+    "primaryStory": {
+      "issue": "Ghost Rider Vol 3 #1–25",
+      "year": 1990,
+      "externalUrl": "https://marvel.fandom.com/wiki/Ghost_Rider_(Johnny_Blaze)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/ghost-rider/4005-2276/"
+      ]
+    }
+  },
+  "flavorText": "Innocent blood cries out. The Rider answers."
+}

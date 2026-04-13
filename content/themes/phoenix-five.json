@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "phoenix-five",
+  "name": "Phoenix Five",
+  "description": "The Phoenix Force returns to Earth seeking a host, splitting its power among five X-Men who reshape the world as utopian rulers. As absolute power corrupts absolutely, the Avengers must stop their former allies before the Phoenix consumes them all.",
+  "setupIntent": {
+    "mastermindId": "dark-phoenix",
+    "schemeId": "x-men-danger-room-goes-berserk",
+    "villainGroupIds": ["hellfire-club", "sisterhood-of-mutants"],
+    "henchmanGroupIds": ["shiar-death-commandos", "hellfire-cult"],
+    "heroDeckIds": ["cyclops", "emma-frost", "storm", "phoenix", "havok", "polaris"]
+  },
+  "playerCount": {
+    "recommended": [4, 5],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["x-men", "avengers", "phoenix-force", "avx", "2010s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Avengers vs. X-Men #1–12",
+      "year": 2012,
+      "externalUrl": "https://marvel.fandom.com/wiki/Avengers_vs._X-Men",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/avengers-vs-x-men/4045-56674/"
+      ]
+    }
+  },
+  "flavorText": "Five hosts. Absolute power. No one is safe—not even the X-Men."
+}

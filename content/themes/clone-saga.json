@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "clone-saga",
+  "name": "Clone Saga",
+  "description": "Ben Reilly returns from the dead claiming to be the real Peter Parker, plunging Spider-Man's identity into chaos. As clones multiply and old enemies manipulate events from the shadows, the question becomes inescapable—who is the real Spider-Man?",
+  "setupIntent": {
+    "mastermindId": "mysterio",
+    "schemeId": "clone-saga-the",
+    "villainGroupIds": ["sinister-six", "maximum-carnage"],
+    "heroDeckIds": ["scarlet-spider", "symbiote-spider-man", "spider-woman", "black-cat", "moon-knight"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["spider-man", "clone-saga", "identity", "mysterio", "1990s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Clone Saga (1994–1996)",
+      "year": 1994,
+      "externalUrl": "https://marvel.fandom.com/wiki/Clone_Saga",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/clone-saga/4045-43775/"
+      ]
+    }
+  },
+  "flavorText": "Who is Spider-Man? Even he doesn't know anymore."
+}

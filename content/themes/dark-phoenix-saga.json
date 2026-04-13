@@ -1,0 +1,31 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "dark-phoenix-saga",
+  "name": "Dark Phoenix Saga",
+  "description": "Jean Grey succumbs to the limitless power of the Phoenix Force and becomes the Dark Phoenix, forcing the X-Men to confront betrayal, cosmic annihilation, and the question of whether one life is worth the survival of an entire universe.",
+  "setupIntent": {
+    "mastermindId": "dark-phoenix",
+    "schemeId": "dark-phoenix-saga-the",
+    "villainGroupIds": ["hellfire-club", "shiar-imperial-guard"],
+    "henchmanGroupIds": ["hellfire-cult", "brood-the"],
+    "heroDeckIds": ["cyclops", "storm", "phoenix", "wolverine", "nightcrawler", "kitty-pryde"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["x-men", "cosmic", "tragic-hero", "phoenix-force", "1980s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Uncanny X-Men #129–137",
+      "year": 1980,
+      "externalUrl": "https://marvel.fandom.com/wiki/Dark_Phoenix_Saga",
+      "marvelUnlimitedUrl": "https://www.marvel.com/comics/discover/702/dark-phoenix-saga",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/dark-phoenix-saga/4045-42183/"
+      ]
+    }
+  },
+  "flavorText": "The fire rises. The Phoenix must be stopped—or the universe will burn."
+}

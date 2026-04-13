@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "cosmic-rays",
+  "name": "Bathe the Earth in Cosmic Rays",
+  "description": "A catastrophic cosmic ray event threatens to mutate all life on Earth. The Fantastic Four—themselves products of cosmic radiation—must contain the phenomenon before the planet's population is irrevocably transformed.",
+  "setupIntent": {
+    "mastermindId": "galactus",
+    "schemeId": "invincible-force-field",
+    "villainGroupIds": ["heralds-of-galactus", "subterranea"],
+    "heroDeckIds": ["mr-fantastic", "invisible-woman", "human-torch", "thing", "silver-surfer"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["fantastic-four", "cosmic", "radiation", "science"],
+  "references": {
+    "primaryStory": {
+      "issue": "Fantastic Four #1 + cosmic ray stories",
+      "year": 1961,
+      "externalUrl": "https://marvel.fandom.com/wiki/Fantastic_Four_(Earth-616)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/fantastic-four/4060-22380/"
+      ]
+    }
+  },
+  "flavorText": "The same rays that made us could unmake the world."
+}

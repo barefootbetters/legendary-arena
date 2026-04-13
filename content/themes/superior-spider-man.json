@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "superior-spider-man",
+  "name": "Superior Spider-Man",
+  "description": "Doctor Octopus has swapped minds with Peter Parker, inheriting Spider-Man's body and powers. Vowing to prove himself the 'superior' Spider-Man, Otto Octavius walks a razor's edge between heroism and tyranny while Peter's ghost fights to reclaim his life.",
+  "setupIntent": {
+    "mastermindId": "mysterio",
+    "schemeId": "splice-humans-with-spider-dna",
+    "villainGroupIds": ["spider-foes", "sinister-six"],
+    "heroDeckIds": ["spider-man", "scarlet-spider", "spider-woman", "moon-knight", "black-cat"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["spider-man", "doc-ock", "identity", "superior", "2010s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Superior Spider-Man #1–33",
+      "year": 2013,
+      "externalUrl": "https://marvel.fandom.com/wiki/Superior_Spider-Man_Vol_1",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/superior-spider-man/4050-68291/"
+      ]
+    }
+  },
+  "flavorText": "Peter Parker is dead. Long live the Superior Spider-Man."
+}

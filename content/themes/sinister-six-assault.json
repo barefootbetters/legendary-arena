@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "sinister-six-assault",
+  "name": "Sinister Six Assault",
+  "description": "Six of Spider-Man's deadliest enemies unite under a single banner, each bringing their unique vendetta against the wall-crawler. Alone, Spider-Man has beaten them all—but together, the Sinister Six may finally break him.",
+  "setupIntent": {
+    "mastermindId": "mysterio",
+    "schemeId": "weave-a-web-of-lies",
+    "villainGroupIds": ["sinister-six", "spider-foes"],
+    "heroDeckIds": ["spider-man", "scarlet-spider", "black-cat", "spider-woman", "moon-knight"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["spider-man", "sinister-six", "classic", "1960s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Amazing Spider-Man Annual #1",
+      "year": 1964,
+      "externalUrl": "https://marvel.fandom.com/wiki/Sinister_Six",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/sinister-six/4060-42695/"
+      ]
+    }
+  },
+  "flavorText": "One spider. Six hunters. No way out."
+}

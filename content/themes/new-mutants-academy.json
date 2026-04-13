@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "new-mutants-academy",
+  "name": "New Mutants Academy",
+  "description": "The next generation of Xavier's students faces Belasco, the Demon Lord of Limbo, when one of their own is dragged into his dimension. The New Mutants must grow up fast—their youth is no shield against true darkness.",
+  "setupIntent": {
+    "mastermindId": "belasco-demon-lord-of-limbo",
+    "schemeId": "demon-bear-saga-the",
+    "villainGroupIds": ["demons-of-limbo", "hellions"],
+    "heroDeckIds": ["karma", "mirage", "sunspot", "warlock", "wolfsbane"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["x-men", "new-mutants", "academy", "young-heroes", "1980s"],
+  "references": {
+    "primaryStory": {
+      "issue": "New Mutants #1–100",
+      "year": 1983,
+      "externalUrl": "https://marvel.fandom.com/wiki/New_Mutants_(Earth-616)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/new-mutants/4060-27075/"
+      ]
+    }
+  },
+  "flavorText": "They came to learn. They stayed to survive."
+}

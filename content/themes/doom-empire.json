@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "doom-empire",
+  "name": "Doctor Doom Empire",
+  "description": "Victor Von Doom rules Latveria with an iron fist and intellect rivaling Reed Richards. His ambitions extend far beyond his borders—Doom seeks nothing less than dominion over the entire world, and the Fantastic Four are the only ones standing in his way.",
+  "setupIntent": {
+    "mastermindId": "dr-doom",
+    "schemeId": "portals-to-the-dark-dimension",
+    "villainGroupIds": ["masters-of-evil"],
+    "henchmanGroupIds": ["doombot-legion"],
+    "heroDeckIds": ["mr-fantastic", "invisible-woman", "human-torch", "thing", "spider-man"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["fantastic-four", "dr-doom", "latveria", "classic"],
+  "references": {
+    "primaryStory": {
+      "issue": "Fantastic Four #5 + various",
+      "year": 1962,
+      "externalUrl": "https://marvel.fandom.com/wiki/Victor_von_Doom_(Earth-616)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/doctor-doom/4005-1468/"
+      ]
+    }
+  },
+  "flavorText": "Doom is not a villain. Doom is a sovereign."
+}

@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "punisher-max",
+  "name": "Punisher MAX",
+  "description": "Frank Castle wages a one-man war against the criminal underworld with brutal efficiency and zero compromise. No superpowers, no mercy—just a soldier who decided that the system failed and took justice into his own hands.",
+  "setupIntent": {
+    "mastermindId": "kingpin",
+    "schemeId": "detonate-the-helicarrier",
+    "villainGroupIds": ["underworld", "emissaries-of-evil"],
+    "henchmanGroupIds": ["maggia-goons"],
+    "heroDeckIds": ["punisher", "blade", "ghost-rider", "elektra", "wolverine"]
+  },
+  "playerCount": {
+    "recommended": [2, 3],
+    "min": 1,
+    "max": 6
+  },
+  "tags": ["street-level", "punisher", "dark", "gritty", "2000s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Punisher MAX #1–60",
+      "year": 2004,
+      "externalUrl": "https://marvel.fandom.com/wiki/Punisher_Vol_7",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/the-punisher/4050-18774/"
+      ]
+    }
+  },
+  "flavorText": "One man. One war. No rules."
+}

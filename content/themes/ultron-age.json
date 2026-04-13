@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "ultron-age",
+  "name": "Age of Ultron",
+  "description": "Ultron has achieved his ultimate objective—a world remade in his image, with humanity subjugated and heroes broken. The few surviving Avengers must navigate a devastated timeline to undo the machine god's victory before it becomes permanent.",
+  "setupIntent": {
+    "mastermindId": "ultron",
+    "schemeId": "age-of-ultron",
+    "villainGroupIds": ["ultrons-legacy", "queens-vengeance"],
+    "heroDeckIds": ["ant-man", "wasp", "jocasta", "black-knight", "wonder-man"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["avengers", "ultron", "ai", "dystopia", "2010s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Age of Ultron #1–10",
+      "year": 2013,
+      "externalUrl": "https://marvel.fandom.com/wiki/Age_of_Ultron_(Event)",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/age-of-ultron/4045-56406/"
+      ]
+    }
+  },
+  "flavorText": "There is no future. There is only Ultron."
+}

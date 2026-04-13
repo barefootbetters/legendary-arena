@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "avengers-disassembled",
+  "name": "Avengers Disassembled",
+  "description": "The Scarlet Witch's grief-stricken reality warping tears the Avengers apart from within. Explosions rock Avengers Mansion, old enemies return from the dead, and the team faces its darkest hour as chaos magic unravels everything they've built.",
+  "setupIntent": {
+    "mastermindId": "grim-reaper",
+    "schemeId": "korvac-saga-the",
+    "villainGroupIds": ["army-of-evil", "lethal-legion"],
+    "henchmanGroupIds": ["mandarins-rings"],
+    "heroDeckIds": ["scarlet-witch", "quicksilver", "captain-marvel-agent-of-shield", "war-machine", "hellcat", "ronin"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["avengers", "scarlet-witch", "chaos-magic", "disassembled", "2000s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Avengers #500–503",
+      "year": 2004,
+      "externalUrl": "https://marvel.fandom.com/wiki/Avengers_Disassembled",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/avengers-disassembled/4045-43625/"
+      ]
+    }
+  },
+  "flavorText": "The Avengers were Earth's mightiest heroes. Were."
+}

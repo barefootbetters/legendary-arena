@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "realm-of-kings",
+  "name": "Realm of Kings",
+  "description": "In the aftermath of the War of Kings, a massive tear in spacetime—the Fault—opens into a nightmarish alternate universe. The Inhumans must guard the rift while cosmic horrors seep through the wound between realities.",
+  "setupIntent": {
+    "mastermindId": "maximus-the-mad",
+    "schemeId": "tornado-of-terrigen-mists",
+    "villainGroupIds": ["inhuman-rebellion", "shiar-imperial-elite"],
+    "heroDeckIds": ["black-bolt", "medusa", "crystal", "karnak", "gorgon"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["cosmic", "inhumans", "the-fault", "post-war-of-kings", "2010s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Realm of Kings #1 + tie-ins",
+      "year": 2010,
+      "externalUrl": "https://marvel.fandom.com/wiki/Realm_of_Kings",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/realm-of-kings/4045-56083/"
+      ]
+    }
+  },
+  "flavorText": "The Fault is open. What comes through is not of this universe."
+}

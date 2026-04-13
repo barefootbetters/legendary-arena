@@ -1,0 +1,30 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "contest-of-champions",
+  "name": "Contest of Champions",
+  "description": "The Grandmaster challenges Death itself to a cosmic game, conscripting Earth's heroes as pawns. Scattered across the globe, the champions must win their contests or forfeit reality to an Elder of the Universe.",
+  "setupIntent": {
+    "mastermindId": "grandmaster-the",
+    "schemeId": "contest-of-champions-the",
+    "villainGroupIds": ["elders-of-the-universe", "celestials"],
+    "henchmanGroupIds": ["universal-church-of-truth"],
+    "heroDeckIds": ["adam-warlock", "quasar", "captain-mar-vell", "moondragon", "nova"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["cosmic", "grandmaster", "elders", "contest", "1980s"],
+  "references": {
+    "primaryStory": {
+      "issue": "Contest of Champions #1–3",
+      "year": 1982,
+      "externalUrl": "https://marvel.fandom.com/wiki/Marvel_Super_Hero_Contest_of_Champions",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/marvel-super-hero-contest-of-champions/4045-55837/"
+      ]
+    }
+  },
+  "flavorText": "The game is simple. The stakes are everything."
+}

@@ -1,0 +1,29 @@
+{
+  "themeSchemaVersion": 1,
+  "themeId": "war-of-kings",
+  "name": "War of Kings",
+  "description": "Black Bolt and the Inhumans clash with Emperor Vulcan's Shi'ar Imperium in a galactic war that reshapes the cosmic order. The conflict escalates beyond reason as two proud civilizations refuse to yield.",
+  "setupIntent": {
+    "mastermindId": "emperor-vulcan-of-the-shiar",
+    "schemeId": "war-of-kings",
+    "villainGroupIds": ["shiar-imperial-elite", "inhuman-rebellion"],
+    "heroDeckIds": ["black-bolt", "medusa", "crystal", "karnak", "gorgon"]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": ["cosmic", "inhumans", "shiar", "war-of-kings", "2000s"],
+  "references": {
+    "primaryStory": {
+      "issue": "War of Kings #1–6",
+      "year": 2009,
+      "externalUrl": "https://marvel.fandom.com/wiki/War_of_Kings",
+      "externalIndexUrls": [
+        "https://comicvine.gamespot.com/war-of-kings/4045-55758/"
+      ]
+    }
+  },
+  "flavorText": "Two empires. One throne. The galaxy trembles."
+}
