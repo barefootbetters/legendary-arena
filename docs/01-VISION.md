@@ -129,6 +129,28 @@ rewrites required to add new ones. The authoritative theme data model is
 established in WP-055 as a registry-layer content primitive: purely data, never
 behavior.
 
+#### 10a. Registry Viewer (cards.barefootbetters.com)
+
+The Registry Viewer is the **public-facing card and theme browser** for
+Legendary Arena, a ground-up rebuild of the earlier www.master-strike.com
+card data viewer.
+
+It serves three audiences:
+
+- **Players** — browse all cards across 40+ sets, read keyword and rule
+  definitions via tooltips, explore comic-accurate gameplay themes
+- **Contributors** — inspect card data quality, validate set health, and
+  verify theme setup intents against the registry
+- **The project itself** — acts as a living smoke test for the R2 data
+  pipeline and content-as-data architecture
+
+The viewer is intentionally lightweight (Vue 3 SPA, no router, no backend)
+and follows the same layer boundaries as the rest of the project. It
+consumes registry data from R2 at runtime and never touches the game engine.
+
+Architecture and history are documented in `apps/registry-viewer/CLAUDE.md`
+and `apps/registry-viewer/HISTORY-modern-master-strike.md`.
+
 ---
 
 ### Operations & Scalability
