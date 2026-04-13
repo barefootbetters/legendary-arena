@@ -81,6 +81,12 @@ function createMockGameState(options?: {
     attachedBystanders: {},
     turnEconomy: options?.turnEconomy ?? resetTurnEconomy(),
     cardStats: options?.cardStats ?? {},
+    mastermind: {
+      id: 'test-mastermind',
+      baseCardId: 'test-mastermind-base',
+      tacticsDeck: [],
+      tacticsDefeated: [],
+    },
     city: options?.city ?? initializeCity(),
     hq: options?.hq ?? initializeHq(),
     lobby: {

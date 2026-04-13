@@ -76,6 +76,11 @@ export type {
 } from './endgame/endgame.types.js';
 export { ENDGAME_CONDITIONS } from './endgame/endgame.types.js';
 
+// why: MastermindState is defined canonically in
+// src/mastermind/mastermind.types.ts (WP-019). Re-exported here so that
+// consumers importing from './types.js' have access.
+export type { MastermindState } from './mastermind/mastermind.types.js';
+
 // why: Economy types (TurnEconomy, CardStatEntry) are defined canonically
 // in src/economy/economy.types.ts (WP-018). Re-exported here so that
 // consumers importing from './types.js' have access.
@@ -99,6 +104,7 @@ export type {
 import type { TurnStage } from './turn/turnPhases.types.js';
 import type { CardExtId, PlayerZones, GlobalPiles } from './state/zones.types.js';
 import type { TurnEconomy, CardStatEntry } from './economy/economy.types.js';
+import type { MastermindState } from './mastermind/mastermind.types.js';
 import type { HookDefinition } from './rules/ruleHooks.types.js';
 import type { LobbyState } from './lobby/lobby.types.js';
 import type { VillainDeckState, RevealedCardType } from './villainDeck/villainDeck.types.js';
@@ -253,6 +259,12 @@ export interface LegendaryGameState {
   // supply). See D-1703.
   /** Bystanders attached to villains/henchmen currently in the City. */
   attachedBystanders: Record<CardExtId, CardExtId[]>;
+
+  // why: mastermind state with identity, tactics deck, and defeated list.
+  // Built at setup from registry data. tacticsDeck drawn from index 0;
+  // tacticsDefeated append-only. All fields are CardExtId or CardExtId[].
+  /** Mastermind state for boss fight resolution. */
+  mastermind: MastermindState;
 
   // why: per-turn attack/recruit point accumulation and spend tracking.
   // Reset at start of each player turn. Values are integers >= 0.

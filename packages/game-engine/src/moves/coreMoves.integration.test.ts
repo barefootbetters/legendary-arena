@@ -76,6 +76,12 @@ function makeTestGameState(
     attachedBystanders: {},
     turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
     cardStats: {},
+    mastermind: {
+      id: 'test-mastermind',
+      baseCardId: 'test-mastermind-base',
+      tacticsDeck: [],
+      tacticsDefeated: [],
+    },
     city: [null, null, null, null, null],
     hq: [null, null, null, null, null],
     lobby: { requiredPlayers: 1, ready: {}, started: false },

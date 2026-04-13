@@ -126,6 +126,10 @@ export type {
   AwardBystandersResult,
   ResolveEscapedBystandersResult,
 } from './board/bystanders.logic.js';
+export type { MastermindState } from './mastermind/mastermind.types.js';
+export { buildMastermindState } from './mastermind/mastermind.setup.js';
+export { defeatTopTactic, areAllTacticsDefeated } from './mastermind/mastermind.logic.js';
+export { fightMastermind } from './moves/fightMastermind.js';
 export type { TurnEconomy, CardStatEntry } from './economy/economy.types.js';
 export {
   parseCardStatValue,

@@ -32,6 +32,7 @@ import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
 import { buildVillainDeck } from '../villainDeck/villainDeck.setup.js';
 import { initializeCity, initializeHq } from '../board/city.logic.js';
 import { buildCardStats, resetTurnEconomy } from '../economy/economy.logic.js';
+import { buildMastermindState } from '../mastermind/mastermind.setup.js';
 
 // why: Pile ext_id constants are re-exported from pilesInit.ts for backward
 // compatibility. The canonical definitions live in pilesInit.ts — importing
@@ -149,6 +150,21 @@ export function buildInitialGameState(
   // producing an empty deck, which the reveal pipeline already supports.
   const villainDeckResult = buildVillainDeck(config, registry, context);
 
+  // why: cardStats extracted to local variable so buildMastermindState
+  // can add the mastermind base card entry to it. buildMastermindState
+  // MUST execute after buildCardStats (ordering invariant — EC-019).
+  const cardStats = buildCardStats(registry as unknown, config);
+
+  // why: mastermind state built from registry at setup time; base card
+  // fightCost added to cardStats so fightMastermind reads it without
+  // registry access. Narrow test mocks produce empty state gracefully.
+  const mastermindState = buildMastermindState(
+    config.mastermindId as CardExtId,
+    registry as unknown,
+    context,
+    cardStats,
+  );
+
   return {
     matchConfiguration: config,
     selection,
@@ -177,14 +193,13 @@ export function buildInitialGameState(
     city: initializeCity(),
     // why: HQ initialized empty; recruit slot population is WP-016 scope
     hq: initializeHq(),
+    // why: mastermind state built at setup from registry; tactics deck
+    // shuffled deterministically; base card fightCost in G.cardStats
+    mastermind: mastermindState,
     // why: card stats resolved at setup from registry so moves never query
     // registry at runtime — same pattern as G.villainDeckCardTypes (WP-014).
-    // Read-only after setup.
-    // why: buildCardStats accepts unknown (same pattern as buildVillainDeck)
-    // because CardRegistryReader is narrower than CardStatsRegistryReader.
-    // The real CardRegistry satisfies both structurally; narrow test mocks
-    // produce an empty record, which moves handle gracefully (0/0 contribution).
-    cardStats: buildCardStats(registry as unknown, config),
+    // Read-only after setup (mastermind base card added by buildMastermindState).
+    cardStats,
     // why: economy starts at zero; reset again at each turn start
     turnEconomy: resetTurnEconomy(),
     // why: lobby state initialized at setup time from ctx.numPlayers. All
