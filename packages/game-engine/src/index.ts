@@ -126,6 +126,15 @@ export type {
   AwardBystandersResult,
   ResolveEscapedBystandersResult,
 } from './board/bystanders.logic.js';
+export { computeFinalScores } from './scoring/scoring.logic.js';
+export type { FinalScoreSummary, PlayerScoreBreakdown } from './scoring/scoring.types.js';
+export {
+  VP_VILLAIN,
+  VP_HENCHMAN,
+  VP_BYSTANDER,
+  VP_TACTIC,
+  VP_WOUND,
+} from './scoring/scoring.types.js';
 export type { MastermindState } from './mastermind/mastermind.types.js';
 export { buildMastermindState } from './mastermind/mastermind.setup.js';
 export { defeatTopTactic, areAllTacticsDefeated } from './mastermind/mastermind.logic.js';

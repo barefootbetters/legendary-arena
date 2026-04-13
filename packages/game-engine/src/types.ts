@@ -76,6 +76,18 @@ export type {
 } from './endgame/endgame.types.js';
 export { ENDGAME_CONDITIONS } from './endgame/endgame.types.js';
 
+// why: Scoring types (FinalScoreSummary, PlayerScoreBreakdown) and VP
+// constants are defined canonically in src/scoring/scoring.types.ts (WP-020).
+// Re-exported here so that consumers importing from './types.js' have access.
+export type { FinalScoreSummary, PlayerScoreBreakdown } from './scoring/scoring.types.js';
+export {
+  VP_VILLAIN,
+  VP_HENCHMAN,
+  VP_BYSTANDER,
+  VP_TACTIC,
+  VP_WOUND,
+} from './scoring/scoring.types.js';
+
 // why: MastermindState is defined canonically in
 // src/mastermind/mastermind.types.ts (WP-019). Re-exported here so that
 // consumers importing from './types.js' have access.
