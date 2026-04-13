@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { FlatCard } from "../../registry/browser";
-import { parseAbilityText, lookupKeyword, lookupRule } from "../composables/useRules";
+import { parseAbilityText, lookupKeyword, lookupRule, lookupHeroClass } from "../composables/useRules";
 import type { AbilityToken } from "../composables/useRules";
 
 defineProps<{ card: FlatCard }>();
@@ -18,6 +18,10 @@ function tooltipTitle(token: AbilityToken): string {
     const entry = lookupRule(token.value);
     return entry ? `${entry.label}: ${entry.summary}` : "";
   }
+  if (token.type === "hc") {
+    const definition = lookupHeroClass(token.value);
+    return definition ?? "";
+  }
   return "";
 }
 
@@ -31,7 +35,7 @@ function tokenClass(token: AbilityToken): string {
     return lookupRule(token.value) ? "token-rule has-tooltip" : "token-rule";
   }
   if (token.type === "icon") return `token-icon token-icon-${token.value}`;
-  if (token.type === "hc")   return `token-hc token-hc-${token.value}`;
+  if (token.type === "hc")   return lookupHeroClass(token.value) ? `token-hc token-hc-${token.value} has-tooltip` : `token-hc token-hc-${token.value}`;
   if (token.type === "team") return "token-team";
   return "";
 }
@@ -162,11 +166,12 @@ const RARITY_LABEL: Record<number, string> = { 1: "Common", 2: "Uncommon", 3: "R
                   :class="tokenClass(token)"
                 >{{ tokenLabel(token) }}</span>
 
-                <!-- Hero class token — colored label -->
+                <!-- Hero class token — colored label with superpower tooltip -->
                 <span
                   v-else-if="token.type === 'hc'"
                   :class="tokenClass(token)"
                   :style="{ color: HC_COLOR[token.value] }"
+                  :title="tooltipTitle(token)"
                 >{{ tokenLabel(token) }}</span>
 
                 <!-- Team token — teal label -->
@@ -258,6 +263,10 @@ const RARITY_LABEL: Record<number, string> = { 1: "Common", 2: "Uncommon", 3: "R
   padding: 1px 3px;
   border-radius: 3px;
   background: rgba(255, 255, 255, 0.06);
+}
+.token-hc.has-tooltip {
+  text-decoration: underline dotted;
+  cursor: help;
 }
 
 /* Team tokens */

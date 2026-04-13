@@ -371,7 +371,8 @@ select { padding: 0.4rem 0.6rem; background: #22222e; border: 1px solid #33334a;
 .clear-link:hover { color: #f87171; }
 
 /* ── Set pills ───────────────────────────────────────────────────────────── */
-.set-pills { display: flex; gap: 0.35rem; padding: 0.35rem 1.25rem; background: #0f0f13; border-bottom: 1px solid #1a1a22; flex-wrap: wrap; align-items: center; flex-shrink: 0; }
+.set-pills { display: none; gap: 0.35rem; padding: 0.35rem 1.25rem; background: #0f0f13; border-bottom: 1px solid #1a1a22; flex-wrap: wrap; align-items: center; flex-shrink: 0; }
+@media (min-width: 768px) { .set-pills { display: flex; } }
 .pills-label { font-size: 0.65rem; color: #44445a; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
 .pill { background: #161620; border: 1px solid #2a2a38; color: #66669a; padding: 0.15rem 0.45rem; border-radius: 3px; font-size: 0.67rem; cursor: pointer; }
 .pill:hover  { background: #22223a; color: #aaaadd; }
