@@ -3,7 +3,7 @@
 > A modern multiplayer evolution of the Marvel Legendary deck-building card game.
 > Built with **boardgame.io**, **TypeScript**, and **Cloudflare R2**.
 
-**Last updated:** 2026-04-12 (Phase 4 complete, Pre-Planning WPs 056-058 added) -- **Authoritative source:** [`docs/ai/work-packets/WORK_INDEX.md`](ai/work-packets/WORK_INDEX.md)
+**Last updated:** 2026-04-13 (WP-060 added, registry viewer tooltips shipped) -- **Authoritative source:** [`docs/ai/work-packets/WORK_INDEX.md`](ai/work-packets/WORK_INDEX.md)
 
 ---
 
@@ -13,10 +13,10 @@
 `00.4` ✅ `00.5` ✅ `01` ✅ `02` ✅
 
 **Work Packets**
-`WP-001` ✅ `WP-002` ✅ `WP-003` ✅ `WP-004` ✅ `WP-005A` ✅ `WP-005B` ✅ `WP-006A` ✅ `WP-006B` ✅ `WP-007A` ✅ `WP-007B` ✅ `WP-008A` ✅ `WP-008B` ✅ `WP-009A` ✅ `WP-009B` ✅ `WP-010` ✅ `WP-011` ✅ `WP-012` ✅ `WP-013` ✅ `WP-014A` ✅ `WP-014B` ✅ `WP-015` ✅ `WP-016` ✅ `WP-017` ✅ `WP-018` ✅ `WP-019` ✅ `WP-020` ✅ `WP-043` ✅ `WP-044` ✅ `WP-045` ✅ `WP-046` ✅ `WP-047` ✅ -- `WP-055` ⬜ `WP-056` ⬜ `WP-057` ⬜ `WP-058` ⬜ -- **WP-021..054** ⬜
+`WP-001` ✅ `WP-002` ✅ `WP-003` ✅ `WP-004` ✅ `WP-005A` ✅ `WP-005B` ✅ `WP-006A` ✅ `WP-006B` ✅ `WP-007A` ✅ `WP-007B` ✅ `WP-008A` ✅ `WP-008B` ✅ `WP-009A` ✅ `WP-009B` ✅ `WP-010` ✅ `WP-011` ✅ `WP-012` ✅ `WP-013` ✅ `WP-014A` ✅ `WP-014B` ✅ `WP-015` ✅ `WP-016` ✅ `WP-017` ✅ `WP-018` ✅ `WP-019` ✅ `WP-020` ✅ `WP-043` ✅ `WP-044` ✅ `WP-045` ✅ `WP-046` ✅ `WP-047` ✅ -- `WP-055` ⬜ `WP-056` ⬜ `WP-057` ⬜ `WP-058` ⬜ `WP-060` ⬜ -- **WP-021..054** ⬜
 
 **Overall Progress**
-35 / 60 items complete (4 FPs + 31 WPs) -- **Next up:** WP-021 (Hero Card Text & Keywords)
+35 / 61 items complete (4 FPs + 31 WPs) -- **Next up:** WP-021 (Hero Card Text & Keywords)
 
 ---
 
@@ -62,15 +62,21 @@ Defines *what* a match is before *how* it plays.
 
 Engine-agnostic content contracts. Parallel-safe with Phase 2+.
 
-| WP  | Name             | Layer    | What It Produces                                         | Status |
-|-----|------------------|----------|----------------------------------------------------------|--------|
-| 055 | Theme Data Model | Registry | `ThemeDefinition` Zod schema, `content/themes/`, examples | ⬜ Ready |
+| WP  | Name                      | Layer    | What It Produces                                         | Status |
+|-----|---------------------------|----------|----------------------------------------------------------|--------|
+| 055 | Theme Data Model          | Registry | `ThemeDefinition` Zod schema, `content/themes/`, examples | ⬜ Ready |
+| 060 | Keyword & Rule Glossary   | Content  | `keywords-full.json`, `rules-full.json` in `data/metadata/` + R2 | ⬜ Ready |
 
 Themes are curated mastermind/scheme/villain/hero combinations recreating
 iconic Marvel storylines. WP-055 defines the schema and validation only --
 loading, referential integrity, and projection into `MatchSetupConfig` land
 as scope items in the first WP that consumes themes at runtime (UI, setup,
 etc.), not as standalone packets.
+
+WP-060 migrates 102 keyword definitions and 18 rule definitions from the
+predecessor `modern-master-strike` project into `data/metadata/` and R2.
+The registry viewer currently hardcodes these; WP-060 replaces hardcoded
+definitions with runtime fetch. Parallel-safe with Phase 2+.
 
 ---
 
@@ -210,6 +216,7 @@ flowchart TD
     WP002 --> WP004["WP-004 ✅\nServer Bootstrap"]
     WP003 --> WP004
     WP003 --> WP055["WP-055\nTheme Data Model"]
+    WP003 --> WP060["WP-060\nKeyword Glossary"]
     WP004 --> Phase1["Phase 1 ✅\nGame Setup"]
     Phase1 --> WP055
     Phase1 --> Phase2["Phase 2 ✅\nTurn Engine"]
@@ -237,7 +244,7 @@ flowchart TD
     style Phase4 fill:#10b981,color:#fff
 ```
 
-**Parallel-safe packets:** WP-003 (alongside 002), WP-005A/B (no dep on 004), WP-030 (parallel to 031), WP-056/057/058 (parallel with Phase 4+).
+**Parallel-safe packets:** WP-003 (alongside 002), WP-005A/B (no dep on 004), WP-030 (parallel to 031), WP-055/060 (parallel with Phase 2+), WP-056/057/058 (parallel with Phase 4+).
 
 ---
 
@@ -267,4 +274,4 @@ flowchart TD
 | `docs/12-SCORING-REFERENCE.md` | PAR scoring formula & leaderboard rules |
 | `docs/ai/REFERENCE/03A-PHASE-3-MULTIPLAYER-READINESS.md` | Phase 3 exit gate (closed) |
 
-*Last updated: 2026-04-12 (Phase 4 complete, 247 tests passing, WP-055 added, Pre-Planning WPs 056-058 added)*
+*Last updated: 2026-04-13 (WP-060 added, registry viewer tooltips shipped, 247 tests passing)*

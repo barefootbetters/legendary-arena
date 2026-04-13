@@ -43,6 +43,10 @@ mindmap
         ["WP-019 ✅\nMastermind & Tactics"]
         ["WP-020 ✅\nVP Scoring & Win Summary"]
 
+      Content Layer
+        ["WP-055 ⬜\nTheme Data Model"]
+        ["WP-060 ⬜\nKeyword & Rule Glossary"]
+
       Phase 5 -- Card Mechanics
         ["WP-021..026 ⬜\nHero / Scheme / Mastermind\nAbilities & Keywords (6)"]
 
@@ -61,9 +65,14 @@ mindmap
         ["12.1-PAR-ARTIFACT-INTEGRITY.md\nHashing Trust Model"]
         ["WP-048 → 049 → 050 → 051\nSimulation → Storage → Gate"]
 
+      Registry Viewer
+        ["cards.barefootbetters.com\nCard + Theme browser"]
+        ["Keyword/Rule tooltips\n102 keywords, 18 rules"]
+        ["Hero class tooltips\n5 superpower descriptions"]
+
       Governance
         [".claude/CLAUDE.md\nRoot coordination"]
-        ["55 Execution Checklists\n1 Done, 54 Draft"]
+        ["56 Execution Checklists\n2 Done, 54 Draft"]
         ["7 Rule Files\n(.claude/rules/)"]
         ["Immutable Decisions\nDECISIONS.md"]
         ["Phase 3 Gate\nClosed (D-1320)"]
@@ -79,11 +88,12 @@ mindmap
 | Phase 2 | WP-007A/B, 008A/B | 4/4 | -- |
 | Phase 3 | WP-009A/B, 010..013 | 6/6 | -- |
 | Phase 4 | WP-014A/B..020 | 8/8 | -- |
+| Content | WP-055, 060 | 0/2 | ⬜ |
 | Phase 5 | WP-021..026 | 0/6 | ⬜ |
 | Phase 6 | WP-027..035, 042, 048 | 0/11 | ⬜ |
 | Phase 7 | WP-036..041, 049..051 | 0/9 | ⬜ |
-| **Total** | | **35/60** | **25** |
+| **Total** | | **35/61** | **26** |
 
-**Next unblocked:** WP-021 (Hero Card Text & Keywords)
+**Next unblocked:** WP-021 (Hero Card Text & Keywords), WP-055, WP-060
 
-*Last updated: 2026-04-12 (Phase 4 complete, 247 tests passing)*
+*Last updated: 2026-04-13 (WP-060 added, registry viewer tooltips shipped)*

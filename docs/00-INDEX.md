@@ -3,7 +3,7 @@
 > A modern multiplayer evolution of the Marvel Legendary deck-building card game.  
 > Built with **boardgame.io**, **TypeScript**, **Cloudflare R2**, and **PostgreSQL**.
 
-**Status:** Foundation complete • Core gameplay loop complete (Phase 4) • Theme data model ready
+**Status:** Foundation complete • Core gameplay loop complete (Phase 4) • Theme data model ready • Registry viewer with keyword/rule tooltips
 
 ---
 
@@ -41,7 +41,7 @@ mindmap
         ["themes/\nComic-accurate gameplay themes\n(static JSON, WP-055)"]
       apps/
         ["server"]
-        ["registry-viewer"]
+        ["registry-viewer\ncards.barefootbetters.com\n(CLAUDE.md for context)"]
 ```
 
 ---
@@ -75,10 +75,12 @@ mindmap
 - **Marvel Legendary Universal Rules** → `Marvel Legendary Universal Rules v23 (hyperlinks).pdf`
 - **Governance** → `docs/ai/ARCHITECTURE.md` + `docs/ai/DECISIONS.md`
 - **Theme Data Model** → `docs/ai/work-packets/WP-055-theme-data-model.md`
+- **Keyword & Rule Glossary** → `docs/ai/work-packets/WP-060-keyword-rule-glossary-data.md`
+- **Registry Viewer** → `apps/registry-viewer/CLAUDE.md` (architecture) + `HISTORY-modern-master-strike.md` (predecessor)
 
 ---
 
-**Last updated:** 2026-04-12
+**Last updated:** 2026-04-13
 **Maintained by:** Human developer
 
 *This index is the single source of truth for navigating the project documentation.*
