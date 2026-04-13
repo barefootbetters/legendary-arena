@@ -136,7 +136,9 @@ Legendary Arena, a ground-up rebuild of the earlier www.master-strike.com
 card data viewer. The original card data was sourced from the
 [`@master-strike/data`](https://www.npmjs.com/package/@master-strike/data)
 npm package, then converted, patched, and upgraded into the current
-R2-hosted JSON format.
+R2-hosted JSON format. Card images are sourced from
+[legendarycardgame.com](https://www.legendarycardgame.com/), the
+community's definitive card image resource for the Legendary card game.
 
 It serves three audiences:
 
