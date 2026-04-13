@@ -7,6 +7,41 @@
 
 ## Current State
 
+### WP-020 — VP Scoring & Win Summary (Minimal MVP) (2026-04-12)
+
+**What changed:**
+- `packages/game-engine/src/scoring/scoring.types.ts` — **new** —
+  `FinalScoreSummary`, `PlayerScoreBreakdown`, VP constants
+  (VP_VILLAIN=1, VP_HENCHMAN=1, VP_BYSTANDER=1, VP_TACTIC=5, VP_WOUND=-1)
+- `packages/game-engine/src/scoring/scoring.logic.ts` — **new** —
+  `computeFinalScores` pure function (read-only on G, deterministic)
+- `packages/game-engine/src/types.ts` — **modified** — re-export scoring
+  types and VP constants
+- `packages/game-engine/src/index.ts` — **modified** — export scoring API
+- `packages/game-engine/src/scoring/scoring.logic.test.ts` — **new** —
+  8 scoring tests
+- `game.ts` NOT modified (scoring is a library export, not wired into
+  engine lifecycle)
+
+**What's true now:**
+- `computeFinalScores(G)` returns per-player VP breakdowns and winner
+- Villains, henchmen classified via `G.villainDeckCardTypes`
+- Bystanders use dual check: `G.villainDeckCardTypes` + `BYSTANDER_EXT_ID`
+- Wounds identified by `WOUND_EXT_ID = 'pile-wound'`
+- Tactic VP awarded to all players (WP-019 lacks per-player attribution)
+- Winner = highest total VP; null on tie; no tiebreaker in MVP
+- KO pile cards contribute 0 VP
+- Scoring is pure — does not mutate G, does not trigger endgame
+- Full MVP game loop complete: setup -> play cards -> fight villains ->
+  recruit heroes -> fight mastermind -> endgame -> score
+- Phase 4 (Core Combat Loop) is done
+- 247 tests passing, 0 failures
+
+**What's next:**
+- WP-021 — Hero Card Text & Keywords (Hooks Only) — Phase 5
+
+---
+
 ### WP-019 — Mastermind Fight & Tactics (Minimal MVP) (2026-04-12)
 
 **What changed:**

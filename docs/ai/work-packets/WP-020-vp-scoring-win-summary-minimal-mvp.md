@@ -27,7 +27,8 @@ Introduce deterministic VP scoring and a final win summary. After this session:
 - MVP VP rules are locked as constants (villain +1, henchman +1, bystander +1,
   tactic +5, wound -1)
 - Card type classification for scoring uses `G.villainDeckCardTypes` (for
-  villain deck cards in victory piles) and `G.cardStats` (for wound
+  villain deck cards in victory piles), `BYSTANDER_EXT_ID` (for rescued
+  supply-pile bystanders in victory piles), and `WOUND_EXT_ID` (for wound
   identification) — no registry access at scoring time
 - The scoring function is called after `endIf` triggers — it does not modify
   `G`, does not trigger endgame, and performs no I/O
@@ -88,9 +89,18 @@ Victory pile cards are `CardExtId` strings. To classify them (villain vs
 henchman vs bystander vs tactic), scoring uses `G.villainDeckCardTypes` which
 maps every villain deck card to its `RevealedCardType`. Tactic cards are
 identified via `G.mastermind.tacticsDefeated`. Wounds are identified by
-checking if a card's `CardExtId` appears in the original wound supply (tracked
-via a setup-time mechanism, or by convention — document the chosen approach
-in DECISIONS.md).
+checking `cardId === WOUND_EXT_ID` where `WOUND_EXT_ID = 'pile-wound'` is
+the well-known constant from WP-017 (`src/setup/pilesInit.ts`). All wound
+cards share this single ext_id. No registry lookup or card text inspection
+is required.
+
+**Bystander dual-source rule:** Victory piles may contain bystanders from
+two sources: (1) villain-deck bystanders with ext_ids tracked in
+`G.villainDeckCardTypes` (classified as `'bystander'`), and (2) rescued
+supply-pile bystanders using `BYSTANDER_EXT_ID = 'pile-bystander'` (awarded
+by `awardAttachedBystanders` in WP-017). Both contribute `VP_BYSTANDER`.
+Scoring must check both: `G.villainDeckCardTypes[cardId] === 'bystander'`
+OR `cardId === BYSTANDER_EXT_ID`.
 
 ---
 
@@ -114,6 +124,9 @@ in DECISIONS.md).
   no side effects
 - Registry boundary: scoring must NOT access the registry. Card classification
   uses `G.villainDeckCardTypes` and `G.mastermind.tacticsDefeated`.
+- Scoring must NOT read `G.cardStats` — stats are for gameplay effects; VP
+  classification uses only `villainDeckCardTypes`, `tacticsDefeated`, and
+  known pile constants (`WOUND_EXT_ID`, `BYSTANDER_EXT_ID`)
 - VP values are **named constants** (not inline numbers):
   `VP_VILLAIN = 1`, `VP_HENCHMAN = 1`, `VP_BYSTANDER = 1`, `VP_TACTIC = 5`,
   `VP_WOUND = -1`
@@ -166,30 +179,46 @@ in DECISIONS.md).
 
 - `computeFinalScores(G: LegendaryGameState): FinalScoreSummary`
   — pure function, read-only on `G`:
-  1. For each player in `G.playerZones`:
+  1. For each player in `G.playerZones` (iterate using
+     `Object.keys(G.playerZones).sort()` for deterministic ordering):
      - Count villains in victory pile using `G.villainDeckCardTypes` classification
      - Count henchmen in victory pile using `G.villainDeckCardTypes`
-     - Count bystanders in victory pile using `G.villainDeckCardTypes`
+     - Count bystanders in victory pile using **dual check**:
+       (a) `G.villainDeckCardTypes[cardId] === 'bystander'` for villain-deck
+       bystanders, AND (b) `cardId === BYSTANDER_EXT_ID` for rescued
+       supply-pile bystanders (`'pile-bystander'` from WP-017). Both
+       sources contribute `VP_BYSTANDER`. `// why:` comment required.
      - Count wounds across all player zones (deck + hand + discard + inPlay)
-       — wound identification strategy must be documented in DECISIONS.md
+       — wounds identified by `cardId === WOUND_EXT_ID` (`'pile-wound'`,
+       imported from `pilesInit.ts` or `buildInitialGameState.ts`)
   2. Count tactic VP from `G.mastermind.tacticsDefeated.length`
-     — tactics VP is shared equally or awarded to the defeating player
-     (MVP decision — document in DECISIONS.md)
+     — **MVP rule:** each defeated tactic contributes `VP_TACTIC` to
+     **every player's score**. WP-019 does not track which player
+     defeated each tactic, so per-player attribution is not possible
+     in MVP. `// why:` comment required.
   3. Compute `totalVP` per player
-  4. Determine `winner` (highest total; `null` if tied)
+  4. Determine `winner` (exact algorithm: compute `maxVP`, collect all
+     players with `totalVP === maxVP`; if exactly one: winner; if more
+     than one: `null` — no tiebreaker in MVP)
   - Uses `for...of` loops for all accumulation (no `.reduce()` with branching)
   - `// why:` comment on wound identification approach
   - Returns `FinalScoreSummary` — never mutates `G`
 
 - Pure helper, no boardgame.io import
 
-### C) `src/game.ts` — modified
+### C) `src/game.ts` — **not modified** (MVP)
 
-- Wire `computeFinalScores` into the `end` phase or make it callable after
-  `endIf` returns a truthy `EndgameResult`
-- The scoring result is available to the caller but NOT stored in `G` during MVP
-- `// why:` comment: scoring is a derived view, not game state; storing it in
-  `G` would violate the principle that `G` is runtime state managed by moves
+`computeFinalScores` is exported and callable but is **not automatically
+invoked** by the engine during MVP. The function is a pure library export
+consumed by the caller (future UI, server, or snapshot code) — not wired
+into `game.ts` or any boardgame.io lifecycle hook.
+
+`// why:` Keeping scoring out of the engine lifecycle preserves purity,
+avoids contact with boardgame.io phase/hook complexity, and lets the
+caller decide when and how to compute scores. Automatic wiring is a
+future concern.
+
+**Hard rule:** Do NOT modify `game.ts` for WP-020.
 
 ### D) `src/types.ts` — modified
 
@@ -237,8 +266,6 @@ in DECISIONS.md).
   FinalScoreSummary, PlayerScoreBreakdown, VP constants
 - `packages/game-engine/src/scoring/scoring.logic.ts` — **new** —
   computeFinalScores pure function
-- `packages/game-engine/src/game.ts` — **modified** — wire scoring into end
-  phase or post-endIf
 - `packages/game-engine/src/types.ts` — **modified** — re-export scoring types
 - `packages/game-engine/src/index.ts` — **modified** — export scoring API
 - `packages/game-engine/src/scoring/scoring.logic.test.ts` — **new** — scoring
@@ -357,6 +384,7 @@ This packet is complete when ALL of the following are true:
       is complete (setup -> play cards -> fight -> recruit -> endgame -> score);
       Phase 4 is done
 - [ ] `docs/ai/DECISIONS.md` updated — at minimum: why MVP VP table uses these
-      specific values; how wounds are identified for scoring; how tactic VP is
-      distributed (shared vs per-player); why scores are not stored in G
+      specific values; wounds identified by `WOUND_EXT_ID`; tactic VP awarded to
+      all players (per-player attribution not possible in MVP); why scores are
+      not stored in G; why `game.ts` is not modified
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` has WP-020 checked off with today's date

@@ -2164,6 +2164,120 @@ their own setup function.
 
 ---
 
+### D-2001 — MVP VP Table Values Locked as Named Constants
+
+**Decision:** VP values for MVP scoring are locked: VP_VILLAIN=1,
+VP_HENCHMAN=1, VP_BYSTANDER=1, VP_TACTIC=5, VP_WOUND=-1. These are
+named constant exports, never inline numbers.
+
+**Rationale:** Named constants prevent magic numbers, make future balance
+changes auditable, and simplify test expectations. Values are chosen for
+MVP simplicity, not game balance. Card-text VP modifiers are future packets.
+
+**Consequences:** All scoring math uses these constants. Any VP value change
+requires updating the constant and re-running all scoring tests.
+
+**Introduced:** WP-020
+**Status:** Accepted (MVP — values may change in future balance packets)
+
+---
+
+### D-2002 — Wounds Identified by WOUND_EXT_ID Constant
+
+**Decision:** Wounds in player zones are identified by `cardId === WOUND_EXT_ID`
+where `WOUND_EXT_ID = 'pile-wound'`. All wound cards share this single ext_id
+from WP-017. No registry lookup or card text inspection is required.
+
+**Rationale:** Wound cards are well-known game components (like starting cards).
+They use a single constant ext_id from the pile system. Pattern matching or
+registry queries would add unnecessary complexity.
+
+**Consequences:** Scoring counts wounds across deck, hand, discard, and inPlay
+(not victory — wounds in victory would be unusual).
+
+**Introduced:** WP-020
+**Status:** Accepted
+
+---
+
+### D-2003 — Tactic VP Awarded to All Players
+
+**Decision:** Each defeated mastermind tactic contributes `VP_TACTIC` to every
+player's score. Tactic VP is not attributed to the player who defeated the
+tactic.
+
+**Rationale:** WP-019's `G.mastermind.tacticsDefeated` does not track which
+player defeated each tactic. Implementing per-player attribution would require
+modifying `MastermindState` — out of scope for WP-020. Awarding to all players
+is the simplest MVP rule that keeps scoring read-only and decoupled.
+
+**Consequences:** Tactic VP is symmetric across all players. The differentiator
+for winning is victory pile composition and wound count, not tactic contribution.
+
+**Introduced:** WP-020
+**Status:** Accepted (MVP — per-player attribution is a future packet)
+
+---
+
+### D-2004 — Scores Not Stored in G During MVP
+
+**Decision:** `computeFinalScores` returns `FinalScoreSummary` as a derived
+view. Results are NOT stored in `G` during MVP.
+
+**Rationale:** Scoring is a derived view, not game state. `G` is runtime state
+managed by moves (D-1801). Storing derived data in `G` would violate this
+principle and create coupling between scoring and the move system.
+
+**Consequences:** Future UI, server, or snapshot code calls
+`computeFinalScores(G)` explicitly to get scores. The function is a pure
+library export.
+
+**Introduced:** WP-020
+**Status:** Accepted
+
+---
+
+### D-2005 — game.ts Not Modified for Scoring
+
+**Decision:** `computeFinalScores` is exported as a pure library function and
+is NOT wired into `game.ts` or any boardgame.io lifecycle hook during MVP.
+
+**Rationale:** Keeping scoring out of the engine lifecycle preserves purity,
+avoids contact with boardgame.io phase/hook complexity, and lets the caller
+decide when and how to compute scores. Automatic invocation is a future concern.
+
+**Consequences:** No engine hook calls scoring automatically. The caller
+(future UI, server, or test harness) is responsible for invoking scoring
+after the game ends.
+
+**Introduced:** WP-020
+**Status:** Accepted (MVP)
+
+---
+
+### D-2006 — Bystander VP Uses Dual-Source Check
+
+**Decision:** Bystander VP scoring uses a dual check: (1)
+`G.villainDeckCardTypes[cardId] === 'bystander'` for villain-deck bystanders,
+AND (2) `cardId === BYSTANDER_EXT_ID` for rescued supply-pile bystanders.
+Both contribute `VP_BYSTANDER`.
+
+**Rationale:** Victory piles may contain bystanders from two different sources
+with different ext_id formats. Villain-deck bystanders have deck-specific
+ext_ids tracked in `G.villainDeckCardTypes`. Rescued supply-pile bystanders
+use `BYSTANDER_EXT_ID = 'pile-bystander'` (awarded by `awardAttachedBystanders`
+in WP-017) and are NOT in `G.villainDeckCardTypes`. Checking only one source
+would undercount bystander VP.
+
+**Consequences:** Scoring must import `BYSTANDER_EXT_ID` and check both
+conditions. Tests must include at least one rescued supply-pile bystander
+to verify the dual check.
+
+**Introduced:** WP-020
+**Status:** Accepted
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision

@@ -490,7 +490,7 @@ These packets make the game play like Legendary for the first time.
   no VP scoring (WP-020); was truncated at 79 lines — normalized to full
   PACKET-TEMPLATE; SharePoint links removed
 
-- [ ] WP-020 — VP Scoring & Win Summary (Minimal MVP) ✅ Reviewed
+- [x] WP-020 — VP Scoring & Win Summary (Minimal MVP) ✅ Reviewed ✅ Complete (2026-04-12)
   Dependencies: WP-019
   Notes: Pure `computeFinalScores(G): FinalScoreSummary` — read-only on G,
   never mutates, never triggers endgame (WP-010 owns that); MVP VP table
