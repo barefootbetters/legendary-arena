@@ -451,11 +451,12 @@ you played, how lucky you were, or what you unlocked.**
 
 ---
 
-## Non-Goals: Monetization (Explicitly Disallowed)
+## Non-Goals: Exploitative Monetization (Explicitly Disallowed)
 
-The following monetization approaches are **explicitly out of scope** for Legendary Arena.
-
-These are not "ideas for later." They are hard **non-goals**, regardless of market trends, revenue pressure, or external requests.
+Legendary Arena will fund itself (see **Financial Sustainability** below), but
+the following monetization *approaches* are permanently disallowed. They are
+not "ideas for later." They are hard **non-goals**, regardless of market
+trends, revenue pressure, or external requests.
 
 If any of the following are proposed, the answer is **no**.
 
@@ -548,9 +549,11 @@ Monetization must be:
 
 ### Monetization Boundary Summary
 
-Legendary Arena:
-- Monetizes **distribution, access, presentation, and participation**
-- Never monetizes **power, probability, impatience, or advantage**
+Legendary Arena **will** generate revenue (see Financial Sustainability below)
+but draws a permanent line:
+
+- **Permitted:** distribution, access, presentation, participation, cosmetics
+- **Forbidden:** power, probability, impatience, advantage, psychological exploitation
 
 The fastest way to destroy trust is to compromise fairness.
 Legendary Arena chooses trust — even when it costs money.
@@ -627,8 +630,8 @@ This is the hard truth that makes every other goal possible.
 
 Primary goals define **what must never change**.
 Secondary goals define **how we choose to build it today**.
-Non-goals define **what we will never do**.
-Financial sustainability defines **what must actually happen** for the project to survive.
+Non-goals define **how we will never make money**.
+Financial sustainability defines **how we will make money** — and why it matters.
 
 ---
 
