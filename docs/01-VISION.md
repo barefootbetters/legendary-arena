@@ -133,7 +133,10 @@ behavior.
 
 The Registry Viewer is the **public-facing card and theme browser** for
 Legendary Arena, a ground-up rebuild of the earlier www.master-strike.com
-card data viewer.
+card data viewer. The original card data was sourced from the
+[`@master-strike/data`](https://www.npmjs.com/package/@master-strike/data)
+npm package, then converted, patched, and upgraded into the current
+R2-hosted JSON format.
 
 It serves three audiences:
 
