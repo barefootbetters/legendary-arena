@@ -61,6 +61,9 @@ Legendary Arena is built to support **years of expansions, heroes, villains, and
 - Core systems must scale without rewrites
 - Adding content must not require structural changes
 - Short-term shortcuts that compromise long-term support are not acceptable
+- Gameplay themes (WP-055) demonstrate this goal directly: new themes are added
+  as static JSON data files without touching engine code, and the schema supports
+  hundreds of entries without structural changes
 
 ---
 
@@ -115,6 +118,16 @@ Cross‑layer shortcuts and leakage are not permitted.
 - Cards, sets, and keywords are data-driven
 - Expansions should not require new engine logic
 - Rules interpretation lives in the engine, not in ad‑hoc content code
+
+**Gameplay Themes** are a first-class expression of this goal. Legendary Arena
+supports hundreds of comic-accurate gameplay themes — curated combinations of
+mastermind, scheme, villain groups, henchman groups, and hero decks that
+faithfully recreate iconic Marvel storylines (sourced from Marvel Unlimited,
+Marvel Fandom, CMRO, and the official comics). Themes are defined as static,
+validated JSON files with no engine changes, structural modifications, or code
+rewrites required to add new ones. The authoritative theme data model is
+established in WP-055 as a registry-layer content primitive: purely data, never
+behavior.
 
 ---
 

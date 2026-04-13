@@ -3,7 +3,7 @@
 > A modern multiplayer evolution of the Marvel Legendary deck-building card game.  
 > Built with **boardgame.io**, **TypeScript**, **Cloudflare R2**, and **PostgreSQL**.
 
-**Status:** Foundation complete • Work Packets in progress
+**Status:** Foundation complete • Core gameplay loop complete (Phase 4) • Theme data model ready
 
 ---
 
@@ -36,7 +36,9 @@ mindmap
         ["05-ROADMAP.md"]
       packages/
         ["game-engine\n@legendary-arena/game-engine"]
-        ["registry\n@legendary-arena/registry"]
+        ["registry\n@legendary-arena/registry\n(cards, sets, themes)"]
+      content/
+        ["themes/\nComic-accurate gameplay themes\n(static JSON, WP-055)"]
       apps/
         ["server"]
         ["registry-viewer"]
@@ -61,6 +63,9 @@ mindmap
 | 12.1 | [PAR-ARTIFACT-INTEGRITY](12.1-PAR-ARTIFACT-INTEGRITY.md) | Why PAR artifacts are hashed (rationale) |
 | 13 | [REPLAYS-REFERENCE](13-REPLAYS-REFERENCE.md) | Replay & game saving system (governance reference) |
 | — | [ai/](ai/) | AI coordination system, Work Packets, ECs |
+| — | [ai/DESIGN-CONSTRAINTS-PREPLANNING](ai/DESIGN-CONSTRAINTS-PREPLANNING.md) | Pre-planning system: problem statement, goal, and 12 design constraints |
+| — | [ai/DESIGN-PREPLANNING](ai/DESIGN-PREPLANNING.md) | Pre-planning system: sandbox architecture and data model |
+| — | content/themes/ | Comic-accurate gameplay theme definitions (WP-055) |
 
 ---
 
@@ -69,11 +74,11 @@ mindmap
 - **Live R2 Data** → [https://images.barefootbetters.com](https://images.barefootbetters.com)
 - **Marvel Legendary Universal Rules** → `Marvel Legendary Universal Rules v23 (hyperlinks).pdf`
 - **Governance** → `docs/ai/ARCHITECTURE.md` + `docs/ai/DECISIONS.md`
+- **Theme Data Model** → `docs/ai/work-packets/WP-055-theme-data-model.md`
 
 ---
 
-**Last updated:** 2026-04-11
+**Last updated:** 2026-04-12
 **Maintained by:** Human developer
 
 *This index is the single source of truth for navigating the project documentation.*
-```

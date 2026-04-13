@@ -1,0 +1,607 @@
+# WP-055 — Theme Data Model (Mastermind / Scenario Themes v1)
+
+**Status:** Ready for Implementation
+**Primary Layer:** Content / Data Contracts (Registry)
+**Schema Version:** 1
+**Last Updated:** 2026-04-12
+**Dependencies:** WP-003 (registry exists), WP-005A (MatchSetupConfig locked)
+
+---
+
+## Session Context
+
+WP-005A locked the `MatchSetupConfig` contract (9 fields) and WP-003
+established the card registry with Zod-based validation infrastructure.
+Legendary Arena is expected to support **hundreds** of comic-accurate gameplay
+themes — curated combinations of mastermind, scheme, villain groups, henchman
+groups, and hero decks that recreate iconic Marvel storylines (researched via
+Marvel Unlimited, Marvel Fandom, CMRO, Comic Vine, etc.).
+
+This Work Packet defines the **authoritative JSON data model** for themes as a
+**registry-layer content primitive**. It introduces **no runtime behavior** and
+**no engine integration**.
+
+---
+
+## Why This Packet Matters
+
+Themes are not ad-hoc flavor text. They are **loadable, validated, versioned
+content** that will be referenced by:
+
+- setup UI and scenario browsers
+- PAR difficulty baselines (future)
+- LLM export and scenario prompting
+- community-authored content
+- deterministic randomizers (future)
+
+By locking a stable, engine-agnostic `ThemeDefinition` schema now, we prevent
+schema drift across hundreds of themes and maintain alignment with **Vision
+Goal 10: "Content as Data."** Themes become first-class citizens in the registry
+— exactly like cards and sets — while remaining **purely static JSON**.
+
+This packet converts comic-accurate theming from a wishlist into architecture.
+
+---
+
+## Goal
+
+Establish a **stable, extensible, engine-agnostic Theme Data Contract (v1)**
+such that:
+
+- Themes are expressible entirely as static JSON files in `content/themes/`
+- All themes share a consistent Zod-validated schema
+- Referential intent is explicit (`ext_id` strings only)
+- Future phases (UI, loaders, randomizers, PAR, LLM tools) can consume
+  themes without schema churn
+
+This WP defines **what a theme is**, not **what the engine does with it**.
+
+### After completion:
+
+- A `ThemeDefinition` Zod schema exists in `packages/registry/`
+- Canonical storage layout is locked:
+  - `content/themes/`
+  - one file per theme
+  - filename slug must match `themeId`
+- Two example themes demonstrate the schema
+- Governance decisions are recorded in `DECISIONS.md`
+
+---
+
+## Assumes
+
+- WP-003 complete: `packages/registry/` exists and uses Zod
+- WP-005A complete: `MatchSetupConfig` fields are locked
+  (`schemeId`, `mastermindId`, `villainGroupIds`, `henchmanGroupIds`,
+  `heroDeckIds`, and count fields)
+- Card metadata exists with stable `ext_id` values
+- `pnpm -r build` exits 0
+- `pnpm test` exits 0
+
+If any assumption is false, this packet is **BLOCKED**.
+
+---
+
+## Context (Read First)
+
+Before writing a single line:
+
+- `docs/ai/ARCHITECTURE.md — "Layer Boundary (Authoritative)"` — theme
+  definitions are **registry-layer data only**. No engine or gameplay logic.
+- `docs/ai/ARCHITECTURE.md — "Registry Layer (Data Input)"` — registry may
+  read JSON, validate via Zod, and expose read-only structures.
+- `packages/game-engine/src/matchSetup.types.ts` — `setupIntent` fields
+  **must match** `MatchSetupConfig` identifiers exactly.
+- `packages/registry/src/schema.ts` — follow established Zod patterns.
+- `docs/ai/REFERENCE/00.6-code-style.md` — full-sentence comments, no
+  abbreviations, ESM only.
+
+---
+
+## Non-Negotiable Constraints
+
+**Engine-wide (always apply — do not remove):**
+- Never use `Math.random()` — all randomness uses `ctx.random.*` only
+- Never throw inside boardgame.io move functions — return void on invalid input
+- Never persist `G`, `ctx`, or any runtime state — see ARCHITECTURE.md §Section 3
+- `G` must be JSON-serializable at all times — no class instances, Maps, Sets, or functions
+- ESM only, Node v22+ — all new files use `import`/`export`, never `require()`
+- `node:` prefix on all Node.js built-in imports (`node:test`, `node:assert`, etc.)
+- Test files use `.test.ts` extension — never `.test.mjs`
+- No database or network access inside move functions or pure helpers
+- Full file contents for every new or modified file in the output — no diffs, no snippets
+- Human-style code per `docs/ai/REFERENCE/00.6-code-style.md`
+
+**Packet-specific:**
+- **Data only** — no runtime behavior, loaders, UI, randomizers, or logic
+- **Registry-layer only** — new code lives in `packages/registry/` or
+  `content/themes/`
+- **No engine imports** — no files from `packages/game-engine/`
+- **No gameplay logic** — themes describe composition only
+- **Exact field alignment** — `setupIntent` mirrors `MatchSetupConfig` ID
+  fields; **count fields excluded** because themes describe content
+  composition, not pile sizing
+- **IDs only** — all references are stable `ext_id` strings
+- **External URLs are editorial** — never authoritative or required at runtime
+- **No PAR scoring** — difficulty scoring deferred to later WPs
+- **Immutable IDs** — once published, `themeId` never changes
+- **Schema evolution via versioning only**, never mutation
+
+**Session protocol:**
+- If any contract, field name, or reference is unclear, stop and ask the human
+  before proceeding — never guess or invent field names, type shapes, or file
+  paths
+
+**Locked contract values:**
+
+- **MatchSetupConfig field names (from WP-005A):**
+  `schemeId`, `mastermindId`, `villainGroupIds`, `henchmanGroupIds`,
+  `heroDeckIds`, `bystandersCount`, `woundsCount`, `officersCount`,
+  `sidekicksCount`
+
+- **Theme storage layout:**
+  `content/themes/` — one JSON file per theme, named by `themeId` slug
+
+- **Schema version:** `themeSchemaVersion: 1`
+
+---
+
+## Debuggability & Diagnostics
+
+- Validation must be deterministic and reproducible
+- Errors must include:
+  - `themeId` (when available)
+  - failing field path
+  - full-sentence error message
+- Identical JSON input must always yield identical validation output
+- Filename slug **must** equal `themeId`
+- `themeSchemaVersion` must equal `1`
+
+---
+
+## Scope (In)
+
+### A) `packages/registry/src/theme.schema.ts` — new
+
+```ts
+import { z } from 'zod';
+
+export const ThemeSetupIntentSchema = z.object({
+  mastermindId: z.string().min(1),
+  schemeId: z.string().min(1),
+  villainGroupIds: z.array(z.string().min(1)).min(1),
+  henchmanGroupIds: z.array(z.string().min(1)).default([]),
+  heroDeckIds: z.array(z.string().min(1)).min(1),
+  // why: exact field names from MatchSetupConfig (WP-005A);
+  // count fields excluded because themes describe composition, not pile sizing
+});
+
+export const ThemePlayerCountSchema = z.object({
+  recommended: z.array(z.number().int().min(1).max(6)).min(1),
+  min: z.number().int().min(1).max(6),
+  max: z.number().int().min(1).max(6),
+})
+.refine((data) => data.min <= data.max, {
+  message: 'playerCount.min must be less than or equal to playerCount.max',
+})
+.refine(
+  (data) => data.recommended.every(
+    (count) => count >= data.min && count <= data.max
+  ),
+  { message: 'all recommended player counts must be within [min, max]' },
+);
+
+export const ThemePrimaryStoryReferenceSchema = z.object({
+  issue: z.string().optional(),
+  year: z.number().int().optional(),
+  externalUrl: z.string().url().optional(),
+  marvelUnlimitedUrl: z.string().url().optional(),
+  externalIndexUrls: z.array(z.string().url()).default([]),
+  // why: all fields are editorial only — not authoritative and never
+  // required at runtime; vendor-specific URLs (Marvel Unlimited, Fandom,
+  // CMRO, Comic Vine) may rot and must never be treated as dependencies
+});
+
+export const ThemeDefinitionSchema = z.object({
+  themeSchemaVersion: z.literal(1),
+  themeId: z.string().min(1).regex(
+    /^[a-z0-9]+(-[a-z0-9]+)*$/,
+    'themeId must be kebab-case',
+  ),
+  name: z.string().min(1),
+  description: z.string().min(1),
+  setupIntent: ThemeSetupIntentSchema,
+  playerCount: ThemePlayerCountSchema,
+  tags: z.array(z.string().min(1)).default([]),
+  references: z.object({
+    primaryStory: ThemePrimaryStoryReferenceSchema,
+  }).optional(),
+  flavorText: z.string().optional(),
+  // why: parDifficultyRating intentionally excluded from v1 —
+  // PAR scoring does not exist yet (WP-048)
+  // note: themes intentionally exclude any rule logic, modifiers, or effects
+});
+
+export type ThemeDefinition = z.infer<typeof ThemeDefinitionSchema>;
+```
+
+### B) `packages/registry/src/theme.validate.ts` — new
+
+```ts
+import { ThemeDefinitionSchema } from './theme.schema.ts';
+import type { ThemeDefinition } from './theme.schema.ts';
+import { readFile } from 'node:fs/promises';
+import { basename } from 'node:path';
+
+type ValidationSuccess = { success: true; theme: ThemeDefinition };
+type ValidationFailure = { success: false; errors: Array<{ path: string; message: string }> };
+type ValidationResult = ValidationSuccess | ValidationFailure;
+
+/** Validate a parsed object against the ThemeDefinition schema. */
+export function validateTheme(data: unknown): ValidationResult {
+  const result = ThemeDefinitionSchema.safeParse(data);
+  if (result.success) {
+    return { success: true, theme: result.data };
+  }
+  return {
+    success: false,
+    errors: result.error.issues.map((issue) => ({
+      path: issue.path.join('.'),
+      message: issue.message,
+    })),
+  };
+}
+
+/** Read a JSON file, validate it, and check filename-to-themeId alignment. */
+export async function validateThemeFile(filePath: string): Promise<ValidationResult> {
+  const raw = await readFile(filePath, 'utf-8');
+  const data = JSON.parse(raw);
+  const validation = validateTheme(data);
+
+  if (validation.success) {
+    const filenameSlug = basename(filePath, '.json');
+    if (filenameSlug !== validation.theme.themeId) {
+      // why: filename-to-themeId alignment prevents silent mismatches
+      // when themes are loaded by directory scan
+      return {
+        success: false,
+        errors: [{
+          path: 'themeId',
+          message: `Filename slug "${filenameSlug}" does not match themeId "${validation.theme.themeId}". Theme files must be named {themeId}.json.`,
+        }],
+      };
+    }
+  }
+
+  return validation;
+}
+```
+
+### C) `content/themes/` — new directory with example themes
+
+Files named `{themeId}.json` — examples serve as living documentation and
+validation test fixtures.
+
+#### `content/themes/dark-phoenix-saga.json` — full example (all fields populated)
+
+```json
+{
+  "themeSchemaVersion": 1,
+  "themeId": "dark-phoenix-saga",
+  "name": "Dark Phoenix Saga",
+  "description": "Jean Grey becomes the Dark Phoenix, forcing the X-Men to confront cosmic power, betrayal, and the possible end of the universe.",
+  "setupIntent": {
+    "mastermindId": "dark-phoenix-jean-grey",
+    "schemeId": "dark-phoenix-rises",
+    "villainGroupIds": [
+      "hellfire-club",
+      "shiar-imperial-guard",
+      "brood"
+    ],
+    "henchmanGroupIds": [
+      "hellfire-goons"
+    ],
+    "heroDeckIds": [
+      "cyclops",
+      "wolverine",
+      "storm",
+      "phoenix"
+    ]
+  },
+  "playerCount": {
+    "recommended": [3, 4],
+    "min": 2,
+    "max": 6
+  },
+  "tags": [
+    "x-men",
+    "cosmic",
+    "tragic-hero",
+    "1970s",
+    "phoenix-force"
+  ],
+  "references": {
+    "primaryStory": {
+      "issue": "X-Men #129-137",
+      "year": 1980,
+      "externalUrl": "https://marvel.fandom.com/wiki/Dark_Phoenix_Saga",
+      "marvelUnlimitedUrl": "https://www.marvel.com/unlimited/series/dark-phoenix-saga",
+      "externalIndexUrls": [
+        "https://marvel.fandom.com/wiki/Dark_Phoenix_Saga",
+        "https://cmro.travis-starnes.com/story_arc.php?arc=123"
+      ]
+    }
+  },
+  "flavorText": "The fire rises. The Phoenix must be stopped — or the universe will burn."
+}
+```
+
+#### `content/themes/minimal-example.json` — minimal example (required fields only)
+
+```json
+{
+  "themeSchemaVersion": 1,
+  "themeId": "minimal-example",
+  "name": "Minimal Example",
+  "description": "A minimal theme demonstrating that all editorial and reference fields are optional.",
+  "setupIntent": {
+    "mastermindId": "example-mastermind",
+    "schemeId": "example-scheme",
+    "villainGroupIds": [
+      "example-villain-group"
+    ],
+    "heroDeckIds": [
+      "example-hero"
+    ]
+  },
+  "playerCount": {
+    "recommended": [2],
+    "min": 2,
+    "max": 2
+  }
+}
+```
+
+> **Note:** The `ext_id` values in these examples (e.g., `dark-phoenix-jean-grey`,
+> `example-mastermind`) are illustrative. When authoring real themes, use actual
+> `ext_id` values from the card registry data. Referential integrity validation
+> against the registry is deferred to the first WP that consumes themes at runtime.
+
+### D) `packages/registry/src/theme.schema.test.ts` — new
+
+Uses `node:test` and `node:assert` only. No boardgame.io import.
+
+Eight tests:
+1. Valid theme with all fields passes validation
+2. Valid theme with only required fields passes validation
+3. Missing `themeSchemaVersion` fails validation
+4. Invalid `themeId` format (uppercase, spaces) fails validation
+5. Empty `heroDeckIds` array fails validation (`.min(1)` enforced)
+6. `playerCount` with `min > max` fails validation
+7. `playerCount.recommended` value outside `[min, max]` fails validation
+8. Example theme files in `content/themes/` all pass validation
+   (directory scan test — confirms examples stay in sync with schema)
+
+---
+
+## Scope (Out)
+
+- **No theme loader or runtime registry** — loading themes into a queryable
+  runtime registry is future work
+- **No random theme selection** — theme randomization is future work
+- **No PAR integration** — `parDifficultyRating` is excluded from v1; PAR
+  scoring belongs to WP-048 and successors
+- **No engine integration** — themes are not wired into `Game.setup()`,
+  `MatchSetupConfig`, or any engine flow
+- **No UI browsing or filtering** — theme display is a client concern
+- **No LLM export** — prompt-generation from themes is future work
+- **No community theme authoring** — contribution workflows are future work
+- **No external scraping** — Marvel Fandom, CMRO, Comic Vine are authoring
+  aids only; no automated fetching or dependency
+- **No referential integrity validation against registry** — v1 validates
+  schema shape only; verifying that `mastermindId` actually exists in the card
+  registry is deferred to a theme loader WP (it requires registry access at
+  validation time, which crosses layer concerns for a static schema)
+- Refactors, cleanups, or "while I'm here" improvements are **out of scope**
+  unless explicitly listed in Scope (In) above.
+
+---
+
+## Files Expected to Change
+
+- `packages/registry/src/theme.schema.ts` — **new** —
+  ThemeDefinitionSchema, ThemeSetupIntentSchema, ThemePlayerCountSchema,
+  ThemePrimaryStoryReferenceSchema Zod schemas and inferred TypeScript types
+- `packages/registry/src/theme.validate.ts` — **new** —
+  validateTheme (sync), validateThemeFile (async) helper functions
+- `packages/registry/src/theme.schema.test.ts` — **new** —
+  `node:test` coverage (8 tests)
+- `content/themes/dark-phoenix-saga.json` — **new** —
+  full example theme (all fields populated)
+- `content/themes/minimal-example.json` — **new** —
+  minimal example theme (required fields only)
+
+No other files may be modified.
+
+---
+
+## Governance (Required)
+
+Add the following decisions to `DECISIONS.md`:
+
+- Themes are **data, not behavior**
+- Theme schema is engine-agnostic (registry layer only)
+- `themeId` values are immutable once published
+- Schema evolution uses versioning, not mutation
+- External comic references (including vendor-specific URLs like Marvel
+  Unlimited, Fandom, CMRO, Comic Vine) are editorial only — never
+  authoritative or required at runtime; URLs may rot without consequence
+- `parDifficultyRating` excluded from v1 (PAR system does not exist yet)
+- `setupIntent` uses `MatchSetupConfig` field names but excludes count
+  fields (themes describe content composition, not pile sizing)
+- Referential integrity validation deferred to a theme loader WP
+
+Update `WORK_INDEX.md` to add WP-055 with status.
+
+---
+
+## Acceptance Criteria
+
+All items must be binary pass/fail. No partial credit.
+
+### Schema Correctness
+- [ ] `ThemeDefinitionSchema` Zod schema exists and exports `ThemeDefinition` type
+- [ ] `themeSchemaVersion` is `z.literal(1)` — not a generic number
+- [ ] `themeId` enforces kebab-case via regex
+- [ ] `setupIntent` field names match `MatchSetupConfig` exactly:
+      `mastermindId`, `schemeId`, `villainGroupIds`, `henchmanGroupIds`,
+      `heroDeckIds`
+- [ ] No `parDifficultyRating` field exists in the schema
+- [ ] `playerCount` refinements enforce `min <= max` and `recommended` within range
+
+### Validation
+- [ ] `validateTheme` returns structured result (never throws)
+- [ ] `validateThemeFile` checks filename-to-themeId alignment
+- [ ] Error messages are full sentences including field path
+
+### Content
+- [ ] At least two example theme files exist in `content/themes/`
+- [ ] All example themes pass `validateTheme`
+- [ ] Example filenames match their `themeId` values
+
+### Layer Boundary
+- [ ] No imports from `packages/game-engine/`
+      (confirmed with `grep`)
+- [ ] No `boardgame.io` import in any new file
+      (confirmed with `grep`)
+- [ ] No files created or modified outside `packages/registry/src/` and
+      `content/themes/`
+
+### Tests
+- [ ] All 8 tests pass
+- [ ] Test files use `.test.ts` extension
+- [ ] Tests use `node:test` and `node:assert` only
+- [ ] No boardgame.io import in test files
+
+### Scope Enforcement
+- [ ] No files outside `## Files Expected to Change` were modified
+      (confirmed with `git diff --name-only`)
+- [ ] No `require()` in any generated file (confirmed with `grep`)
+- [ ] WP-005A contract files (`matchSetup.types.ts`) unmodified
+
+---
+
+## Verification Steps
+
+```bash
+# Step 1 — build after all changes
+pnpm -r build
+# Expected: exits 0, no TypeScript errors
+
+# Step 2 — run all tests
+pnpm test
+# Expected: TAP output — all tests passing
+
+# Step 3 — confirm no engine imports in theme files
+grep -r "game-engine" packages/registry/src/theme.*.ts
+# Expected: no output
+
+# Step 4 — confirm no boardgame.io import in theme files
+grep -r "boardgame.io" packages/registry/src/theme.*.ts
+# Expected: no output
+
+# Step 5 — confirm no require() in theme files
+grep -r "require(" packages/registry/src/theme.*.ts
+# Expected: no output
+
+# Step 6 — confirm example themes are valid JSON
+node --input-type=module -e "
+import { readdir, readFile } from 'node:fs/promises';
+const files = await readdir('content/themes');
+for (const file of files) {
+  JSON.parse(await readFile('content/themes/' + file, 'utf-8'));
+  console.log(file, 'OK');
+}
+"
+# Expected: all files print OK
+
+# Step 7 — confirm no files outside scope were changed
+git diff --name-only
+# Expected: only files listed in ## Files Expected to Change
+
+# Step 8 — confirm WP-005A contracts unmodified
+git diff packages/game-engine/src/matchSetup.types.ts
+# Expected: no changes
+```
+
+---
+
+## Session Recommendations (Preserved from Design Review 2026-04-12)
+
+The following decisions were made during the WP-055 design review session and
+are recorded here to prevent a future execution session from re-deriving them
+as standalone work packets.
+
+### Editorial reference fields belong in v1, not a separate WP-055A
+
+A proposal to create WP-055A (Theme Editorial Reference Extensions, schema v2)
+was rejected. Adding optional fields (`marvelUnlimitedUrl`, `externalIndexUrls`)
+to a Zod schema is backwards-compatible — it does not require a version bump.
+The fields were folded into `ThemePrimaryStoryReferenceSchema` in this WP.
+**There is no v2 schema and no `theme.schema.v2.ts` file.**
+
+### Theme loader does not need its own WP
+
+A proposal for WP-056 (Theme Registry Loader) was rejected as standalone work.
+The loader is ~15 lines wrapping `validateThemeFile` in a directory scan. It
+will land as a scope item in the first WP that actually consumes themes at
+runtime (UI browser, setup projector, etc.).
+
+### Referential integrity validation does not need its own WP
+
+A proposal for WP-057 (Theme Referential Integrity Validator) was rejected as
+standalone work. Checking that `setupIntent` IDs exist in the card registry is
+~30 lines of code. It will land as a prerequisite step in the first WP that
+wires themes into something requiring valid references.
+
+### Theme-to-MatchSetupConfig projection does not need its own WP
+
+A proposal for WP-058 (Theme -> MatchSetupConfig Projection) was rejected as
+standalone work. The projection is a trivial spread operation (~10 lines). The
+consuming WP will already have legitimate access to `MatchSetupConfig` and can
+do the mapping inline. Creating a local structural interface to avoid a
+cross-layer import was identified as over-engineering.
+
+### Summary: WP-055 is the only theme data WP
+
+All downstream theme concerns (loading, integrity checks, projection, UI) are
+deferred to their respective consumer WPs as scope items, not standalone
+contracts. Do not create WP-055A, WP-056, WP-057, or WP-058 for themes.
+
+---
+
+## Definition of Done
+
+> Claude Code must execute every verification command in `## Verification Steps`
+> before checking any item below. Reading the code is not sufficient — run the
+> commands.
+>
+> Every item must be true before this packet is considered complete.
+
+This packet is complete when ALL of the following are true:
+
+- [ ] All acceptance criteria above pass
+- [ ] `pnpm -r build` exits 0
+- [ ] `pnpm test` exits 0 (all test files)
+- [ ] No engine imports in theme files (confirmed with `grep`)
+- [ ] No `boardgame.io` import in theme files (confirmed with `grep`)
+- [ ] No `require()` in any generated file (confirmed with `grep`)
+- [ ] No files outside `## Files Expected to Change` were modified
+      (confirmed with `git diff --name-only`)
+- [ ] WP-005A contract files not modified (confirmed with `git diff`)
+- [ ] Example theme files pass JSON parse and schema validation
+- [ ] `docs/ai/STATUS.md` updated — theme data model v1 established;
+      ThemeDefinition schema with Zod validation; content/themes/ directory
+      with example themes; themes are data-only, engine-agnostic content
+- [ ] `docs/ai/DECISIONS.md` updated with all items from ## Governance
+- [ ] `docs/ai/work-packets/WORK_INDEX.md` has WP-055 added with status
