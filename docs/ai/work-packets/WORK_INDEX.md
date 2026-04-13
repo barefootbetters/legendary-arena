@@ -202,6 +202,22 @@ These packets establish the repo-as-memory system and lock contracts before code
   no enforcement WP needed — `.claude/rules/code-style.md` already handles
   runtime enforcement
 
+- [ ] WP-055 — Theme Data Model (Mastermind / Scenario Themes v1) — pending
+  Dependencies: WP-003, WP-005A
+  Notes: Defines `ThemeDefinition` Zod schema as a registry-layer content
+  primitive; `ThemeSetupIntentSchema` mirrors `MatchSetupConfig` ID fields
+  exactly (`mastermindId`, `schemeId`, `villainGroupIds`, `henchmanGroupIds`,
+  `heroDeckIds`) but excludes count fields (themes describe composition, not
+  pile sizing); `ThemePrimaryStoryReferenceSchema` includes editorial fields
+  (`marvelUnlimitedUrl`, `externalIndexUrls`) — all optional, never
+  authoritative; `content/themes/` directory with one JSON file per theme;
+  `validateTheme` (sync) and `validateThemeFile` (async) with filename-to-
+  themeId alignment check; `parDifficultyRating` excluded from v1 (PAR system
+  does not exist yet); no engine imports, no runtime behavior, no loaders;
+  theme loader, referential integrity, and MatchSetupConfig projection are
+  deferred to consumer WPs as scope items — not standalone packets (design
+  review decision 2026-04-12); parallel-safe with Phase 2+
+
 ---
 
 ## Phase 1 — Game Setup Contracts & Determinism
@@ -453,7 +469,7 @@ These packets make the game play like Legendary for the first time.
   `villainDeck.reveal.ts`; `city.logic.ts` NOT modified (pure helper
   boundary); 22 new tests; test files use `.test.ts`
 
-- [ ] WP-018 — Attack & Recruit Point Economy (Minimal MVP) ✅ Reviewed
+- [x] WP-018 — Attack & Recruit Point Economy (Minimal MVP) ✅ Reviewed ✅ Complete (2026-04-12)
   Dependencies: WP-017
   Notes: `G.turnEconomy` (attack/recruit/spentAttack/spentRecruit, reset per
   turn); `G.cardStats: Record<CardExtId, CardStatEntry>` built at setup time
@@ -830,6 +846,75 @@ These packets ship the game and keep it running.
 
 ---
 
+## Pre-Planning System (Parallel-Safe with Phase 4+)
+
+Reduces multiplayer downtime by providing a sandboxed speculative planning
+system for waiting players. Design constraints in
+`docs/ai/DESIGN-CONSTRAINTS-PREPLANNING.md`, architecture in
+`docs/ai/DESIGN-PREPLANNING.md`.
+
+All pre-planning code lives in `packages/preplan/` — outside the game engine.
+The preplan package may import engine type definitions only (never runtime
+code, never `boardgame.io`).
+
+- [ ] WP-056 — Pre-Planning State Model & Lifecycle — pending ✅ Reviewed
+  Dependencies: WP-006A, WP-008B
+  Notes: Types-only WP — no runtime-executable code; creates
+  `packages/preplan/` package with `PrePlan`, `PrePlanSandboxState`,
+  `RevealRecord`, `PrePlanStep` types; `PrePlan` includes `prePlanId`
+  (unique identity), `revision` (monotonic version), `status` ('active' |
+  'invalidated' | 'consumed'), `baseStateFingerprint` (divergence hint,
+  not correctness guarantee), `invalidationReason` with machine-stable
+  `effectType` discriminator ('discard' | 'ko' | 'gain' | 'other') and
+  optional `affectedCardExtId`; all zones use `CardExtId[]`; counters use
+  `Record<string, number>` (engine convention); reveal ledger elevated to
+  INVARIANT status (sole authority for rewind — sandbox inspection is
+  invalid); lifecycle states encoded in data; null semantics documented
+  (missing plan = "no plan", empty planSteps = "planning started");
+  sandbox counters must not encode conditional state or rule flags;
+  architectural boundary enforced via grep checks (no boardgame.io, no
+  engine runtime imports)
+
+- [ ] WP-057 — Pre-Plan Sandbox Execution — pending ✅ Reviewed
+  Dependencies: WP-056, WP-006A, WP-008B
+  Notes: First runtime code in `packages/preplan/`; client-local seedable
+  PRNG (LCG or equivalent — deterministic per seed, never `ctx.random.*`,
+  algorithm changes require snapshot test updates); `createPrePlan` builds
+  sandbox from `PlayerStateSnapshot` with shuffled deck copy; speculative
+  operations: `speculativeDraw` (deck → hand + ledger), `speculativePlay`
+  (hand → inPlay), `updateSpeculativeCounter`, `addPlanStep` (isValid
+  initialized true, never mutated in this WP), `speculativeSharedDraw`
+  (caller must verify card visibility); all functions are pure, guard on
+  `status === 'active'`, increment `revision`, return new PrePlan (no
+  mutation); failure signaling via `null` (never throw for expected
+  conditions); zero-op plans explicitly valid; 3 test files
+
+- [ ] WP-058 — Pre-Plan Disruption Pipeline — pending ✅ Reviewed
+  Dependencies: WP-057, WP-056, WP-008B
+  Notes: Full disruption workflow as single cohesive pipeline (detect →
+  invalidate → rewind → notify — not separable); `PlayerAffectingMutation`
+  with `sourcePlayerId` (who caused it) and `affectedPlayerId` (who was
+  disrupted) plus `effectType` discriminator; binary per-player detection
+  (no plan-step or sandbox inspection); `invalidatePrePlan` transitions
+  active → invalidated with causal reason; `computeSourceRestoration`
+  derives returns from reveal ledger exclusively (INVARIANT); deck returns
+  must be reshuffled, shared source returns restore membership only;
+  `buildDisruptionNotification` produces structured causal message
+  (`effectDescription` is canonical, `message` is derived rendering);
+  `executeDisruptionPipeline` orchestrates all steps, returns
+  `DisruptionPipelineResult` with `requiresImmediateNotification: true`
+  (Constraint #7 encoded in data); multiple mutations per move handled
+  mechanically by status guard (first invalidates, subsequent return null);
+  terminal state invariant: invalidated plans must never be passed to
+  speculative operations; all functions pure; acceptance scenario test
+  required (create → plan → disrupt → verify); 2 test files
+
+  WP-059 (Pre-Plan UI Integration) is deferred until WP-028 (UI State
+  Contract) is executed and a UI framework decision is made. Integration
+  guidance preserved in `docs/ai/DESIGN-PREPLANNING.md` Section 11.
+
+---
+
 ## Dependency Chain (Quick Reference)
 
 ```
@@ -866,12 +951,18 @@ WP-001 (coordination — complete)        │
                     WP-054 (+ WP-052, WP-051) ←── WP-053
                     
                     WP-036 → WP-037 → WP-038 → WP-039 → WP-040
+
+                    Pre-Planning (parallel with Phase 4+):
+                    WP-006A + WP-008B → WP-056 → WP-057 → WP-058
+                                                            │
+                    WP-059 (deferred — needs WP-028 + UI framework decision)
 ```
 
 **Parallel-safe packets** (no dependency on each other):
 - WP-003 (Card Registry) can run alongside WP-002 (Game Skeleton)
 - WP-005A and WP-005B have no dependency on WP-004
 - WP-030 (Campaign) is parallel to WP-031 (Production Hardening)
+- WP-056/057/058 (Pre-Planning) are parallel with Phase 4+ (depend only on WP-006A + WP-008B from Phase 2)
 
 ---
 
@@ -917,6 +1008,11 @@ Sessions must not relitigate settled choices without updating DECISIONS.md first
 | Snapshots use zone counts only — no `ext_id` arrays | WP-013 | `MatchSnapshot` is not a copy of `G` |
 | Card type classification stored in `G` at setup — moves never import registry | WP-014 | ARCHITECTURE.md §Section 5 |
 | `REVEALED_CARD_TYPES` is a canonical array — drift-detection test required; slugs use hyphens not underscores | WP-014 | same drift-detection pattern |
+| Pre-planning state lives in `packages/preplan/` — never in `packages/game-engine/` (non-authoritative, per-client) | WP-056 | DESIGN-PREPLANNING.md §3 |
+| Reveal ledger is sole authority for rewind — sandbox inspection during rewind is invalid | WP-056 | DESIGN-CONSTRAINTS-PREPLANNING.md #3 |
+| Full rewind to clean hand is the baseline — partial plan survival is a future optimization | WP-056 | DESIGN-CONSTRAINTS-PREPLANNING.md #3 |
+| Speculative PRNG uses seedable LCG, never `ctx.random.*`; `Date.now()` acceptable for seed entropy | WP-057 | DESIGN-PREPLANNING.md §3 |
+| Disruption pipeline is one cohesive workflow (detect → invalidate → rewind → notify) — never split into separate WPs | WP-058 | DESIGN-PREPLANNING.md §11 |
 
 ---
 

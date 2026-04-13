@@ -1983,6 +1983,103 @@ appended to `G.messages`.
 
 ---
 
+### D-1803 — G.cardStats Stores Parsed Card Stats at Setup Time (Registry Boundary)
+
+**Decision:** `G.cardStats` is a `Record<CardExtId, CardStatEntry>` built at
+setup time from registry data via `buildCardStats()`. It is read-only after
+setup — no move or hook may write to it. Moves access card stats via
+`G.cardStats[cardId]` without registry access.
+
+**Rationale:** Same pattern as `G.villainDeckCardTypes` (D-1410). The registry
+is available at setup time only. Resolving card stats during setup ensures moves
+are deterministic and have O(1) lookup without crossing the registry boundary.
+
+**Consequences:** Any new card stat field must be added to `CardStatEntry` and
+populated during `buildCardStats`. Moves may never import or query the registry.
+
+**Introduced:** WP-018
+**Status:** Accepted
+
+---
+
+### D-1804 — "2+" Parses to Base 2 Only (Conditional Bonuses Deferred)
+
+**Decision:** The `parseCardStatValue` parser strips trailing `+` and `*`
+modifiers and returns the integer base only. `"2+"` parses to `2`, not
+"2 plus conditional bonus". Conditional bonus semantics are deferred to WP-022
+(keyword-driven effects).
+
+**Rationale:** ARCHITECTURE.md "Card Field Data Quality" specifies strip-and-parse
+as the parsing rule. The `+` modifier has no mechanical meaning until the keyword
+effect system exists. Implementing conditional logic in the parser would create
+scope creep and couple the economy to an unimplemented system.
+
+**Consequences:** MVP economy values are lower than full-game values for cards
+with `+` modifiers. This is intentional and will be addressed by WP-022.
+
+**Introduced:** WP-018
+**Status:** Accepted
+
+---
+
+### D-1805 — CardStatEntry.fightCost Is Semantically Distinct from CardStatEntry.attack
+
+**Decision:** `CardStatEntry` has separate `attack` (hero attack generation)
+and `fightCost` (villain/henchman fight requirement) fields. Both derive from
+numeric card fields but serve different purposes: `attack` is added to the
+economy by `playCard`, while `fightCost` is validated by `fightVillain`.
+
+**Rationale:** Hero `attack` generates resources; villain `vAttack` represents
+a cost to fight. Conflating them in a single field would create confusion about
+direction (adding vs spending) and make the data model ambiguous.
+
+**Consequences:** `buildCardStats` sets `fightCost = 0` for heroes and
+`attack = 0, recruit = 0, cost = 0` for villains/henchmen. No cross-contamination.
+
+**Introduced:** WP-018
+**Status:** Accepted
+
+---
+
+### D-1806 — Starting Cards Contribute 0/0 in MVP (Fail-Closed)
+
+**Decision:** Starting cards (S.H.I.E.L.D. Agents and Troopers) are not in
+`G.cardStats` and contribute 0 attack / 0 recruit when played. This is a
+**fail-closed MVP** choice.
+
+**Rationale:** Starting cards are well-known game components, not registry cards.
+Adding hardcoded stat values for them would require special-case logic outside
+the registry resolution pattern. The fail-closed behavior (missing stats = 0/0)
+is safe and consistent. In the real game, Agents provide 1 recruit and Troopers
+provide 1 attack — a future WP can add starting card stat entries for
+gameplay-correct economy.
+
+**Consequences:** MVP economy does not match full Legendary gameplay for starting
+cards. Players will need to rely on hero cards for attack/recruit generation.
+
+**Introduced:** WP-018
+**Status:** Accepted (MVP limitation)
+
+---
+
+### D-1807 — HQ Refill After Recruit Is Not in WP-018
+
+**Decision:** Recruiting a hero from the HQ does not automatically refill the
+empty slot. HQ refill is a separate concern that may require its own WP.
+
+**Rationale:** WP-018 focuses on the economy (resource gating). HQ refill
+involves drawing from a hero deck (not yet implemented as a runtime zone) and
+may interact with hero deck exhaustion rules. Bundling it into WP-018 would
+create scope creep.
+
+**Consequences:** After recruiting, the HQ slot remains null until a future WP
+implements refill logic.
+
+**Introduced:** WP-018
+**Status:** Accepted
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision

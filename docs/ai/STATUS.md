@@ -7,6 +7,50 @@
 
 ## Current State
 
+### WP-018 — Attack & Recruit Point Economy (Minimal MVP) (2026-04-12)
+
+**What changed:**
+- `packages/game-engine/src/economy/economy.types.ts` — **new** — `TurnEconomy`
+  and `CardStatEntry` interfaces
+- `packages/game-engine/src/economy/economy.logic.ts` — **new** —
+  `parseCardStatValue`, `buildCardStats`, `CardStatsRegistryReader`, and economy
+  helpers (`getAvailableAttack`, `getAvailableRecruit`, `addResources`,
+  `spendAttack`, `spendRecruit`, `resetTurnEconomy`)
+- `packages/game-engine/src/moves/coreMoves.impl.ts` — **modified** — `playCard`
+  adds hero attack/recruit resources to economy after placing card in inPlay
+- `packages/game-engine/src/moves/fightVillain.ts` — **modified** — attack
+  validation in step 1 (insufficient = return void) and spend in step 3
+- `packages/game-engine/src/moves/recruitHero.ts` — **modified** — recruit
+  validation in step 1 (insufficient = return void) and spend in step 3
+- `packages/game-engine/src/setup/buildInitialGameState.ts` — **modified** —
+  calls `buildCardStats` and initializes `turnEconomy`
+- `packages/game-engine/src/game.ts` — **modified** — economy reset wired into
+  `play.turn.onBegin` before rule hooks
+- `packages/game-engine/src/types.ts` — **modified** — added `turnEconomy` and
+  `cardStats` to `LegendaryGameState`
+- `packages/game-engine/src/index.ts` — **modified** — exports for economy types
+  and helpers
+- 2 new test files: economy unit (8), economy integration (9) = 17 new tests
+- 4 existing test files updated (01.5 wiring: added `turnEconomy`/`cardStats`
+  to mock game state objects)
+
+**What's true now:**
+- `G.turnEconomy` tracks attack/recruit points accumulated and spent per turn
+- `G.cardStats` stores parsed card stat values built at setup time from registry
+- Playing hero cards adds base attack and recruit values to the economy
+- `fightVillain` requires sufficient unspent attack points (fails silently)
+- `recruitHero` requires sufficient unspent recruit points (fails silently)
+- Economy resets to zero at the start of each player turn
+- Card stat parser handles `"2+"`, `"2*"`, integers, null, and garbage input
+- Villains/henchmen have `fightCost` from `vAttack`; heroes have `fightCost = 0`
+- Starting cards (agents/troopers) contribute 0/0 (fail-closed MVP — D-1806)
+- 223 tests passing, 0 failures
+
+**What's next:**
+- WP-019 — Mastermind Fight & Tactics
+
+---
+
 ### WP-017 — KO, Wounds & Bystander Capture (Minimal MVP) (2026-04-12)
 
 **What changed:**

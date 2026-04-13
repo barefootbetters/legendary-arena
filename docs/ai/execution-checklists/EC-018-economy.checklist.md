@@ -37,7 +37,9 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 
 - Strip trailing `+` or `*`
 - Parse integer base
+- Numeric inputs: `Math.floor`, then clamp at `>= 0`
 - Unexpected input returns `0`
+- All return values are integers >= 0
 - Parser never throws
 
 ### Runtime state additions
@@ -45,7 +47,8 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 - `G.turnEconomy` shape:
   `{ attack: number; recruit: number; spentAttack: number; spentRecruit: number }`
 - `G.cardStats` shape:
-  `Record<CardExtId, { attack: number; recruit: number; cost: number }>`
+  `Record<CardExtId, { attack: number; recruit: number; cost: number; fightCost: number }>`
+  Read-only after setup — no move or hook may write to it.
 
 ### Turn reset value
 
@@ -69,6 +72,9 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
   - never throw
 - Helpers contain no `boardgame.io` imports
 - No `.reduce()` usage in economy calculations
+- `buildCardStats` must set hero `fightCost = 0` and villain/henchman
+  `attack = 0`, `recruit = 0`, `cost = 0` (no cross-contamination)
+- `turnEconomy` must not appear in reveal pipeline or board helpers
 
 ---
 

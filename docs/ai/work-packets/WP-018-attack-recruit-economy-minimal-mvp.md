@@ -176,6 +176,7 @@ from `@legendary-arena/registry`.
 - **New LegendaryGameState fields:**
   `turnEconomy: { attack: number; recruit: number; spentAttack: number; spentRecruit: number }`
   `cardStats: Record<CardExtId, { attack: number; recruit: number; cost: number; fightCost: number }>`
+  `G.cardStats` is read-only after setup — no move or hook may write to it.
 
 ---
 
@@ -201,9 +202,11 @@ from `@legendary-arena/registry`.
 - `parseCardStatValue(value: string | number | null | undefined): number`
   — deterministic parser:
   - `null` or `undefined` -> `0`
-  - `number` -> return as-is (floor to integer)
+  - `number` -> `Math.floor(value)`, then clamp at `>= 0` (negative card
+    data values are treated as `0`)
   - `string` -> strip trailing `+` or `*`, parse integer. If unparseable,
     return `0`
+  - All return values are integers >= 0
   - Never throws
   - `// why:` comment referencing ARCHITECTURE.md "Card Field Data Quality"
 
@@ -211,9 +214,11 @@ from `@legendary-arena/registry`.
   — called during `Game.setup()`:
   - Iterates all hero cards in selected hero decks
   - Iterates all villain/henchman cards in selected groups
-  - Parses `attack`, `recruit`, `cost`, `vAttack` using `parseCardStatValue`
-  - For villain/henchman cards, stores the parsed `vAttack` value in the
-    `fightCost` field of `CardStatEntry` (not `attack` — see type definition)
+  - For hero cards: parses `attack`, `recruit`, `cost` using
+    `parseCardStatValue`; sets `fightCost = 0` (heroes are never fought)
+  - For villain/henchman cards: parses `vAttack` using `parseCardStatValue`
+    and stores in `fightCost`; sets `attack = 0`, `recruit = 0`, `cost = 0`
+    (villains do not generate resources or have recruit costs)
   - Returns a flat lookup keyed by `CardExtId`
   - Uses `for...of` loops (no `.reduce()`)
   - If `parseCardStatValue` returns `0` for an unexpected input, the caller
