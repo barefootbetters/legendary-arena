@@ -2,7 +2,7 @@
 
 > Common issues, symptoms, root causes, and fixes for Legendary Arena.
 >
-> **Last updated:** 2026-04-09
+> **Last updated:** 2026-04-14
 >
 > **First step for any problem:** Run `pnpm check:env` (no network) then
 > `pnpm validate` (R2 data). These two commands catch most issues before
@@ -18,15 +18,21 @@ Run these in order when something breaks:
 # 1. Local tooling (no network needed)
 pnpm check:env
 
-# 2. R2 card data integrity
+# 2. Build all packages
+pnpm -r build
+
+# 3. Run all tests (314 engine + 6 server + 3 registry)
+pnpm test
+
+# 4. R2 card data integrity
 pnpm validate
 
-# 3. External service connections (needs .env)
+# 5. External service connections (needs .env)
 pnpm check
 ```
 
-If all three pass, the problem is likely in code you're writing, not
-in the environment or data.
+If steps 1-3 pass, the problem is likely in R2 data or external services.
+If step 2 or 3 fails, the problem is in code.
 
 ---
 
@@ -43,15 +49,15 @@ in the environment or data.
 | `.env file not found` | Haven't created it yet | `Copy-Item .env.example .env` then edit |
 | `PLACEHOLDER` on a variable | `.env` still has example values | Replace `your-32-byte-hex-string-here` etc. with real values |
 | `rclone config not found` | rclone not configured | `rclone config` and create an `r2` remote |
-| `boardgame.io NOT FOUND` | Package not installed yet | Expected until `packages/game-engine` exists (WP-002) |
-| `zod NOT FOUND` | Package not installed yet | Expected until registry package dependencies are resolved |
+| `boardgame.io NOT FOUND` | Package not installed | `pnpm install` from repo root |
+| `zod NOT FOUND` | Package not installed | `pnpm install` from repo root |
 
 ### `pnpm check` fails
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| PostgreSQL connection failed | Server doesn't exist yet (FP-01) | Expected at this stage — ignore |
-| boardgame.io server unreachable | Server doesn't exist yet (FP-01) | Expected at this stage — ignore |
+| PostgreSQL connection failed | PostgreSQL not running or `DATABASE_URL` wrong | Start PostgreSQL; see [04-DEVELOPMENT-SETUP.md](04-DEVELOPMENT-SETUP.md) §3a |
+| boardgame.io server unreachable | Game server not running | `node --env-file=.env apps/server/src/server.mjs` |
 | R2 `metadata/sets.json` returned 404 | R2 bucket misconfigured or URL wrong | Verify `R2_PUBLIC_URL` in `.env` is `https://images.barefootbetters.com` |
 | GitHub API rate limited | Too many unauthenticated requests | Wait a few minutes; rate limit resets hourly |
 | Git remote mismatch | origin URL doesn't match expected | `git remote set-url origin https://github.com/barefootbetters/legendary-arena` |
@@ -155,18 +161,26 @@ has an inconsistency). There is no third category.
 
 ---
 
-## Future Issues (Infrastructure Not Yet Built)
+## Game Engine Issues
 
-These problems will become relevant after Foundation Prompts 01 and 02:
+| Symptom | Cause | Fix |
+|---|---|---|
+| `Game.setup()` throws "invalid ext_id" | `MatchSetupConfig` IDs don't match registry | Verify scheme/mastermind/group IDs exist in the registry |
+| Move returns void silently (no mutation) | Wrong `G.currentStage` for that move | Check `MOVE_ALLOWED_STAGES` — e.g., `playCard` requires `'main'` |
+| Server logs "rules loaded: 0 rules" | PostgreSQL `legendary.rules` table empty | Run `psql -U postgres -d legendary_arena -f data/seed_rules.sql` |
+| "G is not JSON serializable" | Maps, Sets, functions, or class instances in `G` | All G fields must be plain JSON (strings, numbers, arrays, objects) |
+| Drift-detection test fails | Canonical array doesn't match union type | Update BOTH the union type and its canonical array in the same change |
+| `pnpm --filter @legendary-arena/game-engine build` fails | TypeScript error in new code | Read the error; check imports respect layer boundaries |
+| Tests fail after adding field to `LegendaryGameState` | Existing test mocks missing the new field | Guard access with `?? defaultValue` for backward compatibility |
+| Hero effect doesn't fire | `G.heroAbilityHooks` missing or card not in hooks | Check `buildHeroAbilityHooks` extracts the card; check keyword spelling |
+| Board keyword not applied | `G.cardKeywords` empty for the card | Check `buildCardKeywords` — only Ambush extractable from real data at MVP |
+
+## Future Issues (Not Yet Built)
 
 | Symptom | When it applies | Reference |
 |---|---|---|
-| `Game.setup()` throws "invalid ext_id" | After WP-002 | Check `MatchSetupConfig` IDs against registry |
-| Move returns `{ ok: false }` silently | After WP-008B | Check `G.currentStage` and move arguments |
-| Server logs "rules loaded: 0 rules" | After FP-01 | Seed PostgreSQL `legendary.rules` table |
 | Replay verification fails | After WP-027 | Check for `Math.random()` or direct `G` mutation |
-| "G is not JSON serializable" | After WP-002 | Remove Maps, Sets, functions, or class instances from `G` |
-| Drift-detection test fails | After WP-007A | Update the canonical array to match the union type |
+| Client UI state mismatch | After WP-028+ | Client reflects server state; check network sync |
 
 ---
 
