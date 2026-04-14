@@ -160,6 +160,10 @@ engine is never aware of campaigns.
 
 - `interface ScenarioDefinition` — data-only wrapper around a single game
   with setup overrides and outcome conditions
+- `type ScenarioOutcome = 'victory' | 'defeat' | 'incomplete'` — named
+  union for scenario outcomes. Used by both `evaluateScenarioOutcome`
+  (return type) and `advanceCampaignState` (outcome parameter) so callers
+  cannot pass arbitrary strings like `'Victory'` or `'win'`.
 - `interface ScenarioOutcomeCondition` — declarative condition
   (e.g., `{ type: 'heroesWin' }` or `{ type: 'counterReached'; key: string; threshold: number }`)
 - `interface ScenarioReward` — declarative reward descriptor
@@ -189,15 +193,26 @@ engine is never aware of campaigns.
   - `// why:` comment: the engine receives a normal config — it never knows
     about campaigns
 
-- `evaluateScenarioOutcome(result: EndgameResult, scores: FinalScoreSummary, conditions: ScenarioOutcomeCondition[]): 'victory' | 'defeat' | 'incomplete'`
+- `evaluateScenarioOutcome(result: EndgameResult, scores: FinalScoreSummary, victoryConditions: ScenarioOutcomeCondition[] | undefined, failureConditions: ScenarioOutcomeCondition[] | undefined): ScenarioOutcome`
   — checks outcome conditions against game results
   - Pure function, reads results only
   - `// why:` comment: evaluated after game ends, not during
+  - Return type is the named `ScenarioOutcome` union, not an inline literal
+  - `// why:` comment: loss-before-victory evaluation order (D-1235
+    precedent) — failure conditions are checked before victory conditions
+    so simultaneous satisfactions deterministically resolve to `'defeat'`
+  - Victory and failure conditions are accepted as two separate arrays
+    (not a single tagged array) so the evaluation order is expressible at
+    the call site. Either array may be `undefined`, treated as empty.
+    Locked by pre-flight risk review #5.
 
-- `advanceCampaignState(state: CampaignState, scenarioId: string, outcome: string, rewards: ScenarioReward[]): CampaignState`
+- `advanceCampaignState(state: CampaignState, scenarioId: string, outcome: ScenarioOutcome, rewards: ScenarioReward[]): CampaignState`
   — returns updated campaign state (new object, never mutates input)
   - Appends completed scenario, applies rewards, advances to next
   - Pure function
+  - `outcome` is the named `ScenarioOutcome` union — callers cannot pass
+    arbitrary strings. Compile-time safety prevents drift like `'Victory'`
+    or `'win'`.
 
 - No boardgame.io import — campaign is external to the engine
 

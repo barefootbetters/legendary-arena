@@ -2978,6 +2978,115 @@ showing spent totals to spectators) by modifying the filter.
 
 ---
 
+### D-3001 — Campaign Directory Classified as Engine Code Category
+
+**Decision:** `packages/game-engine/src/campaign/` is classified under the
+`engine` code category.
+**Rationale:** Campaign files are pure, deterministic, have no I/O, and do
+not import `boardgame.io` or registry packages. They define data-only
+contracts (`ScenarioDefinition`, `CampaignDefinition`, `CampaignState`) and
+pure helper functions (`applyScenarioOverrides`, `evaluateScenarioOutcome`,
+`advanceCampaignState`) that operate on `MatchSetupConfig` and
+`EndgameResult` without mutating `G`. They follow all engine category rules.
+The campaign directory extends the engine's meta-orchestration capability
+without introducing new categories or blurring existing boundaries. This
+follows the precedent established by D-2706 (replay) and D-2801 (ui) for
+new engine subdirectories that host pure, non-lifecycle code. Campaign
+state remains external to `LegendaryGameState` per D-0502 — directory
+classification is orthogonal to the persistence-class separation.
+**Introduced:** WP-030
+**Status:** Immutable
+
+---
+
+### D-3002 — Campaign State External to G (MVP Implementation)
+
+**Decision:** `CampaignState` is stored, mutated, and persisted entirely
+by the application layer. It is never a field of `LegendaryGameState`,
+never part of `G`, and never read or written by the game engine.
+Individual game `G` remains Class 1 (Runtime) and is never persisted.
+`CampaignState` is Class 2 (Configuration) and is persisted separately
+by the application layer.
+
+**Rationale:** Implements D-0502 (Campaign State Lives Outside the
+Engine) at the code level. Keeps individual games pure and replayable:
+because `G` is unchanged by campaign progression, replaying any single
+scenario reproduces an identical game state regardless of which campaign
+it belongs to. Concretely, this means the engine's snapshot,
+deterministic-replay, and persistence semantics are unaffected by the
+introduction of campaigns. A bug in campaign progression cannot corrupt
+a game's `G`, and a bug in the engine cannot corrupt a campaign's
+progression.
+
+**Affected WPs:** WP-030 introduced the contract. Future WPs that add
+campaign persistence, branching logic, or UI must continue to hold
+`CampaignState` outside the engine.
+
+**Introduced:** WP-030
+**Status:** Immutable
+
+---
+
+### D-3003 — Scenarios Produce MatchSetupConfig, Not Modified G
+
+**Decision:** `applyScenarioOverrides(baseConfig, scenario)` produces a
+valid `MatchSetupConfig` that is passed to `Game.setup()` by the
+application layer. The engine receives a normal config and runs a
+normal deterministic game. The engine never knows a game is part of a
+campaign. Scenario overrides use replace-on-override semantics: any
+field present in `scenario.setupOverrides` replaces the corresponding
+base field wholesale, and all array fields in the result are spread
+copies so callers cannot alias the input via the return value.
+
+**Rationale:** Implements D-0501 (Campaigns Are Meta-Orchestration
+Only) at the code level. Preserves engine simplicity and replay safety
+— the same replay input (seed, config, moves) always produces the same
+game state whether or not the game was played as part of a campaign.
+Replace-on-override was chosen over deep-merge because (a) it matches
+`Partial<MatchSetupConfig>` semantics, (b) it is unambiguous in the
+presence of array fields (append-vs-replace designer confusion is
+eliminated), and (c) it is trivially testable. Spread-copy discipline
+prevents mutable references from leaking between `baseConfig`,
+`scenario.setupOverrides`, and the returned config.
+
+**Affected WPs:** WP-030. Future WPs that introduce additional override
+semantics (e.g., per-scheme count adjustments) must either extend
+`MatchSetupConfig` fields or define new override types — the engine
+contract is not modified.
+
+**Introduced:** WP-030
+**Status:** Immutable
+
+---
+
+### D-3004 — Campaign Replay as Sequence of ReplayInputs
+
+**Decision:** Campaign-level replay is the ordered concatenation of
+each scenario's `ReplayInput` object (WP-027). There is no campaign-
+level replay format. Each scenario's game is independently replayable
+and produces the same `EndgameResult` deterministically. The
+application layer reconstructs campaign progression by replaying each
+scenario in order and feeding the results through `advanceCampaignState`
+to rebuild `CampaignState`.
+
+**Rationale:** Preserves the engine's replay guarantees (D-0201, D-0002)
+without introducing a second replay format. Debugging a campaign bug
+becomes a two-step process: (1) replay the individual scenario game to
+reproduce its `EndgameResult`, (2) replay the sequence of
+`advanceCampaignState` calls to reproduce the `CampaignState` drift.
+Each step is independently debuggable and each step is already proven
+deterministic. No new replay infrastructure is needed.
+
+**Affected WPs:** WP-030. Future WPs that add branching logic must
+record any branch decisions deterministically (e.g., as additional
+`ScenarioReward` entries in the replay history) so that replaying the
+same inputs always reconstructs the same branch path.
+
+**Introduced:** WP-030
+**Status:** Immutable
+
+---
+
 ### How to Add a New Decision
 1. Assign a new decision ID
 2. State the decision clearly
@@ -2994,4 +3103,3 @@ Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
 
 Protect this file.
-``

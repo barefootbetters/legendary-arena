@@ -625,15 +625,21 @@ These packets make the game safe to ship.
   filtered views; was truncated at 57 lines — normalized to full
   PACKET-TEMPLATE
 
-- [ ] WP-030 — Campaign / Scenario Framework ✅ Reviewed
+- [x] WP-030 — Campaign / Scenario Framework ✅ Reviewed ✅ Completed 2026-04-14
   Dependencies: WP-029
   Notes: `ScenarioDefinition` + `CampaignDefinition` + `CampaignState` — all
   data-only, JSON-serializable, external to engine (D-0501, D-0502);
   `applyScenarioOverrides` produces valid `MatchSetupConfig` — engine never
   knows about campaigns; `CampaignState` is Class 2 (Configuration), NOT part
   of `LegendaryGameState`; campaign replay = sequence of `ReplayInput` objects;
-  no engine modifications; was truncated at 68 lines — normalized to full
-  PACKET-TEMPLATE
+  no engine modifications; `ScenarioOutcome` named union shared between
+  evaluator return and advance parameter (pre-flight tightening);
+  `evaluateScenarioOutcome` takes separate victory/failure condition arrays
+  to express loss-before-victory order (pre-flight shape refinement);
+  `src/campaign/` classified as engine code category (D-3001, follows D-2706
+  and D-2801 precedent); 8 new tests, 348 total; 01.5 runtime-wiring allowance
+  NOT invoked — WP is purely additive; was truncated at 68 lines — normalized
+  to full PACKET-TEMPLATE
 
 - [ ] WP-031 — Production Hardening & Engine Invariants ✅ Reviewed
   Dependencies: WP-029

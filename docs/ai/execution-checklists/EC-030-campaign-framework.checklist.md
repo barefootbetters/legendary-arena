@@ -25,6 +25,13 @@ Failure to satisfy any item below is a failed execution of WP-030.
 All items below must be copied verbatim from WP-030.
 If formatting, spelling, or ordering differs, the implementation is invalid.
 
+- **ScenarioOutcome (named union, MVP):**
+  ```ts
+  type ScenarioOutcome = 'victory' | 'defeat' | 'incomplete'
+  ```
+  Used by `evaluateScenarioOutcome` return type and `advanceCampaignState`
+  outcome parameter. Callers must not pass arbitrary strings.
+
 - **ScenarioDefinition shape (MVP):**
   ```ts
   interface ScenarioDefinition {

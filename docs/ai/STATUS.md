@@ -7,6 +7,81 @@
 
 ## Current State
 
+### WP-030 — Campaign / Scenario Framework (2026-04-14)
+
+**What changed:**
+- Campaign and scenario framework implemented as a pure meta-orchestration
+  layer external to the game engine
+- New `packages/game-engine/src/campaign/` directory classified as engine
+  code category (D-3001)
+- `ScenarioDefinition`, `CampaignDefinition`, `CampaignState`,
+  `ScenarioOutcomeCondition`, `ScenarioReward`, `CampaignUnlockRule`,
+  `ScenarioOutcome` — all data-only, JSON-serializable contracts
+  (no functions, no closures)
+- `applyScenarioOverrides(baseConfig, scenario)` — pure function merging
+  scenario overrides into a base `MatchSetupConfig` with replace-on-override
+  semantics and spread-copy discipline (no aliasing with inputs)
+- `evaluateScenarioOutcome(result, scores, victoryConditions, failureConditions)`
+  — pure function with loss-before-victory evaluation order, returns
+  `ScenarioOutcome` union (`'victory' | 'defeat' | 'incomplete'`)
+- `advanceCampaignState(state, scenarioId, outcome, rewards)` — pure
+  function returning a new state with the completed scenario appended;
+  input state never mutated
+- `CampaignState` is Class 2 (Configuration) data, external to the engine
+  — NOT a field of `LegendaryGameState` (D-0502)
+- Named `ScenarioOutcome` union shared by both evaluator return type and
+  advance parameter prevents outcome-string drift
+- `evaluateScenarioOutcome` takes separate `victoryConditions` and
+  `failureConditions` parameters to express the locked loss-before-victory
+  evaluation order
+- 8 new contract enforcement tests (replace semantics, aliasing-free copies,
+  victory, defeat-with-loss-before-victory, append, purity, JSON roundtrip,
+  exact key set)
+- 348 total tests, 93 suites, 0 failures (340 baseline + 8 new)
+- No engine files modified — campaign code is a pure addition
+- 01.5 runtime-wiring allowance **not invoked** — WP is purely additive
+
+**Key decisions:**
+- D-3001: `src/campaign/` classified as engine code category (created
+  during pre-flight as PS-1 resolution, following D-2706 / D-2801
+  precedent)
+- D-3002: Campaign state external to G (implements D-0502 — campaign
+  state is Class 2 data persisted by the application layer; individual
+  game G remains Class 1 and is never persisted)
+- D-3003: Scenarios produce `MatchSetupConfig`, not modified G — the
+  engine receives a normal config and is never aware of campaigns
+- D-3004: Campaign replay is the concatenation of each scenario's
+  `ReplayInput` — no campaign-level replay format
+
+**Architectural significance:**
+- Campaigns orchestrate games without modifying the engine — D-0501
+  (Campaigns Are Meta-Orchestration Only) is implemented at MVP level
+- `CampaignState` is explicitly NOT part of `LegendaryGameState` —
+  D-0502 (Campaign State Lives Outside the Engine) is implemented
+- Campaign code is pure: no `boardgame.io` import, no registry import,
+  no I/O, no `G` mutation, no lifecycle integration
+- Discriminated unions (`ScenarioOutcomeCondition`, `ScenarioReward`)
+  with exhaustive `switch` provide the extension seam for future WPs
+- Safe-skip pattern applied: unknown `counterReached` keys return
+  `false` so future WPs can extend the vocabulary without refactoring
+
+**What's true now:**
+- Scenarios can override any subset of `MatchSetupConfig` fields; the
+  engine plays a normal deterministic game from the resolved config
+- Campaign progression is computed after games end, never during them
+- Individual game G remains unchanged and replayable per-scenario
+- The engine does not import anything from the campaign layer
+
+**What's next:**
+- Future WP for campaign UI (campaign selection, scenario progress)
+- Future WP for campaign persistence (CampaignState save/load)
+- Future WP for branching logic (unlock rules interpreted by application
+  layer; outcome parameter on `advanceCampaignState` currently reserved)
+- Future WP for additional condition and reward types
+- WP-031 (Production Hardening & Engine Invariants) is parallel to WP-030
+
+---
+
 ### WP-027 — Determinism & Replay Verification Harness (2026-04-14)
 
 **What changed:**
