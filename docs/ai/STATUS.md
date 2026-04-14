@@ -7,6 +7,41 @@
 
 ## Current State
 
+### WP-022 — Execute Hero Keywords (Minimal MVP) (2026-04-13)
+
+**What changed:**
+- Hero ability effects now execute when a hero card is played
+- `executeHeroEffects(G, ctx, playerID, cardId)` — new function in
+  `packages/game-engine/src/hero/heroEffects.execute.ts`
+- 4 MVP keywords execute: `'draw'`, `'attack'`, `'recruit'`, `'ko'`
+- `'draw'` — draws N cards from player deck to hand (with reshuffle)
+- `'attack'` — adds N to `G.turnEconomy.attack` via `addResources`
+- `'recruit'` — adds N to `G.turnEconomy.recruit` via `addResources`
+- `'ko'` — removes the played card from inPlay, appends to `G.ko`
+- Conditional effects safely skipped (no mutation, no error)
+- Unsupported keywords (`'rescue'`, `'wound'`, `'reveal'`, `'conditional'`)
+  safely ignored
+- Invalid magnitude (undefined, NaN, negative, float) skipped
+- `HeroEffectResult` internal type for dev/test assertions (not stored in G)
+- Integration: `playCard` in `coreMoves.impl.ts` calls `executeHeroEffects`
+  after base stat economy
+- 11 new tests, 266 total passing
+
+**What's true now:**
+- Hero ability hooks execute deterministically for 4 MVP keywords
+- Hooks fire in registration order; effects fire in descriptor array order
+- Hero hook economy is additive to WP-018 base card stats
+- `'ko'` targets the played card itself (MVP: no player choice)
+- `ctx: unknown` — no boardgame.io import in execution files
+- `ShuffleProvider` from engine-internal `setup/shuffle.js` for draw reshuffle
+- WP-021 contract files unmodified
+- WP-023 is unblocked for conditional effect evaluation
+
+**What's next:**
+- WP-023 — Conditional Hero Effects (Teams, Colors, Keywords)
+
+---
+
 ### WP-021 — Hero Card Text & Keywords (Hooks Only) (2026-04-13)
 
 **What changed:**

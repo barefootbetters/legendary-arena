@@ -17,6 +17,7 @@ import { validateDrawCardsArgs, validatePlayCardArgs, validateMoveAllowedInStage
 import { moveCardFromZone, moveAllCards } from './zoneOps.js';
 import { shuffleDeck } from '../setup/shuffle.js';
 import { addResources } from '../economy/economy.logic.js';
+import { executeHeroEffects } from '../hero/heroEffects.execute.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -82,7 +83,7 @@ export function drawCards({ G, playerID, ...context }: MoveContext, args: DrawCa
  * @param context - boardgame.io move context with G, events, random, playerID.
  * @param args - PlayCardArgs payload with a cardId field.
  */
-export function playCard({ G, playerID }: MoveContext, args: PlayCardArgs): void {
+export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCardArgs): void {
   // Step 1: Validate args
   const argsResult = validatePlayCardArgs(args);
   if (!argsResult.ok) {
@@ -109,11 +110,16 @@ export function playCard({ G, playerID }: MoveContext, args: PlayCardArgs): void
   playerZones.hand = result.from;
   playerZones.inPlay = result.to;
 
-  // why: MVP adds base values only; conditional bonuses are WP-022
+  // why: MVP adds base values only; conditional bonuses are WP-023
   const cardStats = G.cardStats[args.cardId];
   const heroAttack = cardStats ? cardStats.attack : 0;
   const heroRecruit = cardStats ? cardStats.recruit : 0;
   G.turnEconomy = addResources(G.turnEconomy, heroAttack, heroRecruit);
+
+  // why: hero ability effects fire immediately after play, before any
+  // fight/recruit actions. This preserves "play -> generate resources -> act."
+  // Hero hook economy is additive to base card stats above (WP-022).
+  executeHeroEffects(G, context, playerID, args.cardId);
 }
 
 /**

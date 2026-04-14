@@ -526,15 +526,16 @@ These packets make individual cards do things.
   deferred to WP-022+; was truncated at 56 lines — normalized to full
   PACKET-TEMPLATE; this packet is inert by design
 
-- [ ] WP-022 — Execute Hero Keywords (Minimal MVP) ✅ Reviewed
+- [x] WP-022 — Execute Hero Keywords (Minimal MVP) ✅ Complete (2026-04-13)
   Dependencies: WP-021
-  Notes: Executes 4 unconditional hero keywords only: `draw`, `gainAttack`,
-  `gainRecruit`, `koCard`; conditional effects safely skipped (no mutation);
-  unsupported keywords safely ignored; uses existing helpers (drawCards,
-  addResources, koCard) — no ad-hoc state writes; `koCard` MVP targets the
-  played card itself (no player choice); execution fires immediately after
-  play in registration order; WP-021 contracts not modified; was truncated
-  at 160 lines — normalized to full PACKET-TEMPLATE; test files `.test.ts`
+  Notes: Executes 4 unconditional hero keywords only: `'draw'`, `'attack'`,
+  `'recruit'`, `'ko'`; conditional effects safely skipped (no mutation);
+  unsupported keywords safely ignored; uses zone-ops primitives for draw,
+  addResources for economy, koCard helper for KO — no ad-hoc state writes;
+  `'ko'` MVP targets the played card itself (no player choice); execution
+  fires immediately after play in registration order; hero hook economy is
+  additive to WP-018 base card stats; `ctx: unknown` avoids boardgame.io
+  import; WP-021 contracts not modified; 11 new tests, 266 total passing
 
 - [ ] WP-023 — Conditional Hero Effects (Teams, Colors, Keywords) ✅ Reviewed
   Dependencies: WP-022

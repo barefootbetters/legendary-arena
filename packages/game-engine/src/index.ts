@@ -145,6 +145,8 @@ export type { HeroKeyword, HeroAbilityTiming } from './rules/heroKeywords.js';
 export { HERO_KEYWORDS, HERO_ABILITY_TIMINGS } from './rules/heroKeywords.js';
 export { filterHooksByTiming, filterHooksByKeyword, getHooksForCard } from './rules/heroAbility.types.js';
 export { buildHeroAbilityHooks } from './setup/heroAbility.setup.js';
+export type { HeroEffectResult } from './hero/heroEffects.types.js';
+export { executeHeroEffects } from './hero/heroEffects.execute.js';
 export {
   parseCardStatValue,
   buildCardStats,

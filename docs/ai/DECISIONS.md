@@ -2369,6 +2369,94 @@ No direct dependency on the mutable registry implementation.
 
 ---
 
+### D-2201 — Only 4 Keywords Execute in WP-022 MVP
+**Decision:** Only `'draw'`, `'attack'`, `'recruit'`, and `'ko'` are executed in the
+minimal MVP. The remaining 4 keywords (`'rescue'`, `'wound'`, `'reveal'`,
+`'conditional'`) are safely ignored — no mutation, no error.
+**Rationale:** These 4 keywords cover the most common hero card abilities with
+existing helpers (zone-ops for draw, `addResources` for economy, `koCard` for KO).
+The remaining keywords require conditional logic, targeting UI, or additional game
+systems that are not yet implemented. Executing a safe subset first allows
+incremental testing and validates the execution pipeline.
+**Introduced:** WP-022
+**Status:** Scoped to WP-022. WP-023 adds conditional evaluation.
+
+---
+
+### D-2202 — KO Targets the Played Card Only (MVP)
+**Decision:** The `'ko'` keyword in WP-022 targets the played hero card itself —
+the card is removed from inPlay and added to `G.ko`. No player choice or target
+selection is supported.
+**Rationale:** Many hero cards say "KO this card to..." — targeting the played card
+is the simplest deterministic implementation. Target selection requires UI
+interaction and a choice protocol that does not exist yet.
+**Introduced:** WP-022
+**Status:** Scoped to WP-022. Future WPs may add target selection for KO.
+
+---
+
+### D-2203 — Hero Hook Economy Is Additive to Base Card Stats
+**Decision:** `executeHeroEffects` adds attack/recruit from hook effects on top of
+the base card stats already applied by `playCard` via WP-018's `addResources` call.
+The WP-018 economy call is not removed or replaced.
+**Rationale:** Base card stats (from `G.cardStats`) and hero hook effects
+(from `G.heroAbilityHooks`) may overlap for some cards, producing additive economy.
+This is intentional — removing the base stats call risks breaking cards that have
+no hooks. If specific cards produce unintended double-counting, the resolution is
+a card-data fix or a future WP, not removing the base economy path.
+**Introduced:** WP-022
+**Status:** Active. Monitor for double-counting during play testing.
+
+---
+
+### D-2204 — executeHeroEffects Uses ctx: unknown to Avoid boardgame.io Import
+**Decision:** The `executeHeroEffects` function accepts `ctx: unknown` and narrows
+to `ShuffleProvider` (from engine-internal `setup/shuffle.js`) at the draw call
+site. This keeps the file free of boardgame.io imports.
+**Rationale:** Follows the established pattern from WP-005B/008B where
+boardgame.io ctx is structurally compatible with `ShuffleProvider`. Hero execution
+files are pure helpers — the boardgame.io import boundary is enforced by
+`.claude/rules/architecture.md`.
+**Introduced:** WP-022
+**Status:** Active
+
+---
+
+### D-2205 — Draw Logic Extracted, Not drawCards Move Called
+**Decision:** `executeHeroEffects` implements draw logic using zone-ops primitives
+(`moveCardFromZone`, `moveAllCards`, `shuffleDeck`) directly, rather than calling
+the `drawCards` move function.
+**Rationale:** `drawCards` is a full move function that takes `MoveContext`, performs
+args validation, and checks stage gating — responsibilities that belong to the move
+layer, not to a helper called from within another move. The draw algorithm
+(deck-to-hand with reshuffle on empty) is replicated using the same zone-ops
+primitives that `drawCards` uses.
+**Introduced:** WP-022
+**Status:** Active
+
+---
+
+### D-2206 — DataProvenance Type Deferred (Not Yet Useful)
+**Decision:** A `DataProvenance` type for tracing setup-time derived artifacts
+(e.g., `G.heroAbilityHooks`, `G.cardStats`) back to their input data sources
+was considered and deferred. It will not be implemented until real debugging
+pain justifies it.
+**Rationale:** The proposal meets only the weakest "truly useful" criterion
+(likely future extension point). No debugging scenario has yet required
+answering "which card JSON version produced this hook?" The type would also
+introduce a determinism tension: `buildTimeIso` timestamps in `G` violate
+D-0002 unless injected deterministically or omitted, and adding an optional
+`provenance` field to `HeroAbilityHook` would modify a WP-021 locked contract.
+Per code-style rules, "duplicate first, abstract only when a third copy
+appears" — zero copies exist today. A ready-to-execute prompt is saved for
+when the need materializes (criteria: a real debugging session where
+upstream tracing takes >5 minutes, or a second/third derived field with the
+same traceability need, or frequent card data changes).
+**Introduced:** WP-022 review (2026-04-13)
+**Status:** Deferred. Re-evaluate when debugging pain or data churn arrives.
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision
