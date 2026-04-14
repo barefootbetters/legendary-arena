@@ -2,12 +2,12 @@
 
 > How Legendary Arena is deployed and what infrastructure exists.
 >
-> **Last updated:** 2026-04-09
+> **Last updated:** 2026-04-14
 >
-> **Current state:** Cloudflare R2 is live with 40 card sets. The
-> registry viewer is deployed on Cloudflare Pages. The game server
-> and PostgreSQL do not exist yet — they are created by Foundation
-> Prompts 01 and 02.
+> **Current state:** All foundation infrastructure operational.
+> Cloudflare R2 (40 card sets), registry viewer (Cloudflare Pages),
+> game server (Render.com), PostgreSQL (Render.com), and migration
+> runner are all live.
 
 ---
 
@@ -17,9 +17,9 @@
 |---|---|---|---|
 | Card data & images | Cloudflare R2 | `https://images.barefootbetters.com` | ✅ Live |
 | Registry viewer | Cloudflare Pages | `https://cards.barefootbetters.com` | ✅ Live |
-| Game server | Render.com | — | ⬜ Pending (FP-01) |
-| PostgreSQL | Render.com | — | ⬜ Pending (FP-01) |
-| Database migrations | — | — | ⬜ Pending (FP-02) |
+| Game server | Render.com | `render.yaml` | ✅ Live (FP-01) |
+| PostgreSQL | Render.com (managed) | `legendary.*` schema | ✅ Live (FP-01) |
+| Database migrations | `scripts/migrate.mjs` | `data/migrations/` | ✅ Live (FP-02) |
 | GitHub repo | GitHub | `github.com/barefootbetters/legendary-arena` | ✅ Live |
 
 ---
@@ -76,15 +76,11 @@ Two workflows exist:
 
 ## What Is NOT Deployed Yet
 
-These components are created by future Foundation Prompts and Work Packets.
-
 | Component | Created by | What it provides |
 |---|---|---|
-| Render.com game server | FP-01 | boardgame.io `Server()`, `render.yaml`, process entrypoint |
-| PostgreSQL database | FP-01 | `legendary.*` schema, rules table |
-| Migration runner | FP-02 | `pnpm migrate`, `data/migrations/` |
-| Seed pipeline | FP-02 | `pnpm seed`, load card data into PostgreSQL |
-| Match CLI scripts | WP-011/012 | `create-match.mjs`, `list-matches.mjs`, `join-match.mjs` |
+| Client UI | WP-028+ | Player-facing game interface |
+| PAR artifact storage | WP-050 | Immutable simulation results |
+| Competitive gate | WP-051 | Pre-release leaderboard enforcement |
 
 ---
 
@@ -127,8 +123,7 @@ if needed during verification.
 
 ## Environment Variables (Production)
 
-When the game server is deployed (FP-01), these variables will be
-configured in the Render.com dashboard:
+These variables are configured in the Render.com dashboard:
 
 | Variable | Where set | Notes |
 |---|---|---|
@@ -150,10 +145,9 @@ and placeholder values.
 
 ---
 
-## Server Startup Sequence (Planned — FP-01)
+## Server Startup Sequence (FP-01)
 
-When the server is deployed, it will complete two startup tasks before
-accepting requests:
+The server completes two startup tasks before accepting requests:
 
 ```
 Task 1 — Card registry (from local files):

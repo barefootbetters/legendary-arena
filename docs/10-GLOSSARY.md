@@ -4,7 +4,7 @@
 > across Legendary Arena. Every Work Packet, code file, and doc page
 > must align with these definitions.
 >
-> **Last updated:** 2026-04-09
+> **Last updated:** 2026-04-14
 >
 > When a term here conflicts with usage in code or docs, this glossary
 > is authoritative for terminology. For architectural rules, see
@@ -16,8 +16,8 @@
 
 | Abbreviation | Full Term | Context |
 |---|---|---|
-| **EC** | Execution Checklist | 51 EC files; EC-mode is active for all code changes |
-| **WP** | Work Packet | 47 atomic design units (WP-001 through WP-047) |
+| **EC** | Execution Checklist | 63 EC files; EC-mode is active for all code changes |
+| **WP** | Work Packet | 66 atomic design units (WP-001 through WP-060) |
 | **FP** | Foundation Prompt | 4 infrastructure prompts (FP-00.4, FP-00.5, FP-01, FP-02) |
 | **R2** | Cloudflare R2 | Public object storage for card data and images |
 | **MVP** | Minimum Viable Product | First playable game loop (Phases 0–4) |
@@ -66,7 +66,50 @@
 | **`G.cardStats`** | `Record<CardExtId, CardStatEntry>` — card stats (attack, recruit, cost) resolved at setup from registry. |
 | **`G.counters`** | `Record<string, number>` — endgame condition counters. A value `>= 1` is truthy. Keys governed by `ENDGAME_CONDITIONS` constants. |
 | **`G.hookRegistry`** | `HookDefinition[]` — data-only rule definitions. Built at setup, reconstructed each match. |
+| **`G.city`** | `CityZone` — 5-space fixed tuple for villain/henchman placement. Space 0 = entry, space 4 = escape. |
+| **`G.hq`** | `HqZone` — 5-slot fixed tuple for hero recruit cards. |
+| **`G.mastermind`** | `MastermindState` — tactics deck, defeated list, base card ID. Built at setup from registry. |
+| **`G.heroAbilityHooks`** | `HeroAbilityHook[]` — hero ability declarations. Data-only, built at setup, immutable during gameplay. |
+| **`G.cardKeywords`** | `Record<CardExtId, BoardKeyword[]>` — board keywords per card. Built at setup from ability text (WP-025). |
+| **`G.schemeSetupInstructions`** | `SchemeSetupInstruction[]` — scheme board config applied during setup. Empty at MVP (WP-026). |
+| **`G.ko`** | `CardExtId[]` — knocked-out cards pile. |
+| **`G.attachedBystanders`** | `Record<CardExtId, CardExtId[]>` — bystanders attached to villains. |
 | **`G.lobby`** | `{ requiredPlayers, ready, started }` — transient lobby phase state. |
+
+---
+
+## Hero Abilities (Phase 5)
+
+| Term | Definition |
+|---|---|
+| **`HeroAbilityHook`** | Data-only declaration: `{ cardId, timing, keyword, magnitude, effects?, conditions? }`. Built at setup from hero card text. JSON-serializable. |
+| **`HeroKeyword`** | Closed union: `'draw' \| 'attack' \| 'recruit' \| 'ko' \| 'revealVillain' \| 'gainArtifact' \| 'rescueBystander' \| 'wallCrawl'`. With canonical `HERO_KEYWORDS` array. |
+| **`HeroAbilityTiming`** | When the ability fires: `'onPlay' \| 'onFight' \| 'onRecruit' \| 'onDiscard' \| 'onReveal'`. With canonical `HERO_ABILITY_TIMINGS` array. |
+| **`executeHeroEffects`** | Fires hero keyword effects after `playCard`. Evaluates conditions (AND logic), then applies effects. |
+| **`evaluateCondition`** | Pure predicate for hero effect conditions. 4 types: `heroClassMatch`, `requiresTeam`, `requiresKeyword`, `playedThisTurn`. Returns boolean, never mutates G. |
+
+---
+
+## Board Keywords (Phase 5)
+
+| Term | Definition |
+|---|---|
+| **`BoardKeyword`** | Closed union: `'patrol' \| 'ambush' \| 'guard'`. With canonical `BOARD_KEYWORDS` array. Structural City rules — NOT hero abilities. |
+| **Patrol** | +1 fight cost on the target villain (additive modifier). |
+| **Guard** | A Guard card at a higher City index blocks fighting cards at lower indices. The Guard itself can be targeted. |
+| **Ambush** | Each player gains 1 wound when a card with Ambush enters the City. Inline `gainWound` pattern (D-2503). |
+
+---
+
+## Scheme Setup (Phase 5)
+
+| Term | Definition |
+|---|---|
+| **`SchemeSetupInstruction`** | Data-only contract: `{ type: SchemeSetupType, value: unknown }`. Follows D-2601 (Representation Before Execution). |
+| **`SchemeSetupType`** | Closed union: `'modifyCitySize' \| 'addCityKeyword' \| 'addSchemeCounter' \| 'initialCityState'`. With canonical `SCHEME_SETUP_TYPES` array. |
+| **`executeSchemeSetup`** | Deterministic executor. Applies instructions to G via `for...of`. Unknown types warn + skip. |
+| **`buildSchemeSetupInstructions`** | Setup-time builder. `registry: unknown` with local structural interface. MVP: returns `[]`. |
+| **Safe-skip pattern** | When data is unavailable, implement the full structure but return safe defaults. Preserves extension seams for future WPs. (D-2302, D-2504) |
 
 ---
 

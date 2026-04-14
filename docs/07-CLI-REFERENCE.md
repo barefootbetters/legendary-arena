@@ -2,11 +2,10 @@
 
 > Complete reference for all command-line tools in Legendary Arena.
 >
-> **Last updated:** 2026-04-09
+> **Last updated:** 2026-04-14
 >
-> **Current state:** Foundation infrastructure. The game server and its
-> CLI scripts do not exist yet — they are created by Foundation Prompt 01
-> and Work Packets 011/012.
+> **Current state:** Phases 0-5 complete. Game server, CLI scripts,
+> build, test, and migration commands all operational.
 
 ---
 
@@ -14,28 +13,22 @@
 
 Run these from the repository root.
 
-### Available Now
-
 | Command | Script | Purpose |
 |---|---|---|
+| `pnpm install` | — | Install all monorepo dependencies |
+| `pnpm -r build` | all packages | Build all packages |
+| `pnpm test` | all packages | Run all tests across all packages |
+| `pnpm --filter @legendary-arena/game-engine build` | game-engine tsc | Build engine only |
+| `pnpm --filter @legendary-arena/game-engine test` | game-engine node:test | Run engine tests only (314 tests) |
 | `pnpm check` | `scripts/check-connections.mjs` | External service connections (needs `.env`) |
 | `pnpm check:env` | `scripts/Check-Env.ps1` | Local tooling verification (no network) |
 | `pnpm validate` | `scripts/validate-r2.mjs` | R2 card data validation (4 phases, 40 sets) |
-| `pnpm validate:ps` | `scripts/Validate-R2-old.ps1` | Legacy PowerShell R2 validator |
+| `pnpm migrate` | `scripts/migrate.mjs` | Run PostgreSQL migrations |
 | `pnpm viewer:dev` | registry-viewer dev server | Card browser at localhost:5173 |
 | `pnpm viewer:build` | registry-viewer production build | Build viewer for deployment |
 | `pnpm registry:validate` | registry package validate | Validate card schemas via TypeScript |
 | `pnpm registry:build` | registry package build | Build @legendary-arena/registry |
-
-### Planned (Not Yet Created)
-
-| Command | Created by | Purpose |
-|---|---|---|
-| `pnpm dev:server` | FP-01 | Start boardgame.io server locally |
-| `pnpm test` | WP-002 | Run game engine test suite |
-| `pnpm build` | WP-002 | Build all packages |
-| `pnpm migrate` | FP-02 | Run database migrations |
-| `pnpm seed` | FP-02 | Seed PostgreSQL from validated data |
+| `pnpm check:ec` | `scripts/ec/health-check.ec.mjs` | EC health check (with contract IDs) |
 
 ---
 
@@ -102,8 +95,8 @@ Secrets are never printed.
 - `0` — all checks pass
 - `1` — any failure
 
-**Expected failures at this stage:** PostgreSQL and boardgame.io server
-will fail until Foundation Prompt 01 is complete.
+**Expected behavior:** All checks should pass when PostgreSQL is running
+and the game server is started locally.
 
 ---
 
@@ -229,10 +222,7 @@ Fires after the message is written. Validates format and EC references.
 
 ---
 
-## Server CLI Scripts (Planned)
-
-These scripts will be created by Foundation Prompt 01 and Work Packets
-011/012. They are documented here for reference but do not exist yet.
+## Server CLI Scripts
 
 | Script | Created by | Purpose |
 |---|---|---|
@@ -240,8 +230,8 @@ These scripts will be created by Foundation Prompt 01 and Work Packets
 | `apps/server/scripts/list-matches.mjs` | WP-012 | List active matches |
 | `apps/server/scripts/join-match.mjs` | WP-012 | Join an existing match |
 
-All server scripts will use Node.js built-in `fetch` (no axios), ESM
-only, and exit with code 1 on failure with full-sentence error messages.
+All server scripts use Node.js built-in `fetch` (no axios), ESM only,
+and exit with code 1 on failure with full-sentence error messages.
 
 ---
 

@@ -3,7 +3,7 @@
 > High-level, human-readable record of significant changes to Legendary Arena.
 > Not a git log — focuses on architectural impact and milestone completions.
 >
-> **Last updated:** 2026-04-09
+> **Last updated:** 2026-04-14
 > **Format:** Newest first. Each entry tied to commits and Work Packets.
 > **Authoritative sources:** This file, `docs/ai/work-packets/WORK_INDEX.md`,
 > and `git log`.
@@ -13,10 +13,88 @@
 ## Unreleased
 
 **Next milestones:**
-- FP-01: Render.com backend + PostgreSQL scaffold
-- FP-02: Database migration runner + seed pipeline
-- WP-002: boardgame.io Game Skeleton (`LegendaryGame`, 4 phases)
-- WP-003: Card Registry defect fixes + smoke test
+- Phase 6: WP-027 (Replay Determinism Proof) through WP-035/042 (Production)
+- WP-055: Theme Data Model
+- WP-060: Keyword & Rule Glossary data migration
+
+---
+
+## 2026-04-14 — Phase 5 Complete: Card Mechanics & Abilities
+
+**Tag:** `phase-5-complete` | **Tests:** 314 passing (engine)
+
+### WP-026 — Scheme Setup Instructions & City Modifiers (`d14d65b`)
+
+- `SchemeSetupInstruction` data-only contract with 4 MVP instruction types
+- Deterministic executor (`executeSchemeSetup`) — `for...of`, unknown types warn + skip
+- `buildSchemeSetupInstructions` returns `[]` at MVP (safe-skip, D-2504)
+- `modifyCitySize` is warn + no-op while `CityZone` is fixed tuple (D-2602)
+- `G.schemeSetupInstructions` stored for replay observability
+- D-2601 (Representation Before Execution) formalized as named decision
+- Phase 5 complete — 9 new tests, 314 total
+
+### WP-025 — Board Keywords: Patrol, Ambush, Guard (`5963b90`)
+
+- `BoardKeyword` closed union + `BOARD_KEYWORDS` canonical array
+- `G.cardKeywords` built at setup from registry ability text
+- Patrol: +1 fight cost. Guard: blocks lower-index targets. Ambush: wound on City entry
+- Board keywords are structural City rules, separate from hero hooks (D-2501)
+- 14 new tests, 305 total
+
+### WP-024 — Scheme & Mastermind Ability Execution (`various`)
+
+- `schemeTwistHandler` + `mastermindStrikeHandler` via rule execution pipeline
+- Scheme-loss at threshold (7 twists). Mastermind strike: counter + message MVP
+- WP-009B stubs replaced with real handlers. 10 new tests, 291 total
+
+### WP-023 — Conditional Hero Effects (`various`)
+
+- `evaluateCondition` with 4 condition types (AND logic)
+- `requiresKeyword` and `playedThisTurn` functional; `heroClassMatch` and `requiresTeam` safe-skip
+- 15 new tests, 281 total
+
+### WP-022 — Execute Hero Keywords (`various`)
+
+- `executeHeroEffects` fires draw/attack/recruit/ko on `playCard`
+- `ctx: unknown` avoids boardgame.io import in hero code
+- 11 new tests, 266 total
+
+### WP-021 — Hero Card Text & Keywords (Hooks Only) (`various`)
+
+- `HeroAbilityHook[]` data-only declarations, `HeroKeyword` closed union
+- Built at setup, immutable during gameplay. Execution deferred to WP-022
+- 5 new tests, 260 total
+
+---
+
+## 2026-04-13 — Phase 4 Complete: Core Gameplay Loop
+
+**Tag:** `phase-4-complete` | **Tests:** 247 passing (engine)
+
+WP-014A/B through WP-020. Full MVP combat loop: villain deck composition
+and reveal pipeline, City and HQ zones, fight/recruit moves with resource
+gating, KO/wounds/bystander mechanics, mastermind tactics, VP scoring.
+133+ DECISIONS.md entries. 8 moves operational.
+
+---
+
+## 2026-04-11 — Phase 3 Complete: MVP Multiplayer Infrastructure
+
+**Tag:** `phase-3-complete` | **Tests:** 132 passing (engine)
+
+WP-009A/B through WP-013. Rule hooks and execution pipeline (5 triggers,
+4 effect types), endgame evaluation (loss before victory), lobby flow,
+match list/join CLI scripts, persistence boundaries (3 classes, snapshots).
+Phase 3 exit gate closed (D-1320).
+
+---
+
+## 2026-04-10 — Phases 0-2 Complete: Foundation through Turn Engine
+
+FP-01/02 (Render.com backend, PostgreSQL, migrations), WP-001 through
+WP-008B. Coordination system, game skeleton, card registry fixes, server
+bootstrap, match setup contracts, deterministic init, player zones,
+turn structure, core moves (drawCards, playCard, endTurn).
 
 ---
 
