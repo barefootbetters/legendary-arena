@@ -3,7 +3,7 @@
 > A modern multiplayer evolution of the Marvel Legendary deck-building card game.  
 > Built with **boardgame.io**, **TypeScript**, **Cloudflare R2**, and **PostgreSQL**.
 
-**Status:** Foundation complete • Core gameplay loop complete (Phase 4) • Theme data model ready • Registry viewer with keyword/rule tooltips
+**Status:** Foundation complete • Core gameplay loop complete (Phase 4) • Hero ability execution (Phase 5, WP-022) • Theme data model ready • Registry viewer with keyword/rule tooltips
 
 ---
 
@@ -54,6 +54,7 @@ mindmap
 | 01 | [REPO-FOLDER-STRUCTURE](01-REPO-FOLDER-STRUCTURE.md) | Full directory layout |
 | 02 | [ARCHITECTURE](02-ARCHITECTURE.md) | Authoritative package boundaries, data flow, persistence rules |
 | 03 | [DATA-PIPELINE](03-DATA-PIPELINE.md) | R2 → metadata → validation → PostgreSQL + PAR artifact pipeline |
+| 03.1 | [DATA-SOURCES](03.1-DATA-SOURCES.md) | Authoritative input data inventory — provenance, storage, trust model |
 | 04 | [DEVELOPMENT-SETUP](04-DEVELOPMENT-SETUP.md) | Local development guide (you are here) |
 | 05 | [ROADMAP](05-ROADMAP.md) | Current Work Packets & phases |
 | 05M | [ROADMAP-MINDMAP](05-ROADMAP-MINDMAP.md) | Visual overview |

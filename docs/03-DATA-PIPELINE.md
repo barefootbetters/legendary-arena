@@ -396,6 +396,7 @@ for any scenario in the new content set.
 ---
 
 **See also:**
+- [03.1-DATA-SOURCES.md](03.1-DATA-SOURCES.md) — authoritative input data inventory (what exists, where it lives, trust model)
 - [01-REPO-FOLDER-STRUCTURE.md](01-REPO-FOLDER-STRUCTURE.md) — where data files live
 - [08-DEPLOYMENT.md](08-DEPLOYMENT.md) — R2 upload process and env vars
 - [07-CLI-REFERENCE.md](07-CLI-REFERENCE.md) — `pnpm validate` reference
