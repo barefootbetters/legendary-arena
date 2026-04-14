@@ -7,6 +7,42 @@
 
 ## Current State
 
+### WP-023 — Conditional Hero Effects (Teams, Colors, Keywords) (2026-04-13)
+
+**What changed:**
+- Hero ability conditions now evaluate instead of being skipped
+- `evaluateCondition(G, playerID, condition)` — new pure function in
+  `packages/game-engine/src/hero/heroConditions.evaluate.ts`
+- `evaluateAllConditions(G, playerID, conditions)` — AND logic over all
+  conditions (returns `true` only when ALL pass)
+- 4 MVP condition types implemented:
+  - `requiresKeyword` — fully functional, checks `G.heroAbilityHooks` for
+    keyword matches on played cards
+  - `playedThisTurn` — fully functional, checks `inPlay.length` threshold
+  - `heroClassMatch` — placeholder (returns `false`), awaits class data in G
+  - `requiresTeam` — placeholder (returns `false`), awaits team data in G
+- Integration: `heroEffects.execute.ts` calls `evaluateAllConditions`
+  instead of skipping all conditional hooks
+- Conditions never mutate G (pure predicates, deep equality test enforces)
+- Unsupported condition types safely return `false`
+- 15 new tests (10 unit + 5 integration), 281 total passing
+
+**What's true now:**
+- Conditional hero effects evaluate deterministically
+- `requiresKeyword` synergies work (played card keyword matching)
+- `playedThisTurn` thresholds work (card count gating)
+- `heroClassMatch` and `requiresTeam` are safe no-ops pending data resolution
+- Condition type string is `heroClassMatch` (not `requiresColor`)
+- WP-021 contracts unmodified
+- WP-024 is unblocked for scheme/mastermind ability execution
+
+**What's next:**
+- Follow-up WP needed to resolve team/class data into G (enables
+  `heroClassMatch` and `requiresTeam` evaluators)
+- WP-024 — Scheme & Mastermind Ability Execution
+
+---
+
 ### WP-022 — Execute Hero Keywords (Minimal MVP) (2026-04-13)
 
 **What changed:**

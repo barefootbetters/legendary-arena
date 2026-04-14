@@ -2455,6 +2455,70 @@ same traceability need, or frequent card data changes).
 **Introduced:** WP-022 review (2026-04-13)
 **Status:** Deferred. Re-evaluate when debugging pain or data churn arrives.
 
+### D-2301 — Condition Evaluation Uses AND Logic
+**Decision:** `evaluateAllConditions` returns `true` only when ALL conditions
+on a hero ability hook pass. Empty or undefined conditions = unconditional
+(returns `true`). This is the only supported logic mode for MVP.
+**Rationale:** AND logic is the simplest correct model — a hero card that
+says "if you played a Tech hero this turn, gain +2 attack" requires both
+the Tech check and any other conditions to pass. OR logic and complex
+combinators are deferred until card data demands them.
+**Introduced:** WP-023 (2026-04-13)
+**Status:** Active
+
+---
+
+### D-2302 — 4 MVP Condition Types (2 Functional, 2 Placeholder)
+**Decision:** WP-023 implements evaluators for 4 condition types:
+`requiresKeyword` and `playedThisTurn` are fully functional with current G
+data. `heroClassMatch` and `requiresTeam` return `false` unconditionally
+because team/class data is not resolved into G yet.
+**Rationale:** Team and hero class data exists in the registry
+(`HeroGroupSchema.team`, `HeroCardSchema.hc`) but is not resolved into
+`G.cardStats` or any other G field at setup time. Adding this data requires
+expanding `CardStatEntry` or introducing new G fields — scope beyond WP-023.
+The placeholder pattern (return `false` = safe skip) matches WP-022's
+treatment of unsupported keywords.
+**Introduced:** WP-023 (2026-04-13)
+**Status:** Active — follow-up WP needed to resolve team/class data into G
+
+---
+
+### D-2303 — Condition Evaluators Are Pure Functions (Never Mutate G)
+**Decision:** `evaluateCondition` and `evaluateAllConditions` are pure
+functions that read `G` and return `boolean`. They never mutate game state.
+Deep equality test enforces this invariant.
+**Rationale:** Conditions are pre-filters, not actions. Mutating G during
+condition evaluation would break determinism and make debugging impossible
+(the act of checking whether an effect should fire would change the game).
+**Introduced:** WP-023 (2026-04-13)
+**Status:** Immutable
+
+---
+
+### D-2304 — Condition Type String Is heroClassMatch (Not requiresColor)
+**Decision:** The condition type for hero class checks is `heroClassMatch`,
+matching the string produced by `heroAbility.setup.ts` (line 123). The
+WP-023 spec originally used `requiresColor` — pre-flight discovered the
+drift and locked the actual code string.
+**Rationale:** Evaluators must match the condition type strings that exist
+in `G.heroAbilityHooks` at runtime. Using aspirational names from the WP
+instead of actual code strings causes silent evaluation failures.
+**Introduced:** WP-023 pre-flight (2026-04-13)
+**Status:** Active
+
+---
+
+### D-2305 — HeroCondition.value Is Always String; Numeric Parse for playedThisTurn
+**Decision:** `HeroCondition` has `type: string; value: string` per WP-021.
+The `playedThisTurn` evaluator parses `value` to integer via `parseInt`.
+Invalid parse returns `false` (safe skip).
+**Rationale:** The WP-021 contract uses string for value to keep the type
+generic. Parsing at evaluation time is correct — condition descriptors are
+data, evaluators interpret them.
+**Introduced:** WP-023 (2026-04-13)
+**Status:** Active
+
 ---
 
 ## Change Management

@@ -537,15 +537,18 @@ These packets make individual cards do things.
   additive to WP-018 base card stats; `ctx: unknown` avoids boardgame.io
   import; WP-021 contracts not modified; 11 new tests, 266 total passing
 
-- [ ] WP-023 — Conditional Hero Effects (Teams, Colors, Keywords) ✅ Reviewed
+- [x] WP-023 — Conditional Hero Effects (Teams, Colors, Keywords) ✅ Complete (2026-04-13)
   Dependencies: WP-022
-  Notes: 4 MVP condition types: `requiresTeam`, `requiresColor`,
+  Notes: 4 MVP condition types: `heroClassMatch`, `requiresTeam`,
   `requiresKeyword`, `playedThisTurn`; conditions are checked not inferred
   (pure predicates, never mutate G); effects never inspect hidden information;
   ALL conditions must pass (AND logic); unsupported condition types safely
-  skipped; modifies WP-022 execution to integrate condition evaluation;
-  WP-021 contracts not modified; was truncated at 55 lines — normalized to
-  full PACKET-TEMPLATE
+  skipped; `requiresKeyword` and `playedThisTurn` fully functional;
+  `heroClassMatch` and `requiresTeam` are placeholders (return false) until
+  team/class data is resolved into G; modifies WP-022 execution to integrate
+  condition evaluation; WP-021 contracts not modified; condition type string
+  is `heroClassMatch` (not `requiresColor` — pre-flight name drift fix);
+  15 new tests, 281 total passing
 
 - [ ] WP-024 — Scheme & Mastermind Ability Execution ✅ Reviewed
   Dependencies: WP-023

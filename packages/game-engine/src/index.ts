@@ -147,6 +147,7 @@ export { filterHooksByTiming, filterHooksByKeyword, getHooksForCard } from './ru
 export { buildHeroAbilityHooks } from './setup/heroAbility.setup.js';
 export type { HeroEffectResult } from './hero/heroEffects.types.js';
 export { executeHeroEffects } from './hero/heroEffects.execute.js';
+export { evaluateCondition, evaluateAllConditions } from './hero/heroConditions.evaluate.js';
 export {
   parseCardStatValue,
   buildCardStats,

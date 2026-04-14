@@ -14,6 +14,7 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { HeroAbilityHook, HeroEffectDescriptor } from '../rules/heroAbility.types.js';
 import { getHooksForCard } from '../rules/heroAbility.types.js';
+import { evaluateAllConditions } from './heroConditions.evaluate.js';
 import type { HeroEffectResult } from './heroEffects.types.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { shuffleDeck } from '../setup/shuffle.js';
@@ -120,8 +121,9 @@ function drawFromPlayerDeck(
  *
  * Called from playCard after the card is placed in inPlay and base stats
  * are applied. Iterates hooks in registration order, effects in descriptor
- * array order. Hooks with conditions are skipped. Unsupported keywords and
- * invalid magnitudes are skipped.
+ * array order. Hooks with conditions are evaluated via evaluateAllConditions
+ * (WP-023) — effects execute only when ALL conditions pass. Unsupported
+ * keywords and invalid magnitudes are skipped.
  *
  * @param G - Game state (mutated under Immer draft).
  * @param ctx - boardgame.io context passed as unknown to avoid importing
@@ -144,9 +146,12 @@ export function executeHeroEffects(
   const hooks = getHooksForCard(G.heroAbilityHooks, cardId);
 
   for (const hook of hooks) {
-    // why: WP-022 skips all conditional effects. Conditional evaluation
-    // is deferred to WP-023. A hook with conditions produces no mutations.
-    if (hook.conditions !== undefined && hook.conditions.length > 0) {
+    // why: WP-023 upgrade — WP-022 skipped all conditional effects;
+    // WP-023 evaluates them deterministically. Effects execute only when
+    // ALL conditions pass (AND logic). Unsupported condition types return
+    // false (safe skip), so hooks with unsupported conditions are still
+    // effectively skipped.
+    if (!evaluateAllConditions(G, playerID, hook.conditions)) {
       continue;
     }
 
