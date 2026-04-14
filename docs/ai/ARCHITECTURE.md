@@ -17,6 +17,17 @@
 > and re-read this document and `00.1` before proceeding.
 >
 > Created: WP-013 -- Persistence Boundaries & Snapshots
+> Updated: WP-026 -- Phase 5 complete; scheme setup instructions, board keywords,
+>   hero ability execution, conditional effects; D-2601 (RBE) formalized;
+>   G.cardKeywords, G.schemeSetupInstructions, G.heroAbilityHooks documented
+> Updated: WP-025 -- board keywords (Patrol, Ambush, Guard); G.cardKeywords field
+> Updated: WP-021 -- hero ability hooks (data-only); G.heroAbilityHooks field
+> Updated: WP-020 -- VP scoring; computeFinalScores, economy vs scoring separation
+> Updated: WP-019 -- mastermind tactics; G.mastermind state
+> Updated: WP-018 -- attack/recruit economy; G.cardStats, G.turnEconomy
+> Updated: WP-017 -- KO, wounds, bystanders; G.ko, G.attachedBystanders
+> Updated: WP-016 -- fightVillain, recruitHero moves
+> Updated: WP-015 -- City/HQ zones; G.city, G.hq; pushVillainIntoCity, escape
 > Updated: WP-014 review -- villain deck reveal pipeline and RevealedCardType conventions
 > Updated: WP-014 -- Villain Deck & Reveal Pipeline
 > Updated: WP-011 review -- Lobby phase flow and G.lobby observability pattern
@@ -1120,7 +1131,7 @@ are satisfied.
 
 ---
 
-## MVP Gameplay Invariants (WP-010–WP-020)
+## MVP Gameplay Invariants (WP-010–WP-026)
 
 These invariants are locked by the Work Packets that established the MVP
 gameplay loop. They apply to all current and future packets. Violating any
@@ -1142,7 +1153,8 @@ invariant below is an architectural bug, even if the code compiles.
 - No move, rule hook, or scorer may query the registry at runtime.
 - All card metadata required at runtime must be **resolved at setup time** and
   stored in `G` as plain data structures (e.g., `G.cardStats`,
-  `G.villainDeckCardTypes`, `G.heroAbilityHooks`).
+  `G.villainDeckCardTypes`, `G.heroAbilityHooks`, `G.cardKeywords`,
+  `G.schemeSetupInstructions`).
 - Runtime logic operates exclusively on `CardExtId` strings and deterministic
   state derived from setup.
 
@@ -1171,14 +1183,54 @@ invariant below is an architectural bug, even if the code compiles.
 - Endgame detection (WP-010) and VP scoring (WP-020) are strictly separate
   concerns.
 
-### Data Representation Before Execution
+### Hero Abilities & Board Keywords (WP-021–WP-025)
 
-- Gameplay text (hero abilities, keywords, conditions) is represented in the
-  engine **before it is executed**.
+- Hero ability hooks (`G.heroAbilityHooks`) are **data-only** declarations
+  built at setup time. They contain no functions or closures.
+- Hero keyword effects (draw, attack, recruit, ko) fire after `playCard`
+  via `executeHeroEffects`. Execution respects conditions (AND logic).
+- Unsupported keywords and unmet conditions produce **no mutation** — safe
+  skip, not failure.
+- Board keywords (`G.cardKeywords`) are **structural City rules**, separate
+  from hero abilities. They fire automatically without player choice (D-2501).
+- Patrol: additive fight cost modifier. Guard: blocks lower-index targets.
+  Ambush: wound on City entry (inline `gainWound`, D-2503).
+- `G.cardKeywords` and `G.heroAbilityHooks` are immutable during gameplay.
+
+### Scheme Setup (WP-026)
+
+- Scheme setup instructions (`G.schemeSetupInstructions`) are declarative,
+  data-only contracts following D-2601 (Representation Before Execution).
+- Instructions execute **once** during setup, before the first turn. They
+  are never re-executed during moves.
+- `SchemeSetupType` is a **closed union** — new types require a DECISIONS.md
+  entry.
+- Unknown instruction types log a warning and skip — never throw (D-1234).
+- `modifyCitySize` is warn + no-op at MVP while `CityZone` is a fixed
+  tuple (D-2602).
+- Scheme **setup** (board config, WP-026) is formally separate from scheme
+  **twist** (event reaction, WP-024). These must not be mixed (D-2601).
+- Builder returns `[]` at MVP — no structured registry metadata yet (D-2504).
+
+### Data Representation Before Execution (D-2601)
+
+- Gameplay text (hero abilities, keywords, conditions, scheme setup) is
+  represented in the engine **before it is executed**.
 - Representation layers (contracts, hooks, taxonomies) must be in place before
   execution layers are introduced.
 - Execution of represented data must never require refactoring existing
   state contracts.
+- All gameplay behavior follows the Representation Before Execution (RBE)
+  pattern: data-only contracts first, deterministic execution via pure
+  helpers. Proven across `HookDefinition` (WP-009A), `HeroAbilityHook`
+  (WP-021), `HeroEffectDescriptor` (WP-022), and `SchemeSetupInstruction`
+  (WP-026).
+- Setup-time builders use `registry: unknown` with local structural
+  interfaces to respect the layer boundary — no `@legendary-arena/registry`
+  imports in engine code.
+- When data sources are incomplete, the safe-skip pattern applies: implement
+  the full structure, return safe defaults for blocked types, document the
+  gap with `// why:` comments (D-2302, D-2504).
 
 ### Debuggability & Diagnostics
 
