@@ -2,12 +2,14 @@
 
 > How to set up Legendary Arena for local development on Windows.
 >
-> **Last updated:** 2026-04-09
+> **Last updated:** 2026-04-14
 >
-> **Current project state:** Foundation infrastructure complete through FP-01.
-> The game server (`apps/server/`) exists with a minimal boardgame.io
-> Game definition, rules loader, and /health endpoint. The game engine
-> (`packages/game-engine/`) does not exist yet — created by WP-002.
+> **Current project state:** Phases 0-5 complete (41/61 work items).
+> The game engine (`packages/game-engine/`) has a full gameplay loop with
+> 8 moves, rule execution pipeline, hero abilities, board keywords, and
+> scheme setup — 314 tests passing. The game server (`apps/server/`)
+> wires the engine into boardgame.io `Server()` with registry and rules
+> loading.
 
 ---
 
@@ -201,28 +203,22 @@ that block seeding.
 
 ## 4. Available Scripts
 
-Scripts that exist and work today:
-
 | Command | Purpose | When to run |
 |---|---|---|
+| `pnpm install` | Install all dependencies | After clone or lockfile change |
+| `pnpm -r build` | Build all packages | Before running tests or server |
+| `pnpm test` | Run all tests (all packages) | After any code change |
+| `pnpm --filter @legendary-arena/game-engine test` | Run engine tests only (314 tests) | During engine development |
+| `pnpm --filter @legendary-arena/game-engine build` | Build engine only | Quick compile check |
 | `pnpm check:env` | Local tooling check (no network) | First thing on a new machine |
 | `pnpm check` | External service connections | After setting up `.env` |
 | `pnpm validate` | R2 card data validation (4 phases) | Before any seed or deploy |
-| `pnpm validate:ps` | Legacy PowerShell R2 validator | If you prefer PowerShell |
 | `pnpm viewer:dev` | Start the registry viewer locally | Browse cards at localhost:5173 |
 | `pnpm viewer:build` | Build the registry viewer | Before deploying viewer |
 | `pnpm registry:validate` | Registry package validation | After modifying card schemas |
 | `pnpm registry:build` | Build the registry package | After modifying registry code |
-
 | `pnpm check:ec` | EC health check (with contract IDs) | After modifying health checks |
 | `node --env-file=.env apps/server/src/server.mjs` | Start boardgame.io server locally | After PostgreSQL setup |
-
-Scripts that do NOT exist yet (created by future Work Packets):
-
-| Command | Created by | Purpose |
-|---|---|---|
-| `pnpm test` | WP-002 | Run game engine test suite |
-| `pnpm build` | WP-002 | Build all packages |
 
 ---
 
@@ -278,15 +274,16 @@ legendary-arena/
 ├── .githooks/        # Commit hooks (pre-commit, commit-msg)
 ├── apps/
 │   ├── registry-viewer/  # Card browser SPA (Vue)
-│   └── server/           # boardgame.io game server (FP-01)
+│   └── server/           # boardgame.io game server
 ├── packages/
+│   ├── game-engine/  # @legendary-arena/game-engine (314 tests, 17 subdirs)
 │   └── registry/     # @legendary-arena/registry (Zod schemas, loaders)
 ├── data/
 │   ├── cards/        # Per-set card JSON (40 files)
 │   └── metadata/     # Lookup tables (sets, card-types, teams, classes)
 ├── scripts/          # CLI tools (check, validate, git helpers)
 └── docs/
-    ├── ai/           # AI coordination system (WPs, ECs, REFERENCE)
+    ├── ai/           # AI coordination system (66 WPs, 63 ECs, REFERENCE)
     └── *.md          # Human-facing docs (architecture, roadmap, this file)
 ```
 
