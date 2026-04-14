@@ -9,6 +9,7 @@
  */
 
 import type { MatchSetupConfig } from './matchSetup.types.js';
+import type { BoardKeyword } from './board/boardKeywords.types.js';
 
 // why: Persistence boundary types (PERSISTENCE_CLASSES, MatchSnapshot,
 // PersistableMatchConfig) are defined canonically in
@@ -127,6 +128,9 @@ export type {
   ZoneValidationError,
   GameStateShape,
 } from './state/zones.types.js';
+
+export type { BoardKeyword } from './board/boardKeywords.types.js';
+export { BOARD_KEYWORDS } from './board/boardKeywords.types.js';
 
 import type { TurnStage } from './turn/turnPhases.types.js';
 import type { CardExtId, PlayerZones, GlobalPiles } from './state/zones.types.js';
@@ -305,6 +309,12 @@ export interface LegendaryGameState {
   // Read-only after setup.
   /** Card stat lookup keyed by CardExtId. Built at setup, read-only at runtime. */
   cardStats: Record<CardExtId, CardStatEntry>;
+
+  // why: board keyword data resolved at setup time from registry so moves
+  // never query registry at runtime — same setup-time resolution pattern as
+  // G.cardStats and G.villainDeckCardTypes. No runtime registry access.
+  /** Board keywords for villain/henchman cards. Built at setup, read-only at runtime. */
+  cardKeywords: Record<CardExtId, BoardKeyword[]>;
 
   // why: hero ability hooks are built at setup time and immutable during
   // gameplay. Data-only — no functions or closures. Execution is WP-022+.

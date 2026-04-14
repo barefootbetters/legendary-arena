@@ -27,6 +27,7 @@ import {
   attachBystanderToVillain,
   resolveEscapedBystanders,
 } from '../board/bystanders.logic.js';
+import { hasAmbush } from '../board/boardKeywords.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -150,6 +151,29 @@ export function revealVillainCard({ G, ctx, ...context }: MoveContext): void {
         G.messages.push(
           `Bystanders from escaped villain "${pushResult.escapedCard}" returned to supply.`,
         );
+      }
+    }
+
+    // why: Ambush fires on City entry, not on fight. When a villain with
+    // Ambush enters the City, each player gains 1 wound. Wound gain is
+    // inline (not RuleEffect) because no 'gainWound' RuleEffect type exists
+    // — same pattern as escape wounds above (D-2403 safe-skip for effect
+    // type gaps).
+    const cardKeywords = G.cardKeywords ?? {};
+    if (hasAmbush(cardId, cardKeywords)) {
+      const playerIds = Object.keys(G.playerZones);
+      for (const playerId of playerIds) {
+        if (G.piles.wounds.length > 0) {
+          const ambushWoundResult = gainWound(
+            G.piles.wounds,
+            G.playerZones[playerId]!.discard,
+          );
+          G.piles.wounds = ambushWoundResult.woundsPile;
+          G.playerZones[playerId]!.discard = ambushWoundResult.playerDiscard;
+          G.messages.push(
+            `Player ${playerId} gained a wound from Ambush on "${cardId}".`,
+          );
+        }
       }
     }
 

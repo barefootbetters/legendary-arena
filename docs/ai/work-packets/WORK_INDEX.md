@@ -560,7 +560,7 @@ These packets make individual cards do things.
   MVP mastermind strike uses counter + message only (wound card effects
   deferred); WP-009B stubs replaced; 10 new tests, 291 total passing
 
-- [ ] WP-025 — Keywords: Patrol, Ambush, Guard ✅ Reviewed
+- [x] WP-025 — Keywords: Patrol, Ambush, Guard ✅ Complete (2026-04-13)
   Dependencies: WP-024
   Notes: `BoardKeyword` closed union (`'patrol'` | `'ambush'` | `'guard'`)
   with drift-detection; `G.cardKeywords` built at setup (registry boundary);

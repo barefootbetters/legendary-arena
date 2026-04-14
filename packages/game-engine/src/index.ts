@@ -164,3 +164,11 @@ export type { CardStatsRegistryReader, CardStatsFlatCard } from './economy/econo
 export { createSnapshot } from './persistence/snapshot.create.js';
 export type { SnapshotContext } from './persistence/snapshot.create.js';
 export { validateSnapshotShape } from './persistence/snapshot.validate.js';
+export type { BoardKeyword } from './board/boardKeywords.types.js';
+export { BOARD_KEYWORDS } from './board/boardKeywords.types.js';
+export { buildCardKeywords } from './setup/buildCardKeywords.js';
+export {
+  getPatrolModifier,
+  isGuardBlocking,
+  hasAmbush,
+} from './board/boardKeywords.logic.js';

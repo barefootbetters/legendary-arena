@@ -16,6 +16,7 @@ import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
 import { awardAttachedBystanders } from '../board/bystanders.logic.js';
 import { getAvailableAttack, spendAttack } from '../economy/economy.logic.js';
+import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -55,9 +56,20 @@ export function fightVillain(
     return;
   }
 
-  // why: silent failure preserves deterministic move contract — insufficient
-  // attack points means the fight cannot proceed
-  const requiredFightCost = G.cardStats[cardId]?.fightCost ?? 0;
+  // why: Guard blocks access to lower-index City cards. A Guard at a higher
+  // index (closer to escape) prevents fighting villains behind it. You must
+  // defeat the Guard first. Guard check uses defensive access (G.cardKeywords
+  // may be undefined in pre-WP-025 test states).
+  const cardKeywords = G.cardKeywords ?? {};
+  if (isGuardBlocking(G.city, cityIndex, cardKeywords)) {
+    return;
+  }
+
+  // why: Patrol adds +1 to the fight cost (MVP additive modifier). The
+  // patrol modifier is additive on top of the card's base fightCost.
+  const baseFightCost = G.cardStats[cardId]?.fightCost ?? 0;
+  const patrolModifier = getPatrolModifier(cardId, cardKeywords);
+  const requiredFightCost = baseFightCost + patrolModifier;
   const availableAttack = getAvailableAttack(G.turnEconomy);
   if (availableAttack < requiredFightCost) {
     return;

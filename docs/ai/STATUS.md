@@ -7,6 +7,44 @@
 
 ## Current State
 
+### WP-025 — Keywords: Patrol, Ambush, Guard (2026-04-13)
+
+**What changed:**
+- Board keyword system implemented: `BoardKeyword` closed union
+  (`'patrol'` | `'ambush'` | `'guard'`) with `BOARD_KEYWORDS` canonical array
+  and drift-detection test
+- `G.cardKeywords: Record<CardExtId, BoardKeyword[]>` built at setup time
+  from registry card data via `buildCardKeywords()` (same pattern as
+  `G.cardStats` and `G.villainDeckCardTypes`)
+- **Patrol:** `fightVillain` now adds `getPatrolModifier()` (+1 MVP) to the
+  fight cost before the attack sufficiency check. Three-step contract preserved.
+- **Guard:** `fightVillain` now checks `isGuardBlocking()` — a Guard card at a
+  higher City index blocks fighting cards at lower indices. Targeting the Guard
+  itself is allowed.
+- **Ambush:** `revealVillainCard` now checks `hasAmbush()` after City placement
+  — each player gains 1 wound inline (same pattern as escape wounds, D-2503).
+- `buildCardKeywords` extracts Ambush from ability text (`"Ambush:"` prefix).
+  Patrol and Guard have no data source — dormant with real cards (D-2504).
+- 14 new tests (9 unit + 5 integration), 305 total passing
+
+**What's true now:**
+- City gameplay has tactical friction: Patrol, Guard, and Ambush modify
+  fight validation and reveal behavior
+- Board keywords are a separate mechanism from hero ability hooks — automatic,
+  no player choice (D-2501)
+- All keyword helpers are pure (no boardgame.io imports, no .reduce())
+- `G.cardKeywords` is Runtime class, built at setup, immutable during gameplay
+- WP-009A contracts unmodified (no new RuleEffect types)
+- WP-015 contracts unmodified (`city.types.ts` untouched)
+- WP-026 is unblocked
+
+**What's next:**
+- WP-026 — Scheme Setup Instructions & City Modifiers
+- Future WP to add structured keyword classification for Patrol/Guard
+- Future WP to add `'gainWound'` RuleEffect type and migrate Ambush to pipeline
+
+---
+
 ### WP-024 — Scheme & Mastermind Ability Execution (2026-04-13)
 
 **What changed:**

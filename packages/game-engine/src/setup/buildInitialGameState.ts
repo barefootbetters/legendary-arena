@@ -34,6 +34,7 @@ import { initializeCity, initializeHq } from '../board/city.logic.js';
 import { buildCardStats, resetTurnEconomy } from '../economy/economy.logic.js';
 import { buildMastermindState } from '../mastermind/mastermind.setup.js';
 import { buildHeroAbilityHooks } from './heroAbility.setup.js';
+import { buildCardKeywords } from './buildCardKeywords.js';
 
 // why: Pile ext_id constants are re-exported from pilesInit.ts for backward
 // compatibility. The canonical definitions live in pilesInit.ts — importing
@@ -156,6 +157,11 @@ export function buildInitialGameState(
   // MUST execute after buildCardStats (ordering invariant — EC-019).
   const cardStats = buildCardStats(registry as unknown, config);
 
+  // why: card keywords resolved at setup from registry so moves never query
+  // registry at runtime — same pattern as G.cardStats (WP-018) and
+  // G.villainDeckCardTypes (WP-014B).
+  const cardKeywords = buildCardKeywords(registry as unknown, config);
+
   // why: mastermind state built from registry at setup time; base card
   // fightCost added to cardStats so fightMastermind reads it without
   // registry access. Narrow test mocks produce empty state gracefully.
@@ -201,6 +207,9 @@ export function buildInitialGameState(
     // registry at runtime — same pattern as G.villainDeckCardTypes (WP-014).
     // Read-only after setup (mastermind base card added by buildMastermindState).
     cardStats,
+    // why: board keywords resolved at setup from registry — same pattern as
+    // cardStats and villainDeckCardTypes. Immutable during gameplay.
+    cardKeywords,
     // why: economy starts at zero; reset again at each turn start
     turnEconomy: resetTurnEconomy(),
     // why: hero ability hooks built from registry at setup time — same
