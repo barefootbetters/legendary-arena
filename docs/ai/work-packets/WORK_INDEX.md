@@ -614,7 +614,7 @@ These packets make the game safe to ship.
   deferred to WP-029; was truncated at 80 lines — normalized to full
   PACKET-TEMPLATE
 
-- [ ] WP-029 — Spectator & Permissions View Models ✅ Reviewed
+- [x] WP-029 — Spectator & Permissions View Models ✅ Reviewed (2026-04-14)
   Dependencies: WP-028
   Notes: `UIAudience` type (`player` + `spectator`);
   `filterUIStateForAudience` is a pure post-processing filter on UIState

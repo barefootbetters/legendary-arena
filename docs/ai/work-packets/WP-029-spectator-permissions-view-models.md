@@ -221,6 +221,10 @@ same game truth, with only visibility differences.
   filterUIStateForAudience
 - `packages/game-engine/src/ui/uiState.types.ts` — **modified** — add audience
   re-export, optional handCards field
+- `packages/game-engine/src/ui/uiState.build.ts` — **modified** — add
+  `handCards: [...zones.hand]` to player projection (pre-flight authorized,
+  01.5 wiring allowance — buildUIState must populate handCards so
+  filterUIStateForAudience can expose them to the owning player)
 - `packages/game-engine/src/index.ts` — **modified** — export audience types
   and filter
 - `packages/game-engine/src/ui/uiState.filter.test.ts` — **new** — tests

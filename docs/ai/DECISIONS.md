@@ -2927,6 +2927,57 @@ data changes (new images, updated text) do not require engine changes.
 
 ## Change Management
 
+### D-2901 — Audience Filter Operates on UIState, Not G
+
+**Decision:** `filterUIStateForAudience` is a pure post-processing function
+that accepts `UIState` (from `buildUIState`) as input. It never accesses G,
+ctx, or engine internals. All audiences see the same game truth with only
+visibility differences.
+
+**Rationale:** The filter is a projection-layer concern implementing D-0302
+(Single UIState, Multiple Audiences). Operating on UIState (not G) ensures
+the filter cannot accidentally leak engine internals, mutate game state, or
+create alternate game states. The filter is a consumer of the UI projection
+layer, not a participant in gameplay.
+
+**Affected WPs:** WP-029, future UI/server WPs that consume filtered views.
+
+---
+
+### D-2902 — Hand Visibility Approach (handCards Optional Field)
+
+**Decision:** `UIPlayerState.handCards?: string[]` is optional. `buildUIState`
+always populates it (spread copy from `zones.hand`). `filterUIStateForAudience`
+redacts it (omits the field) for non-owning audiences and spectators. The
+active player sees their own hand ext_ids; all others see `handCount` only.
+
+**Rationale:** The filter operates on UIState, not G. For the active player
+to see hand card ext_ids, `buildUIState` must include them. Making the field
+optional allows the filter to cleanly remove it for non-owning audiences
+without introducing `null` semantics. The spread copy in `buildUIState`
+prevents aliasing with G.playerZones.hand.
+
+**Affected WPs:** WP-029. Future WPs consuming UIState should check
+`handCards` presence rather than assuming it exists.
+
+---
+
+### D-2903 — Economy Visibility (Zeroed for Non-Active and Spectators)
+
+**Decision:** Turn economy is zeroed (all fields set to 0) for non-active
+players and spectators. Only the active player (whose turn it is) sees
+economy values (attack, recruit, availableAttack, availableRecruit).
+
+**Rationale:** The turn economy reveals the active player's remaining
+resources, which is strategic information. Non-active players and spectators
+should not know how much attack/recruit the active player has available.
+Zeroing maintains type stability (no optional fields on UITurnEconomyState).
+
+**Affected WPs:** WP-029. Future WPs may adjust visibility rules (e.g.,
+showing spent totals to spectators) by modifying the filter.
+
+---
+
 ### How to Add a New Decision
 1. Assign a new decision ID
 2. State the decision clearly

@@ -75,6 +75,7 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 - `packages/game-engine/src/ui/uiAudience.types.ts` — **new** — UIAudience type
 - `packages/game-engine/src/ui/uiState.filter.ts` — **new** — filterUIStateForAudience
 - `packages/game-engine/src/ui/uiState.types.ts` — **modified** — add audience re-export, optional handCards field
+- `packages/game-engine/src/ui/uiState.build.ts` — **modified** — add handCards population to player projection (pre-flight authorized, 01.5 wiring allowance)
 - `packages/game-engine/src/index.ts` — **modified** — export audience types and filter
 - `packages/game-engine/src/ui/uiState.filter.test.ts` — **new** — tests
 

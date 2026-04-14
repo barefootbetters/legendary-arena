@@ -72,8 +72,39 @@
 - All UI state files are engine category (no boardgame.io, no registry)
 
 **What's next:**
-- WP-029: Spectator & permission-filtered views (UIAudience,
-  filterUIStateForAudience) — implements D-0302
+- WP-030: next in the serial chain (WP-027 -> WP-028 -> WP-029 -> WP-030)
+
+---
+
+### WP-029 — Spectator & Permissions View Models (2026-04-14)
+
+**What changed:**
+- `UIAudience` discriminated union: `{ kind: 'player'; playerId: string }`
+  and `{ kind: 'spectator' }` — defines who is viewing the game
+- `filterUIStateForAudience(uiState, audience)` pure post-processing filter
+  that produces audience-appropriate views from the authoritative UIState
+- `UIPlayerState.handCards?: string[]` — optional field populated by
+  `buildUIState`, redacted by filter for non-owning audiences
+- Information visibility enforced: active player sees own hand ext_ids,
+  all others see handCount only. Economy zeroed for non-active/spectator.
+  Deck order never revealed to any audience.
+- D-0302 (Single UIState, Multiple Audiences) is now implemented
+- Replay viewers use the spectator audience
+- 9 contract enforcement tests verify no hidden information leakage
+- 340 total tests, 89 suites, 0 failures
+
+**Key decisions:**
+- D-2901: Filter operates on UIState, not G
+- D-2902: handCards optional, always populated by buildUIState, redacted by filter
+- D-2903: Economy zeroed for non-active and spectators
+
+**Architectural significance:**
+- One authoritative UIState, multiple filtered views — no alternate game states
+- Filter is pure: no I/O, no mutation, no boardgame.io, no engine internals
+- All audience/filter files are engine category (src/ui/)
+
+**What's next:**
+- WP-030: next in the serial chain
 
 ---
 
