@@ -25,11 +25,23 @@ Failure to satisfy any item below is a failed execution of WP-021.
 All items below must be copied verbatim from WP-021.
 If formatting, spelling, or ordering differs, the implementation is invalid.
 
+- **HeroAbilityTiming closed union:**
+  ```ts
+  type HeroAbilityTiming =
+    | 'onPlay'
+    | 'onFight'
+    | 'onRecruit'
+    | 'onKO'
+    | 'onReveal'
+  ```
+
+- `HERO_ABILITY_TIMINGS: readonly HeroAbilityTiming[]` — canonical array, drift-detection required
+
 - **HeroAbilityHook shape:**
   ```ts
   interface HeroAbilityHook {
     cardId: CardExtId
-    timing: 'onPlay' | 'onFight' | 'onRecruit' | 'onKO' | 'onReveal'
+    timing: HeroAbilityTiming
     keywords: HeroKeyword[]
     conditions?: HeroCondition[]
     effects?: HeroEffectDescriptor[]
@@ -63,8 +75,15 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 - `G.heroAbilityHooks` is immutable during gameplay — moves must never modify it
 - No registry import in move or type files — registry data provided at setup only
 - `HeroKeyword` is a closed union — adding a keyword requires DECISIONS.md entry + both type and array update
+- `HeroAbilityTiming` is a closed union — same drift-detection pattern as `HeroKeyword`
 - No `.reduce()` in hook construction — use `for...of`
 - No `boardgame.io` import in hero ability files
+- **Timing derivation:** if ability markup explicitly encodes timing, use it; otherwise **always assign `'onPlay'`**. Do not infer timing from natural-language phrasing.
+- **No NL magnitude extraction:** do not extract numeric magnitude from English text (e.g., "Draw two cards" does NOT produce `magnitude: 2`). Only structured markup with explicit values may populate `magnitude`.
+- **Registry field constraint:** `buildHeroAbilityHooks` may only rely on `cardId`/`key`, `abilities: string[]`, and deck membership. Richer registry data must be ignored.
+- **Keywords vs effects:** `keywords` are labels only. They do not imply that a matching `HeroEffectDescriptor` must exist. A hook may have keywords but no effects, or vice versa.
+- **Parsing order:** `[hc:X]` -> `[keyword:X]` -> `[icon:X]` -> normalize -> assign timing. No step may depend on results of a later step.
+- **Output determinism:** identical registry + matchConfig inputs produce byte-identical JSON output order
 
 ---
 
@@ -72,11 +91,13 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 
 - `HeroAbilityHook.cardId`: must be a hero card `CardExtId`
 - Timing fields: declarative only — no execution semantics attached
+- Timing derivation: defaults to `'onPlay'` — no NL inference
 - Effects: descriptors, not functions
 - Hooks: immutable after setup
 - `HERO_KEYWORDS`: semantic labels only; adding requires DECISIONS.md entry
+- `HERO_ABILITY_TIMINGS`: same closed-union pattern as keywords
 - `buildHeroAbilityHooks`: setup-time-only pattern
-- Drift-detection test: prevents union/array divergence
+- Drift-detection tests: prevent union/array divergence (keywords AND timings)
 
 ---
 
@@ -96,7 +117,12 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 - Hero hook produces gameplay effects -> packet is no longer inert
 - Registry import in type or move file -> layer boundary violation
 - `HERO_KEYWORDS` array/union mismatch -> drift-detection test missing or wrong
+- `HERO_ABILITY_TIMINGS` array/union mismatch -> drift-detection test missing or wrong
 - Function stored in `G.heroAbilityHooks` -> serialization will fail
+- Timing inferred from English text ("fight" -> `'onFight'`) -> violates timing derivation rule
+- Magnitude extracted from English text ("Draw two" -> `magnitude: 2`) -> violates NL constraint
+- Non-deterministic output order -> replay/snapshot divergence
+- Keywords assumed to imply matching effects -> coupling violation
 
 ---
 
@@ -107,6 +133,6 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 - [ ] No hero abilities execute effects — packet remains inert
 - [ ] No `boardgame.io` import in hero ability files
 - [ ] `docs/ai/STATUS.md` updated (hero ability hooks exist as data-only contracts)
-- [ ] `docs/ai/DECISIONS.md` updated (hooks data-only; keyword union closed; execution deferred to WP-022+)
+- [ ] `docs/ai/DECISIONS.md` updated (hooks data-only; keyword union closed; timing union closed; timing defaults to `'onPlay'`; execution deferred to WP-022+). No speculative language ("enables", "supports", "allows") in entries.
 - [ ] `docs/ai/ARCHITECTURE.md` updated (add `G.heroAbilityHooks` to Field Classification Reference)
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` WP-021 checked off with date

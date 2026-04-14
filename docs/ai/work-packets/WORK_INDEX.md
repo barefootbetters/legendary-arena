@@ -516,7 +516,7 @@ These packets make the game play like Legendary for the first time.
 
 These packets make individual cards do things.
 
-- [ ] WP-021 — Hero Card Text & Keywords (Hooks Only) ✅ Reviewed
+- [x] WP-021 — Hero Card Text & Keywords (Hooks Only) ✅ Complete (2026-04-13)
   Dependencies: WP-020
   Notes: Hero ability hooks only — **no execution**; `HeroAbilityHook` is
   data-only, JSON-serializable (same pattern as `HookDefinition`);

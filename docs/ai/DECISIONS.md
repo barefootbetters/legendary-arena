@@ -2278,6 +2278,97 @@ to verify the dual check.
 
 ---
 
+### D-2101 — HeroAbilityHook Is Data-Only
+
+**Decision:** `HeroAbilityHook` is a data-only, JSON-serializable interface
+stored in `G.heroAbilityHooks`. Same pattern as `HookDefinition` (WP-009A).
+No functions, closures, or handler references stored in `G`.
+
+**Rationale:** `G` must be fully JSON-serializable. Storing functions or
+closures in `G` violates the runtime-only constraint and breaks determinism.
+
+**Consequences:** All hero ability hooks are inert declarations. Execution
+logic lives outside `G` and is introduced in WP-022+.
+
+**Introduced:** WP-021
+**Status:** Accepted
+
+---
+
+### D-2102 — HeroKeyword Union Is Closed
+
+**Decision:** `HeroKeyword` union is closed. Adding a keyword requires a
+DECISIONS.md entry and updating both the union type and `HERO_KEYWORDS`
+canonical array.
+
+**Rationale:** Drift between the union type and the canonical array is a
+known AI failure mode. Closing the union and enforcing drift-detection tests
+prevents silent divergence.
+
+**Consequences:** `HERO_KEYWORDS` canonical array and `HeroKeyword` union
+must always match exactly. Drift-detection tests enforce this.
+
+**Introduced:** WP-021
+**Status:** Accepted
+
+---
+
+### D-2103 — HeroAbilityTiming Union Is Closed
+
+**Decision:** `HeroAbilityTiming` union is closed. Same drift-detection
+pattern as `HeroKeyword`. Timing defaults to `'onPlay'` when ability markup
+does not encode timing explicitly. No NL inference.
+
+**Rationale:** A safe default prevents ambiguous or missing timing values
+from requiring natural-language parsing. `'onPlay'` is the most common
+timing in Legendary and is the correct fallback.
+
+**Consequences:** `HERO_ABILITY_TIMINGS` canonical array and
+`HeroAbilityTiming` union must always match exactly. Drift-detection tests
+enforce this. Unrecognized timings are not inferred.
+
+**Introduced:** WP-021
+**Status:** Accepted
+
+---
+
+### D-2104 — Hero Ability Execution Deferred to WP-022+
+
+**Decision:** Hero ability execution is deferred to WP-022+.
+`G.heroAbilityHooks` is an observation-only data structure in WP-021.
+No game state changes result from hero hooks.
+
+**Rationale:** WP-021 establishes the data contract. Execution introduces
+new complexity (effect application, condition evaluation) that belongs in
+its own packet with its own tests.
+
+**Consequences:** `G.heroAbilityHooks` is populated at setup but never
+consumed by the engine during gameplay in WP-021. The packet is inert
+by design.
+
+**Introduced:** WP-021
+**Status:** Accepted
+
+---
+
+### D-2105 — buildHeroAbilityHooks Uses CardRegistryReader
+
+**Decision:** `buildHeroAbilityHooks` uses `CardRegistryReader` (not
+`CardRegistry`). Builder consumes only `cardId`/`key`, `abilities: string[]`,
+and deck membership.
+
+**Rationale:** `CardRegistryReader` is the read-only interface exposed by
+the registry layer. Using the full `CardRegistry` would widen the coupling
+surface beyond what the builder requires.
+
+**Consequences:** The builder function signature accepts `CardRegistryReader`.
+No direct dependency on the mutable registry implementation.
+
+**Introduced:** WP-021
+**Status:** Accepted
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision

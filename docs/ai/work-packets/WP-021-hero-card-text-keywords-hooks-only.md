@@ -116,8 +116,9 @@ observation-only data that WP-022+ will attach execution logic to via an
 - `G.heroAbilityHooks` is built at setup time and **immutable during gameplay**
   — moves must never modify it
 - `cardId` in `HeroAbilityHook` must be a hero card `CardExtId`
-- Timing values (`'onPlay'`, `'onFight'`, etc.) are **declarative labels only**
-  — no execution semantics are attached in this packet
+- Timing values use `HeroAbilityTiming` closed union — same drift-detection
+  pattern as `HeroKeyword`. Declarative labels only — no execution semantics
+  are attached in this packet
 - Effects are **descriptors, not functions** — `HeroEffectDescriptor` describes
   what an effect would do; it does not do it
 - Conditions are **declarative** — `HeroCondition` describes when an effect
@@ -132,11 +133,32 @@ observation-only data that WP-022+ will attach execution logic to via an
 
 **Locked contract values:**
 
+- **HeroAbilityTiming closed union:**
+  ```ts
+  type HeroAbilityTiming =
+    | 'onPlay'
+    | 'onFight'
+    | 'onRecruit'
+    | 'onKO'
+    | 'onReveal'
+  ```
+
+- **HERO_ABILITY_TIMINGS canonical array:**
+  ```ts
+  const HERO_ABILITY_TIMINGS: readonly HeroAbilityTiming[] = [
+    'onPlay',
+    'onFight',
+    'onRecruit',
+    'onKO',
+    'onReveal',
+  ] as const;
+  ```
+
 - **HeroAbilityHook shape:**
   ```ts
   interface HeroAbilityHook {
     cardId: CardExtId
-    timing: 'onPlay' | 'onFight' | 'onRecruit' | 'onKO' | 'onReveal'
+    timing: HeroAbilityTiming
     keywords: HeroKeyword[]
     conditions?: HeroCondition[]
     effects?: HeroEffectDescriptor[]
@@ -179,14 +201,18 @@ observation-only data that WP-022+ will attach execution logic to via an
 - `type HeroKeyword` — closed union as specified in locked contract values
 - `const HERO_KEYWORDS: readonly HeroKeyword[]` — canonical array for
   drift-detection
-- Drift-detection test required: array must match union type exactly
+- `type HeroAbilityTiming` — closed union as specified in locked contract values
+- `const HERO_ABILITY_TIMINGS: readonly HeroAbilityTiming[]` — canonical
+  array for drift-detection
+- Drift-detection tests required: both arrays must match their union types
+  exactly
 - `// why:` comment: keywords are semantic labels only; they do not imply
   magnitude or effect. Adding a new keyword requires a `DECISIONS.md` entry
-  and updating both the type and the array.
+  and updating both the type and the array. Same rule applies to timings.
 
 ### C) `src/setup/heroAbility.setup.ts` — new
 
-- `buildHeroAbilityHooks(registry: CardRegistry, matchConfig: MatchSetupConfig): HeroAbilityHook[]`
+- `buildHeroAbilityHooks(registry: CardRegistryReader, matchConfig: MatchSetupConfig): HeroAbilityHook[]`
   — called during `Game.setup()`:
   1. Resolve hero cards from selected hero decks in registry
   2. Extract hero text metadata (ability text is already normalized in registry)
@@ -198,6 +224,42 @@ observation-only data that WP-022+ will attach execution logic to via an
   - No side effects
   - Uses `for...of` (no `.reduce()`)
   - `// why:` comment on setup-time-only pattern
+  - Output must be deterministic: identical registry + matchConfig inputs
+    produce byte-identical JSON output order
+
+**Registry Field Constraint:** `buildHeroAbilityHooks` may only rely on:
+- `cardId` / `key` (CardExtId)
+- `abilities: string[]` (structured markup text)
+- deck or set membership (to match `heroDeckIds`)
+
+If the registry provides richer data, it must be ignored in WP-021.
+
+**Timing Derivation Rules (Non-Negotiable):**
+- If ability markup explicitly encodes timing (e.g., `[timing:onFight]`),
+  use it
+- Otherwise, **always assign `'onPlay'`**
+- Do not infer timing from natural-language phrasing
+- Do not interpret words like "fight", "recruit", or "reveal" as timing cues
+
+**Ability Parsing Order (Authoritative):**
+Ability text is processed in the following fixed order:
+1. Extract `[hc:X]` condition markup -> `HeroCondition` entries
+2. Extract `[keyword:X]` markup -> `HeroKeyword` entries
+3. Extract `[icon:X]` markup -> `HeroKeyword` entries
+4. Perform final keyword normalization (dedup, validate against union)
+5. Assign timing (per Timing Derivation Rules above)
+
+No step may depend on results of a later step.
+
+**Magnitude Constraint:** Do not extract numeric magnitude from
+natural-language phrasing (e.g., "Draw two cards" does NOT produce
+`magnitude: 2`). Only structured markup with explicit numeric values
+may populate `HeroEffectDescriptor.magnitude`. If no structured markup
+provides a magnitude, omit it.
+
+**Keywords vs Effects:** `keywords` are labels only. They do not imply
+that a matching `HeroEffectDescriptor` must exist for that ability.
+A hook may have keywords but no effects, or effects but no keywords.
 
 ### D) Rule Engine Integration (Observation Only)
 
@@ -215,26 +277,44 @@ observation-only data that WP-022+ will attach execution logic to via an
 ### E) `src/types.ts` — modified
 
 - Add `heroAbilityHooks: HeroAbilityHook[]` to `LegendaryGameState`
-- Re-export `HeroAbilityHook`, `HeroKeyword`, `HeroCondition`,
-  `HeroEffectDescriptor`
+- Re-export `HeroAbilityHook`, `HeroKeyword`, `HeroAbilityTiming`,
+  `HeroCondition`, `HeroEffectDescriptor`
 
 ### F) `src/index.ts` — modified
 
-- Export `HeroAbilityHook`, `HeroKeyword`, `HERO_KEYWORDS`, `HeroCondition`,
+- Export `HeroAbilityHook`, `HeroKeyword`, `HERO_KEYWORDS`,
+  `HeroAbilityTiming`, `HERO_ABILITY_TIMINGS`, `HeroCondition`,
   `HeroEffectDescriptor`, `buildHeroAbilityHooks`
 
 ### G) Tests — `src/rules/heroAbility.setup.test.ts` — new
 
 - Uses `node:test` and `node:assert` only; uses `makeMockCtx`; no boardgame.io
   import
-- Six tests:
+- Eight tests:
   1. `buildHeroAbilityHooks` produces a non-empty array for valid hero decks
   2. Every hook has a valid `cardId` (CardExtId string)
-  3. Every hook has a valid `timing` value from the union
+  3. Every hook has a valid `timing` value from `HERO_ABILITY_TIMINGS`
   4. Every hook's `keywords` are from the `HeroKeyword` union
   5. `JSON.stringify(hooks)` succeeds (fully serializable)
   6. Drift: `HERO_KEYWORDS` array matches union type exactly
      — `// why:` comment on drift detection
+  7. Determinism: calling `buildHeroAbilityHooks` twice with the same mock
+     input produces `JSON.stringify`-identical output
+  8. Drift: `HERO_ABILITY_TIMINGS` array matches `HeroAbilityTiming` union
+     exactly — same pattern as HERO_KEYWORDS drift detection
+
+---
+
+## AI Agent Warning (Strict)
+
+This WP is satisfiable without interpreting gameplay intent. If you believe
+an ability "should do something", that belief is irrelevant in WP-021.
+Record structure only. Do not produce:
+- Keywords inferred solely from English text (only `[keyword:X]`, `[icon:X]`
+  markup)
+- Effects with implied magnitude without explicit numeric markup
+- Timing derived from phrase interpretation (e.g., "fight" does NOT imply
+  `'onFight'`)
 
 ---
 
@@ -281,18 +361,23 @@ All items must be binary pass/fail. No partial credit.
 - [ ] Hooks reference hero cards by `CardExtId` only
 - [ ] `// why:` comments on data-only design and immutability
 
-### Keyword Taxonomy
+### Keyword & Timing Taxonomy
 - [ ] `HeroKeyword` union is closed and canonical
 - [ ] `HERO_KEYWORDS` canonical array matches union exactly
-- [ ] Drift-detection test exists with `// why:` comment
-- [ ] No duplicate or ad-hoc keywords
+- [ ] `HeroAbilityTiming` union is closed and canonical
+- [ ] `HERO_ABILITY_TIMINGS` canonical array matches union exactly
+- [ ] Drift-detection tests exist for both with `// why:` comments
+- [ ] No duplicate or ad-hoc keywords or timings
 
 ### Setup Integration
 - [ ] Hooks are built at setup time via `buildHeroAbilityHooks`
-- [ ] Hooks are deterministic for identical inputs
+- [ ] Hooks are deterministic for identical inputs (test exists: same input
+      produces `JSON.stringify`-identical output)
 - [ ] Hooks are immutable during gameplay (never modified by moves)
 - [ ] No registry import in move or type files
       (confirmed with `Select-String`)
+- [ ] `buildHeroAbilityHooks` uses only `cardId`/`key`, `abilities: string[]`,
+      and deck membership from registry — no other fields consumed
 
 ### Rule Engine Observation
 - [ ] Hero hooks can be queried/filtered (utility functions exist)
@@ -334,8 +419,10 @@ Select-String -Path "packages\game-engine\src\rules\heroAbility.types.ts","packa
 Select-String -Path "packages\game-engine\src\setup\heroAbility.setup.ts" -Pattern "\.reduce\("
 # Expected: no output
 
-# Step 6 — confirm HERO_KEYWORDS drift test exists
+# Step 6 — confirm HERO_KEYWORDS and HERO_ABILITY_TIMINGS drift tests exist
 Select-String -Path "packages\game-engine\src\rules\heroAbility.setup.test.ts" -Pattern "HERO_KEYWORDS"
+# Expected: at least one match
+Select-String -Path "packages\game-engine\src\rules\heroAbility.setup.test.ts" -Pattern "HERO_ABILITY_TIMINGS"
 # Expected: at least one match
 
 # Step 7 — confirm heroAbilityHooks is JSON-serializable
@@ -375,7 +462,10 @@ This packet is complete when ALL of the following are true:
       contracts; keywords are normalized; WP-022 is unblocked for execution
 - [ ] `docs/ai/DECISIONS.md` updated — at minimum: why hooks are data-only
       (same pattern as `HookDefinition`); why keyword union is closed (prevents
-      ad-hoc additions); why execution is deferred to WP-022+
+      ad-hoc additions); why timing union is closed (same pattern); why
+      execution is deferred to WP-022+; why timing defaults to `'onPlay'`
+      (no NL inference). Use only factual language — no speculative words
+      ("enables", "supports", "allows") in DECISIONS entries
 - [ ] `docs/ai/ARCHITECTURE.md` updated — add `G.heroAbilityHooks` to the
       Field Classification Reference table in Section 3 (class: Runtime)
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` has WP-021 checked off with today's date

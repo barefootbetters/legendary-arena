@@ -33,6 +33,7 @@ import { buildVillainDeck } from '../villainDeck/villainDeck.setup.js';
 import { initializeCity, initializeHq } from '../board/city.logic.js';
 import { buildCardStats, resetTurnEconomy } from '../economy/economy.logic.js';
 import { buildMastermindState } from '../mastermind/mastermind.setup.js';
+import { buildHeroAbilityHooks } from './heroAbility.setup.js';
 
 // why: Pile ext_id constants are re-exported from pilesInit.ts for backward
 // compatibility. The canonical definitions live in pilesInit.ts — importing
@@ -202,6 +203,10 @@ export function buildInitialGameState(
     cardStats,
     // why: economy starts at zero; reset again at each turn start
     turnEconomy: resetTurnEconomy(),
+    // why: hero ability hooks built from registry at setup time — same
+    // pattern as hookRegistry and cardStats. Immutable during gameplay.
+    // Execution deferred to WP-022+.
+    heroAbilityHooks: buildHeroAbilityHooks(registry, config),
     // why: lobby state initialized at setup time from ctx.numPlayers. All
     // players start as not ready. G.lobby.started is false until
     // startMatchIfReady succeeds.

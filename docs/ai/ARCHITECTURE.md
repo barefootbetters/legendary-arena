@@ -489,7 +489,7 @@ The canonical shape is `MatchSnapshot` in `src/persistence/persistence.types.ts`
 | `G.turnEconomy` | Runtime | Attack/recruit/spent tracking; reset per turn; introduced WP-018 |
 | `G.cardStats` | Runtime | `Record<CardExtId, CardStatEntry>`; built at setup from registry; introduced WP-018 |
 | `G.mastermind` | Runtime | `MastermindState` with tactics deck; introduced WP-019 |
-| `G.heroAbilityHooks` | Runtime | `HeroAbilityHook[]`; data-only, built at setup; introduced WP-021 |
+| `G.heroAbilityHooks` | Runtime | `HeroAbilityHook[]`; hero ability hook declarations (data-only, immutable); built at setup; introduced WP-021 |
 | `G.cardKeywords` | Runtime | `Record<CardExtId, BoardKeyword[]>`; built at setup from registry; introduced WP-025 |
 | `G.schemeSetupInstructions` | Runtime | `SchemeSetupInstruction[]`; stored for replay observability; introduced WP-026 |
 | `ImplementationMap` | Runtime | Handler functions — must never enter `G` |

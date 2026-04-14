@@ -140,6 +140,11 @@ export { buildMastermindState } from './mastermind/mastermind.setup.js';
 export { defeatTopTactic, areAllTacticsDefeated } from './mastermind/mastermind.logic.js';
 export { fightMastermind } from './moves/fightMastermind.js';
 export type { TurnEconomy, CardStatEntry } from './economy/economy.types.js';
+export type { HeroAbilityHook, HeroCondition, HeroEffectDescriptor } from './rules/heroAbility.types.js';
+export type { HeroKeyword, HeroAbilityTiming } from './rules/heroKeywords.js';
+export { HERO_KEYWORDS, HERO_ABILITY_TIMINGS } from './rules/heroKeywords.js';
+export { filterHooksByTiming, filterHooksByKeyword, getHooksForCard } from './rules/heroAbility.types.js';
+export { buildHeroAbilityHooks } from './setup/heroAbility.setup.js';
 export {
   parseCardStatValue,
   buildCardStats,

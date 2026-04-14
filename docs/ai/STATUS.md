@@ -7,6 +7,36 @@
 
 ## Current State
 
+### WP-021 — Hero Card Text & Keywords (Hooks Only) (2026-04-13)
+
+**What changed:**
+- Hero ability hooks added as data-only contracts to the game engine
+- `HeroAbilityHook` interface — data-only, JSON-serializable, stored in
+  `G.heroAbilityHooks`
+- `HeroKeyword` closed union + `HERO_KEYWORDS` canonical array (8 keywords:
+  draw, attack, recruit, ko, rescue, wound, reveal, conditional)
+- `HeroAbilityTiming` closed union + `HERO_ABILITY_TIMINGS` canonical array
+  (5 timings: onPlay, onFight, onRecruit, onKO, onReveal)
+- `HeroCondition` and `HeroEffectDescriptor` declarative descriptors
+- `buildHeroAbilityHooks` setup-time builder using `CardRegistryReader`
+- Query/filter utilities: `filterHooksByTiming`, `filterHooksByKeyword`,
+  `getHooksForCard`
+- 8 tests including drift detection for both keywords and timings,
+  determinism test
+
+**What's true now:**
+- `G.heroAbilityHooks` is populated at setup with parsed hero ability data
+- Keywords and timings are normalized with drift-detection tests
+- Timing defaults to `'onPlay'` — no NL inference
+- Hero hooks are observation-only; no effects execute in WP-021
+- The packet is inert by design — no game state changes from hero hooks
+- WP-022 is unblocked for execution
+
+**What's next:**
+- WP-022 — Execute Hero Keywords (Minimal MVP) — Phase 5
+
+---
+
 ### WP-020 — VP Scoring & Win Summary (Minimal MVP) (2026-04-12)
 
 **What changed:**

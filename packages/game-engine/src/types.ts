@@ -98,6 +98,21 @@ export type { MastermindState } from './mastermind/mastermind.types.js';
 // consumers importing from './types.js' have access.
 export type { TurnEconomy, CardStatEntry } from './economy/economy.types.js';
 
+// why: Hero ability hook contracts (HeroAbilityHook, HeroCondition,
+// HeroEffectDescriptor) are defined canonically in
+// src/rules/heroAbility.types.ts (WP-021). HeroKeyword and HeroAbilityTiming
+// are defined in src/rules/heroKeywords.ts. Re-exported here so that
+// consumers importing from './types.js' have access.
+export type {
+  HeroAbilityHook,
+  HeroCondition,
+  HeroEffectDescriptor,
+} from './rules/heroAbility.types.js';
+export type {
+  HeroKeyword,
+  HeroAbilityTiming,
+} from './rules/heroKeywords.js';
+
 // why: Zone types (CardExtId, PlayerZones, GlobalPiles) were originally
 // defined inline in this file during WP-005B. WP-006A consolidated them
 // into src/state/zones.types.ts as the canonical source. They are
@@ -118,6 +133,7 @@ import type { CardExtId, PlayerZones, GlobalPiles } from './state/zones.types.js
 import type { TurnEconomy, CardStatEntry } from './economy/economy.types.js';
 import type { MastermindState } from './mastermind/mastermind.types.js';
 import type { HookDefinition } from './rules/ruleHooks.types.js';
+import type { HeroAbilityHook } from './rules/heroAbility.types.js';
 import type { LobbyState } from './lobby/lobby.types.js';
 import type { VillainDeckState, RevealedCardType } from './villainDeck/villainDeck.types.js';
 import type { CityZone, HqZone } from './board/city.types.js';
@@ -289,6 +305,11 @@ export interface LegendaryGameState {
   // Read-only after setup.
   /** Card stat lookup keyed by CardExtId. Built at setup, read-only at runtime. */
   cardStats: Record<CardExtId, CardStatEntry>;
+
+  // why: hero ability hooks are built at setup time and immutable during
+  // gameplay. Data-only — no functions or closures. Execution is WP-022+.
+  /** Hero ability hook declarations (data-only, inert in WP-021). */
+  heroAbilityHooks: HeroAbilityHook[];
 
   // why: lobby state is stored in G so the UI can observe lobby completion
   // and readiness status. Initialized at setup time from ctx.numPlayers.
