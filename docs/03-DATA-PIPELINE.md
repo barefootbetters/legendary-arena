@@ -3,7 +3,7 @@
 > How card data flows from source JSON files to the live R2 bucket,
 > the registry viewer, and (eventually) the game engine.
 >
-> **Last updated:** 2026-04-09
+> **Last updated:** 2026-04-14
 >
 > **Current state:** All 40 card sets are migrated to `data/cards/`,
 > metadata lookup files are in `data/metadata/`, and everything is
@@ -285,20 +285,29 @@ is the source of truth (per 00.2 §3.2).
 
 ## Relationship to the Game Engine
 
-The game engine (WP-002+) consumes card data at **setup time only**:
+The game engine consumes card data at **setup time only** via six
+dedicated builders (see `docs/02-ARCHITECTURE.md` for the full table).
+Each builder accepts `registry: unknown` with a local structural
+interface to respect the layer boundary.
 
-| What | Source | When |
-|---|---|---|
-| Card display data (names, images, costs) | R2 via registry viewer | Runtime (SPA) |
-| Card registry for match setup | Local files via `createRegistryFromLocalFiles` | Server startup |
-| Game-mechanical fields (vAttack, vp, alwaysLeads) | Resolved into `G` at `Game.setup()` | Match creation |
-| Rules text | PostgreSQL `legendary.rules` table | Server startup |
+| What | Source | When | Builder |
+|---|---|---|---|
+| Card display data (names, images, costs) | R2 via registry viewer | Runtime (SPA) | — |
+| Card registry for match setup | Local files via `createRegistryFromLocalFiles` | Server startup | — |
+| Villain deck composition + card types | Registry at `Game.setup()` | Match creation | `buildVillainDeck` |
+| Card stats (attack, recruit, cost, fightCost) | Registry at `Game.setup()` | Match creation | `buildCardStats` |
+| Mastermind state + tactics | Registry at `Game.setup()` | Match creation | `buildMastermindState` |
+| Hero ability hooks | Registry hero card text | Match creation | `buildHeroAbilityHooks` |
+| Board keywords (Patrol, Ambush, Guard) | Registry villain ability text | Match creation | `buildCardKeywords` |
+| Scheme setup instructions (MVP: empty) | Registry scheme data | Match creation | `buildSchemeSetupInstructions` |
+| Rules text | PostgreSQL `legendary.rules` table | Server startup | — |
 
 **Strict boundaries:**
 - The game engine never queries the registry after `Game.setup()` completes
 - `G` stores `CardExtId` strings only — never full card objects or images
 - PostgreSQL is never used for card display data
 - R2 is never used for live game state
+- All builders use `registry: unknown` — no import of `@legendary-arena/registry`
 
 ---
 
