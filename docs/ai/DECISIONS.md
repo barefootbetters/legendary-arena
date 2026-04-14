@@ -2871,6 +2871,60 @@ introducing new categories or blurring existing boundaries.
 
 ---
 
+### D-2801 — UI Projection Directory Classified as Engine Code Category
+
+**Decision:** `packages/game-engine/src/ui/` is classified under the
+`engine` code category.
+**Rationale:** UI projection files are pure, deterministic, have no I/O, and
+do not import `boardgame.io` or registry packages. They derive UIState from
+G and ctx without mutation. They follow all engine category rules.
+**Introduced:** WP-028
+**Status:** Immutable
+
+---
+
+### D-2802 — Zone Projection Strategy (Counts, Not Card Arrays)
+
+**Decision:** Player zones in UIState are projected as integer counts
+(`deckCount`, `handCount`, etc.), not as `CardExtId[]` arrays.
+**Rationale:** Zone counts prevent the UI from accessing card identities it
+should not see (other players' hands, decks). Card display resolution is a
+separate concern — the UI calls the registry independently for display
+names, images, and ability text using ext_ids from city/HQ projections.
+**Introduced:** WP-028
+**Status:** Immutable
+
+---
+
+### D-2803 — UIState Hides Engine Internals
+
+**Decision:** UIState must not expose or reference, directly or indirectly:
+`hookRegistry`, `ImplementationMap`, `cardStats`, `heroAbilityHooks`,
+`villainDeckCardTypes`, `schemeSetupInstructions`, registry objects, or
+setup builder functions.
+**Rationale:** Engine internals are implementation details that would cause
+logic leakage if exposed to the UI. The UI should depend only on
+display-safe projections, not on how the engine stores or computes state.
+This maintains the Layer Boundary defined in ARCHITECTURE.md.
+**Introduced:** WP-028
+**Status:** Immutable
+
+---
+
+### D-2804 — Card Display Resolution Is a Separate UI Concern
+
+**Decision:** `buildUIState` exposes card ext_ids only (in city spaces and
+HQ slots). The UI calls the registry independently for display names,
+images, and ability text. `buildUIState` does not import the registry.
+**Rationale:** Separating display resolution from state projection keeps
+`buildUIState` pure and free of registry dependencies. The engine layer
+(where `buildUIState` lives) must not import the registry package. Display
+data changes (new images, updated text) do not require engine changes.
+**Introduced:** WP-028
+**Status:** Immutable
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision

@@ -183,3 +183,17 @@ export { replayGame } from './replay/replay.execute.js';
 export { computeStateHash } from './replay/replay.hash.js';
 export { verifyDeterminism } from './replay/replay.verify.js';
 export type { DeterminismResult } from './replay/replay.verify.js';
+
+// UI state contract (WP-028)
+export type {
+  UIState,
+  UIPlayerState,
+  UICityCard,
+  UICityState,
+  UIHQState,
+  UIMastermindState,
+  UISchemeState,
+  UITurnEconomyState,
+  UIGameOverState,
+} from './ui/uiState.types.js';
+export { buildUIState } from './ui/uiState.build.js';

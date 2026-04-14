@@ -46,6 +46,37 @@
 
 ---
 
+### WP-028 — UI State Contract (2026-04-14)
+
+**What changed:**
+- UIState contract implemented: `UIState` interface with 9 sub-types
+  (`UIPlayerState`, `UICityCard`, `UICityState`, `UIHQState`,
+  `UIMastermindState`, `UISchemeState`, `UITurnEconomyState`,
+  `UIGameOverState`)
+- `buildUIState(gameState, ctx)` pure function derives UIState from G
+  and a local `UIBuildContext` structural interface (no boardgame.io import)
+- Player zones projected as counts, not card arrays (D-2802)
+- Engine internals explicitly excluded from UIState (D-2803)
+- Card display resolution is a separate UI concern (D-2804)
+- `src/ui/` classified as engine code category (D-2801)
+- Game-over derived via `evaluateEndgame(G)` + `computeFinalScores(G)`
+- Twist count derived from villain deck discard card type classification
+- Wound count derived via `WOUND_EXT_ID` filtering across all player zones
+- 9 new contract enforcement tests, 331 total passing (322 existing + 9 new)
+- D-0301 (UI Consumes Projections Only) is implemented by this WP
+
+**What's true now:**
+- The UI never reads G directly — UIState is the sole derived projection
+- buildUIState is pure: no I/O, no mutation, no caching, deterministic
+- Engine internals are hidden from the UI at the type level
+- All UI state files are engine category (no boardgame.io, no registry)
+
+**What's next:**
+- WP-029: Spectator & permission-filtered views (UIAudience,
+  filterUIStateForAudience) — implements D-0302
+
+---
+
 ### WP-026 — Scheme Setup Instructions & City Modifiers (2026-04-14)
 
 **What changed:**

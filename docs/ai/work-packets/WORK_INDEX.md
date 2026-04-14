@@ -603,7 +603,7 @@ These packets make the game safe to ship.
   may re-interpret or normalize setup data; seed wiring gap documented
   in D-1248
 
-- [ ] WP-028 — UI State Contract (Authoritative View Model) ✅ Reviewed
+- [x] WP-028 — UI State Contract (Authoritative View Model) ✅ Reviewed (2026-04-14)
   Dependencies: WP-027
   Notes: `UIState` is the **only** state the UI consumes — derived, read-only,
   JSON-serializable; `buildUIState(G, ctx)` is a pure function (no mutation,

@@ -138,6 +138,21 @@ export { SCHEME_SETUP_TYPES } from './scheme/schemeSetup.types.js';
 // Replay types (WP-027)
 export type { ReplayInput, ReplayMove, ReplayResult } from './replay/replay.types.js';
 
+// why: UI state types defined canonically in src/ui/uiState.types.ts
+// (WP-028). Re-exported here so that consumers importing from './types.js'
+// have access.
+export type {
+  UIState,
+  UIPlayerState,
+  UICityCard,
+  UICityState,
+  UIHQState,
+  UIMastermindState,
+  UISchemeState,
+  UITurnEconomyState,
+  UIGameOverState,
+} from './ui/uiState.types.js';
+
 import type { TurnStage } from './turn/turnPhases.types.js';
 import type { CardExtId, PlayerZones, GlobalPiles } from './state/zones.types.js';
 import type { TurnEconomy, CardStatEntry } from './economy/economy.types.js';
