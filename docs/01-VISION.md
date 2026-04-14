@@ -1,5 +1,7 @@
 # Legendary Arena — Vision & Direction
 
+> **Last updated:** 2026-04-14
+
 ## Purpose
 
 This document defines the **vision goals** for Legendary Arena.
@@ -102,6 +104,9 @@ Cross‑layer shortcuts and leakage are not permitted.
 - Game logic is UI‑agnostic
 - Identical inputs always produce identical outcomes
 - Suitable for replay, validation, multiplayer synchronization, and testing
+- Proven through 314 automated tests across setup, moves, rule execution,
+  hero abilities, board keywords, scheme setup, and endgame evaluation
+  (Phases 1-5 complete)
 
 ---
 
@@ -653,6 +658,7 @@ This is the hard truth that makes every other goal possible.
 - **Monetization review:** Does this cross a non-goal boundary?
 - **Financial review:** Does this support long-term sustainability, royalties, and ecosystem health without violating any other rule?
 - **Execution review:** Is this aligned with Legendary Arena's intent?
+- **Pre-flight review:** Does the Work Packet align with the vision before execution begins?
 - **Onboarding:** New contributors read this document first — it defines the *why* behind every decision
 
 Primary goals define **what must never change**.
