@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "maximus-the-mad",
     "schemeId": "tornado-of-terrigen-mists",
-    "villainGroupIds": ["inhuman-rebellion", "shiar-imperial-elite"],
-    "heroDeckIds": ["black-bolt", "medusa", "crystal", "karnak", "gorgon"]
+    "villainGroupIds": [
+      "inhuman-rebellion",
+      "shiar-imperial-elite"
+    ],
+    "heroDeckIds": [
+      "black-bolt",
+      "medusa",
+      "crystal",
+      "karnak",
+      "gorgon"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["cosmic", "inhumans", "the-fault", "post-war-of-kings", "2010s"],
+  "tags": [
+    "cosmic",
+    "inhumans",
+    "the-fault",
+    "post-war-of-kings",
+    "2010s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Realm of Kings #1 + tie-ins",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "The Fault is open. What comes through is not of this universe."
+  "flavorText": "The Fault is open. What comes through is not of this universe.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/4504038-01.jpg"
 }

@@ -6,16 +6,37 @@
   "setupIntent": {
     "mastermindId": "kingpin",
     "schemeId": "organized-crime-wave",
-    "villainGroupIds": ["streets-of-new-york", "underworld"],
-    "henchmanGroupIds": ["maggia-goons"],
-    "heroDeckIds": ["daredevil", "elektra", "punisher", "iron-fist", "ghost-rider", "blade"]
+    "villainGroupIds": [
+      "streets-of-new-york",
+      "underworld"
+    ],
+    "henchmanGroupIds": [
+      "maggia-goons"
+    ],
+    "heroDeckIds": [
+      "daredevil",
+      "elektra",
+      "punisher",
+      "iron-fist",
+      "ghost-rider",
+      "blade"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["marvel-knights", "street-level", "dark-city", "noir", "kingpin"],
+  "tags": [
+    "marvel-knights",
+    "street-level",
+    "dark-city",
+    "noir",
+    "kingpin"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Daredevil #170–172",
@@ -26,5 +47,6 @@
       ]
     }
   },
-  "flavorText": "This city belongs to me. Every shadow. Every alley. Every soul."
+  "flavorText": "This city belongs to me. Every shadow. Every alley. Every soul.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/8/84205/1958949-251px_daredevil_vol_1_170.jpg"
 }

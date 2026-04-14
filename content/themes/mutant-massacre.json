@@ -6,16 +6,37 @@
   "setupIntent": {
     "mastermindId": "mr-sinister",
     "schemeId": "save-humanity",
-    "villainGroupIds": ["marauders", "emissaries-of-evil"],
-    "henchmanGroupIds": ["phalanx"],
-    "heroDeckIds": ["wolverine", "colossus", "nightcrawler", "angel", "jean-grey", "psylocke"]
+    "villainGroupIds": [
+      "marauders",
+      "emissaries-of-evil"
+    ],
+    "henchmanGroupIds": [
+      "phalanx"
+    ],
+    "heroDeckIds": [
+      "wolverine",
+      "colossus",
+      "nightcrawler",
+      "angel",
+      "jean-grey",
+      "psylocke"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["x-men", "marauders", "mr-sinister", "dark", "1980s"],
+  "tags": [
+    "x-men",
+    "marauders",
+    "mr-sinister",
+    "dark",
+    "1980s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Uncanny X-Men #210–213",
@@ -26,5 +47,6 @@
       ]
     }
   },
-  "flavorText": "The tunnels run red. The Marauders show no mercy."
+  "flavorText": "The tunnels run red. The Marauders show no mercy.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11/110017/7254729-xmd_2100001.jpg"
 }

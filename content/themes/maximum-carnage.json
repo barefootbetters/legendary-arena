@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "carnage",
     "schemeId": "splice-humans-with-spider-dna",
-    "villainGroupIds": ["maximum-carnage", "sinister-six"],
-    "heroDeckIds": ["symbiote-spider-man", "scarlet-spider", "spider-woman", "black-cat", "moon-knight"]
+    "villainGroupIds": [
+      "maximum-carnage",
+      "sinister-six"
+    ],
+    "heroDeckIds": [
+      "symbiote-spider-man",
+      "scarlet-spider",
+      "spider-woman",
+      "black-cat",
+      "moon-knight"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["spider-man", "symbiotes", "carnage", "street-level", "1990s"],
+  "tags": [
+    "spider-man",
+    "symbiotes",
+    "carnage",
+    "street-level",
+    "1990s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Amazing Spider-Man #378–380 / Spider-Man Unlimited #1–2",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "There's no law. There's no order. There's only Carnage."
+  "flavorText": "There's no law. There's no order. There's only Carnage.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/8511026-4223850769-20832.jpg"
 }

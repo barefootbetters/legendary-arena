@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "kang-the-conqueror",
     "schemeId": "breach-parallel-dimensions",
-    "villainGroupIds": ["timelines-of-kang", "annihilation-wave"],
-    "heroDeckIds": ["fantastic-four-united", "brainstorm", "psi-lord", "super-skrull", "heralds-of-galactus"]
+    "villainGroupIds": [
+      "timelines-of-kang",
+      "annihilation-wave"
+    ],
+    "heroDeckIds": [
+      "fantastic-four-united",
+      "brainstorm",
+      "psi-lord",
+      "super-skrull",
+      "heralds-of-galactus"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["fantastic-four", "kang", "time-travel", "classic", "avengers"],
+  "tags": [
+    "fantastic-four",
+    "kang",
+    "time-travel",
+    "classic",
+    "avengers"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Avengers #8",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "You cannot defeat me. I have already won—in every timeline that matters."
+  "flavorText": "You cannot defeat me. I have already won—in every timeline that matters.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11/110017/9912124-wwww.jpg"
 }

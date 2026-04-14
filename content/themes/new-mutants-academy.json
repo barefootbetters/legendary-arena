@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "belasco-demon-lord-of-limbo",
     "schemeId": "demon-bear-saga-the",
-    "villainGroupIds": ["demons-of-limbo", "hellions"],
-    "heroDeckIds": ["karma", "mirage", "sunspot", "warlock", "wolfsbane"]
+    "villainGroupIds": [
+      "demons-of-limbo",
+      "hellions"
+    ],
+    "heroDeckIds": [
+      "karma",
+      "mirage",
+      "sunspot",
+      "warlock",
+      "wolfsbane"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["x-men", "new-mutants", "academy", "young-heroes", "1980s"],
+  "tags": [
+    "x-men",
+    "new-mutants",
+    "academy",
+    "young-heroes",
+    "1980s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "New Mutants #1–100",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "They came to learn. They stayed to survive."
+  "flavorText": "They came to learn. They stayed to survive.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11/110017/8868774-scan0001.jpg"
 }

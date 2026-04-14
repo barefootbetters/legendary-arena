@@ -6,16 +6,37 @@
   "setupIntent": {
     "mastermindId": "grim-reaper",
     "schemeId": "korvac-saga-the",
-    "villainGroupIds": ["army-of-evil", "lethal-legion"],
-    "henchmanGroupIds": ["mandarins-rings"],
-    "heroDeckIds": ["scarlet-witch", "quicksilver", "captain-marvel-agent-of-shield", "war-machine", "hellcat", "ronin"]
+    "villainGroupIds": [
+      "army-of-evil",
+      "lethal-legion"
+    ],
+    "henchmanGroupIds": [
+      "mandarins-rings"
+    ],
+    "heroDeckIds": [
+      "scarlet-witch",
+      "quicksilver",
+      "captain-marvel-agent-of-shield",
+      "war-machine",
+      "hellcat",
+      "ronin"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["avengers", "scarlet-witch", "chaos-magic", "disassembled", "2000s"],
+  "tags": [
+    "avengers",
+    "scarlet-witch",
+    "chaos-magic",
+    "disassembled",
+    "2000s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Avengers #500–503",
@@ -26,5 +47,6 @@
       ]
     }
   },
-  "flavorText": "The Avengers were Earth's mightiest heroes. Were."
+  "flavorText": "The Avengers were Earth's mightiest heroes. Were.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/4/57343-10730-90338-1-avengers.jpg"
 }

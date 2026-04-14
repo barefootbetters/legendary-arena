@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "killmonger",
     "schemeId": "plunder-wakandas-vibranium",
-    "villainGroupIds": ["killmongers-league", "enemies-of-wakanda"],
-    "heroDeckIds": ["king-black-panther", "queen-storm-of-wakanda", "princess-shuri", "general-okoye", "white-wolf"]
+    "villainGroupIds": [
+      "killmongers-league",
+      "enemies-of-wakanda"
+    ],
+    "heroDeckIds": [
+      "king-black-panther",
+      "queen-storm-of-wakanda",
+      "princess-shuri",
+      "general-okoye",
+      "white-wolf"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["deep-cut", "black-panther", "wakanda", "killmonger", "vibranium"],
+  "tags": [
+    "deep-cut",
+    "black-panther",
+    "wakanda",
+    "killmonger",
+    "vibranium"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Black Panther Vol 4 #1–41",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "Wakanda forever."
+  "flavorText": "Wakanda forever.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11112/111121983/6987334-9963395327-BLACK.jpg"
 }

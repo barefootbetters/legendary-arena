@@ -6,16 +6,36 @@
   "setupIntent": {
     "mastermindId": "apocalypse",
     "schemeId": "nuclear-armageddon",
-    "villainGroupIds": ["four-horsemen", "marauders"],
-    "henchmanGroupIds": ["phalanx"],
-    "heroDeckIds": ["bishop", "jean-grey", "nightcrawler", "wolverine", "storm", "gambit"]
+    "villainGroupIds": [
+      "four-horsemen",
+      "marauders"
+    ],
+    "henchmanGroupIds": [
+      "phalanx"
+    ],
+    "heroDeckIds": [
+      "bishop",
+      "jean-grey",
+      "nightcrawler",
+      "wolverine",
+      "storm",
+      "gambit"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["x-men", "alternate-reality", "apocalypse", "1990s"],
+  "tags": [
+    "x-men",
+    "alternate-reality",
+    "apocalypse",
+    "1990s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "X-Men Alpha #1 + tie-ins",
@@ -26,5 +46,6 @@
       ]
     }
   },
-  "flavorText": "In the Age of Apocalypse, only the strong survive."
+  "flavorText": "In the Age of Apocalypse, only the strong survive.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11125/111254576/5632591-x-men_alpha_vol_1_1.jpg"
 }

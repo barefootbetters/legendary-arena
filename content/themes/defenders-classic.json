@@ -6,16 +6,37 @@
   "setupIntent": {
     "mastermindId": "odin",
     "schemeId": "crown-thor-king-of-asgard",
-    "villainGroupIds": ["defenders", "avengers"],
-    "henchmanGroupIds": ["asgardian-warriors"],
-    "heroDeckIds": ["loki", "enchantress", "magneto", "mystique", "juggernaut", "ultron"]
+    "villainGroupIds": [
+      "defenders",
+      "avengers"
+    ],
+    "henchmanGroupIds": [
+      "asgardian-warriors"
+    ],
+    "heroDeckIds": [
+      "loki",
+      "enchantress",
+      "magneto",
+      "mystique",
+      "juggernaut",
+      "ultron"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["team-up", "defenders", "classic", "non-team", "1970s"],
+  "tags": [
+    "team-up",
+    "defenders",
+    "classic",
+    "non-team",
+    "1970s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Defenders #1–152",
@@ -26,5 +47,6 @@
       ]
     }
   },
-  "flavorText": "We're not a team. We just keep ending up in the same room."
+  "flavorText": "We're not a team. We just keep ending up in the same room.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11/119711/3041110-1.jpg"
 }

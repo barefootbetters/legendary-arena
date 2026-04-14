@@ -6,16 +6,37 @@
   "setupIntent": {
     "mastermindId": "stryfe",
     "schemeId": "x-cutioners-song",
-    "villainGroupIds": ["mutant-liberation-front", "four-horsemen"],
-    "henchmanGroupIds": ["phalanx"],
-    "heroDeckIds": ["cable", "cyclops", "jean-grey", "wolverine", "bishop", "forge"]
+    "villainGroupIds": [
+      "mutant-liberation-front",
+      "four-horsemen"
+    ],
+    "henchmanGroupIds": [
+      "phalanx"
+    ],
+    "heroDeckIds": [
+      "cable",
+      "cyclops",
+      "jean-grey",
+      "wolverine",
+      "bishop",
+      "forge"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["x-men", "x-force", "stryfe", "cable", "1990s"],
+  "tags": [
+    "x-men",
+    "x-force",
+    "stryfe",
+    "cable",
+    "1990s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "X-Cutioner's Song crossover",
@@ -26,5 +47,6 @@
       ]
     }
   },
-  "flavorText": "The sins of the future are paid in the present."
+  "flavorText": "The sins of the future are paid in the present.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/4031880-01.jpg"
 }

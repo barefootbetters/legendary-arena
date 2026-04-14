@@ -6,16 +6,36 @@
   "setupIntent": {
     "mastermindId": "kingpin",
     "schemeId": "steal-the-weaponized-plutonium",
-    "villainGroupIds": ["streets-of-new-york", "underworld"],
-    "henchmanGroupIds": ["maggia-goons"],
-    "heroDeckIds": ["daredevil", "punisher", "elektra", "iron-fist", "blade"]
+    "villainGroupIds": [
+      "streets-of-new-york",
+      "underworld"
+    ],
+    "henchmanGroupIds": [
+      "maggia-goons"
+    ],
+    "heroDeckIds": [
+      "daredevil",
+      "punisher",
+      "elektra",
+      "iron-fist",
+      "blade"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["street-level", "crime", "kingpin", "marvel-knights", "dark-city"],
+  "tags": [
+    "street-level",
+    "crime",
+    "kingpin",
+    "marvel-knights",
+    "dark-city"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Daredevil Vol 2 #56–60",
@@ -26,5 +46,6 @@
       ]
     }
   },
-  "flavorText": "Five families. One throne. Blood is the only currency."
+  "flavorText": "Five families. One throne. Blood is the only currency.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11145/111450787/8696916-5582673184-814ZG.jpg"
 }

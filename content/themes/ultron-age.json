@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "ultron",
     "schemeId": "age-of-ultron",
-    "villainGroupIds": ["ultrons-legacy", "queens-vengeance"],
-    "heroDeckIds": ["ant-man", "wasp", "jocasta", "black-knight", "wonder-man"]
+    "villainGroupIds": [
+      "ultrons-legacy",
+      "queens-vengeance"
+    ],
+    "heroDeckIds": [
+      "ant-man",
+      "wasp",
+      "jocasta",
+      "black-knight",
+      "wonder-man"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["avengers", "ultron", "ai", "dystopia", "2010s"],
+  "tags": [
+    "avengers",
+    "ultron",
+    "ai",
+    "dystopia",
+    "2010s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Age of Ultron #1–10",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "There is no future. There is only Ultron."
+  "flavorText": "There is no future. There is only Ultron.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11112/111121983/4763853-1365362547-AGEOF.jpg"
 }

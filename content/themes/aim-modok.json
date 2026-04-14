@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "hydra-high-council",
     "schemeId": "hydra-helicarriers-hunt-heroes",
-    "villainGroupIds": ["a-i-m-hydra-offshoot", "hydra-elite"],
-    "heroDeckIds": ["agent-phil-coulson", "mockingbird", "quake", "deathlok", "gw-bridge"]
+    "villainGroupIds": [
+      "a-i-m-hydra-offshoot",
+      "hydra-elite"
+    ],
+    "heroDeckIds": [
+      "agent-phil-coulson",
+      "mockingbird",
+      "quake",
+      "deathlok",
+      "gw-bridge"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["classic-villains", "aim", "modok", "superscience", "shield"],
+  "tags": [
+    "classic-villains",
+    "aim",
+    "modok",
+    "superscience",
+    "shield"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Strange Tales #146",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "Science without conscience is the weapon of tyrants."
+  "flavorText": "Science without conscience is the weapon of tyrants.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/69951/3021848-146.jpg"
 }

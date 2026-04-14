@@ -6,16 +6,38 @@
   "setupIntent": {
     "mastermindId": "dark-phoenix",
     "schemeId": "dark-phoenix-saga-the",
-    "villainGroupIds": ["hellfire-club", "shiar-imperial-guard"],
-    "henchmanGroupIds": ["hellfire-cult", "brood-the"],
-    "heroDeckIds": ["cyclops", "storm", "phoenix", "wolverine", "nightcrawler", "kitty-pryde"]
+    "villainGroupIds": [
+      "hellfire-club",
+      "shiar-imperial-guard"
+    ],
+    "henchmanGroupIds": [
+      "hellfire-cult",
+      "brood-the"
+    ],
+    "heroDeckIds": [
+      "cyclops",
+      "storm",
+      "phoenix",
+      "wolverine",
+      "nightcrawler",
+      "kitty-pryde"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["x-men", "cosmic", "tragic-hero", "phoenix-force", "1980s"],
+  "tags": [
+    "x-men",
+    "cosmic",
+    "tragic-hero",
+    "phoenix-force",
+    "1980s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Uncanny X-Men #129–137",
@@ -27,5 +49,6 @@
       ]
     }
   },
-  "flavorText": "The fire rises. The Phoenix must be stopped—or the universe will burn."
+  "flavorText": "The fire rises. The Phoenix must be stopped—or the universe will burn.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/5329124-10.jpg"
 }

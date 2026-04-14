@@ -6,16 +6,37 @@
   "setupIntent": {
     "mastermindId": "authoritarian-iron-man",
     "schemeId": "epic-super-hero-civil-war",
-    "villainGroupIds": ["registration-enforcers", "thunderbolts"],
-    "henchmanGroupIds": ["cape-killers"],
-    "heroDeckIds": ["captain-america-secret-avenger", "falcon", "luke-cage", "cloak-dagger", "hercules", "goliath"]
+    "villainGroupIds": [
+      "registration-enforcers",
+      "thunderbolts"
+    ],
+    "henchmanGroupIds": [
+      "cape-killers"
+    ],
+    "heroDeckIds": [
+      "captain-america-secret-avenger",
+      "falcon",
+      "luke-cage",
+      "cloak-dagger",
+      "hercules",
+      "goliath"
+    ]
   },
   "playerCount": {
-    "recommended": [4, 5],
+    "recommended": [
+      4,
+      5
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["civil-war", "avengers", "political", "registration", "2000s"],
+  "tags": [
+    "civil-war",
+    "avengers",
+    "political",
+    "registration",
+    "2000s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Civil War #1–7",
@@ -26,5 +47,6 @@
       ]
     }
   },
-  "flavorText": "Whose side are you on?"
+  "flavorText": "Whose side are you on?",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11112/111121983/6008597-4084019309-image_gallery"
 }

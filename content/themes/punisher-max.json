@@ -6,16 +6,36 @@
   "setupIntent": {
     "mastermindId": "kingpin",
     "schemeId": "detonate-the-helicarrier",
-    "villainGroupIds": ["underworld", "emissaries-of-evil"],
-    "henchmanGroupIds": ["maggia-goons"],
-    "heroDeckIds": ["punisher", "blade", "ghost-rider", "elektra", "wolverine"]
+    "villainGroupIds": [
+      "underworld",
+      "emissaries-of-evil"
+    ],
+    "henchmanGroupIds": [
+      "maggia-goons"
+    ],
+    "heroDeckIds": [
+      "punisher",
+      "blade",
+      "ghost-rider",
+      "elektra",
+      "wolverine"
+    ]
   },
   "playerCount": {
-    "recommended": [2, 3],
+    "recommended": [
+      2,
+      3
+    ],
     "min": 1,
     "max": 6
   },
-  "tags": ["street-level", "punisher", "dark", "gritty", "2000s"],
+  "tags": [
+    "street-level",
+    "punisher",
+    "dark",
+    "gritty",
+    "2000s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Punisher MAX #1–60",
@@ -26,5 +46,6 @@
       ]
     }
   },
-  "flavorText": "One man. One war. No rules."
+  "flavorText": "One man. One war. No rules.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/5756/1147385-pmbos_001_c01.jpg"
 }

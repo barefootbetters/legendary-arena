@@ -6,15 +6,34 @@
   "setupIntent": {
     "mastermindId": "hydra-high-council",
     "schemeId": "hail-hydra",
-    "villainGroupIds": ["hydra-elite", "a-i-m-hydra-offshoot"],
-    "heroDeckIds": ["agent-phil-coulson", "quake", "mockingbird", "deathlok", "melinda-may", "sharon-carter"]
+    "villainGroupIds": [
+      "hydra-elite",
+      "a-i-m-hydra-offshoot"
+    ],
+    "heroDeckIds": [
+      "agent-phil-coulson",
+      "quake",
+      "mockingbird",
+      "deathlok",
+      "melinda-may",
+      "sharon-carter"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["espionage", "hydra", "shield", "infiltration", "classic"],
+  "tags": [
+    "espionage",
+    "hydra",
+    "shield",
+    "infiltration",
+    "classic"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Various HYDRA storylines",
@@ -25,5 +44,6 @@
       ]
     }
   },
-  "flavorText": "Cut off one head, two more shall take its place. Hail HYDRA."
+  "flavorText": "Cut off one head, two more shall take its place. Hail HYDRA.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11161/111615891/9205278-cover.jpg"
 }

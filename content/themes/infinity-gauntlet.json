@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "thanos",
     "schemeId": "forge-the-infinity-gauntlet",
-    "villainGroupIds": ["infinity-gems", "kree-starforce"],
-    "heroDeckIds": ["drax-the-destroyer", "gamora", "groot", "rocket-raccoon", "star-lord"]
+    "villainGroupIds": [
+      "infinity-gems",
+      "kree-starforce"
+    ],
+    "heroDeckIds": [
+      "drax-the-destroyer",
+      "gamora",
+      "groot",
+      "rocket-raccoon",
+      "star-lord"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["guardians", "cosmic", "thanos", "infinity-gems", "1990s"],
+  "tags": [
+    "guardians",
+    "cosmic",
+    "thanos",
+    "infinity-gems",
+    "1990s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Infinity Gauntlet #1–6",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "Fine. I'll do it myself."
+  "flavorText": "Fine. I'll do it myself.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/2/22664/1057503-ig.jpg"
 }

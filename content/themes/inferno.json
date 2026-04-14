@@ -6,16 +6,37 @@
   "setupIntent": {
     "mastermindId": "mephisto",
     "schemeId": "transform-citizens-into-demons",
-    "villainGroupIds": ["emissaries-of-evil", "underworld"],
-    "henchmanGroupIds": ["maggia-goons"],
-    "heroDeckIds": ["cyclops", "jean-grey", "wolverine", "colossus", "storm", "angel"]
+    "villainGroupIds": [
+      "emissaries-of-evil",
+      "underworld"
+    ],
+    "henchmanGroupIds": [
+      "maggia-goons"
+    ],
+    "heroDeckIds": [
+      "cyclops",
+      "jean-grey",
+      "wolverine",
+      "colossus",
+      "storm",
+      "angel"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["x-men", "demons", "inferno", "goblin-queen", "1980s"],
+  "tags": [
+    "x-men",
+    "demons",
+    "inferno",
+    "goblin-queen",
+    "1980s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Uncanny X-Men #240–243 / X-Factor #36–39",
@@ -26,5 +47,6 @@
       ]
     }
   },
-  "flavorText": "The city is alive. The city is hungry. The city is Hell."
+  "flavorText": "The city is alive. The city is hungry. The city is Hell.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/2056717-36.jpg"
 }

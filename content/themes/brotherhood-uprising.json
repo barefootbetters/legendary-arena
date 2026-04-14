@@ -6,16 +6,37 @@
   "setupIntent": {
     "mastermindId": "magneto",
     "schemeId": "legacy-virus-the",
-    "villainGroupIds": ["brotherhood", "radiation"],
-    "henchmanGroupIds": ["savage-land-mutates"],
-    "heroDeckIds": ["cyclops", "wolverine", "storm", "emma-frost", "rogue", "gambit"]
+    "villainGroupIds": [
+      "brotherhood",
+      "radiation"
+    ],
+    "henchmanGroupIds": [
+      "savage-land-mutates"
+    ],
+    "heroDeckIds": [
+      "cyclops",
+      "wolverine",
+      "storm",
+      "emma-frost",
+      "rogue",
+      "gambit"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["x-men", "magneto", "brotherhood", "classic", "1990s"],
+  "tags": [
+    "x-men",
+    "magneto",
+    "brotherhood",
+    "classic",
+    "1990s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "X-Men Vol 2 #25",
@@ -26,5 +47,6 @@
       ]
     }
   },
-  "flavorText": "Mutants are the future, Charles. You just refuse to see it."
+  "flavorText": "Mutants are the future, Charles. You just refuse to see it.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/9/96747/6861070-x-men%2023.jpg"
 }

@@ -6,16 +6,38 @@
   "setupIntent": {
     "mastermindId": "dark-phoenix",
     "schemeId": "x-men-danger-room-goes-berserk",
-    "villainGroupIds": ["hellfire-club", "sisterhood-of-mutants"],
-    "henchmanGroupIds": ["shiar-death-commandos", "hellfire-cult"],
-    "heroDeckIds": ["cyclops", "emma-frost", "storm", "phoenix", "havok", "polaris"]
+    "villainGroupIds": [
+      "hellfire-club",
+      "sisterhood-of-mutants"
+    ],
+    "henchmanGroupIds": [
+      "shiar-death-commandos",
+      "hellfire-cult"
+    ],
+    "heroDeckIds": [
+      "cyclops",
+      "emma-frost",
+      "storm",
+      "phoenix",
+      "havok",
+      "polaris"
+    ]
   },
   "playerCount": {
-    "recommended": [4, 5],
+    "recommended": [
+      4,
+      5
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["x-men", "avengers", "phoenix-force", "avx", "2010s"],
+  "tags": [
+    "x-men",
+    "avengers",
+    "phoenix-force",
+    "avx",
+    "2010s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Avengers vs. X-Men #1–12",
@@ -26,5 +48,6 @@
       ]
     }
   },
-  "flavorText": "Five hosts. Absolute power. No one is safe—not even the X-Men."
+  "flavorText": "Five hosts. Absolute power. No one is safe—not even the X-Men.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/3506337-01.jpg"
 }

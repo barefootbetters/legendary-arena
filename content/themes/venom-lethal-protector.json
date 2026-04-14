@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "hybrid",
     "schemeId": "invasion-of-the-venom-symbiotes",
-    "villainGroupIds": ["life-foundation", "poisons"],
-    "heroDeckIds": ["venom", "carnage", "venompool", "venom-rocket", "venomized-dr-strange"]
+    "villainGroupIds": [
+      "life-foundation",
+      "poisons"
+    ],
+    "heroDeckIds": [
+      "venom",
+      "carnage",
+      "venompool",
+      "venom-rocket",
+      "venomized-dr-strange"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["spider-man", "symbiotes", "venom", "anti-hero", "1990s"],
+  "tags": [
+    "spider-man",
+    "symbiotes",
+    "venom",
+    "anti-hero",
+    "1990s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Venom: Lethal Protector #1–6",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "We are Venom. And we protect the innocent—by any means necessary."
+  "flavorText": "We are Venom. And we protect the innocent—by any means necessary.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/4897039-01.jpg"
 }

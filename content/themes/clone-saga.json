@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "mysterio",
     "schemeId": "clone-saga-the",
-    "villainGroupIds": ["sinister-six", "maximum-carnage"],
-    "heroDeckIds": ["scarlet-spider", "symbiote-spider-man", "spider-woman", "black-cat", "moon-knight"]
+    "villainGroupIds": [
+      "sinister-six",
+      "maximum-carnage"
+    ],
+    "heroDeckIds": [
+      "scarlet-spider",
+      "symbiote-spider-man",
+      "spider-woman",
+      "black-cat",
+      "moon-knight"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["spider-man", "clone-saga", "identity", "mysterio", "1990s"],
+  "tags": [
+    "spider-man",
+    "clone-saga",
+    "identity",
+    "mysterio",
+    "1990s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Clone Saga (1994–1996)",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "Who is Spider-Man? Even he doesn't know anymore."
+  "flavorText": "Who is Spider-Man? Even he doesn't know anymore.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/5/54649/1141669-p00001___spider_man_the_clone_saga__6.jpg"
 }

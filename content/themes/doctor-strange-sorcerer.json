@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "nightmare",
     "schemeId": "war-for-the-dream-dimension",
-    "villainGroupIds": ["fear-lords", "lords-of-the-netherworld"],
-    "heroDeckIds": ["doctor-strange", "clea", "doctor-voodoo", "ancient-one-the", "vishanti-the"]
+    "villainGroupIds": [
+      "fear-lords",
+      "lords-of-the-netherworld"
+    ],
+    "heroDeckIds": [
+      "doctor-strange",
+      "clea",
+      "doctor-voodoo",
+      "ancient-one-the",
+      "vishanti-the"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["deep-cut", "doctor-strange", "mystic", "nightmare", "sorcerer-supreme"],
+  "tags": [
+    "deep-cut",
+    "doctor-strange",
+    "mystic",
+    "nightmare",
+    "sorcerer-supreme"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Doctor Strange, Sorcerer Supreme #1–90",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "By the Vishanti—the mystic arts will not be silenced."
+  "flavorText": "By the Vishanti—the mystic arts will not be silenced.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/5935982-01.jpg"
 }

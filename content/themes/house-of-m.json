@@ -6,16 +6,37 @@
   "setupIntent": {
     "mastermindId": "mandarin",
     "schemeId": "house-of-m",
-    "villainGroupIds": ["dark-avengers", "army-of-evil"],
-    "henchmanGroupIds": ["hydra-base"],
-    "heroDeckIds": ["scarlet-witch", "quicksilver", "photon", "speed", "darkhawk", "hellcat"]
+    "villainGroupIds": [
+      "dark-avengers",
+      "army-of-evil"
+    ],
+    "henchmanGroupIds": [
+      "hydra-base"
+    ],
+    "heroDeckIds": [
+      "scarlet-witch",
+      "quicksilver",
+      "photon",
+      "speed",
+      "darkhawk",
+      "hellcat"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["avengers", "x-men", "scarlet-witch", "alternate-reality", "2000s"],
+  "tags": [
+    "avengers",
+    "x-men",
+    "scarlet-witch",
+    "alternate-reality",
+    "2000s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "House of M #1–8",
@@ -26,5 +47,6 @@
       ]
     }
   },
-  "flavorText": "No more mutants."
+  "flavorText": "No more mutants.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/4/71863-12049-104861-1-house-of-m.jpg"
 }

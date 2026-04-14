@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "mysterio",
     "schemeId": "splice-humans-with-spider-dna",
-    "villainGroupIds": ["spider-foes", "sinister-six"],
-    "heroDeckIds": ["spider-man", "scarlet-spider", "spider-woman", "moon-knight", "black-cat"]
+    "villainGroupIds": [
+      "spider-foes",
+      "sinister-six"
+    ],
+    "heroDeckIds": [
+      "spider-man",
+      "scarlet-spider",
+      "spider-woman",
+      "moon-knight",
+      "black-cat"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["spider-man", "doc-ock", "identity", "superior", "2010s"],
+  "tags": [
+    "spider-man",
+    "doc-ock",
+    "identity",
+    "superior",
+    "2010s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Superior Spider-Man #1–33",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "Peter Parker is dead. Long live the Superior Spider-Man."
+  "flavorText": "Peter Parker is dead. Long live the Superior Spider-Man.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/6735989-01.jpg"
 }

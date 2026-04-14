@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "fin-fang-foom",
     "schemeId": "clash-of-the-monsters-unleashed",
-    "villainGroupIds": ["monsters-unleashed", "wrecking-crew"],
-    "heroDeckIds": ["ms-marvel", "nova", "gwenpool", "totally-awesome-hulk", "viv-vision"]
+    "villainGroupIds": [
+      "monsters-unleashed",
+      "wrecking-crew"
+    ],
+    "heroDeckIds": [
+      "ms-marvel",
+      "nova",
+      "gwenpool",
+      "totally-awesome-hulk",
+      "viv-vision"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["deep-cut", "champions", "young-heroes", "ms-marvel", "2010s"],
+  "tags": [
+    "deep-cut",
+    "champions",
+    "young-heroes",
+    "ms-marvel",
+    "2010s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Champions #1–27",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "We're not sidekicks. We're not junior Avengers. We're Champions."
+  "flavorText": "We're not sidekicks. We're not junior Avengers. We're Champions.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/5467793-01.jpg"
 }

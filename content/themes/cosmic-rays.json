@@ -6,15 +6,32 @@
   "setupIntent": {
     "mastermindId": "galactus",
     "schemeId": "invincible-force-field",
-    "villainGroupIds": ["heralds-of-galactus", "subterranea"],
-    "heroDeckIds": ["mr-fantastic", "invisible-woman", "human-torch", "thing", "silver-surfer"]
+    "villainGroupIds": [
+      "heralds-of-galactus",
+      "subterranea"
+    ],
+    "heroDeckIds": [
+      "mr-fantastic",
+      "invisible-woman",
+      "human-torch",
+      "thing",
+      "silver-surfer"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["fantastic-four", "cosmic", "radiation", "science"],
+  "tags": [
+    "fantastic-four",
+    "cosmic",
+    "radiation",
+    "science"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Fantastic Four #1 + cosmic ray stories",
@@ -25,5 +42,6 @@
       ]
     }
   },
-  "flavorText": "The same rays that made us could unmake the world."
+  "flavorText": "The same rays that made us could unmake the world.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11112/111121983/4982390-8551652907-FANTA.jpg"
 }

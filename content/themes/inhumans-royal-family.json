@@ -6,15 +6,32 @@
   "setupIntent": {
     "mastermindId": "maximus-the-mad",
     "schemeId": "devolve-with-xerogen-crystals",
-    "villainGroupIds": ["inhuman-rebellion"],
-    "heroDeckIds": ["black-bolt", "medusa", "crystal", "karnak", "gorgon"]
+    "villainGroupIds": [
+      "inhuman-rebellion"
+    ],
+    "heroDeckIds": [
+      "black-bolt",
+      "medusa",
+      "crystal",
+      "karnak",
+      "gorgon"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["inhumans", "royal-family", "terrigen", "attilan", "classic"],
+  "tags": [
+    "inhumans",
+    "royal-family",
+    "terrigen",
+    "attilan",
+    "classic"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Inhumans #1–12",
@@ -25,5 +42,6 @@
       ]
     }
   },
-  "flavorText": "The throne of Attilan is not inherited. It is defended."
+  "flavorText": "The throne of Attilan is not inherited. It is defended.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/2/22664/968406-inhm.jpg"
 }

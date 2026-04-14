@@ -6,16 +6,36 @@
   "setupIntent": {
     "mastermindId": "nimrod-super-sentinel",
     "schemeId": "mutant-hunting-super-sentinels",
-    "villainGroupIds": ["sentinel-territories"],
-    "henchmanGroupIds": ["sentinel"],
-    "heroDeckIds": ["kitty-pryde", "wolverine", "storm", "colossus-wolverine", "phoenix", "cyclops"]
+    "villainGroupIds": [
+      "sentinel-territories"
+    ],
+    "henchmanGroupIds": [
+      "sentinel"
+    ],
+    "heroDeckIds": [
+      "kitty-pryde",
+      "wolverine",
+      "storm",
+      "colossus-wolverine",
+      "phoenix",
+      "cyclops"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["x-men", "time-travel", "dystopia", "sentinels", "1980s"],
+  "tags": [
+    "x-men",
+    "time-travel",
+    "dystopia",
+    "sentinels",
+    "1980s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Uncanny X-Men #141–142",
@@ -26,5 +46,6 @@
       ]
     }
   },
-  "flavorText": "The future is not set—but the Sentinels are already here."
+  "flavorText": "The future is not set—but the Sentinels are already here.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/9/96747/3312570-check10.jpg"
 }

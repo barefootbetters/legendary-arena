@@ -6,16 +6,37 @@
   "setupIntent": {
     "mastermindId": "baron-helmut-zemo",
     "schemeId": "dark-reign-of-h-a-m-m-e-r-officers",
-    "villainGroupIds": ["thunderbolts", "registration-enforcers"],
-    "henchmanGroupIds": ["cape-killers"],
-    "heroDeckIds": ["speedball", "patriot", "hulkling", "wiccan", "stature", "vision"]
+    "villainGroupIds": [
+      "thunderbolts",
+      "registration-enforcers"
+    ],
+    "henchmanGroupIds": [
+      "cape-killers"
+    ],
+    "heroDeckIds": [
+      "speedball",
+      "patriot",
+      "hulkling",
+      "wiccan",
+      "stature",
+      "vision"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["avengers", "thunderbolts", "dark-reign", "villain-team", "2000s"],
+  "tags": [
+    "avengers",
+    "thunderbolts",
+    "dark-reign",
+    "villain-team",
+    "2000s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Thunderbolts Vol 2 (Dark Reign era)",
@@ -26,5 +47,6 @@
       ]
     }
   },
-  "flavorText": "They were villains. Now they hunt heroes. Nothing has changed."
+  "flavorText": "They were villains. Now they hunt heroes. Nothing has changed.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/5/52045/1075544-yhst_23599503122488_2082_1951389.jpg"
 }

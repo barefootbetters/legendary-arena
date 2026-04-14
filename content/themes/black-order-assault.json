@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "ebony-maw",
     "schemeId": "halve-all-life-in-the-universe",
-    "villainGroupIds": ["children-of-thanos", "black-order-of-thanos"],
-    "heroDeckIds": ["doctor-strange", "captain-marvel", "black-panther", "bruce-banner", "wanda-vision"]
+    "villainGroupIds": [
+      "children-of-thanos",
+      "black-order-of-thanos"
+    ],
+    "heroDeckIds": [
+      "doctor-strange",
+      "captain-marvel",
+      "black-panther",
+      "bruce-banner",
+      "wanda-vision"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["cosmic", "thanos", "black-order", "mcu", "2010s"],
+  "tags": [
+    "cosmic",
+    "thanos",
+    "black-order",
+    "mcu",
+    "2010s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Infinity #1–6",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "The Black Order does not negotiate. They arrive, and worlds end."
+  "flavorText": "The Black Order does not negotiate. They arrive, and worlds end.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/3237209-01a.jpg"
 }

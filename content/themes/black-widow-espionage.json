@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "taskmaster",
     "schemeId": "frame-heroes-for-murder",
-    "villainGroupIds": ["elite-assassins", "taskmasters-thunderbolts"],
-    "heroDeckIds": ["black-widow", "yelena-belova", "red-guardian", "white-tiger", "falcon-winter-soldier"]
+    "villainGroupIds": [
+      "elite-assassins",
+      "taskmasters-thunderbolts"
+    ],
+    "heroDeckIds": [
+      "black-widow",
+      "yelena-belova",
+      "red-guardian",
+      "white-tiger",
+      "falcon-winter-soldier"
+    ]
   },
   "playerCount": {
-    "recommended": [2, 3],
+    "recommended": [
+      2,
+      3
+    ],
     "min": 1,
     "max": 6
   },
-  "tags": ["espionage", "black-widow", "red-room", "taskmaster", "spy"],
+  "tags": [
+    "espionage",
+    "black-widow",
+    "red-room",
+    "taskmaster",
+    "spy"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Black Widow Vol 6",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "In espionage, the truth is the most dangerous weapon of all."
+  "flavorText": "In espionage, the truth is the most dangerous weapon of all.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/5385491-06.jpg"
 }

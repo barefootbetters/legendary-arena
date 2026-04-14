@@ -6,15 +6,32 @@
   "setupIntent": {
     "mastermindId": "romulus",
     "schemeId": "condition-logan-into-weapon-x",
-    "villainGroupIds": ["weapon-plus", "berserkers"],
-    "heroDeckIds": ["weapon-x-wolverine", "fantomex", "marrow", "weapon-h"]
+    "villainGroupIds": [
+      "weapon-plus",
+      "berserkers"
+    ],
+    "heroDeckIds": [
+      "weapon-x-wolverine",
+      "fantomex",
+      "marrow",
+      "weapon-h"
+    ]
   },
   "playerCount": {
-    "recommended": [2, 3],
+    "recommended": [
+      2,
+      3
+    ],
     "min": 1,
     "max": 6
   },
-  "tags": ["deep-cut", "weapon-x", "wolverine", "black-ops", "1990s"],
+  "tags": [
+    "deep-cut",
+    "weapon-x",
+    "wolverine",
+    "black-ops",
+    "1990s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Marvel Comics Presents #72–84",
@@ -25,5 +42,6 @@
       ]
     }
   },
-  "flavorText": "They made him a weapon. They forgot he was also a man."
+  "flavorText": "They made him a weapon. They forgot he was also a man.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/7/71975/8225260-0597553120-STL20.jpg"
 }

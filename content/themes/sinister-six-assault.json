@@ -6,15 +6,32 @@
   "setupIntent": {
     "mastermindId": "mysterio",
     "schemeId": "weave-a-web-of-lies",
-    "villainGroupIds": ["sinister-six", "spider-foes"],
-    "heroDeckIds": ["spider-man", "scarlet-spider", "black-cat", "spider-woman", "moon-knight"]
+    "villainGroupIds": [
+      "sinister-six",
+      "spider-foes"
+    ],
+    "heroDeckIds": [
+      "spider-man",
+      "scarlet-spider",
+      "black-cat",
+      "spider-woman",
+      "moon-knight"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["spider-man", "sinister-six", "classic", "1960s"],
+  "tags": [
+    "spider-man",
+    "sinister-six",
+    "classic",
+    "1960s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Amazing Spider-Man Annual #1",
@@ -25,5 +42,6 @@
       ]
     }
   },
-  "flavorText": "One spider. Six hunters. No way out."
+  "flavorText": "One spider. Six hunters. No way out.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/6614288-01.jpg"
 }

@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "emperor-vulcan-of-the-shiar",
     "schemeId": "war-of-kings",
-    "villainGroupIds": ["shiar-imperial-elite", "inhuman-rebellion"],
-    "heroDeckIds": ["black-bolt", "medusa", "crystal", "karnak", "gorgon"]
+    "villainGroupIds": [
+      "shiar-imperial-elite",
+      "inhuman-rebellion"
+    ],
+    "heroDeckIds": [
+      "black-bolt",
+      "medusa",
+      "crystal",
+      "karnak",
+      "gorgon"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["cosmic", "inhumans", "shiar", "war-of-kings", "2000s"],
+  "tags": [
+    "cosmic",
+    "inhumans",
+    "shiar",
+    "war-of-kings",
+    "2000s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "War of Kings #1–6",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "Two empires. One throne. The galaxy trembles."
+  "flavorText": "Two empires. One throne. The galaxy trembles.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/2/22664/1237343-wok.jpg"
 }

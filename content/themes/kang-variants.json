@@ -6,15 +6,31 @@
   "setupIntent": {
     "mastermindId": "kang-the-conqueror",
     "schemeId": "sneak-attack-the-heroes-homes",
-    "villainGroupIds": ["timelines-of-kang"],
-    "heroDeckIds": ["fantastic-four-united", "brainstorm", "psi-lord", "super-skrull"]
+    "villainGroupIds": [
+      "timelines-of-kang"
+    ],
+    "heroDeckIds": [
+      "fantastic-four-united",
+      "brainstorm",
+      "psi-lord",
+      "super-skrull"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["deep-cut", "kang", "time-travel", "variants", "multiverse"],
+  "tags": [
+    "deep-cut",
+    "kang",
+    "time-travel",
+    "variants",
+    "multiverse"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Avengers Forever #1–12",
@@ -25,5 +41,6 @@
       ]
     }
   },
-  "flavorText": "There is always another Kang. There is always another war."
+  "flavorText": "There is always another Kang. There is always another war.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/2/22664/963306-avg.jpg"
 }

@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "lilith-mother-of-demons",
     "schemeId": "midnight-massacre",
-    "villainGroupIds": ["lilin", "fallen"],
-    "heroDeckIds": ["blade-daywalker", "morbius", "werewolf-by-night", "elsa-bloodstone", "wong-master-of-the-mystic-arts"]
+    "villainGroupIds": [
+      "lilin",
+      "fallen"
+    ],
+    "heroDeckIds": [
+      "blade-daywalker",
+      "morbius",
+      "werewolf-by-night",
+      "elsa-bloodstone",
+      "wong-master-of-the-mystic-arts"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["horror", "supernatural", "midnight-sons", "demons", "1990s"],
+  "tags": [
+    "horror",
+    "supernatural",
+    "midnight-sons",
+    "demons",
+    "1990s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Ghost Rider Vol 3 #28 / Midnight Sons crossover",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "When the sun sets, we rise."
+  "flavorText": "When the sun sets, we rise.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/4/50635-4397-66443-1-ghost-rider.jpg"
 }

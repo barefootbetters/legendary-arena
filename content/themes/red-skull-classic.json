@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "arnim-zola",
     "schemeId": "change-the-outcome-of-wwii",
-    "villainGroupIds": ["zolas-creations", "masters-of-evil-wwii"],
-    "heroDeckIds": ["captain-america-1941", "agent-x-13", "winter-soldier", "captain-america-falcon", "steve-rogers-director-of-shield"]
+    "villainGroupIds": [
+      "zolas-creations",
+      "masters-of-evil-wwii"
+    ],
+    "heroDeckIds": [
+      "captain-america-1941",
+      "agent-x-13",
+      "winter-soldier",
+      "captain-america-falcon",
+      "steve-rogers-director-of-shield"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["espionage", "red-skull", "wwii", "captain-america", "classic"],
+  "tags": [
+    "espionage",
+    "red-skull",
+    "wwii",
+    "captain-america",
+    "classic"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Captain America Comics #1",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "The Skull endures. Empires fall, but hate lives forever."
+  "flavorText": "The Skull endures. Empires fall, but hate lives forever.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/10/100239/2499770-captain_america_comics_128_pages_v1942__1__1942_1____page_1.jpg"
 }

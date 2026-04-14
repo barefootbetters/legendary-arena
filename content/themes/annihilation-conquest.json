@@ -6,16 +6,36 @@
   "setupIntent": {
     "mastermindId": "magus",
     "schemeId": "annihilation-conquest",
-    "villainGroupIds": ["from-beyond", "celestials"],
-    "henchmanGroupIds": ["sidera-maris-bridge-builders"],
-    "heroDeckIds": ["adam-warlock", "phyla-vell", "nebula", "ronan-the-accuser", "yondu"]
+    "villainGroupIds": [
+      "from-beyond",
+      "celestials"
+    ],
+    "henchmanGroupIds": [
+      "sidera-maris-bridge-builders"
+    ],
+    "heroDeckIds": [
+      "adam-warlock",
+      "phyla-vell",
+      "nebula",
+      "ronan-the-accuser",
+      "yondu"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["cosmic", "phalanx", "kree", "annihilation", "2000s"],
+  "tags": [
+    "cosmic",
+    "phalanx",
+    "kree",
+    "annihilation",
+    "2000s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Annihilation: Conquest #1–6",
@@ -26,5 +46,6 @@
       ]
     }
   },
-  "flavorText": "Resistance is not futile. Resistance is all we have left."
+  "flavorText": "Resistance is not futile. Resistance is all we have left.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/2/22664/1065294-anhn.jpg"
 }

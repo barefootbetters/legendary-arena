@@ -6,16 +6,37 @@
   "setupIntent": {
     "mastermindId": "shadow-king",
     "schemeId": "anti-mutant-hatred",
-    "villainGroupIds": ["shadow-x", "dark-descendants"],
-    "henchmanGroupIds": ["hellfire-cult"],
-    "heroDeckIds": ["psylocke", "phoenix", "storm", "cyclops", "legion", "kitty-pryde"]
+    "villainGroupIds": [
+      "shadow-x",
+      "dark-descendants"
+    ],
+    "henchmanGroupIds": [
+      "hellfire-cult"
+    ],
+    "heroDeckIds": [
+      "psylocke",
+      "phoenix",
+      "storm",
+      "cyclops",
+      "legion",
+      "kitty-pryde"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["x-men", "psychic", "shadow-king", "astral-plane", "1970s"],
+  "tags": [
+    "x-men",
+    "psychic",
+    "shadow-king",
+    "astral-plane",
+    "1970s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Uncanny X-Men #117",
@@ -26,5 +47,6 @@
       ]
     }
   },
-  "flavorText": "You cannot fight what lives inside your own mind."
+  "flavorText": "You cannot fight what lives inside your own mind.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/5329124-10.jpg"
 }

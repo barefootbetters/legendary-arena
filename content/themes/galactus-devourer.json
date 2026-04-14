@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "galactus",
     "schemeId": "bathe-the-earth-in-cosmic-rays",
-    "villainGroupIds": ["heralds-of-galactus", "subterranea"],
-    "heroDeckIds": ["mr-fantastic", "invisible-woman", "human-torch", "thing", "silver-surfer"]
+    "villainGroupIds": [
+      "heralds-of-galactus",
+      "subterranea"
+    ],
+    "heroDeckIds": [
+      "mr-fantastic",
+      "invisible-woman",
+      "human-torch",
+      "thing",
+      "silver-surfer"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["fantastic-four", "cosmic", "galactus", "silver-surfer", "1960s"],
+  "tags": [
+    "fantastic-four",
+    "cosmic",
+    "galactus",
+    "silver-surfer",
+    "1960s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Fantastic Four #48–50",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "I hunger. Your world will sate me."
+  "flavorText": "I hunger. Your world will sate me.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/4/45059-6211-52119-1-fantastic-four.jpg"
 }

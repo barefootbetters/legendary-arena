@@ -6,15 +6,31 @@
   "setupIntent": {
     "mastermindId": "annihilus",
     "schemeId": "pull-reality-into-the-negative-zone",
-    "villainGroupIds": ["annihilation-wave"],
-    "heroDeckIds": ["mr-fantastic", "invisible-woman", "human-torch", "thing", "silver-surfer"]
+    "villainGroupIds": [
+      "annihilation-wave"
+    ],
+    "heroDeckIds": [
+      "mr-fantastic",
+      "invisible-woman",
+      "human-torch",
+      "thing",
+      "silver-surfer"
+    ]
   },
   "playerCount": {
-    "recommended": [2, 3],
+    "recommended": [
+      2,
+      3
+    ],
     "min": 1,
     "max": 6
   },
-  "tags": ["fantastic-four", "negative-zone", "annihilus", "classic"],
+  "tags": [
+    "fantastic-four",
+    "negative-zone",
+    "annihilus",
+    "classic"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Fantastic Four #251–256",
@@ -25,5 +41,6 @@
       ]
     }
   },
-  "flavorText": "Beyond the barrier, nothing lives. And the barrier is falling."
+  "flavorText": "Beyond the barrier, nothing lives. And the barrier is falling.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/4/20495-2045-22862-1-fantastic-four.jpg"
 }

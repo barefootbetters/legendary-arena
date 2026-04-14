@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "the-goblin-underworld-boss",
     "schemeId": "five-families-of-crime",
-    "villainGroupIds": ["goblins-freak-show", "x-men-noir"],
-    "heroDeckIds": ["spider-man-noir", "daredevil-noir", "luke-cage-noir", "iron-man-noir", "angel-noir"]
+    "villainGroupIds": [
+      "goblins-freak-show",
+      "x-men-noir"
+    ],
+    "heroDeckIds": [
+      "spider-man-noir",
+      "daredevil-noir",
+      "luke-cage-noir",
+      "iron-man-noir",
+      "angel-noir"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["noir", "street-level", "1930s", "crime", "alternate-reality"],
+  "tags": [
+    "noir",
+    "street-level",
+    "1930s",
+    "crime",
+    "alternate-reality"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Spider-Man Noir #1–4",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "In this city, the shadows have teeth."
+  "flavorText": "In this city, the shadows have teeth.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/2/22664/1245291-spm.jpg"
 }

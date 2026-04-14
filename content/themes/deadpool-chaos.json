@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "evil-deadpool",
     "schemeId": "deadpool-writes-a-scheme",
-    "villainGroupIds": ["evil-deadpool-corpse", "deadpools-friends"],
-    "heroDeckIds": ["deadpool", "bob-agent-of-hydra", "slapstick", "solo", "stingray"]
+    "villainGroupIds": [
+      "evil-deadpool-corpse",
+      "deadpools-friends"
+    ],
+    "heroDeckIds": [
+      "deadpool",
+      "bob-agent-of-hydra",
+      "slapstick",
+      "solo",
+      "stingray"
+    ]
   },
   "playerCount": {
-    "recommended": [2, 3],
+    "recommended": [
+      2,
+      3
+    ],
     "min": 1,
     "max": 6
   },
-  "tags": ["deadpool", "comedy", "fourth-wall", "merc", "1990s"],
+  "tags": [
+    "deadpool",
+    "comedy",
+    "fourth-wall",
+    "merc",
+    "1990s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Deadpool Vol 3 #1–69",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "Maximum effort."
+  "flavorText": "Maximum effort.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/3125/6669592-dea1.jpg"
 }

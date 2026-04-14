@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "dormammu",
     "schemeId": "claim-souls-for-demons",
-    "villainGroupIds": ["lords-of-the-netherworld", "fear-lords"],
-    "heroDeckIds": ["doctor-strange", "clea", "doctor-voodoo", "ancient-one-the", "vishanti-the"]
+    "villainGroupIds": [
+      "lords-of-the-netherworld",
+      "fear-lords"
+    ],
+    "heroDeckIds": [
+      "doctor-strange",
+      "clea",
+      "doctor-voodoo",
+      "ancient-one-the",
+      "vishanti-the"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["horror", "supernatural", "dormammu", "doctor-strange", "mystic"],
+  "tags": [
+    "horror",
+    "supernatural",
+    "dormammu",
+    "doctor-strange",
+    "mystic"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Strange Tales #126–127",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "Dormammu comes. And the Dark Dimension follows."
+  "flavorText": "Dormammu comes. And the Dark Dimension follows.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/12/124613/7912980-126.jpg"
 }

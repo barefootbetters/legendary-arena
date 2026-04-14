@@ -6,15 +6,32 @@
   "setupIntent": {
     "mastermindId": "galactus",
     "schemeId": "flood-the-planet-with-melted-glaciers",
-    "villainGroupIds": ["heralds-of-galactus"],
-    "heroDeckIds": ["silver-surfer", "mr-fantastic", "invisible-woman", "human-torch", "thing"]
+    "villainGroupIds": [
+      "heralds-of-galactus"
+    ],
+    "heroDeckIds": [
+      "silver-surfer",
+      "mr-fantastic",
+      "invisible-woman",
+      "human-torch",
+      "thing"
+    ]
   },
   "playerCount": {
-    "recommended": [2, 3],
+    "recommended": [
+      2,
+      3
+    ],
     "min": 1,
     "max": 6
   },
-  "tags": ["cosmic", "silver-surfer", "galactus", "fantastic-four", "1960s"],
+  "tags": [
+    "cosmic",
+    "silver-surfer",
+    "galactus",
+    "fantastic-four",
+    "1960s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Silver Surfer Vol 1 #1–18",
@@ -25,5 +42,6 @@
       ]
     }
   },
-  "flavorText": "I was his herald. Now I am his enemy."
+  "flavorText": "I was his herald. Now I am his enemy.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/3/38919/1672324-silver_surfer_1.jpg"
 }

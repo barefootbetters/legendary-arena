@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "annihilus",
     "schemeId": "pulse-waves-from-the-negative-zone",
-    "villainGroupIds": ["annihilation-wave", "timelines-of-kang"],
-    "heroDeckIds": ["super-skrull", "heralds-of-galactus", "brainstorm", "psi-lord", "fantastic-four-united"]
+    "villainGroupIds": [
+      "annihilation-wave",
+      "timelines-of-kang"
+    ],
+    "heroDeckIds": [
+      "super-skrull",
+      "heralds-of-galactus",
+      "brainstorm",
+      "psi-lord",
+      "fantastic-four-united"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["cosmic", "annihilation", "negative-zone", "annihilus", "2000s"],
+  "tags": [
+    "cosmic",
+    "annihilation",
+    "negative-zone",
+    "annihilus",
+    "2000s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Annihilation #1–6",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "The wave is coming. Nothing survives in its wake."
+  "flavorText": "The wave is coming. Nothing survives in its wake.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/77/99508-18290-107043-1-annihilation-prolog.jpg"
 }

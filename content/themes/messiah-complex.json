@@ -6,16 +6,37 @@
   "setupIntent": {
     "mastermindId": "bastion-fused-sentinel",
     "schemeId": "control-the-mutant-messiah",
-    "villainGroupIds": ["purifiers", "reavers"],
-    "henchmanGroupIds": ["mr-sinister-clones", "sentinel-squad-o-n-e"],
-    "heroDeckIds": ["cable", "bishop", "multiple-man", "warpath", "siryn", "rictor"]
+    "villainGroupIds": [
+      "purifiers",
+      "reavers"
+    ],
+    "henchmanGroupIds": [
+      "mr-sinister-clones",
+      "sentinel-squad-o-n-e"
+    ],
+    "heroDeckIds": [
+      "cable",
+      "bishop",
+      "multiple-man",
+      "warpath",
+      "siryn",
+      "rictor"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["x-men", "messiah-trilogy", "hope-summers", "2000s"],
+  "tags": [
+    "x-men",
+    "messiah-trilogy",
+    "hope-summers",
+    "2000s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Messiah CompleX crossover",
@@ -26,5 +47,6 @@
       ]
     }
   },
-  "flavorText": "One child. Every faction. The fate of an entire species."
+  "flavorText": "One child. Every faction. The fate of an entire species.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/2/27994/3011737-a58919819b801e77354ff756860a8cda7d7fea21.jpg"
 }

@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "supreme-intelligence-of-the-kree",
     "schemeId": "kree-skrull-war-the",
-    "villainGroupIds": ["kree-starforce", "infinity-gems"],
-    "heroDeckIds": ["captain-mar-vell", "drax-the-destroyer", "gamora", "rocket-raccoon", "star-lord"]
+    "villainGroupIds": [
+      "kree-starforce",
+      "infinity-gems"
+    ],
+    "heroDeckIds": [
+      "captain-mar-vell",
+      "drax-the-destroyer",
+      "gamora",
+      "rocket-raccoon",
+      "star-lord"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["cosmic", "kree", "skrulls", "avengers", "1970s"],
+  "tags": [
+    "cosmic",
+    "kree",
+    "skrulls",
+    "avengers",
+    "1970s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Avengers #89–97",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "Two empires. One planet. No negotiation."
+  "flavorText": "Two empires. One planet. No negotiation.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11/110017/8981690-wwww.jpg"
 }

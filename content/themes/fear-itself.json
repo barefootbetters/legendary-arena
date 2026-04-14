@@ -6,15 +6,32 @@
   "setupIntent": {
     "mastermindId": "uru-enchanted-iron-man",
     "schemeId": "fear-itself",
-    "villainGroupIds": ["mighty-the"],
-    "heroDeckIds": ["greithoth-breaker-of-wills", "kuurth-breaker-of-stone", "nerkkod-breaker-of-oceans", "nul-breaker-of-worlds", "skadi"]
+    "villainGroupIds": [
+      "mighty-the"
+    ],
+    "heroDeckIds": [
+      "greithoth-breaker-of-wills",
+      "kuurth-breaker-of-stone",
+      "nerkkod-breaker-of-oceans",
+      "nul-breaker-of-worlds",
+      "skadi"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["avengers", "asgard", "fear-itself", "worthy", "2010s"],
+  "tags": [
+    "avengers",
+    "asgard",
+    "fear-itself",
+    "worthy",
+    "2010s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Fear Itself #1–7",
@@ -25,5 +42,6 @@
       ]
     }
   },
-  "flavorText": "The Worthy have risen. Fear is their weapon. The world is their battlefield."
+  "flavorText": "The Worthy have risen. Fear is their weapon. The world is their battlefield.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/5344/1935077-msfi_001.jpg"
 }

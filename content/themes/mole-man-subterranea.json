@@ -6,15 +6,31 @@
   "setupIntent": {
     "mastermindId": "mole-man",
     "schemeId": "flood-the-planet-with-melted-glaciers",
-    "villainGroupIds": ["subterranea"],
-    "heroDeckIds": ["mr-fantastic", "invisible-woman", "human-torch", "thing"]
+    "villainGroupIds": [
+      "subterranea"
+    ],
+    "heroDeckIds": [
+      "mr-fantastic",
+      "invisible-woman",
+      "human-torch",
+      "thing"
+    ]
   },
   "playerCount": {
-    "recommended": [2, 3],
+    "recommended": [
+      2,
+      3
+    ],
     "min": 1,
     "max": 6
   },
-  "tags": ["fantastic-four", "mole-man", "subterranea", "monsters", "1960s"],
+  "tags": [
+    "fantastic-four",
+    "mole-man",
+    "subterranea",
+    "monsters",
+    "1960s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Fantastic Four #1",
@@ -25,5 +41,6 @@
       ]
     }
   },
-  "flavorText": "The surface world cast me out. Now the earth itself rises against them."
+  "flavorText": "The surface world cast me out. Now the earth itself rises against them.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11112/111121983/4982390-8551652907-FANTA.jpg"
 }

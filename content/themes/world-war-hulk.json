@@ -6,16 +6,36 @@
   "setupIntent": {
     "mastermindId": "king-hulk-sakaarson",
     "schemeId": "world-war-hulk",
-    "villainGroupIds": ["warbound", "sakaar-imperial-guard"],
-    "henchmanGroupIds": ["sakaaran-hivelings"],
-    "heroDeckIds": ["hulkbuster-iron-man", "she-hulk", "sentry", "amadeus-cho", "rick-jones"]
+    "villainGroupIds": [
+      "warbound",
+      "sakaar-imperial-guard"
+    ],
+    "henchmanGroupIds": [
+      "sakaaran-hivelings"
+    ],
+    "heroDeckIds": [
+      "hulkbuster-iron-man",
+      "she-hulk",
+      "sentry",
+      "amadeus-cho",
+      "rick-jones"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["hulk", "cosmic", "revenge", "sakaar", "2000s"],
+  "tags": [
+    "hulk",
+    "cosmic",
+    "revenge",
+    "sakaar",
+    "2000s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "World War Hulk #1–5",
@@ -26,5 +46,6 @@
       ]
     }
   },
-  "flavorText": "I didn't come here for a whisper. I want to hear you scream."
+  "flavorText": "I didn't come here for a whisper. I want to hear you scream.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/40/135179-18686-110435-1-world-war-hulk.jpg"
 }

@@ -6,16 +6,34 @@
   "setupIntent": {
     "mastermindId": "dr-doom",
     "schemeId": "portals-to-the-dark-dimension",
-    "villainGroupIds": ["masters-of-evil"],
-    "henchmanGroupIds": ["doombot-legion"],
-    "heroDeckIds": ["mr-fantastic", "invisible-woman", "human-torch", "thing", "spider-man"]
+    "villainGroupIds": [
+      "masters-of-evil"
+    ],
+    "henchmanGroupIds": [
+      "doombot-legion"
+    ],
+    "heroDeckIds": [
+      "mr-fantastic",
+      "invisible-woman",
+      "human-torch",
+      "thing",
+      "spider-man"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["fantastic-four", "dr-doom", "latveria", "classic"],
+  "tags": [
+    "fantastic-four",
+    "dr-doom",
+    "latveria",
+    "classic"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Fantastic Four #5 + various",
@@ -26,5 +44,6 @@
       ]
     }
   },
-  "flavorText": "Doom is not a villain. Doom is a sovereign."
+  "flavorText": "Doom is not a villain. Doom is a sovereign.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/6735988-05.jpg"
 }

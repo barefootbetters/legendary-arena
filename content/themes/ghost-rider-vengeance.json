@@ -6,15 +6,33 @@
   "setupIntent": {
     "mastermindId": "zarathos",
     "schemeId": "ritual-sacrifice-to-summon-chthon",
-    "villainGroupIds": ["lilin", "fallen"],
-    "heroDeckIds": ["ghost-rider", "blade", "blade-daywalker", "morbius", "werewolf-by-night"]
+    "villainGroupIds": [
+      "lilin",
+      "fallen"
+    ],
+    "heroDeckIds": [
+      "ghost-rider",
+      "blade",
+      "blade-daywalker",
+      "morbius",
+      "werewolf-by-night"
+    ]
   },
   "playerCount": {
-    "recommended": [2, 3],
+    "recommended": [
+      2,
+      3
+    ],
     "min": 1,
     "max": 6
   },
-  "tags": ["horror", "supernatural", "ghost-rider", "zarathos", "demonic"],
+  "tags": [
+    "horror",
+    "supernatural",
+    "ghost-rider",
+    "zarathos",
+    "demonic"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Ghost Rider Vol 3 #1–25",
@@ -25,5 +43,6 @@
       ]
     }
   },
-  "flavorText": "Innocent blood cries out. The Rider answers."
+  "flavorText": "Innocent blood cries out. The Rider answers.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11144/111442876/8387140-fms0hakaaaeqtqv.jpg"
 }

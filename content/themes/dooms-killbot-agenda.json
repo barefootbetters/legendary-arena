@@ -6,16 +6,34 @@
   "setupIntent": {
     "mastermindId": "dr-doom",
     "schemeId": "replace-earths-leaders-with-killbots",
-    "villainGroupIds": ["masters-of-evil"],
-    "henchmanGroupIds": ["doombot-legion"],
-    "heroDeckIds": ["captain-america", "iron-man", "spider-man", "hulk", "hawkeye"]
+    "villainGroupIds": [
+      "masters-of-evil"
+    ],
+    "henchmanGroupIds": [
+      "doombot-legion"
+    ],
+    "heroDeckIds": [
+      "captain-america",
+      "iron-man",
+      "spider-man",
+      "hulk",
+      "hawkeye"
+    ]
   },
   "playerCount": {
-    "recommended": [2, 3],
+    "recommended": [
+      2,
+      3
+    ],
     "min": 1,
     "max": 6
   },
-  "tags": ["avengers", "dr-doom", "robots", "classic"],
+  "tags": [
+    "avengers",
+    "dr-doom",
+    "robots",
+    "classic"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Fantastic Four #196–200",
@@ -26,5 +44,6 @@
       ]
     }
   },
-  "flavorText": "Doom does as he pleases."
+  "flavorText": "Doom does as he pleases.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/6640535-201609.jpg"
 }

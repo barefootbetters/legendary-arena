@@ -6,15 +6,32 @@
   "setupIntent": {
     "mastermindId": "carnage",
     "schemeId": "invade-the-daily-bugle-news-hq",
-    "villainGroupIds": ["sinister-six", "maximum-carnage"],
-    "heroDeckIds": ["spider-man", "symbiote-spider-man", "scarlet-spider", "spider-woman", "black-cat"]
+    "villainGroupIds": [
+      "sinister-six",
+      "maximum-carnage"
+    ],
+    "heroDeckIds": [
+      "spider-man",
+      "symbiote-spider-man",
+      "scarlet-spider",
+      "spider-woman",
+      "black-cat"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["spider-man", "spider-verse", "team-up", "spider-friends"],
+  "tags": [
+    "spider-man",
+    "spider-verse",
+    "team-up",
+    "spider-friends"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Various Spider-verse stories",
@@ -22,5 +39,6 @@
       "externalUrl": "https://marvel.fandom.com/wiki/Spider-Friends_(Earth-616)"
     }
   },
-  "flavorText": "One spider can be trapped. A whole web? That's a different story."
+  "flavorText": "One spider can be trapped. A whole web? That's a different story.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/7267046-06.jpg"
 }

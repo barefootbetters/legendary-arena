@@ -6,16 +6,37 @@
   "setupIntent": {
     "mastermindId": "mojo",
     "schemeId": "televised-deathtraps-of-mojoworld",
-    "villainGroupIds": ["mojoverse", "murderworld"],
-    "henchmanGroupIds": ["brood-the"],
-    "heroDeckIds": ["longshot", "dazzler", "wolverine", "psylocke", "jubilee", "havok"]
+    "villainGroupIds": [
+      "mojoverse",
+      "murderworld"
+    ],
+    "henchmanGroupIds": [
+      "brood-the"
+    ],
+    "heroDeckIds": [
+      "longshot",
+      "dazzler",
+      "wolverine",
+      "psylocke",
+      "jubilee",
+      "havok"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["x-men", "mojoverse", "mojo", "gladiatorial", "1980s"],
+  "tags": [
+    "x-men",
+    "mojoverse",
+    "mojo",
+    "gladiatorial",
+    "1980s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Longshot #1–6 / Uncanny X-Men Annual #10",
@@ -26,5 +47,6 @@
       ]
     }
   },
-  "flavorText": "Ratings are everything. Your suffering is prime time."
+  "flavorText": "Ratings are everything. Your suffering is prime time.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/5601795-16.jpg"
 }

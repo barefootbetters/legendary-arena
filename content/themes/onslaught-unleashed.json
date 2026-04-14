@@ -6,16 +6,37 @@
   "setupIntent": {
     "mastermindId": "onslaught",
     "schemeId": "horror-of-horrors",
-    "villainGroupIds": ["dark-descendants", "shadow-x"],
-    "henchmanGroupIds": ["sapien-league"],
-    "heroDeckIds": ["cyclops", "phoenix", "storm", "wolverine", "psylocke", "beast"]
+    "villainGroupIds": [
+      "dark-descendants",
+      "shadow-x"
+    ],
+    "henchmanGroupIds": [
+      "sapien-league"
+    ],
+    "heroDeckIds": [
+      "cyclops",
+      "phoenix",
+      "storm",
+      "wolverine",
+      "psylocke",
+      "beast"
+    ]
   },
   "playerCount": {
-    "recommended": [4, 5],
+    "recommended": [
+      4,
+      5
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["x-men", "avengers", "onslaught", "psychic", "1990s"],
+  "tags": [
+    "x-men",
+    "avengers",
+    "onslaught",
+    "psychic",
+    "1990s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "X-Men Vol 2 #53–54 / Onslaught crossover",
@@ -26,5 +47,6 @@
       ]
     }
   },
-  "flavorText": "I am everything you feared. I am everything you created."
+  "flavorText": "I am everything you feared. I am everything you created.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11112/111121983/5112195-6986172767-image_gallery"
 }

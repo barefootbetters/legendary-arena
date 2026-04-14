@@ -6,16 +6,37 @@
   "setupIntent": {
     "mastermindId": "hood-the",
     "schemeId": "secret-hydra-corruption",
-    "villainGroupIds": ["dark-avengers", "hoods-gang"],
-    "henchmanGroupIds": ["hydra-base"],
-    "heroDeckIds": ["ronin", "scarlet-witch", "quicksilver", "war-machine", "darkhawk", "photon"]
+    "villainGroupIds": [
+      "dark-avengers",
+      "hoods-gang"
+    ],
+    "henchmanGroupIds": [
+      "hydra-base"
+    ],
+    "heroDeckIds": [
+      "ronin",
+      "scarlet-witch",
+      "quicksilver",
+      "war-machine",
+      "darkhawk",
+      "photon"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["avengers", "dark-reign", "norman-osborn", "hood", "2000s"],
+  "tags": [
+    "avengers",
+    "dark-reign",
+    "norman-osborn",
+    "hood",
+    "2000s"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Dark Reign status quo (2008–2009)",
@@ -26,5 +47,6 @@
       ]
     }
   },
-  "flavorText": "The villains won. And now they're running the country."
+  "flavorText": "The villains won. And now they're running the country.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/3125/2491974-dark3.jpg"
 }

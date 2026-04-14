@@ -6,16 +6,36 @@
   "setupIntent": {
     "mastermindId": "red-skull",
     "schemeId": "unleash-the-power-of-the-cosmic-cube",
-    "villainGroupIds": ["hydra", "masters-of-evil"],
-    "henchmanGroupIds": ["sentinel"],
-    "heroDeckIds": ["captain-america", "iron-man", "thor", "nick-fury", "black-widow"]
+    "villainGroupIds": [
+      "hydra",
+      "masters-of-evil"
+    ],
+    "henchmanGroupIds": [
+      "sentinel"
+    ],
+    "heroDeckIds": [
+      "captain-america",
+      "iron-man",
+      "thor",
+      "nick-fury",
+      "black-widow"
+    ]
   },
   "playerCount": {
-    "recommended": [3, 4],
+    "recommended": [
+      3,
+      4
+    ],
     "min": 2,
     "max": 6
   },
-  "tags": ["avengers", "cosmic-cube", "red-skull", "hydra", "classic"],
+  "tags": [
+    "avengers",
+    "cosmic-cube",
+    "red-skull",
+    "hydra",
+    "classic"
+  ],
   "references": {
     "primaryStory": {
       "issue": "Tales of Suspense #79–81",
@@ -26,5 +46,6 @@
       ]
     }
   },
-  "flavorText": "With the Cube in my hand, I hold the power of a god."
+  "flavorText": "With the Cube in my hand, I hold the power of a god.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11/117763/2678762-talesofsuspense79.jpg"
 }
