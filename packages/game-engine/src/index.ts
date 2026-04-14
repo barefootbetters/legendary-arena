@@ -176,3 +176,10 @@ export {
   isGuardBlocking,
   hasAmbush,
 } from './board/boardKeywords.logic.js';
+
+// Replay harness (WP-027)
+export type { ReplayInput, ReplayMove, ReplayResult } from './replay/replay.types.js';
+export { replayGame } from './replay/replay.execute.js';
+export { computeStateHash } from './replay/replay.hash.js';
+export { verifyDeterminism } from './replay/replay.verify.js';
+export type { DeterminismResult } from './replay/replay.verify.js';

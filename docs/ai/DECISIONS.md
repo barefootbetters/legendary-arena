@@ -2787,6 +2787,90 @@ which crosses layer concerns for a static schema package.
 
 ---
 
+### D-2701 — Canonical State Hashing: Sorted-Key JSON + djb2
+
+**Decision:** `computeStateHash` uses `JSON.stringify` with a sorted-key
+replacer function and the djb2 string hash algorithm. No crypto dependency.
+**Rationale:** Canonical serialization (sorted keys at every nesting level)
+ensures the same `G` always produces the same hash regardless of JavaScript
+property insertion order. djb2 is a simple, well-known, deterministic hash
+suitable for equality comparison. Cryptographic security is not required —
+this is for replay determinism verification, not tamper detection.
+**Introduced:** WP-027
+**Status:** Immutable
+
+---
+
+### D-2702 — Replay Harness Uses makeMockCtx, Not boardgame.io/testing
+
+**Decision:** The replay harness constructs setup contexts via `makeMockCtx`
+(or equivalent deterministic mock) and never imports `boardgame.io/testing`.
+**Rationale:** `boardgame.io/testing` couples the harness to framework
+internals. `makeMockCtx` provides a deterministic reverse-shuffle that proves
+the shuffle path executed without framework dependency. This matches the
+established testing pattern from WP-005B onward.
+**Introduced:** WP-027
+**Status:** Immutable
+
+---
+
+### D-2703 — ReplayInput Is Class 2 (Configuration) Data
+
+**Decision:** `ReplayInput` (seed, setupConfig, playerOrder, moves) is
+Class 2 data — safe to persist and transfer. The replayed `G` is Class 1
+(Runtime) — never persisted.
+**Rationale:** `ReplayInput` is a deterministic input contract. Given the
+same `ReplayInput`, the engine must always produce the same final state.
+Persisting `ReplayInput` enables match replay, debugging, and QA without
+storing runtime state.
+**Introduced:** WP-027
+**Status:** Immutable
+
+---
+
+### D-2704 — MVP Replay Uses Deterministic Mock Shuffle, Not Seed-Faithful Replay
+
+**Decision:** MVP replay uses `makeMockCtx`'s reverse-shuffle for all
+shuffling operations. The `seed` field in `ReplayInput` is stored but not
+used for actual PRNG seeding at MVP.
+**Rationale:** The MVP goal is to prove the replay mechanism works (identical
+inputs produce identical outputs). Seed-faithful replay (matching live game
+shuffles) requires integration with boardgame.io's seeded PRNG, which is a
+future WP. The `seed` field is included in the contract now so the API is
+stable when seed-fidelity is added later.
+**Introduced:** WP-027
+**Status:** Temporary — seed-faithful replay will be implemented in a future WP
+
+---
+
+### D-2705 — advanceStage Replicated via advanceTurnStage in Replay
+
+**Decision:** The replay harness does not import `advanceStage` from
+`game.ts` (it is a local non-exported function). Instead, the replay
+`MOVE_MAP` entry for `'advanceStage'` calls `advanceTurnStage` from
+`turnLoop.ts` directly with equivalent context.
+**Rationale:** `advanceStage` in `game.ts` is a thin wrapper around
+`advanceTurnStage`. Importing `game.ts` would transitively import
+`boardgame.io`, violating the replay harness guardrail. The reconstruction
+is functionally equivalent.
+**Introduced:** WP-027
+**Status:** Immutable
+
+---
+
+### D-2706 — Replay Directory Classified as Engine Code Category
+
+**Decision:** `packages/game-engine/src/replay/` is classified under the
+`engine` code category.
+**Rationale:** Replay files are pure, deterministic, have no I/O, and do
+not import `boardgame.io` directly. They follow all engine category rules.
+The replay directory extends the engine's verification capability without
+introducing new categories or blurring existing boundaries.
+**Introduced:** WP-027
+**Status:** Immutable
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision

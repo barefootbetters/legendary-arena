@@ -586,7 +586,7 @@ These packets make individual cards do things.
 
 These packets make the game safe to ship.
 
-- [ ] WP-027 — Determinism & Replay Verification Harness ✅ Reviewed
+- [x] WP-027 — Determinism & Replay Verification Harness ✅ Reviewed (2026-04-14)
   Dependencies: WP-026
   Notes: `ReplayInput` canonical contract (seed + setupConfig + playerOrder +
   moves); `replayGame` pure function reconstructs game from inputs;

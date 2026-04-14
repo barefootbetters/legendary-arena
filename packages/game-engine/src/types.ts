@@ -135,6 +135,9 @@ export { BOARD_KEYWORDS } from './board/boardKeywords.types.js';
 export type { SchemeSetupInstruction, SchemeSetupType } from './scheme/schemeSetup.types.js';
 export { SCHEME_SETUP_TYPES } from './scheme/schemeSetup.types.js';
 
+// Replay types (WP-027)
+export type { ReplayInput, ReplayMove, ReplayResult } from './replay/replay.types.js';
+
 import type { TurnStage } from './turn/turnPhases.types.js';
 import type { CardExtId, PlayerZones, GlobalPiles } from './state/zones.types.js';
 import type { TurnEconomy, CardStatEntry } from './economy/economy.types.js';

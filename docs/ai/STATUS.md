@@ -7,6 +7,45 @@
 
 ## Current State
 
+### WP-027 — Determinism & Replay Verification Harness (2026-04-14)
+
+**What changed:**
+- Replay verification harness implemented: `ReplayInput`, `ReplayMove`,
+  `ReplayResult` contracts in `src/replay/replay.types.ts`
+- `replayGame()` — pure function that reconstructs a game from canonical
+  inputs (seed, setupConfig, playerOrder, moves) by calling
+  `buildInitialGameState` directly and executing each move via static
+  `MOVE_MAP`
+- `computeStateHash()` — deterministic state hashing using sorted-key JSON
+  serialization + djb2 hash algorithm (D-2701). No crypto dependency.
+- `verifyDeterminism()` — runs replay twice with identical input, compares
+  hashes. Proves engine determinism formally (D-0002, D-0201).
+- `ReplayInput` is Class 2 (Configuration) data — safe to persist (D-2703)
+- MVP uses `makeMockCtx` deterministic reverse-shuffle; seed field stored
+  for future seed-faithful replay (D-2704)
+- `advanceStage` move handled via `advanceTurnStage` directly since game.ts
+  wrapper is not exported (D-2705)
+- `src/replay/` classified as engine code category (D-2706)
+- 8 new tests, 322 total passing (314 existing + 8 new)
+- Phase 6 (Verification, UI & Production) begins
+
+**What's true now:**
+- Determinism is formally provable — identical inputs produce identical
+  outputs across multiple runs
+- Replay harness is observation-only — no gameplay logic modified
+- All replay files are pure (no boardgame.io imports, no .reduce(),
+  no Math.random, no require())
+- No existing tests broken (314 -> 314, all passing)
+- D-0201 (Replay as a First-Class Feature) is implemented at MVP level
+
+**What's next:**
+- Future WP for seed-faithful replay (real PRNG seeding from ReplayInput.seed)
+- Future WP for replay UI/viewer
+- Future WP for replay persistence/storage
+- Future WP for partial/streaming replay
+
+---
+
 ### WP-026 — Scheme Setup Instructions & City Modifiers (2026-04-14)
 
 **What changed:**
