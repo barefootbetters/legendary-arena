@@ -26,11 +26,14 @@ Define a single authoritative UI state contract. After this session:
 - `UIState` is a fully serializable interface containing everything the UI
   needs: game phase, player states, city, HQ, mastermind, scheme, economy,
   log, and game-over summary
-- `buildUIState(G, ctx)` is a pure function that derives `UIState` from
-  engine state — it never mutates `G` or `ctx`
+- `buildUIState(gameState, ctx)` is a pure function that derives `UIState`
+  from engine state — it never mutates `G` or `ctx`, has no caching or
+  memoization, and is NOT part of the boardgame.io lifecycle (never called
+  from `game.ts`, moves, or phase hooks)
 - `UIState` contains **no engine concepts** — no `HookDefinition`, no
-  `ImplementationMap`, no `hookRegistry`, no `CardExtId[]` zone arrays
-  (zones are projected as counts or display-safe representations)
+  `ImplementationMap`, no `hookRegistry`, no `cardStats`, no
+  `heroAbilityHooks`, no `schemeSetupInstructions`, no `CardExtId[]` zone
+  arrays (zones are projected as counts or display-safe representations)
 - The contract supports replay, spectators, and future networking
 - Tests prove `UIState` is JSON-serializable, deterministic, and derived
   without mutation
@@ -97,7 +100,9 @@ Before writing a single line:
 
 **Packet-specific:**
 - `buildUIState` is a **pure function** — no I/O, no mutation of `G` or `ctx`,
-  no side effects
+  no side effects, no caching, no memoization, no closures over G
+- `buildUIState` is NOT part of the boardgame.io lifecycle — it MUST NOT be
+  called from `game.ts`, any move, or any phase hook
 - `UIState` contains **no engine internals**: no `hookRegistry`, no
   `ImplementationMap`, no `villainDeckCardTypes`, no `cardStats`, no
   `heroAbilityHooks`, no `schemeSetupInstructions`
@@ -174,8 +179,10 @@ Before writing a single line:
 
 ### B) `src/ui/uiState.build.ts` — new
 
-- `buildUIState(G: LegendaryGameState, ctx: Ctx): UIState`
-  — pure function:
+- `buildUIState(gameState: LegendaryGameState, ctx: UIBuildContext): UIState`
+  — pure function (UIBuildContext is a local structural interface
+  `{ readonly phase: string | null, readonly turn: number, readonly currentPlayer: string }`,
+  not boardgame.io `Ctx`):
   1. Project game phase, turn, active player from `ctx`
   2. Project player states: zone counts from `G.playerZones`, wound counts
   3. Project City: card ext_ids + type classification from

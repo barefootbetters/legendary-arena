@@ -48,14 +48,25 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 
 - `UIPlayerState`: `{ playerId, deckCount, handCount, discardCount, inPlayCount, victoryCount, woundCount }`
 - Player zones projected as **counts** — not `CardExtId[]` arrays
-- `buildUIState(G, ctx): UIState` is the ONLY way UI gets state
+- `buildUIState(gameState: LegendaryGameState, ctx: UIBuildContext): UIState`
+  is the ONLY way UI gets state. `UIBuildContext` is a local structural
+  interface `{ readonly phase: string | null, readonly turn: number,
+  readonly currentPlayer: string }` — not boardgame.io `Ctx`.
 
 ---
 
 ## Guardrails
 
-- `buildUIState` is a **pure function** — no I/O, no mutation of G or ctx
-- `UIState` contains **no engine internals**: no `hookRegistry`, `ImplementationMap`, `villainDeckCardTypes`, `cardStats`, `heroAbilityHooks`, `schemeSetupInstructions`
+- `buildUIState` is a **pure function** — no I/O, no mutation of G or ctx,
+  no caching, no memoization, no closures over G
+- `buildUIState` is NOT part of the boardgame.io lifecycle — MUST NOT be
+  called from `game.ts`, any move, or any phase hook
+- `buildUIState` takes a local `UIBuildContext` structural interface (not
+  boardgame.io `Ctx`) — `{ readonly phase, readonly turn, readonly currentPlayer }`.
+  No optional fields, no widening.
+- `UIState` contains **no engine internals**: no `hookRegistry`, `ImplementationMap`,
+  `villainDeckCardTypes`, `cardStats`, `heroAbilityHooks`, `schemeSetupInstructions`,
+  no registry objects or types, no setup builder functions
 - UIState is the **only** state the UI consumes — no direct G access
 - No registry import in `buildUIState` — card display resolution is a separate UI concern
 - No `.reduce()` in projection logic — use `for...of`
