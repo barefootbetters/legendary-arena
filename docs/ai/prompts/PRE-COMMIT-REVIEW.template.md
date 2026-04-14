@@ -255,6 +255,12 @@ If the Work Packet meets its contract:
 **Affirm readiness to commit and conclude the review.**
 Do not invent work.
 
+**Next step after this review passes:**
+Follow `docs/ai/REFERENCE/01.3-commit-hygiene-under-ec-mode.md` for the
+actual commit. This review authorizes the commit — 01.3 governs how it is
+made (prefix format, hook validation, helper script). Do not commit without
+confirming hook compliance.
+
 ---
 
 ## Template Success Criteria
