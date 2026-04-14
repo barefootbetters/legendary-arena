@@ -3,7 +3,7 @@
 > A modern multiplayer evolution of the Marvel Legendary deck-building card game.
 > Built with **boardgame.io**, **TypeScript**, and **Cloudflare R2**.
 
-**Last updated:** 2026-04-13 (WP-060 added, registry viewer tooltips shipped) -- **Authoritative source:** [`docs/ai/work-packets/WORK_INDEX.md`](ai/work-packets/WORK_INDEX.md)
+**Last updated:** 2026-04-14 (Phase 5 complete, 314 tests passing) -- **Authoritative source:** [`docs/ai/work-packets/WORK_INDEX.md`](ai/work-packets/WORK_INDEX.md)
 
 ---
 
@@ -13,10 +13,10 @@
 `00.4` ✅ `00.5` ✅ `01` ✅ `02` ✅
 
 **Work Packets**
-`WP-001` ✅ `WP-002` ✅ `WP-003` ✅ `WP-004` ✅ `WP-005A` ✅ `WP-005B` ✅ `WP-006A` ✅ `WP-006B` ✅ `WP-007A` ✅ `WP-007B` ✅ `WP-008A` ✅ `WP-008B` ✅ `WP-009A` ✅ `WP-009B` ✅ `WP-010` ✅ `WP-011` ✅ `WP-012` ✅ `WP-013` ✅ `WP-014A` ✅ `WP-014B` ✅ `WP-015` ✅ `WP-016` ✅ `WP-017` ✅ `WP-018` ✅ `WP-019` ✅ `WP-020` ✅ `WP-043` ✅ `WP-044` ✅ `WP-045` ✅ `WP-046` ✅ `WP-047` ✅ -- `WP-055` ⬜ `WP-056` ⬜ `WP-057` ⬜ `WP-058` ⬜ `WP-060` ⬜ -- **WP-021..054** ⬜
+`WP-001` ✅ `WP-002` ✅ `WP-003` ✅ `WP-004` ✅ `WP-005A` ✅ `WP-005B` ✅ `WP-006A` ✅ `WP-006B` ✅ `WP-007A` ✅ `WP-007B` ✅ `WP-008A` ✅ `WP-008B` ✅ `WP-009A` ✅ `WP-009B` ✅ `WP-010` ✅ `WP-011` ✅ `WP-012` ✅ `WP-013` ✅ `WP-014A` ✅ `WP-014B` ✅ `WP-015` ✅ `WP-016` ✅ `WP-017` ✅ `WP-018` ✅ `WP-019` ✅ `WP-020` ✅ `WP-021` ✅ `WP-022` ✅ `WP-023` ✅ `WP-024` ✅ `WP-025` ✅ `WP-026` ✅ `WP-043` ✅ `WP-044` ✅ `WP-045` ✅ `WP-046` ✅ `WP-047` ✅ -- `WP-055` ⬜ `WP-056` ⬜ `WP-057` ⬜ `WP-058` ⬜ `WP-060` ⬜ -- **WP-027..054** ⬜
 
 **Overall Progress**
-35 / 61 items complete (4 FPs + 31 WPs) -- **Next up:** WP-021 (Hero Card Text & Keywords)
+41 / 61 items complete (4 FPs + 37 WPs) -- **Next up:** WP-027 (Replay Determinism Proof)
 
 ---
 
@@ -150,13 +150,21 @@ endgame → VP scoring. 247 tests passing.
 
 ---
 
-## Phase 5 -- Card Mechanics & Abilities
+## Phase 5 -- Card Mechanics & Abilities ✅
 
-Individual cards come alive.
+Individual cards come alive. Hero abilities fire with keywords and
+conditions. Scheme twists and mastermind strikes produce real effects.
+Board keywords add tactical City friction. Scheme setup instructions
+configure the board before the first turn. 314 tests passing.
 
-| WP      | Name                          | Layer   | What It Produces                      |
-|---------|-------------------------------|---------|----------------------------------------|
-| 021-026 | Hero Hooks through Scheme Setup | Engine | Abilities, keywords, board rules      |
+| WP      | Name                                  | Layer   | What It Produces                                        | Status      |
+|---------|---------------------------------------|---------|----------------------------------------------------------|-------------|
+| 021     | Hero Card Text & Keywords (Hooks)     | Engine  | `HeroAbilityHook[]`, `HeroKeyword` union, setup builder  | ✅ Complete |
+| 022     | Execute Hero Keywords (Minimal MVP)   | Engine  | `executeHeroEffects`, draw/attack/recruit/ko keywords     | ✅ Complete |
+| 023     | Conditional Hero Effects              | Engine  | `evaluateCondition`, 4 condition types, AND logic         | ✅ Complete |
+| 024     | Scheme & Mastermind Ability Execution | Engine  | `schemeTwistHandler`, `mastermindStrikeHandler`           | ✅ Complete |
+| 025     | Keywords: Patrol, Ambush, Guard       | Engine  | `BoardKeyword`, fight cost/blocking/wound-on-entry        | ✅ Complete |
+| 026     | Scheme Setup Instructions             | Engine  | `SchemeSetupInstruction`, executor, builder (MVP: `[]`)   | ✅ Complete |
 
 ---
 
@@ -222,7 +230,7 @@ flowchart TD
     Phase1 --> Phase2["Phase 2 ✅\nTurn Engine"]
     Phase2 --> Phase3["Phase 3 ✅\nMVP Multiplayer"]
     Phase3 --> Phase4["Phase 4 ✅\nCore Gameplay"]
-    Phase4 --> Phase5["Phase 5\nCard Abilities"]
+    Phase4 --> Phase5["Phase 5 ✅\nCard Abilities"]
     Phase5 --> Phase6["Phase 6\nProduction"]
     Phase6 --> Phase7["Phase 7\nBeta & Launch"]
     Phase6 --> WP048["WP-048\nPAR Scoring"]
@@ -242,6 +250,7 @@ flowchart TD
     style Phase2 fill:#10b981,color:#fff
     style Phase3 fill:#10b981,color:#fff
     style Phase4 fill:#10b981,color:#fff
+    style Phase5 fill:#10b981,color:#fff
 ```
 
 **Parallel-safe packets:** WP-003 (alongside 002), WP-005A/B (no dep on 004), WP-030 (parallel to 031), WP-055/060 (parallel with Phase 2+), WP-056/057/058 (parallel with Phase 4+).
@@ -274,4 +283,4 @@ flowchart TD
 | `docs/12-SCORING-REFERENCE.md` | PAR scoring formula & leaderboard rules |
 | `docs/ai/REFERENCE/03A-PHASE-3-MULTIPLAYER-READINESS.md` | Phase 3 exit gate (closed) |
 
-*Last updated: 2026-04-13 (WP-060 added, registry viewer tooltips shipped, 247 tests passing)*
+*Last updated: 2026-04-14 (Phase 5 complete — hero abilities, board keywords, scheme setup; 314 tests passing)*
