@@ -1,6 +1,7 @@
 # Legendary Arena -- Repository Folder Structure
 
-> This document maps the actual repository layout as of 2026-04-09 (after WP-004).
+> This document maps the actual repository layout as of 2026-04-14 (Phase 5
+> complete, 314 engine tests passing).
 > It describes what each directory and key file does, who owns it,
 > and what governance rules apply.
 >
@@ -124,12 +125,30 @@ apps/
 
 ```
 packages/
-├── game-engine/                # @legendary-arena/game-engine
+├── game-engine/                # @legendary-arena/game-engine (314 tests, 83 suites)
 │   ├── src/
-│   │   ├── index.ts            # Exports: LegendaryGame, MatchConfiguration, LegendaryGameState
+│   │   ├── index.ts            # Public exports (types, builders, executors, helpers)
 │   │   ├── game.ts             # boardgame.io Game() -- phases, moves, validateSetupData
-│   │   ├── types.ts            # MatchConfiguration (9 fields), LegendaryGameState
-│   │   └── game.test.ts        # 5 tests (node:test) -- serialization, phases, moves
+│   │   ├── types.ts            # MatchConfiguration (9 fields), LegendaryGameState (21 fields)
+│   │   ├── matchSetup.types.ts # MatchSetupConfig Zod schema
+│   │   ├── matchSetup.validate.ts # Setup validation + CardRegistryReader
+│   │   │
+│   │   ├── board/              # City, HQ, KO, wounds, bystanders, board keywords
+│   │   ├── economy/            # TurnEconomy, cardStats, resource gating
+│   │   ├── endgame/            # evaluateEndgame, ENDGAME_CONDITIONS
+│   │   ├── hero/               # Hero effect execution, conditional evaluation
+│   │   ├── lobby/              # LobbyState, setPlayerReady, startMatchIfReady
+│   │   ├── mastermind/         # MastermindState, tactics, fightMastermind setup
+│   │   ├── moves/              # Core moves, fight, recruit, zoneOps
+│   │   ├── persistence/        # PERSISTENCE_CLASSES, MatchSnapshot, createSnapshot
+│   │   ├── rules/              # Hook definitions, execution pipeline, scheme/mastermind handlers
+│   │   ├── scheme/             # SchemeSetupInstruction types + executor (WP-026)
+│   │   ├── scoring/            # computeFinalScores, VP breakdowns
+│   │   ├── setup/              # buildInitialGameState, player/pile init, card keywords, scheme builder
+│   │   ├── state/              # Zone types (CardExtId, PlayerZones, GlobalPiles), validators
+│   │   ├── test/               # makeMockCtx (shared test helper)
+│   │   ├── turn/               # Turn stages, phase loop, advanceTurnStage
+│   │   └── villainDeck/        # Deck composition, reveal pipeline, card type classification
 │   └── dist/                   # Build output (not committed)
 │
 └── registry/                   # @legendary-arena/registry
@@ -228,10 +247,22 @@ scripts/
 docs/
 ├── 00-INDEX.md                 # Table of contents
 ├── 01-REPO-FOLDER-STRUCTURE.md # This document
+├── 01-VISION.md                # Product vision
 ├── 02-ARCHITECTURE.md          # High-level architecture overview
 ├── 03-DATA-PIPELINE.md         # R2 -> metadata -> validation flow
+├── 03.1-DATA-SOURCES.md        # Authoritative input data inventory
+├── 04-DEVELOPMENT-SETUP.md     # Local development guide
 ├── 05-ROADMAP.md               # Development roadmap (table format)
 ├── 05-ROADMAP-MINDMAP.md       # Development roadmap (mermaid mindmap)
+├── 06-TESTING.md               # Test philosophy, conventions, inventory
+├── 07-CLI-REFERENCE.md         # CLI tools reference
+├── 08-DEPLOYMENT.md            # Deployment guide
+├── 09-CHANGELOG.md             # Changelog
+├── 10-GLOSSARY.md              # Term definitions
+├── 11-TROUBLESHOOTING.md       # Common issues
+├── 12-SCORING-REFERENCE.md     # PAR scoring formula & leaderboard rules
+├── 12.1-PAR-ARTIFACT-INTEGRITY.md # PAR artifact hashing rationale
+├── 13-REPLAYS-REFERENCE.md     # Replay & game saving system
 │
 ├── devlog/                     # Weekly development journal
 ├── screenshots/                # UI and validation screenshots
@@ -244,11 +275,11 @@ docs/
 ```
 docs/ai/
 ├── ARCHITECTURE.md             # Authoritative system architecture (wins over WPs)
-├── DECISIONS.md                # 26 permanent architectural decisions
+├── DECISIONS.md                # 133+ permanent architectural decisions
 ├── DECISIONS_INDEX.md          # Decision-to-WP traceability index
 ├── STATUS.md                   # Current project state after each session
 │
-├── REFERENCE/                  # Authoritative project memory
+├── REFERENCE/                  # Authoritative project memory (21 files)
 │   ├── 00.1-master-coordination-prompt.md  # Override hierarchy, session protocol
 │   ├── 00.2-data-requirements.md           # Canonical data contracts
 │   ├── 00.3-prompt-lint-checklist.md       # 28-item quality gate
@@ -259,35 +290,32 @@ docs/ai/
 │   ├── 01.1-how-to-use-ecs-while-coding.md # EC workflow
 │   ├── 01.2-bug-handling-under-ec-mode.md  # Clause-driven debugging
 │   ├── 01.3-commit-hygiene-under-ec-mode.md # Commit format and hooks
-│   └── 02-database-migrations.md           # Migration runner prompt
+│   ├── 01.4-pre-flight-invocation.md       # WP readiness gate template
+│   ├── 01.5-runtime-wiring-allowance.md    # Allowlist for structural wiring
+│   ├── 02-CODE-CATEGORIES.md               # Code category boundaries
+│   ├── 02-database-migrations.md           # Migration runner prompt
+│   ├── 03A-PHASE-3-MULTIPLAYER-READINESS.md # Phase 3 exit gate (closed)
+│   └── ... (schema refs, safe knobs, phase gates)
 │
-├── work-packets/               # 47 Work Packets (design authority)
+├── work-packets/               # 66 Work Packets (design authority)
 │   ├── WORK_INDEX.md           # Execution order and status tracking
 │   ├── PACKET-TEMPLATE.md      # Mandatory WP structure
-│   ├── WP-001-foundation.md
-│   ├── WP-002-game-skeleton.md
-│   └── ... (WP-002 through WP-047)
+│   └── WP-001 through WP-060
 │
-├── execution-checklists/       # 51 Execution Checklists (execution authority)
+├── execution-checklists/       # 63 Execution Checklists (execution authority)
 │   ├── EC-TEMPLATE.md          # EC structure and rules
-│   ├── EC_INDEX.md             # EC status tracking (2 Done, 49 Draft)
-│   ├── EC-010-endgame.checklist.md  # Reference EC
-│   ├── R-EC-01-object-abilities.checklist.md  # Registry hygiene
-│   ├── R-EC-02-missing-fields.checklist.md
-│   ├── R-EC-03-missing-images.checklist.md
-│   └── ... (EC-001 through EC-047)
+│   ├── EC_INDEX.md             # EC status tracking
+│   └── EC-001 through EC-060 + R-EC-01..03
 │
 ├── prompts/                    # Reusable tooling prompts
-│   ├── standardization-completeness-check.prompt.md
+│   ├── PRE-COMMIT-REVIEW.template.md       # WP commit gatekeeper
+│   ├── PHASE-COMMIT-REVIEW.template.md     # Phase integration checkpoint
 │   ├── generate-execution-checklist.prompt.md
-│   └── auto-tighten-execution-checklists.prompt.md
+│   └── ... (standardization, auto-tighten)
 │
-└── invocations/                # Session invocation records
-    ├── session-fp01-render-backend.md
-    ├── session-fp02-database-migrations.md
-    ├── session-wp002-game-skeleton.md
-    ├── session-wp003-card-registry.md
-    └── session-wp004-server-bootstrap.md
+└── invocations/                # 62 session invocation records
+    ├── session-wp002 through session-wp026
+    └── session-fp01, session-fp02
 ```
 
 ---
@@ -322,5 +350,5 @@ be created by their respective Work Packets.
 
 ---
 
-*Last updated: 2026-04-09 (after WP-004)*
+*Last updated: 2026-04-14 (Phase 5 complete — 314 engine tests, 41/61 items done)*
 *To regenerate: compare against `find . -type d` and `git ls-files`*
