@@ -550,16 +550,15 @@ These packets make individual cards do things.
   is `heroClassMatch` (not `requiresColor` — pre-flight name drift fix);
   15 new tests, 281 total passing
 
-- [ ] WP-024 — Scheme & Mastermind Ability Execution ✅ Reviewed
+- [x] WP-024 — Scheme & Mastermind Ability Execution ✅ Complete (2026-04-13)
   Dependencies: WP-023
-  Notes: Schemes and masterminds use the **same** `executeRuleHooks` ->
-  `applyRuleEffects` pipeline — no new execution engine; `schemeTwistHandler`
-  fires on `onSchemeTwistRevealed`, `mastermindStrikeHandler` fires on
-  `onMastermindStrikeRevealed`; scheme-loss increments
-  `G.counters[ENDGAME_CONDITIONS.SCHEME_LOSS]` using constant; handlers
-  registered in `ImplementationMap` at setup (never stored in G); uses
-  existing `HookDefinition` shape and `RuleEffect` types; was truncated at
-  52 lines — normalized to full PACKET-TEMPLATE
+  Notes: Scheme twist and mastermind strike handlers use the same
+  `executeRuleHooks` -> `applyRuleEffects` pipeline — no new execution engine;
+  `schemeTwistHandler` fires on `onSchemeTwistRevealed`,
+  `mastermindStrikeHandler` fires on `onMastermindStrikeRevealed`; scheme-loss
+  increments `G.counters[ENDGAME_CONDITIONS.SCHEME_LOSS]` at threshold (7);
+  MVP mastermind strike uses counter + message only (wound card effects
+  deferred); WP-009B stubs replaced; 10 new tests, 291 total passing
 
 - [ ] WP-025 — Keywords: Patrol, Ambush, Guard ✅ Reviewed
   Dependencies: WP-024

@@ -64,8 +64,7 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 
 - `packages/game-engine/src/rules/schemeHandlers.ts` — **new** — schemeTwistHandler
 - `packages/game-engine/src/rules/mastermindHandlers.ts` — **new** — mastermindStrikeHandler
-- `packages/game-engine/src/setup/buildDefaultHookDefinitions.ts` — **modified** — add scheme/mastermind HookDefinition entries
-- `packages/game-engine/src/setup/buildImplementationMap.ts` — **new or modified** — map hook ids to handlers
+- `packages/game-engine/src/rules/ruleRuntime.impl.ts` — **modified** — update triggers, replace stub handlers, wire ImplementationMap
 - `packages/game-engine/src/index.ts` — **modified** — export handlers
 - `packages/game-engine/src/rules/schemeHandlers.test.ts` — **new** — scheme handler tests
 - `packages/game-engine/src/rules/mastermindHandlers.test.ts` — **new** — mastermind handler tests

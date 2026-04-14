@@ -89,6 +89,8 @@ export type { ImplementationMap } from './rules/ruleRuntime.execute.js';
 export { executeRuleHooks } from './rules/ruleRuntime.execute.js';
 export { applyRuleEffects } from './rules/ruleRuntime.effects.js';
 export { buildDefaultHookDefinitions } from './rules/ruleRuntime.impl.js';
+export { schemeTwistHandler } from './rules/schemeHandlers.js';
+export { mastermindStrikeHandler } from './rules/mastermindHandlers.js';
 export type { EndgameResult, EndgameOutcome } from './endgame/endgame.types.js';
 export { ENDGAME_CONDITIONS, ESCAPE_LIMIT } from './endgame/endgame.types.js';
 export { evaluateEndgame } from './endgame/endgame.evaluate.js';

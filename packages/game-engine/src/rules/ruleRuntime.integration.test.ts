@@ -2,8 +2,9 @@
  * End-to-end integration tests for the rule execution pipeline.
  *
  * Verifies that executeRuleHooks + applyRuleEffects produce the expected
- * observable changes in G.messages when the default scheme and mastermind
- * hooks fire on onTurnStart and onTurnEnd triggers.
+ * observable changes in G.messages and G.counters when the scheme and
+ * mastermind hooks fire on onSchemeTwistRevealed and
+ * onMastermindStrikeRevealed triggers.
  *
  * No boardgame.io imports. Uses node:test and node:assert only.
  */
@@ -45,7 +46,7 @@ function createMockRegistry() {
 }
 
 describe('rule execution pipeline — integration', () => {
-  it('onTurnStart trigger produces "Scheme: turn started." in G.messages', () => {
+  it('onSchemeTwistRevealed trigger produces scheme twist message in G.messages', () => {
     const config = createTestConfig();
     const context = makeMockCtx({ numPlayers: 1 });
     const registry = createMockRegistry();
@@ -60,8 +61,8 @@ describe('rule execution pipeline — integration', () => {
     const effects = executeRuleHooks(
       gameState,
       {},
-      'onTurnStart',
-      { currentPlayerId: '0' },
+      'onSchemeTwistRevealed',
+      { cardId: 'test-twist-001' },
       gameState.hookRegistry,
       DEFAULT_IMPLEMENTATION_MAP,
     );
@@ -69,12 +70,12 @@ describe('rule execution pipeline — integration', () => {
     applyRuleEffects(gameState, {}, effects);
 
     assert.ok(
-      gameState.messages.includes('Scheme: turn started.'),
-      'G.messages must contain "Scheme: turn started." after onTurnStart',
+      gameState.messages.includes('Scheme twist revealed — twist count incremented.'),
+      'G.messages must contain scheme twist message after onSchemeTwistRevealed',
     );
   });
 
-  it('onTurnEnd trigger produces "Mastermind: turn ended." in G.messages', () => {
+  it('onMastermindStrikeRevealed trigger produces mastermind strike message in G.messages', () => {
     const config = createTestConfig();
     const context = makeMockCtx({ numPlayers: 1 });
     const registry = createMockRegistry();
@@ -83,8 +84,8 @@ describe('rule execution pipeline — integration', () => {
     const effects = executeRuleHooks(
       gameState,
       {},
-      'onTurnEnd',
-      { currentPlayerId: '0' },
+      'onMastermindStrikeRevealed',
+      { cardId: 'test-strike-001' },
       gameState.hookRegistry,
       DEFAULT_IMPLEMENTATION_MAP,
     );
@@ -92,8 +93,8 @@ describe('rule execution pipeline — integration', () => {
     applyRuleEffects(gameState, {}, effects);
 
     assert.ok(
-      gameState.messages.includes('Mastermind: turn ended.'),
-      'G.messages must contain "Mastermind: turn ended." after onTurnEnd',
+      gameState.messages.includes('Mastermind strike revealed — strike count incremented.'),
+      'G.messages must contain mastermind strike message after onMastermindStrikeRevealed',
     );
   });
 
@@ -103,27 +104,27 @@ describe('rule execution pipeline — integration', () => {
     const registry = createMockRegistry();
     const gameState = buildInitialGameState(config, registry, context);
 
-    // Fire onTurnStart
-    const startEffects = executeRuleHooks(
+    // Fire onSchemeTwistRevealed
+    const twistEffects = executeRuleHooks(
       gameState,
       {},
-      'onTurnStart',
-      { currentPlayerId: '0' },
+      'onSchemeTwistRevealed',
+      { cardId: 'test-twist-001' },
       gameState.hookRegistry,
       DEFAULT_IMPLEMENTATION_MAP,
     );
-    applyRuleEffects(gameState, {}, startEffects);
+    applyRuleEffects(gameState, {}, twistEffects);
 
-    // Fire onTurnEnd
-    const endEffects = executeRuleHooks(
+    // Fire onMastermindStrikeRevealed
+    const strikeEffects = executeRuleHooks(
       gameState,
       {},
-      'onTurnEnd',
-      { currentPlayerId: '0' },
+      'onMastermindStrikeRevealed',
+      { cardId: 'test-strike-001' },
       gameState.hookRegistry,
       DEFAULT_IMPLEMENTATION_MAP,
     );
-    applyRuleEffects(gameState, {}, endEffects);
+    applyRuleEffects(gameState, {}, strikeEffects);
 
     const serialized = JSON.stringify(gameState);
     assert.ok(
@@ -150,8 +151,8 @@ describe('rule execution pipeline — integration', () => {
     executeRuleHooks(
       gameState,
       {},
-      'onTurnStart',
-      { currentPlayerId: '0' },
+      'onSchemeTwistRevealed',
+      { cardId: 'test-twist-001' },
       gameState.hookRegistry,
       DEFAULT_IMPLEMENTATION_MAP,
     );
@@ -174,19 +175,18 @@ describe('rule execution pipeline — integration', () => {
     const effects = executeRuleHooks(
       gameState,
       {},
-      'onTurnStart',
-      { currentPlayerId: '0' },
+      'onSchemeTwistRevealed',
+      { cardId: 'test-twist-001' },
       gameState.hookRegistry,
       DEFAULT_IMPLEMENTATION_MAP,
     );
 
     applyRuleEffects(gameState, {}, effects);
 
-    // Default scheme implementation includes modifyCounter with delta: 0
     assert.equal(
       gameState.counters.schemeTwistCount,
-      0,
-      'schemeTwistCount must be 0 after default scheme fires with delta: 0',
+      1,
+      'schemeTwistCount must be 1 after scheme twist handler fires with delta: 1',
     );
   });
 

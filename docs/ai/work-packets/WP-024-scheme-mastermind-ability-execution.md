@@ -187,22 +187,20 @@ mastermind and registering them at setup time. The pipeline itself is unchanged.
       text abilities are future scope
   - Returns `RuleEffect[]` — never mutates `G` directly
 
-### C) `src/setup/buildDefaultHookDefinitions.ts` — modified
+### C) `src/rules/ruleRuntime.impl.ts` — modified
 
-- Extend `buildDefaultHookDefinitions(matchSetupConfig)` to produce
-  `HookDefinition` entries for the selected scheme and mastermind:
+- Update `buildDefaultHookDefinitions(matchSetupConfig)` to use correct
+  triggers for the selected scheme and mastermind:
   - Scheme hook: `kind: 'scheme'`, `sourceId: schemeId`,
-    `triggers: ['onSchemeTwistRevealed']`
+    `triggers: ['onSchemeTwistRevealed']` (was `['onTurnStart']` stub)
   - Mastermind hook: `kind: 'mastermind'`, `sourceId: mastermindId`,
-    `triggers: ['onMastermindStrikeRevealed']`
+    `triggers: ['onMastermindStrikeRevealed']` (was `['onTurnEnd']` stub)
 - These are stored in `G.hookRegistry` (data-only, JSON-serializable)
-
-### D) `src/setup/buildImplementationMap.ts` — new or modified
-
-- Build the `ImplementationMap` at setup time, mapping hook `id` values to
-  handler functions:
-  - Map scheme hook id -> `schemeTwistHandler`
-  - Map mastermind hook id -> `mastermindStrikeHandler`
+- Update `DEFAULT_IMPLEMENTATION_MAP` to map hook ids to the new real
+  handler functions (`schemeTwistHandler`, `mastermindStrikeHandler`)
+  instead of the stub implementations
+- Remove or replace `defaultSchemeImplementation` and
+  `defaultMastermindImplementation` stubs
 - `ImplementationMap` lives in memory — **never stored in `G`**
 - `// why:` comment: functions cannot be serialized; ImplementationMap is
   rebuilt each match from matchData
@@ -265,10 +263,8 @@ mastermind and registering them at setup time. The pipeline itself is unchanged.
   handler
 - `packages/game-engine/src/rules/mastermindHandlers.ts` — **new** — mastermind
   strike handler
-- `packages/game-engine/src/setup/buildDefaultHookDefinitions.ts` — **modified**
-  — add scheme and mastermind HookDefinition entries
-- `packages/game-engine/src/setup/buildImplementationMap.ts` — **new or
-  modified** — map hook ids to handler functions
+- `packages/game-engine/src/rules/ruleRuntime.impl.ts` — **modified**
+  — update triggers, replace stub handlers, wire ImplementationMap
 - `packages/game-engine/src/index.ts` — **modified** — export handlers
 - `packages/game-engine/src/rules/schemeHandlers.test.ts` — **new** — scheme
   handler tests

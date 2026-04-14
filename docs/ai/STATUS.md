@@ -7,6 +7,44 @@
 
 ## Current State
 
+### WP-024 — Scheme & Mastermind Ability Execution (2026-04-13)
+
+**What changed:**
+- Scheme twist and mastermind strike handlers produce real gameplay effects
+- `schemeTwistHandler(G, ctx, payload)` — new handler in
+  `packages/game-engine/src/rules/schemeHandlers.ts`
+  - Increments `schemeTwistCount` counter on each twist
+  - At threshold (7 twists): increments `ENDGAME_CONDITIONS.SCHEME_LOSS`
+    counter, triggering scheme-loss via existing endgame evaluator
+- `mastermindStrikeHandler(G, ctx, payload)` — new handler in
+  `packages/game-engine/src/rules/mastermindHandlers.ts`
+  - Increments `masterStrikeCount` counter (MVP tracking)
+  - MVP: counter + message only; wound card movement deferred
+- `ruleRuntime.impl.ts` updated:
+  - WP-009B stub handlers replaced with real handlers
+  - Scheme hook trigger: `onTurnStart` -> `onSchemeTwistRevealed`
+  - Mastermind hook trigger: `onTurnEnd` -> `onMastermindStrikeRevealed`
+  - `DEFAULT_IMPLEMENTATION_MAP` now maps to real handler functions
+- Integration test assertions updated (01.5 value-only updates)
+- 10 new tests (6 scheme + 4 mastermind), 291 total passing
+
+**What's true now:**
+- Scheme twists produce real gameplay effects via the rule hook pipeline
+- Scheme-loss condition is functional (counter reaches threshold -> loss)
+- Mastermind strikes track via counter (MVP — wound effects deferred)
+- Same `executeRuleHooks` -> `applyRuleEffects` pipeline as hero effects
+- Handlers in `ImplementationMap` (never stored in G)
+- WP-009A contracts unmodified
+- WP-014 reveal pipeline unmodified
+- WP-025 is unblocked
+
+**What's next:**
+- Future WP to add `'gainWound'` effect type for actual wound card movement
+- Future WP to parameterize per-scheme twist thresholds from registry data
+- WP-025 — next in sequence
+
+---
+
 ### WP-023 — Conditional Hero Effects (Teams, Colors, Keywords) (2026-04-13)
 
 **What changed:**

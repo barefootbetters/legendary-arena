@@ -2521,6 +2521,73 @@ data, evaluators interpret them.
 
 ---
 
+### D-2401 — Scheme and Mastermind Use Same Hook Pipeline as Heroes
+**Decision:** Scheme twist and mastermind strike handlers use the existing
+`executeRuleHooks` -> `applyRuleEffects` pipeline from WP-009B. No new
+execution engine was created.
+**Rationale:** The two-step pipeline (collect effects, apply effects) is the
+established pattern for all rule hooks. Scheme and mastermind handlers are
+`ImplementationMap` entries like hero keyword handlers. One pipeline ensures
+deterministic replay and consistent effect application.
+**Introduced:** WP-024 (2026-04-13)
+**Status:** Active
+
+---
+
+### D-2402 — MVP Scheme Twist Threshold Is Fixed at 7
+**Decision:** `MVP_SCHEME_TWIST_THRESHOLD = 7` is a fixed constant. Most
+standard Legendary schemes trigger loss at 7 twists. A future WP will
+parameterize per-scheme thresholds resolved from registry data at setup time.
+**Rationale:** MVP simplification. Real schemes have varying thresholds
+defined in card text. The constant provides functional scheme-loss behavior
+without text parsing.
+**Introduced:** WP-024 (2026-04-13)
+**Status:** Active (MVP — will be replaced by per-scheme thresholds)
+
+---
+
+### D-2403 — MVP Mastermind Strike Uses Counter + Message Only
+**Decision:** Mastermind strike handler produces `modifyCounter` +
+`queueMessage` effects only. Actual wound card movement (moving cards from
+`G.piles.wounds` to player discard) requires a `'gainWound'` effect type
+that does not exist yet.
+**Rationale:** Existing effect types do not support card-movement wound-gain.
+Counter tracking provides observability for the MVP. A future WP will add
+a `'gainWound'` effect type to the `RuleEffect` union and implement actual
+wound card movement. This follows the WP-023 safe-skip pattern: implement
+the handler structure, defer full behavior.
+**Introduced:** WP-024 (2026-04-13)
+**Status:** Active (MVP — wound card effects deferred)
+
+---
+
+### D-2404 — WP-009B Stub Handlers Replaced with Real Handlers
+**Decision:** `defaultSchemeImplementation` and `defaultMastermindImplementation`
+(WP-009B stubs) replaced with `schemeTwistHandler` and `mastermindStrikeHandler`.
+Stub triggers (`onTurnStart`, `onTurnEnd`) replaced with real triggers
+(`onSchemeTwistRevealed`, `onMastermindStrikeRevealed`). Integration test
+assertions updated under 01.5 allowance (value-only, no new logic).
+**Rationale:** The stubs existed to prove the pipeline worked (WP-009B). Now
+that the pipeline is proven, real handlers replace them. Trigger replacement
+is the core behavioral change — scheme hooks now fire when scheme twists
+are actually revealed, not on generic turn events.
+**Introduced:** WP-024 (2026-04-13)
+**Status:** Active
+
+---
+
+### D-2405 — WP-024 File Path Correction (Pre-Flight Finding)
+**Decision:** WP-024 originally referenced `src/setup/buildDefaultHookDefinitions.ts`
+and `src/setup/buildImplementationMap.ts`. These files do not exist. Both
+`buildDefaultHookDefinitions` and `DEFAULT_IMPLEMENTATION_MAP` live in
+`src/rules/ruleRuntime.impl.ts`. WP-024 and EC-024 corrected during pre-flight.
+**Rationale:** The WP was written before the actual file structure was
+finalized. Pre-flight verification against actual code caught the mismatch.
+**Introduced:** WP-024 pre-flight (2026-04-13)
+**Status:** Active
+
+---
+
 ## Change Management
 
 ### How to Add a New Decision
