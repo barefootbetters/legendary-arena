@@ -56,6 +56,16 @@ export interface UIPlayerState {
   inPlayCount: number;
   victoryCount: number;
   woundCount: number;
+  /**
+   * Hand card ext_ids. Present for the viewing player's own hand;
+   * undefined (redacted) for other players and spectators.
+   *
+   * // why: active player needs to see their own hand cards for gameplay.
+   * Other players and spectators see handCount only to prevent information
+   * leakage. buildUIState always populates this; filterUIStateForAudience
+   * redacts it based on audience.
+   */
+  handCards?: string[];
 }
 
 /**
@@ -120,3 +130,5 @@ export interface UIGameOverState {
   reason: string;
   scores?: FinalScoreSummary;
 }
+
+export type { UIAudience } from './uiAudience.types.js';

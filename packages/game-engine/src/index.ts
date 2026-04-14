@@ -197,3 +197,7 @@ export type {
   UIGameOverState,
 } from './ui/uiState.types.js';
 export { buildUIState } from './ui/uiState.build.js';
+
+// Audience & filter (WP-029)
+export type { UIAudience } from './ui/uiAudience.types.js';
+export { filterUIStateForAudience } from './ui/uiState.filter.js';

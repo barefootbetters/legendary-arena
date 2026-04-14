@@ -121,6 +121,10 @@ export function buildUIState(
       inPlayCount: zones.inPlay.length,
       victoryCount: zones.victory.length,
       woundCount: countWounds(zones),
+      // why: hand card ext_ids included so filterUIStateForAudience can
+      // expose them to the owning player. Spread copy prevents aliasing
+      // with G.playerZones[playerId].hand.
+      handCards: [...zones.hand],
     });
   }
 
