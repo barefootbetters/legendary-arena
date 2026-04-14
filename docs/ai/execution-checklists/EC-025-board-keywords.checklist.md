@@ -48,7 +48,9 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 - Board keywords do NOT use the `HeroAbilityHook` system
 - Keyword data resolved at setup time — no registry queries at move time
 - `fightVillain` validation extended for Guard blocking + Patrol cost — three-step contract preserved
-- Ambush fires during City entry (reveal pipeline) — not during fight
+- Ambush fires during City entry (reveal pipeline, after City placement,
+  before bystander attachment) — not during fight. Wound gain is inline
+  (same pattern as escape wounds), not via RuleEffect pipeline (D-2403).
 - WP-015 contract files (`city.types.ts`) must not be modified
 - No `.reduce()` in keyword logic; no `boardgame.io` import in keyword helpers
 
@@ -59,8 +61,10 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 - Board keywords: structural City rules, not hero abilities; fire automatically
 - Guard blocking direction: blocks access to lower-index cards
 - Patrol cost modifier: additive +1 MVP value
-- Ambush timing: fires on City entry, not on fight
-- `buildCardKeywords`: same setup-time resolution pattern as `G.cardStats`
+- Ambush timing: fires on City entry, not on fight; wound gain is inline
+  (not RuleEffect) because no `gainWound` RuleEffect type exists (D-2403)
+- `buildCardKeywords`: same setup-time resolution pattern as `G.cardStats`;
+  Patrol/Guard have no data source (safe-skip per D-2302)
 
 ---
 

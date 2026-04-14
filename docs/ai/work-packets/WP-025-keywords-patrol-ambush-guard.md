@@ -56,7 +56,12 @@ this session:
   - `packages/game-engine/src/test/mockCtx.ts` exports `makeMockCtx` (WP-005B)
   - `pnpm --filter @legendary-arena/game-engine build` exits 0
   - `pnpm --filter @legendary-arena/game-engine test` exits 0
-- Card data includes keyword information in ability text or structured metadata
+- Card data includes keyword information in ability text (Ambush is identifiable
+  by `"Ambush:"` prefix in ability strings — 304 occurrences across all sets).
+  Patrol and Guard have no structured data source in the registry; mechanics are
+  implemented and tested with synthetic data but dormant with real cards until a
+  future WP adds structured keyword classification. This follows the WP-023
+  safe-skip precedent (D-2302).
 - `docs/ai/ARCHITECTURE.md` exists with "MVP Gameplay Invariants" section
 - `docs/ai/DECISIONS.md` exists
 
@@ -131,8 +136,10 @@ mechanism that modifies City behavior directly.
   Document blocking rule in DECISIONS.md.
 - `fightVillain` validation extended to check Guard and Patrol — three-step
   contract preserved
-- Ambush effects fire during City entry (in `pushVillainIntoCity` path or
-  reveal pipeline) — not during fight
+- Ambush effects fire during City entry (in reveal pipeline, after City
+  placement and before bystander attachment) — not during fight. Wound gain
+  is inline (same pattern as escape wounds), not via RuleEffect pipeline,
+  because no `gainWound` RuleEffect type exists (D-2403).
 - No `.reduce()` in keyword logic — use `for...of`
 - WP-015 contract files (`city.types.ts`) must not be modified
 - Tests use `makeMockCtx` — no `boardgame.io` imports
@@ -179,18 +186,27 @@ mechanism that modifies City behavior directly.
   — Guard blocks access to cards behind it (lower indices)
   — `// why:` comment on blocking direction
 
-- `getAmbushEffects(cardId: CardExtId, cardKeywords: Record<CardExtId, BoardKeyword[]>): RuleEffect[]`
-  — returns MVP ambush effects (wound gain per player) if card has `'ambush'`,
-  empty array otherwise
+- `hasAmbush(cardId: CardExtId, cardKeywords: Record<CardExtId, BoardKeyword[]>): boolean`
+  — returns `true` if card has `'ambush'` keyword, `false` otherwise
+  — `// why:` Ambush wound gain is inline (not RuleEffect) because there is no
+  `gainWound` RuleEffect type. Inline wound logic follows the escape wound
+  precedent in `villainDeck.reveal.ts` (lines 124-137). Future WP may add
+  `gainWound` to the RuleEffect union and migrate to pipeline (D-2403 pattern).
 
 - Pure helpers, no boardgame.io import
 
 ### C) `src/setup/buildCardKeywords.ts` — new
 
-- `buildCardKeywords(registry: CardRegistry, matchConfig: MatchSetupConfig): Record<CardExtId, BoardKeyword[]>`
+- `buildCardKeywords(registry: unknown, matchConfig: MatchSetupConfig): Record<CardExtId, BoardKeyword[]>`
   — called during `Game.setup()`:
+  - Accepts `registry: unknown` with local structural interface
+    (`CardKeywordsRegistryReader`) and runtime type guard, same pattern as
+    `buildCardStats` in `economy.logic.ts` (WP-014B precedent)
   - Resolves villain/henchman cards from registry
-  - Extracts keyword metadata from card data
+  - Extracts Ambush keyword from ability text (`"Ambush:"` prefix detection)
+  - Patrol and Guard: no data source exists; returns empty for these keywords
+    (safe-skip per WP-023 D-2302). Future WP adds structured keyword
+    classification or manual card mapping.
   - Returns a flat lookup keyed by `CardExtId`
   - Uses `for...of` (no `.reduce()`)
   - `// why:` comment: same setup-time resolution pattern as `G.cardStats`
@@ -206,10 +222,16 @@ mechanism that modifies City behavior directly.
 
 ### E) `src/villainDeck/villainDeck.reveal.ts` — modified
 
-- After placing villain/henchman into City:
-  - Check for Ambush: `getAmbushEffects(cardId, G.cardKeywords)`
-  - If effects returned: apply via `applyRuleEffects`
-  - `// why:` comment: Ambush fires on City entry, not on fight
+- After placing villain/henchman into City (after `G.city = pushResult.city`,
+  before bystander attachment):
+  - Check for Ambush: `hasAmbush(cardId, G.cardKeywords)`
+  - If true: iterate `Object.keys(G.playerZones)` with `for...of`, call
+    `gainWound(G.piles.wounds, playerDiscard)` for each player, assign
+    results back to G (same inline pattern as escape wounds at lines 124-137)
+  - Push observability message to `G.messages` for each wound gained
+  - `// why:` comment: Ambush fires on City entry, not on fight. Wound gain
+    is inline (not RuleEffect) because no `gainWound` RuleEffect type exists
+    (D-2403 safe-skip pattern for effect type gaps).
 
 ### F) `src/setup/buildInitialGameState.ts` — modified
 
@@ -223,7 +245,7 @@ mechanism that modifies City behavior directly.
 ### H) `src/index.ts` — modified
 
 - Export `BoardKeyword`, `BOARD_KEYWORDS`, `buildCardKeywords`,
-  `getPatrolModifier`, `isGuardBlocking`, `getAmbushEffects`
+  `getPatrolModifier`, `isGuardBlocking`, `hasAmbush`
 
 ### I) Tests — `src/board/boardKeywords.logic.test.ts` — new
 
@@ -234,8 +256,8 @@ mechanism that modifies City behavior directly.
   3. `isGuardBlocking` returns `true` when Guard card is at higher index
   4. `isGuardBlocking` returns `false` when no Guard between target and escape
   5. `isGuardBlocking` returns `false` when targeting the Guard card itself
-  6. `getAmbushEffects` returns wound effects for Ambush card
-  7. `getAmbushEffects` returns empty array for non-Ambush card
+  6. `hasAmbush` returns `true` for Ambush card
+  7. `hasAmbush` returns `false` for non-Ambush card
   8. Drift: `BOARD_KEYWORDS` contains exactly `['patrol', 'ambush', 'guard']`
   9. `JSON.stringify(cardKeywords)` succeeds
 
