@@ -201,3 +201,19 @@ export { buildUIState } from './ui/uiState.build.js';
 // Audience & filter (WP-029)
 export type { UIAudience } from './ui/uiAudience.types.js';
 export { filterUIStateForAudience } from './ui/uiState.filter.js';
+
+// Campaign / scenario framework (WP-030)
+export type {
+  ScenarioOutcome,
+  ScenarioOutcomeCondition,
+  ScenarioReward,
+  ScenarioDefinition,
+  CampaignUnlockRule,
+  CampaignDefinition,
+  CampaignState,
+} from './campaign/campaign.types.js';
+export {
+  applyScenarioOverrides,
+  evaluateScenarioOutcome,
+  advanceCampaignState,
+} from './campaign/campaign.logic.js';

@@ -153,6 +153,22 @@ export type {
   UIGameOverState,
 } from './ui/uiState.types.js';
 
+// why: Campaign types (ScenarioDefinition, CampaignDefinition,
+// CampaignState, ScenarioOutcome, and sub-types) are defined canonically
+// in src/campaign/campaign.types.ts (WP-030). Re-exported here so that
+// consumers importing from './types.js' have access. CampaignState is
+// NOT a field of LegendaryGameState — campaign state is Class 2 data,
+// external to the engine per D-0502.
+export type {
+  ScenarioOutcome,
+  ScenarioOutcomeCondition,
+  ScenarioReward,
+  ScenarioDefinition,
+  CampaignUnlockRule,
+  CampaignDefinition,
+  CampaignState,
+} from './campaign/campaign.types.js';
+
 import type { TurnStage } from './turn/turnPhases.types.js';
 import type { CardExtId, PlayerZones, GlobalPiles } from './state/zones.types.js';
 import type { TurnEconomy, CardStatEntry } from './economy/economy.types.js';
