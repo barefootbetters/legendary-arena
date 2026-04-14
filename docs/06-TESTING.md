@@ -4,12 +4,13 @@
 > Determinism-first, replay-verifiable, tightly coupled to architectural
 > invariants.
 >
-> **Last updated:** 2026-04-11
+> **Last updated:** 2026-04-14
 >
-> **Current state:** 132 tests passing across all packages (123 engine,
+> **Current state:** 323 tests passing across all packages (314 engine,
 > 6 server, 3 registry). Test coverage spans setup validation, moves,
 > rule pipeline, endgame, lobby, drift detection, persistence contracts,
-> and CLI scripts.
+> CLI scripts, hero ability execution, conditional effects, board
+> keywords, and scheme setup instructions.
 
 Testing in Legendary Arena is part of the architecture.
 If a test contradicts an architectural invariant, the test is wrong.
@@ -118,6 +119,10 @@ architectural invariants, not implementation details.
 | Rule Pipeline | `rules/*.test.ts` | Hook execution + effect application | WP-009B |
 | Endgame | `endgame/*.test.ts` | Victory/loss condition evaluation | WP-010 |
 | Persistence | `persistence/*.test.ts` | Snapshot purity, JSON-serializability, zone counts | WP-013 |
+| Hero Effects | `hero/*.test.ts` | Hero keyword execution, conditional evaluation | WP-022, WP-023 |
+| Board Keywords | `board/boardKeywords.*.test.ts` | Patrol/Guard/Ambush helpers + integration | WP-025 |
+| Scheme Setup | `scheme/*.test.ts` | Instruction executor, type handlers, MVP safe-skip | WP-026 |
+| Integration | `*.integration.test.ts` | Cross-system verification (economy, reveals, keywords) | WP-018+ |
 | Drift Detection | inline in test files | Canonical arrays match union types | WP-007A+ |
 | CLI Scripts | `scripts/*.test.ts` | Argument parsing, error handling, fetch stubs | WP-012 |
 | Replay | `replay/*.test.ts` | Full game replay from recorded moves | WP-027 |
@@ -141,7 +146,11 @@ exists.
 | `CORE_MOVE_NAMES` | — | WP-008A |
 | `RULE_TRIGGER_NAMES` | `RuleTriggerName` | WP-009A |
 | `RULE_EFFECT_TYPES` | `RuleEffectType` | WP-009A |
-| `REVEALED_CARD_TYPES` | `RevealedCardType` | WP-014 |
+| `REVEALED_CARD_TYPES` | `RevealedCardType` | WP-014A |
+| `HERO_KEYWORDS` | `HeroKeyword` | WP-021 |
+| `HERO_ABILITY_TIMINGS` | `HeroAbilityTiming` | WP-021 |
+| `BOARD_KEYWORDS` | `BoardKeyword` | WP-025 |
+| `SCHEME_SETUP_TYPES` | `SchemeSetupType` | WP-026 |
 
 **How drift tests work:**
 ```ts
@@ -236,11 +245,11 @@ If step 5 fails, the snapshot contract is broken.
 
 ---
 
-## Test Inventory (as of 2026-04-11)
+## Test Inventory (as of 2026-04-14)
 
 | Package | Test count | Suites | Key coverage areas |
 |---|---|---|---|
-| `@legendary-arena/game-engine` | 123 | 39 | Setup validation, moves, rules, endgame, lobby, drift detection, persistence |
+| `@legendary-arena/game-engine` | 314 | 83 | Setup, moves, rules, endgame, lobby, drift detection, persistence, hero effects, conditional evaluation, board keywords, scheme setup, economy, villain deck, mastermind |
 | `@legendary-arena/server` | 6 | 2 | CLI script argument parsing, fetch stubs, error handling |
 | `@legendary-arena/registry` | 3 | 1 | Registry smoke test (sets, cards) |
 
