@@ -16,6 +16,12 @@ const emit = defineEmits<{
     </div>
 
     <div class="detail-body">
+      <!-- Cover image -->
+      <div v-if="theme.comicImageUrl" class="img-wrap">
+        <img :src="theme.comicImageUrl" :alt="theme.name + ' cover'" loading="lazy"
+          @error="($event.target as HTMLImageElement).style.display = 'none'" />
+      </div>
+
       <!-- Description -->
       <p class="description">{{ theme.description }}</p>
 
@@ -156,6 +162,10 @@ const emit = defineEmits<{
 .close-btn { background: none; border: none; color: #6666aa; font-size: 1.1rem; cursor: pointer; padding: 0.2rem 0.4rem; border-radius: 4px; }
 .close-btn:hover { background: #2a2a3a; color: #e8e8ee; }
 .detail-body { overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
+
+/* ── Cover image ───────────────────────────────────────────────────────── */
+.img-wrap { border-radius: 8px; overflow: hidden; background: #12121a; }
+.img-wrap img { width: 100%; display: block; object-fit: cover; max-height: 400px; }
 
 /* ── Description ───────────────────────────────────────────────────────── */
 .description { margin: 0; font-size: 0.82rem; color: #c8c8e0; line-height: 1.6; }

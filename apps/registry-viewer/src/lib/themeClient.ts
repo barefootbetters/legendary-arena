@@ -41,6 +41,7 @@ export interface ThemeDefinition {
     primaryStory: ThemePrimaryStoryReference;
   };
   flavorText?: string;
+  comicImageUrl?: string | null;
 }
 
 // ── Singleton loader ────────────────────────────────────────────────────────
