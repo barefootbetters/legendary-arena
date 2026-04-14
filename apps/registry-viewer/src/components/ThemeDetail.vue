@@ -165,7 +165,7 @@ const emit = defineEmits<{
 
 /* ── Cover image ───────────────────────────────────────────────────────── */
 .img-wrap { border-radius: 8px; overflow: hidden; background: #12121a; }
-.img-wrap img { width: 100%; display: block; object-fit: cover; max-height: 400px; }
+.img-wrap img { width: 100%; display: block; object-fit: cover; max-height: 200px; }
 
 /* ── Description ───────────────────────────────────────────────────────── */
 .description { margin: 0; font-size: 0.82rem; color: #c8c8e0; line-height: 1.6; }
