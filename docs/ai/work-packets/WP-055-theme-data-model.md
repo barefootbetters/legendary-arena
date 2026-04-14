@@ -217,6 +217,10 @@ export const ThemeDefinitionSchema = z.object({
     primaryStory: ThemePrimaryStoryReferenceSchema,
   }).optional(),
   flavorText: z.string().optional(),
+  comicImageUrl: z.string().url().nullable().optional(),
+  // why: comicImageUrl is an editorial cover image reference fetched from
+  // Comic Vine API. Nullable because not all themes have verified covers.
+  // URLs are hotlinked, not hosted — no images are stored in R2.
   // why: parDifficultyRating intentionally excluded from v1 —
   // PAR scoring does not exist yet (WP-048)
   // note: themes intentionally exclude any rule logic, modifiers, or effects
@@ -332,7 +336,8 @@ validation test fixtures.
       ]
     }
   },
-  "flavorText": "The fire rises. The Phoenix must be stopped — or the universe will burn."
+  "flavorText": "The fire rises. The Phoenix must be stopped — or the universe will burn.",
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/5329124-10.jpg"
 }
 ```
 

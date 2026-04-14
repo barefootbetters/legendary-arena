@@ -2586,6 +2586,135 @@ finalized. Pre-flight verification against actual code caught the mismatch.
 **Introduced:** WP-024 pre-flight (2026-04-13)
 **Status:** Active
 
+### D-2501 — Board Keywords Separate from Hero Ability Hooks
+**Decision:** Board keywords (Patrol, Ambush, Guard) are a separate mechanism
+from hero ability hooks. They are structural City rules that fire automatically
+without player choice. They do not use the `HeroAbilityHook` system.
+**Rationale:** Hero hooks require player choice and fire on specific timings
+(`onPlay`, `onFight`, etc.). Board keywords are automatic, positional, and
+modify City behavior (fight cost, access blocking, entry effects). Different
+mechanism, different trigger model.
+**Extension seam:** `BoardKeyword` union + `BOARD_KEYWORDS` canonical array.
+Adding a new keyword = add to union + array + handler in
+`boardKeywords.logic.ts` + integration point in fight/reveal.
+**Affected WPs:** WP-025, WP-026+
+**Immutability:** Locked — board keywords must remain separate from hero hooks.
+
+### D-2502 — MVP Board Keyword Values
+**Decision:** MVP keyword effects are fixed:
+- Patrol: +1 fight cost (additive modifier)
+- Ambush: each player gains 1 wound on City entry
+- Guard: blocks `fightVillain` targeting of lower-index City cards
+**Rationale:** These are simplified versions of the Legendary tabletop
+keywords. Future WPs may parameterize effects per card (e.g., Patrol +2,
+Ambush with different effects per card).
+**Affected WPs:** WP-025
+**Immutability:** MVP values may be extended by future WPs.
+
+### D-2503 — Ambush Wound Gain is Inline (Not RuleEffect Pipeline)
+**Decision:** Ambush wound gain calls `gainWound` directly in the reveal
+pipeline (same pattern as escape wounds in `villainDeck.reveal.ts` lines
+124-137). It does NOT route through the `RuleEffect` / `applyRuleEffects`
+system because no `gainWound` RuleEffect type exists.
+**Rationale:** D-2403 safe-skip pattern for effect type gaps. The handler
+structure is complete; only the effect vocabulary is incomplete. Adding a
+`gainWound` RuleEffect type would require modifying `ruleHooks.types.ts`
+(WP-009A contract) which is out of scope.
+**Affected WPs:** WP-025
+**Immutability:** Interim — future WP may add `gainWound` to the RuleEffect
+union and migrate Ambush to the pipeline.
+
+### D-2504 — Board Keyword Data Availability (Safe-Skip)
+**Decision:** Ambush is extractable from villain/henchman ability text
+(`"Ambush:"` prefix, 304 occurrences across all 40 sets). Patrol and Guard
+have no data source in current card data — Patrol in the data is a different
+mechanic (Secret Wars Vol 2 location patrols), and Guard has zero occurrences.
+**Resolution:** `buildCardKeywords` extracts Ambush from ability text. Patrol
+and Guard produce empty results. All three mechanics are fully implemented
+and tested with synthetic data. Patrol and Guard are dormant with real cards
+until a future WP adds structured keyword classification or manual card mapping.
+**Rationale:** WP-023 safe-skip precedent (D-2302). Mechanics are code-complete.
+Data availability is a separate concern.
+**Affected WPs:** WP-025, future keyword data WP
+**Immutability:** Data gap status may change when card data is enhanced.
+
+---
+
+### D-5501 — Themes Are Data, Not Behavior
+**Decision:** Themes are static JSON content in the registry layer. They describe
+game composition (mastermind, scheme, villain groups, hero decks) but contain no
+runtime logic, modifiers, or effects.
+**Rationale:** Keeps themes engine-agnostic and prevents schema coupling to gameplay code.
+**Affected WPs:** WP-055
+**Immutability:** Permanent
+
+---
+
+### D-5502 — Theme Schema Is Engine-Agnostic (Registry Layer Only)
+**Decision:** Theme schema (`ThemeDefinitionSchema`) lives in `packages/registry/`.
+No engine imports. `setupIntent` mirrors `MatchSetupConfig` ID fields but excludes
+count fields because themes describe content composition, not pile sizing.
+**Rationale:** Registry layer boundary (ARCHITECTURE.md). Themes are content, not configuration.
+**Affected WPs:** WP-055, WP-005A
+**Immutability:** Permanent
+
+---
+
+### D-5503 — Theme IDs Are Immutable Once Published
+**Decision:** Once a theme is committed with a `themeId`, that ID never changes.
+Filename must always match `themeId`.
+**Rationale:** Prevents broken references in UI, URLs, and cross-theme links.
+**Affected WPs:** WP-055
+**Immutability:** Permanent
+
+---
+
+### D-5504 — Schema Evolution Via Versioning Only
+**Decision:** `themeSchemaVersion: 1` is a literal. Schema changes require a version bump,
+never mutation of existing fields.
+**Rationale:** Backwards compatibility for hundreds of theme files.
+**Affected WPs:** WP-055
+**Immutability:** Permanent
+
+---
+
+### D-5505 — External Comic References Are Editorial Only
+**Decision:** URLs in `references.primaryStory` (Fandom, Comic Vine, Marvel Unlimited)
+are editorial aids. They are never required at runtime, may rot without consequence,
+and must never be treated as dependencies.
+**Rationale:** External URLs are outside our control. Theme validity must not depend on third-party uptime.
+**Affected WPs:** WP-055
+**Immutability:** Permanent
+
+---
+
+### D-5506 — comicImageUrl Is Editorial, Not Hosted
+**Decision:** `comicImageUrl` stores a URL reference to a Comic Vine cover image.
+Images are hotlinked, not downloaded or stored in R2. The field is nullable
+(`null` when no verified cover exists).
+**Rationale:** Avoids copyright/redistribution concerns. Zero storage cost. URLs may
+rot and are replaced by re-running the fetcher tool.
+**Affected WPs:** WP-055
+**Immutability:** Field exists; hosting policy may evolve.
+
+---
+
+### D-5507 — Referential Integrity Validation Deferred
+**Decision:** v1 validates schema shape only. Verifying that `setupIntent` IDs
+actually exist in the card registry is deferred to a theme loader WP.
+**Rationale:** Integrity checking requires registry access at validation time,
+which crosses layer concerns for a static schema package.
+**Affected WPs:** WP-055, future theme loader WP
+**Immutability:** Temporary — will be addressed when themes are consumed at runtime.
+
+---
+
+### D-5508 — PAR Difficulty Rating Excluded From v1
+**Decision:** `parDifficultyRating` is intentionally absent from `ThemeDefinitionSchema` v1.
+**Rationale:** PAR scoring system does not exist yet (WP-048).
+**Affected WPs:** WP-055, WP-048
+**Immutability:** Temporary — field will be added when PAR system is implemented.
+
 ---
 
 ## Change Management
