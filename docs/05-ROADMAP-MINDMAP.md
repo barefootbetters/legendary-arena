@@ -47,8 +47,13 @@ mindmap
         ["WP-055 ⬜\nTheme Data Model"]
         ["WP-060 ⬜\nKeyword & Rule Glossary"]
 
-      Phase 5 -- Card Mechanics
-        ["WP-021..026 ⬜\nHero / Scheme / Mastermind\nAbilities & Keywords (6)"]
+      Phase 5 -- Card Mechanics ✅
+        ["WP-021 ✅ Hero Hooks"]
+        ["WP-022 ✅ Hero Keywords"]
+        ["WP-023 ✅ Conditional Effects"]
+        ["WP-024 ✅ Scheme/Mastermind Exec"]
+        ["WP-025 ✅ Board Keywords"]
+        ["WP-026 ✅ Scheme Setup"]
 
       Phase 6 -- Verification & Production
         ["WP-027..035, 042 ⬜\nReplay / UI / Hardening\nVersioning / Ops (10)"]
@@ -89,11 +94,11 @@ mindmap
 | Phase 3 | WP-009A/B, 010..013 | 6/6 | -- |
 | Phase 4 | WP-014A/B..020 | 8/8 | -- |
 | Content | WP-055, 060 | 0/2 | ⬜ |
-| Phase 5 | WP-021..026 | 0/6 | ⬜ |
+| Phase 5 | WP-021..026 | 6/6 | -- |
 | Phase 6 | WP-027..035, 042, 048 | 0/11 | ⬜ |
 | Phase 7 | WP-036..041, 049..051 | 0/9 | ⬜ |
-| **Total** | | **35/61** | **26** |
+| **Total** | | **41/61** | **20** |
 
-**Next unblocked:** WP-021 (Hero Card Text & Keywords), WP-055, WP-060
+**Next unblocked:** WP-027 (Replay Determinism Proof), WP-055, WP-060
 
-*Last updated: 2026-04-13 (WP-060 added, registry viewer tooltips shipped)*
+*Last updated: 2026-04-14 (Phase 5 complete — 314 tests passing)*
