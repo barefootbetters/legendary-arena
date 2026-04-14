@@ -569,7 +569,7 @@ These packets make individual cards do things.
   abilities — automatic, no player choice, separate from hero hook system;
   was truncated at 63 lines — normalized to full PACKET-TEMPLATE
 
-- [ ] WP-026 — Scheme Setup Instructions & City Modifiers ✅ Reviewed
+- [x] WP-026 — Scheme Setup Instructions & City Modifiers ✅ Complete (2026-04-14)
   Dependencies: WP-025
   Notes: `SchemeSetupInstruction` data-only contract (D-0603 pattern);
   4 MVP instruction types: `modifyCitySize`, `addCityKeyword`,

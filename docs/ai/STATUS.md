@@ -7,6 +7,52 @@
 
 ## Current State
 
+### WP-026 — Scheme Setup Instructions & City Modifiers (2026-04-14)
+
+**What changed:**
+- Scheme setup instruction system implemented: `SchemeSetupType` closed union
+  (`'modifyCitySize'` | `'addCityKeyword'` | `'addSchemeCounter'` |
+  `'initialCityState'`) with `SCHEME_SETUP_TYPES` canonical array and
+  drift-detection test
+- `SchemeSetupInstruction` is a data-only, JSON-serializable contract following
+  the "Representation Before Execution" pattern (D-2601)
+- `executeSchemeSetup()` — deterministic executor handles all 4 instruction
+  types via `for...of` (no `.reduce()`), unknown types warn and skip
+- `buildSchemeSetupInstructions()` — setup-time builder with
+  `registry: unknown` + local structural interface (`SchemeRegistryReader`) +
+  runtime type guard. MVP: returns `[]` for all schemes (no structured
+  metadata in registry yet, D-2504 safe-skip)
+- `modifyCitySize` is warn + no-op at MVP while `CityZone` is a fixed tuple
+  (D-2602)
+- `G.schemeSetupInstructions: SchemeSetupInstruction[]` added to
+  `LegendaryGameState` for replay observability
+- Wired into `buildInitialGameState` — builder called after `buildCardKeywords`,
+  executor applied to constructed state before return
+- 9 new tests (8 executor + 1 drift-detection), 314 total passing
+- Phase 5 (Card Mechanics & Abilities) is complete
+
+**What's true now:**
+- Schemes can configure the board before the first turn via declarative
+  instructions (counters, keywords, city state, city size in future)
+- Scheme setup (board config, WP-026) is formally separated from scheme twist
+  (event reaction, WP-024) — D-2601
+- All scheme setup files are pure (no boardgame.io imports, no .reduce(),
+  no registry imports)
+- `G.schemeSetupInstructions` is Runtime class, built at setup, immutable
+  during gameplay
+- WP-025 contracts unmodified (`boardKeywords.types.ts` untouched)
+- WP-015 contracts unmodified (`city.types.ts` untouched)
+
+**What's next:**
+- Future WP to add structured scheme metadata to the registry (enables real
+  setup instructions instead of empty `[]`)
+- Future WP to convert `CityZone` from fixed tuple to dynamic array (enables
+  `modifyCitySize`)
+- Future WP for structured keyword classification for Patrol/Guard
+- Future WP for `'gainWound'` RuleEffect type
+
+---
+
 ### WP-025 — Keywords: Patrol, Ambush, Guard (2026-04-13)
 
 **What changed:**

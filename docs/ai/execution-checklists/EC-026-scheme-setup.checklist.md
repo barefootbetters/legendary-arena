@@ -8,13 +8,21 @@ This EC is the authoritative execution checklist for WP-026.
 Implementation must satisfy every clause exactly.
 Failure to satisfy any item below is a failed execution of WP-026.
 
+**Terminology note:**
+References to "Representation Before Execution" (RBE) refer to D-2601 in
+`docs/ai/DECISIONS.md`, which formalizes the pattern:
+- data-only representation first
+- deterministic execution applied by a pure executor
+- no execution logic embedded in registry data or runtime wiring
+
 ---
 
 ## Before Starting
 
 - [ ] WP-025 complete: `BoardKeyword`, `G.cardKeywords` exist
 - [ ] `schemeTwistHandler` exists (WP-024); `G.hookRegistry` has scheme entries
-- [ ] D-0603 (Representation Before Execution) documented in DECISIONS.md
+- [ ] "Representation Before Execution" decision (D-2601) documented in
+      `docs/ai/DECISIONS.md`
 - [ ] `pnpm --filter @legendary-arena/game-engine build` exits 0
 - [ ] `pnpm --filter @legendary-arena/game-engine test` exits 0
 
@@ -36,11 +44,14 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 
 ## Guardrails
 
-- `SchemeSetupInstruction` is **data-only** — no functions, no closures (D-0603)
+- `SchemeSetupInstruction` is **data-only** — no functions, no closures
+  (per "Representation Before Execution" decision, D-2601)
 - Instructions execute **once** during setup — never re-executed during moves
 - No hard-coded scheme logic — all behavior from declarative instruction data
 - `SchemeSetupType` is a closed union — new types require DECISIONS.md entry
 - Unknown instruction types log warning to `G.messages`, skip (never throw)
+- MVP rule: while `CityZone` is a fixed tuple, `modifyCitySize` MUST log a
+  warning to `G.messages`, perform NO mutation, and return `G` unchanged
 - Scheme **setup** (this packet) is separate from scheme **twist** (WP-024)
 - WP-025 contracts (`boardKeywords.types.ts`) must not be modified
 - No `.reduce()` in instruction execution; no `boardgame.io` import in scheme setup files
@@ -49,7 +60,8 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 
 ## Required `// why:` Comments
 
-- `SchemeSetupInstruction`: follows D-0603 — data-only contracts applied by deterministic executor
+- `SchemeSetupInstruction`: follows the "Representation Before Execution"
+  decision (D-2601) — data-only contracts applied by a deterministic executor
 - Each instruction type handler: what it modifies and how
 - Scheme setup timing: runs after base construction, before first turn
 - `modifyCitySize` approach: document tuple vs dynamic in DECISIONS.md
@@ -60,7 +72,7 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 
 - `packages/game-engine/src/scheme/schemeSetup.types.ts` — **new** — SchemeSetupInstruction, SchemeSetupType
 - `packages/game-engine/src/scheme/schemeSetup.execute.ts` — **new** — executeSchemeSetup
-- `packages/game-engine/src/scheme/schemeSetup.build.ts` — **new** — buildSchemeSetupInstructions
+- `packages/game-engine/src/setup/buildSchemeSetupInstructions.ts` — **new** — buildSchemeSetupInstructions
 - `packages/game-engine/src/setup/buildInitialGameState.ts` — **modified** — wire scheme setup
 - `packages/game-engine/src/types.ts` — **modified** — add schemeSetupInstructions to LegendaryGameState
 - `packages/game-engine/src/index.ts` — **modified** — exports

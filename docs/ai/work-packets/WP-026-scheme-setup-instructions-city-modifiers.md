@@ -1,7 +1,7 @@
 # WP-026 — Scheme Setup Instructions & City Modifiers
 
 **Status:** Ready  
-**Primary Layer:** Game Engine / Setup & Board Configuration  
+**Primary Layer:** Game Engine / Setup & Board Configuration (Runtime Wiring)  
 **Dependencies:** WP-025
 
 ---
@@ -16,6 +16,13 @@ configure the board before play begins and persistent modifiers that affect
 gameplay continuously. Schemes become first-class configuration entities that
 shape the game's structure, not just reactive event text. This is the final
 packet in Phase 5 (Card Mechanics & Abilities).
+
+**Terminology note:**
+All references to "Representation Before Execution" (RBE) refer to the
+DECISIONS.md entry (D-2601) that formalizes the pattern:
+- data-only representation first
+- deterministic execution via pure helpers
+- no execution logic embedded in registry data
 
 ---
 
@@ -32,8 +39,8 @@ After this session:
   overlays) are stored in `G` and respected by existing gameplay logic
 - No scheme logic is hard-coded — all behavior derives from declarative
   instruction data resolved from the registry at setup time
-- The instruction system follows the "representation before execution" pattern
-  (D-0603): instructions are data-only contracts, applied by a deterministic
+- The instruction system follows the **Representation Before Execution** pattern
+  (D-2601) — instructions are data-only contracts, applied by a deterministic
   executor
 
 ---
@@ -54,11 +61,17 @@ After this session:
   - `packages/game-engine/src/test/mockCtx.ts` exports `makeMockCtx` (WP-005B)
   - `pnpm --filter @legendary-arena/game-engine build` exits 0
   - `pnpm --filter @legendary-arena/game-engine test` exits 0
-- Scheme card data includes setup instruction metadata in the registry
+- Scheme card data does NOT yet include structured setup instruction metadata.
+  For MVP:
+  - `buildSchemeSetupInstructions()` MUST return an empty array (`[]`).
+  - All instruction execution, typing, and ordering logic MUST be implemented
+    and tested using synthetic instructions only.
+  - No hard-coded scheme mappings are permitted.
+  - A future WP will add structured registry metadata or an explicit mapping
+    layer.
 - `docs/ai/ARCHITECTURE.md` exists with "MVP Gameplay Invariants" section
-- `docs/ai/DECISIONS.md` exists with D-0603 (Representation Before Execution)
-
-If any of the above is false, this packet is **BLOCKED** and must not proceed.
+- A "Representation Before Execution" decision (D-2601) exists in
+  `docs/ai/DECISIONS.md`
 
 ---
 
@@ -67,7 +80,7 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 Before writing a single line:
 
 - `docs/ai/ARCHITECTURE.md — "MVP Gameplay Invariants"` — read "Data
-  Representation Before Execution" (D-0603). Scheme setup instructions follow
+  Representation Before Execution". Scheme setup instructions follow
   this pattern: declarative data contracts first, deterministic execution
   applied by a setup-time executor.
 - `docs/ai/ARCHITECTURE.md — "MVP Gameplay Invariants"` — read "Registry &
@@ -115,9 +128,10 @@ Before writing a single line:
 
 **Packet-specific:**
 - Registry boundary (hard rule): scheme instruction data resolved at setup
-  time from registry. No registry queries after setup.
+  time from registry via `registry: unknown` with local structural interface.
+  No registry queries after setup. No import of `@legendary-arena/registry`.
 - `SchemeSetupInstruction` is **data-only** — no functions, no closures.
-  Fully JSON-serializable.
+  Fully JSON-serializable, per the "Representation Before Execution" decision.
 - Scheme setup instructions execute **once** during the `setup` phase — never
   re-executed during moves
 - Persistent modifiers are stored in `G` as plain data structures and read
@@ -127,6 +141,8 @@ Before writing a single line:
   union and document in DECISIONS.md.
 - `SchemeSetupInstruction.type` is a **closed union** — adding a new type
   requires a `DECISIONS.md` entry
+- MVP rule: while `CityZone` is a fixed tuple, `modifyCitySize` MUST log a
+  warning to `G.messages`, perform NO mutation, and return `G` unchanged
 - No `.reduce()` in instruction execution — use `for...of`
 - WP-025 contract files (`boardKeywords.types.ts`) must not be modified
 - WP-015 contract files (`city.types.ts`) modification may be required if
@@ -154,8 +170,9 @@ Before writing a single line:
 - `interface SchemeSetupInstruction { type: SchemeSetupType; value: unknown }`
   — data-only, JSON-serializable
 - `type SchemeSetupType = 'modifyCitySize' | 'addCityKeyword' | 'addSchemeCounter' | 'initialCityState'`
-- `// why:` comment: scheme instructions follow D-0603 — data-only contracts
-  applied by a deterministic executor at setup time
+- `// why:` comment: scheme instructions follow the "Representation Before
+  Execution" decision (D-2601) — data-only contracts applied by a deterministic
+  executor at setup time
 
 ### B) `src/scheme/schemeSetup.execute.ts` — new
 
@@ -163,8 +180,8 @@ Before writing a single line:
   — deterministic executor:
   1. Iterate instructions with `for...of`
   2. For each instruction type:
-     - `modifyCitySize`: modify `G.city` length (document size change approach
-       in DECISIONS.md — may require changing CityZone from fixed tuple)
+     - `modifyCitySize`: **MVP: log warning and return `G` unchanged** while
+       `CityZone` is a fixed tuple. Document approach in DECISIONS.md.
      - `addCityKeyword`: add a keyword to `G.cardKeywords` for specified cards
      - `addSchemeCounter`: initialize a new counter in `G.counters`
      - `initialCityState`: pre-populate City spaces with specified cards
@@ -172,12 +189,16 @@ Before writing a single line:
   - `// why:` comment on each instruction type handler
   - Returns updated `G` — pure function
 
-### C) `src/scheme/schemeSetup.build.ts` — new
+### C) `src/setup/buildSchemeSetupInstructions.ts` — new
 
-- `buildSchemeSetupInstructions(schemeId: CardExtId, registry: CardRegistry): SchemeSetupInstruction[]`
+- `buildSchemeSetupInstructions(schemeId: CardExtId, registry: unknown): SchemeSetupInstruction[]`
   — called during `Game.setup()`:
-  - Resolves scheme from registry
-  - Extracts setup instruction metadata from scheme data
+  - Uses a **local structural interface** (e.g., `SchemeRegistryReader`) declared
+    in the same file — must NOT import `@legendary-arena/registry` or
+    `CardRegistry`
+  - Must STOP and return `[]` if required registry fields are absent
+  - **MVP behavior:** returns `[]` (empty array) for all schemes — structured
+    metadata does not yet exist in the registry
   - Returns a list of declarative instructions
   - Uses `for...of` (no `.reduce()`)
   - `// why:` comment: same setup-time resolution pattern
@@ -194,7 +215,8 @@ Before writing a single line:
 ### E) `src/types.ts` — modified
 
 - Add `schemeSetupInstructions: SchemeSetupInstruction[]` to
-  `LegendaryGameState` (for replay observability)
+  `LegendaryGameState` (stores the instruction list — empty at MVP until
+  structured metadata exists — for replay observability)
 - Re-export `SchemeSetupInstruction`, `SchemeSetupType`
 
 ### F) `src/index.ts` — modified
@@ -209,7 +231,7 @@ Before writing a single line:
   1. `addSchemeCounter` initializes a new counter in `G.counters`
   2. `addCityKeyword` adds keyword to `G.cardKeywords`
   3. `initialCityState` pre-populates City spaces
-  4. `modifyCitySize` modifies City (document approach in DECISIONS.md)
+  4. `modifyCitySize` logs warning and leaves City unchanged (MVP tuple constraint)
   5. Unknown instruction type: warning logged, no crash
   6. Empty instructions list: `G` returned unchanged
   7. Instructions execute in order (deterministic)
@@ -240,7 +262,7 @@ Before writing a single line:
   SchemeSetupInstruction, SchemeSetupType
 - `packages/game-engine/src/scheme/schemeSetup.execute.ts` — **new** —
   executeSchemeSetup
-- `packages/game-engine/src/scheme/schemeSetup.build.ts` — **new** —
+- `packages/game-engine/src/setup/buildSchemeSetupInstructions.ts` — **new** —
   buildSchemeSetupInstructions
 - `packages/game-engine/src/setup/buildInitialGameState.ts` — **modified** —
   wire scheme setup into game setup
@@ -261,7 +283,8 @@ All items must be binary pass/fail. No partial credit.
 ### Setup Instruction Contract
 - [ ] `SchemeSetupInstruction` is data-only, JSON-serializable
 - [ ] `SchemeSetupType` union matches locked contract values
-- [ ] `// why:` comment references D-0603
+- [ ] `// why:` comment references the "Representation Before Execution"
+      decision (D-2601)
 
 ### Instruction Execution
 - [ ] `executeSchemeSetup` handles all 4 instruction types
@@ -309,7 +332,7 @@ pnpm --filter @legendary-arena/game-engine test
 # Expected: TAP output — all tests passing, 0 failing
 
 # Step 3 — confirm no boardgame.io import in scheme setup
-Select-String -Path "packages\game-engine\src\scheme\schemeSetup.execute.ts","packages\game-engine\src\scheme\schemeSetup.build.ts" -Pattern "boardgame.io"
+Select-String -Path "packages\game-engine\src\scheme\schemeSetup.execute.ts","packages\game-engine\src\setup\buildSchemeSetupInstructions.ts" -Pattern "boardgame.io"
 # Expected: no output
 
 # Step 4 — confirm no registry import in execution file
@@ -317,7 +340,7 @@ Select-String -Path "packages\game-engine\src\scheme\schemeSetup.execute.ts" -Pa
 # Expected: no output
 
 # Step 5 — confirm no .reduce()
-Select-String -Path "packages\game-engine\src\scheme" -Pattern "\.reduce\(" -Recurse
+Select-String -Path "packages\game-engine\src\scheme","packages\game-engine\src\setup\buildSchemeSetupInstructions.ts" -Pattern "\.reduce\(" -Recurse
 # Expected: no output
 
 # Step 6 — confirm WP-025 contracts not modified
@@ -325,7 +348,7 @@ git diff --name-only packages/game-engine/src/board/boardKeywords.types.ts
 # Expected: no output
 
 # Step 7 — confirm no require()
-Select-String -Path "packages\game-engine\src\scheme" -Pattern "require(" -Recurse
+Select-String -Path "packages\game-engine\src\scheme","packages\game-engine\src\setup\buildSchemeSetupInstructions.ts" -Pattern "require(" -Recurse
 # Expected: no output
 
 # Step 8 — confirm no files outside scope

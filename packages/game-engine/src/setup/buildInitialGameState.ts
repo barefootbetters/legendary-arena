@@ -35,6 +35,8 @@ import { buildCardStats, resetTurnEconomy } from '../economy/economy.logic.js';
 import { buildMastermindState } from '../mastermind/mastermind.setup.js';
 import { buildHeroAbilityHooks } from './heroAbility.setup.js';
 import { buildCardKeywords } from './buildCardKeywords.js';
+import { buildSchemeSetupInstructions } from './buildSchemeSetupInstructions.js';
+import { executeSchemeSetup } from '../scheme/schemeSetup.execute.js';
 
 // why: Pile ext_id constants are re-exported from pilesInit.ts for backward
 // compatibility. The canonical definitions live in pilesInit.ts — importing
@@ -162,6 +164,14 @@ export function buildInitialGameState(
   // G.villainDeckCardTypes (WP-014B).
   const cardKeywords = buildCardKeywords(registry as unknown, config);
 
+  // why: scheme setup runs after base construction, before first turn.
+  // Instructions configure the board (counters, keywords, city state).
+  // Separate from scheme twist execution (WP-024).
+  const schemeSetupInstructions = buildSchemeSetupInstructions(
+    config.schemeId as CardExtId,
+    registry as unknown,
+  );
+
   // why: mastermind state built from registry at setup time; base card
   // fightCost added to cardStats so fightMastermind reads it without
   // registry access. Narrow test mocks produce empty state gracefully.
@@ -172,7 +182,10 @@ export function buildInitialGameState(
     cardStats,
   );
 
-  return {
+  // why: build the base state first, then apply scheme setup instructions.
+  // executeSchemeSetup returns updated state — pure function, no mutation.
+  // At MVP, schemeSetupInstructions is always [], so this is a no-op passthrough.
+  const baseState: LegendaryGameState = {
     matchConfiguration: config,
     selection,
     // why: currentStage is initialized to the first canonical turn stage.
@@ -210,6 +223,9 @@ export function buildInitialGameState(
     // why: board keywords resolved at setup from registry — same pattern as
     // cardStats and villainDeckCardTypes. Immutable during gameplay.
     cardKeywords,
+    // why: scheme setup instructions stored for replay observability (D-2601).
+    // Empty at MVP — no structured scheme metadata in registry yet.
+    schemeSetupInstructions,
     // why: economy starts at zero; reset again at each turn start
     turnEconomy: resetTurnEconomy(),
     // why: hero ability hooks built from registry at setup time — same
@@ -225,4 +241,6 @@ export function buildInitialGameState(
       started: false,
     } satisfies LobbyState,
   };
+
+  return executeSchemeSetup(baseState, schemeSetupInstructions);
 }

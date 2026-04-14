@@ -10,6 +10,7 @@
 
 import type { MatchSetupConfig } from './matchSetup.types.js';
 import type { BoardKeyword } from './board/boardKeywords.types.js';
+import type { SchemeSetupInstruction } from './scheme/schemeSetup.types.js';
 
 // why: Persistence boundary types (PERSISTENCE_CLASSES, MatchSnapshot,
 // PersistableMatchConfig) are defined canonically in
@@ -131,6 +132,8 @@ export type {
 
 export type { BoardKeyword } from './board/boardKeywords.types.js';
 export { BOARD_KEYWORDS } from './board/boardKeywords.types.js';
+export type { SchemeSetupInstruction, SchemeSetupType } from './scheme/schemeSetup.types.js';
+export { SCHEME_SETUP_TYPES } from './scheme/schemeSetup.types.js';
 
 import type { TurnStage } from './turn/turnPhases.types.js';
 import type { CardExtId, PlayerZones, GlobalPiles } from './state/zones.types.js';
@@ -315,6 +318,18 @@ export interface LegendaryGameState {
   // G.cardStats and G.villainDeckCardTypes. No runtime registry access.
   /** Board keywords for villain/henchman cards. Built at setup, read-only at runtime. */
   cardKeywords: Record<CardExtId, BoardKeyword[]>;
+
+  // why: scheme instructions follow the "Representation Before Execution"
+  // decision (D-2601). Stored for replay observability. Empty at MVP until
+  // structured metadata exists in the registry.
+  /**
+   * Scheme setup instructions applied during Game.setup().
+   *
+   * Stores the instruction list (empty at MVP until structured metadata
+   * exists) for replay observability. Setup-only — never modified after
+   * initial construction.
+   */
+  schemeSetupInstructions: SchemeSetupInstruction[];
 
   // why: hero ability hooks are built at setup time and immutable during
   // gameplay. Data-only — no functions or closures. Execution is WP-022+.

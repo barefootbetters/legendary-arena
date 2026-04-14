@@ -167,6 +167,10 @@ export { validateSnapshotShape } from './persistence/snapshot.validate.js';
 export type { BoardKeyword } from './board/boardKeywords.types.js';
 export { BOARD_KEYWORDS } from './board/boardKeywords.types.js';
 export { buildCardKeywords } from './setup/buildCardKeywords.js';
+export { buildSchemeSetupInstructions } from './setup/buildSchemeSetupInstructions.js';
+export { executeSchemeSetup } from './scheme/schemeSetup.execute.js';
+export type { SchemeSetupInstruction, SchemeSetupType } from './scheme/schemeSetup.types.js';
+export { SCHEME_SETUP_TYPES } from './scheme/schemeSetup.types.js';
 export {
   getPatrolModifier,
   isGuardBlocking,

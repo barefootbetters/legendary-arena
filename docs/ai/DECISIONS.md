@@ -2638,6 +2638,76 @@ Data availability is a separate concern.
 **Affected WPs:** WP-025, future keyword data WP
 **Immutability:** Data gap status may change when card data is enhanced.
 
+### D-2601 — Representation Before Execution (RBE) & Scheme Setup Separation
+**Decision:** The game engine follows the Representation Before Execution (RBE)
+pattern for all non-trivial gameplay logic and configuration effects. Under this
+pattern: (1) all gameplay behavior is represented first as declarative, data-only
+contracts (JSON-serializable); (2) execution logic operates solely on those
+representations via deterministic evaluators or executors; (3) execution never
+reads directly from upstream sources (registry, server, network, UI) at runtime —
+all external resolution occurs at setup time; (4) data representations are stored
+on `G` for observability, replay, and debugging.
+**Scheme setup vs scheme twist (locked model):** Scheme behavior is divided into
+two distinct mechanisms that MUST NOT be mixed. **Scheme setup** (WP-026) executes
+once during the `setup` phase before the first turn, produces
+`SchemeSetupInstruction[]` (data-only, JSON-serializable, deterministic), and
+configures the board and persistent modifiers (City size rules, keyword overlays,
+counters). Instructions are stored as `G.schemeSetupInstructions` for replay
+observability. A deterministic executor applies these instructions to `G`. No
+setup instruction logic is hard-coded per scheme. **Scheme twist** (WP-024)
+executes reactively each time a scheme twist is revealed, uses rule execution
+infrastructure (`HookDefinition`, effect pipelines), does NOT modify persistent
+board configuration, and does NOT run during setup.
+**MVP data reality:** The card registry does not provide structured scheme setup
+metadata. For MVP: `buildSchemeSetupInstructions()` returns `[]` (empty array).
+All instruction typing, ordering, execution, and safety behavior are implemented
+and tested using synthetic instructions. No hard-coded scheme mappings are
+permitted. A future WP may introduce structured registry metadata or an explicit
+mapping layer — that change builds on this decision without refactoring the
+execution model. This follows the established safe-skip pattern (D-2504, D-2302).
+**Constraints:** Instruction representations are data-only (no functions,
+closures, Maps, Sets, or class instances). Executors are pure functions
+(deterministic). Unknown instruction types log a warning, skip, and never throw.
+Setup instructions execute once and are never re-executed during moves. No
+gameplay logic reads from the registry after setup. `SchemeSetupType` is a closed
+union — new types require a new DECISIONS entry.
+**Rationale:** This pattern ensures determinism and replayability, clear
+separation of data from execution, testability (instruction execution tested
+independently of data resolution), future-proofing against registry evolution,
+and elimination of hard-coded scheme logic. Already proven effective in:
+HookDefinition + execution maps (WP-009A/B), hero ability hooks (WP-021), hero
+effect descriptors (WP-022). WP-026 formalizes and extends it to scheme setup.
+**Affected WPs:** WP-009A, WP-021, WP-022, WP-024, WP-025, WP-026
+**Immutability:** Locked — all future setup-time mechanics must follow RBE unless
+explicitly exempted by a future DECISIONS entry. MVP data gap status may change
+when registry metadata is enhanced.
+
+### D-2602 — City Size Modification Deferred (Fixed Tuple MVP)
+**Decision:** While `CityZone` is a fixed 5-tuple, the `modifyCitySize` scheme
+setup instruction type logs a warning to `G.messages`, performs no mutation, and
+returns `G` unchanged. The instruction type exists in the `SchemeSetupType` union
+so the executor infrastructure is complete, but functional city resizing is
+deferred until `CityZone` is converted from a fixed tuple to a dynamic array.
+**Rationale:** Changing `CityZone` from `[CitySpace, CitySpace, CitySpace,
+CitySpace, CitySpace]` to `CitySpace[]` would modify WP-015 contract
+(`city.types.ts`) and require updating all consumers. This is out of scope for
+WP-026 and requires its own WP with architectural review.
+**Affected WPs:** WP-026, future City resize WP
+**Immutability:** Interim — future WP may convert CityZone to dynamic and enable
+`modifyCitySize` behavior.
+
+### D-2603 — Scheme Setup Builder Location (src/setup/)
+**Decision:** `buildSchemeSetupInstructions.ts` lives in
+`packages/game-engine/src/setup/`, not `src/scheme/`. Scheme setup types and
+executor live in `src/scheme/`.
+**Rationale:** `02-CODE-CATEGORIES.md` maps setup-time builders to `src/setup/`.
+The builder follows the same pattern as `buildCardKeywords.ts`,
+`heroAbility.setup.ts`, and `economy.logic.ts` — it resolves registry data at
+setup time into `G` fields. Types and executor are engine-layer pure code,
+appropriately in `src/scheme/`.
+**Affected WPs:** WP-026
+**Immutability:** Locked — setup builders belong in `src/setup/`.
+
 ---
 
 ### D-5501 — Themes Are Data, Not Behavior
