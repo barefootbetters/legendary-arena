@@ -76,7 +76,7 @@ For full rationale, see `DECISIONS.md`.
 |------------|---------|---------------|--------------|
 | D‑0601 | Content is data, not code | WP‑033 | WP‑046 |
 | D‑0602 | Invalid content blocked at load | WP‑033 | WP‑039 |
-| D‑0603 | Representation before execution | WP‑021 | WP‑022, WP‑023, WP‑024 |
+| D‑0603 | Representation before execution | WP‑021 | WP‑022, WP‑023, WP‑024 (D-2101, D-2104) |
 
 ---
 
@@ -276,6 +276,31 @@ For full rationale, see `DECISIONS.md`.
 | D-1411 | Scheme twists are virtual, scheme-scoped cards | `buildVillainDeck` | WP-014B |
 | D-1412 | Deck composition counts come from rules, not config | `buildVillainDeck` | WP-014B |
 | D-1413 | Mastermind strikes identified by `tactic` field | `buildVillainDeck` | WP-014B |
+
+---
+
+## Hero Ability Hooks (WP-021)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-2101 | `HeroAbilityHook` is data-only (same pattern as `HookDefinition`) | WP-021 |
+| D-2102 | `HeroKeyword` union is closed; requires DECISIONS.md entry to extend | WP-021 |
+| D-2103 | `HeroAbilityTiming` union is closed; defaults to `'onPlay'`, no NL inference | WP-021 |
+| D-2104 | Hero ability execution deferred to WP-022+ | WP-021 |
+| D-2105 | `buildHeroAbilityHooks` uses `CardRegistryReader`, consumes only key/abilities/deck | WP-021 |
+
+---
+
+## VP Scoring (WP-020)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-2001 | MVP VP table values locked as named constants | WP-020 |
+| D-2002 | Wounds identified by `WOUND_EXT_ID` constant | WP-020 |
+| D-2003 | Tactic VP awarded to all players (no per-player attribution) | WP-020 |
+| D-2004 | Scores not stored in `G` during MVP | WP-020 |
+| D-2005 | `game.ts` not modified for scoring | WP-020 |
+| D-2006 | Bystander VP uses dual-source check | WP-020 |
 
 ---
 
