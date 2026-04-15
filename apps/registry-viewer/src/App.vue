@@ -238,10 +238,7 @@ function navigateToCard(slug: string, cardType: string) {
       </div>
     </header>
 
-    <!-- Persistent Rules Glossary panel (mounted at root, overlays the app) -->
-    <GlossaryPanel />
-
-    <!-- Floating glossary toggle button (visible on mobile when panel is closed) -->
+    <!-- Floating glossary toggle button (mobile only — bottom-right FAB) -->
     <button
       v-if="!loading && !loadError && !glossary.isOpen.value"
       class="floating-glossary-btn"
@@ -286,6 +283,7 @@ function navigateToCard(slug: string, cardType: string) {
           <span class="count">{{ filteredThemes.length }} themes</span>
         </div>
         <div class="body">
+          <GlossaryPanel />
           <ThemeGrid :themes="filteredThemes" :selected-id="selectedTheme?.themeId" @select="selectedTheme = $event" />
           <ThemeDetail v-if="selectedTheme" :theme="selectedTheme" @close="selectedTheme = null" @navigate-to-card="navigateToCard" />
         </div>
@@ -352,6 +350,7 @@ function navigateToCard(slug: string, cardType: string) {
 
       <!-- ── Main body ───────────────────────────────────────────────────────── -->
       <div class="body">
+        <GlossaryPanel />
         <CardGrid :cards="filteredCards" :selected-key="selectedCard?.key" @select="selectedCard = $event" />
         <CardDetail v-if="selectedCard" :card="selectedCard" @close="selectedCard = null" />
       </div>

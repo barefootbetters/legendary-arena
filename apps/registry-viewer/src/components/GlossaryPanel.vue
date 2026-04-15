@@ -53,8 +53,8 @@ function handleEntryClick(entry: GlossaryEntry) {
   ></div>
 
   <aside
+    v-if="isOpen"
     class="glossary-panel"
-    :class="{ open: isOpen }"
     role="complementary"
     aria-label="Rules Glossary"
   >
@@ -128,44 +128,43 @@ function handleEntryClick(entry: GlossaryEntry) {
   .glossary-backdrop { display: none; }
 }
 
-/* ── Panel base (desktop sidebar) ──────────────────────────────────────── */
+/* ── Panel base (desktop: left flex sibling, pushes content) ──────────── */
 .glossary-panel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
   width: 360px;
+  flex-shrink: 0;
   background: #1a1a24;
-  border-left: 1px solid #2e2e42;
+  border-right: 1px solid #2e2e42;
   display: flex;
   flex-direction: column;
-  transform: translateX(100%);
-  transition: transform 0.25s ease-out;
-  z-index: 999;
-  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  animation: slideInFromLeft 0.2s ease-out;
 }
-.glossary-panel.open {
-  transform: translateX(0);
+@keyframes slideInFromLeft {
+  from { width: 0; opacity: 0; }
+  to   { width: 360px; opacity: 1; }
 }
 
-/* ── Mobile: bottom sheet ──────────────────────────────────────────────── */
+/* ── Mobile: bottom sheet overlay ──────────────────────────────────────── */
 @media (max-width: 1023px) {
   .glossary-panel {
+    position: fixed;
     top: auto;
     right: 0;
     left: 0;
     bottom: 0;
     width: 100%;
     max-height: 85vh;
-    border-left: none;
+    border-right: none;
     border-top: 1px solid #2e2e42;
     border-top-left-radius: 14px;
     border-top-right-radius: 14px;
-    transform: translateY(100%);
     box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+    z-index: 999;
+    animation: slideUpFromBottom 0.25s ease-out;
   }
-  .glossary-panel.open {
-    transform: translateY(0);
+  @keyframes slideUpFromBottom {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
   }
 }
 
