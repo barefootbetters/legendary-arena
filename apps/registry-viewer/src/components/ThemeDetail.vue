@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import type { ThemeDefinition } from "../lib/themeClient";
 import { useResizable } from "../composables/useResizable";
+import { useLightbox } from "../composables/useLightbox";
+
+// ── Lightbox integration ─────────────────────────────────────────────────────
+// why: clicking the cover image opens a full-screen viewer.
+const { openLightbox } = useLightbox();
 
 defineProps<{ theme: ThemeDefinition }>();
 const emit = defineEmits<{
@@ -37,7 +42,12 @@ const { width: panelWidth, startDrag, resetWidth } = useResizable({
 
     <div class="detail-body">
       <!-- Cover image -->
-      <div v-if="theme.comicImageUrl" class="img-wrap">
+      <div
+        v-if="theme.comicImageUrl"
+        class="img-wrap"
+        @click="openLightbox(theme.comicImageUrl, theme.name)"
+        title="Click to view full size"
+      >
         <img :src="theme.comicImageUrl" :alt="theme.name + ' cover'" loading="lazy"
           @error="($event.target as HTMLImageElement).style.display = 'none'" />
       </div>
@@ -210,8 +220,18 @@ const { width: panelWidth, startDrag, resetWidth } = useResizable({
 .detail-body { overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
 
 /* ── Cover image ───────────────────────────────────────────────────────── */
-.img-wrap { border-radius: 8px; overflow: hidden; background: #12121a; }
-.img-wrap img { width: 100%; display: block; object-fit: cover; max-height: 200px; }
+.img-wrap {
+  border-radius: 8px;
+  overflow: hidden;
+  background: #12121a;
+  cursor: zoom-in;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.img-wrap:hover {
+  transform: scale(1.01);
+  box-shadow: 0 4px 16px rgba(112, 112, 224, 0.3);
+}
+.img-wrap img { width: 100%; display: block; object-fit: cover; max-height: 200px; pointer-events: none; }
 
 /* ── Description ───────────────────────────────────────────────────────── */
 .description { margin: 0; font-size: 0.82rem; color: #c8c8e0; line-height: 1.6; }

@@ -5,15 +5,20 @@ import { getRegistry } from "./lib/registryClient";
 import { getThemes } from "./lib/themeClient";
 import type { ThemeDefinition } from "./lib/themeClient";
 import { useGlossary } from "./composables/useGlossary";
-import CardGrid      from "./components/CardGrid.vue";
-import CardDetail    from "./components/CardDetail.vue";
-import ThemeGrid     from "./components/ThemeGrid.vue";
-import ThemeDetail   from "./components/ThemeDetail.vue";
-import HealthPanel   from "./components/HealthPanel.vue";
-import GlossaryPanel from "./components/GlossaryPanel.vue";
+import { useLightbox } from "./composables/useLightbox";
+import CardGrid       from "./components/CardGrid.vue";
+import CardDetail     from "./components/CardDetail.vue";
+import ThemeGrid      from "./components/ThemeGrid.vue";
+import ThemeDetail    from "./components/ThemeDetail.vue";
+import HealthPanel    from "./components/HealthPanel.vue";
+import GlossaryPanel  from "./components/GlossaryPanel.vue";
+import ImageLightbox  from "./components/ImageLightbox.vue";
 
 // ── Glossary panel ───────────────────────────────────────────────────────────
 const glossary = useGlossary();
+
+// ── Lightbox ─────────────────────────────────────────────────────────────────
+const lightbox = useLightbox();
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const registry      = ref<CardRegistry | null>(null);
@@ -172,9 +177,16 @@ function handleKeydown(event: KeyboardEvent) {
     glossary.toggle();
     return;
   }
-  // Esc closes the glossary if open
-  if (event.key === "Escape" && glossary.isOpen.value) {
-    glossary.close();
+  // why: Esc closes the topmost overlay. Lightbox takes priority because
+  // it's fully modal; glossary is secondary.
+  if (event.key === "Escape") {
+    if (lightbox.isOpen.value) {
+      lightbox.closeLightbox();
+      return;
+    }
+    if (glossary.isOpen.value) {
+      glossary.close();
+    }
   }
 }
 
@@ -248,6 +260,9 @@ function navigateToCard(slug: string, cardType: string) {
     >
       📖
     </button>
+
+    <!-- Full-screen image lightbox (mounted once, opened from anywhere) -->
+    <ImageLightbox />
 
     <div v-if="loading" class="status-screen">
       <div class="spinner">⏳</div>

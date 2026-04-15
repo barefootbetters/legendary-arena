@@ -4,6 +4,7 @@ import { parseAbilityText, lookupKeyword, lookupRule, lookupHeroClass } from "..
 import type { AbilityToken } from "../composables/useRules";
 import { useGlossary } from "../composables/useGlossary";
 import { useResizable } from "../composables/useResizable";
+import { useLightbox } from "../composables/useLightbox";
 
 defineProps<{ card: FlatCard }>();
 const emit = defineEmits<{ close: [] }>();
@@ -25,6 +26,11 @@ const { width: panelWidth, startDrag, resetWidth } = useResizable({
 // panel and scrolls to the matching entry. Complements the native browser
 // tooltip shown on hover with a click-for-full-context experience.
 const { openToKeyword, openToRule } = useGlossary();
+
+// ── Lightbox integration ─────────────────────────────────────────────────────
+// why: clicking the card image opens a full-screen viewer where the user
+// can inspect the card art closely and toggle 2x zoom.
+const { openLightbox } = useLightbox();
 
 function handleTokenClick(token: AbilityToken) {
   if (token.type === "keyword" && lookupKeyword(token.value)) {
@@ -113,7 +119,7 @@ const RARITY_LABEL: Record<number, string> = { 1: "Common", 2: "Uncommon", 3: "R
 
     <div class="detail-body">
       <!-- Image -->
-      <div class="img-wrap">
+      <div class="img-wrap" @click="openLightbox(card.imageUrl, card.name)" title="Click to view full size">
         <img :src="card.imageUrl" :alt="card.name" />
       </div>
 
@@ -267,8 +273,18 @@ const RARITY_LABEL: Record<number, string> = { 1: "Common", 2: "Uncommon", 3: "R
 .detail-body { overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
 
 /* ── Card image ──────────────────────────────────────────────────────────── */
-.img-wrap { border-radius: 8px; overflow: hidden; background: #12121a; }
-.img-wrap img { width: 100%; display: block; object-fit: cover; }
+.img-wrap {
+  border-radius: 8px;
+  overflow: hidden;
+  background: #12121a;
+  cursor: zoom-in;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.img-wrap:hover {
+  transform: scale(1.01);
+  box-shadow: 0 4px 16px rgba(112, 112, 224, 0.3);
+}
+.img-wrap img { width: 100%; display: block; object-fit: cover; pointer-events: none; }
 
 /* ── Stats grid ──────────────────────────────────────────────────────────── */
 .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
