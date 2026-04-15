@@ -1,15 +1,35 @@
 <script setup lang="ts">
 import type { ThemeDefinition } from "../lib/themeClient";
+import { useResizable } from "../composables/useResizable";
 
 defineProps<{ theme: ThemeDefinition }>();
 const emit = defineEmits<{
   close: [];
   navigateToCard: [slug: string, cardType: string];
 }>();
+
+// ── Resizable panel width (persisted) ───────────────────────────────────────
+// why: theme detail panels tend to need more room than cards because of the
+// setup intent badges and tag lists. Default is wider (360px) with independent
+// storage key so card and theme panels remember their own widths.
+const { width: panelWidth, startDrag, resetWidth } = useResizable({
+  storageKey:   "themeDetailWidth",
+  defaultWidth: 360,
+  minWidth:     280,
+  maxWidth:     720,
+  direction:    "left",
+});
 </script>
 
 <template>
-  <aside class="detail">
+  <aside class="detail" :style="{ width: panelWidth + 'px' }">
+    <div
+      class="resize-handle"
+      @pointerdown="startDrag"
+      @dblclick="resetWidth"
+      title="Drag to resize · double-click to reset"
+      aria-label="Resize theme detail panel"
+    ></div>
     <div class="detail-header">
       <h2>{{ theme.name }}</h2>
       <button class="close-btn" @click="emit('close')">✕</button>
@@ -156,7 +176,33 @@ const emit = defineEmits<{
 
 <style scoped>
 /* ── Panel layout (matches CardDetail.vue) ─────────────────────────────── */
-.detail { width: 360px; flex-shrink: 0; background: #1a1a24; border-left: 1px solid #2e2e42; display: flex; flex-direction: column; overflow: hidden; }
+/* width is set inline via :style binding, driven by useResizable() */
+.detail {
+  flex-shrink: 0;
+  background: #1a1a24;
+  border-left: 1px solid #2e2e42;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Resize handle (6px splitter on the left edge) ──────────────────────── */
+.resize-handle {
+  position: absolute;
+  top: 0;
+  left: -2px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 10;
+  background: transparent;
+  transition: background 0.15s;
+}
+.resize-handle:hover,
+.resize-handle:active {
+  background: rgba(112, 112, 224, 0.4);
+}
 .detail-header { display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 1rem; border-bottom: 1px solid #2e2e42; flex-shrink: 0; }
 .detail-header h2 { margin: 0; font-size: 0.95rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .close-btn { background: none; border: none; color: #6666aa; font-size: 1.1rem; cursor: pointer; padding: 0.2rem 0.4rem; border-radius: 4px; }

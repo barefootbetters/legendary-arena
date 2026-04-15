@@ -3,9 +3,22 @@ import type { FlatCard } from "../../registry/browser";
 import { parseAbilityText, lookupKeyword, lookupRule, lookupHeroClass } from "../composables/useRules";
 import type { AbilityToken } from "../composables/useRules";
 import { useGlossary } from "../composables/useGlossary";
+import { useResizable } from "../composables/useResizable";
 
 defineProps<{ card: FlatCard }>();
 const emit = defineEmits<{ close: [] }>();
+
+// ── Resizable panel width (persisted) ───────────────────────────────────────
+// why: users with wide screens want a bigger detail panel; users on small
+// laptops want more grid space. Drag the left edge to resize, double-click
+// to reset. Width is stored in localStorage under cardDetailWidth.
+const { width: panelWidth, startDrag, resetWidth } = useResizable({
+  storageKey:   "cardDetailWidth",
+  defaultWidth: 320,
+  minWidth:     240,
+  maxWidth:     720,
+  direction:    "left",
+});
 
 // ── Glossary integration ─────────────────────────────────────────────────────
 // why: clicking a keyword or rule token opens the persistent Rules Glossary
@@ -85,7 +98,14 @@ const RARITY_LABEL: Record<number, string> = { 1: "Common", 2: "Uncommon", 3: "R
 </script>
 
 <template>
-  <aside class="detail">
+  <aside class="detail" :style="{ width: panelWidth + 'px' }">
+    <div
+      class="resize-handle"
+      @pointerdown="startDrag"
+      @dblclick="resetWidth"
+      title="Drag to resize · double-click to reset"
+      aria-label="Resize card detail panel"
+    ></div>
     <div class="detail-header">
       <h2>{{ card.name }}</h2>
       <button class="close-btn" @click="emit('close')">✕</button>
@@ -213,7 +233,33 @@ const RARITY_LABEL: Record<number, string> = { 1: "Common", 2: "Uncommon", 3: "R
 
 <style scoped>
 /* ── Panel layout ────────────────────────────────────────────────────────── */
-.detail { width: 320px; flex-shrink: 0; background: #1a1a24; border-left: 1px solid #2e2e42; display: flex; flex-direction: column; overflow: hidden; }
+/* width is set inline via :style binding, driven by useResizable() */
+.detail {
+  flex-shrink: 0;
+  background: #1a1a24;
+  border-left: 1px solid #2e2e42;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Resize handle (4px splitter on the left edge) ──────────────────────── */
+.resize-handle {
+  position: absolute;
+  top: 0;
+  left: -2px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 10;
+  background: transparent;
+  transition: background 0.15s;
+}
+.resize-handle:hover,
+.resize-handle:active {
+  background: rgba(112, 112, 224, 0.4);
+}
 .detail-header { display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 1rem; border-bottom: 1px solid #2e2e42; flex-shrink: 0; }
 .detail-header h2 { margin: 0; font-size: 0.95rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .close-btn { background: none; border: none; color: #6666aa; font-size: 1.1rem; cursor: pointer; padding: 0.2rem 0.4rem; border-radius: 4px; }
