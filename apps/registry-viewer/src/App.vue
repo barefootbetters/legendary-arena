@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import type { FlatCard, CardQueryExtended, HealthReport, CardRegistry, SetIndexEntry, FlatCardType } from "./registry/browser";
 import { getRegistry } from "./lib/registryClient";
 import { getThemes } from "./lib/themeClient";
 import type { ThemeDefinition } from "./lib/themeClient";
-import CardGrid    from "./components/CardGrid.vue";
-import CardDetail  from "./components/CardDetail.vue";
-import ThemeGrid   from "./components/ThemeGrid.vue";
-import ThemeDetail from "./components/ThemeDetail.vue";
-import HealthPanel from "./components/HealthPanel.vue";
+import { useGlossary } from "./composables/useGlossary";
+import CardGrid      from "./components/CardGrid.vue";
+import CardDetail    from "./components/CardDetail.vue";
+import ThemeGrid     from "./components/ThemeGrid.vue";
+import ThemeDetail   from "./components/ThemeDetail.vue";
+import HealthPanel   from "./components/HealthPanel.vue";
+import GlossaryPanel from "./components/GlossaryPanel.vue";
+
+// ── Glossary panel ───────────────────────────────────────────────────────────
+const glossary = useGlossary();
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const registry      = ref<CardRegistry | null>(null);
@@ -150,7 +155,28 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+
+  // why: keyboard shortcuts are registered on window so they work regardless
+  // of focus. Ctrl/Cmd+K toggles the glossary, Esc closes it when open.
+  window.addEventListener("keydown", handleKeydown);
 });
+
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", handleKeydown);
+});
+
+function handleKeydown(event: KeyboardEvent) {
+  // Ctrl/Cmd + K toggles the glossary panel
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+    event.preventDefault();
+    glossary.toggle();
+    return;
+  }
+  // Esc closes the glossary if open
+  if (event.key === "Escape" && glossary.isOpen.value) {
+    glossary.close();
+  }
+}
 
 // ── Filtering ─────────────────────────────────────────────────────────────────
 function applyFilters() {
@@ -202,10 +228,29 @@ function navigateToCard(slug: string, cardType: string) {
   <div class="app">
     <header class="header">
       <h1 class="logo">⚔️ Legendary Arena <span class="sub">Registry Viewer</span></h1>
-      <button v-if="!loading && !loadError" class="diag-btn" @click="showDiag = !showDiag">
-        🔍 Diagnostics
-      </button>
+      <div class="header-actions">
+        <button v-if="!loading && !loadError" class="diag-btn" @click="glossary.toggle()" title="Open Rules Glossary (Ctrl+K)">
+          📖 Glossary
+        </button>
+        <button v-if="!loading && !loadError" class="diag-btn" @click="showDiag = !showDiag">
+          🔍 Diagnostics
+        </button>
+      </div>
     </header>
+
+    <!-- Persistent Rules Glossary panel (mounted at root, overlays the app) -->
+    <GlossaryPanel />
+
+    <!-- Floating glossary toggle button (visible on mobile when panel is closed) -->
+    <button
+      v-if="!loading && !loadError && !glossary.isOpen.value"
+      class="floating-glossary-btn"
+      @click="glossary.open()"
+      title="Open Rules Glossary (Ctrl+K)"
+      aria-label="Open Rules Glossary"
+    >
+      📖
+    </button>
 
     <div v-if="loading" class="status-screen">
       <div class="spinner">⏳</div>
@@ -322,8 +367,38 @@ function navigateToCard(slug: string, cardType: string) {
 .header { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1.25rem; background: #1a1a24; border-bottom: 1px solid #2e2e42; flex-shrink: 0; }
 .logo  { margin: 0; font-size: 1.1rem; font-weight: 700; color: #fff; }
 .sub   { font-weight: 400; color: #8888aa; font-size: 0.85rem; margin-left: 0.5rem; }
-.diag-btn { background: #2a2a3a; border: 1px solid #3e3e56; color: #c8c8e0; padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+.header-actions { display: flex; gap: 0.5rem; align-items: center; }
+.diag-btn { background: #2a2a3a; border: 1px solid #3e3e56; color: #c8c8e0; padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-family: inherit; }
 .diag-btn:hover { background: #35354a; }
+
+/* ── Floating glossary button (mobile-focused) ─────────────────────────── */
+.floating-glossary-btn {
+  position: fixed;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #2a2a5a;
+  border: 2px solid #7070e0;
+  color: #fff;
+  font-size: 1.3rem;
+  cursor: pointer;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s, background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.floating-glossary-btn:hover {
+  background: #3a3a7a;
+  transform: scale(1.05);
+}
+/* Hide the floating button on desktop — the header button is sufficient */
+@media (min-width: 1024px) {
+  .floating-glossary-btn { display: none; }
+}
 
 .status-screen { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; padding: 2rem; }
 .spinner { font-size: 2.5rem; animation: spin 1.5s linear infinite; }

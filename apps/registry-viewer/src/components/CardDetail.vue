@@ -2,9 +2,24 @@
 import type { FlatCard } from "../../registry/browser";
 import { parseAbilityText, lookupKeyword, lookupRule, lookupHeroClass } from "../composables/useRules";
 import type { AbilityToken } from "../composables/useRules";
+import { useGlossary } from "../composables/useGlossary";
 
 defineProps<{ card: FlatCard }>();
 const emit = defineEmits<{ close: [] }>();
+
+// ── Glossary integration ─────────────────────────────────────────────────────
+// why: clicking a keyword or rule token opens the persistent Rules Glossary
+// panel and scrolls to the matching entry. Complements the native browser
+// tooltip shown on hover with a click-for-full-context experience.
+const { openToKeyword, openToRule } = useGlossary();
+
+function handleTokenClick(token: AbilityToken) {
+  if (token.type === "keyword" && lookupKeyword(token.value)) {
+    openToKeyword(token.value);
+  } else if (token.type === "rule" && lookupRule(token.value)) {
+    openToRule(token.value);
+  }
+}
 
 // ── Tooltip title ─────────────────────────────────────────────────────────────
 // Uses the native browser title attribute — reliable across all browsers,
@@ -146,18 +161,20 @@ const RARITY_LABEL: Record<number, string> = { 1: "Common", 2: "Uncommon", 3: "R
                 <!-- Plain text -->
                 <span v-if="token.type === 'text'" class="token-text">{{ token.value }}</span>
 
-                <!-- Keyword — gold, underlined, native tooltip on hover -->
+                <!-- Keyword — gold, underlined, click opens glossary panel -->
                 <span
                   v-else-if="token.type === 'keyword'"
                   :class="tokenClass(token)"
                   :title="tooltipTitle(token)"
+                  @click="handleTokenClick(token)"
                 >{{ tokenLabel(token) }}</span>
 
-                <!-- Rule reference — purple, native tooltip on hover -->
+                <!-- Rule reference — purple, click opens glossary panel -->
                 <span
                   v-else-if="token.type === 'rule'"
                   :class="tokenClass(token)"
                   :title="tooltipTitle(token)"
+                  @click="handleTokenClick(token)"
                 >{{ tokenLabel(token) }}</span>
 
                 <!-- Icon token — colored symbol -->
@@ -231,7 +248,11 @@ const RARITY_LABEL: Record<number, string> = { 1: "Common", 2: "Uncommon", 3: "R
 }
 .token-keyword.has-tooltip {
   text-decoration: underline dotted #f0c040;
-  cursor: help;
+  cursor: pointer;
+}
+.token-keyword.has-tooltip:hover {
+  color: #f8d060;
+  text-decoration-color: #f8d060;
 }
 
 /* Rule reference: purple */
@@ -241,7 +262,11 @@ const RARITY_LABEL: Record<number, string> = { 1: "Common", 2: "Uncommon", 3: "R
 }
 .token-rule.has-tooltip {
   text-decoration: underline dotted #c084fc;
-  cursor: help;
+  cursor: pointer;
+}
+.token-rule.has-tooltip:hover {
+  color: #d8a8ff;
+  text-decoration-color: #d8a8ff;
 }
 
 /* Icon tokens */
