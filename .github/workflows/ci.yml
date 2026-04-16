@@ -1,13 +1,16 @@
 name: CI → Build → Deploy
 
 on:
+  # why: two separate `push:` keys in one mapping silently collide —
+  # YAML keeps only the last, so non-tag pushes to main were skipping
+  # CI entirely. Merged into a single `push:` with both branches and
+  # tags. Publishing to npm + uploading to R2 remains gated by the
+  # `if: startsWith(github.ref, 'refs/tags/v')` on those jobs.
   push:
     branches: [main]
+    tags: ["v*.*.*"]
   pull_request:
     branches: [main]
-  # Publish to npm + upload to R2 only on semver tags
-  push:
-    tags: ["v*.*.*"]
 
 jobs:
   # ── 1. Validate card data ───────────────────────────────────────────────────

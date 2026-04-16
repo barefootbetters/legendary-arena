@@ -274,8 +274,14 @@ function navigateToCard(slug: string, cardType: string) {
     <!-- Full-screen image lightbox (mounted once, opened from anywhere) -->
     <ImageLightbox />
 
-    <div v-if="loading" class="status-screen">
-      <div class="spinner">⏳</div>
+    <div
+      v-if="loading"
+      class="status-screen"
+      role="status"
+      aria-live="polite"
+      :aria-busy="loading"
+    >
+      <div class="spinner" aria-hidden="true">⏳</div>
       <p class="status-text">{{ loadStatus }}</p>
       <p class="status-hint">Connecting to images.barefootbetters.com…</p>
     </div>

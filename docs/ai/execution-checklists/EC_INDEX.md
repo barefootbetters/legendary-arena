@@ -167,6 +167,18 @@ is active. See 01.2 for the clause-driven diagnosis sequence.
 
 ---
 
+## Registry Viewer (EC-101+ Series)
+
+Ad-hoc viewer-scoped ECs for CI, tooling, a11y, performance, and
+deployment hardening of `apps/registry-viewer`. Numbered 101+ to keep
+the range clearly separate from game-engine WP-backed ECs.
+
+| EC | Scope | Execution Scope | Status |
+|---|---|---|---|
+| EC-101 | Viewer / CI + Tooling + A11y | Fix CI duplicate `on.push` triggers; scaffold viewer `typecheck` + `lint` scripts + `.eslintrc.cjs`; add `aria-live` status announcements in `App.vue` | Draft |
+
+---
+
 ## Rules
 
 - EC status tracks **independently** from WP completion status in `WORK_INDEX.md`
