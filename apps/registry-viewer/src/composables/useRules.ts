@@ -315,15 +315,34 @@ export function lookupKeyword(name: string): string | null {
   if (KEYWORD_GLOSSARY.has(stripped)) return KEYWORD_GLOSSARY.get(stripped)!;
 
   // why: card data uses parameterized forms like "Focus 2", "Patrol the Bank",
-  // "Danger Sense 3", "Elusive 6" — match the longest known key that starts the token
+  // "Danger Sense 3", "Elusive 6" — match the longest known key that starts
+  // the token. Also handles modifier prefixes like "Ultimate Abomination",
+  // "Double Striker", "Rooftops Conqueror 3", "Streets Abomination" by
+  // checking if any known key appears as a suffix or substring.
   let bestMatch: string | null = null;
   for (const key of KEYWORD_GLOSSARY.keys()) {
+    const keyStripped = key.replace(/[\s-]+/g, "");
+
+    // Prefix match: token starts with the glossary key
     if (lower.startsWith(key) && (bestMatch === null || key.length > bestMatch.length)) {
       bestMatch = key;
     }
-    // Also try against the stripped form
-    const keyStripped = key.replace(/[\s-]+/g, "");
     if (stripped.startsWith(keyStripped) && (bestMatch === null || key.length > bestMatch.length)) {
+      bestMatch = key;
+    }
+
+    // Suffix match: token ends with the glossary key (handles "Ultimate Abomination",
+    // "Double Striker", "Rooftops Abomination", "Triple Empowered", etc.)
+    if (lower.endsWith(key) && key.length >= 4 && (bestMatch === null || key.length > bestMatch.length)) {
+      bestMatch = key;
+    }
+    if (stripped.endsWith(keyStripped) && keyStripped.length >= 4 && (bestMatch === null || key.length > bestMatch.length)) {
+      bestMatch = key;
+    }
+
+    // Substring match: token contains the glossary key as a word boundary
+    // (handles "Cross-Dimensional Hulk Rampage" matching "crossdimensionalrampage")
+    if (key.length >= 6 && lower.includes(key) && (bestMatch === null || key.length > bestMatch.length)) {
       bestMatch = key;
     }
   }
