@@ -179,29 +179,71 @@ before writing a single component.
 **Packet-specific:**
 - The HUD is **stateless** beyond local view state (panel collapsed flags,
   keyboard focus). All game data flows from the Pinia store.
-- No computed value in the HUD may re-derive a field the engine already
-  provides. If `UITurnEconomyState.availableAttack` exists, never compute
-  it from `attack` minus spent amounts client-side.
-- Every user-visible number must render an explicit `aria-label`
-  reflecting the field name from `UIState` (SG-17).
-- PAR delta renders **exactly** `UIGameOverState.finalScore` or the live
-  equivalent — no rounding, no client-side formula, no "estimated"
-  suffix. If the field is absent, render an em-dash, not zero.
+- **Container / presenter split (strict):** only `<ArenaHud />` reads from
+  `useUiStateStore()`. Every subcomponent (`<TurnPhaseBanner />`,
+  `<SharedScoreboard />`, `<ParDeltaReadout />`, `<PlayerPanelList />`,
+  `<PlayerPanel />`, `<EndgameSummary />`) receives its relevant
+  `UIState` sub-slice **exclusively via props** and MUST NOT import
+  `useUiStateStore` or any Pinia store module. A subcomponent that
+  reads the store is a contract violation. This keeps tests
+  trivial-to-set-up (pass a fixture slice as a prop, no store needed)
+  and makes spectator-HUD reuse straightforward later.
+- **No client-side arithmetic or aggregation whatsoever on game values:**
+  no HUD component may sum, subtract, normalize, smooth, average,
+  count, or otherwise combine multiple `UIState` numeric fields into a
+  new game-relevant value. If a combined value is needed, it must be
+  supplied by the engine projection in `UIState`. `.reduce()` is
+  banned, but so is a hand-written loop or a `+` between two projected
+  numbers in a `computed`. The only permitted "computation" is reading
+  a single field and mapping it to a display string (including sign
+  choice for PAR delta).
+- **Every user-visible number's `aria-label` is the literal `UIState`
+  field name**, verbatim — e.g., `aria-label="bystandersRescued"`, NOT
+  `aria-label="Bystanders rescued"` or any paraphrase. Screen-reader
+  output must be deterministic across builds and testable against
+  exact strings. Visible display text may be human-readable
+  (`"Bystanders rescued: 4"`), but the `aria-label` is the
+  data-contract name.
+- **PAR delta semantics, explicit by phase:**
+  - If `snapshot.game.phase === 'end'` and `snapshot.gameOver` is
+    present: render `snapshot.gameOver.finalScore` exactly.
+  - If `snapshot.game.phase !== 'end'` and the live PAR-delta field
+    specified by WP-048 is present on `UIState` (or
+    `UIGameOverState.preview`, whichever WP-048 specifies): render
+    that field exactly.
+  - If the applicable field is absent: render an em-dash (`—`),
+    never zero. Zero is a valid engine value and must not be
+    synthesized client-side.
+  - The HUD must never compute, infer, smooth, or animate toward a
+    PAR-delta value. The exact field name is read **verbatim from
+    WP-048** at Preflight; if unclear, stop and ask.
 - No `team` vocabulary anywhere. Use `player`, `activePlayer`,
   `playerColor`.
-- No `.reduce()` in rendering logic — use `v-for` with explicit named
-  `computed` accumulators.
 - No registry HTTP calls from within HUD components — card display data
   arrives via `UIState` projections; fuller card lookup is a separate
   composable out of scope here.
 - Color choices must pass WCAG AA contrast in both light and dark modes;
   indicator state must not rely on color alone (icon + color).
-- The "bystanders rescued" counter must be visually prominent relative to
-  penalty counters, per Vision §Heroic Values in Scoring.
+- **Visual emphasis uses `data-emphasis`, not CSS class names:** the
+  bystanders-rescued counter renders with `data-emphasis="primary"`;
+  all penalty counters (escaped villains, scheme twists, mastermind
+  tactics) render with `data-emphasis="secondary"`. Tests assert
+  attribute presence, not class tokens. Styling hangs off the
+  attribute selector so refactors or theming cannot regress the
+  emphasis contract.
 
 **Session protocol:**
 - If any `UIState` field is unclear or apparently missing, stop and ask
   before inventing a client-side fallback.
+- If WP-065's Vue SFC test transform is not proven (its tests failing,
+  or `@legendary-arena/vue-sfc-loader` not installed in
+  `apps/arena-client/`), **STOP immediately**. This packet creates 6+
+  SFC component test files; inventing a transform mid-session burns a
+  session and produces inconsistent tooling. Fix WP-065 first.
+- If any subcomponent would need to read from the store to render
+  correctly, STOP — that is a sign the prop contract is wrong or a
+  field is missing from `UIState`. Do not silently import the store
+  as a workaround.
 
 **Locked contract values:**
 
@@ -219,13 +261,20 @@ before writing a single component.
 
 ## Debuggability & Diagnostics
 
-- Each HUD component accepts the relevant `UIState` sub-slice as a prop
-  in addition to reading from the store, so test-only rendering with a
-  fixture requires no store setup.
+- **Props-only subcomponents, one container:** `<ArenaHud />` is the
+  sole store consumer; every subcomponent receives its `UIState`
+  sub-slice exclusively as a prop. Test-only rendering therefore
+  requires no store setup — construct a fixture slice, pass it as a
+  prop, assert. This is the same pattern as the container/presenter
+  split used by most well-tested Vue apps.
 - Every component renders stable `data-testid` attributes on significant
   subtrees: `arena-hud-banner`, `arena-hud-player-panel-list`,
   `arena-hud-player-panel`, `arena-hud-scoreboard`, `arena-hud-par-delta`,
   `arena-hud-endgame`.
+- **Emphasis is structural, not stylistic:** emphasized counters carry
+  `data-emphasis="primary"`; penalty counters carry
+  `data-emphasis="secondary"`. CSS selectors key off the attribute.
+  Tests assert attribute presence, not class or style tokens.
 - No component reads `Date.now()`, `performance.now()`, `Math.random()`,
   or `window.location` for game-relevant state.
 - **Deterministic visible output:** given an identical `UIState` fixture,
@@ -251,53 +300,94 @@ before writing a single component.
 
 ## Scope (In)
 
-### A) HUD root
+### A) HUD root (the sole store consumer)
 - `apps/arena-client/src/components/hud/ArenaHud.vue` — **new**
-  - Composes: `<TurnPhaseBanner />`, `<SharedScoreboard />`,
-    `<ParDeltaReadout />`, `<PlayerPanelList />`,
-    `<EndgameSummary v-if="snapshot.gameOver" />`
-  - Reads from `useUiStateStore()` only
-  - Renders `null` when `snapshot === null`
+  - **Only** this component imports `useUiStateStore()`. No other HUD
+    component may.
+  - Composes: `<TurnPhaseBanner :game="snapshot.game" />`,
+    `<SharedScoreboard :scheme="snapshot.scheme"
+    :mastermind="snapshot.mastermind" />`,
+    `<ParDeltaReadout :phase="snapshot.game.phase"
+    :gameOver="snapshot.gameOver"
+    :live="snapshot[<livePARField>]" />`,
+    `<PlayerPanelList :players="snapshot.players"
+    :activePlayerId="snapshot.game.activePlayerId" />`,
+    `<EndgameSummary v-if="snapshot.gameOver"
+    :gameOver="snapshot.gameOver" />`.
+  - Renders `null` when `snapshot === null`.
+  - `// why:` comment on the single-store-consumer pattern
+    (container/presenter split).
 
-### B) Turn / phase banner
+### B) Turn / phase banner (props-only)
 - `apps/arena-client/src/components/hud/TurnPhaseBanner.vue` — **new**
-  - Displays `snapshot.game.phase`, `snapshot.game.turn`,
-    `snapshot.game.currentStage`, highlights
-    `snapshot.game.activePlayerId`
-  - `aria-live="polite"` on phase/stage changes
-  - `// why:` comment on the aria-live choice
+  - Props: `game: UIState['game']`.
+  - Displays `game.phase`, `game.turn`, `game.currentStage`; highlights
+    `game.activePlayerId`.
+  - `aria-live="polite"` on phase/stage changes.
+  - `// why:` comment on the aria-live choice.
+  - MUST NOT import `useUiStateStore`.
 
-### C) Shared scoreboard
+### C) Shared scoreboard (props-only)
 - `apps/arena-client/src/components/hud/SharedScoreboard.vue` — **new**
-  - Four counters: bystanders rescued (visually emphasized), escaped
-    villains, scheme twists, mastermind tactics (remaining and defeated
-    rendered as two distinct numbers)
-  - Counter labels match exact field names from `UIState`
-  - `// why:` comment on the bystanders-rescued visual emphasis
-    (Vision §Heroic Values in Scoring)
+  - Props: `scheme: UISchemeState`, `mastermind: UIMastermindState`
+    (plus whichever sub-slice exposes `bystandersRescued` and
+    `escapedVillains` per WP-028 — confirm verbatim in Preflight).
+  - Four counters, each rendered in a single element carrying the
+    literal field name as `aria-label`:
+    - `bystandersRescued` — `data-emphasis="primary"`
+    - `escapedVillains` — `data-emphasis="secondary"`
+    - `schemeTwists` — `data-emphasis="secondary"`
+    - `mastermindTacticsRemaining` + `mastermindTacticsDefeated` —
+      rendered as two distinct numbers, both `data-emphasis="secondary"`
+  - Counter labels match exact field names from `UIState` verbatim.
+  - MUST NOT aggregate or sum any fields (no `remaining + defeated`,
+    no "total tactics" number).
+  - MUST NOT import `useUiStateStore`.
+  - `// why:` comment on the bystanders-rescued emphasis tying back
+    to Vision §Heroic Values in Scoring.
+  - `// why:` comment on the `data-emphasis` attribute contract.
 
-### D) PAR delta readout
+### D) PAR delta readout (props-only, phase-aware)
 - `apps/arena-client/src/components/hud/ParDeltaReadout.vue` — **new**
-  - Renders `finalScore` if `snapshot.gameOver` is present, otherwise the
-    live PAR-delta field specified by WP-048 (or em-dash if absent)
-  - Sign convention: negative = under PAR (green + "▼" icon), positive =
-    over PAR (amber + "▲" icon), zero = neutral
-  - Never renders a computed or smoothed value
-  - `// why:` comment: no client-side math permitted here
+  - Props: `phase: UIState['game']['phase']`,
+    `gameOver: UIGameOverState | undefined`,
+    `live: number | undefined` (the live PAR delta sourced from the
+    exact WP-048 field — name and location confirmed at Preflight).
+  - Rendering rules, evaluated in order:
+    1. If `phase === 'end'` and `gameOver` is defined: render
+       `gameOver.finalScore` exactly.
+    2. Else if `live !== undefined`: render `live` exactly.
+    3. Else: render `—` (em-dash). Never render zero as a fallback.
+  - Sign convention: negative = under PAR (green + `▼` icon), positive
+    = over PAR (amber + `▲` icon), zero = neutral (no arrow).
+  - The icon is always accompanied by text (color never the sole
+    signal; `aria-label` uses the literal field name).
+  - Never computes, smooths, animates, or infers a value.
+  - MUST NOT import `useUiStateStore`.
+  - `// why:` comment: no client-side math permitted here; em-dash vs
+    zero is load-bearing — zero is a valid engine value.
 
-### E) Player panels
-- `apps/arena-client/src/components/hud/PlayerPanelList.vue` — **new** —
-  iterates `snapshot.players` with a stable `:key="player.playerId"`
-- `apps/arena-client/src/components/hud/PlayerPanel.vue` — **new** —
-  displays the seven `UIPlayerState` fields, highlights the active player
-  via `aria-current="true"`
+### E) Player panels (props-only)
+- `apps/arena-client/src/components/hud/PlayerPanelList.vue` — **new**
+  - Props: `players: readonly UIPlayerState[]`,
+    `activePlayerId: string`.
+  - Iterates with `:key="player.playerId"`.
+  - MUST NOT import `useUiStateStore`.
+- `apps/arena-client/src/components/hud/PlayerPanel.vue` — **new**
+  - Props: `player: UIPlayerState`, `isActive: boolean`.
+  - Displays the seven `UIPlayerState` fields, each with an
+    `aria-label` matching the literal field name.
+  - Applies `aria-current="true"` when `isActive`.
+  - MUST NOT import `useUiStateStore`.
 
-### F) Endgame summary
+### F) Endgame summary (props-only)
 - `apps/arena-client/src/components/hud/EndgameSummary.vue` — **new**
-  - Displays `UIGameOverState.outcome`, `reason`, and `scores` (if
-    present)
-  - Renders PAR baseline, raw score, and final score as three distinct
-    labeled values
+  - Props: `gameOver: UIGameOverState`.
+  - Displays `gameOver.outcome`, `gameOver.reason`, and
+    `gameOver.scores` (if present).
+  - Renders `parBaseline`, `rawScore`, `finalScore` as three distinct
+    labeled values, each with its literal field-name `aria-label`.
+  - MUST NOT import `useUiStateStore`.
 
 ### G) Accessibility + color utility
 - `apps/arena-client/src/components/hud/hudColors.ts` — **new**
@@ -306,25 +396,43 @@ before writing a single component.
   - Uses a fixed color-blind-safe palette; the icon differentiator is
     mandatory so color is never the sole signal
 
-### H) Tests (`node:test` + jsdom, matching WP-061's test runner choice)
-- `apps/arena-client/src/components/hud/ArenaHud.test.ts` — renders
+### H) Tests (`node:test` + jsdom, using WP-065's SFC transform)
+- `apps/arena-client/src/components/hud/ArenaHud.test.ts` — is the
+  **only** HUD test that sets up a Pinia store. Verifies: renders
   nothing when snapshot is null; renders all five subtrees when a full
-  fixture is loaded; endgame subtree absent when `gameOver` is undefined
+  fixture is loaded; endgame subtree absent when `gameOver` is
+  undefined; asserts the other subcomponents receive the expected
+  sub-slices via props.
 - `apps/arena-client/src/components/hud/SharedScoreboard.test.ts` —
-  counters render exactly the values in the fixture, no rounding; the
-  bystanders-rescued counter has a higher visual-weight class than penalty
-  counters (assert via `data-emphasis="primary"` attribute or
-  equivalent)
+  mounted with a props object (no store). Counters render exactly the
+  values passed in, no rounding. Asserts:
+  - `[data-emphasis="primary"]` is present exactly once (on bystanders
+    rescued).
+  - `[data-emphasis="secondary"]` is present on every penalty counter.
+  - Every counter carries the literal-field-name `aria-label`
+    (`bystandersRescued`, `escapedVillains`, `schemeTwists`,
+    `mastermindTacticsRemaining`, `mastermindTacticsDefeated`).
 - `apps/arena-client/src/components/hud/ParDeltaReadout.test.ts` —
-  negative, zero, positive, and missing-field branches each render the
-  documented icon + aria-label; no computed/derived value ever appears
-- `apps/arena-client/src/components/hud/PlayerPanel.test.ts` — the seven
-  zone fields render; active player gets `aria-current="true"`
-- `apps/arena-client/src/components/hud/TurnPhaseBanner.test.ts` — phase,
-  turn, stage, and active-player highlight all render from the fixture
+  mounted with a props object. Four branch tests:
+  - `phase='end'` + `gameOver.finalScore=-3` → renders `-3` with the
+    `▼` icon and green styling.
+  - `phase='play'` + `live=0` → renders `0` with no arrow icon (zero
+    is neutral and must not be em-dashed).
+  - `phase='play'` + `live=undefined` → renders em-dash and no arrow.
+  - `phase='end'` + `gameOver=undefined` → renders em-dash.
+  - Each assertion checks literal rendered text; no computed/derived
+    value ever appears.
+- `apps/arena-client/src/components/hud/PlayerPanel.test.ts` — mounted
+  with a props object. The seven zone fields render with literal
+  field-name `aria-label`s; active player gets `aria-current="true"`
+  when `isActive` is true and absent otherwise.
+- `apps/arena-client/src/components/hud/TurnPhaseBanner.test.ts` —
+  mounted with a props object. Phase, turn, stage, and active-player
+  highlight all render from the passed-in `game` slice; `aria-live`
+  present on the phase/stage region.
 - Drift test: imports `UIState` as a type and assigns a full fixture to
-  it — fails to typecheck if any locked field is renamed or dropped
-  upstream
+  it via `satisfies UIState` — fails to typecheck if any locked field
+  is renamed or dropped upstream.
 
 ---
 
@@ -394,21 +502,38 @@ must be untouched.
 - [ ] No file under `apps/arena-client/src/components/hud/` mutates any
       prop it receives
 
+### Container / Presenter Split
+- [ ] Only `apps/arena-client/src/components/hud/ArenaHud.vue` imports
+      `useUiStateStore` (confirmed with `Select-String`: grep for the
+      store import across the HUD directory; exactly one match, in
+      `ArenaHud.vue`).
+- [ ] Every subcomponent's render output depends only on its declared
+      props — manually verified by code review + fixture-driven tests
+      that mount subcomponents without a Pinia plugin.
+
 ### Projection Fidelity
-- [ ] Every number rendered in the HUD traces directly to a `UIState`
-      field — no client-side arithmetic on game-relevant values
-- [ ] PAR delta renders an em-dash when the field is absent; never a zero
-- [ ] The "bystanders rescued" counter is visually prominent relative to
-      penalty counters (documented style rule + asserted in a test)
+- [ ] Every number rendered in the HUD traces directly to a single
+      `UIState` field — no client-side arithmetic, aggregation,
+      summing, smoothing, or averaging of game values (confirmed by
+      `Select-String` for `+` operator inside `<script>` blocks of
+      `.vue` files + code review).
+- [ ] PAR delta renders an em-dash when the field is absent; never
+      a zero. Zero is rendered when the engine says zero.
+- [ ] The "bystanders rescued" counter carries `data-emphasis="primary"`
+      exactly once; all four penalty counters carry
+      `data-emphasis="secondary"` (asserted in tests).
 
 ### Accessibility (SG-17)
-- [ ] Every counter has an explicit `aria-label` using the literal field
-      name
-- [ ] Active player indicator uses `aria-current="true"` and an icon, not
-      color alone
+- [ ] Every counter has an explicit `aria-label` equal to the literal
+      `UIState` field name — verbatim, no paraphrasing
+      (`aria-label="bystandersRescued"`, not
+      `aria-label="Bystanders rescued"`). Asserted in tests against
+      exact strings.
+- [ ] Active player indicator uses `aria-current="true"` and an icon,
+      not color alone.
 - [ ] All text passes WCAG AA contrast in both light and dark modes
       (confirmed via automated tooling or manual check documented in
-      DECISIONS.md)
+      DECISIONS.md with numeric ratios).
 
 ### Determinism
 - [ ] Given a fixture `UIState`, rendered **visible text and
@@ -455,14 +580,26 @@ Select-String -Path "apps/arena-client/src/components/hud" -Pattern "\.reduce\("
 # Expected: no output
 
 # Step 6 — confirm no "team" vocabulary
-Select-String -Path "apps/arena-client/src/components/hud" -Pattern "\bteam\b" -Recurse
+Select-String -Path "apps\arena-client\src\components\hud" -Pattern "\bteam\b" -Recurse
 # Expected: no output (Legendary is cooperative, not team-based)
 
-# Step 7 — confirm engine package untouched
+# Step 7 — confirm ONLY ArenaHud.vue imports the store
+Select-String -Path "apps\arena-client\src\components\hud" -Pattern "useUiStateStore" -Recurse
+# Expected: matches only in ArenaHud.vue; any other file matching is a contract violation
+
+# Step 8 — confirm data-emphasis attribute is used
+Select-String -Path "apps\arena-client\src\components\hud\SharedScoreboard.vue" -Pattern "data-emphasis"
+# Expected: at least five matches (primary + four secondary)
+
+# Step 9 — confirm literal field-name aria-labels (no paraphrasing)
+Select-String -Path "apps\arena-client\src\components\hud" -Pattern "aria-label=`"bystandersRescued`"|aria-label=`"escapedVillains`"|aria-label=`"schemeTwists`"" -Recurse
+# Expected: at least three matches; no matches for paraphrased labels like "Bystanders rescued"
+
+# Step 10 — confirm engine package untouched
 git diff --name-only packages/game-engine/
 # Expected: no output
 
-# Step 8 — confirm only expected files changed
+# Step 11 — confirm only expected files changed
 git diff --name-only
 # Expected: only files listed in ## Files Expected to Change
 ```
@@ -481,6 +618,13 @@ git diff --name-only
       any HUD file
 - [ ] No `Math.random`, `Date.now`, or `performance.now` in any HUD file
 - [ ] No `team` vocabulary anywhere in HUD source
+- [ ] Only `ArenaHud.vue` imports `useUiStateStore` (container/presenter
+      split enforced)
+- [ ] `data-emphasis="primary"` appears exactly once in
+      `SharedScoreboard.vue` (bystanders rescued); `data-emphasis="secondary"`
+      on every penalty counter
+- [ ] `aria-label` values are literal `UIState` field names, not
+      paraphrases
 - [ ] `packages/game-engine/**` untouched
 - [ ] No files outside `## Files Expected to Change` were modified
 - [ ] `docs/ai/STATUS.md` updated — the arena client renders a full HUD
