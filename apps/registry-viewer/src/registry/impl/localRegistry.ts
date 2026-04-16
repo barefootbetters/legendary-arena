@@ -31,7 +31,7 @@ export async function createRegistryFromLocalFiles(
   const errors: Array<{ setAbbr?: string; code: string; message: string }> = [];
 
   // ── Load card-types.json ───────────────────────────────────────────────────
-  let setIndex: SetIndexEntry[] = [];
+  const setIndex: SetIndexEntry[] = [];
   try {
     const raw: unknown = JSON.parse(
       await readFile(join(dir, "card-types.json"), "utf8")

@@ -1,9 +1,11 @@
 import { SetDataSchema } from "../schema.js";
 import { flattenSet, applyQuery, buildHealthReport } from "../shared.js";
+// why: use types-index.ts (the live/wide type source) per EC-102
+// consolidation. See browser.ts comment.
 import type {
   CardRegistry, SetIndexEntry, SetData, Hero,
   FlatCard, CardQuery, RegistryInfo, HealthReport, HttpRegistryOptions,
-} from "../types/index.js";
+} from "../types/types-index.js";
 
 export async function createRegistryFromHttp(
   options: HttpRegistryOptions

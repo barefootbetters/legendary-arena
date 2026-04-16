@@ -176,6 +176,7 @@ the range clearly separate from game-engine WP-backed ECs.
 | EC | Scope | Execution Scope | Status |
 |---|---|---|---|
 | EC-101 | Viewer / CI + Tooling + A11y | Fix CI duplicate `on.push` triggers; scaffold viewer `typecheck` + `lint` scripts + `.eslintrc.cjs`; add `aria-live` status announcements in `App.vue` | Draft |
+| EC-102 | Viewer / Type Consolidation + Cosmetic Lint | Consolidate viewer on `types-index.ts` (wide/live FlatCard); retire stale `types/index.ts` as canonical source for browser.ts/httpRegistry.ts/shared.ts; null-safe field mappings + stringify attack/recruit in shared.ts; silence 2 cosmetic ESLint rules; `prefer-const` fix. **CI gating deferred to EC-103** (vue-tsc exclude bug + 29 real a11y errors surfaced by eslint-plugin-vuejs-accessibility) | Draft |
 
 ---
 

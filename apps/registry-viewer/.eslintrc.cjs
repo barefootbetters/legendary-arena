@@ -28,6 +28,12 @@ module.exports = {
     // as custom (App.vue is the canonical root). No risk of clashing with
     // native HTML elements in this project.
     'vue/multi-word-component-names': 'off',
+    // why: disabled under EC-102 — these two cosmetic whitespace rules
+    // produced ~270 of the 307 lint warnings/errors in the EC-101 baseline.
+    // None are semantic. Re-enable behind a dedicated formatting WP if the
+    // team adopts a single-line-style convention.
+    'vue/max-attributes-per-line': 'off',
+    'vue/multiline-html-element-content-newline': 'off',
   },
   ignorePatterns: ['dist/', 'node_modules/', '*.config.ts', '*.config.js'],
 };

@@ -1,6 +1,9 @@
+// why: use types-index.ts (the live/wide type source) per EC-102
+// consolidation. See browser.ts comment. CardQueryExtended is
+// canonically exported from that file — no local redeclaration needed.
 import type {
-  SetData, SetIndexEntry, FlatCard, CardQuery, HealthReport, CardQueryExtended,
-} from "./types/index.js";
+  SetData, SetIndexEntry, FlatCard, CardQueryExtended, HealthReport,
+} from "./types/types-index.js";
 
 export function flattenSet(set: SetData, setName: string): FlatCard[] {
   const cards: FlatCard[] = [];
@@ -14,18 +17,21 @@ export function flattenSet(set: SetData, setName: string): FlatCard[] {
         cardType:    "hero",
         setAbbr:     abbr,
         setName,
-        name:        card.name,
+        name:        card.name ?? "",
         slug:        card.slug,
         imageUrl:    card.imageUrl ?? "",
         heroName:    hero.name,
         team:        hero.team ?? undefined,
         hc:          card.hc ?? undefined,
-        rarity:      card.rarity,
+        rarity:      card.rarity ?? undefined,
         rarityLabel: card.rarityLabel ?? undefined,
-        slot:        card.slot,
+        slot:        card.slot ?? undefined,
         cost:        typeof card.cost === "number" ? card.cost : undefined,
-        attack:      card.attack ?? null,
-        recruit:     card.recruit ?? null,
+        // why: attack/recruit may be numeric or string (star-modifier
+        // costs per registry D-1204). FlatCard stores as string-or-null
+        // for display; stringify on the way in to preserve both forms.
+        attack:      card.attack == null ? null : String(card.attack),
+        recruit:     card.recruit == null ? null : String(card.recruit),
         abilities:   card.abilities ?? [],
       });
     }
