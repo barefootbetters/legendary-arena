@@ -191,6 +191,16 @@ export type {
   IntentValidationContext,
 } from './network/intent.types.js';
 
+// why: content validation types (WP-033) are engine-category types
+// (D-3301) consumed by content-authoring tools. They are a pre-engine
+// gate — NOT part of the boardgame.io lifecycle. Never wire them
+// into game.ts, moves, or phase hooks.
+export type {
+  ContentValidationResult,
+  ContentValidationError,
+  ContentValidationContext,
+} from './content/content.validate.js';
+
 import type { TurnStage } from './turn/turnPhases.types.js';
 import type { CardExtId, PlayerZones, GlobalPiles } from './state/zones.types.js';
 import type { TurnEconomy, CardStatEntry } from './economy/economy.types.js';

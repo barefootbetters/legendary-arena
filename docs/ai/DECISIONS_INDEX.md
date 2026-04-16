@@ -20,6 +20,7 @@ For full rationale, see `DECISIONS.md`.
 | D‑0001 | Correctness over convenience | WP‑027 |
 | D‑0002 | Determinism is non‑negotiable | WP‑027 |
 | D‑0003 | Data outlives code | WP‑034 |
+| D‑0004 | No post‑shuffle seed filtering or fairness gating | 2026‑04‑16 intake review |
 
 ---
 

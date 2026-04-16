@@ -93,7 +93,8 @@ incorrectness.
 `packages/game-engine/src/ui/` (D-2801),
 `packages/game-engine/src/campaign/` (D-3001),
 `packages/game-engine/src/invariants/` (D-3101),
-`packages/game-engine/src/network/` (D-3201)
+`packages/game-engine/src/network/` (D-3201),
+`packages/game-engine/src/content/` (D-3301)
 
 ---
 

@@ -140,6 +140,19 @@ Before writing a single line:
   }
   ```
 
+- **ContentValidationContext shape:**
+  ```ts
+  interface ContentValidationContext {
+    readonly validVillainGroupSlugs?: ReadonlySet<string>
+    readonly validMastermindSlugs?: ReadonlySet<string>
+    readonly validSchemeSlugs?: ReadonlySet<string>
+    readonly validHeroSlugs?: ReadonlySet<string>
+  }
+  ```
+
+  Absence of a field means "skip that cross-reference check." Absence is
+  silent, not an error.
+
 ---
 
 ## Scope (In)
@@ -162,14 +175,19 @@ Before writing a single line:
 
 ### B) `src/content/content.validate.ts` — new
 
-- `validateContent(content: unknown, contentType: string): ContentValidationResult`
+- `validateContent(content: unknown, contentType: string, context?: ContentValidationContext): ContentValidationResult`
   — pure function:
   1. **Structural checks**: required fields present, correct types, valid ranges
-  2. **Enum checks**: keywords in canonical unions, teams in known set, hero
-     classes in known set
-  3. **Cross-reference checks**: alwaysLeads references valid villain groups,
-     setup instructions use valid instruction types, tactic cards present for
-     masterminds
+  2. **Enum checks**: keywords in canonical unions (`HERO_KEYWORDS`,
+     `BOARD_KEYWORDS`, `HERO_ABILITY_TIMINGS`, `SCHEME_SETUP_TYPES`),
+     hero classes in local `HERO_CLASSES` re-declaration (per WP-033
+     RS-9); teams validated as non-empty string only (per RS-8 — no
+     canonical teams union at MVP)
+  3. **Cross-reference checks** (require `context`; silently skipped when
+     `context` is absent): `alwaysLeads` references a slug in
+     `context.validVillainGroupSlugs`, scheme setup instructions
+     reference valid `SCHEME_SETUP_TYPES` values, tactic cards present
+     for masterminds
   4. **Hook consistency checks**: hero ability hooks reference valid keywords
      and timings from WP-021 contracts
   - Uses `for...of` for all iteration (no `.reduce()`)
@@ -177,17 +195,40 @@ Before writing a single line:
   - Error messages are full sentences (Rule 11)
   - `// why:` comment on each validation stage
 
-- `validateContentBatch(items: { content: unknown; contentType: string }[]): ContentValidationResult`
-  — validates multiple items, aggregates errors
+- `validateContentBatch(items: { content: unknown; contentType: string }[], context?: ContentValidationContext): ContentValidationResult`
+  — validates multiple items, aggregates errors. The same `context` is
+  forwarded to each per-item call. When `context` is absent,
+  cross-reference checks are skipped on all items; structural, enum,
+  and hook-consistency checks still run.
+
+- `ContentValidationContext` — a local structural interface for optional
+  cross-reference data supplied by the caller:
+
+  ```ts
+  interface ContentValidationContext {
+    readonly validVillainGroupSlugs?: ReadonlySet<string>
+    readonly validMastermindSlugs?: ReadonlySet<string>
+    readonly validSchemeSlugs?: ReadonlySet<string>
+    readonly validHeroSlugs?: ReadonlySet<string>
+  }
+  ```
+
+  All fields are optional. When a field is absent, the corresponding
+  cross-reference check is silently skipped (absence is not an error —
+  it means the caller chose not to supply that reference set). Pattern
+  matches WP-032's caller-injected `validMoveNames` (D-2801 local
+  structural interface precedent extended to cross-reference data).
 
 ### C) `src/types.ts` — modified
 
-- Re-export `ContentValidationResult`, `ContentValidationError`
+- Re-export `ContentValidationResult`, `ContentValidationError`,
+  `ContentValidationContext`
 
 ### D) `src/index.ts` — modified
 
-- Export `validateContent`, `validateContentBatch`, `ContentValidationResult`,
-  `ContentValidationError`
+- Export `validateContent`, `validateContentBatch`,
+  `ContentValidationResult`, `ContentValidationError`,
+  `ContentValidationContext`
 
 ### E) Tests — `src/content/content.validate.test.ts` — new
 
@@ -199,7 +240,11 @@ Before writing a single line:
   4. Valid mastermind with tactics passes
   5. Mastermind with no tactic cards: fails
   6. Scheme with invalid setup instruction type: fails
-  7. Cross-reference check: alwaysLeads referencing non-existent group: fails
+  7. Cross-reference check with context supplied: a mastermind whose
+     `alwaysLeads` slug is not in `context.validVillainGroupSlugs` fails
+     with a full-sentence error identifying the missing slug. When the
+     same mastermind is validated with `context` omitted, validation
+     passes (cross-reference check is silently skipped).
   8. Batch validation aggregates errors from multiple items
   9. All error messages are full sentences (pattern check)
 

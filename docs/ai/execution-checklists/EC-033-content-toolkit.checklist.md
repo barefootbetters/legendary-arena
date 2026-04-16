@@ -38,6 +38,21 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 - `ContentValidationError` shape:
   - `{ contentType: string; contentId: string; field: string; message: string }`
 
+- `validateContent` signature:
+  - `validateContent(content: unknown, contentType: string, context?: ContentValidationContext): ContentValidationResult`
+
+- `validateContentBatch` signature:
+  - `validateContentBatch(items: { content: unknown; contentType: string }[], context?: ContentValidationContext): ContentValidationResult`
+
+- `ContentValidationContext` shape (local structural interface — no
+  registry import):
+  - `readonly validVillainGroupSlugs?: ReadonlySet<string>`
+  - `readonly validMastermindSlugs?: ReadonlySet<string>`
+  - `readonly validSchemeSlugs?: ReadonlySet<string>`
+  - `readonly validHeroSlugs?: ReadonlySet<string>`
+  - All fields optional; absent field ⇒ that cross-reference check is
+    silently skipped (not an error)
+
 - Validation is a pre-engine gate — invalid content never reaches `Game.setup()`
 - Schemas reference canonical unions: `HERO_KEYWORDS`, `BOARD_KEYWORDS`
 
@@ -78,6 +93,11 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 - Error messages are terse fragments instead of full sentences
 - `.reduce()` used to accumulate validation errors
 - Registry Zod schemas modified instead of extending with author-facing schemas
+- Treating absent `context` field as a validation error — absent means
+  "skip cross-reference check," not "fail the content"
+- Importing `ContentValidationContext` contents from
+  `@legendary-arena/registry` — the context is caller-injected data, the
+  engine must not reach into the registry to populate it
 
 ---
 

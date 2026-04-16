@@ -42,6 +42,76 @@ Deviations require an explicit new decision entry.
 
 ---
 
+### D‑0004 — No Post‑Shuffle Seed Filtering or Fairness Gating
+**Decision:** Legendary Arena does not inspect, score, or reject initial
+seeds for perceived playability. Once `Game.setup()` has established a seed
+and the villain deck is shuffled, that seed is the match. There is no
+pre‑game "fairness" layer that re‑rolls shuffles, rejects opening sequences,
+or filters hypergeometrically improbable draws.
+
+**Scope:**
+- Applies to villain deck order, hero deck order, HQ fill, and any other
+  `ctx.random.*`‑driven setup output.
+- Applies whether the gating is expressed as "hard reject," "soft reroll,"
+  "retry on failure," or "opening difficulty clamp."
+- Does **not** apply to deterministic deck *composition* (which cards are
+  included) — composition is governed by scheme/mastermind rules and
+  `MatchSetupConfig` and is not random.
+- Does **not** prohibit *observational* tooling (e.g., a PAR/difficulty
+  estimator that scores a seed after the fact for telemetry). Scoring is
+  allowed; rewriting outcomes is not.
+
+**Rationale:**
+1. **Determinism integrity (reinforces D‑0002).** A post‑shuffle reroll
+   layer makes the accepted seed a function of `(originalSeed, policy,
+   thresholds, triggerDefs)` rather than `originalSeed` alone. Every input
+   to that function then becomes part of the replay contract. This is a
+   large, silent expansion of replay surface area for no gameplay benefit.
+2. **Engine authority (reinforces D‑0101).** Seed filtering inserts a
+   non‑engine policy layer between match setup and first turn that can
+   veto the engine's own deterministic output. That is the definition of
+   an outside authority over game state.
+3. **No invented mechanics (`.claude/rules/architecture.md`).** "Early
+   loss," "forced loss probability," and "fairness threshold" are not
+   concepts in Legendary's rules. Introducing them as gating conditions
+   invents mechanics rather than implementing them.
+4. **Model mismatch.** Hypergeometric probability of "≥k category‑C cards
+   in the first n villain draws" is a count statistic, not a probability
+   of a forced loss. Forced losses depend on sequence, city position,
+   hero hand, and conditional scheme effects — none of which hypergeometric
+   analysis captures. A filter claiming to gate on "forced‑loss probability"
+   is gating on a proxy and mislabeling it.
+5. **Design intent.** Opening variance — including occasionally brutal
+   openings — is part of Legendary's difficulty profile. Filtering it out
+   changes the tuning of every scheme/mastermind already content‑balanced
+   against the unfiltered distribution.
+
+**How to apply:**
+- A Work Packet proposing "seed validation," "opening fairness," "early‑loss
+  detection that invalidates setup," or equivalent must be rejected at
+  intake.
+- Observational scoring of opening seeds (for PAR, balance telemetry, or
+  content QA) is allowed provided it never mutates the accepted seed or
+  blocks match start.
+- If a scheme is found to produce genuinely unrecoverable openings at a
+  rate players consider broken, the remedy is **content** (adjust scheme
+  rules, deck composition, or twist threshold via the normal content
+  pipeline), not a runtime seed filter.
+
+**Revisiting:** This decision may be revisited only by a new `DECISIONS.md`
+entry that (a) identifies a concrete scheme and playtest data showing
+unrecoverable openings above an agreed rate, (b) proposes a remedy and
+explains why content adjustment is insufficient, and (c) addresses the
+replay‑contract expansion in points 1–2 above.
+
+**Introduced:** 2026‑04‑16 — rejection of draft WP "Early‑Loss Seed
+Validation via Hypergeometric Analysis" at WP intake review.  
+**Reinforces:** D‑0002 (Determinism Is Non‑Negotiable), D‑0101 (Engine Is
+the Sole Authority)  
+**Status:** Active
+
+---
+
 ## Engine & Core Architecture Decisions
 
 ### D‑0101 — Engine Is the Sole Authority
@@ -3406,6 +3476,155 @@ networking code (WebSocket handlers, HTTP endpoints) belongs in
 
 **Introduced:** WP-032
 **Status:** Immutable
+
+---
+
+### D-3301 — Content Directory Classified as Engine Code Category
+
+**Decision:** `packages/game-engine/src/content/` is classified under
+the `engine` code category.
+
+**Rationale:** Content validation files are pure, deterministic, have no
+I/O, and do not import `boardgame.io` or registry packages. They define
+declarative author-facing schemas (`content.schemas.ts`) and pure
+validation functions (`validateContent`, `validateContentBatch`) that
+produce structured results without mutation. All files in this directory
+follow all engine-category rules defined in
+`docs/ai/REFERENCE/02-CODE-CATEGORIES.md` and
+`.claude/rules/game-engine.md`:
+
+- No `boardgame.io` imports
+- No registry imports (hero classes re-declared locally per WP-033 RS-9 lock)
+- No I/O, no network, no database access
+- No `.reduce()` in validation logic
+- No `Math.random()` or nondeterminism
+- No functions stored in schemas or game state
+- Validation never throws — returns structured results only
+- All exports are pure functions or data-only types
+
+This follows the established directory classification pattern from
+D-2706 (`src/replay/`), D-2801 (`src/ui/`), D-3001 (`src/campaign/`),
+D-3101 (`src/invariants/`), and D-3201 (`src/network/`).
+
+**Affected WPs:** WP-033 introduces the directory. Future WPs that add
+content-authoring schemas or validators (e.g., campaign-level content
+schemas, balance-check toolkits) must host them under `src/content/` and
+obey the engine category rules.
+
+**Introduced:** WP-033
+**Status:** Immutable
+
+---
+
+### D-3302 — Henchman Author-Facing Schema Mirrors VillainCard Shape
+
+**Decision:** The WP-033 author-facing henchman schema mirrors the
+required-field shape of the registry's `VillainCardSchema` (name, slug,
+vp, vAttack, abilities), not a bespoke henchman shape.
+
+**Rationale:** The registry currently declares `henchmen:
+z.array(z.unknown())` — henchmen have no typed registry schema and no
+individual card entries. Per D-1410 through D-1413, henchmen are virtual
+cards that exist only in `G` with ext_id format `henchman-{slug}-{NN}`;
+authoring data for new henchmen is undocumented. Rather than invent an
+untethered henchman shape (which would risk the same false-gating
+failure mode resolved in WP-026 / D-2601), the author-facing henchman
+schema reuses the nearest registry analog (`VillainCardSchema`) as a
+conservative starting point. This follows the WP-026 / WP-025
+safe-extension pattern: use the closest established shape until a
+dedicated authoring spec exists.
+
+Engine-category rules apply:
+
+- The henchman schema is a declarative shape in
+  `packages/game-engine/src/content/content.schemas.ts` (no runtime code)
+- No import from `packages/registry/src/schema.ts`; the field list is
+  re-declared locally (same approach as `HERO_CLASSES` per WP-033 RS-9)
+- Validation failures produce `ContentValidationError` entries with
+  full-sentence messages per Rule 11
+
+**Affected WPs:** WP-033 introduces the henchman schema. A future WP
+that defines a dedicated henchman authoring spec (separate required
+fields, henchman-specific enums) may supersede this decision with an
+explicit update. Until that WP exists, the VillainCard-mirroring shape
+is canonical.
+
+**Introduced:** WP-033
+**Status:** Immutable until superseded by a dedicated henchman
+authoring WP
+
+---
+
+### D-3303 — Content Validation Is Author-Facing and Separate from Registry Zod Schemas
+
+**Decision:** The WP-033 content validation toolkit
+(`packages/game-engine/src/content/`) is a **pre-engine gate** that
+validates *new, author-authored content* against stricter, declarative
+descriptor schemas. It is deliberately separate from the registry's
+Zod schemas (`packages/registry/src/schema.ts`) and does not replace
+or extend them.
+
+**Rationale:** The two validation layers answer different questions
+and cannot be merged without losing information:
+
+- **Registry Zod schemas** validate *existing loaded data*, which
+  contains documented historical quirks (D-1204 / D-1227 — e.g.,
+  `anni` cards with only `slug` + `imageUrl`, `amwp` Wasp with
+  `cost: "2*"`, `mgtg` MCU Guardians masterminds with `vp: null`).
+  The registry must be permissive; otherwise forty sets of shipped
+  data would fail to load.
+- **Content validation** (WP-033) validates *new content an author is
+  writing*. Authors must supply fields the registry treats as
+  optional — otherwise authoring typos silently reach runtime as
+  structurally valid but game-mechanically broken content. Stricter
+  required-field lists are the author's safety net.
+
+Semantic checks go beyond structural shape:
+
+1. **Structural** — required fields present, correct types, non-empty
+   strings, finite numbers, arrays where expected.
+2. **Enum** — values belong to canonical closed unions (`HERO_KEYWORDS`,
+   `BOARD_KEYWORDS`, `HERO_ABILITY_TIMINGS`, `SCHEME_SETUP_TYPES`,
+   local `HERO_CLASSES`). Strict accept-list for `contentType` itself
+   (copilot RISK #10 / #21 resolution).
+2a. **Mastermind tactic presence** — at least one `cards[].tactic ===
+    true` entry; missing tactics make a mastermind unplayable.
+3. **Cross-reference** — caller-injected `ContentValidationContext`
+   supplies sets of known slugs; `alwaysLeads` membership is checked
+   against `validVillainGroupSlugs`. Absent sets skip that specific
+   check silently (opt-out, not failure). Pattern mirrors WP-032's
+   `validMoveNames` injection (D-2801 local structural interface
+   precedent).
+4. **Hook consistency** — hero ability hook `timing` and `keywords`
+   are checked against the WP-021 canonical unions, catching drift
+   at authoring time before the hook silently fails to fire.
+
+Canonical-keyword-union reference pattern: schemas declare enum
+references by name (not by value list) in `ContentSchemaDescriptor`;
+the validator dereferences them against the engine-side canonical
+arrays at call time. This guarantees a single source of truth per
+keyword family — adding a new `HERO_KEYWORDS` entry automatically
+enlarges the valid set without touching the content validator. The
+engine category cannot import from the registry package (D-3301), so
+`HERO_CLASSES` is locally re-declared rather than imported from
+`HeroClassSchema` (RS-9).
+
+Lifecycle isolation: `validateContent` and `validateContentBatch` are
+NOT part of the boardgame.io lifecycle. They MUST NOT be called from
+`game.ts`, move functions, phase hooks, setup-time builders, or rule
+hook executors. They are consumed exclusively by content-authoring
+tools and the WP-033 test suite. This preserves the "engine owns
+truth" architectural principle — authorially valid content is a
+prerequisite to engine consumption, not a runtime concern.
+
+**Affected WPs:** WP-033 introduces the toolkit. Future content
+authoring WPs (hero, villain, mastermind authoring specs) will
+tighten per-type schemas but must respect the same layer boundary:
+no registry import, no boardgame.io import, no `G` mutation, no
+`throw`.
+
+**Introduced:** WP-033
+**Status:** Immutable until a superseding architecture decision
 
 ---
 

@@ -260,3 +260,14 @@ export type {
 } from './network/intent.types.js';
 export { validateIntent } from './network/intent.validate.js';
 export { detectDesync } from './network/desync.detect.js';
+
+// Content authoring toolkit (WP-033)
+export {
+  validateContent,
+  validateContentBatch,
+} from './content/content.validate.js';
+export type {
+  ContentValidationResult,
+  ContentValidationError,
+  ContentValidationContext,
+} from './content/content.validate.js';

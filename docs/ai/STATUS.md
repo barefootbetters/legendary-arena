@@ -7,6 +7,64 @@
 
 ## Current State
 
+### WP-033 — Content Authoring Toolkit (2026-04-16)
+
+**What changed:**
+- New `packages/game-engine/src/content/` directory classified as engine
+  code category (D-3301). Three new files: `content.schemas.ts`,
+  `content.validate.ts`, `content.validate.test.ts`
+- Author-facing declarative schemas for six content types: hero card,
+  villain, henchman, mastermind, scheme, scenario. Schemas are plain
+  descriptor objects (`ContentSchemaDescriptor`) — no runtime code, no
+  functions, no closures.
+- `HERO_CLASSES` locally re-declared in the engine category (RS-9) —
+  mirrors `HeroClassSchema` from the registry package without importing
+  it (D-3301 forbids the cross-layer import).
+- `ACCEPTED_CONTENT_TYPES` accept-list closes over the six content type
+  strings — unknown `contentType` produces a single full-sentence error
+  rather than silently passing (copilot RISK #10 / #21 resolution).
+- `validateContent(content, contentType, context?)` — pure function
+  returning `ContentValidationResult`. Stages: accept-list → structural
+  → enum → cross-reference (skipped silently when `context` absent) →
+  hook consistency. Never throws. Never mutates inputs.
+- `validateContentBatch(items, context?)` — aggregates errors across
+  items; single invalid item does not short-circuit the batch. Unknown
+  `contentType` in one item is recorded as that item's error; other
+  items continue to validate.
+- `ContentValidationContext` — caller-injected cross-reference data with
+  four optional `ReadonlySet<string>` fields
+  (`validVillainGroupSlugs`, `validMastermindSlugs`, `validSchemeSlugs`,
+  `validHeroSlugs`). Runtime call-site parameter only — never stored in
+  `G`, persisted, or serialized (D-1232 forbids `Set` in `G`).
+- Henchman author-facing schema mirrors `VillainCardSchema` shape per
+  D-3302 until a future dedicated henchman authoring WP supersedes.
+- Team field is validated as non-empty string only — no canonical
+  `TEAMS` union at MVP (RS-8).
+- Scenario schema validates the split
+  `victoryConditions?` / `failureConditions?` shape per RS-4 (not a
+  single `conditions` array).
+- D-0601 (Content Is Data, Not Code) and D-0602 (Invalid Content Cannot
+  Reach Runtime) implemented at contract level. D-0603 (Representation
+  Before Execution) respected — schemas are data, validator is code.
+- All content files are pure: no boardgame.io import, no registry
+  import, no array `reduce`, no `Math.random()`, no I/O, no `throw`,
+  no mutation.
+- 9 new tests in `content.validate.test.ts`, all wrapped in one
+  `describe('validateContent / validateContentBatch (WP-033)')` block
+  (RS-2): valid hero passes, missing-field error, invalid-keyword
+  enum error, mastermind with tactics passes, mastermind without
+  tactics fails, scheme with invalid setup instruction type fails,
+  cross-reference with-context fails / without-context passes, batch
+  aggregation, all-full-sentence messages including unknown-contentType.
+- Additive re-exports only in `types.ts` and `index.ts` — no existing
+  export modified or reordered.
+
+**Test baseline:** 376 tests / 96 suites / 0 fail (was 367 / 95 / 0).
+
+**WP-033 complete. Ready for WP-034.**
+
+---
+
 ### WP-032 — Network Sync & Turn Validation (2026-04-15)
 
 **What changed:**

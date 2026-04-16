@@ -692,7 +692,7 @@ These packets make the game safe to ship.
   implements D-0401, D-0402; was truncated at 66 lines — normalized to
   full PACKET-TEMPLATE
 
-- [ ] WP-033 — Content Authoring Toolkit ✅ Reviewed
+- [x] WP-033 — Content Authoring Toolkit ✅ Reviewed ✅ Complete 2026-04-16
   Dependencies: WP-031
   Notes: Author-facing JSON schemas for hero, villain, mastermind, scheme,
   scenario; `validateContent` + `validateContentBatch` — structural, enum,
