@@ -128,6 +128,16 @@ function clearTypes() {
   applyFilters();
 }
 
+/** Resets all card filters to their default state and re-applies. */
+function clearAllFilters() {
+  searchText.value = "";
+  filterSet.value = "";
+  filterHC.value = "";
+  selectedTypes.value = new Set();
+  selectedCard.value = null;
+  applyFilters();
+}
+
 // ── Load registry + themes ────────────────────────────────────────────────────
 onMounted(async () => {
   try {
@@ -290,22 +300,17 @@ function navigateToCard(slug: string, cardType: string) {
       </div>
 
       <!-- ══════════════════════════════════════════════════════════════════════ -->
-      <!-- ── THEMES VIEW ─────────────────────────────────────────────────────── -->
+      <!-- ── THEMES VIEW (filter bar only) ───────────────────────────────────── -->
       <!-- ══════════════════════════════════════════════════════════════════════ -->
       <template v-if="activeView === 'themes'">
         <div class="filter-bar">
           <input v-model="themeSearchText" class="search" placeholder="Search themes by name, tag, hero…" @input="applyThemeFilters" />
           <span class="count">{{ filteredThemes.length }} themes</span>
         </div>
-        <div class="body">
-          <GlossaryPanel />
-          <ThemeGrid :themes="filteredThemes" :selected-id="selectedTheme?.themeId" @select="selectedTheme = $event" />
-          <ThemeDetail v-if="selectedTheme" :theme="selectedTheme" @close="selectedTheme = null" @navigate-to-card="navigateToCard" />
-        </div>
       </template>
 
       <!-- ══════════════════════════════════════════════════════════════════════ -->
-      <!-- ── CARDS VIEW ──────────────────────────────────────────────────────── -->
+      <!-- ── CARDS VIEW (filter bar only) ────────────────────────────────────── -->
       <!-- ══════════════════════════════════════════════════════════════════════ -->
       <template v-if="activeView === 'cards'">
 
@@ -363,14 +368,27 @@ function navigateToCard(slug: string, cardType: string) {
         >{{ s.abbr }}</button>
       </div>
 
-      <!-- ── Main body ───────────────────────────────────────────────────────── -->
+      </template><!-- end cards filter bar -->
+
+      <!-- ── Main body (single flex row, shared across both views) ──────────── -->
+      <!-- why: GlossaryPanel is rendered once here instead of duplicated in each
+           view's body div. This eliminates DOM duplication and makes the resizable
+           splitter work seamlessly across view switches. -->
       <div class="body">
         <GlossaryPanel />
-        <CardGrid :cards="filteredCards" :selected-key="selectedCard?.key" @select="selectedCard = $event" />
-        <CardDetail v-if="selectedCard" :card="selectedCard" @close="selectedCard = null" />
-      </div>
 
-      </template><!-- end cards view -->
+        <!-- Themes content -->
+        <template v-if="activeView === 'themes'">
+          <ThemeGrid :themes="filteredThemes" :selected-id="selectedTheme?.themeId" @select="selectedTheme = $event" />
+          <ThemeDetail v-if="selectedTheme" :theme="selectedTheme" @close="selectedTheme = null" @navigate-to-card="navigateToCard" />
+        </template>
+
+        <!-- Cards content -->
+        <template v-if="activeView === 'cards'">
+          <CardGrid :cards="filteredCards" :selected-key="selectedCard?.key" @select="selectedCard = $event" @clear-filters="clearAllFilters" />
+          <CardDetail v-if="selectedCard" :card="selectedCard" @close="selectedCard = null" />
+        </template>
+      </div>
     </template>
   </div>
 </template>

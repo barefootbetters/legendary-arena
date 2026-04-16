@@ -1,25 +1,45 @@
 <script setup lang="ts">
+import { watch, nextTick } from "vue";
 import type { FlatCard } from "../../registry/browser";
 import { TYPE_COLOR, HC_COLOR, RARITY_DOT } from "../lib/theme";
+import { devLog } from "../lib/devLog";
 
-defineProps<{ cards: FlatCard[]; selectedKey?: string }>();
-const emit = defineEmits<{ select: [card: FlatCard] }>();
+const props = defineProps<{ cards: FlatCard[]; selectedKey?: string }>();
+const emit = defineEmits<{ select: [card: FlatCard]; clearFilters: [] }>();
+
+// why: when a card is selected (either by clicking or via cross-link from
+// themes view), scroll it into view so the user can see which tile is active
+// without hunting through a long grid.
+watch(() => props.selectedKey, (newKey) => {
+  if (!newKey) return;
+  nextTick(() => {
+    const element = document.getElementById(`card-${newKey}`);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  });
+});
 </script>
 
 <template>
   <div class="grid-wrapper">
-    <div v-if="!cards.length" class="empty">No cards match your filters.</div>
+    <div v-if="!cards.length" class="empty">
+      <div class="empty-icon">🔍</div>
+      <p>No cards match your filters.</p>
+      <button class="clear-filters-btn" @click="emit('clearFilters')">Clear all filters</button>
+    </div>
     <div class="grid">
       <button
         v-for="card in cards"
         :key="card.key"
+        :id="'card-' + card.key"
         class="card-tile"
         :class="{ selected: card.key === selectedKey }"
         @click="emit('select', card)"
       >
         <div class="img-wrap">
           <img :src="card.imageUrl" :alt="card.name" loading="lazy"
-            @error="($event.target as HTMLImageElement).style.opacity = '0.2'" />
+            @error="($event.target as HTMLImageElement).style.opacity = '0.2'; devLog('ImageError', card.name, card.imageUrl)" />
           <span class="type-badge" :style="{ background: TYPE_COLOR[card.cardType] + '22', color: TYPE_COLOR[card.cardType] }">
             {{ card.cardType }}
           </span>
@@ -40,7 +60,22 @@ const emit = defineEmits<{ select: [card: FlatCard] }>();
 
 <style scoped>
 .grid-wrapper { flex: 1; overflow-y: auto; padding: 1rem; background: #0f0f13; }
-.empty { text-align: center; color: #55556a; padding: 3rem; }
+.empty { text-align: center; color: #55556a; padding: 3rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
+.empty-icon { font-size: 2.5rem; opacity: 0.4; }
+.empty p { margin: 0; font-size: 0.9rem; }
+.clear-filters-btn {
+  background: #2a2a5a;
+  border: 1px solid #5050a0;
+  color: #c0c0ff;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.clear-filters-btn:hover { background: #3a3a7a; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.75rem; }
 .card-tile { background: #1a1a24; border: 2px solid #2e2e42; border-radius: 8px; cursor: pointer; transition: border-color 0.15s, transform 0.1s; overflow: hidden; display: flex; flex-direction: column; text-align: left; padding: 0; }
 .card-tile:hover { border-color: #5050a0; transform: translateY(-2px); }
