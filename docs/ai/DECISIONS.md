@@ -3324,6 +3324,91 @@ implementation contract regardless of future refactors.
 
 ---
 
+### D-3202 — Intent Validation Is Engine-Side, Not Server-Side
+
+**Decision:** All intent validation logic (`validateIntent`,
+`detectDesync`) lives in `packages/game-engine/src/network/`, not in
+`apps/server/`. The server layer wires transport; the engine validates
+intents.
+
+**Rationale:** The engine owns truth (D-0101). Intent validation must be
+transport-agnostic — it works identically whether the transport is
+boardgame.io's WebSocket, HTTP polling, or a future alternative. Placing
+validation in the engine ensures it is covered by the engine test suite,
+deterministic, and replayable. The server is a wiring layer only
+(ARCHITECTURE.md §Layer Boundary) and must not implement game logic.
+
+**Affected WPs:** WP-032 introduces the validation. Future WPs that wire
+intent validation into the server transport must call `validateIntent`
+from the server layer without modifying its implementation.
+
+**Introduced:** WP-032
+**Status:** Immutable
+
+---
+
+### D-3203 — Intent Validation Adds to boardgame.io Turn Order, Not Replaces
+
+**Decision:** `validateIntent` is additive validation on top of
+boardgame.io's built-in turn order enforcement. It does not replace or
+bypass the framework's player turn validation.
+
+**Rationale:** boardgame.io already enforces that only the current player
+can submit moves. `validateIntent` adds intent-level checks that
+boardgame.io does not provide: turn number verification (stale/replayed
+intents), move name validation against the injected list, structural
+args checking, and desync detection. The two layers are complementary:
+boardgame.io enforces framework-level constraints; `validateIntent`
+enforces application-level intent contracts.
+
+**Affected WPs:** WP-032 establishes the relationship. Future WPs that
+modify the move registry or add transport features must maintain both
+validation layers.
+
+**Introduced:** WP-032
+**Status:** Immutable
+
+---
+
+### D-3201 — Network Directory Classified as Engine Code Category
+
+**Decision:** `packages/game-engine/src/network/` is classified under
+the `engine` code category.
+
+**Rationale:** Network validation files are pure, deterministic, have no
+I/O, and do not import `boardgame.io` or registry packages. They define
+data-only contracts (`ClientTurnIntent`, `IntentValidationResult`,
+`IntentRejectionCode`) and pure validation functions (`validateIntent`,
+`detectDesync`) that read game state without mutation. All files in this
+directory follow all engine-category rules defined in
+`docs/ai/REFERENCE/02-CODE-CATEGORIES.md` and
+`.claude/rules/game-engine.md`:
+
+- No `boardgame.io` imports (uses local structural interface for ctx)
+- No registry imports
+- No I/O, no network, no database access
+- No `.reduce()` in validation logic
+- No `Math.random()` or nondeterminism
+- No functions stored in game state
+- Validation never throws — returns structured results only
+- All exports are pure functions or data-only types
+
+This follows the established directory classification pattern from
+D-2706 (`src/replay/`), D-2801 (`src/ui/`), D-3001 (`src/campaign/`),
+and D-3101 (`src/invariants/`).
+
+**Affected WPs:** WP-032 introduces the directory. Future WPs that add
+network-layer contracts (reconnection protocol, rate limiting, transport
+adapters) must host transport-agnostic validation code under
+`src/network/` and obey the engine category rules. Server-specific
+networking code (WebSocket handlers, HTTP endpoints) belongs in
+`apps/server/`, not `src/network/`.
+
+**Introduced:** WP-032
+**Status:** Immutable
+
+---
+
 ### How to Add a New Decision
 1. Assign a new decision ID
 2. State the decision clearly

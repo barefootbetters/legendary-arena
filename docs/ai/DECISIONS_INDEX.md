@@ -497,6 +497,9 @@ For full rationale, see `DECISIONS.md`.
 | D-3101 | Invariants directory classified as engine code category | WP-031 |
 | D-3102 | Runtime invariant check wiring scope (setup-only at MVP) | WP-031 |
 | D-3103 | Card uniqueness invariant scope (fungible token exclusion) | WP-031 |
+| D-3201 | Network directory classified as engine code category | WP-032 |
+| D-3202 | Intent validation is engine-side, not server-side | WP-032 |
+| D-3203 | Intent validation adds to boardgame.io turn order, not replaces | WP-032 |
 
 ---
 

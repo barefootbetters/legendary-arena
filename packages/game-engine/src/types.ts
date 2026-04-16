@@ -182,6 +182,15 @@ export type {
 } from './invariants/invariants.types.js';
 export { INVARIANT_CATEGORIES } from './invariants/invariants.types.js';
 
+// why: network intent contracts are engine-category types (D-3201)
+// consumed by the server layer for transport wiring.
+export type {
+  ClientTurnIntent,
+  IntentValidationResult,
+  IntentRejectionCode,
+  IntentValidationContext,
+} from './network/intent.types.js';
+
 import type { TurnStage } from './turn/turnPhases.types.js';
 import type { CardExtId, PlayerZones, GlobalPiles } from './state/zones.types.js';
 import type { TurnEconomy, CardStatEntry } from './economy/economy.types.js';

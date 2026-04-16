@@ -48,6 +48,30 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
   ```
 
 - `type IntentRejectionCode = 'WRONG_PLAYER' | 'WRONG_TURN' | 'INVALID_MOVE' | 'MALFORMED_ARGS' | 'DESYNC_DETECTED'`
+
+- **IntentValidationContext shape** (local structural interface, no
+  boardgame.io import — WP-028 precedent, D-2801):
+  ```ts
+  interface IntentValidationContext {
+    readonly currentPlayer: string
+    readonly turn: number
+  }
+  ```
+
+- **validateIntent signature** (pre-flight-locked):
+  ```ts
+  function validateIntent(
+    intent: ClientTurnIntent,
+    gameState: LegendaryGameState,
+    context: IntentValidationContext,
+    validMoveNames: readonly string[]
+  ): IntentValidationResult
+  ```
+  Caller injects `validMoveNames` (transport-agnostic; does NOT use
+  `CORE_MOVE_NAMES` which contains only 3 of 10 registered moves).
+  `MALFORMED_ARGS` is MVP structural validation only (not null, not a
+  function, JSON-serializable); per-move schema deferred to move execution.
+
 - Desync detection uses `computeStateHash(G)` from WP-027
 - On desync, engine state is authoritative (D-0402)
 
@@ -77,7 +101,7 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 
 ## Files to Produce
 
-- `packages/game-engine/src/network/intent.types.ts` -- **new** -- ClientTurnIntent, IntentValidationResult, IntentRejectionCode
+- `packages/game-engine/src/network/intent.types.ts` -- **new** -- ClientTurnIntent, IntentValidationResult, IntentRejectionCode, IntentValidationContext
 - `packages/game-engine/src/network/intent.validate.ts` -- **new** -- validateIntent
 - `packages/game-engine/src/network/desync.detect.ts` -- **new** -- detectDesync
 - `packages/game-engine/src/types.ts` -- **modified** -- re-export network types

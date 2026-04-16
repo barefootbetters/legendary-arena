@@ -250,3 +250,13 @@ export type {
   InvariantCheckContext,
 } from './invariants/invariants.types.js';
 export { INVARIANT_CATEGORIES } from './invariants/invariants.types.js';
+
+// Network intent validation (WP-032)
+export type {
+  ClientTurnIntent,
+  IntentValidationResult,
+  IntentRejectionCode,
+  IntentValidationContext,
+} from './network/intent.types.js';
+export { validateIntent } from './network/intent.validate.js';
+export { detectDesync } from './network/desync.detect.js';

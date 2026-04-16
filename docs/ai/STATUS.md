@@ -7,6 +7,45 @@
 
 ## Current State
 
+### WP-032 — Network Sync & Turn Validation (2026-04-15)
+
+**What changed:**
+- New `packages/game-engine/src/network/` directory classified as engine
+  code category (D-3201). Four new files: `intent.types.ts`,
+  `intent.validate.ts`, `desync.detect.ts`, `intent.validate.test.ts`
+- `ClientTurnIntent` is the canonical format for all client move
+  submissions — matchId, playerId, turnNumber, move (name + args),
+  optional clientStateHash for desync detection
+- `IntentValidationResult` is a discriminated union: `{ valid: true }` or
+  `{ valid: false; reason: string; code: IntentRejectionCode }`
+- `IntentRejectionCode` is a 5-member named literal union: `WRONG_PLAYER`,
+  `WRONG_TURN`, `INVALID_MOVE`, `MALFORMED_ARGS`, `DESYNC_DETECTED`
+- `IntentValidationContext` is a local structural interface for the
+  boardgame.io ctx fields needed by validation (currentPlayer, turn) —
+  no boardgame.io import (D-2801 precedent, D-3201)
+- `validateIntent(intent, gameState, context, validMoveNames)` — pure
+  validation function. Caller injects the valid move name list
+  (transport-agnostic). Short-circuits on first failure. Never mutates
+  gameState. Never throws. Returns structured result.
+- `detectDesync(clientHash, gameState)` — compares client hash against
+  engine's `computeStateHash(gameState)` (WP-027). On mismatch, engine
+  state is authoritative (D-0402).
+- All network files are pure: no boardgame.io import, no registry import,
+  no `.reduce()`, no `Math.random()`, no I/O, no `throw`, no mutation
+- D-0401 (Clients Submit Intents, Not Outcomes) implemented at contract
+  level. D-0402 (Engine-Authoritative Resync) implemented via
+  `detectDesync`.
+- D-3202 (intent validation is engine-side, not server-side) and D-3203
+  (intent validation adds to boardgame.io, not replaces) documented.
+- 9 new contract enforcement tests in `intent.validate.test.ts` covering
+  all 5 rejection codes, valid intent, desync with matching/mismatching/
+  absent hashes, and non-mutation invariant.
+- 367 total tests, 95 suites, 0 failures (358 baseline + 9 new). No
+  existing test modified.
+- Multiplayer intent contract ready for server-layer wiring.
+
+---
+
 ### WP-031 — Production Hardening & Engine Invariants (2026-04-15)
 
 **What changed:**

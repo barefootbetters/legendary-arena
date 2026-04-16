@@ -681,7 +681,7 @@ These packets make the game safe to ship.
   D-3102 (setup-only wiring scope), D-3103 (card uniqueness fungible
   exclusion).
 
-- [ ] WP-032 — Network Sync & Turn Validation ✅ Reviewed
+- [x] WP-032 — Network Sync & Turn Validation ✅ Reviewed (2026-04-15)
   Dependencies: WP-031
   Notes: `ClientTurnIntent` canonical submission format; engine-side
   `validateIntent` checks player, turn, move name, args — returns structured

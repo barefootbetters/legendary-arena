@@ -153,18 +153,28 @@ Before writing a single line:
   in locked contract values
 - `type IntentValidationResult` — structured validation outcome
 - `type IntentRejectionCode = 'WRONG_PLAYER' | 'WRONG_TURN' | 'INVALID_MOVE' | 'MALFORMED_ARGS' | 'DESYNC_DETECTED'`
+- `interface IntentValidationContext` — local structural interface for
+  boardgame.io ctx subset (WP-028 precedent, D-2801). Fields:
+  `readonly currentPlayer: string`, `readonly turn: number`. Avoids
+  importing boardgame.io into network files.
 - `// why:` comment: clients submit intents, engine validates (D-0401);
   transport-agnostic by design
 
 ### B) `src/network/intent.validate.ts` — new
 
-- `validateIntent(intent: ClientTurnIntent, G: LegendaryGameState, ctx: Ctx): IntentValidationResult`
-  — pure function:
-  1. Check `intent.playerId === ctx.currentPlayer` — reject with `WRONG_PLAYER`
-  2. Check `intent.turnNumber === ctx.turn` — reject with `WRONG_TURN`
-  3. Check `intent.move.name` is a registered move — reject with `INVALID_MOVE`
-  4. Check `intent.move.args` is structurally valid for the named move —
-     reject with `MALFORMED_ARGS`
+- `validateIntent(intent: ClientTurnIntent, gameState: LegendaryGameState, context: IntentValidationContext, validMoveNames: readonly string[]): IntentValidationResult`
+  — pure function. Uses local `IntentValidationContext` (no boardgame.io
+  import). Caller injects the valid move name list (transport-agnostic):
+  1. Check `intent.playerId === context.currentPlayer` — reject with `WRONG_PLAYER`
+  2. Check `intent.turnNumber === context.turn` — reject with `WRONG_TURN`
+  3. Check `intent.move.name` is in `validMoveNames` — reject with
+     `INVALID_MOVE`. Validates against the caller-injected list, NOT
+     `CORE_MOVE_NAMES` (which contains only 3 of 10 registered moves)
+  4. Check `intent.move.args` is structurally valid (not null, not a
+     function, JSON-serializable) — reject with `MALFORMED_ARGS`. This is
+     MVP structural validation only; per-move schema validation is deferred
+     to move execution (existing `coreMoves.validate.ts` validators handle
+     per-move args checking)
   5. If `intent.clientStateHash` is present: compare with
      `computeStateHash(G)` — reject with `DESYNC_DETECTED` if mismatch
   6. Return `{ valid: true }` if all checks pass
