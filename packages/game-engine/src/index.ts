@@ -217,3 +217,36 @@ export {
   evaluateScenarioOutcome,
   advanceCampaignState,
 } from './campaign/campaign.logic.js';
+
+// WP-031 invariant API
+export {
+  assertInvariant,
+  InvariantViolationError,
+} from './invariants/assertInvariant.js';
+export { runAllInvariantChecks } from './invariants/runAllChecks.js';
+export {
+  checkCitySize,
+  checkZoneArrayTypes,
+  checkCountersAreFinite,
+  checkGIsSerializable,
+} from './invariants/structural.checks.js';
+export {
+  checkNoCardInMultipleZones,
+  checkZoneCountsNonNegative,
+  checkCountersUseConstants,
+} from './invariants/gameRules.checks.js';
+export {
+  checkNoFunctionsInG,
+  checkSerializationRoundtrip,
+} from './invariants/determinism.checks.js';
+export {
+  checkValidPhase,
+  checkValidStage,
+  checkTurnCounterMonotonic,
+} from './invariants/lifecycle.checks.js';
+export type {
+  InvariantCategory,
+  InvariantViolation,
+  InvariantCheckContext,
+} from './invariants/invariants.types.js';
+export { INVARIANT_CATEGORIES } from './invariants/invariants.types.js';

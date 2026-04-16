@@ -165,8 +165,15 @@ returning void. This packet only adds checks for the former.
 ### D) `src/invariants/gameRules.checks.ts` — new
 
 - Pure check functions for game rules invariants:
-  - `checkNoCardInMultipleZones(G)` — no CardExtId appears in more than one
-    zone simultaneously
+  - `checkNoCardInMultipleZones(G)` — no **non-fungible** CardExtId
+    appears in more than one distinct zone simultaneously. See the
+    §Amendments section (A-031-01 / D-3103) for the fungible-exclusion
+    set and revised semantics. CardExtIds are card-type identifiers,
+    not per-instance identifiers, so the check must exclude the six
+    known fungible token strings (starting-shield-agent,
+    starting-shield-trooper, pile-bystander, pile-wound,
+    pile-shield-officer, pile-sidekick) whose legitimate duplication
+    inside piles and starting decks is structural, not corruption.
   - `checkZoneCountsNonNegative(G)` — all zone lengths >= 0
   - `checkCountersUseConstants(G)` — all counter keys are valid
     `ENDGAME_CONDITIONS` values or documented custom keys
@@ -293,7 +300,9 @@ All items must be binary pass/fail. No partial credit.
 - [ ] Serialization roundtrip check detects non-serializable state
 
 ### Game Rules Checks
-- [ ] Multi-zone card check detects duplicate card placement
+- [ ] Multi-zone card check detects a **non-fungible** CardExtId
+      placed into two distinct zones simultaneously (fungible token
+      CardExtIds excluded per §Amendments / D-3103)
 - [ ] Zone count check detects negative lengths
 
 ### Determinism Checks
@@ -389,3 +398,209 @@ This packet is complete when ALL of the following are true:
       run after every move or only in dev/test; which lifecycle points trigger
       checks; why gameplay conditions are excluded from invariant checking
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` has WP-031 checked off with today's date
+
+---
+
+## Amendments
+
+### A-031-01 — `checkNoCardInMultipleZones` Fungible-Exclusion Semantics (2026-04-15)
+
+**Decision reference:** [D-3103](../DECISIONS.md) — Card Uniqueness
+Invariant Scope (Fungible Token Exclusion).
+
+**Context:** Mid-session execution of WP-031 discovered that the
+original §D spec for `checkNoCardInMultipleZones` — "no CardExtId
+appears in more than one zone simultaneously" — is incompatible with
+the actual engine state. `CardExtId` is a card-**type** identifier, not
+a per-instance identifier. The starting deck builder
+(`packages/game-engine/src/setup/buildInitialGameState.ts`) pushes 8
+copies of `'starting-shield-agent'` and 4 copies of
+`'starting-shield-trooper'` into every player's deck (see
+`buildStartingDeckCards`, §`STARTING_AGENTS_COUNT = 8`). The pile
+builder (`packages/game-engine/src/setup/pilesInit.ts`
+`createPileCards`) fills `G.piles.bystanders` with N copies of
+`'pile-bystander'`, and similarly for wounds, officers, and sidekicks.
+The literal Set-based dedup would throw
+`InvariantViolationError` on every freshly-constructed valid `G`, breaking
+every existing test that routes through `LegendaryGame.setup()`.
+
+**Amended semantics:** The check scans every zone that can contain
+`CardExtId` entries and flags ONLY **non-fungible** CardExtIds whose
+identity appears in two or more **distinct zone names**. Fungible
+CardExtIds are excluded from the dedup entirely — their legitimate
+duplication across zones (bystanders in supply and in city space,
+troopers in deck and in hand) is structurally normal and must not
+fire the invariant. The fungible set is locked to the six well-known
+constants exported by the setup layer:
+
+- `SHIELD_AGENT_EXT_ID`   = `'starting-shield-agent'`
+- `SHIELD_TROOPER_EXT_ID` = `'starting-shield-trooper'`
+- `BYSTANDER_EXT_ID`      = `'pile-bystander'`
+- `WOUND_EXT_ID`          = `'pile-wound'`
+- `SHIELD_OFFICER_EXT_ID` = `'pile-shield-officer'`
+- `SIDEKICK_EXT_ID`       = `'pile-sidekick'`
+
+All other CardExtIds (villain cards resolved from
+`listCards()`, henchmen as `henchman-{group}-{NN}`, scheme twists as
+`scheme-twist-{scheme}-{NN}`, virtual bystanders as
+`bystander-villain-deck-{NN}`, mastermind tactics and strikes as
+`{setAbbr}-mastermind-{slug}-{cardSlug}`, and any future hero-deck
+entries) are treated as unique per-instance — if the same string
+appears in two distinct zones, that is a real invariant violation.
+
+**Revised implementation contract (supersedes §D item 1):**
+
+1. Import the six fungible constants from the setup layer's public
+   re-exports in `src/types.ts` / `src/index.ts`. If the re-exports
+   are not already available from `../types.js` or a sibling engine
+   path, use the existing `src/setup/buildInitialGameState.js` and
+   `src/setup/pilesInit.js` re-exports — these are data-only constants
+   with no runtime or side effects. An inline `Set<CardExtId>` built
+   from these constants inside the check function is acceptable
+   (preferred) and requires a `// why:` comment: "fungible token
+   exclusion — see D-3103; CardExtIds are card-type IDs, not per-
+   instance IDs; duplication across zones for these six strings is
+   structural and must not fire the invariant".
+
+2. Build a `Map<CardExtId, string>` mapping each **non-fungible**
+   CardExtId to the **name of the first zone** it was seen in. Scan
+   zones in a deterministic order (see item 3). On each encounter:
+   - If the CardExtId is in the fungible set → skip entirely; do not
+     add to the map, do not check.
+   - Otherwise, if the map already contains the CardExtId AND the
+     previously-recorded zone name differs from the current zone
+     name → `assertInvariant(false, 'gameRules', ...)`.
+   - Otherwise, insert into the map if not already present. If the
+     same non-fungible CardExtId appears twice within the SAME zone,
+     that is currently allowed (not flagged) because the zone-name
+     key is identical. A stronger "no duplicates within one zone"
+     check is deferred.
+
+3. Scan order is deterministic and fixed:
+   - Player zones, via `Object.keys(G.playerZones).sort()` with a
+     `// why:` comment ("deterministic error reproducibility — fail
+     fast must identify the same offending player on every run").
+     For each player, iterate zones in canonical field order:
+     `deck`, `hand`, `discard`, `inPlay`, `victory`
+     (**not** `victoryPile`; see Amendment A-031-02).
+   - Global piles: `G.piles.bystanders`, `G.piles.wounds`,
+     `G.piles.officers`, `G.piles.sidekicks` (in that order).
+   - City: `G.city` — skip `null` entries.
+   - HQ: `G.hq` — skip `null` entries.
+   - KO: `G.ko`.
+   - Villain deck: `G.villainDeck.deck`, then `G.villainDeck.discard`.
+   - Mastermind: `G.mastermind.tacticsDeck`, then
+     `G.mastermind.tacticsDefeated`.
+   - `G.attachedBystanders` — **excluded** from the scan per D-1703
+     attachment semantics. Add a `// why:` comment citing D-1703.
+
+4. Zone-name keys used inside the map should be stable, descriptive
+   strings, e.g., `"playerZones[0].deck"`, `"piles.bystanders"`,
+   `"city[2]"`, `"villainDeck.deck"`. The zone name is used in the
+   full-sentence error message and must identify the offender
+   unambiguously.
+
+5. The full-sentence error message remains: "CardExtId '${cardId}'
+   appears in more than one zone simultaneously (first seen in
+   ${firstLocation}, also found in ${secondLocation}). This is a
+   game rules invariant violation — each non-fungible card must
+   exist in exactly one zone at a time. Fungible token CardExtIds
+   (see D-3103) are excluded from this check. Inspect any move that
+   moved this card for a missing zoneOps.removeFromZone call."
+
+**Implications for Test K.2:** The test must inject a
+**non-fungible** CardExtId into two distinct zones to trigger the
+check. Example (test-only direct mutation after valid-G
+construction):
+
+```ts
+const syntheticUniqueCard = 'test-injection-unique-villain-001';
+// Bypass the move system — this is a structural corruption test.
+G.villainDeck.deck.push(syntheticUniqueCard);
+G.city[0] = syntheticUniqueCard;
+runAllInvariantChecks(G, { phase: 'play', turn: 1 });
+// Asserts throws with error.category === 'gameRules'.
+```
+
+Using a fungible (e.g., `'starting-shield-agent'`) will NOT trigger
+the check and is explicitly rejected by this amendment.
+
+**Forward-compatibility note:** This amendment narrows WP-031's
+correctness coverage but does not remove future coverage. A
+follow-up WP may introduce per-instance unique CardExtIds
+(e.g., `starting-shield-agent-00`, `starting-shield-agent-01`, …)
+and then strengthen the check to the literal "no CardExtId in
+multiple zones" semantics without a fungible exclusion. That
+refactor is out of scope for WP-031.
+
+---
+
+### A-031-02 — `PlayerZones` Canonical Field Name Is `victory`, Not `victoryPile` (2026-04-15)
+
+**Context:** The original WP §C item 2 (`checkZoneArrayTypes`) and
+§D item 1 (`checkNoCardInMultipleZones`) list the zones to scan as
+`deck, hand, discard, inPlay, victoryPile`. The canonical type in
+`packages/game-engine/src/state/zones.types.ts:49` exports
+`PlayerZones.victory: Zone` — **no** `victoryPile` field exists. The
+`victoryPile` spelling is a WP drafting typo.
+
+**Resolution:** The check implementation and the test fixtures must
+use the canonical field name `victory` exclusively. Do not introduce
+aliases. Do not rename the type. Amendment A-031-01 already lists
+the corrected canonical order (`deck, hand, discard, inPlay, victory`).
+
+**Affected spec locations:** §C item 2, §D item 1, §K Test 1
+(when iterating zones), and any doc comments that mention the zone
+list.
+
+---
+
+### A-031-03 — `InvariantCheckContext` Compatibility with `exactOptionalPropertyTypes` (2026-04-15)
+
+**Context:** `packages/game-engine/tsconfig.json` sets
+`exactOptionalPropertyTypes: true`. `InvariantCheckContext` as
+declared in Pre-Flight RS-2 uses
+
+```ts
+readonly phase?: string;
+readonly turn?: number;
+```
+
+These fields are compile-time compatible with `context.ctx.phase`
+(boardgame.io `Ctx.phase: string`) and `context.ctx.turn`
+(`Ctx.turn: number`), so the literal
+`{ phase: context.ctx.phase, turn: context.ctx.turn }` at the
+wiring site type-checks under `exactOptionalPropertyTypes: true`.
+
+At runtime, mock contexts (via `makeMockCtx` + cast, used by the
+existing `game.test.ts`) do not set `phase` or `turn`, so the check
+functions receive `undefined` at runtime even though the compiler
+sees `string` / `number`. The lifecycle check functions
+(`checkValidPhase`, `checkTurnCounterMonotonic`) MUST handle the
+runtime-undefined case by short-circuiting:
+
+```ts
+export function checkValidPhase(phase: string | undefined): void {
+  // why: at setup time inside tests that cast makeMockCtx, phase
+  // may be runtime-undefined even though boardgame.io Ctx types it
+  // as string. Silent-skip when undefined — lifecycle validity
+  // cannot be asserted on an absent field.
+  if (phase === undefined) return;
+  // ... existing canonical-phase assertion
+}
+```
+
+The parameter type must be declared `string | undefined` (not
+`string`) on `checkValidPhase` and on `checkTurnCounterMonotonic`'s
+`currentTurn`/`previousTurn` parameters, even though the interface
+field is `phase?: string`. This is because TypeScript parameter
+types describe what the function can accept, independent of the
+interface field's declared type. The interface field type does not
+leak into the function signature.
+
+**No change to `InvariantCheckContext` itself is required** — the
+interface remains `readonly phase?: string; readonly turn?: number;`
+as locked in RS-2.
+
+---
+

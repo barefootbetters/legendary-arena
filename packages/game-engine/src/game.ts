@@ -15,6 +15,7 @@ import { fightVillain } from './moves/fightVillain.js';
 import { recruitHero } from './moves/recruitHero.js';
 import { fightMastermind } from './moves/fightMastermind.js';
 import { resetTurnEconomy } from './economy/economy.logic.js';
+import { runAllInvariantChecks } from './invariants/runAllChecks.js';
 
 // why: The registry must be available to Game.setup() for ext_id validation,
 // but boardgame.io's setup function signature does not include a registry
@@ -154,7 +155,22 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // not configured a registry (e.g., in unit tests).
     const registryForSetup = gameRegistry ?? EMPTY_REGISTRY;
 
-    return buildInitialGameState(matchConfiguration, registryForSetup, context);
+    // why: runAllInvariantChecks enforces structural, gameRules,
+    // determinism, and lifecycle invariants after buildInitialGameState
+    // constructs G. Setup is the one engine-wide call site permitted to
+    // throw per .claude/rules/game-engine.md §Throwing Convention row 1,
+    // so assertInvariant's throw is safe here. Per D-3102, per-move
+    // wiring is deferred to a follow-up WP.
+    const initialState = buildInitialGameState(
+      matchConfiguration,
+      registryForSetup,
+      context,
+    );
+    runAllInvariantChecks(initialState, {
+      phase: context.ctx.phase,
+      turn: context.ctx.turn,
+    });
+    return initialState;
   },
 
   moves: {

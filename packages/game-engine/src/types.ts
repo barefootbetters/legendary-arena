@@ -169,6 +169,19 @@ export type {
   CampaignState,
 } from './campaign/campaign.types.js';
 
+// why: Invariant types (InvariantCategory, InvariantViolation,
+// InvariantCheckContext) are defined canonically in
+// src/invariants/invariants.types.ts (WP-031). The canonical
+// INVARIANT_CATEGORIES array is a const export (not a type), so it
+// uses a separate export statement. Re-exported here so that
+// consumers importing from './types.js' have access.
+export type {
+  InvariantCategory,
+  InvariantViolation,
+  InvariantCheckContext,
+} from './invariants/invariants.types.js';
+export { INVARIANT_CATEGORIES } from './invariants/invariants.types.js';
+
 import type { TurnStage } from './turn/turnPhases.types.js';
 import type { CardExtId, PlayerZones, GlobalPiles } from './state/zones.types.js';
 import type { TurnEconomy, CardStatEntry } from './economy/economy.types.js';

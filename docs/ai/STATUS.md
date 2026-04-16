@@ -7,6 +7,163 @@
 
 ## Current State
 
+### WP-031 — Production Hardening & Engine Invariants (2026-04-15)
+
+**What changed:**
+- New `packages/game-engine/src/invariants/` directory classified as
+  engine code category (D-3101). Eight new files:
+  `invariants.types.ts`, `assertInvariant.ts`, `structural.checks.ts`,
+  `gameRules.checks.ts`, `determinism.checks.ts`,
+  `lifecycle.checks.ts`, `runAllChecks.ts`, `invariants.test.ts`
+- Five non-overlapping invariant categories defined as a closed
+  union: `'structural' | 'gameRules' | 'determinism' | 'security' | 'lifecycle'`
+- Canonical `INVARIANT_CATEGORIES` readonly array exported alongside
+  the union with a Test 1 drift-detection assertion
+  (`assert.deepStrictEqual` matches the union exactly), following
+  the precedent of `MATCH_PHASES`, `TURN_STAGES`, `REVEALED_CARD_TYPES`,
+  `BOARD_KEYWORDS`, `SCHEME_SETUP_TYPES`, `PERSISTENCE_CLASSES`
+- `assertInvariant(condition, category, message)` — throwing
+  assertion utility with `InvariantViolationError` companion class
+  carrying the violated category for post-mortem inspection
+- `runAllInvariantChecks(G, invariantContext)` — orchestrator that
+  runs every implemented check in a fixed category order
+  (structural → gameRules → determinism → lifecycle), fail-fast on
+  first violation
+- 11 pure check functions implemented across 4 categories:
+  - **structural:** `checkCitySize`, `checkZoneArrayTypes`,
+    `checkCountersAreFinite`, `checkGIsSerializable`
+  - **gameRules:** `checkNoCardInMultipleZones` (with
+    fungible-token exclusion per A-031-01 / D-3103),
+    `checkZoneCountsNonNegative`, `checkCountersUseConstants`
+  - **determinism:** `checkNoFunctionsInG`, `checkSerializationRoundtrip`
+  - **lifecycle:** `checkValidPhase`, `checkValidStage`,
+    `checkTurnCounterMonotonic` (exported but uncalled — reserved
+    for future per-turn wiring)
+- `runAllInvariantChecks` wired into `Game.setup()` return path
+  in `game.ts` per D-3102 Option B (setup-only wiring). Per-move
+  wiring deferred to a follow-up WP. The minimal-wiring 01.5
+  allowance covered: 1 import + 4-line setup-return wrap in
+  `game.ts`, additive re-exports in `types.ts`, additive exports
+  in `index.ts`. No other file modified.
+- All check functions are pure: no `boardgame.io` import, no
+  registry import, no `.reduce()`, no `Math.random()`, no I/O,
+  no `process.env`, no mutation of `G`
+- Every `Object.keys(record)` site that may throw on a specific
+  key uses `Object.keys(record).sort()` for deterministic error
+  reproducibility, with a `// why:` comment at each sort site
+- `InvariantCheckContext` is a local structural interface
+  (`{ readonly phase?: string; readonly turn?: number }`) defined
+  in `invariants.types.ts` — no `boardgame.io` `Ctx` import
+  anywhere under `src/invariants/` (RS-2 / D-2801 precedent)
+- 10 new tests in `invariants.test.ts` (Test 1 combines drift
+  detection with valid-G; Tests 2–5 assert specific category
+  throws; Tests 6–8 cover `assertInvariant` contract and
+  serialization happy path; Tests 9–10 are contract enforcement
+  tests proving gameplay conditions — insufficient attack, empty
+  wounds pile — do NOT throw)
+- 358 total tests, 94 suites, 0 failures (348 baseline + 10 new).
+  No existing test modified.
+
+**Mid-execution amendment:**
+- During implementation, the executor surfaced a conflict between
+  the original WP-031 spec for `checkNoCardInMultipleZones` and
+  the actual engine state: `CardExtId` is a card-type identifier
+  (not per-instance), and the starting-deck and pile builders push
+  multiple identical token strings into the same zone (8× of
+  `'starting-shield-agent'` per player deck, 30× of
+  `'pile-bystander'` per supply pile, etc.). A literal "no
+  CardExtId in multiple zones" check would throw on every valid
+  G and regress the 348-test baseline.
+- User authorized Option 1 (fungible-exclusion cross-zone semantics)
+  via WP-031 spec amendment + new DECISIONS.md entry. Three
+  amendments applied in place:
+  - **A-031-01:** `checkNoCardInMultipleZones` skips the six
+    well-known fungible token strings
+    (`starting-shield-agent`, `starting-shield-trooper`,
+    `pile-bystander`, `pile-wound`, `pile-shield-officer`,
+    `pile-sidekick`) and detects cross-zone duplication only for
+    non-fungible CardExtIds. Zone scan order is deterministic;
+    `attachedBystanders` excluded per D-1703.
+  - **A-031-02:** Canonical zone field name is `victory`, not
+    `victoryPile` (WP draft typo). All check spec locations and
+    tests use `victory`.
+  - **A-031-03:** `checkValidPhase` and
+    `checkTurnCounterMonotonic` parameter types widened to
+    `string | undefined` / `number | undefined` to handle
+    runtime-undefined values from mock contexts in tests.
+- Pre-flight RS-9 / RS-10 / RS-11 + PS-3 captured the discovery.
+  Copilot check Findings #31 / #32 / #33 captured the resolution.
+  Both audit trails re-confirm READY TO EXECUTE / CONFIRM after
+  the amendment. No test count change. No file list change.
+
+**Key decisions:**
+- D-3101: `src/invariants/` classified as engine code category
+  (pre-session, follows D-2706 / D-2801 / D-3001 precedent)
+- D-3102: Setup-only wiring scope chosen (Option B). Per-move
+  wiring deferred to a follow-up WP. Gameplay conditions remain
+  safe no-ops at move return per D-0102 clarification.
+- D-3103: Card uniqueness invariant scope (fungible token
+  exclusion). Locks the 6-string fungible set and the amended
+  cross-zone semantics. Documents the trade-off acknowledgement
+  and the forward-compatibility path to a future per-instance
+  refactor.
+
+**Architectural significance:**
+- D-0001 (Correctness Over Convenience) implemented at MVP level —
+  invariant violations fail fast at setup; no silent corruption.
+- D-0102 (Fail Fast on Invariant Violations, with clarification)
+  implemented at MVP level — the violation/condition distinction
+  is now mechanically enforced by the test pipeline (Tests 9 and 10
+  prove gameplay conditions are NOT flagged as invariants).
+- The five-category taxonomy provides a stable extension seam:
+  future WPs add a check by writing one new function inside an
+  existing category file and adding one new call inside
+  `runAllInvariantChecks`. Adding a new category requires updating
+  the union, the canonical array, the orchestrator, and one new
+  check file — drift-detection by Test 1 catches partial updates.
+- `InvariantViolationError` class authorized as a companion type
+  to `assertInvariant` (no new error contract); throwing path
+  fully covered by the existing `Game.setup() may throw` row in
+  `.claude/rules/game-engine.md §Throwing Convention` (no new
+  rule exception introduced).
+- `LegendaryGameState` unchanged — WP-031 adds zero fields. No
+  snapshot schema change. No `MatchSetupConfig` change.
+- The Security/Visibility category slot is reserved in the union
+  but no checks are implemented yet. A future WP fills the slot
+  without refactoring the orchestrator.
+
+**What's true now:**
+- Every match created via `LegendaryGame.setup()` is invariant-
+  checked at the moment its initial state is constructed. A
+  setup-time invariant violation aborts match creation immediately
+  with a typed `InvariantViolationError` carrying the category.
+- Gameplay conditions (insufficient attack, empty pile, no valid
+  target) are NEVER invariant violations and NEVER cause throws —
+  they remain handled by moves returning void.
+- All 11 check functions are pure helpers that read `G` (and a
+  small framework-context subset) and either return void or throw.
+  No mutation, no I/O, no registry access, no environment access.
+- The `// why:` comment discipline is uniformly applied: each
+  check has a one-line description of what it prevents; each
+  `Object.keys(...).sort()` site cites deterministic error
+  reproducibility; the wired block in `game.ts` cites D-3102 and
+  the throwing-convention row.
+
+**What's next:**
+- Follow-up WP: per-move wiring of `runAllInvariantChecks` (would
+  introduce a new throwing-convention exception for "assertInvariant
+  inside a move" and would require careful test-baseline impact
+  analysis). Currently deferred per D-3102.
+- Follow-up WP: Security/Visibility check functions (UIState
+  leakage detection, audience-filtered projection invariants). The
+  `'security'` category slot exists in the union for this.
+- Follow-up WP (hypothetical, larger refactor): per-instance unique
+  CardExtIds for fungible tokens, which would supersede D-3103 and
+  enable a literal "no CardExtId in multiple zones" check without a
+  fungible filter.
+
+---
+
 ### WP-030 — Campaign / Scenario Framework (2026-04-14)
 
 **What changed:**

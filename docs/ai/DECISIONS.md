@@ -3087,6 +3087,243 @@ same inputs always reconstructs the same branch path.
 
 ---
 
+### D-3101 — Invariants Directory Classified as Engine Code Category
+
+**Decision:** `packages/game-engine/src/invariants/` is classified under
+the `engine` code category.
+
+**Rationale:** Invariant files are pure, deterministic, have no I/O, and
+do not import `boardgame.io` or registry packages. They define data-only
+contracts (`InvariantCategory`, `InvariantViolation`,
+`InvariantCheckContext`) and a throwing assertion utility
+(`assertInvariant`) with a companion `InvariantViolationError` class.
+The check functions (`structural.checks`, `gameRules.checks`,
+`determinism.checks`, `lifecycle.checks`) and the orchestrator
+(`runAllInvariantChecks`) read `G` and either call `assertInvariant`
+or return `void` — they never mutate `G`, never read external inputs,
+and never query the registry. They follow all engine category rules.
+
+The invariants directory extends the engine's correctness-guarantee
+capability without introducing new categories or blurring existing
+boundaries. Runtime wiring of `runAllInvariantChecks` into `game.ts`
+is permitted because `game.ts` is the framework-boundary file that
+already imports `boardgame.io` — the wiring site, not the invariant
+files themselves, is where `Ctx` fields are read and passed into the
+local structural `InvariantCheckContext` interface (see D-2801
+`UIBuildContext` precedent for the pattern).
+
+This follows the precedent established by D-2706 (replay),
+D-2801 (ui), and D-3001 (campaign) for new engine subdirectories
+that host pure, non-lifecycle code. The classification is orthogonal
+to the throwing-convention exception: `assertInvariant` throws at
+setup time under the existing `Game.setup() may throw` rule
+(`.claude/rules/game-engine.md §Throwing Convention`), not as a new
+exception.
+
+**Affected WPs:** WP-031 introduces the directory. Future WPs that
+add additional invariant check files, extend the `InvariantCategory`
+union, or wire invariant checks into additional lifecycle points
+(e.g., per-move checks under a follow-up of D-3102) must continue to
+host them under `src/invariants/` and obey the engine category rules.
+
+**Introduced:** WP-031
+**Status:** Immutable
+
+---
+
+### D-3102 — Runtime Invariant Check Wiring Scope (Setup-Only at MVP)
+
+**Decision:** `runAllInvariantChecks` is wired into the engine runtime
+at exactly **one** point for the WP-031 MVP: the return path of
+`Game.setup()` in `packages/game-engine/src/game.ts`. Per-move
+wiring is **deferred** to a follow-up WP. The four implemented
+invariant categories (structural, gameRules, determinism, lifecycle)
+fire once per match, immediately after `buildInitialGameState`
+produces the initial `G`.
+
+Gameplay conditions (insufficient attack, empty wounds pile, no
+valid target, stage gate blocked) remain **safe no-ops at move
+return** per D-0102 clarification. They are NOT invariant violations
+and are NOT checked by the invariant pipeline. Move functions
+continue to follow the "validate args → check stage gate → mutate
+G → return void" contract with no changes.
+
+**Rationale:** Three alternatives were considered during WP-031
+pre-flight:
+
+- **Option A — per-move wiring, production-on:** wrap every entry
+  in `LegendaryGame.moves` with `withInvariantChecks`. Highest
+  correctness coverage, but would run invariant checks on every
+  move across the 348-test baseline. Any existing test that
+  constructs a handcrafted partial `G` and flows it through a
+  move could break. High ripple risk, uncertain remediation cost.
+
+- **Option B — setup-only wiring (this decision):** wire
+  `runAllInvariantChecks` only at the `Game.setup()` return. The
+  setup path is the highest-value single observation point for
+  MVP invariants — every WP-001 through WP-026 construction step
+  converges there, and a single successful check after setup
+  validates the entire deterministic build pipeline. Tests 9 and
+  10 (WP-031 §K) prove gameplay-condition non-violation via
+  direct unit calls to the check functions, so per-move runtime
+  wiring is not required for EC satisfaction. **Chosen.**
+
+- **Option C — dev/test-gated per-move wiring:** gate Option A
+  behind `process.env.NODE_ENV !== 'production'` or an
+  `ENABLE_RUNTIME_INVARIANTS` module flag. Rejected because it
+  introduces environment coupling into `game.ts`, which conflicts
+  with the engine's environment-independence principle. The
+  engine should not read `process.env`; it should be configurable
+  from the server layer or not at all.
+
+Option B preserves the existing 348-test baseline, keeps the engine
+environment-independent, satisfies the WP-031 Definition of Done
+(runtime wiring exists, gameplay conditions excluded), and leaves
+a clean extension seam for a future WP to re-evaluate per-move
+wiring once the performance-vs-coverage trade-off is measured
+against real move throughput.
+
+The follow-up WP that adds per-move wiring (if and when it is
+scheduled) must introduce a new throwing-convention exception for
+"`assertInvariant` inside a move is permitted because structural
+corruption must not be silently ignored". That exception is NOT
+introduced by WP-031 — under Option B, `assertInvariant` is only
+called from the setup return path, which is already covered by the
+existing `Game.setup() may throw` rule in
+`.claude/rules/game-engine.md §Throwing Convention`.
+
+**Affected WPs:** WP-031 implements setup-only wiring. A future
+follow-up WP may expand wiring into the move lifecycle under a new
+decision that supersedes this one for the move-wiring scope
+specifically; the setup-only portion remains Immutable regardless.
+
+**Introduced:** WP-031
+**Status:** Immutable
+
+---
+
+### D-3103 — Card Uniqueness Invariant Scope (Fungible Token Exclusion)
+
+**Decision:** The `checkNoCardInMultipleZones` invariant in WP-031
+§D scans for cross-zone duplication of **non-fungible** CardExtIds
+only. Six well-known CardExtId strings are classified as **fungible
+tokens** and are excluded from the dedup scan entirely. Their
+legitimate duplication across zones is structurally normal and must
+not fire the invariant.
+
+The locked fungible set (drawn from existing setup-layer public
+constants, no new constants introduced):
+
+| Constant | Value | Owner |
+|---|---|---|
+| `SHIELD_AGENT_EXT_ID`   | `'starting-shield-agent'`    | `buildInitialGameState.ts` |
+| `SHIELD_TROOPER_EXT_ID` | `'starting-shield-trooper'`  | `buildInitialGameState.ts` |
+| `BYSTANDER_EXT_ID`      | `'pile-bystander'`           | `pilesInit.ts`             |
+| `WOUND_EXT_ID`          | `'pile-wound'`               | `pilesInit.ts`             |
+| `SHIELD_OFFICER_EXT_ID` | `'pile-shield-officer'`      | `pilesInit.ts`             |
+| `SIDEKICK_EXT_ID`       | `'pile-sidekick'`            | `pilesInit.ts`             |
+
+All other CardExtIds — villain cards (from `listCards()` keys in the
+format `{setAbbr}-villain-{groupSlug}-{cardSlug}`), henchmen
+(`henchman-{groupSlug}-{NN}`), scheme twists
+(`scheme-twist-{schemeSlug}-{NN}`), virtual bystanders
+(`bystander-villain-deck-{NN}`), mastermind strikes and tactics
+(`{setAbbr}-mastermind-{slug}-{cardSlug}`), and any future hero-deck
+instance IDs — are treated as **per-instance unique**. If any of
+these strings appear in two distinct zones simultaneously, the
+invariant fires and `assertInvariant` throws with category
+`'gameRules'`.
+
+**Rationale:** CardExtIds in the Legendary Arena engine are card-
+**type** identifiers, not per-instance identifiers. The MVP engine
+makes a deliberate space-vs-precision trade-off for fungible game
+components (agents, troopers, pile tokens): all copies of a token
+share a single string ID, and `G.piles.bystanders` is an array of
+30 identical `'pile-bystander'` entries. This keeps setup code
+simple, snapshot state compact, and registry-loader concerns out of
+the pile-builder code path.
+
+The correctness cost of this trade-off is that a literal
+"no CardExtId appears in more than one zone" invariant cannot be
+implemented for these six strings — every valid `G` produced by
+`buildInitialGameState` contains legitimate duplication inside the
+piles and starting decks. A mid-execution discovery during WP-031
+(2026-04-15) surfaced this conflict: running the literal check on
+the initial state would throw `InvariantViolationError` and break
+every existing test that routes through `LegendaryGame.setup()`,
+regressing the 348-test baseline that WP-031 was required to
+preserve.
+
+Three alternatives were considered:
+
+- **Option 1 — Fungible-exclusion cross-zone check (this decision):**
+  The check skips the six fungible tokens entirely. For all other
+  CardExtIds, it detects cross-zone duplication (same ID, two
+  distinct zone names). Narrower correctness coverage than a literal
+  "no duplicate ever" check, but sound against the current engine
+  state. Chosen.
+
+- **Option 2 — Drop the check entirely from WP-031:** defer the
+  invariant to a follow-up WP. Rejected because it removes
+  correctness coverage WP-031 was scoped to deliver, and because
+  cross-zone non-fungible duplication is a real bug class (e.g., a
+  move that reveals a villain into the city without removing it
+  from `G.villainDeck.deck`) that the amended check does catch.
+
+- **Option 3 — Refactor fungible tokens to per-instance unique
+  CardExtIds** (e.g., `'starting-shield-agent-00'`,
+  `'starting-shield-agent-01'`, …, `'pile-bystander-0000'`, …):
+  would enable the literal check but requires rewriting
+  `buildStartingDeckCards`, `createPileCards`, every zoneOp that
+  references starting-card strings, every test fixture that
+  hardcodes token IDs, and inflates snapshot state by ~10× on the
+  bystanders / wounds / officers piles. Massively out of scope for
+  a production-hardening WP. Deferred to a hypothetical future WP
+  that explicitly decides the per-instance trade-off.
+
+Option 1 is the correct choice for WP-031 because it preserves the
+348-test baseline, delivers the non-fungible cross-zone coverage
+that was the check's original intent, and leaves a clean extension
+seam: a future WP that chooses Option 3 can replace the amended
+check with a literal one without touching the fungible set (which
+will be empty after the refactor).
+
+**Trade-off acknowledgement:** The amended check does NOT detect:
+
+- Duplication of a fungible token across two zones that should not
+  both hold it (e.g., a bug that copies a `'pile-wound'` out of
+  `G.piles.wounds` into `G.playerZones[0].hand` without removing it
+  from the pile — both are legitimate locations for wound tokens in
+  isolation, so the check cannot distinguish the bug from normal
+  state). Such bugs must be caught by test fixtures or a future
+  per-instance refactor.
+- Duplication of a non-fungible CardExtId **within the same zone**
+  (the amended check uses a zone-name key, so two identical non-
+  fungible IDs inside `G.villainDeck.deck` would currently be
+  allowed). A "no duplicates within one zone" check is a separate
+  invariant and is deferred. For the MVP, villain/henchman/tactic
+  construction pipelines are deterministic and do not emit
+  intra-zone duplicates in practice.
+- Security/Visibility leakage (category is reserved in the union;
+  no checks are implemented in WP-031 per its §Out of Scope).
+
+These gaps are intentional and documented so that a future
+correctness audit does not treat the amended check as a complete
+card-tracking invariant.
+
+**Affected WPs:** WP-031 implements the amended check. A future WP
+that introduces per-instance unique CardExtIds (refactoring
+`buildStartingDeckCards` and `createPileCards`) supersedes this
+decision for the fungible-exclusion portion — the check can then
+be widened to literal cross-zone dedup without a fungible filter.
+The Option 1 scope described here remains the authoritative WP-031
+implementation contract regardless of future refactors.
+
+**Introduced:** WP-031 (mid-execution, 2026-04-15)
+**Status:** Immutable
+
+---
+
 ### How to Add a New Decision
 1. Assign a new decision ID
 2. State the decision clearly

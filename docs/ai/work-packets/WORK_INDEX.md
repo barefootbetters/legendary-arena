@@ -641,16 +641,45 @@ These packets make the game safe to ship.
   NOT invoked — WP is purely additive; was truncated at 68 lines — normalized
   to full PACKET-TEMPLATE
 
-- [ ] WP-031 — Production Hardening & Engine Invariants ✅ Reviewed
+- [x] WP-031 — Production Hardening & Engine Invariants ✅ Reviewed ✅ Completed 2026-04-15
   Dependencies: WP-029
   Notes: Five non-overlapping invariant categories: structural, gameRules,
-  determinism, security, lifecycle; `assertInvariant` throws on violation
-  (D-0102 fail fast); invariant checks are pure, deterministic, no I/O;
-  critical distinction: invariant violations (structural corruption) fail
-  fast; gameplay conditions (insufficient attack, empty pile) remain safe
-  no-ops per D-0102 clarification; checks wired into setup and move lifecycle;
-  implements D-0001, D-0102; was truncated at 78 lines — normalized to full
-  PACKET-TEMPLATE
+  determinism, security (deferred), lifecycle. Canonical
+  `INVARIANT_CATEGORIES` readonly array with Test 1 drift-detection
+  assertion. `assertInvariant` throws `InvariantViolationError` on
+  violation (D-0102 fail fast); invariant checks are pure helpers, no
+  boardgame.io import, no registry import, no `.reduce()`, no
+  `Math.random()`. Critical distinction enforced by Tests 9/10: invariant
+  violations (structural corruption) fail fast; gameplay conditions
+  (insufficient attack, empty pile) remain safe no-ops per D-0102
+  clarification. Wiring scope: setup-only per D-3102 / Option B
+  (per-move wiring deferred to a follow-up WP) — `runAllInvariantChecks`
+  called from `Game.setup()` return path only, throwing covered by the
+  existing `Game.setup() may throw` row in `.claude/rules/game-engine.md
+  §Throwing Convention` (no new rule exception). 01.5 runtime-wiring
+  allowance INVOKED with three minimal additive edits: `game.ts` (1
+  import + 4-line setup-return wrap), `types.ts` (additive re-export
+  block), `index.ts` (additive export block). 10 new tests in
+  `invariants.test.ts`; 358 total tests, 94 suites, 0 failures (348
+  baseline + 10 new); no existing test modified. Implements D-0001
+  (Correctness Over Convenience) and D-0102 (Fail Fast on Invariant
+  Violations). Mid-execution amendment: WP §D
+  `checkNoCardInMultipleZones` semantics narrowed to
+  fungible-token exclusion per A-031-01 / D-3103 because CardExtIds
+  are card-type IDs (not per-instance) — the literal "no CardExtId in
+  multiple zones" check would have thrown on every valid G. Six
+  fungible token strings (starting-shield-agent, starting-shield-trooper,
+  pile-bystander, pile-wound, pile-shield-officer, pile-sidekick) are
+  excluded; cross-zone duplication of all other CardExtIds still fires
+  the invariant. A-031-02 fixes a `victoryPile` → `victory` field-name
+  drift in the WP draft. A-031-03 widens
+  `checkValidPhase`/`checkTurnCounterMonotonic` parameter types to
+  `| undefined` for mock-context test compatibility. Pre-flight RS-9 /
+  RS-10 / RS-11 + PS-3 and copilot Findings #31 / #32 / #33 capture
+  the discovery and resolution; both audit trails re-confirm. New
+  decisions: D-3101 (invariants directory engine classification),
+  D-3102 (setup-only wiring scope), D-3103 (card uniqueness fungible
+  exclusion).
 
 - [ ] WP-032 — Network Sync & Turn Validation ✅ Reviewed
   Dependencies: WP-031
