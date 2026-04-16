@@ -1,27 +1,9 @@
 <script setup lang="ts">
 import type { ThemeDefinition } from "../lib/themeClient";
+import { TAG_COLOR } from "../lib/theme";
 
 defineProps<{ themes: ThemeDefinition[]; selectedId?: string }>();
 const emit = defineEmits<{ select: [theme: ThemeDefinition] }>();
-
-/** Color for the category badge based on the first tag. */
-const TAG_COLOR: Record<string, string> = {
-  "x-men": "#f472b6",
-  "cosmic": "#c084fc",
-  "avengers": "#60a5fa",
-  "spider-man": "#f87171",
-  "street-level": "#f59e0b",
-  "noir": "#f59e0b",
-  "espionage": "#34d399",
-  "horror": "#a78bfa",
-  "supernatural": "#a78bfa",
-  "fantastic-four": "#60a5fa",
-  "deep-cut": "#94a3b8",
-  "team-up": "#94a3b8",
-  "hulk": "#34d399",
-  "deadpool": "#f87171",
-  "inhumans": "#c084fc",
-};
 
 function primaryTag(theme: ThemeDefinition): string {
   return (theme.tags ?? [])[0] ?? "";
@@ -90,7 +72,7 @@ function tagColor(theme: ThemeDefinition): string {
   padding: 0;
 }
 .theme-tile:hover { border-color: #5050a0; transform: translateY(-2px); }
-.theme-tile.selected { border-color: #7070e0; }
+.theme-tile.selected { border-color: #7070e0; box-shadow: 0 0 12px rgba(112, 112, 224, 0.35); }
 
 .img-wrap { position: relative; width: 100%; aspect-ratio: 3/4; background: #12121a; overflow: hidden; }
 .img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }

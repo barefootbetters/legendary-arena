@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { useGlossary } from "../composables/useGlossary";
 import type { GlossaryEntry } from "../composables/useGlossary";
+import { useResizable } from "../composables/useResizable";
 
 const {
   isOpen,
@@ -11,6 +12,15 @@ const {
   close,
   scrollToEntry,
 } = useGlossary();
+
+// ── Resizable panel width (persisted, right-edge drag) ──────────────────────
+const { width: panelWidth, startDrag, resetWidth } = useResizable({
+  storageKey:   "glossaryWidth",
+  defaultWidth: 360,
+  minWidth:     240,
+  maxWidth:     600,
+  direction:    "right",
+});
 
 // ── Grouped entries for rendering ───────────────────────────────────────────
 
@@ -55,9 +65,17 @@ function handleEntryClick(entry: GlossaryEntry) {
   <aside
     v-if="isOpen"
     class="glossary-panel"
+    :style="{ width: panelWidth + 'px' }"
     role="complementary"
     aria-label="Rules Glossary"
   >
+    <div
+      class="resize-handle"
+      @pointerdown="startDrag"
+      @dblclick="resetWidth"
+      title="Drag to resize · double-click to reset"
+      aria-label="Resize glossary panel"
+    ></div>
     <div class="glossary-header">
       <div class="header-title">
         <span class="title-icon">📖</span>
@@ -129,19 +147,37 @@ function handleEntryClick(entry: GlossaryEntry) {
 }
 
 /* ── Panel base (desktop: left flex sibling, pushes content) ──────────── */
+/* width is set inline via :style binding, driven by useResizable() */
 .glossary-panel {
-  width: 360px;
   flex-shrink: 0;
   background: #1a1a24;
   border-right: 1px solid #2e2e42;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: slideInFromLeft 0.2s ease-out;
+  position: relative;
+  animation: fadeInPanel 0.2s ease-out;
 }
-@keyframes slideInFromLeft {
-  from { width: 0; opacity: 0; }
-  to   { width: 360px; opacity: 1; }
+@keyframes fadeInPanel {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Resize handle (6px splitter on the right edge) ─────────────────────── */
+.resize-handle {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 10;
+  background: transparent;
+  transition: background 0.15s;
+}
+.resize-handle:hover,
+.resize-handle:active {
+  background: rgba(112, 112, 224, 0.4);
 }
 
 /* ── Mobile: bottom sheet overlay ──────────────────────────────────────── */

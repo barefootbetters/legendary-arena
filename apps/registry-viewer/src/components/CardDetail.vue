@@ -5,6 +5,7 @@ import type { AbilityToken } from "../composables/useRules";
 import { useGlossary } from "../composables/useGlossary";
 import { useResizable } from "../composables/useResizable";
 import { useLightbox } from "../composables/useLightbox";
+import { TYPE_COLOR, HC_COLOR, RARITY_LABEL } from "../lib/theme";
 
 defineProps<{ card: FlatCard }>();
 const emit = defineEmits<{ close: [] }>();
@@ -92,15 +93,8 @@ function tokenLabel(token: AbilityToken): string {
   return token.value;
 }
 
-// ── Stat display ──────────────────────────────────────────────────────────────
-const HC_COLOR: Record<string, string> = {
-  covert: "#34d399", instinct: "#f472b6", ranged: "#60a5fa",
-  strength: "#f87171", tech: "#fbbf24",
-};
-const TYPE_COLOR: Record<string, string> = {
-  hero: "#60a5fa", mastermind: "#f87171", villain: "#f59e0b", scheme: "#a78bfa",
-};
-const RARITY_LABEL: Record<number, string> = { 1: "Common", 2: "Uncommon", 3: "Rare" };
+// why: TYPE_COLOR, HC_COLOR, RARITY_LABEL imported from src/lib/theme.ts
+// (single source of truth for all color constants across the viewer)
 </script>
 
 <template>

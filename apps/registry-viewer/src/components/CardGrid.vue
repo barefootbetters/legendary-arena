@@ -1,16 +1,9 @@
 <script setup lang="ts">
 import type { FlatCard } from "../../registry/browser";
+import { TYPE_COLOR, HC_COLOR, RARITY_DOT } from "../lib/theme";
 
 defineProps<{ cards: FlatCard[]; selectedKey?: string }>();
 const emit = defineEmits<{ select: [card: FlatCard] }>();
-
-const TYPE_COLOR: Record<string, string> = {
-  hero: "#60a5fa", mastermind: "#f87171", villain: "#f59e0b", scheme: "#a78bfa",
-};
-const HC_COLOR: Record<string, string> = {
-  covert: "#34d399", instinct: "#f472b6", ranged: "#60a5fa", strength: "#f87171", tech: "#fbbf24",
-};
-const RARITY_DOT: Record<number, string> = { 1: "#9ca3af", 2: "#34d399", 3: "#60a5fa" };
 </script>
 
 <template>
@@ -51,7 +44,7 @@ const RARITY_DOT: Record<number, string> = { 1: "#9ca3af", 2: "#34d399", 3: "#60
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.75rem; }
 .card-tile { background: #1a1a24; border: 2px solid #2e2e42; border-radius: 8px; cursor: pointer; transition: border-color 0.15s, transform 0.1s; overflow: hidden; display: flex; flex-direction: column; text-align: left; padding: 0; }
 .card-tile:hover { border-color: #5050a0; transform: translateY(-2px); }
-.card-tile.selected { border-color: #7070e0; }
+.card-tile.selected { border-color: #7070e0; box-shadow: 0 0 12px rgba(112, 112, 224, 0.35); }
 .img-wrap { position: relative; width: 100%; aspect-ratio: 3/4; background: #12121a; overflow: hidden; }
 .img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .type-badge { position: absolute; bottom: 4px; left: 4px; font-size: 0.6rem; padding: 0.1rem 0.35rem; border-radius: 3px; font-weight: 600; text-transform: capitalize; }

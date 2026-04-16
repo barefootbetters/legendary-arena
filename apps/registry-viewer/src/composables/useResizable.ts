@@ -16,6 +16,7 @@
  */
 
 import { ref, onBeforeUnmount } from "vue";
+import { loadStoredWidth } from "../lib/theme";
 
 export interface ResizableOptions {
   /** localStorage key to persist the user's preferred width. */
@@ -44,25 +45,10 @@ export function useResizable(options: ResizableOptions) {
     direction = "left",
   } = options;
 
-  // ── Load initial width from storage ────────────────────────────────────
-  // why: try/catch because localStorage may be unavailable in some contexts
-  // (private mode, storage quota exceeded). Fall back silently to default.
-  function loadStoredWidth(): number {
-    try {
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        const parsed = parseInt(stored, 10);
-        if (!Number.isNaN(parsed) && parsed >= minWidth && parsed <= maxWidth) {
-          return parsed;
-        }
-      }
-    } catch {
-      // Silent fallback — localStorage may not be available
-    }
-    return defaultWidth;
-  }
-
-  const width = ref<number>(loadStoredWidth());
+  // why: loadStoredWidth from theme.ts checks a layout version key so that
+  // panel widths auto-reset after structural changes (e.g. adding a panel).
+  const storedWidth = loadStoredWidth(storageKey, minWidth, maxWidth);
+  const width = ref<number>(storedWidth ?? defaultWidth);
 
   // ── Drag state ─────────────────────────────────────────────────────────
   let isDragging = false;
