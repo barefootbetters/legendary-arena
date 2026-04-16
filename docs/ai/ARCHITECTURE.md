@@ -114,17 +114,35 @@ C:\pcloud\BB\DEV\legendary-arena\
 │   │             Zod schemas, CardRegistry interface
 │   │   Must NOT import: game-engine, preplan, server, any app package, pg
 │   │
-│   └── preplan/              @legendary-arena/preplan
-│       Responsibility: speculative pre-planning state for waiting players
-│       Contains: PrePlan types, sandbox creation, speculative operations,
-│                 disruption detection, invalidation, source restoration
-│       Non-authoritative: never writes to G, ctx, or engine state
-│       All randomness uses a client-local seedable PRNG, never ctx.random.*
-│       Must NOT import: boardgame.io, game-engine runtime code, server,
-│                        registry, any app package, pg
-│       May import: game-engine type definitions only (e.g., CardExtId)
-│       Design docs: docs/ai/DESIGN-CONSTRAINTS-PREPLANNING.md,
-│                    docs/ai/DESIGN-PREPLANNING.md
+│   ├── preplan/              @legendary-arena/preplan
+│   │   Responsibility: speculative pre-planning state for waiting players
+│   │   Contains: PrePlan types, sandbox creation, speculative operations,
+│   │             disruption detection, invalidation, source restoration
+│   │   Non-authoritative: never writes to G, ctx, or engine state
+│   │   All randomness uses a client-local seedable PRNG, never ctx.random.*
+│   │   Must NOT import: boardgame.io, game-engine runtime code, server,
+│   │                    registry, any app package, pg
+│   │   May import: game-engine type definitions only (e.g., CardExtId)
+│   │   Design docs: docs/ai/DESIGN-CONSTRAINTS-PREPLANNING.md,
+│   │                docs/ai/DESIGN-PREPLANNING.md
+│   │
+│   └── vue-sfc-loader/       @legendary-arena/vue-sfc-loader
+│       Responsibility: test-only Vue SFC import support for node:test
+│       Contains: compileVue (wraps @vue/compiler-sfc), Node 22 module.register
+│                 loader hook, register entry point, test fixture
+│       Layer: Shared Tooling (cross-cutting, test/build only)
+│       Must NOT be imported by runtime app code — only consumed via
+│                 NODE_OPTIONS=--import @legendary-arena/vue-sfc-loader/register
+│                 in app test scripts
+│       Must NOT import: game-engine, registry, preplan, server, any app
+│                        package, pg
+│       May import: @vue/compiler-sfc (peer dep), vue (peer dep), typescript
+│                   (only if Preflight TS smoke test requires it), Node
+│                   built-ins
+│       Emits: JavaScript only — Node's loader chain does not re-transform
+│              the string returned from load(), so compileVue must emit JS
+│              even when <script lang="ts"> is present
+│       Work Packet: WP-065
 │
 ├── apps/
 │   ├── server/
@@ -175,14 +193,20 @@ C:\pcloud\BB\DEV\legendary-arena\
 
 | Package | May import | Must NOT import |
 |---|---|---|
-| `game-engine` | Node built-ins only | `registry`, `preplan`, `server`, any `apps/*`, `pg` |
-| `registry` | Node built-ins, `zod` | `game-engine`, `preplan`, `server`, any `apps/*`, `pg` |
-| `preplan` | `game-engine` (types only), Node built-ins | `game-engine` (runtime), `registry`, `server`, any `apps/*`, `pg`, `boardgame.io` |
-| `apps/server` | `game-engine`, `registry`, `pg`, Node built-ins | `preplan`, UI packages, browser APIs |
-| `apps/registry-viewer` | `registry`, UI framework | `game-engine`, `preplan`, `server`, `pg` |
+| `game-engine` | Node built-ins only | `registry`, `preplan`, `server`, `vue-sfc-loader`, any `apps/*`, `pg` |
+| `registry` | Node built-ins, `zod` | `game-engine`, `preplan`, `server`, `vue-sfc-loader`, any `apps/*`, `pg` |
+| `preplan` | `game-engine` (types only), Node built-ins | `game-engine` (runtime), `registry`, `server`, `vue-sfc-loader`, any `apps/*`, `pg`, `boardgame.io` |
+| `vue-sfc-loader` (WP-065) | `@vue/compiler-sfc` (peer), `vue` (peer), `typescript` (optional, test-only), Node built-ins | `game-engine`, `registry`, `preplan`, `server`, any `apps/*`, `pg`, `boardgame.io`, any runtime UI code |
+| `apps/server` | `game-engine`, `registry`, `pg`, Node built-ins | `preplan`, `vue-sfc-loader`, UI packages, browser APIs |
+| `apps/registry-viewer` | `registry`, UI framework, `vue-sfc-loader` (devDep only, test scripts) | `game-engine`, `preplan`, `server`, `pg`, `vue-sfc-loader` at runtime |
+| `apps/arena-client` (WP-061+) | UI framework, `vue-sfc-loader` (devDep only, test scripts) | `game-engine` (runtime), `registry` (runtime), `preplan`, `server`, `pg`, `vue-sfc-loader` at runtime |
 
 Violations of these rules are bugs. The TypeScript build should catch them via
-`"paths"` restrictions in `tsconfig.json`.
+`"paths"` restrictions in `tsconfig.json`. The `vue-sfc-loader` row is
+additionally enforced at packaging time: it appears only in apps'
+`devDependencies` and their `test` scripts' `NODE_OPTIONS`, never in their
+production bundles. Any app listing `vue-sfc-loader` in `dependencies` is a
+layer violation.
 
 ### Layer Boundary (Authoritative)
 

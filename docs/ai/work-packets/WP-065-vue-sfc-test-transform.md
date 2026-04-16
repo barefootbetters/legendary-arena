@@ -107,19 +107,26 @@ Before writing a single line:
   with `--import` is still the supported API on the project's target
   Node version (22+). This is the Node API this packet uses directly.
   Log the exact Node minor version in DECISIONS.md.
-- **`<script lang="ts">` smoke-test before writing `loader.ts`:**
+- **`<script lang="ts">` smoke-test before writing `compileVue.ts`:**
   `@vue/compiler-sfc`'s `compileScript` behavior on TypeScript varies
   across versions — sometimes it strips TS types, sometimes it emits
-  TS-with-types that needs a secondary transform. Before writing
-  `loader.ts`, run a one-off smoke test: feed a minimal SFC with
-  `<script lang="ts">` containing a type annotation into
-  `compileScript` and inspect the output. Record the observed
-  behavior in DECISIONS.md (e.g., "version X.Y.Z of
-  `@vue/compiler-sfc` emits plain JS for `lang='ts'` scripts, so no
-  secondary TS pass is required"). If the output still contains TS
-  syntax, the loader must chain to the repo's TS transform (tsx or
-  equivalent) after SFC compilation — note this in DECISIONS.md and
-  adjust Scope (In) §C before writing.
+  TS-with-types. `compileVue` **must always return JS** (see
+  Non-Negotiable Constraints). Before coding, run a one-off smoke
+  test: feed a minimal SFC with `<script lang="ts">` containing a
+  type annotation into `compileScript` with `babelParserPlugins:
+  ['typescript']` and inspect the output. Two outcomes:
+  - Output is already plain JS → record in DECISIONS.md ("version
+    X.Y.Z emits plain JS for `lang='ts'`; no secondary TS pass
+    required"). `compileVue` emits `compileScript` output directly.
+  - Output still contains TS syntax → `compileVue` applies
+    `typescript.transpileModule({ module: 'ESNext', target:
+    'ES2022' })` to the script block after `compileScript`, before
+    concatenating with the template render function. Add
+    `typescript` to the package's direct dependencies. Record this
+    in DECISIONS.md.
+  Do NOT attempt to "let the outer TS loader catch up" — Node's
+  loader chain does not re-transform the string returned from
+  `load()`.
 - **Architecture layer classification:** confirm that
   `docs/ai/ARCHITECTURE.md §Layer Boundary` includes a "Shared
   Tooling" layer (amended 2026-04-16 for this packet). If the layer
@@ -145,8 +152,11 @@ If any item is unknown, **stop and ask** before writing code.
 - **Forbidden dependencies (lint §7):** no `axios`, no `node-fetch`
   (use Node's built-in `fetch`); no ORMs; no `Jest`, no `Vitest`, no
   `Mocha` — only `node:test`; no `passport`, no `auth0`, no `clerk`;
-  no `@swc/core`, no `babel` — the compiler is `@vue/compiler-sfc`
-  plus whatever TypeScript transform the repo already uses.
+  no `@swc/core`, no `babel`. Permitted compilers: `@vue/compiler-sfc`
+  for SFC parsing and `typescript` (the TS compiler package) **only
+  inside `compileVue`** for the `transpileModule` TS→JS pass, if the
+  Preflight smoke test shows it is needed. No other TS transform
+  (tsx, ts-node, esbuild, etc.) is installed inside this package.
 
 **Packet-specific:**
 - The loader is **tests-only**. Runtime SFC handling in Vite for
@@ -155,27 +165,57 @@ If any item is unknown, **stop and ask** before writing code.
 - `compileVue` is a **pure function**: input is a string + filename,
   output is a string + optional sourcemap. No I/O. No `console.*`. No
   wall clock. No mutation of inputs.
+- **`compileVue` MUST emit JavaScript only — never TypeScript**, even
+  when the input `<script lang="ts">` contains TS syntax. Node's
+  loader chain decides transforms by the specifier (`.vue`); once
+  `load()` returns `{ format: 'module', source: <string> }`, no
+  further loader gets a second pass at that string as TS. Relying on
+  tsx or any external TS loader to "catch up after" would fail with
+  `Unexpected token` errors on `lang="ts"` SFCs.
+  - If the Preflight smoke test proves
+    `@vue/compiler-sfc.compileScript({ ..., babelParserPlugins:
+    ['typescript'] })` already emits plain JS for `lang="ts"`,
+    record that in DECISIONS.md and no further action is needed.
+  - Otherwise, `compileVue` applies a deterministic TS-to-JS pass
+    **internally** using `typescript.transpileModule` with
+    `{ module: 'ESNext', target: 'ES2022' }` (or whatever settings
+    Preflight confirms match the repo). `typescript` is added as a
+    direct dependency. No Babel, no SWC, no tsx dependency inside
+    this package.
 - The loader hook reads the `.vue` file via `node:fs/promises`, passes
   contents to `compileVue`, and returns the result to Node's module
   system. Errors produce full-sentence messages naming the offending
   `.vue` file and the compiler diagnostic that failed.
-- Style blocks (`<style>`) are **stripped** at test time (they emit no
-  code). Test-time components render without CSS; this is acceptable
-  because HUD/component tests assert on text content and
-  `aria-label`-ed elements (per WP-062 debuggability), not on computed
-  styles.
-- `<script lang="ts">` is supported: after SFC block extraction, the
-  TypeScript script content is passed through the **same TypeScript
-  transform the repo already uses under `node:test`** (tsx or
-  equivalent). Do not introduce a second TS transform.
-- Sourcemaps are emitted so test stack traces point at `.vue` line
-  numbers, not compiled JS. Inline sourcemap comment is acceptable.
-- Consumers opt in via one of two mechanisms:
-  1. `NODE_OPTIONS=--import @legendary-arena/vue-sfc-loader/register`
-     in the consumer's `test` script (cross-platform, preferred).
-  2. `node --import @legendary-arena/vue-sfc-loader/register
-     --test src/**/*.test.ts` direct invocation.
-  The README documents both patterns.
+- **Filename normalization for compiler identity:** `compileVue`
+  normalizes filenames to POSIX-style forward slashes before passing
+  them as the compiler `id` (so the same SFC produces byte-identical
+  output on Windows and Linux CI). The original OS-native path is
+  still used for error messages so humans see the path their shell
+  understands. This is a determinism-load-bearing rule; a test
+  asserts that two calls with `C:\foo\Hello.vue` and `/foo/Hello.vue`
+  as filenames produce compiler outputs differing only in the error
+  path (never in the emitted module body).
+- **Style and unknown-custom blocks are stripped — this is
+  intentional test-time behavior, not a silent fallback.** The
+  compiler stripping is documented and counted in DEBUG output (see
+  Debuggability). "No silent fallbacks" applies to *parse failures*
+  and *zero-block results* (which throw), not to intentional
+  block-type omission at test time.
+- Sourcemaps are emitted so test stack traces reference the `.vue`
+  file path with a non-zero line number. Perfect column accuracy is
+  not required — `@vue/compiler-sfc` produces separate maps for
+  template and script, and merging them perfectly is non-trivial.
+  Inline sourcemap comment is acceptable. The acceptance criterion
+  is "stack trace contains the `.vue` path **and** a non-zero line
+  number", not "maps every byte."
+- **Consumers opt in via one canonical NODE_OPTIONS pattern**
+  documented in the README:
+  - `NODE_OPTIONS="--import tsx --import @legendary-arena/vue-sfc-loader/register"`
+    — TS loader first (so consumer `.ts` test files are handled),
+    Vue loader second. `compileVue` itself is JS-only, so this
+    ordering is composable and stable.
+  - Alternatives (direct `node --import ...`) are shown in the
+    README but are not the recommended default.
 
 **Session protocol:**
 - If `apps/registry-viewer/` already has a home-rolled SFC test
@@ -202,20 +242,32 @@ If any item is unknown, **stop and ask** before writing code.
   and the diagnostic text verbatim. Example: `Compilation of
   "src/components/Hello.vue" failed in <template>: Element is missing
   end tag.`
-- **Sourcemaps point at `.vue`:** test stack traces from a failing
-  SFC test show the original `.vue` file and line number, not the
-  generated JS. The register hook returns a `source` + `sourcemap`
-  pair to Node.
-- **No silent fallbacks:** if a file ends in `.vue` but parsing
-  produces zero blocks, the loader throws (do not return an empty
-  module silently).
+- **Sourcemaps reference `.vue` path and line number:** test stack
+  traces from a failing SFC test show the original `.vue` file path
+  and a non-zero line number. Perfect column mapping is not required
+  — merging `compileTemplate` and `compileScript` maps perfectly is
+  non-trivial and out of scope. Success is defined as "a human can
+  find the failing line in the `.vue` file from the stack trace."
+- **Parse-failure and zero-block throws — not silent:** if a file
+  ends in `.vue` but `@vue/compiler-sfc.parse` throws OR returns zero
+  `<template>`/`<script>` blocks combined, the loader throws a
+  full-sentence `Error`. Intentional stripping of `<style>` blocks
+  and unknown custom blocks is **not** a silent fallback — it is
+  documented test-time behavior and is surfaced via the DEBUG
+  counters below.
 - **`DEBUG=vue-sfc-loader` env opt-in:** when set, the loader writes a
   one-line summary to stderr for each compiled file:
-  `compiled <file> blocks=<template|script|style counts>
-  bytesIn=<N> bytesOut=<N>`. Silent otherwise.
-- **Deterministic compilation:** given identical input source + id,
-  `compileVue` returns byte-identical output across runs. A test
-  asserts this directly.
+  `compiled <file> template=<0|1> script=<0|1> styleStripped=<N>
+  customStripped=<N> bytesIn=<N> bytesOut=<N>`. Silent otherwise.
+  Custom-block counts make the intentional stripping visible without
+  dumping contents.
+- **Deterministic compilation (load-bearing):** given identical
+  source, identical POSIX-normalized filename, and identical
+  `@vue/compiler-sfc` / `typescript` versions, `compileVue` returns
+  byte-identical output across runs and across OSes (Windows vs
+  Linux CI). A test asserts this directly by compiling the same
+  source with two filename inputs — `C:\fix\hello.vue` and
+  `/fix/hello.vue` — and asserting identical emitted module bodies.
 
 ---
 
@@ -225,38 +277,75 @@ If any item is unknown, **stop and ask** before writing code.
 
 - `packages/vue-sfc-loader/package.json` — **new**. Name
   `@legendary-arena/vue-sfc-loader`. `private: true`. Scripts:
-  `build`, `test`, `typecheck`. Exports map publishing `./register`
-  as a subpath entry so `--import @legendary-arena/vue-sfc-loader/register`
-  resolves. Runtime deps: `@vue/compiler-sfc` (version matches the
-  repo's `vue` dep exactly), `vue`. Dev deps: `@vue/test-utils`,
-  `jsdom`, `typescript`.
+  `build` (runs `tsc` only — **no bundler**, no esbuild, no rollup),
+  `test`, `typecheck`. Exports map publishes `./register` as a
+  subpath entry pointing at the compiled `dist/register.js`, so
+  `--import @legendary-arena/vue-sfc-loader/register` resolves.
+  - **Dependency strategy (anti-duplication):**
+    - `peerDependencies`: `vue` and `@vue/compiler-sfc` — pinned to
+      match the repo's current Vue version exactly. This prevents
+      pnpm from installing a second copy of Vue when apps consume
+      this package, which would break `@vue/test-utils` mount checks
+      and `instanceof` assertions in subtle ways.
+    - `devDependencies`: `vue` and `@vue/compiler-sfc` at the same
+      version (so this package's own tests resolve them), plus
+      `@vue/test-utils`, `jsdom`, `typescript`. Use `workspace:*` or
+      whatever the repo's canonical workspace-version protocol is.
+    - `dependencies`: none on Vue; `typescript` is added here only
+      if the Preflight TS smoke test shows `compileScript` does not
+      emit plain JS (see Preflight + Non-Negotiable Constraints).
 - `packages/vue-sfc-loader/tsconfig.json` — **new**. Strict mode.
-  Extends the repo's root TS config.
+  Extends the repo's root TS config. Emits ESM to `dist/` (the
+  package's published entry is compiled JS, not TS — important
+  because consumers `--import` the compiled `register.js` via the
+  exports map and no TS loader is in the chain yet at that point).
 - `packages/vue-sfc-loader/README.md` — **new**. Engineering-grade
-  usage doc: two consumer patterns (`NODE_OPTIONS` and direct
-  `--import`), example `.vue` test, debugging tips, known limitations
-  (no style rendering, script lang inheritance).
+  usage doc. Must document:
+  - The **canonical `NODE_OPTIONS` composition pattern**:
+    `NODE_OPTIONS="--import tsx --import @legendary-arena/vue-sfc-loader/register"`
+    (TS loader first, Vue loader second — so consumer `.test.ts`
+    files get TS-transformed and `.vue` imports then get SFC-compiled
+    by this package). If the repo's canonical TS loader is something
+    other than `tsx`, use that name; the README shows it verbatim.
+  - A worked example: minimal `.vue`, minimal `.test.ts` that
+    imports and mounts it, `package.json` script line.
+  - Debugging tips: `DEBUG=vue-sfc-loader`, how to read stack traces,
+    how to find the sourcemap.
+  - Known limitations: no style rendering, no HMR, no custom blocks,
+    tests-only.
 
 ### B) SFC compiler wrapper
 
 - `packages/vue-sfc-loader/src/compileVue.ts` — **new**:
   - `compileVue(source: string, filename: string): { code: string;
-    map?: string }`
+    map?: string }`.
+  - **Filename normalization:** before any call into
+    `@vue/compiler-sfc`, `filename` is normalized to POSIX
+    (`filename.replace(/\\/g, '/')`) and used as both the `filename`
+    parameter to the compiler and the compiler `id`. The original
+    OS-native filename is retained for error messages. `// why:`
+    comment: deterministic compiler identity across Windows and Linux.
   - Uses `@vue/compiler-sfc` `parse`, `compileTemplate`, and
-    `compileScript`.
-  - Concatenates the compiled script and template render function into
-    a single ESM module.
-  - Strips `<style>` blocks (emits no code for them).
-  - Handles `<script lang="ts">` by delegating to the repo's existing
-    TS transform at the consumer level (this file produces JS that
-    still contains TS if `lang="ts"` is detected — the TS-transform
-    step applied to `.ts` files picks it up).
-  - Emits inline sourcemap comment when `@vue/compiler-sfc` produces a
-    map.
-  - `// why:` comment explaining why style blocks are stripped in
-    tests (CSS has no runtime effect under jsdom and tests assert on
-    text + a11y, not styles).
+    `compileScript` (with `babelParserPlugins: ['typescript']` when
+    `<script lang="ts">` is detected).
+  - **Emits JavaScript only.** If the Preflight smoke test shows
+    `compileScript` output still contains TS syntax, `compileVue`
+    feeds the script block through `typescript.transpileModule({
+    compilerOptions: { module: 'ESNext', target: 'ES2022',
+    sourceMap: true } })` before concatenation. The emitted module
+    body must be parseable as ESM JavaScript by Node 22 without any
+    further transform.
+  - Concatenates the compiled script (now JS) and the template render
+    function into a single ESM module with a single default export.
+  - **Strips `<style>` blocks and any unknown custom blocks** —
+    intentional test-time behavior documented in Non-Negotiable
+    Constraints. `// why:` comment on each strip point.
+  - Emits an inline sourcemap comment pointing at the `.vue` path
+    and a non-zero line number (perfect column accuracy not
+    required; see Non-Negotiable Constraints sourcemap rule).
   - Throws full-sentence errors naming file + block + diagnostic.
+  - Pure function: no I/O, no `console.*`, no wall clock, no RNG, no
+    mutation of `source` or `filename`.
 
 ### C) Node module loader hook
 
@@ -381,18 +470,33 @@ No other files may be modified. `apps/arena-client/**`,
       wall clock, no RNG — confirmed with `Select-String`).
 - [ ] Compiling `test-fixtures/hello.vue` returns a string containing
       an ESM default export.
-- [ ] Style blocks are stripped from the returned code.
-- [ ] Two identical calls produce byte-identical output.
-- [ ] Malformed `.vue` input throws a full-sentence error naming file
-      and diagnostic.
+- [ ] **Output is always JavaScript** — the returned `code` is
+      parseable by `node --check`-equivalent means without any
+      TS transform step (assert via a test that writes the output
+      to a temp `.js` file and requires it via a child process; it
+      must execute without `SyntaxError`).
+- [ ] Style blocks and unknown custom blocks are stripped from the
+      returned code.
+- [ ] Two identical calls with the same source + POSIX filename
+      produce byte-identical output.
+- [ ] **Filename normalization holds cross-platform**: compiling the
+      same source with `C:\fix\hello.vue` and `/fix/hello.vue` as
+      filenames produces byte-identical emitted module bodies
+      (error-path strings may differ; module output must not).
+- [ ] Malformed `.vue` input throws a full-sentence error naming
+      file and diagnostic.
+- [ ] A `.vue` input with zero `<template>` AND zero `<script>`
+      blocks throws (not returns empty).
 
 ### Loader Hook
-- [ ] Importing a `.vue` file via a child Node process with
-      `--import @legendary-arena/vue-sfc-loader/register` succeeds.
+- [ ] Importing a `.vue` file via a child Node process with the
+      canonical `NODE_OPTIONS` pattern succeeds.
 - [ ] The imported component mounts under `@vue/test-utils` + `jsdom`
       and renders the expected text.
-- [ ] A deliberately broken fixture produces a stack trace referencing
-      the `.vue` file path (sourcemap integrity).
+- [ ] A deliberately broken fixture produces a stack trace that
+      contains the `.vue` file path **and** a non-zero line number.
+      Perfect column accuracy is not asserted (sourcemap merging
+      between template and script is non-trivial).
 
 ### Lint Alignment
 - [ ] No import of `vitest`, `jest`, or `mocha` anywhere in the package
@@ -476,9 +580,17 @@ git diff --name-only
       SFCs across the repo via one shared loader; WP-061 onward are
       unblocked.
 - [ ] `docs/ai/DECISIONS.md` updated — at minimum: Vue version
-      pinning; whether `apps/registry-viewer/` had a prior shim and
-      how it was consolidated; style-strip rationale; Node 22 loader
-      API choice and observed Windows behavior; decision not to emit
-      styles under jsdom.
+      pinning via peerDependencies to prevent duplicate Vue copies
+      in pnpm; whether `apps/registry-viewer/` had a prior shim and
+      how it was consolidated; intentional stripping of style and
+      custom blocks (not a silent fallback); Node 22 loader API
+      choice and observed Windows behavior; decision not to emit
+      styles under jsdom; TS strategy outcome from the Preflight
+      smoke test (compileScript emits JS, or typescript.transpileModule
+      needed inside compileVue); canonical NODE_OPTIONS composition
+      pattern chosen for consumers; filename normalization rule
+      (POSIX-style `id` for deterministic output across OSes);
+      sourcemap tolerance (path + non-zero line, not perfect column
+      mapping).
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` has WP-065 checked off with
       today's date and a note linking this file.
