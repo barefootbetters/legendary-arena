@@ -31,7 +31,7 @@
 | ✅ Reviewed | Packet has been audited: SharePoint links removed, all required sections present, verified against conventions |
 | ⚠️ Needs review | Packet has NOT been audited — likely contains SharePoint links, missing Definition of Done, `.mjs` test paths |
 
-All WPs marked ⚠️ must be reviewed using the same process applied to WP-001 through WP-014 before Claude Code executes them.
+All WPs are currently marked ✅ Reviewed. WP-048 through WP-054, WP-055, and WP-060 were audited during the 2026-04-15 Standardization Completeness Pass (no issues found). Any future WPs must be reviewed before Claude Code executes them.
 
 ---
 
@@ -155,7 +155,7 @@ These packets establish the repo-as-memory system and lock contracts before code
   see ARCHITECTURE.md §Section 1 for server layer constraints and
   §Section 2 "Server Startup Sequence" for the startup flow
 
-- [x] WP-043 — Data Contracts Reference (Canonical Card & Metadata Shapes) ✅ Complete (2026-04-10)
+- [x] WP-043 — Data Contracts Reference (Canonical Card & Metadata Shapes) ✅ Reviewed ✅ Completed (2026-04-10)
   Dependencies: WP-003
   Notes: Migrates legacy `00.2-data-requirements.md` into governed
   `docs/ai/REFERENCE/00.2-data-requirements.md`; documents card data shapes,
@@ -202,7 +202,7 @@ These packets establish the repo-as-memory system and lock contracts before code
   no enforcement WP needed — `.claude/rules/code-style.md` already handles
   runtime enforcement
 
-- [ ] WP-055 — Theme Data Model (Mastermind / Scenario Themes v1) — pending
+- [ ] WP-055 — Theme Data Model (Mastermind / Scenario Themes v1) ✅ Reviewed — pending
   Dependencies: WP-003, WP-005A
   Notes: Defines `ThemeDefinition` Zod schema as a registry-layer content
   primitive; `ThemeSetupIntentSchema` mirrors `MatchSetupConfig` ID fields
@@ -218,7 +218,7 @@ These packets establish the repo-as-memory system and lock contracts before code
   deferred to consumer WPs as scope items — not standalone packets (design
   review decision 2026-04-12); parallel-safe with Phase 2+
 
-- [ ] WP-060 — Keyword & Rule Glossary Data Migration — pending
+- [ ] WP-060 — Keyword & Rule Glossary Data Migration ✅ Reviewed — pending
   Dependencies: WP-003
   Notes: Migrates `keywords-full.json` (102 keywords with definitions) and
   `rules-full.json` (18 rules with definitions) from external
@@ -234,7 +234,7 @@ These packets establish the repo-as-memory system and lock contracts before code
 
 These packets define *what* a match is before implementing *how* it plays.
 
-- [x] WP-005A — Match Setup Contracts ✅ Complete (2026-04-10)
+- [x] WP-005A — Match Setup Contracts ✅ Reviewed ✅ Completed (2026-04-10)
   Dependencies: WP-002, WP-003
   Notes: Defines `MatchSetupConfig` (9 fields, locked names from 00.2 §8.1:
   `schemeId`, `mastermindId`, `villainGroupIds`, `henchmanGroupIds`, `heroDeckIds`,
@@ -409,7 +409,7 @@ These packets complete the minimum viable multiplayer loop.
   built-in `fetch` — no axios; unit tests stub `fetch` (no live server needed
   for tests); full end-to-end verified manually; no game logic changes
 
-- [x] WP-013 — Persistence Boundaries & Snapshots ✅ Reviewed ✅ Complete (2026-04-11)
+- [x] WP-013 — Persistence Boundaries & Snapshots ✅ Reviewed ✅ Reviewed ✅ Completed (2026-04-11)
   Dependencies: WP-012
   Notes: Creates `PERSISTENCE_CLASSES` constants, `MatchSnapshot` (zone counts
   only — no ext_id arrays), `PersistableMatchConfig`, `createSnapshot` (pure,
@@ -422,7 +422,7 @@ These packets complete the minimum viable multiplayer loop.
 
 These packets make the game play like Legendary for the first time.
 
-- [x] WP-014A — Villain Reveal & Trigger Pipeline ✅ Reviewed ✅ Complete (2026-04-11)
+- [x] WP-014A — Villain Reveal & Trigger Pipeline ✅ Reviewed ✅ Reviewed ✅ Completed (2026-04-11)
   Dependencies: WP-013
   Notes: Types (`RevealedCardType`, `VillainDeckState`, `REVEALED_CARD_TYPES`),
   `revealVillainCard` move (draw, classify, trigger, apply, discard), 12 new
@@ -430,7 +430,7 @@ These packets make the game play like Legendary for the first time.
   `buildVillainDeck` deferred to WP-014B; discard routing temporary (WP-015
   changes to City)
 
-- [x] WP-014B — Villain Deck Composition Rules & Registry Integration ✅ Reviewed ✅ Complete (2026-04-11)
+- [x] WP-014B — Villain Deck Composition Rules & Registry Integration ✅ Reviewed ✅ Reviewed ✅ Completed (2026-04-11)
   Dependencies: WP-014A
   Notes: Implements `buildVillainDeck` using decisions D-1410 through D-1413;
   virtual card instancing for henchmen and scheme twists; ext_id conventions
@@ -439,7 +439,7 @@ These packets make the game play like Legendary for the first time.
   replaces empty defaults in `buildInitialGameState` with real data;
   D-1412 amended with bystander ext_id format
 
-- [x] WP-015 — City & HQ Zones (Villain Movement + Escapes) ✅ Reviewed ✅ Complete (2026-04-11)
+- [x] WP-015 — City & HQ Zones (Villain Movement + Escapes) ✅ Reviewed ✅ Reviewed ✅ Completed (2026-04-11)
   Dependencies: WP-014A
   Notes: `G.city` (5-tuple of `CardExtId | null`) and `G.hq` (5-tuple);
   `pushVillainIntoCity` is a pure helper (no boardgame.io import, no `.reduce()`);
@@ -450,7 +450,7 @@ These packets make the game play like Legendary for the first time.
   SharePoint links removed; test files use `.test.ts` not `.test.mjs`; normalized
   to PACKET-TEMPLATE structure
 
-- [x] WP-015A — Reveal Safety Fixes (Stage Gate + No-Card-Drop) ✅ Complete (2026-04-11)
+- [x] WP-015A — Reveal Safety Fixes (Stage Gate + No-Card-Drop) ✅ Reviewed ✅ Completed (2026-04-11)
   Dependencies: WP-015
   Notes: Patch packet. Adds internal stage gating to `revealVillainCard`
   (allowed in `start` stage only, per tabletop Legendary semantics and
@@ -459,7 +459,7 @@ These packets make the game play like Legendary for the first time.
   lost. Defers deck removal until placement destination is confirmed.
   1 new test (stage gating); 1 updated test (malformed city deck assertion).
 
-- [x] WP-016 — Fight First, Then Recruit (Minimal MVP) ✅ Reviewed ✅ Complete (2026-04-11)
+- [x] WP-016 — Fight First, Then Recruit (Minimal MVP) ✅ Reviewed ✅ Reviewed ✅ Completed (2026-04-11)
   Dependencies: WP-015
   Notes: Adds `fightVillain({ cityIndex })` and `recruitHero({ hqIndex })`
   moves, both `main` stage only, both follow three-step validation contract;
@@ -468,7 +468,7 @@ These packets make the game play like Legendary for the first time.
   no card text effects (WP-022), no bystander rescue (WP-017); 14 new tests
   (7 per move); game.test.ts 01.5 wiring (5->7 moves)
 
-- [x] WP-017 — KO, Wounds & Bystander Capture (Minimal MVP) ✅ Reviewed ✅ Complete (2026-04-12)
+- [x] WP-017 — KO, Wounds & Bystander Capture (Minimal MVP) ✅ Reviewed ✅ Reviewed ✅ Completed (2026-04-12)
   Dependencies: WP-016
   Notes: Adds `G.ko: CardExtId[]` and `G.attachedBystanders: Record<CardExtId,
   CardExtId[]>`; MVP: 1 bystander per villain entering City (simplified);
@@ -479,7 +479,7 @@ These packets make the game play like Legendary for the first time.
   `villainDeck.reveal.ts`; `city.logic.ts` NOT modified (pure helper
   boundary); 22 new tests; test files use `.test.ts`
 
-- [x] WP-018 — Attack & Recruit Point Economy (Minimal MVP) ✅ Reviewed ✅ Complete (2026-04-12)
+- [x] WP-018 — Attack & Recruit Point Economy (Minimal MVP) ✅ Reviewed ✅ Reviewed ✅ Completed (2026-04-12)
   Dependencies: WP-017
   Notes: `G.turnEconomy` (attack/recruit/spentAttack/spentRecruit, reset per
   turn); `G.cardStats: Record<CardExtId, CardStatEntry>` built at setup time
@@ -489,7 +489,7 @@ These packets make the game play like Legendary for the first time.
   gated by available recruit; no conditional bonuses (WP-022); PowerBI links
   removed; test files `.test.ts`; normalized to PACKET-TEMPLATE
 
-- [x] WP-019 — Mastermind Fight & Tactics (Minimal MVP) ✅ Reviewed ✅ Complete (2026-04-12)
+- [x] WP-019 — Mastermind Fight & Tactics (Minimal MVP) ✅ Reviewed ✅ Reviewed ✅ Completed (2026-04-12)
   Dependencies: WP-018
   Notes: `G.mastermind: MastermindState` with `id`, `baseCardId`,
   `tacticsDeck`, `tacticsDefeated`; `fightMastermind` move validates attack
@@ -500,7 +500,7 @@ These packets make the game play like Legendary for the first time.
   no VP scoring (WP-020); was truncated at 79 lines — normalized to full
   PACKET-TEMPLATE; SharePoint links removed
 
-- [x] WP-020 — VP Scoring & Win Summary (Minimal MVP) ✅ Reviewed ✅ Complete (2026-04-12)
+- [x] WP-020 — VP Scoring & Win Summary (Minimal MVP) ✅ Reviewed ✅ Reviewed ✅ Completed (2026-04-12)
   Dependencies: WP-019
   Notes: Pure `computeFinalScores(G): FinalScoreSummary` — read-only on G,
   never mutates, never triggers endgame (WP-010 owns that); MVP VP table
@@ -516,7 +516,7 @@ These packets make the game play like Legendary for the first time.
 
 These packets make individual cards do things.
 
-- [x] WP-021 — Hero Card Text & Keywords (Hooks Only) ✅ Complete (2026-04-13)
+- [x] WP-021 — Hero Card Text & Keywords (Hooks Only) ✅ Reviewed ✅ Completed (2026-04-13)
   Dependencies: WP-020
   Notes: Hero ability hooks only — **no execution**; `HeroAbilityHook` is
   data-only, JSON-serializable (same pattern as `HookDefinition`);
@@ -526,7 +526,7 @@ These packets make individual cards do things.
   deferred to WP-022+; was truncated at 56 lines — normalized to full
   PACKET-TEMPLATE; this packet is inert by design
 
-- [x] WP-022 — Execute Hero Keywords (Minimal MVP) ✅ Complete (2026-04-13)
+- [x] WP-022 — Execute Hero Keywords (Minimal MVP) ✅ Reviewed ✅ Completed (2026-04-13)
   Dependencies: WP-021
   Notes: Executes 4 unconditional hero keywords only: `'draw'`, `'attack'`,
   `'recruit'`, `'ko'`; conditional effects safely skipped (no mutation);
@@ -537,7 +537,7 @@ These packets make individual cards do things.
   additive to WP-018 base card stats; `ctx: unknown` avoids boardgame.io
   import; WP-021 contracts not modified; 11 new tests, 266 total passing
 
-- [x] WP-023 — Conditional Hero Effects (Teams, Colors, Keywords) ✅ Complete (2026-04-13)
+- [x] WP-023 — Conditional Hero Effects (Teams, Colors, Keywords) ✅ Reviewed ✅ Completed (2026-04-13)
   Dependencies: WP-022
   Notes: 4 MVP condition types: `heroClassMatch`, `requiresTeam`,
   `requiresKeyword`, `playedThisTurn`; conditions are checked not inferred
@@ -550,7 +550,7 @@ These packets make individual cards do things.
   is `heroClassMatch` (not `requiresColor` — pre-flight name drift fix);
   15 new tests, 281 total passing
 
-- [x] WP-024 — Scheme & Mastermind Ability Execution ✅ Complete (2026-04-13)
+- [x] WP-024 — Scheme & Mastermind Ability Execution ✅ Reviewed ✅ Completed (2026-04-13)
   Dependencies: WP-023
   Notes: Scheme twist and mastermind strike handlers use the same
   `executeRuleHooks` -> `applyRuleEffects` pipeline — no new execution engine;
@@ -560,7 +560,7 @@ These packets make individual cards do things.
   MVP mastermind strike uses counter + message only (wound card effects
   deferred); WP-009B stubs replaced; 10 new tests, 291 total passing
 
-- [x] WP-025 — Keywords: Patrol, Ambush, Guard ✅ Complete (2026-04-13)
+- [x] WP-025 — Keywords: Patrol, Ambush, Guard ✅ Reviewed ✅ Completed (2026-04-13)
   Dependencies: WP-024
   Notes: `BoardKeyword` closed union (`'patrol'` | `'ambush'` | `'guard'`)
   with drift-detection; `G.cardKeywords` built at setup (registry boundary);
@@ -569,7 +569,7 @@ These packets make individual cards do things.
   abilities — automatic, no player choice, separate from hero hook system;
   was truncated at 63 lines — normalized to full PACKET-TEMPLATE
 
-- [x] WP-026 — Scheme Setup Instructions & City Modifiers ✅ Complete (2026-04-14)
+- [x] WP-026 — Scheme Setup Instructions & City Modifiers ✅ Reviewed ✅ Completed (2026-04-14)
   Dependencies: WP-025
   Notes: `SchemeSetupInstruction` data-only contract (D-0603 pattern);
   4 MVP instruction types: `modifyCitySize`, `addCityKeyword`,
@@ -733,7 +733,7 @@ These packets make the game safe to ship.
   legacy Checklist C (Konva.js canvas UI) excluded — UI implementation is
   not a deployment concern per Layer Boundary
 
-- [ ] WP-048 — PAR Scenario Scoring & Leaderboards ⚠️ Needs review
+- [ ] WP-048 — PAR Scenario Scoring & Leaderboards ✅ Reviewed
   Dependencies: WP-020, WP-027, WP-030
   Notes: Extends VP scoring (WP-020) into PAR-based scenario scoring per
   `docs/12-SCORING-REFERENCE.md`; `ScenarioKey` and `TeamKey` stable identity
@@ -751,7 +751,7 @@ These packets make the game safe to ship.
 
 These packets ship the game and keep it running.
 
-- [ ] WP-049 — PAR Simulation Engine ⚠️ Needs review
+- [ ] WP-049 — PAR Simulation Engine ✅ Reviewed
   Dependencies: WP-036, WP-048
   Notes: Implements T2 Competent Heuristic AI policy (5 behavioral heuristics
   modeling experienced human play) and PAR aggregation pipeline (55th percentile
@@ -766,7 +766,7 @@ These packets ship the game and keep it running.
   no simulation may derive or mutate setup composition; seed-to-PRNG wiring
   limitations documented in D-1248 and must not be masked
 
-- [ ] WP-051 — PAR Publication & Server Gate Contract ⚠️ Needs review
+- [ ] WP-051 — PAR Publication & Server Gate Contract ✅ Reviewed
   Dependencies: WP-050, WP-004
   Notes: Server-layer enforcement of the pre-release PAR gate; loads PAR
   index at startup (non-blocking — casual play continues without PAR);
@@ -777,7 +777,7 @@ These packets ship the game and keep it running.
   use `.mjs` extension per WP-004; closes the chain from simulation →
   artifact → enforcement
 
-- [ ] WP-052 — Player Identity, Replay Ownership & Access Control ⚠️ Needs review
+- [ ] WP-052 — Player Identity, Replay Ownership & Access Control ✅ Reviewed
   Dependencies: WP-051, WP-004, WP-027
   Notes: Introduces `PlayerId` (branded string, UUID v4), `PlayerAccount`,
   `GuestIdentity`, `PlayerIdentity` discriminated union; `ReplayOwnership`
@@ -791,7 +791,7 @@ These packets ship the game and keep it running.
   `packages/game-engine/`; GDPR-compliant deletion; 30-day minimum retention
   per `13-REPLAYS-REFERENCE.md`; does NOT modify WP-027 or WP-051 contracts
 
-- [ ] WP-053 — Competitive Score Submission & Verification ⚠️ Needs review
+- [ ] WP-053 — Competitive Score Submission & Verification ✅ Reviewed
   Dependencies: WP-048, WP-051, WP-052, WP-027, WP-004
   Notes: Keystone trust surface for competition — every competitive score is
   replay-verified; server re-executes replays via `replayGame`, recomputes
@@ -804,7 +804,7 @@ These packets ship the game and keep it running.
   scoring to engine; PostgreSQL table `legendary.competitive_scores`;
   does NOT modify WP-048, WP-051, WP-052, or WP-027 contracts
 
-- [ ] WP-054 — Public Leaderboards & Read-Only Web Access ⚠️ Needs review
+- [ ] WP-054 — Public Leaderboards & Read-Only Web Access ✅ Reviewed
   Dependencies: WP-053, WP-052, WP-051, WP-004
   Notes: Read-only public access to verified competitive results;
   scenario-scoped leaderboards sorted by `finalScore` ascending,
@@ -817,7 +817,7 @@ These packets ship the game and keep it running.
   write operations; no engine imports; no scoring logic; does NOT modify
   WP-053 or WP-052 contracts
 
-- [ ] WP-050 — PAR Artifact Storage & Indexing ⚠️ Needs review
+- [ ] WP-050 — PAR Artifact Storage & Indexing ✅ Reviewed
   Dependencies: WP-049, WP-048
   Notes: Defines how PAR simulation results are stored, indexed, versioned,
   and accessed as immutable file-based artifacts; content-addressed by

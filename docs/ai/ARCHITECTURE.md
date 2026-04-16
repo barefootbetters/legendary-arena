@@ -180,6 +180,97 @@ C:\pcloud\BB\DEV\legendary-arena\
 Violations of these rules are bugs. The TypeScript build should catch them via
 `"paths"` restrictions in `tsconfig.json`.
 
+### Layer Boundary (Authoritative)
+
+Legendary Arena is structured as a **strictly layered system**. Each layer
+has a single responsibility and hard boundaries that must not be crossed.
+Violations of these boundaries are **architectural bugs**, even if the code
+compiles or appears to "work".
+
+This section is the **canonical reference** for layer responsibility and
+ownership. Enforcement of these boundaries is implemented in the
+corresponding `.claude/rules/*.md` files.
+
+#### Layer Overview
+
+| Layer | Package / Path | Role | Claude Enforcement |
+|---|---|---|---|
+| Registry | `packages/registry/**` | Card data loading & validation | `.claude/rules/registry.md` |
+| Game Engine | `packages/game-engine/**` | Gameplay rules & state transitions | `.claude/rules/game-engine.md` |
+| Pre-Planning | `packages/preplan/**` | Speculative planning for waiting players (non-authoritative) | `DESIGN-PREPLANNING.md` |
+| Server | `apps/server/**` | Wiring, startup, networking | `.claude/rules/server.md` |
+| Persistence (cross-cutting) | engine / app boundary | Data lifecycle & storage rules | `.claude/rules/persistence.md` |
+
+Each layer depends **only downward**. No layer may reach upward or sideways.
+
+#### Registry Layer (Data Input)
+
+- Load and validate card and metadata JSON; expose an immutable `CardRegistry`.
+- May read local files or R2 via loaders; validate data via Zod schemas.
+- Must NEVER contain gameplay logic, import `packages/game-engine` or
+  `apps/server`, query PostgreSQL, or mutate runtime game state.
+- Direction: Registry feeds the Game Engine at setup-time **only**.
+
+#### Game Engine Layer (Gameplay Authority)
+
+- Define the `Game()` object; own all gameplay logic (phases, moves, rule
+  hooks, turn flow, endgame); mutate `G` deterministically.
+- May receive registry data via `Game.setup()`; use `ctx.random.*`;
+  maintain derived runtime state in `G`; export pure helpers and types.
+- Must NEVER import from `apps/server/**`, query PostgreSQL/HTTP/
+  filesystem/environment, contain startup or networking logic, treat `G`
+  as persistent storage, or load registry data after setup time.
+- Direction: Game Engine wires into `Server()`.
+
+#### Pre-Planning Layer (Non-Authoritative, Per-Client)
+
+- Provide speculative turn planning for waiting players; track speculative
+  reveals for deterministic rewind; detect disruptions and produce
+  invalidation events.
+- May import engine **type** definitions (`import type` only); read engine
+  state projections (read-only); use a client-local seedable PRNG.
+- Must NEVER write to `G`, `ctx`, or any authoritative game state; import
+  engine runtime code, registry, server, or `boardgame.io`; persist state.
+- Direction: Game Engine supplies read-only types to Pre-Planning. The
+  engine does not know pre-planning exists.
+
+#### Server Layer (Wiring Only)
+
+- Load immutable inputs at startup; wire `LegendaryGame` into `Server()`;
+  expose network and CLI entrypoints; manage process lifecycle.
+- Must NEVER implement game logic, define moves/rules/effects, mutate or
+  interpret `G`, or re-implement turn or phase logic.
+- Direction: Server connects pieces — it does not decide what happens in
+  the game.
+
+#### Dependency Direction (Non-Negotiable)
+
+```
+Registry -> Game Engine -> Server -> Client / CLI
+                    |
+                    └-> Pre-Planning (types only, read-only)
+```
+
+#### Persistence Boundary (Cross-Layer)
+
+- `G` and `ctx` are **runtime-only**.
+- Only the server/application layer may persist data.
+- Snapshots are **derived records**, never live state.
+- No layer may treat snapshots as save-games.
+
+#### Enforcement Rule
+
+If unsure where code belongs: **If it decides gameplay** → Game Engine.
+**If it loads or validates data** → Registry. **If it speculatively plans
+a future turn** → Pre-Planning. **If it wires components or handles
+process concerns** → Server. **If it stores anything** → re-check
+Persistence rules. If a change touches more than one layer, **stop and
+re-evaluate**.
+
+**Registry provides data. Engine decides outcomes. Pre-planning speculates
+privately. Server connects pieces.** If a layer starts doing another
+layer's job, the architecture is already broken.
+
 ---
 
 ## Section 2 — Data Flow
@@ -1245,6 +1336,36 @@ invariant below is an architectural bug, even if the code compiles.
   may be mutated outside declared scope.
 - Failures must be localizable via invariant violation or unexpected state
   mutation.
+
+#### Runtime Invariant Checks (WP-031)
+
+`packages/game-engine/src/invariants/` hosts the runtime invariant
+pipeline that formalizes these diagnostics as fail-fast checks. The
+pipeline is structured as:
+
+- **`InvariantCategory`** — closed 5-value union (`structural`,
+  `gameRules`, `determinism`, `security`, `lifecycle`) with a canonical
+  `INVARIANT_CATEGORIES` readonly array (drift-pinned by Test 1).
+- **`assertInvariant(condition, category, message)`** — throwing
+  assertion utility. Throws `InvariantViolationError` on violation.
+  Contained to `Game.setup()` return path per D-3102 (setup-only
+  wiring at MVP). No new throwing-convention exception introduced.
+- **`runAllInvariantChecks(G, invariantContext)`** — orchestrator
+  running every check in fixed category order (structural → gameRules
+  → determinism → lifecycle), fail-fast on first violation.
+- **11 pure check functions** across 4 implemented categories.
+  Security/Visibility category is reserved (no checks at MVP).
+- All check functions are pure, deterministic, have no I/O, no
+  registry queries, no `boardgame.io` imports. They read `G` and
+  either return `void` or throw via `assertInvariant`.
+
+Per D-3102, per-move wiring is deferred to a follow-up WP. The setup
+return path is the single observation point for MVP invariants.
+
+Per D-3103, `checkNoCardInMultipleZones` uses fungible-token
+exclusion semantics because `CardExtId` is a card-type identifier,
+not a per-instance identifier, and the setup builders reuse six
+well-known token strings inside piles and starting decks.
 
 ---
 

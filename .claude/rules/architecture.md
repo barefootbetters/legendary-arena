@@ -120,17 +120,16 @@ Source: ARCHITECTURE.md, The Rule Execution Pipeline
 
 ---
 
-## Layer Boundary (Authoritative)
+## Layer Boundary (Enforcement — Canonical Source Is ARCHITECTURE.md)
 
-Legendary Arena is structured as a **strictly layered system**.
-Each layer has a single responsibility and hard boundaries that must not be crossed.
+The canonical Layer Boundary specification — including the five-layer
+overview table, per-layer responsibilities, import rules, dependency
+direction diagram, persistence boundary, and enforcement rule — now
+lives in `docs/ai/ARCHITECTURE.md §Layer Boundary (Authoritative)`.
+This rules file enforces those boundaries; ARCHITECTURE.md defines them.
 
-Violations of these boundaries are **architectural bugs**, even if the code compiles
-or appears to "work".
-
-This section is the **canonical reference** for layer responsibility and ownership.
-Enforcement of these boundaries is implemented in the corresponding
-`.claude/rules/*.md` files.
+The detailed layer descriptions below are **derived from** ARCHITECTURE.md.
+If any text here contradicts ARCHITECTURE.md, ARCHITECTURE.md wins.
 
 ### Layer Overview
 

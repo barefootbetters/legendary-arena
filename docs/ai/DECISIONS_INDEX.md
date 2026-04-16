@@ -304,6 +304,202 @@ For full rationale, see `DECISIONS.md`.
 
 ---
 
+## Architectural Invariants (cross-WP)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-1249 | boardgame.io version locked at ^0.50.0 | WP-002 |
+| D-1250 | Phase names locked to lobby/setup/play/end | WP-007A |
+| D-1251 | Package import matrix is an architectural invariant | WP-002 |
+
+---
+
+## City & HQ (WP-015)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-1501 | City and HQ use fixed 5-tuples | WP-015 |
+| D-1502 | City push inserts at space 0 | WP-015 |
+| D-1503 | Bystander MVP: discard, not capture | WP-015 |
+
+---
+
+## Core Move Expansion (WP-016)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-1601 | CoreMoveName and MOVE_ALLOWED_STAGES are a closed set | WP-016 |
+| D-1602 | Fight and recruit ordering is player-controlled | WP-016 |
+| D-1603 | MVP fight and recruit have no resource checking | WP-016 |
+| D-1604 | Recruited heroes go to player discard, not hand | WP-016 |
+
+---
+
+## KO, Wounds & Bystanders (WP-017)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-1701 | MVP attaches exactly 1 bystander per villain entering city | WP-017 |
+| D-1702 | Escape causes wound (MVP player penalty) | WP-017 |
+| D-1703 | G.attachedBystanders is a plain Record, not a Map | WP-017 |
+| D-1704 | Escaped bystanders return to supply pile, not KO | WP-017 |
+| D-1705 | Supply pile pile[0] is top-of-pile convention | WP-017 |
+
+---
+
+## Economy (WP-018)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-1801 | Economy and scoring are separate concerns | WP-018 |
+| D-1802 | Debuggability via deterministic reproduction only | WP-018 |
+| D-1803 | G.cardStats stores parsed card stats at setup time (registry boundary) | WP-018 |
+| D-1804 | "2+" parses to base 2 only (conditional bonuses deferred) | WP-018 |
+| D-1805 | CardStatEntry.fightCost is semantically distinct from attack | WP-018 |
+| D-1806 | Starting cards contribute 0/0 in MVP (fail-closed) | WP-018 |
+| D-1807 | HQ refill after recruit is not in WP-018 | WP-018 |
+
+---
+
+## Mastermind (WP-019)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-1901 | MVP defeats exactly 1 tactic per successful fight | WP-019 |
+| D-1902 | Mastermind vAttack stored as fightCost via buildMastermindState | WP-019 |
+| D-1903 | No tactic text effects in MVP | WP-019 |
+| D-1904 | buildMastermindState adds mastermind base card to cardStats separately | WP-019 |
+
+---
+
+## Hero Ability Execution (WP-022)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-2201 | Only 4 keywords execute in WP-022 MVP | WP-022 |
+| D-2202 | KO targets the played card only (MVP) | WP-022 |
+| D-2203 | Hero hook economy is additive to base card stats | WP-022 |
+| D-2204 | executeHeroEffects uses ctx: unknown to avoid boardgame.io import | WP-022 |
+| D-2205 | Draw logic extracted, not drawCards move called | WP-022 |
+| D-2206 | DataProvenance type deferred (not yet useful) | WP-022 |
+
+---
+
+## Conditional Hero Effects (WP-023)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-2301 | Condition evaluation uses AND logic | WP-023 |
+| D-2302 | 4 MVP condition types (2 functional, 2 placeholder) | WP-023 |
+| D-2303 | Condition evaluators are pure functions (never mutate G) | WP-023 |
+| D-2304 | Condition type string is heroClassMatch (not requiresColor) | WP-023 |
+| D-2305 | HeroCondition.value is always string; numeric parse for playedThisTurn | WP-023 |
+
+---
+
+## Scheme & Mastermind Execution (WP-024)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-2401 | Scheme and mastermind use same hook pipeline as heroes | WP-024 |
+| D-2402 | MVP scheme twist threshold is fixed at 7 | WP-024 |
+| D-2403 | MVP mastermind strike uses counter + message only | WP-024 |
+| D-2404 | WP-009B stub handlers replaced with real handlers | WP-024 |
+| D-2405 | WP-024 file path correction (pre-flight finding) | WP-024 |
+
+---
+
+## Board Keywords (WP-025)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-2501 | Board keywords separate from hero ability hooks | WP-025 |
+| D-2502 | MVP board keyword values | WP-025 |
+| D-2503 | Ambush wound gain is inline (not RuleEffect pipeline) | WP-025 |
+| D-2504 | Board keyword data availability (safe-skip) | WP-025 |
+
+---
+
+## Scheme Setup (WP-026)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-2601 | Representation before execution (RBE) and scheme setup separation | WP-026 |
+| D-2602 | City size modification deferred (fixed tuple MVP) | WP-026 |
+| D-2603 | Scheme setup builder location (src/setup/) | WP-026 |
+
+---
+
+## Theme Data Model (WP-055)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-5501 | Themes are data, not behavior | WP-055 |
+| D-5502 | Theme schema is engine-agnostic (registry layer only) | WP-055 |
+| D-5503 | Theme IDs are immutable once published | WP-055 |
+| D-5504 | Schema evolution via versioning only | WP-055 |
+| D-5505 | External comic references are editorial only | WP-055 |
+| D-5506 | comicImageUrl is editorial, not hosted | WP-055 |
+| D-5507 | Referential integrity validation deferred | WP-055 |
+| D-5508 | PAR difficulty rating excluded from v1 | WP-055 |
+
+---
+
+## Replay & Determinism Verification (WP-027)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-2701 | Canonical state hashing: sorted-key JSON + djb2 | WP-027 |
+| D-2702 | Replay harness uses makeMockCtx, not boardgame.io/testing | WP-027 |
+| D-2703 | ReplayInput is Class 2 (Configuration) data | WP-027 |
+| D-2704 | MVP replay uses deterministic mock shuffle, not seed-faithful | WP-027 |
+| D-2705 | advanceStage replicated via advanceTurnStage in replay | WP-027 |
+| D-2706 | Replay directory classified as engine code category | WP-027 |
+
+---
+
+## UI State Contract (WP-028)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-2801 | UI projection directory classified as engine code category | WP-028 |
+| D-2802 | Zone projection strategy (counts, not card arrays) | WP-028 |
+| D-2803 | UIState hides engine internals | WP-028 |
+| D-2804 | Card display resolution is a separate UI concern | WP-028 |
+
+---
+
+## Audience-Filtered Views (WP-029)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-2901 | Audience filter operates on UIState, not G | WP-029 |
+| D-2902 | Hand visibility approach (handCards optional field) | WP-029 |
+| D-2903 | Economy visibility (zeroed for non-active and spectators) | WP-029 |
+
+---
+
+## Campaign / Scenario Framework (WP-030)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-3001 | Campaign directory classified as engine code category | WP-030 |
+| D-3002 | Campaign state external to G (MVP implementation) | WP-030 |
+| D-3003 | Scenarios produce MatchSetupConfig, not modified G | WP-030 |
+| D-3004 | Campaign replay as sequence of ReplayInputs | WP-030 |
+
+---
+
+## Production Hardening & Invariants (WP-031)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-3101 | Invariants directory classified as engine code category | WP-031 |
+| D-3102 | Runtime invariant check wiring scope (setup-only at MVP) | WP-031 |
+| D-3103 | Card uniqueness invariant scope (fungible token exclusion) | WP-031 |
+
+---
+
 ## Usage Rules
 
 - Before changing behaviour, locate related Decision IDs here
