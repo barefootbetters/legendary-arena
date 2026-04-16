@@ -31,7 +31,7 @@
 | ✅ Reviewed | Packet has been audited: SharePoint links removed, all required sections present, verified against conventions |
 | ⚠️ Needs review | Packet has NOT been audited — likely contains SharePoint links, missing Definition of Done, `.mjs` test paths |
 
-All WPs are currently marked ✅ Reviewed. WP-048 through WP-054, WP-055, and WP-060 were audited during the 2026-04-15 Standardization Completeness Pass (no issues found). Any future WPs must be reviewed before Claude Code executes them.
+All existing WPs through WP-060 are marked ✅ Reviewed. WP-048 through WP-054, WP-055, and WP-060 were audited during the 2026-04-15 Standardization Completeness Pass (no issues found). WP-061 through WP-064 were drafted 2026-04-16 as a UI-implementation chain and passed the lint-gate review (00.3) the same day: Vitest option removed in favor of `node:test`-only per §7/§12; verification code fences switched to `pwsh` and Windows paths per §9; forbidden-packages block added explicitly per §7; WP-063 determinism check now uses `Compare-Object` instead of Unix `diff`. WP-065 was added 2026-04-16 as a hard prerequisite for the UI chain: a shared `packages/vue-sfc-loader/` that makes `.vue` SFCs importable under `node:test` (the lint-forbidden Vitest escape hatch is replaced by this internal loader). Any future WPs must be reviewed before Claude Code executes them.
 
 ---
 
@@ -745,6 +745,95 @@ These packets make the game safe to ship.
   cap, round cost, escape penalty); does NOT modify WP-020 or WP-027 contracts;
   implements Vision goals 20-25
 
+- [ ] WP-065 — Vue SFC Test Transform Pipeline ✅ Reviewed (2026-04-16 lint-gate pass)
+  Dependencies: none
+  Notes: Creates `packages/vue-sfc-loader/` as a shared internal private
+  package (`@legendary-arena/vue-sfc-loader`) that makes `.vue` SFCs
+  importable under `node:test`. Lint §7 and §12 forbid Vitest / Jest /
+  Mocha; `node:test` is mandatory project-wide, but Node cannot import
+  `.vue` files without a compilation step. This package wraps
+  `@vue/compiler-sfc` in a Node 22 `module.register()` loader hook
+  exposed via the subpath `@legendary-arena/vue-sfc-loader/register`;
+  consumers opt in by setting `NODE_OPTIONS=--import
+  @legendary-arena/vue-sfc-loader/register` in their `test` script.
+  Scoped to **tests only** — runtime SFC handling in Vite is unchanged.
+  `<style>` blocks are stripped at test time (jsdom ignores CSS;
+  component tests assert on text + a11y, not styles). Sourcemaps are
+  emitted so stack traces point at `.vue` line numbers. Pure
+  `compileVue` helper + deterministic output verified by tests.
+  Hard prerequisite for WP-061, WP-062, WP-064 and every future UI WP
+  that tests `.vue` components. If `apps/registry-viewer/` already had
+  a home-rolled SFC shim, this packet consolidates it — DECISIONS.md
+  records the consolidation outcome.
+
+- [ ] WP-061 — Gameplay Client Bootstrap ✅ Reviewed (2026-04-16 lint-gate pass)
+  Dependencies: WP-028, WP-065
+  Notes: Creates `apps/arena-client/` as a new Vue 3 + Vite + Pinia + TypeScript
+  SPA — the first gameplay client in the repo (distinct from `apps/registry-viewer/`,
+  which is a card browser); exposes `useUiStateStore()` with a single slot
+  `snapshot: UIState | null` and one mutation `setSnapshot`; fixture loader
+  reads committed JSON `UIState` artifacts (`mid-turn`, `endgame-win`,
+  `endgame-loss`) for deterministic rendering; ships `<BootstrapProbe />` as
+  a wiring smoke test only — no HUD, no routing beyond a placeholder, no
+  networking, no auth; engine import is type-only (no `@legendary-arena/game-engine`
+  runtime import anywhere in `apps/arena-client/`); unblocks WP-062 and WP-064;
+  test runner and router choice deferred to "match `apps/registry-viewer/`
+  precedent" to avoid drift; accessibility baseline (WCAG AA contrast, focus
+  rings) established in base CSS for all future UI packets to inherit.
+  Layer rule: client apps consume engine types only; this WP enforces that
+  boundary at repo setup time so it cannot regress later.
+
+- [ ] WP-062 — Arena HUD & Scoreboard (Client Projection View) ✅ Reviewed (2026-04-16 lint-gate pass)
+  Dependencies: WP-061, WP-028, WP-029, WP-048
+  Notes: First on-screen presentation of `UIState`; fixed (non-floating) HUD
+  comprising `<TurnPhaseBanner />`, `<SharedScoreboard />`, `<ParDeltaReadout />`,
+  `<PlayerPanelList />`, `<EndgameSummary />`; four shared counters (bystanders
+  rescued, escaped villains, scheme twists, mastermind tactics); live PAR
+  delta readout driven by WP-048 fields (em-dash when absent, never zero);
+  bystanders-rescued counter visually emphasized per Vision §Heroic Values in
+  Scoring; no client-side arithmetic on game values (every number traces
+  directly to a `UIState` field); `team` vocabulary explicitly forbidden
+  (Legendary is cooperative); color-blind-safe palette with mandatory icon
+  differentiation (color is never the sole signal); floating-window system
+  explicitly dropped as vision-misaligned (deck-builder, not arena sim);
+  cosmetic theming deferred to a future monetization WP; accessibility (SG-17)
+  enforced at test level (`aria-label` + `aria-current` assertions); no engine
+  or registry changes.
+
+- [ ] WP-063 — Replay Snapshot Producer ✅ Reviewed (2026-04-16 lint-gate pass)
+  Dependencies: WP-027, WP-028, WP-005B
+  Notes: Two-part packet crossing engine + new CLI app; engine adds type
+  `ReplaySnapshotSequence` (version: 1 literal, `readonly snapshots:
+  readonly UIState[]`) and pure helper `buildSnapshotSequence({ setupConfig,
+  seed, inputs })` that wraps WP-027's harness and calls `buildUIState`
+  (WP-028) at each step, returning a frozen sequence; helper is pure (no I/O,
+  no `console.*`, no wall clock, no RNG); new CLI app `apps/replay-producer/`
+  wraps the helper with file I/O, exposing `produce-replay --in <file>
+  --out <file> --produced-at <iso>`; `--produced-at` override required for
+  byte-identical determinism tests across machines; exit codes documented
+  (0/1/2/3/4); sorted top-level JSON keys for stable diffs; committed golden
+  sample (`three-turn-sample`) demonstrates round-trip; consumed by WP-064;
+  no change to `G`, `UIState`, `buildUIState`, WP-027 harness surface, or
+  any existing engine move/phase; `apps/arena-client/`, `apps/registry-viewer/`,
+  `apps/server/`, `packages/registry/`, `packages/preplan/` untouched.
+
+- [ ] WP-064 — Game Log & Replay Inspector ✅ Reviewed (2026-04-16 lint-gate pass)
+  Dependencies: WP-061, WP-063, WP-028, WP-027
+  Notes: First post-match inspection UI; `<GameLogPanel />` renders
+  `UIState.log` verbatim with `aria-live="polite"` and a `role="status"`
+  empty state (no reformatting, no filtering — engine authors log entries,
+  client renders them); `<ReplayInspector />` consumes a
+  `ReplaySnapshotSequence` (imported as a type from WP-063) and drives
+  the Pinia store via `setSnapshot` on index changes — client NEVER
+  regenerates `UIState` from moves (Layer Boundary); keyboard operation
+  required (`←`/`→` step, `Home`/`End` jump); `<ReplayFileLoader />` uses
+  the browser `File` API to accept a JSON replay (no `fetch`, no network);
+  fixture is generated by the WP-063 CLI — do NOT hand-author (the command
+  line is committed alongside for reproducibility); clamping (no wrap) on
+  step overruns; auto-play gated behind an opt-in prop to keep scope to
+  one session; `src/stores/` from WP-061 untouched unless a DECISIONS.md
+  entry justifies a change; no engine, registry, or server-side changes.
+
 ---
 
 ## Phase 7 — Beta, Launch & Live Ops
@@ -1004,6 +1093,21 @@ WP-001 (coordination — complete)        │
                     WP-006A + WP-008B → WP-056 → WP-057 → WP-058
                                                             │
                     WP-059 (deferred — needs WP-028 + UI framework decision)
+
+                    UI Implementation Chain (Phase 6, parallel with Phase 7 where deps allow):
+                    WP-065 (Vue SFC Test Transform — prerequisite for all UI test packets)
+                       │
+                    WP-028 + WP-065 → WP-061 → WP-062 (+ WP-029, WP-048)
+                                        │          │
+                                        │          └── future spectator HUD WP (+ WP-029)
+                                        │          └── future lobby client WP (+ WP-011)
+                                        │          └── future card-tooltip WP (+ registry client access)
+                                        │
+                                        └── WP-064 (+ WP-028, WP-027)
+                                              ▲
+                                              │
+                    WP-027 + WP-028 → WP-063 ─┘
+                    (WP-063 defines ReplaySnapshotSequence consumed by WP-064)
 ```
 
 **Parallel-safe packets** (no dependency on each other):
@@ -1011,6 +1115,8 @@ WP-001 (coordination — complete)        │
 - WP-005A and WP-005B have no dependency on WP-004
 - WP-030 (Campaign) is parallel to WP-031 (Production Hardening)
 - WP-056/057/058 (Pre-Planning) are parallel with Phase 4+ (depend only on WP-006A + WP-008B from Phase 2)
+- WP-061 (Client Bootstrap) and WP-063 (Replay Snapshot Producer) are parallel — WP-061 touches only `apps/arena-client/` and WP-063 touches `packages/game-engine/` + new `apps/replay-producer/`; WP-064 joins both chains so it waits for both
+- WP-065 (Vue SFC Test Transform) is parallel with every other WP — it touches only `packages/vue-sfc-loader/`; it blocks WP-061, WP-062, WP-064 on the test-harness side only
 
 ---
 

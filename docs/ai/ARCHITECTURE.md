@@ -17,6 +17,10 @@
 > and re-read this document and `00.1` before proceeding.
 >
 > Created: WP-013 -- Persistence Boundaries & Snapshots
+> Updated: WP-065 (2026-04-16) -- added Shared Tooling layer to the Layer
+>   Boundary authoritative table so that `packages/vue-sfc-loader/` and any
+>   future cross-cutting dev/test tooling has an explicit, non-runtime slot
+>   in the layer graph
 > Updated: WP-026 -- Phase 5 complete; scheme setup instructions, board keywords,
 >   hero ability execution, conditional effects; D-2601 (RBE) formalized;
 >   G.cardKeywords, G.schemeSetupInstructions, G.heroAbilityHooks documented
@@ -199,9 +203,13 @@ corresponding `.claude/rules/*.md` files.
 | Game Engine | `packages/game-engine/**` | Gameplay rules & state transitions | `.claude/rules/game-engine.md` |
 | Pre-Planning | `packages/preplan/**` | Speculative planning for waiting players (non-authoritative) | `DESIGN-PREPLANNING.md` |
 | Server | `apps/server/**` | Wiring, startup, networking | `.claude/rules/server.md` |
+| Shared Tooling (cross-cutting, test/build only) | `packages/vue-sfc-loader/**` (and future test/build packages) | Dev- and test-time transforms consumed only by `apps/*` test scripts or local tooling; never imported by production code | (enforcement follows the rules in this section; a dedicated `.claude/rules/shared-tooling.md` may be added later when a second tooling package lands) |
 | Persistence (cross-cutting) | engine / app boundary | Data lifecycle & storage rules | `.claude/rules/persistence.md` |
 
 Each layer depends **only downward**. No layer may reach upward or sideways.
+The Shared Tooling layer is **orthogonal** to the main dependency chain —
+it is a cross-cutting concern consumed only by `apps/*` at test or build
+time, never imported by runtime code in any other layer.
 
 #### Registry Layer (Data Input)
 
@@ -243,12 +251,36 @@ Each layer depends **only downward**. No layer may reach upward or sideways.
 - Direction: Server connects pieces — it does not decide what happens in
   the game.
 
+#### Shared Tooling Layer (Cross-Cutting, Test/Build Only)
+
+- Provide reusable dev- and test-time transforms, loaders, or build
+  utilities consumed by `apps/*` test scripts or local tooling. Examples:
+  `packages/vue-sfc-loader/` (SFC transform for `node:test`). Any future
+  cross-cutting dev/test package that serves multiple apps belongs here.
+- May import third-party dev/test packages (e.g., `@vue/compiler-sfc`,
+  `jsdom`, `@vue/test-utils`) and Node built-ins.
+- Must NEVER import from `packages/game-engine/**`, `packages/registry/**`,
+  `packages/preplan/**`, or `apps/server/**`. Must NEVER be imported at
+  runtime by any production code path — Shared Tooling exists only in
+  `devDependencies` or test scripts.
+- Must NEVER contain gameplay logic, persist state, query a database,
+  access the network at runtime, or use `ctx.random.*` (it has no `ctx`).
+- Must be deterministic wherever applicable (same input → same output) so
+  that test-infrastructure failures are reproducible.
+- Direction: consumed only **upward** by `apps/*` at test or build time.
+  The Shared Tooling layer is **orthogonal** to the Registry → Engine →
+  Server chain — it has no runtime edges into that chain and no layer on
+  that chain may import from it.
+
 #### Dependency Direction (Non-Negotiable)
 
 ```
 Registry -> Game Engine -> Server -> Client / CLI
                     |
                     └-> Pre-Planning (types only, read-only)
+
+Shared Tooling (orthogonal):
+  packages/vue-sfc-loader/ -> apps/* (test scripts only, never runtime)
 ```
 
 #### Persistence Boundary (Cross-Layer)
@@ -263,13 +295,15 @@ Registry -> Game Engine -> Server -> Client / CLI
 If unsure where code belongs: **If it decides gameplay** → Game Engine.
 **If it loads or validates data** → Registry. **If it speculatively plans
 a future turn** → Pre-Planning. **If it wires components or handles
-process concerns** → Server. **If it stores anything** → re-check
-Persistence rules. If a change touches more than one layer, **stop and
-re-evaluate**.
+process concerns** → Server. **If it is a dev- or test-time transform
+consumed only by `apps/*`** → Shared Tooling. **If it stores anything** →
+re-check Persistence rules. If a change touches more than one layer,
+**stop and re-evaluate**.
 
 **Registry provides data. Engine decides outcomes. Pre-planning speculates
-privately. Server connects pieces.** If a layer starts doing another
-layer's job, the architecture is already broken.
+privately. Server connects pieces. Shared Tooling supports builds and
+tests without ever running in production.** If a layer starts doing
+another layer's job, the architecture is already broken.
 
 ---
 

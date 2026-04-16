@@ -59,6 +59,13 @@ mindmap
         ["WP-027..035, 042 ⬜\nReplay / UI / Hardening\nVersioning / Ops (10)"]
         ["WP-048 ⬜\nPAR Scoring & Leaderboards"]
 
+      UI Implementation Chain (Phase 6)
+        ["WP-065 ⬜\nVue SFC Test Transform\npackages/vue-sfc-loader/\n(prerequisite for all UI test packets)"]
+        ["WP-061 ⬜\nGameplay Client Bootstrap\napps/arena-client/ skeleton"]
+        ["WP-062 ⬜\nArena HUD & Scoreboard\nTurn/phase, PAR delta, panels"]
+        ["WP-063 ⬜\nReplay Snapshot Producer\nEngine helper + CLI app"]
+        ["WP-064 ⬜\nGame Log & Replay Inspector\nLog panel + step/scrub"]
+
       Phase 7 -- Beta, Launch & PAR
         ["WP-036..041 ⬜\nAI Testing / Beta\nLaunch / Live Ops (6)"]
         ["WP-049 ⬜\nPAR Simulation Engine"]
@@ -96,9 +103,10 @@ mindmap
 | Content | WP-055, 060 | 0/2 | ⬜ |
 | Phase 5 | WP-021..026 | 6/6 | -- |
 | Phase 6 | WP-027..035, 042, 048 | 0/11 | ⬜ |
+| UI Chain | WP-061..065 | 0/5 | ⬜ (lint-gate passed 2026-04-16) |
 | Phase 7 | WP-036..041, 049..051 | 0/9 | ⬜ |
-| **Total** | | **41/61** | **20** |
+| **Total** | | **41/66** | **25** |
 
-**Next unblocked:** WP-027 (Replay Determinism Proof), WP-055, WP-060
+**Next unblocked:** WP-027 (Replay Determinism Proof), WP-055, WP-060, WP-065 (Vue SFC Test Transform — no deps). The UI Implementation Chain (WP-065 → WP-061 → WP-062 / WP-063 → WP-064) waits on WP-028 (UIState), which in turn waits on WP-027. WP-065 itself has no dependencies and can be executed immediately.
 
-*Last updated: 2026-04-14 (Phase 5 complete — 314 tests passing)*
+*Last updated: 2026-04-16 (UI Implementation Chain drafted + lint-gate passed: WP-061 Gameplay Client Bootstrap, WP-062 Arena HUD, WP-063 Replay Snapshot Producer, WP-064 Game Log & Replay Inspector, WP-065 Vue SFC Test Transform Pipeline — all Ready; WP-065 is the hard prerequisite that makes `node:test` compatible with `.vue` SFCs)*
