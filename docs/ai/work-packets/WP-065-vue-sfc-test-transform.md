@@ -88,6 +88,45 @@ Before writing a single line:
 
 ---
 
+## Load-Bearing Invariants (Do Not Violate)
+
+The following rules are relied upon by downstream UI work packets
+(WP-061, WP-062, WP-064, and every future client UI WP) and by CI
+determinism guarantees. Violations may not fail locally but will
+surface as cross-platform divergence, CI-only errors, or subtle
+mount-assertion failures far from the change site.
+
+- **Loader chain ordering is fixed:** the repo's canonical TS loader
+  always runs *before* `@legendary-arena/vue-sfc-loader/register`.
+  Consumer `.test.ts` files get TS-transformed first; `.vue` imports
+  are then SFC-compiled by this package. Reversing the order breaks
+  `<script lang="ts">` handling in unrelated ways.
+- **POSIX filename normalization in `compileVue`:** all filenames
+  passed as the compiler `id` are POSIX-normalized
+  (`filename.replace(/\\/g, '/')`). The original OS-native path is
+  retained for error messages only. Compiler `id` identity is what
+  determines byte-level emission stability across Windows and Linux.
+- **JS-only emission from `compileVue`:** the returned `code` is
+  always parseable as ESM JavaScript by Node 22 with no further
+  transform. TS stripping, when needed, is performed *inside*
+  `compileVue` via `typescript.transpileModule` — never by an outer
+  loader. Node's loader chain does not re-transform the string
+  returned from `load()`.
+- **Sourcemap tolerance contract:** the acceptance bar is "stack
+  trace contains the `.vue` path **and** a non-zero line number".
+  Perfect column accuracy is explicitly out of scope because
+  `@vue/compiler-sfc` produces separate maps for template and script
+  and merging them perfectly is non-trivial.
+- **Loader scope is `.vue`-only:** `load()` intercepts only URLs
+  ending in `.vue`. Every other extension is passed through to
+  `nextLoad` untouched so upstream loaders (TS, JSON, etc.) still run.
+
+Each invariant above is enforced by an Acceptance Criterion or a test
+in `## Scope (In)`. Changes to these rules require a DECISIONS.md
+entry, not a silent edit.
+
+---
+
 ## Preflight (Must Pass Before Coding)
 
 - **Vue version pinned:** confirm the exact `vue` version used by
@@ -197,6 +236,12 @@ If any item is unknown, **stop and ask** before writing code.
 - `compileVue` is a **pure function**: input is a string + filename,
   output is a string + optional sourcemap. No I/O. No `console.*`. No
   wall clock. No mutation of inputs.
+- `compileVue` is **not a general SFC compiler**. It exists solely to
+  produce **Node-parseable ESM JavaScript** for test environments.
+  This boundary preempts future "why not emit styles?", "why not
+  support custom blocks?", and "why not let an external TS loader
+  handle TS?" expansions — all three are out of scope by design, not
+  oversight.
 - **`compileVue` MUST emit JavaScript only — never TypeScript**, even
   when the input `<script lang="ts">` contains TS syntax. Node's
   loader chain decides transforms by the specifier (`.vue`); once
@@ -320,7 +365,7 @@ If any item is unknown, **stop and ask** before writing code.
   `test`, `typecheck`. Exports map publishes `./register` as a
   subpath entry pointing at the compiled `dist/register.js`, so
   `--import @legendary-arena/vue-sfc-loader/register` resolves.
-  - **Dependency strategy (anti-duplication):**
+  - **Dependency strategy (anti-duplication and version alignment):**
     - `peerDependencies`: `vue` and `@vue/compiler-sfc` — pinned to
       match the repo's current Vue version exactly. This prevents
       pnpm from installing a second copy of Vue when apps consume
@@ -355,6 +400,11 @@ If any item is unknown, **stop and ask** before writing code.
     how to find the sourcemap.
   - Known limitations: no style rendering, no HMR, no custom blocks,
     tests-only.
+  - Troubleshooting section: cross-reference the "Common Failure
+    Smells" table in `EC-065-vue-sfc-loader.checklist.md` so a
+    consumer hitting a cryptic error (e.g., `Unexpected token` in a
+    `.test.ts`) can diagnose loader-ordering, TS-pass, or
+    peer-dependency misconfiguration without re-reading this WP.
 
 ### B) SFC compiler wrapper
 
@@ -427,6 +477,14 @@ If any item is unknown, **stop and ask** before writing code.
     implement `resolve()` to force `file://` URL construction via
     `node:url`'s `pathToFileURL` and document the case in
     DECISIONS.md. Do NOT implement `resolve()` speculatively.
+    `// why:` (for the WP itself, not the code) implementing
+    `resolve()` too eagerly risks diverging from Node's native
+    resolution semantics and breaking interop with other loaders in
+    the chain. A minimal loader surface is easier to audit, port to
+    future Node LTS versions, and compose with the canonical TS
+    loader. Any future maintainer tempted to "helpfully" add
+    `resolve()` must first produce a failing-test case that default
+    Node resolution cannot handle.
   - `// why:` comment: the loader only intercepts `.vue` — any other
     extension is passed through untouched so the TypeScript loader
     above it still runs.
@@ -469,7 +527,10 @@ If any item is unknown, **stop and ask** before writing code.
   - Asserts that stack traces from a deliberately broken fixture
     reference the `.vue` file path (sourcemap integrity).
   - `// why:` comment on the child-process pattern: loader hooks
-    install per-process, so verifying them requires a fresh process.
+    install per-process, so verifying them requires spawning a fresh
+    Node process with the `--import` flags. In-process testing would
+    verify hook registration in isolation but not actual import
+    resolution or `.vue` compilation end-to-end.
 
 ---
 
@@ -485,6 +546,14 @@ If any item is unknown, **stop and ask** before writing code.
 - No custom language blocks (`<i18n>`, `<docs>`, etc.). Stripped
   silently at test time only if present; production Vite handles them.
 - No Vue 2 support. Vue 3 only.
+- No attempt is made to track, polyfill, or forward-port **future Vue
+  SFC features** (e.g., new block types, evolving `<script setup>`
+  syntax, or post-3.x compiler APIs) inside this loader. When Vue
+  ships new SFC capabilities, the response is to bump
+  `@vue/compiler-sfc` in lockstep with `vue` and retest — never to
+  add per-feature shims inside `compileVue`. This keeps the loader's
+  surface area bounded by whatever `@vue/compiler-sfc` already
+  supports at the pinned version.
 - No general-purpose TypeScript loader (tsx, ts-node, esbuild-register,
   @swc/register, etc.) is introduced. This package performs a
   **minimal, deterministic type-stripping pass** via
@@ -562,15 +631,18 @@ No other files may be modified. `apps/arena-client/**`,
       returned code; a DEBUG summary emitted under
       `DEBUG=vue-sfc-loader` names the stripped counts.
 - [ ] Two identical calls with the same source + POSIX filename
-      produce byte-identical output **when compared with the
-      sourcemap comment line removed**. The sourcemap comment may
-      encode the filename or other context and is allowed to differ
-      across equivalent calls; the executable module body must not.
+      produce **byte-for-byte identical** emitted module bodies after
+      stripping the sourcemap comment line. The sourcemap comment
+      may encode the filename or other context and is allowed to
+      differ across equivalent calls; the executable module body
+      must not. A future maintainer may not weaken this assertion
+      (e.g., to "semantically equivalent" or "AST-identical") —
+      byte-for-byte is the contract.
 - [ ] **Filename normalization holds cross-platform**: compiling the
       same source with `C:\fix\hello.vue` and `/fix/hello.vue` as
-      filenames produces byte-identical emitted module bodies
-      (same sourcemap-stripped comparison; error-path strings may
-      differ; module output must not).
+      filenames produces **byte-for-byte identical** emitted module
+      bodies (same sourcemap-comment-stripped comparison; error-path
+      strings may differ; module output must not).
 - [ ] A template-only SFC (no `<script>`) compiles and mounts.
 - [ ] A script-only SFC (no `<template>`) compiles and exports a
       valid component.
@@ -645,6 +717,16 @@ git diff --name-only apps/arena-client/ apps/registry-viewer/ apps/server/ packa
 # Step 9 — confirm only expected files changed
 git diff --name-only
 # Expected: only files listed in ## Files Expected to Change
+
+# Step 10 — cross-platform determinism sanity check (run on both
+# Windows and Linux CI if feasible)
+# The determinism test inside compileVue.test.ts already asserts
+# byte-for-byte identical output across C:\ and POSIX filenames on
+# the current host. If WP-065 is ever re-executed on a new OS or new
+# Node minor version, re-run this filter to confirm the invariant
+# still holds on the target CI environment before unblocking WP-061+.
+pnpm --filter @legendary-arena/vue-sfc-loader test
+# Expected: determinism test passes on the target platform
 ```
 
 ---
