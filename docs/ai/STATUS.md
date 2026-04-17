@@ -7,6 +7,101 @@
 
 ## Current State
 
+### WP-048 — PAR Scenario Scoring & Leaderboards (2026-04-17)
+
+**What changed:**
+- New PAR scoring subtree under `packages/game-engine/src/scoring/`. Five
+  new files matching the EC-048 Files to Produce exactly:
+  `parScoring.types.ts`, `parScoring.keys.ts`, `parScoring.logic.ts`,
+  `parScoring.keys.test.ts`, `parScoring.logic.test.ts`. Three re-export
+  surfaces updated: `scoring/scoring.types.ts`, `types.ts`, and `index.ts`
+  — no structural changes to pre-existing contracts.
+- **Types (WP-048 §A):** `ScenarioKey`, `TeamKey`, `ScoringWeights`,
+  `ScoringCaps`, `PenaltyEventType`, `PENALTY_EVENT_TYPES`,
+  `PenaltyEventWeights`, `ParBaseline`, `ScenarioScoringConfig`,
+  `ScoringInputs`, `ScoreBreakdown`, `LeaderboardEntry`,
+  `ScoringConfigValidationResult`. All `readonly`, all JSON-serializable
+  (no functions, Maps, Sets, Dates, class instances — D-4806).
+- **Identity keys (WP-048 §C):** `buildScenarioKey(scheme, mastermind,
+  villainGroups)` and `buildTeamKey(heroes)` produce stable, sorted
+  strings (`{scheme}::{mastermind}::{v1+v2+…}` and `{h1+h2+…}`). Sorting
+  is done inside the builders; callers pass slugs in any order.
+- **Logic (WP-048 §B):** six pure functions — `deriveScoringInputs`,
+  `computeRawScore`, `computeParScore`, `computeFinalScore`,
+  `buildScoreBreakdown`, `validateScoringConfig`. All deterministic; all
+  integer (centesimal) arithmetic. `computeRawScore` and `computeParScore`
+  share one arithmetic path so PAR is always consistent with Raw.
+  `buildScoreBreakdown` spread-copies `inputs` and `penaltyEventCounts`
+  before storing (D-2801 aliasing precedent).
+- **`deriveScoringInputs` signature (D-4801):**
+  `(replayResult: ReplayResult, gameState: LegendaryGameState) =>
+  ScoringInputs`. No `gameLog` parameter, no `GameMessage` type introduced.
+  Derivation sources documented per-field in the WP: `rounds =
+  moveCount`, `victoryPoints = sum(computeFinalScores.players[*].totalVP)`
+  (D-4803 team-aggregate), `bystandersRescued` counted via
+  `playerZones[*].victory` against `villainDeckCardTypes`, `escapes =
+  counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] ?? 0`. Non-villainEscaped
+  penalty event counts safe-skip to `0` per D-4801.
+- **Validation (`validateScoringConfig`):** enforces positive core
+  weights, positive per-event penalty weights, complete
+  `penaltyEventWeights` coverage (every `PenaltyEventType` key present
+  per D-4805), non-negative caps, non-negative PAR baseline, positive
+  config version, and the three moral-hierarchy structural invariants
+  (`bystanderReward > villainEscaped`, `bystanderLost > villainEscaped`,
+  `bystanderLost > bystanderReward`). Never throws — returns
+  `{ valid, errors: readonly string[] }` with full-sentence messages per
+  code-style Rule 11.
+- **Tests:** 16 tests in `parScoring.logic.test.ts` and 4 tests in
+  `parScoring.keys.test.ts`, each inside a single `describe()` block.
+  Test 8 proves heroic play strictly beats conservative play under
+  reference weights (moral hierarchy). Test 13 is the
+  `PENALTY_EVENT_TYPES`/`PenaltyEventType` drift-detection gate. Test 14
+  absorbs the aliasing-protection assertion (D-2801). Test 15 loops over
+  `PENALTY_EVENT_TYPES` and asserts one-rejection-per-missing-key for the
+  self-contained config rule (D-4805). Test 16 JSON-roundtrips both
+  `ScoreBreakdown` and `LeaderboardEntry` for structural equality (D-4806).
+- **Scope compliance:** `LegendaryGameState` shape unchanged (D-4802).
+  `buildInitialGameState` signature unchanged (D-4802). `MatchSetupConfig`
+  9-field lock preserved. `scoring.logic.ts` zero-diff (WP-020 contract
+  read-only). `replay.types.ts` / `replay.execute.ts` / `replay.hash.ts` /
+  `replay.verify.ts` zero-diff (WP-027 contract read-only). No
+  `boardgame.io`, `@legendary-arena/registry`, or `apps/server` import in
+  any `parScoring.*.ts`. No `.reduce()`, no floating-point helpers, no
+  `require()`.
+
+**Verification (from WP-048 §Verification Steps + EC-048 §After Completing):**
+- `pnpm --filter @legendary-arena/game-engine build` exits 0.
+- `pnpm --filter @legendary-arena/game-engine test` exits 0 — 396 passing,
+  98 suites, 0 failing (baseline 376/96 → +16 logic tests + 4 key tests =
+  +20 tests, +2 suites). Note: the session prompt mentioned "392/98" as an
+  arithmetic error; the spec explicitly requires 16+4=20 new tests, which
+  lands at 396/98. Flagged in commit message for post-mortem.
+- `pnpm -r test` exits 0 — 429 passing (409 → 429, +20). Same arithmetic
+  observation: prompt said "425"; authoritative requirement is 20 new tests
+  landing at 429.
+- `git diff c5f7ca4 --name-only` returns only the allowlisted files plus
+  STATUS.md and WORK_INDEX.md. `DECISIONS.md` already contains D-4801
+  through D-4806 from commit c5f7ca4 and is not modified in this commit.
+- Every required `// why:` comment from EC-048 is present (types, logic,
+  keys, derivation safe-skips, aliasing, monotonicity, full-sentence
+  error messages).
+
+**What remains:**
+- UI projection of `ScoreBreakdown` + live progress counters onto
+  `UIState` / `UIGameOverState` — handled by a separate intermediate WP
+  between WP-048 and WP-062 (Arena HUD & Scoreboard). WP-048 deliberately
+  adds no UI surface.
+- `G.activeScoringConfig` field and match-setup wiring — deferred to
+  WP-067 per D-4802.
+- Structured penalty-event producers for `bystanderLost`,
+  `schemeTwistNegative`, `mastermindTacticUntaken`, and
+  `scenarioSpecificPenalty` — each has a D-4801 safe-skip comment
+  naming the deferred follow-up.
+- PAR-value content derivation (difficulty ratings → PAR baselines) —
+  consumes `ParBaseline` as input, future WP.
+- Server-side `LeaderboardEntry` storage, query, and tournament aggregate
+  scoring — future WPs.
+
 ### WP-061 — Gameplay Client Bootstrap (2026-04-17)
 
 **What changed:**

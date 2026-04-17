@@ -733,17 +733,27 @@ These packets make the game safe to ship.
   legacy Checklist C (Konva.js canvas UI) excluded — UI implementation is
   not a deployment concern per Layer Boundary
 
-- [ ] WP-048 — PAR Scenario Scoring & Leaderboards ✅ Reviewed
+- [x] WP-048 — PAR Scenario Scoring & Leaderboards ✅ Reviewed (2026-04-17 pre-flight READY TO EXECUTE + copilot 30/30 CONFIRM; commit c5f7ca4) — Completed 2026-04-17 (see [session-wp048-par-scenario-scoring.md](../invocations/session-wp048-par-scenario-scoring.md))
   Dependencies: WP-020, WP-027, WP-030
   Notes: Extends VP scoring (WP-020) into PAR-based scenario scoring per
   `docs/12-SCORING-REFERENCE.md`; `ScenarioKey` and `TeamKey` stable identity
   strings; `ScenarioScoringConfig` versioned per-scenario weights, caps, PAR
-  baseline, penalty event mappings; `deriveScoringInputs` extracts R/VP/BP/E
-  from replay log; integer arithmetic (centesimal) for determinism; monotonicity
-  invariant enforced by config validation; `LeaderboardEntry` contract defined
-  in engine, storage is server-only; anti-exploit controls (bystander cap, VP
-  cap, round cost, escape penalty); does NOT modify WP-020 or WP-027 contracts;
-  implements Vision goals 20-25
+  baseline, penalty event mappings; `deriveScoringInputs(replayResult,
+  gameState)` (D-4801) reads G directly, no `GameMessage` type introduced;
+  non-villainEscaped penalty producers safe-skip to 0 per D-4801; integer
+  arithmetic (centesimal) for determinism; monotonicity invariant enforced
+  by config validation; self-contained configs per D-4805 (every
+  `PenaltyEventType` key must be present in `penaltyEventWeights`);
+  team-aggregate MVP per D-4803; end-of-match only per D-4804;
+  `G.activeScoringConfig` field deferred to WP-067 per D-4802;
+  `ScoreBreakdown` and `LeaderboardEntry` JSON-roundtrip tested per D-4806;
+  `LeaderboardEntry` contract defined in engine, storage is server-only;
+  anti-exploit controls (bystander cap, VP cap, round cost, per-event
+  penalty weights); does NOT modify WP-020 or WP-027 contracts; implements
+  Vision goals 20-25. 16 logic tests + 4 key tests; game-engine suite
+  396/98, repo-wide 429. Note: session prompt quoted 392/425 for test
+  counts (arithmetic error); authoritative counts are 396/429 from 20 new
+  tests.
 
 - [x] WP-065 — Vue SFC Test Transform Pipeline ✅ Reviewed (2026-04-16 lint-gate pass) — Completed 2026-04-17 (see [session-wp065-vue-sfc-loader.md](../invocations/session-wp065-vue-sfc-loader.md))
   Dependencies: none

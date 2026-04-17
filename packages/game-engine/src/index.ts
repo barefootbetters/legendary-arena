@@ -137,6 +137,32 @@ export {
   VP_TACTIC,
   VP_WOUND,
 } from './scoring/scoring.types.js';
+
+// PAR scenario scoring (WP-048)
+export type {
+  ScenarioKey,
+  TeamKey,
+  ScoringWeights,
+  ScoringCaps,
+  PenaltyEventType,
+  PenaltyEventWeights,
+  ParBaseline,
+  ScenarioScoringConfig,
+  ScoringInputs,
+  ScoreBreakdown,
+  LeaderboardEntry,
+  ScoringConfigValidationResult,
+} from './scoring/parScoring.types.js';
+export { PENALTY_EVENT_TYPES } from './scoring/parScoring.types.js';
+export { buildScenarioKey, buildTeamKey } from './scoring/parScoring.keys.js';
+export {
+  deriveScoringInputs,
+  computeRawScore,
+  computeParScore,
+  computeFinalScore,
+  buildScoreBreakdown,
+  validateScoringConfig,
+} from './scoring/parScoring.logic.js';
 export type { MastermindState } from './mastermind/mastermind.types.js';
 export { buildMastermindState } from './mastermind/mastermind.setup.js';
 export { defeatTopTactic, areAllTacticsDefeated } from './mastermind/mastermind.logic.js';

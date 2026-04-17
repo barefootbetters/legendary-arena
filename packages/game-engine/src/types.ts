@@ -90,6 +90,27 @@ export {
   VP_WOUND,
 } from './scoring/scoring.types.js';
 
+// why: PAR scoring types (WP-048) are defined canonically in
+// src/scoring/parScoring.types.ts. Re-exported here so that consumers
+// importing from './types.js' have access to the full scoring surface.
+// No LegendaryGameState field addition — the setup-time scoring config
+// field is deferred to WP-067 per D-4802.
+export type {
+  ScenarioKey,
+  TeamKey,
+  ScoringWeights,
+  ScoringCaps,
+  PenaltyEventType,
+  PenaltyEventWeights,
+  ParBaseline,
+  ScenarioScoringConfig,
+  ScoringInputs,
+  ScoreBreakdown,
+  LeaderboardEntry,
+  ScoringConfigValidationResult,
+} from './scoring/parScoring.types.js';
+export { PENALTY_EVENT_TYPES } from './scoring/parScoring.types.js';
+
 // why: MastermindState is defined canonically in
 // src/mastermind/mastermind.types.ts (WP-019). Re-exported here so that
 // consumers importing from './types.js' have access.

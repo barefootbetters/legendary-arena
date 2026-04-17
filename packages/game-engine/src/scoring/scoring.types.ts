@@ -64,3 +64,28 @@ export interface FinalScoreSummary {
   /** Player with highest total VP, or null if tied. */
   winner: string | null;
 }
+
+// ---------------------------------------------------------------------------
+// PAR scoring re-exports (WP-048)
+// ---------------------------------------------------------------------------
+
+// why: PAR scoring types live canonically in parScoring.types.ts. Re-exported
+// here so consumers importing from './scoring.types.js' have access to the
+// full scoring API (VP + PAR) without having to import from two paths. No
+// structural changes to VP scoring types above this line — WP-020 contract
+// is read-only per EC-048.
+export type {
+  ScenarioKey,
+  TeamKey,
+  ScoringWeights,
+  ScoringCaps,
+  PenaltyEventType,
+  PenaltyEventWeights,
+  ParBaseline,
+  ScenarioScoringConfig,
+  ScoringInputs,
+  ScoreBreakdown,
+  LeaderboardEntry,
+  ScoringConfigValidationResult,
+} from './parScoring.types.js';
+export { PENALTY_EVENT_TYPES } from './parScoring.types.js';
