@@ -2,6 +2,11 @@
 
 **Status:** Ready
 **Primary Layer:** Client UI (new Vue 3 SPA)
+**Execution Checklist:** `docs/ai/execution-checklists/EC-067-gameplay-client-bootstrap.checklist.md`
+**Commit prefix:** `EC-067:` (not `EC-061:` — the `EC-061` slot is
+historically bound to the registry-viewer Rules Glossary panel
+shipped in commit `1b923a4`. WP-061 uses EC-067, the next free
+slot in the shared 060+ range.)
 **Dependencies:** WP-028 (UIState — types only), WP-065 (Vue SFC Test
 Transform Pipeline — provides the shared loader that makes `.vue`
 component tests runnable under `node:test`)
@@ -54,14 +59,25 @@ route. This packet is strictly plumbing.
     `UITurnEconomyState`, `UIGameOverState` as types.
 - WP-065 complete. Specifically:
   - `@legendary-arena/vue-sfc-loader` is a private package published
-    inside the monorepo and publishes
-    `@legendary-arena/vue-sfc-loader/register` as a subpath import
-    specifier.
+    inside the monorepo. Its `exports` map publishes **only** the
+    `./register` subpath; `.` and `./loader` are intentionally not
+    exposed (removed during WP-065 post-mortem to honor the 9-file
+    allowlist). WP-061 consumes the package solely via
+    `@legendary-arena/vue-sfc-loader/register` — do not attempt to
+    import `compileVue` directly.
   - Running a Node process with
     `--import @legendary-arena/vue-sfc-loader/register` makes `.vue`
     imports work under `node:test`, with sourcemaps that point at
     `.vue` files.
   - WP-065 tests exit 0 on `main`.
+  - WP-065 execution observed pnpm resolving `vue@3.5.30` against
+    the `^3.4.27` peerDep pin (D-6502). WP-061's
+    `apps/arena-client/package.json` pins `vue@^3.4.27` for
+    consistency; pnpm may resolve the same 3.5.x minor. The jsdom
+    global-injection boilerplate required by `@vue/test-utils.mount()`
+    (see §Scope (In) G and §Non-Negotiable Constraints) is
+    Vue-3.5.x-specific behavior — if a future WP bumps the pin, the
+    jsdom globals list may need to be re-verified.
 - `apps/registry-viewer/` exists as prior-art Vue 3 SPA in this repo and
   follows the repo's ESM + Composition API conventions.
 - `pnpm -r build` and `pnpm -r test` exit 0 on `main`.
@@ -105,35 +121,58 @@ packet does not invent a new toolchain mid-session. Each item below is a
 - **Test runner is locked to `node:test` + `node:assert` only** per
   lint checklist §7 and §12, and `.claude/rules/code-style.md`. Vitest,
   Jest, and Mocha are **forbidden** project-wide — do NOT propose them
-  as an alternative.
+  as an alternative. **There is no prior client-app test precedent in
+  `apps/registry-viewer/`** (verified during WP-065 execution: zero
+  `.test.*` files, no `test` script in its `package.json`). WP-061
+  **establishes** the client-app `node:test` + SFC-transform
+  precedent; do not search for one that does not exist.
 - **SFC test transform comes from WP-065.** This packet's `test`
-  script invokes Node with
-  `--import @legendary-arena/vue-sfc-loader/register`
-  (cross-platform via `NODE_OPTIONS`). Do NOT create a second
-  transform pipeline; do NOT copy WP-065's loader into this package;
-  do NOT modify `packages/vue-sfc-loader/**`. If running a WP-065 test
-  fixture (`hello.vue`) through `node:test` fails in this app's test
-  environment, WP-065 is broken and must be fixed there — not patched
-  here.
-- **TypeScript config prior art:** confirm the repo has a root
-  `tsconfig.base.json` (or equivalent) and whether it enables
-  `resolveJsonModule` and `"strict": true`. `resolveJsonModule` is
-  required for the typed-fixture strategy in Scope (In) §C; if it is not
-  enabled repo-wide, propose enabling it in this packet or downgrade
-  fixture validation to runtime Zod checks and document the choice in
-  DECISIONS.md.
+  script invokes Node directly with two `--import` flags in fixed
+  order: `node --import tsx --import
+  @legendary-arena/vue-sfc-loader/register --test src/**/*.test.ts`.
+  This matches the precedent set by
+  `packages/game-engine/package.json:19`,
+  `packages/registry/package.json:19`, and
+  `apps/server/package.json:10` (all use direct `--import tsx`
+  flags in their test scripts). **Do NOT** introduce `cross-env`,
+  `NODE_OPTIONS` in scripts, or any other wrapper — direct CLI
+  flags inside the `"test"` string work cross-platform without
+  new dependencies. Do NOT create a second transform pipeline; do
+  NOT copy WP-065's loader into this package; do NOT modify
+  `packages/vue-sfc-loader/**`. If running a WP-065 test fixture
+  (`hello.vue`) through `node:test` fails here, WP-065 is broken
+  and must be fixed there — not patched here.
+- **Code-category classification for `apps/arena-client/` (PS-#
+  candidate).** Per `01.4` §Precedent Log P6-26 (new lesson from
+  WP-065), any new top-level workspace package needs a category row
+  in `docs/ai/REFERENCE/02-CODE-CATEGORIES.md`. Verify that
+  `apps/arena-client/` is covered by an existing `apps/*`-wide row;
+  if it is not, resolve as **PS-1** by adding a new
+  `D-NNNN — Client app classification for apps/arena-client/` entry
+  to `DECISIONS.md` and the matching `02-CODE-CATEGORIES.md` row
+  **before** session-prompt generation. Precedent: D-6501 (Shared
+  Tooling classification for `packages/vue-sfc-loader/`).
+- **TypeScript config prior art:** the repo does not ship a
+  `tsconfig.base.json`; each package/app owns its own tsconfig.
+  `resolveJsonModule: true` is therefore enabled **only in this
+  app's `apps/arena-client/tsconfig.json`** — no repo-wide change is
+  proposed. The Zod-fallback branch is dropped; `satisfies UIState`
+  is the only fixture-validation strategy.
 - **Workspace packaging prior art:** confirm how other apps are named
-  (`@legendary-arena/*` scope), marked (`private: true`), and filtered
-  via pnpm (`pnpm --filter @legendary-arena/<name>`). Match the prevailing
-  convention exactly.
-- **Vue routing convention:** confirm whether any existing app uses
-  `vue-router`. If no existing app uses it, this packet omits routing
-  entirely (preferred). If an existing app uses it, decide once whether
-  this packet adopts it; do not create a "maybe router" branch.
-- **Sourcemap convention:** confirm whether existing Vite apps ship
-  sourcemaps in dev, build, or both. This packet matches that default;
-  if no prior art, dev sourcemaps are mandatory and build sourcemaps are
-  enabled (to make first-time bootstrap failures diagnosable).
+  (`@legendary-arena/*` scope — `apps/registry-viewer/package.json:2`
+  uses `"name": "registry-viewer"` without the scope; WP-061 adopts
+  the scoped form `@legendary-arena/arena-client` for consistency
+  with `@legendary-arena/game-engine` and
+  `@legendary-arena/vue-sfc-loader`), marked (`private: true`), and
+  filtered via pnpm (`pnpm --filter @legendary-arena/<name>`).
+- **Vue routing convention:** `apps/registry-viewer/` does not use
+  `vue-router`. This packet **omits routing entirely** (no "maybe
+  router" branch).
+- **Sourcemap convention:** `apps/registry-viewer/vite.config.ts`
+  is the only prior art. WP-061 ships dev sourcemaps (Vite default)
+  and enables `build.sourcemap: true` to make first-time bootstrap
+  failures diagnosable; revisit in a future packet once the app
+  grows.
 
 If any of these items is unknown or cannot be answered by reading
 `apps/registry-viewer/` + repo root config, **stop and ask** before
@@ -192,10 +231,36 @@ writing a single file.
   No Jest. No Vitest. No Mocha. (Lint §7, §12 — project-wide rule.)
   The `.vue` SFC transform pipeline is provided by WP-065
   (`@legendary-arena/vue-sfc-loader`); this packet's `test` script
-  sets `NODE_OPTIONS=--import @legendary-arena/vue-sfc-loader/register`
-  and writes component tests without any further transform setup. If
-  SFC tests fail to run, the fault lies in WP-065 — do not patch
-  around it in this packet.
+  uses **direct `--import` CLI flags** (no `NODE_OPTIONS`, no
+  `cross-env`): `node --import tsx --import
+  @legendary-arena/vue-sfc-loader/register --test
+  src/**/*.test.ts`. Matches the precedent set by
+  `packages/game-engine`, `packages/registry`, and `apps/server`.
+  If SFC tests fail to run, the fault lies in WP-065 — do not
+  patch around it in this packet.
+- **jsdom + `@vue/test-utils.mount()` setup boilerplate is
+  load-bearing.** Under Vue 3.5.x + Node 22+ (WP-065's observed
+  environment), `@vue/runtime-dom.resolveRootNamespace` probes
+  `SVGElement` during `app.mount()`; a plain assignment
+  `globalThis.navigator = dom.window.navigator` throws
+  `TypeError: Cannot set property navigator of #<Object> which
+  has only a getter`. Every component test that calls `mount()`
+  imports a shared `src/testing/jsdom-setup.ts` helper that
+  injects `HTMLElement`, `Element`, `Node`, `SVGElement`,
+  `MathMLElement`, and assigns `navigator` via
+  `Object.defineProperty(globalThis, 'navigator', { value, writable:
+  true, configurable: true })`. Precedent: WP-065
+  `packages/vue-sfc-loader/src/loader.test.ts` driver.
+- **Optional `UIState` fields are OMITTED from fixture JSON**, not
+  emitted as `null` or `undefined`. The repo's strict tsconfig has
+  `exactOptionalPropertyTypes: true` (verified in
+  `packages/game-engine/tsconfig.json:8` and inherited by this
+  app's tsconfig). Under that flag, `{ gameOver: null }` is not
+  assignable to `{ gameOver?: UIGameOverState }` — the field must
+  be absent for `satisfies UIState` to hold. JSON cannot represent
+  `undefined`, so **omit** is the only correct form. Precedent:
+  WP-065 Locked Decision 11 (`compileVue` return-object
+  construction) and WP-029 `preserveHandCards`.
 
 **Session protocol:**
 - If `apps/registry-viewer/` uses a test runner that is not `node:test`,
@@ -257,28 +322,41 @@ writing a single file.
 
 - `apps/arena-client/package.json` — **new**. Name
   `@legendary-arena/arena-client`. Scripts: `dev`, `build`, `preview`,
-  `test`, `typecheck`. Mark `private: true`. The `test` script sets
-  `NODE_OPTIONS=--import @legendary-arena/vue-sfc-loader/register`
-  (cross-platform via the `cross-env` pattern or inline env). Add
-  `@legendary-arena/vue-sfc-loader` as a `devDependency` with
-  `workspace:*`. No Jest, Vitest, or Mocha.
-- `apps/arena-client/tsconfig.json` — **new**. Strict mode. Extends the
-  repo's root TS config if one exists.
-- `apps/arena-client/vite.config.ts` — **new**. Vue plugin + standard Vite
-  defaults. No custom middleware.
+  `test`, `typecheck`. Mark `private: true`. The `test` script uses
+  direct `--import` CLI flags (no `NODE_OPTIONS`, no `cross-env`):
+  `node --import tsx --import
+  @legendary-arena/vue-sfc-loader/register --test
+  src/**/*.test.ts`. Add `@legendary-arena/vue-sfc-loader` as a
+  `devDependency` with `workspace:*` (never `dependencies` —
+  anti-production-bundle rule). Pin `vue@^3.4.27` to match
+  `apps/registry-viewer/` and the vue-sfc-loader peerDep pin
+  (D-6502). No Jest, Vitest, or Mocha. No `cross-env`.
+- `apps/arena-client/tsconfig.json` — **new**. Strict mode
+  (`strict: true`, `exactOptionalPropertyTypes: true`,
+  `noUncheckedIndexedAccess: true` — matching
+  `packages/game-engine/tsconfig.json`). `resolveJsonModule: true`
+  so the typed-fixture strategy in §C compiles. No repo-wide
+  `tsconfig.base.json` exists; this file is self-contained.
+- `apps/arena-client/vite.config.ts` — **new**. Vue plugin +
+  `build.sourcemap: true`. No custom middleware.
 - `apps/arena-client/index.html` — **new**. Single mount point `<div
   id="app">`. `<title>Legendary Arena</title>`.
 - `apps/arena-client/src/main.ts` — **new**. Creates app, installs Pinia,
-  mounts. Routing follows the Preflight decision (preferred outcome:
-  omit routing entirely; fallback: match the repo convention — no
-  "maybe router" branch). Includes the **dev-only `?fixture=` bootstrap**:
+  mounts. **No routing** (preflight confirmed `apps/registry-viewer/`
+  does not use `vue-router`). Includes the **dev-only `?fixture=` bootstrap**:
   before `app.mount()`, a single `if (import.meta.env.DEV)` branch parses
   `window.location.search`, validates the `fixture` name against the
   three known fixture names, and calls `loadUiStateFixture(name)` +
   `store.setSnapshot(...)`. The `if` branch is dead-code eliminated in
   production builds. `// why:` comment on the dev-branch explaining that
   URL-based fixture selection is the team's reproducible-bug-report
-  mechanism.
+  mechanism. The dev branch also contains the dedicated DCE marker
+  string `'__WP061_DEV_FIXTURE_HARNESS__'` (inside a
+  `console.debug(...)` call or an assigned `const __marker = ...`)
+  so the production-build verification grep targets this unique
+  token rather than the fixture names (which survive minification
+  through the JSON imports regardless of the dev branch). See
+  §Acceptance Criteria §Dev Fixture Harness.
 
 ### B) Store
 
@@ -304,7 +382,9 @@ writing a single file.
 
 - `apps/arena-client/src/fixtures/uiState/mid-turn.json` — **new**. Full,
   valid `UIState` mid-match: phase `'play'`, stage `'main'`, at least two
-  players, non-empty city and HQ, scheme twist count > 0, no `gameOver`.
+  players, non-empty city and HQ, scheme twist count > 0. **Omit the
+  `gameOver` key entirely** (do not emit `"gameOver": null`) — see
+  `exactOptionalPropertyTypes` note under Non-Negotiable Constraints.
 - `apps/arena-client/src/fixtures/uiState/endgame-win.json` — **new**.
   Phase `'end'`, `gameOver.outcome === 'win'`, scores present.
 - `apps/arena-client/src/fixtures/uiState/endgame-loss.json` — **new**.
@@ -362,15 +442,32 @@ writing a single file.
 
 ### G) Tests
 
+- `apps/arena-client/src/testing/jsdom-setup.ts` — **new**. A single
+  side-effect module that installs the jsdom globals
+  `@vue/test-utils.mount()` needs under Vue 3.5.x + Node 22+.
+  Exports nothing; callers `import './testing/jsdom-setup.ts'` at
+  the top of any test file that mounts components. Injects
+  `HTMLElement`, `Element`, `Node`, `SVGElement`, `MathMLElement`
+  from `new JSDOM(...)`; assigns `navigator` via
+  `Object.defineProperty(globalThis, 'navigator', { value, writable:
+  true, configurable: true })` because Node 22+ makes
+  `globalThis.navigator` a read-only getter. `// why:` comment on
+  each global-injection block citing WP-065
+  `packages/vue-sfc-loader/src/loader.test.ts` as the originating
+  precedent.
 - `apps/arena-client/src/stores/uiState.test.ts` — **new**:
   - `setSnapshot(fixture)` updates `snapshot`.
   - `setSnapshot(null)` clears it.
+  - No `mount()` call — store tests do not need jsdom.
 - `apps/arena-client/src/fixtures/uiState/index.test.ts` — **new**:
   - Each of the three fixtures loads and contains all required
     top-level `UIState` keys.
   - `endgame-win.json` has `gameOver.outcome === 'win'`.
   - `endgame-loss.json` has `gameOver.outcome === 'loss'`.
+  - `mid-turn.json` has no `gameOver` **key** (tests `'gameOver'
+    in fixture` is `false`, not `fixture.gameOver === undefined`).
 - `apps/arena-client/src/components/BootstrapProbe.test.ts` — **new**:
+  - First import: `import './testing/jsdom-setup.ts'` (load-bearing).
   - With no snapshot, renders the empty-state message.
   - With the `mid-turn` fixture loaded, renders a phase value matching the
     fixture.
@@ -416,20 +513,29 @@ writing a single file.
 - `apps/arena-client/src/fixtures/uiState/endgame-loss.json` — **new**
 - `apps/arena-client/src/components/BootstrapProbe.vue` — **new**
 - `apps/arena-client/src/components/BootstrapProbe.test.ts` — **new**
+- `apps/arena-client/src/testing/jsdom-setup.ts` — **new**
 - `apps/arena-client/src/styles/base.css` — **new**
 - Root `pnpm-workspace.yaml` — **modified** only if the new package is not
   already covered by an existing glob
-- Root `tsconfig.base.json` (or equivalent) — **modified** only if
-  `resolveJsonModule: true` needs to be added per Preflight findings.
-  Any such modification requires a DECISIONS.md entry.
 - `docs/ai/STATUS.md` — **modified** (governance update per DoD)
 - `docs/ai/DECISIONS.md` — **modified** (governance update per DoD)
+- `docs/ai/REFERENCE/02-CODE-CATEGORIES.md` — **modified** only if the
+  Preflight PS-# resolution determines a new category row is needed
+  for `apps/arena-client/`; any such modification requires a matching
+  `D-NNNN` entry in `DECISIONS.md` per the P6-26 precedent (D-6501
+  lineage)
 - `docs/ai/work-packets/WORK_INDEX.md` — **modified** (governance update
   per DoD)
 
 No other files may be modified. `packages/game-engine/**`,
-`packages/registry/**`, `apps/server/**`, and `apps/registry-viewer/**`
-must be untouched.
+`packages/registry/**`, `packages/vue-sfc-loader/**`, `apps/server/**`,
+and `apps/registry-viewer/**` must be untouched. **Per `01.4`
+§Precedent Log P6-27 (new lesson from WP-065), any file beyond this
+list is a scope violation, not a "minor additive deviation." If
+execution discovers that a file genuinely outside this list is
+required, stop and escalate to a pre-flight amendment (WP-031
+A-031-01 precedent) rather than shipping it and minimizing it in the
+execution summary.**
 
 ---
 
@@ -473,6 +579,12 @@ must be untouched.
       `resolveJsonModule`).
 - [ ] `endgame-win.json` and `endgame-loss.json` both include a `gameOver`
       block with the expected outcome.
+- [ ] `mid-turn.json` does NOT contain a `gameOver` key at all
+      (optional UIState fields are omitted under
+      `exactOptionalPropertyTypes: true`; `"gameOver": null` fails
+      `satisfies UIState`). Confirm via
+      `Select-String -Path "apps/arena-client/src/fixtures/uiState/mid-turn.json" -Pattern "gameOver"`
+      returning no matches.
 - [ ] `loadUiStateFixture` has a single code path (no environment
       branching between Vite and Node).
 
@@ -489,9 +601,17 @@ must be untouched.
 - [ ] Unknown `fixture` names in the query string do NOT populate the
       store (silent no-op; no throw — invalid query strings must not
       crash dev).
-- [ ] The dev branch is dead-code eliminated in production builds
-      (confirmed by grepping the build output for the fixture names —
-      they must be absent).
+- [ ] The dev branch contains the dedicated DCE marker string
+      `'__WP061_DEV_FIXTURE_HARNESS__'` (inside a `console.debug`
+      call or a `// why:` comment content accessible to the
+      minifier — e.g., `const __marker = '__WP061_DEV_FIXTURE_HARNESS__';`).
+      This marker is the target of the DCE verification grep.
+      **Do NOT grep for the fixture names themselves** — the
+      fixture JSON imports survive minification regardless of
+      the dev branch, so name-grepping produces false positives.
+- [ ] The dev branch is dead-code eliminated in production builds:
+      `Select-String -Path "apps/arena-client/dist" -Pattern "__WP061_DEV_FIXTURE_HARNESS__" -Recurse`
+      returns no matches.
 
 ### Base Styles & Accessibility
 - [ ] `base.css` defines `--color-foreground`, `--color-background`,
@@ -547,11 +667,28 @@ Select-String -Path "apps/arena-client/src/fixtures/uiState/typed.ts" -Pattern "
 Select-String -Path "apps/arena-client/src/main.ts" -Pattern "import\.meta\.env\.DEV"
 # Expected: at least one match
 
-# Step 10 — confirm engine and server packages untouched
-git diff --name-only packages/game-engine/ packages/registry/ apps/server/ apps/registry-viewer/
+# Step 10 — confirm mid-turn fixture omits gameOver key
+Select-String -Path "apps/arena-client/src/fixtures/uiState/mid-turn.json" -Pattern "gameOver"
+# Expected: no output (optional UIState fields are omitted, not set to null)
+
+# Step 11 — confirm DCE marker exists in dev source
+Select-String -Path "apps/arena-client/src/main.ts" -Pattern "__WP061_DEV_FIXTURE_HARNESS__"
+# Expected: at least one match
+
+# Step 12 — confirm DCE marker is stripped from production build
+pnpm --filter @legendary-arena/arena-client build
+Select-String -Path "apps/arena-client/dist" -Pattern "__WP061_DEV_FIXTURE_HARNESS__" -Recurse
+# Expected: no output (dev branch is dead-code eliminated)
+
+# Step 13 — confirm jsdom-setup.ts is imported by every component test
+Select-String -Path "apps/arena-client/src/components" -Pattern "from '.+/testing/jsdom-setup" -Recurse
+# Expected: at least one match per *.test.ts that calls mount()
+
+# Step 14 — confirm engine, server, registry-viewer, and vue-sfc-loader untouched
+git diff --name-only packages/game-engine/ packages/registry/ packages/vue-sfc-loader/ apps/server/ apps/registry-viewer/
 # Expected: no output
 
-# Step 11 — confirm only expected files changed
+# Step 15 — confirm only expected files changed
 git diff --name-only
 # Expected: only files listed in ## Files Expected to Change
 ```
@@ -583,3 +720,30 @@ git diff --name-only
       to enable build sourcemaps.
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` has WP-061 checked off with
       today's date and a note linking this file.
+- [ ] Commit uses the `EC-067:` prefix (NOT `EC-061:` — that slot is
+      historically bound to the registry-viewer Rules Glossary
+      panel). See `docs/ai/execution-checklists/EC-067-gameplay-client-bootstrap.checklist.md`.
+- [ ] **01.6 post-mortem is MANDATORY for this WP.** Three triggering
+      criteria apply per `01.6` §When Post-Mortem Is Required: (1)
+      new contract consumed by future WPs (`useUiStateStore()`
+      shape, `loadUiStateFixture` signature, `FixtureName` union,
+      dev `?fixture=` URL convention); (2) new long-lived
+      abstraction (the UI store pattern every subsequent UI WP
+      inherits); (3) new code category directory
+      (`apps/arena-client/` as the first gameplay client app).
+      Precedent: WP-065 P6-28. The session prompt generated for
+      this WP **must not** soften post-mortem to "recommended" —
+      01.6's mandatoriness rules override session-prompt language.
+- [ ] **Session prompt includes `### Runtime Wiring Allowance — NOT
+      INVOKED`** section with the four 01.5 trigger criteria
+      enumerated and marked absent, citing 01.5 §Escalation.
+      Precedent: WP-030 / WP-065 P6-10. WP-061 is purely additive
+      at the engine layer (no new `LegendaryGameState` field, no
+      `buildInitialGameState` shape change, no new
+      `LegendaryGame.moves` entry, no new phase hook) so the
+      declaration is factual and bounds the scope lock.
+- [ ] If PS-# code-category resolution was required during
+      pre-flight (per P6-26 / the Preflight bullet above), a
+      `D-NNNN — Client app classification for apps/arena-client/`
+      entry exists in `DECISIONS.md` and a matching row exists in
+      `02-CODE-CATEGORIES.md`.

@@ -127,6 +127,7 @@ is active. See 01.2 for the clause-driven diagnosis sequence.
 | EC-035 | WP-035    | Operations / Release     | Release artifacts, 4 environments, rollback          | Draft  |
 | EC-042 | WP-042    | Server / Operations      | Deployment checklists (R2, PostgreSQL, infra)        | Draft  |
 | EC-048 | WP-048    | Engine Scoring + Server  | PAR scoring, ScenarioKey, LeaderboardEntry contract  | Draft  |
+| EC-066 | WP-066    | Client UI / Registry     | Registry viewer: image-to-data toggle, localStorage   | Draft  |
 
 ---
 
@@ -151,9 +152,9 @@ is active. See 01.2 for the clause-driven diagnosis sequence.
 | Status   | Count |
 |----------|-------|
 | Done     | 1     |
-| Draft    | 54    |
+| Draft    | 55    |
 | Blocked  | 0     |
-| **Total**| **55**|
+| **Total**| **56**|
 
 ---
 
@@ -164,6 +165,20 @@ is active. See 01.2 for the clause-driven diagnosis sequence.
 | R-EC-01 | Registry / R2 Data | Fix `[object Object]` abilities in R2 metadata (msmc, bkpt, msis) | Deferred |
 | R-EC-02 | Registry / Card Data | Fix missing vp fields in mgtg masterminds | Done |
 | R-EC-03 | Registry / R2 Images | Resolve 5 missing images (slug mismatch or not uploaded) | Deferred |
+
+---
+
+## Shared Tooling (EC-060+ Series)
+
+Execution Checklists for shared internal tooling packages under
+`packages/*` that are consumed by app test scripts only (not by the
+game engine, registry, or server at runtime). Numbered 060+ to keep
+the range separate from phase-driven game-engine ECs and viewer ECs.
+
+| EC | Source WP | Layer | Execution Scope | Status |
+|---|---|---|---|---|
+| EC-065 | WP-065 | Shared Tooling (`packages/vue-sfc-loader/`) | Node `module.register()` loader + `compileVue` pure helper; enables `node:test` to import `.vue` SFCs; hard prerequisite for WP-061, WP-062, WP-064 and future client UI WPs. See `EC-065-vue-sfc-loader.checklist.md`. | Draft |
+| EC-067 | WP-061 | Client UI (`apps/arena-client/`) | Gameplay client bootstrap: Vue 3 + Vite + Pinia SPA; `useUiStateStore()` with `snapshot: UIState \| null` + `setSnapshot`; typed fixture loader with `satisfies UIState` discipline; `<BootstrapProbe />` wiring smoke; dev-only `?fixture=` URL harness behind `import.meta.env.DEV` (DCE-guarded); jsdom + `@vue/test-utils` test path via `vue-sfc-loader/register`. No HUD, no networking, no runtime engine import. **Note:** EC-061 was consumed by the registry-viewer Rules Glossary (commit `1b923a4`); WP-061 uses EC-067 — the next free slot. See `EC-067-gameplay-client-bootstrap.checklist.md`. | Draft |
 
 ---
 
@@ -194,4 +209,4 @@ the range clearly separate from game-engine WP-backed ECs.
 
 ---
 
-**Last updated:** 2026-04-17 (EC-105 drafted as Deferred — trigger: WP-065)
+**Last updated:** 2026-04-17 (EC-065 drafted under new Shared Tooling series; WP-065 unblocks EC-105 once executed)
