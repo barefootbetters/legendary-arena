@@ -4,6 +4,15 @@
 > session in `C:\pcloud\BB\DEV\legendary-arena` and paste this entire
 > file as the first user message. Do not execute it in the session
 > that generated it.
+>
+> **Shell requirement:** all commands in this prompt use Bash
+> syntax (heredocs, pipes with `grep -cE`, `&&` chains). The
+> repo's `.githooks/*` are POSIX shell scripts. Use **Git Bash**
+> on Windows (installed by default with Git for Windows). If you
+> must use PowerShell, translate pipe-counts with
+> `(… | Select-String "PATTERN").Count` and commit messages with
+> `git commit -F message.txt` instead of heredocs. Do not mix
+> shells mid-session.
 
 ---
 
@@ -67,27 +76,56 @@ Read these **in order, fully**, before writing any code:
 
 ## Pre-Execution Verification (Run Before Editing)
 
+Verify categorical assertions, not exact counts — plugin minor
+versions, line-ending quirks, and dependency resolution can shift
+totals without changing the underlying debt.
+
 ```bash
 cd C:/pcloud/BB/DEV/legendary-arena
 
-# 1. Confirm baseline at commit 05f27da (EC-103 draft) or later
-git log --oneline -1
+# 1. Confirm base commit ancestry (EC-103 draft or later on top of main)
+git log --oneline -6
+# expect: top 2 entries include "EC-103" and "EC-102" references
 
-# 2. Confirm EC-102 baseline errors
-pnpm --filter registry-viewer build           # expect: exits 0
-pnpm --filter registry-viewer typecheck 2>&1 | grep -cE "error TS"
-# expect: 8 (5 localRegistry + 3 vue-tsc cascade)
+# 2. Build is green (this is the absolute must-not-regress gate)
+pnpm --filter registry-viewer build
+# expect: exits 0; dist/ emitted
 
-pnpm --filter registry-viewer lint 2>&1 | grep -cE "vuejs-accessibility"
-# expect: 29
+# 3. Typecheck has exactly the known-categories debt (not a strict count)
+pnpm --filter registry-viewer typecheck 2>&1 | tee /tmp/ec103-typecheck.txt
+# assertions (verify ALL of these hold; do NOT count):
+#   a. errors exist in src/registry/impl/localRegistry.ts
+#      referencing `node:fs/promises` and `node:path`
+#   b. the vue-tsc module-resolution cascade appears in
+#      src/components/CardDetail.vue, CardGrid.vue, and/or
+#      HealthPanel.vue with "Cannot find module '../../registry/browser'"
+#   c. NO typecheck errors in browser.ts, httpRegistry.ts, or shared.ts
+#      (EC-102 consolidated those)
+#
+# PowerShell equivalent (if Git Bash unavailable):
+#   pnpm --filter registry-viewer typecheck 2>&1 |
+#     Select-String "localRegistry|Cannot find module '../../registry/browser'"
 
-# 3. Confirm no other working-tree changes
+# 4. Lint has the known a11y debt categories
+pnpm --filter registry-viewer lint 2>&1 | tee /tmp/ec103-lint.txt
+# assertions (verify ALL hold; do NOT count exact numbers):
+#   a. rule `vuejs-accessibility/no-static-element-interactions` appears
+#   b. rule `vuejs-accessibility/click-events-have-key-events` appears
+#   c. rule `vuejs-accessibility/form-control-has-label` appears
+#   d. rule `vuejs-accessibility/no-redundant-roles` appears
+#   e. all a11y errors are inside apps/registry-viewer/src/App.vue
+#      or apps/registry-viewer/src/components/*.vue — NO other files
+#      (if any other file flagged, STOP — plugin config changed)
+
+# 5. Working tree is clean of EC-103-scoped files
 git status --short
-# expect: only pre-existing untracked files (.claude/settings.local.json,
-# marketing docs, session-context-wp029.md) — NOT EC-103-related
+# expect: only pre-existing untracked items
+#   .claude/settings.local.json, session-context-wp029.md,
+#   docs/legendary-arena-*.{md,docx}, docs/upper-deck-licensing-contacts.md
+# NONE of the files in §Scope Lock may be modified yet.
 ```
 
-If any of these don't match, **STOP and report**.
+If any assertion fails, **STOP and report** — do not start editing.
 
 ---
 
@@ -104,7 +142,12 @@ If any of these don't match, **STOP and report**.
   matching `// why:` explaining the genuine edge case
 - Any `git commit --no-verify` or `--no-gpg-sign` — prohibited
 - Any new dependency beyond `@types/node`
-- Any visual regression (elements must render identically before/after)
+- Any visual regression **in the default/unfocused state** (elements
+  must render identically pre- and post-edit when not focused).
+  Focused-state changes are EXPECTED and REQUIRED: after a semantic
+  `<div>` → `<button>` swap, Tab-to-focus must show a visible focus
+  indicator (the browser's default outline is sufficient). Do NOT
+  suppress focus outlines to hide this change.
 - Any new feature, keyboard shortcut, focus-ring restyle, or
   animation
 - Any commit prefix other than `EC-103:` (hook will block `INFRA:` /
@@ -121,23 +164,55 @@ If any of these don't match, **STOP and report**.
 
 ### Step 1 — Unblock typecheck
 
-**1a. Add `@types/node` as viewer devDep.**
+**1a. Add `@types/node` as viewer devDep — match the repo runtime baseline.**
+
+The canonical runtime target is set in the root `package.json`
+`engines.node`. Read that value first:
+
 ```bash
-pnpm --filter registry-viewer add -D @types/node@^20
+node -e "const p=require('./package.json'); console.log('engines.node =', p.engines?.node)"
+# at this moment, repo declares: engines.node = ">=22"
 ```
-(Match the Node version in `package.json` `engines.node` if specified;
-otherwise `^20` aligns with CI's `node-version: 20`.)
+
+Install `@types/node` matching **the repo's `engines.node` baseline**,
+NOT CI's `node-version`:
+
+```bash
+pnpm --filter registry-viewer add -D @types/node@^22
+```
+
+Why not match CI's `node-version: 20`? Because the repo baseline is
+v22+ (root `engines.node: ">=22"`; `CLAUDE.md` notes "uses built-in
+fetch" which is a Node 18+ feature but semantically relies on the
+v22+ target). CI running on Node 20 is a **pre-existing repo
+inconsistency** (already pinned before EC-103). Fixing CI's
+`node-version` is **OUT OF SCOPE for EC-103** — flag it in your
+post-commit summary as debt for a future INFRA commit. Do NOT change
+`.github/workflows/ci.yml` `node-version: 20` values in this session.
+
+If `engines.node` changes in the future, `@types/node` should track
+it — not CI.
 
 **1b. Re-point `localRegistry.ts` type import.**
-Edit `apps/registry-viewer/src/registry/impl/localRegistry.ts` lines
-11–20: change `from "../types/index.js"` to
-`from "../types/types-index.js"`. This follows the EC-102
-consolidation pattern already applied to browser.ts/httpRegistry.ts/
-shared.ts.
+
+Do NOT trust line numbers — the file has drifted. Use search anchors:
+
+- Open `apps/registry-viewer/src/registry/impl/localRegistry.ts`
+- Find the import block that reads `from "../types/index.js"` and
+  whose `import type {` list contains `CardRegistry, SetIndexEntry,
+  SetData, Hero, FlatCard, CardQuery, RegistryInfo, HealthReport`
+- Change the `from` clause to `from "../types/types-index.js"`
+- No other edits in this block
+
+This matches the EC-102 consolidation pattern already applied to
+`browser.ts`, `httpRegistry.ts`, `shared.ts`.
 
 **1c. Annotate the `readdir` callback parameter.**
-Line 64 of `localRegistry.ts`: change `.filter((f) => ...)` to
-`.filter((f: string) => ...)`. This eliminates TS7006.
+
+Search anchor: find `.filter((f) =>` in
+`apps/registry-viewer/src/registry/impl/localRegistry.ts`.
+Change `(f) =>` to `(f: string) =>`. This eliminates `TS7006`
+(`Parameter 'f' implicitly has an 'any' type`).
 
 **1d. Verify typecheck exits 0.**
 ```bash
@@ -153,12 +228,15 @@ If typecheck still fails, STOP and report. Do NOT proceed to Step 2.
 
 **Error inventory (from EC-103 §Locked Values):**
 
-| Rule | Count | Canonical fix |
-|---|---|---|
-| `vuejs-accessibility/no-static-element-interactions` | 13 | `<div @click>` → `<button @click>` (preferred) or `role="button" tabindex="0"` (fallback) |
-| `vuejs-accessibility/click-events-have-key-events` | 10 | Same elements as above also need `@keydown.enter.space.prevent="handler"` when using the ARIA fallback; NOT needed if semantic swap used |
-| `vuejs-accessibility/form-control-has-label` | 3 | Add `<label for="id">` or wrap input in `<label>` |
-| `vuejs-accessibility/no-redundant-roles` | 1 | Drop `role="complementary"` from `<aside>` (implicit role) |
+Work by rule category, not raw count. Exact totals may drift between
+plugin minor versions.
+
+| Rule | Canonical fix |
+|---|---|
+| `vuejs-accessibility/no-static-element-interactions` | `<div @click>` → `<button type="button" @click>` (preferred) or `role="button" tabindex="0"` (fallback, only when semantic swap is impossible) |
+| `vuejs-accessibility/click-events-have-key-events` | If semantic swap used: automatic (native button handles Enter/Space). If ARIA fallback used: add **TWO separate handlers** — `@keydown.enter.prevent="handler"` AND `@keydown.space.prevent="handler"`. Do NOT chain as `@keydown.enter.space` — Vue interprets chained key modifiers as AND, which a single keystroke can never satisfy; the handler will never fire. |
+| `vuejs-accessibility/form-control-has-label` | Add `<label for="id">…</label>` paired with matching `id=` on the input, OR wrap the input inside a `<label>…<input>…</label>` block |
+| `vuejs-accessibility/no-redundant-roles` | Drop `role="complementary"` from `<aside>` (implicit role already matches) |
 
 **Affected files (8 SFCs):**
 - `apps/registry-viewer/src/App.vue`
@@ -175,22 +253,49 @@ If typecheck still fails, STOP and report. Do NOT proceed to Step 2.
 1. Run `pnpm --filter registry-viewer lint 2>&1 | grep -A 0 -B 0 "path/to/file.vue"` to pull just that file's errors.
 2. Read the file top to bottom. Note which elements are flagged.
 3. For each flagged `<div @click>`:
-   - **Default:** convert to `<button @click>`. Add scoped CSS to
-     neutralize native button styling if needed:
+   - **Default (preferred):** convert to `<button type="button" @click>`.
+     `type="button"` is **mandatory** — without it, a `<button>` inside
+     any future `<form>` will default to `submit` and trigger page
+     reloads or unintended form submissions. Add scoped CSS to
+     neutralize native button styling:
      ```css
      .my-div-turned-button {
+       /* why: preserve the visual appearance of the original <div>.
+          Do NOT touch `outline` — the browser focus ring must remain
+          visible when keyboard users Tab to this button (EC-103). */
+       appearance: none;
+       -webkit-appearance: none;
        border: none;
        background: none;
        padding: 0;
+       margin: 0;
        font: inherit;
        color: inherit;
-       text-align: left; /* buttons default to center */
+       text-align: left;      /* buttons default to center */
        cursor: pointer;
+       /* Preserve block-level layout if the original <div> was block:
+          uncomment if needed. Buttons are inline-block by default. */
+       /* display: block; */
+       /* width: 100%; */     /* only if the parent relied on it */
      }
      ```
+     Do NOT add `outline: none` or `outline: 0` anywhere in the reset.
+     The default browser focus ring is the minimum viable a11y
+     indicator; removing it fails WCAG 2.4.7.
    - **Only if semantic swap breaks layout/CSS:** keep as `<div>`,
-     add `role="button"` + `tabindex="0"` +
-     `@keydown.enter.space.prevent="sameHandler"`.
+     add `role="button"` + `tabindex="0"` + **two separate key
+     handlers**:
+     ```vue
+     <div
+       role="button"
+       tabindex="0"
+       @click="handler"
+       @keydown.enter.prevent="handler"
+       @keydown.space.prevent="handler"
+     >
+     ```
+     Do NOT chain `.enter.space` on one handler — it means AND and
+     never fires.
 4. For `<aside role="complementary">`: remove the `role` attribute.
 5. For unlabeled `<input>` / `<select>`: add an `id` to the input
    and a `<label for="id">...</label>`, OR wrap the input inside a
@@ -250,11 +355,24 @@ pnpm --filter registry-viewer preview
 For every element you converted (every `<div>` → `<button>` swap,
 every `role="button"` addition, every new `<label>`):
 
-1. **Tab** to focus it. Confirm focus ring visible.
-2. Press **Enter** — confirm activation (click handler fires).
-3. Press **Space** — confirm activation (click handler fires).
-4. Confirm the element renders identically to the pre-edit version
-   (no accidental padding, border, background, or font change).
+1. **Unfocused render check**: confirm the element looks **visually
+   identical** to the pre-edit version in its default (not focused)
+   state — no accidental padding, border, background, font, or layout
+   shift. This is the "no visual regression" guarantee.
+2. **Tab** to focus it. Confirm the browser's focus indicator is
+   visible. This is a REQUIRED focused-state change — not a
+   regression.
+3. Press **Enter** — confirm activation (click handler fires).
+4. Press **Space** — confirm activation (click handler fires).
+   If the semantic swap was used (`<button type="button">`), Enter
+   and Space both work natively. If the ARIA fallback was used, both
+   keys must be wired to separate `@keydown.enter.prevent` and
+   `@keydown.space.prevent` handlers — a chained `.enter.space`
+   modifier means AND and will not fire.
+5. **Form submit check** (if the converted element is inside any
+   `<form>` ancestor): press Enter while focused on the button.
+   Confirm the form does NOT submit / page does NOT reload — this
+   verifies `type="button"` is present.
 
 If any of the above fails, fix before committing. Do not commit
 with known regressions.
@@ -319,13 +437,34 @@ pnpm --filter registry-viewer build
 git diff --name-only
 # expect: only files in §Scope Lock §Allowed
 
-# 5. CI workflow has the two new steps
-grep -A 1 "Lint viewer\|Typecheck viewer" .github/workflows/ci.yml
-# expect: both step names appear once each
+# 5. CI workflow has the two new steps — in the build-viewer job,
+#    in the correct order, before Build viewer.
+#    Extract the build-viewer job block and eyeball the step
+#    ordering manually. A raw grep for the strings would pass
+#    even if the steps were misplaced in another job or after
+#    `Build viewer`.
+awk '/^  build-viewer:/,/^  [a-z]/' .github/workflows/ci.yml | \
+  grep -E "^\s+- name:"
+# expect the `- name:` sequence to be, IN THIS ORDER:
+#   - name: Download registry dist
+#   - name: Lint viewer
+#   - name: Typecheck viewer
+#   - name: Build viewer
+#
+# If any step is missing, out of order, or after `Build viewer`,
+# fix before proceeding.
+#
+# PowerShell equivalent:
+#   (Get-Content .github/workflows/ci.yml -Raw) `
+#     -split "(?m)^  (?=[a-z])" |
+#     Where-Object { $_ -match "^build-viewer:" } |
+#     Select-String -Pattern "^\s+- name:" -AllMatches
 
 # 6. No --no-verify or --no-gpg-sign anywhere
 grep -r "no-verify\|no-gpg-sign" .github/ apps/ packages/ 2>/dev/null
 # expect: no matches
+# PowerShell: Get-ChildItem -Recurse .github,apps,packages |
+#   Select-String "no-verify|no-gpg-sign"
 ```
 
 ---
