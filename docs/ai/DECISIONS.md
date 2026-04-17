@@ -217,7 +217,6 @@ WP‑024 (scheme-loss counter)
 **Introduced:** WP‑032  
 **Status:** Immutable
 
----
 
 ## Campaign & Scenario Decisions
 
@@ -3625,6 +3624,96 @@ no registry import, no boardgame.io import, no `G` mutation, no
 
 **Introduced:** WP-033
 **Status:** Immutable until a superseding architecture decision
+
+---
+
+### D-6501 — Shared Tooling classification for packages/vue-sfc-loader/
+**Decision:** The new package at `packages/vue-sfc-loader/` is classified as Shared Tooling and belongs to the Shared Tooling category in `docs/ai/REFERENCE/02-CODE-CATEGORIES.md`.  
+**Rationale:** This package provides internal test-tooling for Vue SFC compilation and loader registration; it is not part of runtime game engine logic, server persistence, registry data input, or end-user documentation. Classifying it as Shared Tooling ensures its imports and behavior are governed by the layer-boundary rules in `docs/ai/ARCHITECTURE.md §Layer Boundary` rather than the broader `infra` or `docs` categories.  
+**Alternatives rejected:** classifying it as `infra` would be too broad and would not distinguish executable shared tooling from one-off scripts; classifying it as `docs` would mischaracterize package code as non-executable governance material; classifying it under `server`, `engine`, or `data-input` would violate the package's tooling-only nature and layer import rules.  
+**Introduced:** PS-1 / WP-065  
+**Status:** Active
+
+---
+
+### D-6502 — Vue version pinning via peerDependencies
+**Decision:** `packages/vue-sfc-loader/package.json` pins both `vue` and `@vue/compiler-sfc` to `^3.4.27` under `peerDependencies`, mirrored (at the same pin) under `devDependencies`. Vue is never added to `dependencies`.
+**Rationale:** pnpm will install a second copy of Vue into a package's own `node_modules` when `vue` appears under `dependencies`. `@vue/test-utils`' `mount()` uses component identity and `instanceof` checks that silently fail when two Vue copies coexist. Pinning `vue` and `@vue/compiler-sfc` together prevents template-compilation drift — `@vue/compiler-sfc` ships in lockstep with `vue`, and a version mismatch corrupts compiled render functions without surfacing an error. The pin matches `apps/registry-viewer/package.json:15`.
+**Alternatives rejected:** direct `dependencies` entry (causes pnpm dual-install, breaks mount); installing Vue only in `apps/*` (package tests cannot resolve Vue); leaving `@vue/compiler-sfc` unpinned while pinning `vue` (silent template-compilation drift).
+**Introduced:** WP-065
+**Status:** Active
+
+---
+
+### D-6503 — apps/registry-viewer/ prior-shim disposition: none found
+**Decision:** `apps/registry-viewer/` had no prior SFC test shim at WP-065 execution time. No `.test.*` files, no custom loader hook, no `register.mjs`. `vue-sfc-loader` is therefore the first `.vue` test transform in the repo, not a consolidation.
+**Rationale:** The Preflight "viewer precedent" item required an explicit finding in DECISIONS.md so that future maintainers can distinguish "greenfield transform" from "consolidation". Greenfield status means no apps/registry-viewer/** edits are in this WP's scope.
+**Alternatives rejected:** silently leaving two transforms in place (would violate WP-065 scope); expanding WP-065 to cover shim removal (scope violation since the shim does not exist).
+**Introduced:** WP-065
+**Status:** Active
+
+---
+
+### D-6504 — Intentional stripping of style and unknown custom blocks in compileVue
+**Decision:** `compileVue` emits code for `<template>` and `<script>` blocks only. `<style>` blocks and any unknown custom blocks (`<i18n>`, `<docs>`, etc.) are dropped silently from the emitted module. The `DEBUG=vue-sfc-loader` one-liner surfaces the stripped counts so the behavior is visible without dumping contents.
+**Rationale:** `jsdom` does not compute styles, and component tests under `node:test` assert on text and accessibility, not visual presentation. Emitting `<style>` into a no-op module adds bytes and noise without test value. Custom blocks have no standard runtime interpretation outside Vite; surfacing them as test-visible warnings would create per-project escape hatches.
+**Alternatives rejected:** emitting `<style>` into a no-op module (adds bytes, no test value); surfacing custom blocks as test-visible warnings (creates per-project escape hatches); failing the compile on unknown blocks (breaks mixed-use `.vue` files shared with production Vite).
+**Introduced:** WP-065
+**Status:** Active
+
+---
+
+### D-6505 — Node 22 module.register() as the loader API
+**Decision:** `packages/vue-sfc-loader/src/register.ts` uses `register('./loader.js', import.meta.url)` from `node:module`. The consumer-facing opt-in is `--import @legendary-arena/vue-sfc-loader/register`. Node v22 is the documented floor; pre-flight validated on Node v24.14.1.
+**Rationale:** `module.register()` + `--import` is the stable, non-deprecated loader-registration API on Node 22 LTS and Node 24. It works cross-platform (Windows, macOS, Linux). Legacy `--loader` hooks are deprecated and the runtime prints a warning. CommonJS `require.extensions` is not ESM-compatible and the repo is ESM-only.
+**Alternatives rejected:** legacy `--loader` hook (deprecated, warns at runtime); `require.extensions` (CJS-only, incompatible with repo's ESM-only policy); a global monkey-patch of `import` (not feasible under ESM).
+**Introduced:** WP-065
+**Status:** Active
+
+---
+
+### D-6506 — TS strategy outcome for vue-sfc-loader (Outcome B)
+**Decision:** Pre-flight's `<script lang="ts">` smoke test was run during execution (Locked Decision 7). At `@vue/compiler-sfc@^3.4.27` (actual installed version 3.5.30) `compileScript` retains TypeScript syntax (`interface Props`, `: string` annotations, `__props: any`) in its output. `compileVue` therefore applies `typescript.transpileModule({ module: 'ESNext', target: 'ES2022', isolatedModules: true })` internally after concatenating the rewritten script, template, and default-export sections. `typescript` is a `dependencies` entry (not `devDependencies`) because it runs at loader time.
+**Rationale:** Node's loader chain does not re-transform the string returned from `load()`. Relying on an outer TS loader (`tsx`, `ts-node`) to "catch up" after this loader returned TS would fail with `Unexpected token` on `<script lang="ts">`. The pass must happen inside `compileVue`. `isolatedModules: true` ensures the transpile pass does not require a full TS program and stays deterministic for pure string-in / string-out behavior.
+**Alternatives rejected:** relying on the outer TS loader (incompatible with Node's loader chain — `load()` return is not re-transformed); adding `tsx`, `ts-node`, or `esbuild` as in-package dependencies (violates WP-065 forbidden-dependencies list); stripping TS via regex (incorrect for generics, unions, and enums).
+**Introduced:** WP-065
+**Status:** Active
+
+---
+
+### D-6507 — Canonical NODE_OPTIONS composition pattern (tsx first, vue-sfc-loader second)
+**Decision:** The canonical consumer composition is `NODE_OPTIONS="--import tsx --import @legendary-arena/vue-sfc-loader/register"`. `tsx` runs first so consumer `.test.ts` files are TypeScript-transformed; `@legendary-arena/vue-sfc-loader/register` runs second so `.vue` imports are SFC-compiled. The delivered `packages/vue-sfc-loader/README.md` substitutes `tsx` for the `<repo-ts-loader>` placeholder per Locked Decision 1. The governance documents (WP-065 and EC-065) keep the placeholder literally.
+**Rationale:** Reversing the order breaks `<script lang="ts">` handling: `tsx` cannot re-transform strings returned from this loader's `load()`. A single documented pattern prevents per-app drift and makes failure smells diagnosable (the EC-065 "Common Failure Smells" table cites loader-ordering as the first mode).
+**Alternatives rejected:** letting each app invent its own ordering (guarantees drift); using direct `node --import` invocations as the default (worse onboarding for app authors); deferring the TS-loader choice to the app (ambiguity when WP-061+ land).
+**Introduced:** WP-065
+**Status:** Active
+
+---
+
+### D-6508 — Canonical TS loader name = tsx
+**Decision:** The repo-canonical TypeScript loader for `node:test` consumers is `tsx`. This is the literal package name substituted for `<repo-ts-loader>` in the delivered `packages/vue-sfc-loader/README.md` worked example, composition-pattern lines, and troubleshooting section.
+**Rationale:** `tsx` appears verbatim in all three existing `node:test` runners that ship today — `packages/game-engine/package.json:19`, `packages/registry/package.json:19`, `apps/server/package.json:10`. Picking any other package would create a second TS-loader dependency and diverge from existing precedent. The `<repo-ts-loader>` placeholder in the WP-065 and EC-065 governance documents remains literal so those files remain re-executable under a future loader change.
+**Alternatives rejected:** hard-coding `tsx` inside WP-065 / EC-065 governance text (loses re-executability under a loader change); `ts-node` (not in use anywhere in the repo); a repo-local loader (no such loader exists and introducing one was out of scope).
+**Introduced:** WP-065
+**Status:** Active
+
+---
+
+### D-6509 — POSIX filename normalization for compiler identity
+**Decision:** `compileVue` normalizes `filename` to POSIX forward slashes (`filename.replace(/\\/g, '/')`) before passing it as the `id` argument to `@vue/compiler-sfc.parse`, `compileScript`, `compileTemplate`, and `typescript.transpileModule`. The original OS-native path is retained for error messages so humans see a path their shell understands. A dedicated test asserts byte-for-byte identical emitted module bodies for `C:\fix\hello.vue` and `/fix/hello.vue` (sourcemap comment stripped for the comparison).
+**Rationale:** `@vue/compiler-sfc` embeds the `id` string into generated render-function helpers and sourcemap `sources` arrays. On Windows the id is `C:\foo\Hello.vue`; on Linux CI it is `/foo/Hello.vue`. Without normalization the emitted bodies diverge in the id bytes even when the source and intent are identical, which makes byte-for-byte determinism across CI platforms impossible. POSIX normalization is a strictly one-way transform that preserves identity — the dropped backslashes cannot conflict with any legal POSIX path character.
+**Alternatives rejected:** passing the raw OS-native path (produces divergent compiler IDs across platforms); hashing the filename (loses debuggability — stack traces lose the `.vue` path); normalizing only the compiler `id` but not `filename` (splits the two paths, risking future drift).
+**Introduced:** WP-065
+**Status:** Active
+
+---
+
+### D-6510 — Sourcemap tolerance = .vue path + non-zero line, not perfect column accuracy
+**Decision:** `compileVue` emits an inline sourcemap comment (`//# sourceMappingURL=data:application/json;charset=utf-8;base64,...`) containing a minimal identity mapping (`"mappings": "AAAA"`) with `sources` pointing at the POSIX-normalized `.vue` path and `sourcesContent` carrying the original SFC source. The acceptance target is "stack traces reference the `.vue` path with a non-zero line number"; perfect column accuracy is explicitly out of scope. A dedicated test in `loader.test.ts` asserts the stack trace from a deliberately broken fixture names the `.vue` path.
+**Rationale:** `@vue/compiler-sfc` produces separate sourcemaps for template and script; merging them into a single accurate map that threads through the subsequent `typescript.transpileModule` pass is non-trivial and out of scope for a test-time transform. "Path + non-zero line" is the debuggability target a human needs to find the failing site in the source `.vue`. Perfect column accuracy would add map-merger complexity that test environments do not consume.
+**Alternatives rejected:** a custom template/script map-merger (scope creep; fragile across `@vue/compiler-sfc` minor bumps); no sourcemap at all (breaks stack trace debuggability); emitting an external `.map` file (adds filesystem coupling to a pure helper).
+**Introduced:** WP-065
+**Status:** Active
 
 ---
 

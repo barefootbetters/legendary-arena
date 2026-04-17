@@ -7,6 +7,67 @@
 
 ## Current State
 
+### WP-065 — Vue SFC Test Transform Pipeline (2026-04-17)
+
+**What changed:**
+- New `packages/vue-sfc-loader/` package classified as Shared Tooling
+  (D-6501). Nine new files exactly matching WP-065 §Files Expected to
+  Change: `package.json`, `tsconfig.json`, `README.md`,
+  `src/compileVue.ts`, `src/compileVue.test.ts`, `src/loader.ts`,
+  `src/loader.test.ts`, `src/register.ts`, and
+  `test-fixtures/hello.vue`.
+- `@legendary-arena/vue-sfc-loader` exposes a single consumer entry
+  point via its exports map: `./register` (the side-effect import
+  that installs the Node 22 `.vue` loader hook). Consumers opt in by
+  setting `NODE_OPTIONS="--import tsx --import @legendary-arena/vue-sfc-loader/register"`
+  in their `test` script.
+- `compileVue(source, filename): { code, map? }` is a pure function.
+  POSIX-normalizes the filename before any compiler call; emits a
+  single ESM module with one `export default`; strips `<style>` and
+  unknown custom blocks (D-6504); runs `typescript.transpileModule`
+  internally (Outcome B from the pre-flight smoke test, recorded in
+  D-6506) so output is always plain JavaScript parseable by Node 22.
+- Loader intercepts `.vue` URLs only and delegates everything else to
+  `nextLoad`. `resolve()` is not implemented (Locked Decision 8 —
+  default Node resolution is the contract). `DEBUG=vue-sfc-loader`
+  env opt-in writes a one-line `compiled <file> template=… script=…
+  styleStripped=… customStripped=… bytesIn=… bytesOut=…` to stderr
+  per compiled file.
+- 11 tests in the new package all pass: nine `compileVue` tests
+  (including byte-for-byte determinism across `C:\fix\hello.vue`
+  vs `/fix/hello.vue` per D-6509, template-only and script-only
+  SFC validity per WP-065 §B, and a Node-22-parseable smoke test on
+  the emitted code) and two end-to-end `loader` tests that spawn
+  child Node processes with the canonical `NODE_OPTIONS` pattern
+  (D-6507) and verify jsdom mount plus broken-fixture stack-trace
+  integrity (D-6510).
+- Vue version pin: `^3.4.27` across `peerDependencies` and
+  `devDependencies` (D-6502), matching `apps/registry-viewer/`.
+- Canonical TS loader recorded as `tsx` (D-6508). Governance
+  documents keep the literal `<repo-ts-loader>` placeholder; the
+  delivered README substitutes the confirmed name.
+- `pnpm --filter @legendary-arena/vue-sfc-loader build / typecheck /
+  test` all exit 0. Full-repo test run remains green: 3 + 376 + 11 +
+  6 = 396 tests passing across `packages/registry`,
+  `packages/game-engine`, `packages/vue-sfc-loader`, and
+  `apps/server`. No regressions outside the new package.
+- `apps/arena-client/`, `apps/registry-viewer/`, `apps/server/`,
+  `packages/game-engine/`, `packages/registry/`, `packages/preplan/`,
+  `docs/ai/ARCHITECTURE.md`, and `docs/ai/REFERENCE/02-CODE-CATEGORIES.md`
+  were not modified by this session (the two governance files already
+  carried pre-flight changes from PS-1 that predate execution).
+
+**What's unblocked:**
+- WP-061 (Gameplay Client Bootstrap), WP-062 (Arena HUD), WP-064
+  (Game Log & Replay Inspector), and every future UI Work Packet
+  that tests `.vue` components can now use `node:test` with the
+  canonical `NODE_OPTIONS` composition. No additional per-app test
+  harness is required.
+- EC-105 (deferred viewer a11y interaction tracing) can now be
+  re-evaluated for scheduling.
+
+---
+
 ### WP-033 — Content Authoring Toolkit (2026-04-16)
 
 **What changed:**

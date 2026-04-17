@@ -1,0 +1,37 @@
+{
+  "name": "@legendary-arena/vue-sfc-loader",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Node module-loader hook that compiles Vue 3 Single-File Components for node:test consumers",
+  "type": "module",
+  "exports": {
+    "./register": {
+      "import": "./dist/register.js",
+      "types": "./dist/register.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/compileVue.test.ts src/loader.test.ts"
+  },
+  "peerDependencies": {
+    "@vue/compiler-sfc": "^3.4.27",
+    "vue": "^3.4.27"
+  },
+  "dependencies": {
+    "typescript": "^5.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.17",
+    "@vue/compiler-sfc": "^3.4.27",
+    "@vue/test-utils": "^2.4.6",
+    "jsdom": "^24.1.0",
+    "tsx": "^4.15.7",
+    "typescript": "^5.4.5",
+    "vue": "^3.4.27"
+  }
+}

@@ -745,7 +745,7 @@ These packets make the game safe to ship.
   cap, round cost, escape penalty); does NOT modify WP-020 or WP-027 contracts;
   implements Vision goals 20-25
 
-- [ ] WP-065 — Vue SFC Test Transform Pipeline ✅ Reviewed (2026-04-16 lint-gate pass)
+- [x] WP-065 — Vue SFC Test Transform Pipeline ✅ Reviewed (2026-04-16 lint-gate pass) — Completed 2026-04-17 (see [session-wp065-vue-sfc-loader.md](../invocations/session-wp065-vue-sfc-loader.md))
   Dependencies: none
   Notes: Creates `packages/vue-sfc-loader/` as a shared internal private
   package (`@legendary-arena/vue-sfc-loader`) that makes `.vue` SFCs
@@ -833,6 +833,21 @@ These packets make the game safe to ship.
   step overruns; auto-play gated behind an opt-in prop to keep scope to
   one session; `src/stores/` from WP-061 untouched unless a DECISIONS.md
   entry justifies a change; no engine, registry, or server-side changes.
+
+- [ ] WP-066 — Registry Viewer: Card Image-to-Data Toggle (Not yet reviewed)
+  Dependencies: None (registry viewer is independent)
+  Notes: Adds a global view-mode toggle to `apps/registry-viewer/` allowing
+  users to switch between image view (current behavior) and a structured
+  data view mirroring www.master-strike.com layout. Toggle state persisted
+  in `localStorage` under key `cardViewMode` (`'image'` | `'data'`, default
+  `'image'`). New components: `ViewModeToggle.vue` (button/switch), 
+  `CardDataDisplay.vue` (structured card attributes table). Modified components:
+  `App.vue` (manages global viewMode state), `CardDetail.vue` (conditional
+  render image or data based on viewMode). Display attributes organized by
+  section (cost, attack, recruit, abilities, metadata); both modes use same
+  underlying `FlatCard` data; printable in data mode. Toggling view does not
+  reset selected card or filters. No TypeScript errors. Follows
+  `docs/ai/REFERENCE/00.6-code-style.md` conventions.
 
 ---
 
