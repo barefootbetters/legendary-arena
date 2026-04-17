@@ -1,7 +1,25 @@
 <script setup lang="ts">
 import type { HealthReport, RegistryInfo } from "../registry/browser";
+import { DEBUG_VIEWER } from "../lib/debugMode";
 
-defineProps<{ report: HealthReport; info: RegistryInfo }>();
+interface DebugState {
+  searchText: string;
+  filterSet: string;
+  filterHC: string;
+  selectedTypes: string[];
+  selectedCardKey: string | null;
+  selectedThemeId: string | null;
+  filteredCount: number;
+  totalCount: number;
+  glossaryOpen: boolean;
+  lightboxOpen: boolean;
+}
+
+defineProps<{
+  report: HealthReport;
+  info: RegistryInfo;
+  debugState?: DebugState;
+}>();
 const emit = defineEmits<{ close: [] }>();
 </script>
 
@@ -54,6 +72,16 @@ const emit = defineEmits<{ close: [] }>();
             </li>
           </ul>
         </div>
+
+        <!-- why: EC-104 — dev-only debug surface. Gated by DEBUG_VIEWER
+             (`import.meta.env.DEV && location.search.has("debug")`), so
+             the entire block is stripped by Vite's DCE in production. -->
+        <div v-if="DEBUG_VIEWER && debugState" class="debug-section">
+          <div class="section-title">
+            Debug (dev-only)
+          </div>
+          <pre class="debug-dump">{{ JSON.stringify(debugState, null, 2) }}</pre>
+        </div>
       </div>
     </div>
   </div>
@@ -73,7 +101,8 @@ const emit = defineEmits<{ close: [] }>();
 .tile.warn { border-color: #f59e0b; }
 .val { display: block; font-size: 1.4rem; font-weight: 700; color: #e8e8ee; }
 .lbl { font-size: 0.65rem; color: #6666aa; text-transform: uppercase; letter-spacing: 0.05em; }
-.info-section, .errors-section { display: flex; flex-direction: column; gap: 0.45rem; }
+.info-section, .errors-section, .debug-section { display: flex; flex-direction: column; gap: 0.45rem; }
+.debug-dump { margin: 0; padding: 0.6rem 0.75rem; background: #0f0f1a; border: 1px solid #2e2e42; border-radius: 6px; color: #9999cc; font-size: 0.72rem; line-height: 1.4; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
 .section-title { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: #6666aa; display: flex; align-items: center; gap: 0.5rem; }
 .badge { background: #f87171; color: #fff; border-radius: 999px; padding: 0.1rem 0.4rem; font-size: 0.68rem; font-weight: 700; }
 .badge.ok { background: #10b981; }

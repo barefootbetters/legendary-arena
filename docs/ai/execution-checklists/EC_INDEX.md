@@ -178,6 +178,7 @@ the range clearly separate from game-engine WP-backed ECs.
 | EC-101 | Viewer / CI + Tooling + A11y | Fix CI duplicate `on.push` triggers; scaffold viewer `typecheck` + `lint` scripts + `.eslintrc.cjs`; add `aria-live` status announcements in `App.vue` | Draft |
 | EC-102 | Viewer / Type Consolidation + Cosmetic Lint | Consolidate viewer on `types-index.ts` (wide/live FlatCard); retire stale `types/index.ts` as canonical source for browser.ts/httpRegistry.ts/shared.ts; null-safe field mappings + stringify attack/recruit in shared.ts; silence 2 cosmetic ESLint rules; `prefer-const` fix. **CI gating deferred to EC-103** (vue-tsc exclude bug + 29 real a11y errors surfaced by eslint-plugin-vuejs-accessibility) | Draft |
 | EC-103 | Viewer / A11y Cleanup + CI Gating | Resolve EC-102's two blockers: (1) add `@types/node` to unblock `localRegistry.ts` typecheck + re-point its types to `types-index.ts`; (2) fix 29 real a11y errors across 8 Vue SFCs (`no-static-element-interactions` ×13, `click-events-have-key-events` ×10, `form-control-has-label` ×3, `no-redundant-roles` ×1) — prefer `<div @click>` → `<button>` semantic swaps over ARIA. Then wire `Lint viewer` + `Typecheck viewer` CI steps into `build-viewer` job. Includes manual keyboard smoke test. | Done |
+| EC-104 | Viewer / Debug Surface (Dev-Only) | Add unified dev-only debug gate `DEBUG_VIEWER` (`import.meta.env.DEV && ?debug`) in new `src/lib/debugMode.ts`; rewrite `devLog.ts` to locked categorical signature `(category, message, fields?)`; instrument `registryClient.ts` / `themeClient.ts` with `load start/complete/failed` events; add conditional `.debug-section` inside `HealthPanel.vue` with optional `debugState` prop fed inline from `App.vue`; tighten ESLint with `no-console: ['error', { allow: ['warn','error'] }]` + overrides for `devLog.ts` / `debugMode.ts`. DCE hard-gate verified: zero `DEBUG_VIEWER` / `debugMode` references in `dist/`. | Done |
 
 ---
 
@@ -192,4 +193,4 @@ the range clearly separate from game-engine WP-backed ECs.
 
 ---
 
-**Last updated:** 2026-04-16
+**Last updated:** 2026-04-17

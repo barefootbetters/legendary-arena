@@ -5,6 +5,8 @@
  * An index.json manifest lists all available theme filenames.
  */
 
+import { devLog } from "./devLog";
+
 // ── Types (viewer-local, not imported from packages/registry) ───────────────
 
 export interface ThemeSetupIntent {
@@ -55,36 +57,53 @@ let _promise: Promise<ThemeDefinition[]> | null = null;
 export function getThemes(metadataBaseUrl: string): Promise<ThemeDefinition[]> {
   if (_promise) return _promise;
   _promise = (async () => {
-    const indexResponse = await fetch(`${metadataBaseUrl}/themes/index.json`);
-    if (!indexResponse.ok) {
-      throw new Error(
-        `Cannot load themes/index.json: HTTP ${indexResponse.status}. ` +
-        'Verify that theme files have been uploaded to R2.',
-      );
-    }
-    const filenames: string[] = await indexResponse.json();
-
-    const fetchResults = await Promise.allSettled(
-      filenames.map(async (filename) => {
-        const themeResponse = await fetch(`${metadataBaseUrl}/themes/${filename}`);
-        if (!themeResponse.ok) {
-          console.warn(`[Themes] Failed to load ${filename}: HTTP ${themeResponse.status}`);
-          return null;
-        }
-        return themeResponse.json() as Promise<ThemeDefinition>;
-      }),
-    );
-
-    const themes: ThemeDefinition[] = [];
-    for (const result of fetchResults) {
-      if (result.status === 'fulfilled' && result.value !== null) {
-        themes.push(result.value);
+    const startedAt = performance.now();
+    devLog("theme", "load start", { baseUrl: metadataBaseUrl });
+    try {
+      const indexResponse = await fetch(`${metadataBaseUrl}/themes/index.json`);
+      if (!indexResponse.ok) {
+        throw new Error(
+          `Cannot load themes/index.json: HTTP ${indexResponse.status}. ` +
+          'Verify that theme files have been uploaded to R2.',
+        );
       }
-    }
+      const filenames: string[] = await indexResponse.json();
 
-    // why: sort alphabetically by name for stable display order
-    themes.sort((a, b) => a.name.localeCompare(b.name));
-    return themes;
+      const fetchResults = await Promise.allSettled(
+        filenames.map(async (filename) => {
+          const themeResponse = await fetch(`${metadataBaseUrl}/themes/${filename}`);
+          if (!themeResponse.ok) {
+            console.warn(`[Themes] Failed to load ${filename}: HTTP ${themeResponse.status}`);
+            return null;
+          }
+          return themeResponse.json() as Promise<ThemeDefinition>;
+        }),
+      );
+
+      const themes: ThemeDefinition[] = [];
+      for (const result of fetchResults) {
+        if (result.status === 'fulfilled' && result.value !== null) {
+          themes.push(result.value);
+        }
+      }
+
+      // why: sort alphabetically by name for stable display order
+      themes.sort((a, b) => a.name.localeCompare(b.name));
+      devLog("theme", "load complete", {
+        baseUrl: metadataBaseUrl,
+        durationMs: Math.round(performance.now() - startedAt),
+        themeCount: themes.length,
+        sampleThemeIds: themes.slice(0, 3).map((t) => t.themeId),
+      });
+      return themes;
+    } catch (error) {
+      devLog("theme", "load failed", {
+        baseUrl: metadataBaseUrl,
+        durationMs: Math.round(performance.now() - startedAt),
+        message: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
   })();
   return _promise;
 }

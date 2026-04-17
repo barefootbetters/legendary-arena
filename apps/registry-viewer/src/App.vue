@@ -293,7 +293,24 @@ function navigateToCard(slug: string, cardType: string) {
     </div>
 
     <template v-else>
-      <HealthPanel v-if="showDiag && healthReport" :report="healthReport" :info="registry!.info()" @close="showDiag = false" />
+      <HealthPanel
+        v-if="showDiag && healthReport"
+        :report="healthReport"
+        :info="registry!.info()"
+        :debug-state="{
+          searchText: searchText,
+          filterSet: filterSet,
+          filterHC: filterHC,
+          selectedTypes: [...selectedTypes].sort(),
+          selectedCardKey: selectedCard?.key ?? null,
+          selectedThemeId: selectedTheme?.themeId ?? null,
+          filteredCount: filteredCards.length,
+          totalCount: allCards.length,
+          glossaryOpen: glossary.isOpen.value,
+          lightboxOpen: lightbox.isOpen.value,
+        }"
+        @close="showDiag = false"
+      />
 
       <!-- ── View tabs ──────────────────────────────────────────────────────── -->
       <div class="view-tabs">

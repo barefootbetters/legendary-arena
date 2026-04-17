@@ -34,6 +34,20 @@ module.exports = {
     // team adopts a single-line-style convention.
     'vue/max-attributes-per-line': 'off',
     'vue/multiline-html-element-content-newline': 'off',
+    // why: EC-104 — force all dev-only logging through `devLog` (which is
+    // gated by `DEBUG_VIEWER` and stripped from prod by DCE). `warn`/`error`
+    // remain allowed for genuine user-facing failure messages.
+    'no-console': ['error', { allow: ['warn', 'error'] }],
   },
+  overrides: [
+    // why: EC-104 — `devLog.ts` and `debugMode.ts` are the approved
+    // `console.*` exit points for the viewer. They are the only files
+    // permitted to call `console.log`/`groupCollapsed`/`groupEnd`; every
+    // other file must route through `devLog`.
+    {
+      files: ['src/lib/devLog.ts', 'src/lib/debugMode.ts'],
+      rules: { 'no-console': 'off' },
+    },
+  ],
   ignorePatterns: ['dist/', 'node_modules/', '*.config.ts', '*.config.js'],
 };

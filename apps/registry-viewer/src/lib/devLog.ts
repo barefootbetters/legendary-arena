@@ -1,22 +1,45 @@
 /**
- * devLog.ts — Development-only console logging helper.
+ * devLog.ts — Dev-only console logger gated on the unified `DEBUG_VIEWER`
+ * flag. Signature and categories are locked by EC-104.
  *
- * Logs are visible only when running via `pnpm dev` (Vite dev server).
- * In production builds, the function is a no-op and the dead code is
- * tree-shaken by Vite's minifier.
+ * Enable by running the dev server with `?debug` in the query string:
+ *   http://localhost:5173/?debug
  *
- * Usage:
- *   import { devLog } from '../lib/devLog';
- *   devLog('applyFilters', { searchText: searchText.value });
+ * In production builds `DEBUG_VIEWER` collapses to `false` and Vite's
+ * DCE strips both this module's `console.*` calls and their call sites.
  */
 
+import { DEBUG_VIEWER } from "./debugMode";
+
+type Category = "registry" | "theme" | "filter" | "render";
+
 /**
- * Logs a labeled message to the console in development mode only.
- * @param label - Short identifier for the log source (e.g. 'CardGrid', 'Glossary')
- * @param data - Any values to log alongside the label
+ * Logs a categorized dev event. No-op when `DEBUG_VIEWER` is false.
+ *
+ * Rules (EC-104):
+ * - Never log full registry/theme payloads — keep to counts, durations,
+ *   and 3-sample identifiers.
+ * - Never log arrays larger than 20 elements; slice callers' arrays to
+ *   3-sample IDs before passing them in.
+ *
+ * @param category - Fixed category tag (registry | theme | filter | render).
+ * @param message  - Short human-readable event description.
+ * @param fields   - Optional structured payload (small — counts, ids, ms).
  */
-export function devLog(label: string, ...data: unknown[]): void {
-  if (import.meta.env.DEV) {
-    console.log(`%c[${label}]`, "color:#7070e0;font-weight:600", ...data);
+export function devLog(
+  category: Category,
+  message: string,
+  fields?: Record<string, unknown>,
+): void {
+  if (!DEBUG_VIEWER) return;
+  const label = `[${category}] ${message}`;
+  if (fields && Object.keys(fields).length > 0) {
+    console.groupCollapsed(label);
+    for (const [key, value] of Object.entries(fields)) {
+      console.log(`${key}:`, value);
+    }
+    console.groupEnd();
+  } else {
+    console.log(label);
   }
 }
