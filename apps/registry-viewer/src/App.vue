@@ -324,12 +324,12 @@ function navigateToCard(slug: string, cardType: string) {
       <div class="filter-bar">
         <input v-model="searchText" class="search" placeholder="Search cards…" @input="applyFilters" />
 
-        <select v-model="filterSet" @change="applyFilters">
+        <select v-model="filterSet" @change="applyFilters" aria-label="Filter by set">
           <option value="">All Sets</option>
           <option v-for="s in allSets" :key="s.abbr" :value="s.abbr">{{ s.name }}</option>
         </select>
 
-        <select v-model="filterHC" @change="applyFilters">
+        <select v-model="filterHC" @change="applyFilters" aria-label="Filter by hero class">
           <option value="">All Classes</option>
           <option v-for="hc in HC_OPTIONS" :key="hc" :value="hc">{{ hc }}</option>
         </select>
@@ -359,7 +359,13 @@ function navigateToCard(slug: string, cardType: string) {
           {{ group.emoji }} {{ group.label }}
         </button>
 
-        <span v-if="activeTypeCount > 0" class="clear-link" @click="clearTypes">✕ clear</span>
+        <!-- why: was <span @click>; converted to <button> for native keyboard + SR support (EC-103) -->
+        <button
+          v-if="activeTypeCount > 0"
+          type="button"
+          class="clear-link"
+          @click="clearTypes"
+        >✕ clear</button>
       </div>
 
       <!-- ── Set quick-filter pills ──────────────────────────────────────────── -->
@@ -480,7 +486,20 @@ select { padding: 0.4rem 0.6rem; background: #22222e; border: 1px solid #33334a;
 .type-group-btn:hover  { background: #2a2a3e; color: #c8c8ee; border-color: #5555aa; }
 .type-group-btn.active { background: #2a2a5a; border-color: #7070e0; color: #c0c0ff; font-weight: 700; }
 .type-group-btn.partial { background: #1e1e3a; border-color: #5555aa; color: #9999dd; border-style: dashed; }
-.clear-link { font-size: 0.72rem; color: #6666aa; cursor: pointer; margin-left: 0.25rem; }
+/* why: .clear-link became a <button> (EC-103). Reset native button styles to
+   preserve the original visual (text-like link); keep native focus outline. */
+.clear-link {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  margin-left: 0.25rem;
+  font: inherit;
+  font-size: 0.72rem;
+  color: #6666aa;
+  cursor: pointer;
+}
 .clear-link:hover { color: #f87171; }
 
 /* ── Set pills ───────────────────────────────────────────────────────────── */

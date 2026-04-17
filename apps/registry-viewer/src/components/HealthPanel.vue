@@ -1,12 +1,25 @@
 <script setup lang="ts">
-import type { HealthReport, RegistryInfo } from "../../registry/browser";
+import type { HealthReport, RegistryInfo } from "../registry/browser";
 
 defineProps<{ report: HealthReport; info: RegistryInfo }>();
 const emit = defineEmits<{ close: [] }>();
 </script>
 
 <template>
-  <div class="overlay" @click.self="emit('close')">
+  <!-- why: overlay kept as <div> with ARIA fallback — it wraps the modal panel
+       and can't be a <button> (buttons must not contain complex interactive
+       content). role="button" + tabindex + Enter/Space keydown close parity.
+       @click.self + keydown still trigger close only when the overlay itself
+       is the event target, not when bubbled from inside the panel (EC-103). -->
+  <div
+    class="overlay"
+    role="button"
+    tabindex="0"
+    aria-label="Close diagnostics"
+    @click.self="emit('close')"
+    @keydown.enter.self.prevent="emit('close')"
+    @keydown.space.self.prevent="emit('close')"
+  >
     <div class="panel">
       <div class="panel-header">
         <h2>Registry Diagnostics</h2>

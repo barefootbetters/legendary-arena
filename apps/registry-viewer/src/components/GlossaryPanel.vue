@@ -56,25 +56,35 @@ function handleEntryClick(entry: GlossaryEntry) {
 
 <template>
   <!-- Backdrop (mobile only, click to close) -->
-  <div
+  <!-- why: was <div @click>; converted to <button> for native keyboard + SR support (EC-103) -->
+  <button
     v-if="isOpen"
+    type="button"
     class="glossary-backdrop"
+    aria-label="Close glossary"
     @click="close"
-  ></div>
+  ></button>
 
+  <!-- why: removed redundant role="complementary" — <aside> has this implicit role (EC-103) -->
   <aside
     v-if="isOpen"
     class="glossary-panel"
     :style="{ width: panelWidth + 'px' }"
-    role="complementary"
     aria-label="Rules Glossary"
   >
+    <!-- why: resize handle keeps <div> — drag via pointerdown can't be expressed
+         as a semantic <button>. ARIA fallback: role="button" + tabindex + Enter/Space
+         reset parity so keyboard users can reset panel width (EC-103). -->
     <div
       class="resize-handle"
+      role="button"
+      tabindex="0"
       @pointerdown="startDrag"
       @dblclick="resetWidth"
+      @keydown.enter.prevent="resetWidth"
+      @keydown.space.prevent="resetWidth"
       title="Drag to resize · double-click to reset"
-      aria-label="Resize glossary panel"
+      aria-label="Resize glossary panel (Enter or Space to reset)"
     ></div>
     <div class="glossary-header">
       <div class="header-title">
@@ -90,6 +100,7 @@ function handleEntryClick(entry: GlossaryEntry) {
         v-model="searchQuery"
         type="search"
         placeholder="Search rules, keywords, classes…"
+        aria-label="Search glossary"
         class="search-input"
       />
       <button
@@ -108,13 +119,22 @@ function handleEntryClick(entry: GlossaryEntry) {
       <div v-for="group in groupedEntries" :key="group.title" class="group">
         <div class="group-title">{{ group.title }} ({{ group.entries.length }})</div>
         <ul class="entry-list">
+          <!-- why: <li @click> kept as ARIA fallback (role="button" + tabindex +
+               Enter/Space). Restructuring to a child <button> would require
+               re-targeting ~5 CSS rules (.entry, .entry:hover, .entry.highlighted,
+               animation) and duplicate them on the button. ARIA parity preserves
+               the existing styling unchanged (EC-103). -->
           <li
             v-for="entry in group.entries"
             :key="entry.id"
             :id="entry.id"
             class="entry"
+            role="button"
+            tabindex="0"
             :class="{ highlighted: entry.id === highlightedId }"
             @click="handleEntryClick(entry)"
+            @keydown.enter.prevent="handleEntryClick(entry)"
+            @keydown.space.prevent="handleEntryClick(entry)"
           >
             <div class="entry-label">{{ entry.label }}</div>
             <div class="entry-description">{{ entry.description }}</div>
@@ -131,13 +151,24 @@ function handleEntryClick(entry: GlossaryEntry) {
 
 <style scoped>
 /* ── Backdrop (mobile only) ────────────────────────────────────────────── */
+/* why: .glossary-backdrop became a <button> (EC-103). Reset native button styles
+   to preserve visual identity; keep default focus outline. */
 .glossary-backdrop {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
   z-index: 998;
   animation: fadeIn 0.2s ease-out;
 }
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }

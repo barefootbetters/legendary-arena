@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { FlatCard } from "../../registry/browser";
+import type { FlatCard } from "../registry/browser";
 import { parseAbilityText, lookupKeyword, lookupRule, lookupHeroClass } from "../composables/useRules";
 import type { AbilityToken } from "../composables/useRules";
 import { useGlossary } from "../composables/useGlossary";
@@ -99,12 +99,19 @@ function tokenLabel(token: AbilityToken): string {
 
 <template>
   <aside class="detail" :style="{ width: panelWidth + 'px' }">
+    <!-- why: resize handle keeps <div> — drag via pointerdown can't be expressed
+         as a semantic <button>. ARIA fallback: role="button" + tabindex + Enter/Space
+         reset parity so keyboard users can reset panel width (EC-103). -->
     <div
       class="resize-handle"
+      role="button"
+      tabindex="0"
       @pointerdown="startDrag"
       @dblclick="resetWidth"
+      @keydown.enter.prevent="resetWidth"
+      @keydown.space.prevent="resetWidth"
       title="Drag to resize · double-click to reset"
-      aria-label="Resize card detail panel"
+      aria-label="Resize card detail panel (Enter or Space to reset)"
     ></div>
     <div class="detail-header">
       <h2>{{ card.name }}</h2>
@@ -113,9 +120,16 @@ function tokenLabel(token: AbilityToken): string {
 
     <div class="detail-body">
       <!-- Image -->
-      <div class="img-wrap" @click="openLightbox(card.imageUrl, card.name)" title="Click to view full size">
+      <!-- why: was <div @click>; converted to <button> for native keyboard + SR support (EC-103) -->
+      <button
+        type="button"
+        class="img-wrap"
+        @click="openLightbox(card.imageUrl, card.name)"
+        title="Click to view full size"
+        :aria-label="`View ${card.name} full size`"
+      >
         <img :src="card.imageUrl" :alt="card.name" />
-      </div>
+      </button>
 
       <!-- Stats -->
       <div class="stats">
@@ -182,20 +196,24 @@ function tokenLabel(token: AbilityToken): string {
                 <span v-if="token.type === 'text'" class="token-text">{{ token.value }}</span>
 
                 <!-- Keyword — gold, underlined, click opens glossary panel -->
-                <span
+                <!-- why: was <span @click>; converted to <button> for native keyboard + SR support (EC-103) -->
+                <button
                   v-else-if="token.type === 'keyword'"
-                  :class="tokenClass(token)"
+                  type="button"
+                  :class="['token-btn', tokenClass(token)]"
                   :title="tooltipTitle(token)"
                   @click="handleTokenClick(token)"
-                >{{ tokenLabel(token) }}</span>
+                >{{ tokenLabel(token) }}</button>
 
                 <!-- Rule reference — purple, click opens glossary panel -->
-                <span
+                <!-- why: was <span @click>; converted to <button> for native keyboard + SR support (EC-103) -->
+                <button
                   v-else-if="token.type === 'rule'"
-                  :class="tokenClass(token)"
+                  type="button"
+                  :class="['token-btn', tokenClass(token)]"
                   :title="tooltipTitle(token)"
                   @click="handleTokenClick(token)"
-                >{{ tokenLabel(token) }}</span>
+                >{{ tokenLabel(token) }}</button>
 
                 <!-- Icon token — colored symbol -->
                 <span
@@ -267,7 +285,19 @@ function tokenLabel(token: AbilityToken): string {
 .detail-body { overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
 
 /* ── Card image ──────────────────────────────────────────────────────────── */
+/* why: .img-wrap became a <button> (EC-103). Reset native button styles to
+   preserve visual identity; keep default focus outline. */
 .img-wrap {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  display: block;
+  width: 100%;
+  text-align: left;
   border-radius: 8px;
   overflow: hidden;
   background: #12121a;
@@ -296,6 +326,23 @@ function tokenLabel(token: AbilityToken): string {
 .ability-line { font-size: 0.8rem; color: #c8c8e0; line-height: 1.7; }
 
 /* ── Inline tokens ───────────────────────────────────────────────────────── */
+
+/* why: keyword/rule tokens became <button> (EC-103). Reset native button styles
+   so they render identically to the previous inline <span>; keep default focus
+   outline for keyboard users. */
+.token-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  line-height: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
 
 /* Keyword: gold, dotted underline when definition exists */
 .token-keyword {

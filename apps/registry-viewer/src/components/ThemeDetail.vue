@@ -28,12 +28,19 @@ const { width: panelWidth, startDrag, resetWidth } = useResizable({
 
 <template>
   <aside class="detail" :style="{ width: panelWidth + 'px' }">
+    <!-- why: resize handle keeps <div> — drag via pointerdown can't be expressed
+         as a semantic <button>. ARIA fallback: role="button" + tabindex + Enter/Space
+         reset parity so keyboard users can reset panel width (EC-103). -->
     <div
       class="resize-handle"
+      role="button"
+      tabindex="0"
       @pointerdown="startDrag"
       @dblclick="resetWidth"
+      @keydown.enter.prevent="resetWidth"
+      @keydown.space.prevent="resetWidth"
       title="Drag to resize · double-click to reset"
-      aria-label="Resize theme detail panel"
+      aria-label="Resize theme detail panel (Enter or Space to reset)"
     ></div>
     <div class="detail-header">
       <h2>{{ theme.name }}</h2>
@@ -42,15 +49,18 @@ const { width: panelWidth, startDrag, resetWidth } = useResizable({
 
     <div class="detail-body">
       <!-- Cover image -->
-      <div
+      <!-- why: was <div @click>; converted to <button> for native keyboard + SR support (EC-103) -->
+      <button
         v-if="theme.comicImageUrl"
+        type="button"
         class="img-wrap"
         @click="openLightbox(theme.comicImageUrl, theme.name)"
         title="Click to view full size"
+        :aria-label="`View ${theme.name} cover full size`"
       >
         <img :src="theme.comicImageUrl" :alt="theme.name + ' cover'" loading="lazy"
           @error="($event.target as HTMLImageElement).style.display = 'none'" />
-      </div>
+      </button>
 
       <!-- Description -->
       <p class="description">{{ theme.description }}</p>
@@ -220,7 +230,19 @@ const { width: panelWidth, startDrag, resetWidth } = useResizable({
 .detail-body { overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
 
 /* ── Cover image ───────────────────────────────────────────────────────── */
+/* why: .img-wrap became a <button> (EC-103). Reset native button styles to
+   preserve visual identity; keep default focus outline. */
 .img-wrap {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  display: block;
+  width: 100%;
+  text-align: left;
   border-radius: 8px;
   overflow: hidden;
   background: #12121a;

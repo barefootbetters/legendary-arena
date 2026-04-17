@@ -7,7 +7,7 @@
     "strict": true,
     "baseUrl": ".",
     "paths": { "@/*": ["src/*"] },
-    "types": ["vite/client"]
+    "types": ["vite/client", "node"]
   },
   "include": ["src/**/*", "public/**/*"],
   "exclude": ["node_modules", "dist"]

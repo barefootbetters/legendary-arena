@@ -90,6 +90,12 @@ jobs:
         uses: actions/download-artifact@v4
         with: { name: registry-dist, path: packages/registry/dist }
 
+      - name: Lint viewer
+        run: pnpm --filter registry-viewer lint
+
+      - name: Typecheck viewer
+        run: pnpm --filter registry-viewer typecheck
+
       - name: Build viewer
         run: pnpm viewer:build
 

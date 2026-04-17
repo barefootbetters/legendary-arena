@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { watch, nextTick } from "vue";
-import type { FlatCard } from "../../registry/browser";
+import type { FlatCard } from "../registry/browser";
 import { TYPE_COLOR, HC_COLOR, RARITY_DOT } from "../lib/theme";
 import { devLog } from "../lib/devLog";
 

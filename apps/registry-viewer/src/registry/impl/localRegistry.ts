@@ -17,7 +17,7 @@ import type {
   CardQuery,
   RegistryInfo,
   HealthReport,
-} from "../types/index.js";
+} from "../types/types-index.js";
 
 export interface LocalRegistryOptions {
   /** Path to folder containing card-types.json + {abbr}.json files */
@@ -61,7 +61,7 @@ export async function createRegistryFromLocalFiles(
   const setIndexMap = new Map(setIndex.map((s) => [s.abbr, s]));
 
   const files = (await readdir(dir)).filter(
-    (f) => extname(f) === ".json" && f !== "card-types.json"
+    (f: string) => extname(f) === ".json" && f !== "card-types.json"
   );
 
   for (const file of files) {

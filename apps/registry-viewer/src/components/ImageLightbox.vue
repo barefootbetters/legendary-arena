@@ -2,25 +2,28 @@
 import { useLightbox } from "../composables/useLightbox";
 
 const { isOpen, imageUrl, altText, isZoomed, closeLightbox, toggleZoom } = useLightbox();
-
-function handleBackdropClick(event: MouseEvent) {
-  // why: only close when the backdrop itself is clicked, not when a child
-  // element (the image or controls) bubbles a click through
-  if (event.target === event.currentTarget) {
-    closeLightbox();
-  }
-}
 </script>
 
 <template>
+  <!-- why: removed @click handler from the <div role="dialog"> wrapper — that combo
+       triggered no-static-element-interactions (dialog isn't in the plugin's
+       interactive-roles list). Replaced with a dedicated full-area dismiss <button>
+       sibling that handles click-outside-to-close semantics with native keyboard
+       + SR support (EC-103). -->
   <div
     v-if="isOpen"
     class="lightbox-backdrop"
-    @click="handleBackdropClick"
     role="dialog"
     aria-modal="true"
     aria-label="Image viewer"
   >
+    <button
+      type="button"
+      class="backdrop-dismiss"
+      aria-label="Close image viewer"
+      @click="closeLightbox"
+    ></button>
+
     <div class="lightbox-toolbar">
       <button
         class="toolbar-btn"
@@ -41,13 +44,20 @@ function handleBackdropClick(event: MouseEvent) {
     </div>
 
     <div class="lightbox-content" :class="{ zoomed: isZoomed }">
-      <img
-        :src="imageUrl"
-        :alt="altText"
-        :class="{ zoomed: isZoomed }"
+      <!-- why: was <img @click>; wrapped in <button> for native keyboard + SR support (EC-103) -->
+      <button
+        type="button"
+        class="image-zoom-btn"
         @click="toggleZoom"
-        draggable="false"
-      />
+        :aria-label="isZoomed ? 'Zoom out' : 'Zoom in'"
+      >
+        <img
+          :src="imageUrl"
+          :alt="altText"
+          :class="{ zoomed: isZoomed }"
+          draggable="false"
+        />
+      </button>
     </div>
 
     <div class="lightbox-caption">{{ altText }}</div>
@@ -103,8 +113,46 @@ function handleBackdropClick(event: MouseEvent) {
   border-color: #f87171;
 }
 
+/* why: full-area dismiss button behind the toolbar/image. Reset native button
+   styles; positioned absolute so clicks outside the content area close the
+   lightbox (EC-103). */
+.backdrop-dismiss {
+  position: absolute;
+  inset: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: default;
+  z-index: 1;
+}
+
+/* why: image-wrapper button; reset native styles so the image renders as before.
+   Inline flex so the image stays centered (EC-103). */
+.image-zoom-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: inherit;
+  display: inline-flex;
+  z-index: 2;
+}
+
 /* ── Image container ───────────────────────────────────────────────────── */
 .lightbox-content {
+  /* why: z-index: 2 so the content sits above the .backdrop-dismiss button
+     (z-index: 1) — clicks on the image go to its own handler, not the dismiss (EC-103). */
+  position: relative;
+  z-index: 2;
   flex: 1;
   display: flex;
   align-items: center;
