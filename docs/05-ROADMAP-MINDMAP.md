@@ -56,15 +56,25 @@ mindmap
         ["WP-026 ✅ Scheme Setup"]
 
       Phase 6 -- Verification & Production
-        ["WP-027..035, 042 ⬜\nReplay / UI / Hardening\nVersioning / Ops (10)"]
-        ["WP-048 ⬜\nPAR Scoring & Leaderboards"]
+        ["WP-027 ✅ Replay Harness (2026-04-14)"]
+        ["WP-028 ✅ UIState Contract (2026-04-14)"]
+        ["WP-029 ✅ Spectator & Permissions (2026-04-14)"]
+        ["WP-030 ✅ Campaign Framework (2026-04-14)"]
+        ["WP-031 ✅ Production Hardening (2026-04-15)"]
+        ["WP-032 ✅ Network Sync (2026-04-15)"]
+        ["WP-033 ✅ Content Authoring Toolkit (2026-04-16)"]
+        ["WP-034 ⬜ Versioning & Save Migration\n(deps WP-033 ✅ — ready now)"]
+        ["WP-035 ⬜ Release & Ops Playbook\n(deps WP-034)"]
+        ["WP-042 ⬜ Deployment Checklists\n(deps WP-035)"]
+        ["WP-048 ⬜ PAR Scoring & Leaderboards\n(deps WP-020/027/030 ✅ — ready; gates WP-067)"]
+        ["WP-067 ⬜ UIState PAR + Progress Projection\n(deps WP-028 ✅ / WP-048 ⬜; EC-068; drafted + lint-reviewed 2026-04-17; gates WP-062)"]
 
       UI Implementation Chain (Phase 6)
-        ["WP-065 ⬜\nVue SFC Test Transform\npackages/vue-sfc-loader/\n(prerequisite for all UI test packets)"]
-        ["WP-061 ⬜\nGameplay Client Bootstrap\napps/arena-client/ skeleton"]
-        ["WP-062 ⬜\nArena HUD & Scoreboard\nTurn/phase, PAR delta, panels"]
-        ["WP-063 ⬜\nReplay Snapshot Producer\nEngine helper + CLI app"]
-        ["WP-064 ⬜\nGame Log & Replay Inspector\nLog panel + step/scrub"]
+        ["WP-065 ✅ Vue SFC Test Transform\npackages/vue-sfc-loader/\nShipped 2026-04-17 (EC-065, commit bc23913)"]
+        ["WP-061 ✅ Gameplay Client Bootstrap\napps/arena-client/ Vue 3 + Pinia + Vite\nShipped 2026-04-17 (EC-067, commit 2e68530)"]
+        ["WP-062 ⬜ Arena HUD & Scoreboard\nTurn/phase, PAR delta, panels\n(blocked on WP-067 + base.css allowlist)"]
+        ["WP-063 ⬜ Replay Snapshot Producer\nEngine helper + CLI app\n(parallel-safe with WP-067)"]
+        ["WP-064 ⬜ Game Log & Replay Inspector\nLog panel + step/scrub\n(deps WP-061 ✅ + WP-063)"]
 
       Phase 7 -- Beta, Launch & PAR
         ["WP-036..041 ⬜\nAI Testing / Beta\nLaunch / Live Ops (6)"]
@@ -84,7 +94,7 @@ mindmap
 
       Governance
         [".claude/CLAUDE.md\nRoot coordination"]
-        ["56 Execution Checklists\n2 Done, 54 Draft"]
+        ["Execution Checklists\nWP-backed (EC-001..051, 060s+) + R-EC hygiene + EC-101+ viewer\nDone: EC-FP01, EC-001, EC-065 (WP-065), EC-067 (WP-061), EC-103, EC-104, R-EC-02\nDraft: EC-068 (WP-067, lint-reviewed 2026-04-17)\nDeferred: R-EC-01, R-EC-03\nSee EC_INDEX.md"]
         ["7 Rule Files\n(.claude/rules/)"]
         ["Immutable Decisions\nDECISIONS.md"]
         ["Phase 3 Gate\nClosed (D-1320)"]
@@ -102,11 +112,19 @@ mindmap
 | Phase 4 | WP-014A/B..020 | 8/8 | -- |
 | Content | WP-055, 060 | 0/2 | ⬜ |
 | Phase 5 | WP-021..026 | 6/6 | -- |
-| Phase 6 | WP-027..035, 042, 048 | 0/11 | ⬜ |
-| UI Chain | WP-061..065 | 0/5 | ⬜ (lint-gate passed 2026-04-16) |
+| Phase 6 | WP-027..035, 042, 048, 067 | 7/12 | ⬜ WP-034, 035, 042, 048, 067 |
+| UI Chain | WP-061..065 | 2/5 | ✅ WP-061, 065 (2026-04-17); ⬜ WP-062, 063, 064 |
 | Phase 7 | WP-036..041, 049..051 | 0/9 | ⬜ |
-| **Total** | | **41/66** | **25** |
+| Pre-Plan | WP-056..058 | 0/3 | ⬜ (parallel-safe) |
+| **Total** | | **50/72** | **22** |
 
-**Next unblocked:** WP-027 (Replay Determinism Proof), WP-055, WP-060, WP-065 (Vue SFC Test Transform — no deps). The UI Implementation Chain (WP-065 → WP-061 → WP-062 / WP-063 → WP-064) waits on WP-028 (UIState), which in turn waits on WP-027. WP-065 itself has no dependencies and can be executed immediately.
+**Next unblocked (dependencies met, no active work):**
+- **WP-048** — PAR Scoring & Leaderboards (deps WP-020 / 027 / 030 ✅); **now the gating item for the UI chain's scoring side** — unblocks WP-067 → WP-062. Also unblocks WP-049 / 053 / 054 for Phase 7.
+- **WP-034** — Versioning & Save Migration (deps WP-033 ✅); continues WP-030→31→32→33 ops-chain momentum; independent of UI chain.
+- **WP-063** — Replay Snapshot Producer (deps WP-027 / 028 / 005B ✅); parallel-safe with WP-067; part of the WP-064 chain.
+- **WP-055** / **WP-060** — content / data, parallel-safe with any engine work.
+- **WP-056** — Pre-Plan State Model & Lifecycle (parallel-safe with Phase 4+).
 
-*Last updated: 2026-04-16 (UI Implementation Chain drafted + lint-gate passed: WP-061 Gameplay Client Bootstrap, WP-062 Arena HUD, WP-063 Replay Snapshot Producer, WP-064 Game Log & Replay Inspector, WP-065 Vue SFC Test Transform Pipeline — all Ready; WP-065 is the hard prerequisite that makes `node:test` compatible with `.vue` SFCs)*
+**Sequenced UI-chain path:** `WP-048 → WP-067 → WP-062` (scoring side) and `WP-063 → WP-064` (replay side). WP-061 ✅ and WP-065 ✅ have already landed and no longer gate parallel work.
+
+*Last updated: 2026-04-17 (WP-027..033 flipped to complete — all landed between 2026-04-14 and 2026-04-16; WP-065 shipped 2026-04-17 at commit `bc23913` under EC-065; WP-061 shipped 2026-04-17 at commit `2e68530` under EC-067 — note retargeted EC slot, EC-061 historically bound to registry-viewer Rules Glossary; WP-067 drafted + lint-gate reviewed 2026-04-17 under EC-068 as the intermediate engine WP bridging WP-048 into the UIState surface that WP-062 consumes; Phase 6 row updated to include WP-067; UI Chain row flipped to 2/5 complete; Total 48/71 → 50/72 reflects the new WP-067 row plus two completions; "Next unblocked" rewritten — WP-048 now the gating scoring item since WP-065 / WP-061 landed; sequenced UI-chain path added. New precedent-log entries P6-30 / P6-31 / P6-32 live in `docs/ai/REFERENCE/01.4-pre-flight-invocation.md`.)*

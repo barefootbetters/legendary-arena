@@ -849,6 +849,43 @@ These packets make the game safe to ship.
   reset selected card or filters. No TypeScript errors. Follows
   `docs/ai/REFERENCE/00.6-code-style.md` conventions.
 
+- [ ] WP-067 — UIState Projection of PAR Scoring & Progress Counters ✅ Reviewed (2026-04-17 lint-gate pass)
+  Dependencies: WP-028, WP-048
+  Execution Checklist: `docs/ai/execution-checklists/EC-068-uistate-par-projection-and-progress-counters.checklist.md`
+  Commit prefix: `EC-068:` (EC-066 / EC-067 taken; EC-068 is the next free slot)
+  Lint-gate outcome: 1 fix applied (added explicit `00.6-code-style.md` citation
+  to Non-Negotiable Constraints per §2). 1 scope amendment applied during
+  lint-gate (adds 3 WP-061 fixture type-conformance edits to §Files Expected
+  to Change — the new non-optional `UIState.progress` field forces
+  `satisfies UIState` updates in the three committed fixtures; leaving them
+  unchanged would break `pnpm -r test`). 2 non-blocking observations noted:
+  (a) §5 file count is now 11 unconditional + 2 conditional + 3 governance;
+  the 2 conditional files under §C (`types.ts`, `buildInitialGameState.ts`)
+  are unlikely to trigger since WP-048 likely adds `G.activeScoringConfig`
+  itself, reducing the realistic count to ≤ 14; (b) §14 Acceptance Criteria
+  has 18 items vs the 6–12 advisory band, each binary / observable / specific
+  across six concern subsections — consolidation would reduce traceability.
+  Both observations non-blocking per 00.3 Final Gate (neither matches a
+  ❌ FAIL condition).
+  Notes: Engine-side bridge between WP-048 (PAR scoring types) and WP-062
+  (Arena HUD). Adds `UIProgressCounters { bystandersRescued, escapedVillains }`
+  and optional `UIGameOverState.par: UIParBreakdown { rawScore, parScore,
+  finalScore, scoringConfigVersion }` to `UIState`. Extends `buildUIState`
+  with two pure helpers: aggregates bystanders by scanning each player's
+  victory pile via `G.villainDeckCardTypes`; reads `escapedVillains` from
+  `G.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] ?? 0`; projects WP-048's
+  `ScoreBreakdown` into `UIGameOverState.par` only when
+  `G.activeScoringConfig` is defined and `phase === 'end'`. Adds drift
+  tests asserting field-name stability. Purely additive — no existing
+  `UIState` sub-type contract changes; no UI code modified; no new G
+  counter introduced (bystanders aggregated at projection time per
+  DECISIONS.md rationale). Discovered 2026-04-17 during WP-061 execution
+  audit of WP-062 (see `session-context-wp062.md` §IMPORTANT and 01.4
+  Precedent Log P6-30/31/32 context).
+  Unblocks: WP-062 pre-flight blockers #1–#3 (dependency, no-UI, field
+  names). WP-062 pre-flight blocker #4 (base.css allowlist) is
+  independent.
+
 ---
 
 ## Phase 7 — Beta, Launch & Live Ops

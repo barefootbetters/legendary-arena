@@ -40,12 +40,23 @@ committed `UIState` fixtures from WP-061.
 
 ## Assumes
 
-- WP-061 (gameplay client bootstrap) complete. Specifically:
+- WP-061 (gameplay client bootstrap) complete (commit 2e68530 on main).
+  Specifically:
   - `apps/arena-client/` is a working Vue 3 + Pinia + Vite SPA
-  - `useUiStateStore()` exposes `snapshot: Ref<UIState | null>` and
-    `setSnapshot(next)`
-  - `loadUiStateFixture(name)` and at least three `UIState` fixtures
-    (`mid-turn`, `endgame-win`, `endgame-loss`) are committed
+  - `useUiStateStore()` returns a Pinia Options API store instance where
+    `snapshot: UIState | null` is a **reactive state field** (NOT a `Ref`)
+    and `setSnapshot(next: UIState | null)` is the single action.
+    **Correct access patterns inside components:**
+    - Template auto-unwrap: `store.snapshot.game.phase` (works directly).
+    - Script-side Ref wrapping: `const { snapshot } = storeToRefs(store)`
+      then `snapshot.value` in script scope.
+    - Plain destructuring `const { snapshot } = store` **breaks reactivity**
+      — do not use. (An earlier draft of this WP said
+      `snapshot: Ref<UIState | null>`; that was wrong and has been
+      corrected here per WP-061 execution.)
+  - `loadUiStateFixture(name)` and three `UIState` fixtures (`mid-turn`,
+    `endgame-win`, `endgame-loss`) are committed; `isFixtureName(candidate)`
+    is a type guard over the `FixtureName` union
 - WP-028 complete: `UIState`, `UIPlayerState`, `UICityState`, `UIHQState`,
   `UIMastermindState`, `UISchemeState`, `UITurnEconomyState`,
   `UIGameOverState` are exported from `@legendary-arena/game-engine` as
@@ -101,6 +112,86 @@ If any of the above is false, this packet is **BLOCKED**.
 ---
 
 ## Preflight (Must Pass Before Coding)
+
+> **Blocking findings propagated from WP-061 execution (2026-04-17).**
+> The four items marked **BLOCKER (WP-061 session)** below must be
+> resolved by explicit pre-flight action before this WP can return
+> READY. They were discovered when the WP-061 executor audited the
+> WP-062 spec against actual engine surface and committed code. Do
+> not skip them — each one will cause WP-062 to stall mid-session.
+>
+> 1. **BLOCKER — WP-048 dependency unsatisfied.** WP-062 lists WP-048
+>    (PAR Scenario Scoring & Leaderboards) as a dependency. WP-048 is
+>    still Draft (WORK_INDEX.md:736). Pre-flight returns BLOCKED until
+>    WP-048 ships, OR this WP is descoped to drop the PAR-delta readout
+>    (§Scope (In) D and related tests).
+> 2. **BLOCKER — WP-048 explicitly produces no UI projection.**
+>    WP-048 §Out of Scope states "No UI changes — scoring produces data,
+>    not display." WP-048 emits `ScoreBreakdown.{rawScore, parScore,
+>    finalScore}` inside `LeaderboardEntry`, NOT on `UIGameOverState`.
+>    Therefore even after WP-048 ships, this WP cannot consume its
+>    fields directly. A missing intermediate WP ("Project ScoreBreakdown
+>    + live progress counters into `UIState` / `UIGameOverState`") must
+>    be drafted and executed between WP-048 and this one.
+> 3. **BLOCKER — Several asserted field names do not exist in today's
+>    engine.** `bystandersRescued`, `escapedVillains`, `schemeTwists`,
+>    `mastermindTacticsRemaining`, `mastermindTacticsDefeated`,
+>    `finalScore`, `parBaseline`, `rawScore` — none of these appear on
+>    any current UIState sub-type. Closest siblings under different
+>    names: `UISchemeState.twistCount`, `UIMastermindState.tacticsRemaining`,
+>    `UIMastermindState.tacticsDefeated`, `FinalScoreSummary.winner`,
+>    `PlayerScoreBreakdown.totalVP`. `bystandersRescued` and
+>    `escapedVillains` have no engine home at all. Pre-flight must either
+>    (a) rewrite the aria-label assertions to match the actual engine
+>    names, or (b) depend on the intermediate UIState-extension WP in #2.
+> 4. **BLOCKER — `base.css` is not in §Files Expected to Change, but
+>    HUD colour tokens require extension.** `base.css` defines
+>    `--color-foreground`, `--color-background`, `--color-focus-ring`
+>    only (per D-6515). The HUD needs tokens for emphasis, penalty,
+>    active-player highlight, PAR-delta positive / negative — see §H)
+>    below. Pre-flight must either (a) add
+>    `apps/arena-client/src/styles/base.css` to §Files Expected to
+>    Change with a DECISIONS.md justification, or (b) explicitly route
+>    HUD tokens through scoped `<style>` blocks in each component (loses
+>    `prefers-color-scheme` discipline across the HUD as a whole).
+>
+> **Additional WP-061 lessons that apply to this WP** (non-blocking but
+> execution-critical — see `docs/ai/REFERENCE/01.4-pre-flight-invocation.md`
+> §Precedent Log for details):
+>
+> - **P6-30** — `ArenaHud.vue` has setup-scope bindings
+>   (`storeToRefs(store).snapshot`) in its template AND ships with a
+>   `node:test` test. Under `@legendary-arena/vue-sfc-loader`'s
+>   separate-compile pipeline (`inlineTemplate: false`), `<script setup>`
+>   top-level bindings are not exposed on the template's `_ctx`.
+>   **`ArenaHud.vue` MUST use the
+>   `defineComponent({ setup() { return { … } } })` form**, not
+>   `<script setup>` sugar. The six props-only subcomponents
+>   (TurnPhaseBanner, SharedScoreboard, ParDeltaReadout, PlayerPanelList,
+>   PlayerPanel, EndgameSummary) may freely use `<script setup>` — props
+>   reach `_ctx` via `$props` (proven by WP-065's `hello.vue` fixture).
+>   See D-6512.
+> - **P6-31** — DCE-marker absence checks in WPs that enable sourcemaps
+>   must target `dist/assets/*.js`, not `dist/**`. If this WP adds any
+>   new dev-only URL harness with a DCE marker, the Step 12 verification
+>   command must use the narrower glob from the start. See D-6513.
+> - **jsdom-setup import path** — WP-061's `BootstrapProbe.test.ts` at
+>   `src/components/*.test.ts` imports `'../testing/jsdom-setup'`
+>   (1 level up). WP-062 HUD tests at `src/components/hud/*.test.ts`
+>   must import `'../../testing/jsdom-setup'` (2 levels up). Every
+>   `mount()`-using HUD test must have this import as its **first
+>   line** — load-bearing because `@vue/runtime-dom.resolveRootNamespace`
+>   probes `SVGElement` at `app.mount()` under Vue 3.5.x (resolved
+>   against the `^3.4.27` peer pin).
+> - **Test script composition** — inherit WP-061's unchanged:
+>   `node --import tsx --import @legendary-arena/vue-sfc-loader/register
+>   --test src/**/*.test.ts` (D-6517). The glob already covers
+>   `src/components/hud/*.test.ts`. No `NODE_OPTIONS`, no `cross-env`.
+> - **EC slot** — EC-062 may be historically bound (the 060-series has
+>   this risk; EC-061 was bound to the registry-viewer Rules Glossary
+>   panel and WP-061 therefore used EC-067). Pre-flight must choose the
+>   slot explicitly and triple-cross-reference WP header + EC header +
+>   commit lineage, following the WP-061 / EC-067 precedent.
 
 WP-061 is the authoritative source for the client app's toolchain. This
 packet inherits — never re-decides — the following choices already

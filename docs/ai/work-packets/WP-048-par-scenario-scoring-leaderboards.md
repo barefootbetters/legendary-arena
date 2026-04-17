@@ -1,6 +1,6 @@
 # WP-048 — PAR Scenario Scoring & Leaderboards
 
-**Status:** Draft
+**Status:** Draft — Amended 2026-04-17 (pre-flight + copilot resolution; see §Amendments)
 **Primary Layer:** Game Engine (Scoring) + Server (Leaderboard Storage)
 **Dependencies:** WP-020, WP-027, WP-030
 
@@ -127,10 +127,45 @@ Before writing a single line:
 - **Layer boundary:** scoring computation (engine) must not import server,
   persistence, or UI code. `LeaderboardEntry` type is defined in engine for
   the contract, but instantiation and storage are server-only.
+- **Scenario configs are self-contained (D-4805):** every `ScenarioScoringConfig`
+  carries a full `ScoringWeights`, `ScoringCaps`, `PenaltyEventWeights`,
+  `ParBaseline`, and `scoringConfigVersion`. There is no default config
+  object and no runtime merge with defaults. The reference defaults in the
+  "Locked contract values" table below are **authoring guidance**, not
+  runtime merge targets. `validateScoringConfig` rejects any config missing
+  any required field (including any `PenaltyEventType` key in
+  `penaltyEventWeights`).
+- **Derivation from G state, not a structured event log (D-4801):**
+  `deriveScoringInputs` reads from `ReplayResult.finalState` and never
+  from an event-log array. No `GameMessage` type, no log substring-match.
+  Penalty event counts that have no producer in `G` today (all except
+  `villainEscaped`) safe-skip to `0` with `// why:` comments naming the
+  follow-up WP. This is the WP-023 / D-2302 safe-skip precedent extended
+  to scoring.
+- **Team-aggregate MVP (D-4803):** `ScoringInputs.victoryPoints` is the
+  **sum across all players**. MVP PAR is a shared-team score. Per-player
+  PAR is a future WP.
+- **End-of-match only (D-4804):** `deriveScoringInputs` is meaningful
+  only when `replayResult.finalState` is a terminal state
+  (`ctx.phase === 'end'`). Callers must not invoke it mid-match — counter
+  and victory-pile values are not yet final.
+- **`G.activeScoringConfig` is out of scope for this WP (D-4802):** the
+  setup-time field addition to `LegendaryGameState` is deferred to WP-067.
+  WP-048 does not modify `types.ts` `LegendaryGameState` or
+  `buildInitialGameState.ts`. `MatchSetupConfig` remains at its 9-field
+  lock.
 - WP-020 contract files must NOT be modified — PAR scoring extends VP scoring.
 - WP-027 contract files must NOT be modified — PAR scoring consumes replay output.
 - No `.reduce()` for score accumulation with branching — use `for...of`
 - Tests use `makeMockCtx` or plain mocks — no `boardgame.io` imports
+- `buildScoreBreakdown` must not alias caller-provided `ScoringInputs` —
+  the returned `ScoreBreakdown.inputs` must be a new object with spread-
+  copied `penaltyEventCounts`. Aliasing allows consumers to mutate a
+  returned `ScoreBreakdown` by mutating their own `ScoringInputs` after
+  the call. (WP-028 D-2801 aliasing precedent.)
+- `ScoreBreakdown` and `LeaderboardEntry` must survive
+  `JSON.parse(JSON.stringify(...))` with structural equality (D-4806).
+  No functions, Maps, Sets, Dates, or class instances in either type.
 
 **Locked contract values:**
 
@@ -224,18 +259,67 @@ Before writing a single line:
     any weight, cap, or PAR change — leaderboard entries pin to this version
 - `interface ScoringInputs { rounds: number; victoryPoints: number; bystandersRescued: number; escapes: number; penaltyEventCounts: Record<PenaltyEventType, number> }`
 - `interface ScoreBreakdown { inputs: ScoringInputs; weightedRoundCost: number; weightedPenaltyTotal: number; penaltyBreakdown: Record<PenaltyEventType, number>; weightedBystanderReward: number; weightedVictoryPointReward: number; rawScore: number; parScore: number; finalScore: number; scoringConfigVersion: number }`
-- `interface LeaderboardEntry { scenarioKey: ScenarioKey; teamKey: TeamKey; playerIdentifiers: string[]; scoreBreakdown: ScoreBreakdown; replayHash: string; createdAt: string; scoringConfigVersion: number }`
+- `interface LeaderboardEntry { scenarioKey: ScenarioKey; teamKey: TeamKey; playerIdentifiers: readonly string[]; scoreBreakdown: ScoreBreakdown; replayHash: string; createdAt: string; scoringConfigVersion: number }`
+- `interface ScoringConfigValidationResult { readonly valid: boolean; readonly errors: readonly string[] }`
+  — structured result returned by `validateScoringConfig`. `errors` is an
+  array of full-sentence strings naming the invariant violated and (where
+  possible) which field failed. Empty array when `valid === true`.
+  - `// why:` comment: full-sentence error messages match code-style Rule 11
+    and make config-authoring failures self-describing.
 
 ### B) `src/scoring/parScoring.logic.ts` — new
 
-- `deriveScoringInputs(replayResult: ReplayResult, gameLog: GameMessage[]): ScoringInputs`
-  — pure function that extracts R, VP, BP, E from replay output and game log
-  - Rounds: count from turn progression events in game log
-  - VP: from `computeFinalScores(replayResult.finalState)` — reuses WP-020
-  - BP: count bystander rescue events in game log
-  - E: count penalty events by type in game log using `PENALTY_EVENT_TYPES`
-  - Uses `for...of` over game log entries — no `.reduce()` with branching
-  - `// why:` comment on each derivation source
+- `deriveScoringInputs(replayResult: ReplayResult, gameState: LegendaryGameState): ScoringInputs`
+  — pure function that extracts R, VP, BP, E from replay output and the
+  final game state. **End-of-match only (D-4804).** No `gameLog` parameter
+  and no `GameMessage` type — derivation reads `G` counters and zones
+  directly (D-4801).
+  - **Rounds (`R`):** `replayResult.moveCount` is the canonical round-proxy
+    for MVP. A future WP that introduces a first-class turn/round counter
+    on `G` may replace this source without changing the function signature.
+    - `// why:` comment: MVP uses move count as a round proxy. Per-turn
+      counting requires a new `G.counters['turns']` or similar; deferred
+      to a follow-up WP.
+  - **Victory points (`VP`):** sum of `computeFinalScores(gameState).players[*].totalVP`.
+    MVP PAR is team-aggregate (D-4803); per-player PAR is a future WP.
+    - `// why:` comment: reuses WP-020's `computeFinalScores` so VP counting
+      stays in exactly one place. Summing across players is the D-4803
+      team-aggregate rule.
+  - **Bystanders rescued (`BP`):** aggregate count of `cardExtId` entries
+    in each `gameState.playerZones[playerId].victory` where
+    `gameState.villainDeckCardTypes[cardExtId] === 'bystander'`. Uses
+    `for...of` over `Object.values(gameState.playerZones)` and nested
+    `for...of` over `.victory`. This matches the projection approach
+    locked in EC-068 lines 70-73 / WP-067 §A.
+    - `// why:` comment: the victory pile is the canonical rescue marker
+      (EC-068, WP-067). Bystanders in hand/deck/discard/inPlay are not
+      "rescued". Same aggregation primitive as `buildUIState`'s
+      `countBystandersRescued` helper (introduced by WP-067).
+  - **Escapes (`escapes`):** `gameState.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] ?? 0`.
+    The `?? 0` is load-bearing — the counter is created lazily on first
+    escape. Feeds into `penaltyEventCounts.villainEscaped` (see below).
+    - `// why:` comment: the counter is lazily initialised; absence is
+      semantically zero. Same `?? 0` pattern used by EC-068 `buildProgressCounters`.
+  - **Penalty event counts by type:**
+    - `villainEscaped` = `escapes` (from above)
+    - `bystanderLost` = `0` — `// why: no engine producer today; follow-up
+      WP will introduce bystander-lost tracking (either via
+      ENDGAME_CONDITIONS.BYSTANDERS_LOST counter or via a structured event
+      log). D-4801 safe-skip.`
+    - `schemeTwistNegative` = `0` — `// why: scheme-twist polarity is not
+      classified in G.messages today; follow-up WP adds a discriminated
+      scheme-twist outcome projection. D-4801 safe-skip.`
+    - `mastermindTacticUntaken` = `0` — `// why: derivable at endgame from
+      G.mastermind.tacticsRemaining.length but the penalty is semantically
+      "missed opportunity during play", which needs per-turn history. Full
+      derivation deferred to a follow-up WP. D-4801 safe-skip.`
+    - `scenarioSpecificPenalty` = `0` — `// why: scenario-unique failure
+      events are declared per scenario and have no generic producer today.
+      Deferred to the scenario-definition authoring WP that introduces
+      structured scenario events. D-4801 safe-skip.`
+  - All arithmetic is integer — no floating-point
+  - Uses `for...of` with descriptive variable names — no `.reduce()` with
+    branching
 
 - `computeRawScore(inputs: ScoringInputs, config: ScenarioScoringConfig): number`
   — pure function implementing the locked formula:
@@ -305,7 +389,7 @@ Before writing a single line:
 ### G) Tests — `src/scoring/parScoring.logic.test.ts` — new
 
 - Uses `node:test` and `node:assert` only; no boardgame.io import
-- Fourteen tests:
+- Sixteen tests (one `describe()` block for deterministic suite counting):
   1. `computeRawScore` with default weights matches hand-calculated value
   2. `computeRawScore` monotonicity: extra round increases score
   3. `computeRawScore` monotonicity: extra villain escape increases score
@@ -319,7 +403,21 @@ Before writing a single line:
   11. `validateScoringConfig` rejects config violating structural invariant 1 (bystanderReward <= villainEscaped)
   12. `validateScoringConfig` rejects config violating structural invariant 3 (bystanderLost <= bystanderReward)
   13. `PENALTY_EVENT_TYPES` array matches `PenaltyEventType` union (drift detection)
-  14. Determinism: same inputs + same config = identical `ScoreBreakdown`
+  14. Determinism **and aliasing protection**: same inputs + same config
+      produce identical `ScoreBreakdown` (deep equality); additionally,
+      mutating the caller's `ScoringInputs.penaltyEventCounts` after
+      `buildScoreBreakdown` returns must not change the returned
+      `ScoreBreakdown.inputs.penaltyEventCounts` (D-2801 aliasing
+      precedent).
+  15. `validateScoringConfig` rejects a config whose `penaltyEventWeights`
+      is missing an entry for any `PenaltyEventType` (D-4805 self-contained
+      config invariant; drift-complement to Test 13). Loops over
+      `PENALTY_EVENT_TYPES` and asserts one rejection per missing key.
+  16. JSON-roundtrip (D-4806): `JSON.parse(JSON.stringify(breakdown))`
+      produces a structurally-equal `ScoreBreakdown`; repeat for a sample
+      `LeaderboardEntry` constructed from the breakdown. Proves no
+      functions, Maps, Sets, Dates, or class instances leak into either
+      type.
 
 ### H) Tests — `src/scoring/parScoring.keys.test.ts` — new
 
@@ -348,7 +446,35 @@ Before writing a single line:
 - **No difficulty tiers** — PAR variants by player count are future work.
 - **No card-text VP modifiers** — card-specific VP bonuses remain WP-022+.
 - **No UI changes** — scoring produces data, not display.
+  > **Downstream consumer note (added 2026-04-17 post WP-061 execution):**
+  > WP-062 (Arena HUD & Scoreboard) expects PAR fields `rawScore`,
+  > `parScore`, `finalScore` and live progress counters
+  > `bystandersRescued`, `escapedVillains`, `schemeTwists`,
+  > `mastermindTacticsRemaining`, `mastermindTacticsDefeated` to be
+  > readable on `UIState` / `UIGameOverState`. This WP does NOT
+  > project any of that into UIState — the fields remain on
+  > `ScoreBreakdown` inside `LeaderboardEntry` per the "No UI changes"
+  > rule above. **A separate intermediate WP is required between this
+  > one and WP-062** — scope: "Project `ScoreBreakdown` + live
+  > progress counters into `UIState` / `UIGameOverState` via
+  > `buildUIState`." That intermediate WP must decide the exact
+  > `UIGameOverState` / `UIState` field names and reconcile the
+  > aria-label assertions in WP-062 §Non-Negotiable Constraints.
+  > Without it, WP-062's PAR-delta readout and four penalty counters
+  > cannot render against real engine types.
 - **No modification of WP-020 or WP-027 contracts.**
+- **No addition of `activeScoringConfig` to `LegendaryGameState` (D-4802).**
+  The setup-time field is deferred to WP-067. WP-048 does not modify
+  `packages/game-engine/src/types.ts` `LegendaryGameState` shape, does not
+  modify `packages/game-engine/src/setup/buildInitialGameState.ts`, and does
+  not touch `MatchSetupConfig` (locked at 9 fields per `.claude/CLAUDE.md`).
+- **No structured event-log or `GameMessage` type introduction (D-4801).**
+  `G.messages` remains `string[]`. Penalty event producers that require
+  structured events (all penalty types except `villainEscaped`) are
+  deferred to follow-up WPs and safe-skip to `0` today.
+- **No per-player PAR scoring (D-4803).** MVP is team-aggregate.
+- **No live/mid-match PAR (D-4804).** `deriveScoringInputs` is end-of-match
+  only.
 - Refactors, cleanups, or "while I'm here" improvements are **out of scope**
   unless explicitly listed in Scope (In) above.
 
@@ -369,7 +495,9 @@ Before writing a single line:
 - `packages/game-engine/src/types.ts` — **modified** — re-export PAR types
 - `packages/game-engine/src/index.ts` — **modified** — export PAR scoring API
 - `packages/game-engine/src/scoring/parScoring.logic.test.ts` — **new** —
-  14 scoring tests
+  16 scoring tests (amended 2026-04-17 from 14; adds self-contained-config
+  validation test and JSON-roundtrip test, absorbs aliasing assertion into
+  determinism test)
 - `packages/game-engine/src/scoring/parScoring.keys.test.ts` — **new** —
   4 key tests
 
@@ -436,9 +564,15 @@ All items must be binary pass/fail. No partial credit.
 
 ### Tests
 - [ ] `pnpm --filter @legendary-arena/game-engine test` exits 0 (all test files)
-- [ ] All 14 scoring tests pass
+- [ ] All 16 scoring tests pass
 - [ ] All 4 key tests pass
 - [ ] All test files use `.test.ts`; no boardgame.io import
+- [ ] `ScoreBreakdown` and `LeaderboardEntry` JSON-roundtrip test passes
+      (Test 16)
+- [ ] Aliasing protection assertion in Test 14 passes (mutating caller's
+      `ScoringInputs.penaltyEventCounts` does not mutate the returned
+      `ScoreBreakdown.inputs.penaltyEventCounts`)
+- [ ] Self-contained-config test passes (Test 15)
 
 ### Scope Enforcement
 - [ ] No `require()` in any generated file (confirmed with `Select-String`)
@@ -461,14 +595,18 @@ pnpm --filter @legendary-arena/game-engine test
 # Expected: TAP output — all tests passing, 0 failing
 
 # Step 3 — confirm no boardgame.io import in PAR scoring
-Select-String -Path "packages\game-engine\src\scoring\parScoring.logic.ts" -Pattern "boardgame.io"
-Select-String -Path "packages\game-engine\src\scoring\parScoring.keys.ts" -Pattern "boardgame.io"
-Select-String -Path "packages\game-engine\src\scoring\parScoring.types.ts" -Pattern "boardgame.io"
+Select-String -Path "packages\game-engine\src\scoring\parScoring.logic.ts" -Pattern "boardgame.io" -SimpleMatch
+Select-String -Path "packages\game-engine\src\scoring\parScoring.keys.ts" -Pattern "boardgame.io" -SimpleMatch
+Select-String -Path "packages\game-engine\src\scoring\parScoring.types.ts" -Pattern "boardgame.io" -SimpleMatch
 # Expected: no output for any
 
 # Step 4 — confirm no server or registry import in PAR scoring
-Select-String -Path "packages\game-engine\src\scoring" -Pattern "@legendary-arena/registry|apps/server" -Recurse
+Select-String -Path "packages\game-engine\src\scoring" -Pattern "@legendary-arena/registry","apps/server" -SimpleMatch -Recurse
 # Expected: no output
+# why: -SimpleMatch disables regex so the pipe and dots are literal. Comma-
+# separated patterns under -SimpleMatch ORs them (WP-031 P6-22 precedent
+# — regex-unescaped dots previously matched unintended strings in engine
+# comments).
 
 # Step 5 — confirm no .reduce() with branching in PAR scoring
 Select-String -Path "packages\game-engine\src\scoring\parScoring.logic.ts" -Pattern "\.reduce\("
@@ -525,3 +663,56 @@ This packet is complete when ALL of the following are true:
       uses `::` separator; why LeaderboardEntry type lives in engine but
       storage is server-only
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` has WP-048 checked off with today's date
+
+---
+
+## Amendments
+
+### A-048-01 (2026-04-17) — Pre-flight + copilot check resolution
+
+**Trigger:** Pre-flight §Dependency Contract Verification (2026-04-17) flagged
+`GameMessage[]` as uncompilable spec (no such type exists in the engine; no
+structured event log). Copilot check (2026-04-17) added three scope-neutral
+findings: aliasing discipline (#9), merge semantics (#12), JSON-roundtrip
+coverage (#17).
+
+**Scope-neutral changes:**
+1. **§A** adds `ScoringConfigValidationResult` interface.
+2. **§B `deriveScoringInputs`** signature changes from
+   `(replayResult, gameLog: GameMessage[])` to
+   `(replayResult, gameState: LegendaryGameState)`. Derivation sources
+   documented per-field. Penalty event counts that have no engine
+   producer safe-skip to `0` with `// why:` comments naming the
+   deferred follow-up WP. (D-4801)
+3. **§G Tests** count increases from 14 to 16. Test 14 absorbs an
+   aliasing-protection assertion (D-2801 precedent). Test 15 asserts
+   self-contained-config rejection (D-4805). Test 16 asserts
+   JSON-roundtrip of `ScoreBreakdown` and `LeaderboardEntry` (D-4806).
+4. **§Non-Negotiable Constraints** adds self-contained config rule
+   (D-4805), team-aggregate MVP rule (D-4803), end-of-match-only rule
+   (D-4804), `G.activeScoringConfig` out-of-scope rule (D-4802),
+   aliasing prohibition on `buildScoreBreakdown` (D-2801), and JSON-
+   roundtrip requirement (D-4806).
+5. **§Out of Scope** explicitly excludes `activeScoringConfig` field
+   addition (D-4802), `GameMessage`/structured-event-log introduction
+   (D-4801), per-player PAR (D-4803), and live/mid-match PAR (D-4804).
+6. **§Acceptance Criteria `### Tests`** updates test count to 16 and
+   adds three new binary checks (JSON-roundtrip, aliasing, self-
+   contained).
+7. **§Files Expected to Change** updates test count annotation.
+8. **§Verification Steps** updates `Select-String` invocations to use
+   `-SimpleMatch` per WP-031 P6-22 precedent (unescaped-regex-dot hazard).
+
+**What did NOT change:**
+- Files Expected to Change allowlist (eight files, unchanged)
+- Dependencies (WP-020, WP-027, WP-030, unchanged)
+- Scoring formula / weights / structural invariants / key formats (all
+  Locked contract values unchanged)
+- Out-of-scope items from the original draft (all preserved; new items
+  added only)
+- Code category classification (scoring/ is already `engine`)
+
+**Authority:** Pre-flight PS-1 through PS-8 and Copilot check Findings #9,
+#12, #17 authorize this amendment. The pre-flight verdict converts to
+**READY TO EXECUTE** without re-run. New DECISIONS.md entries: D-4801,
+D-4802, D-4803, D-4804, D-4805, D-4806.

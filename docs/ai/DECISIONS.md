@@ -3908,6 +3908,241 @@ and `.claude/rules/code-style.md`).
 
 ---
 
+### D-4801 — PAR Derivation Reads G State, Not a Structured Event Log
+
+**Context:** WP-048 originally specified
+`deriveScoringInputs(replayResult, gameLog: GameMessage[])`. Pre-flight
+(2026-04-17) discovered that `GameMessage` is not a declared type anywhere
+in the engine and that the canonical penalty event literals
+(`villainEscaped`, `bystanderLost`, `schemeTwistNegative`,
+`mastermindTacticUntaken`, `scenarioSpecificPenalty`) have no runtime
+producers. `G.messages` is `string[]` — unstructured, wording-coupled.
+An executor implementing the original spec would have been forced to
+either invent a parallel event-log contract (massive scope creep) or
+substring-match `G.messages` (brittle and non-deterministic).
+
+**Decision:** `deriveScoringInputs` signature is
+`(replayResult: ReplayResult, gameState: LegendaryGameState): ScoringInputs`.
+No `gameLog` parameter. No `GameMessage` type is introduced. Derivation
+reads `replayResult.moveCount` for rounds, `computeFinalScores` for VP,
+`gameState.playerZones[*].victory` + `villainDeckCardTypes` for
+bystanders-rescued, and `gameState.counters[ESCAPED_VILLAINS] ?? 0` for
+escapes. Penalty event counts that have no engine producer today
+(`bystanderLost`, `schemeTwistNegative`, `mastermindTacticUntaken`,
+`scenarioSpecificPenalty`) safe-skip to `0` with `// why:` comments
+naming the deferred follow-up WP.
+
+**Rationale:** This is the WP-023 / D-2302 safe-skip precedent extended
+to scoring (condition evaluators safe-skipped missing data; scoring
+safe-skips missing producers). The extension seam (`PENALTY_EVENT_TYPES`
+union + canonical array) is preserved — a future WP adds a producer by
+updating the corresponding derivation line without changing the
+`deriveScoringInputs` signature or any consumer. Formula weights still
+apply — safe-skipped counts are `0`, which contributes zero to the raw
+score, not a silent inflation.
+
+**Alternatives rejected:**
+- **Introduce `GameMessage` type and structured event log in `G`** —
+  massive blast radius (every move, every reveal, every hook would need
+  to emit structured events). Deferred as a separate WP.
+- **Substring-match `G.messages: string[]`** — brittle; couples scoring
+  to human-readable log wording; non-deterministic across minor log
+  changes. Rejected.
+- **Silent `0` without `// why:` comments** — violates code-style Rule 6
+  and hides the known gap from future maintainers. Rejected.
+
+**Introduced:** WP-048 pre-flight amendment A-048-01, 2026-04-17  
+**Status:** Active
+
+---
+
+### D-4802 — WP-048 Defers `G.activeScoringConfig` Field to WP-067
+
+**Context:** The `MatchSetupConfig` 9-field lock in `.claude/CLAUDE.md`
+forbids adding a 10th field, but the scoring config must reach `G`
+somehow at match setup so `buildUIState` can project PAR into
+`UIGameOverState.par`. WP-048's original draft did not list
+`types.ts` or `buildInitialGameState.ts` in Files Expected to Change,
+while WP-067's draft assumes `G.activeScoringConfig` is populated at
+setup. Session-context-wp048 item #1 required a pre-flight decision
+on which WP owns the field addition.
+
+**Decision:** WP-048 does NOT add `activeScoringConfig` to
+`LegendaryGameState` and does NOT modify `buildInitialGameState`'s
+signature. WP-067 owns the field addition via its Conditional §C.
+When WP-067 lands, the field is threaded through an **optional 4th
+parameter** to `buildInitialGameState(config, registry, context,
+scoringConfig?)` — not a 10th `MatchSetupConfig` field.
+`MatchSetupConfig` remains at 9 fields.
+
+**Rationale:** Keeps WP-048 as a pure Contract-Only WP with no
+Runtime Wiring Allowance invocation. Separates scoring-contract
+concerns (WP-048) from setup-wiring concerns (WP-067). Preserves
+the `MatchSetupConfig` lock. EC-068 lines 29-34 already
+accommodate this decision via its conditional §C — no downstream
+churn.
+
+**Alternatives rejected:**
+- **Add `activeScoringConfig` in WP-048** — expands WP-048's
+  allowlist and blurs its contract-only classification. Rejected.
+- **Amend `MatchSetupConfig` to 10 fields** — largest blast
+  radius, breaks CLAUDE.md lock, forces all setup validators and
+  tests to update. Rejected.
+- **Server-layer population after `Game.setup()` finishes** —
+  blurs the setup-only boundary and introduces a timing race with
+  the first call to `buildUIState`. Rejected.
+
+**Introduced:** WP-048 pre-flight amendment A-048-01, 2026-04-17  
+**Status:** Active
+
+---
+
+### D-4803 — MVP PAR Scoring Is Team-Aggregate, Not Per-Player
+
+**Context:** `ScoringInputs.victoryPoints` derivation reuses
+`computeFinalScores(gameState)`, which returns
+`FinalScoreSummary.players[*].totalVP` — per-player breakdowns. Pre-flight
+needed to decide whether PAR scoring summed across players (team score)
+or produced per-player scores.
+
+**Decision:** MVP PAR is a **team-aggregate score**.
+`ScoringInputs.victoryPoints` = `sum(FinalScoreSummary.players[*].totalVP)`.
+`ScoreBreakdown` carries a single set of numbers, not per-player
+breakdowns. `LeaderboardEntry.playerIdentifiers` is a `readonly string[]`
+naming the team.
+
+**Rationale:** Legendary tabletop semantics are cooperative — the team
+wins or loses together, and a scenario's PAR is a team-level target.
+Per-player PAR is interesting (contribution analysis, personal best
+tracking) but requires additional design decisions (how to attribute
+shared events like mastermind tactic defeats) that are out of scope for
+WP-048. The team-aggregate MVP preserves the option to add per-player
+PAR later without breaking the `LeaderboardEntry` contract — a future
+WP can add an optional `perPlayerBreakdown?: PlayerScoreBreakdown[]`
+field.
+
+**Alternatives rejected:**
+- **Per-player PAR in MVP** — requires attribution rules for shared
+  events (tactic VP is awarded to all players today per
+  `scoring.logic.ts:45`; distributing it fairly across PAR targets is
+  a design question deferred).
+- **Both team and per-player at MVP** — doubles the contract surface
+  without a clear authoring use case. Deferred.
+
+**Introduced:** WP-048 pre-flight amendment A-048-01, 2026-04-17  
+**Status:** Active
+
+---
+
+### D-4804 — `deriveScoringInputs` Is End-of-Match Only
+
+**Context:** `computeRawScore`, `computeParScore`, and `computeFinalScore`
+are pure arithmetic functions callable at any lifecycle point. But
+`deriveScoringInputs` reads from `replayResult.finalState` and from
+`gameState.counters` — values that are only meaningful once the match
+has reached `ctx.phase === 'end'`. Pre-flight needed to lock the
+timing contract.
+
+**Decision:** `deriveScoringInputs` is **end-of-match only**. Callers
+must not invoke it mid-match; behaviour at non-terminal states is
+unspecified (and will produce partial, misleading inputs — e.g., an
+intermediate `escapes` count that could still grow). Live / mid-match
+PAR projection is a separate future WP.
+
+**Rationale:** Matches WP-067 / EC-068's decision that PAR appears on
+`UIGameOverState` only when `ctx.phase === 'end'`. Two independent
+declarations of the same timing rule prevent drift. Downstream WP-062
+(Arena HUD) already tolerates `live=undefined` per WP-067
+§Non-Negotiable Constraints.
+
+**Alternatives rejected:**
+- **Live mid-match PAR** — requires a separate "partial derivation"
+  contract with different semantics; deferred to a future WP if/when
+  product direction requires live PAR.
+
+**Introduced:** WP-048 pre-flight amendment A-048-01, 2026-04-17  
+**Status:** Active
+
+---
+
+### D-4805 — Scenario Scoring Configs Are Self-Contained
+
+**Context:** WP-048's "Locked contract values" table lists reference
+defaults for component weights, penalty weights, and caps, with
+language stating "scenarios may override". Copilot check (2026-04-17)
+Finding #12 flagged that "override" alone is ambiguous — it could mean
+full replacement, field-level merge with defaults, or default
+inheritance for missing fields. Each interpretation has different
+implications for `validateScoringConfig` strictness and for leaderboard
+entry interpretability across config versions.
+
+**Decision:** Every `ScenarioScoringConfig` is **self-contained**. It
+carries a full `ScoringWeights`, full `ScoringCaps`, full
+`PenaltyEventWeights` (with an entry for every `PenaltyEventType`),
+full `ParBaseline`, and a `scoringConfigVersion`. There is no default
+config object and no runtime merge with defaults. The reference
+defaults in the WP are **authoring guidance**, not merge targets.
+`validateScoringConfig` rejects any config missing any required field,
+including any `PenaltyEventType` key in `penaltyEventWeights` —
+WP-048 Test 15 enforces this.
+
+**Rationale:** Self-contained configs make leaderboard entries
+interpretable in isolation — reading a persisted `LeaderboardEntry`
+never requires joining against a runtime "current defaults" source.
+They eliminate the drift class where changing a reference default
+silently changes the semantics of historical leaderboard entries that
+pinned to an earlier version. They also simplify
+`validateScoringConfig` — strict reject-on-missing is a single-branch
+check, not a multi-step merge-then-validate.
+
+**Alternatives rejected:**
+- **Field-level merge with defaults** — creates a "magic defaults"
+  surface that `ScenarioScoringConfig` persistence records don't
+  capture; historical entries become uninterpretable if defaults drift.
+- **Partial configs with missing fields inheriting defaults** — same
+  drift hazard; also forces `validateScoringConfig` to run a merge
+  pass before validating, doubling the code path.
+
+**Introduced:** WP-048 pre-flight amendment A-048-01, 2026-04-17  
+**Status:** Active
+
+---
+
+### D-4806 — `ScoreBreakdown` and `LeaderboardEntry` Are JSON-Roundtrip Tested
+
+**Context:** `ScoreBreakdown` is Class 3 (Snapshot, persistable) and
+`LeaderboardEntry` is server-persisted. Both must be JSON-safe — no
+functions, Maps, Sets, Dates, or class instances. WP-048's original
+test list (14 tests) did not include a JSON-roundtrip assertion;
+copilot check (2026-04-17) Finding #17 flagged that a future field
+addition could silently break persistability.
+
+**Decision:** WP-048 Test 16 asserts
+`JSON.parse(JSON.stringify(breakdown))` produces a structurally-equal
+`ScoreBreakdown`, and the same assertion for a sample `LeaderboardEntry`
+constructed from the breakdown. The test exists to catch the failure
+mode where a later refactor introduces a `Date`, `Map`, or closure in
+either type.
+
+**Rationale:** Matches the project-wide JSON-serializability discipline
+(engine rule: "G must be JSON-serializable — no functions, classes,
+Maps, Sets, Dates, or Symbols" per `.claude/rules/game-engine.md`).
+Extends that discipline from `G` to Class 3 snapshots, which are
+persisted and must re-hydrate deterministically. WP-028 D-2801
+precedent established aliasing protection as a first-class test
+requirement for projection-class types; D-4806 applies
+JSON-serializability to the scoring type family.
+
+**Alternatives rejected:**
+- **Rely on code review to catch non-serializable additions** — misses
+  the failure mode the rule is designed to prevent; rejected per the
+  WP-028 principle "prevention by construction, not vigilance".
+
+**Introduced:** WP-048 pre-flight amendment A-048-01, 2026-04-17  
+**Status:** Active
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

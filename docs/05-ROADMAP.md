@@ -3,7 +3,7 @@
 > A modern multiplayer evolution of the Marvel Legendary deck-building card game.
 > Built with **boardgame.io**, **TypeScript**, and **Cloudflare R2**.
 
-**Last updated:** 2026-04-16 (UI Implementation Chain drafted: WP-061 → WP-064) -- **Authoritative source:** [`docs/ai/work-packets/WORK_INDEX.md`](ai/work-packets/WORK_INDEX.md)
+**Last updated:** 2026-04-17 (WP-027..033 landed 2026-04-14/15/16; EC-103/104 landed 2026-04-16/17; WP-065 landed 2026-04-17 at commit `bc23913` under EC-065; WP-061 landed 2026-04-17 at commit `2e68530` under EC-067; WP-067 drafted + lint-gate reviewed 2026-04-17 as the intermediate engine WP between WP-048 and WP-062 under EC-068) -- **Authoritative source:** [`docs/ai/work-packets/WORK_INDEX.md`](ai/work-packets/WORK_INDEX.md)
 
 ---
 
@@ -13,10 +13,10 @@
 `00.4` ✅ `00.5` ✅ `01` ✅ `02` ✅
 
 **Work Packets**
-`WP-001` ✅ `WP-002` ✅ `WP-003` ✅ `WP-004` ✅ `WP-005A` ✅ `WP-005B` ✅ `WP-006A` ✅ `WP-006B` ✅ `WP-007A` ✅ `WP-007B` ✅ `WP-008A` ✅ `WP-008B` ✅ `WP-009A` ✅ `WP-009B` ✅ `WP-010` ✅ `WP-011` ✅ `WP-012` ✅ `WP-013` ✅ `WP-014A` ✅ `WP-014B` ✅ `WP-015` ✅ `WP-016` ✅ `WP-017` ✅ `WP-018` ✅ `WP-019` ✅ `WP-020` ✅ `WP-021` ✅ `WP-022` ✅ `WP-023` ✅ `WP-024` ✅ `WP-025` ✅ `WP-026` ✅ `WP-043` ✅ `WP-044` ✅ `WP-045` ✅ `WP-046` ✅ `WP-047` ✅ -- `WP-055` ⬜ `WP-056` ⬜ `WP-057` ⬜ `WP-058` ⬜ `WP-060` ⬜ `WP-061` ⬜ `WP-062` ⬜ `WP-063` ⬜ `WP-064` ⬜ `WP-065` ⬜ -- **WP-027..054** ⬜
+`WP-001` ✅ `WP-002` ✅ `WP-003` ✅ `WP-004` ✅ `WP-005A` ✅ `WP-005B` ✅ `WP-006A` ✅ `WP-006B` ✅ `WP-007A` ✅ `WP-007B` ✅ `WP-008A` ✅ `WP-008B` ✅ `WP-009A` ✅ `WP-009B` ✅ `WP-010` ✅ `WP-011` ✅ `WP-012` ✅ `WP-013` ✅ `WP-014A` ✅ `WP-014B` ✅ `WP-015` ✅ `WP-016` ✅ `WP-017` ✅ `WP-018` ✅ `WP-019` ✅ `WP-020` ✅ `WP-021` ✅ `WP-022` ✅ `WP-023` ✅ `WP-024` ✅ `WP-025` ✅ `WP-026` ✅ `WP-027` ✅ `WP-028` ✅ `WP-029` ✅ `WP-030` ✅ `WP-031` ✅ `WP-032` ✅ `WP-033` ✅ `WP-043` ✅ `WP-044` ✅ `WP-045` ✅ `WP-046` ✅ `WP-047` ✅ `WP-061` ✅ `WP-065` ✅ -- `WP-034` ⬜ `WP-035` ⬜ `WP-042` ⬜ `WP-048` ⬜ `WP-055` ⬜ `WP-056` ⬜ `WP-057` ⬜ `WP-058` ⬜ `WP-060` ⬜ `WP-062` ⬜ `WP-063` ⬜ `WP-064` ⬜ `WP-067` ⬜ -- **WP-036..041, 049..054** ⬜
 
 **Overall Progress**
-41 / 66 items complete (4 FPs + 37 WPs) -- **Next up:** WP-027 (Replay Determinism Proof). UI Implementation Chain (WP-065 → WP-061 → WP-062 / WP-063 → WP-064) added 2026-04-16, lint-gate passed same day; all five marked Ready. WP-065 is the hard prerequisite for any UI WP that tests `.vue` components.
+50 / 72 items complete (4 FPs + 46 WPs). WP-065 and WP-061 landed 2026-04-17 (commits `bc23913` and `2e68530`). WP-067 (UIState projection of PAR scoring + progress counters) was drafted and passed the 00.3 lint gate the same day as the intermediate engine WP that bridges WP-048's scoring types into the `UIState` surface WP-062 consumes. **Next unblocked (dependencies met, no active work):** WP-034 (Versioning & Save Migration — deps WP-033 ✅), WP-048 (PAR Scoring — deps WP-020/027/030 ✅; **now the gating item for the UI chain's scoring side**), WP-055 / WP-060 (content, parallel-safe), WP-056 (Pre-Plan State, parallel-safe), WP-063 (Replay Snapshot Producer — deps WP-027/028/005B ✅; parallel with WP-067). **Sequenced UI-chain path:** WP-048 → WP-067 → WP-062 (and separately WP-063 → WP-064). WP-067 is ready to execute the moment WP-048 lands.
 
 ---
 
@@ -172,31 +172,60 @@ configure the board before the first turn. 314 tests passing.
 
 Making the game safe to ship.
 
-| WP           | Name                                | Layer          | What It Produces                               |
-|--------------|--------------------------------------|----------------|-------------------------------------------------|
-| 027-035, 042 | Replay through Deployment Checklists | Engine + Ops   | Determinism, UIState, versioning, ops playbook  |
-| 048          | PAR Scenario Scoring & Leaderboards  | Engine Scoring | ScenarioKey, ScoreBreakdown, LeaderboardEntry   |
-| 065          | Vue SFC Test Transform Pipeline      | Shared tooling | `packages/vue-sfc-loader/`, `@vue/compiler-sfc` register hook   |
-| 061          | Gameplay Client Bootstrap            | Client UI      | `apps/arena-client/` Vue 3 + Pinia skeleton, `UIState` fixtures |
-| 062          | Arena HUD & Scoreboard               | Client UI      | Turn/phase banner, shared scoreboard, PAR delta, player panels  |
-| 063          | Replay Snapshot Producer             | Engine + CLI   | `ReplaySnapshotSequence` type + `apps/replay-producer/` CLI     |
-| 064          | Game Log & Replay Inspector          | Client UI      | `<GameLogPanel />`, `<ReplayInspector />`, file loader          |
+| WP      | Name                                | Layer          | What It Produces                               | Status |
+|---------|--------------------------------------|----------------|-------------------------------------------------|--------|
+| 027-033 | Replay through Network Boundaries   | Engine + Ops   | Determinism, UIState, versioning, network types | ✅ Complete |
+| 034-035, 042 | Versioning / Release / Deployment Checklists | Ops | Save migration, ops playbook, deployment procedures | ⬜ Ready |
+| 048     | PAR Scenario Scoring & Leaderboards | Engine Scoring | ScenarioKey, ScoreBreakdown, LeaderboardEntry   | ⬜ Ready (gates WP-067) |
+| 065     | Vue SFC Test Transform Pipeline     | Shared tooling | `packages/vue-sfc-loader/`, `@vue/compiler-sfc` register hook | ✅ Complete (2026-04-17, EC-065, commit `bc23913`) |
+| 061     | Gameplay Client Bootstrap           | Client UI      | `apps/arena-client/` Vue 3 + Pinia skeleton, `UIState` fixtures | ✅ Complete (2026-04-17, EC-067, commit `2e68530`) |
+| 067     | UIState Projection of PAR Scoring & Progress Counters | Engine — UI projection | `UIProgressCounters`, optional `UIGameOverState.par`, drift tests, three WP-061 fixture conformance edits | ⬜ Ready (EC-068; lint-gate passed 2026-04-17; blocked on WP-048) |
+| 062     | Arena HUD & Scoreboard              | Client UI      | Turn/phase banner, shared scoreboard, PAR delta, player panels  | ⬜ Ready (blocked on WP-067 + base.css allowlist decision) |
+| 063     | Replay Snapshot Producer            | Engine + CLI   | `ReplaySnapshotSequence` type + `apps/replay-producer/` CLI     | ⬜ Ready (parallel-safe with WP-067) |
+| 064     | Game Log & Replay Inspector         | Client UI      | `<GameLogPanel />`, `<ReplayInspector />`, file loader          | ⬜ Ready (blocked on WP-061 ✅ + WP-063) |
 
 ### UI Implementation Chain (Phase 6)
 
 The UI chain introduces the first gameplay client and its first consumer
-surfaces. Decisions captured during drafting (2026-04-16):
+surfaces. Decisions captured during drafting (2026-04-16) and refined
+during WP-061 execution (2026-04-17):
 
 - **Vitest forbidden** (lint §7, §12) -- `node:test` is the only permitted
-  test runner project-wide. WP-065 establishes the Vue SFC test transform
+  test runner project-wide. WP-065 established the Vue SFC test transform
   pipeline that makes this work by wrapping `@vue/compiler-sfc` in a
-  Node 22 `module.register()` loader hook. Every UI WP that tests `.vue`
-  components depends on WP-065.
+  Node 22 `module.register()` loader hook. ✅ Shipped 2026-04-17 (EC-065).
+  Every UI WP that tests `.vue` components depends on WP-065.
+- **Gameplay client skeleton** ✅ Shipped 2026-04-17 as `apps/arena-client/`
+  (EC-067, commit `2e68530`). Vue 3 + Vite + Pinia SPA; single-state
+  `useUiStateStore()` with `snapshot: UIState | null` + `setSnapshot`; typed
+  JSON fixtures validated via `satisfies UIState`; `<BootstrapProbe />`
+  wiring smoke; DCE-guarded dev `?fixture=` URL harness. Engine import is
+  type-only.
+- **Missing intermediate WP (WP-067)** -- WP-062 as originally drafted
+  depended on `rawScore` / `parScore` / `finalScore` / `bystandersRescued` /
+  `escapedVillains` being readable on `UIState`; none were. WP-048 ships
+  the scoring types but explicitly produces no UI projection ("No UI
+  changes -- scoring produces data, not display"). WP-067 was drafted +
+  lint-gate reviewed 2026-04-17 to bridge that gap: adds
+  `UIState.progress: UIProgressCounters` (non-optional, projection-time
+  aggregation), optional `UIGameOverState.par: UIParBreakdown`,
+  drift-detection tests, and three WP-061 fixture conformance edits. Lives
+  under EC-068. Ready to execute the moment WP-048 lands.
 - **Floating-window system dropped** -- vision-misaligned (Legendary is a
   cooperative tabletop recreation, not an arena sim).
 - **Cosmetic theming deferred** to a future monetization WP; accessibility
-  presets (WCAG AA contrast, color-blind-safe palette) are folded into
-  WP-061's base CSS and WP-062's HUD components.
+  presets (WCAG AA contrast, color-blind-safe palette) were folded into
+  WP-061's base CSS ✅ (`--color-foreground`, `--color-background`,
+  `--color-focus-ring` with numeric contrast ratios per D-6515) and
+  extend into WP-062's HUD components.
+- **`<script setup>` vs `defineComponent` under vue-sfc-loader** (new trap
+  discovered 2026-04-17, precedent P6-30 in 01.4): vue-sfc-loader's
+  separate-compile pipeline (`inlineTemplate: false`) does NOT expose
+  `<script setup>` top-level bindings on the template's `_ctx`, so any
+  tested `.vue` component with setup-scope bindings in its template must
+  use the explicit `defineComponent({ setup() { return {...} } })` form
+  (D-6512). Props-only components may continue to use `<script setup>`.
+  WP-062's `ArenaHud.vue` is the next consumer of this rule.
 - **Spectator HUD layout** is a future WP (consumes WP-029).
 - **`ReplaySnapshotSequence` defined once** in the engine by WP-063 and
   imported as a type by WP-064 -- the client never regenerates `UIState`
@@ -266,17 +295,19 @@ flowchart TD
     Phase2 --> WP056["WP-056\nPrePlan State"]
     WP056 --> WP057["WP-057\nSandbox Exec"]
     WP057 --> WP058["WP-058\nDisruption Pipeline"]
-    Phase6 --> WP028["WP-028\nUIState Contract"]
-    Phase6 --> WP065["WP-065\nVue SFC Test Transform"]
-    WP028 --> WP061["WP-061\nClient Bootstrap"]
+    Phase6 --> WP028["WP-028 ✅\nUIState Contract"]
+    Phase6 --> WP065["WP-065 ✅\nVue SFC Test Transform"]
+    WP028 --> WP061["WP-061 ✅\nClient Bootstrap"]
     WP065 --> WP061
-    WP061 --> WP062["WP-062\nArena HUD"]
+    WP028 --> WP067["WP-067\nUIState PAR + Progress Projection"]
+    WP048 --> WP067
+    WP067 --> WP062["WP-062\nArena HUD"]
+    WP061 --> WP062
     WP065 --> WP062
-    WP048 --> WP062
     WP061 --> WP064["WP-064\nLog & Replay Inspector"]
     WP065 --> WP064
     WP028 --> WP063["WP-063\nReplay Snapshot Producer"]
-    Phase6 --> WP027["WP-027\nReplay Harness"]
+    Phase6 --> WP027["WP-027 ✅\nReplay Harness"]
     WP027 --> WP063
     WP063 --> WP064
     style FP fill:#10b981,color:#fff
@@ -289,9 +320,13 @@ flowchart TD
     style Phase3 fill:#10b981,color:#fff
     style Phase4 fill:#10b981,color:#fff
     style Phase5 fill:#10b981,color:#fff
+    style WP027 fill:#10b981,color:#fff
+    style WP028 fill:#10b981,color:#fff
+    style WP065 fill:#10b981,color:#fff
+    style WP061 fill:#10b981,color:#fff
 ```
 
-**Parallel-safe packets:** WP-003 (alongside 002), WP-005A/B (no dep on 004), WP-030 (parallel to 031), WP-055/060 (parallel with Phase 2+), WP-056/057/058 (parallel with Phase 4+), WP-061 and WP-063 (parallel -- WP-061 touches `apps/arena-client/`, WP-063 touches `packages/game-engine/` + `apps/replay-producer/`; WP-064 joins both chains), WP-065 (parallel with any WP -- touches only `packages/vue-sfc-loader/`).
+**Parallel-safe packets:** WP-003 (alongside 002), WP-005A/B (no dep on 004), WP-030 (parallel to 031), WP-055/060 (parallel with Phase 2+), WP-056/057/058 (parallel with Phase 4+), WP-063 (parallel with WP-067 — WP-063 touches `packages/game-engine/` + `apps/replay-producer/`; WP-067 touches `packages/game-engine/src/ui/` + three fixture JSONs; WP-064 joins both chains). WP-065 ✅ and WP-061 ✅ complete; no longer gating parallel work.
 
 ---
 
@@ -316,9 +351,9 @@ flowchart TD
 | `docs/ai/ARCHITECTURE.md` | Architectural decisions & boundaries |
 | `docs/ai/work-packets/WORK_INDEX.md` | Execution order & status |
 | `.claude/rules/*.md` | 7 layer-specific enforcement rules |
-| `docs/ai/execution-checklists/EC-*.md` | 55 execution contracts (1 Done, 54 Draft) |
+| `docs/ai/execution-checklists/EC-*.md` | WP-backed ECs + ad-hoc R-EC (registry hygiene) and EC-101+ (viewer) series; see `EC_INDEX.md` for status |
 | `docs/ai/DECISIONS.md` | Immutable decisions |
 | `docs/12-SCORING-REFERENCE.md` | PAR scoring formula & leaderboard rules |
 | `docs/ai/REFERENCE/03A-PHASE-3-MULTIPLAYER-READINESS.md` | Phase 3 exit gate (closed) |
 
-*Last updated: 2026-04-16 (UI Implementation Chain drafted + lint-gate passed: WP-061 Gameplay Client Bootstrap, WP-062 Arena HUD & Scoreboard, WP-063 Replay Snapshot Producer, WP-064 Game Log & Replay Inspector, WP-065 Vue SFC Test Transform Pipeline — all Ready; key fixes: `node:test`-only per §7/§12, pwsh code fences + Windows paths per §9, forbidden-packages block per §7, `Compare-Object` instead of Unix `diff` in WP-063, WP-065 added as the hard prerequisite that makes `node:test` compatible with `.vue` SFCs)*
+*Last updated: 2026-04-17 (WP-027..033 flipped to complete: WP-027/028/029 2026-04-14; WP-030 2026-04-14; WP-031 2026-04-15; WP-032 2026-04-15; WP-033 2026-04-16. EC-103 landed 2026-04-16 and EC-104 landed 2026-04-17 — both viewer 101+ series. EC-105 drafted as Deferred with trigger WP-065. "Next up" line corrected — WP-027 had landed 3 days before the prior refresh claimed it was next. WP-065 shipped 2026-04-17 at commit `bc23913` under EC-065 (Shared Tooling — `packages/vue-sfc-loader/`). WP-061 shipped 2026-04-17 at commit `2e68530` under EC-067 (first gameplay client — `apps/arena-client/`); note the retargeted EC slot, since EC-061 was historically bound to the registry-viewer Rules Glossary panel (commit `1b923a4`). WP-067 drafted + lint-gate reviewed same day under EC-068 as the intermediate UIState-projection WP bridging WP-048 (PAR scoring types) and WP-062 (Arena HUD); dependency graph rewired accordingly — WP-048 → WP-067 → WP-062, not WP-048 → WP-062 direct. Phase 6 table gained a Status column and split the "WP-027-035, 042" mega-row so the ✅ / ⬜ boundary is visible without cross-referencing WORK_INDEX. New precedent-log entries P6-30 (`<script setup>` vs `defineComponent` under vue-sfc-loader separate-compile), P6-31 (DCE-marker sourcemap carve-out), P6-32 (DECISIONS.md ↔ 02-CODE-CATEGORIES.md asymmetry check) added to 01.4 from WP-061 execution.)*
