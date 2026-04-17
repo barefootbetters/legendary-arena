@@ -1,0 +1,94 @@
+{
+  "game": {
+    "phase": "end",
+    "turn": 14,
+    "activePlayerId": "0",
+    "currentStage": "cleanup"
+  },
+  "players": [
+    {
+      "playerId": "0",
+      "deckCount": 8,
+      "handCount": 6,
+      "discardCount": 7,
+      "inPlayCount": 0,
+      "victoryCount": 9,
+      "woundCount": 2,
+      "handCards": [
+        "sm-shield-agent",
+        "sm-shield-officer",
+        "dp-belt-pouches",
+        "sm-shield-trooper",
+        "dp-chimichangas",
+        "sm-web-slinger"
+      ]
+    },
+    {
+      "playerId": "1",
+      "deckCount": 7,
+      "handCount": 5,
+      "discardCount": 8,
+      "inPlayCount": 0,
+      "victoryCount": 8,
+      "woundCount": 3
+    }
+  ],
+  "city": {
+    "spaces": [null, null, null, null, null]
+  },
+  "hq": {
+    "slots": [
+      "sm-amazing-friend",
+      "dp-weapon-x",
+      "sm-hero-for-hire",
+      "dp-chimichangas",
+      "sm-web-slinger"
+    ]
+  },
+  "mastermind": {
+    "id": "mastermind-doctor-octopus",
+    "tacticsRemaining": 0,
+    "tacticsDefeated": 4
+  },
+  "scheme": {
+    "id": "scheme-midtown-bank-robbery",
+    "twistCount": 6
+  },
+  "economy": {
+    "attack": 0,
+    "recruit": 0,
+    "availableAttack": 0,
+    "availableRecruit": 0
+  },
+  "log": [
+    "Turn 13: Player 0 defeated the last tactic of Doctor Octopus",
+    "Turn 14: Heroes win — mastermind defeated."
+  ],
+  "gameOver": {
+    "outcome": "win",
+    "reason": "Mastermind Doctor Octopus has been defeated.",
+    "scores": {
+      "players": [
+        {
+          "playerId": "0",
+          "villainVP": 5,
+          "henchmanVP": 2,
+          "bystanderVP": 2,
+          "tacticVP": 20,
+          "woundVP": -2,
+          "totalVP": 27
+        },
+        {
+          "playerId": "1",
+          "villainVP": 4,
+          "henchmanVP": 3,
+          "bystanderVP": 1,
+          "tacticVP": 20,
+          "woundVP": -3,
+          "totalVP": 25
+        }
+      ],
+      "winner": "0"
+    }
+  }
+}

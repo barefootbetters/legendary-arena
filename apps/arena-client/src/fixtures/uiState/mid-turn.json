@@ -1,0 +1,73 @@
+{
+  "game": {
+    "phase": "play",
+    "turn": 3,
+    "activePlayerId": "0",
+    "currentStage": "main"
+  },
+  "players": [
+    {
+      "playerId": "0",
+      "deckCount": 12,
+      "handCount": 5,
+      "discardCount": 3,
+      "inPlayCount": 2,
+      "victoryCount": 4,
+      "woundCount": 0,
+      "handCards": [
+        "sm-shield-agent",
+        "sm-shield-officer",
+        "sm-shield-trooper",
+        "dp-belt-pouches",
+        "sm-amazing-friend"
+      ]
+    },
+    {
+      "playerId": "1",
+      "deckCount": 10,
+      "handCount": 5,
+      "discardCount": 4,
+      "inPlayCount": 3,
+      "victoryCount": 2,
+      "woundCount": 1
+    }
+  ],
+  "city": {
+    "spaces": [
+      { "extId": "sinister-six-shocker", "type": "villain", "keywords": ["ranged"] },
+      { "extId": "sinister-six-electro", "type": "villain", "keywords": ["ranged"] },
+      null,
+      { "extId": "sinister-six-vulture", "type": "villain", "keywords": ["ranged"] },
+      null
+    ]
+  },
+  "hq": {
+    "slots": [
+      "dp-weapon-x",
+      "sm-hero-for-hire",
+      null,
+      "dp-chimichangas",
+      "sm-web-slinger"
+    ]
+  },
+  "mastermind": {
+    "id": "mastermind-doctor-octopus",
+    "tacticsRemaining": 3,
+    "tacticsDefeated": 1
+  },
+  "scheme": {
+    "id": "scheme-midtown-bank-robbery",
+    "twistCount": 2
+  },
+  "economy": {
+    "attack": 4,
+    "recruit": 3,
+    "availableAttack": 4,
+    "availableRecruit": 3
+  },
+  "log": [
+    "Turn 1: Player 0 recruited sm-shield-agent",
+    "Turn 2: Villain Electro entered the city",
+    "Turn 3: Player 1 defeated Shocker"
+  ]
+}

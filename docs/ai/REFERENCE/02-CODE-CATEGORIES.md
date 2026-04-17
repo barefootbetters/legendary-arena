@@ -41,6 +41,7 @@ they are not real categories.
 | `moves` | Move Implementations | `packages/game-engine/src/moves/` | `.claude/rules/game-engine.md` |
 | `data-input` | Data Input / Registry | `packages/registry/`, `data/` | `.claude/rules/registry.md` |
 | `server` | Server / Persistence | `apps/server/` | `.claude/rules/server.md`, `.claude/rules/persistence.md` |
+| `client-app` | Client App | `apps/arena-client/` | `docs/ai/ARCHITECTURE.md` §Layer Boundary (D-6511) |
 | `test` | Tests | `**/*.test.ts` | `.claude/rules/code-style.md` |
 | `infra` | Data Pipeline / Infra | `scripts/`, `.githooks/`, CI workflows | N/A (not shipped to players) |
 | `docs` | Documentation / Governance | `docs/`, `.claude/` | `.claude/rules/work-packets.md` |
@@ -176,6 +177,32 @@ inspect `G` beyond routing. Import UI packages.
 issues.
 
 **Directories:** `apps/server/`
+
+---
+
+### `client-app` — Client App
+
+**What it is:** Executable browser-side applications that render gameplay UI
+for end users. The first instance is `apps/arena-client/` — a Vue 3 + Vite
+SPA that consumes `UIState` projections from the engine and renders them
+for match play.
+
+**May:** Import engine **types only** (`import type` from
+`@legendary-arena/game-engine`). Consume read-only projections. Use a UI
+framework (Vue 3). Use `import.meta.env.DEV`-guarded dev harnesses. Mount
+Pinia stores that hold the current projection snapshot.
+
+**Must not:** Import engine runtime code (only `import type`). Import
+`@legendary-arena/registry`. Import `boardgame.io`. Use `Math.random()`,
+`Date.now()`, or `performance.now()`. Persist `UIState` to any storage
+(localStorage, sessionStorage, IndexedDB, cookies). Implement gameplay
+rules or compute game outcomes. Re-enter the engine.
+
+**Failure mode:** Layer-boundary violations (engine runtime leaking into
+the client bundle). State drift between client projection and authoritative
+engine state. Bundle bloat from engine-runtime imports.
+
+**Directories:** `apps/arena-client/` (D-6511)
 
 ---
 

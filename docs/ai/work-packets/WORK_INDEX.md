@@ -766,7 +766,7 @@ These packets make the game safe to ship.
   a home-rolled SFC shim, this packet consolidates it — DECISIONS.md
   records the consolidation outcome.
 
-- [ ] WP-061 — Gameplay Client Bootstrap ✅ Reviewed (2026-04-16 lint-gate pass)
+- [x] WP-061 — Gameplay Client Bootstrap ✅ Reviewed (2026-04-16 lint-gate pass) — Completed 2026-04-17 under commit prefix `EC-067:` (see [session-wp061-gameplay-client-bootstrap.md](../invocations/session-wp061-gameplay-client-bootstrap.md))
   Dependencies: WP-028, WP-065
   Notes: Creates `apps/arena-client/` as a new Vue 3 + Vite + Pinia + TypeScript
   SPA — the first gameplay client in the repo (distinct from `apps/registry-viewer/`,

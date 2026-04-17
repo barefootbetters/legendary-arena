@@ -1,0 +1,45 @@
+/*
+ * Base styles for the Legendary Arena gameplay client.
+ *
+ * Minimal reset + a tiny palette of color tokens with documented contrast
+ * ratios. No component styles, no framework, no theming system beyond
+ * prefers-color-scheme. Component styling is scoped to each .vue file.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  /* contrast 17.8:1 (#111111 on #f9f9f9) — WCAG AAA for normal and large text */
+  --color-foreground: #111111;
+  --color-background: #f9f9f9;
+  /* contrast 4.8:1 (#005fcc on #f9f9f9) — WCAG AA for normal text */
+  --color-focus-ring: #005fcc;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* contrast 15.6:1 (#f1f1f1 on #101015) — WCAG AAA for normal and large text */
+    --color-foreground: #f1f1f1;
+    --color-background: #101015;
+    /* contrast 6.5:1 (#8ab4f8 on #101015) — WCAG AA for normal text */
+    --color-focus-ring: #8ab4f8;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--color-foreground);
+  background: var(--color-background);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}

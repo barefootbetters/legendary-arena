@@ -1,0 +1,92 @@
+{
+  "game": {
+    "phase": "end",
+    "turn": 11,
+    "activePlayerId": "0",
+    "currentStage": "cleanup"
+  },
+  "players": [
+    {
+      "playerId": "0",
+      "deckCount": 2,
+      "handCount": 0,
+      "discardCount": 5,
+      "inPlayCount": 0,
+      "victoryCount": 3,
+      "woundCount": 6
+    },
+    {
+      "playerId": "1",
+      "deckCount": 3,
+      "handCount": 0,
+      "discardCount": 4,
+      "inPlayCount": 0,
+      "victoryCount": 2,
+      "woundCount": 5
+    }
+  ],
+  "city": {
+    "spaces": [
+      { "extId": "sinister-six-vulture", "type": "villain", "keywords": ["ranged"] },
+      { "extId": "sinister-six-shocker", "type": "villain", "keywords": ["ranged"] },
+      { "extId": "sinister-six-electro", "type": "villain", "keywords": ["ranged"] },
+      { "extId": "sinister-six-mysterio", "type": "villain", "keywords": ["ranged"] },
+      { "extId": "sinister-six-kraven", "type": "villain", "keywords": ["ranged"] }
+    ]
+  },
+  "hq": {
+    "slots": [
+      "sm-amazing-friend",
+      "sm-hero-for-hire",
+      "dp-weapon-x",
+      "dp-chimichangas",
+      "sm-web-slinger"
+    ]
+  },
+  "mastermind": {
+    "id": "mastermind-doctor-octopus",
+    "tacticsRemaining": 4,
+    "tacticsDefeated": 0
+  },
+  "scheme": {
+    "id": "scheme-midtown-bank-robbery",
+    "twistCount": 8
+  },
+  "economy": {
+    "attack": 0,
+    "recruit": 0,
+    "availableAttack": 0,
+    "availableRecruit": 0
+  },
+  "log": [
+    "Turn 10: Scheme twist 8 drawn",
+    "Turn 11: Scheme advances — heroes lose."
+  ],
+  "gameOver": {
+    "outcome": "loss",
+    "reason": "Scheme Midtown Bank Robbery reached its final twist.",
+    "scores": {
+      "players": [
+        {
+          "playerId": "0",
+          "villainVP": 2,
+          "henchmanVP": 0,
+          "bystanderVP": 1,
+          "tacticVP": 0,
+          "woundVP": -6,
+          "totalVP": -3
+        },
+        {
+          "playerId": "1",
+          "villainVP": 1,
+          "henchmanVP": 1,
+          "bystanderVP": 0,
+          "tacticVP": 0,
+          "woundVP": -5,
+          "totalVP": -3
+        }
+      ],
+      "winner": null
+    }
+  }
+}

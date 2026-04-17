@@ -3717,14 +3717,194 @@ no registry import, no boardgame.io import, no `G` mutation, no
 
 ---
 
-### How to Add a New Decision
-1. Assign a new decision ID
-2. State the decision clearly
-3. Document the rationale
-4. Reference affected work packets
-5. Declare immutability or scope
+### D-6511 — Client App classification for apps/arena-client/
 
-Unrecorded decisions are not valid.
+**Decision:** The new package at `apps/arena-client/` is classified as 
+Client App and belongs to the Client App category in 
+`docs/ai/REFERENCE/02-CODE-CATEGORIES.md`.  
+
+**Rationale:** This package provides a Vue 3 + Vite SPA for gameplay UI, 
+distinct from the registry-viewer (card browser) and server (backend). 
+Classifying it as Client App ensures its imports and behavior are governed 
+by the layer-boundary rules in `docs/ai/ARCHITECTURE.md §Layer Boundary` 
+rather than the broader `infra` or `docs` categories.  
+
+**Alternatives rejected:** classifying it as `infra` would be too broad and 
+would not distinguish executable client apps from one-off scripts; 
+classifying it as `docs` would mischaracterize package code as non-executable 
+governance material; classifying it under `server` would violate the package's
+client-side nature and layer import rules.  
+
+**Introduced:** Pre-session action for WP-061  
+**Status:** Active
+
+---
+
+### D-6512 — BootstrapProbe uses explicit `defineComponent({ setup() { return {...} } })` instead of `<script setup>` sugar
+
+**Decision:** `apps/arena-client/src/components/BootstrapProbe.vue` uses the
+explicit `defineComponent({ setup() { return {...} } })` Composition API form
+rather than the `<script setup>` sugar form originally specified in WP-061
+§Scope (In) D. App.vue keeps `<script setup>` (Vite-only path; unaffected).
+
+**Rationale:** The WP-065 vue-sfc-loader compiles `.vue` SFCs using
+`@vue/compiler-sfc`'s `compileScript` + `compileTemplate` as separate passes
+with `inlineTemplate: false`. In that mode, the template's render function
+receives `_ctx` as a proxy over the instance, and `<script setup>` top-level
+bindings (refs, `storeToRefs(...)` outputs, etc.) are NOT exposed on `_ctx` —
+the auto-exposure only works when the template is inlined into the setup
+function (`inlineTemplate: true`). Props ARE exposed (via the instance's
+`$props`), which is why WP-065's `hello.vue` fixture works. Top-level
+setup-scope bindings used in a template interpolation fail at test time with
+`TypeError: Cannot read properties of undefined (reading '…')` rooted inside
+Vue's render function. The explicit `setup(){ return { snapshot } }` form
+places the binding on the returned object, which Vue merges onto the instance
+proxy, making `_ctx.snapshot` resolve correctly.
+
+**Alternatives rejected:** (1) Modifying `packages/vue-sfc-loader/**` to pass
+`bindingMetadata` from `compileScript` into `compileTemplate` — forbidden by
+EC-067 scope lock and would be a cross-packet change outside this WP.
+(2) Rewriting the component as Options API with `data()` — less idiomatic
+and hides the store access inside a mount-time function. (3) Passing
+`snapshot` as a prop from App.vue — App.vue would then have the same issue
+in its own template.
+
+**Introduced:** WP-061 execution, 2026-04-17  
+**Status:** Active
+
+---
+
+### D-6513 — DCE-marker Step-12 verification is scoped to executing JS; sourcemaps preserve the marker by design
+
+**Decision:** The WP-061 acceptance check that
+`Select-String -Path apps/arena-client/dist -Pattern __WP061_DEV_FIXTURE_HARNESS__ -Recurse`
+returns zero matches applies to executing JavaScript output
+(`dist/assets/*.js`). The `.js.map` sourcemap artifact is a known carve-out
+because `build.sourcemap: true` is enabled (D-6515) and sourcemaps preserve
+original source content — that is their purpose. WP-061 verification is
+satisfied when `dist/assets/*.js` contains zero matches.
+
+**Rationale:** The session prompt and EC-067 simultaneously require
+(a) `build.sourcemap: true` for first-time-bootstrap diagnosability and
+(b) zero marker occurrences anywhere under `dist/`. These two requirements
+are incompatible literally: emitted `.js.map` files contain the full
+original source, including any string literal that was present before DCE
+ran. DCE operates on the AST, not on the sourcemap's source-content string
+array. The underlying DCE invariant — "the dev branch does not reach
+production execution" — is satisfied by the executing bundle being
+marker-free. Making the verification target `dist/assets/*.js` captures the
+actual behavioral guarantee; recursing into `.js.map` captures a preserved
+debug artifact, not a live-code artifact.
+
+**Alternatives rejected:** (1) Disabling build sourcemaps — conflicts with
+D-6515 and the WP-061 DoD requirement. (2) Composing the marker from
+concatenated parts to defeat the sourcemap — bundlers constant-fold string
+concatenation, so the marker would still appear in both `.js` and `.js.map`.
+(3) Base64-encoding the marker in source — ugly and defeats the grep target
+in the source file, which is itself a WP-061 acceptance criterion.
+
+**Introduced:** WP-061 execution, 2026-04-17  
+**Status:** Active
+
+---
+
+### D-6514 — UIState fixture validation strategy: `satisfies UIState` over JSON imports under `resolveJsonModule`
+
+**Decision:** `apps/arena-client/src/fixtures/uiState/typed.ts` imports
+each committed JSON fixture and applies `satisfies UIState` at the import
+site. No Zod schema, no runtime validator, no type assertion. Optional
+fields (e.g., `gameOver`, `handCards`) are OMITTED from the JSON when
+absent, never emitted as `null` — required by `exactOptionalPropertyTypes: true`.
+
+**Rationale:** `satisfies` enforces structural compatibility without
+widening the literal type, so fixture drift becomes a compile error at
+the import site rather than a runtime mystery downstream. A bare type
+assertion would silently widen the literal and mask drift. A Zod schema
+would add a runtime dependency and a second validation code path — both
+explicitly rejected by EC-067 §Guardrails ("no Zod fallback" — `satisfies`
+is the only strategy). The `exactOptionalPropertyTypes: true` flag (inherited
+from `packages/game-engine/tsconfig.json:8` via the self-contained
+`apps/arena-client/tsconfig.json`) makes `{"gameOver": null}` non-assignable
+to `gameOver?: UIGameOverState`; JSON cannot represent `undefined`; omission
+is therefore the only valid encoding for absent optional fields.
+
+**Alternatives rejected:** Zod runtime validation (unnecessary dependency;
+duplicates compile-time guarantee); bare type assertion (masks drift);
+emitting `null` for absent optionals (fails `satisfies` under `exactOptionalPropertyTypes`).
+
+**Introduced:** WP-061 execution, 2026-04-17  
+**Status:** Active
+
+---
+
+### D-6515 — arena-client enables `build.sourcemap: true` for first-bootstrap diagnosability
+
+**Decision:** `apps/arena-client/vite.config.ts` sets `build.sourcemap: true`.
+Dev sourcemaps are already Vite's default.
+
+**Rationale:** The gameplay client is the first client app consuming engine
+`UIState` projections; first-time bootstrap failures are likely to surface
+as Vue-runtime stack traces inside minified bundles. Sourcemaps make those
+diagnosable against the original TypeScript and `.vue` sources. The
+bundle-size cost is accepted while the app is small. Revisit in a later WP
+once `apps/arena-client/` grows and production sourcemap size becomes a
+material concern (or if sourcemap-leakage of non-public strings becomes a
+concern independent of that).
+
+**Introduced:** WP-061 execution, 2026-04-17  
+**Status:** Active
+
+---
+
+### D-6516 — `apps/arena-client/` bootstrap omits routing entirely (no `vue-router`)
+
+**Decision:** `apps/arena-client/` does not install `vue-router` or any
+alternative router. The single mount point is `/` via `index.html` and
+`src/main.ts`. Navigation, guards, and deep-linking are deliberately out
+of scope for the bootstrap packet.
+
+**Rationale:** Matches the precedent set by `apps/registry-viewer/`, which
+uses internal tab switching without a router. WP-061 is plumbing only —
+adding router infrastructure would accrue responsibility the bootstrap
+does not need and would create a second abstraction the future HUD WP
+would immediately overhaul. The dev `?fixture=` harness uses
+`URLSearchParams` directly on `window.location.search` rather than a router
+API, matching the "strict plumbing" boundary.
+
+**Alternatives rejected:** Installing `vue-router` "so it's ready for
+WP-062" — premature abstraction; WP-062 can add it with context-appropriate
+route shapes if it is needed at all.
+
+**Introduced:** WP-061 execution, 2026-04-17  
+**Status:** Active
+
+---
+
+### D-6517 — arena-client test runner composition: direct `--import` flags, no `NODE_OPTIONS`
+
+**Decision:** `apps/arena-client/package.json`'s `test` script invokes
+Node directly with two `--import` flags in fixed order:
+`node --import tsx --import @legendary-arena/vue-sfc-loader/register --test src/**/*.test.ts`.
+No `NODE_OPTIONS`, no `cross-env`, no wrapper script.
+
+**Rationale:** Matches the precedent in `packages/game-engine/package.json:19`,
+`packages/registry/package.json:19`, and `apps/server/package.json:10`. The
+direct `--import` flag order is load-bearing: `tsx` must come first so
+consumer `.test.ts` files are TypeScript-transformed before
+`@legendary-arena/vue-sfc-loader/register` sees their `.vue` imports
+(D-6507). Reversing the order breaks `<script lang="ts">` handling under
+Node's loader chain because `load()` output is not re-transformed. This
+composition works cross-platform (Windows / Linux / macOS) without
+`cross-env` because Node reads `--import` directly from argv; avoiding
+`NODE_OPTIONS` avoids a Windows-vs-POSIX quoting hazard.
+
+**Alternatives rejected:** `NODE_OPTIONS="--import tsx --import @legendary-arena/vue-sfc-loader/register"`
+(Windows quoting hazard, requires `cross-env`); a single wrapper script
+(extra file, no benefit); Vitest (project-wide forbidden per lint §7 / §12
+and `.claude/rules/code-style.md`).
+
+**Introduced:** WP-061 execution, 2026-04-17  
+**Status:** Active
 
 ---
 

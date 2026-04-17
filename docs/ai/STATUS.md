@@ -7,6 +7,89 @@
 
 ## Current State
 
+### WP-061 — Gameplay Client Bootstrap (2026-04-17)
+
+**What changed:**
+- New `apps/arena-client/` package classified as Client App (D-6511). 18 new
+  files exactly matching WP-061 / EC-067 §Files Expected to Change:
+  `package.json`, `tsconfig.json`, `vite.config.ts`, `index.html`,
+  `src/main.ts`, `src/App.vue`, `src/stores/uiState.ts`,
+  `src/stores/uiState.test.ts`, `src/fixtures/uiState/typed.ts`,
+  `src/fixtures/uiState/index.ts`, `src/fixtures/uiState/index.test.ts`,
+  `src/fixtures/uiState/mid-turn.json`, `src/fixtures/uiState/endgame-win.json`,
+  `src/fixtures/uiState/endgame-loss.json`,
+  `src/components/BootstrapProbe.vue`, `src/components/BootstrapProbe.test.ts`,
+  `src/testing/jsdom-setup.ts`, `src/styles/base.css`.
+- Package name `@legendary-arena/arena-client`, `"private": true`, vue pinned
+  to `^3.4.27` (pnpm resolves 3.5.30 against the peer pin, matching WP-065).
+  `@legendary-arena/vue-sfc-loader` and `@legendary-arena/game-engine` are
+  declared as `devDependencies` only — never `dependencies` — per the
+  anti-production-bundle rule (D-6501) and the type-only engine import rule.
+- `useUiStateStore()` exposes exactly one state field (`snapshot: UIState | null`)
+  and one action (`setSnapshot`). No getters, no additional state, no
+  additional actions — the contract future UI packets (WP-062, WP-064) will
+  depend on.
+- Three committed JSON fixtures (`mid-turn`, `endgame-win`, `endgame-loss`),
+  each typed via `satisfies UIState` at the import site in
+  `fixtures/uiState/typed.ts` — never a bare type-assertion (the forbidden
+  drift-masking pattern). `mid-turn.json` omits the optional `gameOver` key
+  entirely because repo tsconfig has `exactOptionalPropertyTypes: true` and
+  `{ "gameOver": null }` would break `satisfies UIState` (D-6514).
+- `loadUiStateFixture(name: FixtureName)` is a single-code-path switch over
+  the typed imports — no Vite-vs-Node branching. `isFixtureName()` is a
+  pure type guard consumed by the dev `?fixture=` harness in `main.ts`.
+- `<BootstrapProbe />` renders `snapshot.game.phase` when a fixture is
+  loaded, an empty-state message otherwise, both with explicit `aria-label`
+  attributes. The component uses the explicit
+  `defineComponent({ setup() { return {...} } })` Composition API form
+  rather than `<script setup>` sugar — load-bearing under the vue-sfc-loader
+  separate-compile pipeline (D-6512). App.vue keeps `<script setup>` because
+  it is only ever processed by Vite's `@vitejs/plugin-vue`, never by the
+  test loader.
+- Dev-only URL harness in `main.ts`: a single `if (import.meta.env.DEV)`
+  branch reads `?fixture=` from `window.location.search`, silently no-ops
+  on unknown values, and calls `store.setSnapshot(loadUiStateFixture(name))`
+  for valid ones. Dedicated DCE marker `__WP061_DEV_FIXTURE_HARNESS__`
+  inside the branch is absent from the executing production bundle; the
+  marker is preserved only in `dist/assets/*.js.map` because
+  `build.sourcemap: true` is enabled (D-6513 carve-out: marker-absence
+  verification applies to executing JS, not sourcemaps).
+- Test infrastructure: `node --import tsx --import @legendary-arena/vue-sfc-loader/register --test src/**/*.test.ts`
+  — direct CLI flags, no `NODE_OPTIONS`, no `cross-env`, matching the
+  precedent in `packages/game-engine`, `packages/registry`, and
+  `apps/server`. `src/testing/jsdom-setup.ts` installs jsdom globals
+  (`window`, `document`, `HTMLElement`, `Element`, `Node`, `SVGElement`,
+  `MathMLElement`, `navigator`) via `Object.defineProperty` mirroring the
+  WP-065 `loader.test.ts` driver — load-bearing because Node 22+ exposes
+  `globalThis.navigator` as a read-only getter.
+- 13 new tests pass: 3 store tests, 7 fixture tests, 3 component tests.
+  Full-repo regression check: engine, registry, vue-sfc-loader, server,
+  registry-viewer untouched; their tests remain green.
+- Base CSS (`src/styles/base.css`) defines `--color-foreground`,
+  `--color-background`, `--color-focus-ring` tokens for both light and dark
+  `prefers-color-scheme` blocks, each with explicit numeric contrast-ratio
+  comments (17.8:1 / 4.8:1 light, 15.6:1 / 6.5:1 dark). No framework, no
+  theming system, no component styles — scoped component styles arrive
+  with real HUD components in WP-062.
+- `docs/ai/REFERENCE/02-CODE-CATEGORIES.md` received a new `client-app`
+  row + detailed definition section (pre-session Gate #2 resolution;
+  D-6511 already existed asserting the classification, but the matching
+  row was missing — asymmetric governance state fixed).
+
+**What's unblocked:**
+- WP-062 (Arena HUD) can now consume the `useUiStateStore()` shape and the
+  `FixtureName` union without needing to stand up new infrastructure.
+- WP-064 (Log / Replay Inspector) can build against the same store.
+- Any future UI WP can copy the jsdom-setup pattern and the typed-fixture
+  loader pattern verbatim.
+
+**Governance:** commit prefix is `EC-067:` (not `EC-061:` — EC-061 is
+historically bound to the registry-viewer Rules Glossary panel shipped in
+commit `1b923a4`). `01.6` post-mortem is mandatory per P6-28 and runs in
+the same session as execution, before commit.
+
+---
+
 ### WP-065 — Vue SFC Test Transform Pipeline (2026-04-17)
 
 **What changed:**
