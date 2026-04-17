@@ -42,10 +42,13 @@
       `G.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS]` is incremented at
       `packages/game-engine/src/villainDeck/villainDeck.reveal.ts:120`.
       Re-verify; if moved, update the DECISIONS.md rationale entry.
-- [ ] **Test baseline:** `pnpm -r test` exits 0 on `main`. Record the
-      pre-execution test count (should include WP-061's 13 arena-client
-      tests and WP-048's scoring tests). No regressions permitted after
-      WP-067 lands.
+- [ ] **Test baseline:** `pnpm -r test` exits 0 on `main`. **Record the
+      exact pre-execution test count as `PRE_COUNT`.** After WP-048
+      (commit `2587bbb`) the expected value is **429** (3 registry + 396
+      game-engine + 11 vue-sfc-loader + 6 server + 13 arena-client). If
+      the number differs, STOP and investigate — a drifted baseline
+      invalidates the arithmetic check in §After Completing. No
+      regressions permitted after WP-067 lands.
 
 ---
 
@@ -220,10 +223,25 @@ no `tsconfig.json`, no `vite.config.ts` edit under `apps/arena-client/`.
 ## After Completing
 
 - [ ] `pnpm --filter @legendary-arena/game-engine build` exits 0
-- [ ] `pnpm --filter @legendary-arena/game-engine test` exits 0 and
-      includes ≥ 13 new tests from this WP
-- [ ] `pnpm -r test` exits 0 (zero regressions anywhere — specifically
-      including the 13 arena-client tests from WP-061)
+- [ ] `pnpm --filter @legendary-arena/game-engine test` exits 0. **Record
+      `POST_GAME_ENGINE_COUNT`.** The engine baseline after WP-048 is
+      396 passing / 98 suites; WP-067 adds ≥ 13 new tests, so
+      `POST_GAME_ENGINE_COUNT >= 409`. **Exact arithmetic check:**
+      `POST_GAME_ENGINE_COUNT - 396 >= 13` (equality preferred — any
+      overage must be justifiable as drift-detection or aliasing
+      strengthening within declared test intent).
+- [ ] `pnpm -r test` exits 0. **Record `POST_COUNT`.** Assert:
+      `POST_COUNT - PRE_COUNT === NEW_TESTS_ADDED` (strict equality).
+      With `PRE_COUNT = 429` and WP-067's declared `≥ 13` new tests,
+      the expected `POST_COUNT` is ≥ 442. If `POST_COUNT - PRE_COUNT`
+      does not equal the number of tests WP-067 declared in its
+      §Files Expected to Change, STOP — either a test regressed or a
+      test was silently skipped. This arithmetic check exists because
+      EC-048 §After Completing quoted "392/425" for WP-048 post-
+      execution totals while the spec required 16+4 = 20 new tests;
+      WP-048 landed at 396/429 correctly, but the quoted-total drift
+      could have masked a regression. Strict arithmetic prevents
+      recurrence.
 - [ ] `Select-String` confirms no boardgame.io / registry / apps import
       under `packages/game-engine/src/ui/`
 - [ ] `Select-String` confirms no `Math.random`, `Date.now`, or

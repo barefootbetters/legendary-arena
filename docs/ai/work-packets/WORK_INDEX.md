@@ -871,11 +871,16 @@ These packets make the game safe to ship.
   unchanged would break `pnpm -r test`). 2 non-blocking observations noted:
   (a) §5 file count is now 11 unconditional + 2 conditional + 3 governance;
   the 2 conditional files under §C (`types.ts`, `buildInitialGameState.ts`)
-  are unlikely to trigger since WP-048 likely adds `G.activeScoringConfig`
-  itself, reducing the realistic count to ≤ 14; (b) §14 Acceptance Criteria
-  has 18 items vs the 6–12 advisory band, each binary / observable / specific
-  across six concern subsections — consolidation would reduce traceability.
-  Both observations non-blocking per 00.3 Final Gate (neither matches a
+  are **highly likely to trigger** because WP-048 did NOT add
+  `G.activeScoringConfig` (D-4802 explicitly deferred it to WP-067;
+  confirmed post-commit against `2587bbb`). WP-067 therefore owns both
+  the design decision (optional 3rd param to `buildInitialGameState`
+  vs. server-layer population vs. 9-field `MatchSetupConfig` amend — see
+  `session-context-wp067.md`) and the implementation; realistic file
+  count is ≤ 16 not ≤ 14. (b) §14 Acceptance Criteria has 18 items vs
+  the 6–12 advisory band, each binary / observable / specific across six
+  concern subsections — consolidation would reduce traceability. Both
+  observations non-blocking per 00.3 Final Gate (neither matches a
   ❌ FAIL condition).
   Notes: Engine-side bridge between WP-048 (PAR scoring types) and WP-062
   (Arena HUD). Adds `UIProgressCounters { bystandersRescued, escapedVillains }`
