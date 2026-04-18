@@ -901,6 +901,36 @@ These packets make the game safe to ship.
   names). WP-062 pre-flight blocker #4 (base.css allowlist) is
   independent.
 
+- [ ] WP-068 — Preferences Foundation: Pinia + Shared-Tier Schema + Section Registry (Not yet reviewed)
+  Dependencies: None (Option A path — `apps/registry-viewer/` is independent)
+  Branch: `wp-068-preferences-foundation` (SPEC commit `32c8012` on 2026-04-18)
+  Governance: decision D-1401 locks the Option A delivery path (in-app
+  under `apps/registry-viewer/src/prefs/`; no `packages/ui-preferences/`
+  package created); plan at `docs/14-PREFERENCES-PANEL-IMPLEMENTATION-PLAN.md`
+  §2.1 / §2.3 / §8; full packet at
+  `docs/ai/work-packets/WP-068-preferences-foundation.md`; session context
+  at `docs/ai/session-context/session-context-wp068.md`.
+  Notes: First packet of an 11-WP preferences/options-panel series
+  (WP-068..WP-078). Foundation only — installs Pinia; adds shared-tier
+  Zod schemas for Appearance / Accessibility / AdvancedBase (defaults
+  calibrated to match current hardcoded viewer behavior per plan §5.7);
+  adds a section registry with duplicate-id rejection, a Pinia store
+  factory with corruption-safe localStorage envelope
+  (`legendary-arena.preferences` key, backup under `.backup`), a
+  `usePreferences()` composable, and a schema-purity test guarding the
+  eventual Option-A → Option-B hoist to `packages/ui-preferences/` if/when
+  `apps/game-ui/` is scoped. **Zero user-visible UI changes** (no gear
+  icon, no drawer, no CSS migration — those ship in WP-069 / WP-070 /
+  WP-075). Scope is 15 files: 2 modified (`package.json`, `main.ts`) +
+  9 new source files + 4 new `.test.ts` files, all under
+  `apps/registry-viewer/src/prefs/`. No engine, server, or registry-package
+  changes. Next packets (WP-069..WP-078) are tracked in the plan
+  document; they will be added to this index row-by-row as each is
+  drafted, not as placeholder rows.
+  Unblocks: WP-069 (gear icon + empty drawer shell) — WP-068's Pinia
+  store and section registry must exist before the drawer can iterate
+  sections.
+
 ---
 
 ## Phase 7 — Beta, Launch & Live Ops
