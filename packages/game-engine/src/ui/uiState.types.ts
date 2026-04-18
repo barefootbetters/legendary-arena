@@ -38,6 +38,7 @@ export interface UIState {
   scheme: UISchemeState;
   economy: UITurnEconomyState;
   log: string[];
+  progress: UIProgressCounters;
   gameOver?: UIGameOverState;
 }
 
@@ -129,6 +130,47 @@ export interface UIGameOverState {
   outcome: string;
   reason: string;
   scores?: FinalScoreSummary;
+  par?: UIParBreakdown;
+}
+
+// why: projected for WP-062 HUD consumption; `bystandersRescued` aggregates
+// from each player's victory pile, `escapedVillains` surfaces
+// G.counters[ESCAPED_VILLAINS]. See WP-067.
+/**
+ * Aggregate progress counters projected from G for HUD display.
+ *
+ * Both fields are derived at projection time from authoritative G state and
+ * are required on every UIState — even during the lobby phase, where both
+ * values are zero.
+ */
+export interface UIProgressCounters {
+  /** Aggregate count of bystanders in every player's victory zone. */
+  bystandersRescued: number;
+  /** Cumulative count of villains that escaped the City. */
+  escapedVillains: number;
+}
+
+// why: verbatim name-for-name mirror of WP-048 ScoreBreakdown so WP-062
+// aria-labels bind to a single contract. Optional on UIGameOverState because
+// not every match is PAR-scored; under D-6701 MVP the payload is deferred and
+// the field is always omitted at runtime.
+/**
+ * PAR scoring breakdown projection for the endgame HUD.
+ *
+ * Field names mirror WP-048's ScoreBreakdown verbatim so WP-062 aria-labels
+ * bind to a single contract. Per D-6701 the payload is deferred until the
+ * follow-up WP wires `ReplayResult` into `buildUIState`; the type-level
+ * contract ships here so the drift test pins the four field names today.
+ */
+export interface UIParBreakdown {
+  /** Raw score before applying PAR baseline. */
+  rawScore: number;
+  /** Baseline PAR score for the scenario. */
+  parScore: number;
+  /** Final score after applying PAR baseline and penalty events. */
+  finalScore: number;
+  /** Version stamp of the ScenarioScoringConfig used to compute the breakdown. */
+  scoringConfigVersion: number;
 }
 
 export type { UIAudience } from './uiAudience.types.js';

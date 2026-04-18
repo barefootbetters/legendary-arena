@@ -64,6 +64,7 @@
     "Turn 13: Player 0 defeated the last tactic of Doctor Octopus",
     "Turn 14: Heroes win — mastermind defeated."
   ],
+  "progress": { "bystandersRescued": 9, "escapedVillains": 2 },
   "gameOver": {
     "outcome": "win",
     "reason": "Mastermind Doctor Octopus has been defeated.",

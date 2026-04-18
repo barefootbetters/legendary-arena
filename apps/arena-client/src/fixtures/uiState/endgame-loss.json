@@ -62,6 +62,7 @@
     "Turn 10: Scheme twist 8 drawn",
     "Turn 11: Scheme advances — heroes lose."
   ],
+  "progress": { "bystandersRescued": 1, "escapedVillains": 8 },
   "gameOver": {
     "outcome": "loss",
     "reason": "Scheme Midtown Bank Robbery reached its final twist.",

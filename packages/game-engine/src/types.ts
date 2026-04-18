@@ -231,6 +231,7 @@ import type { HeroAbilityHook } from './rules/heroAbility.types.js';
 import type { LobbyState } from './lobby/lobby.types.js';
 import type { VillainDeckState, RevealedCardType } from './villainDeck/villainDeck.types.js';
 import type { CityZone, HqZone } from './board/city.types.js';
+import type { ScenarioScoringConfig } from './scoring/parScoring.types.js';
 
 // why: MatchConfiguration (WP-002) and MatchSetupConfig (WP-005A) have
 // identical 9-field shapes. MatchSetupConfig in matchSetup.types.ts is now
@@ -427,4 +428,11 @@ export interface LegendaryGameState {
   // and readiness status. Initialized at setup time from ctx.numPlayers.
   /** Lobby phase state (player readiness and match start flag). */
   lobby: LobbyState;
+
+  // why: runtime-only — never persisted (see ARCHITECTURE.md Section 3); its
+  // presence marks the match as PAR-scored for future `buildUIState` gating
+  // once D-6701's follow-up WP lands. WP-067 adds the field; WP-048
+  // explicitly deferred it per D-4802.
+  /** Optional setup-time scoring config; presence marks the match as PAR-scored. */
+  readonly activeScoringConfig?: ScenarioScoringConfig;
 }

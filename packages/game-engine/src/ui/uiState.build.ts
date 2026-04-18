@@ -16,11 +16,14 @@ import type {
   UIPlayerState,
   UICityCard,
   UIGameOverState,
+  UIProgressCounters,
+  UIParBreakdown,
 } from './uiState.types.js';
 import { getAvailableAttack, getAvailableRecruit } from '../economy/economy.logic.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
 import { computeFinalScores } from '../scoring/scoring.logic.js';
 import { WOUND_EXT_ID } from '../setup/buildInitialGameState.js';
+import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 
 // why: exact structural contract — do not widen or add optional fields.
 // buildUIState MUST NOT depend on any other ctx fields.
@@ -72,6 +75,83 @@ function countWounds(zones: PlayerZones): number {
   }
 
   return woundCount;
+}
+
+// why: aggregation happens at projection time instead of tracking a first-class
+// counter. If write-path events need a counter later, introduce
+// ENDGAME_CONDITIONS.BYSTANDERS_RESCUED in a separate WP.
+/**
+ * Counts bystanders across every player's victory zone.
+ *
+ * Iterates only the `victory` zone of each player. Bystanders in hand, deck,
+ * discard, or inPlay are deliberately excluded — a bystander outside victory
+ * is not yet rescued.
+ *
+ * @param gameState - The engine state. Not mutated.
+ * @returns Total count of bystanders sitting in any player's victory zone.
+ */
+function countBystandersRescued(gameState: LegendaryGameState): number {
+  let bystanderCount = 0;
+
+  // why: iterate every player's victory zone explicitly with for...of; no
+  // .reduce() with branching per code-style Rule 8.
+  for (const playerZones of Object.values(gameState.playerZones)) {
+    for (const cardExtId of playerZones.victory) {
+      if (gameState.villainDeckCardTypes[cardExtId] === 'bystander') {
+        bystanderCount += 1;
+      }
+    }
+  }
+
+  return bystanderCount;
+}
+
+/**
+ * Builds the UIProgressCounters projection for the HUD.
+ *
+ * Always returns a fully populated counters object — both fields are required
+ * on every UIState even during the lobby phase, where both values are zero.
+ *
+ * @param gameState - The engine state. Not mutated.
+ * @returns Aggregate progress counters projection.
+ */
+function buildProgressCounters(gameState: LegendaryGameState): UIProgressCounters {
+  // why: counter is lazily initialised on first escape; absence is
+  // semantically zero.
+  const escapedVillains = gameState.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] ?? 0;
+  return {
+    bystandersRescued: countBystandersRescued(gameState),
+    escapedVillains,
+  };
+}
+
+// why: per D-6701, PAR payload is deferred until `buildUIState` has access to
+// a `ReplayResult`. The type-level contract ships via `UIParBreakdown` and the
+// drift test locks the four field names. Body stays `return undefined;`
+// unconditionally — no call to `deriveScoringInputs` / `buildScoreBreakdown`.
+// A follow-up WP resolves the data source.
+/**
+ * Builds the optional UIParBreakdown projection for the endgame HUD.
+ *
+ * Per D-6701 the body is `return undefined;` unconditionally at MVP; the
+ * type-level contract ships via `UIParBreakdown` and the drift test pins the
+ * four field names. The follow-up WP that supplies the payload modifies only
+ * this body — `buildUIState` already preserves the wire via conditional spread.
+ *
+ * @param gameState - The engine state. Not used in the safe-skip body.
+ * @param ctx - The build context. Not used in the safe-skip body.
+ * @returns Always undefined under D-6701; payload is deferred.
+ */
+function buildParBreakdown(
+  gameState: LegendaryGameState,
+  ctx: UIBuildContext,
+): UIParBreakdown | undefined {
+  // why: D-6701 safe-skip — explicit void references keep the parameters in
+  // the signature for the follow-up WP without tripping `noUnusedParameters`
+  // when it is later enabled, and prove this body has no other intent.
+  void gameState;
+  void ctx;
+  return undefined;
 }
 
 /**
@@ -191,17 +271,28 @@ export function buildUIState(
   // why: shallow copy prevents mutation of G.messages through UIState
   const log = [...gameState.messages];
 
-  // --- 9. Project game over ---
+  // --- 9. Project progress counters ---
+  // why: progress counters are required on every UIState (even pre-play)
+  // so the HUD can render a stable shape. WP-067.
+  const progress = buildProgressCounters(gameState);
+
+  // --- 10. Project game over ---
   // why: endgame state derived from G counters via evaluateEndgame
   // (pure); scores computed via computeFinalScores (pure). No ctx.gameover
   // access needed.
   let gameOver: UIGameOverState | undefined;
   const endgameResult = evaluateEndgame(gameState);
   if (endgameResult !== null) {
+    // why: wire preserved as the D-6701 extension seam — current branch is
+    // unreachable (`buildParBreakdown` returns `undefined`) but the follow-up
+    // WP that supplies the payload only modifies `buildParBreakdown`'s body,
+    // not `buildUIState`.
+    const par = buildParBreakdown(gameState, ctx);
     gameOver = {
       outcome: endgameResult.outcome,
       reason: endgameResult.reason,
       scores: computeFinalScores(gameState),
+      ...(par !== undefined ? { par } : {}),
     };
   }
 
@@ -214,6 +305,7 @@ export function buildUIState(
     scheme,
     economy,
     log,
+    progress,
     ...(gameOver !== undefined ? { gameOver } : {}),
   };
 }

@@ -7,6 +7,21 @@
 
 ## Current State
 
+### WP-067 — UIState PAR Projection & Progress Counters (2026-04-17, EC-068)
+
+`buildUIState` now emits `UIState.progress` (required, with `bystandersRescued`
+and `escapedVillains`) and `UIGameOverState.par` (optional `UIParBreakdown` —
+deferred safe-skip body per D-6701, omitted at runtime). `LegendaryGameState`
+gains optional `activeScoringConfig` (D-6702); `buildInitialGameState` takes a
+fourth positional optional `scoringConfig` (D-6703). WP-062 projection-layer
+blockers are resolved.
+
+Suite: 442 passing repo-wide (engine 409/101, +13 tests / +3 suites). One
+forced cascade outside the WP allowlist: `uiState.filter.ts` gained a single
+`progress: { ...uiState.progress }` passthrough so the new required field
+roundtrips through audience filtering — counters are public and need no
+redaction.
+
 ### WP-048 — PAR Scenario Scoring & Leaderboards (2026-04-17)
 
 **What changed:**

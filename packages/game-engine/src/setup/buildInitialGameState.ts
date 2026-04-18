@@ -16,6 +16,7 @@ import type {
   MatchSelection,
   CardExtId,
   LobbyState,
+  ScenarioScoringConfig,
 } from '../types.js';
 import { TURN_STAGES } from '../turn/turnPhases.types.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
@@ -116,12 +117,19 @@ function buildMatchSelection(config: MatchSetupConfig): MatchSelection {
  *   mastermind data at setup time. Satisfies VillainDeckRegistryReader
  *   structurally.
  * @param context - Setup context with ctx.numPlayers and random.Shuffle.
+ * @param scoringConfig - Optional setup-time PAR scoring configuration. When
+ *   provided, assigned to G.activeScoringConfig to mark the match as
+ *   PAR-scored. When undefined, the field stays unset.
  * @returns The fully populated initial LegendaryGameState.
  */
+// why: 4th positional optional parameter per D-6703; narrowest additive change
+// that keeps the 9-field MatchSetupConfig lock (D-1244) and D-4805
+// scenario-config separation intact.
 export function buildInitialGameState(
   config: MatchSetupConfig,
   registry: CardRegistryReader,
   context: SetupContext,
+  scoringConfig?: ScenarioScoringConfig,
 ): LegendaryGameState {
   // why: Helpers were extracted from this function to satisfy the 30-line
   // function limit (code-style Rule 5) and to improve testability. Each
@@ -240,6 +248,10 @@ export function buildInitialGameState(
       ready: {},
       started: false,
     } satisfies LobbyState,
+    // why: conditional spread per WP-029 exactOptionalPropertyTypes pattern —
+    // the field is included only when scoringConfig was supplied; never written
+    // as `activeScoringConfig: undefined` literally (D-6703).
+    ...(scoringConfig !== undefined ? { activeScoringConfig: scoringConfig } : {}),
   };
 
   return executeSchemeSetup(baseState, schemeSetupInstructions);

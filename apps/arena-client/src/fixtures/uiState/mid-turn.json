@@ -69,5 +69,6 @@
     "Turn 1: Player 0 recruited sm-shield-agent",
     "Turn 2: Villain Electro entered the city",
     "Turn 3: Player 1 defeated Shocker"
-  ]
+  ],
+  "progress": { "bystandersRescued": 4, "escapedVillains": 1 }
 }

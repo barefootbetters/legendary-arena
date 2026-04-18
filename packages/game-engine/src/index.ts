@@ -210,7 +210,7 @@ export { computeStateHash } from './replay/replay.hash.js';
 export { verifyDeterminism } from './replay/replay.verify.js';
 export type { DeterminismResult } from './replay/replay.verify.js';
 
-// UI state contract (WP-028)
+// UI state contract (WP-028; progress + PAR breakdown added WP-067)
 export type {
   UIState,
   UIPlayerState,
@@ -221,6 +221,8 @@ export type {
   UISchemeState,
   UITurnEconomyState,
   UIGameOverState,
+  UIProgressCounters,
+  UIParBreakdown,
 } from './ui/uiState.types.js';
 export { buildUIState } from './ui/uiState.build.js';
 

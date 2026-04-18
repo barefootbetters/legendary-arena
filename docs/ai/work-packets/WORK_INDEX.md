@@ -859,7 +859,7 @@ These packets make the game safe to ship.
   reset selected card or filters. No TypeScript errors. Follows
   `docs/ai/REFERENCE/00.6-code-style.md` conventions.
 
-- [ ] WP-067 — UIState Projection of PAR Scoring & Progress Counters ✅ Reviewed (2026-04-17 lint-gate pass)
+- [x] WP-067 — UIState Projection of PAR Scoring & Progress Counters ✅ Reviewed (2026-04-17 lint-gate pass) — Completed 2026-04-17 under EC-068 (see [session-wp067-uistate-par-projection-and-progress-counters.md](../invocations/session-wp067-uistate-par-projection-and-progress-counters.md))
   Dependencies: WP-028, WP-048
   Execution Checklist: `docs/ai/execution-checklists/EC-068-uistate-par-projection-and-progress-counters.checklist.md`
   Commit prefix: `EC-068:` (EC-066 / EC-067 taken; EC-068 is the next free slot)

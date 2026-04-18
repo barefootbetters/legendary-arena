@@ -143,6 +143,10 @@ export function filterUIStateForAudience(
     scheme: { ...uiState.scheme },
     economy,
     log: [...uiState.log],
+    // why: progress counters are public (no redaction needed) — passed through
+    // unchanged via fresh object copy to avoid aliasing with the input UIState.
+    // Forced cascade from WP-067 making `progress` a required UIState field.
+    progress: { ...uiState.progress },
   };
 
   if (uiState.gameOver !== undefined) {
