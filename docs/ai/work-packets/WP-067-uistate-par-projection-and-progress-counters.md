@@ -66,8 +66,11 @@ potential aria-label reconciliation.
     helpers
 - WP-020 complete: `computeFinalScores(G): FinalScoreSummary` exists
 - `G.villainDeckCardTypes: Record<CardExtId, RevealedCardType>` is populated
-  at setup time and carries `'bystander'` as one of the canonical types
-  (verified: `REVEALED_CARD_TYPES` at [packages/game-engine/src/rules/revealedCardTypes.ts] — confirm exact path at pre-flight)
+  at setup time and carries `'bystander'` as one of the canonical types.
+  Canonical `REVEALED_CARD_TYPES` lives at
+  `packages/game-engine/src/villainDeck/villainDeck.types.ts` and is
+  re-exported from `packages/game-engine/src/types.ts` (verified at
+  pre-flight 2026-04-17).
 - `G.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS]` is maintained by
   `villainDeck.reveal.ts:120` on every villain escape
 - WP-061 complete (commit 2e68530). `apps/arena-client/` consumes `UIState`
@@ -152,16 +155,22 @@ If any of the above is false, this packet is **BLOCKED**.
   `G.activeScoringConfig` is defined. Otherwise `gameOver.par` is omitted
   entirely.
 - `G.activeScoringConfig: ScenarioScoringConfig | undefined` is the
-  canonical home for the active match's scoring config. It is populated
-  (or left undefined) at setup time by `buildInitialGameState`. This
-  packet **may** add the field to `LegendaryGameState` and the setup path
-  **iff** the WP-048 scope did not already do so — confirm at pre-flight.
-  If WP-048 added `G.activeScoringConfig`, this packet only reads it.
-- PAR projection uses `buildScoreBreakdown(deriveScoringInputs(replayResult,
-  gameLog), config)` from WP-048. This packet does not re-implement
-  scoring arithmetic. If `deriveScoringInputs` needs a `ReplayResult` or
-  `gameLog` shape not available at `buildUIState` time, **stop at
-  pre-flight and ask** — do not synthesize partial inputs.
+  canonical home for the active match's scoring config. Per **D-6702**
+  (confirmed at pre-flight 2026-04-17 that the field does not exist in
+  source) WP-067 **unconditionally** adds the field to
+  `LegendaryGameState` and wires the setup path. The WP-048-already-added
+  branch is inoperative.
+- PAR projection payload is **DEFERRED via D-6701 safe-skip**.
+  `buildParBreakdown(G, ctx)` returns `undefined` unconditionally at
+  MVP. The function is NOT wired to `buildScoreBreakdown` /
+  `deriveScoringInputs` — `buildUIState(G, ctx)` has no `ReplayResult`
+  in scope and inventing one would violate D-4801. WP-067 ships
+  `UIParBreakdown` as a type-level contract (drift-test enforced); a
+  follow-up WP delivers the runtime payload once a `ReplayResult` is
+  available. **For reference only:** the correct helper signature is
+  `deriveScoringInputs(replayResult: ReplayResult, gameState:
+  LegendaryGameState)` — NOT `(replayResult, gameLog)` as earlier WP
+  drafts suggested.
 - No live PAR computation during `phase === 'play'`. `UIParBreakdown` is
   endgame-only. WP-062's "live PAR-delta field" assumption is explicitly
   out of scope — WP-062 pre-flight must tolerate `live=undefined` (which
@@ -231,33 +240,64 @@ Add two new exported interfaces and one new optional field:
   - Returns `{ bystandersRescued: countBystandersRescued(G), escapedVillains: G.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] ?? 0 }`
   - `// why:` comment on the `?? 0` — counter is lazily initialised
 - Add pure helper `buildParBreakdown(G: LegendaryGameState, ctx: UIBuildContext): UIParBreakdown | undefined`:
-  - Returns `undefined` when `ctx.phase !== 'end'`
-  - Returns `undefined` when `G.activeScoringConfig` is undefined
-  - Otherwise calls `deriveScoringInputs(...)` + `buildScoreBreakdown(...)`
-    and projects the four fields onto `UIParBreakdown`
-  - `// why:` comment on why a missing scoring config is legitimate (not
-    every match is scenario-scored)
-- Extend `buildUIState` return construction to include `progress:
-  buildProgressCounters(G)` unconditionally, and `gameOver.par:
-  buildParBreakdown(G, ctx)` only when `buildParBreakdown` returns a
-  defined value (preserving the exact-optional-property-types contract)
+  - **Body is `return undefined;`** unconditionally, per D-6701
+    safe-skip. No phase check, no config check, no call to
+    `deriveScoringInputs`, no call to `buildScoreBreakdown`.
+  - `// why:` comment citing D-6701: "PAR projection payload is deferred
+    until `buildUIState` has access to a `ReplayResult`. The type-level
+    contract ships via `UIParBreakdown`; the drift test locks the four
+    field names. A follow-up WP resolves the data source (threading
+    `replayResult` into `buildUIState`, persisting `moveCount` into G at
+    endgame, or moving PAR projection to a server-side pipeline)."
+  - No imports of `ReplayResult`, `deriveScoringInputs`, or
+    `buildScoreBreakdown` in `uiState.build.ts`.
+- Extend `buildUIState` return construction to include
+  `progress: buildProgressCounters(G)` unconditionally.
+- Extend `buildUIState` return construction to **also** wire
+  `buildParBreakdown(G, ctx)` via the conditional-assignment pattern
+  (WP-029 precedent) — concretely, inside the existing `if
+  (endgameResult !== null)` block that builds `gameOver`, compute
+  `const par = buildParBreakdown(G, ctx);` and include `par` in the
+  `gameOver` object only via `...(par !== undefined ? { par } : {})`.
+  Under D-6701 the branch is currently unreachable (`buildParBreakdown`
+  always returns `undefined`), but the wire MUST be present so the
+  follow-up WP that supplies the payload only has to modify the helper
+  body — not `buildUIState` itself. This is the extension seam the
+  drift test is guarding.
 
-### C) `packages/game-engine/src/types.ts` — **modified** (conditional)
+### C) `packages/game-engine/src/types.ts` and `setup/buildInitialGameState.ts` — **modified (UNCONDITIONAL per D-6702 / D-6703)**
 
-If and only if `G.activeScoringConfig` does not already exist on
-`LegendaryGameState` (confirmed at pre-flight by reading WP-048's delivered
-code):
+Pre-flight (2026-04-17) confirmed via grep that
+`G.activeScoringConfig` does not exist anywhere in
+`packages/game-engine/src/`. WP-067 adds it:
 
-- Add `readonly activeScoringConfig?: ScenarioScoringConfig;` to
-  `LegendaryGameState` with a `// why:` comment explaining that scoring
-  config is runtime-only and never persisted; its presence signals the
-  match is PAR-scored
-- Update `buildInitialGameState` to accept an optional
-  `scoringConfig?: ScenarioScoringConfig` in its setup input and assign
-  it to `G.activeScoringConfig`
+- `packages/game-engine/src/types.ts`: add
+  `readonly activeScoringConfig?: ScenarioScoringConfig;` to
+  `LegendaryGameState`, with a `// why:` comment explaining the field
+  is runtime-only, never persisted, and marks the match as PAR-scored
+  for future `buildUIState` gating.
+- `packages/game-engine/src/setup/buildInitialGameState.ts`: add a
+  **fourth positional optional parameter**
+  `scoringConfig?: ScenarioScoringConfig` (per D-6703). Full new
+  signature:
 
-If WP-048 already added this field, this section is a no-op and the
-DECISIONS.md entry notes that WP-067 adopted WP-048's `G` field verbatim.
+  ```
+  buildInitialGameState(
+    config: MatchSetupConfig,
+    registry: CardRegistryReader,
+    context: SetupContext,
+    scoringConfig?: ScenarioScoringConfig,
+  ): LegendaryGameState
+  ```
+
+  Inside the function body, set
+  `G.activeScoringConfig = scoringConfig` when
+  `scoringConfig !== undefined`. Leave the field unset otherwise (do
+  not assign `undefined` explicitly under
+  `exactOptionalPropertyTypes`).
+
+`MatchSetupConfig` is **not** modified (D-4805, D-1244 remain locked).
+No existing call sites break because the new parameter is optional.
 
 ### D) Tests — `packages/game-engine/src/ui/uiState.build.progress.test.ts` — **new**
 
@@ -271,15 +311,23 @@ DECISIONS.md entry notes that WP-067 adopted WP-048's `G` field verbatim.
 - Determinism: two calls to `buildUIState` with the same `G` produce
   structurally equal `progress` objects
 
-### E) Tests — `packages/game-engine/src/ui/uiState.build.par.test.ts` — **new**
+### E) Tests — `packages/game-engine/src/ui/uiState.build.par.test.ts` — **new** (4 tests; D-6701 safe-skip)
 
-- `gameOver.par` is undefined at `phase !== 'end'`
-- `gameOver.par` is undefined at `phase === 'end'` when
-  `G.activeScoringConfig` is undefined
-- `gameOver.par` is defined at `phase === 'end'` when
-  `G.activeScoringConfig` is present, and its four fields match
-  `buildScoreBreakdown` output exactly
-- Determinism: identical `G` + `ctx` → identical `gameOver.par`
+Wrapped in exactly **one** top-level `describe()` block (suite count +1).
+
+1. `gameOver.par` is undefined at `phase !== 'end'`.
+2. `gameOver.par` is undefined at `phase === 'end'` when
+   `G.activeScoringConfig` is undefined.
+3. `gameOver.par` is undefined even when `phase === 'end'` AND
+   `G.activeScoringConfig !== undefined` (safe-skip proof per D-6701 —
+   validates that `buildParBreakdown` is unconditionally `undefined`
+   regardless of gate state).
+4. Determinism: two calls to `buildUIState` with the same `G` + `ctx`
+   produce structurally equal `gameOver` (both with `par` absent).
+
+Do NOT assert numeric payload fields on `par` — the payload is deferred
+to a follow-up WP. The drift test (§F) locks the four field names at
+the type level; runtime payload tests belong to the follow-up WP.
 
 ### F) Drift test — `packages/game-engine/src/ui/uiState.types.drift.test.ts` — **new**
 

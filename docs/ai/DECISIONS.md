@@ -4143,6 +4143,169 @@ JSON-serializability to the scoring type family.
 
 ---
 
+### D-6701 — WP-067 `UIParBreakdown` Ships as Type-Level Contract With Safe-Skip Payload
+
+**Context:** WP-067 extends `UIGameOverState` with an optional
+`par?: UIParBreakdown` populated by a new `buildParBreakdown(G, ctx)`
+helper. The payload would be computed by
+`buildScoreBreakdown(deriveScoringInputs(replayResult, gameState), config)`.
+But `deriveScoringInputs` requires a `ReplayResult` (for `moveCount` →
+`rounds`) and `buildUIState(G, ctx)` has no `ReplayResult` in scope.
+`replayResult` only exists inside WP-027's `replayGame` infrastructure,
+which is not part of the normal engine → UI rendering path. WP-067
+§Non-Negotiable Constraints installs a "stop and ask" gate for exactly
+this condition; the WP-067 pre-flight (2026-04-17) tripped the gate.
+
+**Decision:** WP-067 ships `UIProgressCounters` and `UIParBreakdown` as
+full type-level contracts. `UIState.progress` is populated for every
+call. `UIGameOverState.par?` is **always omitted** at MVP:
+`buildParBreakdown(G, ctx)` returns `undefined` unconditionally, with a
+`// why:` comment citing this decision. The four `UIParBreakdown`
+fields (`rawScore`, `parScore`, `finalScore`, `scoringConfigVersion`)
+are locked at the type level — WP-062's aria-label bindings compile
+against the drift-test `satisfies` fixture — but no runtime payload is
+produced. The function signature, gating logic (`ctx.phase === 'end'`
+AND `G.activeScoringConfig !== undefined`), and the call to
+`deriveScoringInputs` / `buildScoreBreakdown` are deferred.
+
+A follow-up WP resolves data availability by one of:
+- threading `replayResult` into `buildUIState` (new two-arg → three-arg
+  public signature — must not break WP-061 consumers);
+- persisting a minimal `{ moveCount }` into `G` at the endgame boundary
+  (new engine contract, setup-time persistence class);
+- moving PAR projection entirely into a post-match server pipeline that
+  already holds the `ReplayResult`.
+
+The choice between those paths is out of scope for WP-067 and is not
+pre-committed here.
+
+**Rationale:** Matches the established safe-skip pattern (WP-023
+D-2302, WP-025 D-2504, WP-026 D-2601) where a contract ships at the
+type level with a deterministic `undefined` / no-op payload until a
+data source is available. Preserves WP-062's type-level consumption
+without forcing WP-067 to thread a new parameter through a frozen
+`buildUIState` signature or invent a partial `ReplayResult`. Purity of
+`buildUIState` is preserved — the function reads nothing it doesn't
+already read. The drift test remains load-bearing: any future rename of
+the four PAR field names still fails typecheck before runtime.
+
+**Alternatives rejected:**
+- **Add `replayResult?` parameter to `buildUIState`** — rejected because
+  WP-061 consumers (Pinia store, fixtures, component tests) are already
+  frozen on the `(G, ctx)` shape. The signature change would cascade
+  into every WP-061 call site.
+- **Synthesize a partial `ReplayResult` from `G`** — rejected per
+  D-4801. Inventing a `moveCount` value at projection time introduces a
+  non-authoritative data source that replay cannot reconcile.
+- **Delay `UIParBreakdown` type to a later WP** — rejected because
+  WP-062 (Arena HUD) pre-flight blockers #1-#3 require a stable
+  type-level contract now. Shipping the type without a payload
+  unblocks WP-062 design; the payload lands in a follow-up WP.
+
+**Introduced:** WP-067 pre-flight, 2026-04-17  
+**Status:** Active
+
+---
+
+### D-6702 — `G.activeScoringConfig` Added by WP-067, Not WP-048
+
+**Context:** WP-048 (PAR scoring engine types and helpers, commit
+`2587bbb`) delivered `ScenarioScoringConfig` as a self-contained
+validated type but explicitly deferred adding
+`G.activeScoringConfig?: ScenarioScoringConfig` to `LegendaryGameState`
+(D-4802). WP-067 reads `G.activeScoringConfig` at projection time as
+part of the PAR gate (`ctx.phase === 'end'` AND
+`G.activeScoringConfig !== undefined`). A grep of
+`packages/game-engine/src/` at WP-067 pre-flight time (2026-04-17)
+returned zero matches for `activeScoringConfig`, confirming the field
+does not yet exist.
+
+**Decision:** WP-067 adds the field unconditionally. The `types.ts`
+and `setup/buildInitialGameState.ts` edits listed in WP-067 §C and
+EC-068 §Files to Produce are **not conditional** — the "no-op" /
+"adopted from WP-048" branch is inoperative and must not appear in the
+session prompt.
+
+Concretely:
+1. `packages/game-engine/src/types.ts` — add
+   `readonly activeScoringConfig?: ScenarioScoringConfig` to
+   `LegendaryGameState`, with a `// why:` comment stating the field is
+   runtime-only, never persisted, and marks the match as PAR-scored for
+   `buildUIState` gating (D-6701 gate is only active when this field
+   is defined).
+2. `packages/game-engine/src/setup/buildInitialGameState.ts` — accept
+   a new optional setup input (see D-6703 for positional arity),
+   assign it to `G.activeScoringConfig`.
+
+**Rationale:** Confirms and executes the deferral recorded in D-4802.
+Keeps scoring-config storage inside `G` consistent with the engine's
+runtime-state pattern (`G.hookRegistry`, `G.cardStats`,
+`G.heroAbilityHooks`). Does not modify `MatchSetupConfig` — D-4805
+keeps scenario configs self-contained and separate from match setup.
+
+**Alternatives rejected:**
+- **Server-layer population after `Game.setup()`** — rejected per
+  session-context-wp067 option (b); blurs the setup boundary and
+  requires the server to mutate `G` post-setup, which is forbidden
+  outside move / phase hook contexts.
+- **Extend `MatchSetupConfig` to a 10th field** — rejected per
+  session-context-wp067 option (c). The 9-field lock (D-1244) is a
+  foundational invariant; amending it would cascade into every WP that
+  validates `MatchSetupConfig` shape.
+
+**Introduced:** WP-067 pre-flight, 2026-04-17  
+**Status:** Active
+
+---
+
+### D-6703 — `buildInitialGameState` Gains a Fourth Positional Optional Parameter for `scoringConfig`
+
+**Context:** D-6702 locks that `G.activeScoringConfig` is populated
+by `buildInitialGameState` from an incoming `ScenarioScoringConfig`.
+The current signature is
+`buildInitialGameState(config: MatchSetupConfig, registry: CardRegistryReader, context: SetupContext)`
+— three positional parameters. Session-context-wp067 line 106-111
+options (a/b/c) describe adding "an optional third parameter" but the
+third slot is already taken. Pre-flight RS-3 (2026-04-17) flagged the
+ambiguity before execution.
+
+**Decision:** Add a **fourth positional optional parameter**:
+`scoringConfig?: ScenarioScoringConfig`. Full new signature:
+
+```
+buildInitialGameState(
+  config: MatchSetupConfig,
+  registry: CardRegistryReader,
+  context: SetupContext,
+  scoringConfig?: ScenarioScoringConfig,
+): LegendaryGameState
+```
+
+All existing call sites remain source-compatible because the new
+parameter is optional. `MatchSetupConfig` is not modified. Inside the
+function body, assign `G.activeScoringConfig = scoringConfig` when
+`scoringConfig !== undefined`; leave the field unset otherwise.
+
+**Rationale:** Minimal additive change. Preserves the narrow
+structural interface pattern (D-2801 / D-6512) — the helper's caller
+provides the config, no new registry or framework import needed.
+Keeps `MatchSetupConfig` immutable (D-1244 9-field lock,
+D-4805 scenario-config separation). Avoids a positional bag object
+for one field.
+
+**Alternatives rejected:**
+- **Convert the third parameter to an object bag** — rejected
+  because it would break every existing call site.
+- **Bundle `scoringConfig` into `SetupContext`** — rejected because
+  `SetupContext` is a narrow framework-facing shape (`ctx`, `random`)
+  and adding gameplay config to it conflates categories.
+- **Expand `MatchSetupConfig`** — rejected per D-6702 rationale.
+
+**Introduced:** WP-067 pre-flight, 2026-04-17  
+**Status:** Active
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

@@ -26,16 +26,19 @@
 - [ ] **WP-020 complete:** `computeFinalScores(G): FinalScoreSummary`
       exists (already required by WP-028; re-verify because `ScoreBreakdown`
       reuses it).
-- [ ] **`G.activeScoringConfig` field ownership decided:** read
-      `packages/game-engine/src/types.ts` to confirm whether WP-048 added
-      `activeScoringConfig?: ScenarioScoringConfig` to `LegendaryGameState`.
-      If yes, WP-067 §C is a no-op; record in DECISIONS.md as "adopted from
-      WP-048". If no, WP-067 adds the field and wires it through
-      `buildInitialGameState`; record in DECISIONS.md.
+- [ ] **`G.activeScoringConfig` field is added by WP-067 (UNCONDITIONAL):**
+      pre-flight (2026-04-17) confirmed via grep that the field does not
+      exist in `packages/game-engine/src/`. Per D-6702 WP-067 owns adding
+      it. §C edits to `types.ts` and `setup/buildInitialGameState.ts` are
+      **mandatory, not conditional** — do not treat them as no-ops.
 - [ ] **Bystander card-type slug confirmed:** `Select-String` for
-      `'bystander'` in `packages/game-engine/src/rules/revealedCardTypes.ts`
-      (or wherever `REVEALED_CARD_TYPES` lives). The slug is the exact
-      string used in `G.villainDeckCardTypes[extId]` comparisons. If the
+      `'bystander'` in
+      `packages/game-engine/src/villainDeck/villainDeck.types.ts`
+      (canonical location of `REVEALED_CARD_TYPES`; re-exported from
+      `packages/game-engine/src/types.ts`). Pre-flight (2026-04-17)
+      verified the slug is exactly `'bystander'` and that the same
+      comparison is already used in
+      `packages/game-engine/src/scoring/parScoring.logic.ts:76`. If the
       slug is anything other than `'bystander'`, STOP and ask — do not
       proceed with a guess.
 - [ ] **Existing counter path confirmed:**
@@ -76,14 +79,24 @@
   rescued.
 - **Card-type comparison:** `G.villainDeckCardTypes[extId] === 'bystander'`.
   No prefix matching, no case normalization, no slug alias.
-- **PAR endgame gate:** `ctx.phase === 'end' && G.activeScoringConfig
-  !== undefined`. Both conditions must be true. Neither one alone
-  populates `par`.
-- **PAR projection path:** `deriveScoringInputs(replayResult, gameLog)` +
-  `buildScoreBreakdown(inputs, config)` — both from WP-048. Do NOT
-  re-implement scoring arithmetic. If `buildUIState` does not have
-  `replayResult` or `gameLog` available at call time, STOP and ask — do
-  not synthesize partial inputs.
+- **PAR endgame gate (type-level contract):** the type-level gate is
+  `ctx.phase === 'end' && G.activeScoringConfig !== undefined`, but per
+  **D-6701 safe-skip** `buildParBreakdown(G, ctx)` returns `undefined`
+  unconditionally at MVP. `UIGameOverState.par` is therefore **always
+  omitted** in WP-067's delivery, regardless of gate state. A follow-up
+  WP supplies the payload once a `ReplayResult` is available to
+  `buildUIState`.
+- **PAR projection path (DEFERRED per D-6701):** the call
+  `buildScoreBreakdown(deriveScoringInputs(replayResult, gameState), config)`
+  is **NOT** executed in WP-067. `buildUIState(G, ctx)` has no
+  `ReplayResult` in scope, and synthesizing one would violate D-4801.
+  `buildParBreakdown` ships with signature `(G, ctx): UIParBreakdown |
+  undefined` and body `return undefined;` plus a `// why:` comment
+  citing D-6701. Do NOT re-implement scoring arithmetic; do NOT call
+  `deriveScoringInputs`; do NOT import `ReplayResult`.
+  **For reference only:** when the follow-up WP lands, the correct
+  signature is `deriveScoringInputs(replayResult: ReplayResult,
+  gameState: LegendaryGameState)` — NOT `(replayResult, gameLog)`.
 - **No live PAR during `phase === 'play'`:** WP-067 projects PAR at
   endgame only. Live partial-PAR is a separate future WP.
 - **Aggregation primitive:** `for...of` with descriptive variable names
@@ -158,12 +171,31 @@
 - `packages/game-engine/src/ui/uiState.build.ts` on the `?? 0` in
   `buildProgressCounters`: "counter is lazily initialised on first
   escape; absence is semantically zero."
-- `packages/game-engine/src/ui/uiState.build.ts` on the early-return
-  path in `buildParBreakdown`: "a missing scoring config is legitimate
-  (casual / non-scenario play); em-dash fallback happens client-side."
-- `packages/game-engine/src/types.ts` on the conditional `activeScoringConfig?`
-  field (only if this WP adds it): "runtime-only — never persisted; its
-  presence marks the match as PAR-scored for `buildUIState` gating."
+- `packages/game-engine/src/ui/uiState.build.ts` on the
+  unconditional-`undefined` body of `buildParBreakdown`: "per D-6701,
+  PAR payload is deferred until `buildUIState` has access to a
+  `ReplayResult`. The type-level contract ships via `UIParBreakdown`
+  and the drift test locks the four field names. Body stays
+  `return undefined;` unconditionally — no call to
+  `deriveScoringInputs` / `buildScoreBreakdown`. A follow-up WP
+  resolves the data source."
+- `packages/game-engine/src/ui/uiState.build.ts` on the conditional
+  `...(par !== undefined ? { par } : {})` spread inside `gameOver`:
+  "wire preserved as the D-6701 extension seam — current branch is
+  unreachable (`buildParBreakdown` returns `undefined`) but the follow-
+  up WP that supplies the payload only modifies `buildParBreakdown`'s
+  body, not `buildUIState`."
+- `packages/game-engine/src/types.ts` on the new `activeScoringConfig?`
+  field (added unconditionally per D-6702): "runtime-only — never
+  persisted (see ARCHITECTURE.md Section 3); its presence marks the
+  match as PAR-scored for future `buildUIState` gating once D-6701's
+  follow-up WP lands. WP-067 adds the field; WP-048 explicitly
+  deferred it per D-4802."
+- `packages/game-engine/src/setup/buildInitialGameState.ts` on the new
+  fourth positional parameter: "4th positional optional parameter per
+  D-6703; narrowest additive change that keeps the 9-field
+  `MatchSetupConfig` lock (D-1244) and D-4805 scenario-config
+  separation intact."
 
 ---
 
@@ -174,25 +206,54 @@
   `UIParBreakdown`, `UIState.progress` (required), `UIGameOverState.par?`
   (optional)
 - `packages/game-engine/src/ui/uiState.build.ts` — adds
-  `countBystandersRescued`, `buildProgressCounters`, `buildParBreakdown`
-  pure helpers; extends `buildUIState` return object with `progress` and
-  conditional `gameOver.par`
+  `countBystandersRescued`, `buildProgressCounters`, and
+  `buildParBreakdown` pure helpers; extends `buildUIState` return object
+  with `progress` (always). Per D-6701, `buildParBreakdown(G, ctx)`
+  returns `undefined` unconditionally, so `gameOver.par` is always
+  omitted at MVP — the four type-level field names remain locked via
+  the drift test.
 - `packages/game-engine/src/index.ts` — exports `UIProgressCounters` and
   `UIParBreakdown` as types
 
-### Modified — conditional (only if WP-048 did not already add the field)
+### Modified — engine (UNCONDITIONAL per D-6702)
 - `packages/game-engine/src/types.ts` — adds
-  `activeScoringConfig?: ScenarioScoringConfig` to `LegendaryGameState`
-- `packages/game-engine/src/setup/buildInitialGameState.ts` — threads
-  optional `scoringConfig` input into `G.activeScoringConfig`
+  `readonly activeScoringConfig?: ScenarioScoringConfig` to
+  `LegendaryGameState` (pre-flight 2026-04-17 confirmed the field does
+  not exist in source; the WP-048-already-added branch is inoperative).
+- `packages/game-engine/src/setup/buildInitialGameState.ts` — adds a
+  **fourth positional optional parameter** `scoringConfig?:
+  ScenarioScoringConfig` (per D-6703). Assigns
+  `G.activeScoringConfig = scoringConfig` when
+  `scoringConfig !== undefined`. `MatchSetupConfig` is NOT modified.
 
 ### New — tests
-- `packages/game-engine/src/ui/uiState.build.progress.test.ts` — 7 tests
-  (aggregation, lazy-init counter, negative-controls, determinism)
-- `packages/game-engine/src/ui/uiState.build.par.test.ts` — 4 tests
-  (gated by phase AND config, field exactness, determinism)
-- `packages/game-engine/src/ui/uiState.types.drift.test.ts` — 2 tests
-  (satisfies-fixture lock for each new interface)
+- `packages/game-engine/src/ui/uiState.build.progress.test.ts` — 7 tests,
+  each wrapped in exactly **one** top-level `describe()` block (suite
+  count +1). Scope: aggregation, lazy-init counter, negative-controls,
+  determinism.
+- `packages/game-engine/src/ui/uiState.build.par.test.ts` — 4 tests,
+  each wrapped in exactly **one** top-level `describe()` block (suite
+  count +1). Scope (D-6701 safe-skip):
+  1. `gameOver.par` is undefined at `phase !== 'end'`.
+  2. `gameOver.par` is undefined at `phase === 'end'` when
+     `G.activeScoringConfig` is undefined.
+  3. `gameOver.par` is undefined even when `phase === 'end'` AND
+     `G.activeScoringConfig !== undefined` (safe-skip path per D-6701).
+  4. Determinism: two calls with identical `G` + `ctx` produce
+     structurally equal `gameOver` (both with `par` absent).
+  Do NOT assert any numeric payload on `par` — it is always absent at
+  MVP.
+- `packages/game-engine/src/ui/uiState.types.drift.test.ts` — 2 tests,
+  wrapped in exactly **one** top-level `describe()` block (suite
+  count +1). Scope: satisfies-fixture lock for `UIProgressCounters` and
+  `UIParBreakdown`. This enforces the four PAR field names at the type
+  level even though the payload is safe-skipped.
+
+**Suite-count lock:** exactly +3 suites (one `describe()` per file).
+Pre-execution engine-suite baseline is 98; expected
+`POST_GAME_ENGINE_SUITE_COUNT === 101`. Bare top-level `test()` calls
+that skip `describe()` are forbidden — they would break the +3 suite
+arithmetic.
 
 ### Modified — WP-061 fixture type-conformance (three JSON edits only)
 - `apps/arena-client/src/fixtures/uiState/mid-turn.json` — add
