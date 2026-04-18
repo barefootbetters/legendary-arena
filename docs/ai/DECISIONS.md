@@ -4306,6 +4306,43 @@ for one field.
 
 ---
 
+### D-1401 — Preferences Panel: Option A delivery path (in-app, deferred hoist)
+
+**Decision:** The Preferences / Options Panel defined in
+`docs/14-PREFERENCES-PANEL-IMPLEMENTATION-PLAN.md` will be built under
+**Option A** — all schema, store, panel primitives, and sections live
+inside `apps/registry-viewer/src/prefs/` (with the shared-tier files
+under `apps/registry-viewer/src/prefs/shared/`). No new workspace
+package is created at this time.
+
+The later hoist into `packages/ui-preferences/` (Option B) remains
+available as a pure file-move when the game UI (`apps/game-ui/`) is
+scoped. The plan's §2.8 tier table is the exact inventory of files
+that move during the hoist.
+
+**Rationale:** `apps/game-ui/` does not yet exist and has no committed
+near-term roadmap entry. Option A minimizes monorepo scaffolding
+(no new `package.json`, no new `tsconfig.json`, no workspace
+dependency wiring) and gets a user-visible panel shipping faster.
+Because no import path crosses the `apps/` boundary under Option A,
+the eventual hoist is mechanical — it does not invalidate tests,
+types, or acceptance criteria from earlier work packets.
+
+**Alternatives rejected:**
+- **Option B (full shared package from day one)** — rejected for now
+  because the cost of the extra package (peer-dep wiring, standalone
+  build, publishable surface) is paid before any consumer besides
+  the viewer exists. Will be revisited if/when the game UI is
+  formally scoped.
+- **Defer the decision** — rejected because every subsequent
+  preferences WP branches on the choice, so leaving it open blocks
+  execution of the first preferences work packet.
+
+**Introduced:** Preferences plan §2.1, 2026-04-18  
+**Status:** Active
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
