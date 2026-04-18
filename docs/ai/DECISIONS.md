@@ -4306,7 +4306,7 @@ for one field.
 
 ---
 
-### D-1401 — Preferences Panel: Option A delivery path (in-app, deferred hoist)
+### D-1414 — Preferences Panel: Option A delivery path (in-app, deferred hoist)
 
 **Decision:** The Preferences / Options Panel defined in
 `docs/14-PREFERENCES-PANEL-IMPLEMENTATION-PLAN.md` will be built under

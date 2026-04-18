@@ -13,7 +13,7 @@ currently has no state-management library and no preferences system — every
 user-facing behavior is hardcoded (dark theme, tile size `130px`, `Ctrl+K`
 shortcut, etc.). `docs/14-PREFERENCES-PANEL-IMPLEMENTATION-PLAN.md` designs the
 introduction of a Pinia-backed preferences store, and `docs/ai/DECISIONS.md`
-D-1401 locked the **Option A** delivery path (everything under
+D-1414 locked the **Option A** delivery path (everything under
 `apps/registry-viewer/src/prefs/`, no new workspace package). This packet
 builds the invisible foundation only — no user-visible UI changes.
 
@@ -59,7 +59,7 @@ users. Existing viewer output must be bit-identical to pre-packet production.
 - `vue` is at `^3.4.27` (per existing `package.json`).
 - `docs/14-PREFERENCES-PANEL-IMPLEMENTATION-PLAN.md` exists and §2.3 is the
   authoritative schema reference for this packet.
-- `docs/ai/DECISIONS.md` entry **D-1401** exists and locks the Option A path.
+- `docs/ai/DECISIONS.md` entry **D-1414** exists and locks the Option A path.
 - `localStorage` is available in the target browser environment (degrade to
   in-memory when it is not).
 
@@ -76,7 +76,7 @@ Before writing a single line:
   packet creates. §2.3 schema defaults are load-bearing (the
   "defaults-match-today" property depends on them); §5.7 requires that users
   with no stored preferences see the exact same UI they see today.
-- `docs/ai/DECISIONS.md` §D-1401 — locks the Option A path. This packet
+- `docs/ai/DECISIONS.md` §D-1414 — locks the Option A path. This packet
   creates files under `apps/registry-viewer/src/prefs/` only; it must not
   create `packages/ui-preferences/`.
 - `apps/registry-viewer/CLAUDE.md` — layer rules for the viewer. Confirm that
@@ -124,7 +124,7 @@ Before writing a single line:
   must wrap every `localStorage` access in `try/catch` with a `// why:`
   comment explaining the degradation path (private mode, quota exceeded,
   corruption).
-- Option A path is locked per D-1401. Do NOT create `packages/ui-preferences/`.
+- Option A path is locked per D-1414. Do NOT create `packages/ui-preferences/`.
   All files live under `apps/registry-viewer/src/prefs/`.
 - The schema defaults in §2.3 of the plan are the source of truth — every
   default in `appearance.schema.ts`, `accessibility.schema.ts`,
@@ -371,7 +371,7 @@ Add `node:test` test files (viewer already uses `.test.ts` per
 - **No `useThemeVars()`** — WP-075.
 - **No `useUrlSync()`** — WP-073.
 - **No CSS variable migration** — WP-075.
-- **No `packages/ui-preferences/` workspace package** — deferred per D-1401;
+- **No `packages/ui-preferences/` workspace package** — deferred per D-1414;
   may be hoisted later when `apps/game-ui/` is scoped.
 - **Refactors, cleanups, or "while I'm here" improvements** are out of scope
   unless explicitly listed in Scope (In) above.
@@ -477,7 +477,7 @@ No other files may be modified.
 
 - [ ] No files outside `## Files Expected to Change` were modified
       (confirmed with `git diff --name-only`).
-- [ ] `packages/ui-preferences/` does NOT exist (D-1401 compliance —
+- [ ] `packages/ui-preferences/` does NOT exist (D-1414 compliance —
       confirmed by `Test-Path packages/ui-preferences` returning `False`).
 - [ ] `App.vue`, `CardGrid.vue`, `CardDetail.vue`, `ThemeGrid.vue`,
       `ThemeDetail.vue`, `HealthPanel.vue`, `GlossaryPanel.vue`,
@@ -510,7 +510,7 @@ pnpm --filter registry-viewer typecheck
 pnpm --filter registry-viewer test
 # Expected: all tests pass including purity, duplicate-id, corrupt-blob tests
 
-# Step 5 — confirm no packages/ui-preferences/ created (D-1401 compliance)
+# Step 5 — confirm no packages/ui-preferences/ created (D-1414 compliance)
 Test-Path packages\ui-preferences
 # Expected: False
 
@@ -562,6 +562,6 @@ This packet is complete when ALL of the following are true:
       but no user-visible UI yet; next packet (WP-069) adds the gear icon +
       drawer shell
 - [ ] `docs/ai/DECISIONS.md` updated only if this packet surfaces a new
-      decision beyond D-1401 — none expected
+      decision beyond D-1414 — none expected
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` has WP-068 listed and checked off
       with today's date

@@ -904,7 +904,7 @@ These packets make the game safe to ship.
 - [ ] WP-068 — Preferences Foundation: Pinia + Shared-Tier Schema + Section Registry (Not yet reviewed)
   Dependencies: None (Option A path — `apps/registry-viewer/` is independent)
   Branch: `wp-068-preferences-foundation` (SPEC commit `32c8012` on 2026-04-18)
-  Governance: decision D-1401 locks the Option A delivery path (in-app
+  Governance: decision D-1414 locks the Option A delivery path (in-app
   under `apps/registry-viewer/src/prefs/`; no `packages/ui-preferences/`
   package created); plan at `docs/14-PREFERENCES-PANEL-IMPLEMENTATION-PLAN.md`
   §2.1 / §2.3 / §8; full packet at
