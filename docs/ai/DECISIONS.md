@@ -183,48 +183,6 @@ WP‑024 (scheme-loss counter)
 
 ---
 
-### D‑0205 — RNG Truth Source for Replay
-**Decision:** Scope the existing replay harness as **determinism-only / debug-only**.
-The harness proves the reducer is deterministic under a fixed mock RNG; it does
-NOT reproduce live-match boardgame.io `ctx.random.*` RNG. The stored
-`ReplayInput.seed` field is retained but currently ignored —
-`replay.execute.ts` hardcodes a reverse-shuffle at lines 121–123. The narrowed
-claim is enforced via JSDoc and module-header warnings on `replay.execute.ts`
-and `replay.verify.ts`.
-**Rationale:** The `MOVE_LOG_FORMAT.md` forensics report (Gap #4) discovered
-the harness had been implicitly described as general-purpose replay while
-actually functioning as a determinism test harness. Rather than introduce a
-new RNG pipeline under uncertainty (the canonical-persisted-artifact decision
-is still open), D‑0205 narrows the claim to match what the harness actually
-proves. See also D‑0002 (Determinism Is Non-Negotiable) and D‑0201 (Replay
-as a First-Class Feature).
-**Options considered:**
-- **Option (A) — Make `boardgame.io ctx.random.*` canonical.** Deferred, not
-  rejected. Revisit once the canonical-persisted-artifact decision resolves.
-- **Option (B) — Make an engine-owned seed canonical.** Permanently rejected.
-  Contradicts D‑0002 by introducing a parallel RNG truth source outside the
-  framework's own `ctx.random.*`.
-- **Option (C) — Label the existing harness as determinism-only.** Chosen.
-  Minimal surface; preserves current behavior; makes the narrowed claim
-  visible at every export surface.
-**Consequences:**
-- `replay.execute.ts` and `replay.verify.ts` carry JSDoc + module-header
-  warnings citing D‑0205 and `MOVE_LOG_FORMAT.md` Gap #4.
-- `replayGame` and `verifyDeterminism` signatures, exports, and tests remain
-  unchanged.
-- The reverse-shuffle at `replay.execute.ts:121–123` is preserved verbatim;
-  any replacement is future work gated on the canonical-persisted-artifact
-  decision.
-- `ReplayInput.seed` semantics unchanged (stored but ignored).
-**Follow-up actions required by this decision:**
-- WP‑079 / EC‑073 — add JSDoc + module-header warnings on `replay.execute.ts`
-  and `replay.verify.ts` (pending execution).
-- Revisit Option (A) when the canonical-persisted-artifact decision resolves.
-**Introduced:** WP‑079  
-**Status:** Active
-
----
-
 ## UI & Presentation Decisions
 
 ### D‑0301 — UI Consumes Projections Only
