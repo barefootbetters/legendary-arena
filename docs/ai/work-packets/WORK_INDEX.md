@@ -855,6 +855,27 @@ These packets make the game safe to ship.
   one session; `src/stores/` from WP-061 untouched unless a DECISIONS.md
   entry justifies a change; no engine, registry, or server-side changes.
 
+- [ ] WP-079 — Label Engine Replay Harness as Determinism-Only ✅ Reviewed (2026-04-18 lint-gate pass; 00.3 self-lint clean after two surgical patches)
+  Dependencies: WP-027, D-0205
+  Execution Checklist: `docs/ai/execution-checklists/EC-073-label-replay-harness-determinism-only.checklist.md` (Draft)
+  Notes: Doc-only decision-closure WP carrying out D-0205's single
+  follow-up action. Modifies two source files (doc-only content
+  edit; zero runtime behavior change): `packages/game-engine/src/replay/replay.execute.ts`
+  gains a module-header notice + wholesale `replayGame()` JSDoc
+  rewrite; `packages/game-engine/src/replay/replay.verify.ts`
+  gains a module-header sentence + wholesale `verifyDeterminism()`
+  JSDoc rewrite. Forbidden phrases ("replays live matches",
+  "replays a specific match", "reproduces live-match outcomes")
+  must grep to zero; required phrases ("determinism-only" ≥ 2 in
+  execute / ≥ 1 in verify; D-0205 xref in both; `MOVE_LOG_FORMAT.md`
+  Gap #4 xref in execute). No signature changes. No export changes.
+  No type changes. No test changes — test count IDENTICAL to
+  starting commit. No new files. Hard upstream for WP-080 (both
+  packets touch `replay.execute.ts`; WP-079 lands first, WP-080
+  inherits the JSDoc narrowing verbatim). Commit prefix `EC-073:`
+  at execution (NEVER `WP-079:` per P6-36). NO 01.6 post-mortem
+  required (doc-only; no new abstraction; no new code category).
+
 - [ ] WP-080 — Replay Harness Step-Level API for Downstream Snapshot / Replay Tools ✅ Reviewed (2026-04-18 lint-gate pass — drafted to unblock WP-063 / EC-071 Pre-Session Gate #4)
   Dependencies: WP-027, WP-079, D-6304
   Execution Checklist: `docs/ai/execution-checklists/EC-072-replay-harness-step-level-api.checklist.md` (Draft)

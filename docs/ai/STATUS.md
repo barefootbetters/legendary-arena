@@ -7,6 +7,53 @@
 
 ## Current State
 
+### WP-079 EC-073 Drafted (2026-04-18, SPEC)
+
+Step 1 of the replay-harness chain. WP-079 (Label Engine Replay
+Harness as Determinism-Only) is a doc-only decision-closure WP
+carrying out D-0205's single follow-up action. This SPEC commit
+drafts the missing governance artifacts needed to execute WP-079
+under current commit-prefix rules:
+
+- `docs/ai/execution-checklists/EC-073-label-replay-harness-determinism-only.checklist.md`
+  (new; Draft status; follows EC-TEMPLATE verbatim)
+- `docs/ai/invocations/session-wp079-label-replay-harness-determinism-only.md`
+  (new; execution session prompt; commit prefix `EC-073:`)
+- `docs/ai/work-packets/WP-079-label-replay-harness-determinism-only.md`
+  (newly tracked; WP file was drafted earlier but untracked until
+  this commit)
+- `docs/ai/session-context/session-context-wp079.md` (newly tracked
+  + amended: two claims superseded by post-P6-36 reconciliation —
+  "no EC needed" and "already in WORK_INDEX.md" are both now false
+  because P6-36 forbids `WP-###:` commit prefixes, requiring an
+  EC-prefixed commit for any code-changing session)
+- `docs/ai/work-packets/WORK_INDEX.md` (new WP-079 row in Phase 6)
+- `docs/ai/execution-checklists/EC_INDEX.md` (new EC-073 row)
+- `docs/ai/work-packets/WP-080-replay-harness-step-level-api.md`
+  (note updated: WP-079 EC status is now "Draft (EC-073)" instead
+  of "UNKNOWN")
+
+WP-079's scope unchanged from the original draft: JSDoc + module-
+header text on `packages/game-engine/src/replay/replay.execute.ts`
+and `packages/game-engine/src/replay/replay.verify.ts`. Zero runtime
+behavior change. Zero signature / export / type / test change.
+Forbidden phrases must grep to zero; required phrases must grep to
+their declared counts. Existing `// why:` comments preserved
+verbatim.
+
+Chain status after this commit:
+- Step 1 (THIS COMMIT): WP-079 EC-073 drafted — `SPEC:`
+- Step 2: WP-079 execution under `EC-073:` — pending
+- Step 3: WP-080 execution under `EC-072:` — pending (blocked on
+  Step 2; both packets touch `replay.execute.ts`)
+- Step 4: WP-063 resume under `EC-071:` — pending (blocked on
+  Step 3)
+
+Repo test baseline unchanged at 464 (no source code touched in this
+SPEC commit). Stashes `stash@{0}` and `stash@{1}` retained. EC-069
+`<pending — gatekeeper session>` placeholder in `EC_INDEX.md`
+retained (owned by separate SPEC commit).
+
 ### WP-063 Blocked → WP-080 / EC-072 / D-6304 Drafted (2026-04-18, SPEC)
 
 WP-063 / EC-071 (Replay Snapshot Producer) stopped at Pre-Session Gate #4:

@@ -6,12 +6,17 @@
 must land first — both packets touch `replay.execute.ts`), D-6304 (this
 packet's governing decision)
 
-> **Note on WP-079 coordination:** At WP-080 drafting time, WP-079 has
-> a WP file on disk but no EC row in `EC_INDEX.md`. If WP-079 still has
-> no EC at WP-080 execution time, drafting a WP-079 EC is a transitive
-> prerequisite before WP-080 executes. WP-080 must NOT ship ahead of
-> WP-079 — the JSDoc narrowing WP-079 introduces is expected verbatim
-> at the export site WP-080 adds and must not be re-worded.
+> **Note on WP-079 coordination:** At WP-080 drafting time (commit
+> `41d28d1`), WP-079 had a WP file on disk but no EC row in
+> `EC_INDEX.md`. As of a subsequent SPEC commit (2026-04-18), EC-073
+> has been drafted for WP-079 (Draft status; see
+> `docs/ai/execution-checklists/EC-073-label-replay-harness-determinism-only.checklist.md`
+> and the WP-079 execution session prompt at
+> `docs/ai/invocations/session-wp079-label-replay-harness-determinism-only.md`).
+> WP-079 executes under commit prefix `EC-073:` (never `WP-079:` per
+> P6-36). WP-080 must NOT ship ahead of WP-079 — the JSDoc narrowing
+> WP-079 introduces is expected verbatim at the export site WP-080
+> adds and must not be re-worded.
 
 ---
 
