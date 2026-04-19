@@ -458,19 +458,27 @@ before writing a single component.
   exact strings. Visible display text may be human-readable
   (`"Bystanders rescued: 4"`), but the `aria-label` is the
   data-contract name.
-- **PAR delta semantics, explicit by phase:**
-  - If `snapshot.game.phase === 'end'` and `snapshot.gameOver` is
-    present: render `snapshot.gameOver.finalScore` exactly.
-  - If `snapshot.game.phase !== 'end'` and the live PAR-delta field
-    specified by WP-048 is present on `UIState` (or
-    `UIGameOverState.preview`, whichever WP-048 specifies): render
-    that field exactly.
-  - If the applicable field is absent: render an em-dash (`—`),
-    never zero. Zero is a valid engine value and must not be
-    synthesized client-side.
+- **PAR delta semantics, explicit by phase (post-WP-067 shape):**
+  - If `snapshot.game.phase === 'end'` and `'par' in snapshot.gameOver`
+    (equivalently, `snapshot.gameOver?.par` is defined): render
+    `snapshot.gameOver.par.finalScore` exactly. `finalScore` lives on
+    `UIParBreakdown` at `gameOver.par.finalScore`; `UIGameOverState`
+    has **no** top-level `finalScore` field and **no** `preview`
+    field — do not look for either.
+  - Otherwise: render an em-dash (`—`), never zero. Under D-6701 the
+    `par` key is absent (not present-as-undefined) on every runtime
+    UIState today because `buildParBreakdown` returns `undefined`
+    unconditionally, so branch-2 is the dominant path. Zero is a
+    valid engine value and must not be synthesized client-side —
+    when `gameOver.par.finalScore === 0`, render `0`, NOT an em-dash.
+  - There is **no live PAR-delta field** on `UIState` during
+    `phase === 'play'` today. Inventing one is out of scope.
   - The HUD must never compute, infer, smooth, or animate toward a
-    PAR-delta value. The exact field name is read **verbatim from
-    WP-048** at Preflight; if unclear, stop and ask.
+    PAR-delta value. The authoritative rendering rules live in
+    §Scope (In) §D (ParDeltaReadout) and EC-069 §Guardrails + §D-6701
+    Safe-Skip Rendering Rules; this bullet is a summary, not a
+    parallel source of truth. If anything below contradicts §Scope
+    (In) §D, §Scope (In) §D wins.
 - No `team` vocabulary anywhere. Use `player`, `activePlayer`,
   `playerColor`.
 - No registry HTTP calls from within HUD components — card display data
