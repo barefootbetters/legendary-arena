@@ -44,5 +44,8 @@
     }
   },
   "flavorText": "Science without conscience is the weapon of tyrants.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/69951/3021848-146.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/69951/3021848-146.jpg",
+  "musicTheme": "Villain Entrance / Imperial March",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Villain Entrance / Imperial March. Superscience villain M.O.D.O.K. commanding A.I.M.'s arsenal. Mechanical percussion, dissonant brass stabs, rising electronic undertones, pure menacing intellect. High cinematic energy, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/aim-modok-jw-score.mp3"
 }

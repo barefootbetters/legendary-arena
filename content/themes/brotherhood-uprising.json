@@ -48,5 +48,8 @@
     }
   },
   "flavorText": "Mutants are the future, Charles. You just refuse to see it.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/9/96747/6861070-x-men%2023.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/9/96747/6861070-x-men%2023.jpg",
+  "musicTheme": "Villain Entrance / Imperial March",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Villain Entrance / Imperial March. Magneto's war on humanity and the Legacy Virus. Militant brass with a mutant mutiny motif in minor key. Dark and revolutionary, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/brotherhood-uprising-jw-score.mp3"
 }

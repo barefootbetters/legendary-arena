@@ -44,5 +44,8 @@
     }
   },
   "flavorText": "The Skull endures. Empires fall, but hate lives forever.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/10/100239/2499770-captain_america_comics_128_pages_v1942__1__1942_1____page_1.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/10/100239/2499770-captain_america_comics_128_pages_v1942__1__1942_1____page_1.jpg",
+  "musicTheme": "Villain Entrance / Imperial March",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Villain Entrance / Imperial March. WWII-era Red Skull and HYDRA. Nazi-style march gone cosmic. Menacing and enduring, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/red-skull-classic-jw-score.mp3"
 }

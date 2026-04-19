@@ -48,5 +48,8 @@
     }
   },
   "flavorText": "We don't ask permission. We don't apologize. We get results.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11/110017/8868382-wwww.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11/110017/8868382-wwww.jpg",
+  "musicTheme": "Pursuit / Escape",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Pursuit / Escape. Cable's black-ops X-Force mutant strike team. Aggressive military strings and gunfire percussion. Intense and no-holds-barred, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/x-force-extreme-jw-score.mp3"
 }

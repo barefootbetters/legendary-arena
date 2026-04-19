@@ -44,5 +44,8 @@
     }
   },
   "flavorText": "Wakanda forever.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11112/111121983/6987334-9963395327-BLACK.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11112/111121983/6987334-9963395327-BLACK.jpg",
+  "musicTheme": "Hero’s Theme / Main Title",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Hero’s Theme / Main Title. King T'Challa defending Wakanda and its vibranium legacy. Tribal percussion fused with soaring African-inspired brass fanfare. Proud and heroic, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/black-panther-wakanda-jw-score.mp3"
 }

@@ -44,5 +44,8 @@
     }
   },
   "flavorText": "In this city, the shadows have teeth.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/2/22664/1245291-spm.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/2/22664/1245291-spm.jpg",
+  "musicTheme": "Suspense / Tension Build",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Suspense / Tension Build. 1930s rain-soaked noir underworld crime. Smoky jazz and low strings. Gritty and shadowy, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/noir-underworld-jw-score.mp3"
 }

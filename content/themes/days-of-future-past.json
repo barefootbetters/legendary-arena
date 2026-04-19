@@ -47,5 +47,8 @@
     }
   },
   "flavorText": "The future is not set—but the Sentinels are already here.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/9/96747/3312570-check10.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/9/96747/3312570-check10.jpg",
+  "musicTheme": "Suspense / Tension Build",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Suspense / Tension Build. Dystopian Sentinel future and time-travel warning. Ticking clock percussion with distant mechanical Sentinel motif. Tense and dystopian, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/days-of-future-past-jw-score.mp3"
 }

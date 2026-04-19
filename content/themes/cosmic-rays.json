@@ -43,5 +43,8 @@
     }
   },
   "flavorText": "The same rays that made us could unmake the world.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11112/111121983/4982390-8551652907-FANTA.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11112/111121983/4982390-8551652907-FANTA.jpg",
+    "musicTheme": "Wonder / Awe Discovery",
+    "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Wonder / Awe Discovery. Catastrophic cosmic ray event mutating life on Earth. Sweeping strings and radiant brass 'ray' glissandi. Awe-inspiring and cosmic, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+    "musicURL": "https://music.barefootbetters.com/themes/cosmic-rays-jw-score.mp3"
 }

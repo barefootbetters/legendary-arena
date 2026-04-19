@@ -47,5 +47,8 @@
     }
   },
   "flavorText": "Five families. One throne. Blood is the only currency.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11145/111450787/8696916-5582673184-814ZG.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11145/111450787/8696916-5582673184-814ZG.jpg",
+  "musicTheme": "Suspense / Tension Build",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Suspense / Tension Build. Kingpin's mafia turf war with five crime families. Dark jazz bass and tense low strings. Gritty and dangerous, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/five-families-of-crime-jw-score.mp3"
 }

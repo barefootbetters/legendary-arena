@@ -44,5 +44,8 @@
     }
   },
   "flavorText": "Two empires. One throne. The galaxy trembles.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/2/22664/1237343-wok.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/2/22664/1237343-wok.jpg",
+  "musicTheme": "Epic Battle / Confrontation",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Epic Battle / Confrontation. Inhuman vs Shi'ar galactic war of kings. Imperial brass and royal choir. Epic and galactic, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/war-of-kings-jw-score.mp3"
 }

@@ -44,5 +44,8 @@
     }
   },
   "flavorText": "The wave is coming. Nothing survives in its wake.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/77/99508-18290-107043-1-annihilation-prolog.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/77/99508-18290-107043-1-annihilation-prolog.jpg",
+  "musicTheme": "Epic Battle / Confrontation",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Epic Battle / Confrontation. Universe-ending Annihilation Wave across the cosmos. Relentless timpani, full-orchestra swells, negative-zone whoosh effects. High cinematic energy, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/annihilation-jw-score.mp3"
 }

@@ -44,5 +44,8 @@
     }
   },
   "flavorText": "By the Vishanti—the mystic arts will not be silenced.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/5935982-01.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/5935982-01.jpg",
+  "musicTheme": "Mystery / Revelation",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Mystery / Revelation. Mystic realms and Nightmare invading the Dream Dimension. Haunting woodwinds, harp glissandi, sudden brass portal hits. Mystical and enigmatic, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/doctor-strange-sorcerer-jw-score.mp3"
 }

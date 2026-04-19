@@ -48,5 +48,8 @@
     }
   },
   "flavorText": "I am everything you feared. I am everything you created.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11112/111121983/5112195-6986172767-image_gallery"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11112/111121983/5112195-6986172767-image_gallery",
+  "musicTheme": "Terror / Horror Sting",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Terror / Horror Sting. Psychic Onslaught entity born from Xavier and Magneto. Mind-shattering brass and whispering choir. Psychic and terrifying, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/onslaught-unleashed-jw-score.mp3"
 }

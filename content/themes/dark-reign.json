@@ -48,5 +48,8 @@
     }
   },
   "flavorText": "The villains won. And now they're running the country.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/3125/2491974-dark3.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/3125/2491974-dark3.jpg",
+  "musicTheme": "Villain Entrance / Imperial March",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Villain Entrance / Imperial March. Norman Osborn's villain-run America with Dark Avengers. Corrupt twisted heroic fanfare gone wrong. Sinister and powerful, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/dark-reign-jw-score.mp3"
 }

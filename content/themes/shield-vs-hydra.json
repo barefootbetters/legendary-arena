@@ -45,5 +45,8 @@
     }
   },
   "flavorText": "Trust no one. Verify everything. The war never ends.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11/110017/8868239-img001.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11/110017/8868239-img001.jpg",
+  "musicTheme": "Suspense / Tension Build",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Suspense / Tension Build. S.H.I.E.L.D. vs HYDRA spy-agency civil war. Military march with espionage tension. High-stakes and shadowy, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/shield-vs-hydra-jw-score.mp3"
 }

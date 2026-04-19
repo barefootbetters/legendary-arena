@@ -48,5 +48,8 @@
     }
   },
   "flavorText": "The Avengers were Earth's mightiest heroes. Were.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/4/57343-10730-90338-1-avengers.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/4/57343-10730-90338-1-avengers.jpg",
+  "musicTheme": "Emotional Lament / Loss",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Emotional Lament / Loss. Avengers implosion and chaos magic unraveling the team. Heart-wrenching solo violin over fractured strings, sudden chaotic percussion bursts. Tragic and cinematic, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/avengers-disassembled-jw-score.mp3"
 }

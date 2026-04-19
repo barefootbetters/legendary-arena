@@ -43,5 +43,8 @@
     }
   },
   "flavorText": "The Worthy have risen. Fear is their weapon. The world is their battlefield.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/5344/1935077-msfi_001.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/5344/1935077-msfi_001.jpg",
+  "musicTheme": "Epic Battle / Confrontation",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Epic Battle / Confrontation. Worthy hammers spreading global terror. God-like brass and thunderous percussion. Fearful and massive, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/fear-itself-jw-score.mp3"
 }

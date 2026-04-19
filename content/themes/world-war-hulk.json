@@ -47,5 +47,8 @@
     }
   },
   "flavorText": "I didn't come here for a whisper. I want to hear you scream.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/40/135179-18686-110435-1-world-war-hulk.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/40/135179-18686-110435-1-world-war-hulk.jpg",
+  "musicTheme": "Epic Battle / Confrontation",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Epic Battle / Confrontation. Hulk's revenge rampage as World Breaker. Planet-shaking brass and war drums. Vengeful and massive, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/world-war-hulk-jw-score.mp3"
 }

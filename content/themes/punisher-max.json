@@ -47,5 +47,8 @@
     }
   },
   "flavorText": "One man. One war. No rules.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/5756/1147385-pmbos_001_c01.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/5756/1147385-pmbos_001_c01.jpg",
+  "musicTheme": "Pursuit / Escape",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Pursuit / Escape. One-man Punisher war on crime with zero mercy. Driving strings and relentless percussion. Gritty and unstoppable, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/punisher-max-jw-score.mp3"
 }

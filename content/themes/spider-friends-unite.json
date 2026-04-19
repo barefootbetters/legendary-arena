@@ -40,5 +40,8 @@
     }
   },
   "flavorText": "One spider can be trapped. A whole web? That's a different story.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/7267046-06.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/7267046-06.jpg",
+  "musicTheme": "Friendship / Bonding Theme",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Friendship / Bonding Theme. Spider-family team-up against a massive threat. Bouncy web-slinging strings. Heroic and fun, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/spider-friends-unite-jw-score.mp3"
 }

@@ -42,5 +42,8 @@
     }
   },
   "flavorText": "The surface world cast me out. Now the earth itself rises against them.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11112/111121983/4982390-8551652907-FANTA.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11112/111121983/4982390-8551652907-FANTA.jpg",
+  "musicTheme": "Suspense / Tension Build",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Suspense / Tension Build. Underground monster invasion from Subterranea. Low rumbling strings and seismic percussion. Tense and subterranean, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/mole-man-subterranea-jw-score.mp3"
 }

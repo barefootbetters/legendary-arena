@@ -45,5 +45,8 @@
     }
   },
   "flavorText": "Doom does as he pleases.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/6640535-201609.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/6640535-201609.jpg",
+  "musicTheme": "Suspense / Tension Build",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Suspense / Tension Build. Global leader-replacement conspiracy with Doom's killbots. Mechanical ticking and paranoid strings. Tense and conspiratorial, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/dooms-killbot-agenda-jw-score.mp3"
 }

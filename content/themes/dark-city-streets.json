@@ -48,5 +48,8 @@
     }
   },
   "flavorText": "This city belongs to me. Every shadow. Every alley. Every soul.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/8/84205/1958949-251px_daredevil_vol_1_170.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/8/84205/1958949-251px_daredevil_vol_1_170.jpg",
+  "musicTheme": "Suspense / Tension Build",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Suspense / Tension Build. Kingpin's gritty street-level crime wave in a noir city. Dark jazz bass, low strings, rain-soaked piano. Tense and shadowy, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/dark-city-streets-jw-score.mp3"
 }

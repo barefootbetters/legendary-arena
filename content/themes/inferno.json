@@ -48,5 +48,8 @@
     }
   },
   "flavorText": "The city is alive. The city is hungry. The city is Hell.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/2056717-36.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/2056717-36.jpg",
+    "musicTheme": "Terror / Horror Sting",
+    "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Terror / Horror Sting. Demonic Limbo invasion turning Manhattan into Hell. Chaotic orchestral frenzy and hellish choir. Demonic and nightmarish, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+    "musicURL": "https://music.barefootbetters.com/themes/inferno-jw-score.mp3"
 }

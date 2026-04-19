@@ -48,5 +48,8 @@
     }
   },
   "flavorText": "We're not a team. We just keep ending up in the same room.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11/119711/3041110-1.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11/119711/3041110-1.jpg",
+  "musicTheme": "Friendship / Bonding Theme",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Friendship / Bonding Theme. Misfit non-team Defenders assembling. Warm quirky strings with heroic but slightly off-kilter brass. Nostalgic and powerful, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/defenders-classic-jw-score.mp3"
 }

@@ -44,5 +44,8 @@
     }
   },
   "flavorText": "You cannot defeat me. I have already won—in every timeline that matters.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11/110017/9912124-wwww.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11/110017/9912124-wwww.jpg",
+    "musicTheme": "Villain Entrance / Imperial March",
+    "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Villain Entrance / Imperial March. Time-conquering Kang with armies from a thousand timelines. Futuristic militaristic march. Menacing and unstoppable, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+    "musicURL": "https://music.barefootbetters.com/themes/kang-conqueror-jw-score.mp3"
 }

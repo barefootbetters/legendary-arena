@@ -50,5 +50,8 @@
     }
   },
   "flavorText": "The fire rises. The Phoenix must be stopped—or the universe will burn.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/5329124-10.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/5329124-10.jpg",
+    "musicTheme": "Terror / Horror Sting",
+    "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Terror / Horror Sting. Jean Grey becoming the Dark Phoenix and cosmic annihilation. Screeching high strings and apocalyptic brass. Terrifying and tragic, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+    "musicURL": "https://music.barefootbetters.com/themes/dark-phoenix-saga-jw-score.mp3"
 }

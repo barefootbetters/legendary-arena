@@ -47,5 +47,8 @@
     }
   },
   "flavorText": "The game is simple. The stakes are everything.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/4845176-01.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/4845176-01.jpg",
+  "musicTheme": "Grand March / Processional",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Grand March / Processional. Cosmic game of the Elders with heroes as pawns. Stately ceremonial brass and harp with game-show fanfare energy. Regal and cosmic, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/contest-of-champions-jw-score.mp3"
 }

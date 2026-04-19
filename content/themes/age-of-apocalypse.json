@@ -47,5 +47,8 @@
     }
   },
   "flavorText": "In the Age of Apocalypse, only the strong survive.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11125/111254576/5632591-x-men_alpha_vol_1_1.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11125/111254576/5632591-x-men_alpha_vol_1_1.jpg",
+  "musicTheme": "Epic Battle / Confrontation",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Epic Battle / Confrontation. Dystopian mutant resistance against Apocalypse's Four Horsemen in a conquered North America. Sweeping heroic strings, thunderous brass fanfares, low ominous strings, pounding timpani and choral Latin chanting. Dark yet hopeful major-to-minor shifts. High cinematic energy, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/age-of-apocalypse-jw-score.mp3"
 }

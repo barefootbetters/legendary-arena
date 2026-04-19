@@ -44,5 +44,8 @@
     }
   },
   "flavorText": "Innocent blood cries out. The Rider answers.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11144/111442876/8387140-fms0hakaaaeqtqv.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11144/111442876/8387140-fms0hakaaaeqtqv.jpg",
+    "musicTheme": "Terror / Horror Sting",
+    "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Terror / Horror Sting. Demonic Ghost Rider Spirit of Vengeance. Hellfire brass and motorcycle percussion. Fiery and vengeful, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+    "musicURL": "https://music.barefootbetters.com/themes/ghost-rider-vengeance-jw-score.mp3"
 }

@@ -44,5 +44,8 @@
     }
   },
   "flavorText": "Peter Parker is dead. Long live the Superior Spider-Man.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/6735989-01.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/6735989-01.jpg",
+  "musicTheme": "Mystery / Revelation",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Mystery / Revelation. Doc Ock in Peter Parker's body as Superior Spider-Man. Twisted heroic theme with mechanical undertones. Identity-twisting and dark, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicURL": "https://music.barefootbetters.com/themes/superior-spider-man-jw-score.mp3"
 }
