@@ -77,21 +77,33 @@
   `src/prefs/shared/registry/sectionRegistry.test.ts`;
   `src/prefs/shared/store/createPreferencesStore.test.ts`
 
-## After Completing
-- [x] `pnpm --filter registry-viewer build` exits 0
-- [x] `pnpm --filter registry-viewer typecheck` exits 0
-- [x] `pnpm --filter registry-viewer test` exits 0 (17 new tests; 17 pass)
-- [x] `pnpm -r test` exits 0; repo-wide count = 459 (+17 from viewer;
-      zero other regressions)
-- [x] `Test-Path packages/ui-preferences` returns `False`
-- [x] `Select-String ... createPreferencesStore.ts -Pattern "^\s*throw "` → no output
-- [x] `Select-String ... /shared/schema/*.schema.ts -Pattern "vue|document.|window.|@vue/"` → no output
-- [x] `Select-String .../prefs -Pattern "Math.random"` → no output
+## Verification (must be all green)
+- [x] `pnpm --filter registry-viewer build` → exits 0
+- [x] `pnpm --filter registry-viewer typecheck` → exits 0
+- [x] `pnpm --filter registry-viewer test` → exits 0 (17 new tests; 17 pass)
+- [x] `pnpm -r test` → exits 0; repo-wide count = 459 (registry-viewer
+      0 → 17; zero other regressions)
+
+## Scope Guardrails (spot checks)
+- [x] `Test-Path packages/ui-preferences` → `False` (D-1414 compliance)
+- [x] `Select-String ... createPreferencesStore.ts -Pattern "^\s*throw "`
+      → no output (all error paths degrade, never throw)
+- [x] `Select-String ... /shared/schema/*.schema.ts -Pattern "from \"vue\"|document\.|window\.|@vue/"`
+      → no output (Option-A → Option-B hoist remains a pure file-move)
+- [x] `Select-String .../prefs -Pattern "Math\.random"` → no output
+- [x] No edits to `App.vue`, `CardGrid.vue`, `CardDetail.vue`,
+      `ThemeGrid.vue`, `ThemeDetail.vue`, `HealthPanel.vue`,
+      `GlossaryPanel.vue`, `ImageLightbox.vue`, or any `src/lib/*.ts`
+
+## After Completing (tracking updates)
 - [x] `git diff --name-only` shows only WP-068 files + pnpm-lock.yaml +
       STATUS.md + WORK_INDEX.md + this EC file
 - [x] STATUS.md updated with WP-068 summary and deviation notes
-- [x] WORK_INDEX.md WP-068 row flipped from `[ ]` to `[x]`
-- [x] Commit prefix: `EC-070:`
+- [x] WORK_INDEX.md WP-068 row flipped from `[ ]` to `[x]` with
+      completion-line format matching WP-067
+- [x] Commit prefix: `EC-070:` (commit-hygiene hook rejects `WP-###:`;
+      minimum-ceremony EC drafted alongside execution per
+      session-context-wp068.md Step 7 Option A)
 
 ## Common Failure Smells
 - A `.schema.ts` file imports `vue` → purity test fails; DO NOT add types
