@@ -4731,6 +4731,249 @@ via `AskUserQuestion`)
 
 ---
 
+## Decision Points Raised by `MOVE_LOG_FORMAT.md`
+
+The three entries below originate from the forensics report
+`docs/ai/MOVE_LOG_FORMAT.md` (commit `1d709e5`, 2026-04-18), which
+established that no persisted move-log format exists in the repo today
+and that these three forks are the preconditions for any Phase 6
+persistence / replay Work Packet.
+
+Entries are resolved **in place** rather than moved: when an entry
+flips to `Status: Active` it keeps its original options, adds an
+`Options rejected:` block, and records the resolution date. The
+`Status:` field on each entry is the source of truth — some entries
+in this section may be Open, others Active. A Work Packet that
+depends on one of these decisions may not be scoped while its
+corresponding entry's status is `Open`.
+
+---
+
+### D-0203 — Canonical Persisted Artifact for Move Log / Replay
+
+**Decision:** *TBD.*
+
+**Scope:** Determines which artifact the server persists for every match
+so that a match can be reconstructed after the process restarts and so
+that replays, spectator late-join, and reconnection have a single
+source of truth to read from. Narrows what Recommendation 1 of
+`MOVE_LOG_FORMAT.md` actually builds.
+
+**Options:**
+- **(A) boardgame.io-native.** Persist `initialState + LogEntry[]`
+  retrieved via the framework's `fetch({ initialState: true, log: true })`
+  contract. Store via a `db:` adapter passed to `Server({...})` in
+  `apps/server/src/server.mjs` — today this call sets no `db:` and
+  defaults to `InMemory` (lines 90-98).
+- **(B) engine-native.** Persist the engine's existing `ReplayInput`
+  (`packages/game-engine/src/replay/replay.types.ts:34-39`). Requires a
+  new server-side writer that derives `ReplayInput.moves` from
+  observable match activity, since nothing constructs `ReplayInput`
+  from a live match today.
+- **(C) both, with one derived from the other.** Persist one as
+  canonical and materialise the other on demand.
+
+**Trade-offs:**
+- (A) reuses the framework's own per-move record and the reducer's
+  native replay path; no parallel contract. But it couples replay
+  forever to boardgame.io's `LogEntry` shape and requires adopting or
+  writing a `StorageAPI.Async` subclass (`bgio-postgres` or custom).
+- (B) keeps replay inside the engine's pure-helper layer and isolates
+  it from framework upgrades, but duplicates the framework's work and
+  leaves `LogEntry[]` as write-only Diagnostic data. The current
+  `replayGame` also hardcodes a reverse-shuffle and ignores
+  `ReplayInput.seed` — see D-0205.
+- (C) is the most flexible but carries the largest maintenance surface
+  (two shapes, two writers, a projection between them). Must specify
+  which is authoritative for conflict resolution.
+
+**Dependencies:**
+- Blocks Work Packets scoped from `MOVE_LOG_FORMAT.md` Recommendation 1
+  (persistent adapter) and Recommendation 3 (unify engine replay harness
+  with framework log).
+- Interacts with D-0204 (privacy) and D-0205 (RNG truth source): any
+  persisted artifact is only useful if it can (a) be stored without
+  leaking hidden information and (b) actually reproduce live matches.
+
+**Target resolution:** Phase 6 — Verification, UI & Production. This
+decision gates the persistence-adapter WP implied by
+`MOVE_LOG_FORMAT.md` Recommendation 1 and is a precondition for
+WP-063 (Replay Snapshot Producer) producing artifacts with a
+committed shape. Non-binding target — adjustable via a follow-up
+DECISIONS.md entry if Phase 6 re-sequences.
+
+**Status:** Open — Awaiting decision
+**Raised:** `MOVE_LOG_FORMAT.md` Decision Point 1, 2026-04-18
+
+---
+
+### D-0204 — Privacy Boundary for Persisted Logs
+
+**Decision:** *TBD.*
+
+**Scope:** Establishes whether a persisted move log (whichever artifact
+D-0203 selects) contains hidden information, and if so, who can see it.
+Gates `redact` declarations on moves and any dual-view log tooling.
+
+**Context from `MOVE_LOG_FORMAT.md` Gap #8:** today, no Legendary Arena
+move declares the boardgame.io `redact` property. The only `redact*`
+code path lives in `packages/game-engine/src/ui/uiState.filter.ts` and
+is an **audience-scoped UI filter**, not a persistence policy. Today's
+eight registered moves appear to operate on public `CardExtId` strings
+only, but `ReplayMove.args: unknown` carries no enforced contract.
+Future moves that select from a hidden zone or reveal top-of-deck
+would leak through a naive persisted log.
+
+**Options:**
+- **(A) Public-only persistence.** Redact private args at write time;
+  persisted logs are safe for any audience. Forbids reconstructing
+  fully-faithful replays of games with hidden information.
+- **(B) Privileged persistence.** Persist raw logs including hidden
+  information; restrict read access to admin / tournament / post-hoc
+  analysis roles only. Enables full replay but expands the trust
+  surface of whatever system reads persisted matches.
+- **(C) Dual-view persistence.** Store two projections per match — a
+  redacted public log and a privileged full log. Most expensive but
+  lets replay tooling pick the right view per audience.
+
+**Trade-offs:**
+- (A) is the simplest threat model but silently loses replay fidelity
+  the moment a move touches hidden state. Would also require all
+  future moves to be audited for private-info leaks in their args.
+- (B) is the easiest to implement but makes persistent storage the
+  new attack surface for information leaks; any bug in read-path
+  access control leaks hidden information across matches.
+- (C) matches the UI layer's existing audience-based filtering
+  (`filterUIStateForAudience`, D-0302), but doubles write-path cost
+  and requires careful derivation so the two views do not drift.
+
+**Dependencies:**
+- Must be resolved before any WP scoped from Recommendation 1 of
+  `MOVE_LOG_FORMAT.md` begins implementation.
+- Reinforces, and is a concrete application of, D-0302
+  (*One UIState, many audiences*). A persisted log is a second,
+  different projection surface that needs its own audience model.
+
+**Target resolution:** Phase 6 — Verification, UI & Production.
+Co-resolves with D-0203; also gates WP-064 (Game Log & Replay
+Inspector), which must know which audiences can read which fields.
+Reinforced again in Phase 7 by WP-053 (Competitive Score Submission
+& Verification). Non-binding target.
+
+**Status:** Open — Awaiting decision
+**Raised:** `MOVE_LOG_FORMAT.md` Decision Point 2, 2026-04-18
+
+---
+
+### D-0205 — RNG Truth Source for Replay
+
+**Decision:** **Option (C) — the engine's `replayGame` / `verifyDeterminism`
+harness is explicitly scoped as *determinism-only / debug-only* tooling.**
+It is not, and does not claim to be, a live-match replayer. Any future
+"replay a specific match" feature builds on a separate pipeline that
+rehydrates boardgame.io's seeded `ctx.random.*` — most likely via
+D-0203 option (A), but that choice remains open.
+
+**Decision rationale:** The repo currently lacks a canonical persisted
+RNG truth source. `replayGame` hardcodes a reverse-shuffle and ignores
+`ReplayInput.seed` — this is deterministic but is not the RNG that
+drives live matches. Claiming "replay" capability without reconciling
+the two would be dishonest and would silently invite downstream WPs to
+build on a false foundation. Scoping the harness to determinism
+verification keeps the tooling **honest and useful** (it still proves
+the engine reducer is deterministic given fixed RNG) while deferring
+the architectural RNG decision to the same pipeline that resolves
+D-0203. Minimum-commitment resolution: costs only a doc change on
+two exports; no storage choice, no framework coupling, no engine
+behavior change.
+
+**Scope:** Fixes which RNG source is authoritative for replay
+reconstruction. Today this is ambiguous: live matches use boardgame.io's
+seeded `ctx.random.*` (required by D-0002 and `.claude/rules/architecture.md`
+§Determinism), but `packages/game-engine/src/replay/replay.execute.ts:119-123`
+hardcodes a reverse-shuffle and ignores `ReplayInput.seed`. The stored
+seed exists, but is not honoured — the two paths disagree.
+
+**Context from `MOVE_LOG_FORMAT.md` Gap #4:** this gap is flagged as a
+**blocker** for any "replay live matches" Work Packet. A replay feature
+that runs against the current harness does not reproduce live-match
+outcomes, it reproduces a parallel mock-RNG universe.
+
+**Options:**
+- **(A) boardgame.io `ctx.random.*` is canonical.** Replay reconstructs
+  via the framework reducer, with the framework's seeded RNG. The
+  engine's own `replayGame` becomes derived (or is retired) per D-0203
+  option C. Requires persisting whatever the framework needs to
+  rehydrate `ctx.random` (typically the initial seed on
+  `initialState`, plus any RNG state carried in `ctx`).
+- **(B) Engine seed is canonical.** Replace the reverse-shuffle in
+  `replay.execute.ts:121-123` with a seeded deterministic PRNG driven
+  by `ReplayInput.seed`. Decouples replay from the framework but
+  requires the live engine to *also* source randomness from this PRNG,
+  or the two diverge — which contradicts D-0002.
+- **(C) Explicitly debug-only harness.** Keep `replayGame` as it is
+  (reverse-shuffle, ignored seed) but label it *debug-only /
+  determinism-only* — it proves the engine is deterministic given a
+  fixed RNG, nothing more. Any future "replay a specific match" WP
+  builds a separate pipeline under option (A).
+
+**Trade-offs:**
+- (A) is the least invasive for the engine today and aligns replay
+  with the framework's existing contract. Tightens the repo's
+  dependency on boardgame.io's RNG semantics surviving future upgrades.
+- (B) would make the engine's replay path self-contained, but creates
+  a second RNG source of truth that must be kept in lockstep with
+  live play — exactly the drift D-0002 is meant to prevent.
+- (C) is cheapest: it costs only a doc change and a label on
+  `verifyDeterminism`. It does, however, permanently narrow what the
+  existing replay harness claims to do, and pushes the "replay live
+  matches" feature onto a different (as-yet-unscoped) stack.
+
+**Options rejected:**
+- **(A) boardgame.io `ctx.random.*` is canonical.** Rejected *for now*
+  (not permanently) — this remains the natural fit for a future
+  "replay live matches" feature, but selecting it today would
+  pre-commit D-0203 to option (A) without the architectural review
+  D-0203 deserves. Revisit when D-0203 resolves.
+- **(B) Engine seed is canonical.** Rejected. Makes the engine
+  maintain a second RNG source of truth in lockstep with
+  boardgame.io's live RNG — exactly the silent-divergence failure
+  mode D-0002 (*Determinism Is Non-Negotiable*) exists to prevent.
+  No path forward unless boardgame.io's seeded `ctx.random.*` is
+  replaced wholesale, which is out of scope.
+
+**Follow-up actions required by this decision:**
+- `packages/game-engine/src/replay/replay.execute.ts` and
+  `replay.verify.ts`: add JSDoc + header warnings on `replayGame` and
+  `verifyDeterminism` stating the harness does not replay live-match
+  RNG (uses a fixed reverse-shuffle; `ReplayInput.seed` is ignored).
+- `docs/ai/MOVE_LOG_FORMAT.md` Gap #4: remains accurate (the gap
+  *describes* the condition this decision resolves) — no edit
+  required.
+- `packages/game-engine/src/index.ts` public exports of
+  `replayGame` / `verifyDeterminism`: no API change; doc-only.
+- These actions should land as a tiny Work Packet — *"Label engine
+  replay harness as determinism-only"* — scoped via the normal
+  00.3 lint gate + `WORK_INDEX.md` flow.
+
+**Dependencies:**
+- Blocker for any `MOVE_LOG_FORMAT.md` Recommendation that claims
+  "replay live matches" (Recommendations 1 and 3). This decision
+  *closes* the blocker by re-scoping the claim, not by building a
+  replayer — the replayer itself remains a future WP gated on D-0203.
+
+**Target resolution:** Phase 6 — Verification, UI & Production. This
+is the blocker flagged by `MOVE_LOG_FORMAT.md` Gap #4 for any Phase 6
+"replay live matches" feature (WP-063, WP-064, and the unscoped
+persistence-adapter WP). Must resolve before or alongside D-0203.
+Non-binding target.
+
+**Status:** Active
+**Raised:** `MOVE_LOG_FORMAT.md` Decision Point 3, 2026-04-18
+**Resolved:** 2026-04-18
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
