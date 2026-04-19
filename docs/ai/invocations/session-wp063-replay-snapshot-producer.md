@@ -12,6 +12,25 @@
 
 ## Pre-Session Gates (Resolve Before Writing Any File)
 
+> **Amendment 2026-04-18 (SPEC):** Gate #4 was amended on 2026-04-18
+> to reference WP-080 / EC-072 / D-6304. The original WP-063 / EC-071
+> execution session stopped at Pre-Session Gate #4 because WP-027's
+> harness is end-to-end only (`MOVE_MAP` at `replay.execute.ts:77`,
+> `buildMoveContext` at `replay.execute.ts:98`, and the
+> `ReplayMoveContext` interface at `replay.execute.ts:39` are all
+> module-local; `replayGame` has no per-step callback parameter).
+> WP-080 / EC-072 / D-6304 drafts the step-level amendment
+> (`applyReplayStep` named export + `replayGame` loop refactor to
+> delegate through it). Gate #4 is SATISFIED once WP-080 has been
+> executed and `applyReplayStep` is visible at
+> `packages/game-engine/src/index.ts`. Until WP-080 executes, this
+> gate remains BLOCKED.
+>
+> See:
+> - `docs/ai/work-packets/WP-080-replay-harness-step-level-api.md`
+> - `docs/ai/execution-checklists/EC-072-replay-harness-step-level-api.checklist.md`
+> - `docs/ai/DECISIONS.md §D-6304`
+
 These items were locked by the pre-flight + copilot check. Each is binary — if unresolved, STOP.
 
 1. **EC slot confirmation (EC-071, not EC-062 / EC-063 / EC-064 / EC-070).** Triple cross-reference:
@@ -33,6 +52,16 @@ These items were locked by the pre-flight + copilot check. Each is binary — if
    ```
    The log must show `eb19264` (SPEC: EC-071 draft + D-6301/D-6302/D-6303) sitting on top of `a1816f0` (SPEC: revise WP-063 with WP-062 session results + EC-071 slot lock). `eb19264` is the **execution base commit** for WP-063. If it is not present, STOP — the governance bundle is unlanded and READY is void under P6-34.
    Working-tree cleanliness on **governance index files** (`DECISIONS.md`, `DECISIONS_INDEX.md`, `WORK_INDEX.md`, `EC_INDEX.md`, `02-CODE-CATEGORIES.md`, `EC-071-*.checklist.md`) is required at session start. Unrelated dirty files (`content/themes/*.json`, `.claude/settings.local.json`, the various untracked `docs/ai/invocations/session-wp*.md` / `docs/ai/session-context/*.md` / root-level survey files) are expected and must not be staged into any WP-063 commit.
+
+> **Amendment 2026-04-18 (SPEC) — §Pre-Session Gate #4:** WP-080 /
+> EC-072 drafted to add `applyReplayStep` (or equivalent) to
+> `replay.execute.ts`. Gate #4 below is SATISFIED when WP-080 has
+> been executed and its exports are visible in
+> `packages/game-engine/src/index.ts`. Until WP-080 executes, this
+> gate remains BLOCKED. See:
+> - `docs/ai/work-packets/WP-080-replay-harness-step-level-api.md`
+> - `docs/ai/execution-checklists/EC-072-replay-harness-step-level-api.checklist.md`
+> - `docs/ai/DECISIONS.md §D-6304`
 
 4. **Upstream dependencies verified green at `eb19264`.**
    ```pwsh
@@ -102,6 +131,9 @@ The two engine-barrel modifications (`packages/game-engine/src/index.ts`, `packa
 17. [packages/game-engine/src/index.ts](../../../packages/game-engine/src/index.ts) + [packages/game-engine/src/types.ts](../../../packages/game-engine/src/types.ts) — confirm the engine's public barrel pattern; match it exactly for new exports
 18. [apps/server/](../../../apps/server/) — confirm the CLI arg-parser precedent (Commander vs. `node:util parseArgs`); fall back to `node:util parseArgs` if the server has no CLI yet
 19. [apps/arena-client/package.json](../../../apps/arena-client/package.json) + [apps/registry-viewer/package.json](../../../apps/registry-viewer/package.json) — read for the currently pinned `tsx` version; mirror it in `apps/replay-producer/package.json` (P6-37 explicit allowlist)
+20. **Amendment 2026-04-18 (SPEC):** [docs/ai/work-packets/WP-080-replay-harness-step-level-api.md](../work-packets/WP-080-replay-harness-step-level-api.md) — the step-level API amendment this session's Gate #4 depends on; read to confirm `applyReplayStep` is the export `buildSnapshotSequence` will wrap
+21. **Amendment 2026-04-18 (SPEC):** [docs/ai/execution-checklists/EC-072-replay-harness-step-level-api.checklist.md](../execution-checklists/EC-072-replay-harness-step-level-api.checklist.md) — WP-080's Draft execution checklist
+22. **Amendment 2026-04-18 (SPEC):** [docs/ai/DECISIONS.md §D-6304](../DECISIONS.md) — the decision locking the step-level API approach and the rejected alternatives
 
 If any of these conflict, higher-authority documents win.
 

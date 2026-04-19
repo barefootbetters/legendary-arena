@@ -4597,6 +4597,140 @@ breaking change visible at every import site.
 
 ---
 
+### D-6304 — WP-027 Replay Harness Exposes a Step-Level API for Downstream Snapshot / Replay Tools
+
+**Decision:** The engine's replay harness
+(`packages/game-engine/src/replay/replay.execute.ts`) exposes a named
+step-level API — `applyReplayStep(gameState, move, numPlayers):
+LegendaryGameState` — that downstream consumers
+(`buildSnapshotSequence` in WP-063, future replay inspectors, future
+debug tools) call to apply exactly one `ReplayMove` at a time. The
+harness's internal move dispatch (`MOVE_MAP` and `buildMoveContext`,
+both file-local in `replay.execute.ts`) remains the **single source
+of truth**; `replayGame` is refactored so its internal loop delegates
+each iteration to `applyReplayStep`. The step function mutates
+`gameState` in place and returns the same reference
+(mutate-and-return-same-reference contract); consumers that need
+historical snapshots must project via `buildUIState` (WP-028) after
+each step, not retain `G` copies. The existing
+`verifyDeterminism` test fixture is the regression guard: the
+`stateHash` produced by `replayGame` must be byte-identical before
+and after the refactor.
+
+**Rationale:** A prior session attempted to execute WP-063 / EC-071
+(Replay Snapshot Producer) and stopped at Pre-Session Gate #4
+because `replay.execute.ts` currently exposes only
+`replayGame(input, registry): ReplayResult` — an end-to-end function
+that loops all moves internally and returns only the final state
+plus a hash. `MOVE_MAP` (line 77), `buildMoveContext` (line 98), and
+the `ReplayMoveContext` structural interface (line 39) are all
+module-local; no per-step callback, no generator, no intermediate
+`G` observable from outside. WP-063's `buildSnapshotSequence` needs
+per-input stepping with a live `G` reference at each step to call
+`buildUIState`; without a step-level export from WP-027, the only
+path for WP-063 would be to duplicate `MOVE_MAP` and
+`buildMoveContext` into `apps/replay-producer/` or a new engine
+file. That is the failure mode this decision exists to prevent: when
+a new move is added to `LegendaryGame.moves`, the author must
+remember to update two dispatch tables instead of one, and the
+legacy `replayGame` path passes existing tests while the new
+consumer path silently diverges until a new-move-specific test is
+written. Locking "single source of truth for dispatch" now —
+before the first duplicate `MOVE_MAP` is written — prevents the
+drift.
+
+**Alternatives Considered:**
+- **Option A — status quo (rejected):** consumers duplicate
+  `MOVE_MAP` + `buildMoveContext` in `apps/replay-producer/` or a
+  new file under `packages/game-engine/src/replay/`. Drift risk;
+  new moves silently diverge; two bodies of dispatch logic must
+  be kept in sync without a compiler check.
+- **Option B — expose a context-constructing pair
+  (`buildReplayMoveContext` + `dispatchReplayMove`) (rejected):**
+  doubles the export surface and forces `ReplayMoveContext` to
+  become a public type. WP-063's actual need is one function that
+  applies one move — Option B leaks internals that no current
+  consumer requires. Follow-up WP can promote the constructor if
+  a second consumer surfaces (00.6 Rule 1: duplicate first,
+  abstract on third copy).
+- **Option C — expose `MOVE_MAP` directly (`export const
+  REPLAY_MOVE_MAP`) (rejected):** leaks the `MoveFn` type and the
+  internal dispatch topology; invites ad-hoc extension by
+  downstream code. Rejected as maximum-surface, minimum-discipline.
+- **Option D (accepted) — single named step function
+  `applyReplayStep`:** minimum surface area; matches WP-063's
+  need exactly; "one function, one job"; `MOVE_MAP` and
+  `buildMoveContext` stay file-local; the refactor of
+  `replayGame`'s loop collapses two potential dispatch paths into
+  one.
+
+**Sub-rules embedded in this decision (do not split into D-6305 /
+D-6306 unless a load-bearing reason surfaces):**
+- **Step-function state ownership (Q2):** `applyReplayStep`
+  mutates `gameState` in place and returns the same reference.
+  Cloning is not performed. Consumers wanting historical snapshots
+  must project via `buildUIState` after each step. Rationale:
+  preserves `replayGame`'s current semantics byte-identically
+  (`replay.execute.ts`'s loop at 156–168 already mutates in
+  place); cloning per step is expensive on long matches and
+  duplicates work `buildUIState` already performs for its
+  immutable projection.
+- **Step-function purity (inherited from WP-027 / D-0205):** no
+  `Date.now`, no `Math.random`, no `performance.now`, no
+  `console.*`, no `node:fs*` import, no network, no environment
+  access. No `boardgame.io` import in `replay.execute.ts` (the
+  file already avoids this; the new export preserves the
+  invariant). RNG semantics unchanged — the step function
+  inherits the reverse-shuffle determinism-only semantics per
+  D-0205.
+- **`ReplayMoveContext` scope (Q4):** remains a file-local
+  structural interface in `replay.execute.ts`. Not exported; not
+  re-declared in `replay.types.ts`; not added to the engine
+  barrel. Dead surface area until a consumer actually imports it.
+
+**Scope:**
+- Does **not** change live-match RNG semantics. D-0205 remains in
+  force unchanged. The step function inherits the reverse-shuffle
+  determinism-only semantics from the module-level contract.
+- Does **not** introduce or modify `ReplayInputsFile` (WP-063's
+  scope; Q5 marks it out of scope for WP-080).
+- Does **not** bump `boardgame.io` version (locked at `^0.50.0`).
+- Does **not** modify `ReplayInput`, `ReplayMove`, `ReplayResult`,
+  `DeterminismResult`, `computeStateHash`, or `verifyDeterminism`
+  — all WP-027 contract surfaces remain frozen.
+
+**Follow-up actions required by this decision:**
+- Execute WP-080 / EC-072 to add the step-level export and
+  refactor `replayGame`'s loop. Commit prefix `EC-072:` (P6-36 —
+  never `WP-080:`).
+- Resume WP-063 / EC-071 execution (existing session prompt;
+  amended at Pre-Session Gates #4 and Authority Chain in the
+  same SPEC commit that created this decision) once WP-080 lands.
+  Pre-Session Gate #4 then passes because `applyReplayStep` is
+  visible at `packages/game-engine/src/index.ts`.
+- If WP-079 has not yet been drafted as an EC, that drafting is
+  a **separate** SPEC session and a transitive prerequisite to
+  WP-080 execution (both packets touch `replay.execute.ts`;
+  WP-079 lands first with JSDoc narrowing, WP-080 inherits it
+  verbatim).
+
+**References:** WP-027 (harness locked), WP-063 (blocked consumer),
+WP-079 (JSDoc narrowing sibling; must land before WP-080), WP-080
+(this decision's execution WP), EC-071 (WP-063's checklist;
+BLOCKED at Pre-Session Gate #4), EC-072 (WP-080's checklist;
+Draft), session-wp063-replay-snapshot-producer.md §Pre-Session
+Gates #4 (the amended block), D-0201 (Replay as a First-Class
+Feature — the parent decision WP-080 implements), D-0205 (RNG
+truth source — unchanged; WP-080 inherits).
+
+**Status:** Active
+**Raised:** WP-063 / EC-071 execution session 2026-04-18 (stopped
+at Pre-Session Gate #4; user selected "Stop and amend (pre-flight)"
+via `AskUserQuestion`)
+**Resolved:** 2026-04-18
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

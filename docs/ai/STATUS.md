@@ -7,6 +7,60 @@
 
 ## Current State
 
+### WP-063 Blocked → WP-080 / EC-072 / D-6304 Drafted (2026-04-18, SPEC)
+
+WP-063 / EC-071 (Replay Snapshot Producer) stopped at Pre-Session Gate #4:
+`packages/game-engine/src/replay/replay.execute.ts` exposes only
+`replayGame(input, registry): ReplayResult` — an end-to-end harness
+that loops all moves internally. `MOVE_MAP` (line 77),
+`buildMoveContext` (line 98), and the `ReplayMoveContext` interface
+(line 39) are all module-local; no per-step callback, no intermediate
+`G` observable from outside. WP-063's `buildSnapshotSequence` needs
+per-input stepping with a live `G` reference at each step to call
+`buildUIState` (WP-028) — without a step-level export from WP-027,
+the only consumer path would duplicate `MOVE_MAP` into
+`apps/replay-producer/`, creating dispatch drift. Under the EC-071
+session protocol's "If the harness is end-to-end only, WP-063 is
+BLOCKED — STOP and ask" clause, the session halted and the user
+selected "Stop and amend (pre-flight)" via `AskUserQuestion`.
+
+This SPEC commit drafts WP-080 / EC-072 / D-6304 to add a named
+step-level export `applyReplayStep(gameState, move, numPlayers):
+LegendaryGameState` to `replay.execute.ts`, with `replayGame`'s
+internal loop refactored to delegate to it (single source of truth
+for dispatch). Q1=A (single function), Q2=A
+(mutate-and-return-same-reference), Q3=A (refactor the loop), Q4=A
+(keep `ReplayMoveContext` file-local), Q5 (`ReplayInputsFile`) out of
+scope. RNG semantics unchanged; D-0205 remains in force.
+
+Artifacts created / modified in this session:
+- `docs/ai/work-packets/WP-080-replay-harness-step-level-api.md`
+  (new; Status Ready; dependencies WP-027, WP-079, D-6304)
+- `docs/ai/execution-checklists/EC-072-replay-harness-step-level-api.checklist.md`
+  (new; Draft)
+- `docs/ai/DECISIONS.md §D-6304` (new; Active, Resolved 2026-04-18)
+- `docs/ai/work-packets/WORK_INDEX.md` (new WP-080 row; WP-063
+  dependency cell amended to include WP-080)
+- `docs/ai/execution-checklists/EC_INDEX.md` (new EC-072 row;
+  EC-071 entry annotated as Blocked at Pre-Session Gate #4)
+- `docs/ai/invocations/session-wp063-replay-snapshot-producer.md`
+  (additive amendment at §Pre-Session Gates #4 and §Authority Chain
+  citing WP-080 / EC-072 / D-6304 as the newly-added upstream; no
+  deletions)
+
+Order of execution from here: (1) WP-079 EC drafting (if no EC
+exists yet at `EC_INDEX.md`), (2) WP-079 execution (doc-only JSDoc
+narrowing on `replay.execute.ts` + `replay.verify.ts`), (3) WP-080
+execution under commit prefix `EC-072:`, (4) WP-063 resume under
+existing `EC-071:` commit prefix (Pre-Session Gate #4 then passes
+because `applyReplayStep` is visible at
+`packages/game-engine/src/index.ts`). Commit prefix for this drafting
+session: `SPEC:` (P6-36 — `WP-080:` and `EC-072:` both forbidden
+for documentation-only commits). Repo test baseline unchanged at 464
+(no source code touched). Stashes `stash@{0}` and `stash@{1}`
+retained. EC-069 `<pending — gatekeeper session>` placeholder in
+`EC_INDEX.md` retained (owned by a separate SPEC commit).
+
 ### WP-062 — Arena HUD & Scoreboard (2026-04-18, EC-069)
 
 The arena client now renders a full HUD driven by `UIState` fixtures.

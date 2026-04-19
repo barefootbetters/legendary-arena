@@ -820,7 +820,9 @@ These packets make the game safe to ship.
   vue-sfc-loader 11, server 6); no engine or registry changes.
 
 - [ ] WP-063 — Replay Snapshot Producer ✅ Reviewed (2026-04-16 lint-gate pass)
-  Dependencies: WP-027, WP-028, WP-005B
+  Dependencies: WP-027, WP-028, WP-005B, WP-080 (step-level API —
+  amended 2026-04-18 after WP-063 / EC-071 stopped at Pre-Session
+  Gate #4; resumes after WP-080 / EC-072 lands)
   Notes: Two-part packet crossing engine + new CLI app; engine adds type
   `ReplaySnapshotSequence` (version: 1 literal, `readonly snapshots:
   readonly UIState[]`) and pure helper `buildSnapshotSequence({ setupConfig,
@@ -852,6 +854,31 @@ These packets make the game safe to ship.
   step overruns; auto-play gated behind an opt-in prop to keep scope to
   one session; `src/stores/` from WP-061 untouched unless a DECISIONS.md
   entry justifies a change; no engine, registry, or server-side changes.
+
+- [ ] WP-080 — Replay Harness Step-Level API for Downstream Snapshot / Replay Tools ✅ Reviewed (2026-04-18 lint-gate pass — drafted to unblock WP-063 / EC-071 Pre-Session Gate #4)
+  Dependencies: WP-027, WP-079, D-6304
+  Execution Checklist: `docs/ai/execution-checklists/EC-072-replay-harness-step-level-api.checklist.md` (Draft)
+  Notes: Additive refactor to `packages/game-engine/src/replay/replay.execute.ts`:
+  adds named export `applyReplayStep(gameState, move, numPlayers):
+  LegendaryGameState` (Q1 = Option A — single function, minimum surface),
+  mutate-and-return-same-reference contract (Q2 = Option A), and refactors
+  `replayGame`'s internal loop to delegate each iteration to the new
+  export (Q3 = Option A — single source of truth for dispatch).
+  `MOVE_MAP` and `buildMoveContext` remain file-local; `ReplayMoveContext`
+  remains a file-local structural interface (Q4 — not exported). One new
+  export line added under the WP-027 block in `packages/game-engine/src/index.ts`.
+  New test file `replay.execute.test.ts` adds three cases: identity
+  (same inputs → same output state), `replayGame` regression guard
+  (byte-identical `stateHash` on existing `verifyDeterminism` fixture
+  pre- and post-refactor), and unknown-move warning-and-skip routing.
+  `ReplayInputsFile` is OUT OF SCOPE (Q5 — WP-063's concern). RNG
+  semantics unchanged; D-0205 remains in force (step function inherits
+  reverse-shuffle determinism-only semantics). WP-079 is a hard upstream —
+  both packets touch `replay.execute.ts`; WP-079 lands first with JSDoc
+  narrowing, WP-080 inherits it verbatim. If WP-079 has no EC at WP-080
+  execution time, drafting WP-079's EC is a transitive prerequisite.
+  Commit prefix `EC-072:` at execution (never `WP-080:` per P6-36).
+  Unblocks WP-063 Pre-Session Gate #4 once executed.
 
 - [ ] WP-066 — Registry Viewer: Card Image-to-Data Toggle (Not yet reviewed)
   Dependencies: None (registry viewer is independent)
