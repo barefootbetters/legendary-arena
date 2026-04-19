@@ -6,6 +6,74 @@
 > it first, then load the WP-080 session prompt at
 > `docs/ai/invocations/session-wp080-replay-harness-step-level-api.md`.
 
+> **Amendment 2026-04-19 (SPEC) — WP-079 executed + WP-080 drafting complete;
+> this file now serves the EXECUTION session.** The drafting session referenced
+> in the generated header above has run and produced all artifacts listed in
+> §What the Drafting Session Must Produce. WP-079 execution has also landed
+> under EC-073. This amendment supersedes the following statements in the
+> body; all other guidance (dirty-tree discipline, scope summary, Q1–Q5
+> design answers, pre-flight-gate intent) remains load-bearing.
+>
+> 1. **Branch status** — supersedes "Branch: `wp-062-arena-hud`" in §Upstream
+>    State. Current state: `wp-062-arena-hud` was merged to `main` at
+>    `3307b12` via an EC-069 `--no-ff` merge. WP-079 execution then cut
+>    `wp-079-replay-harness-determinism-label` off main at `3307b12` and
+>    landed four commits: `1e6de0b` (`EC-073:` source JSDoc + module
+>    headers), `2131116` (`EC-073:` governance closure), `924f88b`
+>    (`SPEC:` pre-commit review artifact), `f8858d4` (`SPEC:` 01.3
+>    compliance amendment to the review). HEAD at this amendment:
+>    `f8858d4`. For WP-080 execution, a branch-strategy decision is
+>    required — see §Lessons Learned §Branch strategy at the bottom of
+>    this file.
+>
+> 2. **WP-079 status** — supersedes "WP-079 drafted, untracked, no EC yet"
+>    throughout §WP-079 Coordination and §Order of Execution. Current
+>    state: WP-079 source commit `1e6de0b` landed 2026-04-19. EC-073 is
+>    Done in `EC_INDEX.md` line 187 with "Executed 2026-04-19 at commit
+>    `1e6de0b`". D-0205's single follow-up action is formally closed in
+>    `DECISIONS.md §D-0205 Follow-up`. `replay.execute.ts` module JSDoc
+>    and `replayGame()` JSDoc carry the determinism-only narrowing with
+>    D-0205 + `MOVE_LOG_FORMAT.md §Known Gaps / Risks Gap #4`
+>    cross-references; `replay.verify.ts` module JSDoc and
+>    `verifyDeterminism()` JSDoc carry the same narrowing with a D-0205
+>    cross-reference. **WP-080 execution MUST preserve these JSDoc
+>    blocks verbatim** when adding `applyReplayStep` — do not re-word
+>    (explicit contract per WP-080 body + EC-072).
+>
+> 3. **WP-080 drafting status** — supersedes "drafting session (this one),
+>    SPEC-only" framing throughout §Two distinct sessions and §Order of
+>    Execution. Drafting is complete: WP-080 body, EC-072 checklist
+>    (Draft), D-6304 decision, and WORK_INDEX / EC_INDEX / STATUS rows
+>    are landed as of SPEC bundle `1264133` (merged to main via
+>    `3307b12`). Next step is the **execution session** under `EC-072:`
+>    prefix.
+>
+> 4. **Test baseline** — unchanged at **464 passing / 0 failing /
+>    0 skipped** (registry 3 + vue-sfc-loader 11 + game-engine 409 +
+>    server 6 + arena-client 35), re-verified on
+>    `wp-079-replay-harness-determinism-label` at `f8858d4`. WP-080
+>    execution adds new tests in `replay.execute.test.ts` per EC-072;
+>    the new baseline target is documented in EC-072.
+>
+> 5. **Pre-flight + authority chain** — the drafted
+>    `docs/ai/invocations/session-wp080-replay-harness-step-level-api.md`
+>    is the authoritative load for the execution session. If that file's
+>    §Pre-Flight Verdict is absent or references a pre-WP-079-execution
+>    HEAD, re-run 01.4 pre-flight per
+>    `docs/ai/REFERENCE/01.4-pre-flight-invocation.md` against the
+>    post-WP-079 HEAD before execution. See §Lessons Learned for two
+>    additional governance artifacts the WP-080 invocation likely does
+>    NOT cite (PRE-COMMIT-REVIEW.template.md, 01.3-commit-hygiene) that
+>    should be loaded explicitly.
+>
+> 6. **Dirty-tree advisory** — both stashes (`stash@{0}` + `stash@{1}`)
+>    retained unchanged through the WP-079 execution session. EC-069
+>    `<pending — gatekeeper session>` placeholder in `EC_INDEX.md` line
+>    183 retained (not backfilled). Seven untracked Category D files +
+>    one modified `session-wp079-...md` file remained outside every
+>    commit. Discipline carries into WP-080 execution — see §Lessons
+>    Learned.
+
 ---
 
 ## Why WP-080 Exists
@@ -404,6 +472,222 @@ D-6302 / D-6303 precedent (three decisions, each load-bearing).
 
 ---
 
+## Lessons Learned from WP-079 / EC-073 Execution (2026-04-19)
+
+Captured by the WP-079 / EC-073 execution session on 2026-04-19 and
+load-bearing for the WP-080 / EC-072 execution session. Evidence
+artifacts: `docs/ai/reviews/pre-commit-review-wp079-ec073.md` (review
++ 01.3 compliance audit); `STATUS.md` §"WP-079 / EC-073 Executed";
+`DECISIONS.md §D-0205 Follow-up".
+
+### Process gaps discovered (and closed post-hoc)
+
+1. **Step 5 pre-commit review was missed.** 01.6 §Workflow Position
+   lists `docs/ai/prompts/PRE-COMMIT-REVIEW.template.md` as step 5,
+   running as a non-implementing gatekeeper between post-mortem
+   (step 4) and commit (step 6). The WP-079 session prompt did not
+   cite this template in its 11-entry Authority Chain, Pre-Session
+   Gates, Verification Steps, or Definition of Done. The implementation
+   session followed the prompt verbatim and skipped step 5. Closed
+   post-hoc as review commit `924f88b` (`SPEC:`).
+
+   **For WP-080 execution:** explicitly load
+   `docs/ai/prompts/PRE-COMMIT-REVIEW.template.md` as part of the
+   Authority Chain reading, even if the WP-080 invocation does not
+   cite it. Run the review as step 5 — either inline before the
+   execution commit lands (self-review; faster) or coordinate a
+   separate gatekeeper session (cleaner separation of duties per
+   01.6). WP-080 introduces `applyReplayStep`, a new long-lived
+   abstraction; a pre-commit review is materially higher-value than
+   it was for WP-079's doc-only scope.
+
+2. **01.3 commit hygiene was not formally opened** at the top of the
+   commit phase. The session relied on prior familiarity + the
+   `.githooks` chain as backstop. One subject line contained the
+   forbidden word `"updates"` and was rejected by the `commit-msg`
+   hook; subject was rewritten and the retry accepted. No
+   `--no-verify`, no `--amend`, no bypass. The compliance verdict was
+   Pass but the reading of the reference document was retroactive,
+   not proactive. Closed post-hoc as amendment commit `f8858d4`
+   (`SPEC:`).
+
+   **For WP-080 execution:** read
+   `docs/ai/REFERENCE/01.3-commit-hygiene-under-ec-mode.md` at the
+   top of the commit phase. Before each commit, consider
+   `pwsh scripts/git/ec-commit.ps1 -Check -Message "<subject>"` for
+   dry-run validation — avoids live-hook rejections. Forbidden-word
+   list (rejected by `commit-msg`): `WIP`, `wip`, `fix stuff`,
+   `misc`, `tmp`, `updates`, `changes`, `debug`, `quick fix`,
+   `hotfix`, `cleanup`, `refactor`. Subject must be ≥ 12 chars
+   after prefix.
+
+### Hook behaviors observed live
+
+- **`commit-msg` rejects `WP-###:` prefix (P6-36).** Confirmed active.
+  WP-080 execution uses `EC-072:`; do not regress to `WP-080:`.
+- **`commit-msg` issues a non-blocking warning when `EC_INDEX.md` is
+  staged with an `EC-###:` prefix.** Text: *"EC governance files
+  (EC_INDEX.md, EC-TEMPLATE.md) staged with an EC-### commit. These
+  files are usually changed via SPEC: or INFRA: commits. Proceeding,
+  but verify this is intentional."* Expected when flipping an EC
+  Draft → Done as part of the WP's DoD. Acknowledge in the commit
+  body ("EC-072 Draft → Done is named by EC-072 §Files to Produce").
+- **`pre-commit`** blocks secrets, `node_modules/`, `dist/`, and
+  `.test.mjs`. The new `replay.execute.test.ts` WP-080 adds is
+  `.test.ts` (correct extension per EC-072) — no collision.
+
+### Commit-splitting pattern that worked
+
+For EC-073 (6 files), WP-079 used a **two-commit split** under the
+same `EC-073:` prefix to avoid needing `--amend` for hash
+substitution:
+
+1. Source-code commit first (`1e6de0b`, 2 files:
+   `replay.execute.ts` + `replay.verify.ts`). Captured its hash.
+2. Governance commit second (`2131116`, 4 files: `STATUS.md` +
+   `WORK_INDEX.md` + `DECISIONS.md` + `EC_INDEX.md`). Referenced
+   `1e6de0b` verbatim in the body (and in `DECISIONS.md §D-0205
+   Follow-up` + `EC_INDEX.md` "Executed at commit" + `STATUS.md`
+   summary + `WORK_INDEX.md` checkbox flip).
+
+**For WP-080 execution (EC-072):** same pattern is viable —
+source-code commit first (`replay.execute.ts`, `index.ts`, new
+`replay.execute.test.ts`), then governance commit referencing its
+hash. If 01.6 post-mortem surfaces fixes during execution, those
+fixes land **in** the source commit (post-mortem is step 4, before
+commit at step 6), not as a third commit.
+
+### Scope-lock verification: the right command
+
+`git diff --name-only <session-start-HEAD>..HEAD` is correct for
+multi-commit scope verification. `git diff --name-only` alone shows
+only working-tree deltas and will appear empty after all commits
+land — do not use it for post-commit scope audit.
+
+For WP-079 this returned exactly the 6 EC-073 allowlist files after
+the two EC-073 commits; SPEC commits (review + amendment) added 1
+new file under `docs/ai/reviews/`, which is outside the EC-073
+allowlist by design. The six-file EC-073 allowlist was honored
+exactly.
+
+### 01.6 post-mortem applicability
+
+- WP-079 correctly waived 01.6 (doc-only; both P6-35 triggers
+  absent — no new long-lived abstraction, no new code category).
+- **WP-080 MUST run 01.6** — `applyReplayStep` is a new long-lived
+  abstraction (the canonical step-level dispatch surface for every
+  future replay consumer). EC-072 explicitly states "01.6
+  post-mortem MANDATORY" per the EC_INDEX row. Budget session time
+  accordingly.
+- **Aliasing audit (01.6 §5)** is especially relevant for WP-080:
+  `applyReplayStep` takes a `LegendaryGameState` and returns it
+  (Q2 = Option A, mutate-and-return-same-reference). Confirm the
+  return value IS the same reference (not a copy) so the documented
+  contract holds, AND confirm no helpers introduced by the refactor
+  return aliased references to mutable `G` fields. WP-028 precedent
+  in 01.6 §Precedent Log is directly applicable.
+
+### Case-sensitivity of locked-phrase checks
+
+WP-079 had a locked contract `"determinism-only"` ≥ 2 hits in
+`replay.execute.ts`. PowerShell `Select-String -Pattern "..."` is
+case-insensitive by default (matches `Determinism-only`); bash
+`grep -c "..."` is case-sensitive (does not). The WP-079 session
+initially wrote `"Determinism-only"` in the module JSDoc and only
+caught the case drift via a cross-tool grep check. Fix: lowered
+the module-header occurrence to `"determinism-only"` so both tools
+count the same.
+
+**For WP-080:** if EC-072 has similar locked phrases (signature
+line matchers, required @tags, etc.), use both `grep -c` and
+`Select-String` during verification and normalize case at write time.
+
+### Carryover working-tree state
+
+At WP-079 session start, the working tree carried **7 untracked
+Category D files** (forensics + WP-048/067/068/063 invocations +
+session-contexts) plus **1 modified tracked file** (the WP-079
+session-invocation itself, with pre-flight + copilot check content
+from prior prep). All 8 files were kept out of every commit via
+strict `git add <file>` discipline (never `git add -A` or
+`git add .`).
+
+**For WP-080 execution:** those 8 files are likely still present
+plus possibly new ones from the WP-079 execution session. Continue
+the same discipline:
+
+- Stage only files in the EC-072 §Files to Produce allowlist.
+- Never use `git add -A` or `git add .`.
+- `git status --short` immediately before each commit — confirm only
+  expected files are staged.
+- Untracked governance artifacts (session-contexts, invocations,
+  pre-commit reviews) are owned by their respective SPEC / EC
+  sessions and MUST NOT be swept into EC-072 commits.
+
+### Branch strategy for WP-080 execution
+
+WP-079 cut its own branch `wp-079-replay-harness-determinism-label`
+off main at `3307b12`. WP-080 execution has a branch-strategy
+decision. Three options:
+
+- **Option A — Cut new branch off `main`.** WP-080 inherits main's
+  state but NOT WP-079's landed JSDoc (WP-079 branch has not yet
+  merged to main as of this amendment). WP-080 would then need to
+  re-apply the JSDoc narrowing verbatim during execution, or merge
+  WP-079 first. Highest merge-conflict risk because both WPs touch
+  `replay.execute.ts`.
+
+- **Option B — Cut new branch off `wp-079-replay-harness-determinism-label`.**
+  WP-080 inherits WP-079's JSDoc verbatim at branch-cut time —
+  cleanest inheritance. Separate PR trail per WP preserved. When
+  WP-079's branch later merges to main, WP-080's branch can rebase
+  or merge normally. **Recommended** unless the user prefers the
+  audit-trail benefits of Option A.
+
+- **Option C — Continue WP-080 execution on the existing
+  `wp-079-...` branch.** Simplest but combines WP-079 and WP-080
+  commit history on one branch, complicating the "WP-079 lands
+  first, WP-080 second" audit story. Not recommended.
+
+The WP-080 invocation's Pre-Flight §Header should record the
+branch-cut decision explicitly.
+
+### Authority Chain addenda for WP-080 execution
+
+The WP-080 session prompt's Authority Chain likely does not cite
+two governance artifacts that proved load-bearing for WP-079:
+
+- `docs/ai/prompts/PRE-COMMIT-REVIEW.template.md` (step 5 of the
+  01.6 workflow)
+- `docs/ai/REFERENCE/01.3-commit-hygiene-under-ec-mode.md`
+  (commit-phase reference — not the hooks themselves, the rules
+  that precede them)
+
+Load both explicitly even if the WP-080 invocation omits them. A
+later SPEC patch to the invocation-prompt template (or to 01.1 /
+EC-TEMPLATE.md) could formalize this; out of scope for WP-080
+execution itself.
+
+### Summary bullets
+
+- Load `PRE-COMMIT-REVIEW.template.md` explicitly; WP-080 is
+  higher-stakes than WP-079 (new long-lived abstraction).
+- Load `01.3-commit-hygiene-under-ec-mode.md` at the top of the
+  commit phase; use `ec-commit.ps1 -Check` for dry-runs.
+- Use the two-commit split (source first, governance second
+  referencing the source hash) to avoid `--amend`.
+- Use `git diff --name-only <session-start>..HEAD` for post-commit
+  scope verification.
+- 01.6 post-mortem IS MANDATORY for WP-080; aliasing audit (§5) is
+  first-priority given Q2 = Option A.
+- Normalize case on all locked-phrase occurrences; verify with both
+  `grep -c` and `Select-String`.
+- Continue strict `git add <file>` discipline.
+- Recommended branch: cut WP-080 off `wp-079-replay-harness-determinism-label`
+  (Option B) for clean inheritance.
+
+---
+
 ## One-Line Handoff
 
 WP-063 / EC-071 blocked at Pre-Session Gate #4 (WP-027 is end-to-end
@@ -412,3 +696,20 @@ only); WP-080 drafts the step-level API amendment under a new
 code changes in this session; WP-079 is a sibling dependency that
 lands first; both stashes retained; EC-069 `<pending>` placeholder
 retained.
+
+---
+
+## One-Line Handoff (Amended 2026-04-19)
+
+Drafting session + WP-079 execution both complete; WP-080 execution
+is next under `EC-072:` prefix; HEAD at handoff `f8858d4` on
+`wp-079-replay-harness-determinism-label`; recommended branch-cut
+strategy is Option B (cut `wp-080-replay-harness-step-level-api`
+off `wp-079-replay-harness-determinism-label` for clean JSDoc
+inheritance); 01.6 post-mortem MANDATORY (aliasing audit §5 is
+first-priority); load `PRE-COMMIT-REVIEW.template.md` +
+`01.3-commit-hygiene-under-ec-mode.md` explicitly even if the WP-080
+invocation Authority Chain omits them; both stashes retained;
+EC-069 `<pending>` placeholder retained; 7 untracked Category D
+files + 1 modified session-invocation file remain outside every
+allowlist and MUST stay unstaged.
