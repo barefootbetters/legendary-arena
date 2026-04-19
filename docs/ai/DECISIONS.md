@@ -4306,6 +4306,154 @@ for one field.
 
 ---
 
+### D-6201 — HUD aria-labels are the literal leaf UIState field name, verbatim
+
+**Decision:** Every user-visible numeric value in the Arena HUD carries
+an `aria-label` equal to the **literal leaf** `UIState` field name,
+verbatim, with no paraphrasing or humanization. Examples:
+`aria-label="bystandersRescued"`, `aria-label="twistCount"`,
+`aria-label="tacticsRemaining"`, `aria-label="tacticsDefeated"`,
+`aria-label="finalScore"`. Visible display text may be human-readable
+(e.g., `"Bystanders rescued: 4"`), but the `aria-label` is the data-
+contract name.
+
+**Rationale:** Tests assert the accessibility tree against exact
+strings; humanized or paraphrased labels drift silently when
+translation pipelines, locale files, or cosmetic refactors touch the
+HUD. The literal-leaf rule also binds the HUD's a11y surface to
+`uiState.types.drift.test.ts` — a rename of any of the six locked
+field names (WP-067) breaks BOTH the drift test AND the HUD tests in
+lockstep, preventing divergence.
+
+**Status:** Active
+**Raised:** WP-062 execution (2026-04-18)
+**Resolved:** 2026-04-18
+
+---
+
+### D-6202 — No client-side arithmetic on `UIState` game values in the HUD
+
+**Decision:** HUD components must not sum, subtract, normalize, smooth,
+average, count, or otherwise combine two or more numeric `UIState`
+fields into a new game-relevant value. `.reduce()` is banned in HUD
+source; so is a hand-written loop or a `+` operator between projected
+numbers in a `computed`. The only permitted "computation" is reading a
+single field and mapping it to a display string (including sign choice
+for PAR delta rendering).
+
+**Rationale:** Every number visible to the player must trace directly
+to an engine projection. Client-side aggregation introduces a second
+source of truth — if the engine later projects a pre-aggregated field
+and the HUD's aggregation disagrees, the UI lies to the player and
+undermines Vision §Primary Goal 3 (Player Trust & Fairness). Derived
+values belong on `UIState`, produced by the engine's projection layer.
+
+**Status:** Active
+**Raised:** WP-062 execution (2026-04-18)
+**Resolved:** 2026-04-18
+
+---
+
+### D-6203 — `<ParDeltaReadout />` renders em-dash only when `par` is absent, never when `finalScore === 0`
+
+**Decision:** The PAR delta readout renders an em-dash (`—`) when
+`!('par' in gameOver)` or `gameOver === undefined`. It renders `0`
+(no arrow, neutral tone) when `gameOver.par.finalScore === 0`. Tests
+assert the absent form via the `'par' in gameOver` key check, NOT via
+`gameOver.par === undefined`, because under `Object.keys` iteration
+and `JSON.stringify` the two forms differ (D-6701 §1).
+
+**Rationale:** Zero is a valid engine value — a player can legitimately
+hit PAR exactly. Collapsing `finalScore === 0` into an em-dash would
+hide a real competitive outcome behind the same indicator that means
+"no payload yet." This is load-bearing under D-6701 because
+`buildParBreakdown` currently returns `undefined` unconditionally; the
+HUD must distinguish "not wired yet" (em-dash) from "you hit par
+exactly" (`0`).
+
+**Status:** Active
+**Raised:** WP-062 execution (2026-04-18)
+**Resolved:** 2026-04-18
+
+---
+
+### D-6204 — Bystanders-rescued counter is the single `data-emphasis="primary"` slot in `<SharedScoreboard />`
+
+**Decision:** In `SharedScoreboard.vue`, the `bystandersRescued`
+counter carries `data-emphasis="primary"` exactly once. The four
+penalty counters (`escapedVillains`, `twistCount`,
+`tacticsRemaining`, `tacticsDefeated`) carry
+`data-emphasis="secondary"`. The attribute contract is structural —
+tests assert `[data-emphasis="primary"]` count = 1 and
+`[data-emphasis="secondary"]` count = 4, not class names — so a CSS
+refactor or theme layer cannot silently regress the emphasis rule.
+
+**Rationale:** `docs/01-VISION.md §Heroic Values in Scoring` names
+bystanders rescued as the strongest positive cooperative action. The
+visual hierarchy surfaces cooperation above penalty tracking; if the
+HUD has exactly one "primary" emphasis slot in the scoreboard, this
+is it.
+
+**Status:** Active
+**Raised:** WP-062 execution (2026-04-18)
+**Resolved:** 2026-04-18
+
+---
+
+### D-6205 — HUD failure semantics: fail-loud-for-required, fail-soft-for-optional
+
+**Decision:** HUD components access **required** `UIState` paths
+without defensive guards (`snapshot.progress.*`, every `UIPlayerState`
+core field, `snapshot.game.*`, `snapshot.scheme.*`,
+`snapshot.mastermind.*`). A missing required key is a fixture or
+contract violation — a loud `TypeError` is the correct failure mode,
+caught upstream by `satisfies UIState` fixture typing and the WP-067
+drift test. **Optional** paths (`snapshot.gameOver?`,
+`snapshot.gameOver.par?`, `snapshot.gameOver.scores?`,
+`snapshot.players[i].handCards?`) are guarded via `'key' in parent` or
+`?.` before access.
+
+**Rationale:** Defensive guards on required fields mask bugs instead
+of surfacing them. If `snapshot.progress` ever goes missing, the HUD
+should fail loudly at test time rather than silently render zero.
+Optional fields, by contrast, are legitimately absent in well-formed
+UIStates (e.g., `gameOver` during play, `par` under D-6701) and MUST
+be guarded to preserve the HUD's empty-state rendering guarantees.
+
+**Status:** Active
+**Raised:** WP-062 execution (2026-04-18)
+**Resolved:** 2026-04-18
+
+---
+
+### D-6206 — HUD color tokens: Okabe-Ito palette with numeric contrast-ratio comments
+
+**Decision:** `apps/arena-client/src/styles/base.css` gains five HUD
+color tokens (`--color-emphasis`, `--color-penalty`,
+`--color-active-player`, `--color-par-positive`,
+`--color-par-negative`) under both `prefers-color-scheme: light` and
+`prefers-color-scheme: dark` blocks. Each token carries an inline
+numeric contrast-ratio comment against the appropriate background
+token (format: `/* 7.2:1 on --color-background */`). Player identity
+colors come from the Okabe-Ito CUD-safe qualitative palette; the
+icon differentiator (distinct glyph per palette slot) is mandatory
+because color is never the sole accessibility signal.
+
+**Rationale:** WCAG AA requires 4.5:1 contrast for normal text; WP-062
+targets 4.5:1 minimum with AAA (7:1+) on the emphasis and active-
+player indicators where the visual hierarchy is highest. Numeric
+comments are load-bearing — a hand-wave "AA compliant" claim is a
+DoD failure per §Debuggability & Diagnostics. Contrast ratios were
+computed against the light (`#f9f9f9`) and dark (`#101015`)
+background tokens WP-061 committed; values are standard computations
+from the WebAIM contrast formula, verifiable with any WCAG checker.
+
+**Status:** Active
+**Raised:** WP-062 execution (2026-04-18)
+**Resolved:** 2026-04-18
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

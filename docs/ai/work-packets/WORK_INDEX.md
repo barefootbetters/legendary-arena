@@ -793,22 +793,31 @@ These packets make the game safe to ship.
   Layer rule: client apps consume engine types only; this WP enforces that
   boundary at repo setup time so it cannot regress later.
 
-- [ ] WP-062 — Arena HUD & Scoreboard (Client Projection View) ✅ Reviewed (2026-04-16 lint-gate pass)
-  Dependencies: WP-061, WP-028, WP-029, WP-048
+- [x] WP-062 — Arena HUD & Scoreboard (Client Projection View) ✅ Reviewed (2026-04-16 lint-gate pass) — Completed 2026-04-18 under EC-069 (see [session-wp062-arena-hud-scoreboard.md](../invocations/session-wp062-arena-hud-scoreboard.md))
+  Dependencies: WP-061, WP-028, WP-029, WP-048, WP-067
   Notes: First on-screen presentation of `UIState`; fixed (non-floating) HUD
   comprising `<TurnPhaseBanner />`, `<SharedScoreboard />`, `<ParDeltaReadout />`,
-  `<PlayerPanelList />`, `<EndgameSummary />`; four shared counters (bystanders
-  rescued, escaped villains, scheme twists, mastermind tactics); live PAR
-  delta readout driven by WP-048 fields (em-dash when absent, never zero);
-  bystanders-rescued counter visually emphasized per Vision §Heroic Values in
-  Scoring; no client-side arithmetic on game values (every number traces
-  directly to a `UIState` field); `team` vocabulary explicitly forbidden
-  (Legendary is cooperative); color-blind-safe palette with mandatory icon
-  differentiation (color is never the sole signal); floating-window system
-  explicitly dropped as vision-misaligned (deck-builder, not arena sim);
-  cosmetic theming deferred to a future monetization WP; accessibility (SG-17)
-  enforced at test level (`aria-label` + `aria-current` assertions); no engine
-  or registry changes.
+  `<PlayerPanelList />`, `<EndgameSummary />`; five shared counters
+  (bystandersRescued, escapedVillains, twistCount, tacticsRemaining,
+  tacticsDefeated) rendered unconditionally from the required
+  `UIState.progress` field (no phase gating — lobby renders zeros);
+  `<ParDeltaReadout />` reads `gameOver.par.finalScore` when `'par' in gameOver`
+  and renders em-dash otherwise (D-6701 dominant path); zero is a valid engine
+  value rendered as `0`, not em-dash; bystanders-rescued counter carries
+  `data-emphasis="primary"` exactly once per Vision §Heroic Values in Scoring;
+  no client-side arithmetic on game values; `team` vocabulary forbidden;
+  color-blind-safe Okabe-Ito palette with mandatory icon differentiation
+  (color is never the sole signal); five new base.css tokens with numeric
+  contrast-ratio comments under both light and dark `prefers-color-scheme`
+  blocks; container/presenter split enforced (only `ArenaHud.vue` imports
+  `useUiStateStore`); `ArenaHud.vue`, `PlayerPanel.vue`, `PlayerPanelList.vue`,
+  `ParDeltaReadout.vue`, `EndgameSummary.vue` use the `defineComponent`
+  authoring form per D-6512 / P6-30 (template-scope bindings beyond props
+  require setup-returned surfacing under vue-sfc-loader's separate-compile
+  pipeline); `TurnPhaseBanner.vue` + `SharedScoreboard.vue` remain in
+  `<script setup>` form (props-only templates). Repo suite: 464 tests passing
+  (engine 409/101, arena-client +22 tests / 6 new test files, registry 3,
+  vue-sfc-loader 11, server 6); no engine or registry changes.
 
 - [ ] WP-063 — Replay Snapshot Producer ✅ Reviewed (2026-04-16 lint-gate pass)
   Dependencies: WP-027, WP-028, WP-005B
