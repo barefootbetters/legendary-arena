@@ -491,6 +491,16 @@ For full rationale, see `DECISIONS.md`.
 
 ---
 
+## Replay Snapshot Producer (WP-063)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-6301 | `apps/replay-producer/` classified as `cli-producer-app` code category (new top-level category) | WP-063 |
+| D-6302 | `ReplaySnapshotSequence` JSON sorting: top-level keys sorted; nested objects inherit engine-produced order | WP-063 |
+| D-6303 | `ReplaySnapshotSequence` version bump policy: additive-at-v1, breaking-to-v2, consumer-must-assert | WP-063 |
+
+---
+
 ## Production Hardening & Invariants (WP-031)
 
 | Decision ID | Summary | Introduced In |

@@ -4454,6 +4454,149 @@ from the WebAIM contrast formula, verifiable with any WCAG checker.
 
 ---
 
+### D-6301 — `apps/replay-producer/` classified as `cli-producer-app` code category (new top-level category)
+
+**Decision:** `apps/replay-producer/` (introduced by WP-063) is the
+first instance of a new top-level code category, `cli-producer-app`
+("CLI Producer App"). The category sits alongside `client-app` in
+`docs/ai/REFERENCE/02-CODE-CATEGORIES.md` and is governed by the
+same §Layer Boundary section of `docs/ai/ARCHITECTURE.md`. Unlike
+`client-app` (which is browser-side, type-only engine imports), a
+`cli-producer-app` runs under Node 22+ and MAY import
+`@legendary-arena/game-engine` runtime — it wraps engine helpers
+with filesystem and stdout/stderr I/O to produce deterministic,
+portable artifacts. The category forbids `@legendary-arena/registry`
+imports (unless `Game.setup()` transitively requires them, mirroring
+`apps/server/`), forbids `boardgame.io` direct imports, forbids
+network/DB access, and permits `Date.now()` only as a fallback when
+an explicit override flag is absent (the override is the
+deterministic path; `Date.now()` is the convenience fallback).
+
+**Rationale:** WP-063 introduces `apps/replay-producer/` as a new
+top-level application that does not fit any existing category:
+- `client-app` forbids runtime engine imports (type-only) and
+  targets the browser — wrong for a Node CLI that must drive the
+  engine step-by-step.
+- `server` carries the expectation of PostgreSQL access, HTTP
+  endpoints, and process lifecycle management — far too broad for a
+  single-artifact producer.
+- `infra` (scripts/, .githooks/) explicitly covers one-off tooling
+  not shipped to players, but its rules permit "performance
+  shortcuts" and do not enforce the determinism + sourcemap +
+  full-sentence-error discipline a replay artifact producer
+  requires.
+- `engine` forbids all I/O, which is the CLI's reason to exist.
+
+Creating `cli-producer-app` lets pre-flight, ECs, and pre-commit
+review pin the exact constraints a CLI producer must satisfy
+(determinism flag override, sourcemap enablement, named exit-code
+constants, no runtime registry reach) without diluting an existing
+category. Future CLI producers (PAR artifact producer, migration
+scripts promoted to first-class tooling, etc.) reuse the same
+category.
+
+**Status:** Active
+**Raised:** WP-063 pre-flight / EC-071 drafting (2026-04-18)
+**Resolved:** 2026-04-18
+
+---
+
+### D-6302 — `ReplaySnapshotSequence` JSON sorting: top-level keys sorted, nested objects inherit engine-produced order
+
+**Decision:** The CLI `produce-replay` output serializes
+`ReplaySnapshotSequence` with **top-level keys sorted
+alphabetically** (`metadata`, `snapshots`, `version` at the outer
+object level). **Nested objects are NOT recursively sorted** — they
+inherit the key order produced by the engine (`buildUIState` output
+for each `snapshots[i]`, and any `metadata` sub-fields in author-
+supplied input order constrained to the locked shape). A
+probe-object unit test in `buildSnapshotSequence.test.ts` constructs
+a shape with deliberately-shuffled top-level keys and asserts stable
+serialization across two invocations; the CLI-side determinism test
+(`cli.test.ts`, Verification Step 5) asserts byte-identical output
+across two runs with the same `--produced-at` override.
+
+**Rationale:** Determinism in the artifact is the product of two
+independent sources: (a) top-level key stability, which a custom
+sorter guarantees regardless of the `JSON.stringify` implementation;
+and (b) nested key stability, which is **already guaranteed** by the
+engine's purity discipline (`UIState` is constructed by deterministic
+engine code under a single Node runtime per session). Recursive
+sorting would add ~dozens of lines of walker logic and a bespoke
+comparator for every nested shape, with no additional determinism
+benefit — the engine purity rule is load-bearing for the nested
+case. If a future Node release ever changed nested-key iteration
+order, the engine determinism test (WP-027) would catch it long
+before the replay artifact; escalating the detection to the CLI
+layer would be redundant. Top-level sorting remains mandatory
+because the CLI itself assembles the outer object (combining
+helper output + author-supplied metadata) and cannot rely on the
+engine's purity rule for its own assembly order.
+
+**Consequence:** The CLI serializer is a ~10-line function that
+projects the outer object to a sorted shape and then calls
+`JSON.stringify` with two-space indentation. It does NOT walk into
+`snapshots[*]` or `metadata.*`. The probe test proves the
+top-level guarantee; the run-twice determinism test proves the
+end-to-end byte stability.
+
+**Status:** Active
+**Raised:** WP-063 pre-flight / EC-071 drafting (2026-04-18)
+**Resolved:** 2026-04-18
+
+---
+
+### D-6303 — `ReplaySnapshotSequence` version bump policy: additive-at-v1, breaking-to-v2, consumer-must-assert
+
+**Decision:** `ReplaySnapshotSequence.version` is the literal `1`.
+Additive changes (new optional top-level fields, new optional
+`metadata` sub-fields) remain at `version: 1`. Any of the following
+require a bump to `version: 2`: (a) a change to the shape of
+`snapshots[i]` beyond what `UIState` itself defines (the engine
+projection is its own versioning axis — a change to `UIState` is
+governed by WP-028's rules, and the snapshot sequence inherits it
+transparently), (b) removal or rename of a documented field,
+(c) a change to sort semantics or serialization format, (d) a
+change to the meaning of any existing field (even if the name and
+type are unchanged). Consumers of `ReplaySnapshotSequence` (WP-064
+and future replay readers) MUST assert `version === 1` and refuse
+unknown versions with a full-sentence error per
+`00.6-code-style.md` Rule 11 (example: `"Unsupported
+ReplaySnapshotSequence version <N>; this reader supports version 1
+only."`). The `version` field is deliberately declared as the
+literal `1` (not `number`) so a future bump is a compile-time
+breaking change at every consumer, not a silent runtime drift.
+
+**Optional-field serialization addendum:** optional fields are
+**OMITTED** when absent, never serialized as `"metadata":
+undefined` or `"par": null`. When `metadata` has no sub-fields set,
+the entire `metadata` key is omitted from the output. A
+construction-matrix test covers: `metadata` absent, `metadata: {}`,
+and each `metadata.*` sub-field set singly, each case asserting
+serialized output stability and absence of `undefined` literals in
+the JSON text. This rule eliminates the
+`exactOptionalPropertyTypes`-related ambiguity between "key missing"
+and "key present with value `undefined`" at the serialization
+boundary.
+
+**Rationale:** `ReplaySnapshotSequence` becomes the input type for
+WP-064's `<ReplayInspector />` and any future replay tooling. The
+cost of a silent schema drift (a consumer blindly accepting a v2
+artifact as v1) is corrupted playback and hard-to-trace desyncs.
+The cost of a loud version assertion is a single line per consumer.
+Locking the additive-vs-breaking threshold now — before the first
+additive change is requested — prevents the "is this a v2 or still
+v1?" debate that typically surfaces when the first optional field
+is proposed. The literal-type `version: 1` constraint is the
+compile-time seam that makes any future format change a
+breaking change visible at every import site.
+
+**Status:** Active
+**Raised:** WP-063 pre-flight / EC-071 drafting (2026-04-18)
+**Resolved:** 2026-04-18
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

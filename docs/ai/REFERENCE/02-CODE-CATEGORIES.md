@@ -42,6 +42,7 @@ they are not real categories.
 | `data-input` | Data Input / Registry | `packages/registry/`, `data/` | `.claude/rules/registry.md` |
 | `server` | Server / Persistence | `apps/server/` | `.claude/rules/server.md`, `.claude/rules/persistence.md` |
 | `client-app` | Client App | `apps/arena-client/` | `docs/ai/ARCHITECTURE.md` §Layer Boundary (D-6511) |
+| `cli-producer-app` | CLI Producer App | `apps/replay-producer/` | `docs/ai/ARCHITECTURE.md` §Layer Boundary (D-6301) |
 | `test` | Tests | `**/*.test.ts` | `.claude/rules/code-style.md` |
 | `infra` | Data Pipeline / Infra | `scripts/`, `.githooks/`, CI workflows | N/A (not shipped to players) |
 | `docs` | Documentation / Governance | `docs/`, `.claude/` | `.claude/rules/work-packets.md` |
@@ -203,6 +204,46 @@ the client bundle). State drift between client projection and authoritative
 engine state. Bundle bloat from engine-runtime imports.
 
 **Directories:** `apps/arena-client/` (D-6511)
+
+---
+
+### `cli-producer-app` — CLI Producer App
+
+**What it is:** Executable Node.js command-line applications that wrap
+engine helpers with file I/O to produce deterministic, portable
+artifacts consumed by tests, CI, and downstream UI tooling. The first
+instance is `apps/replay-producer/` — a Node 22+ CLI that wraps
+`buildSnapshotSequence` and emits `ReplaySnapshotSequence` JSON for
+`<ReplayInspector />` (WP-064) and future replay consumers.
+
+**May:** Import `@legendary-arena/game-engine` runtime (unlike
+`client-app`, which is type-only). Read from / write to the local
+filesystem via `node:fs/promises`. Write to `stdout` / `stderr` with
+`process.stdout` / `process.stderr`. Use `node:util` `parseArgs` for
+argument parsing. Call `Date.now()` ONLY as a fallback when an
+explicit `--produced-at`-style override flag is not supplied (the
+override is the deterministic path; `Date.now()` is the
+developer-convenience fallback). Emit non-zero exit codes with
+full-sentence error messages on stderr. Enable Node sourcemaps via
+`NODE_OPTIONS=--enable-source-maps` so stack traces point at
+TypeScript.
+
+**Must not:** Import `@legendary-arena/registry` unless
+`Game.setup()` transitively requires it (mirror `apps/server/`
+precedent). Import `boardgame.io` directly. Access PostgreSQL, R2,
+or network endpoints. Implement gameplay rules. Mutate `G` or `ctx`.
+Implement logic that belongs in the engine helper it wraps — the CLI
+is strictly I/O + arg parsing + serialization. Use `Math.random()` or
+`performance.now()` anywhere. Persist anything beyond the explicit
+output artifact (no caches, no session files, no state dirs).
+
+**Failure mode:** Non-deterministic artifacts (wall-clock leaking
+into output). Layer-boundary violations (engine logic duplicated in
+the CLI). Silent I/O failures that should surface as non-zero exits
+with actionable messages. Sourcemap misconfiguration hiding the real
+crash site.
+
+**Directories:** `apps/replay-producer/` (D-6301)
 
 ---
 
