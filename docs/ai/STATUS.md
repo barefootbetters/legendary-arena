@@ -7,6 +7,46 @@
 
 ## Current State
 
+### WP-068 — Preferences Foundation (2026-04-18)
+
+`apps/registry-viewer/` now has a functional Pinia-backed preferences store
+with three shared-tier sections registered (`appearance`, `accessibility`,
+`advancedBase`). Schema defaults are calibrated to match the viewer's
+current hardcoded behavior per plan §2.3 / §5.7, so a fresh visitor with
+no stored preferences sees bit-identical UI to what shipped pre-packet.
+No user-visible UI yet — gear icon, drawer, control primitives, CSS
+migration all ship in WP-069..WP-077. The section registry rejects
+duplicate-id registrations with a loud `throw`; every `localStorage`
+access is corruption-safe and degrades to in-memory on quota / private-
+mode / corrupt-blob failures. Option A delivery path (per D-1414) —
+everything lives under `apps/registry-viewer/src/prefs/`; no
+`packages/ui-preferences/` package was created.
+
+**Repo test count:** 459 passing / 0 failing (registry 3 + registry-viewer
+17 new + vue-sfc-loader 11 + game-engine 409 + server 6 + arena-client 13).
+registry-viewer goes from 0 to 17 tests — WP-068 is the first packet to
+add tests to that app. No other suite regressed.
+
+**Minor scope deviations from the packet's literal text:**
+- Added `"tsx": "^4.15.7"` to `devDependencies` and a `"test"` script to
+  `apps/registry-viewer/package.json` — both required to satisfy the
+  packet's own AC §G verification (`pnpm --filter registry-viewer test`
+  exits 0) and the Viewer had neither before this session. AC §A wording
+  restricts only the `dependencies` block, not the rest of the file, so
+  this does not violate the explicit scope lock.
+- Used `console.warn("[prefs] ...")` directly in persistence catch
+  blocks instead of adding `"prefs"` to the `Category` union in
+  `lib/devLog.ts` — `devLog.ts` is not in the packet's Files Expected to
+  Change allowlist. The "prefs" devLog category reservation in the locked
+  values is therefore still available for a future packet to wire.
+- `createPreferencesStore.loadFromStorage()` probes `localStorage.getItem`
+  a second time after `readEnvelope` returns null, to distinguish "no
+  stored value" from "stored value is corrupt JSON" and back up only the
+  latter. Documented via `// why:` comment.
+
+Next: WP-066 rescope pre-flight (to consume the store instead of an
+ad-hoc `cardViewMode` key), then WP-069 (gear icon + drawer shell).
+
 ### WP-067 — UIState PAR Projection & Progress Counters (2026-04-17, EC-068)
 
 `buildUIState` now emits `UIState.progress` (required, with `bystandersRescued`

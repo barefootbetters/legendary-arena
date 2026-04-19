@@ -57,6 +57,9 @@ importers:
 
   apps/registry-viewer:
     dependencies:
+      pinia:
+        specifier: ^2.1.7
+        version: 2.3.1(typescript@5.9.3)(vue@3.5.30(typescript@5.9.3))
       vue:
         specifier: ^3.4.27
         version: 3.5.30(typescript@5.9.3)
@@ -91,6 +94,9 @@ importers:
       eslint-plugin-vuejs-accessibility:
         specifier: ^2.5.0
         version: 2.5.0(eslint@8.57.1)(globals@13.24.0)
+      tsx:
+        specifier: ^4.15.7
+        version: 4.21.0
       typescript:
         specifier: ^5.4.5
         version: 5.9.3

@@ -901,7 +901,7 @@ These packets make the game safe to ship.
   names). WP-062 pre-flight blocker #4 (base.css allowlist) is
   independent.
 
-- [ ] WP-068 — Preferences Foundation: Pinia + Shared-Tier Schema + Section Registry (Not yet reviewed)
+- [x] WP-068 — Preferences Foundation: Pinia + Shared-Tier Schema + Section Registry ✅ Reviewed (2026-04-18 lint-gate pass) — Completed 2026-04-18 under `WP-068:` commit prefix (no dedicated EC drafted; registry-viewer-only lightweight pattern) (see [session-context-wp068.md](../session-context/session-context-wp068.md))
   Dependencies: None (Option A path — `apps/registry-viewer/` is independent)
   Branch: `wp-068-preferences-foundation` (SPEC commit `32c8012` on 2026-04-18)
   Governance: decision D-1414 locks the Option A delivery path (in-app
