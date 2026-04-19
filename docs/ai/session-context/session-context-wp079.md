@@ -1,5 +1,55 @@
 # Session Context — WP-079 (Label Engine Replay Harness as Determinism-Only)
 
+> **Amendment 2026-04-19 (SPEC) — post-governance landing + pre-flight READY.**
+> This amendment **supersedes** the specific stale statements noted below.
+> All other guidance in this document remains authoritative (phrases,
+> scope guardrails, target line ranges, locked contract values).
+>
+> 1. **Branch status** — supersedes "no branch created yet" (below).
+>    Branch `wp-079-replay-harness-determinism-label` exists. Cut off
+>    `main` at `3307b12`. Current HEAD `b9977f0` (STATUS session-close).
+>    Step 0 sanity check: `git branch --show-current` → expect
+>    `wp-079-replay-harness-determinism-label`.
+>
+> 2. **Governance bundle gate wording** — supersedes "STOP if 41d28d1 /
+>    EC-073 drafting commit not present" guidance that pointed at the
+>    wp-062-arena-hud-era HEAD. Current state: governance artifacts are
+>    merged to `main` via `3307b12` (no reach-over needed).
+>
+> 3. **DECISIONS.md §D-0205 existence** — supersedes any implication
+>    that D-0205 is missing or lives only in session-context narration.
+>    D-0205 now exists as a canonical decision block in `DECISIONS.md`
+>    at line 4868, Status **Active**, Resolved **2026-04-18** (landed
+>    by SPEC-A′, merged to main).
+>
+> 4. **WORK_INDEX.md registration note** — supersedes earlier
+>    "WP-079 not listed" / "now listed" confusion. WP-079 row exists
+>    and the top-of-file review-status paragraph now carries an
+>    additional one-sentence registration sentence (SPEC-C, merged
+>    to main).
+>
+> 5. **Test baseline** — baseline unchanged at **464** but now
+>    re-verified on the execution branch itself. Verified at `b9977f0`:
+>    464 / 0 (registry 3 + vue-sfc-loader 11 + game-engine 409 +
+>    server 6 + arena-client 35).
+>
+> 6. **Pre-flight status** — supersedes "pre-flight can begin
+>    immediately" future tense. Pre-flight re-run 2026-04-19 returned
+>    **READY**; all 11 Pre-Session Gates pass. Execution may begin.
+>
+> 7. **Working tree hygiene warning** — execution session must not
+>    accidentally commit unrelated artifacts. Working tree carries
+>    **7 Category D untracked** governance artifacts (forensics
+>    invocations + prior session-context / invocation docs for
+>    WP-048/067/068/063). These are outside EC-073 Files-to-Produce
+>    allowlist and must NOT be included in any `EC-073:` commit.
+>    Verification Step 9 expectation stands: `git diff --name-only`
+>    shows **exactly 6 files** after execution.
+>
+> This is an **append-only clarification** intended to prevent Step 0
+> reader confusion; it does not revise the original Step 8 authored
+> content below.
+
 > **Amendment 2026-04-18 (SPEC) — post-P6-36 reconciliation:** Two
 > claims below predate P6-36 and WP-080 drafting and are now
 > superseded:
