@@ -428,3 +428,170 @@ proceed, and don't just stop without offering an option chain — the
 user's time is best spent picking from a curated list.
 
 Run pre-flight for WP-062 next.
+
+---
+
+WP-068 execution session lessons (folded in 2026-04-18 from the
+Preferences Foundation session; MUST be consulted before WP-062 session
+prompt is generated or executed). Four items landed in 01.4 Precedent
+Log as P6-36 through P6-39; two items are branch-mechanical and
+relevant only to the WP-062 next-session start.
+
+**Branch and base-commit update (supersedes the earlier header):**
+
+- Branch for WP-062 execution is `wp-062-arena-hud`, cut from `main` at
+  `1d709e5` on 2026-04-18. It is **not** the `wp-068-preferences-foundation`
+  branch — that branch carries WP-068's 17 new registry-viewer tests and
+  must not be conflated with this one. WP-068's work will merge to `main`
+  separately from WP-062.
+- The new execution base commit is `97e70ad SPEC: WP-062 governance
+  cleanup + WP-068 lessons-learned propagation`. This commit lands the
+  four Gate #2 governance files (WP-062 packet, EC-069 checklist,
+  copilot-wp062 check, session-wp062 invocation), the EC-069 and EC-070
+  rows in EC_INDEX.md, and the P6-36..P6-39 additions to 01.4. WP-062's
+  session prompt should reference `97e70ad` as the execution base (not
+  `1d709e5`), and the invocation's Gate #3 `git log --oneline -10` check
+  should allow `97e70ad` as the most recent commit before execution begins.
+- Gate #2 (governance files committed) is now **clear** at `97e70ad`.
+  Gate #3 (upstream dependencies) inherits from the `1d709e5` ancestor:
+  `2587bbb` EC-048, `2e68530` EC-067, `bc23913` EC-065 all still present.
+- Repo test baseline on `wp-062-arena-hud` at `97e70ad`: **442 passing
+  / 0 failing** (3 registry + 409 game-engine + 11 vue-sfc-loader + 6
+  server + 13 arena-client). The registry-viewer 0 → 17 jump from
+  WP-068 is NOT present on this branch; do not expect it during Gate #3
+  verification.
+
+**P6-36: Commit-prefix hook enforcement (load-bearing for WP-062
+commit step).**
+
+- The `.githooks/commit-msg` hook rejects any subject prefix other
+  than `EC-###:` / `SPEC:` / `INFRA:`. `WP-###:` is rejected outright.
+  The WP-062 invocation already locks `EC-069:` — that is the only
+  acceptable code-commit prefix for this WP. Do NOT let any
+  mid-session improvisation (e.g., "lightweight commit for a small
+  fix") introduce a `WP-062:` or other prefix; the hook will reject
+  it and the CI mirror (`.github/workflows/commit-hygiene.yml`) will
+  reject it on PR.
+- If mid-session execution discovers a need for a SPEC-shaped
+  correction (e.g., a DECISIONS.md entry surfaced during post-mortem
+  that must be added separately from the execution commit), the
+  correct prefix is `SPEC:`, committed in its own commit alongside
+  but not bundled with the `EC-069:` execution commit.
+- The WP-068 session hit this rule by accident: session-context
+  offered `WP-068:` as a "lightweight" Option B. The hook rejected
+  it; resolution required drafting a minimum-ceremony EC alongside
+  execution. WP-062 already has EC-069 fully drafted, so this is a
+  confirmation, not a pivot path.
+
+**P6-37: Test-infrastructure scope (applies only if WP-062 adds a
+first-test-ever to any app — not expected).**
+
+- `apps/arena-client/` already has 13 tests with a working
+  `node:test` script (inherited from WP-061), so WP-062 does not
+  introduce first-tests-in-an-app and does not trigger this
+  precedent's scope-widening rule. The HUD test files WP-062 adds
+  (five `.test.ts` under `apps/arena-client/src/components/hud/`)
+  run against the existing `test` script — no `package.json`
+  `scripts` or `devDependencies` changes are expected.
+- If a mid-session discovery does require extending the test script
+  (unlikely), treat the additions as implicit scope per P6-37 and
+  document the deviation in STATUS.md and the commit body. Do NOT
+  add new test-runner devDeps or test-script entries silently.
+
+**P6-38: Governance index file dirty-tree hold (applies to WP-062
+DoD step that updates EC_INDEX.md and WORK_INDEX.md).**
+
+- EC_INDEX.md is **clean** at `97e70ad` — EC-069 has its Draft row
+  and EC-070 has its Done row. WP-062's DoD will flip EC-069 from
+  Draft to Done with `Executed 2026-04-18 at commit <hash>` per the
+  EC-067 / EC-068 format. That edit is clean because EC_INDEX.md has
+  no pre-existing unrelated modifications on this branch.
+- WORK_INDEX.md on this branch has pre-existing unrelated modifications
+  (WP-079 content from the other developer's in-flight work). When
+  WP-062's DoD step flips the WP-062 checkbox from `[ ]` to `[x]`,
+  selective staging will be required — the same `git stash push
+  --keep-index -- <path>` dance that the WP-068 session used to
+  isolate its WP-068 checkbox flip from pre-existing WP-079 edits in
+  WORK_INDEX.md. See the bottom of this section for the recipe.
+- DECISIONS.md on this branch also carries pre-existing modifications.
+  If WP-062 pre-flight produces new decisions (HUD layout choice,
+  color-token additions, PAR-delta composable contract), they must be
+  committed under a separate `SPEC:` prefix commit on top of
+  `97e70ad` BEFORE the `EC-069:` execution commit lands — per P6-34.
+  Do NOT bundle a DECISIONS.md edit into the EC-069 execution commit.
+
+**P6-39: Corruption-safe loader distinction (not applicable to
+WP-062).**
+
+- WP-062 HUD components are read-only projections with no persistence
+  layer, no fallback logic, and no corruption-safe state to load. The
+  precedent is logged for future persistence-layer WPs (e.g., WP-074
+  DataSource preferences).
+
+**Residual dirty tree state (WP-062 execution must not stage or
+modify any of these):**
+
+- `.claude/settings.local.json` (local tool config)
+- `docs/ai/DECISIONS.md` (pre-existing WP-079 work)
+- `docs/ai/DECISIONS_INDEX.md` (pre-existing)
+- `docs/ai/work-packets/WORK_INDEX.md` (pre-existing WP-079 content)
+- Untracked files: Monrovia surveys (4), content/themes conflicted
+  JSONs (with pCloud `[conflicted]` marker — per memory, pCloud sync
+  can create these), MOVE_LOG_FORMAT.md, WP-079 packet, forensics
+  invocations and session-context, WP-067/WP-068 invocations,
+  WP-048 invocation, session-context-wp067, session-context-wp079,
+  license letters, one-pager, upper-deck-licensing-contacts.md
+
+**Stash state at WP-062 session start:** `stash@{0}` on this branch
+carries pre-existing WP-068-branch dirty-tree modifications that
+conflicted during the branch-cut on 2026-04-18. It includes
+DECISIONS.md and WORK_INDEX.md content divergent from `main`'s
+versions. WP-062 execution must NOT pop this stash — it is retained
+for the WP-068 / WP-079 owners to reconcile separately. Leave
+`git stash list` output alone.
+
+**Selective-staging recipe (for WP-062 DoD step that flips
+WORK_INDEX.md and STATUS.md while pre-existing modifications sit in
+WORK_INDEX.md):**
+
+```pwsh
+# Stash the pre-existing WORK_INDEX.md modifications only
+git stash push --keep-index -- docs/ai/work-packets/WORK_INDEX.md
+
+# Now WORK_INDEX.md reflects main's version. Apply the WP-062
+# checkbox flip via the Edit tool. Then stage and commit:
+git add docs/ai/work-packets/WORK_INDEX.md  # stages the flip only
+
+# After the EC-069 execution commit lands:
+git stash pop
+
+# The pre-existing WP-079 modifications are restored to the
+# working tree but not to the commit. They remain dirty for the
+# WP-079 owner to handle.
+```
+
+This is the exact pattern the WP-068 session used; it works cleanly
+when the pre-existing modifications and the WP-062 flip are in
+different regions of the file (different lines or hunks). If they
+overlap (WP-062 flip + pre-existing edit on the same line), stash
+pop will conflict — in that case, resolve via
+`git checkout --theirs` or `--ours` and raise the conflict via
+`AskUserQuestion` per item 7 in the chat-only intelligence section.
+
+---
+
+WP-062 executing session starts with:
+
+1. Load this file (session-context-wp062.md).
+2. Checkout branch `wp-062-arena-hud` at commit `97e70ad`.
+3. `git status --short` — confirm no modifications to the four Gate
+   #2 governance files; confirm the residual dirty tree matches the
+   list above; confirm `stash@{0}` is retained and do not touch it.
+4. `pnpm -r test` — confirm 442 passing / 0 failing on this branch.
+5. Read `docs/ai/invocations/session-wp062-arena-hud-scoreboard.md`
+   (the session prompt) end-to-end.
+6. Read `docs/ai/execution-checklists/EC-069-arena-hud-scoreboard.checklist.md`
+   (the execution authority).
+7. Execute per the session prompt. All gates (#1 EC slot, #2
+   governance committed, #3 upstream green, #4 category inheritance)
+   are pre-cleared as of `97e70ad`.
