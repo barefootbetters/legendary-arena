@@ -88,20 +88,29 @@ WP gated on D-0203, not to WP-079.
 
 ## Baseline to Preserve
 
-- Repo test baseline: **442 passing** (3 registry + 409 game-engine +
-  11 vue-sfc-loader + 6 server + 13 arena-client) as of the forensics
-  run (commit `1d709e5`). WP-079 must **not** regress any of these
-  counts or add any new tests (the latter is forbidden by the WP's
-  Acceptance Criteria, "Test count is identical to the starting
-  commit").
-- Game-engine suite baseline: **409 passing** across the existing
-  suites. WP-079 touches two source files; both have existing test
-  coverage that does not exercise JSDoc. The tests will re-run
-  unchanged.
+- **Updated 2026-04-18 (SPEC `1264133`):** Repo test baseline has
+  advanced since the original forensics commit. Current baseline is
+  **464 passing** (3 registry + 409 game-engine + 11 vue-sfc-loader +
+  6 server + 35 arena-client) as of commit `7eab3dc` (WP-062 close)
+  and unchanged through the three SPEC commits that followed
+  (`4b75dca`, `41d28d1`, `1264133` — all docs-only). The original
+  forensics-run baseline of **442 passing** (arena-client at 13)
+  is historical; the arena-client delta of +22 tests came from
+  WP-062 HUD component tests. WP-079 must hold the count at
+  whatever HEAD is at execution-session start — the Acceptance
+  Criteria "Test count is identical to the starting commit" is
+  still the binary gate, just measured against the current HEAD,
+  not 442.
+- Game-engine suite baseline: **409 passing** across 101 suites
+  (unchanged since WP-067 / EC-068 at commit `1d709e5`; WP-062 did
+  not modify the engine). WP-079 touches two source files; both
+  have existing test coverage that does not exercise JSDoc. The
+  tests re-run unchanged.
 - Build baseline: `pnpm --filter @legendary-arena/game-engine build`
   exits 0 at the starting commit. JSDoc additions cannot break the
   TypeScript build unless they introduce malformed `@` tags — a risk
-  the `Verification Steps` §Step 6 catches.
+  the Verification Steps in EC-073 / the execution session prompt
+  catch.
 
 ---
 
@@ -223,10 +232,43 @@ Determinism & Replay cluster.
   2026-04-18. D-0205 is Active; the other two are Open.
 - `docs/ai/DECISIONS_INDEX.md` — three new rows in the Determinism &
   Replay cluster.
-- `docs/ai/work-packets/WORK_INDEX.md` — WP-079 row at end of Phase 6.
+- `docs/ai/work-packets/WORK_INDEX.md` — WP-079 row in Phase 6 (added
+  in SPEC `1264133` as part of the EC-073 drafting bundle, clustered
+  with WP-080 and WP-063).
+
+### Added in SPEC `1264133` (2026-04-18) — EC-073 drafting bundle
+- `docs/ai/execution-checklists/EC-073-label-replay-harness-determinism-only.checklist.md`
+  — Draft status; **primary execution authority** for the WP-079
+  session. Follows EC-TEMPLATE verbatim. Locked Values encode
+  forbidden/required phrases + existing `// why:` comments to
+  preserve. Common Failure Smells include the `WP-079:` commit-
+  prefix hook rejection.
+- `docs/ai/invocations/session-wp079-label-replay-harness-determinism-only.md`
+  — execution session prompt. Pre-Session Gates, Authority Chain
+  (11 entries), Goal, Files Expected to Change allowlist (P6-27
+  enforced), Non-Negotiable Constraints, Verification Steps 1–10
+  in `pwsh`, Definition of Done.
+- `docs/ai/execution-checklists/EC_INDEX.md` — EC-073 row in
+  Shared Tooling section.
+
+### Downstream coordination (added in SPEC `41d28d1`, confirmed in `1264133`)
+- `docs/ai/work-packets/WP-080-replay-harness-step-level-api.md`
+  lists WP-079 as a **hard upstream dependency**. Both packets
+  touch `packages/game-engine/src/replay/replay.execute.ts`.
+  WP-079 lands first (minimal merge surface, doc-only); WP-080
+  (step-level API + `replayGame` loop refactor) inherits
+  WP-079's JSDoc narrowing verbatim without re-wording. Do NOT
+  attempt to parallelize. The WP-080 body's "EC status UNKNOWN"
+  note was replaced in `1264133` with a concrete EC-073 Draft
+  reference.
+- `docs/ai/DECISIONS.md §D-6304` (added in `41d28d1`) cites D-0205
+  and depends on WP-079 to land before WP-080 executes. D-6304
+  locks the single-source-of-truth-for-dispatch decision that
+  `applyReplayStep` (WP-080) introduces.
 
 No further planning artifacts need to be created before WP-079 can
-execute. Pre-flight can begin immediately.
+execute. Pre-flight can begin immediately by loading
+`docs/ai/invocations/session-wp079-label-replay-harness-determinism-only.md`.
 
 ---
 
@@ -245,30 +287,89 @@ execute. Pre-flight can begin immediately.
    discovering the WP-068..WP-078 Preferences-series reservation)
 6. WP 00.3 self-lint run → 🔧 Pass with notes → two patches applied
    → ✅ clean Pass
-7. WP-079 row inserted at end of Phase 6 in WORK_INDEX.md;
-   narrative-log paragraph updated
-8. This file
+7. WP-079 row planned for WORK_INDEX.md (original note at top of
+   this file claimed the row was inserted, but grep confirmed it
+   was never landed — the row was actually added later in step 9b)
+8. This file drafted
+9. **SPEC `1264133` (2026-04-18) — EC-073 drafting bundle landed.**
+   Four new artifacts committed (WP-079 body tracked; EC-073
+   checklist; session-wp079 execution prompt; this session-context
+   tracked + amended). Three index updates (WORK_INDEX.md WP-079
+   row added to Phase 6; EC_INDEX.md EC-073 row added; STATUS.md
+   "WP-079 EC-073 Drafted" section added at top of Current State).
+   WP-080 body's "EC status UNKNOWN" note replaced with a concrete
+   EC-073 Draft reference. Two predated claims in this file
+   superseded by the amendment block at the top: "no EC needed"
+   (P6-36 forbids `WP-###:` prefixes on code-changing commits;
+   EC-073 is now the required authority) and "already in
+   WORK_INDEX.md" (false — row added in this SPEC commit). 00.3
+   lint gate PASS on the WP-079 body documented in the commit
+   body. No source code changes. Both stashes retained. EC-069
+   `<pending>` placeholder retained.
 
 ---
 
 ## Next Steps
 
-Run pre-flight for WP-079 when ready. Because WP-079 is doc-only and
-its `Files Expected to Change` allowlist is tight (2 source files +
-3 governance files), pre-flight will be a short confirmation rather
-than a branching decision:
+WP-079 execution is **Step 2 of the four-step replay-harness chain**
+that unblocks WP-063. Full chain:
 
-- Confirm the starting commit's test count is 442 (or record the
-  actual baseline) and that `pnpm --filter @legendary-arena/game-engine build`
-  and `pnpm --filter @legendary-arena/game-engine test` exit 0.
-- Confirm D-0205 is still `Status: Active` in `DECISIONS.md`.
-- Confirm `MOVE_LOG_FORMAT.md` Gap #4 still exists unedited.
-- Confirm the two target JSDoc blocks (`replayGame` at
-  `replay.execute.ts:127-141`, `verifyDeterminism` at
-  `replay.verify.ts:16-38`) still sit at roughly those line ranges
-  and contain the text the WP assumes.
+- ✅ **Step 1 (COMPLETE — SPEC `1264133`):** EC-073 drafted +
+  governance artifacts in place.
+- ⏳ **Step 2 (READY NOW):** WP-079 execution under `EC-073:`
+  commit prefix. Authoritative session prompt at
+  `docs/ai/invocations/session-wp079-label-replay-harness-determinism-only.md`.
+  No blockers.
+- ⏸ **Step 3 (BLOCKED on Step 2):** WP-080 execution under
+  `EC-072:` prefix. Both packets touch `replay.execute.ts`; do NOT
+  parallelize.
+- ⏸ **Step 4 (BLOCKED on Step 3):** WP-063 resume under existing
+  `EC-071:` prefix. Pre-Session Gate #4 (amended in SPEC `41d28d1`)
+  satisfies once `applyReplayStep` from WP-080 is visible at
+  `packages/game-engine/src/index.ts`.
 
-If all four confirm, proceed to execution. The WP is expected to
-produce ~30-50 lines of new JSDoc/header text total across both
-files. Post-execution, update `DECISIONS.md §D-0205 Follow-up actions
-required` to mark the JSDoc action completed with the commit hash.
+### To execute WP-079 (Step 2)
+
+Load the session prompt as the primary authority — it supersedes
+this session-context for execution-time decisions. In particular,
+the session prompt + EC-073 override this file's original claim of
+"no EC needed" (which is why they exist at all under P6-36).
+
+Pre-flight (abbreviated because EC-073 owns the gates):
+
+- `git log --oneline -5` — confirm `1264133` (this SPEC bundle) or
+  later is HEAD. If not, STOP — governance is unlanded.
+- `pnpm -r test` — record actual starting-commit count (expected
+  464 unless intervening commits landed). This count, not 442, is
+  the binary equality target for "test count identical" AC.
+- Confirm D-0205 Status `Active`; confirm `MOVE_LOG_FORMAT.md` Gap
+  #4 exists unedited.
+- Confirm target JSDoc blocks still at their line ranges:
+  - `replay.execute.ts` — `replayGame()` JSDoc at ~127–137;
+    signature at line 138
+  - `replay.verify.ts` — `verifyDeterminism()` JSDoc at ~25–38;
+    signature at line 39
+  (The original session-context claimed 127–141 and 16–38; verify
+  the actual ranges at session start. WP-080 drafting confirmed
+  `replay.execute.ts` line 138 has the `replayGame` signature —
+  the 127–141 claim rounded to include the signature line.)
+- Confirm `stash@{0}` + `stash@{1}` present and untouched; do NOT
+  pop; do NOT backfill the EC-069 `<pending>` placeholder in
+  `EC_INDEX.md`.
+
+If all confirm, proceed to execution per the session prompt's Goal
+and Files Expected to Change allowlist. Expected diff: ~30–50 lines
+of new JSDoc/header text across the two source files + five
+governance updates (STATUS + WORK_INDEX + DECISIONS §D-0205
+Follow-up + EC_INDEX EC-073 flip + this session-context if
+post-exec notes are added). Commit under `EC-073:` (NEVER
+`WP-079:`).
+
+### Post-execution handoff
+
+After WP-079 execution lands under `EC-073:`, Step 3 (WP-080
+execution) becomes ready. The WP-080 execution session should read
+the landed `replay.execute.ts` header + `replayGame()` JSDoc
+verbatim as the narrowing to preserve — do NOT re-word WP-079's
+text, and do NOT introduce new forbidden phrases while adding
+`applyReplayStep` alongside.
