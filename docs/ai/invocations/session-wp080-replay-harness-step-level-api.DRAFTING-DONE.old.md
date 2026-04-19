@@ -1,3 +1,20 @@
+> **⚠️ RETIRED — DO NOT RUN ⚠️**
+>
+> This file was the SPEC-only drafting session invocation for WP-080 / EC-072.
+> The drafting session ran to completion on 2026-04-18 (merged to main via
+> SPEC bundle `1264133` → `3307b12`). Its deliverables (WP-080 body, EC-072
+> checklist, D-6304 decision, WORK_INDEX / EC_INDEX / STATUS rows) are all on
+> disk.
+>
+> **For WP-080 execution, use:**
+> `docs/ai/invocations/session-wp080-ec072-execution-step-level-api.md`
+>
+> This file is retained as a historical audit artifact only. Renamed with
+> the `.DRAFTING-DONE.old.md` suffix on 2026-04-19 to prevent accidental
+> re-invocation in a new Claude Code session.
+
+---
+
 # Session Prompt — WP-080 / EC-072 Drafting: Replay Harness Step-Level API
 
 **Session class:** SPEC-only drafting session (no source code changes).
