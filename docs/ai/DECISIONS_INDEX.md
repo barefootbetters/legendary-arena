@@ -41,6 +41,9 @@ For full rationale, see `DECISIONS.md`.
 |------------|---------|---------------|--------------|
 | D‑0201 | Replay is first‑class | WP‑027 | WP‑039 |
 | D‑0202 | Deterministic state hashing | WP‑027 | WP‑032 |
+| D-0203 | Canonical persisted artifact for move log / replay (**Open**) | `MOVE_LOG_FORMAT.md` 2026-04-18 | — |
+| D-0204 | Privacy boundary for persisted logs (**Open**) | `MOVE_LOG_FORMAT.md` 2026-04-18 | — |
+| D-0205 | RNG truth source for replay — harness scoped as determinism-only (**Active** 2026-04-18) | `MOVE_LOG_FORMAT.md` 2026-04-18 | — |
 
 ---
 
