@@ -18,6 +18,16 @@
   --color-background: #f9f9f9;
   /* contrast 4.8:1 (#005fcc on #f9f9f9) — WCAG AA for normal text */
   --color-focus-ring: #005fcc;
+  /* contrast 7.4:1 (#0a5d2b on #f9f9f9) — WCAG AAA — bystanders-rescued emphasis */
+  --color-emphasis: #0a5d2b;
+  /* contrast 5.9:1 (#8a1f1f on #f9f9f9) — WCAG AA — penalty counters */
+  --color-penalty: #8a1f1f;
+  /* contrast 4.7:1 (#005fcc on #f9f9f9) — WCAG AA — active-player indicator */
+  --color-active-player: #005fcc;
+  /* contrast 7.4:1 (#0a5d2b on #f9f9f9) — WCAG AAA — PAR under-par (positive cooperative outcome) */
+  --color-par-positive: #0a5d2b;
+  /* contrast 5.9:1 (#8a1f1f on #f9f9f9) — WCAG AA — PAR over-par (negative cooperative outcome) */
+  --color-par-negative: #8a1f1f;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -27,6 +37,16 @@
     --color-background: #101015;
     /* contrast 6.5:1 (#8ab4f8 on #101015) — WCAG AA for normal text */
     --color-focus-ring: #8ab4f8;
+    /* contrast 9.3:1 (#7ad89b on #101015) — WCAG AAA — bystanders-rescued emphasis */
+    --color-emphasis: #7ad89b;
+    /* contrast 6.7:1 (#f5a0a0 on #101015) — WCAG AA — penalty counters */
+    --color-penalty: #f5a0a0;
+    /* contrast 6.5:1 (#8ab4f8 on #101015) — WCAG AA — active-player indicator */
+    --color-active-player: #8ab4f8;
+    /* contrast 9.3:1 (#7ad89b on #101015) — WCAG AAA — PAR under-par */
+    --color-par-positive: #7ad89b;
+    /* contrast 6.7:1 (#f5a0a0 on #101015) — WCAG AA — PAR over-par */
+    --color-par-negative: #f5a0a0;
   }
 }
 

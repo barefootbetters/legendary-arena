@@ -31,7 +31,7 @@
 | ✅ Reviewed | Packet has been audited: SharePoint links removed, all required sections present, verified against conventions |
 | ⚠️ Needs review | Packet has NOT been audited — likely contains SharePoint links, missing Definition of Done, `.mjs` test paths |
 
-All existing WPs through WP-060 are marked ✅ Reviewed. WP-048 through WP-054, WP-055, and WP-060 were audited during the 2026-04-15 Standardization Completeness Pass (no issues found). WP-061 through WP-064 were drafted 2026-04-16 as a UI-implementation chain and passed the lint-gate review (00.3) the same day: Vitest option removed in favor of `node:test`-only per §7/§12; verification code fences switched to `pwsh` and Windows paths per §9; forbidden-packages block added explicitly per §7; WP-063 determinism check now uses `Compare-Object` instead of Unix `diff`. WP-065 was added 2026-04-16 as a hard prerequisite for the UI chain: a shared `packages/vue-sfc-loader/` that makes `.vue` SFCs importable under `node:test` (the lint-forbidden Vitest escape hatch is replaced by this internal loader). Any future WPs must be reviewed before Claude Code executes them.
+All existing WPs through WP-060 are marked ✅ Reviewed. WP-048 through WP-054, WP-055, and WP-060 were audited during the 2026-04-15 Standardization Completeness Pass (no issues found). WP-061 through WP-064 were drafted 2026-04-16 as a UI-implementation chain and passed the lint-gate review (00.3) the same day: Vitest option removed in favor of `node:test`-only per §7/§12; verification code fences switched to `pwsh` and Windows paths per §9; forbidden-packages block added explicitly per §7; WP-063 determinism check now uses `Compare-Object` instead of Unix `diff`. WP-065 was added 2026-04-16 as a hard prerequisite for the UI chain: a shared `packages/vue-sfc-loader/` that makes `.vue` SFCs importable under `node:test` (the lint-forbidden Vitest escape hatch is replaced by this internal loader). WP-079 was added 2026-04-18 as a tiny doc-only decision-closure WP arising from the `docs/ai/MOVE_LOG_FORMAT.md` forensics report; passed the 00.3 lint-gate self-review the same day after two surgical patches (verification-command shell + acceptance-criteria count). Any future WPs must be reviewed before Claude Code executes them.
 
 ---
 
@@ -793,25 +793,36 @@ These packets make the game safe to ship.
   Layer rule: client apps consume engine types only; this WP enforces that
   boundary at repo setup time so it cannot regress later.
 
-- [ ] WP-062 — Arena HUD & Scoreboard (Client Projection View) ✅ Reviewed (2026-04-16 lint-gate pass)
-  Dependencies: WP-061, WP-028, WP-029, WP-048
+- [x] WP-062 — Arena HUD & Scoreboard (Client Projection View) ✅ Reviewed (2026-04-16 lint-gate pass) — Completed 2026-04-18 under EC-069 (see [session-wp062-arena-hud-scoreboard.md](../invocations/session-wp062-arena-hud-scoreboard.md))
+  Dependencies: WP-061, WP-028, WP-029, WP-048, WP-067
   Notes: First on-screen presentation of `UIState`; fixed (non-floating) HUD
   comprising `<TurnPhaseBanner />`, `<SharedScoreboard />`, `<ParDeltaReadout />`,
-  `<PlayerPanelList />`, `<EndgameSummary />`; four shared counters (bystanders
-  rescued, escaped villains, scheme twists, mastermind tactics); live PAR
-  delta readout driven by WP-048 fields (em-dash when absent, never zero);
-  bystanders-rescued counter visually emphasized per Vision §Heroic Values in
-  Scoring; no client-side arithmetic on game values (every number traces
-  directly to a `UIState` field); `team` vocabulary explicitly forbidden
-  (Legendary is cooperative); color-blind-safe palette with mandatory icon
-  differentiation (color is never the sole signal); floating-window system
-  explicitly dropped as vision-misaligned (deck-builder, not arena sim);
-  cosmetic theming deferred to a future monetization WP; accessibility (SG-17)
-  enforced at test level (`aria-label` + `aria-current` assertions); no engine
-  or registry changes.
+  `<PlayerPanelList />`, `<EndgameSummary />`; five shared counters
+  (bystandersRescued, escapedVillains, twistCount, tacticsRemaining,
+  tacticsDefeated) rendered unconditionally from the required
+  `UIState.progress` field (no phase gating — lobby renders zeros);
+  `<ParDeltaReadout />` reads `gameOver.par.finalScore` when `'par' in gameOver`
+  and renders em-dash otherwise (D-6701 dominant path); zero is a valid engine
+  value rendered as `0`, not em-dash; bystanders-rescued counter carries
+  `data-emphasis="primary"` exactly once per Vision §Heroic Values in Scoring;
+  no client-side arithmetic on game values; `team` vocabulary forbidden;
+  color-blind-safe Okabe-Ito palette with mandatory icon differentiation
+  (color is never the sole signal); five new base.css tokens with numeric
+  contrast-ratio comments under both light and dark `prefers-color-scheme`
+  blocks; container/presenter split enforced (only `ArenaHud.vue` imports
+  `useUiStateStore`); `ArenaHud.vue`, `PlayerPanel.vue`, `PlayerPanelList.vue`,
+  `ParDeltaReadout.vue`, `EndgameSummary.vue` use the `defineComponent`
+  authoring form per D-6512 / P6-30 (template-scope bindings beyond props
+  require setup-returned surfacing under vue-sfc-loader's separate-compile
+  pipeline); `TurnPhaseBanner.vue` + `SharedScoreboard.vue` remain in
+  `<script setup>` form (props-only templates). Repo suite: 464 tests passing
+  (engine 409/101, arena-client +22 tests / 6 new test files, registry 3,
+  vue-sfc-loader 11, server 6); no engine or registry changes.
 
 - [ ] WP-063 — Replay Snapshot Producer ✅ Reviewed (2026-04-16 lint-gate pass)
-  Dependencies: WP-027, WP-028, WP-005B
+  Dependencies: WP-027, WP-028, WP-005B, WP-080 (step-level API —
+  amended 2026-04-18 after WP-063 / EC-071 stopped at Pre-Session
+  Gate #4; resumes after WP-080 / EC-072 lands)
   Notes: Two-part packet crossing engine + new CLI app; engine adds type
   `ReplaySnapshotSequence` (version: 1 literal, `readonly snapshots:
   readonly UIState[]`) and pure helper `buildSnapshotSequence({ setupConfig,
@@ -843,6 +854,52 @@ These packets make the game safe to ship.
   step overruns; auto-play gated behind an opt-in prop to keep scope to
   one session; `src/stores/` from WP-061 untouched unless a DECISIONS.md
   entry justifies a change; no engine, registry, or server-side changes.
+
+- [ ] WP-079 — Label Engine Replay Harness as Determinism-Only ✅ Reviewed (2026-04-18 lint-gate pass; 00.3 self-lint clean after two surgical patches)
+  Dependencies: WP-027, D-0205
+  Execution Checklist: `docs/ai/execution-checklists/EC-073-label-replay-harness-determinism-only.checklist.md` (Draft)
+  Notes: Doc-only decision-closure WP carrying out D-0205's single
+  follow-up action. Modifies two source files (doc-only content
+  edit; zero runtime behavior change): `packages/game-engine/src/replay/replay.execute.ts`
+  gains a module-header notice + wholesale `replayGame()` JSDoc
+  rewrite; `packages/game-engine/src/replay/replay.verify.ts`
+  gains a module-header sentence + wholesale `verifyDeterminism()`
+  JSDoc rewrite. Forbidden phrases ("replays live matches",
+  "replays a specific match", "reproduces live-match outcomes")
+  must grep to zero; required phrases ("determinism-only" ≥ 2 in
+  execute / ≥ 1 in verify; D-0205 xref in both; `MOVE_LOG_FORMAT.md`
+  Gap #4 xref in execute). No signature changes. No export changes.
+  No type changes. No test changes — test count IDENTICAL to
+  starting commit. No new files. Hard upstream for WP-080 (both
+  packets touch `replay.execute.ts`; WP-079 lands first, WP-080
+  inherits the JSDoc narrowing verbatim). Commit prefix `EC-073:`
+  at execution (NEVER `WP-079:` per P6-36). NO 01.6 post-mortem
+  required (doc-only; no new abstraction; no new code category).
+
+- [ ] WP-080 — Replay Harness Step-Level API for Downstream Snapshot / Replay Tools ✅ Reviewed (2026-04-18 lint-gate pass — drafted to unblock WP-063 / EC-071 Pre-Session Gate #4)
+  Dependencies: WP-027, WP-079, D-6304
+  Execution Checklist: `docs/ai/execution-checklists/EC-072-replay-harness-step-level-api.checklist.md` (Draft)
+  Notes: Additive refactor to `packages/game-engine/src/replay/replay.execute.ts`:
+  adds named export `applyReplayStep(gameState, move, numPlayers):
+  LegendaryGameState` (Q1 = Option A — single function, minimum surface),
+  mutate-and-return-same-reference contract (Q2 = Option A), and refactors
+  `replayGame`'s internal loop to delegate each iteration to the new
+  export (Q3 = Option A — single source of truth for dispatch).
+  `MOVE_MAP` and `buildMoveContext` remain file-local; `ReplayMoveContext`
+  remains a file-local structural interface (Q4 — not exported). One new
+  export line added under the WP-027 block in `packages/game-engine/src/index.ts`.
+  New test file `replay.execute.test.ts` adds three cases: identity
+  (same inputs → same output state), `replayGame` regression guard
+  (byte-identical `stateHash` on existing `verifyDeterminism` fixture
+  pre- and post-refactor), and unknown-move warning-and-skip routing.
+  `ReplayInputsFile` is OUT OF SCOPE (Q5 — WP-063's concern). RNG
+  semantics unchanged; D-0205 remains in force (step function inherits
+  reverse-shuffle determinism-only semantics). WP-079 is a hard upstream —
+  both packets touch `replay.execute.ts`; WP-079 lands first with JSDoc
+  narrowing, WP-080 inherits it verbatim. If WP-079 has no EC at WP-080
+  execution time, drafting WP-079's EC is a transitive prerequisite.
+  Commit prefix `EC-072:` at execution (never `WP-080:` per P6-36).
+  Unblocks WP-063 Pre-Session Gate #4 once executed.
 
 - [ ] WP-066 — Registry Viewer: Card Image-to-Data Toggle (Not yet reviewed)
   Dependencies: None (registry viewer is independent)

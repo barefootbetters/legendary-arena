@@ -7,6 +7,160 @@
 
 ## Current State
 
+### WP-079 EC-073 Drafted (2026-04-18, SPEC)
+
+Step 1 of the replay-harness chain. WP-079 (Label Engine Replay
+Harness as Determinism-Only) is a doc-only decision-closure WP
+carrying out D-0205's single follow-up action. This SPEC commit
+drafts the missing governance artifacts needed to execute WP-079
+under current commit-prefix rules:
+
+- `docs/ai/execution-checklists/EC-073-label-replay-harness-determinism-only.checklist.md`
+  (new; Draft status; follows EC-TEMPLATE verbatim)
+- `docs/ai/invocations/session-wp079-label-replay-harness-determinism-only.md`
+  (new; execution session prompt; commit prefix `EC-073:`)
+- `docs/ai/work-packets/WP-079-label-replay-harness-determinism-only.md`
+  (newly tracked; WP file was drafted earlier but untracked until
+  this commit)
+- `docs/ai/session-context/session-context-wp079.md` (newly tracked
+  + amended: two claims superseded by post-P6-36 reconciliation —
+  "no EC needed" and "already in WORK_INDEX.md" are both now false
+  because P6-36 forbids `WP-###:` commit prefixes, requiring an
+  EC-prefixed commit for any code-changing session)
+- `docs/ai/work-packets/WORK_INDEX.md` (new WP-079 row in Phase 6)
+- `docs/ai/execution-checklists/EC_INDEX.md` (new EC-073 row)
+- `docs/ai/work-packets/WP-080-replay-harness-step-level-api.md`
+  (note updated: WP-079 EC status is now "Draft (EC-073)" instead
+  of "UNKNOWN")
+
+WP-079's scope unchanged from the original draft: JSDoc + module-
+header text on `packages/game-engine/src/replay/replay.execute.ts`
+and `packages/game-engine/src/replay/replay.verify.ts`. Zero runtime
+behavior change. Zero signature / export / type / test change.
+Forbidden phrases must grep to zero; required phrases must grep to
+their declared counts. Existing `// why:` comments preserved
+verbatim.
+
+Chain status after this commit:
+- Step 1 (THIS COMMIT): WP-079 EC-073 drafted — `SPEC:`
+- Step 2: WP-079 execution under `EC-073:` — pending
+- Step 3: WP-080 execution under `EC-072:` — pending (blocked on
+  Step 2; both packets touch `replay.execute.ts`)
+- Step 4: WP-063 resume under `EC-071:` — pending (blocked on
+  Step 3)
+
+Repo test baseline unchanged at 464 (no source code touched in this
+SPEC commit). Stashes `stash@{0}` and `stash@{1}` retained. EC-069
+`<pending — gatekeeper session>` placeholder in `EC_INDEX.md`
+retained (owned by separate SPEC commit).
+
+### WP-063 Blocked → WP-080 / EC-072 / D-6304 Drafted (2026-04-18, SPEC)
+
+WP-063 / EC-071 (Replay Snapshot Producer) stopped at Pre-Session Gate #4:
+`packages/game-engine/src/replay/replay.execute.ts` exposes only
+`replayGame(input, registry): ReplayResult` — an end-to-end harness
+that loops all moves internally. `MOVE_MAP` (line 77),
+`buildMoveContext` (line 98), and the `ReplayMoveContext` interface
+(line 39) are all module-local; no per-step callback, no intermediate
+`G` observable from outside. WP-063's `buildSnapshotSequence` needs
+per-input stepping with a live `G` reference at each step to call
+`buildUIState` (WP-028) — without a step-level export from WP-027,
+the only consumer path would duplicate `MOVE_MAP` into
+`apps/replay-producer/`, creating dispatch drift. Under the EC-071
+session protocol's "If the harness is end-to-end only, WP-063 is
+BLOCKED — STOP and ask" clause, the session halted and the user
+selected "Stop and amend (pre-flight)" via `AskUserQuestion`.
+
+This SPEC commit drafts WP-080 / EC-072 / D-6304 to add a named
+step-level export `applyReplayStep(gameState, move, numPlayers):
+LegendaryGameState` to `replay.execute.ts`, with `replayGame`'s
+internal loop refactored to delegate to it (single source of truth
+for dispatch). Q1=A (single function), Q2=A
+(mutate-and-return-same-reference), Q3=A (refactor the loop), Q4=A
+(keep `ReplayMoveContext` file-local), Q5 (`ReplayInputsFile`) out of
+scope. RNG semantics unchanged; D-0205 remains in force.
+
+Artifacts created / modified in this session:
+- `docs/ai/work-packets/WP-080-replay-harness-step-level-api.md`
+  (new; Status Ready; dependencies WP-027, WP-079, D-6304)
+- `docs/ai/execution-checklists/EC-072-replay-harness-step-level-api.checklist.md`
+  (new; Draft)
+- `docs/ai/DECISIONS.md §D-6304` (new; Active, Resolved 2026-04-18)
+- `docs/ai/work-packets/WORK_INDEX.md` (new WP-080 row; WP-063
+  dependency cell amended to include WP-080)
+- `docs/ai/execution-checklists/EC_INDEX.md` (new EC-072 row;
+  EC-071 entry annotated as Blocked at Pre-Session Gate #4)
+- `docs/ai/invocations/session-wp063-replay-snapshot-producer.md`
+  (additive amendment at §Pre-Session Gates #4 and §Authority Chain
+  citing WP-080 / EC-072 / D-6304 as the newly-added upstream; no
+  deletions)
+
+Order of execution from here: (1) WP-079 EC drafting (if no EC
+exists yet at `EC_INDEX.md`), (2) WP-079 execution (doc-only JSDoc
+narrowing on `replay.execute.ts` + `replay.verify.ts`), (3) WP-080
+execution under commit prefix `EC-072:`, (4) WP-063 resume under
+existing `EC-071:` commit prefix (Pre-Session Gate #4 then passes
+because `applyReplayStep` is visible at
+`packages/game-engine/src/index.ts`). Commit prefix for this drafting
+session: `SPEC:` (P6-36 — `WP-080:` and `EC-072:` both forbidden
+for documentation-only commits). Repo test baseline unchanged at 464
+(no source code touched). Stashes `stash@{0}` and `stash@{1}`
+retained. EC-069 `<pending — gatekeeper session>` placeholder in
+`EC_INDEX.md` retained (owned by a separate SPEC commit).
+
+### WP-062 — Arena HUD & Scoreboard (2026-04-18, EC-069)
+
+The arena client now renders a full HUD driven by `UIState` fixtures.
+`apps/arena-client/src/components/hud/` holds a seven-file Vue 3 component
+tree plus a color-palette helper: `ArenaHud.vue` (sole `useUiStateStore`
+consumer — container/presenter split), `TurnPhaseBanner.vue` (phase / turn /
+stage / active-player), `SharedScoreboard.vue` (five counters with literal
+leaf-name `aria-label`s; `bystandersRescued` carries `data-emphasis="primary"`,
+penalty counters carry `data-emphasis="secondary"`), `ParDeltaReadout.vue`
+(em-dash when `!('par' in gameOver)` — the D-6701 dominant runtime path;
+zero rendered as `0` when present), `PlayerPanelList.vue` +
+`PlayerPanel.vue` (seven zone fields per player, `aria-current="true"` on
+active, Okabe-Ito palette with mandatory icon glyph), `EndgameSummary.vue`
+(outcome / reason always rendered; optional four-field PAR breakdown
+guarded by `'par' in gameOver`), and `hudColors.ts`.
+
+`apps/arena-client/src/App.vue` mounts `<ArenaHud />` in place of
+`<BootstrapProbe />`. `apps/arena-client/src/styles/base.css` gains five new
+HUD tokens (`--color-emphasis`, `--color-penalty`, `--color-active-player`,
+`--color-par-positive`, `--color-par-negative`) under both light and dark
+`prefers-color-scheme` blocks, each with a numeric contrast-ratio comment
+computed against the appropriate background token.
+
+Six new test files (`ArenaHud.test.ts`, `TurnPhaseBanner.test.ts`,
+`SharedScoreboard.test.ts`, `ParDeltaReadout.test.ts`, `PlayerPanel.test.ts`,
+`PlayerPanelList.test.ts`) add 22 tests. `ArenaHud.test.ts` includes the
+per-fixture-variant deep-immutability assertion (FIX for copilot Issue 17)
+and is the only HUD test that sets up a Pinia store;
+`PlayerPanelList.test.ts` includes the player-array-ordering assertion
+(FIX for copilot Issue 23) using `findAllComponents({ name: 'PlayerPanel' })`.
+
+`ArenaHud.vue`, `PlayerPanel.vue`, `PlayerPanelList.vue`, `ParDeltaReadout.vue`,
+and `EndgameSummary.vue` use the `defineComponent({ setup() { return {...} } })`
+authoring form per D-6512 / P6-30. The `<script setup>` sugar is insufficient
+under vue-sfc-loader's separate-compile pipeline for two reasons — template
+bindings beyond props must be returned from `setup()` to reach `_ctx`, and
+imported child components (e.g., `PlayerPanel` inside `PlayerPanelList`) must
+be explicitly registered via `components: {...}` because the loader does not
+hoist `<script setup>` imports onto the render function's component registry.
+`TurnPhaseBanner.vue` and `SharedScoreboard.vue` remain in `<script setup>`
+form (props-only templates). WP-061's store, fixtures, `main.ts`, and
+`BootstrapProbe*` are untouched (`apps/arena-client/src/stores/uiState.ts`
+in particular was not modified — WP-061's one-state-field / one-action
+contract is preserved).
+
+Suite: 464 passing repo-wide (engine 409/101 + registry 3 + vue-sfc-loader 11
++ server 6 + arena-client 35). No engine, registry, vue-sfc-loader, server,
+or registry-viewer changes.
+
+01.5 NOT INVOKED. 01.6 post-mortem produced in-session prior to commit
+(MANDATORY per P6-35 — triggered by new long-lived abstraction + new
+contract consumption).
+
 ### WP-067 — UIState PAR Projection & Progress Counters (2026-04-17, EC-068)
 
 `buildUIState` now emits `UIState.progress` (required, with `bystandersRescued`

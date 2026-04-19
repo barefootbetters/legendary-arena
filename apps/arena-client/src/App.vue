@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import BootstrapProbe from './components/BootstrapProbe.vue';
+import ArenaHud from './components/hud/ArenaHud.vue';
 </script>
 
 <template>
   <main>
-    <BootstrapProbe />
+    <ArenaHud />
   </main>
 </template>

@@ -4306,6 +4306,674 @@ for one field.
 
 ---
 
+### D-6201 — HUD aria-labels are the literal leaf UIState field name, verbatim
+
+**Decision:** Every user-visible numeric value in the Arena HUD carries
+an `aria-label` equal to the **literal leaf** `UIState` field name,
+verbatim, with no paraphrasing or humanization. Examples:
+`aria-label="bystandersRescued"`, `aria-label="twistCount"`,
+`aria-label="tacticsRemaining"`, `aria-label="tacticsDefeated"`,
+`aria-label="finalScore"`. Visible display text may be human-readable
+(e.g., `"Bystanders rescued: 4"`), but the `aria-label` is the data-
+contract name.
+
+**Rationale:** Tests assert the accessibility tree against exact
+strings; humanized or paraphrased labels drift silently when
+translation pipelines, locale files, or cosmetic refactors touch the
+HUD. The literal-leaf rule also binds the HUD's a11y surface to
+`uiState.types.drift.test.ts` — a rename of any of the six locked
+field names (WP-067) breaks BOTH the drift test AND the HUD tests in
+lockstep, preventing divergence.
+
+**Status:** Active
+**Raised:** WP-062 execution (2026-04-18)
+**Resolved:** 2026-04-18
+
+---
+
+### D-6202 — No client-side arithmetic on `UIState` game values in the HUD
+
+**Decision:** HUD components must not sum, subtract, normalize, smooth,
+average, count, or otherwise combine two or more numeric `UIState`
+fields into a new game-relevant value. `.reduce()` is banned in HUD
+source; so is a hand-written loop or a `+` operator between projected
+numbers in a `computed`. The only permitted "computation" is reading a
+single field and mapping it to a display string (including sign choice
+for PAR delta rendering).
+
+**Rationale:** Every number visible to the player must trace directly
+to an engine projection. Client-side aggregation introduces a second
+source of truth — if the engine later projects a pre-aggregated field
+and the HUD's aggregation disagrees, the UI lies to the player and
+undermines Vision §Primary Goal 3 (Player Trust & Fairness). Derived
+values belong on `UIState`, produced by the engine's projection layer.
+
+**Status:** Active
+**Raised:** WP-062 execution (2026-04-18)
+**Resolved:** 2026-04-18
+
+---
+
+### D-6203 — `<ParDeltaReadout />` renders em-dash only when `par` is absent, never when `finalScore === 0`
+
+**Decision:** The PAR delta readout renders an em-dash (`—`) when
+`!('par' in gameOver)` or `gameOver === undefined`. It renders `0`
+(no arrow, neutral tone) when `gameOver.par.finalScore === 0`. Tests
+assert the absent form via the `'par' in gameOver` key check, NOT via
+`gameOver.par === undefined`, because under `Object.keys` iteration
+and `JSON.stringify` the two forms differ (D-6701 §1).
+
+**Rationale:** Zero is a valid engine value — a player can legitimately
+hit PAR exactly. Collapsing `finalScore === 0` into an em-dash would
+hide a real competitive outcome behind the same indicator that means
+"no payload yet." This is load-bearing under D-6701 because
+`buildParBreakdown` currently returns `undefined` unconditionally; the
+HUD must distinguish "not wired yet" (em-dash) from "you hit par
+exactly" (`0`).
+
+**Status:** Active
+**Raised:** WP-062 execution (2026-04-18)
+**Resolved:** 2026-04-18
+
+---
+
+### D-6204 — Bystanders-rescued counter is the single `data-emphasis="primary"` slot in `<SharedScoreboard />`
+
+**Decision:** In `SharedScoreboard.vue`, the `bystandersRescued`
+counter carries `data-emphasis="primary"` exactly once. The four
+penalty counters (`escapedVillains`, `twistCount`,
+`tacticsRemaining`, `tacticsDefeated`) carry
+`data-emphasis="secondary"`. The attribute contract is structural —
+tests assert `[data-emphasis="primary"]` count = 1 and
+`[data-emphasis="secondary"]` count = 4, not class names — so a CSS
+refactor or theme layer cannot silently regress the emphasis rule.
+
+**Rationale:** `docs/01-VISION.md §Heroic Values in Scoring` names
+bystanders rescued as the strongest positive cooperative action. The
+visual hierarchy surfaces cooperation above penalty tracking; if the
+HUD has exactly one "primary" emphasis slot in the scoreboard, this
+is it.
+
+**Status:** Active
+**Raised:** WP-062 execution (2026-04-18)
+**Resolved:** 2026-04-18
+
+---
+
+### D-6205 — HUD failure semantics: fail-loud-for-required, fail-soft-for-optional
+
+**Decision:** HUD components access **required** `UIState` paths
+without defensive guards (`snapshot.progress.*`, every `UIPlayerState`
+core field, `snapshot.game.*`, `snapshot.scheme.*`,
+`snapshot.mastermind.*`). A missing required key is a fixture or
+contract violation — a loud `TypeError` is the correct failure mode,
+caught upstream by `satisfies UIState` fixture typing and the WP-067
+drift test. **Optional** paths (`snapshot.gameOver?`,
+`snapshot.gameOver.par?`, `snapshot.gameOver.scores?`,
+`snapshot.players[i].handCards?`) are guarded via `'key' in parent` or
+`?.` before access.
+
+**Rationale:** Defensive guards on required fields mask bugs instead
+of surfacing them. If `snapshot.progress` ever goes missing, the HUD
+should fail loudly at test time rather than silently render zero.
+Optional fields, by contrast, are legitimately absent in well-formed
+UIStates (e.g., `gameOver` during play, `par` under D-6701) and MUST
+be guarded to preserve the HUD's empty-state rendering guarantees.
+
+**Status:** Active
+**Raised:** WP-062 execution (2026-04-18)
+**Resolved:** 2026-04-18
+
+---
+
+### D-6206 — HUD color tokens: Okabe-Ito palette with numeric contrast-ratio comments
+
+**Decision:** `apps/arena-client/src/styles/base.css` gains five HUD
+color tokens (`--color-emphasis`, `--color-penalty`,
+`--color-active-player`, `--color-par-positive`,
+`--color-par-negative`) under both `prefers-color-scheme: light` and
+`prefers-color-scheme: dark` blocks. Each token carries an inline
+numeric contrast-ratio comment against the appropriate background
+token (format: `/* 7.2:1 on --color-background */`). Player identity
+colors come from the Okabe-Ito CUD-safe qualitative palette; the
+icon differentiator (distinct glyph per palette slot) is mandatory
+because color is never the sole accessibility signal.
+
+**Rationale:** WCAG AA requires 4.5:1 contrast for normal text; WP-062
+targets 4.5:1 minimum with AAA (7:1+) on the emphasis and active-
+player indicators where the visual hierarchy is highest. Numeric
+comments are load-bearing — a hand-wave "AA compliant" claim is a
+DoD failure per §Debuggability & Diagnostics. Contrast ratios were
+computed against the light (`#f9f9f9`) and dark (`#101015`)
+background tokens WP-061 committed; values are standard computations
+from the WebAIM contrast formula, verifiable with any WCAG checker.
+
+**Status:** Active
+**Raised:** WP-062 execution (2026-04-18)
+**Resolved:** 2026-04-18
+
+---
+
+### D-6301 — `apps/replay-producer/` classified as `cli-producer-app` code category (new top-level category)
+
+**Decision:** `apps/replay-producer/` (introduced by WP-063) is the
+first instance of a new top-level code category, `cli-producer-app`
+("CLI Producer App"). The category sits alongside `client-app` in
+`docs/ai/REFERENCE/02-CODE-CATEGORIES.md` and is governed by the
+same §Layer Boundary section of `docs/ai/ARCHITECTURE.md`. Unlike
+`client-app` (which is browser-side, type-only engine imports), a
+`cli-producer-app` runs under Node 22+ and MAY import
+`@legendary-arena/game-engine` runtime — it wraps engine helpers
+with filesystem and stdout/stderr I/O to produce deterministic,
+portable artifacts. The category forbids `@legendary-arena/registry`
+imports (unless `Game.setup()` transitively requires them, mirroring
+`apps/server/`), forbids `boardgame.io` direct imports, forbids
+network/DB access, and permits `Date.now()` only as a fallback when
+an explicit override flag is absent (the override is the
+deterministic path; `Date.now()` is the convenience fallback).
+
+**Rationale:** WP-063 introduces `apps/replay-producer/` as a new
+top-level application that does not fit any existing category:
+- `client-app` forbids runtime engine imports (type-only) and
+  targets the browser — wrong for a Node CLI that must drive the
+  engine step-by-step.
+- `server` carries the expectation of PostgreSQL access, HTTP
+  endpoints, and process lifecycle management — far too broad for a
+  single-artifact producer.
+- `infra` (scripts/, .githooks/) explicitly covers one-off tooling
+  not shipped to players, but its rules permit "performance
+  shortcuts" and do not enforce the determinism + sourcemap +
+  full-sentence-error discipline a replay artifact producer
+  requires.
+- `engine` forbids all I/O, which is the CLI's reason to exist.
+
+Creating `cli-producer-app` lets pre-flight, ECs, and pre-commit
+review pin the exact constraints a CLI producer must satisfy
+(determinism flag override, sourcemap enablement, named exit-code
+constants, no runtime registry reach) without diluting an existing
+category. Future CLI producers (PAR artifact producer, migration
+scripts promoted to first-class tooling, etc.) reuse the same
+category.
+
+**Status:** Active
+**Raised:** WP-063 pre-flight / EC-071 drafting (2026-04-18)
+**Resolved:** 2026-04-18
+
+---
+
+### D-6302 — `ReplaySnapshotSequence` JSON sorting: top-level keys sorted, nested objects inherit engine-produced order
+
+**Decision:** The CLI `produce-replay` output serializes
+`ReplaySnapshotSequence` with **top-level keys sorted
+alphabetically** (`metadata`, `snapshots`, `version` at the outer
+object level). **Nested objects are NOT recursively sorted** — they
+inherit the key order produced by the engine (`buildUIState` output
+for each `snapshots[i]`, and any `metadata` sub-fields in author-
+supplied input order constrained to the locked shape). A
+probe-object unit test in `buildSnapshotSequence.test.ts` constructs
+a shape with deliberately-shuffled top-level keys and asserts stable
+serialization across two invocations; the CLI-side determinism test
+(`cli.test.ts`, Verification Step 5) asserts byte-identical output
+across two runs with the same `--produced-at` override.
+
+**Rationale:** Determinism in the artifact is the product of two
+independent sources: (a) top-level key stability, which a custom
+sorter guarantees regardless of the `JSON.stringify` implementation;
+and (b) nested key stability, which is **already guaranteed** by the
+engine's purity discipline (`UIState` is constructed by deterministic
+engine code under a single Node runtime per session). Recursive
+sorting would add ~dozens of lines of walker logic and a bespoke
+comparator for every nested shape, with no additional determinism
+benefit — the engine purity rule is load-bearing for the nested
+case. If a future Node release ever changed nested-key iteration
+order, the engine determinism test (WP-027) would catch it long
+before the replay artifact; escalating the detection to the CLI
+layer would be redundant. Top-level sorting remains mandatory
+because the CLI itself assembles the outer object (combining
+helper output + author-supplied metadata) and cannot rely on the
+engine's purity rule for its own assembly order.
+
+**Consequence:** The CLI serializer is a ~10-line function that
+projects the outer object to a sorted shape and then calls
+`JSON.stringify` with two-space indentation. It does NOT walk into
+`snapshots[*]` or `metadata.*`. The probe test proves the
+top-level guarantee; the run-twice determinism test proves the
+end-to-end byte stability.
+
+**Status:** Active
+**Raised:** WP-063 pre-flight / EC-071 drafting (2026-04-18)
+**Resolved:** 2026-04-18
+
+---
+
+### D-6303 — `ReplaySnapshotSequence` version bump policy: additive-at-v1, breaking-to-v2, consumer-must-assert
+
+**Decision:** `ReplaySnapshotSequence.version` is the literal `1`.
+Additive changes (new optional top-level fields, new optional
+`metadata` sub-fields) remain at `version: 1`. Any of the following
+require a bump to `version: 2`: (a) a change to the shape of
+`snapshots[i]` beyond what `UIState` itself defines (the engine
+projection is its own versioning axis — a change to `UIState` is
+governed by WP-028's rules, and the snapshot sequence inherits it
+transparently), (b) removal or rename of a documented field,
+(c) a change to sort semantics or serialization format, (d) a
+change to the meaning of any existing field (even if the name and
+type are unchanged). Consumers of `ReplaySnapshotSequence` (WP-064
+and future replay readers) MUST assert `version === 1` and refuse
+unknown versions with a full-sentence error per
+`00.6-code-style.md` Rule 11 (example: `"Unsupported
+ReplaySnapshotSequence version <N>; this reader supports version 1
+only."`). The `version` field is deliberately declared as the
+literal `1` (not `number`) so a future bump is a compile-time
+breaking change at every consumer, not a silent runtime drift.
+
+**Optional-field serialization addendum:** optional fields are
+**OMITTED** when absent, never serialized as `"metadata":
+undefined` or `"par": null`. When `metadata` has no sub-fields set,
+the entire `metadata` key is omitted from the output. A
+construction-matrix test covers: `metadata` absent, `metadata: {}`,
+and each `metadata.*` sub-field set singly, each case asserting
+serialized output stability and absence of `undefined` literals in
+the JSON text. This rule eliminates the
+`exactOptionalPropertyTypes`-related ambiguity between "key missing"
+and "key present with value `undefined`" at the serialization
+boundary.
+
+**Rationale:** `ReplaySnapshotSequence` becomes the input type for
+WP-064's `<ReplayInspector />` and any future replay tooling. The
+cost of a silent schema drift (a consumer blindly accepting a v2
+artifact as v1) is corrupted playback and hard-to-trace desyncs.
+The cost of a loud version assertion is a single line per consumer.
+Locking the additive-vs-breaking threshold now — before the first
+additive change is requested — prevents the "is this a v2 or still
+v1?" debate that typically surfaces when the first optional field
+is proposed. The literal-type `version: 1` constraint is the
+compile-time seam that makes any future format change a
+breaking change visible at every import site.
+
+**Status:** Active
+**Raised:** WP-063 pre-flight / EC-071 drafting (2026-04-18)
+**Resolved:** 2026-04-18
+
+---
+
+### D-6304 — WP-027 Replay Harness Exposes a Step-Level API for Downstream Snapshot / Replay Tools
+
+**Decision:** The engine's replay harness
+(`packages/game-engine/src/replay/replay.execute.ts`) exposes a named
+step-level API — `applyReplayStep(gameState, move, numPlayers):
+LegendaryGameState` — that downstream consumers
+(`buildSnapshotSequence` in WP-063, future replay inspectors, future
+debug tools) call to apply exactly one `ReplayMove` at a time. The
+harness's internal move dispatch (`MOVE_MAP` and `buildMoveContext`,
+both file-local in `replay.execute.ts`) remains the **single source
+of truth**; `replayGame` is refactored so its internal loop delegates
+each iteration to `applyReplayStep`. The step function mutates
+`gameState` in place and returns the same reference
+(mutate-and-return-same-reference contract); consumers that need
+historical snapshots must project via `buildUIState` (WP-028) after
+each step, not retain `G` copies. The existing
+`verifyDeterminism` test fixture is the regression guard: the
+`stateHash` produced by `replayGame` must be byte-identical before
+and after the refactor.
+
+**Rationale:** A prior session attempted to execute WP-063 / EC-071
+(Replay Snapshot Producer) and stopped at Pre-Session Gate #4
+because `replay.execute.ts` currently exposes only
+`replayGame(input, registry): ReplayResult` — an end-to-end function
+that loops all moves internally and returns only the final state
+plus a hash. `MOVE_MAP` (line 77), `buildMoveContext` (line 98), and
+the `ReplayMoveContext` structural interface (line 39) are all
+module-local; no per-step callback, no generator, no intermediate
+`G` observable from outside. WP-063's `buildSnapshotSequence` needs
+per-input stepping with a live `G` reference at each step to call
+`buildUIState`; without a step-level export from WP-027, the only
+path for WP-063 would be to duplicate `MOVE_MAP` and
+`buildMoveContext` into `apps/replay-producer/` or a new engine
+file. That is the failure mode this decision exists to prevent: when
+a new move is added to `LegendaryGame.moves`, the author must
+remember to update two dispatch tables instead of one, and the
+legacy `replayGame` path passes existing tests while the new
+consumer path silently diverges until a new-move-specific test is
+written. Locking "single source of truth for dispatch" now —
+before the first duplicate `MOVE_MAP` is written — prevents the
+drift.
+
+**Alternatives Considered:**
+- **Option A — status quo (rejected):** consumers duplicate
+  `MOVE_MAP` + `buildMoveContext` in `apps/replay-producer/` or a
+  new file under `packages/game-engine/src/replay/`. Drift risk;
+  new moves silently diverge; two bodies of dispatch logic must
+  be kept in sync without a compiler check.
+- **Option B — expose a context-constructing pair
+  (`buildReplayMoveContext` + `dispatchReplayMove`) (rejected):**
+  doubles the export surface and forces `ReplayMoveContext` to
+  become a public type. WP-063's actual need is one function that
+  applies one move — Option B leaks internals that no current
+  consumer requires. Follow-up WP can promote the constructor if
+  a second consumer surfaces (00.6 Rule 1: duplicate first,
+  abstract on third copy).
+- **Option C — expose `MOVE_MAP` directly (`export const
+  REPLAY_MOVE_MAP`) (rejected):** leaks the `MoveFn` type and the
+  internal dispatch topology; invites ad-hoc extension by
+  downstream code. Rejected as maximum-surface, minimum-discipline.
+- **Option D (accepted) — single named step function
+  `applyReplayStep`:** minimum surface area; matches WP-063's
+  need exactly; "one function, one job"; `MOVE_MAP` and
+  `buildMoveContext` stay file-local; the refactor of
+  `replayGame`'s loop collapses two potential dispatch paths into
+  one.
+
+**Sub-rules embedded in this decision (do not split into D-6305 /
+D-6306 unless a load-bearing reason surfaces):**
+- **Step-function state ownership (Q2):** `applyReplayStep`
+  mutates `gameState` in place and returns the same reference.
+  Cloning is not performed. Consumers wanting historical snapshots
+  must project via `buildUIState` after each step. Rationale:
+  preserves `replayGame`'s current semantics byte-identically
+  (`replay.execute.ts`'s loop at 156–168 already mutates in
+  place); cloning per step is expensive on long matches and
+  duplicates work `buildUIState` already performs for its
+  immutable projection.
+- **Step-function purity (inherited from WP-027 / D-0205):** no
+  `Date.now`, no `Math.random`, no `performance.now`, no
+  `console.*`, no `node:fs*` import, no network, no environment
+  access. No `boardgame.io` import in `replay.execute.ts` (the
+  file already avoids this; the new export preserves the
+  invariant). RNG semantics unchanged — the step function
+  inherits the reverse-shuffle determinism-only semantics per
+  D-0205.
+- **`ReplayMoveContext` scope (Q4):** remains a file-local
+  structural interface in `replay.execute.ts`. Not exported; not
+  re-declared in `replay.types.ts`; not added to the engine
+  barrel. Dead surface area until a consumer actually imports it.
+
+**Scope:**
+- Does **not** change live-match RNG semantics. D-0205 remains in
+  force unchanged. The step function inherits the reverse-shuffle
+  determinism-only semantics from the module-level contract.
+- Does **not** introduce or modify `ReplayInputsFile` (WP-063's
+  scope; Q5 marks it out of scope for WP-080).
+- Does **not** bump `boardgame.io` version (locked at `^0.50.0`).
+- Does **not** modify `ReplayInput`, `ReplayMove`, `ReplayResult`,
+  `DeterminismResult`, `computeStateHash`, or `verifyDeterminism`
+  — all WP-027 contract surfaces remain frozen.
+
+**Follow-up actions required by this decision:**
+- Execute WP-080 / EC-072 to add the step-level export and
+  refactor `replayGame`'s loop. Commit prefix `EC-072:` (P6-36 —
+  never `WP-080:`).
+- Resume WP-063 / EC-071 execution (existing session prompt;
+  amended at Pre-Session Gates #4 and Authority Chain in the
+  same SPEC commit that created this decision) once WP-080 lands.
+  Pre-Session Gate #4 then passes because `applyReplayStep` is
+  visible at `packages/game-engine/src/index.ts`.
+- If WP-079 has not yet been drafted as an EC, that drafting is
+  a **separate** SPEC session and a transitive prerequisite to
+  WP-080 execution (both packets touch `replay.execute.ts`;
+  WP-079 lands first with JSDoc narrowing, WP-080 inherits it
+  verbatim).
+
+**References:** WP-027 (harness locked), WP-063 (blocked consumer),
+WP-079 (JSDoc narrowing sibling; must land before WP-080), WP-080
+(this decision's execution WP), EC-071 (WP-063's checklist;
+BLOCKED at Pre-Session Gate #4), EC-072 (WP-080's checklist;
+Draft), session-wp063-replay-snapshot-producer.md §Pre-Session
+Gates #4 (the amended block), D-0201 (Replay as a First-Class
+Feature — the parent decision WP-080 implements), D-0205 (RNG
+truth source — unchanged; WP-080 inherits).
+
+**Status:** Active
+**Raised:** WP-063 / EC-071 execution session 2026-04-18 (stopped
+at Pre-Session Gate #4; user selected "Stop and amend (pre-flight)"
+via `AskUserQuestion`)
+**Resolved:** 2026-04-18
+
+---
+
+## Decision Points Raised by `MOVE_LOG_FORMAT.md`
+
+The three entries below originate from the forensics report
+`docs/ai/MOVE_LOG_FORMAT.md` (commit `1d709e5`, 2026-04-18), which
+established that no persisted move-log format exists in the repo today
+and that these three forks are the preconditions for any Phase 6
+persistence / replay Work Packet.
+
+Entries are resolved **in place** rather than moved: when an entry
+flips to `Status: Active` it keeps its original options, adds an
+`Options rejected:` block, and records the resolution date. The
+`Status:` field on each entry is the source of truth — some entries
+in this section may be Open, others Active. A Work Packet that
+depends on one of these decisions may not be scoped while its
+corresponding entry's status is `Open`.
+
+---
+
+### D-0203 — Canonical Persisted Artifact for Move Log / Replay
+
+**Decision:** *TBD.*
+
+**Scope:** Determines which artifact the server persists for every match
+so that a match can be reconstructed after the process restarts and so
+that replays, spectator late-join, and reconnection have a single
+source of truth to read from. Narrows what Recommendation 1 of
+`MOVE_LOG_FORMAT.md` actually builds.
+
+**Options:**
+- **(A) boardgame.io-native.** Persist `initialState + LogEntry[]`
+  retrieved via the framework's `fetch({ initialState: true, log: true })`
+  contract. Store via a `db:` adapter passed to `Server({...})` in
+  `apps/server/src/server.mjs` — today this call sets no `db:` and
+  defaults to `InMemory` (lines 90-98).
+- **(B) engine-native.** Persist the engine's existing `ReplayInput`
+  (`packages/game-engine/src/replay/replay.types.ts:34-39`). Requires a
+  new server-side writer that derives `ReplayInput.moves` from
+  observable match activity, since nothing constructs `ReplayInput`
+  from a live match today.
+- **(C) both, with one derived from the other.** Persist one as
+  canonical and materialise the other on demand.
+
+**Trade-offs:**
+- (A) reuses the framework's own per-move record and the reducer's
+  native replay path; no parallel contract. But it couples replay
+  forever to boardgame.io's `LogEntry` shape and requires adopting or
+  writing a `StorageAPI.Async` subclass (`bgio-postgres` or custom).
+- (B) keeps replay inside the engine's pure-helper layer and isolates
+  it from framework upgrades, but duplicates the framework's work and
+  leaves `LogEntry[]` as write-only Diagnostic data. The current
+  `replayGame` also hardcodes a reverse-shuffle and ignores
+  `ReplayInput.seed` — see D-0205.
+- (C) is the most flexible but carries the largest maintenance surface
+  (two shapes, two writers, a projection between them). Must specify
+  which is authoritative for conflict resolution.
+
+**Dependencies:**
+- Blocks Work Packets scoped from `MOVE_LOG_FORMAT.md` Recommendation 1
+  (persistent adapter) and Recommendation 3 (unify engine replay harness
+  with framework log).
+- Interacts with D-0204 (privacy) and D-0205 (RNG truth source): any
+  persisted artifact is only useful if it can (a) be stored without
+  leaking hidden information and (b) actually reproduce live matches.
+
+**Target resolution:** Phase 6 — Verification, UI & Production. This
+decision gates the persistence-adapter WP implied by
+`MOVE_LOG_FORMAT.md` Recommendation 1 and is a precondition for
+WP-063 (Replay Snapshot Producer) producing artifacts with a
+committed shape. Non-binding target — adjustable via a follow-up
+DECISIONS.md entry if Phase 6 re-sequences.
+
+**Status:** Open — Awaiting decision
+**Raised:** `MOVE_LOG_FORMAT.md` Decision Point 1, 2026-04-18
+
+---
+
+### D-0204 — Privacy Boundary for Persisted Logs
+
+**Decision:** *TBD.*
+
+**Scope:** Establishes whether a persisted move log (whichever artifact
+D-0203 selects) contains hidden information, and if so, who can see it.
+Gates `redact` declarations on moves and any dual-view log tooling.
+
+**Context from `MOVE_LOG_FORMAT.md` Gap #8:** today, no Legendary Arena
+move declares the boardgame.io `redact` property. The only `redact*`
+code path lives in `packages/game-engine/src/ui/uiState.filter.ts` and
+is an **audience-scoped UI filter**, not a persistence policy. Today's
+eight registered moves appear to operate on public `CardExtId` strings
+only, but `ReplayMove.args: unknown` carries no enforced contract.
+Future moves that select from a hidden zone or reveal top-of-deck
+would leak through a naive persisted log.
+
+**Options:**
+- **(A) Public-only persistence.** Redact private args at write time;
+  persisted logs are safe for any audience. Forbids reconstructing
+  fully-faithful replays of games with hidden information.
+- **(B) Privileged persistence.** Persist raw logs including hidden
+  information; restrict read access to admin / tournament / post-hoc
+  analysis roles only. Enables full replay but expands the trust
+  surface of whatever system reads persisted matches.
+- **(C) Dual-view persistence.** Store two projections per match — a
+  redacted public log and a privileged full log. Most expensive but
+  lets replay tooling pick the right view per audience.
+
+**Trade-offs:**
+- (A) is the simplest threat model but silently loses replay fidelity
+  the moment a move touches hidden state. Would also require all
+  future moves to be audited for private-info leaks in their args.
+- (B) is the easiest to implement but makes persistent storage the
+  new attack surface for information leaks; any bug in read-path
+  access control leaks hidden information across matches.
+- (C) matches the UI layer's existing audience-based filtering
+  (`filterUIStateForAudience`, D-0302), but doubles write-path cost
+  and requires careful derivation so the two views do not drift.
+
+**Dependencies:**
+- Must be resolved before any WP scoped from Recommendation 1 of
+  `MOVE_LOG_FORMAT.md` begins implementation.
+- Reinforces, and is a concrete application of, D-0302
+  (*One UIState, many audiences*). A persisted log is a second,
+  different projection surface that needs its own audience model.
+
+**Target resolution:** Phase 6 — Verification, UI & Production.
+Co-resolves with D-0203; also gates WP-064 (Game Log & Replay
+Inspector), which must know which audiences can read which fields.
+Reinforced again in Phase 7 by WP-053 (Competitive Score Submission
+& Verification). Non-binding target.
+
+**Status:** Open — Awaiting decision
+**Raised:** `MOVE_LOG_FORMAT.md` Decision Point 2, 2026-04-18
+
+---
+
+### D-0205 — RNG Truth Source for Replay
+
+**Decision:** **Option (C) — the engine's `replayGame` / `verifyDeterminism`
+harness is explicitly scoped as *determinism-only / debug-only* tooling.**
+It is not, and does not claim to be, a live-match replayer. Any future
+"replay a specific match" feature builds on a separate pipeline that
+rehydrates boardgame.io's seeded `ctx.random.*` — most likely via
+D-0203 option (A), but that choice remains open.
+
+**Decision rationale:** The repo currently lacks a canonical persisted
+RNG truth source. `replayGame` hardcodes a reverse-shuffle and ignores
+`ReplayInput.seed` — this is deterministic but is not the RNG that
+drives live matches. Claiming "replay" capability without reconciling
+the two would be dishonest and would silently invite downstream WPs to
+build on a false foundation. Scoping the harness to determinism
+verification keeps the tooling **honest and useful** (it still proves
+the engine reducer is deterministic given fixed RNG) while deferring
+the architectural RNG decision to the same pipeline that resolves
+D-0203. Minimum-commitment resolution: costs only a doc change on
+two exports; no storage choice, no framework coupling, no engine
+behavior change.
+
+**Scope:** Fixes which RNG source is authoritative for replay
+reconstruction. Today this is ambiguous: live matches use boardgame.io's
+seeded `ctx.random.*` (required by D-0002 and `.claude/rules/architecture.md`
+§Determinism), but `packages/game-engine/src/replay/replay.execute.ts:119-123`
+hardcodes a reverse-shuffle and ignores `ReplayInput.seed`. The stored
+seed exists, but is not honoured — the two paths disagree.
+
+**Context from `MOVE_LOG_FORMAT.md` Gap #4:** this gap is flagged as a
+**blocker** for any "replay live matches" Work Packet. A replay feature
+that runs against the current harness does not reproduce live-match
+outcomes, it reproduces a parallel mock-RNG universe.
+
+**Options:**
+- **(A) boardgame.io `ctx.random.*` is canonical.** Replay reconstructs
+  via the framework reducer, with the framework's seeded RNG. The
+  engine's own `replayGame` becomes derived (or is retired) per D-0203
+  option C. Requires persisting whatever the framework needs to
+  rehydrate `ctx.random` (typically the initial seed on
+  `initialState`, plus any RNG state carried in `ctx`).
+- **(B) Engine seed is canonical.** Replace the reverse-shuffle in
+  `replay.execute.ts:121-123` with a seeded deterministic PRNG driven
+  by `ReplayInput.seed`. Decouples replay from the framework but
+  requires the live engine to *also* source randomness from this PRNG,
+  or the two diverge — which contradicts D-0002.
+- **(C) Explicitly debug-only harness.** Keep `replayGame` as it is
+  (reverse-shuffle, ignored seed) but label it *debug-only /
+  determinism-only* — it proves the engine is deterministic given a
+  fixed RNG, nothing more. Any future "replay a specific match" WP
+  builds a separate pipeline under option (A).
+
+**Trade-offs:**
+- (A) is the least invasive for the engine today and aligns replay
+  with the framework's existing contract. Tightens the repo's
+  dependency on boardgame.io's RNG semantics surviving future upgrades.
+- (B) would make the engine's replay path self-contained, but creates
+  a second RNG source of truth that must be kept in lockstep with
+  live play — exactly the drift D-0002 is meant to prevent.
+- (C) is cheapest: it costs only a doc change and a label on
+  `verifyDeterminism`. It does, however, permanently narrow what the
+  existing replay harness claims to do, and pushes the "replay live
+  matches" feature onto a different (as-yet-unscoped) stack.
+
+**Options rejected:**
+- **(A) boardgame.io `ctx.random.*` is canonical.** Rejected *for now*
+  (not permanently) — this remains the natural fit for a future
+  "replay live matches" feature, but selecting it today would
+  pre-commit D-0203 to option (A) without the architectural review
+  D-0203 deserves. Revisit when D-0203 resolves.
+- **(B) Engine seed is canonical.** Rejected. Makes the engine
+  maintain a second RNG source of truth in lockstep with
+  boardgame.io's live RNG — exactly the silent-divergence failure
+  mode D-0002 (*Determinism Is Non-Negotiable*) exists to prevent.
+  No path forward unless boardgame.io's seeded `ctx.random.*` is
+  replaced wholesale, which is out of scope.
+
+**Follow-up actions required by this decision:**
+- `packages/game-engine/src/replay/replay.execute.ts` and
+  `replay.verify.ts`: add JSDoc + header warnings on `replayGame` and
+  `verifyDeterminism` stating the harness does not replay live-match
+  RNG (uses a fixed reverse-shuffle; `ReplayInput.seed` is ignored).
+- `docs/ai/MOVE_LOG_FORMAT.md` Gap #4: remains accurate (the gap
+  *describes* the condition this decision resolves) — no edit
+  required.
+- `packages/game-engine/src/index.ts` public exports of
+  `replayGame` / `verifyDeterminism`: no API change; doc-only.
+- These actions should land as a tiny Work Packet — *"Label engine
+  replay harness as determinism-only"* — scoped via the normal
+  00.3 lint gate + `WORK_INDEX.md` flow.
+
+**Dependencies:**
+- Blocker for any `MOVE_LOG_FORMAT.md` Recommendation that claims
+  "replay live matches" (Recommendations 1 and 3). This decision
+  *closes* the blocker by re-scoping the claim, not by building a
+  replayer — the replayer itself remains a future WP gated on D-0203.
+
+**Target resolution:** Phase 6 — Verification, UI & Production. This
+is the blocker flagged by `MOVE_LOG_FORMAT.md` Gap #4 for any Phase 6
+"replay live matches" feature (WP-063, WP-064, and the unscoped
+persistence-adapter WP). Must resolve before or alongside D-0203.
+Non-binding target.
+
+**Status:** Active
+**Raised:** `MOVE_LOG_FORMAT.md` Decision Point 3, 2026-04-18
+**Resolved:** 2026-04-18
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

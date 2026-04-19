@@ -41,6 +41,9 @@ For full rationale, see `DECISIONS.md`.
 |------------|---------|---------------|--------------|
 | D‑0201 | Replay is first‑class | WP‑027 | WP‑039 |
 | D‑0202 | Deterministic state hashing | WP‑027 | WP‑032 |
+| D-0203 | Canonical persisted artifact for move log / replay (**Open**) | `MOVE_LOG_FORMAT.md` 2026-04-18 | — |
+| D-0204 | Privacy boundary for persisted logs (**Open**) | `MOVE_LOG_FORMAT.md` 2026-04-18 | — |
+| D-0205 | RNG truth source for replay — harness scoped as determinism-only (**Active** 2026-04-18) | `MOVE_LOG_FORMAT.md` 2026-04-18 | — |
 
 ---
 
@@ -488,6 +491,16 @@ For full rationale, see `DECISIONS.md`.
 | D-3002 | Campaign state external to G (MVP implementation) | WP-030 |
 | D-3003 | Scenarios produce MatchSetupConfig, not modified G | WP-030 |
 | D-3004 | Campaign replay as sequence of ReplayInputs | WP-030 |
+
+---
+
+## Replay Snapshot Producer (WP-063)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-6301 | `apps/replay-producer/` classified as `cli-producer-app` code category (new top-level category) | WP-063 |
+| D-6302 | `ReplaySnapshotSequence` JSON sorting: top-level keys sorted; nested objects inherit engine-produced order | WP-063 |
+| D-6303 | `ReplaySnapshotSequence` version bump policy: additive-at-v1, breaking-to-v2, consumer-must-assert | WP-063 |
 
 ---
 

@@ -3,9 +3,15 @@
 **Status:** Ready
 **Primary Layer:** Game Engine (type + pure helper) + new CLI app
 (`apps/replay-producer/`)
-**Dependencies:** WP-027 (determinism & replay verification harness),
-WP-028 (UIState + `buildUIState`), WP-005B (`Game.setup()` deterministic
-construction)
+**Dependencies:** WP-027 (determinism & replay verification harness,
+commit `<verify via git log>`), WP-028 (UIState + `buildUIState`,
+commit `<verify via git log>`), WP-005B (`Game.setup()` deterministic
+construction, commit `<verify via git log>`). **All three dependencies
+complete as of 2026-04-18** (confirmed by `WORK_INDEX.md` `[x]` marks
+at lines 249 / 589 / 606).
+**EC:** EC-071 (next free slot; see Preflight §EC Slot Lock).
+**Commit prefix:** `EC-071:` (NOT `WP-063:` — per P6-36 the commit-msg
+hook rejects `WP-###:` prefixes; see Preflight §Commit Prefix Lock).
 
 ---
 
@@ -57,6 +63,15 @@ harness. No server, network, or DB access.
 
 ## Assumes
 
+- **Repo test baseline: 464 tests passing** (3 registry + 409
+  game-engine + 11 vue-sfc-loader + 6 server + 35 arena-client), 0
+  failures, as of commit `7eab3dc` (WP-062 execution). WP-063 must not
+  regress any of these counts. Engine baseline is **409 tests / 101
+  suites** (unchanged since WP-067 / EC-068 at commit `1d709e5` —
+  WP-062 did not modify the engine). WP-063 will ADD to both the
+  engine count (new `buildSnapshotSequence.test.ts` suite) and
+  introduce a NEW per-app count for `apps/replay-producer/` (the
+  fifth app with its own test suite).
 - WP-027 complete. Specifically:
   - The replay harness exists and deterministically reproduces `G` from a
     `MatchSetupConfig`, a seed, and an ordered input list.
@@ -107,6 +122,129 @@ reshaping WP-027 is out of scope here.
 ## Preflight (Must Pass Before Coding)
 
 Each item below is a **blocker**. Resolve before writing a single line.
+
+### EC Slot Lock (do not re-derive)
+
+**This WP executes against EC-071.** Existing ECs in the 060 series:
+EC-061 (registry-viewer Glossary panel, Done), EC-065 (vue-sfc-loader,
+Done), EC-066 (registry-viewer data toggle, Draft/Done), EC-067 (WP-061
+client bootstrap, Done), EC-068 (WP-067 UIState PAR projection, Done),
+EC-069 (WP-062 Arena HUD, Done — commit `7eab3dc`), EC-070 (WP-068
+preferences foundation, Done in EC_INDEX.md but checklist file not yet
+on disk per P6-38 fallout). EC-062, EC-063, EC-064 are unused. Following
+the EC-061→EC-067, EC-066→EC-068, and EC-062→EC-069 retargeting
+precedent, the next truly free slot is **EC-071**.
+
+- Commit prefix: `EC-071:` (not `WP-063:`)
+- EC filename: `docs/ai/execution-checklists/EC-071-replay-snapshot-producer.checklist.md`
+- EC header note must preserve the rationale (consumed-slot history) so
+  future readers understand why a 060-range WP uses an out-of-sequence
+  EC. See the EC-067 / EC-069 headers for the template.
+
+### Commit Prefix Lock (P6-36)
+
+**`WP-###:` is NEVER a valid commit prefix for code changes.** The
+`.githooks/commit-msg` hook rejects it; 01.3 allows only `EC-###:`,
+`SPEC:`, and `INFRA:`. Every WP-063 code-changing commit MUST use the
+`EC-071:` prefix; every documentation/governance correction MUST use
+`SPEC:`. The session prompt for WP-063 MUST quote 01.3's three-prefix
+list verbatim or cite 01.3 without enumerating options — never invent
+a fourth prefix. See 01.4 §P6-36 for the WP-068 precedent where this
+gap forced a mid-session pivot.
+
+### Post-WP-062 Inherited Tree State (MUST NOT modify)
+
+The WP-063 executing session inherits three unresolved states from the
+close of WP-062 (commit `7eab3dc`). Pre-flight MUST document these as
+non-blocking handoffs before READY is printed:
+
+1. **Retained `stash@{0}`** — holds pre-existing WP-068 /
+   MOVE_LOG_FORMAT governance edits (D-1414, D-0203, D-0204, D-0205,
+   WP-068 WORK_INDEX row, EC-070 EC_INDEX row, DECISIONS_INDEX.md
+   entries). Owned by the WP-068 / MOVE_LOG_FORMAT governance
+   resolver. **WP-063 MUST NOT `git stash pop` this stash.** If
+   WP-063's own governance edits collide with the same four files
+   (DECISIONS.md, DECISIONS_INDEX.md, WORK_INDEX.md, EC_INDEX.md),
+   apply the path-scoped stash + re-apply + leave-stash pattern
+   documented in 01.4 §P6-41 — DO NOT bundle the stashed edits into
+   the WP-063 commit.
+2. **`EC_INDEX.md` `<pending — gatekeeper session>` placeholder** —
+   the EC-069 row references `<pending>` where commit `7eab3dc` should
+   appear. WP-063 MUST NOT backfill this placeholder as part of its
+   own commit (cross-WP contamination). A separate `SPEC:` commit or
+   the WP-068 stash-pop resolution commit owns the backfill.
+3. **Unrelated untracked / modified files** — `docs/ai/MOVE_LOG_FORMAT.md`,
+   `docs/ai/invocations/session-wp*.md` (multiple), `docs/ai/session-context/*.md`
+   (multiple), `docs/ai/work-packets/WP-079-*.md`, `content/themes/*.json`,
+   and root-level survey text files are all outside WP-063's scope.
+   Stage by name only; NEVER use `git add .` or `git add -A`.
+
+### Precedent Applicability (from 01.4 Precedent Log)
+
+**APPLIES to WP-063 — must consult before session prompt is generated:**
+- **P6-34: Pre-flight READY verdict must verify pre-flight edits are
+  committed, not just applied.** WP-063 pre-flight will produce
+  DECISIONS.md entries (CLI location, sorted-key serialization,
+  `--produced-at` rationale, `version: 1` literal, `ReplayInputsFile`
+  origin, and the new code-category classification for
+  `apps/replay-producer/`). Commit these under a `SPEC:` prefix first,
+  then print READY with the SPEC commit hash as the new base.
+- **P6-35: 01.6 post-mortem is MANDATORY before commit.** WP-063
+  introduces a new long-lived abstraction (`ReplaySnapshotSequence`
+  becomes the input type for WP-064 `<ReplayInspector />`) and a new
+  code category (`apps/replay-producer/` as the first "CLI Producer
+  App"). Both 01.6 triggering criteria (new long-lived abstraction +
+  new code category) are met. The session prompt MUST encode 01.6 as
+  a literal STOP gate before commit; an informal in-line summary is
+  NOT a substitute for the formal 10-section output.
+- **P6-36: Session-context must never offer `WP-###:` as a commit
+  prefix.** See §Commit Prefix Lock above.
+- **P6-37: Test-infrastructure additions are implicit in scope when
+  AC requires a test-verification command to exit 0.** `apps/replay-
+  producer/package.json` is brand new — the test script, test runner
+  devDep (`tsx`), and any tsconfig adjustments MUST be enumerated as
+  EXPLICIT allowlist entries in §Files Expected to Change, not
+  implicit scope. WP-068's P6-37 deviation is the cautionary
+  precedent: a WP that says "package.json — new" without listing the
+  test-infra triggers a scope interpretation dispute mid-execution.
+- **P6-38: Pre-flight must verify governance index files are
+  commit-clean.** WORK_INDEX.md, EC_INDEX.md, DECISIONS.md, and
+  DECISIONS_INDEX.md will still be dirty with WP-068 residue AND the
+  WP-062 EC_INDEX `<pending>` placeholder. Document the expected
+  governance-update handoff explicitly in the pre-flight READY
+  verdict; the executing session must know IN ADVANCE which index
+  files it will need to stash + reapply.
+- **P6-41: Path-scoped stash + re-apply + leave-stash pattern for
+  mixed governance-file edits.** Likely to apply during WP-063's
+  DoD-driven updates to DECISIONS.md, WORK_INDEX.md, and
+  EC_INDEX.md. Executing session should default to this pattern
+  when the file-level diff contains both pre-existing and
+  in-session hunks.
+- **P6-42: Same-session 01.6 / pre-commit review is a user-approved
+  deviation from P6-35 and must be disclosed in the commit body.**
+  WP-063 should RESTORE the separate-session gatekeeper discipline
+  for the pre-commit review unless the user explicitly requests the
+  deviation via `AskUserQuestion`. WP-067 is the "do not repeat"
+  precedent; WP-062 was the user-approved exception with disclosure.
+
+**DOES NOT APPLY to WP-063 — do NOT cargo-cult from UI WPs:**
+- **P6-30 / P6-40: `defineComponent` authoring form under vue-sfc-
+  loader.** WP-063 adds NO `.vue` files. No SFCs, no vue-sfc-loader
+  interaction. Ignore.
+- **D-6512: setup-scope binding surfacing.** Same reason. Ignore.
+- **D-6201: literal-leaf-name `aria-label` rule.** WP-063 emits
+  JSON, not an accessibility tree. No a11y labels. Ignore.
+- **D-6202: no client-side arithmetic on UIState.** Engine-side
+  helpers and CLI layer ARE permitted to count snapshots and read
+  `inputs.length` for loop bookkeeping (e.g., `inputs.length + 1`
+  snapshot count assertion). That is not "client-side arithmetic
+  on game values" — it's control-flow arithmetic on collection
+  lengths. Distinguish carefully: `UIState` field combination is
+  still forbidden in any future HUD consumer of `ReplaySnapshotSequence`.
+- **HUD container/presenter split.** WP-063 has no components, no
+  Pinia store, no DOM.
+
+### Original Preflight Blockers (unchanged)
 
 - **WP-027 harness surface:** open `packages/game-engine/src/replay/*.ts`
   (or equivalent) and confirm:
@@ -400,7 +538,19 @@ If any item is unknown, **stop and ask** before coding.
 - `packages/game-engine/src/index.ts` — **modified** (add exports only)
 - `packages/game-engine/src/types.ts` — **modified** (re-export new
   types)
-- `apps/replay-producer/package.json` — **new**
+- `apps/replay-producer/package.json` — **new**. Per P6-37, the file
+  is new and MUST explicitly include (a) `"test": "node --import tsx
+  --test \"src/**/*.test.ts\""` in `scripts`, (b) `"tsx": "^4.15.7"`
+  (or the repo's current pinned version — verify against
+  `apps/arena-client/package.json` or `apps/registry-viewer/package.json`)
+  in `devDependencies`, (c) `"@types/node": "^22.x"` in
+  `devDependencies`, (d) `"@legendary-arena/game-engine":
+  "workspace:*"` in `dependencies`, (e) `build`, `test`, and
+  `produce-replay` scripts, (f) `"type": "module"`, `"private": true`,
+  and the `@legendary-arena/replay-producer` name. Test-infrastructure
+  additions (test script + tsx + @types/node) are EXPLICIT allowlist
+  entries, not implicit scope — this avoids the WP-068 P6-37 scope
+  interpretation dispute mid-execution.
 - `apps/replay-producer/tsconfig.json` — **new**
 - `apps/replay-producer/README.md` — **new**
 - `apps/replay-producer/src/cli.ts` — **new**
@@ -417,6 +567,12 @@ If any item is unknown, **stop and ask** before coding.
   rationale, `version: 1` literal choice, `ReplayInputsFile` origin)
 - `docs/ai/work-packets/WORK_INDEX.md` — **modified** (governance update
   per DoD)
+- `docs/ai/execution-checklists/EC_INDEX.md` — **modified** (flip EC-071
+  from Draft to Done with today's date and the execution commit hash,
+  matching the EC-067 / EC-069 format `Executed YYYY-MM-DD at commit
+  <hash>`). Per P6-41, if this file is dirty with pre-existing residue
+  at commit time, apply the path-scoped stash + re-apply + leave-stash
+  pattern.
 
 No other files may be modified. `apps/arena-client/**`,
 `apps/registry-viewer/**`, `apps/server/**`, `packages/registry/**`,
@@ -540,4 +696,23 @@ git diff --name-only
       serialization choice; the `--produced-at` override rationale; the
       `version: 1` literal choice.
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` has WP-063 checked off with
-      today's date.
+      today's date and a link back to the session invocation.
+- [ ] `docs/ai/execution-checklists/EC_INDEX.md` has EC-071 flipped from
+      Draft to Done with today's date and the execution commit hash
+      (format: `Executed YYYY-MM-DD at commit <hash>`).
+- [ ] Commit uses the `EC-071:` prefix (NOT `WP-063:`; NOT `EC-063:`).
+- [ ] **01.6 post-mortem complete (MANDATORY per P6-35)** — formal
+      10-section output, in-session, BEFORE commit. Two triggering
+      criteria apply: (a) new long-lived abstraction
+      (`ReplaySnapshotSequence` is the input type for WP-064), (b)
+      new code category (`apps/replay-producer/` as the first
+      CLI Producer App).
+- [ ] Pre-commit review runs in a **separate gatekeeper session** per
+      P6-35; if the user explicitly requests in-session review via
+      `AskUserQuestion`, the deviation MUST be disclosed in the
+      `EC-071:` commit body per P6-42.
+- [ ] `stash@{0}` retained (NOT popped during the WP-063 session) —
+      belongs to the WP-068 / MOVE_LOG_FORMAT governance resolver.
+- [ ] WP-062's EC_INDEX `<pending — gatekeeper session>` placeholder
+      NOT backfilled in the WP-063 commit — separate `SPEC:` commit
+      owns the backfill.
