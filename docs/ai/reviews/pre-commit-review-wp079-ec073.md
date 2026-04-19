@@ -241,6 +241,116 @@ of scope for this review.
 
 ---
 
+## 01.3 Compliance Audit (Commit Hygiene Under EC Mode)
+
+Added as an amendment to this review after the initial commit and
+a user-prompted audit against
+`docs/ai/REFERENCE/01.3-commit-hygiene-under-ec-mode.md`. The
+implementation session did not formally open 01.3 during the commit
+phase and relied on prior familiarity plus the `.githooks` chain as
+mechanical backstop. This section documents compliance retrospectively
+so the review artifact is self-contained as a governance record.
+
+### Commits audited
+
+1. `1e6de0b` — `EC-073: label replay harness as determinism-only
+   (JSDoc + module headers)`
+2. `2131116` — `EC-073: close WP-079 governance (STATUS +
+   WORK_INDEX + D-0205 follow-up + EC_INDEX)`
+3. `924f88b` — `SPEC: add post-hoc pre-commit review artifact for
+   WP-079 / EC-073`
+
+This review artifact itself will land in a fourth `SPEC:`-prefix
+amendment commit after this section is added. That fourth commit is
+subject to the same 01.3 contract and will be audited by the same
+hook chain at the moment it is created.
+
+### Format audit against 01.3 §Commit Message Format
+
+| Rule | `1e6de0b` | `2131116` | `924f88b` |
+|---|---|---|---|
+| Prefix is one of `EC-###:` / `SPEC:` / `INFRA:` | `EC-073:` | `EC-073:` | `SPEC:` |
+| Subject ≥ 12 chars after prefix | 63 | 74 | 54 |
+| No forbidden word in subject (`WIP`, `fix stuff`, `misc`, `tmp`, `updates`, `changes`, `debug`, `quick fix`, `hotfix`, `cleanup`, `refactor`) | pass | pass (after rewrite — see §Hook events) | pass |
+| `EC-###:` required when `packages/` or `apps/` staged | `packages/game-engine/...` staged → `EC-073:` required → used | docs-only, any prefix permitted; chose `EC-073:` because EC-073 §Files to Produce explicitly names the four governance files as part of WP-079 DoD | docs-only, any prefix permitted; chose `SPEC:` because the review artifact is outside the EC-073 six-file allowlist |
+| `commit-msg` validations: EC file exists, EC-### in `EC_INDEX.md`, code-path cross-check | all pass | all pass (non-blocking `EC_INDEX.md` warning — acknowledged intentional) | N/A (SPEC) |
+
+### Hook events observed
+
+- `1e6de0b` — `pre-commit` + `commit-msg` both silent (clean pass).
+- Initial attempt at the governance commit — `commit-msg` returned
+  `COMMIT BLOCKED: Subject contains a forbidden pattern` because
+  the subject used the forbidden word `"updates"`. The working-tree
+  state was untouched by the reject (as designed). The subject was
+  rewritten to `"close WP-079 governance (STATUS + WORK_INDEX +
+  D-0205 follow-up + EC_INDEX)"` and the retry was accepted as
+  `2131116`. This is evidence the hook chain is functioning end-to-end
+  and that the forbidden-pattern list in 01.3 is live.
+- `2131116` — non-blocking warning from `commit-msg`:
+  `"EC governance files (EC_INDEX.md, EC-TEMPLATE.md) staged with
+  an EC-### commit. These files are usually changed via SPEC: or
+  INFRA: commits. Proceeding, but verify this is intentional."`
+  Verified intentional: EC-073 §Files to Produce explicitly names
+  the EC-073 Draft → Done flip in `EC_INDEX.md` as part of the
+  WP-079 DoD, so the warning is expected and the proceed-anyway
+  behaviour is correct for this specific WP. Captured in STATUS.md
+  commit body.
+- `924f88b` — clean pass.
+
+### Bypass audit against 01.3 §Bypassing Hooks
+
+- No commit used `--no-verify`.
+- No commit used `--no-gpg-sign`.
+- No emergency `.githooks` → `.githooks-disabled` rename occurred.
+- No commit used `git commit --amend`.
+- No forced push, no `git reset --hard`, no destructive git
+  operation was used at any point in the session.
+
+### Helper-script usage
+
+- `scripts/git/ec-commit.ps1` (interactive / direct / staged modes)
+  was **not** used. All three commits used raw `git commit -m "..."`
+  with a heredoc body. 01.3 presents the helper as a convenience
+  wrapper rather than a required path; the mechanical contract is
+  the `.githooks` chain, which ran on all three commits. Using the
+  helper would have given the same enforcement and would have
+  allowed a `-Check` dry-run to catch the `"updates"` subject before
+  the live-hook rejection. That is a minor process note, not a
+  compliance gap.
+
+### Installation check
+
+- `git config --get core.hooksPath` was not explicitly queried
+  before commits, but the hooks demonstrably ran (one forbidden-word
+  rejection, one EC_INDEX.md warning), so `core.hooksPath` is set to
+  `.githooks` in this clone. 01.3 §Installation is satisfied.
+
+### 01.3 process gap
+
+The implementation session did not formally open 01.3 before
+committing. It followed the document's conventions from prior
+familiarity and relied on the hook chain as backstop. In practice
+the outcome is clean — the hooks caught the only violation
+(`"updates"`) before it landed, and all other rules were satisfied.
+The proper workflow would have been to read 01.3 at the top of the
+commit phase the way EC-073 and 01.6 were read earlier in the
+session, rather than to discover compliance retroactively. This is
+the same class of process gap as the missed PRE-COMMIT-REVIEW step
+5 captured at the top of this review; both gaps are captured in
+§Commit Hygiene Recommendations as a future-session template nit.
+
+### 01.3 compliance verdict
+
+**Pass.** All three commits satisfy 01.3's enforceable contract
+(prefix, subject length, forbidden-word list, EC-file existence,
+EC-###-required-for-code rule, no-bypass rule). The single
+subject-rewrite that occurred was triggered by the hook working
+correctly and was corrected before landing. No commit used any of
+the bypass mechanisms 01.3 prohibits. This audit does not alter the
+Executive Verdict below.
+
+---
+
 ## Final Verdict
 
 **Safe to commit as-is.** Both EC-073 commits are already landed
