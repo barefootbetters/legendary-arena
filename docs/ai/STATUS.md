@@ -7,6 +7,68 @@
 
 ## Current State
 
+### WP-079 / EC-073 Executed — Replay Harness Labeled Determinism-Only (2026-04-19, EC-073)
+
+WP-079 executed doc-only under EC-073 at commit `1e6de0b`: labeled the
+engine's replay harness (`packages/game-engine/src/replay/replay.execute.ts`
+and `replay.verify.ts`) as determinism-only tooling per D-0205's single
+follow-up action. Added a module-header paragraph scoping the module
+as determinism-only and a wholesale `replayGame()` JSDoc rewrite in
+`replay.execute.ts`; added a module-header sentence and a wholesale
+`verifyDeterminism()` JSDoc rewrite in `replay.verify.ts`. Cross-references
+to `DECISIONS.md §D-0205` present in both files; `MOVE_LOG_FORMAT.md`
+Gap #4 cross-reference present in `replay.execute.ts`. All three
+forbidden phrases ("replays live matches", "replays a specific match",
+"reproduces live-match outcomes") grep to zero across both files.
+`"determinism-only"` grep (case-sensitive) returns 2 hits in
+`replay.execute.ts` and 2 hits in `replay.verify.ts`.
+
+Zero runtime behavior change; zero signature change (`git diff`
+confirms no `(-|+)export function` matches on either file); zero
+export change (`packages/game-engine/src/index.ts` untouched); zero
+type change (`replay.types.ts` untouched); zero test change
+(`replay.verify.test.ts` untouched). Preserved `// why:` comments
+verbatim: events no-op (`replay.execute.ts:110-117`), reverse-shuffle
+rationale (`:118-124`), two-run rationale (`replay.verify.ts:43-45`).
+Test baseline held at **464 passing / 0 failing** across all five
+packages (registry 3 + vue-sfc-loader 11 + game-engine 409 +
+server 6 + arena-client 35) — identical to the starting commit. Engine
+build (`pnpm --filter @legendary-arena/game-engine build`) exits 0.
+
+Two EC-073 commits on this branch:
+- `1e6de0b` EC-073 — source JSDoc + module-header rewrites (two `.ts`
+  files)
+- `<this commit>` EC-073 — governance updates (STATUS.md,
+  WORK_INDEX.md, DECISIONS.md §D-0205 Follow-up, EC_INDEX.md)
+
+Closes the D-0205 single follow-up action; D-0205 Follow-up block
+now carries the completion reference. Hard upstream for WP-080 /
+EC-072 unblocked: both packets touch `replay.execute.ts`, and WP-080
+now inherits this JSDoc narrowing verbatim.
+
+**Stashes:** `stash@{0}` (WP-068 / MOVE_LOG_FORMAT) and `stash@{1}`
+(WP-068 pre-wp-062-branch-cut) retained unchanged (not popped).
+**EC-069 placeholder:** `<pending — gatekeeper session>` in
+`EC_INDEX.md` retained (not backfilled — cross-WP contamination
+would be a scope violation).
+**01.6 post-mortem:** not required (doc-only; no new long-lived
+abstraction; no new code category — both P6-35 triggers absent per
+EC-073 After Completing).
+**Commit prefix:** `EC-073:` exclusively (never `WP-079:` per P6-36;
+the `.githooks/commit-msg` hook rejects `WP-###:`).
+
+Chain status after this session:
+- Step 1 (COMPLETE — SPEC `1264133` / merged `3307b12`): EC-073
+  drafted + governance artifacts + merge
+- Step 2 (COMPLETE — THIS SESSION): WP-079 execution under `EC-073:`
+- Step 3 (READY): WP-080 execution under `EC-072:` — reads landed
+  `replay.execute.ts` header + `replayGame()` JSDoc verbatim as the
+  narrowing to preserve when adding `applyReplayStep` alongside
+- Step 4 (BLOCKED on Step 3): WP-063 resume under existing `EC-071:`
+  prefix
+
+---
+
 ### WP-079 Execution Branch Cut — Governance Chain Merged (2026-04-19, SPEC)
 
 Session prepared `wp-079-replay-harness-determinism-label` as the

@@ -4947,6 +4947,7 @@ outcomes, it reproduces a parallel mock-RNG universe.
   `replay.verify.ts`: add JSDoc + header warnings on `replayGame` and
   `verifyDeterminism` stating the harness does not replay live-match
   RNG (uses a fixed reverse-shuffle; `ReplayInput.seed` is ignored).
+  **Completed 2026-04-19 at commit `1e6de0b` under EC-073 / WP-079.**
 - `docs/ai/MOVE_LOG_FORMAT.md` Gap #4: remains accurate (the gap
   *describes* the condition this decision resolves) — no edit
   required.
@@ -4954,7 +4955,9 @@ outcomes, it reproduces a parallel mock-RNG universe.
   `replayGame` / `verifyDeterminism`: no API change; doc-only.
 - These actions should land as a tiny Work Packet — *"Label engine
   replay harness as determinism-only"* — scoped via the normal
-  00.3 lint gate + `WORK_INDEX.md` flow.
+  00.3 lint gate + `WORK_INDEX.md` flow. **Landed as WP-079 under
+  EC-073 on 2026-04-19; see `STATUS.md` entry "WP-079 / EC-073
+  Executed — Replay Harness Labeled Determinism-Only".**
 
 **Dependencies:**
 - Blocker for any `MOVE_LOG_FORMAT.md` Recommendation that claims

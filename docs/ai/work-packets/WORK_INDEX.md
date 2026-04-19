@@ -855,9 +855,9 @@ These packets make the game safe to ship.
   one session; `src/stores/` from WP-061 untouched unless a DECISIONS.md
   entry justifies a change; no engine, registry, or server-side changes.
 
-- [ ] WP-079 — Label Engine Replay Harness as Determinism-Only ✅ Reviewed (2026-04-18 lint-gate pass; 00.3 self-lint clean after two surgical patches)
+- [x] WP-079 — Label Engine Replay Harness as Determinism-Only ✅ Completed 2026-04-19 at commit `1e6de0b` under EC-073 (Reviewed 2026-04-18 lint-gate pass; 00.3 self-lint clean after two surgical patches)
   Dependencies: WP-027, D-0205
-  Execution Checklist: `docs/ai/execution-checklists/EC-073-label-replay-harness-determinism-only.checklist.md` (Draft)
+  Execution Checklist: `docs/ai/execution-checklists/EC-073-label-replay-harness-determinism-only.checklist.md` (Done)
   Notes: Doc-only decision-closure WP carrying out D-0205's single
   follow-up action. Modifies two source files (doc-only content
   edit; zero runtime behavior change): `packages/game-engine/src/replay/replay.execute.ts`
