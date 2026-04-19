@@ -7,6 +7,11 @@
  *
  * Implements D-0201 (Replay as a First-Class Feature) and validates
  * D-0002 (Determinism Is Non-Negotiable).
+ *
+ * This module inherits the determinism-only scope established for the
+ * replay harness in D-0205: it verifies reducer determinism under the
+ * fixed mock RNG that `replayGame` supplies, not live-match
+ * reproducibility.
  */
 
 import type { CardRegistryReader } from '../matchSetup.validate.js';
@@ -23,12 +28,18 @@ export interface DeterminismResult {
 }
 
 /**
- * Verifies determinism by running the same ReplayInput twice and comparing
- * state hashes.
+ * Verifies reducer determinism by running the same ReplayInput twice
+ * through the determinism-only replay harness and comparing state hashes.
  *
- * If the hashes match, the engine produced identical output from identical
- * input — determinism holds. If the hashes differ, nondeterminism is present
- * in the engine and must be investigated.
+ * If the two runs produce identical hashes, the engine reducer is
+ * deterministic under the fixed mock RNG that `replayGame` supplies;
+ * divergent hashes mean nondeterminism is present in the reducer and
+ * must be investigated. This is the narrowed claim of the harness: it
+ * does not demonstrate that the engine reconstructs a production
+ * boardgame.io match, since production matches use boardgame.io's
+ * seeded `ctx.random.*` and this harness ignores `ReplayInput.seed`.
+ * See `docs/ai/DECISIONS.md §D-0205` for the decision that scopes the
+ * harness this way.
  *
  * Pure function — no I/O, no side effects.
  *

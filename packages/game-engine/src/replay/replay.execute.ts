@@ -6,6 +6,17 @@
  * inputs always produce identical outputs.
  *
  * Implements D-0201 (Replay as a First-Class Feature).
+ *
+ * This module is determinism-only tooling (per D-0205): it is a
+ * reducer-determinism harness, not a live-match replayer. It ignores the
+ * stored `ReplayInput.seed` and drives every in-game shuffle through a
+ * fixed deterministic reverse-shuffle at the `random.Shuffle` call inside
+ * `buildMoveContext` below. It therefore proves the engine reducer is
+ * deterministic given a fixed mock RNG, but it does not reproduce the
+ * live boardgame.io `ctx.random.*` sequence that drives production
+ * matches. See `docs/ai/DECISIONS.md §D-0205` (RNG Truth Source for
+ * Replay) and `docs/ai/MOVE_LOG_FORMAT.md §Known Gaps / Risks Gap #4`
+ * for the forensics trail that led to this narrowing.
  */
 
 import type { LegendaryGameState } from '../types.js';
@@ -125,13 +136,29 @@ function buildMoveContext(
 }
 
 /**
- * Replays a game from a canonical ReplayInput and returns the final state
- * with a deterministic hash.
+ * Replays a game from a canonical ReplayInput against the determinism-only
+ * harness and returns the final state with a deterministic hash.
+ *
+ * This function drives the engine reducer under a fixed mock RNG so that
+ * identical inputs always produce identical outputs — that property is the
+ * entire claim. It does not replay live-match RNG: the stored
+ * `ReplayInput.seed` is ignored, and every in-game shuffle uses the
+ * deterministic reverse-shuffle supplied by `buildMoveContext` below. A
+ * future feature that reconstructs the `ctx.random.*` sequence from a
+ * production boardgame.io match must therefore be built on a separate
+ * pipeline gated on D-0203; this function cannot substitute for one.
+ *
+ * See `docs/ai/DECISIONS.md §D-0205` (RNG Truth Source for Replay) for
+ * the decision that narrows this claim, and
+ * `docs/ai/MOVE_LOG_FORMAT.md §Known Gaps / Risks Gap #4` for the
+ * forensics trail.
  *
  * Pure function — identical input always produces identical output. No I/O,
  * no side effects.
  *
  * @param input - The canonical replay input (seed, config, players, moves).
+ *                The `seed` field is stored but ignored by this harness;
+ *                see D-0205.
  * @param registry - Card registry reader for setup-time resolution.
  * @returns The replay result with final state, hash, and move count.
  */
