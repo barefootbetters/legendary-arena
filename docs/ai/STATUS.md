@@ -7,6 +7,98 @@
 
 ## Current State
 
+### WP-079 Execution Branch Cut — Governance Chain Merged (2026-04-19, SPEC)
+
+Session prepared `wp-079-replay-harness-determinism-label` as the
+canonical execution branch for EC-073 / WP-079. All 11 Pre-Session
+Gates from `docs/ai/invocations/session-wp079-label-replay-harness-determinism-only.md`
+now pass. Test baseline re-verified on the new branch at **464
+passing / 0 failing** across all five packages (registry 3 +
+vue-sfc-loader 11 + game-engine 409/101 + server 6 + arena-client 35).
+
+This session produced nine commits across three branches. Summary
+in causal order:
+
+**Replay governance chain (on `wp-062-arena-hud`, then merged to `main`):**
+- `d153bec` SPEC-A — premature minimal D-0205 block (reverted)
+- `8c87418` SPEC-revert — path β course-correction after the
+  Step-2 parity check discovered `stash@{0}` contained a more
+  complete D-0203 / D-0204 / D-0205 ecosystem
+- `0ffda27` SPEC-A′ — landed the full 243-line three-decision
+  cluster verbatim from stash; section "Decision Points Raised
+  by MOVE_LOG_FORMAT.md" placed before `## Final Note`
+- `aef0dc0` SPEC-B — committed `docs/ai/MOVE_LOG_FORMAT.md`
+  (506 lines, forensics report) + `docs/00-INDEX.md` pointer row
+- `a52a67c` SPEC-C — DECISIONS_INDEX.md three new rows
+  (D-0203/0204/0205) + WORK_INDEX.md one-sentence WP-079
+  registration (classified stash index hunks: 1 extracted,
+  3 already-landed, 1 deferred, 1 superseded)
+
+**Operational guardrails (on `main` directly):**
+- `3574b22` SPEC: Pre-B — `.gitignore` rules for
+  `content/media/` + two generated `content/themes/*ALL_THEMES_COMBINED.json`
+  outputs. Landed on `main` directly so `wp-081-theme-audio`
+  branches off a base that already has the rules.
+
+**WP-081 Theme Audio isolation (`wp-081-theme-audio` branch cut from main):**
+- `19f3c93` SPEC — WP-081 design drafts (2 files, 953 lines)
+- `8c5130c` INFRA — WP-081 tooling scripts (2 PowerShell files;
+  combiner reusable, `01-ScripAddMusicFields.ps1` one-time migration)
+- `41fa60a` SPEC — WP-081 theme audio fields
+  (`musicTheme` / `musicAIPrompt` / `musicURL`) on 68 theme JSONs
+
+**Merge to main:**
+- `3307b12` `EC-069:` — `--no-ff` merge of `wp-062-arena-hud` onto
+  main, folding in all 17 commits. `EC-069:` prefix chosen
+  deliberately because the only code-under-`apps/` in the merge
+  diff originates from `7eab3dc EC-069:`; SPEC-prefix was blocked
+  by `.githooks/commit-msg` Rule 5 (code changes require EC-###
+  prefix) and `--no-verify` was rejected. Commit body explicit:
+  bookkeeping merge, not re-execution. Merge has two parents
+  (`3574b22` + `a52a67c`).
+
+**Branch cut:**
+- `wp-079-replay-harness-determinism-label` cut from main `3307b12`.
+  Zero commits ahead / behind main at cut. Working tree: 7 Category D
+  untracked governance artifacts carry across — all outside EC-073
+  Files to Produce allowlist.
+
+Working-tree cleanup (moves off-repo, no commits):
+- `.claude/settings.local.json` — `git update-index --skip-worktree`
+- 4 Monrovia ACTV survey `.txt` files → `~/Documents/monrovia-survey/`
+- 5 business/legal docs (license letter, one-pager, Upper Deck
+  contacts, each in `.md` + `.docx` where applicable) →
+  `~/Documents/legendary-arena-business/`
+
+Dirty-tree reduction: **91 → 7 entries**. Stashes `stash@{0}` and
+`stash@{1}` retained unchanged throughout. EC-069
+`<pending — gatekeeper session>` placeholder in `EC_INDEX.md`
+retained. No history rewrites. No `--no-verify`. No forced pushes.
+
+Chain status after this session:
+- Step 1 (COMPLETE): EC-073 drafted + governance artifacts + merge
+- Step 2 (READY — NEW SESSION): WP-079 execution under `EC-073:`
+  on `wp-079-replay-harness-determinism-label`
+- Step 3 (BLOCKED on Step 2): WP-080 execution under `EC-072:`
+- Step 4 (BLOCKED on Step 3): WP-063 resume under `EC-071:`
+
+Category D governance artifacts (4 forensics/WP-048/067/068
+invocations + 3 session-context files) remain untracked across
+all branches; landing them is orthogonal to EC-073 execution and
+can follow under a batched SPEC at any time.
+
+### Branch topology post-session
+
+- `main` `3307b12` — canonical; contains Arena HUD code, full replay
+  governance, operational guardrails.
+- `wp-079-replay-harness-determinism-label` `3307b12` — EC-073
+  execution branch; equal to main until EC-073 commits land.
+- `wp-062-arena-hud` `a52a67c` — preserved rollback reference;
+  fully contained in main (0 commits ahead of main).
+- `wp-081-theme-audio` `41fa60a` — isolated feature branch, 3
+  commits ahead of main, no dependency on wp-079 or wp-062 chains.
+- `wp-068-preferences-foundation` `8ec6ced` — historical.
+
 ### WP-079 EC-073 Drafted (2026-04-18, SPEC)
 
 Step 1 of the replay-harness chain. WP-079 (Label Engine Replay
