@@ -595,3 +595,150 @@ WP-062 executing session starts with:
 7. Execute per the session prompt. All gates (#1 EC slot, #2
    governance committed, #3 upstream green, #4 category inheritance)
    are pre-cleared as of `97e70ad`.
+
+---
+
+## Lessons Learned (2026-04-18, Post-Execution, commit `7eab3dc`)
+
+Two execution-surfaced lessons worth preserving for future HUD WPs
+(WP-063 replay inspector, WP-064 log panel, spectator-HUD, et al.).
+
+### L1 — D-6512 / P6-30 generalizes from containers to subcomponents
+
+**Original form (WP-061 precedent, D-6512):** `ArenaHud.vue` must use
+`defineComponent({ setup() { return { … } } })` form because its
+template references the `snapshot` binding returned from `setup()`.
+Under `@legendary-arena/vue-sfc-loader`'s separate-compile pipeline
+(`inlineTemplate: false`), `<script setup>` top-level bindings are
+not exposed on the template's `_ctx`.
+
+**Generalized form (WP-062 finding):** The rule applies to ANY HUD
+`.vue` file whose template references bindings other than `$props`.
+Concretely, five WP-062 files had to convert from `<script setup>`
+to `defineComponent` form during Step 14 test verification, for two
+distinct reasons:
+
+1. **Template references a computed or function binding declared in
+   `<script setup>`.** Examples from WP-062:
+   - `PlayerPanel.vue` — template references `colorBundle` (computed
+     from `playerColorStyles(props.player.playerId)`)
+   - `ParDeltaReadout.vue` — template references `hasParBreakdown`,
+     `arrowIcon`, `toneClass` (computeds derived from `gameOver.par`)
+   - `EndgameSummary.vue` — template references `hasPar()`,
+     `hasScores()` (functions guarding optional fields)
+
+2. **Template references an imported child component.** Example from
+   WP-062:
+   - `PlayerPanelList.vue` — template references `<PlayerPanel>`
+     imported at the top of `<script setup>`. Under the separate-
+     compile pipeline, top-level imports are NOT hoisted onto the
+     render function's component registry the way
+     `@vitejs/plugin-vue` (Vite dev/build) handles them. Explicit
+     registration via `components: { PlayerPanel }` is required.
+
+**`<script setup>` remains correct** for components whose template
+references ONLY props (and no imports, no computeds, no setup-scope
+helpers). WP-062 examples:
+- `TurnPhaseBanner.vue` — template references only `game` prop
+- `SharedScoreboard.vue` — template references only `scheme`,
+  `mastermind`, `progress` props
+
+**Diagnostic signal:** `[Vue warn]: Property "X" was accessed during
+render but is not defined on instance.` at mount time is the
+fingerprint of (1). `[Vue warn]: Failed to resolve component: X`
+is the fingerprint of (2). Both produce a runtime `TypeError` from
+within Vue's own runtime, not from the HUD code — expensive to
+diagnose without this precedent.
+
+**Recommendation for future HUD WPs:** default to the
+`defineComponent({ setup() { return {...} }, components: {...} })`
+form for any component that renders child components or uses
+computeds. Use `<script setup>` ONLY for leaf, props-only views.
+
+### L2 — Path-scoped stash pattern for mixed governance edits
+
+**Situation:** EC-069 mandated six governance-file edits (DECISIONS,
+STATUS, WORK_INDEX, EC_INDEX). At session start, three of those
+files (DECISIONS.md, WORK_INDEX.md, EC_INDEX.md) already contained
+uncommitted pre-existing modifications from prior WP-068 and
+MOVE_LOG_FORMAT work (D-1414, D-0203/4/5, WP-068 WORK_INDEX entry,
+EC-070 EC_INDEX row). Committing the whole-file diffs under the
+`EC-069:` prefix would have bundled unrelated WPs — a scope
+violation under 01.3 commit hygiene.
+
+**Attempted shortcut that DOES NOT work:** `git stash push -m "..."
+-- <path>` does NOT isolate pre-existing hunks from freshly-added
+hunks within the same file. Git operates on whole-file diffs against
+HEAD — the stash captures every unstaged change in those paths,
+including the WP-062 edits made earlier in the same session. The
+pre-existing file even documents a variant (`--keep-index`) but that
+flag preserves the INDEX (staged state), not a subset of unstaged
+changes.
+
+**Correct pattern (verified end-to-end this session):**
+
+1. **Stash all governance-file modifications path-scoped:**
+   ```pwsh
+   git stash push -m "pre-existing ... (quarantined during WP-062 commit)" `
+     -- docs/ai/DECISIONS.md docs/ai/DECISIONS_INDEX.md `
+        docs/ai/work-packets/WORK_INDEX.md `
+        docs/ai/execution-checklists/EC_INDEX.md
+   ```
+   This captures BOTH pre-existing AND in-session edits. The working
+   tree copies of those files revert to HEAD.
+
+2. **Re-apply the WP's governance edits via the Edit tool** from
+   authoritative session memory (the exact D-#### entries, the WP
+   row-flip text, the EC row status change). The execution session
+   is the authoritative source for its own governance additions, so
+   reconstruction is deterministic.
+
+3. **Verify READY STATE:** `git diff --stat` on the four files shows
+   ONLY the WP's additions. Grep for the specific new markers (e.g.,
+   `D-6201`) to confirm they are back; grep for pre-existing markers
+   (e.g., `D-1414`) to confirm they are absent.
+
+4. **Stage by name, commit** with the WP's EC prefix.
+
+5. **Hand off to the next session-owner for stash resolution.** Do
+   NOT `git stash pop` — the popped hunks will conflict with the
+   newly-committed WP edits (same file regions now differ from the
+   stash's base). The pre-existing-work owner resolves the conflict
+   when they commit their governance additions.
+
+**Why not `git add -p`:** interactive hunk picking inside governance
+files is fragile and audit-hostile — the reviewer cannot
+deterministically verify which hunks were selected without
+inspecting the interactive session. Stash + re-apply produces a
+clean whole-file diff that is reviewable without replaying the
+session.
+
+**Why not "let the user commit pre-existing first":** valid as a
+human-driven path, but adds a mandatory session boundary and
+requires the pre-existing work to be fully self-contained — which
+it often isn't at the point a downstream WP reaches commit.
+
+**Precedent to carry forward:** future EC executions that land on a
+tree with pre-existing uncommitted governance edits (common in this
+project due to overlapping WP timelines) should use this
+stash + re-apply + leave-stash pattern.
+
+---
+
+## Closing State (commit `7eab3dc`)
+
+- **Branch:** `wp-062-arena-hud`
+- **Execution commit:** `7eab3dc` (20 files, +1454 / -17; six new
+  HUD Vue components + one palette helper + six test files; five
+  `base.css` tokens; six new decisions D-6201–D-6206; STATUS +
+  WORK_INDEX + EC_INDEX governance updates)
+- **Tests:** 464 repo-wide (+22 new HUD tests; engine 409, registry
+  3, vue-sfc-loader 11, server 6, arena-client 35)
+- **Stash retained:** `stash@{0}` holds the pre-existing WP-068 /
+  MOVE_LOG_FORMAT governance edits, quarantined during commit.
+  Restore with `git stash pop stash@{0}` when those WPs' governance
+  is ready to commit.
+- **Placeholder outstanding:** `EC_INDEX.md` carries `<pending —
+  gatekeeper session>` for the execution commit hash. Replace with
+  `7eab3dc` in a follow-up `SPEC:` commit or fold into the stash-pop
+  resolution commit.
