@@ -876,9 +876,9 @@ These packets make the game safe to ship.
   at execution (NEVER `WP-079:` per P6-36). NO 01.6 post-mortem
   required (doc-only; no new abstraction; no new code category).
 
-- [ ] WP-080 — Replay Harness Step-Level API for Downstream Snapshot / Replay Tools ✅ Reviewed (2026-04-18 lint-gate pass — drafted to unblock WP-063 / EC-071 Pre-Session Gate #4)
+- [x] WP-080 — Replay Harness Step-Level API for Downstream Snapshot / Replay Tools ✅ Reviewed (2026-04-18 lint-gate pass — drafted to unblock WP-063 / EC-071 Pre-Session Gate #4) — Executed 2026-04-19 at commit `dd0e2fd`
   Dependencies: WP-027, WP-079, D-6304
-  Execution Checklist: `docs/ai/execution-checklists/EC-072-replay-harness-step-level-api.checklist.md` (Draft)
+  Execution Checklist: `docs/ai/execution-checklists/EC-072-replay-harness-step-level-api.checklist.md` (Done)
   Notes: Additive refactor to `packages/game-engine/src/replay/replay.execute.ts`:
   adds named export `applyReplayStep(gameState, move, numPlayers):
   LegendaryGameState` (Q1 = Option A — single function, minimum surface),

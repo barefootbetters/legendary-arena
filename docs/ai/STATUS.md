@@ -7,6 +7,55 @@
 
 ## Current State
 
+### WP-080 / EC-072 Executed — Replay Harness Step-Level API (2026-04-19, EC-072)
+
+WP-080 executed at commit `dd0e2fd`: added named export
+`applyReplayStep(gameState, move, numPlayers): LegendaryGameState` to
+`packages/game-engine/src/replay/replay.execute.ts` immediately above
+`replayGame`; refactored `replayGame`'s internal loop to delegate each
+iteration to the new export so `MOVE_MAP` + `buildMoveContext` remain
+the single source of truth for dispatch (D-6304). Added one export line
+under the WP-027 block in `packages/game-engine/src/index.ts`. Added
+new test file `replay.execute.test.ts` with three cases (identity +
+same-reference contract; `replayGame` regression guard with
+`PRE_WP080_HASH = 'a56f949e'` byte-identical pre- and post-refactor;
+unknown-move warning-and-skip routing through `applyReplayStep`).
+
+State-ownership contract is mutate-and-return-same-reference (Q2 = A):
+`applyReplayStep` never clones `gameState`; consumers wanting historical
+snapshots project via `buildUIState` after each step. `MOVE_MAP`,
+`buildMoveContext`, `ReplayMoveContext`, and `MoveFn` remain file-local
+(Q1 = A / Q4). WP-079's JSDoc narrowing preserved verbatim
+(`determinism-only` xref; D-0205 xref; `MOVE_LOG_FORMAT.md` Gap #4 xref;
+forbidden phrases absent). No `boardgame.io` import added; no
+`console.*` / `Date.now` / `Math.random` / `performance.now` / `node:fs`
+inside `applyReplayStep`.
+
+Test counts: game-engine **412 / 102 suites / 0 fail** (was 409 / 101);
+`pnpm -r test` **467 passing / 0 fail** (was 464). Engine build exits 0.
+
+**Unblocks WP-063 / EC-071 Pre-Session Gate #4.** `buildSnapshotSequence`
+can now wrap `applyReplayStep` instead of duplicating `MOVE_MAP` into
+`apps/replay-producer/`.
+
+Two WP-080 commits on this branch:
+- `dd0e2fd` EC-072 — code (`replay.execute.ts`, `replay.execute.test.ts`,
+  `index.ts`)
+- `<this commit>` SPEC — governance (STATUS.md, WORK_INDEX.md,
+  EC_INDEX.md)
+
+01.6 post-mortem completed in-session before Commit A (new long-lived
+abstraction trigger); §5 aliasing audit PASSED (intentional
+same-reference contract, distinguished from WP-028 `cardKeywords`
+precedent). Pre-commit review ran in a separate gatekeeper session per
+§9 locked choice (P6-35 default path).
+
+**Stashes:** `stash@{0}` (WP-068 / MOVE_LOG_FORMAT) and `stash@{1}`
+(WP-068 pre-wp-062-branch-cut) retained unchanged (not popped).
+EC-069 `<pending>` placeholder in `EC_INDEX.md` not backfilled.
+
+---
+
 ### WP-079 / EC-073 Executed — Replay Harness Labeled Determinism-Only (2026-04-19, EC-073)
 
 WP-079 executed doc-only under EC-073 at commit `1e6de0b`: labeled the
