@@ -209,6 +209,7 @@ export { replayGame } from './replay/replay.execute.js';
 export { computeStateHash } from './replay/replay.hash.js';
 export { verifyDeterminism } from './replay/replay.verify.js';
 export type { DeterminismResult } from './replay/replay.verify.js';
+export { applyReplayStep } from './replay/replay.execute.js';
 
 // UI state contract (WP-028; progress + PAR breakdown added WP-067)
 export type {

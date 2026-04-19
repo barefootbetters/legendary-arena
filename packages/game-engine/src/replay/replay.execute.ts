@@ -136,6 +136,41 @@ function buildMoveContext(
 }
 
 /**
+ * Applies a single ReplayMove to the given LegendaryGameState and returns
+ * the same reference.
+ *
+ * Mutate-and-return-same-reference contract (D-6304): consumers wanting
+ * historical snapshots must project via buildUIState after each step — they
+ * must not retain G copies. applyReplayStep never clones.
+ *
+ * Unblocks WP-063's buildSnapshotSequence and future replay inspectors by
+ * exposing the step-level dispatch primitive while keeping MOVE_MAP as the
+ * single source of truth (D-6304). Inherits replayGame's determinism-only
+ * semantics (D-0205).
+ *
+ * @param gameState - The current mutable game state; mutated in place.
+ * @param move - The ReplayMove to apply (name + playerId + optional args).
+ * @param numPlayers - Total number of players in the match.
+ * @returns The same gameState reference that was passed in.
+ */
+export function applyReplayStep(
+  gameState: LegendaryGameState,
+  move: ReplayMove,
+  numPlayers: number,
+): LegendaryGameState {
+  const moveFn = MOVE_MAP[move.moveName];
+  if (!moveFn) {
+    gameState.messages.push(
+      `Replay warning: unknown move name "${move.moveName}" — skipped.`,
+    );
+    return gameState;
+  }
+  const moveContext = buildMoveContext(gameState, move.playerId, numPlayers);
+  moveFn(moveContext, move.args);
+  return gameState;
+}
+
+/**
  * Replays a game from a canonical ReplayInput against the determinism-only
  * harness and returns the final state with a deterministic hash.
  *
@@ -180,18 +215,13 @@ export function replayGame(
   let gameState = initialState;
   const numPlayers = input.playerOrder.length;
 
+  // why: the loop delegates to applyReplayStep so MOVE_MAP + buildMoveContext
+  // remain the single source of truth for dispatch (D-6304). Reassignment is
+  // stylistic — applyReplayStep returns the same reference per Q2 = A, so the
+  // variable binding is always identical. Determinism regression is covered by
+  // the PRE_WP080_HASH guard in replay.execute.test.ts via computeStateHash.
   for (const move of input.moves) {
-    const moveFn = MOVE_MAP[move.moveName];
-
-    if (!moveFn) {
-      gameState.messages.push(
-        `Replay warning: unknown move name "${move.moveName}" — skipped.`,
-      );
-      continue;
-    }
-
-    const moveContext = buildMoveContext(gameState, move.playerId, numPlayers);
-    moveFn(moveContext, move.args);
+    gameState = applyReplayStep(gameState, move, numPlayers);
   }
 
   // Step 3: Compute canonical state hash
