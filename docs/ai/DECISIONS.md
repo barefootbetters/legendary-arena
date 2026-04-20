@@ -2856,6 +2856,25 @@ which crosses layer concerns for a static schema package.
 
 ---
 
+### D-5509 — Theme Schema v2: Music Fields Added Via Version Bump
+**Decision:** `themeSchemaVersion` bumped from `1` to `2`. V2 adds three optional
+top-level fields (`musicTheme`, `musicAIPrompt`, `musicAssets`) and one new
+sub-schema (`ThemeMusicAssetsSchema`) with eight optional URL fields
+(`previewIntroUrl`, `matchStartUrl`, `ambientLoopUrl`, `mainThemeUrl`,
+`schemeTwistUrl`, `masterStrikeUrl`, `villainAmbushUrl`, `bystanderUrl`).
+All 68 authored themes in `content/themes/` migrated to v2 on 2026-04-19.
+**Rationale:** D-5504 requires a version bump for any schema change, including
+additive-only ones. The music fields are the first such bump. Keeping v1 with
+additive changes was rejected to preserve the immutability rule in D-5504 and
+give consumers an unambiguous signal that the schema grew. This decision also
+supersedes the 2026-04-12 design-review note in WP-055 that exempted editorial
+fields from versioning; that exemption is grandfathered, not precedent.
+**Affected WPs:** WP-055
+**Immutability:** Permanent — v1 is retired, v2 is the authoring target. Any
+future additions will require a v3 bump.
+
+---
+
 ### D-2701 — Canonical State Hashing: Sorted-Key JSON + djb2
 
 **Decision:** `computeStateHash` uses `JSON.stringify` with a sorted-key
@@ -5440,6 +5459,260 @@ in WP-035 §Non-Negotiable.
 **Resolved:** 2026-04-19 (pre-flight SPEC commit lands D-3501 +
 02-CODE-CATEGORIES.md update + WP-035 session prompt before EC-035
 execution begins)
+
+---
+
+### D-3502 — Four Deployment Environments: `dev` → `test` → `staging` → `prod`
+
+**Decision:** Legendary Arena supports exactly **four** deployment
+environments, ordered sequentially in a single promotion path:
+
+1. `dev` — engine & content development.
+2. `test` — full validation, replay, migration checks.
+3. `staging` — production-identical dry run.
+4. `prod` — live players.
+
+The ordering is locked by the typed contract
+`DeploymentEnvironment = 'dev' | 'test' | 'staging' | 'prod'` exported
+from `packages/game-engine/src/ops/ops.types.ts`. Promotion moves one
+step right at a time; skipping is forbidden. Adding a fifth environment
+is a governance change (new D-entry + coordinated update to the typed
+union + `docs/ops/DEPLOYMENT_FLOW.md`), not a silent code extension.
+
+**Rationale:** each environment tests a different aspect of the
+release, and the four-environment count is the minimum that covers all
+four aspects without overlap.
+
+- `dev` is where authoring happens — no shared traffic, no persistence
+  guarantees across `dataVersion` bumps.
+- `test` is the first shared environment; it runs the full
+  `RELEASE_CHECKLIST.md` gate suite on every build. Synthetic fixtures
+  and replay suites provide coverage; no player traffic.
+- `staging` exists because `test` cannot prove production-identical
+  behavior — `test` accepts synthetic data shapes that production will
+  never see. `staging` forces the promotion artifact to confront the
+  real production topology, configuration, and data shape before any
+  player reaches it.
+- `prod` is the terminal environment; every artifact here is immutable
+  (see D-3503) and carries a full audit trail.
+
+Fewer environments leaves a gap: merging `test` and `staging` sacrifices
+the production-parity gate; merging `dev` and `test` removes the shared
+gate-suite boundary. More environments (a separate QA tier, a public
+beta ring, dynamic per-PR deployments) creates promotion fatigue and
+dilutes the sequential-promotion discipline without adding a new
+testable aspect. The four-environment count is the minimum sufficient
+covering.
+
+**Implications:**
+
+- The four-element literal union in `ops.types.ts` is closed at MVP;
+  the TypeScript compiler enforces exhaustive handling at every
+  consumer site.
+- `docs/ops/DEPLOYMENT_FLOW.md` is the authoritative prose
+  specification of each environment's purpose, promotion trigger,
+  approval gate, and artifact identity (byte-identical from `test`
+  through `prod`).
+- Future ops tooling (logging, alerting, metrics collection) that
+  discriminates by environment consumes this union directly — no
+  environment-identifying string literal should appear anywhere except
+  the one `DeploymentEnvironment` declaration.
+
+**Alternatives rejected:**
+
+- **Three environments** (merge `test` + `staging`): rejected. Loses
+  the production-identical dry-run gate; the `staging → prod` promotion
+  becomes "deploy and hope" without a parity check.
+- **Five or more environments** (add `qa`, `beta`, or per-PR): rejected
+  at MVP. Adds promotion steps without adding new testable aspects.
+  Revisitable post-MVP if a concrete signal gap emerges.
+- **Dynamic environments** (spun up per branch or per pull request):
+  rejected. Breaks the sequential-promotion discipline; introduces
+  environments that never receive a gate-suite run and never feed
+  back into the release checklist's audit trail.
+
+**Status:** Immutable
+**Raised:** WP-035 / EC-035 pre-commit review (follow-up SPEC), 2026-04-19
+**Resolved:** 2026-04-19 (this entry satisfies the WP-035 Definition
+of Done requirement that the four-environment rationale be captured in
+`DECISIONS.md`; prose restatement is retained in
+`docs/ops/DEPLOYMENT_FLOW.md` §The Four Environments)
+
+---
+
+### D-3503 — No Hot-Patching In Production
+
+**Decision:** Production accepts **only** versioned artifact
+deployments. Ad-hoc edits to a running `prod` process, manual patches
+to a running container, side-loaded configuration changes, and
+"just-this-once" SQL fixes are all forbidden. If production behavior
+needs to change, the change is authored, stamped via `stampArtifact`,
+and promoted through the full `dev → test → staging → prod` path
+defined in D-3502.
+
+When production behavior must change immediately, the only two valid
+responses are:
+
+1. **Roll back** to the previous known-good artifact (D-0902). This is
+   the path for broken production deployments.
+2. **Fast-track a new versioned artifact** through the release
+   checklist as quickly as the gate suite allows. This is the path for
+   new behavior that production needs.
+
+There is no third option.
+
+**Rationale:** the no-hot-patching rule is load-bearing for three
+independent architectural properties:
+
+- **Determinism of rollback (D-0902).** "Reversible to what" is only
+  well-defined if the rollback target is a named, stamped artifact
+  that passed the full release checklist. A hot-patch is by definition
+  unstamped — there is no prior artifact to revert to without
+  reconstructing the pre-patch state from memory, which breaks the
+  D-0902 guarantee that every deployment is reversible without data
+  loss.
+- **Audit trail.** Every production change must be traceable to an
+  artifact, a `VersionedArtifact` stamp, a release note, and a human
+  sign-off (`RELEASE_CHECKLIST.md` Gate 7). A hot-patch bypasses all
+  four; post-incident reconstruction becomes guesswork.
+- **Staging parity.** `staging` is a production-identical dry run
+  (D-3502). If production accepts a hot-patch that `staging` never
+  saw, the parity guarantee is broken and the entire promotion path
+  loses its meaning for the next release. The hot-patch contaminates
+  all subsequent deployments, not just itself.
+
+This decision enforces D-1002 (Immutable Surfaces Are Protected) at the
+deployment boundary. Release artifacts are the immutable surface;
+production is the environment that receives them; hot-patching would
+mutate the surface in place.
+
+**Implications:**
+
+- Deployment tooling must not expose any operation that writes directly
+  to a running production process. Container orchestration, SSH access,
+  database console access, and dynamic configuration reloads are
+  constrained to the rollback + fast-track-release paths above.
+- Emergency procedures for severe incidents route through D-0902
+  rollback, not through hot-patching. The incident-response playbook
+  (`docs/ops/INCIDENT_RESPONSE.md`) classifies "corrupted game state"
+  as P0 with immediate rollback — not immediate hot-patch.
+- `staging` gets the same no-hot-patching treatment for the same
+  reason: a `staging` hot-patch breaks the identity guarantee between
+  `staging` and `prod` artifacts, making the `staging → prod`
+  promotion decision unreliable.
+- `test` and `dev` may accept destructive editing (rebuild from
+  scratch), but any behavior observed there must still be reproduced
+  via a promoted artifact before it reaches `staging` or `prod`.
+
+**Alternatives rejected:**
+
+- **Allow emergency hot-patches with post-hoc justification:**
+  rejected. The "emergency" carve-out erodes quickly — every hot-patch
+  author believes their situation is an emergency. The absence of a
+  carve-out is itself the discipline.
+- **Allow configuration hot-reloads (but not code):** rejected at MVP.
+  Configuration is Class 2 data per `ARCHITECTURE.md` §Section 3 and
+  is bundled into the versioned artifact; splitting configuration out
+  for live reload would require a separate versioning axis and a
+  separate audit trail. Revisitable if a concrete need emerges.
+- **Allow hot-patches gated by a second-human-approval:** rejected.
+  The approval adds friction without restoring the three properties
+  (rollback determinism, audit trail, staging parity) that hot-patching
+  breaks.
+
+**Status:** Immutable
+**Raised:** WP-035 / EC-035 pre-commit review (follow-up SPEC), 2026-04-19
+**Resolved:** 2026-04-19 (this entry satisfies the WP-035 Definition
+of Done requirement that the no-hot-patching rationale be captured in
+`DECISIONS.md`; prose restatement is retained in
+`docs/ops/DEPLOYMENT_FLOW.md` §Why No Hot-Patching)
+
+---
+
+### D-3504 — Release Validation Gates and Runtime Invariant Checks Are Complementary
+
+**Decision:** The release-time validation gates defined in
+`docs/ops/RELEASE_CHECKLIST.md` and the runtime invariant checks
+defined in `packages/game-engine/src/invariants/` (WP-031) are
+**complementary, not redundant**. Each operates on a different signal
+window and serves a different purpose:
+
+- **Release gates run before** the artifact reaches any environment.
+  They catch problems in the artifact itself (failing tests, invalid
+  content, non-deterministic replays, broken migrations, missing
+  version stamps). Failure blocks promotion; no player is ever
+  exposed to a gate-failing artifact.
+- **Runtime invariants run during** a live match. They catch problems
+  that emerge from the interaction of a gate-passing artifact with
+  live state (unexpected zone contents, serializability violations,
+  counter inconsistencies, lifecycle-state anomalies). Failure fires a
+  P0 incident (`docs/ops/INCIDENT_RESPONSE.md`) and triggers rollback
+  per D-0902.
+
+A well-run release never fires a runtime invariant in production. When
+a runtime invariant **does** fire in production, it is evidence that a
+release gate missed something — the invariant is the final line of
+defense against a class of bug the release pipeline did not anticipate.
+Both layers are required; removing either one creates a silent failure
+mode.
+
+**Rationale:** the two layers differ on every axis that matters:
+
+| Axis | Release gates | Runtime invariants |
+|---|---|---|
+| When | Pre-promotion | During live match |
+| Signal source | Test fixtures, validation reports | Live `G` state transitions |
+| Failure mode | Block promotion (artifact never ships) | Fire P0 incident (rollback) |
+| Cost of miss | High (players see broken behavior) | Very high (players experience the failure) |
+| Cost of false positive | Low (author re-runs the gate) | Medium (rollback churn) |
+| Coverage model | Representative sample of inputs | Exhaustive check of actual state |
+
+Release gates cannot prove runtime safety for inputs the gate suite
+never sampled; runtime invariants cannot prevent a broken artifact
+from reaching production. Each defends the other's blind spot.
+
+**Implications:**
+
+- Adding a new runtime invariant (WP-031 or a follow-up WP) does not
+  justify removing a corresponding release gate. A runtime invariant
+  that fires in production is already a P0; preventing the P0 at
+  release time is strictly cheaper.
+- Conversely, adding a new release gate does not justify removing a
+  corresponding runtime invariant. Release gates run against a
+  representative sample; live play exercises the full input space.
+- When a production incident is traced to a gap in either layer, the
+  post-mortem must decide which layer to strengthen — and typically
+  strengthens both. A release gate catches the specific defect; a
+  runtime invariant catches the class of defect.
+- The incident-severity mapping in `docs/ops/INCIDENT_RESPONSE.md`
+  reflects this relationship: P0 (corrupted game state) inherits
+  D-0802 fail-loud semantics because the runtime invariant is
+  declaring that a load-bearing assumption is broken — a signal no
+  release gate can produce, because the gates run before load.
+
+**Alternatives rejected:**
+
+- **Collapse release gates into runtime invariants ("fail fast at
+  load"):** rejected. Release gates catch problems before any player
+  is affected; collapsing them means every release defect becomes a
+  production incident.
+- **Collapse runtime invariants into release gates ("test
+  exhaustively before release"):** rejected. Live state space exceeds
+  any practical test fixture; runtime invariants exist precisely
+  because the full input space cannot be sampled offline.
+- **Treat runtime invariants as warnings rather than P0 triggers:**
+  rejected. A runtime invariant firing means the engine has detected a
+  state shape that contradicts a locked assumption; continuing to
+  serve the match risks cascading corruption. The fail-loud response
+  per D-0802 is load-bearing.
+
+**Status:** Immutable
+**Raised:** WP-035 / EC-035 pre-commit review (follow-up SPEC), 2026-04-19
+**Resolved:** 2026-04-19 (this entry satisfies the WP-035 Definition
+of Done requirement that the relationship between release gates and
+runtime invariants be captured in `DECISIONS.md`; prose restatement is
+retained in `docs/ops/RELEASE_CHECKLIST.md` §Relationship to runtime
+invariant checks)
 
 ---
 

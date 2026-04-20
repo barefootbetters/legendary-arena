@@ -526,6 +526,9 @@ For full rationale, see `DECISIONS.md`.
 | Decision ID | Summary | Introduced In |
 |---|---|---|
 | D-3501 | `packages/game-engine/src/ops/` classified as engine code category (eighth engine-subdirectory precedent); ships pure type definitions only — no runtime `OpsCounters` instance anywhere in the engine (RS-1 option (a)); no wall-clock / RNG / I/O / `.reduce()` carve-outs | WP-035 |
+| D-3502 | Four deployment environments locked at `dev` → `test` → `staging` → `prod` in sequential promotion order; fifth environment requires a new D-entry + coordinated update to the `DeploymentEnvironment` typed union and `docs/ops/DEPLOYMENT_FLOW.md`; rationale: each environment covers a distinct testable aspect, four is the minimum sufficient covering | WP-035 |
+| D-3503 | No hot-patching in production — only versioned artifact deployments; enforces D-1002 (Immutable Surfaces Are Protected) at the deployment boundary; load-bearing for rollback determinism (D-0902), audit trail (release notes), and staging-parity identity; only valid responses to urgent production change are D-0902 rollback or a fast-track versioned-artifact release | WP-035 |
+| D-3504 | Release-time validation gates (`docs/ops/RELEASE_CHECKLIST.md`) and runtime invariant checks (`packages/game-engine/src/invariants/`, WP-031) are complementary not redundant; gates catch pre-promotion defects, invariants catch live-match anomalies; each defends the other's blind spot; a runtime invariant firing in production is evidence a release gate missed something and triggers P0 rollback | WP-035 |
 
 ---
 
