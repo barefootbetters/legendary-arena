@@ -308,3 +308,22 @@ export type {
   ContentValidationError,
   ContentValidationContext,
 } from './content/content.validate.js';
+
+// Versioning & save migration strategy (WP-034 / D-3401)
+export type {
+  EngineVersion,
+  DataVersion,
+  ContentVersion,
+  VersionedArtifact,
+  CompatibilityStatus,
+  CompatibilityResult,
+} from './versioning/versioning.types.js';
+export {
+  CURRENT_DATA_VERSION,
+  checkCompatibility,
+  formatEngineVersion,
+  getCurrentEngineVersion,
+} from './versioning/versioning.check.js';
+export type { MigrationKey, MigrationFn } from './versioning/versioning.migrate.js';
+export { migrateArtifact, migrationRegistry } from './versioning/versioning.migrate.js';
+export { stampArtifact } from './versioning/versioning.stamp.js';

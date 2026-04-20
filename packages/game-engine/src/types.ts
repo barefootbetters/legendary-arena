@@ -28,6 +28,19 @@ export { PERSISTENCE_CLASSES } from './persistence/persistence.types.js';
 // Re-exported here so that consumers importing from './types.js' have access.
 export type { LobbyState, SetPlayerReadyArgs } from './lobby/lobby.types.js';
 
+// why: Versioning types (EngineVersion, DataVersion, ContentVersion,
+// VersionedArtifact, CompatibilityStatus, CompatibilityResult) are defined
+// canonically in src/versioning/versioning.types.ts (WP-034 / D-3401).
+// Re-exported here so consumers importing from './types.js' have access.
+export type {
+  EngineVersion,
+  DataVersion,
+  ContentVersion,
+  VersionedArtifact,
+  CompatibilityStatus,
+  CompatibilityResult,
+} from './versioning/versioning.types.js';
+
 // why: Villain deck types (VillainDeckState, RevealedCardType) are defined
 // canonically in src/villainDeck/villainDeck.types.ts (WP-014A). Re-exported
 // here so that consumers importing from './types.js' have access.
