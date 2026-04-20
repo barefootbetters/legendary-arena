@@ -3,7 +3,7 @@
 > A modern multiplayer evolution of the Marvel Legendary deck-building card game.  
 > Built with **boardgame.io**, **TypeScript**, **Cloudflare R2**, and **PostgreSQL**.
 
-**Status:** Foundation complete • Core gameplay loop complete (Phase 4) • Card mechanics & abilities complete (Phase 5) • Theme data model ready • Registry viewer with keyword/rule tooltips
+**Status:** Foundation complete • Core gameplay loop complete (Phase 4) • Card mechanics & abilities complete (Phase 5) • PAR scoring + UIState progress projection + Arena HUD complete (WP-048 2026-04-17, WP-067 2026-04-17, WP-062 2026-04-18) • Replay snapshot producer + step-level API + game log & replay inspector client surface complete (WP-079 / WP-080 / WP-063 / WP-064 all landed 2026-04-19) • Theme data model ready • Registry viewer with keyword/rule tooltips
 
 ---
 
@@ -85,7 +85,7 @@ mindmap
 
 ---
 
-**Last updated:** 2026-04-17
+**Last updated:** 2026-04-19
 **Maintained by:** Human developer
 
 *This index is the single source of truth for navigating the project documentation.*
