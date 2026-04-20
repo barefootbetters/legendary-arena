@@ -327,3 +327,10 @@ export {
 export type { MigrationKey, MigrationFn } from './versioning/versioning.migrate.js';
 export { migrateArtifact, migrationRegistry } from './versioning/versioning.migrate.js';
 export { stampArtifact } from './versioning/versioning.stamp.js';
+
+// Ops metadata (WP-035 / D-3501)
+export type {
+  OpsCounters,
+  DeploymentEnvironment,
+  IncidentSeverity,
+} from './ops/ops.types.js';

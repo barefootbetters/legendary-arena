@@ -41,6 +41,18 @@ export type {
   CompatibilityResult,
 } from './versioning/versioning.types.js';
 
+// Ops metadata (WP-035 / D-3501)
+// why: Operational metadata types (OpsCounters, DeploymentEnvironment,
+// IncidentSeverity) are defined canonically in src/ops/ops.types.ts
+// (WP-035 / D-3501). Re-exported here so consumers importing from
+// './types.js' have access. These types are passive metadata — the engine
+// never constructs or mutates instances (RS-1 option (a)).
+export type {
+  OpsCounters,
+  DeploymentEnvironment,
+  IncidentSeverity,
+} from './ops/ops.types.js';
+
 // why: Villain deck types (VillainDeckState, RevealedCardType) are defined
 // canonically in src/villainDeck/villainDeck.types.ts (WP-014A). Re-exported
 // here so that consumers importing from './types.js' have access.
