@@ -6031,6 +6031,87 @@ body, confirming the documentation-class invariant in practice)
 
 ---
 
+### D-5601 — Pre-Planning Package Classified as New `preplan` Code Category
+
+**Decision:** `packages/preplan/` is classified under a **new top-level
+`preplan` code category**. It is not a subcategory of `engine`, `data-input`,
+`client-app`, or `cli-producer-app` — pre-planning is a non-authoritative,
+per-client, speculative layer that observes the engine's read-only projections
+but never writes to authoritative game state.
+
+**Rationale:** Pre-planning has distinct constraints that none of the existing
+categories fully express:
+
+- Unlike `engine`, the preplan layer is **non-authoritative** and client-local.
+  It cannot mutate `G`, cannot participate in `boardgame.io` lifecycle, and
+  cannot be imported by the engine. Classifying it as `engine` would inherit
+  the engine's authority semantics and misrepresent the layer boundary.
+- Unlike `data-input`, it performs no I/O, loads no files, and validates no
+  card data. It consumes engine type definitions and produces speculative
+  in-memory state only.
+- Unlike `client-app`, it is a reusable package (`packages/preplan/`), not
+  an executable application. Client apps may consume the preplan package,
+  but preplan is not itself a bundle target or rendering surface.
+- Unlike `cli-producer-app`, it produces no file artifacts and has no
+  CLI entry point. All output is in-memory advisory state consumed by UI
+  layers within the same client process.
+
+The import matrix for the `preplan` category:
+
+**May:**
+- Import type definitions from `@legendary-arena/game-engine` via
+  `import type` only (e.g., `CardExtId`).
+- Use Node built-ins (for utilities, once runtime code is introduced by
+  WP-057 and beyond).
+- Read read-only projections of engine state (via UI-layer snapshots;
+  never via direct engine runtime imports).
+- Use a client-local seedable PRNG for speculative deck shuffling
+  (WP-057 scope; not introduced by WP-056).
+
+**Must not:**
+- Import `@legendary-arena/game-engine` runtime code (functions, constants,
+  helpers) — type-only imports only.
+- Import `boardgame.io`, `@legendary-arena/registry`, `apps/server`, any
+  `apps/*` package, or `pg`.
+- Write to `G`, `ctx`, or any authoritative game state.
+- Use `ctx.random.*` (engine randomness is authoritative; preplan uses
+  its own client-local PRNG).
+- Persist state to any storage (localStorage, sessionStorage, IndexedDB,
+  cookies, filesystem, database).
+- Be wired into `game.ts`, `LegendaryGame.moves`, phase hooks, or any
+  engine lifecycle point — the engine does not know preplan exists.
+
+This follows the **top-level category pattern** established by D-6301
+(`cli-producer-app` for `apps/replay-producer/`) and D-6511 (`client-app`
+for `apps/arena-client/`), not the engine-subdirectory pattern established
+by D-2706 (`src/replay/`), D-2801 (`src/ui/`), D-3001 (`src/campaign/`),
+D-3101 (`src/invariants/`), D-3201 (`src/network/`), D-3301 (`src/content/`),
+D-3401 (`src/versioning/`), and D-3501 (`src/ops/`). The preplan layer is
+architecturally distinct because it lives outside the game engine package
+and has different authority semantics.
+
+ARCHITECTURE.md §Layer Boundary (Authoritative) already lists
+`packages/preplan/**` as a layer row citing `DESIGN-PREPLANNING.md` as its
+specification source; `.claude/rules/architecture.md` §Import Rules already
+locks the import matrix. D-5601 extends `02-CODE-CATEGORIES.md` to carry
+the same category taxonomy so that pre-flight §Code Category Boundary
+Check has an explicit row to verify against.
+
+**Affected WPs:** WP-056 introduces the directory and the four public
+type contracts (`PrePlan`, `PrePlanSandboxState`, `RevealRecord`,
+`PrePlanStep`) as types-only. WP-057 will introduce the first runtime
+code under the `preplan` category (sandbox execution; speculative move
+simulation; client-local PRNG for deck shuffling). WP-058 will introduce
+disruption detection and invalidation pipelines. WP-059 is deferred per
+`DESIGN-PREPLANNING.md §WP-059 Deferral Rationale`. All preplan-hosted
+code, whether types or runtime, must continue to obey the `preplan`
+category rules above.
+
+**Introduced:** WP-056
+**Status:** Immutable
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

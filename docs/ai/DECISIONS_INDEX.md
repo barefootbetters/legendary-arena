@@ -555,6 +555,14 @@ For full rationale, see `DECISIONS.md`.
 
 ---
 
+## Pre-Planning State Model & Lifecycle (WP-056)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-5601 | `packages/preplan/` classified as a new top-level `preplan` code category (non-authoritative, per-client, speculative); follows the top-level-category pattern of D-6301 (`cli-producer-app`) and D-6511 (`client-app`), not the engine-subdirectory pattern of D-2706/D-2801/D-3001/D-3101/D-3201/D-3301/D-3401/D-3501; type-only import from `@legendary-arena/game-engine` permitted, no runtime engine imports, no `boardgame.io`, no registry, no server, no `apps/*`, no `pg`, no writes to `G` or `ctx`, no persistence to any storage, no wiring into `game.ts` or lifecycle hooks | WP-056 |
+
+---
+
 ## Usage Rules
 
 - Before changing behaviour, locate related Decision IDs here

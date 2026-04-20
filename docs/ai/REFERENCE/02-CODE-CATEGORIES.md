@@ -40,6 +40,7 @@ they are not real categories.
 | `setup` | Setup-Time Builders | `packages/game-engine/src/setup/` | `.claude/rules/game-engine.md` |
 | `moves` | Move Implementations | `packages/game-engine/src/moves/` | `.claude/rules/game-engine.md` |
 | `data-input` | Data Input / Registry | `packages/registry/`, `data/` | `.claude/rules/registry.md` |
+| `preplan` | Pre-Planning (Non-Authoritative, Per-Client) | `packages/preplan/` | `docs/ai/DESIGN-PREPLANNING.md`, `.claude/rules/architecture.md` §Pre-Planning Layer |
 | `server` | Server / Persistence | `apps/server/` | `.claude/rules/server.md`, `.claude/rules/persistence.md` |
 | `client-app` | Client App | `apps/arena-client/` | `docs/ai/ARCHITECTURE.md` §Layer Boundary (D-6511) |
 | `cli-producer-app` | CLI Producer App | `apps/replay-producer/` | `docs/ai/ARCHITECTURE.md` §Layer Boundary (D-6301) |
@@ -161,6 +162,47 @@ loaded (sets.json vs card-types.json). Bugs here manifest as wrong
 gameplay behavior downstream.
 
 **Directories:** `packages/registry/`, `data/cards/`, `data/metadata/`
+
+---
+
+### `preplan` — Pre-Planning (Non-Authoritative, Per-Client)
+
+**What it is:** A non-authoritative, per-client speculative planning layer
+that lets waiting players draft upcoming turns without committing moves or
+mutating authoritative game state. The first and only instance is
+`packages/preplan/` — introduced by WP-056 as a types-only contract
+(`PrePlan`, `PrePlanSandboxState`, `RevealRecord`, `PrePlanStep`), with
+runtime code (sandbox execution, client-local PRNG, disruption detection)
+to follow in WP-057 / WP-058. WP-059 is deferred per
+`DESIGN-PREPLANNING.md §WP-059 Deferral Rationale`.
+
+**May:** Import type definitions from `@legendary-arena/game-engine` via
+`import type` only (e.g., `CardExtId`). Use Node built-ins. Read read-only
+projections of engine state (via UI-layer snapshots; never via direct
+engine runtime imports). Use a client-local seedable PRNG for speculative
+deck shuffling (WP-057 scope; not introduced by WP-056). Maintain
+disposable sandbox state and a reveal ledger that is the sole authority
+for deterministic rewind.
+
+**Must not:** Import `@legendary-arena/game-engine` runtime code (functions,
+constants, helpers) — type-only imports only. Import `boardgame.io`,
+`@legendary-arena/registry`, `apps/server`, any `apps/*` package, or `pg`.
+Write to `G`, `ctx`, or any authoritative game state. Use `ctx.random.*`
+(engine randomness is authoritative; preplan uses its own client-local
+PRNG). Persist state to any storage (localStorage, sessionStorage,
+IndexedDB, cookies, filesystem, database). Be wired into `game.ts`,
+`LegendaryGame.moves`, phase hooks, or any engine lifecycle point — the
+engine does not know preplan exists. Use `.reduce()` for branching logic
+(code-style invariant inherited).
+
+**Failure mode:** Layer-boundary violations (engine runtime leaking into
+the preplan bundle or preplan state leaking into `G`). Information
+leakage (sandbox state exposing hidden opponent data). Rewind correctness
+gaps (rewind logic inspecting `sandboxState` directly instead of
+consuming the `revealLedger`). Single-turn-scope violations (pre-plans
+surviving past their `appliesToTurn = ctx.turn + 1` boundary).
+
+**Directories:** `packages/preplan/` (D-5601)
 
 ---
 
