@@ -85,7 +85,7 @@ mindmap
 
 ---
 
-**Last updated:** 2026-04-20 (Post-Phase-6 hygiene + Phase 7 entry — **WP-056** ✅ pre-planning types-only core at `eade2d0` (new `packages/preplan/` package; D-5601 new `preplan` code category; RS-2 zero-test lock) + **WP-081** ✅ registry build pipeline cleanup at `ea5cfdd` (3 broken scripts deleted + tsc-only build; D-8101 delete-not-rewrite + D-8102 single-CI-validate-step). Engine baseline 436/109/0 UNCHANGED through both; repo-wide 536/0 UNCHANGED. Prior Phase 6 state retained: tag `phase-6-complete` at `c376467` published 2026-04-19; 19 WPs landed; WP-042.1 deferred per D-4201 and WP-066 unreviewed carried forward to Phase 7 backlog)
+**Last updated:** 2026-04-20 (Post-Phase-6 hygiene + Phase 7 entry — **WP-056** ✅ pre-planning types-only core at `eade2d0` (new `packages/preplan/` package; D-5601 new `preplan` code category; RS-2 zero-test lock; governance close `cff16e1`; 01.6 template-gap-closure addendum `5bce4a2` — §1 Binary Health Check + §7 Test Adequacy N/A + §9 Forward-Safety all YES) + **WP-081** ✅ registry build pipeline cleanup at `ea5cfdd` (3 broken scripts deleted + tsc-only build; D-8101 delete-not-rewrite + D-8102 single-CI-validate-step). Engine baseline 436/109/0 UNCHANGED through both; repo-wide 536/0 UNCHANGED. Prior Phase 6 state retained: tag `phase-6-complete` at `c376467` published 2026-04-19; 19 WPs landed; WP-042.1 deferred per D-4201 and WP-066 unreviewed carried forward to Phase 7 backlog)
 **Maintained by:** Human developer
 
 *This index is the single source of truth for navigating the project documentation.*
