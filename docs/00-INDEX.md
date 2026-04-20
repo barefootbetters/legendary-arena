@@ -3,7 +3,7 @@
 > A modern multiplayer evolution of the Marvel Legendary deck-building card game.  
 > Built with **boardgame.io**, **TypeScript**, **Cloudflare R2**, and **PostgreSQL**.
 
-**Status:** Foundation complete • Core gameplay loop complete (Phase 4) • Card mechanics & abilities complete (Phase 5) • **Phase 6 (Verification, UI & Production) complete — tagged `phase-6-complete` at commit `c376467` on 2026-04-19**: replay + UIState + inspector chain (WP-027/028/063/064/080) plus production-safety stack (WP-031 invariants / WP-032 network / WP-034 versioning `5139817` / WP-035 release-ops playbook `d5935b5` / WP-042 deployment checklists `c964cf4`) plus client surfaces (WP-061/062/065) plus scoring (WP-048/067) all landed • Theme data model ready • Registry viewer with keyword/rule tooltips
+**Status:** Foundation complete • Core gameplay loop complete (Phase 4) • Card mechanics & abilities complete (Phase 5) • **Phase 6 (Verification, UI & Production) complete — tagged `phase-6-complete` at commit `c376467` on 2026-04-19**: replay + UIState + inspector chain (WP-027/028/063/064/080) plus production-safety stack (WP-031 invariants / WP-032 network / WP-034 versioning `5139817` / WP-035 release-ops playbook `d5935b5` / WP-042 deployment checklists `c964cf4`) plus client surfaces (WP-061/062/065) plus scoring (WP-048/067) all landed • **Post-Phase-6 work (2026-04-20):** WP-056 ✅ pre-planning types-only core at `eade2d0` (new `packages/preplan/` package; D-5601 new `preplan` code category) + WP-081 ✅ registry build pipeline cleanup at `ea5cfdd` (subtractive hygiene; tsc-only build; D-8101 + D-8102; first green `pnpm --filter @legendary-arena/registry build` since WP-003) • Theme data model ready • Registry viewer with keyword/rule tooltips
 
 ---
 
@@ -85,7 +85,7 @@ mindmap
 
 ---
 
-**Last updated:** 2026-04-19 (Phase 6 closed — tag `phase-6-complete` at commit `c376467`; 19 WPs landed; engine 436/109/0, repo-wide 526/0; WP-042.1 deferred per D-4201 and WP-066 unreviewed carried forward to Phase 7 backlog)
+**Last updated:** 2026-04-20 (Post-Phase-6 hygiene + Phase 7 entry — **WP-056** ✅ pre-planning types-only core at `eade2d0` (new `packages/preplan/` package; D-5601 new `preplan` code category; RS-2 zero-test lock) + **WP-081** ✅ registry build pipeline cleanup at `ea5cfdd` (3 broken scripts deleted + tsc-only build; D-8101 delete-not-rewrite + D-8102 single-CI-validate-step). Engine baseline 436/109/0 UNCHANGED through both; repo-wide 536/0 UNCHANGED. Prior Phase 6 state retained: tag `phase-6-complete` at `c376467` published 2026-04-19; 19 WPs landed; WP-042.1 deferred per D-4201 and WP-066 unreviewed carried forward to Phase 7 backlog)
 **Maintained by:** Human developer
 
 *This index is the single source of truth for navigating the project documentation.*
