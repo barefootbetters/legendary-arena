@@ -7,6 +7,86 @@
 
 ## Current State
 
+### WP-063 / EC-071 Executed — Replay Snapshot Producer (2026-04-19, EC-071)
+
+WP-063 executed at commit `97560b1`: added engine type
+`ReplaySnapshotSequence { version: 1, snapshots: readonly UIState[],
+metadata? }` and the pure helper
+`buildSnapshotSequence({ setupConfig, seed, playerOrder, moves,
+registry, metadata? })` in
+`packages/game-engine/src/replay/replaySnapshot.types.ts` and
+`packages/game-engine/src/replay/buildSnapshotSequence.ts`. The helper
+wraps WP-080's `applyReplayStep` step-level API and calls WP-028's
+`buildUIState` after setup and after each step, returning a frozen
+sequence whose length is exactly `moves.length + 1`. No I/O, no
+logging, no wall-clock reads, no non-engine RNG, no `boardgame.io`
+import. Engine barrel exports added in `packages/game-engine/src/index.ts`
+and `packages/game-engine/src/types.ts`.
+
+New CLI app `apps/replay-producer/` is the first `cli-producer-app` per
+D-6301. It wraps the helper with `node:util parseArgs`, canonical
+top-level-sorted JSON serialization (D-6302; nested key order inherits
+engine purity), optional-field omission (D-6303 — never `"metadata":
+undefined` / `null`), five named exit-code constants under a single
+`// why:` block (`EXIT_OK=0` / `EXIT_INVALID_ARGS=1` / `EXIT_INPUT_PARSE=2`
+/ `EXIT_ENGINE=3` / `EXIT_OUTPUT_WRITE=4`), and
+`process.setSourceMapsEnabled(true)` at the entry for TypeScript stack
+traces. Committed golden fixture triplet
+(`three-turn-sample.{inputs,sequence,cmd}`) demonstrates round-trip
+determinism.
+
+Execution surfaced **D-6305**: `ReplayInputsFile.moves` is typed
+`readonly ReplayMove[]` to match WP-027's canonical per-step record
+name (not `readonly ReplayInput[]` as the WP literally phrased it);
+`BuildSnapshotSequenceParams` is a 6-field interface carrying explicit
+`playerOrder` (for `numPlayers` derivation) and `registry` (a
+`CardRegistryReader` required by `buildInitialGameState`). Full
+rationale + rejected alternatives in
+`docs/ai/post-mortems/01.6-WP-063-replay-snapshot-producer.md §D-6305`
+and `docs/ai/DECISIONS.md §D-6305`.
+
+Test counts: game-engine **427 / 108 suites / 0 fail** (was 412 / 102;
++15 tests across 6 new suites in `buildSnapshotSequence.test.ts`).
+`apps/replay-producer` adds **4 tests / 2 suites / 0 fail** as the
+fifth per-app count (determinism + three exit-code cases). `pnpm -r
+test` **486 passing / 0 fail** (was 467; +19 total). Engine and CLI
+builds exit 0.
+
+Verification: helper-purity grep returns no match; no `boardgame.io`
+under `packages/game-engine/src/replay/`; determinism verified at both
+helper level (deep-equal two-call) and CLI level (byte-identical
+two-run with `--produced-at=2026-04-19T00:00:00Z` — confirmed via
+shell `diff`); committed golden sequence byte-matches fresh
+regeneration via the `three-turn-sample.cmd.txt` invocation;
+`apps/arena-client/`, `apps/registry-viewer/`, `apps/server/`,
+`packages/registry/`, `packages/vue-sfc-loader/` all untouched.
+
+**Unblocks WP-064 (Game Log & Replay Inspector).** WP-064 will import
+`ReplaySnapshotSequence` as a type, carry the consumer-side
+`version === 1` assertion per D-6303, and render the committed
+`three-turn-sample.sequence.json` as its first fixture.
+
+Two WP-063 commits on this branch:
+- `97560b1` EC-071 — code + samples + in-session post-mortem artifact
+  (engine types / helper / tests / CLI app / fixtures)
+- `<this commit>` SPEC — governance (STATUS.md, WORK_INDEX.md,
+  EC_INDEX.md, DECISIONS.md §D-6305, DECISIONS_INDEX.md)
+
+01.6 post-mortem completed in-session before Commit A (new long-lived
+abstraction + new code category triggers both fired); §5 aliasing
+audit PASSED (outer sequence + snapshots array frozen; each UIState
+is a `buildUIState` projection whose mutable fields — `handCards`,
+`log` — are spread-copies per WP-028 precedent). Pre-commit review
+ran in a separate gatekeeper session per P6-35 default; no P6-42
+deviation.
+
+**Stashes:** `stash@{0}` (WP-068 / MOVE_LOG_FORMAT) and `stash@{1}`
+(WP-068 pre-wp-062-branch-cut) retained unchanged (not popped).
+EC-069 `<pending>` placeholder in `EC_INDEX.md` not backfilled by
+WP-063.
+
+---
+
 ### WP-080 / EC-072 Executed — Replay Harness Step-Level API (2026-04-19, EC-072)
 
 WP-080 executed at commit `dd0e2fd`: added named export

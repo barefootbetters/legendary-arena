@@ -819,7 +819,7 @@ These packets make the game safe to ship.
   (engine 409/101, arena-client +22 tests / 6 new test files, registry 3,
   vue-sfc-loader 11, server 6); no engine or registry changes.
 
-- [ ] WP-063 — Replay Snapshot Producer ✅ Reviewed (2026-04-16 lint-gate pass)
+- [x] WP-063 — Replay Snapshot Producer ✅ Reviewed (2026-04-16 lint-gate pass) — Completed 2026-04-19 at commit `97560b1` under EC-071 (see [session-wp063-replay-snapshot-producer.md](../invocations/session-wp063-replay-snapshot-producer.md))
   Dependencies: WP-027, WP-028, WP-005B, WP-080 (step-level API —
   amended 2026-04-18 after WP-063 / EC-071 stopped at Pre-Session
   Gate #4; resumes after WP-080 / EC-072 lands)

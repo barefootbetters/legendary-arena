@@ -4731,6 +4731,91 @@ via `AskUserQuestion`)
 
 ---
 
+### D-6305 — `ReplayInputsFile` Reconciled with WP-027 Canonical `ReplayMove`; `buildSnapshotSequence` Requires Explicit `playerOrder` + `registry` Parameters
+
+**Decision:** The on-disk `ReplayInputsFile` shape defined by WP-063
+uses `moves: readonly ReplayMove[]` (not `inputs: readonly
+ReplayInput[]` as the WP literally phrased it) and carries
+`playerOrder: readonly string[]` alongside `setupConfig`, `seed`, and
+optional `metadata`. The `buildSnapshotSequence` helper signature is
+a 6-field `BuildSnapshotSequenceParams` interface (`setupConfig`,
+`seed`, `playerOrder`, `moves`, `registry`, optional `metadata`),
+which extends the WP's literal 3-field signature with `playerOrder`
+(required to derive `numPlayers` for `applyReplayStep`) and
+`registry` (a `CardRegistryReader` required by
+`buildInitialGameState` at setup time). The CLI `apps/replay-producer`
+supplies a minimal inline registry reader
+(`{ listCards: () => [] }`) matching the `replay.execute.test.ts` /
+`replay.verify.test.ts` precedent — no runtime registry import
+under the `cli-producer-app` category (D-6301).
+
+**Rationale:** WP-063's literal field-naming was internally
+inconsistent. `snapshots.length === inputs.length + 1` (from the
+WP's acceptance criteria) requires each "input" to be a per-step
+move record, which is `ReplayMove` in WP-027's canonical naming —
+not `ReplayInput` (WP-027's top-level match record containing
+`seed`, `setupConfig`, `playerOrder`, and `moves`). Reconciling
+the file field with `ReplayMove` avoids a confusing parallel
+naming convention and preserves the WP-027 invariant that
+"`ReplayInput` is the full match record, `ReplayMove` is one
+step." The `playerOrder` and `registry` additions are
+non-negotiable preconditions for `buildInitialGameState` and
+`applyReplayStep` — omitting them would force module-level
+singletons or hidden globals that break the helper's purity
+guarantee and the `cli-producer-app` "no registry imports at
+runtime" rule. Accepting `seed` in the helper params (even though
+`applyReplayStep` inherits determinism-only semantics per D-0205
+and ignores seed) preserves spec fidelity and gives a natural
+metadata passthrough for the CLI.
+
+**Alternatives Considered:**
+- **Option A — `ReplayInputsFile = ReplayInput & { version: 1;
+  metadata? }` intersection type (rejected):** elegant structural
+  reuse, but surfaces WP-027's mutable array types (`playerOrder:
+  string[]`, `moves: ReplayMove[]`) — the WP-063 spec asks for
+  `readonly` arrays, which the intersection cannot enforce without
+  widening or wrapping.
+- **Option B — hide `registry` behind a module-scoped singleton
+  (`let currentRegistry; export setRegistry(...)`) (rejected):**
+  breaks the helper's pure-function guarantee; makes tests
+  non-composable; introduces hidden global state that
+  determinism-only testing cannot distinguish from real regressions.
+- **Option C — omit `playerOrder`, derive `numPlayers` from
+  `moves` (e.g., `new Set(moves.map(m => m.playerId)).size`)
+  (rejected):** fragile — fails when only one player has moved so
+  far or when move list is empty; forces the helper to make
+  assumptions about the match's player population from
+  partial-history data.
+- **Option D — rename the field to `inputs: readonly ReplayMove[]`
+  (preserves WP's literal field name, contradicts WP-027 naming)
+  (rejected):** invites future drift; every downstream consumer
+  (WP-064 and beyond) must then either alias `ReplayMove` to
+  `ReplayInput` locally or explain the naming divergence. Cleaner
+  to align with the canonical per-step record name.
+
+**Scope:**
+- `packages/game-engine/src/replay/replaySnapshot.types.ts`
+  (`ReplayInputsFile` shape)
+- `packages/game-engine/src/replay/buildSnapshotSequence.ts`
+  (`BuildSnapshotSequenceParams` shape)
+- `apps/replay-producer/src/cli.ts` (minimal inline registry
+  reader; CLI param mapping)
+
+**Forward guard:** if a future replay-producer consumer surfaces
+that legitimately requires live registry resolution, the CLI's
+minimal reader is a single swap site; the engine helper stays
+unchanged because `registry` is already a first-class param. Any
+such swap must be a follow-up WP with an explicit rationale,
+not a silent CLI edit.
+
+**Status:** Active
+**Raised:** WP-063 / EC-071 execution session 2026-04-19 (during
+implementation — WP's literal 3-field helper signature proved
+insufficient to call the upstream engine helpers)
+**Resolved:** 2026-04-19
+
+---
+
 ## Decision Points Raised by `MOVE_LOG_FORMAT.md`
 
 The three entries below originate from the forensics report
