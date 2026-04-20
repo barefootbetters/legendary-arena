@@ -1289,7 +1289,7 @@ All pre-planning code lives in `packages/preplan/` — outside the game engine.
 The preplan package may import engine type definitions only (never runtime
 code, never `boardgame.io`).
 
-- [ ] WP-056 — Pre-Planning State Model & Lifecycle — pending ✅ Reviewed
+- [x] WP-056 — Pre-Planning State Model & Lifecycle ✅ Reviewed — Executed 2026-04-20 at commit `eade2d0`
   Dependencies: WP-006A, WP-008B
   Notes: Types-only WP — no runtime-executable code; creates
   `packages/preplan/` package with `PrePlan`, `PrePlanSandboxState`,
