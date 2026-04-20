@@ -195,9 +195,13 @@ Before writing a single line:
     `scripts.standardize-img`
   - `.github/workflows/ci.yml` — job `build` step "Normalize cards" +
     misleading comment
-  - `README.md` — pipeline diagram near the top of the file (currently
-    lines 62-64) and acceptance items in the acceptance checklist
-    (currently lines 204-205)
+  - `README.md` — five anchor regions (extended per PS-1 pre-flight
+    resolution, 2026-04-20):
+    1. Pipeline diagram near the top of the file (currently lines 62-64)
+    2. Registry Config section — viewer-fetch sentence (currently line 111)
+    3. How to Upload to R2 section — "Uploads:" listing (currently line 132)
+    4. Acceptance Checklist items (currently lines 204-205)
+    5. Definition of Done Checklist — viewer-loads item (currently line 207)
 
 - **`package.json` `scripts.build` after this packet:**
   `"build": "tsc -p tsconfig.build.json"`
@@ -294,27 +298,61 @@ unchanged.
 
 ### F) Modify `README.md`
 
-Remove the pipeline diagram near the top of the file (currently lines
-62-64):
+Five anchor regions are edited. Use the anchor strings shown below
+to locate each block; line numbers are provided as a hint, not a
+lock. After all edits, `README.md` contains no occurrence of any
+precomputed registry JSON artifact other than
+`dist/registry-health.json`.
+
+**F.1 — Pipeline diagram near the top of the file (currently lines 62-64).**
+Remove:
 ```
 #  1. scripts/normalize-cards.ts  → dist/cards.json
 #  2. scripts/standardize-images.ts → images/standard/...
 #  3. scripts/build-dist.mjs      → dist/index.json, sets.json, keywords.json
 ```
+Replace with up-to-date wording that describes what the build actually
+does today (tsc → `dist/index.js` + `.d.ts`; validate →
+`dist/registry-health.json`). The replacement prose should be minimal —
+two to four lines — and must not reintroduce any reference to the
+deleted scripts or their outputs.
 
-Remove the acceptance items in the acceptance checklist (currently
-lines 204-205):
+**F.2 — Registry Config section — viewer-fetch sentence (currently line 111).**
+Anchor: `The viewer fetches {dataBaseUrl}/data/{dataVersion}/cards.json
+and images from {imageBaseUrl}/{type}/{filename}.webp at runtime — no
+rebuild needed.` Rewrite to reflect the actual runtime path: the viewer
+fetches `{metadataBaseUrl}/metadata/sets.json` + per-set
+`{metadataBaseUrl}/metadata/{abbr}.json` and images from
+`{imageBaseUrl}/{type}/{filename}.webp` at runtime. Keep the "no rebuild
+needed" phrasing — it's still accurate.
+
+**F.3 — How to Upload to R2 section — "Uploads:" listing (currently line 132).**
+Anchor: `- data/1.0.0/cards.json, index.json, etc. → R2`. Remove this
+line. The adjacent image line (`- images/1.0.0/{type}/{cardId}.webp → R2`)
+stays unchanged. After WP-081 lands, `upload-r2.ts` still runs but no
+longer finds the deleted pipeline's JSONs to upload — `dist/` now
+contains only `registry-health.json` plus TypeScript artifacts. Replacing
+the deleted line with an accurate new listing is OUT OF SCOPE because
+`upload-r2.ts` itself is out of scope; leave the section with only the
+image upload line rather than documenting a listing that a future WP
+may revise.
+
+**F.4 — Acceptance Checklist items (currently lines 204-205).**
+Remove:
 ```
 - [ ] `dist/cards.json` contains all normalized cards sorted by ID
 - [ ] `dist/index.json` contains lightweight metadata only
 ```
+Do not replace — the surrounding `pnpm registry:validate fails on ...`
+items remain as the checklist's validation coverage.
 
-Replace with up-to-date wording that describes what the build actually
-does today (tsc → `dist/index.js` + `.d.ts`; validate → `dist/registry-
-health.json`). The replacement prose should be minimal — two to four
-lines — and must not reintroduce any reference to the deleted scripts
-or their outputs, and must not mention any precomputed registry JSON
-artifact other than `dist/registry-health.json`.
+**F.5 — Definition of Done Checklist — viewer-loads item (currently line 207).**
+Anchor: `- [ ] Viewer loads cards.json and registry-health.json from R2
+base URL`. Remove this line entirely. The viewer does not load
+`cards.json` (post-WP-003 the viewer consumes `metadata/sets.json` +
+`metadata/{abbr}.json`, not any `cards.json`). The adjacent items about
+viewer rendering, search/filters, and `pnpm viewer:build` stay
+unchanged.
 
 ---
 
@@ -357,8 +395,14 @@ artifact other than `dist/registry-health.json`.
   `scripts.standardize-img` removed
 - `.github/workflows/ci.yml` — **modified** — "Normalize cards" step
   removed from job 2 (`build`)
-- `README.md` — **modified** — pipeline diagram at lines 62-64 and
-  acceptance items at lines 204-205 replaced with accurate prose
+- `README.md` — **modified** — five anchor regions per §F: pipeline
+  diagram (currently lines 62-64), Registry Config viewer-fetch
+  sentence (currently line 111), How to Upload to R2 listing
+  (currently line 132), Acceptance Checklist items (currently lines
+  204-205), Definition of Done Checklist viewer-loads item (currently
+  line 207). Scope extended per PS-1 pre-flight resolution
+  (2026-04-20) so the post-review negative-guarantee AC is
+  satisfiable
 
 No other file may be modified. `pnpm-lock.yaml` unchanged.
 

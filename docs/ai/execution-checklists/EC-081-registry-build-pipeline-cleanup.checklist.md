@@ -44,12 +44,20 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 - **CI job `build` step deleted:** the step named `"Normalize cards"`
   with run `pnpm registry:validate` and comment `# also writes
   cards.json + index.json`
-- **README.md regions edited:** pipeline diagram near the top of the
-  file (currently lines 62-64 — three-line block starting
-  `#  1. scripts/normalize-cards.ts`) and acceptance items in the
-  acceptance checklist (currently lines 204-205). Use the anchor
-  strings, not the line numbers, to locate the blocks during edit;
-  line numbers are provided as a hint, not a lock
+- **README.md regions edited (five anchor regions — extended per PS-1
+  pre-flight resolution, 2026-04-20):** use the anchor strings, not the
+  line numbers, to locate each block during edit; line numbers are
+  provided as a hint, not a lock.
+  1. Pipeline diagram (currently lines 62-64 — three-line block
+     starting `#  1. scripts/normalize-cards.ts`)
+  2. Registry Config viewer-fetch sentence (currently line 111 —
+     anchor `The viewer fetches {dataBaseUrl}/data/{dataVersion}/cards.json`)
+  3. How to Upload to R2 listing (currently line 132 — anchor
+     `- data/1.0.0/cards.json, index.json, etc. → R2`)
+  4. Acceptance Checklist items (currently lines 204-205 — two-item
+     block starting `- [ ] dist/cards.json contains`)
+  5. Definition of Done Checklist viewer-loads item (currently line
+     207 — anchor `Viewer loads cards.json and registry-health.json`)
 - **DECISIONS.md additions:** D-8101 (delete-not-rewrite rationale),
   D-8102 (`registry:validate` as the single CI validation step)
 - **Test baseline UNCHANGED:** engine `436 / 109 / 0 fail`; repo-wide
@@ -96,8 +104,12 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
   `scripts.standardize-img` removed
 - `.github/workflows/ci.yml` — **modified** — "Normalize cards" step
   deleted from job `build`
-- `README.md` — **modified** — pipeline diagram (lines 62-64) and
-  acceptance items (lines 204-205) replaced with accurate prose
+- `README.md` — **modified** — five anchor regions per WP-081 §F
+  (extended per PS-1 pre-flight resolution): pipeline diagram
+  (currently lines 62-64), Registry Config viewer-fetch sentence
+  (currently line 111), How to Upload to R2 listing (currently line
+  132), Acceptance Checklist items (currently lines 204-205),
+  Definition of Done Checklist viewer-loads item (currently line 207)
 
 ---
 
