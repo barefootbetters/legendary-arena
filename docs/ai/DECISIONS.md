@@ -6112,6 +6112,84 @@ category rules above.
 
 ---
 
+### D-8101 — Dead Registry Build Pipeline Deleted, Not Rewritten
+
+**Decision:** The three broken operator scripts under
+`packages/registry/scripts/` — `normalize-cards.ts`, `build-dist.mjs`,
+and `standardize-images.ts` — are **deleted** by WP-081 rather than
+rewritten against the post-WP-003 schemas. The associated
+`scripts.normalize` and `scripts.standardize-img` entries in
+`packages/registry/package.json` are removed, and the `node
+scripts/build-dist.mjs` suffix is trimmed from `scripts.build`, leaving
+the registry build as `tsc -p tsconfig.build.json`-only.
+
+**Rationale:** No consumer in the monorepo reads any of the five JSON
+artifacts that the deleted pipeline produced (`dist/cards.json`,
+`dist/index.json`, `dist/sets.json`, `dist/keywords.json`,
+`dist/registry-info.json`). The runtime path for registry data is
+`metadata/sets.json` plus per-set `metadata/{abbr}.json` fetched
+directly from R2 by `httpRegistry.ts` / `localRegistry.ts`; there is
+no precomputed flat artifact on the critical path. The
+`dist/image-manifest.json` emitted by `standardize-images.ts` is
+likewise unconsumed; `upload-r2.ts` uploads images directly from
+`images/standard/` to R2 without relying on the manifest.
+
+Rewriting the pipeline against the current `SetDataSchema` / `FlatCard`
+shapes would produce an additional derived artifact with no runtime
+consumer, increasing maintenance surface without benefit. The WP-003
+schema rewrite is the authoritative data shape for both local and
+HTTP loaders; deriving a flattened JSON aggregate from it adds a
+second source-of-truth risk (aggregate drifts from per-set files)
+with no corresponding read-side benefit.
+
+The discovery anchor is `docs/ai/post-mortems/01.6-WP-055-theme-data-model.md`
+§8 item 3, which flagged the dead pipeline as pre-existing breakage
+unrelated to WP-055. WP-081 is the eventual follow-up cleanup.
+
+**Affected WPs:** WP-003 (current schema shape is load-bearing),
+WP-055 (discovery anchor), WP-081 (execution).
+
+**Introduced:** WP-081
+**Status:** Immutable
+
+---
+
+### D-8102 — `registry:validate` Is the Single CI Validation Step
+
+**Decision:** Registry validation runs **exactly once per CI pipeline**,
+in the job named `validate` via `pnpm registry:validate`. The redundant
+second invocation formerly present in the `build` job under the step
+named `"Normalize cards"` (with the misleading comment `# also writes
+cards.json + index.json`) is removed. The `build` job is restricted to
+`tsc`-compiling the registry source and uploading the `registry-dist`
+artifact.
+
+**Rationale:** The `"Normalize cards"` step was a copy of
+`pnpm registry:validate` dressed in a misleading name. Its comment
+claimed the step also wrote `cards.json` and `index.json`, but
+`packages/registry/scripts/validate.ts` writes only
+`dist/registry-health.json` — the claim was never true, even
+pre-WP-003. The step added no artifact that any following step
+consumed; it only re-ran the validation that the earlier `validate`
+job already produced as the `registry-health` artifact.
+
+Build and validate responsibilities are **not merged** by WP-081. CI
+remains a two-step pipeline: the `validate` job runs the schema /
+health checks once and uploads `registry-health.json`; the `build`
+job compiles TypeScript types. Future registry-data changes that need
+validation at build time must use the upstream `validate` job's
+artifact (via `needs: validate` + `download-artifact`), not re-run
+validation locally.
+
+**Affected WPs:** WP-081 (execution). Affects `.github/workflows/ci.yml`
+job `build` only; jobs `validate`, `build-viewer`, `upload-r2`, and
+`publish-npm` are textually unchanged.
+
+**Introduced:** WP-081
+**Status:** Immutable
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

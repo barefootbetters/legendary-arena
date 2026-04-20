@@ -57,11 +57,6 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Normalize cards
-        run: pnpm registry:validate   # also writes cards.json + index.json
-        env:
-          DATA_VERSION: ${{ github.ref_name }}
-
       - name: Build TypeScript types
         run: pnpm registry:build
 

@@ -17,10 +17,8 @@
   ],
   "scripts": {
     "test": "node --import tsx --test src/**/*.test.ts",
-    "build": "tsc -p tsconfig.build.json && node scripts/build-dist.mjs",
+    "build": "tsc -p tsconfig.build.json",
     "validate": "tsx scripts/validate.ts",
-    "normalize": "tsx scripts/normalize-cards.ts",
-    "standardize-img": "tsx scripts/standardize-images.ts",
     "upload": "tsx scripts/upload-r2.ts",
     "prepublishOnly": "pnpm build"
   },

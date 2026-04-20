@@ -55,30 +55,13 @@ Writes a `packages/registry/dist/registry-health.json` report on every run.
 ## How to Build the Registry Package
 
 ```bash
-# Normalize + validate cards, then compile TypeScript types:
+# Compile TypeScript types:
 pnpm registry:build
 
-# This runs in order:
-#  1. scripts/normalize-cards.ts  → dist/cards.json
-#  2. tsc                         → dist/*.js + dist/*.d.ts
-#  3. scripts/build-dist.mjs      → dist/index.json, sets.json, keywords.json
+# Runs: tsc -p tsconfig.build.json → dist/*.js + dist/*.d.ts
+# Registry validation (pnpm registry:validate) is a separate command and
+# writes dist/registry-health.json; the build itself is tsc-only.
 ```
-
----
-
-## How to Standardize Images
-
-1. Place raw WebP images in `images/raw/` (run `convert-to-webp.mjs` first if needed).
-2. Run:
-
-```bash
-cd packages/registry
-pnpm standardize-img
-# Or with custom paths:
-INPUT_IMG_DIR=../../images/raw OUTPUT_IMG_DIR=../../images/standard pnpm standardize-img
-```
-
-This copies images to `images/standard/{type}/{cardId}.webp` and writes `dist/image-manifest.json`.
 
 ---
 
@@ -108,7 +91,7 @@ Edit `apps/registry-viewer/public/registry-config.json`:
 }
 ```
 
-The viewer fetches `{dataBaseUrl}/data/{dataVersion}/cards.json` and images from `{imageBaseUrl}/{type}/{filename}.webp` at runtime — no rebuild needed.
+The viewer fetches `{metadataBaseUrl}/metadata/sets.json` plus per-set `{metadataBaseUrl}/metadata/{abbr}.json` files, and images from `{imageBaseUrl}/{type}/{filename}.webp` at runtime — no rebuild needed.
 
 ---
 
@@ -129,7 +112,6 @@ DATA_VERSION=1.0.0 pnpm upload
 ```
 
 Uploads:
-- `data/1.0.0/cards.json`, `index.json`, etc. → R2
 - `images/1.0.0/{type}/{cardId}.webp` → R2
 
 ---
@@ -201,10 +183,7 @@ Image filenames are derived directly: `{cardId}.webp` — e.g. `hero-iron-man.we
 - [ ] `pnpm registry:validate` fails on missing required fields
 - [ ] `pnpm registry:validate` fails on non-canonical image filenames
 - [ ] `pnpm registry:validate` fails on invalid card ID format
-- [ ] `dist/cards.json` contains all normalized cards sorted by ID
-- [ ] `dist/index.json` contains lightweight metadata only
 - [ ] `dist/registry-health.json` is written on every validation run
-- [ ] Viewer loads `cards.json` and `registry-health.json` from R2 base URL
 - [ ] Viewer renders card images via `{imageBaseUrl}/{type}/{fileName}`
 - [ ] Viewer search and filters work without a backend
 - [ ] `pnpm viewer:build` produces a deployable static site

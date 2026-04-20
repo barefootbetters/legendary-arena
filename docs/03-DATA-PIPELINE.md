@@ -329,21 +329,6 @@ Previously resolved:
 
 ---
 
-## Legacy Scripts (Retained for Reference)
-
-These scripts in `packages/registry/scripts/` predate the current
-pipeline. They are not part of the production data flow.
-
-| Script | Status | Notes |
-|---|---|---|
-| `normalize-cards.ts` | Superseded | References removed `CardSchema` exports |
-| `build-dist.mjs` | Superseded | Older flat-card pipeline |
-| `standardize-images.ts` | Superseded | Image renaming utility |
-| `upload-r2.ts` | Active | R2 upload via Cloudflare SDK |
-| `validate.ts` | Active | Registry validation (`pnpm registry:validate`) |
-
----
-
 ## PAR Artifact Pipeline
 
 PAR artifacts are a separate data pipeline from card data. They flow from

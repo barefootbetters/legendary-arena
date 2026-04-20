@@ -563,6 +563,15 @@ For full rationale, see `DECISIONS.md`.
 
 ---
 
+## Registry Build Pipeline Cleanup (WP-081)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-8101 | Dead registry build pipeline (`normalize-cards.ts` → `build-dist.mjs` → `standardize-images.ts`) deleted rather than rewritten because no monorepo consumer reads `dist/cards.json`, `dist/index.json`, `dist/sets.json`, `dist/keywords.json`, `dist/registry-info.json`, or `dist/image-manifest.json`; runtime path is `metadata/sets.json` + `metadata/{abbr}.json` fetched directly from R2 via `httpRegistry.ts` / `localRegistry.ts`; registry build is now tsc-only | WP-081 |
+| D-8102 | `registry:validate` is the single CI validation step; redundant second invocation formerly in the `build` job under step `"Normalize cards"` is removed; build and validate responsibilities remain separate, not merged | WP-081 |
+
+---
+
 ## Usage Rules
 
 - Before changing behaviour, locate related Decision IDs here
