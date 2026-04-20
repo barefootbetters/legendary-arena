@@ -7,6 +7,96 @@
 
 ## Current State
 
+### WP-042 / EC-042 Executed — Deployment Checklists (Data, Database & Infrastructure) (2026-04-19, EC-042)
+
+WP-042 executed at commit `c964cf4`: Legendary Arena now has
+governed R2 and PostgreSQL deployment verification checklists
+cross-referenced from `docs/ops/RELEASE_CHECKLIST.md`. Ships
+scope-reduced per **D-4201** — the PostgreSQL checklist contains
+four sections (§B.1 Pre-conditions, §B.2 Migration execution,
+§B.6 Rules data seeding verification, §B.7 Schema-structure
+verification); four further sections (§B.3 / §B.4 / §B.5 / §B.8)
+are deferred to **WP-042.1** awaiting Foundation Prompt 03
+revival (`scripts/seed-from-r2.mjs` has never existed).
+
+Surfaces produced (seven files in Commit A allowlist; zero
+runtime code; zero new tests — engine baseline UNCHANGED at
+436 / 109 / 0 fail; repo-wide 526 / 0 fail):
+
+- `docs/ai/deployment/r2-data-checklist.md` — full seven-section
+  R2 data verification checklist (§A.1 Validation script usage
+  across local + R2 modes with the six real env vars exposed by
+  `packages/registry/scripts/validate.ts`; §A.2 Registry manifest;
+  §A.3 Metadata files with the six locked minimum-entry counts;
+  §A.4 Image assets naming convention + Phase 5 spot-checks;
+  §A.5 Cross-reference checks; §A.6 R2 bucket configuration —
+  `legendary-images` bucket, CORS, cache-control, `rclone` remote
+  verification; §A.7 New set upload procedure as seven ordered
+  steps). Paraphrase discipline per P6-50 — zero matches for
+  `Konva`, `canvas`, `boardLayout`, `CARD_TINT`, `game-engine`,
+  the game framework name, `LegendaryGame`, or framework-context
+  references.
+- `docs/ai/deployment/postgresql-checklist.md` — scope-reduced
+  PostgreSQL checklist with a prominent "Deferred sections"
+  pointer at the top citing D-4201. Documents the three real
+  migration files from Foundation Prompt 02 commit `ac8486b`
+  (`001_server_schema.sql`, `002_seed_rules.sql`,
+  `003_game_sessions.sql`) with their actual SQL structure
+  (`legendary.*` schema tables, FK constraints, GIN FTS index on
+  `legendary.rule_docs.search_tsv`, `public.game_sessions`
+  `updated_at` trigger). Explicitly avoids references to
+  `pnpm seed` or `scripts/seed-from-r2.mjs` which do not exist.
+- `docs/ai/ARCHITECTURE.md` — one-line additive cross-reference
+  to `docs/ai/deployment/` in §Section 2 Server Startup Sequence.
+- `docs/ops/RELEASE_CHECKLIST.md` — two additive back-pointer
+  blocks (Gate 2 → R2 checklist §A.1; §Relationship to runtime
+  invariant checks → PostgreSQL checklist §B.7).
+- `docs/ai/DECISIONS.md` — two new entries: **D-4202**
+  (legacy 00.2b §C UI-rendering-layer verification exclusion;
+  P6-51 form-(2) back-pointer) and **D-4203** (WP-042 is
+  Documentation-class under Server/Operations as a load-bearing
+  invariant; P6-51 form-(1) discrete entry). D-4201 landed at
+  pre-flight commit `cbb6476`.
+- `docs/ai/DECISIONS_INDEX.md` — rows for D-4202 and D-4203
+  under the existing "Deployment Checklists — Scope Reduction
+  (WP-042)" section.
+- `docs/ai/post-mortems/01.6-WP-042-deployment-checklists.md` —
+  mandatory 10-section post-mortem, verdict **WP COMPLETE**.
+  §8 Documentation & Governance Updates documents three
+  reality-reconciliation findings where the produced checklists
+  match the actual code on disk rather than pre-amendment paper
+  specs (validate.ts env vars are `SETS_DIR` / `METADATA_DIR` /
+  `HEALTH_OUT`, not `CARDS_DIR`; migrate.mjs does not read
+  `EXPECTED_DB_NAME` so §B.1 prescribes an operator-level
+  database-name eye-check; §B.7 verifies the tables the three
+  shipped migrations actually create rather than seed-dependent
+  tables that only arrive with WP-042.1).
+
+D-4203 locks the documentation-only class for WP-042: no new
+runtime code (`.ts` / `.mjs` / `.js`), no new `scripts/` files
+(explicitly no `scripts/seed-from-r2.mjs`), no new `package.json`
+entries, no new migrations, no new tests, no new npm dependencies.
+Future deployment-pillar Documentation WPs (UI-rendering checklist,
+Render-specific runbook, logging / alerting checklist) may cite
+D-4203 as precedent.
+
+Commit topology:
+- Commit A0 (`SPEC:` pre-flight bundle) — `cbb6476` — D-4201 +
+  WP-042 amendments + EC-042 amendments + session prompt.
+- Commit A (`EC-042:` code + post-mortem) — `c964cf4` — seven-file
+  allowlist (two checklist files + ARCHITECTURE cross-reference +
+  RELEASE_CHECKLIST back-pointers + DECISIONS/INDEX entries +
+  post-mortem).
+- Commit B (`SPEC:` governance close) — `<this commit>` —
+  STATUS.md + WORK_INDEX.md (WP-042 flip + WP-042.1 new entry) +
+  EC_INDEX.md (EC-042 Draft → Done + footer refresh).
+
+Pre-commit review handoff per P6-35 default to a separate
+gatekeeper session. **Unblocks WP-042.1** (PostgreSQL seeding
+checklist sections when Foundation Prompt 03 is revived).
+
+---
+
 ### WP-035 / EC-035 Executed — Release, Deployment & Ops Playbook (2026-04-19, EC-035)
 
 WP-035 executed at commit `d5935b5`: Legendary Arena now has a

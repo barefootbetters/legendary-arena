@@ -782,14 +782,66 @@ These packets make the game safe to ship.
   P6-35 default to a separate gatekeeper session. **Unblocks WP-042**
   (Deployment Checklists); WP-036 (AI Playtesting) dependency also green.
 
-- [ ] WP-042 — Deployment Checklists (Data, Database & Infrastructure) ✅ Reviewed
+- [x] WP-042 — Deployment Checklists (Data, Database & Infrastructure) ✅ Reviewed (2026-04-19 pre-flight READY TO EXECUTE + copilot 30/30 CONFIRM; Commit A `c964cf4`) — Completed 2026-04-19 (see [session-wp042-deployment-checklists.md](../invocations/session-wp042-deployment-checklists.md))
   Dependencies: WP-035
   Notes: Converts legacy `00.2b-deployment-checklists.md` into governed
-  verification procedures; covers R2 card data validation (`pnpm registry:validate`),
-  PostgreSQL migration and seeding (`pnpm migrate`, `pnpm seed`), and
-  infrastructure configuration; produces binary pass/fail outcomes only;
-  legacy Checklist C (Konva.js canvas UI) excluded — UI implementation is
-  not a deployment concern per Layer Boundary
+  verification procedures under `docs/ai/deployment/`. Ships scope-reduced
+  per **D-4201**: R2 checklist full (§A.1 validation script usage with the
+  six real env vars from `validate.ts` — `METADATA_DIR`, `SETS_DIR`,
+  `HEALTH_OUT`, `R2_BASE_URL`, `SKIP_IMAGES`, `IMAGE_DELAY_MS`; §A.2 through
+  §A.7 per spec); PostgreSQL checklist scope-reduced to §B.1 / §B.2 / §B.6 /
+  §B.7 with explicit "deferred sections" pointer citing D-4201 for §B.3 /
+  §B.4 / §B.5 / §B.8 awaiting WP-042.1. Three real migrations from
+  Foundation Prompt 02 (`001_server_schema.sql`, `002_seed_rules.sql`,
+  `003_game_sessions.sql`) documented; `scripts/seed-from-r2.mjs` references
+  absent from both produced checklists (the script does not exist).
+  D-4202 (P6-51 form-(2) back-pointer for legacy §C UI-rendering-layer
+  exclusion) + D-4203 (P6-51 form-(1) Documentation-class invariant for
+  WP-042) land in the EC-042 commit alongside the seven-file allowlist.
+  Zero new runtime code, zero new scripts, zero `package.json` edits, zero
+  new npm dependencies, zero new tests; engine baseline UNCHANGED at
+  436 / 109 / 0 fail; repo-wide 526 / 0 fail. Paraphrase discipline per
+  P6-50 — forbidden-token greps (`Konva`, `canvas`, `boardLayout`,
+  `CARD_TINT`, `game-engine`, framework name, `LegendaryGame`,
+  framework-context) all zero across the two produced checklists.
+  01.5 NOT INVOKED (no types, no moves, no phase hooks added). 01.6
+  post-mortem MANDATORY (new long-lived abstractions: two canonical
+  deployment-pillar checklist surfaces + first concrete consumer of
+  WP-035's `RELEASE_CHECKLIST.md` back-pointer pattern) — verdict WP
+  COMPLETE. Post-mortem §8 flags three reality-reconciliation findings
+  (env var list, `EXPECTED_DB_NAME` not in runner, §B.7 table coverage
+  restricted to what the three shipped migrations actually create) as
+  lessons-learned input for future pre-flights. Three commits: `cbb6476`
+  SPEC pre-flight (D-4201 + WP-042 amendments + EC-042 amendments +
+  session prompt); `c964cf4` EC-042 code + D-4202 + D-4203 + post-mortem;
+  `<this commit>` SPEC governance close. **Unblocks WP-042.1** (deferred
+  PostgreSQL seeding checklist sections).
+
+- [ ] WP-042.1 — Deployment Checklists: Deferred PostgreSQL Seeding Sections
+  Dependencies: WP-042, Foundation Prompt 03 revival
+  Notes: Authors the four PostgreSQL checklist sections deferred by WP-042
+  per **D-4201**: §B.3 (Lookup table seeding), §B.4 (Group and entity
+  seeding), §B.5 (Card record seeding), §B.8 (Re-seeding procedure). All
+  four depend on a seed runner (tentatively `scripts/seed-from-r2.mjs`),
+  a corresponding `"seed"` entry in root `package.json`, and any
+  additional `legendary.*` lookup-table migrations the seed runner
+  requires (e.g., `004_upsert_indexes.sql` with `UNIQUE` constraints on
+  `slug` columns per Foundation Prompt 03 deliverable 3). WP-042.1 is
+  **blocked** until Foundation Prompt 03 is revived as a predecessor WP
+  that delivers the seed runner + its `package.json` wiring +
+  complementary migrations. Once that land, WP-042.1 extends the
+  existing `docs/ai/deployment/postgresql-checklist.md` in place by
+  converting the top-of-file "deferred sections" pointer into four full
+  sections using the §B.1 / §B.2 / §B.6 / §B.7 structure established by
+  WP-042, and adds the row-count verification queries (`legendary.sets`
+  = 40, `legendary.card_types` = 37, `legendary.teams` = 25,
+  `legendary.hero_classes` = 5, `legendary.icons` = 7,
+  `legendary.rarities` = 3) that WP-042's §B.7 intentionally omits.
+  Layer: Server / Operations. Class: Documentation (should preserve
+  D-4203 discipline) unless the predecessor WP subsumes the seed-runner
+  authoring into WP-042.1 directly, in which case the class changes to
+  Code + Docs and a new DECISIONS.md entry is required to lift the
+  D-4203 documentation-only invariant for WP-042.1 specifically.
 
 - [x] WP-048 — PAR Scenario Scoring & Leaderboards ✅ Reviewed (2026-04-17 pre-flight READY TO EXECUTE + copilot 30/30 CONFIRM; commit c5f7ca4) — Completed 2026-04-17 (see [session-wp048-par-scenario-scoring.md](../invocations/session-wp048-par-scenario-scoring.md))
   Dependencies: WP-020, WP-027, WP-030
