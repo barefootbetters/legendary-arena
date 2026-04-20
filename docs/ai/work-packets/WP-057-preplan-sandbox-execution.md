@@ -1,15 +1,41 @@
 # WP-057 — Pre-Plan Sandbox Execution (Speculative Planning Logic)
 
-**Status:** Ready for Implementation
+**Status:** Ready for Implementation (amended 2026-04-20 per pre-flight PS-2 / PS-3)
 **Primary Layer:** Pre-Planning (Non-Authoritative, Per-Client)
-**Last Updated:** 2026-04-12
+**Last Updated:** 2026-04-20
 **Dependencies:**
 
 - `docs/ai/DESIGN-PREPLANNING.md` (approved architecture)
 - `docs/ai/DESIGN-CONSTRAINTS-PREPLANNING.md` (design constraints)
-- **WP-056** — Pre-Planning State Model & Lifecycle
+- **WP-056** — Pre-Planning State Model & Lifecycle (complete at commit `eade2d0`, 2026-04-20)
 - WP-006A — Player zones & hand/deck/discard model
 - WP-008B — Core moves implementation (move names, counter patterns)
+
+---
+
+## Amendments
+
+**2026-04-20 (pre-flight, Commit A0 `SPEC:`):** Two scope-neutral corrections
+identified by `docs/ai/invocations/preflight-wp057-preplan-sandbox-execution.md`
+and locked by `docs/ai/execution-checklists/EC-057-preplan-sandbox-execution.checklist.md`:
+
+- **PS-2** — Added `packages/preplan/src/preplanStatus.ts` (canonical readonly
+  array `PREPLAN_STATUS_VALUES` + derived `PrePlanStatusValue` type) and
+  `packages/preplan/src/preplanStatus.test.ts` (drift-detection test) to
+  §F, §Updated Package Exports, §Tests, and §Files Expected to Change.
+  This closes the WP-056 deferral captured in EC-056 Locked Value line 32
+  ("Canonical readonly arrays + drift-detection tests for `status` /
+  `effectType` closed unions are deferred to WP-057 (first runtime
+  consumer)"). `PREPLAN_EFFECT_TYPES` remains WP-058 scope.
+- **PS-3** — Added `packages/preplan/package.json` (modify: `test` script +
+  `tsx` devDep) and `pnpm-lock.yaml` (modify: scoped devDep delta) to
+  §Files Expected to Change. Without the `test` script the 21 new tests
+  added by this WP would silently skip under `pnpm test` at the repo root.
+
+Uniform null-on-inactive return convention across all five speculative
+operations (`speculativeDraw`, `speculativePlay`, `updateSpeculativeCounter`,
+`addPlanStep`, `speculativeSharedDraw`) is locked in EC-057; §C below is
+read together with the EC's "null-on-inactive convention" locked value.
 
 ---
 
@@ -378,7 +404,7 @@ export function speculativeSharedDraw(
 
 ### D) Updated Package Exports
 
-**File:** `packages/preplan/src/index.ts` (modify)
+**File:** `packages/preplan/src/index.ts` (modify — type-only surface from WP-056 becomes mixed runtime + type surface here; authorized by EC-057 RS-2)
 
 ```typescript
 // Types (WP-056)
@@ -388,6 +414,10 @@ export type {
   RevealRecord,
   PrePlanStep,
 } from './preplan.types.js';
+
+// Canonical status array + derived type (WP-057, PS-2 — deferred from WP-056 per EC-056 Locked Value line 32)
+export { PREPLAN_STATUS_VALUES } from './preplanStatus.js';
+export type { PrePlanStatusValue } from './preplanStatus.js';
 
 // Sandbox creation (WP-057)
 export type { PlayerStateSnapshot } from './preplanSandbox.js';
@@ -412,32 +442,90 @@ export {
 
 ---
 
+### F) Canonical Status Array & Drift-Detection Test (PS-2)
+
+**File:** `packages/preplan/src/preplanStatus.ts`
+
+WP-056 declared the `PrePlan.status` closed union (`'active' | 'invalidated' | 'consumed'`) and intentionally deferred the paired canonical readonly array + drift-detection test to WP-057, which is the first runtime consumer (the speculative operations in §C guard on `status === 'active'`). See `packages/preplan/src/preplan.types.ts:60-65` JSDoc and EC-056 Locked Value line 32.
+
+```typescript
+import type { PrePlan } from './preplan.types.js';
+
+/**
+ * Canonical readonly array of all valid PrePlan lifecycle status values.
+ *
+ * Drift-detection contract:
+ *   PREPLAN_STATUS_VALUES must match the PrePlan['status'] union exactly.
+ *   Adding a status value requires updating BOTH the union in
+ *   preplan.types.ts AND this array. The paired test in
+ *   preplanStatus.test.ts enforces parity at build time.
+ */
+// why: canonical readonly array paired with PrePlan.status closed union;
+// drift-detection test enforces parity at build time (deferred from WP-056
+// per EC-056 Locked Value line 32; first runtime consumer is WP-057 §C
+// speculative operation status guards).
+export const PREPLAN_STATUS_VALUES = ['active', 'invalidated', 'consumed'] as const;
+
+/** Derived type — structurally identical to PrePlan['status']. */
+export type PrePlanStatusValue = typeof PREPLAN_STATUS_VALUES[number];
+
+// Compile-time exhaustive-check: fails to compile if PREPLAN_STATUS_VALUES
+// drifts from PrePlan['status'] in either direction.
+type _StatusDriftCheck = PrePlanStatusValue extends PrePlan['status']
+  ? PrePlan['status'] extends PrePlanStatusValue
+    ? true
+    : never
+  : never;
+const _statusDriftProof: _StatusDriftCheck = true;
+void _statusDriftProof;
+```
+
+**Rules:**
+
+- Array values appear in the spec order: `'active'`, `'invalidated'`, `'consumed'` — matches the union declaration order in `preplan.types.ts:66`
+- `as const` is mandatory (narrows to literal-type tuple)
+- `PREPLAN_EFFECT_TYPES` for `invalidationReason.effectType` is **NOT** added by this WP — it remains deferred to WP-058, which is the first runtime consumer of `effectType`
+- The compile-time exhaustive-check pattern is the project convention (matches the drift-detection tests for `MATCH_PHASES` / `TURN_STAGES` / `CORE_MOVE_NAMES` / `RULE_TRIGGER_NAMES` / `RULE_EFFECT_TYPES` / `REVEALED_CARD_TYPES`)
+
+---
+
 ### E) Tests
 
-**File:** `packages/preplan/src/preplanSandbox.test.ts`
-**File:** `packages/preplan/src/speculativeOperations.test.ts`
-**File:** `packages/preplan/src/speculativePrng.test.ts`
+**File:** `packages/preplan/src/speculativePrng.test.ts` (3 tests, 1 `describe` block)
+**File:** `packages/preplan/src/preplanSandbox.test.ts` (6 tests, 1 `describe` block)
+**File:** `packages/preplan/src/speculativeOperations.test.ts` (13 tests, 1 `describe` block)
+**File:** `packages/preplan/src/preplanStatus.test.ts` (1 test, 1 `describe` block) — **PS-2**
 
-Test runner: `node:test`. File extension: `.test.ts`.
+Test runner: `node:test`. File extension: `.test.ts`. Each file wraps
+its tests in exactly one top-level `describe('preplan <area> (WP-057)')`
+block; bare top-level `test()` calls are forbidden (they do not register
+as suites under `node:test` — WP-031 precedent).
+
+**Test-count baseline lock:** preplan `0 / 0 / 0 → 23 / 4 / 0`;
+engine `436 / 109 / 0` UNCHANGED; repo-wide `536 / 0 → 559 / 0`.
 
 Required test coverage:
 
-**PRNG tests:**
+**PRNG tests (3 tests in `describe('preplan PRNG (WP-057)')`):**
 - Same seed produces same shuffle order
 - Different seeds produce different shuffle orders
 - Shuffle does not mutate input array
 
-**Sandbox creation tests:**
+**Sandbox creation tests (6 tests in `describe('preplan sandbox (WP-057)')`):**
 - `createPrePlan` returns `status: 'active'` with `revision: 1`, empty ledger and steps
 - `appliesToTurn` equals `snapshot.currentTurn + 1`
-- Deck is shuffled (not identical to input order — use seeded PRNG
-  for deterministic assertion)
+- Deck is shuffled (not identical to input order — use ≥8-card deck +
+  seed proven to produce a non-identity permutation; `// why:` comment
+  at the seed literal justifies the choice)
 - Fingerprint is deterministic (same snapshot → same fingerprint)
 - Fingerprint changes when hand contents differ
+- Zero-op plan is valid: `createPrePlan` followed by no operations
+  produces a usable PrePlan with empty ledger and steps
 
-**Speculative operation tests:**
+**Speculative operation tests (13 tests in `describe('preplan speculative operations (WP-057)')`):**
 - `speculativeDraw` moves top card from deck to hand
 - `speculativeDraw` appends to revealLedger with source `'player-deck'`
+  and monotonically-increasing `revealIndex`
 - `speculativeDraw` returns null when deck is empty
 - `speculativeDraw` returns null when status is not `'active'`
 - `speculativePlay` moves card from hand to inPlay
@@ -446,9 +534,36 @@ Required test coverage:
 - `updateSpeculativeCounter` creates counter if missing
 - `addPlanStep` appends step with `isValid: true`
 - `speculativeSharedDraw` adds card to hand and records source in ledger
-- No operation mutates the input PrePlan (returns new object)
-- Zero-op plan is valid: `createPrePlan` followed by no operations
-  produces a usable PrePlan with empty ledger and steps
+- No operation mutates the input PrePlan across 3 sequential operations
+  (deep-equality check of input PrePlan before + after; WP-028 aliasing
+  precedent — aliasing of `sandboxState.hand` / `deck` / `discard` /
+  `inPlay` / `counters` arrays/objects through returned references is
+  forbidden and must be proven absent by this test)
+- **Uniform null-on-inactive across all five operations** — iterate
+  (`speculativeDraw`, `speculativePlay`, `updateSpeculativeCounter`,
+  `addPlanStep`, `speculativeSharedDraw`) × (`status: 'invalidated'`,
+  `status: 'consumed'`); assert every call returns `null`. Ten
+  `assert.strictEqual(result, null)` assertions in one `test`. Proves
+  EC-057 RS-8 uniform convention (a forgotten guard on any of the four
+  non-draw operations would trip this test)
+- **Revision-increment discipline across all five operations** —
+  iterate the same five operations × (one success path, one null-return
+  path); assert `result.revision === input.revision + 1` on success and
+  the returned value is strictly `null` on the null-return branch (the
+  input PrePlan's `revision` must remain unchanged after the null
+  return, since the function is pure — tested via reference equality on
+  the input). Ten assertions in one `test`. Proves EC-057 locked value
+  "revision increments by exactly 1 on successful mutation; no increment
+  on null-return paths" — a forgotten `revision + 1` in any operation
+  would trip this test
+
+**Status drift test (1 test in `describe('preplan status drift (WP-057)')`, PS-2):**
+- `PREPLAN_STATUS_VALUES` matches `PrePlan['status']` union exactly — a
+  runtime set-equality assertion against a fixture `Set<PrePlan['status']>`
+  proves the array is neither a superset nor a subset. The compile-time
+  exhaustive-check in `preplanStatus.ts` provides the type-level proof;
+  the test provides the runtime proof (both layers match the
+  WP-007A / 009A / 014A / 021 drift-detection precedent)
 
 ---
 
@@ -466,17 +581,34 @@ Required test coverage:
 
 ## Files Expected to Change
 
-| File | Action |
-|---|---|
-| `packages/preplan/src/speculativePrng.ts` | **new** |
-| `packages/preplan/src/preplanSandbox.ts` | **new** |
-| `packages/preplan/src/speculativeOperations.ts` | **new** |
-| `packages/preplan/src/index.ts` | **modify** (add exports) |
-| `packages/preplan/src/speculativePrng.test.ts` | **new** |
-| `packages/preplan/src/preplanSandbox.test.ts` | **new** |
-| `packages/preplan/src/speculativeOperations.test.ts` | **new** |
+| File | Action | Notes |
+|---|---|---|
+| `packages/preplan/src/speculativePrng.ts` | **new** | PRNG + Fisher-Yates shuffle + seed generator |
+| `packages/preplan/src/preplanSandbox.ts` | **new** | `PlayerStateSnapshot` type + `createPrePlan` + `computeStateFingerprint` |
+| `packages/preplan/src/speculativeOperations.ts` | **new** | Five speculative operations; uniform `null` on non-active status |
+| `packages/preplan/src/preplanStatus.ts` | **new** (PS-2) | `PREPLAN_STATUS_VALUES` + `PrePlanStatusValue` + compile-time drift check |
+| `packages/preplan/src/index.ts` | **modify** | Add runtime exports; authorized type-only → mixed transition per EC-057 RS-2 |
+| `packages/preplan/src/speculativePrng.test.ts` | **new** | 3 tests |
+| `packages/preplan/src/preplanSandbox.test.ts` | **new** | 6 tests (includes zero-op and aliasing baseline) |
+| `packages/preplan/src/speculativeOperations.test.ts` | **new** | 13 tests (includes 3-op aliasing proof + uniform null-on-inactive across all five ops + revision-increment discipline across all five ops) |
+| `packages/preplan/src/preplanStatus.test.ts` | **new** (PS-2) | 1 test (runtime set-equality drift check) |
+| `packages/preplan/package.json` | **modify** (PS-3) | Add `"test": "node --import tsx --test src/**/*.test.ts"` and `"tsx": "^4.15.7"` devDep (match `packages/registry/package.json` version exactly) |
+| `pnpm-lock.yaml` | **modify** (PS-3) | Regenerated by `pnpm install`; delta confined to `importers['packages/preplan']` devDep block; any cross-importer churn is a scope violation (P6-44) |
 
-No other files may be modified.
+**No other files may be modified.** The 10 files under `packages/preplan/`
+plus `pnpm-lock.yaml` are the complete allowlist. `packages/preplan/src/preplan.types.ts`
+is **immutable in this WP** (WP-056 output; no field additions, no signature
+changes, no JSDoc edits).
+
+Governance artifacts produced alongside execution (outside the
+implementation allowlist but part of the three-commit topology per EC-057):
+
+- `docs/ai/post-mortems/01.6-WP-057-preplan-sandbox-execution.md` — **new**, Commit A (01.6 MANDATORY per three triggers)
+- `docs/ai/DECISIONS.md` — **modify** if new D-entries are authored (candidates: `D-5701` seedable LCG + `Date.now()` permission; pure-function return-new invariant; reveal-ledger-at-operation-level)
+- `docs/ai/DECISIONS_INDEX.md` — **modify** to match any D-entries
+- `docs/ai/STATUS.md` — **modify**, Commit B
+- `docs/ai/work-packets/WORK_INDEX.md` — **modify**, Commit B (check off WP-057 with date + commit hash)
+- `docs/ai/execution-checklists/EC_INDEX.md` — **modify**, Commit A0 (add EC-057 row) + Commit B (flip Draft → Done)
 
 ---
 
@@ -496,8 +628,9 @@ No other files may be modified.
 - [ ] `speculativePlay` moves card from hand to inPlay
 - [ ] `updateSpeculativeCounter` tracks counter deltas
 - [ ] `speculativeSharedDraw` records source correctly in ledger
-- [ ] All operations guard on `status === 'active'`
-- [ ] No operation mutates input (returns new PrePlan)
+- [ ] **All five operations return `null` when `status !== 'active'`** (uniform convention locked by EC-057 RS-8)
+- [ ] No operation mutates input (returns new PrePlan); `sandboxState` arrays/objects are spread-copied, never aliased (WP-028 precedent)
+- [ ] `revision` increments by exactly 1 on each successful mutation; does NOT increment on any null-return path
 
 ### Reveal Ledger Integrity
 
@@ -507,19 +640,24 @@ No other files may be modified.
 
 ### Architectural Boundary
 
-- [ ] All files live in `packages/preplan/`
-- [ ] No `boardgame.io` imports
-- [ ] No game engine runtime imports (type-only permitted)
-- [ ] All functions are pure (no I/O, no side effects)
+- [ ] All implementation files live in `packages/preplan/` (plus `pnpm-lock.yaml` for the PS-3 devDep delta; plus governance files outside the implementation allowlist)
+- [ ] No `boardgame.io` imports anywhere under `packages/preplan/`
+- [ ] No game engine runtime imports (`import type { CardExtId } from '@legendary-arena/game-engine'` is the only permitted engine reference)
+- [ ] No `@legendary-arena/registry`, no `pg`, no `apps/**` imports
+- [ ] No `Math.random()`, no `ctx.random.*`, no `.reduce()` anywhere in `packages/preplan/`
+- [ ] All functions are pure (no I/O, no side effects); `Date.now()` appears only inside `generateSpeculativeSeed` with a `// why:` comment
+- [ ] `packages/preplan/src/preplan.types.ts` unchanged (`git diff` empty)
 
 ### Tests
 
 - [ ] All tests use `node:test` runner and `.test.ts` extension
-- [ ] PRNG determinism verified
-- [ ] Sandbox creation verified
-- [ ] All speculative operations verified
+- [ ] Each test file wraps its tests in exactly one top-level `describe()` block (suite count increment of +4 is locked; bare `test()` calls are forbidden)
+- [ ] PRNG determinism verified (3 tests)
+- [ ] Sandbox creation verified, including zero-op plan and aliasing baseline (6 tests)
+- [ ] All five speculative operations verified, including uniform null-on-inactive across all five ops × two non-active statuses, revision-increment discipline across all five ops, and 3-operation aliasing proof (13 tests)
+- [ ] `PREPLAN_STATUS_VALUES` drift-detection test passes (1 test, PS-2)
 - [ ] `pnpm -r build` exits 0
-- [ ] `pnpm test` passes
+- [ ] `pnpm -r --if-present test` passes; preplan delta `0 / 0 / 0 → 23 / 4 / 0`; engine UNCHANGED at `436 / 109 / 0`; repo-wide `536 → 559`
 
 ### Behavioral
 
@@ -532,39 +670,76 @@ No other files may be modified.
 
 ## Governance (Required)
 
-Add to `DECISIONS.md`:
+Add to `DECISIONS.md` (candidates grouped under a new `D-5701` entry, or
+split across `D-5701` / `D-5702` / `D-5703` at executor discretion — the
+EC fixes one shape before Commit A):
 
 - Speculative PRNG uses a seedable LCG (or equivalent); never
   `ctx.random.*`; acceptable to use `Date.now()` for seed entropy
-  because speculative randomness is non-authoritative
+  because speculative randomness is non-authoritative (DESIGN-PREPLANNING §3)
 - All speculative operations are pure functions returning new PrePlan
-  objects (no mutation)
+  objects (no mutation of input; spread/slice/object-literal discipline
+  prevents aliasing per WP-028 precedent)
 - The reveal ledger is populated by speculative operations, not by
-  callers (ledger integrity is enforced at the operation level)
+  callers (ledger integrity is enforced at the operation level;
+  `revealIndex` is strictly monotonic across all draw kinds)
+- Uniform null-on-inactive return convention across all five speculative
+  operations (extends WP-057 §C Rules to `updateSpeculativeCounter` /
+  `addPlanStep` / `speculativeSharedDraw`)
 
-Update `WORK_INDEX.md` to add WP-057.
+Update `DECISIONS_INDEX.md` with a row for every new D-entry.
+
+Update `WORK_INDEX.md` to mark WP-057 `[x]` with date + commit hash (Commit B).
+
+Update `STATUS.md` to reflect WP-057 close (Commit B).
+
+Update `EC_INDEX.md`: add EC-057 row at Commit A0, flip Draft → Done at Commit B.
 
 ---
 
 ## Verification Steps
 
+Boundary greps use escaped regex patterns (WP-031 P6-22 precedent — a bare
+`boardgame.io` pattern matches comment prose because `.` is regex-special
+and matches "any character"):
+
 ```bash
-pnpm -r build
-pnpm test
+pnpm install                       # regenerate pnpm-lock.yaml devDep delta
+pnpm -r build                      # exits 0
+pnpm -r --if-present test          # preplan 0/0/0 → 23/4/0; engine 436/109/0 UNCHANGED; repo 536 → 559
 
-# Architectural boundary enforcement
-grep -r "boardgame.io" packages/preplan/ && echo "FAIL: boardgame.io import found" || echo "PASS"
-grep -r "from '@legendary-arena/game-engine'" packages/preplan/src/ --include="*.ts" | grep -v "import type" && echo "FAIL: runtime engine import found" || echo "PASS"
+# Architectural boundary enforcement (escaped-dot patterns per WP-031 P6-22)
+git grep -nE "from ['\"]boardgame\.io" packages/preplan/            # expect: zero hits
+git grep -nE "from ['\"]@legendary-arena/game-engine['\"]" packages/preplan/src/ \
+  | grep -v "import type"                                           # expect: zero hits
+git grep -nE "from ['\"]@legendary-arena/registry" packages/preplan/ # expect: zero hits
+git grep -nE "from ['\"]pg" packages/preplan/                       # expect: zero hits
+git grep -nE "from ['\"]apps/" packages/preplan/                    # expect: zero hits
+git grep -nE "Math\.random"  packages/preplan/                      # expect: zero hits
+git grep -nE "ctx\.random"   packages/preplan/                      # expect: zero hits
+git grep -nE "Date\.now"     packages/preplan/src/                  # expect: exactly one hit (speculativePrng.ts generateSpeculativeSeed only — per DESIGN-PREPLANNING §3 non-authoritative carve-out)
+git grep -nE "require\("     packages/preplan/                      # expect: zero hits (ESM only)
+git grep -nE "\.reduce\("    packages/preplan/                      # expect: zero hits
 
-git diff --name-only
+# P6-50 paraphrase discipline (new preplan code must not name engine runtime concepts)
+git grep -nE "\b(LegendaryGameState|LegendaryGame|boardgame\.io)\b" packages/preplan/src/ # expect: zero hits
+git grep -nE "\bG\b"   packages/preplan/src/                        # expect: zero hits
+git grep -nE "\bctx\b" packages/preplan/src/                        # expect: only `ctx.turn + 1` invariant references (inherited WP-056 carve-out)
+
+# Immutability check
+git diff packages/preplan/src/preplan.types.ts                      # expect: empty (WP-056 file immutable in this WP)
+
+# Allowlist check
+git diff --name-only                                                # expect: exactly the 10 implementation files + pnpm-lock.yaml + governance files; no other paths
 ```
 
 Expected:
 
-- Build exits 0
-- All tests pass
-- Both boundary checks pass
-- Only listed files modified
+- `pnpm install` regenerates `pnpm-lock.yaml` with delta confined to `importers['packages/preplan']`
+- Build exits 0; all 557 tests pass; engine baseline unchanged
+- All boundary + paraphrase greps pass
+- `preplan.types.ts` unchanged
+- Only allowlisted files modified
 
 ---
 
@@ -572,14 +747,30 @@ Expected:
 
 This WP is complete when:
 
-- Sandbox creation, speculative operations, and PRNG are implemented
-  and exported
+- Sandbox creation, speculative operations, PRNG, and `PREPLAN_STATUS_VALUES`
+  canonical array (PS-2) are implemented and exported via `index.ts`
+- `packages/preplan/package.json` has a `test` script + `tsx` devDep (PS-3);
+  `pnpm-lock.yaml` delta is scoped to `importers['packages/preplan']`
 - Reveal ledger is populated correctly by all draw operations
-- All functions are pure and guard on `status === 'active'`
-- Tests cover creation, all operations, PRNG determinism, and ledger
-  integrity
-- Architectural boundary checks pass
-- Governance updated (DECISIONS.md, WORK_INDEX.md)
+  (`revealIndex` strictly monotonic from zero across all draw kinds)
+- All five speculative operations (`Draw` / `Play` / `UpdateCounter` /
+  `AddPlanStep` / `SharedDraw`) uniformly return `null` when
+  `status !== 'active'` (EC-057 RS-8)
+- All functions are pure; `sandboxState` arrays/objects are spread-copied
+  on every mutation path (no aliasing through returned references)
+- `revision` increments by exactly 1 on each successful mutation and does
+  NOT increment on any null-return path
+- Tests cover creation, all operations, PRNG determinism, ledger integrity,
+  uniform null-on-inactive across all five speculative operations,
+  revision-increment discipline across all five operations, and
+  `PREPLAN_STATUS_VALUES` drift detection (23 tests across 4 `describe`
+  blocks; preplan `0 / 0 / 0 → 23 / 4 / 0`; engine UNCHANGED; repo `536 → 559`)
+- Architectural boundary + P6-50 paraphrase greps all pass with zero hits
+- `packages/preplan/src/preplan.types.ts` unchanged (`git diff` empty)
+- Governance updated: 01.6 post-mortem authored (MANDATORY per three triggers);
+  any new D-entries present with `DECISIONS_INDEX.md` rows; `STATUS.md` /
+  `WORK_INDEX.md` / `EC_INDEX.md` updated at Commit B; Commit A prefix is
+  `EC-057:` (not `WP-057:` — P6-36)
 
 ---
 
