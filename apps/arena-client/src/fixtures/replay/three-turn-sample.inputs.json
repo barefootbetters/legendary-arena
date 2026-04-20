@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "setupConfig": {
+    "schemeId": "test-scheme-001",
+    "mastermindId": "test-mastermind-001",
+    "villainGroupIds": ["test-villain-group-001"],
+    "henchmanGroupIds": ["test-henchman-group-001"],
+    "heroDeckIds": ["test-hero-deck-001", "test-hero-deck-002"],
+    "bystandersCount": 10,
+    "woundsCount": 15,
+    "officersCount": 20,
+    "sidekicksCount": 5
+  },
+  "seed": "wp064-three-turn-sample-seed",
+  "playerOrder": ["0", "1"],
+  "moves": [
+    { "playerId": "0", "moveName": "advanceStage", "args": null },
+    { "playerId": "0", "moveName": "wp064ProbeAlpha", "args": null },
+    { "playerId": "0", "moveName": "advanceStage", "args": null },
+    { "playerId": "0", "moveName": "wp064ProbeBravo", "args": null },
+    { "playerId": "1", "moveName": "wp064ProbeCharlie", "args": null },
+    { "playerId": "1", "moveName": "advanceStage", "args": null },
+    { "playerId": "1", "moveName": "wp064ProbeDelta", "args": null }
+  ],
+  "metadata": {
+    "matchId": "wp064-three-turn-sample-match",
+    "note": "WP-064 inspector fixture. Mixes advanceStage moves (visible currentStage transitions: start to main between snapshots 0 and 1; main to cleanup between snapshots 2 and 3) with unknown-move records (visible UIState.log growth via applyReplayStep warning-and-skip). Phases unreachable per D-0205. Regenerate via three-turn-sample.cmd.txt for byte-identical output."
+  }
+}

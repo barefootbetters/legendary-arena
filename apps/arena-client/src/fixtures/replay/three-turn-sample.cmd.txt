@@ -1,0 +1,19 @@
+# Exact CLI invocation used to produce three-turn-sample.json from
+# three-turn-sample.inputs.json via the WP-063 (EC-071) replay producer.
+#
+# WP-064 / EC-074 fixture composition (verified): 8 snapshots, two visible
+# G.currentStage transitions (start to main between snapshots 0 and 1; main
+# to cleanup between snapshots 2 and 3) plus four UIState.log growth steps
+# from unknown-move warnings. Phases unreachable per D-0205.
+#
+# Determinism contract: --produced-at is the literal timestamp baked into
+# the committed sequence. Changing it changes metadata.producedAt and
+# therefore the emitted bytes. To regenerate byte-identically, run the
+# command below from the repo root.
+#
+# Paths are resolved by the producer relative to apps/replay-producer/
+# (the package the script runs under), so the --in / --out arguments use
+# ../arena-client/... rather than apps/arena-client/...
+#
+# From the repo root:
+pnpm --filter @legendary-arena/replay-producer produce-replay --in ../arena-client/src/fixtures/replay/three-turn-sample.inputs.json --out ../arena-client/src/fixtures/replay/three-turn-sample.json --produced-at 2026-04-19T00:00:00Z
