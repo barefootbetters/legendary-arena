@@ -532,6 +532,14 @@ For full rationale, see `DECISIONS.md`.
 
 ---
 
+## Deployment Checklists — Scope Reduction (WP-042)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-4201 | WP-042 scope reduced from 8 PostgreSQL checklist sections to 4 (§B.1, §B.2, §B.6, §B.7 ship; §B.3, §B.4, §B.5, §B.8 deferred to future WP-042.1); reason: `scripts/seed-from-r2.mjs` has never existed (Foundation Prompt 03 never executed); pulling script creation into WP-042 scope would change class from Documentation to Code+Docs, violate RS-2 test-count lock, and change commit topology; scope reduction preserves invariants and ships real R2 + schema-structure value today | WP-042 |
+
+---
+
 ## Production Hardening & Invariants (WP-031)
 
 | Decision ID | Summary | Introduced In |

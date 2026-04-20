@@ -5716,6 +5716,147 @@ invariant checks)
 
 ---
 
+### D-4201 — WP-042 Scope Reduction: PostgreSQL Seeding Sections Deferred Until Foundation Prompt 03 Is Revived
+
+**Decision:** WP-042 (Deployment Checklists) ships with the
+PostgreSQL checklist **scope-reduced** from eight sections to four.
+The four surviving sections are:
+
+- §B.1 — Pre-conditions (`DATABASE_URL`, connection health, Node
+  v22+, `pg` package)
+- §B.2 — Migration execution (three real migrations:
+  `001_server_schema.sql`, `002_seed_rules.sql`,
+  `003_game_sessions.sql`)
+- §B.6 — Rules data seeding verification (`legendary.rules` +
+  `legendary.rule_docs` + FTS vector — this is the one seeding path
+  WP-042 can verify because `002_seed_rules.sql` IS a real migration)
+- §B.7 — Schema-structure verification (tables/columns/FK/indexes
+  exist, NOT row counts)
+
+The four **deferred** sections are:
+
+- §B.3 — Lookup table seeding
+- §B.4 — Group and entity seeding
+- §B.5 — Card record seeding
+- §B.8 — Re-seeding procedure
+
+All four deferred sections depend on `scripts/seed-from-r2.mjs` and
+the corresponding `pnpm seed` npm script. **Neither has ever
+existed in the repo.** They were specified by Foundation Prompt 03
+(`docs/archive prompts-legendary-area-game/03-game-seed-data.md`
+§Deliverable 1 + §Deliverable 4), but Foundation Prompt 03 was
+never executed. Git history (`git log --all --oneline --diff-filter=A
+-- "scripts/*seed*"`) shows no commit that ever introduced a seed
+script. The only `seed`-adjacent scripts in `scripts/` are
+`upload-themes-to-r2.mjs` (uploads theme content, not database
+seeding) and `validate-r2.mjs` (validates R2, does not seed).
+
+A future work packet — provisionally **WP-042.1** — revives
+Foundation Prompt 03: creates `scripts/seed-from-r2.mjs`, adds the
+`"seed"` entry to root `package.json`, authors any additional
+`legendary.*` lookup-table migrations that the seed script requires
+(`004_upsert_indexes.sql` with UNIQUE constraints on `slug`
+columns, per the Foundation Prompt 03 deliverable 3), and then
+ships the deferred checklist sections §B.3 / §B.4 / §B.5 / §B.8.
+
+**Rationale:** three options were considered at WP-042 pre-flight.
+
+- **(a) Scope reduction (this decision).** Ship what can be shipped
+  without the missing script. Preserves WP-042's Documentation
+  class (zero new tests, zero new runtime code). Delivers real
+  verifiable value for the R2 checklist + schema structure
+  verification today. Defers the seed-dependent verification
+  cleanly to a successor WP.
+- **(b) Block WP-042 until Foundation Prompt 03 is revived.**
+  Rejected. Foundation Prompt 03 is itself unscheduled; blocking
+  WP-042 on an unscheduled prerequisite creates an open-ended
+  wait and forecloses on shipping the R2 checklist, which has
+  real standalone value.
+- **(c) Pull Foundation Prompt 03 into WP-042's scope.** Rejected.
+  Would change WP-042 class from Documentation to
+  Code+Documentation. Adding `scripts/seed-from-r2.mjs` violates
+  the WP-042 §Non-Negotiable "documentation only" rule; invalidates
+  the RS-2 test-count lock (script would need tests); changes the
+  commit topology from `SPEC:` governance-only to `EC-042:`
+  code-plus-docs. The PS-51 form-(2) precedent (prose-in-
+  produced-doc with back-pointer D-entry) was drafted for
+  WP-042's style of doc-heavy work; folding in runtime code
+  changes the class entirely and invalidates the pre-flight's
+  §Non-Negotiable lock.
+
+Option (a) is the minimum-change path that preserves both WP-042's
+design invariants and the broader architectural commitment (D-4203
+below will codify the documentation-only invariant).
+
+**Implications:**
+
+- The PostgreSQL checklist produced by WP-042 MUST include a clear
+  "deferred sections" pointer at the top, enumerating §B.3 / §B.4
+  / §B.5 / §B.8 as awaiting WP-042.1. A future reader of the
+  checklist must not be left wondering why seeding verification
+  appears incomplete — the deferral must be visible and cited.
+- Lookup-table row-count verification (`legendary.sets` = 40,
+  `legendary.card_types` = 37, etc.) is DEFERRED. WP-042's
+  §B.7 verifies schema structure (table/column/FK/index
+  existence), not row populations. A production deployment could
+  pass WP-042's checklist with zero rows in every lookup table —
+  this is intentional at this scope reduction. Row-count
+  verification is the essence of the deferred sections.
+- `WORK_INDEX.md` MUST gain a WP-042.1 entry alongside the WP-042
+  `[x]` flip, so the deferral is tracked as durable work-item
+  state, not lost in a commit message.
+- `STATUS.md` §Current State entry for WP-042 MUST mention the
+  scope reduction explicitly — "WP-042 shipped scope-reduced per
+  D-4201; seeding checklist sections deferred to WP-042.1" or
+  similar.
+
+**Pre-flight archaeology evidence:**
+
+- `git log --all --oneline --diff-filter=D -- scripts/seed-from-r2.mjs`
+  returns no output (script never deleted — because it never
+  existed).
+- `grep -rln "seed-from-r2" --include="*.mjs" --include="*.ts"`
+  returns no output in runtime code; matches appear only in
+  documentation files (WP-042 spec, legacy Foundation Prompt 03,
+  and now this D-entry).
+- `grep -n "seed" package.json` returns no matches — no
+  `"seed":` npm script entry exists.
+- `git log ac8486b -1 --format="%B"` (the Foundation Prompt 02
+  commit) enumerates what DID land:
+  `001_server_schema.sql`, `002_seed_rules.sql`,
+  `003_game_sessions.sql`, `scripts/migrate.mjs`, `render.yaml`
+  updates, `package.json` `pnpm migrate` script. No seed script;
+  no `004_upsert_indexes.sql`; no `005_lobby_columns.sql`. The
+  five-migration locked list in the pre-amendment WP-042 body was
+  drafted against Foundation Prompt 03's paper specs, not
+  against Foundation Prompt 02's actual output.
+
+**Alternatives rejected:**
+
+- **Rewrite the seed script in WP-042 scope:** rejected (option (c)
+  above; class change).
+- **Silently drop the deferred sections without a D-entry:**
+  rejected. The deferral is load-bearing; a future reader must be
+  able to trace why §B.3–§B.5 and §B.8 are missing without
+  reconstructing the archaeology from scratch. D-4201 is the
+  durable record of the scope reduction; the checklist's pointer
+  cites it by number.
+- **Defer WP-042 in its entirety:** rejected. The R2 checklist
+  (§A.1–§A.7) has no dependency on the missing seed script; it
+  ships complete. The four surviving PostgreSQL sections verify
+  real shipped infrastructure (three real migrations + rules FTS
+  + schema structure). Shipping today is strictly better than
+  waiting for Foundation Prompt 03 revival to unblock both
+  checklists.
+
+**Status:** Immutable
+**Raised:** WP-042 pre-flight session, 2026-04-19
+**Resolved:** 2026-04-19 (pre-flight SPEC commit lands D-4201 +
+WP-042 amendments + EC-042 amendments + WP-042 session prompt
+before EC-042 execution begins)
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
