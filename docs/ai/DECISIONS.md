@@ -5062,6 +5062,148 @@ Non-binding target.
 
 ---
 
+### D-6401 — Keyboard Focus Pattern for Stepper-Style Interactive Components: `tabindex="0"` Root + Listeners-on-Root
+
+**Decision:** Stepper-style interactive components in
+`apps/arena-client/` (and any future client app) carry `tabindex="0"`
+on the component's root element AND mount their keyboard event
+listeners (e.g., `@keydown`) directly on that root element rather
+than on individual child controls. The first instance of this
+pattern is `<ReplayInspector />`
+(`apps/arena-client/src/components/replay/ReplayInspector.vue`).
+Each listener call site MUST carry a `// why:` comment citing this
+decision and documenting the focus order.
+
+The pattern applies to any component that exposes a
+discrete-step navigation surface to the keyboard:
+
+- `←` / `→` step prev/next
+- `Home` / `End` jump first/last
+- (future) `Space` toggle play/pause for any auto-play extension
+- (future) `PageUp` / `PageDown` jump-by-page for long sequences
+- (future) numeric range scrub via screen-reader announcements
+
+It does NOT apply to leaf form controls
+(buttons, inputs, range sliders) that already receive focus
+naturally — those keep their own `aria-label` and rely on the
+browser's default keyboard handling.
+
+**Rationale:** WP-064 introduced the first client component that
+takes discrete keyboard steps over a sequence (the replay
+inspector's snapshots index). Pre-flight confirmed via direct
+review of WP-061's `<BootstrapProbe />` and WP-062's six HUD
+components (`<ArenaHud />`, `<TurnPhaseBanner />`,
+`<SharedScoreboard />`, `<ParDeltaReadout />`,
+`<PlayerPanelList />`, `<PlayerPanel />`, `<EndgameSummary />`)
+that no prior keyboard-stepper precedent existed — WP-062's HUD
+components are passive display surfaces with `aria-label` /
+`aria-live` / `aria-current` attributes only, none carrying
+`tabindex` or `@keydown` handlers.
+
+The pattern was selected over the alternative
+"per-control listeners with manually-managed focus refs" because:
+
+1. **Determinism of focus order:** root-level focus + root-level
+   listeners means the screen-reader announces the inspector once
+   when focused, then ArrowLeft/ArrowRight/Home/End act on the
+   inspector as a unit. Per-control listeners would announce each
+   button on focus traversal, which is verbose for a stepper.
+2. **No per-control focus juggling:** the alternative requires
+   a `ref` for each interactive control plus JavaScript-side focus
+   management (`button.focus()`) on each step, which is brittle and
+   adds state that is invisible to the template.
+3. **Mirror of native scrubbers:** every other replay/timeline tool
+   (video players, audio scrubbers, IDE timeline scrubbers) uses
+   the same root-focus-plus-arrow-keys idiom. Users coming from
+   those tools have correct expectations on first use.
+4. **Accessibility tree stability:** `tabindex="0"` on the root
+   creates exactly one tab stop for the whole stepper, regardless
+   of how many controls it contains. Adding or removing a control
+   (e.g., a future "loop" toggle) does not change the tab order
+   for downstream components.
+
+The leaf controls inside the inspector (the buttons and the range
+input) keep their own `aria-label` so screen-reader users can
+discover them by browsing within the inspector. They are
+keyboard-operable independently — clicking via Enter / Space on a
+focused button works the same as the top-level keyboard map. The
+root-level `@keydown` is additive, not exclusive.
+
+**Sub-rule embedded in this decision (do not split into D-6402):**
+the keyboard map MUST clamp at sequence boundaries, never wrap.
+Stepping past index 0 or past `lastIndex` is a no-op. Wrapping
+from last to first would present unrelated game state as
+"adjacent" — a confusing UX for replay inspection. The
+ReplayInspector's `setIndex(target)` helper enforces this via a
+`clamp(target)` call that returns `0` for negative targets and
+`lastIndex` for over-range targets. Future stepper components
+inherit this clamp-not-wrap rule.
+
+**Implications for future client WPs:**
+
+- Any future stepper component (moves timeline, scenario
+  selector, tutorial carousel, spectator-position chooser)
+  follows this pattern verbatim. The session prompt should cite
+  D-6401 in §Locked Values, and the EC should require a
+  `// why:` comment on the `tabindex="0"` declaration and on the
+  root-level `@keydown` handler.
+- Components that are NOT steppers (passive display surfaces like
+  the WP-062 HUD subcomponents) continue to omit `tabindex` and
+  `@keydown`. They rely on the browser's default focus order
+  through their interactive children.
+- A future spectator surface that wraps `<ReplayInspector />`
+  inherits the keyboard map for free. Wrapping the inspector in
+  another `tabindex="0"` container would create a redundant tab
+  stop — don't do that.
+- A future "playback controls" component for live-match catchup
+  may extend the map with `Space` for play/pause; the prop seam
+  for this exists today as `enableAutoPlay?: boolean` on the
+  inspector (default `false`; no implementation yet — gated to
+  keep WP-064 scope to one session per its §Out of Scope).
+
+**Alternatives rejected:**
+
+- **Per-control `@keydown` listeners on each button + the range
+  input:** rejected because `Home` / `End` would need a global
+  listener anyway (no single button "owns" jump-to-first), so
+  the per-control approach degenerates to a mixed pattern that's
+  harder to reason about than uniform root listeners.
+- **Document-level `@keydown` listener on the body:** rejected
+  because it would steal keys from any other focused element
+  (text inputs in modals, text in forms). Root-level scoping is
+  the right granularity.
+- **`role="application"` on the root:** rejected because the
+  inspector is a content surface, not an application widget that
+  intercepts every key. `role="group"` (the chosen role) plus
+  the explicit `aria-label="Replay inspector"` correctly
+  describes the structure.
+- **No keyboard support, mouse-only:** rejected because WP-064
+  AC + Vision §17 (Accessibility & Inclusivity) require full
+  keyboard operation.
+
+**Implementation locations:**
+
+- Pattern definition: `apps/arena-client/src/components/replay/
+  ReplayInspector.vue` — root `tabindex="0"` + `@keydown="onKeyDown"`
+  + clamping `setIndex(target)` helper.
+- `// why:` comment in the same file documents the focus order
+  and cites D-6401.
+- Locked-value reference: `docs/ai/execution-checklists/EC-074-
+  log-replay-inspector.checklist.md` §Locked Values "Keyboard
+  focus pattern (D-6401)".
+- Pre-flight reference: `docs/ai/preflight-wp064.md` (READY
+  verdict 2026-04-19) §Likely New Decisions identified D-64NN
+  as the placeholder; this entry assigns the real number.
+- Post-mortem reference: `docs/ai/post-mortems/01.6-WP-064-log-
+  replay-inspector.md` §6 hidden-coupling audit confirms no
+  WP-061 / WP-062 precedent existed.
+
+**Status:** Immutable
+**Raised:** WP-064 / EC-074 pre-flight, 2026-04-19
+**Resolved:** 2026-04-19 at commit `76beddc`
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

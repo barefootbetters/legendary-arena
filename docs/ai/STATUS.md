@@ -7,6 +7,117 @@
 
 ## Current State
 
+### WP-064 / EC-074 Executed — Game Log & Replay Inspector (2026-04-19, EC-074)
+
+WP-064 executed at commit `76beddc`: added the first client-side
+surface that consumes WP-063's `ReplaySnapshotSequence` artifact.
+Twelve new files under `apps/arena-client/src/` (no existing files
+modified): `replay/loadReplay.{ts,test.ts}`,
+`components/log/GameLogPanel.{vue,test.ts}`,
+`components/replay/ReplayInspector.{vue,test.ts}`,
+`components/replay/ReplayFileLoader.{vue,test.ts}`,
+`fixtures/replay/{index.ts, three-turn-sample.{json,inputs.json,cmd.txt}}`.
+Plus `docs/ai/post-mortems/01.6-WP-064-log-replay-inspector.md`.
+
+Components produced:
+
+- `parseReplayJson(raw, source?): ReplaySnapshotSequence` — the first
+  consumer-side D-6303 `version === 1` assertion site in the repo.
+  Throws `Error` with one of three locked full-sentence templates
+  mirroring the WP-063 CLI wording at `apps/replay-producer/src/cli.ts`
+  so producer (stderr) and consumer (in-browser alert region) agree
+  on diagnostic phrasing.
+- `<GameLogPanel />` — leaf SFC under `<script setup>`. Renders a
+  `readonly string[]` log prop verbatim with stable `:key` by line
+  index, `aria-live="polite"` on the list, `role="status"` on the
+  empty-state region, plus `data-testid` + `data-index` per line for
+  diagnostic addressing.
+- `<ReplayInspector />` — non-leaf SFC in
+  `defineComponent({ setup })` form per P6-30 / P6-40 (template
+  references multiple non-prop bindings). Drives
+  `useUiStateStore().setSnapshot` on index changes via first / prev /
+  next / last buttons, a range scrubber, and the
+  `←` / `→` / `Home` / `End` keyboard map. `tabindex="0"` on the
+  root + listeners-on-root — first repo stepper precedent, locked as
+  **D-6401**. Clamp-not-wrap semantics at both boundaries.
+- `<ReplayFileLoader />` — `defineComponent` form (template
+  references `errorMessage` ref + `onChange` handler — same
+  `vue-sfc-loader` separate-compile pipeline failure WP-061's
+  `<BootstrapProbe />` and WP-062's HUD containers documented). Uses
+  the browser `File` API (`file.text()`); parses via
+  `parseReplayJson`; emits `loaded` on success; renders a
+  `role="alert"` region inline on failure (never `alert()`, never
+  silent `console.error`).
+
+Fixture (committed at
+`apps/arena-client/src/fixtures/replay/three-turn-sample.{json,
+inputs.json,cmd.txt}`): 8 snapshots produced by the WP-063 CLI from a
+hand-authored `ReplayInputsFile` mixing 3 `advanceStage` moves
+(visible `currentStage` transitions: start→main between snapshots 0
+and 1; main→cleanup between 2 and 3) with 4 unknown-move records (log
+growth via `applyReplayStep`'s warning-and-skip at
+`replay.execute.ts:162-166`). Phases unreachable per D-0205 — fixture
+re-scoped to stage-and-log per WP-064 amendment 2026-04-19. Byte-
+identical regeneration confirmed twice. The inputs file +
+`.cmd.txt` invocation are committed alongside for reproducibility.
+
+Test counts: arena-client **66 / 0 fail** (was 35; +31 across four
+new suites + the loadReplay helper). `pnpm -r test` **517 passing
+/ 0 fail** (was 486; +31 total). Engine, registry, vue-sfc-loader,
+server, replay-producer counts unchanged.
+
+Verification (12 of 12 pass): build / typecheck / test exit 0; no
+runtime engine / registry / boardgame.io import in any new file
+(`Grep` returned no matches); no engine move/hook names leaked
+into client paths (`Grep` for the 12 documented engine runtime
+symbols returned no matches); no `Math.random` / `Date.now` /
+`performance.now` (per P6-43, JSDoc paraphrases forbidden APIs);
+no `.reduce()` in rendering or navigation; engine, registry,
+vue-sfc-loader, server, registry-viewer, replay-producer all
+clean per `git diff --name-only`; `pnpm-lock.yaml` absent from
+diff (P6-44 pass); `apps/arena-client/package.json` untouched (no
+new devDep); both retained stashes intact; EC-069 `<pending>`
+placeholder not backfilled; WP-080 post-mortem not staged.
+
+Execution surfaced **D-6401** (keyboard focus pattern for
+stepper-style components — `tabindex="0"` on the root + keyboard
+listeners on the root; first repo precedent confirmed via WP-061 /
+WP-062 review). Full rationale + rejected alternatives in
+`docs/ai/DECISIONS.md §D-6401` and the post-mortem §6 hidden-coupling
+audit.
+
+01.6 post-mortem MANDATORY (P6-35 — two triggering criteria fired:
+new long-lived abstraction `parseReplayJson` + new keyboard focus
+precedent D-6401) delivered in-session at
+`docs/ai/post-mortems/01.6-WP-064-log-replay-inspector.md`; verdict
+**WP COMPLETE**. One in-allowlist refinement applied during the
+post-mortem itself: `<ReplayInspector />`'s `currentLog` computed
+now spread-copies `snapshot.log` before passing to
+`<GameLogPanel />` (WP-028 / D-2802 aliasing-prevention pattern).
+
+**Unblocks future replay-consuming surfaces** (spectator HUD,
+shared-match replay UI, export tools). The D-6303 assertion site is
+canonical; the keyboard focus pattern (D-6401) is canonical for any
+future stepper component (moves timeline, scenario selector,
+tutorial carousel). No engine, persistence, or production wiring —
+WP-064 is a pure consumer of committed `ReplaySnapshotSequence`
+artifacts.
+
+Two WP-064 commits on this branch:
+
+- `76beddc` EC-074 — code + fixture triplet + 01.6 post-mortem
+  (12 new client files + 1 post-mortem; 1740 insertions; engine /
+  registry / vue-sfc-loader / server / replay-producer untouched)
+- `<this commit>` SPEC — governance close (STATUS.md,
+  WORK_INDEX.md, EC_INDEX.md, DECISIONS.md §D-6401,
+  DECISIONS_INDEX.md)
+
+Pre-commit review handoff: per P6-35, runs in a separate gatekeeper
+session (no in-session AskUserQuestion request, no P6-42 deviation
+to disclose).
+
+---
+
 ### WP-063 / EC-071 Executed — Replay Snapshot Producer (2026-04-19, EC-071)
 
 WP-063 executed at commit `97560b1`: added engine type

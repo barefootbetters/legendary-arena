@@ -505,6 +505,14 @@ For full rationale, see `DECISIONS.md`.
 
 ---
 
+## Game Log & Replay Inspector (WP-064)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-6401 | Keyboard focus pattern for stepper-style interactive components: `tabindex="0"` root + listeners-on-root + clamp-not-wrap; first repo precedent | WP-064 |
+
+---
+
 ## Production Hardening & Invariants (WP-031)
 
 | Decision ID | Summary | Introduced In |
