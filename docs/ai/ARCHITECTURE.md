@@ -364,6 +364,9 @@ different data sources with different update cadences. The registry is immutable
 release data. The rules text is seeded at deploy time. Neither is `G` — they are
 read-only inputs to the engine, not game state.
 
+Deployment prerequisites for both startup tasks are verified by the checklists in
+[`docs/ai/deployment/`](deployment/) before any environment promotion.
+
 ### Registry Metadata File Shapes
 
 Two files in `data/metadata/` are easily confused because they have similar names

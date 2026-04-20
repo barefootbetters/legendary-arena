@@ -65,6 +65,11 @@ content errors are non-negotiable. Zero-error policy is a MANDATORY
 gate, not a warning tolerance. Remove or repair the offending content
 and re-run this gate before attempting release again.
 
+**Canonical verification procedure:** the R2 / card-data side of this
+gate is performed by the checklist at
+[`docs/ai/deployment/r2-data-checklist.md`](../ai/deployment/r2-data-checklist.md)
+§A.1 (validation script usage, local + R2 modes, five-phase pipeline).
+
 ### Gate 3 — Replay verification passes
 
 - [ ] `verifyDeterminism` returns `{ deterministic: true }` for every
@@ -208,3 +213,9 @@ environment; runtime invariants catch problems **during** a live match
 if an assumption is violated mid-play. A well-run release never fires a
 runtime invariant in production — but the runtime invariant is the
 final line of defense when a release gate misses something.
+
+Database-schema verification — the structural companion to runtime
+invariant checks at the persistence boundary — is performed by the
+checklist at
+[`docs/ai/deployment/postgresql-checklist.md`](../ai/deployment/postgresql-checklist.md)
+§B.7 before promotion onto the release path.

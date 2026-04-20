@@ -537,6 +537,8 @@ For full rationale, see `DECISIONS.md`.
 | Decision ID | Summary | Introduced In |
 |---|---|---|
 | D-4201 | WP-042 scope reduced from 8 PostgreSQL checklist sections to 4 (§B.1, §B.2, §B.6, §B.7 ship; §B.3, §B.4, §B.5, §B.8 deferred to future WP-042.1); reason: `scripts/seed-from-r2.mjs` has never existed (Foundation Prompt 03 never executed); pulling script creation into WP-042 scope would change class from Documentation to Code+Docs, violate RS-2 test-count lock, and change commit topology; scope reduction preserves invariants and ships real R2 + schema-structure value today | WP-042 |
+| D-4202 | Legacy `00.2b` §C UI-rendering-layer verification explicitly excluded from the WP-042 deployment checklist suite; P6-51 form-(2) back-pointer — authoritative prose lives in `docs/ai/deployment/r2-data-checklist.md` §Scope ("Explicitly out of scope") citing this D-entry by number; rationale: Layer Boundary discipline (UI is a separate layer from Server / Ops), UI-implementation volatility (rendering libraries evolve faster than infrastructure checklists), `RELEASE_CHECKLIST.md` Gate 5 already covers UI contract correctness at release time | WP-042 |
+| D-4203 | WP-042 classified as Documentation-class under Server / Operations layer as a load-bearing invariant; prohibits new runtime code, new `scripts/` files, new `package.json` entries, new migrations, and new tests within WP-042's scope; preserves test-baseline invariance (436 engine / 526 repo-wide / 0 failing), three-commit topology (`SPEC:` pre-flight / `EC-042:` execution / `SPEC:` governance close), and Server/Ops Layer Boundary stability; future deployment-pillar Documentation WPs may cite as precedent and adjust file list to their own scope | WP-042 |
 
 ---
 

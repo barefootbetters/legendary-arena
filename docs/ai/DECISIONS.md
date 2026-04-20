@@ -5857,6 +5857,180 @@ before EC-042 execution begins)
 
 ---
 
+### D-4202 — Legacy UI-Rendering-Layer Verification Excluded From Deployment Checklists (Back-Pointer)
+
+**Decision:** The legacy operational checklist at
+`docs/archive prompts-legendary-area-game/00.2b-deployment-checklists.md`
+included a §C that verified a specific browser-side rendering
+library's integration — color constants, zone layout, card rendering
+layers, modal components. WP-042 **explicitly excludes** that §C
+from the deployment checklist suite. UI-layer rendering concerns
+are not deployment prerequisites; they are UI-layer implementation
+details and belong in a UI-layer deployment checklist authored (if
+ever) by a separate UI-layer work packet.
+
+This entry is the P6-51 **form (2)** back-pointer for the full
+rationale. The authoritative prose of the exclusion lives in the
+produced checklist itself at
+[`docs/ai/deployment/r2-data-checklist.md`](deployment/r2-data-checklist.md)
+§Scope (the "Explicitly out of scope" block), which cites this
+D-entry by number as its governance anchor.
+
+**Rationale (summary):**
+
+- **Layer Boundary discipline.** Per `ARCHITECTURE.md §Layer
+  Boundary (Authoritative)`, UI rendering and server / ops
+  deployment are separate concerns. A deployment checklist that
+  verifies UI-rendering-layer integration would cross the boundary
+  and conflate release-time infrastructure verification with
+  runtime UI correctness.
+- **UI-implementation volatility.** The legacy §C was specific to a
+  single rendering library's API surface. UI implementations evolve
+  (framework migrations, renderer swaps, component rewrites) far
+  more frequently than infrastructure checklists can track; binding
+  a deployment gate to a specific rendering-library API guarantees
+  stale-checklist drift.
+- **Testing surface overlap.** UI-rendering correctness is already
+  covered by the UI package's own test suites (`apps/arena-client`,
+  `apps/registry-viewer`) in the `pnpm -r test` baseline enforced
+  by `docs/ops/RELEASE_CHECKLIST.md` Gate 1. Duplicating that
+  coverage inside a deployment checklist would create a second
+  source of truth for UI-rendering correctness and invite drift
+  between the two.
+
+**Alternatives rejected:**
+
+- **Port legacy §C verbatim into the deployment checklist:**
+  rejected (Layer Boundary violation + library-specific coupling).
+- **Translate legacy §C into library-agnostic UI-rendering
+  assertions:** rejected. "Library-agnostic UI rendering
+  verification" is a useful concept but it belongs in a UI-layer
+  work packet, not in a server / ops deployment packet. WP-042 is
+  Documentation class under the Server / Operations layer; mixing
+  layers would re-open the scope-reduction question that D-4201
+  resolved.
+- **Leave the legacy §C's absence undocumented:** rejected. A
+  future reader comparing WP-042's output to the legacy source
+  document would see the missing §C and either reintroduce it
+  unknowingly or waste effort tracing why it was dropped. D-4202
+  is the durable anchor that makes the exclusion load-bearing and
+  auditable.
+
+**Implications:**
+
+- A future UI-layer work packet that needs a UI-rendering
+  deployment checklist must create a **new** checklist file (e.g.,
+  `docs/ai/deployment/ui-rendering-checklist.md`) with its own
+  scope, guardrails, and Layer Boundary compliance; it must **not**
+  retrofit UI-layer checks into `r2-data-checklist.md` or
+  `postgresql-checklist.md`.
+- `docs/ops/RELEASE_CHECKLIST.md` Gate 5 (UI contract unchanged or
+  versioned) remains the release-time surface for UI-layer
+  correctness. D-4202 does not reduce the coverage of Gate 5; it
+  clarifies that UI-rendering verification is **not** a §A / §B
+  responsibility.
+
+**Status:** Immutable
+**Raised:** WP-042 execution session, 2026-04-19
+**Resolved:** 2026-04-19 (EC-042 execution commit lands D-4202 +
+the `r2-data-checklist.md` §Scope exclusion prose together)
+
+---
+
+### D-4203 — WP-042 Is Documentation-Class, Not Code-Class (Layer-Boundary Invariant)
+
+**Decision:** WP-042 (Deployment Checklists) is classified as
+**Documentation class** under the Server / Operations layer, and
+this classification is load-bearing. The WP ships:
+
+- two new files under `docs/ai/deployment/`,
+- one additive line in `docs/ai/ARCHITECTURE.md`,
+- two additive back-pointer lines in `docs/ops/RELEASE_CHECKLIST.md`,
+- two new D-entries in `docs/ai/DECISIONS.md` (D-4202 + D-4203),
+- one new post-mortem under `docs/ai/post-mortems/`.
+
+It does **not** ship any of the following, and must not in any
+amendment that preserves the D-4203 classification:
+
+- New runtime code (`.ts`, `.mjs`, `.js`) anywhere in the repo.
+- New `scripts/` files — in particular, no
+  `scripts/seed-from-r2.mjs`; the temptation to "helpfully" create
+  that script in-scope is explicitly forbidden by this D-entry.
+- New `package.json` entries (no `"seed":` npm script; no new
+  dependencies).
+- New migration SQL files under `data/migrations/`.
+- New tests — the repo-wide test baseline is locked at
+  `436 engine / 526 repo-wide / 0 failing` across the execution of
+  WP-042 (RS-2 lock in the EC-042 pre-flight).
+
+**Rationale:** WP-042 is the first deployment-pillar documentation
+WP to ship under the EC-framework; its class discipline is the
+template that WP-042.1 and future sibling WPs (UI-rendering
+deployment checklist, Render-specific runbook, logging / alerting
+checklist) should follow when each is opened. Three class-preserving
+properties that this D-entry locks:
+
+- **Test-baseline invariance.** Documentation-only WPs must never
+  perturb `pnpm -r test` totals. A shifting baseline makes drift
+  detection harder for subsequent code-class WPs and creates false
+  positives in the `engine count UNCHANGED at 436 / 109 / 0 fail`
+  verification step that every Server-/ Ops-layer WP inherits.
+- **Commit-topology clarity.** Documentation WPs use the
+  three-commit pattern (`SPEC:` pre-flight / `EC-NNN:` execution /
+  `SPEC:` governance close) without a tests-passing commit in the
+  middle. Code-class WPs typically insert a separate tests commit
+  between execution and governance close; preserving the shorter
+  three-commit pattern keeps the `WORK_INDEX.md` commit-hash
+  column unambiguous for documentation WPs.
+- **Layer Boundary stability.** Folding script creation into a
+  deployment-documentation WP would drag the WP from Server / Ops
+  (where deployment verification lives) into the cross-cutting
+  infrastructure layer (where scripts live). D-4201 resolved that
+  scope pull-in explicitly; D-4203 codifies the resolution as an
+  ongoing invariant rather than a one-time decision.
+
+**Alternatives rejected:**
+
+- **Leave WP-042's class implicit.** Rejected. The session prompt
+  for WP-042 repeatedly references "Documentation class" as an
+  invariant; making it a first-class DECISIONS.md entry gives
+  future work packets a citable anchor instead of forcing them to
+  reconstruct the class discipline from session-prompt prose.
+- **Generalize the invariant to all Documentation WPs at once.**
+  Rejected. D-4203 scopes the invariant specifically to WP-042 so
+  that subsequent Documentation WPs can cite D-4203 as precedent
+  without being retroactively bound by a rule they did not
+  negotiate. Once three or more sibling D-entries exist (e.g.,
+  D-4301 for a future UI-rendering checklist, D-4401 for a
+  Render-specific runbook), a consolidating cross-WP invariant
+  entry may be considered.
+
+**Implications:**
+
+- Any amendment to WP-042 that would add runtime code, a new
+  `scripts/` file, a new test, or a new npm dependency requires
+  re-opening D-4203 and either superseding it with a new D-entry
+  or explicitly carving out an exception with a coordinated
+  DECISIONS_INDEX.md row. Silent amendments are a class-discipline
+  violation.
+- Future deployment-pillar documentation WPs (UI-rendering,
+  Render-specific runbook, logging / alerting) should cite D-4203
+  as precedent when locking their own class invariants and adjust
+  the specific file list to their own scope.
+- The post-mortem artifact at
+  `docs/ai/post-mortems/01.6-WP-042-deployment-checklists.md`
+  captures the execution-time reality of this invariant so it is
+  observable in the historical record, not just in the forward-
+  looking governance.
+
+**Status:** Immutable
+**Raised:** WP-042 execution session, 2026-04-19
+**Resolved:** 2026-04-19 (EC-042 execution commit lands D-4203 +
+WP-042's four-file deliverable + the §B.7 schema-structure checklist
+body, confirming the documentation-class invariant in practice)
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
