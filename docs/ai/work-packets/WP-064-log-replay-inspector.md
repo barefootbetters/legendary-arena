@@ -7,6 +7,69 @@ snapshot producer — defines `ReplaySnapshotSequence`), WP-028 (UIState),
 WP-027 (replay verification harness — consumed indirectly via WP-063).
 WP-062 (Arena HUD) is optional but recommended so this packet's components
 slot next to the HUD components.
+**EC:** EC-074 (to be drafted; next free slot following the EC-061 →
+EC-067, EC-066 → EC-068, EC-062 → EC-069, EC-063 → EC-071, EC-080 →
+EC-072, EC-079 → EC-073 retargeting precedent).
+**Commit prefix:** `EC-074:` (never `WP-064:` — `.githooks/commit-msg`
+rejects `WP-###:` per P6-36).
+
+---
+
+> **Amendment 2026-04-19 (SPEC):** WP-063 / EC-071 executed at commit
+> `97560b1` (+ `b1ad8e5` SPEC governance). Several items in the
+> sections below were assumed at draft time and can now be locked to
+> hard facts. The executing session SHOULD NOT re-excavate these;
+> each amendment is inline in the relevant section below and carries
+> the same `Amendment 2026-04-19 (SPEC)` marker. Summary of what is
+> now locked:
+>
+> 1. `ReplaySnapshotSequence` is exported at
+>    `packages/game-engine/src/index.ts:217` (barrel block labelled
+>    `// Replay snapshot sequence (WP-063)`). Source file lives at
+>    `packages/game-engine/src/replay/replaySnapshot.types.ts`.
+> 2. The WP-063 golden sample is at
+>    `apps/replay-producer/samples/three-turn-sample.sequence.json`
+>    (NOT `apps/arena-client/src/fixtures/replay/` as §Assumes below
+>    originally implied). That golden is 4 snapshots, insufficient
+>    for WP-064's §F fixture — WP-064 regenerates its own fixture via
+>    the WP-063 CLI with a new inputs file.
+> 3. `UIState.log` is `string[]` (not `readonly string[]` as §Locked
+>    contract values below claims). The UI treats it as read-only
+>    semantically per WP-028; the readonly wording is a lint of the
+>    spec, not the type.
+> 4. The WP-061 SFC transform mechanism is
+>    `@legendary-arena/vue-sfc-loader` (WP-065), registered via
+>    `node --import @legendary-arena/vue-sfc-loader/register`. WP-064
+>    tests inherit this pipeline verbatim.
+> 5. Sourcemap inheritance (WP-064 §Non-Negotiable Constraints) means
+>    "inherit Vite's defaults" — NOT the
+>    `process.setSourceMapsEnabled(true)` pattern WP-063 used at its
+>    CLI entry. That WP-063 pattern solves a Windows `NODE_OPTIONS`
+>    cross-env problem specific to node-CLI entrypoints; Vite's
+>    client build already emits sourcemaps.
+> 6. "Phase transition" in §F is **semantically unreachable** via the
+>    WP-063 producer because `applyReplayStep`'s `events.setPhase` is
+>    a no-op per D-0205 determinism-only semantics. WP-064's §F must
+>    re-scope to **stage** transitions (`G.currentStage` via the
+>    `advanceStage` move, which the replay MOVE_MAP supports) plus
+>    log growth via unknown-move records (which push a warning to
+>    `G.messages` → `UIState.log` per
+>    `replay.execute.ts:162–166`). See §F amendment for the locked
+>    fixture-generation path.
+> 7. No keyboard focus-management prior art exists in WP-061 or
+>    WP-062 (confirmed via arena-client component review). WP-064 IS
+>    the first repo precedent — lock `tabindex="0"` + listeners-on-root
+>    as a new D-entry (e.g., D-64NN) during WP-064 execution.
+> 8. Consumer-side `version === 1` assertion wording is WP-064's DoD
+>    per D-6303. Template (mirrors WP-063 CLI pattern): `Replay file
+>    <source> field "version" must be the literal 1; received
+>    <value>.` EC-074 locks this string verbatim.
+> 9. New precedents P6-43 (JSDoc + grep collision), P6-44
+>    (pnpm-lock.yaml as implicit allowlist for workspace-package
+>    additions), and P6-45 (execution-surfaced D-entry pattern for
+>    WP-literal vs upstream-canonical conflicts) are now in 01.4.
+>    P6-43 and P6-44 apply to WP-064 execution; see §Verification
+>    Steps amendment.
 
 ---
 
@@ -66,9 +129,16 @@ packet that will wrap WP-027 in a CLI or server utility.
   - `@legendary-arena/game-engine` exports type
     `ReplaySnapshotSequence` from
     `packages/game-engine/src/replay/replaySnapshot.types.ts`.
-  - At least one sample artifact produced by the WP-063 CLI is committed
-    under `apps/arena-client/src/fixtures/replay/` (filename decided by
-    this packet).
+  - The WP-063 producer CLI (`apps/replay-producer/`) and at least
+    one golden sample triplet
+    (`apps/replay-producer/samples/three-turn-sample.{inputs,sequence,cmd}`)
+    are committed. **Amendment 2026-04-19 (SPEC):** the original
+    wording here claimed a sample was committed under
+    `apps/arena-client/src/fixtures/replay/` — that is incorrect.
+    WP-063 committed its golden under `apps/replay-producer/samples/`
+    only. WP-064 generates a NEW fixture under
+    `apps/arena-client/src/fixtures/replay/` via the WP-063 CLI (see
+    §F Fixture below for the locked generation path).
 - WP-028 complete: `UIState` and all sub-types are type-exported.
 - WP-027 complete: a replay harness exists (wrapped by WP-063).
 - `pnpm --filter @legendary-arena/arena-client build` and `test` exit 0.
@@ -122,6 +192,22 @@ for the `ReplaySnapshotSequence` type. Each item below is a **blocker**.
   amendment. Future readers should not have to cross-reference
   WP-061's commit history to know which transform this packet relied
   on.
+
+  > **Amendment 2026-04-19 (SPEC):** this item is PRE-RESOLVED.
+  > WP-061 adopted `@legendary-arena/vue-sfc-loader` (WP-065,
+  > `packages/vue-sfc-loader/`), registered via `node --import
+  > @legendary-arena/vue-sfc-loader/register`. The arena-client test
+  > script is
+  > `node --import tsx --import @legendary-arena/vue-sfc-loader/register --test src/**/*.test.ts`
+  > (see `apps/arena-client/package.json`). WP-062 / WP-067 confirmed
+  > the loader remains stable. **P6-30 / P6-40 apply:** any non-leaf
+  > SFC (one that registers child components OR references template
+  > bindings beyond `defineProps` / `defineEmits`) MUST use the
+  > `defineComponent({ setup() { return {...} } })` form under this
+  > loader. Leaf SFCs (props-only templates) may use `<script setup>`.
+  > WP-064's executing session does NOT need to open WP-061's commit
+  > history — this line is the summary the original preflight asked
+  > for.
 - **WP-063 engine type exported:** confirm
   `import type { ReplaySnapshotSequence } from '@legendary-arena/game-engine'`
   resolves in the arena-client package. If the type has not been
@@ -140,6 +226,23 @@ for the `ReplaySnapshotSequence` type. Each item below is a **blocker**.
   WP-062 established a focus-management pattern. If so, match it. If
   not, the inspector root is `tabindex="0"` and keyboard listeners
   mount on the root (documented with a `// why:` comment).
+
+  > **Amendment 2026-04-19 (SPEC):** this item is PRE-RESOLVED.
+  > Review of WP-061 bootstrap (`<BootstrapProbe />`) and WP-062 HUD
+  > components (`<ArenaHud />`, `<TurnPhaseBanner />`,
+  > `<SharedScoreboard />`, `<ParDeltaReadout />`,
+  > `<PlayerPanelList />`, `<PlayerPanel />`, `<EndgameSummary />`)
+  > confirmed: **no keyboard focus-management pattern exists yet**.
+  > All WP-062 HUD components are passive display surfaces with
+  > `aria-label`s and `aria-live`/`aria-current` attributes only —
+  > none carry `tabindex` or keyboard event handlers. WP-064 IS the
+  > first client component to introduce keyboard-driven interaction.
+  > The fallback path becomes the locked pattern: `tabindex="0"` on
+  > the inspector root, keyboard listeners mounted on the root, with
+  > a `// why:` comment documenting the focus order. WP-064 MUST lock
+  > this as a new D-entry (e.g., D-64NN "Keyboard focus pattern for
+  > stepper-style interactive components") so future WPs with
+  > keyboard controls inherit it rather than re-derive.
 
 If any item is unknown, **stop and ask**.
 
@@ -169,6 +272,17 @@ If any item is unknown, **stop and ask**.
   `src/fixtures/uiState/`) unless a concrete reason is documented in
   DECISIONS.md and reflected in Files Expected to Change.
 - Sourcemaps: inherit WP-061's sourcemap setup (dev + build).
+
+  > **Amendment 2026-04-19 (SPEC):** "inherit WP-061's setup" means
+  > inherit Vite's defaults (Vite dev server + `build.sourcemap`
+  > option) as configured in
+  > `apps/arena-client/vite.config.ts`/`package.json`. **Do NOT copy
+  > WP-063's `process.setSourceMapsEnabled(true)` pattern** from
+  > `apps/replay-producer/src/cli.ts` — that is a node-CLI-specific
+  > answer addressing Windows `NODE_OPTIONS=--enable-source-maps`
+  > cross-env hostility, and applies only to the `cli-producer-app`
+  > category (D-6301). WP-064 is `client-app`; sourcemaps are a Vite
+  > concern, not a node-entrypoint concern.
 
 **Packet-specific:**
 - `<ReplayInspector />` **never** computes a `UIState` from moves — it
@@ -203,12 +317,31 @@ If any item is unknown, **stop and ask**.
   `import type` only. Do NOT redefine or extend it locally.
 
 **Locked contract values:**
-- **`UIState.log` shape:** `readonly string[]` (per WP-028).
+- **`UIState.log` shape:** `string[]` (per WP-028 source at
+  `packages/game-engine/src/ui/uiState.types.ts:40`). **Amendment
+  2026-04-19 (SPEC):** the original wording "readonly string[]" is a
+  lint of the spec, not the compile-time type. The array IS mutable
+  at the TypeScript level; WP-028 enforces non-mutation semantically
+  ("UI consumes projections only" — D-0301). WP-064's AC keeps
+  "Does not mutate `snapshot.log`" but does not assert `readonly` at
+  compile time.
 - **`ReplaySnapshotSequence` shape:** defined by WP-063 in
   `packages/game-engine/src/replay/replaySnapshot.types.ts`. This packet
   consumes the type as-is. Ordering is determined exclusively by array
   position in `snapshots` — the client never reads timing metadata for
   ordering decisions.
+- **Amendment 2026-04-19 (SPEC) — Consumer-side `version === 1`
+  assertion (D-6303):** `parseReplayJson` (§Scope A) MUST assert
+  `version === 1` and throw a full-sentence `Error` on any other
+  value. EC-074 locks the exact message template to:
+  `Replay file <source> field "version" must be the literal 1;
+  received <JSON.stringify(value)>.` where `<source>` is the
+  filename passed into the parser or the literal string
+  `"in-memory"` when no filename is available. This template mirrors
+  the WP-063 CLI error at
+  `apps/replay-producer/src/cli.ts:93` verbatim so operator
+  diagnostic wording is consistent across the producer and
+  consumer.
 
 ---
 
@@ -253,13 +386,34 @@ If any item is unknown, **stop and ask**.
 
 - `apps/arena-client/src/replay/loadReplay.ts` — **new**:
   - `import type { ReplaySnapshotSequence } from '@legendary-arena/game-engine'`
-  - `parseReplayJson(raw: string): ReplaySnapshotSequence` — throws a
-    full-sentence `Error` on invalid version, missing `snapshots`, or
-    empty array.
+  - `parseReplayJson(raw: string, source?: string): ReplaySnapshotSequence`
+    — throws a full-sentence `Error` on invalid version, missing
+    `snapshots`, or empty array. The optional `source` parameter names
+    the origin (filename or the literal `"in-memory"`) for
+    error-message context.
   - `// why:` comment: invalid replay files must fail loudly, not
     silently render an empty inspector.
   - `// why:` comment: the `ReplaySnapshotSequence` type is imported from
     the engine (defined by WP-063) — never redefined client-side.
+
+  > **Amendment 2026-04-19 (SPEC) — Locked error-message templates.**
+  > Per D-6303 and the §Locked contract values amendment above, the
+  > parser emits these exact full-sentence strings:
+  >
+  > - Invalid version:
+  >   `Replay file <source> field "version" must be the literal 1;
+  >   received <JSON.stringify(value)>.`
+  > - Missing `snapshots`:
+  >   `Replay file <source> is missing required field "snapshots".`
+  > - Empty `snapshots`:
+  >   `Replay file <source> field "snapshots" must contain at least
+  >   one UIState; received an empty array.`
+  >
+  > `<source>` resolves to the `source` arg or the literal
+  > `"in-memory"` fallback. These templates mirror the WP-063 CLI
+  > wording convention verbatim so operator tooling produced by the
+  > CLI (stderr) and the consumer (in-browser alert region) agree on
+  > diagnostic phrasing.
 
 ### C) Game log panel
 
@@ -290,6 +444,26 @@ If any item is unknown, **stop and ask**.
     why the root is focusable.
   - Emits no events — the store is the side channel.
 
+  > **Amendment 2026-04-19 (SPEC) — Authoring form.**
+  > `<ReplayInspector />` is a **non-leaf SFC** under the
+  > `@legendary-arena/vue-sfc-loader` pipeline: it registers child
+  > components (the buttons, the range input, and likely
+  > `<GameLogPanel />` when composed into a container view) AND
+  > references template bindings beyond `defineProps` / `defineEmits`
+  > (e.g., `currentIndex`, event handlers, `isPlaying`). Per
+  > P6-30 / P6-40, it MUST use the
+  > `defineComponent({ setup() { return {...} } })` authoring form,
+  > with child components registered via the `components: {...}`
+  > option. `<script setup>` will fail under
+  > `vue-sfc-loader`'s separate-compile pipeline when the template
+  > references anything beyond props — this is the same failure mode
+  > WP-062's `<ArenaHud />` / `<PlayerPanel />` /
+  > `<PlayerPanelList />` / `<ParDeltaReadout />` /
+  > `<EndgameSummary />` hit. `<GameLogPanel />` and
+  > `<ReplayFileLoader />` (§C and §E below) may stay in
+  > `<script setup>` if their templates reference only props-and-emits
+  > bindings; pre-flight verifies per-SFC.
+
 ### E) Replay file loader
 
 - `apps/arena-client/src/components/replay/ReplayFileLoader.vue` — **new**:
@@ -304,14 +478,58 @@ If any item is unknown, **stop and ask**.
 - `apps/arena-client/src/fixtures/replay/three-turn-sample.json` —
   **new**. A valid `ReplaySnapshotSequence` produced by the WP-063 CLI
   against a deterministic match with between 6 and 12 snapshots, each a
-  complete `UIState`. The sequence must include at least one phase
-  transition and one log-growth step. Do NOT hand-author this file —
-  generate it via the WP-063 producer so it remains byte-identical to
-  what real replays will look like. Commit the generator command line in a
-  sibling `three-turn-sample.cmd.txt` for reproducibility.
+  complete `UIState`. The sequence must include at least one **stage**
+  transition and one log-growth step (see Amendment below). Do NOT
+  hand-author this file — generate it via the WP-063 producer so it
+  remains byte-identical to what real replays will look like. Commit
+  the generator command line in a sibling `three-turn-sample.cmd.txt`
+  for reproducibility.
 - `apps/arena-client/src/fixtures/replay/index.ts` — **new**. Exports
   `loadReplayFixture(name: 'three-turn-sample'):
   ReplaySnapshotSequence`. Imports the type from the engine.
+
+  > **Amendment 2026-04-19 (SPEC) — Fixture requirement re-scoped
+  > from "phase transition" to "stage transition."** The original
+  > "at least one phase transition" bar is **unreachable via the
+  > WP-063 producer** because `applyReplayStep`
+  > (`packages/game-engine/src/replay/replay.execute.ts`) enforces
+  > `events.setPhase: () => {}` (no-op) per the D-0205
+  > determinism-only harness contract. No `ReplaySnapshotSequence`
+  > produced today can carry a `snapshot.game.phase` change.
+  >
+  > **Stage transitions ARE reachable.** The replay MOVE_MAP includes
+  > `advanceStage`, which calls `advanceTurnStage` and updates
+  > `G.currentStage` (`start` → `main` → `cleanup`), which WP-028's
+  > `buildUIState` projects into `snapshot.game.currentStage`. A
+  > `ReplayMove` with `moveName: 'advanceStage'` therefore produces a
+  > visible stage delta between adjacent snapshots.
+  >
+  > **Log growth IS reachable** via the unknown-move warning path:
+  > `applyReplayStep` pushes
+  > `Replay warning: unknown move name "<X>" — skipped.` to
+  > `gameState.messages` for any move name not in MOVE_MAP
+  > (`replay.execute.ts:162–166`). WP-028's `buildUIState` projects
+  > `gameState.messages` into `snapshot.log` verbatim
+  > (`uiState.build.ts:272`), so an unknown-move record produces a
+  > new log entry deterministically, with no registry footprint.
+  >
+  > **Locked fixture-generation path for WP-064.** Author the inputs
+  > file at `apps/arena-client/src/fixtures/replay/three-turn-sample.inputs.json`
+  > (kept sibling to the sequence for auditability), mix
+  > `advanceStage` moves (stage deltas) with a handful of unknown-move
+  > records (log growth), target 6–12 total moves, run the WP-063
+  > CLI against it, commit the produced `three-turn-sample.json` and
+  > the `three-turn-sample.cmd.txt` invocation. The empty-list
+  > registry reader the WP-063 CLI bundles is sufficient — matches
+  > the `replay.execute.test.ts` / `replay.verify.test.ts`
+  > precedent and avoids importing `@legendary-arena/registry` at
+  > runtime.
+  >
+  > **WP-064's §G Tests must assert stage-transition wording, not
+  > phase-transition wording.** Any test that checks
+  > `fixture.snapshots[i].game.currentStage !==
+  > fixture.snapshots[i+1].game.currentStage` is the correct form;
+  > asserting `snapshot.game.phase` diversity will fail vacuously.
 
 ### G) Tests
 
@@ -478,7 +696,27 @@ git diff --name-only packages/game-engine/ packages/registry/ apps/server/ apps/
 # Step 7 — confirm only expected files changed
 git diff --name-only
 # Expected: only files listed in ## Files Expected to Change
+
+# Step 8 — P6-44 pnpm-lock discipline (new workspace packages only)
+# WP-064 adds NO new workspace package (first cli-producer-app /
+# client-app / shared-lib). pnpm-lock.yaml should be absent from the
+# diff. If it appears, a new devDep was silently added — investigate
+# before staging (likely violates §Non-Negotiable Constraints line
+# "Any new dependency requires a DECISIONS.md justification").
+git diff --name-only | Select-String "^pnpm-lock\.yaml$"
+# Expected: no output
 ```
+
+> **Amendment 2026-04-19 (SPEC) — P6-43 JSDoc-paraphrase discipline
+> for Step 4.** `Select-String -Pattern "Math\.random|Date\.now|performance\.now"`
+> in Step 4 matches JSDoc / comment text, not just live calls. If a
+> new file's JSDoc describes what the file does NOT do using the
+> literal API names (e.g., "no `Math.random`, no `Date.now`"), the
+> grep returns a false-positive match. Per P6-43, WP-064's JSDoc
+> MUST use paraphrase form ("no non-engine RNG", "no wall-clock
+> reads", "no timing shortcuts") so the purity grep remains
+> unambiguous. See the WP-063 post-mortem §10 for the same fix
+> applied to `buildSnapshotSequence.ts`.
 
 ---
 
