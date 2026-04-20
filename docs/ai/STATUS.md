@@ -7,6 +7,95 @@
 
 ## Current State
 
+### WP-035 / EC-035 Executed — Release, Deployment & Ops Playbook (2026-04-19, EC-035)
+
+WP-035 executed at commit `d5935b5`: Legendary Arena now has a
+complete, auditable release → deployment → incident playbook plus
+the engine-side type surface for operational monitoring. Six new
+files (three docs + one engine type file + two additive re-exports)
+under the six-file allowlist; zero engine logic touched; zero new
+tests (RS-2 lock).
+
+Surfaces produced:
+
+- `docs/ops/RELEASE_CHECKLIST.md` — the mandatory pre-release gate.
+  Seven binary pass/fail gates (engine tests; content validation
+  zero errors; replay verification; migration tests if `dataVersion`
+  changes; UI contract unchanged or versioned; version stamps
+  correct; release notes authored) plus a "Why these gates"
+  rationale section citing D-0602, D-0801, D-0802, D-0902. Release
+  is blocked if any gate fails.
+- `docs/ops/DEPLOYMENT_FLOW.md` — the four-environment promotion
+  path (`dev` → `test` → `staging` → `prod`) with per-step
+  trigger + gate + approval rules, atomic-promotion statement, the
+  no-hot-patching rule citing D-1002, four rollback triggers
+  (invariant violation, replay hash mismatch, migration failure,
+  desync incidents), and four rollback rules (revert engine +
+  content together; never roll `dataVersion` forward; re-apply last
+  known good; no data loss). D-0902 implemented at the deployment
+  boundary.
+- `docs/ops/INCIDENT_RESPONSE.md` — the P0–P3 severity ladder with
+  locked examples and required actions (P0 corrupted state →
+  immediate rollback; P1 replay desync → freeze deployments; P2
+  invalid turn spikes → investigate; P3 content lint warnings →
+  backlog), the D-0802 vs D-1234 severity-mapping explanation in
+  prose, and the four-field incident-record contract (root cause;
+  invariant violated if applicable; version implicated; corrective
+  action).
+- `packages/game-engine/src/ops/ops.types.ts` — the new engine
+  subtree under D-3501 (eighth engine subdirectory classification,
+  after D-2706 / D-2801 / D-3001 / D-3101 / D-3201 / D-3301 /
+  D-3401). Exports `OpsCounters` (four `readonly number` fields in
+  locked order: `invariantViolations`, `rejectedTurns`,
+  `replayFailures`, `migrationFailures`), `DeploymentEnvironment`
+  (closed union in promotion order), and `IncidentSeverity`
+  (closed union in descending urgency). Pure type definitions only
+  — no runtime instance anywhere in the engine (RS-1 option (a)).
+
+Test counts: engine **436 / 109 / 0 fail** (unchanged — RS-2 lock,
+zero new tests). `pnpm -r test` **526 passing / 0 fail** (unchanged).
+
+Verification (16 of 16 pass): build / test / full-repo-test exit 0;
+no forbidden framework / registry / server import in the new
+subtree; no wall-clock / RNG / timing helpers; no `.reduce()`;
+no I/O; `pnpm-lock.yaml` absent from diff (no new deps);
+`game.ts`, moves, rules, setup, and all other engine subdirectories
+untouched; both retained stashes intact (neither popped); EC-069
+`<pending — gatekeeper session>` placeholder not backfilled.
+
+D-3501 landed in the SPEC pre-flight commit `4b6b60b` (directory
+classification + `02-CODE-CATEGORIES.md` update + session prompt).
+No new D-entry surfaced during execution.
+
+01.6 post-mortem MANDATORY (P6-35 — two triggering criteria fired:
+new long-lived abstraction `OpsCounters` + new code-category
+directory D-3501) delivered in-session at
+`docs/ai/post-mortems/01.6-WP-035-release-deployment-ops-playbook.md`;
+verdict **WP COMPLETE**. Zero mid-execution fixes — the pre-flight
+paraphrase-discipline Locked Value prevented the P6-43 collision
+class that surfaced in WP-034.
+
+**Unblocks WP-042 (Deployment Checklists).** Release process is
+now defined; deployment environments are established; every
+deployment has a tested rollback path (D-0902 implemented);
+incident response is classified. WP-042 provides the per-
+environment procedure runbooks on top of the process this WP
+defines.
+
+Three WP-035 commits on this branch:
+
+- `4b6b60b` SPEC — pre-flight bundle (D-3501 + 02-CODE-CATEGORIES.md
+  update + session prompt)
+- `d5935b5` EC-035 — code + 01.6 post-mortem (1 new engine file +
+  3 new ops docs + 2 modified re-exports + 1 post-mortem)
+- `<this commit>` SPEC — governance close (STATUS.md,
+  WORK_INDEX.md, EC_INDEX.md)
+
+Pre-commit review handoff: per P6-35, runs in a separate gatekeeper
+session.
+
+---
+
 ### WP-034 / EC-034 Executed — Versioning & Save Migration Strategy (2026-04-19, EC-034)
 
 WP-034 executed at commit `5139817`: added the first persistence-

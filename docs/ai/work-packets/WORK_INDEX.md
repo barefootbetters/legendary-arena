@@ -746,8 +746,10 @@ These packets make the game safe to ship.
   separate gatekeeper session per P6-35 default; no P6-42
   deviation.
 
-- [ ] WP-035 — Release, Deployment & Ops Playbook ✅ Reviewed
-  Dependencies: WP-034
+- [x] WP-035 — Release, Deployment & Ops Playbook ✅ Reviewed
+  Executed 2026-04-19 at commit `d5935b5` per session prompt
+  `docs/ai/invocations/session-wp035-release-deployment-ops-playbook.md`.
+  Dependencies: WP-034 (complete at `5139817`)
   Notes: Release artifacts (engine build + content bundle + migration bundle +
   validation report) — immutable once published; 4 environments: dev -> test ->
   staging -> prod with sequential promotion; mandatory release checklist gates
@@ -755,7 +757,30 @@ These packets make the game safe to ship.
   content together, no data loss (D-0902); incident response P0-P3; OpsCounters
   type for passive monitoring; produces `docs/ops/` documentation; WP-042
   provides specific deployment checklists on top of this framework; was 166
-  lines but missing template sections — normalized to full PACKET-TEMPLATE
+  lines but missing template sections — normalized to full PACKET-TEMPLATE.
+  Execution shipped exactly the six expected files (3 new docs under
+  `docs/ops/` + 1 new engine file at `packages/game-engine/src/ops/ops.types.ts`
+  + 2 modified re-exports in `types.ts` / `index.ts`) plus the MANDATORY 01.6
+  post-mortem. Engine count UNCHANGED at **436 / 109 / 0 fail** (RS-2 lock —
+  zero new tests); repo-wide 526 / 0 fail. D-3501 landed in SPEC pre-flight
+  commit `4b6b60b` classifying `packages/game-engine/src/ops/` as engine code
+  category (eighth precedent after D-2706 / D-2801 / D-3001 / D-3101 / D-3201
+  / D-3301 / D-3401). RS-1 option (a) locked at pre-flight: `OpsCounters` is a
+  pure type with no runtime instance anywhere in the engine. Verification
+  (16 of 16 pass): build exits 0; engine + repo test baselines unchanged; no
+  framework / registry / server imports in new subtree; no wall-clock / RNG /
+  timing helpers; no `.reduce()`; no I/O; no new npm deps; all other engine
+  subdirectories untouched; both retained stashes intact (neither popped);
+  EC-069 `<pending — gatekeeper session>` placeholder NOT backfilled (owned
+  by separate SPEC session). 01.5 NOT INVOKED. 01.6 post-mortem MANDATORY
+  (new long-lived abstraction `OpsCounters` + new code-category directory
+  D-3501) — delivered in-session at
+  `docs/ai/post-mortems/01.6-WP-035-release-deployment-ops-playbook.md`;
+  verdict WP COMPLETE with zero mid-execution fixes. Three commits on this
+  branch: `4b6b60b` SPEC (pre-flight), `d5935b5` EC-035 (code + post-mortem),
+  `<this commit>` SPEC (governance close). Pre-commit review handoff per
+  P6-35 default to a separate gatekeeper session. **Unblocks WP-042**
+  (Deployment Checklists); WP-036 (AI Playtesting) dependency also green.
 
 - [ ] WP-042 — Deployment Checklists (Data, Database & Infrastructure) ✅ Reviewed
   Dependencies: WP-035
