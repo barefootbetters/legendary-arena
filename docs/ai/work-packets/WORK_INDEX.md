@@ -1093,6 +1093,42 @@ These packets make the game safe to ship.
   names). WP-062 pre-flight blocker #4 (base.css allowlist) is
   independent.
 
+- [ ] WP-081 — Registry Build Pipeline Cleanup (Draft — Not yet reviewed)
+  Dependencies: WP-003 (current `SetDataSchema` + `FlatCard` shape is
+  load-bearing; pre-WP-003 symbols `CardSchema` / `CardIDSchema` /
+  `CANONICAL_ID_REGEX` / `CardTypeSchema` are gone)
+  Execution Checklist: `docs/ai/execution-checklists/EC-081-registry-build-pipeline-cleanup.checklist.md` (Draft)
+  Commit prefix: `EC-081:` at execution (never `WP-081:` per P6-36)
+  Notes: Subtractive cleanup packet. Deletes three broken operator
+  scripts under `packages/registry/scripts/` that have been failing
+  since WP-003 changed the registry schema shape (`normalize-cards.ts`,
+  `build-dist.mjs`, `standardize-images.ts`). Trims
+  `packages/registry/package.json` `scripts.build` to
+  `"tsc -p tsconfig.build.json"` only, removes `scripts.normalize` and
+  `scripts.standardize-img`. Deletes the redundant and misleadingly
+  commented "Normalize cards" step from `.github/workflows/ci.yml`
+  job `build` (job 1 already runs `pnpm registry:validate`; the
+  duplicate in job 2 fails because the deleted `build-dist.mjs` cannot
+  find `dist/cards.json`). Replaces the `README.md` pipeline diagram
+  at lines 62-64 and acceptance items at lines 204-205 with accurate
+  prose describing the current tsc-only build. Registers **D-8101**
+  (delete-not-rewrite rationale: zero monorepo consumers of the old
+  JSON artifacts `dist/cards.json` / `dist/index.json` / `dist/sets.json` /
+  `dist/keywords.json` / `dist/registry-info.json`; runtime path is
+  `metadata/sets.json` + `metadata/{abbr}.json` fetched directly from
+  R2 by `httpRegistry.ts` / `localRegistry.ts`) and **D-8102**
+  (`registry:validate` is the single CI validation step; merging build
+  and validate responsibilities rejected). `packages/registry/src/**`
+  untouched (WP-003 immutable files `schema.ts` / `shared.ts` /
+  `impl/localRegistry.ts` unchanged); `validate.ts` and `upload-r2.ts`
+  out of scope; no new tests, no new dependencies, no version bump;
+  `pnpm-lock.yaml` unchanged. Test baseline UNCHANGED (engine
+  `436 / 109 / 0 fail`; repo-wide `536 / 0 fail`). Discovered during
+  WP-055 execution and flagged in `docs/ai/post-mortems/01.6-WP-055-theme-data-model.md`
+  §8 item 3. After WP-081 lands, `pnpm --filter
+  @legendary-arena/registry build` and `pnpm -r build` both exit 0 for
+  the first time since WP-003.
+
 ---
 
 ## Phase 7 — Beta, Launch & Live Ops

@@ -129,6 +129,7 @@ is active. See 01.2 for the clause-driven diagnosis sequence.
 | EC-048 | WP-048    | Engine Scoring + Server  | PAR scoring, ScenarioKey, LeaderboardEntry contract  | Draft  |
 | EC-055 | WP-055    | Registry / Content Contracts | Theme Data Model (v2): `ThemeDefinitionSchema` + sub-schemas (`ThemeSetupIntentSchema`, `ThemePlayerCountSchema`, `ThemePrimaryStoryReferenceSchema`, `ThemeMusicAssetsSchema`) in `packages/registry/src/theme.schema.ts`; `validateTheme` (sync) + `validateThemeFile` (async, filename-to-themeId alignment, four stable error-path labels `'file'`/`'json'`/`'themeId'`/`<zod-path>`) in `theme.validate.ts`; 10 `node:test` cases wrapped in one `describe('theme schema (WP-055)')` block in `theme.schema.test.ts` (registry 3→13 / 1→2 / 0 fail; repo-wide 526→536; engine 436/109/0 UNCHANGED). `setupIntent` mirrors WP-005A `MatchSetupConfig` ID fields verbatim (count fields excluded — themes describe composition, not pile sizing). Three optional music fields added at v2 per D-5509 (`musicTheme`, `musicAIPrompt`, `musicAssets` with eight optional `*Url` sub-fields). 74-file allowlist: `theme.schema.ts` / `theme.validate.ts` / `theme.schema.test.ts` + `content/themes/minimal-example.json` + mandatory 01.6 post-mortem NEW + 68 shipped `content/themes/*.json` v1→v2 migration per D-5509 (migration staged during 2026-04-19 v2 design pass; committed under WP-055 allowlist) + `packages/registry/src/index.ts` public-surface extension MODIFIED (8 additive export lines per WP-055 §E; no existing export reordered/renamed/removed). §D.8 directory-scan test iterates `content/themes/index.json` manifest (NOT `readdir`) so aggregate artifacts (`00-ALL_THEMES_COMBINED.json`, `01-ALL_THEMES_COMBINED.json`, `index.json` itself) are excluded. Registry-layer only — zero `game-engine` / `boardgame.io` / `apps/server/` / `apps/registry-viewer/` imports (grep confirmed); immutable WP-003 files (`schema.ts`, `shared.ts`, `impl/localRegistry.ts`) untouched; WP-005A `matchSetup.types.ts` untouched; `apps/registry-viewer/` remains quarantined in `stash@{0}` per PS-4. 01.5 NOT INVOKED. 01.6 post-mortem MANDATORY — verdict WP COMPLETE with zero post-mortem fixes and one mid-execution paraphrase-token self-catch (`packages/game-engine/src/matchSetup.types.ts` literal path reference removed from a `// why:` comment at Verification Step 4, documented in post-mortem §8). Three-commit topology A0 `aaba66d` (SPEC pre-flight bundle) + A `dc7010e` (EC-055 execution) + B (this commit, SPEC governance close). See `EC-055-theme-data-model.checklist.md` + `docs/ai/invocations/session-wp055-theme-data-model.md`. Executed 2026-04-20 at commit `dc7010e`. | Done   |
 | EC-066 | WP-066    | Client UI / Registry     | Registry viewer: image-to-data toggle, localStorage   | Draft  |
+| EC-081 | WP-081    | Registry / Build Tooling | Registry build pipeline cleanup: delete 3 broken scripts (`normalize-cards.ts`, `build-dist.mjs`, `standardize-images.ts`) and their `package.json` / ci.yml / README references; trim `scripts.build` to `tsc` only. Subtractive only — zero new code, zero new tests, zero deps. Registers D-8101 (delete-not-rewrite; no monorepo consumer of the old `dist/*.json` artifacts) + D-8102 (`registry:validate` is the single CI validation step). Test baseline UNCHANGED. See `EC-081-registry-build-pipeline-cleanup.checklist.md`. | Draft  |
 
 ---
 
@@ -153,9 +154,9 @@ is active. See 01.2 for the clause-driven diagnosis sequence.
 | Status   | Count |
 |----------|-------|
 | Done     | 3     |
-| Draft    | 54    |
+| Draft    | 55    |
 | Blocked  | 0     |
-| **Total**| **57**|
+| **Total**| **58**|
 
 ---
 
