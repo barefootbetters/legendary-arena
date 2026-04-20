@@ -271,6 +271,163 @@ src/*/` subdirectories.
 **Default at pre-flight:** no new D-entry for
 `docs/ai/deployment/`. Matches the WP-035 / RS-4 precedent.
 
+### PS-4 (BLOCKING) — `scripts/seed-from-r2.mjs` is missing from the repo
+
+**Status:** open — surfaced by precondition verification on
+2026-04-19 after WP-035 close, BEFORE any WP-042 pre-flight session.
+Must be resolved before EC-042 can execute.
+
+WP-042 §Assumes line 45 reads *"`scripts/migrate.mjs` and
+`scripts/seed-from-r2.mjs` exist (Foundation Prompt 01/02)"* and
+EC-042 §Before Starting line 19 repeats the same. WP-042's
+PostgreSQL checklist body references `pnpm seed` in §B.3 (Lookup
+table seeding) and §B.8 (Re-seeding procedure) — both presumably
+invoke `scripts/seed-from-r2.mjs` via the `seed` npm script.
+
+Verification at 2026-04-19 after WP-035 close:
+
+```pwsh
+test -f scripts/seed-from-r2.mjs
+# Actual: MISSING
+test -f scripts/migrate.mjs
+# Actual: exists
+```
+
+Only `scripts/migrate.mjs` is present. The seed script is absent.
+A WP-042 executor following the current WP body would hit this at
+the first `pnpm seed` reference and have no way to write a working
+checklist — the `B.3` and `B.8` sections lock specific CLI
+invocations against a nonexistent script.
+
+**Resolution options:**
+
+- **(a) Archaeology — confirm the script was renamed.** Check
+  `git log --all --diff-filter=D -- scripts/seed-from-r2.mjs` and
+  `grep -rn "seed-from-r2\|seed:r2\|\"seed\":" --include=package.json`
+  to see if the script lives under a different name. If yes, amend
+  WP-042 §Assumes + EC-042 §Before Starting + WP-042 §Locked Values
+  + the checklist body's `pnpm seed` references to match reality.
+  Lands as a pre-flight SPEC commit before execution.
+- **(b) Prerequisite WP — the script was never created.** If
+  `seed-from-r2.mjs` is a Foundation Prompt deliverable that was
+  deferred, WP-042 is BLOCKED until a separate prerequisite WP
+  creates it. This would be a new WP (e.g., WP-041-seed-script) or
+  a Foundation Prompt backfill, not an in-session WP-042 fix.
+- **(c) Scope reduction — WP-042 ships without `B.3`/`B.8`.** If
+  the seed workflow is genuinely out of scope for MVP, amend
+  WP-042 to remove the sections that reference `pnpm seed` and
+  ship only the migration + R2 parts. Lands as a pre-flight SPEC
+  commit.
+- **(d) Script creation in-scope — WP-042 ships the seed script
+  itself.** Rejected at first pass. WP-042 §Non-Negotiable line 87
+  says "No modification to `packages/registry/src/`" and the
+  broader intent is documentation-only. Adding a new `.mjs`
+  script under `scripts/` would pull WP-042 from Documentation
+  class into Code-and-Documentation class, changing the commit
+  topology (EC-042: code + docs instead of SPEC:-style doc-only).
+  Revisitable only if (a)/(b)/(c) all fail to resolve.
+
+**Default recommendation:** run archaeology first (option (a)). The
+most likely explanation is that `seed-from-r2.mjs` was refactored
+or renamed (matching the WP-079/WP-080 pattern of in-flight script
+refactors) and WP-042's assumes block simply drifted. If
+archaeology surfaces a renamed script, option (a) ships
+immediately. If it surfaces nothing, escalate to (b) or (c) at
+pre-flight.
+
+### PS-5 (BLOCKING) — Migration filenames diverge from WP-042's locked list
+
+**Status:** open — surfaced by precondition verification on
+2026-04-19 after WP-035 close, BEFORE any WP-042 pre-flight session.
+Must be resolved before EC-042 can execute.
+
+WP-042 §Locked contract values line 119–122 reads:
+
+> **Migration files (execution order by filename):**
+> `001_initial_schema.sql` | `002_seed_base_set.sql` |
+> `003_add_game_sessions.sql` | `004_upsert_indexes.sql` |
+> `005_lobby_columns.sql`
+
+EC-042 §Locked Values line 31 repeats the same five filenames.
+
+Verification at 2026-04-19 after WP-035 close:
+
+```pwsh
+ls data/migrations/*.sql
+# Actual:
+#   data/migrations/001_server_schema.sql
+#   data/migrations/002_seed_rules.sql
+#   data/migrations/003_game_sessions.sql
+```
+
+| WP-042 locked filename | Actual on disk |
+|---|---|
+| `001_initial_schema.sql` | `001_server_schema.sql` |
+| `002_seed_base_set.sql` | `002_seed_rules.sql` |
+| `003_add_game_sessions.sql` | `003_game_sessions.sql` |
+| `004_upsert_indexes.sql` | **does not exist** |
+| `005_lobby_columns.sql` | **does not exist** |
+
+All three present migrations have diverging filenames; two locked
+migrations (004, 005) do not exist on disk at all. A WP-042
+checklist authored against the locked names would fail its own
+verification at `B.2 — Migration execution` the first time a
+reader tries to match the list against the filesystem.
+
+**Resolution options:**
+
+- **(a) Update WP-042 §Locked Values to match reality.** Drop
+  `004_upsert_indexes.sql` and `005_lobby_columns.sql` entirely;
+  rename `001_initial_schema.sql` → `001_server_schema.sql`,
+  `002_seed_base_set.sql` → `002_seed_rules.sql`,
+  `003_add_game_sessions.sql` → `003_game_sessions.sql`. Lands as
+  a pre-flight SPEC commit. Simplest option, but forecloses on
+  the possibility that 004/005 are planned future migrations whose
+  filenames were drafted into WP-042 preemptively.
+- **(b) Split "current" vs "future" migration lists.** Amend
+  WP-042 §Locked Values to split the list into (1) current-on-
+  disk (three files, corrected names) and (2) planned-future
+  (`004_upsert_indexes.sql`, `005_lobby_columns.sql`) marked as
+  "to be added by separate WP before ship." The checklist's §B.2
+  then becomes "verify the current three migrations execute; the
+  checklist MUST be re-verified after any planned-future
+  migration lands." Preserves the design intent.
+- **(c) Git archaeology on `data/migrations/`.** Check
+  `git log --all --follow data/migrations/` to see whether any of
+  the WP-042 locked names ever existed and were subsequently
+  renamed. If `git log` shows a `002_seed_base_set.sql` that was
+  renamed to `002_seed_rules.sql` (for example), update WP-042 to
+  match current reality AND note the rename in the amendment's
+  rationale. Similar for 004 / 005 — if a commit added them and
+  a later commit deleted them, the amendment should explain why.
+  This is a more thorough version of (a) — same outcome, better
+  audit trail.
+- **(d) Revert repo to match WP-042.** Rejected. WP-042 is a
+  documentation-only packet; rewriting shipped migration SQL to
+  match a paper specification inverts the normal direction of
+  cause and effect. Reality wins over specification when the
+  specification was drafted against a snapshot that no longer
+  holds.
+
+**Default recommendation:** run (c) first (git archaeology) to
+understand the divergence history, then land an amendment per
+option (a) or (b) depending on what archaeology surfaces. If 004
+and 005 were never drafted as real SQL, option (a) ships
+immediately. If they were planned-but-never-landed, option (b)
+preserves the intent.
+
+**Lookup table counts are a separate question.** WP-042 §Locked
+Values also locks row counts (`legendary.sets` = 40,
+`legendary.card_types` = 37, `legendary.teams` = 25,
+`legendary.hero_classes` = 5, `legendary.icons` = 7,
+`legendary.rarities` = 3). These are database contents, not files;
+verification requires a live PostgreSQL connection with the
+migrations run. The WP-042 executor should confirm these counts
+against a seeded test database before trusting the locked values
+— they may have drifted for the same reason the migration
+filenames did. If drift is confirmed, fold into the PS-5
+resolution amendment.
+
 ### RS-1 — Render.com coverage
 
 WP-042's Session Context claims it covers "three infrastructure
@@ -644,9 +801,23 @@ The WP-042 executor's first action is to run pre-flight against
 the WP body + EC + this bridge file, resolving PS-1 (`docs/ops/`
 vs `docs/ai/deployment/` placement) + PS-2 (`RELEASE_CHECKLIST.md`
 cross-reference scope) + PS-3 (new-directory D-entry — likely no)
-+ RS-1 (Render.com coverage) + RS-2 (test-count lock) + RS-3
-(environment-variable documentation discipline) before generating
-the session prompt.
++ **PS-4 (BLOCKING — `scripts/seed-from-r2.mjs` missing from repo)**
++ **PS-5 (BLOCKING — migration filenames diverge from WP-042 locked
+list; 004 and 005 don't exist on disk)** + RS-1 (Render.com
+coverage) + RS-2 (test-count lock) + RS-3 (environment-variable
+documentation discipline) before generating the session prompt.
+
+**PS-4 and PS-5 are BLOCKING prerequisites.** They were surfaced
+by precondition verification immediately after WP-035 close
+(2026-04-19); they are not speculative. Either the WP-042 body is
+correct and the repo is behind, or the repo is ahead and the WP-042
+body is stale. Resolution options are enumerated above; the
+pre-flight session must pick one per blocker and land a pre-flight
+SPEC amendment commit before the EC-042 execution session opens.
+
+Do NOT attempt to execute WP-042 against its current locked values
+— the locked migration filenames and the missing seed script would
+produce a WP whose own verification steps fail against the repo.
 
 At minimum three commits expected (matching the steady-state
 topology); if the pre-commit review surfaces a nit, expect a
