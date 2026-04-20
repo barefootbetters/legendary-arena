@@ -170,6 +170,42 @@ should NOT silently expand scope — the §Scope (Out) entry for
 lines 13-17 (five consecutive lines) from `.env.example` in the same
 commit that trims or deletes `upload-r2.ts`.
 
+### 2.7 "How to Standardize Images" README section — PS-2 amendment (2026-04-20)
+
+During the execution session's pre-flight re-read of README.md, a
+sixth stale region was discovered that the PS-1 amendment had missed:
+the "How to Standardize Images" section (README.md lines 69-82, with
+the leading blank on line 68 and trailing `---` separator on line 83).
+
+The section documents the now-deleted `standardize-images.ts` script
+(§C) and references both:
+- `pnpm standardize-img` — the package.json script entry deleted in §D
+- `dist/image-manifest.json` — a precomputed registry JSON artifact
+  produced only by the deleted script
+
+**Impact:** With only the PS-1 five-region scope applied, the WP-081
+Acceptance Criterion "`README.md` does not mention any precomputed
+registry JSON artifact other than `dist/registry-health.json`" would
+fail on `dist/image-manifest.json` (line 81), and README.md would
+still instruct readers to run the no-longer-defined
+`pnpm standardize-img` command. PS-1's grep audited only
+`cards\.json` occurrences, so the PS-1 resolution did not cover this
+region.
+
+**Resolution:** WP-081 §F extended to six anchor regions (F.1–F.6).
+F.6 removes the entire "How to Standardize Images" section — header,
+body, and trailing separator. No replacement prose. EC-081 §Locked
+Values "README.md regions edited" and §Files to Produce updated to
+match. Session invocation §Goal and §Files Expected to Change
+updated to match. WP-081 §Acceptance Criteria extended with three
+new grep-testable items (no `scripts/standardize-images.ts` string,
+no `dist/image-manifest.json` string, no `## How to Standardize
+Images` heading, no `standardize-img` string).
+
+**Disposition:** Amendment committed as a SPEC commit before the
+EC-081 execution commit. Same precedent as PS-1. After the SPEC
+amendment, PS-2 is closed and execution proceeds.
+
 ---
 
 ## 3. Open Questions for Pre-Flight to Close

@@ -6,7 +6,7 @@
 **Pre-flight (+ 01.7 Copilot Check):** [docs/ai/invocations/preflight-wp081-registry-build-pipeline-cleanup.md](preflight-wp081-registry-build-pipeline-cleanup.md) — READY TO EXECUTE (PS-1 resolved in pre-flight; 01.7 verdict CONFIRM with 29/30 PASS and one RISK on #12 resolved scope-neutrally in the copilot-check SPEC bundle).
 **Commit prefix:** `EC-081:` on every code- or doc-changing commit in the WP-081 allowlist; `SPEC:` on governance-only commits outside the allowlist (STATUS.md / WORK_INDEX.md / EC_INDEX.md close). `WP-081:` is **forbidden** (commit-msg hook rejects per P6-36).
 **WP Class:** Documentation + Hygiene (subtractive — no new code, no new tests, no new dependencies, no version bump). Closest to Contract-Only in the 01.4 taxonomy.
-**Primary layer:** Registry / Build Tooling — deletes three broken operator scripts; trims `packages/registry/package.json`; deletes one step from `.github/workflows/ci.yml`; rewrites five stale regions of `README.md`.
+**Primary layer:** Registry / Build Tooling — deletes three broken operator scripts; trims `packages/registry/package.json`; deletes one step from `.github/workflows/ci.yml`; rewrites five stale regions of `README.md` plus deletes the "How to Standardize Images" section (six anchor regions total after PS-2 pre-execution resolution).
 
 ---
 
@@ -88,7 +88,7 @@ After this session, Legendary Arena's registry build pipeline is tsc-only and CI
 1. The three broken scripts are **deleted**: `packages/registry/scripts/normalize-cards.ts`, `build-dist.mjs`, `standardize-images.ts`.
 2. `packages/registry/package.json` `scripts.build` is exactly `"tsc -p tsconfig.build.json"`. The `normalize` and `standardize-img` script entries are gone. `test`, `validate`, `upload`, `prepublishOnly` are unchanged.
 3. `.github/workflows/ci.yml` job `build` no longer contains the "Normalize cards" step (the redundant `pnpm registry:validate` invocation with the misleading `# also writes cards.json + index.json` comment). The `validate`, `build-viewer`, `upload-r2`, `publish-npm` jobs are textually unchanged.
-4. `README.md` has five anchor regions rewritten per WP-081 §Scope (In) §F.1 through §F.5. After the edits, `README.md` does not mention any precomputed registry JSON artifact other than `dist/registry-health.json`.
+4. `README.md` has six anchor regions rewritten per WP-081 §Scope (In) §F.1 through §F.6 (extended from five per PS-2 pre-execution resolution, 2026-04-20 — see session-context §2.7). After the edits, `README.md` does not mention any precomputed registry JSON artifact other than `dist/registry-health.json`.
 5. `pnpm --filter @legendary-arena/registry build` exits 0 on a clean `dist/` (verified after `rm -rf packages/registry/dist` first).
 6. `pnpm -r build` exits 0.
 7. `pnpm test` exits 0 with **engine 436 / 109 / 0 fail** and **repo-wide 536 / 0 fail** — both **UNCHANGED** from baseline.
@@ -120,7 +120,7 @@ No other file under `packages/registry/scripts/` is deleted. `validate.ts` and `
 
 - `packages/registry/package.json` — `scripts.build` trimmed to `"tsc -p tsconfig.build.json"`; `scripts.normalize` and `scripts.standardize-img` removed. No other key touched.
 - `.github/workflows/ci.yml` — "Normalize cards" step deleted from the `build` job. No other job, step, trigger, artifact name, or env passthrough changed.
-- `README.md` — five anchor regions edited per WP-081 §Scope (In) §F.1 through §F.5. Use the anchor strings, not the line numbers, to locate each block.
+- `README.md` — six anchor regions edited per WP-081 §Scope (In) §F.1 through §F.6. Use the anchor strings, not the line numbers, to locate each block.
 
 ### Governance files to touch (during the Commit A and Commit B edits)
 
@@ -172,7 +172,7 @@ All items from WP-081 §Non-Negotiable Constraints apply. Non-exhaustive highlig
 3. `packages/registry/scripts/standardize-images.ts` — **deleted**
 4. `packages/registry/package.json` — **modified** (scripts.build / scripts.normalize / scripts.standardize-img only)
 5. `.github/workflows/ci.yml` — **modified** (delete "Normalize cards" step in `build` job only)
-6. `README.md` — **modified** (five anchor regions per §F.1–§F.5)
+6. `README.md` — **modified** (six anchor regions per §F.1–§F.6)
 7. `docs/ai/DECISIONS.md` — **modified** (add D-8101 and D-8102 entries)
 8. `docs/ai/DECISIONS_INDEX.md` — **modified** (if convention requires; add D-8101 / D-8102 index rows)
 9. `docs/ai/post-mortems/01.6-WP-081-*.md` — **optional, new** if the executor chooses to author a post-mortem (not required for doc-only / subtractive WPs).

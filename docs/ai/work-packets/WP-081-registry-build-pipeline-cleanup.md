@@ -195,13 +195,15 @@ Before writing a single line:
     `scripts.standardize-img`
   - `.github/workflows/ci.yml` — job `build` step "Normalize cards" +
     misleading comment
-  - `README.md` — five anchor regions (extended per PS-1 pre-flight
-    resolution, 2026-04-20):
+  - `README.md` — six anchor regions (extended per PS-1 pre-flight
+    resolution and PS-2 pre-execution resolution, both 2026-04-20):
     1. Pipeline diagram near the top of the file (currently lines 62-64)
     2. Registry Config section — viewer-fetch sentence (currently line 111)
     3. How to Upload to R2 section — "Uploads:" listing (currently line 132)
     4. Acceptance Checklist items (currently lines 204-205)
     5. Definition of Done Checklist — viewer-loads item (currently line 207)
+    6. "How to Standardize Images" section (currently lines 68-83 inclusive —
+       section header, body, and trailing separator)
 
 - **`package.json` `scripts.build` after this packet:**
   `"build": "tsc -p tsconfig.build.json"`
@@ -298,10 +300,11 @@ unchanged.
 
 ### F) Modify `README.md`
 
-Five anchor regions are edited. Use the anchor strings shown below
-to locate each block; line numbers are provided as a hint, not a
-lock. After all edits, `README.md` contains no occurrence of any
-precomputed registry JSON artifact other than
+Six anchor regions are edited (extended from five per PS-2 pre-execution
+resolution, 2026-04-20 — see session-context §2.7). Use the anchor
+strings shown below to locate each block; line numbers are provided as
+a hint, not a lock. After all edits, `README.md` contains no occurrence
+of any precomputed registry JSON artifact other than
 `dist/registry-health.json`.
 
 **F.1 — Pipeline diagram near the top of the file (currently lines 62-64).**
@@ -354,6 +357,24 @@ base URL`. Remove this line entirely. The viewer does not load
 viewer rendering, search/filters, and `pnpm viewer:build` stay
 unchanged.
 
+**F.6 — "How to Standardize Images" section (currently lines 69-82, with
+the adjacent blank line on line 68 and trailing `---` separator on line
+83).** Anchor: `## How to Standardize Images` (section heading). Remove
+the entire section — the blank line preceding the heading, the heading
+itself, its numbered instructions, the fenced bash block, the summary
+sentence ending `writes `dist/image-manifest.json`.`, and the trailing
+horizontal-rule separator — so that the `---` separator currently on
+line 67 is immediately followed by the `## How to Build the Viewer`
+heading's leading blank line. No replacement prose. The section
+documents the now-deleted `standardize-images.ts` script (§C) and
+references both `pnpm standardize-img` (removed from `package.json`
+in §D) and `dist/image-manifest.json` (a precomputed registry JSON
+artifact that would otherwise violate the post-WP-081 negative-guarantee
+Acceptance Criterion). Flagged by PS-2 pre-execution review
+(2026-04-20). Scope extension is surgical and mechanical — no new
+contracts, no new behavior, only broader coverage of already-in-scope
+README hygiene.
+
 ---
 
 ## Scope (Out)
@@ -404,14 +425,15 @@ unchanged.
   `scripts.standardize-img` removed
 - `.github/workflows/ci.yml` — **modified** — "Normalize cards" step
   removed from job 2 (`build`)
-- `README.md` — **modified** — five anchor regions per §F: pipeline
+- `README.md` — **modified** — six anchor regions per §F: pipeline
   diagram (currently lines 62-64), Registry Config viewer-fetch
   sentence (currently line 111), How to Upload to R2 listing
   (currently line 132), Acceptance Checklist items (currently lines
   204-205), Definition of Done Checklist viewer-loads item (currently
-  line 207). Scope extended per PS-1 pre-flight resolution
-  (2026-04-20) so the post-review negative-guarantee AC is
-  satisfiable
+  line 207), and "How to Standardize Images" section (currently
+  lines 68-83). Scope extended per PS-1 pre-flight resolution and
+  PS-2 pre-execution resolution (both 2026-04-20) so the
+  post-review negative-guarantee AC is satisfiable
 
 No other file may be modified. `pnpm-lock.yaml` unchanged.
 
@@ -479,10 +501,18 @@ All items must be binary pass/fail. No partial credit.
       `scripts/normalize-cards.ts`
 - [ ] `README.md` contains no occurrence of the string
       `scripts/build-dist.mjs`
+- [ ] `README.md` contains no occurrence of the string
+      `scripts/standardize-images.ts`
 - [ ] `README.md` contains no occurrence of the string `dist/cards.json`
 - [ ] `README.md` contains no occurrence of the string `dist/index.json`
 - [ ] `README.md` contains no occurrence of the string
       `dist/keywords.json`
+- [ ] `README.md` contains no occurrence of the string
+      `dist/image-manifest.json`
+- [ ] `README.md` contains no `## How to Standardize Images` section
+      heading (post-F.6 the section is removed in full)
+- [ ] `README.md` contains no occurrence of the string `standardize-img`
+      (including any `pnpm standardize-img` invocation)
 - [ ] `README.md` does not mention any precomputed registry JSON
       artifact other than `dist/registry-health.json` (negative
       guarantee — prevents replacement prose from reintroducing legacy
