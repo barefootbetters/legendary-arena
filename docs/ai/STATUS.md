@@ -7,6 +7,80 @@
 
 ## Current State
 
+### WP-081 / EC-081 Executed — Registry Build Pipeline Cleanup (2026-04-20, EC-081)
+
+WP-081 executed across two governance amendments (PS-2 + PS-3) and one
+execution commit: **Registry build is tsc-only; no normalize/dist
+pipeline remains.** `pnpm --filter @legendary-arena/registry build`
+exits 0 for the first time since WP-003 landed. The three broken
+operator scripts under `packages/registry/scripts/` are deleted; their
+references in `package.json`, `.github/workflows/ci.yml`, `README.md`,
+and `docs/03-DATA-PIPELINE.md` are removed. CI job `build` no longer
+runs the redundant `pnpm registry:validate` step (formerly named
+"Normalize cards" with a misleading `# also writes cards.json +
+index.json` comment).
+
+Commit topology (three commits on `wp-081-registry-build-pipeline-cleanup`):
+
+- `9fae043` — SPEC: PS-2 amendment (add README §F.6 anchor for the
+  "How to Standardize Images" section — closes the negative-guarantee
+  AC gap that PS-1 missed).
+- `aab002f` — SPEC: PS-3 amendment (add §G anchor deleting the
+  "Legacy Scripts (Retained for Reference)" subsection in
+  `docs/03-DATA-PIPELINE.md` — closes the session-invocation Step 5
+  grep expectation gap; also amends Step 6 to acknowledge the two
+  known OOS matches in `.env.example:15` and `upload-r2.ts:5,~125`).
+- `ea5cfdd` — EC-081 execution: three script deletions + four file
+  modifications (package.json / ci.yml / docs/03-DATA-PIPELINE.md /
+  README.md) + D-8101 + D-8102 in DECISIONS.md + DECISIONS_INDEX.md
+  rows. Zero engine changes, zero new code, zero new tests, zero
+  dependencies, zero `packages/registry/src/**` diff, zero
+  `pnpm-lock.yaml` diff, zero `version` bump.
+
+Decisions registered:
+
+- **D-8101** — Dead build pipeline (`normalize-cards.ts` →
+  `build-dist.mjs` → `standardize-images.ts`) deleted rather than
+  rewritten because no monorepo consumer reads any of the five JSON
+  artifacts it produced (`dist/cards.json`, `dist/index.json`,
+  `dist/sets.json`, `dist/keywords.json`, `dist/registry-info.json`)
+  or the orphaned `dist/image-manifest.json` from
+  `standardize-images.ts`. Runtime path is `metadata/sets.json` +
+  `metadata/{abbr}.json` fetched directly from R2 by
+  `httpRegistry.ts` / `localRegistry.ts`. No precomputed flat
+  artifact on the critical path; rewriting would add maintenance
+  surface without runtime benefit.
+- **D-8102** — `registry:validate` is the single CI step that
+  exercises the registry data shape. The redundant second invocation
+  in job `build` (under step `"Normalize cards"`) is removed. Build
+  and validate responsibilities remain separate, not merged.
+
+Test baseline UNCHANGED (subtractive guarantee preserved):
+
+- registry: **13 / 13 / 0 fail**
+- vue-sfc-loader: **11 / 11 / 0 fail**
+- game-engine: **436 / 436 / 0 fail**, **109 suites**
+- replay-producer: **4 / 4 / 0 fail**
+- server: **6 / 6 / 0 fail**
+- arena-client: **66 / 66 / 0 fail**
+- **Repo-wide: 536 / 0 fail**
+
+Known follow-up (OOS per WP-081 §Scope (Out); targeted by a separate
+operator-tooling cleanup WP):
+
+- `packages/registry/.env.example` lines 13-17 (`INPUT_DIR`,
+  `OUTPUT_FILE`, `INPUT_IMG_DIR`, `OUTPUT_IMG_DIR` + header comment)
+  orphaned after the three deletions — no remaining consumer.
+- `packages/registry/scripts/upload-r2.ts` docstring (line 5) and
+  closing `console.log` (line ~125) still reference
+  `dist/registry-info.json` / `dist/cards.json` — misleading after
+  the pipeline deletion, but harmless at upload runtime.
+
+Next: follow-up operator-tooling cleanup WP addresses the two OOS
+items above together in a single subtractive pass.
+
+---
+
 ### WP-056 / EC-056 Executed — Pre-Planning State Model & Lifecycle (Read-Only Core) (2026-04-20, EC-056)
 
 WP-056 executed at commit `eade2d0`: Legendary Arena now has a

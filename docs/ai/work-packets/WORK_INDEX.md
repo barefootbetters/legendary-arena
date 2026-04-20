@@ -1093,7 +1093,7 @@ These packets make the game safe to ship.
   names). WP-062 pre-flight blocker #4 (base.css allowlist) is
   independent.
 
-- [ ] WP-081 — Registry Build Pipeline Cleanup (Draft — Not yet reviewed)
+- [x] WP-081 — Registry Build Pipeline Cleanup (Done, 2026-04-20, commit `ea5cfdd`; PS-2 amendment `9fae043`, PS-3 amendment `aab002f`)
   Dependencies: WP-003 (current `SetDataSchema` + `FlatCard` shape is
   load-bearing; pre-WP-003 symbols `CardSchema` / `CardIDSchema` /
   `CANONICAL_ID_REGEX` / `CardTypeSchema` are gone)
