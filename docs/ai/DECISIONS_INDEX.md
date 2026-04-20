@@ -513,6 +513,14 @@ For full rationale, see `DECISIONS.md`.
 
 ---
 
+## Versioning & Save Migration Strategy (WP-034)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-3401 | `packages/game-engine/src/versioning/` classified as engine code category; `new Date().toISOString()` exception documented for `versioning.stamp.ts` `savedAt` metadata only | WP-034 |
+
+---
+
 ## Production Hardening & Invariants (WP-031)
 
 | Decision ID | Summary | Introduced In |

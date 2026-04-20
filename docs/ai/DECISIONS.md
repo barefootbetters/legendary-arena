@@ -5204,6 +5204,121 @@ inherit this clamp-not-wrap rule.
 
 ---
 
+### D-3401 — `packages/game-engine/src/versioning/` Classified as Engine Code Category
+
+**Decision:** The new `packages/game-engine/src/versioning/` subdirectory
+(introduced by WP-034 / EC-034) is classified as the **`engine`** code
+category per `docs/ai/REFERENCE/02-CODE-CATEGORIES.md`. All files in
+the subdirectory inherit the engine-category invariants:
+
+- No `boardgame.io` import at runtime.
+- No `@legendary-arena/registry` import at runtime.
+- No `apps/server/` import at runtime.
+- No `Math.random()`, `performance.now()`, or `Date.now()`. (One
+  documented exception: `versioning.stamp.ts` calls
+  `new Date().toISOString()` for `savedAt` metadata — this is a
+  load-boundary call, structurally distinct from the gameplay-affecting
+  `Date.now()` rule, and is the only place in the subdirectory that
+  reads the wall clock. Documented with a `// why:` comment in the
+  file and re-stated in the WP-034 session prompt §Locked Values.)
+- No I/O (filesystem, network, environment access).
+- No `.reduce()` with branching logic.
+- No `require()` — ESM only.
+- `.test.ts` extension on test files.
+
+**Rationale:** Versioning logic is a pure engine concern: it operates
+on persisted artifact wrappers (`VersionedArtifact<T>`) before the
+engine reducer ever sees the payload, and it produces no side effects
+beyond returning typed structured results. It does not touch `G`, does
+not import the framework, does not query persistence storage (storage
+is the server/app layer's concern — see §Layer Boundary). The
+classification mirrors six prior precedents that established the
+"new engine subdirectory needs a D-entry" pattern:
+
+- D-2706 — `src/replay/` (WP-027 replay harness)
+- D-2801 — `src/ui/` (WP-028 UIState contract)
+- D-3001 — `src/campaign/` (WP-030 campaign framework)
+- D-3101 — `src/invariants/` (WP-031 production invariants)
+- D-3201 — `src/network/` (WP-032 network sync)
+- D-3301 — `src/content/` (WP-033 content authoring toolkit)
+
+D-3401 is the seventh instance of the same pattern; the precedent is
+fully steady-state. Pre-flight P6-25 (WP-033) explicitly anticipated
+this entry as the next instance.
+
+**Sub-rule embedded in this decision (do not split into D-3402):**
+the `new Date().toISOString()` exception in `versioning.stamp.ts` is
+strictly limited to the `savedAt` metadata field. Any other call to
+`new Date()` or `Date.now()` in `src/versioning/` is a violation of
+the engine-category invariants. The exception applies because:
+
+1. Save-time stamping is at the persistence boundary, not in
+   gameplay code paths.
+2. The `savedAt` field is metadata about when an artifact was
+   serialized, not gameplay state — it does not affect determinism
+   of any in-game decision.
+3. Load-time validation (`checkCompatibility`, `migrateArtifact`)
+   reads the `savedAt` field as a string only — it never invokes
+   `new Date()` or any clock function.
+4. The forbidden-call grep gate in Verification Step 3 of the WP-034
+   session prompt uses pattern `Math\.random|performance\.now|Date\.now`
+   — `new Date().toISOString()` is structurally distinct and does not
+   match.
+
+**Implications for future engine WPs:**
+
+- Any future versioning extension (additional axes, migration
+  functions, snapshot diff helpers) lives in `src/versioning/` under
+  the same D-3401 classification — no new D-entry needed.
+- Save/load adapters that bridge `VersionedArtifact<T>` to actual
+  storage backends (PostgreSQL rows, R2 objects, file artifacts)
+  do NOT live in `src/versioning/` — they belong in the server /
+  app layer per the Layer Boundary. The engine never imports those
+  adapters; they import the engine.
+- Future engine subdirectories continue to need D-entries (D-3501,
+  D-3601, …) per the established pattern. The pre-flight check for
+  this is now codified in P6-25 (01.4 Established Patterns).
+
+**Alternatives rejected:**
+
+- **No classification (skip the D-entry):** rejected. The pattern
+  has six prior precedents; skipping breaks the audit trail. A
+  future code-category boundary check would have no documented
+  authority for the subdirectory's invariants.
+- **Classify as `setup`:** rejected. `setup` is for code that runs
+  inside `Game.setup()` and produces `G.*` fields. Versioning runs
+  before `Game.setup()` (artifact validation gates load) and never
+  produces `G` fields.
+- **Classify as `infra`:** rejected. `infra` is for non-shipped
+  code (scripts, hooks, CI). Versioning ships to players as part
+  of the engine bundle.
+- **Allow `Date.now()` instead of `new Date().toISOString()`:**
+  rejected. `Date.now()` returns a numeric millisecond count that
+  would need separate ISO-string conversion for the `savedAt` field;
+  `new Date().toISOString()` is the single-step idiom that produces
+  the correct serialized form directly. Both call shapes are
+  semantically equivalent at the boundary but the latter avoids an
+  intermediate `number` representation.
+
+**Implementation locations:**
+
+- Pattern reference: `docs/ai/REFERENCE/02-CODE-CATEGORIES.md`
+  §`engine` directory list — `packages/game-engine/src/versioning/`
+  added alongside the six prior precedents.
+- Locked-value reference: `docs/ai/execution-checklists/EC-034-versioning.checklist.md`
+  + `docs/ai/invocations/session-wp034-versioning-save-migration.md`
+  §Locked Values + §Non-Negotiable Constraints.
+- Wall-clock exception documentation: `versioning.stamp.ts` `// why:`
+  comment on the `new Date().toISOString()` call, citing this D-entry
+  by number and quoting the sub-rule above.
+
+**Status:** Immutable
+**Raised:** WP-034 / EC-034 pre-flight, 2026-04-19
+**Resolved:** 2026-04-19 (pre-flight SPEC commit lands D-3401 +
+02-CODE-CATEGORIES.md update before EC-034 execution begins)
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
