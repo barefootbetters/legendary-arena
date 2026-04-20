@@ -521,6 +521,14 @@ For full rationale, see `DECISIONS.md`.
 
 ---
 
+## Release, Deployment & Ops Playbook (WP-035)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-3501 | `packages/game-engine/src/ops/` classified as engine code category (eighth engine-subdirectory precedent); ships pure type definitions only — no runtime `OpsCounters` instance anywhere in the engine (RS-1 option (a)); no wall-clock / RNG / I/O / `.reduce()` carve-outs | WP-035 |
+
+---
+
 ## Production Hardening & Invariants (WP-031)
 
 | Decision ID | Summary | Introduced In |

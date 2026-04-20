@@ -5319,6 +5319,130 @@ the engine-category invariants. The exception applies because:
 
 ---
 
+### D-3501 — `packages/game-engine/src/ops/` Classified as Engine Code Category
+
+**Decision:** The new `packages/game-engine/src/ops/` subdirectory
+(introduced by WP-035 / EC-035) is classified as the **`engine`** code
+category per `docs/ai/REFERENCE/02-CODE-CATEGORIES.md`. All files in
+the subdirectory inherit the engine-category invariants:
+
+- No `boardgame.io` import at runtime.
+- No `@legendary-arena/registry` import at runtime.
+- No `apps/server/` import at runtime.
+- No cross-subdirectory import from any other `packages/game-engine/src/*/`
+  subdirectory (ops is a leaf of the engine-export DAG — it depends on
+  nothing engine-internal).
+- No `Math.random()`, `performance.now()`, `Date.now()`, or `new Date()`.
+  **No sub-rule carve-outs** (unlike D-3401, which carved out
+  `new Date().toISOString()` for `savedAt` metadata in
+  `versioning.stamp.ts`). The ops subdirectory ships pure type
+  definitions only — no load-boundary wall-clock need exists.
+- No I/O (filesystem, network, environment access).
+- No `.reduce()` with branching logic.
+- No `require()` — ESM only.
+- `.test.ts` extension on test files (none expected at MVP — WP-035
+  ships zero new tests per the RS-2 lock).
+
+**Rationale:** Operational counter types and environment / severity
+literal unions are pure engine-layer metadata contracts. They describe
+the shape of observability data that downstream tooling (server layer,
+future ops dashboard, future WP-042 deployment procedures) will
+construct, increment, and persist — but the engine itself never reads
+or writes a counter instance at runtime (the RS-1 option-(a) lock in
+the WP-035 session prompt). The types live in the engine package
+because they form part of the engine's public API surface consumed by
+the server layer; they do not live in `apps/server/` because the
+server layer is wiring-only and does not own contract definitions.
+
+The classification mirrors seven prior precedents that established the
+"new engine subdirectory needs a D-entry" pattern:
+
+- D-2706 — `src/replay/` (WP-027 replay harness)
+- D-2801 — `src/ui/` (WP-028 UIState contract)
+- D-3001 — `src/campaign/` (WP-030 campaign framework)
+- D-3101 — `src/invariants/` (WP-031 production invariants)
+- D-3201 — `src/network/` (WP-032 network sync)
+- D-3301 — `src/content/` (WP-033 content authoring toolkit)
+- D-3401 — `src/versioning/` (WP-034 versioning & save migration)
+
+D-3501 is the eighth instance of the same pattern; the precedent is
+fully steady-state. Pre-flight P6-25 (WP-033) anticipates each new
+engine subdirectory as its own D-entry.
+
+**Sub-rule embedded in this decision:** WP-035 ships no runtime
+`OpsCounters` instance anywhere in the engine. `ops.types.ts` exports
+types only — no constants, no functions, no module-level state. Any
+future need for an engine-side counter instance (module-level
+singleton, field on `G`, or side-effect surface) is out of scope for
+D-3501 and requires a separate D-entry. This preserves the
+"engine does not auto-heal — monitoring is passive" invariant stated
+in WP-035 §Non-Negotiable.
+
+**Implications for future engine WPs:**
+
+- Any future ops-metadata type (additional counter fields, new
+  deployment environments, new severity levels, or new observability
+  surfaces) lives in `src/ops/` under the same D-3501 classification —
+  no new D-entry needed, but a coordinated update to the three
+  `docs/ops/*.md` files is required alongside any shape change.
+- Server-layer code that constructs and increments `OpsCounters`
+  instances lives in `apps/server/` (wiring) or a future ops tooling
+  package, never in `src/ops/`. `src/ops/` is the contract; the
+  construction and mutation sites are elsewhere.
+- A future P4 severity level or a fifth deployment environment is a
+  governance change (new D-entry + coordinated doc update), not a
+  silent code extension. The two closed literal unions
+  (`DeploymentEnvironment`, `IncidentSeverity`) are intentionally
+  small and locked at MVP.
+- Future engine subdirectories continue to need D-entries (D-3601,
+  D-3701, …) per the established pattern.
+
+**Alternatives rejected:**
+
+- **No classification (skip the D-entry):** rejected. Eight prior
+  precedents (through D-3401); skipping breaks the audit trail.
+- **Classify as `infra`:** rejected. `infra` is for non-shipped code
+  (scripts, hooks, CI). Ops types ship to players as part of the
+  engine bundle (consumed by the server layer at runtime; exported on
+  the public API surface via `packages/game-engine/src/index.ts`).
+- **Place ops types under `apps/server/`:** rejected. The server layer
+  is wiring-only per §Layer Boundary — it consumes engine contracts,
+  it does not own them. Moving ops types to the server would couple
+  the contract surface to a specific deployment target and block
+  reuse by future tooling (CLI producers, replay inspectors, ops
+  dashboards).
+- **Allow a module-level `currentOpsCounters` singleton in
+  `ops.types.ts`:** rejected. A mutable module-level instance in the
+  engine bundle would violate the "engine does not auto-heal"
+  invariant, risk accidental inclusion in `G` via closure capture, and
+  break JSON-roundtrip assertions for any future state snapshot that
+  enumerates engine exports. Pure-type classification keeps the
+  boundary clean (RS-1 option-(a) in the WP-035 session prompt).
+- **Classify as `setup`:** rejected. `setup` is for code that runs
+  inside `Game.setup()` and produces `G.*` fields. Ops types never
+  participate in `Game.setup()` and never produce `G` fields.
+
+**Implementation locations:**
+
+- Pattern reference: `docs/ai/REFERENCE/02-CODE-CATEGORIES.md`
+  §`engine` directory list — `packages/game-engine/src/ops/` added
+  alongside the seven prior precedents.
+- Locked-value reference:
+  `docs/ai/execution-checklists/EC-035-release-ops.checklist.md`
+  + `docs/ai/invocations/session-wp035-release-deployment-ops-playbook.md`
+  §Locked Values + §Non-Negotiable Constraints.
+- Runtime-ownership lock (RS-1 option (a)): WP-035 session prompt
+  §Locked Values "Runtime ownership" subsection — `ops.types.ts`
+  ships no runtime value.
+
+**Status:** Immutable
+**Raised:** WP-035 / EC-035 pre-flight, 2026-04-19
+**Resolved:** 2026-04-19 (pre-flight SPEC commit lands D-3501 +
+02-CODE-CATEGORIES.md update + WP-035 session prompt before EC-035
+execution begins)
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
