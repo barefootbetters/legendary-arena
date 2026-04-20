@@ -7,6 +7,108 @@
 
 ## Current State
 
+### WP-034 / EC-034 Executed — Versioning & Save Migration Strategy (2026-04-19, EC-034)
+
+WP-034 executed at commit `5139817`: added the first persistence-
+versioning surface for the engine. Five new files under
+`packages/game-engine/src/versioning/` (D-3401 engine code category,
+classified in the SPEC pre-flight commit `c587f74`) plus additive
+re-exports in `types.ts` and `index.ts`.
+
+Surfaces produced:
+
+- `VersionedArtifact<T>` — generic wrapper embedding three independent
+  version axes (`EngineVersion` semver, `DataVersion` integer,
+  `ContentVersion` integer optional) plus an ISO 8601 `savedAt`
+  stamp. JSON-serializable per D-1232. Three axes evolve on
+  independent cadences per D-0801.
+- `checkCompatibility(artifactVersion, currentVersion)` — pure
+  decision function returning structured `CompatibilityResult`
+  (`'compatible' | 'migratable' | 'incompatible'` + locked
+  full-sentence message + optional migrations array). Never throws
+  — D-1234 vs D-0802 reconciliation: D-0802 wins at the load
+  boundary.
+- `migrateArtifact<T>(artifact, targetVersion)` — forward-only
+  migration dispatcher. MAY throw (load-boundary exception per
+  D-0802 fail-loud, identical rationale to `Game.setup()`'s
+  throw). Three locked throw templates: no migration path;
+  downgrade refusal; no-op same-version (returns spread-copied
+  wrapper without throwing). Returns a NEW `VersionedArtifact<T>`
+  with spread-copied wrapper fields per D-2802 aliasing
+  prevention.
+- `stampArtifact<T>(payload, contentVersion?)` — save-time embed
+  function. Wraps payload with current engine + data versions,
+  optional content version, and a fresh ISO 8601 timestamp from
+  the `Date` constructor. The single permitted wall-clock read in
+  the versioning subtree, documented as the D-3401 sub-rule
+  exception (load-boundary metadata, structurally distinct from
+  gameplay clock reads).
+- `migrationRegistry` — `Object.freeze({})` at MVP. Long-lived
+  seam keyed by `"<a.b.c>-><a.b.c>"` strings; future format
+  changes append entries here.
+
+Test counts: engine **436 / 109 / 0 fail** (was 427 / 108; +9
+across one new `describe('versioning (WP-034)')` block per
+P6-19 / P6-25 suite-count discipline). `pnpm -r test` **526
+passing / 0 fail** (was 517; +9 total). Other package counts
+unchanged.
+
+Verification (10 of 10 pass): build / typecheck / test exit 0; no
+game framework / registry / server import in the new subtree
+(Grep returned no matches after the P6-43 paraphrase pass — six
+initial JSDoc-vs-grep collisions caught at the first verification
+gate run and fixed before re-test); no non-engine RNG / wall-clock
+helper / high-resolution timing reads (Grep clean — `new Date()`
+constructor in `stampArtifact` is structurally distinct from the
+forbidden static helper); no `.reduce()` in versioning subtree;
+no I/O / `require()`; `pnpm-lock.yaml` absent from diff (P6-44
+pass); `packages/game-engine/src/scoring/`, `replay/`,
+`campaign/`, `persistence/`, `content/`, `network/`, `invariants/`,
+`ui/`, `setup/`, `moves/`, `game.ts` all untouched; both retained
+stashes intact.
+
+D-3401 already landed in the SPEC pre-flight commit `c587f74`
+(directory classification + `02-CODE-CATEGORIES.md` update),
+following the pre-flight P6-25 pattern. No new D-entry surfaced
+during execution.
+
+01.6 post-mortem MANDATORY (P6-35 — two triggering criteria fired:
+new long-lived abstraction `VersionedArtifact<T>` + new code-
+category directory D-3401) delivered in-session at
+`docs/ai/post-mortems/01.6-WP-034-versioning-save-migration-strategy.md`;
+verdict **WP COMPLETE**. Zero in-allowlist refinements applied
+during post-mortem (all P6-43 paraphrase fixes happened during
+execution before verification gates were re-run).
+
+**Meta-finding:** P6-43 (the JSDoc + grep collision precedent
+authored from WP-064 execution and committed at `0c741c6`) caught
+this WP at the very first verification gate run. Six initial
+matches across three files; all fixed via paraphrase form. First
+empirical demonstration that the precedent log is load-bearing
+across sessions — a lesson written at session N+0 prevented a
+regression at session N+1.
+
+**Unblocks future persistence adapters** (server-layer save/load
+of replays, campaign state, match snapshots, content definitions).
+Each adapter inherits the `VersionedArtifact<T>` wrapper and the
+`checkCompatibility` / `migrateArtifact` / `stampArtifact` API.
+The migration registry is the long-lived seam — future format
+changes append entries.
+
+Three WP-034 commits on this branch:
+
+- `c587f74` SPEC — pre-flight bundle (D-3401 + 02-CODE-CATEGORIES.md
+  update + session prompt)
+- `5139817` EC-034 — code + 01.6 post-mortem (5 new versioning
+  files + 2 modified re-exports + 1 post-mortem)
+- `<this commit>` SPEC — governance close (STATUS.md,
+  WORK_INDEX.md, EC_INDEX.md)
+
+Pre-commit review handoff: per P6-35, runs in a separate gatekeeper
+session.
+
+---
+
 ### WP-064 / EC-074 Executed — Game Log & Replay Inspector (2026-04-19, EC-074)
 
 WP-064 executed at commit `76beddc`: added the first client-side

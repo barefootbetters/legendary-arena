@@ -703,15 +703,48 @@ These packets make the game safe to ship.
   D-0601, D-0602; was truncated at 78 lines — normalized to full
   PACKET-TEMPLATE
 
-- [ ] WP-034 — Versioning & Save Migration Strategy ✅ Reviewed
+- [x] WP-034 — Versioning & Save Migration Strategy ✅ Reviewed (2026-04-19 pre-flight READY TO EXECUTE; SPEC pre-flight commit `c587f74` landed D-3401 + 02-CODE-CATEGORIES.md update + session prompt before execution) — Completed 2026-04-19 at commit `5139817` under EC-034 (see [session-wp034-versioning-save-migration.md](../invocations/session-wp034-versioning-save-migration.md))
   Dependencies: WP-033
+  Execution Checklist: `docs/ai/execution-checklists/EC-034-versioning.checklist.md` (Done)
   Notes: Three independent version axes: `EngineVersion` (semver),
   `DataVersion` (integer), `ContentVersion` (integer); `VersionedArtifact<T>`
   embeds all stamps at save time; `checkCompatibility` returns structured
-  result (compatible/migratable/incompatible); migrations forward-only, pure,
-  deterministic; incompatible + unmigratable = fail loud (D-0802); engine
-  never guesses old data meaning; implements D-0003, D-0801, D-0802; was
-  truncated at 72 lines — normalized to full PACKET-TEMPLATE
+  result (compatible/migratable/incompatible) with five locked
+  full-sentence message templates; migrations forward-only, pure,
+  deterministic; incompatible + unmigratable = fail loud (D-0802 wins
+  over D-1234 at the load boundary); engine never guesses old data
+  meaning. Five new files under `packages/game-engine/src/versioning/`
+  (D-3401 engine code category, seventh instance of the established
+  pattern after replay/ui/campaign/invariants/network/content);
+  additive re-exports in `types.ts` and `index.ts` only — no
+  `LegendaryGameState` shape change, no other engine subdirectory
+  touched. `migrateArtifact` MAY throw — load-boundary exception
+  identical to `Game.setup()`'s throw rationale per D-0802
+  fail-loud. `stampArtifact` is the single permitted wall-clock
+  read in the versioning subtree (`new Date().toISOString()` for
+  `savedAt` metadata, structurally distinct from the forbidden
+  `Date.now` static helper per D-3401 sub-rule). MVP migration
+  registry is `Object.freeze({})` — long-lived seam for future
+  format changes. Engine tests 427 → 436 (+9 in one
+  `describe('versioning (WP-034)')` block per P6-19 / P6-25);
+  repo-wide tests 517 → 526. `pnpm-lock.yaml` absent (no new
+  dep). Engine, registry, vue-sfc-loader, server, replay-producer,
+  registry-viewer, arena-client all untouched. 01.5 NOT INVOKED.
+  01.6 post-mortem MANDATORY (new long-lived abstraction
+  `VersionedArtifact<T>` + new code-category directory D-3401) —
+  delivered in-session at
+  `docs/ai/post-mortems/01.6-WP-034-versioning-save-migration-strategy.md`;
+  verdict WP COMPLETE. Zero in-allowlist refinements applied during
+  post-mortem. Meta-finding: P6-43 (JSDoc + grep collision precedent
+  authored from WP-064 execution and committed at `0c741c6`) caught
+  six initial JSDoc-vs-grep collisions at the first verification
+  gate run; all fixed via paraphrase form before re-test. First
+  empirical demonstration that the precedent log is load-bearing
+  across sessions. Three commits on this branch: `c587f74` SPEC
+  (pre-flight), `5139817` EC-034 (code + post-mortem), `<this
+  commit>` SPEC (governance close). Pre-commit review ran in a
+  separate gatekeeper session per P6-35 default; no P6-42
+  deviation.
 
 - [ ] WP-035 — Release, Deployment & Ops Playbook ✅ Reviewed
   Dependencies: WP-034
