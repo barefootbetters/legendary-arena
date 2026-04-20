@@ -7,6 +7,120 @@
 
 ## Current State
 
+### WP-055 / EC-055 Executed — Theme Data Model (Mastermind / Scenario Themes v2) (2026-04-20, EC-055)
+
+WP-055 executed at commit `dc7010e`: Legendary Arena now has a governed,
+engine-agnostic theme data contract at schema version 2, the full
+shipped theme set committed at v2, and the registry public surface
+extended to expose theme types and validators to future consumer WPs.
+
+Surfaces produced (74-file Commit A allowlist):
+
+- `packages/registry/src/theme.schema.ts` — **new**: Zod schemas
+  `ThemeDefinitionSchema` (v2), `ThemeSetupIntentSchema` (mirrors
+  WP-005A `MatchSetupConfig` ID fields verbatim; count fields
+  excluded — composition, not pile sizing), `ThemePlayerCountSchema`
+  (`min<=max` + `recommended`-in-range refinements),
+  `ThemePrimaryStoryReferenceSchema` (editorial-only external URLs),
+  `ThemeMusicAssetsSchema` (eight optional URL fields per D-5509)
+  plus the inferred `ThemeDefinition` type.
+- `packages/registry/src/theme.validate.ts` — **new**: `validateTheme`
+  (sync) and `validateThemeFile` (async). Both never throw.
+  `validateThemeFile` wraps `readFile` and `JSON.parse` in try/catch
+  and returns structured `ValidationFailure` with one of four stable
+  error-path labels (`'file'` / `'json'` / `'themeId'` / Zod issue
+  path) and three verbatim full-sentence message templates.
+- `packages/registry/src/theme.schema.test.ts` — **new**: 10
+  `node:test` cases inside one `describe('theme schema (WP-055)')`
+  block. Test #1 pins WP-028 / D-2802 aliasing-prevention via
+  `assert.notStrictEqual(result.theme, inputData)`. Test #8 is a
+  single `test()` call with Parts A/B/C internal assertions
+  (manifest-driven happy path + I/O failure structured-return +
+  malformed-JSON structured-return; WP-033 P6-23 count preservation).
+- `content/themes/minimal-example.json` — **new**: minimal
+  required-fields-only example theme (`themeSchemaVersion: 2`).
+- `docs/ai/post-mortems/01.6-WP-055-theme-data-model.md` — **new**:
+  mandatory 10-section post-mortem (01.6 triggers: new long-lived
+  abstraction `ThemeDefinitionSchema` + new contract consumed by
+  future WPs; both fire).
+- `packages/registry/src/index.ts` — **modified** (additive §E
+  public-surface extension): eight new export lines in the existing
+  Types → Schemas → Functions grouping; no existing export reordered,
+  renamed, or removed.
+- 68 `content/themes/*.json` files — **modified** (v1→v2 migration
+  per D-5509): `themeSchemaVersion: 2` + three optional music fields
+  (`musicTheme`, `musicAIPrompt`, `musicAssets`). Migration was
+  staged in the working tree during the 2026-04-19 v2 design pass
+  and committed here under WP-055's allowlist.
+
+Test baseline shift:
+
+- Registry: `3 / 1 / 0 fail` → **`13 / 2 / 0 fail`** (+10 tests,
+  +1 suite).
+- Repo-wide: `526 / 0 fail` → **`536 / 0 fail`**.
+- Engine: `436 / 109 / 0 fail` **UNCHANGED** (zero engine code
+  modified).
+
+Layer-boundary integrity:
+
+- Zero imports from `packages/game-engine` (grep confirmed).
+- Zero `boardgame.io` imports (escaped-dot grep per P6-22).
+- Zero `require()` calls; zero `.reduce()` in theme source files.
+- WP-003 immutable files (`schema.ts`, `shared.ts`,
+  `impl/localRegistry.ts`) unchanged.
+- WP-005A contract file (`packages/game-engine/src/matchSetup.types.ts`)
+  unchanged.
+- `apps/registry-viewer/` untouched — viewer-domain v1→v2 edits
+  remain quarantined in `stash@{0}` "wp-055-quarantine-viewer" per
+  PS-4; `stash@{1}` and `stash@{2}` also intact.
+- `package.json` / `pnpm-lock.yaml` unchanged (P6-44).
+- Paraphrase discipline (P6-50): no `boardgame.io` / `Math.random` /
+  `Date.now` / `G.` / `ctx.` tokens in theme source files.
+
+Three-commit topology (WP-034 / WP-035 / WP-042 pattern):
+
+- **Commit A0 (`aaba66d`)** — `SPEC:` pre-flight bundle: EC-055
+  (new) + `_informal-viewer-themes-tab.md` (renamed from
+  `EC-055-theme-viewer.checklist.md` per PS-4 slot reclaim) +
+  EC_INDEX EC-055 row (Draft 54→55 / Total 56→57) + WP-055 PS-2/3/5
+  amendments + FIX #17 (aliasing) + FIX #22 (try/catch +
+  error-path labels + message templates) + WORK_INDEX v1→v2 title
+  correction + session prompt.
+- **Commit A (`dc7010e`)** — `EC-055:` execution: the 74-file
+  allowlist listed above.
+- **Commit B (this commit)** — `SPEC:` governance close:
+  `STATUS.md` + `WORK_INDEX.md` (WP-055 `[x]` with date + commit
+  hash) + `EC_INDEX.md` (EC-055 status Draft → Done).
+
+Precedents applied:
+
+- P6-22 (escaped-dot `boardgame\.io` grep pattern).
+- P6-23 (test-count preservation via Parts A/B/C inside one
+  `test()` call).
+- P6-27 (stage by name only; never `git add .` / `-A`).
+- P6-33 (EC authored at pre-flight, not deferred).
+- P6-36 (`WP-NNN:` commit prefix forbidden; `EC-NNN:` required).
+- P6-43 / P6-50 (paraphrase discipline in `// why:` comments —
+  one mid-execution self-catch documented in post-mortem §8).
+- P6-44 (`pnpm-lock.yaml` must not change when no `package.json`
+  edited).
+- P6-51 form (1) (01.5 NOT INVOKED explicit declaration).
+- WP-028 / D-2802 (projection aliasing prevention — applied via
+  FIX #17).
+- WP-031 (describe-block wrapping adds +1 suite).
+
+01.5 NOT INVOKED (all four triggers absent). 01.6 MANDATORY
+(authored in-session, staged into Commit A).
+
+Next eligible WPs: consumer WPs that import theme types (setup UI,
+scenario browser, LLM exporter, deterministic randomizer). The
+referential-integrity validator against the card registry is
+deferred to the first such consumer WP per the WP-055 Design Review
+Summary. The theme registry loader is deferred to the same consumer
+WP (~15 lines wrapping `validateThemeFile` in a directory scan).
+
+---
+
 ### WP-042 / EC-042 Executed — Deployment Checklists (Data, Database & Infrastructure) (2026-04-19, EC-042)
 
 WP-042 executed at commit `c964cf4`: Legendary Arena now has
