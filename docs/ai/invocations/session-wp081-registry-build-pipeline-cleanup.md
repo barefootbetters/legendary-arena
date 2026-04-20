@@ -6,7 +6,7 @@
 **Pre-flight (+ 01.7 Copilot Check):** [docs/ai/invocations/preflight-wp081-registry-build-pipeline-cleanup.md](preflight-wp081-registry-build-pipeline-cleanup.md) — READY TO EXECUTE (PS-1 resolved in pre-flight; 01.7 verdict CONFIRM with 29/30 PASS and one RISK on #12 resolved scope-neutrally in the copilot-check SPEC bundle).
 **Commit prefix:** `EC-081:` on every code- or doc-changing commit in the WP-081 allowlist; `SPEC:` on governance-only commits outside the allowlist (STATUS.md / WORK_INDEX.md / EC_INDEX.md close). `WP-081:` is **forbidden** (commit-msg hook rejects per P6-36).
 **WP Class:** Documentation + Hygiene (subtractive — no new code, no new tests, no new dependencies, no version bump). Closest to Contract-Only in the 01.4 taxonomy.
-**Primary layer:** Registry / Build Tooling — deletes three broken operator scripts; trims `packages/registry/package.json`; deletes one step from `.github/workflows/ci.yml`; rewrites five stale regions of `README.md` plus deletes the "How to Standardize Images" section (six anchor regions total after PS-2 pre-execution resolution).
+**Primary layer:** Registry / Build Tooling — deletes three broken operator scripts; trims `packages/registry/package.json`; deletes one step from `.github/workflows/ci.yml`; rewrites six anchor regions of `README.md` (PS-2 pre-execution resolution); deletes the "Legacy Scripts (Retained for Reference)" subsection from `docs/03-DATA-PIPELINE.md` (PS-3 pre-execution resolution).
 
 ---
 
@@ -89,6 +89,7 @@ After this session, Legendary Arena's registry build pipeline is tsc-only and CI
 2. `packages/registry/package.json` `scripts.build` is exactly `"tsc -p tsconfig.build.json"`. The `normalize` and `standardize-img` script entries are gone. `test`, `validate`, `upload`, `prepublishOnly` are unchanged.
 3. `.github/workflows/ci.yml` job `build` no longer contains the "Normalize cards" step (the redundant `pnpm registry:validate` invocation with the misleading `# also writes cards.json + index.json` comment). The `validate`, `build-viewer`, `upload-r2`, `publish-npm` jobs are textually unchanged.
 4. `README.md` has six anchor regions rewritten per WP-081 §Scope (In) §F.1 through §F.6 (extended from five per PS-2 pre-execution resolution, 2026-04-20 — see session-context §2.7). After the edits, `README.md` does not mention any precomputed registry JSON artifact other than `dist/registry-health.json`.
+4a. `docs/03-DATA-PIPELINE.md` has the "Legacy Scripts (Retained for Reference)" subsection deleted in full per WP-081 §Scope (In) §G (PS-3 pre-execution resolution, 2026-04-20 — see session-context §2.8). After the edit, `docs/03-DATA-PIPELINE.md` contains no `## Legacy Scripts` heading and no reference to the three deleted scripts.
 5. `pnpm --filter @legendary-arena/registry build` exits 0 on a clean `dist/` (verified after `rm -rf packages/registry/dist` first).
 6. `pnpm -r build` exits 0.
 7. `pnpm test` exits 0 with **engine 436 / 109 / 0 fail** and **repo-wide 536 / 0 fail** — both **UNCHANGED** from baseline.
@@ -105,7 +106,7 @@ After this session, Legendary Arena's registry build pipeline is tsc-only and CI
 
 ### Commit topology (two commits)
 
-- **Commit A (`EC-081:`)** — execution: delete three scripts + modify three files (`package.json`, `ci.yml`, `README.md`) + add D-8101 and D-8102 to `docs/ai/DECISIONS.md` (plus `DECISIONS_INDEX.md` rows if the index convention requires them — check at execution). Optional 01.6 post-mortem if the executor judges one useful; per 01.6 triggers, WP-081 adds no long-lived abstraction or new code category, so post-mortem is **optional** (WP-079 precedent: doc-only / subtractive WPs may skip).
+- **Commit A (`EC-081:`)** — execution: delete three scripts + modify four files (`package.json`, `ci.yml`, `docs/03-DATA-PIPELINE.md`, `README.md`) + add D-8101 and D-8102 to `docs/ai/DECISIONS.md` (plus `DECISIONS_INDEX.md` rows if the index convention requires them — check at execution). Optional 01.6 post-mortem if the executor judges one useful; per 01.6 triggers, WP-081 adds no long-lived abstraction or new code category, so post-mortem is **optional** (WP-079 precedent: doc-only / subtractive WPs may skip).
 - **Commit B (`SPEC:`)** — governance close: `STATUS.md` entry with the verbatim tsc-only phrase + `WORK_INDEX.md` (WP-081 `[x]` with date + commit hash) + `EC_INDEX.md` (EC-081 flipped to Done, Summary counts bumped) + any `DECISIONS_INDEX.md` follow-ups surfaced during execution.
 
 ### Files to delete (exactly 3)
@@ -116,10 +117,11 @@ After this session, Legendary Arena's registry build pipeline is tsc-only and CI
 
 No other file under `packages/registry/scripts/` is deleted. `validate.ts` and `upload-r2.ts` remain.
 
-### Files to modify (exactly 3)
+### Files to modify (exactly 4)
 
 - `packages/registry/package.json` — `scripts.build` trimmed to `"tsc -p tsconfig.build.json"`; `scripts.normalize` and `scripts.standardize-img` removed. No other key touched.
 - `.github/workflows/ci.yml` — "Normalize cards" step deleted from the `build` job. No other job, step, trigger, artifact name, or env passthrough changed.
+- `docs/03-DATA-PIPELINE.md` — "Legacy Scripts (Retained for Reference)" subsection deleted in full per WP-081 §Scope (In) §G (currently lines 331-345 inclusive — header, intro, five-row table, trailing `---` separator). The leading `---` on line 330 is preserved. No replacement prose. Added per PS-3 pre-execution resolution (2026-04-20).
 - `README.md` — six anchor regions edited per WP-081 §Scope (In) §F.1 through §F.6. Use the anchor strings, not the line numbers, to locate each block.
 
 ### Governance files to touch (during the Commit A and Commit B edits)
@@ -172,7 +174,8 @@ All items from WP-081 §Non-Negotiable Constraints apply. Non-exhaustive highlig
 3. `packages/registry/scripts/standardize-images.ts` — **deleted**
 4. `packages/registry/package.json` — **modified** (scripts.build / scripts.normalize / scripts.standardize-img only)
 5. `.github/workflows/ci.yml` — **modified** (delete "Normalize cards" step in `build` job only)
-6. `README.md` — **modified** (six anchor regions per §F.1–§F.6)
+6. `docs/03-DATA-PIPELINE.md` — **modified** (delete "Legacy Scripts (Retained for Reference)" subsection per §G; PS-3 pre-execution resolution)
+7. `README.md` — **modified** (six anchor regions per §F.1–§F.6)
 7. `docs/ai/DECISIONS.md` — **modified** (add D-8101 and D-8102 entries)
 8. `docs/ai/DECISIONS_INDEX.md` — **modified** (if convention requires; add D-8101 / D-8102 index rows)
 9. `docs/ai/post-mortems/01.6-WP-081-*.md` — **optional, new** if the executor chooses to author a post-mortem (not required for doc-only / subtractive WPs).
@@ -225,7 +228,13 @@ grep -rn "normalize-cards\|build-dist\|standardize-images" . \
 # Step 6 — confirm no consumer code references the deleted JSON artifacts (AFTER edits)
 grep -rn "dist/cards\.json\|dist/keywords\.json\|dist/registry-info\.json" \
   apps/ packages/ scripts/ data/ .github/
-# Expected: no output
+# Expected: matches only inside:
+#   packages/registry/.env.example (OUTPUT_FILE=dist/cards.json line, OOS
+#     per WP-081 §Scope (Out) + session-context §2.6)
+#   packages/registry/scripts/upload-r2.ts (docstring + closing
+#     console.log at line ~125 referencing dist/registry-info.json, OOS
+#     per WP-081 §Scope (Out) + session-context §2.4)
+# No other match is permitted.
 
 # Step 7 — confirm README negative-guarantee AC
 grep -n "cards\.json\|index\.json\|keywords\.json" README.md
@@ -284,7 +293,7 @@ All items from [WP-081 §Definition of Done](../work-packets/WP-081-registry-bui
 
 You are authorized to execute WP-081 in a **new Claude Code session** reading this prompt as the single execution brief. At the end of that session:
 
-1. **Commit A** (`EC-081:` prefix) lands the six allowlist file changes + D-8101 + D-8102 + optional post-mortem.
+1. **Commit A** (`EC-081:` prefix) lands the seven allowlist file changes (3 deletions + 4 modifications) + D-8101 + D-8102 + DECISIONS_INDEX.md rows + optional post-mortem.
 2. **Commit B** (`SPEC:` prefix) lands the governance close (STATUS.md + WORK_INDEX.md + EC_INDEX.md + DECISIONS_INDEX.md if applicable).
 3. Both commits live on the execution branch off `311c8fe` or a descendant.
 

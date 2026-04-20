@@ -190,11 +190,17 @@ Before writing a single line:
   - `packages/registry/scripts/build-dist.mjs`
   - `packages/registry/scripts/standardize-images.ts`
 
-- **Files to modify (3):**
+- **Files to modify (4):**
   - `packages/registry/package.json` — `scripts.build`, `scripts.normalize`,
     `scripts.standardize-img`
   - `.github/workflows/ci.yml` — job `build` step "Normalize cards" +
     misleading comment
+  - `docs/03-DATA-PIPELINE.md` — "Legacy Scripts (Retained for
+    Reference)" subsection deleted in full (currently lines 331-345
+    inclusive — section header, intro prose, five-row table, trailing
+    `---` separator; the leading `---` separator on line 330
+    preserved). Extended per PS-3 pre-execution resolution
+    (2026-04-20 — see session-context §2.8).
   - `README.md` — six anchor regions (extended per PS-1 pre-flight
     resolution and PS-2 pre-execution resolution, both 2026-04-20):
     1. Pipeline diagram near the top of the file (currently lines 62-64)
@@ -375,6 +381,34 @@ Acceptance Criterion). Flagged by PS-2 pre-execution review
 contracts, no new behavior, only broader coverage of already-in-scope
 README hygiene.
 
+### G) Modify `docs/03-DATA-PIPELINE.md`
+
+Delete the "Legacy Scripts (Retained for Reference)" subsection
+(currently lines 330-345 inclusive) — section header, intro prose,
+the five-row table, and the trailing `---` separator. The preceding
+`---` on line 330 is preserved so the file flows directly from the
+"Previously resolved" block to the "## PAR Artifact Pipeline"
+section.
+
+Anchor: `## Legacy Scripts (Retained for Reference)` (section
+heading). Remove the blank line before the heading, the heading
+itself, the two-line intro paragraph (`These scripts in
+\`packages/registry/scripts/\` predate the current pipeline. They
+are not part of the production data flow.`), the table (five rows:
+`normalize-cards.ts` / `build-dist.mjs` / `standardize-images.ts` /
+`upload-r2.ts` / `validate.ts`), and the trailing `---` separator.
+
+No replacement prose. The section's premise ("Retained for
+Reference") no longer holds after §A / §B / §C delete three of the
+five rows; the remaining two scripts (`upload-r2.ts`, `validate.ts`)
+are self-documented by their `pnpm` invocations (`pnpm
+registry:upload`, `pnpm registry:validate`) and do not require a
+dedicated inventory table.
+
+Flagged by PS-3 pre-execution review (2026-04-20). Scope extension
+is surgical and mechanical — no new contracts, no new behavior,
+only broader coverage of doc hygiene for the three deleted scripts.
+
 ---
 
 ## Scope (Out)
@@ -425,6 +459,12 @@ README hygiene.
   `scripts.standardize-img` removed
 - `.github/workflows/ci.yml` — **modified** — "Normalize cards" step
   removed from job 2 (`build`)
+- `docs/03-DATA-PIPELINE.md` — **modified** — "Legacy Scripts
+  (Retained for Reference)" subsection deleted in full per §G
+  (currently lines 331-345 inclusive — header, intro, five-row
+  table, trailing `---` separator). Scope extended per PS-3
+  pre-execution resolution (2026-04-20) so the session-invocation
+  Step 5 grep matches only inside the expected governance files
 - `README.md` — **modified** — six anchor regions per §F: pipeline
   diagram (currently lines 62-64), Registry Config viewer-fetch
   sentence (currently line 111), How to Upload to R2 listing
@@ -495,6 +535,15 @@ All items must be binary pass/fail. No partial credit.
       `upload-artifact` step with `name: registry-dist`
 - [ ] Jobs `validate`, `build-viewer`, `upload-r2`, `publish-npm` are
       textually unchanged
+
+### docs/03-DATA-PIPELINE.md
+- [ ] `docs/03-DATA-PIPELINE.md` contains no `## Legacy Scripts` heading
+- [ ] `docs/03-DATA-PIPELINE.md` contains no occurrence of the string
+      `normalize-cards.ts`
+- [ ] `docs/03-DATA-PIPELINE.md` contains no occurrence of the string
+      `build-dist.mjs`
+- [ ] `docs/03-DATA-PIPELINE.md` contains no occurrence of the string
+      `standardize-images.ts`
 
 ### README.md
 - [ ] `README.md` contains no occurrence of the string

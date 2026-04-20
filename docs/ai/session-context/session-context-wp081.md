@@ -206,6 +206,68 @@ Images` heading, no `standardize-img` string).
 EC-081 execution commit. Same precedent as PS-1. After the SPEC
 amendment, PS-2 is closed and execution proceeds.
 
+### 2.8 `docs/03-DATA-PIPELINE.md` "Legacy Scripts" subsection — PS-3 amendment (2026-04-20)
+
+During the execution session's pre-delete grep (`grep -rn
+"normalize-cards\|build-dist\|standardize-images" . --exclude-dir=...`),
+a surprise match surfaced at `docs/03-DATA-PIPELINE.md` lines
+332-345: a "Legacy Scripts (Retained for Reference)" subsection
+containing a five-row table listing the three about-to-be-deleted
+scripts (`normalize-cards.ts`, `build-dist.mjs`,
+`standardize-images.ts`) plus the two retained ones (`upload-r2.ts`,
+`validate.ts`).
+
+PS-1 and PS-2 both audited README.md but neither audited
+`docs/03-DATA-PIPELINE.md`. The session-invocation Step 5 grep
+expected matches only inside the WP-081 / EC-081 / governance /
+WP-055 post-mortem files; a surprise match at
+`docs/03-DATA-PIPELINE.md` would fail that verification.
+
+**Impact:** The section's premise ("Retained for Reference") no
+longer holds post-WP-081 — three of the five rows describe scripts
+that are deleted, not superseded-but-retained. Leaving the section
+would also continue to advertise scripts that no longer exist in
+the repository.
+
+**Resolution:** WP-081 §Scope (In) extended with a new §G
+(co-equal with §F) that deletes the "Legacy Scripts (Retained for
+Reference)" subsection in full — header, intro, five-row table,
+trailing `---` separator. The leading `---` separator preserved so
+the file flows directly from the "Previously resolved" block to
+the "## PAR Artifact Pipeline" section. No replacement prose —
+the two remaining Active scripts (`upload-r2.ts`, `validate.ts`)
+are self-documented by their `pnpm registry:upload` /
+`pnpm registry:validate` invocations. WP-081 §Acceptance Criteria
+extended with four grep-testable items (no `## Legacy Scripts`
+heading, no `normalize-cards.ts` / `build-dist.mjs` /
+`standardize-images.ts` occurrences in that file). EC-081 §Locked
+Values and §Files to Produce updated. Session invocation §Primary
+layer, §Goal, §Locked Values, §Files Expected to Change, and
+§Verification Steps Step 6 updated.
+
+**Disposition:** Amendment committed as a second SPEC commit
+before the EC-081 execution commit. Same precedent as PS-1 + PS-2.
+After the SPEC amendment, PS-3 is closed and execution resumes.
+
+### 2.9 Step 6 grep OOS-match note (PS-3 companion fix)
+
+As part of the PS-3 amendment, session invocation §Verification
+Steps Step 6 is updated from "Expected: no output" to explicitly
+acknowledge two OOS matches that survive the deletions:
+
+- `packages/registry/.env.example` line 15: `OUTPUT_FILE=dist/cards.json`
+  — env-var default for the deleted `normalize-cards.ts`. OOS per
+  WP-081 §Scope (Out) and session-context §2.6. Targeted by a
+  follow-up operator-tooling cleanup WP.
+- `packages/registry/scripts/upload-r2.ts` lines 5 and ~125:
+  docstring + closing `console.log` reference to
+  `dist/registry-info.json`. OOS per WP-081 §Scope (Out) and
+  session-context §2.4. Targeted by the same follow-up WP.
+
+These are not hidden consumers — they are acknowledged-OOS stale
+references that will be cleaned in the upload-r2 / `.env.example`
+follow-up WP.
+
 ---
 
 ## 3. Open Questions for Pre-Flight to Close

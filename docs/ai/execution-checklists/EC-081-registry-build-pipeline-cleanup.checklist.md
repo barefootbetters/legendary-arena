@@ -44,6 +44,14 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 - **CI job `build` step deleted:** the step named `"Normalize cards"`
   with run `pnpm registry:validate` and comment `# also writes
   cards.json + index.json`
+- **`docs/03-DATA-PIPELINE.md` "Legacy Scripts (Retained for Reference)"
+  subsection deleted in full** (extended per PS-3 pre-execution
+  resolution, 2026-04-20): header on line 332 (`## Legacy Scripts
+  (Retained for Reference)`), two-line intro paragraph, five-row
+  table (`normalize-cards.ts` / `build-dist.mjs` / `standardize-images.ts`
+  / `upload-r2.ts` / `validate.ts`), and trailing `---` separator on
+  line 345. The leading `---` on line 330 is preserved. No
+  replacement prose. See session-context §2.8.
 - **README.md regions edited (six anchor regions — extended per PS-1
   pre-flight resolution and PS-2 pre-execution resolution, both
   2026-04-20):** use the anchor strings, not the line numbers, to
@@ -109,6 +117,11 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
   `scripts.standardize-img` removed
 - `.github/workflows/ci.yml` — **modified** — "Normalize cards" step
   deleted from job `build`
+- `docs/03-DATA-PIPELINE.md` — **modified** per WP-081 §G (extended
+  per PS-3 pre-execution resolution): "Legacy Scripts (Retained for
+  Reference)" subsection (currently lines 331-345) deleted in full
+  — header, intro, five-row table, trailing `---` separator. No
+  replacement prose.
 - `README.md` — **modified** — six anchor regions per WP-081 §F
   (extended per PS-1 pre-flight resolution and PS-2 pre-execution
   resolution): pipeline diagram (currently lines 62-64), Registry
