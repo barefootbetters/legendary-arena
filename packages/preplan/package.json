@@ -1,0 +1,24 @@
+{
+  "name": "@legendary-arena/preplan",
+  "version": "1.0.0",
+  "description": "Pre-Planning State Model & Lifecycle (Non-Authoritative, Per-Client)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc"
+  },
+  "peerDependencies": {
+    "@legendary-arena/game-engine": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

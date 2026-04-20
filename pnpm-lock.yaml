@@ -149,6 +149,16 @@ importers:
         specifier: ^5.4.5
         version: 5.9.3
 
+  packages/preplan:
+    dependencies:
+      '@legendary-arena/game-engine':
+        specifier: workspace:*
+        version: link:../game-engine
+    devDependencies:
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.3
+
   packages/registry:
     dependencies:
       zod:
