@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "setupConfig": {
+    "schemeId": "test-scheme-001",
+    "mastermindId": "test-mastermind-001",
+    "villainGroupIds": ["test-villain-group-001"],
+    "henchmanGroupIds": ["test-henchman-group-001"],
+    "heroDeckIds": ["test-hero-deck-001", "test-hero-deck-002"],
+    "bystandersCount": 10,
+    "woundsCount": 15,
+    "officersCount": 20,
+    "sidekicksCount": 5
+  },
+  "seed": "sample-seed-three-turn",
+  "playerOrder": ["0", "1"],
+  "moves": [
+    { "playerId": "0", "moveName": "setPlayerReady", "args": { "ready": true } },
+    { "playerId": "1", "moveName": "setPlayerReady", "args": { "ready": true } },
+    { "playerId": "0", "moveName": "startMatchIfReady", "args": null }
+  ],
+  "metadata": {
+    "matchId": "three-turn-sample-match",
+    "note": "Golden fixture for WP-063 / EC-071 round-trip determinism verification."
+  }
+}

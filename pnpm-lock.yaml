@@ -101,6 +101,22 @@ importers:
         specifier: ^2.0.19
         version: 2.2.12(typescript@5.9.3)
 
+  apps/replay-producer:
+    dependencies:
+      '@legendary-arena/game-engine':
+        specifier: workspace:*
+        version: link:../../packages/game-engine
+    devDependencies:
+      '@types/node':
+        specifier: ^22.19.17
+        version: 22.19.17
+      tsx:
+        specifier: ^4.15.7
+        version: 4.21.0
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.3
+
   apps/server:
     dependencies:
       '@legendary-arena/game-engine':

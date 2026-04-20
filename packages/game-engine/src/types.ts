@@ -159,6 +159,12 @@ export { SCHEME_SETUP_TYPES } from './scheme/schemeSetup.types.js';
 // Replay types (WP-027)
 export type { ReplayInput, ReplayMove, ReplayResult } from './replay/replay.types.js';
 
+// Replay snapshot sequence types (WP-063)
+export type {
+  ReplaySnapshotSequence,
+  ReplayInputsFile,
+} from './replay/replaySnapshot.types.js';
+
 // why: UI state types defined canonically in src/ui/uiState.types.ts
 // (WP-028). Re-exported here so that consumers importing from './types.js'
 // have access.

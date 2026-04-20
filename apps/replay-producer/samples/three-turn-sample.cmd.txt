@@ -1,0 +1,9 @@
+# Exact CLI invocation used to produce three-turn-sample.sequence.json.
+# Any consumer regenerating the golden sequence from the committed inputs
+# must run the command below from the repo root to get byte-identical
+# output. --produced-at is the literal timestamp baked into the committed
+# sequence — changing it changes the metadata.producedAt field and
+# therefore the emitted bytes.
+#
+# From the repo root:
+pnpm --filter @legendary-arena/replay-producer produce-replay --in samples/three-turn-sample.inputs.json --out samples/three-turn-sample.sequence.json --produced-at 2026-04-19T00:00:00Z

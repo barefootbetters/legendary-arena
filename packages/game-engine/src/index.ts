@@ -211,6 +211,14 @@ export { verifyDeterminism } from './replay/replay.verify.js';
 export type { DeterminismResult } from './replay/replay.verify.js';
 export { applyReplayStep } from './replay/replay.execute.js';
 
+// Replay snapshot sequence (WP-063)
+export type {
+  ReplaySnapshotSequence,
+  ReplayInputsFile,
+} from './replay/replaySnapshot.types.js';
+export type { BuildSnapshotSequenceParams } from './replay/buildSnapshotSequence.js';
+export { buildSnapshotSequence } from './replay/buildSnapshotSequence.js';
+
 // UI state contract (WP-028; progress + PAR breakdown added WP-067)
 export type {
   UIState,
