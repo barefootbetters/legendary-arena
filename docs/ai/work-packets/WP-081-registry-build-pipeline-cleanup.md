@@ -377,6 +377,15 @@ unchanged.
   registry data is untouched.
 - **No changes to `apps/server/**` or `apps/registry-viewer/**`** —
   runtime consumers are unchanged.
+- **`packages/registry/.env.example` lines 13-17 not modified** —
+  four env vars (`INPUT_DIR`, `OUTPUT_FILE`, `INPUT_IMG_DIR`,
+  `OUTPUT_IMG_DIR`) plus the `# Optional overrides for scripts`
+  comment become orphaned after the three scripts that consume them
+  are deleted. WP-081 deliberately leaves them untouched to preserve
+  the subtractive-only guarantee and keep this WP tight. Flagged by
+  the 01.7 copilot check (2026-04-20, Issue #12) and deferred to a
+  follow-up operator-tooling cleanup WP that also addresses
+  `upload-r2.ts`. See `session-context-wp081.md` §2.4 + §2.6.
 - Refactors, cleanups, or "while I'm here" improvements are **out of
   scope** unless explicitly listed in Scope (In) above.
 

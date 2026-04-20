@@ -341,3 +341,213 @@ If there is uncertainty, missing context, or unresolved ambiguity:
 **DO NOT PROCEED TO EXECUTION.**
 
 Escalate, clarify, or split the WP instead.
+
+---
+
+## Copilot Check
+
+**Date:** 2026-04-20
+**Pre-flight verdict under review:** READY TO EXECUTE (2026-04-20, PS-1 resolved)
+**Inputs reviewed:**
+
+- EC: `docs/ai/execution-checklists/EC-081-registry-build-pipeline-cleanup.checklist.md`
+- WP: `docs/ai/work-packets/WP-081-registry-build-pipeline-cleanup.md`
+- Pre-flight: this file (above)
+- Session context: `docs/ai/session-context/session-context-wp081.md`
+
+### Overall Judgment
+
+**RISK** — one RISK finding on Issue #12 (Scope Creep /
+Under-scoping). The pre-flight READY verdict still holds, but only
+after a scope-neutral FIX that documents `packages/registry/.env.example`
+lines 13-17 as acknowledged out-of-scope (OOS) alongside the existing
+OOS entries for `upload-r2.ts` and `validate.ts`. The remaining 29
+issues PASS. No finding would cause architectural or determinism
+damage if unaddressed — the risk is incomplete deprecation hygiene,
+not structural damage. Verdict disposition: **CONFIRM** after the
+scope-neutral FIX is applied in this same SPEC bundle.
+
+### Findings
+
+1. **PASS** — #1 Engine vs UI / App Boundary Drift. WP explicitly
+   forbids modifying `packages/registry/src/**`, `apps/server/**`,
+   `apps/registry-viewer/**`. WP-003 immutable files called out by
+   name. Layer boundary stated in Non-Negotiable Constraints.
+
+2. **PASS** — #2 Non-Determinism. WP introduces zero new code; no
+   `Math.random`, `Date.now`, or randomness surface. Deleted scripts
+   were themselves deterministic (sort by ID). Subtractive-only
+   guarantee prevents determinism regression by construction.
+
+3. **PASS** — #3 Pure Functions vs Immer Mutation. Not applicable —
+   no new helpers, no `G` mutation, no moves.
+
+4. **PASS** — #4 Contract Drift Between Types, Tests, and Runtime.
+   WP touches no canonical readonly array (`MATCH_PHASES`,
+   `TURN_STAGES`, etc.), no union type, no schema. WP-003 immutable
+   files (`schema.ts`, `shared.ts`, `impl/localRegistry.ts`) locked
+   as untouched. Drift-detection tests unaffected.
+
+5. **PASS** — #5 Optional Field Ambiguity. Not applicable — no
+   types added or widened.
+
+6. **PASS** — #6 Undefined Merge Semantics. Not applicable — no
+   merge operations introduced.
+
+7. **PASS** — #7 Persisting Runtime State by Accident. Not
+   applicable — WP touches no persistence surface. Deleted
+   `dist/*.json` artifacts were build outputs, not persistence
+   records. `G` and `ctx` never referenced by the WP.
+
+8. **PASS** — #8 No Single Debugging Truth Artifact. Replay harness
+   (WP-027) is the project's debugging-truth artifact and is not
+   affected by WP-081.
+
+9. **PASS** — #9 UI Re-implements Engine Logic. Not applicable — no
+   UI changes; `apps/` explicitly OOS.
+
+10. **PASS** — #10 Stringly-Typed Outcomes. Not applicable — no new
+    result types or outcomes.
+
+11. **PASS** — #11 Tests Validate Behavior, Not Invariants. WP adds
+    zero tests and removes zero tests. Test baseline invariance is
+    itself an Acceptance Criterion (engine `436 / 109 / 0 fail`;
+    repo-wide `536 / 0 fail` UNCHANGED). The baseline-invariance
+    check is an invariant check by construction.
+
+12. **RISK** — #12 Scope Creep / Under-Scoping During "Small"
+    Packets. The WP claims to "delete the dead build pipeline" but
+    leaves `packages/registry/.env.example` lines 13-17 (`INPUT_DIR`,
+    `OUTPUT_FILE=dist/cards.json`, `INPUT_IMG_DIR`, `OUTPUT_IMG_DIR`,
+    plus the comment line `# Optional overrides for scripts`)
+    orphaned. All four env vars were consumed only by the deleted
+    scripts (`INPUT_DIR` + `OUTPUT_FILE` by `normalize-cards.ts`;
+    `INPUT_IMG_DIR` + `OUTPUT_IMG_DIR` by `standardize-images.ts`).
+    After WP-081 lands, these lines are dead config.
+    **FIX (scope-neutral):** Add an explicit OOS bullet to WP-081
+    §Scope (Out) for `packages/registry/.env.example` lines 13-17,
+    and add §2.6 to `session-context-wp081.md` documenting the
+    finding alongside the existing `upload-r2.ts` OOS entry (§2.4).
+    This is scope-clarifying, not scope-changing — the file was
+    never in the allowlist and is not being added now. A future
+    follow-up WP should address `upload-r2.ts` + `.env.example`
+    together as the final operator-tooling cleanup.
+
+13. **PASS** — #13 Unclassified Directories. No new directories
+    created. All modifications stay in already-classified surfaces
+    (`packages/registry/scripts/`, `packages/registry/`, `.github/
+    workflows/`, repo root README).
+
+14. **PASS** — #14 No Extension Seams. Not applicable — WP deletes,
+    does not extend.
+
+15. **PASS** — #15 Missing "Why" for Invariants. EC §Required
+    `// why:` Comments correctly declares "None — this packet
+    produces no new code" (the correct form for a subtractive WP).
+    D-8101 and D-8102 carry the WHY for the deletions themselves.
+
+16. **PASS** — #16 Lifecycle Wiring Creep. WP does not touch
+    `game.ts`, phases, moves, or hooks. Package explicitly
+    documents "01.5 NOT INVOKED" as the correct declaration (to be
+    surfaced in the session prompt per WP-030/055 precedent).
+
+17. **PASS** — #17 Hidden Mutation via Aliasing. Not applicable —
+    no projections, no data-return paths.
+
+18. **PASS** — #18 Outcome Evaluation Timing. Not applicable — no
+    runtime logic.
+
+19. **PASS** — #19 Weak JSON-Serializability. Not applicable — no
+    runtime data shapes modified.
+
+20. **PASS** — #20 Ambiguous Authority Chain. Pre-flight Authority
+    Chain section lists read order explicitly. WP cites WP-003
+    immutable files, `.claude/rules/registry.md`,
+    `ARCHITECTURE.md §Registry Layer`. No conflicts.
+
+21. **PASS** — #21 Type Widening. Not applicable — no new
+    signatures.
+
+22. **PASS** — #22 Silent Failure vs Loud Failure. Session-context
+    §3 open questions + EC §Guardrails both carry explicit
+    STOP-and-ask discipline ("If grep reveals a hidden consumer of
+    the deleted JSON artifacts, STOP and ask — do not silently
+    expand scope to a rewrite"). Fail-fast decisions are locked.
+
+23. **PASS** — #23 Deterministic Ordering. Not applicable — no
+    iteration changes.
+
+24. **PASS** — #24 Mixed Persistence Concerns. Not applicable — no
+    persistence surface touched.
+
+25. **PASS** — #25 Overloaded Function Responsibilities. Not
+    applicable — no new functions.
+
+26. **PASS** — #26 Implicit Content Semantics. WP prose is
+    explicit throughout — every command, file path, anchor string,
+    and expected output is verbatim or locked with a hedge. No
+    "convention-based" meaning.
+
+27. **PASS** — #27 Weak Canonical Naming Discipline. WP deletes
+    scripts referencing obsolete names (`CardSchema`,
+    `CANONICAL_ID_REGEX`, `CardTypeSchema`). The cleanup itself
+    removes the only remaining canonical-name drift in the
+    registry scripts. Post-WP-081, schema.ts exports (`SetDataSchema`,
+    `HeroCardSchema`, etc.) are the sole canonical source.
+
+28. **PASS** — #28 No Upgrade or Deprecation Story. D-8101 is
+    itself the deprecation story for the three deleted scripts.
+    WP §Scope (Out) locks "No rewrite of the deleted pipeline — if
+    a future need to precompute flattened card artifacts emerges,
+    it lands in a new WP against the current SetDataSchema /
+    FlatCard shapes." The version is not bumped (subtractive-only).
+
+29. **PASS** — #29 Assumptions Leaking Across Layers. Registry
+    cleanup stays within registry tooling. No cross-layer
+    assumptions surfaced.
+
+30. **PASS** — #30 Missing Pre-Session Governance Fixes. Pre-flight
+    caught PS-1 (README under-scoping) and resolved it in-place
+    with an amendment bundle committed in the same SPEC commit.
+    D-8101 and D-8102 pre-specified. The present copilot check
+    identifies one additional RISK (#12 above) and resolves it in
+    this same SPEC bundle.
+
+### Mandatory Governance Follow-ups
+
+- **WP-081 §Scope (Out)** — add bullet:
+  `- .env.example lines 13-17 (operator-facing config) — four env
+  vars (INPUT_DIR, OUTPUT_FILE, INPUT_IMG_DIR, OUTPUT_IMG_DIR) plus
+  the "# Optional overrides for scripts" comment become orphaned
+  after the three scripts that consume them are deleted. Left for
+  a follow-up operator-tooling cleanup WP that also addresses
+  upload-r2.ts (see session-context-wp081.md §2.4 and §2.6).`
+- **session-context-wp081.md** — add §2.6 documenting the finding
+  as a follow-up item, mirroring the §2.4 treatment of
+  `upload-r2.ts`.
+- No DECISIONS.md entry required (the finding is sub-threshold —
+  an acknowledged OOS cleanup item, not a design decision).
+- No `02-CODE-CATEGORIES.md` update (no new directories).
+- No `.claude/rules/*.md` update (no new enforcement pattern).
+- No `WORK_INDEX.md` update (WP-081 row already reflects Draft
+  status with full notes).
+
+### Pre-Flight Verdict Disposition
+
+- [x] **CONFIRM** — Pre-flight READY TO EXECUTE verdict stands
+      after the scope-neutral FIX is applied in this same SPEC
+      bundle. Session prompt generation authorized.
+- [ ] HOLD — not needed; FIX is scope-clarifying (OOS bullet +
+      session-context amendment), not scope-changing.
+- [ ] SUSPEND — not needed; no allowlist change, no mutation
+      boundary move, no new contract.
+
+The session prompt may be generated next. It must:
+
+- Include an explicit `## 01.5 NOT INVOKED` section with the four
+  runtime-wiring trigger criteria enumerated and marked absent
+  (WP-030 / WP-055 precedent).
+- Use commit prefix `EC-081:` at execution (never `WP-081:` per
+  P6-36).
+- Reference this pre-flight + copilot check as the authorization
+  record.

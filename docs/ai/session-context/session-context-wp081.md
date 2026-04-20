@@ -138,6 +138,38 @@ entry as context — it describes the exact error path
 `dist/cards.json not found — run 'pnpm normalize' first`) and confirms
 the issue predates WP-055.
 
+### 2.6 `.env.example` lines 13-17 orphan after WP-081 (acknowledged OOS)
+
+`packages/registry/.env.example` has five lines that become dead
+config the moment WP-081 lands:
+
+- Line 13: `# Optional overrides for scripts` (comment header)
+- Line 14: `INPUT_DIR=data/raw` — consumed only by the deleted
+  `normalize-cards.ts`
+- Line 15: `OUTPUT_FILE=dist/cards.json` — consumed only by the
+  deleted `normalize-cards.ts`
+- Line 16: `INPUT_IMG_DIR=images/raw` — consumed only by the
+  deleted `standardize-images.ts`
+- Line 17: `OUTPUT_IMG_DIR=images/standard` — consumed only by the
+  deleted `standardize-images.ts`
+
+After WP-081, lines 14-17 have no consumer in the remaining scripts
+(`validate.ts`, `upload-r2.ts`). Lines 1-11 remain in use by
+`upload-r2.ts` (R2 credentials + `DATA_VERSION`).
+
+**Flagged by:** 2026-04-20 copilot check (01.7) Issue #12 RISK.
+
+**Decision:** OOS for WP-081. Same rationale as `upload-r2.ts` (§2.4):
+preserve the subtractive-only guarantee, keep the WP tight, and defer
+to a follow-up operator-tooling cleanup WP that addresses both
+surfaces together. An executor who notices this during execution
+should NOT silently expand scope — the §Scope (Out) entry for
+`.env.example` is the authoritative OOS record.
+
+**For the follow-up WP:** the simplest correct edit is to delete
+lines 13-17 (five consecutive lines) from `.env.example` in the same
+commit that trims or deletes `upload-r2.ts`.
+
 ---
 
 ## 3. Open Questions for Pre-Flight to Close
