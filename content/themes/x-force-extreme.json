@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "x-force-extreme",
   "name": "X-Force (Extreme)",
   "description": "Cable's black-ops mutant strike team operates outside Xavier's rules of engagement. When diplomacy fails and the X-Men can't get their hands dirty, X-Force goes in—loud, lethal, and unapologetic.",
@@ -48,5 +48,17 @@
     }
   },
   "flavorText": "We don't ask permission. We don't apologize. We get results.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11/110017/8868382-wwww.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11/110017/8868382-wwww.jpg",
+  "musicTheme": "Pursuit / Escape",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Pursuit / Escape. Cable's black-ops X-Force mutant strike team. Aggressive military strings and gunfire percussion. Intense and no-holds-barred, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/x-force-extreme_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/x-force-extreme_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/x-force-extreme_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/x-force-extreme_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/x-force-extreme_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/x-force-extreme_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/x-force-extreme_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/x-force-extreme_ES04_bystander.mp3"
+  }
 }

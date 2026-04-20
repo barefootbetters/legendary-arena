@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "doctor-strange-sorcerer",
   "name": "Doctor Strange, Sorcerer Supreme",
   "description": "As Earth's Sorcerer Supreme, Stephen Strange stands as the last line of defense against extradimensional threats. When Nightmare invades the Dream Dimension, Strange must navigate realms where the laws of physics are merely suggestions.",
@@ -44,5 +44,17 @@
     }
   },
   "flavorText": "By the Vishanti—the mystic arts will not be silenced.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/5935982-01.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/5935982-01.jpg",
+  "musicTheme": "Mystery / Revelation",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Mystery / Revelation. Mystic realms and Nightmare invading the Dream Dimension. Haunting woodwinds, harp glissandi, sudden brass portal hits. Mystical and enigmatic, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/doctor-strange-sorcerer_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/doctor-strange-sorcerer_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/doctor-strange-sorcerer_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/doctor-strange-sorcerer_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/doctor-strange-sorcerer_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/doctor-strange-sorcerer_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/doctor-strange-sorcerer_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/doctor-strange-sorcerer_ES04_bystander.mp3"
+  }
 }

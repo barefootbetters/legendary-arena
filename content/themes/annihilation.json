@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "annihilation",
   "name": "Annihilation",
   "description": "Annihilus breaches the Negative Zone barrier with an unstoppable Annihilation Wave, obliterating everything in its path across the cosmos. The surviving heroes of the galaxy must unite or watch the universe be consumed.",
@@ -44,5 +44,17 @@
     }
   },
   "flavorText": "The wave is coming. Nothing survives in its wake.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/77/99508-18290-107043-1-annihilation-prolog.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/77/99508-18290-107043-1-annihilation-prolog.jpg",
+  "musicTheme": "Epic Battle / Confrontation",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Epic Battle / Confrontation. Universe-ending Annihilation Wave across the cosmos. Relentless timpani, full-orchestra swells, negative-zone whoosh effects. High cinematic energy, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/annihilation_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/annihilation_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/annihilation_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/annihilation_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/annihilation_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/annihilation_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/annihilation_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/annihilation_ES04_bystander.mp3"
+  }
 }

@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "spider-friends-unite",
   "name": "Spider-Friends Unite",
   "description": "When a threat too large for any single spider to handle emerges, the extended Spider-family rallies together. Spider-Man, Scarlet Spider, Spider-Woman, and their allies must combine their abilities to protect New York from all sides.",
@@ -40,5 +40,17 @@
     }
   },
   "flavorText": "One spider can be trapped. A whole web? That's a different story.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/7267046-06.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/7267046-06.jpg",
+  "musicTheme": "Friendship / Bonding Theme",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Friendship / Bonding Theme. Spider-family team-up against a massive threat. Bouncy web-slinging strings. Heroic and fun, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/spider-friends-unite_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/spider-friends-unite_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/spider-friends-unite_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/spider-friends-unite_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/spider-friends-unite_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/spider-friends-unite_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/spider-friends-unite_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/spider-friends-unite_ES04_bystander.mp3"
+  }
 }

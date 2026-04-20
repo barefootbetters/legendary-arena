@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "world-war-hulk",
   "name": "World War Hulk",
   "description": "Betrayed and exiled to the planet Sakaar by the Illuminati, the Hulk returns to Earth with his Warbound allies seeking vengeance against those who sent him away. Manhattan becomes a gladiatorial arena as the World Breaker demands justice.",
@@ -47,5 +47,17 @@
     }
   },
   "flavorText": "I didn't come here for a whisper. I want to hear you scream.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/40/135179-18686-110435-1-world-war-hulk.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/40/135179-18686-110435-1-world-war-hulk.jpg",
+  "musicTheme": "Epic Battle / Confrontation",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Epic Battle / Confrontation. Hulk's revenge rampage as World Breaker. Planet-shaking brass and war drums. Vengeful and massive, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/world-war-hulk_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/world-war-hulk_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/world-war-hulk_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/world-war-hulk_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/world-war-hulk_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/world-war-hulk_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/world-war-hulk_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/world-war-hulk_ES04_bystander.mp3"
+  }
 }

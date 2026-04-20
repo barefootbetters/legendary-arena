@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "black-panther-wakanda",
   "name": "Black Panther of Wakanda",
   "description": "King T'Challa defends Wakanda from Killmonger's relentless campaign to seize the throne and plunder the nation's vibranium. With General Okoye, Princess Shuri, and the Dora Milaje at his side, the Black Panther must protect his people and their legacy.",
@@ -44,5 +44,17 @@
     }
   },
   "flavorText": "Wakanda forever.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11112/111121983/6987334-9963395327-BLACK.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11112/111121983/6987334-9963395327-BLACK.jpg",
+  "musicTheme": "Hero’s Theme / Main Title",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Hero’s Theme / Main Title. King T'Challa defending Wakanda and its vibranium legacy. Tribal percussion fused with soaring African-inspired brass fanfare. Proud and heroic, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/black-panther-wakanda_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/black-panther-wakanda_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/black-panther-wakanda_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/black-panther-wakanda_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/black-panther-wakanda_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/black-panther-wakanda_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/black-panther-wakanda_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/black-panther-wakanda_ES04_bystander.mp3"
+  }
 }

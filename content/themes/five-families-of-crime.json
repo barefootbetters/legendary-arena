@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "five-families-of-crime",
   "name": "Five Families of Crime",
   "description": "New York's five crime families wage a brutal turf war for control of the city's underworld. With the Kingpin consolidating power and the streets running red, the Marvel Knights must dismantle the syndicate from within.",
@@ -47,5 +47,17 @@
     }
   },
   "flavorText": "Five families. One throne. Blood is the only currency.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11145/111450787/8696916-5582673184-814ZG.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11145/111450787/8696916-5582673184-814ZG.jpg",
+  "musicTheme": "Suspense / Tension Build",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Suspense / Tension Build. Kingpin's mafia turf war with five crime families. Dark jazz bass and tense low strings. Gritty and dangerous, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/five-families-of-crime_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/five-families-of-crime_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/five-families-of-crime_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/five-families-of-crime_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/five-families-of-crime_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/five-families-of-crime_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/five-families-of-crime_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/five-families-of-crime_ES04_bystander.mp3"
+  }
 }

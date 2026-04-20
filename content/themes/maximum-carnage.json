@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "maximum-carnage",
   "name": "Maximum Carnage",
   "description": "Carnage escapes Ravencroft and assembles a twisted family of killers, unleashing a city-wide massacre across Manhattan. Spider-Man and his allies must stop the symbiote-fueled rampage before New York drowns in chaos.",
@@ -44,5 +44,17 @@
     }
   },
   "flavorText": "There's no law. There's no order. There's only Carnage.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/8511026-4223850769-20832.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/8511026-4223850769-20832.jpg",
+  "musicTheme": "Terror / Horror Sting",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Terror / Horror Sting. Symbiote-fueled Maximum Carnage massacre in Manhattan. Screaming strings and brutal percussion. Chaotic and horrific, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/maximum-carnage_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/maximum-carnage_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/maximum-carnage_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/maximum-carnage_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/maximum-carnage_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/maximum-carnage_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/maximum-carnage_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/maximum-carnage_ES04_bystander.mp3"
+  }
 }

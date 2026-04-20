@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "clone-saga",
   "name": "Clone Saga",
   "description": "Ben Reilly returns from the dead claiming to be the real Peter Parker, plunging Spider-Man's identity into chaos. As clones multiply and old enemies manipulate events from the shadows, the question becomes inescapable—who is the real Spider-Man?",
@@ -44,5 +44,17 @@
     }
   },
   "flavorText": "Who is Spider-Man? Even he doesn't know anymore.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/5/54649/1141669-p00001___spider_man_the_clone_saga__6.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/5/54649/1141669-p00001___spider_man_the_clone_saga__6.jpg",
+  "musicTheme": "Mystery / Revelation",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Mystery / Revelation. Spider-Man identity crisis and clone chaos. Enigmatic harp and woodwinds with sudden brass 'reveal' hits. Suspenseful and twisting, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/clone-saga_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/clone-saga_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/clone-saga_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/clone-saga_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/clone-saga_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/clone-saga_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/clone-saga_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/clone-saga_ES04_bystander.mp3"
+  }
 }

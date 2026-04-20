@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "black-order-assault",
   "name": "Black Order Assault",
   "description": "Thanos dispatches his Black Order—Ebony Maw, Proxima Midnight, Corvus Glaive, and the rest—to Earth as heralds of destruction. While the Avengers are scattered across the galaxy, Earth's remaining defenders face an enemy designed to break them.",
@@ -44,5 +44,17 @@
     }
   },
   "flavorText": "The Black Order does not negotiate. They arrive, and worlds end.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/3237209-01a.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/3237209-01a.jpg",
+  "musicTheme": "Villain Entrance / Imperial March",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Villain Entrance / Imperial March. Thanos' elite Black Order death squad arrives on Earth. Dark marching brass with anvil strikes and whispering choir. Pure menace, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/black-order-assault_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/black-order-assault_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/black-order-assault_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/black-order-assault_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/black-order-assault_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/black-order-assault_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/black-order-assault_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/black-order-assault_ES04_bystander.mp3"
+  }
 }

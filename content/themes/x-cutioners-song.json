@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "x-cutioners-song",
   "name": "X-Cutioner's Song",
   "description": "Stryfe, the dark clone of Cable, orchestrates an assassination attempt on Professor X and unleashes the Legacy Virus. The X-Men and X-Force must untangle a web of time-displaced identities to stop him.",
@@ -48,5 +48,17 @@
     }
   },
   "flavorText": "The sins of the future are paid in the present.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/4031880-01.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/4031880-01.jpg",
+  "musicTheme": "Mystery / Revelation",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Mystery / Revelation. Time-displaced Stryfe assassination and Legacy Virus. Fractured Cable motif and ticking clock. Tense and identity-twisting, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/x-cutioners-song_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/x-cutioners-song_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/x-cutioners-song_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/x-cutioners-song_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/x-cutioners-song_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/x-cutioners-song_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/x-cutioners-song_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/x-cutioners-song_ES04_bystander.mp3"
+  }
 }

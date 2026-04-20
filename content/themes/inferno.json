@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "inferno",
   "name": "Inferno",
   "description": "Demons from Limbo pour through portals into New York as Madelyne Pryor embraces her destiny as the Goblin Queen. The city itself turns hostile—mailboxes bite, buildings come alive—and the X-Men must seal the breach before Manhattan is consumed.",
@@ -48,5 +48,17 @@
     }
   },
   "flavorText": "The city is alive. The city is hungry. The city is Hell.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/2056717-36.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/2056717-36.jpg",
+  "musicTheme": "Terror / Horror Sting",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Terror / Horror Sting. Demonic Limbo invasion turning Manhattan into Hell. Chaotic orchestral frenzy and hellish choir. Demonic and nightmarish, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/inferno_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/inferno_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/inferno_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/inferno_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/inferno_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/inferno_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/inferno_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/inferno_ES04_bystander.mp3"
+  }
 }

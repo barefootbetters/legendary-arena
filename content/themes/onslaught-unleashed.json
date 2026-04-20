@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "onslaught-unleashed",
   "name": "Onslaught Unleashed",
   "description": "The dark psychic entity born from the combined consciousness of Professor X and Magneto manifests as Onslaught—a being of near-limitless power that threatens to reshape reality. Every hero must unite to stop the monster within.",
@@ -48,5 +48,17 @@
     }
   },
   "flavorText": "I am everything you feared. I am everything you created.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11112/111121983/5112195-6986172767-image_gallery"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11112/111121983/5112195-6986172767-image_gallery",
+  "musicTheme": "Terror / Horror Sting",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Terror / Horror Sting. Psychic Onslaught entity born from Xavier and Magneto. Mind-shattering brass and whispering choir. Psychic and terrifying, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/onslaught-unleashed_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/onslaught-unleashed_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/onslaught-unleashed_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/onslaught-unleashed_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/onslaught-unleashed_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/onslaught-unleashed_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/onslaught-unleashed_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/onslaught-unleashed_ES04_bystander.mp3"
+  }
 }

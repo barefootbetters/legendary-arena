@@ -34,3 +34,18 @@ export {
   HeroClassSchema,
   CardQuerySchema,
 } from "./schema.js";
+
+// Theme types
+export type { ThemeDefinition } from "./theme.schema.js";
+
+// Theme schemas
+export {
+  ThemeDefinitionSchema,
+  ThemeSetupIntentSchema,
+  ThemePlayerCountSchema,
+  ThemePrimaryStoryReferenceSchema,
+  ThemeMusicAssetsSchema,
+} from "./theme.schema.js";
+
+// Theme validators
+export { validateTheme, validateThemeFile } from "./theme.validate.js";

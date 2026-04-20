@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "house-of-m",
   "name": "House of M",
   "description": "The Scarlet Witch reshapes reality into a world where mutants rule and Magneto's family sits atop a global dynasty. When heroes begin to remember the real world, they must confront Wanda before her three words erase mutantkind forever.",
@@ -48,5 +48,17 @@
     }
   },
   "flavorText": "No more mutants.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/4/71863-12049-104861-1-house-of-m.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/4/71863-12049-104861-1-house-of-m.jpg",
+  "musicTheme": "Emotional Lament / Loss",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Emotional Lament / Loss. Scarlet Witch reality rewrite and 'No more mutants'. Heart-wrenching strings and tragic choir. Emotional and world-shattering, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/house-of-m_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/house-of-m_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/house-of-m_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/house-of-m_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/house-of-m_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/house-of-m_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/house-of-m_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/house-of-m_ES04_bystander.mp3"
+  }
 }

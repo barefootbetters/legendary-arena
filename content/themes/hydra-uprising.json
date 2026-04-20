@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "hydra-uprising",
   "name": "HYDRA Uprising",
   "description": "The HYDRA High Council activates sleeper cells embedded across every level of government and military. S.H.I.E.L.D. agents must root out the infiltrators before the serpent's grip becomes unbreakable.",
@@ -45,5 +45,17 @@
     }
   },
   "flavorText": "Cut off one head, two more shall take its place. Hail HYDRA.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11161/111615891/9205278-cover.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11161/111615891/9205278-cover.jpg",
+  "musicTheme": "Suspense / Tension Build",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Suspense / Tension Build. HYDRA sleeper-cell global conspiracy. Marching HYDRA motif in minor key with espionage tension. Suspenseful and menacing, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/hydra-uprising_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/hydra-uprising_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/hydra-uprising_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/hydra-uprising_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/hydra-uprising_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/hydra-uprising_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/hydra-uprising_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/hydra-uprising_ES04_bystander.mp3"
+  }
 }

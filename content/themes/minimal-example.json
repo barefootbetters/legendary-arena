@@ -1,0 +1,21 @@
+{
+  "themeSchemaVersion": 2,
+  "themeId": "minimal-example",
+  "name": "Minimal Example",
+  "description": "A minimal theme demonstrating that all editorial, reference, and music fields are optional.",
+  "setupIntent": {
+    "mastermindId": "example-mastermind",
+    "schemeId": "example-scheme",
+    "villainGroupIds": [
+      "example-villain-group"
+    ],
+    "heroDeckIds": [
+      "example-hero"
+    ]
+  },
+  "playerCount": {
+    "recommended": [2],
+    "min": 2,
+    "max": 2
+  }
+}

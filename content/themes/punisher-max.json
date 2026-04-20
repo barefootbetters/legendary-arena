@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "punisher-max",
   "name": "Punisher MAX",
   "description": "Frank Castle wages a one-man war against the criminal underworld with brutal efficiency and zero compromise. No superpowers, no mercy—just a soldier who decided that the system failed and took justice into his own hands.",
@@ -47,5 +47,17 @@
     }
   },
   "flavorText": "One man. One war. No rules.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/5756/1147385-pmbos_001_c01.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/0/5756/1147385-pmbos_001_c01.jpg",
+  "musicTheme": "Pursuit / Escape",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Pursuit / Escape. One-man Punisher war on crime with zero mercy. Driving strings and relentless percussion. Gritty and unstoppable, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/punisher-max_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/punisher-max_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/punisher-max_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/punisher-max_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/punisher-max_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/punisher-max_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/punisher-max_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/punisher-max_ES04_bystander.mp3"
+  }
 }

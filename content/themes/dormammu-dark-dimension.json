@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "dormammu-dark-dimension",
   "name": "Dormammu's Dark Dimension",
   "description": "Dormammu, the Dread One, breaches the barriers between dimensions to consume Earth. Doctor Strange and his mystic allies must hold the line at the Sanctum Sanctorum while reality itself warps under the Dark Dimension's influence.",
@@ -44,5 +44,17 @@
     }
   },
   "flavorText": "Dormammu comes. And the Dark Dimension follows.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/12/124613/7912980-126.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/12/124613/7912980-126.jpg",
+  "musicTheme": "Terror / Horror Sting",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Terror / Horror Sting. Dormammu breaching dimensions to consume Earth. Deep brass drones and screaming high strings. Apocalyptic and otherworldly, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/dormammu-dark-dimension_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/dormammu-dark-dimension_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/dormammu-dark-dimension_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/dormammu-dark-dimension_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/dormammu-dark-dimension_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/dormammu-dark-dimension_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/dormammu-dark-dimension_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/dormammu-dark-dimension_ES04_bystander.mp3"
+  }
 }

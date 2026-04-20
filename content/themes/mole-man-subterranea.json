@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "mole-man-subterranea",
   "name": "Mole Man's Subterranea",
   "description": "The Mole Man commands an army of subterranean monsters from Monster Island, launching attacks on the surface world that rejected him. The Fantastic Four must descend into his underground kingdom to stop the seismic assaults before entire cities collapse.",
@@ -42,5 +42,17 @@
     }
   },
   "flavorText": "The surface world cast me out. Now the earth itself rises against them.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11112/111121983/4982390-8551652907-FANTA.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11112/111121983/4982390-8551652907-FANTA.jpg",
+  "musicTheme": "Suspense / Tension Build",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Suspense / Tension Build. Underground monster invasion from Subterranea. Low rumbling strings and seismic percussion. Tense and subterranean, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/mole-man-subterranea_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/mole-man-subterranea_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/mole-man-subterranea_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/mole-man-subterranea_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/mole-man-subterranea_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/mole-man-subterranea_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/mole-man-subterranea_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/mole-man-subterranea_ES04_bystander.mp3"
+  }
 }

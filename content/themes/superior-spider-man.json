@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "superior-spider-man",
   "name": "Superior Spider-Man",
   "description": "Doctor Octopus has swapped minds with Peter Parker, inheriting Spider-Man's body and powers. Vowing to prove himself the 'superior' Spider-Man, Otto Octavius walks a razor's edge between heroism and tyranny while Peter's ghost fights to reclaim his life.",
@@ -44,5 +44,17 @@
     }
   },
   "flavorText": "Peter Parker is dead. Long live the Superior Spider-Man.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/6735989-01.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/6735989-01.jpg",
+  "musicTheme": "Mystery / Revelation",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Mystery / Revelation. Doc Ock in Peter Parker's body as Superior Spider-Man. Twisted heroic theme with mechanical undertones. Identity-twisting and dark, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/superior-spider-man_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/superior-spider-man_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/superior-spider-man_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/superior-spider-man_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/superior-spider-man_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/superior-spider-man_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/superior-spider-man_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/superior-spider-man_ES04_bystander.mp3"
+  }
 }

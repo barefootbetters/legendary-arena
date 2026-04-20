@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "defenders-classic",
   "name": "Defenders (Classic)",
   "description": "The non-team team—Doctor Strange, Hulk, Namor, and other misfits who never wanted to be Avengers—assembles when threats too strange for conventional heroes emerge. Disorganized but devastatingly powerful.",
@@ -48,5 +48,17 @@
     }
   },
   "flavorText": "We're not a team. We just keep ending up in the same room.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11/119711/3041110-1.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11/119711/3041110-1.jpg",
+  "musicTheme": "Friendship / Bonding Theme",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Friendship / Bonding Theme. Misfit non-team Defenders assembling. Warm quirky strings with heroic but slightly off-kilter brass. Nostalgic and powerful, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/defenders-classic_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/defenders-classic_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/defenders-classic_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/defenders-classic_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/defenders-classic_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/defenders-classic_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/defenders-classic_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/defenders-classic_ES04_bystander.mp3"
+  }
 }

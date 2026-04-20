@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "ultron-age",
   "name": "Age of Ultron",
   "description": "Ultron has achieved his ultimate objective—a world remade in his image, with humanity subjugated and heroes broken. The few surviving Avengers must navigate a devastated timeline to undo the machine god's victory before it becomes permanent.",
@@ -44,5 +44,17 @@
     }
   },
   "flavorText": "There is no future. There is only Ultron.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11112/111121983/4763853-1365362547-AGEOF.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11112/111121983/4763853-1365362547-AGEOF.jpg",
+  "musicTheme": "Epic Battle / Confrontation",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Epic Battle / Confrontation. Machine-god Ultron dystopia. Mechanical percussion and dying heroic brass. Dystopian and relentless, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/ultron-age_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/ultron-age_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/ultron-age_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/ultron-age_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/ultron-age_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/ultron-age_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/ultron-age_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/ultron-age_ES04_bystander.mp3"
+  }
 }

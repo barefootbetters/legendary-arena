@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "ghost-rider-vengeance",
   "name": "Ghost Rider: Spirit of Vengeance",
   "description": "Zarathos, the demon bound to the Ghost Rider, threatens to consume his host entirely. Caught between demonic servitude and the burning need for justice, the Spirit of Vengeance rides through Hell's own streets.",
@@ -44,5 +44,17 @@
     }
   },
   "flavorText": "Innocent blood cries out. The Rider answers.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11144/111442876/8387140-fms0hakaaaeqtqv.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11144/111442876/8387140-fms0hakaaaeqtqv.jpg",
+  "musicTheme": "Terror / Horror Sting",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Terror / Horror Sting. Demonic Ghost Rider Spirit of Vengeance. Hellfire brass and motorcycle percussion. Fiery and vengeful, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/ghost-rider-vengeance_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/ghost-rider-vengeance_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/ghost-rider-vengeance_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/ghost-rider-vengeance_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/ghost-rider-vengeance_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/ghost-rider-vengeance_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/ghost-rider-vengeance_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/ghost-rider-vengeance_ES04_bystander.mp3"
+  }
 }

@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "aim-modok",
   "name": "A.I.M. and M.O.D.O.K.",
   "description": "Advanced Idea Mechanics has created M.O.D.O.K.—a Mental Organism Designed Only for Killing—and the weaponized intellect now commands A.I.M.'s arsenal of superscience. S.H.I.E.L.D. agents must shut down the beekeepers before their next invention destroys the world.",
@@ -44,5 +44,17 @@
     }
   },
   "flavorText": "Science without conscience is the weapon of tyrants.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/69951/3021848-146.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/69951/3021848-146.jpg",
+  "musicTheme": "Villain Entrance / Imperial March",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Villain Entrance / Imperial March. Superscience villain M.O.D.O.K. commanding A.I.M.'s arsenal. Mechanical percussion, dissonant brass stabs, rising electronic undertones, pure menacing intellect. High cinematic energy, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/aim-modok_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/aim-modok_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/aim-modok_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/aim-modok_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/aim-modok_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/aim-modok_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/aim-modok_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/aim-modok_ES04_bystander.mp3"
+  }
 }

@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "dark-city-streets",
   "name": "Dark City Streets",
   "description": "The Kingpin tightens his iron grip on New York's criminal underworld, commanding the streets through fear and corruption. The city's street-level vigilantes must fight to keep the darkness at bay before organized crime swallows every borough.",
@@ -48,5 +48,17 @@
     }
   },
   "flavorText": "This city belongs to me. Every shadow. Every alley. Every soul.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/8/84205/1958949-251px_daredevil_vol_1_170.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/8/84205/1958949-251px_daredevil_vol_1_170.jpg",
+  "musicTheme": "Suspense / Tension Build",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Suspense / Tension Build. Kingpin's gritty street-level crime wave in a noir city. Dark jazz bass, low strings, rain-soaked piano. Tense and shadowy, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/dark-city-streets_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/dark-city-streets_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/dark-city-streets_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/dark-city-streets_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/dark-city-streets_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/dark-city-streets_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/dark-city-streets_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/dark-city-streets_ES04_bystander.mp3"
+  }
 }

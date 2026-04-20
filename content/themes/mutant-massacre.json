@@ -1,5 +1,5 @@
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "mutant-massacre",
   "name": "Mutant Massacre",
   "description": "Mr. Sinister's Marauders descend into the Morlock Tunnels and systematically slaughter the mutant outcasts living beneath New York. The X-Men arrive to find carnage—and a trap that will cost them dearly.",
@@ -48,5 +48,17 @@
     }
   },
   "flavorText": "The tunnels run red. The Marauders show no mercy.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11/110017/7254729-xmd_2100001.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/11/110017/7254729-xmd_2100001.jpg",
+  "musicTheme": "Terror / Horror Sting",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Terror / Horror Sting. Marauder slaughter in the Morlock Tunnels. Brutal stabbing brass and dying strings. Dark and merciless, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/mutant-massacre_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/mutant-massacre_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/mutant-massacre_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/mutant-massacre_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/mutant-massacre_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/mutant-massacre_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/mutant-massacre_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/mutant-massacre_ES04_bystander.mp3"
+  }
 }
