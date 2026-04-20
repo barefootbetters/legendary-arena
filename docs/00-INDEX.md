@@ -3,7 +3,7 @@
 > A modern multiplayer evolution of the Marvel Legendary deck-building card game.  
 > Built with **boardgame.io**, **TypeScript**, **Cloudflare R2**, and **PostgreSQL**.
 
-**Status:** Foundation complete • Core gameplay loop complete (Phase 4) • Card mechanics & abilities complete (Phase 5) • PAR scoring + UIState progress projection + Arena HUD complete (WP-048 2026-04-17, WP-067 2026-04-17, WP-062 2026-04-18) • Replay snapshot producer + step-level API + game log & replay inspector client surface complete (WP-079 / WP-080 / WP-063 / WP-064 all landed 2026-04-19) • Theme data model ready • Registry viewer with keyword/rule tooltips
+**Status:** Foundation complete • Core gameplay loop complete (Phase 4) • Card mechanics & abilities complete (Phase 5) • **Phase 6 (Verification, UI & Production) complete — tagged `phase-6-complete` at commit `c376467` on 2026-04-19**: replay + UIState + inspector chain (WP-027/028/063/064/080) plus production-safety stack (WP-031 invariants / WP-032 network / WP-034 versioning `5139817` / WP-035 release-ops playbook `d5935b5` / WP-042 deployment checklists `c964cf4`) plus client surfaces (WP-061/062/065) plus scoring (WP-048/067) all landed • Theme data model ready • Registry viewer with keyword/rule tooltips
 
 ---
 
@@ -85,7 +85,7 @@ mindmap
 
 ---
 
-**Last updated:** 2026-04-19
+**Last updated:** 2026-04-19 (Phase 6 closed — tag `phase-6-complete` at commit `c376467`; 19 WPs landed; engine 436/109/0, repo-wide 526/0; WP-042.1 deferred per D-4201 and WP-066 unreviewed carried forward to Phase 7 backlog)
 **Maintained by:** Human developer
 
 *This index is the single source of truth for navigating the project documentation.*

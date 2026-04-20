@@ -1,10 +1,17 @@
-# WP-055 — Theme Data Model (Mastermind / Scenario Themes v1)
+# WP-055 — Theme Data Model (Mastermind / Scenario Themes v2)
 
 **Status:** Ready for Implementation
 **Primary Layer:** Content / Data Contracts (Registry)
-**Schema Version:** 1
-**Last Updated:** 2026-04-12
+**Schema Version:** 2
+**Last Updated:** 2026-04-19
 **Dependencies:** WP-003 (registry exists), WP-005A (MatchSetupConfig locked)
+
+**v2 Addendum (2026-04-19):** Schema bumped from 1 to 2 to introduce three
+optional music fields (`musicTheme`, `musicAIPrompt`, `musicAssets`) per
+D-5509. The v2 schema is a strict superset of v1 — all v1-required fields
+retain their v1 semantics; v2 adds optional fields only. Per D-5504 (schema
+evolution via versioning), the bump is required even for additive changes.
+All 68 authored themes in `content/themes/` have been migrated to v2.
 
 ---
 
@@ -45,7 +52,7 @@ This packet converts comic-accurate theming from a wishlist into architecture.
 
 ## Goal
 
-Establish a **stable, extensible, engine-agnostic Theme Data Contract (v1)**
+Establish a **stable, extensible, engine-agnostic Theme Data Contract (v2)**
 such that:
 
 - Themes are expressible entirely as static JSON files in `content/themes/`
@@ -131,6 +138,15 @@ Before writing a single line:
 - If any contract, field name, or reference is unclear, stop and ask the human
   before proceeding — never guess or invent field names, type shapes, or file
   paths
+- **Reality-reconciliation at pre-flight (WP-042 precedent):** before locking
+  any Zod schema field name, file path, or contract reference in the session
+  invocation prompt as a "Locked Value", grep the actual source
+  (`packages/registry/src/schema.ts`, `packages/registry/src/index.ts`, at
+  least one representative `content/themes/*.json`, and `apps/registry-viewer/
+  src/`) to confirm the name exists and matches. WP-042's 01.6 post-mortem
+  §8 documents three session-prompt vs reality drifts that were caught only
+  at execution time and cost authoring cycles — the pre-flight grep prevents
+  the same class of issue here
 
 **Locked contract values:**
 
@@ -142,7 +158,7 @@ Before writing a single line:
 - **Theme storage layout:**
   `content/themes/` — one JSON file per theme, named by `themeId` slug
 
-- **Schema version:** `themeSchemaVersion: 1`
+- **Schema version:** `themeSchemaVersion: 2`
 
 ---
 
@@ -155,7 +171,7 @@ Before writing a single line:
   - full-sentence error message
 - Identical JSON input must always yield identical validation output
 - Filename slug **must** equal `themeId`
-- `themeSchemaVersion` must equal `1`
+- `themeSchemaVersion` must equal `2`
 
 ---
 
@@ -202,8 +218,22 @@ export const ThemePrimaryStoryReferenceSchema = z.object({
   // CMRO, Comic Vine) may rot and must never be treated as dependencies
 });
 
+export const ThemeMusicAssetsSchema = z.object({
+  previewIntroUrl: z.string().url().optional(),
+  matchStartUrl: z.string().url().optional(),
+  ambientLoopUrl: z.string().url().optional(),
+  mainThemeUrl: z.string().url().optional(),
+  schemeTwistUrl: z.string().url().optional(),
+  masterStrikeUrl: z.string().url().optional(),
+  villainAmbushUrl: z.string().url().optional(),
+  bystanderUrl: z.string().url().optional(),
+  // why: every URL is optional so themes can ship partial audio coverage
+  // while the full asset pipeline documented in
+  // content/media/MUSIC-AUTHORING.md is being produced
+});
+
 export const ThemeDefinitionSchema = z.object({
-  themeSchemaVersion: z.literal(1),
+  themeSchemaVersion: z.literal(2),
   themeId: z.string().min(1).regex(
     /^[a-z0-9]+(-[a-z0-9]+)*$/,
     'themeId must be kebab-case',
@@ -218,10 +248,15 @@ export const ThemeDefinitionSchema = z.object({
   }).optional(),
   flavorText: z.string().optional(),
   comicImageUrl: z.string().url().nullable().optional(),
+  musicTheme: z.string().optional(),
+  musicAIPrompt: z.string().optional(),
+  musicAssets: ThemeMusicAssetsSchema.optional(),
   // why: comicImageUrl is an editorial cover image reference fetched from
   // Comic Vine API. Nullable because not all themes have verified covers.
   // URLs are hotlinked, not hosted — no images are stored in R2.
-  // why: parDifficultyRating intentionally excluded from v1 —
+  // why: musicTheme / musicAIPrompt / musicAssets are v2 additions (D-5509).
+  // All three are optional; themes without authored audio omit them.
+  // why: parDifficultyRating intentionally excluded from v2 —
   // PAR scoring does not exist yet (WP-048)
   // note: themes intentionally exclude any rule logic, modifiers, or effects
 });
@@ -290,7 +325,7 @@ validation test fixtures.
 
 ```json
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "dark-phoenix-saga",
   "name": "Dark Phoenix Saga",
   "description": "Jean Grey becomes the Dark Phoenix, forcing the X-Men to confront cosmic power, betrayal, and the possible end of the universe.",
@@ -337,7 +372,19 @@ validation test fixtures.
     }
   },
   "flavorText": "The fire rises. The Phoenix must be stopped — or the universe will burn.",
-  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/5329124-10.jpg"
+  "comicImageUrl": "https://comicvine.gamespot.com/a/uploads/original/6/67663/5329124-10.jpg",
+  "musicTheme": "Terror / Horror Sting",
+  "musicAIPrompt": "Create a 45-second seamless loopable orchestral film score in the exact style of John Williams. Terror / Horror Sting. Jean Grey's descent into the Dark Phoenix — cosmic power turning to tragedy. Fractured strings, dissonant woodwinds, low choral whispers, sudden orchestral hits. High cinematic energy, wide stereo, instrumental only, perfectly loopable with no fade in/out.",
+  "musicAssets": {
+    "previewIntroUrl": "https://music.barefootbetters.com/themes/dark-phoenix-saga_MT01_preview-intro.mp3",
+    "matchStartUrl": "https://music.barefootbetters.com/themes/dark-phoenix-saga_MT02_match-start.mp3",
+    "ambientLoopUrl": "https://music.barefootbetters.com/themes/dark-phoenix-saga_MT03_ambient-loop.mp3",
+    "mainThemeUrl": "https://music.barefootbetters.com/themes/dark-phoenix-saga_MT04_main-theme.mp3",
+    "schemeTwistUrl": "https://music.barefootbetters.com/themes/dark-phoenix-saga_ES01_scheme-twist.mp3",
+    "masterStrikeUrl": "https://music.barefootbetters.com/themes/dark-phoenix-saga_ES02_master-strike.mp3",
+    "villainAmbushUrl": "https://music.barefootbetters.com/themes/dark-phoenix-saga_ES03_villain-ambush.mp3",
+    "bystanderUrl": "https://music.barefootbetters.com/themes/dark-phoenix-saga_ES04_bystander.mp3"
+  }
 }
 ```
 
@@ -345,10 +392,10 @@ validation test fixtures.
 
 ```json
 {
-  "themeSchemaVersion": 1,
+  "themeSchemaVersion": 2,
   "themeId": "minimal-example",
   "name": "Minimal Example",
-  "description": "A minimal theme demonstrating that all editorial and reference fields are optional.",
+  "description": "A minimal theme demonstrating that all editorial, reference, and music fields are optional.",
   "setupIntent": {
     "mastermindId": "example-mastermind",
     "schemeId": "example-scheme",
@@ -376,7 +423,7 @@ validation test fixtures.
 
 Uses `node:test` and `node:assert` only. No boardgame.io import.
 
-Eight tests:
+Ten tests:
 1. Valid theme with all fields passes validation
 2. Valid theme with only required fields passes validation
 3. Missing `themeSchemaVersion` fails validation
@@ -386,6 +433,9 @@ Eight tests:
 7. `playerCount.recommended` value outside `[min, max]` fails validation
 8. Example theme files in `content/themes/` all pass validation
    (directory scan test — confirms examples stay in sync with schema)
+9. `themeSchemaVersion: 1` fails validation (literal v2 enforced — v1 files
+   must be migrated, never loaded as-is)
+10. `musicAssets` with a non-URL string in any URL field fails validation
 
 ---
 
@@ -420,7 +470,8 @@ Eight tests:
 - `packages/registry/src/theme.validate.ts` — **new** —
   validateTheme (sync), validateThemeFile (async) helper functions
 - `packages/registry/src/theme.schema.test.ts` — **new** —
-  `node:test` coverage (8 tests)
+  `node:test` coverage (10 tests — includes tests #9 and #10 added
+  with the v2 schema bump per D-5509)
 - `content/themes/dark-phoenix-saga.json` — **new** —
   full example theme (all fields populated)
 - `content/themes/minimal-example.json` — **new** —
@@ -441,10 +492,12 @@ Add the following decisions to `DECISIONS.md`:
 - External comic references (including vendor-specific URLs like Marvel
   Unlimited, Fandom, CMRO, Comic Vine) are editorial only — never
   authoritative or required at runtime; URLs may rot without consequence
-- `parDifficultyRating` excluded from v1 (PAR system does not exist yet)
+- `parDifficultyRating` excluded from v2 (PAR system does not exist yet)
 - `setupIntent` uses `MatchSetupConfig` field names but excludes count
   fields (themes describe content composition, not pile sizing)
 - Referential integrity validation deferred to a theme loader WP
+- Music fields (`musicTheme`, `musicAIPrompt`, `musicAssets`) added at v2
+  per D-5509 — all optional, editorial in spirit, engine ignores missing values
 
 Update `WORK_INDEX.md` to add WP-055 with status.
 
@@ -456,13 +509,17 @@ All items must be binary pass/fail. No partial credit.
 
 ### Schema Correctness
 - [ ] `ThemeDefinitionSchema` Zod schema exists and exports `ThemeDefinition` type
-- [ ] `themeSchemaVersion` is `z.literal(1)` — not a generic number
+- [ ] `themeSchemaVersion` is `z.literal(2)` — not a generic number
 - [ ] `themeId` enforces kebab-case via regex
 - [ ] `setupIntent` field names match `MatchSetupConfig` exactly:
       `mastermindId`, `schemeId`, `villainGroupIds`, `henchmanGroupIds`,
       `heroDeckIds`
 - [ ] No `parDifficultyRating` field exists in the schema
 - [ ] `playerCount` refinements enforce `min <= max` and `recommended` within range
+- [ ] `ThemeMusicAssetsSchema` exists with all 8 optional URL fields
+      (`previewIntroUrl`, `matchStartUrl`, `ambientLoopUrl`, `mainThemeUrl`,
+      `schemeTwistUrl`, `masterStrikeUrl`, `villainAmbushUrl`, `bystanderUrl`)
+- [ ] `musicTheme`, `musicAIPrompt`, and `musicAssets` are all optional on `ThemeDefinitionSchema`
 
 ### Validation
 - [ ] `validateTheme` returns structured result (never throws)
@@ -483,7 +540,8 @@ All items must be binary pass/fail. No partial credit.
       `content/themes/`
 
 ### Tests
-- [ ] All 8 tests pass
+- [ ] All 10 tests pass (the 8 v1-era tests + tests #9 and #10 added
+      with the v2 schema bump per D-5509)
 - [ ] Test files use `.test.ts` extension
 - [ ] Tests use `node:test` and `node:assert` only
 - [ ] No boardgame.io import in test files
@@ -547,13 +605,20 @@ The following decisions were made during the WP-055 design review session and
 are recorded here to prevent a future execution session from re-deriving them
 as standalone work packets.
 
-### Editorial reference fields belong in v1, not a separate WP-055A
+### Editorial reference fields belonged in v1, not a separate WP-055A
 
-A proposal to create WP-055A (Theme Editorial Reference Extensions, schema v2)
-was rejected. Adding optional fields (`marvelUnlimitedUrl`, `externalIndexUrls`)
-to a Zod schema is backwards-compatible — it does not require a version bump.
-The fields were folded into `ThemePrimaryStoryReferenceSchema` in this WP.
-**There is no v2 schema and no `theme.schema.v2.ts` file.**
+A proposal to create WP-055A (Theme Editorial Reference Extensions) was
+rejected at the 2026-04-12 review. Adding optional fields
+(`marvelUnlimitedUrl`, `externalIndexUrls`) to a Zod schema was judged
+backwards-compatible and was folded into `ThemePrimaryStoryReferenceSchema`
+without a version bump.
+
+**Superseded 2026-04-19 (D-5504 / D-5509):** On re-reading D-5504 ("Schema
+changes require a version bump, never mutation of existing fields"), any
+schema change — additive or otherwise — now requires a version bump. The
+music-fields addition is the first such bump (v1 → v2). Future additive
+fields will also require a version bump. The editorial-fields exemption
+above is grandfathered in v1; it would not be permitted today.
 
 ### Theme loader does not need its own WP
 
