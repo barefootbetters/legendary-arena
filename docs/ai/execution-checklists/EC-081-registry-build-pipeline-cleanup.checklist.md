@@ -44,9 +44,12 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 - **CI job `build` step deleted:** the step named `"Normalize cards"`
   with run `pnpm registry:validate` and comment `# also writes
   cards.json + index.json`
-- **README.md regions edited:** pipeline diagram at lines 62-64
-  (three-line block starting `#  1. scripts/normalize-cards.ts`) and
-  acceptance items at lines 204-205
+- **README.md regions edited:** pipeline diagram near the top of the
+  file (currently lines 62-64 — three-line block starting
+  `#  1. scripts/normalize-cards.ts`) and acceptance items in the
+  acceptance checklist (currently lines 204-205). Use the anchor
+  strings, not the line numbers, to locate the blocks during edit;
+  line numbers are provided as a hint, not a lock
 - **DECISIONS.md additions:** D-8101 (delete-not-rewrite rationale),
   D-8102 (`registry:validate` as the single CI validation step)
 - **Test baseline UNCHANGED:** engine `436 / 109 / 0 fail`; repo-wide
@@ -62,11 +65,17 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 - WP-003 immutable files untouched: `schema.ts`, `shared.ts`,
   `impl/localRegistry.ts`
 - `validate.ts` and `upload-r2.ts` are out of scope for any modification
-- CI edit is confined to deleting one step in job `build`; no other job,
-  trigger, or artifact name changes
+- CI edit is confined to deleting one step in the `build` job; no
+  other job, trigger, or artifact name changes
 - If grep reveals a hidden consumer of the deleted JSON artifacts,
   STOP and ask — do not silently expand scope to a rewrite
 - Do not `--amend` a published commit; create a new commit if a hook fails
+- Perform the final grep checks (normalize-cards / build-dist /
+  standardize-images / `dist/cards.json` / `dist/keywords.json` /
+  `dist/registry-info.json`) **immediately before** the delete commit,
+  not earlier in the session — this prevents any mid-session doc or
+  config edit from silently reintroducing a reference between the
+  check and the deletion
 
 ---
 
@@ -127,8 +136,9 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
       `.github/workflows/ci.yml`, `README.md`
 - [ ] `git diff --name-only --diff-filter=D` lists only the three
       deleted scripts
-- [ ] `docs/ai/STATUS.md` updated — dead pipeline removed; registry
-      build is tsc-only; D-8101 + D-8102 recorded
+- [ ] `docs/ai/STATUS.md` entry explicitly notes:
+      `Registry build is tsc-only; no normalize/dist pipeline remains.`
+      (verbatim phrase) plus D-8101 + D-8102 recorded
 - [ ] `docs/ai/DECISIONS.md` has D-8101 and D-8102 entries
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` WP-081 flipped to Done with
       date and commit hash

@@ -42,16 +42,17 @@ plus the `tsc` output (`dist/*.js` + `*.d.ts`), which `apps/server` and
 the WP-055 post-mortem §8 item 3 as a pre-existing artifact unrelated to
 WP-055.
 
-CI is also affected: `.github/workflows/ci.yml` job 2 (`build`) re-runs
-`pnpm registry:validate` under a step named "Normalize cards" with the
-misleading comment `# also writes cards.json + index.json` (it does not —
-`validate.ts` writes only `dist/registry-health.json`). That step is
-redundant (job 1 already runs validation) and the following `pnpm
-registry:build` step fails because `build-dist.mjs` cannot find
-`dist/cards.json`.
+CI is also affected: `.github/workflows/ci.yml` job named `build`
+re-runs `pnpm registry:validate` under a step named "Normalize cards"
+with the misleading comment `# also writes cards.json + index.json`
+(it does not — `validate.ts` writes only `dist/registry-health.json`).
+That step is redundant (the CI job named `validate` already runs
+registry validation) and the following `pnpm registry:build` step
+fails because `build-dist.mjs` cannot find `dist/cards.json`.
 
-README.md still documents the dead pipeline at lines 62-64 and lines
-204-205 of the acceptance checklist.
+README.md still documents the dead pipeline near the top of the file
+(currently lines 62-64) and in the acceptance checklist (currently
+lines 204-205).
 
 ---
 
@@ -177,6 +178,13 @@ Before writing a single line:
 
 **Locked contract values:**
 
+> **Authoritative Lock:** All locked contract values appear only in this
+> "Locked contract values" subsection (and, for executor use, in
+> EC-081 §Locked Values). Any listing of the same values elsewhere in
+> this packet (Scope (In) §D–§F prose, Files Expected to Change, etc.)
+> is descriptive and must not diverge from this block. If a conflict
+> arises, this subsection wins.
+
 - **Files to delete (3):**
   - `packages/registry/scripts/normalize-cards.ts`
   - `packages/registry/scripts/build-dist.mjs`
@@ -187,8 +195,9 @@ Before writing a single line:
     `scripts.standardize-img`
   - `.github/workflows/ci.yml` — job `build` step "Normalize cards" +
     misleading comment
-  - `README.md` — lines 62-64 (pipeline diagram) and lines 204-205
-    (acceptance items)
+  - `README.md` — pipeline diagram near the top of the file (currently
+    lines 62-64) and acceptance items in the acceptance checklist
+    (currently lines 204-205)
 
 - **`package.json` `scripts.build` after this packet:**
   `"build": "tsc -p tsconfig.build.json"`
@@ -262,13 +271,13 @@ untouched.
 
 ### E) Modify `.github/workflows/ci.yml`
 
-Delete the "Normalize cards" step from job 2 (`build`). The redundant
-`pnpm registry:validate` invocation and its misleading `# also writes
-cards.json + index.json` comment both go. Job 1 (`validate`) already
-runs registry validation; job 2 only needs to `tsc`-compile and upload
-the dist artifact.
+Delete the "Normalize cards" step from the CI job named `build`. The
+redundant `pnpm registry:validate` invocation and its misleading
+`# also writes cards.json + index.json` comment both go. The CI job
+named `validate` already runs registry validation; the `build` job
+only needs to `tsc`-compile and upload the dist artifact.
 
-After, job 2 (`build`) steps are:
+After, the `build` job steps are:
 1. `actions/checkout@v4`
 2. `pnpm/action-setup@v3` with `version: 9`
 3. `actions/setup-node@v4` with `node-version: 20, cache: pnpm`
@@ -277,20 +286,24 @@ After, job 2 (`build`) steps are:
 6. `actions/upload-artifact@v4` with `name: registry-dist, path:
    packages/registry/dist/`
 
-No other job is modified. Jobs 1, 3, 4, 5 unchanged. The `needs:`
-graph, the `if: startsWith(github.ref, 'refs/tags/v')` tag gates on
-jobs 4/5, and the environment-variable passthroughs are unchanged.
+No other job is modified. The `validate`, `build-viewer`, `upload-r2`,
+and `publish-npm` jobs are unchanged. The `needs:` graph, the
+`if: startsWith(github.ref, 'refs/tags/v')` tag gates on `upload-r2`
+and `publish-npm`, and the environment-variable passthroughs are all
+unchanged.
 
 ### F) Modify `README.md`
 
-Remove the pipeline diagram at lines 62-64:
+Remove the pipeline diagram near the top of the file (currently lines
+62-64):
 ```
 #  1. scripts/normalize-cards.ts  → dist/cards.json
 #  2. scripts/standardize-images.ts → images/standard/...
 #  3. scripts/build-dist.mjs      → dist/index.json, sets.json, keywords.json
 ```
 
-Remove the acceptance items at lines 204-205:
+Remove the acceptance items in the acceptance checklist (currently
+lines 204-205):
 ```
 - [ ] `dist/cards.json` contains all normalized cards sorted by ID
 - [ ] `dist/index.json` contains lightweight metadata only
@@ -300,7 +313,8 @@ Replace with up-to-date wording that describes what the build actually
 does today (tsc → `dist/index.js` + `.d.ts`; validate → `dist/registry-
 health.json`). The replacement prose should be minimal — two to four
 lines — and must not reintroduce any reference to the deleted scripts
-or their outputs.
+or their outputs, and must not mention any precomputed registry JSON
+artifact other than `dist/registry-health.json`.
 
 ---
 
@@ -362,7 +376,9 @@ Add the following decisions to `DECISIONS.md`:
   for registry data is `metadata/sets.json` + `metadata/{abbr}.json`
   fetched directly from R2 by `httpRegistry.ts` / `localRegistry.ts`
   at runtime; there is no precomputed flat artifact on the critical
-  path.
+  path. Rewriting the pipeline against post-WP-003 schemas would
+  create an additional derived artifact with no runtime consumer,
+  increasing maintenance surface without benefit.
 - **D-8102** — `registry:validate` is the single CI step that
   exercises the registry data shape; the redundant second invocation
   in job 2 (`build`) is deleted. Build and validate responsibilities
@@ -414,6 +430,10 @@ All items must be binary pass/fail. No partial credit.
 - [ ] `README.md` contains no occurrence of the string `dist/index.json`
 - [ ] `README.md` contains no occurrence of the string
       `dist/keywords.json`
+- [ ] `README.md` does not mention any precomputed registry JSON
+      artifact other than `dist/registry-health.json` (negative
+      guarantee — prevents replacement prose from reintroducing legacy
+      artifacts under a different name)
 
 ### Build and Test Invariance
 - [ ] `pnpm --filter @legendary-arena/registry build` exits 0 (verified
@@ -512,9 +532,10 @@ This packet is complete when ALL of the following are true:
       `git diff --name-only --diff-filter=D`)
 - [ ] `packages/registry/src/**` is unchanged (confirmed with
       `git diff --stat`)
-- [ ] `docs/ai/STATUS.md` updated — dead build pipeline removed;
-      registry build reduced to tsc only; CI job `build` no longer
-      runs the redundant validation step; D-8101 and D-8102 recorded
+- [ ] `docs/ai/STATUS.md` updated — entry explicitly notes
+      `Registry build is tsc-only; no normalize/dist pipeline remains.`
+      plus: CI job `build` no longer runs the redundant validation
+      step; D-8101 and D-8102 recorded
 - [ ] `docs/ai/DECISIONS.md` updated with D-8101 and D-8102
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` WP-081 flipped from
       Draft to Done with date and commit hash
