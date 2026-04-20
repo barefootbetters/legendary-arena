@@ -167,8 +167,15 @@ Before writing a single line:
 - Validation must be deterministic and reproducible
 - Errors must include:
   - `themeId` (when available)
-  - failing field path
+  - failing field path — one of four stable labels:
+    `'file'` (I/O failure), `'json'` (malformed JSON), `'themeId'`
+    (filename-to-themeId mismatch), or a dot-joined Zod issue path
+    (schema violation)
   - full-sentence error message
+- Neither `validateTheme` nor `validateThemeFile` ever throws; both
+  return `ValidationResult`. I/O and JSON-parse failures return
+  structured errors with stable paths `'file'` and `'json'`
+  respectively so directory scanners can aggregate without try/catch
 - Identical JSON input must always yield identical validation output
 - Filename slug **must** equal `themeId`
 - `themeSchemaVersion` must equal `2`
@@ -276,7 +283,19 @@ type ValidationSuccess = { success: true; theme: ThemeDefinition };
 type ValidationFailure = { success: false; errors: Array<{ path: string; message: string }> };
 type ValidationResult = ValidationSuccess | ValidationFailure;
 
-/** Validate a parsed object against the ThemeDefinition schema. */
+/**
+ * Validate a parsed object against the ThemeDefinition schema.
+ *
+ * Never throws — returns `{ success: false, errors: [...] }` for any
+ * schema violation. Error paths are dot-joined from the Zod issue path.
+ *
+ * why: the returned `theme` is Zod's parsed value. `safeParse` produces
+ * a fresh top-level object, but nested arrays and objects may share
+ * references with the input `data`. Callers that plan to mutate either
+ * the input or the returned theme after validation must clone first
+ * (e.g., `structuredClone(result.theme)`). This mirrors the WP-028 /
+ * D-2802 aliasing-prevention precedent.
+ */
 export function validateTheme(data: unknown): ValidationResult {
   const result = ThemeDefinitionSchema.safeParse(data);
   if (result.success) {
@@ -291,10 +310,54 @@ export function validateTheme(data: unknown): ValidationResult {
   };
 }
 
-/** Read a JSON file, validate it, and check filename-to-themeId alignment. */
+/**
+ * Read a JSON file, validate it, and check filename-to-themeId alignment.
+ *
+ * Never throws — all failure modes return a structured
+ * `ValidationFailure` with one of four stable error-path labels:
+ *   - `'file'`     — I/O failure (ENOENT, EACCES, etc.)
+ *   - `'json'`     — malformed JSON
+ *   - `'themeId'`  — filename-to-themeId mismatch
+ *   - `<schema>`   — Zod issue path (dot-joined) for schema violations
+ *
+ * This contract lets directory scanners and authoring CLIs aggregate
+ * errors across many files without try/catch noise, and is consistent
+ * with the project-wide "pure helpers return structured results; only
+ * `Game.setup()` may throw" rule (`.claude/rules/code-style.md`).
+ */
 export async function validateThemeFile(filePath: string): Promise<ValidationResult> {
-  const raw = await readFile(filePath, 'utf-8');
-  const data = JSON.parse(raw);
+  let raw: string;
+  try {
+    raw = await readFile(filePath, 'utf-8');
+  } catch (error) {
+    // why: I/O failures return structured results instead of throwing so
+    // callers can aggregate file-scan errors uniformly (never throw rule)
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      success: false,
+      errors: [{
+        path: 'file',
+        message: `Cannot read theme file "${filePath}": ${message}.`,
+      }],
+    };
+  }
+
+  let data: unknown;
+  try {
+    data = JSON.parse(raw);
+  } catch (error) {
+    // why: malformed JSON returns a structured result instead of throwing
+    // so authoring workflows can report "invalid JSON at <path>" uniformly
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      success: false,
+      errors: [{
+        path: 'json',
+        message: `Theme file "${filePath}" contains invalid JSON: ${message}.`,
+      }],
+    };
+  }
+
   const validation = validateTheme(data);
 
   if (validation.success) {
@@ -316,12 +379,20 @@ export async function validateThemeFile(filePath: string): Promise<ValidationRes
 }
 ```
 
-### C) `content/themes/` — new directory with example themes
+### C) `content/themes/` — shipped theme directory (already exists; migrated to v2)
 
-Files named `{themeId}.json` — examples serve as living documentation and
-validation test fixtures.
+The `content/themes/` directory ships with 68 authored theme files plus a
+`content/themes/index.json` R2 manifest, a `CATALOG.md` slug reference, and
+a `THEME-INDEX.md` governance index. WP-055 does NOT create this directory —
+it was authored during the v1 design pass. WP-055's content responsibilities
+are (a) commit the v1→v2 music-field migration for all 68 shipped themes,
+and (b) add one new minimal-example theme. Files named `{themeId}.json`
+serve as living documentation and validation test fixtures.
 
-#### `content/themes/dark-phoenix-saga.json` — full example (all fields populated)
+The JSON below illustrates the v2 shape — the file already exists on disk
+and the working tree holds its v2 migration as part of the shipped set.
+
+#### `content/themes/dark-phoenix-saga.json` — reference example (all fields populated; shipped, not new)
 
 ```json
 {
@@ -424,18 +495,74 @@ validation test fixtures.
 Uses `node:test` and `node:assert` only. No boardgame.io import.
 
 Ten tests:
-1. Valid theme with all fields passes validation
+1. Valid theme with all fields passes validation. Also asserts top-level
+   distinctness: `result.theme !== inputData` — pins the WP-028 / D-2802
+   aliasing-prevention precedent at the documented boundary
+   (`safeParse` returns a fresh top-level object for object schemas;
+   nested references may still share by design, per `validateTheme`
+   JSDoc). Single `test()` call with two assertions.
 2. Valid theme with only required fields passes validation
 3. Missing `themeSchemaVersion` fails validation
 4. Invalid `themeId` format (uppercase, spaces) fails validation
 5. Empty `heroDeckIds` array fails validation (`.min(1)` enforced)
 6. `playerCount` with `min > max` fails validation
 7. `playerCount.recommended` value outside `[min, max]` fails validation
-8. Example theme files in `content/themes/` all pass validation
-   (directory scan test — confirms examples stay in sync with schema)
+8. `validateThemeFile` manifest + error-path matrix. One `test()` call
+   with three internal assertions (Part A/B/C wrapping per WP-033 P6-23
+   precedent — preserves the locked 10-test / 2-suite count):
+   - **Part A — manifest-driven happy path:** every theme filename
+     listed in `content/themes/index.json` passes `validateThemeFile`.
+     The manifest is the authoritative list of shipped theme files;
+     aggregate and manifest artifacts in the same directory
+     (`00-ALL_THEMES_COMBINED.json`, `01-ALL_THEMES_COMBINED.json`,
+     `index.json` itself) are NOT themes and must be excluded by
+     construction — a naïve `readdir` scan would load them and fail
+     validation. The test reads `content/themes/index.json`, iterates
+     the resulting `string[]`, and calls `validateThemeFile` on each.
+   - **Part B — I/O failure returns structured result (never throws):**
+     `validateThemeFile('<path-that-does-not-exist>.json')` resolves
+     (not rejects) with
+     `{ success: false, errors: [{ path: 'file', message: /^Cannot read theme file/ }] }`.
+   - **Part C — malformed JSON returns structured result (never throws):**
+     write `"{ not valid json"` to a fixture path under `os.tmpdir()`
+     via `node:fs/promises writeFile`, then
+     `validateThemeFile(<fixtureTmpPath>)` resolves with
+     `{ success: false, errors: [{ path: 'json', message: /contains invalid JSON/ }] }`.
+     Clean up the tmp fixture in a `t.after()` hook.
 9. `themeSchemaVersion: 1` fails validation (literal v2 enforced — v1 files
    must be migrated, never loaded as-is)
 10. `musicAssets` with a non-URL string in any URL field fails validation
+
+### E) `packages/registry/src/index.ts` — modify (public-surface re-export)
+
+Extend the registry package's public surface so future WPs consuming themes
+(UI browsers, setup projectors, scenario loaders) can import from
+`@legendary-arena/registry` rather than deep-path imports into
+`packages/registry/src/theme.*.js`. Follows the existing export pattern
+used for card types, factories, and schemas.
+
+Add the following lines to `packages/registry/src/index.ts`:
+
+```ts
+// Theme types
+export type { ThemeDefinition } from "./theme.schema.js";
+
+// Theme schemas
+export {
+  ThemeDefinitionSchema,
+  ThemeSetupIntentSchema,
+  ThemePlayerCountSchema,
+  ThemePrimaryStoryReferenceSchema,
+  ThemeMusicAssetsSchema,
+} from "./theme.schema.js";
+
+// Theme validators
+export { validateTheme, validateThemeFile } from "./theme.validate.js";
+```
+
+Export ordering: theme exports land **below** the existing card-data
+re-exports, in the same Types → Schemas → Functions grouping the file
+already uses. No re-ordering or renaming of existing exports is permitted.
 
 ---
 
@@ -471,13 +598,35 @@ Ten tests:
   validateTheme (sync), validateThemeFile (async) helper functions
 - `packages/registry/src/theme.schema.test.ts` — **new** —
   `node:test` coverage (10 tests — includes tests #9 and #10 added
-  with the v2 schema bump per D-5509)
-- `content/themes/dark-phoenix-saga.json` — **new** —
-  full example theme (all fields populated)
+  with the v2 schema bump per D-5509); all 10 wrapped in one
+  `describe('theme schema (WP-055)')` block so the suite count
+  increments cleanly by +1 (registry 3/1 → 13/2)
 - `content/themes/minimal-example.json` — **new** —
-  minimal example theme (required fields only)
+  minimal example theme (required fields only; required to satisfy
+  the "at least two example theme files" acceptance criterion)
+- `content/themes/*.json` — **modify (v1→v2 migration per D-5509)** —
+  68 shipped theme files migrated to `themeSchemaVersion: 2` with
+  three optional music fields (`musicTheme`, `musicAIPrompt`,
+  `musicAssets`). The migration was staged in the working tree during
+  the v2 design pass (2026-04-19) and must be committed under WP-055's
+  allowlist so the §D.8 manifest-driven validation test sees a fully
+  migrated shipped set. `dark-phoenix-saga.json` is one of the 68
+  migrated files and serves as the full-example reference shown in
+  §C above; it is a **modify**, not a **new**, because the file has
+  been shipped since the v1 authoring pass. The authoritative list
+  of the 68 filenames is `content/themes/index.json` — no file
+  outside that manifest may be modified by this WP
+- `packages/registry/src/index.ts` — **modify (public-surface extension)** —
+  append the theme type / schema / validator exports listed in §E above.
+  Pure additive edit — no existing export may be reordered, renamed, or
+  removed. Enables consumers to import via `@legendary-arena/registry`
+  instead of deep paths
 
-No other files may be modified.
+No other files may be modified. The following working-tree edits that
+appear adjacent to WP-055 work are **explicitly out of scope** and must
+remain quarantined: `apps/registry-viewer/src/lib/themeClient.ts`,
+`apps/registry-viewer/CLAUDE.md` (both hold v1→v2 viewer-side edits
+that belong to a separate viewer-domain commit).
 
 ---
 
@@ -527,9 +676,15 @@ All items must be binary pass/fail. No partial credit.
 - [ ] Error messages are full sentences including field path
 
 ### Content
-- [ ] At least two example theme files exist in `content/themes/`
-- [ ] All example themes pass `validateTheme`
-- [ ] Example filenames match their `themeId` values
+- [ ] `content/themes/minimal-example.json` exists and passes
+      `validateTheme` (the new minimal example)
+- [ ] Every filename listed in `content/themes/index.json` exists on
+      disk at `themeSchemaVersion: 2` (v1→v2 migration committed for
+      all 68 shipped themes per D-5509)
+- [ ] Every filename listed in `content/themes/index.json` passes
+      `validateThemeFile` (manifest-driven scan per §D.8)
+- [ ] Every filename listed in `content/themes/index.json` matches its
+      file's `themeId` (filename-to-themeId alignment)
 
 ### Layer Boundary
 - [ ] No imports from `packages/game-engine/`
@@ -577,16 +732,21 @@ grep -r "boardgame.io" packages/registry/src/theme.*.ts
 grep -r "require(" packages/registry/src/theme.*.ts
 # Expected: no output
 
-# Step 6 — confirm example themes are valid JSON
+# Step 6 — confirm all themes listed in the manifest are valid JSON
+# why: manifest-driven scan (NOT readdir) — aggregate/manifest artifacts
+# in content/themes/ (00-ALL_THEMES_COMBINED.json, 01-ALL_THEMES_COMBINED.json,
+# index.json itself) are not themes and must be excluded
 node --input-type=module -e "
-import { readdir, readFile } from 'node:fs/promises';
-const files = await readdir('content/themes');
-for (const file of files) {
+import { readFile } from 'node:fs/promises';
+const manifest = JSON.parse(
+  await readFile('content/themes/index.json', 'utf-8'),
+);
+for (const file of manifest) {
   JSON.parse(await readFile('content/themes/' + file, 'utf-8'));
   console.log(file, 'OK');
 }
 "
-# Expected: all files print OK
+# Expected: every file listed in index.json prints OK
 
 # Step 7 — confirm no files outside scope were changed
 git diff --name-only
