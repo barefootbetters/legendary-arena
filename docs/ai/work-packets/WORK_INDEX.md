@@ -1307,7 +1307,7 @@ code, never `boardgame.io`).
   architectural boundary enforced via grep checks (no boardgame.io, no
   engine runtime imports)
 
-- [ ] WP-057 — Pre-Plan Sandbox Execution — pending ✅ Reviewed
+- [x] WP-057 — Pre-Plan Sandbox Execution — ✅ Reviewed — Executed 2026-04-20 at commit `8a324f0`
   Dependencies: WP-056, WP-006A, WP-008B
   Notes: First runtime code in `packages/preplan/`; client-local seedable
   PRNG (LCG or equivalent — deterministic per seed, never `ctx.random.*`,

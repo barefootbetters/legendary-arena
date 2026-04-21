@@ -7,6 +7,106 @@
 
 ## Current State
 
+### WP-057 / EC-057 Executed — Pre-Plan Sandbox Execution (2026-04-20, EC-057)
+
+WP-057 lands the first runtime consumer of the `@legendary-arena/preplan`
+contract WP-056 published as types. Ten new public functions across four
+new source files under `packages/preplan/src/` provide the speculative
+sandbox described in `DESIGN-PREPLANNING.md`:
+
+- **PRNG.** `speculativePrng.ts` — seedable LCG
+  (`state = (state * 1664525 + 1013904223) >>> 0`), Fisher-Yates
+  `speculativeShuffle` (fresh spread input, never mutates), and
+  `generateSpeculativeSeed` using `Date.now()` exactly once at that site
+  per DESIGN-PREPLANNING §3.
+- **Sandbox factory.** `preplanSandbox.ts` — `PlayerStateSnapshot` type,
+  `createPrePlan(snapshot, prePlanId, prngSeed)` producing an active
+  pre-plan with `revision: 1`, `appliesToTurn: snapshot.currentTurn + 1`
+  (DESIGN-CONSTRAINT #10), empty ledger/steps, shuffled sandbox deck,
+  and `computeStateFingerprint` (djb2 over sorted canonical
+  stringification — deterministic + content-sensitive only, not
+  cryptographic per EC-057 non-goals lock).
+- **Five speculative operations.** `speculativeOperations.ts` —
+  `speculativeDraw` / `speculativePlay` / `updateSpeculativeCounter` /
+  `addPlanStep` / `speculativeSharedDraw`. Uniform null-on-inactive
+  (RS-8): every operation returns `null` when `status !== 'active'`.
+  Revision `+1` on successful mutation / `0 delta` on null-return.
+  Spread-copy discipline on every returned field (post-mortem §6 trace
+  confirms 42/42 fresh field assignments across six mutation sites —
+  no aliasing).
+- **Canonical status array.** `preplanStatus.ts` —
+  `PREPLAN_STATUS_VALUES = ['active', 'invalidated', 'consumed'] as
+  const` + `PrePlanStatusValue` derived type + compile-time exhaustive
+  check proving parity with `PrePlan['status']` union. Deferred from
+  WP-056 per EC-056 Locked Value line 32 (PS-2). `PREPLAN_EFFECT_TYPES`
+  remains WP-058 scope.
+
+`packages/preplan/src/index.ts` transitions from WP-056's type-only
+re-export surface to a mixed runtime + type surface (authorized by
+EC-057 RS-2). `packages/preplan/package.json` gains `"test": "node
+--import tsx --test src/**/*.test.ts"` + `"tsx": "^4.15.7"` devDep
+mirroring `packages/registry/package.json:19, 34` exactly (PS-3).
+`pnpm-lock.yaml` delta scoped to 3 lines inside
+`importers['packages/preplan']` — zero cross-importer churn (P6-44
+verified).
+
+Commit topology (three commits on
+`wp-081-registry-build-pipeline-cleanup`):
+
+- `f12c796` — SPEC: A0 pre-flight bundle (EC-057 checklist + WP-057
+  amendments + pre-flight file + session-context + EC_INDEX row +
+  session prompt).
+- `8a324f0` — EC-057 execution: 9 new source files + `index.ts`
+  modification + `package.json` modification + `pnpm-lock.yaml` +
+  mandatory 01.6 post-mortem. Commit prefix `EC-057:` per P6-36
+  (`WP-057:` forbidden).
+- `<this commit>` — SPEC: governance close (WORK_INDEX + EC_INDEX +
+  STATUS).
+
+Test baseline: preplan `0 / 0 / 0 → 23 / 4 / 0` (23 new tests in 4
+describe suites: 3 + 6 + 13 + 1). Engine UNCHANGED at `436 / 109 / 0`
+(WP-057 touches zero engine code). Registry / vue-sfc-loader / server /
+replay-producer / arena-client all unchanged. Repo-wide
+`536 → 559 passing / 0 failing`.
+
+Architectural boundary integrity — all 24 verification greps pass:
+
+- No `boardgame.io` / runtime engine / `@legendary-arena/registry` /
+  `pg` / `apps/` imports in `packages/preplan/`. Three engine
+  references are all `import type`.
+- No `Math.random` / `ctx.random` / `require(` / `.reduce(` hits.
+- `Date.now` exactly one hit at `speculativePrng.ts:79` inside
+  `generateSpeculativeSeed`.
+- P6-50 paraphrase discipline: zero `G` / `LegendaryGameState` /
+  `LegendaryGame` / `boardgame.io` tokens in code or JSDoc; `ctx`
+  appears only in the inherited `ctx.turn + 1` carve-out at
+  `preplan.types.ts:21, :51` (WP-056 output, untouched in this WP).
+- `preplan.types.ts` / `tsconfig.json` / `pnpm-workspace.yaml` diffs
+  all empty.
+
+01.5 Runtime Wiring Allowance: NOT INVOKED (all four criteria absent
+— no `LegendaryGameState` field added; no `buildInitialGameState`
+shape change; no new `LegendaryGame.moves` entry; no new phase hook).
+
+01.6 Post-Mortem: MANDATORY — three triggers fire (new long-lived
+abstractions + first runtime consumer of `PrePlan.status` closed union
++ contract consumed by WP-058). Verdict **WP COMPLETE** with zero
+post-mortem fixes; one first-compile reality-reconciliation finding
+documented in §8.1 (WP-056-inherited strict tsconfig settings —
+`noUncheckedIndexedAccess` + `exactOptionalPropertyTypes` — required
+destructured-guard + `as T` swap + optional-field omission patterns
+that the session-prompt skeletons did not include; resolved at first
+compile, no spec semantics changed).
+
+Copilot Check (01.7): CONFIRM 30/30 at pre-flight Re-Run. All three
+HOLD FIXes (Date.now grep gate + test 12 uniform null-on-inactive 5×2
++ test 13 revision-increment discipline 5×2) present and passing.
+
+Unblocks **WP-058** (Pre-Plan Disruption Pipeline). Inherited
+dirty-tree items (10 unrelated files + `.claude/worktrees/` + one
+test-time `content/themes/heroes/` artifact) untouched; quarantine
+`stash@{0..2}` intact and not popped.
+
 ### WP-081 / EC-081 Executed — Registry Build Pipeline Cleanup (2026-04-20, EC-081)
 
 WP-081 executed across two governance amendments (PS-2 + PS-3) and one
