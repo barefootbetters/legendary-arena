@@ -11,7 +11,7 @@
 
 import { DEBUG_VIEWER } from "./debugMode";
 
-type Category = "registry" | "theme" | "filter" | "render";
+type Category = "registry" | "theme" | "filter" | "render" | "glossary";
 
 /**
  * Logs a categorized dev event. No-op when `DEBUG_VIEWER` is false.
@@ -22,7 +22,7 @@ type Category = "registry" | "theme" | "filter" | "render";
  * - Never log arrays larger than 20 elements; slice callers' arrays to
  *   3-sample IDs before passing them in.
  *
- * @param category - Fixed category tag (registry | theme | filter | render).
+ * @param category - Fixed category tag (registry | theme | filter | render | glossary).
  * @param message  - Short human-readable event description.
  * @param fields   - Optional structured payload (small — counts, ids, ms).
  */

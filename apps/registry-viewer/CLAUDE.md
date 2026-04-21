@@ -28,6 +28,12 @@ App Mount
   │   ├─ GET /themes/index.json     → filename list
   │   └─ GET /themes/{file}.json    → ThemeDefinition[] (parallel)
   │
+  ├─ getKeywordGlossary()    → singleton, non-blocking
+  │   └─ GET /metadata/keywords-full.json → Map<key, description>
+  │
+  ├─ getRuleGlossary()       → singleton, non-blocking
+  │   └─ GET /metadata/rules-full.json    → Map<key, { label, summary }>
+  │
   └─ User interaction
       ├─ Filter/search → applyQuery()
       ├─ Select card   → CardDetail panel
@@ -45,9 +51,11 @@ App Mount
 | `src/components/ThemeGrid.vue` | Theme tile grid with tag-colored accents |
 | `src/components/ThemeDetail.vue` | Theme detail — setup intent with cross-links to cards |
 | `src/components/HealthPanel.vue` | Diagnostics modal — set counts, parse errors |
-| `src/composables/useRules.ts` | Static glossaries (18 rules, 50+ keywords), ability text tokenizer |
+| `src/composables/useRules.ts` | Glossary lookups + ability text tokenizer; fetched keyword/rule Maps are installed at mount via `setGlossaries()` |
+| `src/composables/useGlossary.ts` | Rules Glossary panel state; `rebuildGlossaryEntries()` is called once after the async glossary fetch resolves |
 | `src/lib/registryClient.ts` | Singleton factory for HTTP-based CardRegistry |
 | `src/lib/themeClient.ts` | Singleton factory for ThemeDefinition[] from R2 |
+| `src/lib/glossaryClient.ts` | Singleton factory for KeywordGlossary + RuleGlossary Maps from R2 (non-blocking, devLog-instrumented) |
 | `src/registry/schema.ts` | Zod schemas — permissive to handle inconsistent set data |
 | `src/registry/shared.ts` | `flattenSet()`, `applyQuery()`, `buildHealthReport()` |
 | `src/registry/impl/httpRegistry.ts` | Browser-safe CardRegistry factory (R2 fetches) |
@@ -88,20 +96,24 @@ node scripts/generate-theme-catalog.mjs
 ## Keyword & Rule Glossary
 
 Card ability tooltips (keywords like Berserk, Patrol, Focus; rules like Shards,
-Divided Cards) are currently **hardcoded** in `src/composables/useRules.ts`.
-The canonical source data is:
+Divided Cards) are **fetched from R2** at startup via `src/lib/glossaryClient.ts`:
 
-- `C:\Users\jjensen\bbcode\modern-master-strike\src\data\keywords-full.json` (102 keywords)
-- `C:\Users\jjensen\bbcode\modern-master-strike\src\data\rules-full.json` (18 rules)
+- `/metadata/keywords-full.json` — 113 keyword entries (`{ key, description }[]`)
+- `/metadata/rules-full.json`    — 20 rule entries (`{ key, label, summary }[]`)
 
-**WP-060** migrates these files into `data/metadata/`, uploads them to R2, and
-updates the registry viewer to fetch them at runtime instead of bundling
-hardcoded definitions. Until WP-060 is executed, the hardcoded glossary works
-but is a maintenance liability.
+`App.vue`'s `onMounted` handler calls `getKeywordGlossary()` and
+`getRuleGlossary()` in parallel, installs the resulting Maps into
+`useRules.ts` via `setGlossaries()`, and triggers `rebuildGlossaryEntries()`
+on `useGlossary.ts` so the Rules Glossary panel populates. The fetch is
+**non-blocking**: if R2 is unreachable, `App.vue` logs `"[Glossary] Load
+failed (non-blocking)"` and continues — tooltips are absent but the card
+view remains functional. `lookupKeyword` / `lookupRule` return `null` until
+the fetch resolves; callers (`CardDetail.vue`, `useGlossary.ts`) already
+handle null via tooltip-absent paths.
 
 Hero class tooltips (Covert, Instinct, Ranged, Strength, Tech) are hardcoded
-in `useRules.ts` and are **not** in the external glossary data. These stay
-hardcoded regardless of WP-060.
+in `useRules.ts` (`HERO_CLASS_GLOSSARY`, 5 entries) and are **not** in the
+external glossary data. These stay hardcoded.
 
 ## Design Patterns
 

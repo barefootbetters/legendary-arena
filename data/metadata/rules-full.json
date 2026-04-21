@@ -1,0 +1,102 @@
+[
+  {
+    "key": "adaptingmasterminds",
+    "label": "Adapting Masterminds",
+    "summary": "Adapting Masterminds have only Tactic cards — no main card. The top Tactic counts as the Mastermind. After each Strike, Adapt: shuffle Tactics and reveal a new one on top."
+  },
+  {
+    "key": "additional mastermind",
+    "label": "Additional Mastermind",
+    "summary": "This enemy ascends to become an additional Mastermind. All Masterminds must be defeated to win. No Tactics — fight it once to claim it."
+  },
+  {
+    "key": "ambushschemes",
+    "label": "Ambush Schemes",
+    "summary": "Played alongside the main Scheme. Triggers an immediate effect when drawn. Scheme Twists now trigger both Schemes. Defeat the Ambush Scheme for bonus VP."
+  },
+  {
+    "key": "asterisk",
+    "label": "Asterisk Symbol (*)",
+    "summary": "A * on VP or Attack means there's something unusual about that value — like Size-Changing or a special condition required to fight."
+  },
+  {
+    "key": "chooseavillain",
+    "label": "Choose a Villain Group",
+    "summary": "Pick one specific Villain Group by name. You can count Henchman Groups but not multiple groups at once via shared words."
+  },
+  {
+    "key": "divided",
+    "label": "Divided Card",
+    "summary": "A Divided Card has two mini-cards printed on one card. When played, choose which side to use. The cost is the cost of one side, not both."
+  },
+  {
+    "key": "enragingwounds",
+    "label": "Enraging Wounds",
+    "summary": "Wounds that can be played from hand for bonuses like Recruit or Attack. Each has a unique Healing condition. Still count as Wounds for all effects."
+  },
+  {
+    "key": "grievouswounds",
+    "label": "Grievous Wounds",
+    "summary": "Harder-to-heal Wounds with unique Healing abilities like \"Spend 5 Recruit to KO this Wound.\" Still count as Wounds for all effects."
+  },
+  {
+    "key": "locations",
+    "label": "Locations",
+    "summary": "Locations are placed above city spaces. They don't move and don't count as Villains. Fight them by spending the listed Attack to claim them."
+  },
+  {
+    "key": "multiclasscards",
+    "label": "Multiclass Cards",
+    "summary": "A multiclass card counts as both of its Hero Classes. Great for triggering multiple Superpower Abilities."
+  },
+  {
+    "key": "multiplemasterminds",
+    "label": "Multiple Masterminds",
+    "summary": "When Villains escape, they can ascend to become additional Masterminds. All Masterminds must be defeated to win."
+  },
+  {
+    "key": "shards",
+    "label": "Shards",
+    "summary": "Shard tokens represent cosmic energy. Players can spend a Shard for +1 Attack. Villains and Masterminds gain +1 Attack per Shard on them."
+  },
+  {
+    "key": "sidekicks",
+    "label": "Sidekicks",
+    "summary": "Pay 2 Recruit to take one Sidekick per turn from the Sidekick Stack. When played, return it to the bottom of the Stack."
+  },
+  {
+    "key": "transformingschemes",
+    "label": "Transforming Schemes",
+    "summary": "Double-sided Schemes that flip over mid-game. Start with the Setup side face up. When told to Transform, flip it over."
+  },
+  {
+    "key": "transforms",
+    "label": "Transforms",
+    "summary": "Flip this double-sided card over to its other face. Use only the rules now showing."
+  },
+  {
+    "key": "traps",
+    "label": "Traps",
+    "summary": "When a Trap is played from the Villain Deck, you must complete a challenge this turn to avoid it. Success puts it in your Victory Pile."
+  },
+  {
+    "key": "unveiledschemes",
+    "label": "Unveiled Schemes",
+    "summary": "The transformed version of a Veiled Scheme. Use these rules once the Scheme has flipped to this side."
+  },
+  {
+    "key": "veiledschemes",
+    "label": "Veiled Schemes",
+    "summary": "Start with this side face up. At a certain point it transforms into a randomly selected Unveiled Scheme."
+  },
+  {
+    "key": "villainousweapons",
+    "label": "Villainous Weapons",
+    "summary": "Weapons captured by Villains boost their Attack. When you defeat that Villain, you claim the Weapon as an Artifact for your own hand."
+  },
+  {
+    "key": "woundsonvillains",
+    "label": "Wounds on Villains",
+    "summary": "Place a Wound on a Villain to give it -1 Attack. Wounds are returned to the Wound Stack when that Villain is defeated or leaves the city."
+  }
+]

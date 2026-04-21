@@ -1,0 +1,454 @@
+[
+  {
+    "key": "abomination",
+    "description": "This keyword is used by Villains that are twisted genetic experiments. “Abomination” means “This gets +1 Attack for each Abomination card in the KO pile.”"
+  },
+  {
+    "key": "ambush",
+    "description": "Some Heroes say “Instinct Ambush: Draw a card.” When another player recruits this Hero from the HQ, you may use its Ambush ability."
+  },
+  {
+    "key": "antics",
+    "description": "“Antics: You get +2 Attack” represents Ant-Man using his power to control ants, shrink to ant size, or grow ants to giant size."
+  },
+  {
+    "key": "artifact",
+    "description": "When you gain a Hero Artifact, put it in your discard pile. When you draw that Artifact later, you may play it in front of you and use its effects. It stays in front of you for the rest of the game."
+  },
+  {
+    "key": "astralplane",
+    "description": "The Fear Lords move enemies beyond the physical world to a realm of pure psychic energy, where they prey on the human psyche."
+  },
+  {
+    "key": "berserk",
+    "description": "“Berserk” means “Discard the top card of your deck. You get +Attack equal to the discarded card’s printed Attack.” If the discarded card gives “+2 Attack”, you count 2."
+  },
+  {
+    "key": "bloodfrenzy",
+    "description": "Blood Frenzy represents vampires and werewolves gaining strength from every kind of blood they drain. You get bonuses for each Instinct or Strength card you played this turn."
+  },
+  {
+    "key": "bribe",
+    "description": "You can fight villains with the keyword “Bribe” by spending any combination of Attack and/or Recruit points."
+  },
+  {
+    "key": "burnshards",
+    "description": "“Burn 2 Shards: Draw two cards” means you may spend that many Shards to do the listed effect. You don’t get the normal +1 Attack per Shard when you burn them."
+  },
+  {
+    "key": "burrow",
+    "description": "“Burrow” means: “Fight: If the Streets were empty, put this Villain back into the Streets.” When you fight a Villain with Burrow, do all of that Villain’s Fight effects."
+  },
+  {
+    "key": "celestialboon",
+    "description": "Celestials cannot be truly defeated by mortals. However, if you manage to fight a Celestial, it is impressed with your efforts and grants you a Celestial Boon."
+  },
+  {
+    "key": "charge",
+    "description": "“Ambush: Charge one space” means after this Villain enters the Sewers, it charges forward an extra space, pushing other Villains forward. This might cause more escapes."
+  },
+  {
+    "key": "cheeringcrowds",
+    "description": "“Cheering Crowds” means “You may play this card twice in a row if you return a Bystander from your Victory Pile to the bottom of the Bystander Stack.”"
+  },
+  {
+    "key": "chivalrousduel",
+    "description": "You can’t gang up on an enemy in a Chivalrous Duel — you have to pick just one Hero Name to duel the enemy."
+  },
+  {
+    "key": "circleofkungfu",
+    "description": "“5th Circle of Kung-Fu” means “During your turn, this Villain has +5 Attack unless you reveal a Hero that costs 5 or more.” Likewise for other Circles."
+  },
+  {
+    "key": "clone",
+    "description": "Clone represents characters that are literal clones or can create copies. Clone cards can be played multiple times or duplicated."
+  },
+  {
+    "key": "command",
+    "description": "“Taserface gets +2 Attack while he Commands the Ravagers.” A Villain “Commands” their group as long as it’s the leftmost Villain of that group in the city."
+  },
+  {
+    "key": "conqueror",
+    "description": "“Bridge Conqueror 3” means “This gets +3 Attack while any Villain is on the Bridge.”"
+  },
+  {
+    "key": "contestofchampions",
+    "description": "Some Villains say “Contest of Champions Strength.” This means “Each player reveals a Strength Hero or gains a Wound.” Represents the Grandmaster’s games."
+  },
+  {
+    "key": "coordinate",
+    "description": "Coordinating allows you to let another player “borrow” one of your cards. Put a card from your hand in front of another player. On that player’s next turn, they play it and return it to you afterward."
+  },
+  {
+    "key": "cosmicthreat",
+    "description": "Villains with Cosmic Threat have incredibly high Attack values with a special vulnerability. If an enemy has Cosmic Threat Ranged, that means: “Once per turn, for each Ranged card you reveal, this Enemy gets −3 Attack this turn.”"
+  },
+  {
+    "key": "crossdimensionalrampage",
+    "description": "“Cross-Dimensional Hulk Rampage” means “Each player reveals one of their Hulk Heroes or a Hulk card in their Victory Pile or gains a Wound.” Similar for other character rampages."
+  },
+  {
+    "key": "cybermod",
+    "description": "In 2099, Heroes augment their bodies with cybernetic enhancements. “Cyber-Mod Wound” means “You may gain a Wound to use this ability.”"
+  },
+  {
+    "key": "dangersense",
+    "description": "“Danger Sense 2” means “Reveal the top 2 cards of the Villain Deck. You get +1 Attack for each Villain you revealed. Put them all back in the same order.”"
+  },
+  {
+    "key": "darkmemories",
+    "description": "“Dark Memories” means “This gets +1 Attack for each Hero Class among cards in your discard pile.”"
+  },
+  {
+    "key": "demolish",
+    "description": "“Demolish each player” means “Reveal the top card of the Ally/Hero Deck, note its cost, and put it on the bottom of the Ally/Hero Deck. Each player reveals their hand and discards each card with that cost.”"
+  },
+  {
+    "key": "demonicbargain",
+    "description": "Demons offer gifts of power with a dark price. Demonic Bargain lets you gain powerful effects at the cost of giving the Mastermind benefits."
+  },
+  {
+    "key": "digest",
+    "description": "“Digest 2: Draw a card” means use this ability only if you have at least 2 cards in your Victory Pile."
+  },
+  {
+    "key": "dodge",
+    "description": "Dodge means “During your turn, you may discard this card from your hand to draw another card.” When you Dodge a card from your hand, ignore all the other text on that card."
+  },
+  {
+    "key": "dominate",
+    "description": "Some Villains “Dominate” Hero cards. This means “Put those Heroes under this enemy. This enemy gets +1 Attack for each Hero it’s Dominating.”"
+  },
+  {
+    "key": "doubleabomination",
+    "description": "“Double Abomination” means “This gets +2 Attack for each Abomination card in the KO pile.”"
+  },
+  {
+    "key": "doublecross",
+    "description": "“Double-Cross each player” means each player reveals their hand and discards one of their highest-cost “doubles” (a card that has the same cost as another card in your hand)."
+  },
+  {
+    "key": "doubledarkmemories",
+    "description": "“Double Dark Memories” means “This gets +2 Attack for each Hero Class among cards in your discard pile.”"
+  },
+  {
+    "key": "doubleempowered",
+    "description": "“Double Empowered” means “You get +2 Attack for each card of the specified class in the HQ.”"
+  },
+  {
+    "key": "doublelaststand",
+    "description": "“Double Last Stand” means “This gets +2 Attack for each empty space in the city.”"
+  },
+  {
+    "key": "doubleshieldclearance",
+    "description": "You must discard two S.H.I.E.L.D. Heroes (or the same one twice) as an additional cost to fight this Villain."
+  },
+  {
+    "key": "doublestriker",
+    "description": "“Double Striker” means “This gets +2 Attack for each Master Strike in the KO pile and/or stacked next to the Mastermind.”"
+  },
+  {
+    "key": "elusive",
+    "description": "“Elusive 6” means “You can only fight this Adversary if you have made at least 6 Recruit this turn.” You don’t have to spend that Recruit, you just have to have made that much."
+  },
+  {
+    "key": "empowered",
+    "description": "“You get Empowered by Strength” means “You get +1 Attack for each Strength card in the HQ.”"
+  },
+  {
+    "key": "endgame",
+    "description": "“Endgame: +3 Attack” means this enemy gets +3 Attack for each Master Strike that has occurred so far this game."
+  },
+  {
+    "key": "excessivekindness",
+    "description": "Excessive Kindness works like Excessive Violence, except you trigger it by spending 1 Recruit more than you need when recruiting a Hero."
+  },
+  {
+    "key": "excessiveviolence",
+    "description": "Some Heroes say “Excessive Violence: Draw a card.” You can use this ability by spending 1 Attack more than you need when you fight a Villain."
+  },
+  {
+    "key": "explore",
+    "description": "“Explore” means “Reveal the top two cards of your deck. Put any one card on top of your deck and the other on the bottom.”"
+  },
+  {
+    "key": "fail",
+    "description": "“Fail: You gain a Wound” — do this effect if you try to fight that Enemy but the Berserk Attack bonus causes you to fail. You can’t try unless you have enough for the printed Attack."
+  },
+  {
+    "key": "fatedfuture",
+    "description": "“Fated Future” means “Reveal the top card of the Villain Deck. If that card does something bad to players, use this Fated Future ability.”"
+  },
+  {
+    "key": "fatefulresurrection",
+    "description": "“Fight: Fateful Resurrection” means “Reveal the top card of the Villain Deck. If it’s a Scheme Twist or Master Strike, this Villain reenters the city.”"
+  },
+  {
+    "key": "feast",
+    "description": "“Feast” means “Fight: KO the top card of your deck.” Likewise, “Feast on each player” means “KO the top card of each player’s deck.”"
+  },
+  {
+    "key": "fightorfail",
+    "description": "“Fight or Fail: KO one of your Heroes” — do this effect if you successfully fight that Enemy OR if you try but the Attack bonus causes you to fail."
+  },
+  {
+    "key": "focus",
+    "description": "The “Focus” keyword lets you transform your Recruit Points into powerful, flexible effects. When you play a card with a Focus ability, you can pay the cost on the left side to get the effect on the right side, as many times as you want."
+  },
+  {
+    "key": "fortify",
+    "description": "Some Villains say “Escape: Fortify the Mastermind. While it’s fortified, the Mastermind can’t be fought.” Put this Villain on the specified place; while there, it has the listed effect."
+  },
+  {
+    "key": "haunt",
+    "description": "“Ambush: Haunt the rightmost unhaunted Hero in the HQ” means tuck this Villain beneath that Hero. While haunted, that Hero costs +2 Recruit more."
+  },
+  {
+    "key": "heist",
+    "description": "Once per turn, if you played any Heroes with Heist abilities, you may attempt a Heist: reveal the top card of the Villain Deck. If it’s not a Scheme Twist or Master Strike, use all your Heist abilities."
+  },
+  {
+    "key": "hiddenwitness",
+    "description": "Represents Villains and Masterminds hiding behind layers of informants, victims, and stooges. Hidden Witnesses are Bystanders captured face-down."
+  },
+  {
+    "key": "highestabomination",
+    "description": "“Highest Abomination” means “This gets +Attack equal to the highest printed Attack among Abomination cards in the KO pile.”"
+  },
+  {
+    "key": "humanshield",
+    "description": "“Ambush: This Villain captures 2 Human Shields” means the Villain captures the top 2 cards of the Bystander Stack face-down. You can’t fight a Villain while it has any Human Shields."
+  },
+  {
+    "key": "huntforvictims",
+    "description": "“Hunt for Victims” means “KO a Bystander that is captured by any Villain or Mastermind or in the Escape Pile. If you can’t, then this captures a Bystander instead.”"
+  },
+  {
+    "key": "hydralevel",
+    "description": "Hydra Level represents villains rising through the ranks of the Hydra organization, achieving greater power by helping operatives escape."
+  },
+  {
+    "key": "hyperspeed",
+    "description": "“Hyperspeed 5” means “Reveal the top 5 cards of your deck. Choose one to add to your hand. Discard the rest.” Represents blindingly fast strikes."
+  },
+  {
+    "key": "indigestion",
+    "description": "Indigestion abilities trigger when Carnage or Venom is eating somebody and gets indigestion — reversing Digest effects in chaotic ways."
+  },
+  {
+    "key": "investigate",
+    "description": "“Investigate for a Tech card” means “Look at the top two cards of your deck. Reveal a Tech card from among them and draw it. Put the rest back on the bottom of your deck.”"
+  },
+  {
+    "key": "laststand",
+    "description": "“Last Stand” means “This gets +1 Attack for each empty space in the city.”"
+  },
+  {
+    "key": "liberate",
+    "description": "“Liberate” means “KO a card from your hand or discard pile that costs 0.” Represents destroying oppressive enemy technology."
+  },
+  {
+    "key": "lightshow",
+    "description": "Once per turn, if you played at least two Lightshow cards this turn, you can use a single Lightshow ability from any of those cards."
+  },
+  {
+    "key": "manoutoftime",
+    "description": "This keyword means “After you use this card’s abilities, set it aside. At the end of this turn, put it on the bottom of your deck.” Represents heroes fighting in both past and present."
+  },
+  {
+    "key": "microscopicsizechanging",
+    "description": "Far beyond other Size-Changing heroes, Ant-Man and Wasp can shrink down smaller than an atom, to the quantum Microverse."
+  },
+  {
+    "key": "momentum",
+    "description": "“Momentum 3” means “This Villain gets +3 Attack if it entered the city on a previous turn (not the current turn).”"
+  },
+  {
+    "key": "moonlightsunlight",
+    "description": "Vampires and Werewolves are vicious at night (Moonlight), while Sunspot gains strength from sunlight. Moonlight/Sunlight effects depend on the top card of the Wound Stack."
+  },
+  {
+    "key": "outwit",
+    "description": "“Outwit” means “You may reveal a Tech Hero from your hand. If you do, use this Outwit ability.” Represents genius-level intellect characters."
+  },
+  {
+    "key": "patrol",
+    "description": "You can use the Patrol ability only if the specified city space has no cards in it. If that city space becomes empty later in the turn, it’s too late to use the Patrol ability."
+  },
+  {
+    "key": "phasing",
+    "description": "During your turn, if a card with Phasing is in your hand, you may swap it with the top card of your deck."
+  },
+  {
+    "key": "piercingenergy",
+    "description": "Some Heroes give you “Piercing Energy” points. Piercing Energy can be used to fight enemies and ignores effects that would increase the enemy’s Attack."
+  },
+  {
+    "key": "prey",
+    "description": "“Prey on the fewest Tech” means after this Villain enters, each player reveals their hand. The player with the fewest Tech cards suffers the Prey effect."
+  },
+  {
+    "key": "quadrupleempowered",
+    "description": "“Quadruple Empowered” means “You get +4 Attack for each card of the specified class in the HQ.”"
+  },
+  {
+    "key": "revenge",
+    "description": "“Revenge for Evil Deadpool Corpse” means “This Villain gets +1 Attack for each Evil Deadpool Corpse Villain in your Victory Pile.”"
+  },
+  {
+    "key": "riseofthelivingdead",
+    "description": "“Rise of the Living Dead” means “Each player checks the top card of their Victory Pile. If that card is a Villain with a Rise of the Living Dead ability, that Villain reenters the city.”"
+  },
+  {
+    "key": "ritualartifact",
+    "description": "Ritual Artifacts use the Artifact rules with a twist — they can be “charged up” with mystic energy and unleashed for powerful effects."
+  },
+  {
+    "key": "sacrifice",
+    "description": "Several Heroes say things like “Ranged Sacrifice: Take another turn after this one.” Sacrifice means KO this card to use the powerful Sacrifice ability."
+  },
+  {
+    "key": "savior",
+    "description": "This means “Use this ability if you have at least 3 Bystanders in your Victory Pile.”"
+  },
+  {
+    "key": "shatter",
+    "description": "“Shatter a Villain in the Sewers” means “Halve that enemy’s current Attack (round up to the nearest whole number).”"
+  },
+  {
+    "key": "shieldclearance",
+    "description": "If a Villain says “S.H.I.E.L.D. Clearance,” you must discard a S.H.I.E.L.D. Hero as an additional cost to fight that Villain."
+  },
+  {
+    "key": "shieldlevel",
+    "description": "S.H.I.E.L.D. Level represents agents unlocking special abilities as they rise through the ranks. Higher levels unlock more powerful effects."
+  },
+  {
+    "key": "sizechanging",
+    "description": "Some Hero cards say “Size-Changing: Covert.” This means “This card’s printed Attack is also its Victory Points. When you play this card, it has the Covert class.”"
+  },
+  {
+    "key": "smash",
+    "description": "“Smash 3” means “You may discard another card from your hand. If you do, you get +3 Attack.”"
+  },
+  {
+    "key": "soaringflight",
+    "description": "“Soaring Flight” means “When you recruit this Hero, set it aside. At the end of this turn, add it to your new hand as an extra card.”"
+  },
+  {
+    "key": "soulbind",
+    "description": "“Soulbind a Villain” means put a Villain from the city into your Victory Pile without fighting it. Represents binding dark souls to devour their power."
+  },
+  {
+    "key": "spectrum",
+    "description": "You can use a card’s Spectrum abilities only if you have at least 3 classes of Hero (e.g. Covert, Strength and Ranged). Grey S.H.I.E.L.D. Heroes and normal Sidekicks don’t have classes."
+  },
+  {
+    "key": "striker",
+    "description": "This means “This gets +1 Attack for each Master Strike in the KO pile and/or stacked next to the Mastermind.”"
+  },
+  {
+    "key": "switcheroo",
+    "description": "“Switcheroo 4” means “You may swap a card from your hand with a card from the HQ that costs 4 or less.”"
+  },
+  {
+    "key": "symbiotebonds",
+    "description": "You must fight the combined strength of the host and symbiote to split them apart, then finish what remains in a second fight."
+  },
+  {
+    "key": "tacticalformation",
+    "description": "“Tactical Formation 445: You get +3 Attack” means “You get this bonus if you played Heroes costing exactly 4, 4, and 5 this turn.”"
+  },
+  {
+    "key": "teleport",
+    "description": "Instead of playing, you may set aside a card with the keyword “Teleport”. If you do, add it to your new hand at the end of your turn as an extra card."
+  },
+  {
+    "key": "thronesfavor",
+    "description": "When you “gain the Throne’s Favor,” take a nearby object to represent it. There is only ever one Throne’s Favor in the game. While you have it, you get bonuses."
+  },
+  {
+    "key": "thrownartifact",
+    "description": "Thrown Artifacts can be “thrown” at the perfect moment. After playing it, instead of keeping it in play, put it into your discard pile at end of turn (or use it once and discard)."
+  },
+  {
+    "key": "transform",
+    "description": "Each Hero in this set has special “Transformed” cards. When you play a card that says Transform, swap it with one of your Transformed cards."
+  },
+  {
+    "key": "triggeredartifact",
+    "description": "“Triggered Artifact — Whenever you draw a card during your turn, you get +1 Attack.” Triggered Artifacts activate automatically on their trigger condition."
+  },
+  {
+    "key": "tripleempowered",
+    "description": "“Triple Empowered” means “You get +3 Attack for each card of the specified class in the HQ.”"
+  },
+  {
+    "key": "triplestriker",
+    "description": "“Triple Striker” means “This gets +3 Attack for each Master Strike in the KO pile and/or stacked next to the Mastermind.”"
+  },
+  {
+    "key": "ultimateabomination",
+    "description": "This Mastermind gets +Attack equal to the printed Attack of all Heroes in the HQ."
+  },
+  {
+    "key": "undercover",
+    "description": "Represents sending agents off the grid on special missions. Heroes go “Undercover” face-down in your Victory Pile to be Unleashed later."
+  },
+  {
+    "key": "unleash",
+    "description": "“Unleash a Hero from Undercover” means return that Hero from your Victory Pile to your hand, ready to play."
+  },
+  {
+    "key": "uruenchantedweapons",
+    "description": "Uru-Enchanted Weapons combine nanotech and nuclear fusion to mimic the power of the fabled Mjolnir."
+  },
+  {
+    "key": "versatile",
+    "description": "This keyword represents Heroes who think quickly on their feet to react perfectly to any situation. “Versatile 2” means “You get +2 Recruit or +2 Attack.” You choose all Recruit or all Attack when you play the card."
+  },
+  {
+    "key": "villainousweapons",
+    "description": "Villains and Masterminds can capture Villainous Weapons to become even more powerful. If you defeat them, you can seize those weapons as Artifacts."
+  },
+  {
+    "key": "wakingnightmare",
+    "description": "“Waking Nightmare” means “Reveal the top card of your deck. If that card costs 0, KO it.” Represents psychological horror attacks."
+  },
+  {
+    "key": "wallcrawl",
+    "description": "“Wall-Crawl” means: “When you recruit this Hero, you may put it on top of your deck.”"
+  },
+  {
+    "key": "weaponxsequence",
+    "description": "The Weapon X Sequence means each successive copy of this card you play gets stronger. The first gives a base effect, the second gives more, and so on."
+  },
+  {
+    "key": "whatif",
+    "description": "“What If…?: You get +3 Recruit” means choose a Hero Class or Hero Name. Reveal the top card of your deck. If it matches, use the What If ability."
+  },
+  {
+    "key": "whenrecruited",
+    "description": "“When Recruited: You get +3 Attack.” Use this ability immediately when you recruit this Hero, not when you play it later."
+  },
+  {
+    "key": "whenrecruitedundercover",
+    "description": "“When Recruited: Send this Undercover” means put this Hero face-down in your Victory Pile when recruited. It can be Unleashed later."
+  },
+  {
+    "key": "worthy",
+    "description": "Some Hero cards say “If you are Worthy, draw a card.” You become Worthy this turn if you recruited a card that costs 0 or fought a Villain that costs 0."
+  },
+  {
+    "key": "woundedfury",
+    "description": "“Wounded Fury” means “You get +1 Attack for each Wound in your discard pile.”"
+  },
+  {
+    "key": "xgene",
+    "description": "“X-Gene Ranged: You get +2 Attack” means “If you have a Ranged card in your discard pile, you get +2 Attack.”"
+  },
+  {
+    "key": "xtremeattack",
+    "description": "“X-Treme Attack” means “This Adversary gets +1 Attack for each other Adversary in the city with X-Treme Attack.”"
+  }
+]

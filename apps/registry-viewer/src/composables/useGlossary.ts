@@ -9,9 +9,9 @@
 
 import { ref, computed } from "vue";
 import {
-  RULES_GLOSSARY,
-  KEYWORD_GLOSSARY,
   HERO_CLASS_GLOSSARY,
+  getKeywordGlossaryMap,
+  getRuleGlossaryMap,
   lookupKeyword,
   lookupRule,
 } from "./useRules";
@@ -33,28 +33,34 @@ export interface GlossaryEntry {
 function buildAllEntries(): GlossaryEntry[] {
   const entries: GlossaryEntry[] = [];
 
-  for (const [key, ruleEntry] of RULES_GLOSSARY) {
-    entries.push({
-      id:          `rule-${key}`,
-      type:        "rule",
-      key,
-      label:       ruleEntry.label,
-      description: ruleEntry.summary,
-    });
+  const ruleMap = getRuleGlossaryMap();
+  if (ruleMap !== null) {
+    for (const [key, ruleEntry] of ruleMap) {
+      entries.push({
+        id:          `rule-${key}`,
+        type:        "rule",
+        key,
+        label:       ruleEntry.label,
+        description: ruleEntry.summary,
+      });
+    }
   }
 
-  for (const [key, description] of KEYWORD_GLOSSARY) {
-    // why: some keywords appear twice in the map (villainousweapons). Skip duplicates.
-    if (entries.some((existingEntry) => existingEntry.id === `keyword-${key}`)) {
-      continue;
+  const keywordMap = getKeywordGlossaryMap();
+  if (keywordMap !== null) {
+    for (const [key, description] of keywordMap) {
+      // why: some keywords appear twice in the map (villainousweapons). Skip duplicates.
+      if (entries.some((existingEntry) => existingEntry.id === `keyword-${key}`)) {
+        continue;
+      }
+      entries.push({
+        id:          `keyword-${key}`,
+        type:        "keyword",
+        key,
+        label:       titleCase(key),
+        description,
+      });
     }
-    entries.push({
-      id:          `keyword-${key}`,
-      type:        "keyword",
-      key,
-      label:       titleCase(key),
-      description,
-    });
   }
 
   for (const [key, description] of HERO_CLASS_GLOSSARY) {
@@ -98,13 +104,25 @@ function titleCase(key: string): string {
 const isOpen        = ref<boolean>(false);
 const searchQuery   = ref<string>("");
 const highlightedId = ref<string | null>(null);
-const allEntries    = buildAllEntries();
+const allEntries    = ref<GlossaryEntry[]>([]);
+
+/**
+ * Rebuilds allEntries from the currently-installed glossary Maps.
+ * why: Called once from App.vue after the async glossary fetch resolves.
+ * Before this call, allEntries.value is [], filteredEntries yields [],
+ * and the panel shows no entries — matching the non-blocking fetch
+ * guardrail. Vue reactivity propagates the reassignment to filteredEntries
+ * and any downstream v-for.
+ */
+export function rebuildGlossaryEntries(): void {
+  allEntries.value = buildAllEntries();
+}
 
 /** The filtered entry list based on the current search query. */
 const filteredEntries = computed<GlossaryEntry[]>(() => {
   const needle = searchQuery.value.toLowerCase().trim();
-  if (!needle) return allEntries;
-  return allEntries.filter((entry) => {
+  if (!needle) return allEntries.value;
+  return allEntries.value.filter((entry) => {
     return entry.label.toLowerCase().includes(needle)
       || entry.description.toLowerCase().includes(needle)
       || entry.key.includes(needle);
@@ -155,7 +173,7 @@ function openToKeyword(keywordName: string): void {
 
   // Find the glossary key that matched (lookupKeyword already did fuzzy matching)
   // We need to find which entry has this description to get its id
-  const matchingEntry = allEntries.find(
+  const matchingEntry = allEntries.value.find(
     (entry) => entry.type === "keyword" && entry.description === definition,
   );
   if (!matchingEntry) return;
@@ -173,7 +191,7 @@ function openToRule(ruleCode: string): void {
   const ruleEntry = lookupRule(ruleCode);
   if (!ruleEntry) return;
 
-  const matchingEntry = allEntries.find(
+  const matchingEntry = allEntries.value.find(
     (entry) => entry.type === "rule"
       && entry.label === ruleEntry.label
       && entry.description === ruleEntry.summary,

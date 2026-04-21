@@ -4,7 +4,9 @@ import type { FlatCard, CardQueryExtended, HealthReport, CardRegistry, SetIndexE
 import { getRegistry } from "./lib/registryClient";
 import { getThemes } from "./lib/themeClient";
 import type { ThemeDefinition } from "./lib/themeClient";
-import { useGlossary } from "./composables/useGlossary";
+import { getKeywordGlossary, getRuleGlossary } from "./lib/glossaryClient";
+import { setGlossaries } from "./composables/useRules";
+import { useGlossary, rebuildGlossaryEntries } from "./composables/useGlossary";
 import { useLightbox } from "./composables/useLightbox";
 import CardGrid       from "./components/CardGrid.vue";
 import CardDetail     from "./components/CardDetail.vue";
@@ -163,6 +165,21 @@ onMounted(async () => {
       filteredThemes.value = themes;
     } catch (themeError) {
       console.warn("[Themes] Load failed (non-blocking):", themeError);
+    }
+
+    // why: Parallel to getThemes() above — glossary fetch is non-blocking.
+    // If R2 is unreachable or the JSON files are missing, console.warn and
+    // continue; tooltips will be absent but the card view remains functional.
+    loadStatus.value = "Loading glossary…";
+    try {
+      const [keywords, rules] = await Promise.all([
+        getKeywordGlossary(metadataBaseUrl),
+        getRuleGlossary(metadataBaseUrl),
+      ]);
+      setGlossaries(keywords, rules);
+      rebuildGlossaryEntries();
+    } catch (glossaryError) {
+      console.warn("[Glossary] Load failed (non-blocking):", glossaryError);
     }
   } catch (err) {
     loadError.value = err instanceof Error ? err.message : String(err);

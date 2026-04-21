@@ -6190,6 +6190,141 @@ job `build` only; jobs `validate`, `build-viewer`, `upload-r2`, and
 
 ---
 
+### D-6001 — Keyword and Rule Glossary Data Is Display-Only, No Zod Schema
+**Decision:** `data/metadata/keywords-full.json` (113 entries,
+`{ key, description }[]`) and `data/metadata/rules-full.json` (20 entries,
+`{ key, label, summary }[]`) ship without a Zod schema. The files are
+consumed only by the registry-viewer for tooltip rendering. Shape drift
+shows up as absent or obviously-wrong tooltip text at runtime, not as
+silent contract breakage.
+**Rationale:** Display text is not a validated contract. Adding a schema
+would mandate maintenance (re-infer types, re-export from the registry
+package, wire into `pnpm validate`) with no defensive value — the viewer's
+fetch already tolerates schema drift by falling back to the tooltip-absent
+path. Matches the precedent in `themeClient.ts` (WP-055) where theme JSON
+parses directly into display-oriented types without a Zod guard.
+**Affected WPs:** WP-060 (execution), any future viewer WP that adds
+glossary entries.
+**Introduced:** WP-060 / EC-106
+**Status:** Immutable
+
+---
+
+### D-6002 — Glossary Data Lives in `data/metadata/` Alongside Registry Metadata
+**Decision:** Keyword and rule glossary JSON files live under
+`data/metadata/`, the same directory that holds `sets.json`,
+`card-types.json`, `hero-classes.json`, `hero-teams.json`, `icons-meta.json`,
+and `leads.json`. They are served from
+`images.barefootbetters.com/metadata/` at runtime, matching the registry
+metadata hosting pattern.
+**Rationale:** Glossary definitions are registry-layer *content*, not
+game-engine *logic*. Co-locating them with the existing registry metadata
+keeps one directory, one R2 prefix, and one upload cadence for viewer data.
+Creating a new top-level directory would have introduced classification
+ambiguity without any operational benefit.
+**Affected WPs:** WP-060
+**Introduced:** WP-060 / EC-106
+**Status:** Immutable
+
+---
+
+### D-6003 — Glossary Data Is Served From R2 Alongside Card and Theme Data
+**Decision:** Both glossary JSON files are uploaded to
+`images.barefootbetters.com/metadata/keywords-full.json` and
+`images.barefootbetters.com/metadata/rules-full.json` via the same R2 bucket
+and manual upload workflow used for card set metadata and theme files. No
+separate CDN, no per-file version query string.
+**Rationale:** Glossary data shares the registry-viewer's data-fetch
+lifecycle — loaded once at startup, cached in module scope, invalidated
+only on redeploy. Using the same bucket means one CORS policy, one cache
+policy, and one credential set. Diverging would create an operational tax
+with no user-visible benefit.
+**Affected WPs:** WP-060
+**Introduced:** WP-060 / EC-106
+**Status:** Immutable
+
+---
+
+### D-6004 — `[keyword:N]` Numeric References Are Resolved by the Viewer at Render Time
+**Decision:** Definition text in `keywords-full.json` may contain
+`[keyword:N]` markers that reference other keyword IDs in the same file.
+The registry-viewer resolves these via `parseAbilityText()` in
+`useRules.ts`, the same tokenizer that handles `[icon:X]`, `[hc:X]`,
+`[rule:N]`, and `[team:T]` markers. No pre-processing step rewrites token
+markup before upload.
+**Rationale:** Token markup is preserved verbatim in R2 so that the viewer
+can re-render definitions with arbitrary cross-references. Flattening
+`[keyword:N]` to plain text at author time would lose the hyperlinking
+behavior that makes the glossary panel useful.
+**Affected WPs:** WP-060
+**Introduced:** WP-060 / EC-106
+**Status:** Immutable
+
+---
+
+### D-6005 — Hero Class Descriptions Stay Hardcoded in `useRules.ts`
+**Decision:** `HERO_CLASS_GLOSSARY` (5 entries: Covert, Instinct, Ranged,
+Strength, Tech) remains hardcoded in
+`apps/registry-viewer/src/composables/useRules.ts`. It is **not** migrated
+to R2 by WP-060 and is not present in any external or R2 glossary artifact.
+**Rationale:** Hero class labels are stable engine-class identifiers that
+match `MatchSetupConfig` class semantics. They are bounded (exactly 5),
+never edited, and semantically closer to engine-layer enum values than to
+editable glossary content. Co-locating them with `lookupHeroClass()` keeps
+the one-entry-per-class mapping adjacent to its only consumer.
+**Affected WPs:** WP-060
+**Introduced:** WP-060 / EC-106
+**Status:** Immutable
+
+---
+
+### D-6006 — Canonical Migration Baseline Is the Hardcoded Maps, Not the Upstream JSON
+**Decision:** The authoritative source for WP-060's data migration is the
+pair of hardcoded Maps `KEYWORD_GLOSSARY` (113 entries) and
+`RULES_GLOSSARY` (20 entries) in
+`apps/registry-viewer/src/composables/useRules.ts` — not the upstream
+`C:\Users\jjensen\bbcode\modern-master-strike\src\data\keywords-full.json`
+(102 entries) or `.../rules-full.json` (18 entries) that the Maps
+originally diverged from.
+**Rationale:** The in-repo Maps include ~30 modifier variants
+(`ultimateabomination`, `doublestriker`, `tripleempowered`, etc.), two
+generic rule references (`additional mastermind`, `transforms`), and
+post-divergence editorial fixes that the upstream files never received.
+Re-seeding from upstream would silently regress the modifier-keyword
+tooltips that card data in the viewer already depends on.
+**Affected WPs:** WP-060
+**Introduced:** WP-060 / EC-106
+**Status:** Immutable
+
+---
+
+### D-6007 — Glossary Wiring Scope Expansion and Lookup Algorithm Lock
+**Decision:** WP-060's scope expansion to modify
+`apps/registry-viewer/src/composables/useGlossary.ts` (reactive `allEntries`
+rebuild after the async fetch) is authorized under the viewer-scope analog
+of `docs/ai/REFERENCE/01.5-runtime-wiring-allowance.md` —
+dependency-driven wiring only, no new behavior. Separately, the
+algorithmic bodies of `lookupKeyword` and `lookupRule` in `useRules.ts`
+are locked: only the backing Map source changes in this migration. The
+exact-lowercase → space-hyphen-stripped → prefix / suffix / substring
+matcher for `lookupKeyword` and the exact + slugified-fallback matcher for
+`lookupRule` are preserved byte-for-byte, with only the identifier
+substitution (module-scope holder + null-guard) permitted.
+**Rationale:** The reactive `ref` conversion is a strict consequence of
+moving from module-eval-time Map construction to post-mount Map
+installation — removing the exports that `useGlossary.ts` imported would
+have broken compilation without the wiring edit. Preserving the matcher
+bodies verbatim defends against regressing ~20 modifier-keyword tooltips
+("Ultimate Abomination", "Double Striker", "Triple Empowered", "Focus 2",
+"Patrol the Bank", "Danger Sense 3", "Cross-Dimensional Hulk Rampage",
+etc.) that a naïve `return fetchedMap.get(lower) ?? null` rewrite would
+silently drop.
+**Affected WPs:** WP-060
+**Introduced:** WP-060 / EC-106
+**Status:** Immutable
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
