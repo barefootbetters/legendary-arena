@@ -43,7 +43,8 @@
  */
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
-import { join, resolve }              from "node:path";
+import { dirname, join, resolve }     from "node:path";
+import { fileURLToPath }              from "node:url";
 import {
   RegistryConfigSchema,
   SetIndexEntrySchema,
@@ -58,8 +59,15 @@ import type { SetData } from "../src/types/index.js";
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
-const METADATA_DIR   = resolve(process.env["METADATA_DIR"]   ?? "data/metadata");
-const SETS_DIR       = resolve(process.env["SETS_DIR"]       ?? "data/cards");
+// why: defaults resolve relative to this script's location, not process.cwd(),
+// because `pnpm --filter @legendary-arena/registry validate` runs with CWD =
+// packages/registry/, which breaks repo-root-relative defaults. Env overrides
+// still win when set.
+const HERE      = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = resolve(HERE, "../../..");
+
+const METADATA_DIR   = resolve(process.env["METADATA_DIR"]   ?? join(REPO_ROOT, "data/metadata"));
+const SETS_DIR       = resolve(process.env["SETS_DIR"]       ?? join(REPO_ROOT, "data/cards"));
 const HEALTH_OUT     = resolve(process.env["HEALTH_OUT"]     ?? "dist/registry-health.json");
 const R2_BASE_URL    = (process.env["R2_BASE_URL"] ?? "").replace(/\/$/, "");
 const SKIP_IMAGES    = process.env["SKIP_IMAGES"] === "1";
