@@ -7,6 +7,127 @@
 
 ## Current State
 
+### WP-058 / EC-058 Executed — Pre-Plan Disruption Pipeline (2026-04-20, EC-058)
+
+WP-058 lands the disruption pipeline that closes the pre-planning layer's
+detect → invalidate → rewind → notify workflow. Eight new files under
+`packages/preplan/src/` provide the first runtime consumer of
+`PrePlan.invalidationReason.effectType` closed union + the first
+implementation of DESIGN-CONSTRAINT #3 "reveal ledger is the sole
+authority for rewind":
+
+- **Types consolidated per PS-3.** `disruption.types.ts` exports four
+  public types: `PlayerAffectingMutation` (source + affected player
+  ids + `effectType` + description + optional card),
+  `DisruptionNotification` (structured causal payload), `SourceRestoration`
+  (`playerDeckReturns` + `sharedSourceReturns` partitioned buckets),
+  `DisruptionPipelineResult` (output envelope with
+  `requiresImmediateNotification: true` typed as literal, not `boolean`
+  — Copilot Issue 15 FIX encodes Constraint #7 at the type level).
+- **Binary per-player detection.** `disruptionDetection.ts` exports
+  `isPrePlanDisrupted(prePlan | null, mutation)` — false on null or
+  non-active; otherwise compares `playerId` to `mutation.affectedPlayerId`
+  (DESIGN-CONSTRAINT #4). No plan-step or sandbox inspection.
+- **Pipeline orchestration.** `disruptionPipeline.ts` exports five
+  functions: `invalidatePrePlan` (returns a full-spread 42/42 fresh
+  `PrePlan` with `status: 'invalidated'`; does NOT increment `revision`
+  per `preplan.types.ts:36-38`); `computeSourceRestoration` (reads
+  **only** `revealLedger`; DESIGN-CONSTRAINT #3 ledger-sole rewind
+  backstopped by Test 11 which constructs a plan whose sandbox
+  disagrees with the ledger); `buildDisruptionNotification` (the sole
+  throw in the package — programming-error only on `status !==
+  'invalidated'`; conditional-assignment for optional
+  `affectedCardExtId`); internal `buildNotificationMessage`;
+  `executeDisruptionPipeline` (reads `prePlan.revealLedger` per RS-8
+  with required `// why:` comment — invalidation doesn't mutate the
+  ledger, so pre-invalidation read is equivalent and avoids coupling to
+  `invalidatePrePlan`'s spread-copy semantics).
+- **Canonical effect-type array (PS-2).** `preplanEffectTypes.ts` exports
+  `PREPLAN_EFFECT_TYPES = ['discard', 'ko', 'gain', 'other'] as const`
+  + `PrePlanEffectType` derived type + compile-time drift-check using
+  `NonNullable<PrePlan['invalidationReason']>['effectType']`. The
+  `NonNullable<>` wrapper is mandatory because `invalidationReason` is
+  optional on `PrePlan`. Deferred from WP-056 per
+  `preplan.types.ts:101-106` JSDoc.
+
+`packages/preplan/src/index.ts` gains an additive WP-058 export block
+below the existing WP-056 + WP-057 blocks (five functions + four types
++ `PREPLAN_EFFECT_TYPES` + `PrePlanEffectType`). WP-056 + WP-057 blocks
+unchanged verbatim. `packages/preplan/package.json` and
+`pnpm-lock.yaml` explicitly NOT in the allowlist — `tsx` devDep + test
+script inherited from WP-057.
+
+Commit topology (three commits on
+`wp-081-registry-build-pipeline-cleanup`):
+
+- `29c66d2` — SPEC: A0 pre-flight bundle (EC-058 + WP-058 amendments
+  A-058-01 through A-058-05 + pre-flight + copilot check re-run
+  CONFIRM + session prompt + EC_INDEX row Draft).
+- `bae70e7` — EC-058 execution: 7 new source files + `index.ts`
+  modification + mandatory 01.6 post-mortem. Commit prefix `EC-058:`
+  per P6-36 (`WP-058:` forbidden).
+- `<this commit>` — SPEC: governance close (WORK_INDEX + EC_INDEX +
+  STATUS).
+
+Test baseline: preplan `23 / 4 / 0 → 52 / 7 / 0` (29 new tests in 3
+describe suites: detection 5 + pipeline 23 + effect-type drift 1).
+Engine UNCHANGED at `436 / 109 / 0` (WP-058 touches zero engine code).
+Registry / vue-sfc-loader / server / replay-producer / arena-client all
+unchanged. Repo-wide `559 → 588 passing / 0 failing`.
+
+Architectural boundary integrity — all 25 verification gates pass:
+
+- No `boardgame.io` / runtime engine / `@legendary-arena/registry` /
+  `pg` / `apps/` imports in `packages/preplan/`. Two new `import type
+  { CardExtId }` lines (disruption.types.ts, disruptionPipeline.ts)
+  joining the three inherited WP-056/057 lines.
+- No `Math.random` / `ctx.random` / `require(` / `.reduce(` hits.
+- `Date.now` exactly one hit at `speculativePrng.ts:79` (WP-057
+  carve-out); zero new hits in WP-058 files.
+- P6-50 paraphrase discipline: zero `G` / `LegendaryGameState` /
+  `LegendaryGame` / `boardgame.io` tokens in code or JSDoc in new
+  files; `ctx` appears only in the inherited `ctx.turn + 1` carve-out
+  at `preplan.types.ts:21, :51` (WP-056 output, untouched).
+- `preplan.types.ts` / `preplanStatus.ts` / `speculativePrng.ts` /
+  `preplanSandbox.ts` / `speculativeOperations.ts` diffs all empty
+  (WP-056 + WP-057 immutable). `package.json` / `tsconfig.json` /
+  `pnpm-lock.yaml` / `pnpm-workspace.yaml` diffs all empty.
+- `disruptionPipeline.ts` has 7 `// why:` comments covering status
+  guard, conditional-assignment (×2), full-spread rationale,
+  ledger-sole loop, programming-error throw, pre-invalidation ledger
+  source.
+- `requiresImmediateNotification` typed as literal `true` (not
+  `boolean`). `revision` not incremented in `invalidatePrePlan`
+  (zero hits for `revision: prePlan.revision +`). Programming-error
+  throw template matches verbatim. Each test file has exactly one
+  top-level `describe()`.
+
+01.5 Runtime Wiring Allowance: NOT INVOKED (all four criteria absent).
+
+01.6 Post-Mortem: MANDATORY — four triggers fire (new long-lived
+abstractions: detection / invalidation / restoration / notification /
+pipeline orchestration + `PREPLAN_EFFECT_TYPES`; first runtime
+consumer of `invalidationReason.effectType` closed union; first
+implementation of DESIGN-CONSTRAINT #3 ledger-sole rewind; first
+full-spread 42/42 pattern applied to a status-transition operation
+rather than a sandbox-mutation operation as in WP-057). Verdict **WP
+COMPLETE** with zero post-mortem fixes; one session-protocol finding
+documented in §8.1 (test-count rebalance to hit locked 23 —
+consolidated with-card/without-card branches into one parameterized
+`test()` call and swapped the sourceRestoration-equivalence test for
+the spec-required detection-gate test; no semantic change).
+
+Copilot Check (01.7): CONFIRM 30/30 inherited from pre-flight A0.
+All three HOLD FIXes (Date.now grep gate + ledger-sole restoration
+test + literal-true `// why:` upgrade) present and passing.
+
+Inherited dirty-tree items (11 unrelated files + `.claude/worktrees/`)
+untouched; quarantine `stash@{0..2}` intact and not popped. Next
+natural WP: **WP-059** (Pre-Plan UI Integration) — deferred until
+WP-028 (UI State Contract) is executed and a UI framework decision
+is made. Integration guidance preserved in
+`docs/ai/DESIGN-PREPLANNING.md` §11.
+
 ### WP-057 / EC-057 Executed — Pre-Plan Sandbox Execution (2026-04-20, EC-057)
 
 WP-057 lands the first runtime consumer of the `@legendary-arena/preplan`

@@ -1321,7 +1321,7 @@ code, never `boardgame.io`).
   mutation); failure signaling via `null` (never throw for expected
   conditions); zero-op plans explicitly valid; 3 test files
 
-- [ ] WP-058 — Pre-Plan Disruption Pipeline — pending ✅ Reviewed
+- [x] WP-058 — Pre-Plan Disruption Pipeline — Executed 2026-04-20 at commit `bae70e7` ✅ Reviewed
   Dependencies: WP-057, WP-056, WP-008B
   Notes: Full disruption workflow as single cohesive pipeline (detect →
   invalidate → rewind → notify — not separable); `PlayerAffectingMutation`
