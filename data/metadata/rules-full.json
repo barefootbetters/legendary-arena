@@ -2,101 +2,101 @@
   {
     "key": "adaptingmasterminds",
     "label": "Adapting Masterminds",
-    "summary": "Adapting Masterminds have only Tactic cards — no main card. The top Tactic counts as the Mastermind. After each Strike, Adapt: shuffle Tactics and reveal a new one on top."
+    "summary": "An Adapting Mastermind has only Mastermind Tactic cards (4 or 6) and no separate Mastermind card. The top Tactic counts as the current Mastermind and is kept face up. Whenever the Mastermind Adapts (during setup, after each Master Strike, and after each fight), shuffle the remaining Tactics and reveal a new one on top. You always fight the top Tactic."
   },
   {
     "key": "additional mastermind",
     "label": "Additional Mastermind",
-    "summary": "This enemy ascends to become an additional Mastermind. All Masterminds must be defeated to win. No Tactics — fight it once to claim it."
+    "summary": "When certain powerful Villains escape, they ascend to become additional Masterminds. These Masterminds have no Tactics and only need to be defeated once. All Masterminds must be defeated to win. When a Master Strike occurs, each Mastermind resolves its Strike in an order chosen by the current player."
   },
   {
     "key": "ambushschemes",
     "label": "Ambush Schemes",
-    "summary": "Played alongside the main Scheme. Triggers an immediate effect when drawn. Scheme Twists now trigger both Schemes. Defeat the Ambush Scheme for bonus VP."
+    "summary": "Ambush Schemes are shuffled into the Villain Deck with their Villain Group. When played, place it next to the main Scheme and immediately resolve its Ambush effect. For the rest of the game, each Scheme Twist triggers both Schemes. Each Ambush Scheme lists how to defeat it for Victory Points. Only one Ambush Scheme can be in play at a time."
   },
   {
     "key": "asterisk",
     "label": "Asterisk Symbol (*)",
-    "summary": "A * on VP or Attack means there's something unusual about that value — like Size-Changing or a special condition required to fight."
+    "summary": "An asterisk (*) on a card’s Cost or Attack indicates that value is unusual or variable, such as Size‑Changing or a special condition required to fight. The asterisk itself has no rules effect beyond signaling that the value may change."
   },
   {
     "key": "chooseavillain",
     "label": "Choose a Villain Group",
-    "summary": "Pick one specific Villain Group by name. You can count Henchman Groups but not multiple groups at once via shared words."
+    "summary": "When you are told to choose a Villain Group, you must choose one specific group by name. You may choose Henchman Groups, but you cannot choose multiple groups via shared words (e.g., choosing “Hydra” does not include Hydra Elite). Cards without a Villain Group never count."
   },
   {
     "key": "divided",
     "label": "Divided Card",
-    "summary": "A Divided Card has two mini-cards printed on one card. When played, choose which side to use. The cost is the cost of one side, not both."
+    "summary": "A Divided Card has two miniature cards printed on one card. You pay its cost once to recruit it. When played, choose one side and use only that side’s text. While not being played, it counts as having all printed colors, classes, names, and traits, and its printed values are the sum of both sides."
   },
   {
     "key": "enragingwounds",
     "label": "Enraging Wounds",
-    "summary": "Wounds that can be played from hand for bonuses like Recruit or Attack. Each has a unique Healing condition. Still count as Wounds for all effects."
+    "summary": "Enraging Wounds are shuffled into the Wound Deck with normal Wounds. You may play them from your hand for printed bonuses. Each has a unique Healing ability that can be used during your turn without preventing recruiting or fighting. They still count as Wounds for all effects."
   },
   {
     "key": "grievouswounds",
     "label": "Grievous Wounds",
-    "summary": "Harder-to-heal Wounds with unique Healing abilities like \"Spend 5 Recruit to KO this Wound.\" Still count as Wounds for all effects."
+    "summary": "Grievous Wounds are more difficult to heal than normal Wounds. Each has a special Healing ability such as spending Recruit to KO it. Using these Healing abilities does not prevent recruiting or fighting. Grievous Wounds still count as Wounds for all effects."
   },
   {
     "key": "locations",
     "label": "Locations",
-    "summary": "Locations are placed above city spaces. They don't move and don't count as Villains. Fight them by spending the listed Attack to claim them."
+    "summary": "Locations are played from the Villain Deck and placed above the nearest city space without a Location. They do not move and do not count as Villains. You may fight a Location by spending its listed Attack to claim it and resolve its Fight effect. If all spaces already have Locations, KO one with the lowest Attack."
   },
   {
     "key": "multiclasscards",
     "label": "Multiclass Cards",
-    "summary": "A multiclass card counts as both of its Hero Classes. Great for triggering multiple Superpower Abilities."
+    "summary": "Multiclass cards count as all of their listed Hero Classes simultaneously. They are especially effective for triggering Superpower abilities that require multiple classes and for abilities that count Hero Classes."
   },
   {
     "key": "multiplemasterminds",
     "label": "Multiple Masterminds",
-    "summary": "When Villains escape, they can ascend to become additional Masterminds. All Masterminds must be defeated to win."
+    "summary": "Some effects create multiple Masterminds in the same game. Players must defeat all Masterminds to win. When a Master Strike occurs, each Mastermind resolves its Strike, in an order chosen by the current player."
   },
   {
     "key": "shards",
     "label": "Shards",
-    "summary": "Shard tokens represent cosmic energy. Players can spend a Shard for +1 Attack. Villains and Masterminds gain +1 Attack per Shard on them."
+    "summary": "Shard tokens represent cosmic energy. Players may spend a Shard at any time during their turn for +1 Attack. Villains and Masterminds gain +1 Attack per Shard on them. When defeated, the player takes one Shard; the rest return to the supply."
   },
   {
     "key": "sidekicks",
     "label": "Sidekicks",
-    "summary": "Pay 2 Recruit to take one Sidekick per turn from the Sidekick Stack. When played, return it to the bottom of the Stack."
+    "summary": "Once per turn, a player may pay 2 Recruit to gain a Sidekick from the Sidekick Stack. When played, Sidekicks return to the bottom of the stack. They still count as Heroes when played and can trigger Superpower abilities."
   },
   {
     "key": "transformingschemes",
     "label": "Transforming Schemes",
-    "summary": "Double-sided Schemes that flip over mid-game. Start with the Setup side face up. When told to Transform, flip it over."
+    "summary": "Transforming Schemes are double‑sided. Start with the Setup side face up. When instructed to Transform, flip the Scheme and use only the rules on the new face."
   },
   {
     "key": "transforms",
     "label": "Transforms",
-    "summary": "Flip this double-sided card over to its other face. Use only the rules now showing."
+    "summary": "When a card Transforms, remove it from the game and replace it with the specified transformed card. You complete all effects of the original card first, then may immediately play the transformed card if it enters your hand."
   },
   {
     "key": "traps",
     "label": "Traps",
-    "summary": "When a Trap is played from the Villain Deck, you must complete a challenge this turn to avoid it. Success puts it in your Victory Pile."
+    "summary": "When a Trap is played from the Villain Deck, it presents a challenge to complete this turn. If you succeed, put the Trap in your Victory Pile and score its VP. If you fail, suffer its penalty at end of turn. Traps never push Villains forward."
   },
   {
     "key": "unveiledschemes",
     "label": "Unveiled Schemes",
-    "summary": "The transformed version of a Veiled Scheme. Use these rules once the Scheme has flipped to this side."
+    "summary": "An Unveiled Scheme is the transformed side of a Veiled Scheme. Once revealed, use only the Unveiled Scheme’s rules for the rest of the game unless another effect changes it."
   },
   {
     "key": "veiledschemes",
     "label": "Veiled Schemes",
-    "summary": "Start with this side face up. At a certain point it transforms into a randomly selected Unveiled Scheme."
+    "summary": "Veiled Schemes begin face up. At a specified point, they are removed and replaced by a randomly selected Unveiled Scheme. The chosen Unveiled Scheme might be the reverse of the original card or a different one."
   },
   {
     "key": "villainousweapons",
     "label": "Villainous Weapons",
-    "summary": "Weapons captured by Villains boost their Attack. When you defeat that Villain, you claim the Weapon as an Artifact for your own hand."
+    "summary": "Villainous Weapons are not Villains. When played, they are captured by the Villain closest to the Villain Deck, granting its printed Attack bonus. If no Villain is present, the Weapon is KO’d. When you defeat a Villain or Mastermind holding Weapons, you gain them as Artifact cards with 0 cost."
   },
   {
     "key": "woundsonvillains",
     "label": "Wounds on Villains",
-    "summary": "Place a Wound on a Villain to give it -1 Attack. Wounds are returned to the Wound Stack when that Villain is defeated or leaves the city."
+    "summary": "Some effects place Wounds directly on Villains or Masterminds, giving them −1 Attack per Wound. When that enemy is defeated or leaves the city, all Wounds on it return to the Wound Stack. Wounds on enemies are ignored for their text while attached."
   }
 ]
