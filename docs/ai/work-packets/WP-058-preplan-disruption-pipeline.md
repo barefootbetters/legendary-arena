@@ -1,8 +1,8 @@
 # WP-058 — Pre-Plan Disruption Pipeline (Detect → Invalidate → Rewind → Notify)
 
-**Status:** Ready for Implementation
+**Status:** Ready for Implementation (amended 2026-04-20 per pre-flight PS-2/PS-3 + copilot-check HOLD fixes)
 **Primary Layer:** Pre-Planning (Non-Authoritative, Per-Client)
-**Last Updated:** 2026-04-12
+**Last Updated:** 2026-04-20
 **Dependencies:**
 
 - `docs/ai/DESIGN-PREPLANNING.md` (approved architecture)
@@ -10,6 +10,18 @@
 - **WP-056** — Pre-Planning State Model & Lifecycle
 - **WP-057** — Pre-Plan Sandbox Execution
 - WP-008B — Core moves implementation (player-affecting effects)
+
+---
+
+## Amendments (2026-04-20)
+
+Applied as part of the pre-flight Commit A0 `SPEC:` bundle. Each amendment is scope-neutral — no new file outside the enlarged allowlist, no new runtime behavior beyond what the pre-flight locked.
+
+- **A-058-01 (PS-2)** — Add `PREPLAN_EFFECT_TYPES` canonical readonly array + drift-detection test. Deferred from WP-056 per `preplan.types.ts:101-106` JSDoc; WP-058 is the first runtime consumer of the `invalidationReason.effectType` closed union. New files: `packages/preplan/src/preplanEffectTypes.ts` + `packages/preplan/src/preplanEffectTypes.test.ts`. Updates: §Scope In section J; §Files Expected to Change; §H exports; §I tests; §Acceptance Criteria.
+- **A-058-02 (PS-3)** — Consolidate all four public types in `packages/preplan/src/disruption.types.ts`. Original §E declared `SourceRestoration` in `disruptionPipeline.ts` and §G declared `DisruptionPipelineResult` in `disruptionPipeline.ts`, but §H exported both from `./disruption.types.js` — inconsistent. Resolution: `disruption.types.ts` is the single source of truth for `PlayerAffectingMutation`, `DisruptionNotification`, `SourceRestoration`, `DisruptionPipelineResult`; `disruptionPipeline.ts` imports them via `import type`. Updates: §E, §G code skeletons relocated + imports added.
+- **A-058-03 (Copilot Issue 2)** — Add `Date.now` grep gate to §Verification Steps (expect exactly one hit at `speculativePrng.ts:79`, the WP-057 carve-out). Prevents accidental propagation of wall-clock reads into WP-058 new files.
+- **A-058-04 (Copilot Issue 11)** — Add ledger-sole restoration test: `computeSourceRestoration` reads only from `revealLedger`, never from `sandboxState`. Test constructs a `PrePlan` whose `sandboxState` disagrees with the ledger and asserts restoration follows the ledger. Raises restoration tests 5 → 6 in `disruptionPipeline.test.ts`.
+- **A-058-05 (Copilot Issue 15)** — Upgrade JSDoc on `DisruptionPipelineResult.requiresImmediateNotification: true` to explicitly state type-level enforcement rationale (removing the field would delete a type-level Constraint #7 encoding mechanism).
 
 ---
 
@@ -209,6 +221,97 @@ export type DisruptionNotification = {
 
 ---
 
+### B.1) Source Restoration Type (PS-3 consolidation)
+
+**File:** `packages/preplan/src/disruption.types.ts` (same file)
+
+Imported by `disruptionPipeline.ts` via `import type { SourceRestoration } from './disruption.types.js';`
+
+```typescript
+/**
+ * Description of sources that must be restored after a rewind.
+ *
+ * The caller (integration layer) is responsible for applying these
+ * restorations to whatever state tracking exists outside the sandbox.
+ * This WP produces the restoration instructions; it does not execute
+ * them against engine state.
+ *
+ * Restoration semantics:
+ *
+ * - playerDeckReturns MUST be re-shuffled before any further sandbox
+ *   use (new PRNG seed). Returning cards without reshuffling leaks
+ *   information about deck order.
+ * - sharedSourceReturns restore membership only; ordering is defined
+ *   by the shared source's own rules:
+ *     - Stacks (officers, sidekicks): ordering is irrelevant (top card
+ *       is the only visible position, and it's determined by the real
+ *       game state, not by the sandbox)
+ *     - HQ-style sources: positioning is integration-layer policy
+ *
+ * This pipeline does not assume ordering semantics for shared sources.
+ */
+export type SourceRestoration = {
+  /** Cards to return to the player's deck (must be re-shuffled). */
+  playerDeckReturns: CardExtId[];
+
+  /**
+   * Cards to return to shared sources, grouped by source name.
+   * e.g., { 'officer-stack': ['card-1'], 'sidekick-stack': ['card-2'] }
+   */
+  sharedSourceReturns: Record<string, CardExtId[]>;
+};
+```
+
+---
+
+### B.2) Disruption Pipeline Result Type (PS-3 consolidation)
+
+**File:** `packages/preplan/src/disruption.types.ts` (same file)
+
+Imported by `disruptionPipeline.ts` via `import type { DisruptionPipelineResult } from './disruption.types.js';`
+
+```typescript
+import type { PrePlan } from './preplan.types.js';
+
+/**
+ * Result of running the full disruption pipeline.
+ *
+ * Contains the invalidated plan, source restoration instructions,
+ * and a notification for the UI. The caller is responsible for:
+ * 1. Applying source restorations
+ * 2. Delivering the notification (before allowing further planning)
+ * 3. Optionally creating a fresh sandbox via createPrePlan (WP-057)
+ */
+export type DisruptionPipelineResult = {
+  /** The PrePlan after invalidation (status: 'invalidated'). */
+  invalidatedPlan: PrePlan;
+
+  /** Instructions for restoring speculatively revealed sources. */
+  sourceRestoration: SourceRestoration;
+
+  /** Structured notification for the player. */
+  notification: DisruptionNotification;
+
+  /**
+   * Type-level encoding of Constraint #7 (immediate notification).
+   *
+   * The literal-true type (not `boolean`) is intentional: the caller
+   * MUST deliver the notification before allowing any further
+   * pre-planning interaction. Callers check this field to confirm
+   * they are handling the notification requirement.
+   *
+   * Removing this field would delete a type-level enforcement
+   * mechanism for Constraint #7 — the notification requirement
+   * would then live only in prose. Do not "clean up" this field
+   * as redundant data. (WP-058 amendment A-058-05 per copilot
+   * Issue 15 lock.)
+   */
+  requiresImmediateNotification: true;
+};
+```
+
+---
+
 ### C) Disruption Detection
 
 **File:** `packages/preplan/src/disruptionDetection.ts`
@@ -292,43 +395,12 @@ export function invalidatePrePlan(
 
 **File:** `packages/preplan/src/disruptionPipeline.ts` (same file)
 
+`SourceRestoration` is declared in `disruption.types.ts` (see §B.1) per PS-3 consolidation and imported here via `import type`. `disruptionPipeline.ts` contains only the `computeSourceRestoration` implementation — no type declarations.
+
 ```typescript
 import type { RevealRecord } from './preplan.types.js';
+import type { SourceRestoration } from './disruption.types.js';
 import type { CardExtId } from '@legendary-arena/game-engine';
-
-/**
- * Description of sources that must be restored after a rewind.
- *
- * The caller (integration layer) is responsible for applying these
- * restorations to whatever state tracking exists outside the sandbox.
- * This WP produces the restoration instructions; it does not execute
- * them against engine state.
- */
-/**
- * Restoration semantics:
- *
- * - playerDeckReturns MUST be re-shuffled before any further sandbox
- *   use (new PRNG seed). Returning cards without reshuffling leaks
- *   information about deck order.
- * - sharedSourceReturns restore membership only; ordering is defined
- *   by the shared source's own rules:
- *     - Stacks (officers, sidekicks): ordering is irrelevant (top card
- *       is the only visible position, and it's determined by the real
- *       game state, not by the sandbox)
- *     - HQ-style sources: positioning is integration-layer policy
- *
- * This pipeline does not assume ordering semantics for shared sources.
- */
-export type SourceRestoration = {
-  /** Cards to return to the player's deck (must be re-shuffled). */
-  playerDeckReturns: CardExtId[];
-
-  /**
-   * Cards to return to shared sources, grouped by source name.
-   * e.g., { 'officer-stack': ['card-1'], 'sidekick-stack': ['card-2'] }
-   */
-  sharedSourceReturns: Record<string, CardExtId[]>;
-};
 
 /**
  * Compute source restoration instructions from a reveal ledger.
@@ -337,8 +409,12 @@ export type SourceRestoration = {
  * speculatively revealed and from which sources. The caller
  * must re-shuffle the player's deck after applying returns.
  *
- * INVARIANT: All rewinds are derived exclusively from the
- * revealLedger (WP-056 ledger authority invariant).
+ * INVARIANT (DESIGN-CONSTRAINT #3, preplan.types.ts:162-168): All
+ * rewinds are derived exclusively from the revealLedger. This function
+ * must not inspect any other PrePlan field — no sandboxState read path
+ * exists here, by construction. A future refactor that reads
+ * sandboxState for restoration would violate the ledger-sole
+ * rewind-authority invariant.
  *
  * Pure function: no I/O, no side effects.
  */
@@ -434,36 +510,10 @@ function buildNotificationMessage(
 
 **File:** `packages/preplan/src/disruptionPipeline.ts` (same file)
 
+`DisruptionPipelineResult` is declared in `disruption.types.ts` (see §B.2) per PS-3 consolidation and imported here via `import type`. `disruptionPipeline.ts` contains only the `executeDisruptionPipeline` implementation — no result-type declaration.
+
 ```typescript
-/**
- * Result of running the full disruption pipeline.
- *
- * Contains the invalidated plan, source restoration instructions,
- * and a notification for the UI. The caller is responsible for:
- * 1. Applying source restorations
- * 2. Delivering the notification (before allowing further planning)
- * 3. Optionally creating a fresh sandbox via createPrePlan (WP-057)
- */
-export type DisruptionPipelineResult = {
-  /** The PrePlan after invalidation (status: 'invalidated'). */
-  invalidatedPlan: PrePlan;
-
-  /** Instructions for restoring speculatively revealed sources. */
-  sourceRestoration: SourceRestoration;
-
-  /** Structured notification for the player. */
-  notification: DisruptionNotification;
-
-  /**
-   * Data-level contract: the caller MUST deliver the notification
-   * before allowing any further pre-planning interaction.
-   *
-   * This field exists to encode Constraint #7 in the type system
-   * rather than relying on prose alone. Callers should check this
-   * field to confirm they are handling the notification requirement.
-   */
-  requiresImmediateNotification: true;
-};
+import type { DisruptionPipelineResult } from './disruption.types.js';
 
 /**
  * Execute the full disruption pipeline for a single pre-plan.
@@ -479,7 +529,9 @@ export type DisruptionPipelineResult = {
  * changes. The caller is responsible for acting on the result.
  *
  * The caller MUST deliver the notification BEFORE allowing
- * further planning interaction (Constraint #7).
+ * further planning interaction (Constraint #7). This requirement
+ * is also encoded at the type level via
+ * `DisruptionPipelineResult.requiresImmediateNotification: true`.
  */
 export function executeDisruptionPipeline(
   prePlan: PrePlan,
@@ -488,6 +540,10 @@ export function executeDisruptionPipeline(
   const invalidatedPlan = invalidatePrePlan(prePlan, mutation);
   if (!invalidatedPlan) return null;
 
+  // why: invalidation does not mutate the ledger; reading from the
+  // pre-invalidation plan is equivalent to reading from invalidatedPlan
+  // and avoids depending on invalidatePrePlan's spread-copy semantics
+  // (pre-flight RS-8).
   const sourceRestoration = computeSourceRestoration(prePlan.revealLedger);
   const notification = buildDisruptionNotification(invalidatedPlan, mutation);
 
@@ -502,11 +558,59 @@ export function executeDisruptionPipeline(
 
 ---
 
-### H) Updated Package Exports
+### H) Canonical Effect-Type Array + Drift Check (PS-2)
+
+**File:** `packages/preplan/src/preplanEffectTypes.ts` (new)
+
+Canonical readonly array paired with the `invalidationReason.effectType` closed union declared at `packages/preplan/src/preplan.types.ts:108`. Deferred from WP-056 per the JSDoc at `preplan.types.ts:101-106`; WP-058 is the first runtime consumer of the `effectType` union and owns this file.
+
+```typescript
+import type { PrePlan } from './preplan.types.js';
+
+/**
+ * Canonical readonly array of every value in
+ * `PrePlan.invalidationReason.effectType`.
+ *
+ * Paired with the closed-union type on `invalidationReason.effectType`
+ * and validated by both a compile-time exhaustive check in this file
+ * and a runtime drift test in `preplanEffectTypes.test.ts`. Any edit
+ * to the union must be accompanied by a matching edit to this array,
+ * and vice versa.
+ */
+// why: canonical readonly array paired with
+// PrePlan.invalidationReason.effectType closed union; drift-detection
+// test enforces parity at build time (deferred from WP-056 per
+// preplan.types.ts:101-106 JSDoc — WP-058 is the first runtime
+// consumer of the effectType union).
+export const PREPLAN_EFFECT_TYPES = ['discard', 'ko', 'gain', 'other'] as const;
+
+/** Derived union type matching `invalidationReason.effectType` exactly. */
+export type PrePlanEffectType = typeof PREPLAN_EFFECT_TYPES[number];
+
+/**
+ * Compile-time proof that `PREPLAN_EFFECT_TYPES` and
+ * `invalidationReason.effectType` describe the same set. `NonNullable<>`
+ * is required because `invalidationReason` itself is optional on
+ * `PrePlan`. If either side gains or drops a value without the other,
+ * this assignment will fail to typecheck.
+ */
+type _EffectTypeDriftCheck = PrePlanEffectType extends
+  NonNullable<PrePlan['invalidationReason']>['effectType']
+  ? NonNullable<PrePlan['invalidationReason']>['effectType'] extends PrePlanEffectType
+    ? true
+    : never
+  : never;
+const _effectTypeDriftProof: _EffectTypeDriftCheck = true;
+void _effectTypeDriftProof;
+```
+
+---
+
+### I) Updated Package Exports
 
 **File:** `packages/preplan/src/index.ts` (modify)
 
-Add to existing exports:
+Add to existing exports (preserves WP-056 and WP-057 blocks unchanged):
 
 ```typescript
 // Disruption types (WP-058)
@@ -527,48 +631,64 @@ export {
   buildDisruptionNotification,
   executeDisruptionPipeline,
 } from './disruptionPipeline.js';
+
+// Canonical effect-type array + derived type (WP-058, PS-2)
+export { PREPLAN_EFFECT_TYPES } from './preplanEffectTypes.js';
+export type { PrePlanEffectType } from './preplanEffectTypes.js';
 ```
 
 ---
 
-### I) Tests
+### J) Tests
 
 **File:** `packages/preplan/src/disruptionDetection.test.ts`
 **File:** `packages/preplan/src/disruptionPipeline.test.ts`
+**File:** `packages/preplan/src/preplanEffectTypes.test.ts` (PS-2)
 
-Test runner: `node:test`. File extension: `.test.ts`.
+Test runner: `node:test`. File extension: `.test.ts`. Each file wraps its tests in exactly one top-level `describe()` block (WP-031 / WP-057 suite-wrapping convention).
 
 Required test coverage:
 
-**Detection tests:**
+**Detection tests** (in `describe('preplan disruption detection (WP-058)')`):
 - Mutation affecting plan owner returns true
 - Mutation affecting a different player returns false
 - Null plan returns false
 - Already-invalidated plan returns false
 - Already-consumed plan returns false
 
-**Invalidation tests:**
+**Invalidation tests** (in `describe('preplan disruption pipeline (WP-058)')`):
 - Active plan transitions to `'invalidated'`
 - `invalidationReason` is populated with correct source and description
 - Non-active plan returns null
-- Input plan is not mutated (returns new object)
+- Input plan is not mutated (returns new object) — assert `revision`
+  stays unchanged (status + `invalidationReason` are not
+  revision-bumping fields per `preplan.types.ts:36-38`)
 
-**Source restoration tests:**
+**Source restoration tests** (in the same pipeline describe):
 - Empty ledger produces empty restoration
 - Player-deck reveals produce `playerDeckReturns`
 - Shared-source reveals produce grouped `sharedSourceReturns`
 - Mixed sources are correctly separated
 - Reveal order is preserved within each source group
+- **Ledger-sole rewind (amendment A-058-04 per copilot Issue 11):**
+  construct a `PrePlan` whose `sandboxState.hand` / `deck` / `discard`
+  / `inPlay` contain cards that are NOT in the `revealLedger`, and
+  whose `revealLedger` contains cards NOT in the sandbox. Assert
+  `computeSourceRestoration` returns exactly the ledger-derived cards
+  and ignores the sandbox entirely. Enforces DESIGN-CONSTRAINT #3 at
+  the test level — a future refactor that reads `sandboxState` for
+  restoration would fail this test.
 
-**Notification tests:**
+**Notification tests** (in the same pipeline describe):
 - Notification includes correct `prePlanId` and player IDs
 - Message includes effect description
 - Message includes card when `affectedCardExtId` is present
 - Message omits card when `affectedCardExtId` is absent
 - Throws on non-invalidated plan
 
-**Full pipeline tests:**
-- Active plan + matching mutation → full result with all four fields
+**Full pipeline tests** (in the same pipeline describe):
+- Active plan + matching mutation → full result with all four fields,
+  including `requiresImmediateNotification: true`
 - Active plan + non-matching mutation → null (detection rejects)
 - Non-active plan → null
 - Multiple mutations for same player: first produces result, second
@@ -577,13 +697,21 @@ Required test coverage:
 - Result's `sourceRestoration` matches the plan's `revealLedger`
 - Result's `notification` includes causal message
 
-**Acceptance scenario (integration test):**
+**Acceptance scenario** (integration test, in the same pipeline describe):
 - Create a PrePlan (WP-057's `createPrePlan`)
 - Perform speculative draws and plays (WP-057's operations)
 - Execute disruption pipeline with a mutation
 - Verify: plan is invalidated, restoration lists correct cards,
-  notification explains the cause
+  notification explains the cause, `requiresImmediateNotification` is `true`
 - Verify: creating a fresh PrePlan from updated state succeeds
+
+**Effect-type drift test** (in `describe('preplan effect-type drift (WP-058)')`):
+- Runtime set-equality between `new Set(PREPLAN_EFFECT_TYPES)` and a
+  literal reference set `new Set<PrePlanEffectType>(['discard', 'ko',
+  'gain', 'other'])`. Paired with the compile-time exhaustive check
+  in `preplanEffectTypes.ts` (amendment A-058-01 per PS-2).
+
+**Test count lock:** 5 detection + 4 invalidation + 6 restoration + 5 notification + 7 full pipeline + 1 acceptance + 1 drift = **29 tests** across **3 new suites** (`disruptionDetection.test.ts` / `disruptionPipeline.test.ts` / `preplanEffectTypes.test.ts`). Preplan baseline shifts `23 / 4 / 0 → 52 / 7 / 0`; repo-wide `559 → 588`. Executor may parameterize within a single `test()` call (per WP-057 Test 12/13 precedent) but may not reduce the suite count below 3.
 
 ---
 
@@ -601,16 +729,18 @@ Required test coverage:
 
 ## Files Expected to Change
 
-| File | Action |
-|---|---|
-| `packages/preplan/src/disruption.types.ts` | **new** |
-| `packages/preplan/src/disruptionDetection.ts` | **new** |
-| `packages/preplan/src/disruptionPipeline.ts` | **new** |
-| `packages/preplan/src/index.ts` | **modify** (add exports) |
-| `packages/preplan/src/disruptionDetection.test.ts` | **new** |
-| `packages/preplan/src/disruptionPipeline.test.ts` | **new** |
+| File | Action | Notes |
+|---|---|---|
+| `packages/preplan/src/disruption.types.ts` | **new** | Four public types consolidated here per PS-3: `PlayerAffectingMutation`, `DisruptionNotification`, `SourceRestoration`, `DisruptionPipelineResult` |
+| `packages/preplan/src/disruptionDetection.ts` | **new** | `isPrePlanDisrupted` only |
+| `packages/preplan/src/disruptionPipeline.ts` | **new** | `invalidatePrePlan`, `computeSourceRestoration`, `buildDisruptionNotification`, internal `buildNotificationMessage`, `executeDisruptionPipeline`. Types imported from `disruption.types.ts` |
+| `packages/preplan/src/preplanEffectTypes.ts` | **new** (PS-2) | `PREPLAN_EFFECT_TYPES` readonly array + `PrePlanEffectType` + compile-time drift check using `NonNullable<>` |
+| `packages/preplan/src/index.ts` | **modify** | Add WP-058 additive export block (§I); WP-056 + WP-057 blocks unchanged |
+| `packages/preplan/src/disruptionDetection.test.ts` | **new** | 5 detection tests in one `describe` block |
+| `packages/preplan/src/disruptionPipeline.test.ts` | **new** | 23 tests in one `describe` block (invalidation 4 + restoration 6 + notification 5 + full pipeline 7 + acceptance 1) |
+| `packages/preplan/src/preplanEffectTypes.test.ts` | **new** (PS-2) | 1 test in one `describe` block (runtime set-equality) |
 
-No other files may be modified.
+No other files may be modified. `packages/preplan/package.json` and `pnpm-lock.yaml` are **not** in the allowlist — `tsx` devDep and the `test` script are inherited from WP-057.
 
 ---
 
@@ -637,6 +767,9 @@ No other files may be modified.
 - [ ] `computeSourceRestoration` derives returns from ledger only
 - [ ] Player-deck reveals and shared-source reveals are correctly separated
 - [ ] Empty ledger produces empty restoration
+- [ ] **Ledger-sole rewind (amendment A-058-04):** `computeSourceRestoration`
+      ignores `sandboxState` entirely — verified by a test where the sandbox
+      contains cards not in the ledger and vice versa
 
 ### Notification
 
@@ -658,11 +791,24 @@ No other files may be modified.
 - [ ] No game engine runtime imports (type-only permitted)
 - [ ] All functions are pure (no I/O, no side effects, no real state mutation)
 
+### Canonical Effect-Type Array (PS-2)
+
+- [ ] `PREPLAN_EFFECT_TYPES` exported as a readonly tuple matching
+      `invalidationReason.effectType` exactly
+- [ ] `PrePlanEffectType` derived type exported
+- [ ] Compile-time drift check present in `preplanEffectTypes.ts` using
+      `NonNullable<PrePlan['invalidationReason']>['effectType']`
+- [ ] Runtime drift test present in `preplanEffectTypes.test.ts`
+
 ### Tests
 
 - [ ] All tests use `node:test` runner and `.test.ts` extension
+- [ ] Each test file wraps its tests in exactly one top-level `describe()`
+      block (WP-031 / WP-057 suite convention)
 - [ ] `pnpm -r build` exits 0
-- [ ] `pnpm test` passes
+- [ ] `pnpm test` passes with preplan delta `23 / 4 / 0 → 52 / 7 / 0`
+      and repo-wide `559 → 588`; engine baseline `436 / 109 / 0`
+      unchanged
 
 ---
 
@@ -692,11 +838,32 @@ Update `WORK_INDEX.md` to add WP-058.
 
 ```bash
 pnpm -r build
-pnpm test
+pnpm -r --if-present test
 
-# Architectural boundary enforcement
-grep -r "boardgame.io" packages/preplan/ && echo "FAIL: boardgame.io import found" || echo "PASS"
-grep -r "from '@legendary-arena/game-engine'" packages/preplan/src/ --include="*.ts" | grep -v "import type" && echo "FAIL: runtime engine import found" || echo "PASS"
+# Architectural boundary enforcement (escaped patterns per WP-031 P6-22)
+git grep -nE "from ['\"]boardgame\.io" packages/preplan/
+git grep -nE "from ['\"]@legendary-arena/game-engine['\"]" packages/preplan/src/ | grep -v "import type"
+git grep -nE "from ['\"]@legendary-arena/registry" packages/preplan/
+git grep -nE "from ['\"]pg" packages/preplan/
+git grep -nE "from ['\"]apps/" packages/preplan/
+
+# Determinism enforcement
+git grep -nE "Math\.random" packages/preplan/
+git grep -nE "ctx\.random" packages/preplan/
+git grep -nE "\.reduce\(" packages/preplan/
+git grep -nE "require\(" packages/preplan/
+
+# Date.now carve-out (amendment A-058-03 per copilot Issue 2): exactly
+# one hit at speculativePrng.ts:79 (WP-057 generateSpeculativeSeed). Any
+# additional hit is an unauthorized wall-clock read introduced by WP-058.
+git grep -nE "Date\.now" packages/preplan/src/
+
+# P6-50 paraphrase discipline (JSDoc + code): engine runtime tokens
+# forbidden in new WP-058 files. ctx.turn + 1 at preplan.types.ts:21,:51
+# is the inherited WP-056 carve-out.
+git grep -nE "\\b(LegendaryGameState|LegendaryGame)\\b" packages/preplan/src/
+git grep -nE "\\bG\\b" packages/preplan/src/
+git grep -nE "\\bctx\\b" packages/preplan/src/
 
 git diff --name-only
 ```
@@ -704,9 +871,23 @@ git diff --name-only
 Expected:
 
 - Build exits 0
-- All tests pass
-- Both boundary checks pass
-- Only listed files modified
+- All tests pass; preplan delta `23 / 4 / 0 → 52 / 7 / 0`; engine
+  unchanged at `436 / 109 / 0`; repo-wide `559 → 588`
+- `boardgame.io`, registry, `pg`, `apps/` import greps return zero hits
+- Runtime engine import grep returns zero hits (only `import type` lines
+  in WP-058 new files)
+- `Math.random`, `ctx.random`, `.reduce(`, `require(` greps return zero
+  hits in `packages/preplan/`
+- `Date.now` grep returns exactly one hit at
+  `packages/preplan/src/speculativePrng.ts:79` — any additional hit is
+  a scope violation
+- `LegendaryGameState` / `LegendaryGame` / `G` / `ctx` greps return zero
+  hits in new WP-058 files (the `ctx.turn + 1` carve-out at
+  `preplan.types.ts:21,:51` is pre-existing and not in the WP-058 new-file
+  set)
+- `git diff --name-only` matches the 8-file allowlist +
+  `docs/ai/DECISIONS.md` / `DECISIONS_INDEX.md` (if D-entries authored) +
+  01.6 post-mortem; no `package.json` or `pnpm-lock.yaml` delta
 
 ---
 
