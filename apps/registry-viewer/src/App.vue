@@ -4,7 +4,7 @@ import type { FlatCard, CardQueryExtended, HealthReport, CardRegistry, SetIndexE
 import { getRegistry } from "./lib/registryClient";
 import { getThemes } from "./lib/themeClient";
 import type { ThemeDefinition } from "./lib/themeClient";
-import { getKeywordGlossary, getRuleGlossary } from "./lib/glossaryClient";
+import { getKeywordGlossary, getKeywordPdfPages, getRuleGlossary } from "./lib/glossaryClient";
 import { setGlossaries } from "./composables/useRules";
 import { useGlossary, rebuildGlossaryEntries } from "./composables/useGlossary";
 import { useLightbox } from "./composables/useLightbox";
@@ -37,6 +37,13 @@ const searchText    = ref("");
 const filterSet     = ref("");
 const filterHC      = ref("");
 const HC_OPTIONS    = ["covert","instinct","ranged","strength","tech"];
+
+// why: Absolute URL to the rulebook PDF on R2, populated from
+// registry-config.json. `config.rulebookPdfUrl ?? null` is the supported
+// absence path — when the config field is missing, the GlossaryPanel's
+// per-entry anchor template already guards against null, so missing config
+// is silent (no warning banner, no fallback UI).
+const rulebookPdfUrl = ref<string | null>(null);
 
 // ── View toggle ──────────────────────────────────────────────────────────────
 type ActiveView = "cards" | "themes";
@@ -148,6 +155,7 @@ onMounted(async () => {
     if (!configResponse.ok) throw new Error(`Cannot load registry-config.json: ${configResponse.status}`);
     const config = await configResponse.json();
     const metadataBaseUrl = config.metadataBaseUrl as string;
+    rulebookPdfUrl.value = (config.rulebookPdfUrl as string | undefined) ?? null;
 
     const reg = await getRegistry();
     loadStatus.value = "Parsing card data…";
@@ -172,11 +180,12 @@ onMounted(async () => {
     // continue; tooltips will be absent but the card view remains functional.
     loadStatus.value = "Loading glossary…";
     try {
-      const [keywords, rules] = await Promise.all([
+      const [keywords, keywordPdfPages, rules] = await Promise.all([
         getKeywordGlossary(metadataBaseUrl),
+        getKeywordPdfPages(metadataBaseUrl),
         getRuleGlossary(metadataBaseUrl),
       ]);
-      setGlossaries(keywords, rules);
+      setGlossaries(keywords, keywordPdfPages, rules);
       rebuildGlossaryEntries();
     } catch (glossaryError) {
       console.warn("[Glossary] Load failed (non-blocking):", glossaryError);
@@ -421,7 +430,7 @@ function navigateToCard(slug: string, cardType: string) {
            view's body div. This eliminates DOM duplication and makes the resizable
            splitter work seamlessly across view switches. -->
       <div class="body">
-        <GlossaryPanel />
+        <GlossaryPanel :rulebook-pdf-url="rulebookPdfUrl" />
 
         <!-- Themes content -->
         <template v-if="activeView === 'themes'">

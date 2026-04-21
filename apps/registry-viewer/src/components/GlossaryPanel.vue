@@ -4,6 +4,18 @@ import { useGlossary } from "../composables/useGlossary";
 import type { GlossaryEntry } from "../composables/useGlossary";
 import { useResizable } from "../composables/useResizable";
 
+interface Props {
+  /**
+   * Absolute URL to the Marvel Legendary Universal Rulebook PDF on R2.
+   * When `null`, per-entry "Rulebook p. N" deep-links are omitted silently
+   * from every entry (supported absent-config path; no warning or banner).
+   */
+  rulebookPdfUrl?: string | null;
+}
+const props = withDefaults(defineProps<Props>(), {
+  rulebookPdfUrl: null,
+});
+
 const {
   isOpen,
   searchQuery,
@@ -138,6 +150,16 @@ function handleEntryClick(entry: GlossaryEntry) {
           >
             <div class="entry-label">{{ entry.label }}</div>
             <div class="entry-description">{{ entry.description }}</div>
+            <a
+              v-if="entry.pdfPage !== undefined && props.rulebookPdfUrl"
+              :href="`${props.rulebookPdfUrl}#page=${entry.pdfPage}`"
+              target="_blank"
+              rel="noopener"
+              class="entry-rulebook-link"
+              @click.stop
+            >
+              📖 Rulebook p. {{ entry.pdfPage }}
+            </a>
           </li>
         </ul>
       </div>
@@ -365,6 +387,21 @@ function handleEntryClick(entry: GlossaryEntry) {
   font-size: 0.78rem;
   color: #c8c8e0;
   line-height: 1.5;
+}
+/* why: rulebook deep-link uses the same palette as other secondary labels;
+   @click.stop on the anchor prevents the parent <li @click> from firing
+   scrollToEntry when the link is clicked. */
+.entry-rulebook-link {
+  display: inline-block;
+  margin-top: 0.35rem;
+  font-size: 0.72rem;
+  color: #8888cc;
+  text-decoration: none;
+  border-bottom: 1px dashed #44446a;
+}
+.entry-rulebook-link:hover {
+  color: #c0c0ff;
+  border-bottom-color: #7070e0;
 }
 
 /* ── Footer ────────────────────────────────────────────────────────────── */

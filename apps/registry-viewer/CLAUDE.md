@@ -98,22 +98,53 @@ node scripts/generate-theme-catalog.mjs
 Card ability tooltips (keywords like Berserk, Patrol, Focus; rules like Shards,
 Divided Cards) are **fetched from R2** at startup via `src/lib/glossaryClient.ts`:
 
-- `/metadata/keywords-full.json` — 113 keyword entries (`{ key, description }[]`)
-- `/metadata/rules-full.json`    — 20 rule entries (`{ key, label, summary }[]`)
+- `/metadata/keywords-full.json` — 123 keyword entries (`{ key, label, description, pdfPage? }[]`)
+- `/metadata/rules-full.json`    — 20 rule entries (`{ key, label, summary, pdfPage? }[]`)
 
-`App.vue`'s `onMounted` handler calls `getKeywordGlossary()` and
-`getRuleGlossary()` in parallel, installs the resulting Maps into
-`useRules.ts` via `setGlossaries()`, and triggers `rebuildGlossaryEntries()`
-on `useGlossary.ts` so the Rules Glossary panel populates. The fetch is
-**non-blocking**: if R2 is unreachable, `App.vue` logs `"[Glossary] Load
-failed (non-blocking)"` and continues — tooltips are absent but the card
-view remains functional. `lookupKeyword` / `lookupRule` return `null` until
-the fetch resolves; callers (`CardDetail.vue`, `useGlossary.ts`) already
-handle null via tooltip-absent paths.
+Both payloads are validated at fetch time against
+`KeywordGlossarySchema` and `RuleGlossarySchema` imported from
+`@legendary-arena/registry` (authoritative schema lives at
+`packages/registry/src/schema.ts`). The call uses `.safeParse(...)` rather
+than `.parse(...)` so the fetch boundary is non-blocking: a malformed R2
+publish logs a full-sentence `[Glossary] Rejected ...` warning and
+degrades to an empty Map. Schema failures never throw. Network failures
+still throw so `App.vue` can catch + continue.
+
+`App.vue`'s `onMounted` handler calls `getKeywordGlossary()`,
+`getKeywordPdfPages()`, and `getRuleGlossary()` in parallel (the three share
+a single underlying fetch per resource; `getKeywordPdfPages` derives from
+the same keyword bundle as `getKeywordGlossary`). It installs the resulting
+Maps into `useRules.ts` via `setGlossaries()` and triggers
+`rebuildGlossaryEntries()` on `useGlossary.ts` so the Rules Glossary panel
+populates. The fetch is **non-blocking**: if R2 is unreachable, `App.vue`
+logs `"[Glossary] Load failed (non-blocking)"` and continues — tooltips
+are absent but the card view remains functional. `lookupKeyword` /
+`lookupRule` return `null` until the fetch resolves; callers
+(`CardDetail.vue`, `useGlossary.ts`) already handle null via
+tooltip-absent paths.
+
+Entries with a confirmable rulebook page expose a "📖 Rulebook p. N"
+anchor in the panel, linking to the Marvel Legendary Universal Rulebook
+PDF on R2 at
+`https://images.barefootbetters.com/docs/legendary-universal-rules-v23.pdf`
+(configured as `rulebookPdfUrl` in `public/registry-config.json`). The
+anchor uses `target="_blank"` and `rel="noopener"` mandatory. When the
+`rulebookPdfUrl` config field is missing, the anchor is silently omitted
+from every entry (no warning, no fallback UI — this is a supported
+absent-config path).
+
+**Do not infer labels from keys under any circumstance.** The WP-060
+audit confirmed that heuristic label generation (the deleted `titleCase()`
+helper) breaks canonical rulebook capitalization in cases like
+"chooseavillaingroup" → "Choose a Villain Group" and "shieldclearance" →
+"S.H.I.E.L.D. Clearance". Every display label must trace to an explicit
+source: `entry.label` from the JSON for keywords and rules, or the
+`HERO_CLASS_LABELS` Map in `useRules.ts` for the 5 hero classes.
 
 Hero class tooltips (Covert, Instinct, Ranged, Strength, Tech) are hardcoded
 in `useRules.ts` (`HERO_CLASS_GLOSSARY`, 5 entries) and are **not** in the
-external glossary data. These stay hardcoded.
+external glossary data. These stay hardcoded. Their display labels live in
+the parallel `HERO_CLASS_LABELS` Map (also hardcoded, 5 entries).
 
 ## Design Patterns
 

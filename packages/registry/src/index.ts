@@ -33,6 +33,15 @@ export {
   HeroCardSchema,
   HeroClassSchema,
   CardQuerySchema,
+  KeywordGlossaryEntrySchema,
+  KeywordGlossarySchema,
+  RuleGlossaryEntrySchema,
+  RuleGlossarySchema,
+} from "./schema.js";
+
+export type {
+  KeywordGlossaryEntry,
+  RuleGlossaryEntry,
 } from "./schema.js";
 
 // Theme types

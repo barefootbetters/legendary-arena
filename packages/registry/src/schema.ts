@@ -215,3 +215,30 @@ export const CardQuerySchema = z.object({
   cardType:     z.enum(["hero", "mastermind", "villain", "scheme"]).optional(),
   rarity:       z.union([z.literal(1), z.literal(2), z.literal(3)]).optional(),
 });
+
+// ── Keyword & Rule glossary entries (keywords-full.json, rules-full.json) ─────
+// why: Keyword and Rule glossary entries are intentionally separate
+// schemas. The description/summary distinction is semantic (one
+// defines an ability, the other states a rule). Duplicating the
+// shared fields keeps semantics explicit at the registry boundary
+// and avoids a future contributor extracting a base shape that
+// blurs that distinction.
+export const KeywordGlossaryEntrySchema = z.object({
+  key:         z.string().min(1),
+  label:       z.string().min(1),
+  description: z.string().min(1),
+  pdfPage:     z.number().int().min(1).optional(),
+}).strict();
+
+export const RuleGlossaryEntrySchema = z.object({
+  key:     z.string().min(1),
+  label:   z.string().min(1),
+  summary: z.string().min(1),
+  pdfPage: z.number().int().min(1).optional(),
+}).strict();
+
+export const KeywordGlossarySchema = z.array(KeywordGlossaryEntrySchema);
+export const RuleGlossarySchema    = z.array(RuleGlossaryEntrySchema);
+
+export type KeywordGlossaryEntry = z.infer<typeof KeywordGlossaryEntrySchema>;
+export type RuleGlossaryEntry    = z.infer<typeof RuleGlossaryEntrySchema>;
