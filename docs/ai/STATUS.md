@@ -7,6 +7,160 @@
 
 ## Current State
 
+### WP-082 / EC-107 Executed — Keyword & Rule Glossary Schema, Labels, and Rulebook Deep-Links (2026-04-21, EC-107)
+
+WP-082 lands Zod validation at the glossary fetch boundary, a required
+`label` field + optional `pdfPage` on every keyword, optional `pdfPage`
+on every rule (where determinable), the Marvel Legendary Universal
+Rulebook v23 PDF hosted on R2, and per-entry rulebook deep-links in the
+Glossary panel. The WP-060 `titleCase()` heuristic — responsible for
+broken canonical rulebook capitalization in five confirmed cases — is
+deleted; labels now trace to explicit sources (the JSON `label` field
+for keywords/rules, the `HERO_CLASS_LABELS` Map for hero classes).
+
+**Surfaces produced / modified:**
+
+- `packages/registry/src/schema.ts` — four new Zod schemas
+  (`KeywordGlossaryEntrySchema`, `KeywordGlossarySchema`,
+  `RuleGlossaryEntrySchema`, `RuleGlossarySchema`, both entry schemas
+  `.strict()` — first use of `.strict()` in this file, per the
+  author-facing-strict vs loader-permissive pattern of WP-033 / D-3303)
+  plus two inferred types.
+- `packages/registry/src/index.ts` — explicit named re-export of the
+  four schemas + two types.
+- `packages/registry/package.json` — new `"./schema"` subpath in the
+  `exports` map (A-082-01, resolving a Vite browser-build cascade
+  caused by the `impl/localRegistry.js` Node-only imports in the
+  barrel).
+- `data/metadata/keywords-full.json` — 123 entries; 123 `label`s
+  sourced verbatim from the rulebook; 118 `pdfPage`s; 5 omitted
+  (no confirmable rulebook source: `burnshards`, `fail`,
+  `fightorfail`, `unleash`, `whenrecruitedundercover`). Descriptions
+  preserved byte-for-byte. Alphabetical, duplicate-free.
+- `data/metadata/rules-full.json` — 20 entries; existing `label` and
+  `summary` preserved byte-for-byte; 19 `pdfPage`s; 1 omitted
+  (`asterisk`). A pre-session rulebook-verbatim `summary` rewrite
+  was caught by the RS-3 diff gate and quarantined to `stash@{0}`
+  per A-082-02 for a future dedicated WP.
+- `apps/registry-viewer/src/lib/glossaryClient.ts` — schemas imported
+  via `@legendary-arena/registry/schema` subpath; `.safeParse(...)` at
+  the fetch boundary with dot-joined issue-path rendering and a
+  full-sentence `[Glossary] Rejected ...` warning on failure;
+  widened `KeywordGlossary` value shape to `{ label, description }`;
+  parallel `KeywordPdfPageMap` exposed via `getKeywordPdfPages(...)`
+  sharing the singleton fetch; network errors still throw
+  (App.vue catches); schema failures never throw.
+- `apps/registry-viewer/src/composables/useRules.ts` — widened
+  `KeywordGlossary` handling across `setGlossaries` /
+  `getKeywordGlossaryMap` / `lookupKeyword`; `lookupKeyword`
+  algorithmic branching (exact / space-hyphen-stripped / prefix /
+  suffix / substring) preserved byte-for-byte — only three
+  `.description` identifier suffix-adds at the `.get(...)!` return
+  sites. Added `HERO_CLASS_LABELS: Map<string, string>` (5 entries:
+  Covert, Instinct, Ranged, Strength, Tech) — hardcoded, no
+  transformation helper. Added `getKeywordPdfPageMap()` export.
+  `RuleEntry` extended with optional `pdfPage`.
+- `apps/registry-viewer/src/composables/useGlossary.ts` — `titleCase()`
+  function and both call sites deleted; dedup block deleted;
+  `buildAllEntries()` reads `entry.label` for keywords and rules,
+  `HERO_CLASS_LABELS.get(...)` for hero classes; `GlossaryEntry`
+  carries optional `pdfPage`.
+- `apps/registry-viewer/src/components/GlossaryPanel.vue` —
+  conditional `📖 Rulebook p. N` anchor rendered per entry with
+  mandatory `target="_blank"` + `rel="noopener"` + `@click.stop`;
+  accepts new `rulebookPdfUrl` prop; silent absence when either
+  `pdfPage` or `rulebookPdfUrl` is missing.
+- `apps/registry-viewer/src/App.vue` — `rulebookPdfUrl` ref populated
+  from `config.rulebookPdfUrl ?? null` (silent absence contract);
+  `getKeywordPdfPages(...)` added to `onMounted` Promise.all; prop
+  piped to `<GlossaryPanel>`.
+- `apps/registry-viewer/public/registry-config.json` — new
+  `rulebookPdfUrl` field pointing at
+  `https://images.barefootbetters.com/docs/legendary-universal-rules-v23.pdf`.
+- `apps/registry-viewer/package.json` — added
+  `"@legendary-arena/registry": "workspace:*"` dep (A-082-01) so the
+  viewer can resolve the schema subpath import.
+- `apps/registry-viewer/CLAUDE.md` — Keyword & Rule Glossary section
+  rewritten to document Zod validation at fetch, the `label` field,
+  the `pdfPage` deep-link, and the verbatim sentence **"Do not infer
+  labels from keys under any circumstance."**
+- `docs/03.1-DATA-SOURCES.md` §Registry Metadata — row counts moved
+  113 → 123, schema-reference paragraph added, new rulebook-PDF
+  sub-table added.
+- `docs/legendary-universal-rules-v23.md` — 5,262-line
+  `pdftotext -layout` markdown extract committed with the
+  **Authority Notice** blockquote prepended; authoritative source
+  for every `pdfPage` value above.
+- `docs/Marvel Legendary Universal Rules v23.txt` — raw `pdftotext
+  -layout` output committed as the reproducible source behind the
+  markdown extract.
+- `pnpm-lock.yaml` — 3-line workspace-link delta (A-082-01), no NPM
+  packages added/removed.
+
+**R2 artifacts (operator step, delegated):**
+
+- `images.barefootbetters.com/docs/legendary-universal-rules-v23.pdf`
+  — HTTP 200, `Content-Type: application/pdf`, 44,275,000 bytes
+  (matches EC §Assumes byte count exactly).
+- `images.barefootbetters.com/metadata/keywords-full.json` — HTTP 200,
+  republished with the 123-entry schema-valid payload.
+- `images.barefootbetters.com/metadata/rules-full.json` — HTTP 200,
+  republished with the 20-entry schema-valid payload.
+
+Cross-browser smoke tests (EC §24a–25d) all passed per operator
+confirmation: canonical failure cases (Choose a Villain Group,
+S.H.I.E.L.D. Clearance, Grey Heroes, Half-Points) render with correct
+capitalization; rulebook anchors open in new tabs at the correct
+page; absent `rulebookPdfUrl` cleanly omits anchors; schema-corrupt
+data cleanly degrades to empty panel with one console warning.
+
+**Decisions added (six; see `docs/ai/DECISIONS.md`):**
+
+- D-8201 — Zod-validated fetch boundary for glossary payloads
+  (**supersedes D-6001 partial** — Zod schema clause only;
+  display-only clause remains)
+- D-8202 — Required `label` + optional `pdfPage` on keywords;
+  `titleCase()` heuristic deleted
+- D-8203 — Optional `pdfPage` on rules; existing `label`/`summary`
+  unchanged
+- D-8204 — Rulebook PDF hosted at version-pinned R2 URL
+- D-8205 — RFC 3778 `#page=N` deep-links with mandatory
+  `target="_blank"` + `rel="noopener"` + `@click.stop`
+- D-8206 — Markdown extract is authoritative `pdfPage` source; omit
+  rather than guess
+
+**Amendments (three):**
+
+- A-082-01 — formalizes three beyond-allowlist additions required by
+  the EC's locked `@legendary-arena/registry` import design: viewer
+  `"@legendary-arena/registry": "workspace:*"` dep, registry
+  `"./schema"` subpath export, 3-line `pnpm-lock.yaml` workspace-link
+  delta.
+- A-082-02 — records the RS-3 diff-gate STOP at Commit A start and
+  the path-1 quarantine of the pre-session `rules-full.json` summary
+  rewrite to `stash@{0}`. Recoverable via `git stash show -p
+  stash@{0}`; reclaim in a future governed WP.
+- A-082-03 — records the R2 operator sequence including the initial
+  `.md` upload that was superseded by the `.pdf` upload before
+  Commit B; notes that `Cache-Control: max-age=31536000, immutable`
+  did not surface in the HEAD response (non-blocker per the URL's
+  `v23` version pin, worth checking before the next rulebook drop).
+
+**Baseline:** `pnpm -r build` exits 0, `pnpm -r --if-present test`
+596 / 0 failing (unchanged), `pnpm --filter registry-viewer lint`
+0 errors / 174 warnings (under the 180 budget). Zero engine /
+preplan / server / pg / boardgame.io touches. 01.5 engine clause
+NOT INVOKED; viewer analog invoked for 5 viewer files per
+WP-060 / D-6007. 01.6 post-mortem NOT TRIGGERED (new schemas are
+instances of an existing abstraction; no new code category; zero
+engine touch).
+
+Commit topology: A0 `SPEC:` `be08c11` (pre-flight bundle) → A
+`EC-107:` `3da6ac3` (execution) → B `SPEC:` (governance close —
+this entry).
+
+---
+
 ### WP-060 / EC-106 Executed — Keyword & Rule Glossary Data Migration (2026-04-20, EC-106)
 
 WP-060 lands the registry-viewer's first non-theme content-class fetch

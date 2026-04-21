@@ -6206,7 +6206,8 @@ parses directly into display-oriented types without a Zod guard.
 **Affected WPs:** WP-060 (execution), any future viewer WP that adds
 glossary entries.
 **Introduced:** WP-060 / EC-106
-**Status:** Immutable
+**Superseded by:** D-8201 (partial — Zod schema clause only; display-only clause remains)
+**Status:** Immutable (partial supersession)
 
 ---
 
@@ -6321,6 +6322,225 @@ etc.) that a naïve `return fetchedMap.get(lower) ?? null` rewrite would
 silently drop.
 **Affected WPs:** WP-060
 **Introduced:** WP-060 / EC-106
+**Status:** Immutable
+
+---
+
+### D-8201 — Keyword and Rule Glossary Payloads Are Zod-Validated at the Fetch Boundary
+**Decision:** `data/metadata/keywords-full.json` and
+`data/metadata/rules-full.json` are validated against
+`KeywordGlossarySchema` and `RuleGlossarySchema` (both defined in
+`packages/registry/src/schema.ts`) at the R2 fetch boundary in
+`apps/registry-viewer/src/lib/glossaryClient.ts`. The call uses
+`.safeParse(...)` rather than `.parse(...)` — the fetch boundary
+remains non-blocking: a schema failure logs a full-sentence
+`[Glossary] Rejected <file> from <url>: <path> — <issue.message>.
+Panel will show no entries until data is corrected.` warning and
+degrades to an empty Map. Network failures still throw so `App.vue`
+can catch + continue. Both entry schemas use `.strict()` to reject
+unknown fields.
+**Rationale:** WP-060 (D-6001) rejected a schema for these files on the
+grounds that display drift "shows up as absent or obviously-wrong tooltip
+text at runtime, not as silent contract breakage." The 2026-04-21
+rulebook-v23 audit that added ten new keywords and mandated a `label`
+field invalidated that premise — a malformed R2 publish during the audit
+cycle produced an empty Map silently, and the glossary panel disappeared
+with no surfaced error. Validation at the fetch boundary surfaces the
+defect in operator logs before users notice. `.strict()` is the
+author-facing-strict pattern per WP-033 / D-3303: loader schemas accept
+shipped-data quirks permissively, but schemas over new editorial
+metadata reject unknown fields so typos reach the pre-flight grep rather
+than runtime.
+**Alternatives rejected:**
+- **Leave unvalidated (D-6001 status quo):** rejected. The audit showed
+  the silent-empty-Map failure mode is a real hazard.
+- **Use `.parse(...)` at the fetch boundary:** rejected. A throw would
+  propagate past the App.vue try/catch for network errors and take
+  down the card view; the guardrail is explicit in EC-107
+  §Guardrails.
+- **Schema in the viewer's local `src/registry/`:** rejected. Per
+  `.claude/rules/registry.md` §Schema Authority, schemas live only in
+  `packages/registry/src/schema.ts`; the viewer imports from there
+  via the `@legendary-arena/registry/schema` subpath (A-082-01).
+**Supersedes:** D-6001 (partial — Zod schema clause only; display-only clause remains)
+**Affected WPs:** WP-082 (introduction), any future glossary-field WP.
+**Introduced:** WP-082 / EC-107
+**Status:** Immutable
+
+---
+
+### D-8202 — Keyword Entries Carry Required `label` and Optional `pdfPage`; `titleCase()` Heuristic Deleted
+**Decision:** `KeywordGlossaryEntrySchema` requires a non-empty
+`label` field and accepts an optional positive-integer `pdfPage`
+field. Every one of the 123 entries in `keywords-full.json` carries a
+`label` sourced verbatim from the rulebook (including
+`"S.H.I.E.L.D. Clearance"`, `"Choose a Villain Group"`, `"Grey Heroes"`,
+`"Half-Points"`, etc.); 118 also carry a `pdfPage`. The
+`titleCase()` heuristic at `useGlossary.ts:94–100` and its two call
+sites are deleted. The deduplication block at `useGlossary.ts:52–55` is
+also deleted (uniqueness is a JSON contract, enforced at backfill time
+and by the alphabetical-by-key invariant).
+**Rationale:** WP-060's `titleCase()` helper split camelCase /
+hyphens and capitalized each segment. The WP-060 audit documented
+five confirmed cases where this broke canonical rulebook
+capitalization: `chooseavillaingroup` → `Chooseavillaingroup`,
+`shieldclearance` → `Shieldclearance`, `greyheroes` → `Greyheroes`,
+`halfpoints` → `Half-points`, plus any punctuation-bearing name. No
+heuristic can recover these — explicit `label` fields sourced
+verbatim from the rulebook are the only correct answer. The
+viewer's `CLAUDE.md` carries the sentence *"Do not infer labels
+from keys under any circumstance."* so a future contributor does
+not reintroduce a transformation helper.
+**Alternatives rejected:**
+- **Keep `titleCase()` + add `label` only for the 5 failure cases:**
+  rejected. Label authority must live in one place; a per-entry
+  label with a heuristic fallback creates two sources of truth.
+- **Auto-derive `label` from a server-side enrichment step:**
+  rejected. The viewer fetches raw R2 JSON; no enrichment layer
+  exists and adding one would blur the registry/viewer boundary.
+**Affected WPs:** WP-082 (introduction), any future glossary-authoring WP.
+**Introduced:** WP-082 / EC-107
+**Status:** Immutable
+
+---
+
+### D-8203 — Rule Entries Carry Optional `pdfPage`; Existing `label` and `summary` Unchanged
+**Decision:** `RuleGlossaryEntrySchema` accepts an optional
+positive-integer `pdfPage` field alongside the existing required
+`label` and `summary`. Every one of the 20 entries in
+`rules-full.json` except `asterisk` (no confirmable rulebook page
+for the asterisk-symbol convention) carries a `pdfPage`. Existing
+`label` and `summary` values are preserved byte-for-byte.
+**Rationale:** The rule glossary already had `label` from WP-060
+(no capitalization-heuristic problem existed for rules, which were
+always authored with explicit labels). Only `pdfPage` needed to
+flow through for rulebook deep-links. The EC-107 §Non-Negotiable
+"no content changes" guardrail applies: `summary` rewrites — even
+rulebook-verbatim ones — are out of scope for WP-082. A pre-session
+rewrite of all 20 summaries was detected by the RS-3 diff gate at
+Commit A start and quarantined per A-082-02 for a future dedicated
+WP.
+**Alternatives rejected:**
+- **Fold the rulebook-verbatim summary rewrite into WP-082:**
+  rejected. Byte-for-byte preservation is the EC guardrail; scope
+  creep here would have invalidated the RS-3 gate's binary STOP
+  contract.
+**Affected WPs:** WP-082 (introduction), future rule-glossary WP (inherits).
+**Introduced:** WP-082 / EC-107
+**Status:** Immutable
+
+---
+
+### D-8204 — Marvel Legendary Universal Rulebook v23 PDF Is Hosted on R2 at a Version-Pinned URL
+**Decision:** The rulebook PDF is hosted at
+`https://images.barefootbetters.com/docs/legendary-universal-rules-v23.pdf`
+with `Content-Type: application/pdf` and
+`Cache-Control: max-age=31536000, immutable`. The URL is
+version-pinned by `v23` in the filename — a hypothetical v24
+rulebook will be a new file at
+`.../legendary-universal-rules-v24.pdf`, not a mutation of this
+one. The viewer exposes the URL via a new `rulebookPdfUrl` field
+in `apps/registry-viewer/public/registry-config.json`.
+**Rationale:** Rulebooks are versioned physical artifacts — a new
+edition supersedes the old but both remain authoritative for
+specific `pdfPage` values. Immutable cache headers are safe because
+the URL itself encodes the version; operators who want to ship a
+patched v23 (e.g., to fix a typo) must cache-bust at the filename
+level. Co-locating under `images.barefootbetters.com` keeps one
+CORS policy and one credential set with the existing metadata
+artifacts. The PDF filename is kebab-case with no spaces or
+parentheses so it URL-encodes cleanly and copy-pastes without quote
+ambiguity.
+**Alternatives rejected:**
+- **Rulebook as a mutable `.pdf` at a stable URL with cache
+  busting via `?v=`:** rejected. Invalidates the immutability
+  guarantee and forces client-side version awareness that isn't
+  otherwise needed.
+- **Rulebook as a rendered `.md` with anchor fragments:** attempted
+  by operator at upload time, reverted per A-082-03. Markdown
+  doesn't support `#page=N` fragment navigation in native browser
+  viewers; the `.md` URL would have shipped broken deep-links.
+**Affected WPs:** WP-082 (introduction); future WPs that reference
+rulebook deep-links inherit this URL pattern.
+**Introduced:** WP-082 / EC-107
+**Status:** Immutable
+
+---
+
+### D-8205 — Rulebook Deep-Links Use RFC 3778 `#page=N` with Mandatory `target="_blank"` and `rel="noopener"`
+**Decision:** The glossary panel renders an anchor below each
+entry with a `pdfPage` whose href is
+`${rulebookPdfUrl}#page=${pdfPage}`, exactly matching the
+[RFC 3778 §3](https://datatracker.ietf.org/doc/html/rfc3778#section-3)
+open-parameter syntax supported by Chrome, Firefox, Edge, and
+Safari native PDF viewers. The anchor carries `target="_blank"`
+and `rel="noopener"` mandatorily, plus `@click.stop` to prevent
+the parent `<li @click>` from firing `scrollToEntry` when the
+link is clicked. Anchor rendering is gated by
+`entry.pdfPage !== undefined && rulebookPdfUrl` — when either side
+is absent the anchor is silently omitted (no warning, no fallback
+UI, no banner).
+**Rationale:** `rel="noopener"` is a hard security guardrail —
+without it the new tab can manipulate `window.opener` in the
+parent frame. `target="_blank"` + `rel="noopener"` are therefore
+a paired contract, never one without the other. `@click.stop` is
+required because the entire `<li>` already has a click handler
+(scrollToEntry) — without `.stop` the click would both navigate to
+the PDF and scroll the panel. Silent absence is the contract for
+the missing-config case so operators can deliberately ship the
+viewer without the rulebook anchor (e.g., during a rulebook
+re-upload window) without any user-visible break. Browser-native
+PDF viewers handle the fragment; no PDF.js bundle is shipped with
+the viewer.
+**Alternatives rejected:**
+- **`target="_blank"` without `rel="noopener"`:** rejected as a
+  security regression.
+- **Inline PDF viewer via `PDF.js`:** rejected. Adds ~1 MB to the
+  bundle and re-implements what browsers already do well.
+- **Warning banner when `rulebookPdfUrl` is missing:** rejected.
+  The config field's absence is a supported operator choice; a
+  banner would nag operators into adding a URL they may not want
+  to ship yet.
+**Affected WPs:** WP-082 (introduction).
+**Introduced:** WP-082 / EC-107
+**Status:** Immutable
+
+---
+
+### D-8206 — `docs/legendary-universal-rules-v23.md` Is the Authoritative `pdfPage` Source; Omit Rather Than Guess
+**Decision:** Every `pdfPage` value in `keywords-full.json` and
+`rules-full.json` must trace to a specific `page N` marker in the
+markdown extract at `docs/legendary-universal-rules-v23.md`. When
+no confirmable page source exists, the field is **omitted** —
+never filled with a best guess. At WP-082 ship time, 5 keywords
+(`burnshards`, `fail`, `fightorfail`, `unleash`,
+`whenrecruitedundercover`) and 1 rule (`asterisk`) omit `pdfPage`.
+The markdown extract's first block is the verbatim Authority
+Notice *"This file is the authoritative source for all `pdfPage`
+values in glossary metadata. Page numbers must not be inferred
+from the PDF alone."*
+**Rationale:** The rulebook PDF itself is the ground truth but
+is not greppable by contributors; the markdown extract (produced
+once via `pdftotext -layout` and committed alongside the raw
+`docs/Marvel Legendary Universal Rules v23.txt`) is the greppable
+surrogate. Requiring a specific page marker in the markdown before
+a `pdfPage` ships prevents two drift modes: (a) contributors
+hand-counting PDF pages and landing on the physical-page vs
+printed-page distinction (a 6-page offset for this PDF), and
+(b) contributors inferring pages from internal rulebook
+cross-references that may themselves be stale. Omission is
+architecturally cheap (optional field in the Zod schema, silent
+anchor omission in the panel) and operationally correct —
+incomplete metadata is preferred to speculatively complete metadata.
+**Alternatives rejected:**
+- **Allow best-guess `pdfPage` values:** rejected. Guesses
+  accumulate and become harder to audit once shipped.
+- **Require every entry to have `pdfPage`:** rejected. Would
+  force either fabrication for the five non-keyword modifier
+  entries or scope creep to re-derive every rulebook reference
+  from primary sources.
+**Affected WPs:** WP-082 (introduction); any future glossary-authoring WP.
+**Introduced:** WP-082 / EC-107
 **Status:** Immutable
 
 ---
