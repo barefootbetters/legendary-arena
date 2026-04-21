@@ -32,9 +32,6 @@ jobs:
 
       - name: Run registry validation
         run: pnpm registry:validate
-        env:
-          CARDS_DIR: data/raw
-          DATA_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || '0.0.0-dev' }}
 
       - uses: actions/upload-artifact@v4
         with:
