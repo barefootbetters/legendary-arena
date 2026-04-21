@@ -396,3 +396,43 @@ dependency, no new export surface. Resolves PS-2 of the WP-036
 pre-flight; engine category cannot import `CardRegistry` from
 `@legendary-arena/registry` per the D-3301 family and §Layer Boundary.
 Landed in the A0 SPEC commit alongside D-3601 (PS-1 resolution).
+
+**A-036-02 (2026-04-21, governance-close SPEC bundle):**
+`ClientTurnIntent` shape reconciliation. The session prompt's
+pseudocode (e.g., §RS-6 fallback, §AIPolicy + §createRandomPolicy
+illustrative code blocks) sketched `ClientTurnIntent` as flat
+`{ playerID: string; moveName: string; moveArgs: unknown; intentTurn: number; }`.
+The authoritative contract in
+`packages/game-engine/src/network/intent.types.ts:35` is nested
+`{ matchId: string; playerId: string; turnNumber: number; move: { name: string; args: unknown }; clientStateHash?: string; }`.
+The session prompt itself instructed "Copy WP-032's shape verbatim;
+do not invent field names. If the actual shape diverges from the
+above, STOP and correct this session prompt (amendment A-036-02)
+before continuing." — implementation followed the binding "verbatim"
+instruction and used the authoritative shape. A-036-02 records the
+reconciliation for the audit trail and confirms the "Copy WP-032's
+shape verbatim" instruction is the authority. Scope-neutral — no file
+allowlist change, no test count change, no wiring change, no new
+dependency, no new export surface. Also records three additional
+session-prompt reconciliations resolved during execution per the same
+"copy the real type verbatim" authority:
+
+- §Authority Chain reference to `scoring/computeFinalScores.ts` is a
+  session-prompt documentation typo; actual path is
+  `scoring/scoring.logic.ts` (per `index.ts:131`). Implementation
+  imports from the real path.
+- §RS-13 pseudocode's `{ name: 'playCard', args: { cardIndex: index } }`
+  diverges from `PlayCardArgs` at `moves/coreMoves.types.ts:49` which
+  uses `{ cardId: CardExtId }`. Implementation enumerates
+  `zones.hand` and pushes `{ cardId }` per hand entry — consistent with
+  RS-13's stated "one LegalMove per hand card" intent.
+- §RS-12 statistics sourcing referenced
+  `gameOver?.outcome === 'victory'` as the win predicate; the actual
+  `EndgameOutcome` literal for heroes-side victory is `'heroes-win'`
+  (villain-side loss is `'scheme-wins'`). Implementation uses
+  `postEndgameUi.gameOver?.outcome === 'heroes-win'`.
+
+These three reconciliations are subsidiary to A-036-02's main
+"copy the real type verbatim" principle — all follow from the
+session prompt's own binding instructions in §Authority Chain and
+§Hard Stops. Landed in the Commit B governance-close SPEC bundle.
