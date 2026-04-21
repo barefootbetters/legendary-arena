@@ -253,6 +253,18 @@ export type {
   ContentValidationContext,
 } from './content/content.validate.js';
 
+// why: Simulation types (WP-036 / D-3601) are engine-category types
+// consumed by external balance tooling (D-0702). They live in src/simulation/
+// under D-3601. Re-exported here so consumers importing from './types.js'
+// have access to the pluggable AIPolicy interface and the SimulationResult
+// contract.
+export type {
+  AIPolicy,
+  LegalMove,
+  SimulationConfig,
+  SimulationResult,
+} from './simulation/ai.types.js';
+
 import type { TurnStage } from './turn/turnPhases.types.js';
 import type { CardExtId, PlayerZones, GlobalPiles } from './state/zones.types.js';
 import type { TurnEconomy, CardStatEntry } from './economy/economy.types.js';
