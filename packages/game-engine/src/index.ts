@@ -334,3 +334,15 @@ export type {
   DeploymentEnvironment,
   IncidentSeverity,
 } from './ops/ops.types.js';
+
+// AI playtesting & balance simulation framework (WP-036 / D-3601)
+export type {
+  AIPolicy,
+  LegalMove,
+  SimulationConfig,
+  SimulationResult,
+} from './simulation/ai.types.js';
+export { createRandomPolicy } from './simulation/ai.random.js';
+export { getLegalMoves } from './simulation/ai.legalMoves.js';
+export type { SimulationLifecycleContext } from './simulation/ai.legalMoves.js';
+export { runSimulation } from './simulation/simulation.runner.js';
