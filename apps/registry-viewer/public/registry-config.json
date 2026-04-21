@@ -1,5 +1,6 @@
 {
   "metadataBaseUrl": "https://images.barefootbetters.com",
+  "rulebookPdfUrl":  "https://images.barefootbetters.com/docs/legendary-universal-rules-v23.pdf",
   "eagerLoad": [
     "core", "dkcy", "ff04", "pttr", "vill", "gotg", "fear",
     "3dtc", "ssw1", "ssw2", "ca75", "cvwr", "dead", "noir",

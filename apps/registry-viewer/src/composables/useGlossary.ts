@@ -5,12 +5,25 @@
  * The panel displays all rules, keywords, and hero classes from useRules.ts
  * as a searchable, scrollable list. Keywords and rule tokens in ability text
  * are clickable and open the panel scrolled to the matching entry.
+ *
+ * Display labels are sourced explicitly:
+ *   - Rules:       ruleEntry.label (from rules-full.json)
+ *   - Keywords:    keywordValue.label (from keywords-full.json)
+ *   - HeroClasses: HERO_CLASS_LABELS (hardcoded in useRules.ts)
+ *
+ * No heuristic label helper exists — the WP-060 audit confirmed that label
+ * inference breaks canonical rulebook capitalization in five cases
+ * ("chooseavillaingroup", "shieldclearance", "greyheroes", "halfpoints",
+ * and other punctuated labels). Every display label must trace to an explicit
+ * source, not a heuristic transformation of a key.
  */
 
 import { ref, computed } from "vue";
 import {
   HERO_CLASS_GLOSSARY,
+  HERO_CLASS_LABELS,
   getKeywordGlossaryMap,
+  getKeywordPdfPageMap,
   getRuleGlossaryMap,
   lookupKeyword,
   lookupRule,
@@ -26,6 +39,7 @@ export interface GlossaryEntry {
   key:         string;          // lookup key (e.g. "shards", "berserk")
   label:       string;          // display label (e.g. "Shards", "Berserk")
   description: string;          // full definition text
+  pdfPage?:    number;          // 1-indexed rulebook page for deep-link (optional)
 }
 
 // ── Build the unified entry list from the three glossary maps ───────────────
@@ -36,30 +50,32 @@ function buildAllEntries(): GlossaryEntry[] {
   const ruleMap = getRuleGlossaryMap();
   if (ruleMap !== null) {
     for (const [key, ruleEntry] of ruleMap) {
-      entries.push({
+      const entry: GlossaryEntry = {
         id:          `rule-${key}`,
         type:        "rule",
         key,
         label:       ruleEntry.label,
         description: ruleEntry.summary,
-      });
+      };
+      if (ruleEntry.pdfPage !== undefined) entry.pdfPage = ruleEntry.pdfPage;
+      entries.push(entry);
     }
   }
 
   const keywordMap = getKeywordGlossaryMap();
+  const keywordPdfPages = getKeywordPdfPageMap();
   if (keywordMap !== null) {
-    for (const [key, description] of keywordMap) {
-      // why: some keywords appear twice in the map (villainousweapons). Skip duplicates.
-      if (entries.some((existingEntry) => existingEntry.id === `keyword-${key}`)) {
-        continue;
-      }
-      entries.push({
+    for (const [key, value] of keywordMap) {
+      const entry: GlossaryEntry = {
         id:          `keyword-${key}`,
         type:        "keyword",
         key,
-        label:       titleCase(key),
-        description,
-      });
+        label:       value.label,
+        description: value.description,
+      };
+      const page = keywordPdfPages?.get(key);
+      if (page !== undefined) entry.pdfPage = page;
+      entries.push(entry);
     }
   }
 
@@ -68,7 +84,7 @@ function buildAllEntries(): GlossaryEntry[] {
       id:          `heroClass-${key}`,
       type:        "heroClass",
       key,
-      label:       titleCase(key),
+      label:       HERO_CLASS_LABELS.get(key) ?? key,
       description,
     });
   }
@@ -84,19 +100,6 @@ function buildAllEntries(): GlossaryEntry[] {
   });
 
   return entries;
-}
-
-/**
- * Converts a lowercase key like "darkmemories" or "wall-crawl" into Title Case.
- * why: glossary keys are stored lowercase and collapsed for matching; we need
- * a human-readable label for display.
- */
-function titleCase(key: string): string {
-  return key
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .split(/[\s-]+/)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
 }
 
 // ── Shared reactive state (module-scoped singleton) ─────────────────────────
