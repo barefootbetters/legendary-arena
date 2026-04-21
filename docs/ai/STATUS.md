@@ -7,6 +7,156 @@
 
 ## Current State
 
+### WP-036 / EC-036 Executed — AI Playtesting & Balance Simulation Framework (2026-04-21, EC-036)
+
+WP-036 lands the AI playtesting and balance simulation framework as a new
+`packages/game-engine/src/simulation/` subdirectory under D-3601 engine code
+category classification. Four new source files establish the pluggable
+`AIPolicy` interface, a deterministic mulberry32-backed random baseline
+policy, the canonical legal-move enumerator, and the simulation runner that
+drives the full engine pipeline from outside `boardgame.io`. Balance
+changes can now be measured empirically per D-0702 — the invariant has a
+runtime; the runtime has a baseline policy; the baseline produces
+reproducible aggregate statistics given `(config, registry)` inputs.
+
+**Surfaces produced:**
+
+- `packages/game-engine/src/simulation/ai.types.ts` — four pure type
+  contracts: `AIPolicy` (with `name` + `decideTurn(playerView, legalMoves)
+  → ClientTurnIntent`), `LegalMove` (`name` + `args: unknown`),
+  `SimulationConfig` (`games` + `seed` + `setupConfig` + `policies`),
+  `SimulationResult` (six numeric fields + `seed`). No runtime values.
+  `// why:` block cites D-0701 (AI Is Tooling, Not Gameplay) + D-0702
+  (Balance Changes Require Simulation).
+- `packages/game-engine/src/simulation/ai.random.ts` —
+  `createRandomPolicy(seed: string): AIPolicy`. File-local djb2 seed
+  hash + file-local mulberry32 PRNG (neither exported from the package).
+  Zero-legal-moves fallback returns an `endTurn` intent per RS-6.
+- `packages/game-engine/src/simulation/ai.legalMoves.ts` —
+  `getLegalMoves(G, context): LegalMove[]` with the 8-entry
+  `SIMULATION_MOVE_NAMES` tuple and the RS-13 enumeration order lock
+  (`playCard` → `recruitHero` → `fightVillain` → `fightMastermind` →
+  `revealVillainCard` → `drawCards` → `advanceStage` → `endTurn`, stage-
+  gated appropriately). Exported helper type
+  `SimulationLifecycleContext`.
+- `packages/game-engine/src/simulation/simulation.runner.ts` —
+  `runSimulation(config, registry: CardRegistryReader)
+  → SimulationResult` with a static 8-entry `MOVE_MAP` dispatch
+  (D-2705), a local `SimulationMoveContext` structural interface
+  (D-2801), a 200-turn safety cap (RS-7), Fisher-Yates shuffle driven
+  by the run's mulberry32 instance (RS-1), closure-flag `events.endTurn`
+  detection, and post-endgame statistics sourced from the
+  `UIState.progress.escapedVillains` field + sum of
+  `UIPlayerState.woundCount` across players (RS-12). Degenerate inputs
+  return zeroed `SimulationResult` without throwing.
+- `packages/game-engine/src/simulation/simulation.test.ts` — exactly 8
+  tests in one `describe('simulation framework (WP-036)')` block. Uses
+  `node:test` + `node:assert` only. Canonical RS-14 assertion pattern
+  `assert.equal(player1.handCards, undefined, ...)` for test #7 (hidden-
+  state protection).
+- `packages/game-engine/src/types.ts` — re-export block appended after
+  the content validation types: `AIPolicy`, `LegalMove`,
+  `SimulationConfig`, `SimulationResult`.
+- `packages/game-engine/src/index.ts` — public API block appended after
+  the ops metadata exports: four types + `createRandomPolicy` +
+  `getLegalMoves` + `SimulationLifecycleContext` + `runSimulation`.
+- `docs/ai/DECISIONS.md` — four new entries. D-3601 (Simulation Code
+  Category; landed in A0 `4e340fd`), D-3602 (AI Uses the Same Pipeline
+  as Humans; landed in A `04c53c0`), D-3603 (Random Policy Is the MVP
+  Balance Baseline; landed in A `04c53c0`), D-3604 (Simulation Seed
+  Reproducibility: Two Independent PRNG Domains; landed in A
+  `04c53c0`).
+- `docs/ai/REFERENCE/02-CODE-CATEGORIES.md` — `packages/game-engine/src/simulation/`
+  added to the engine directory list (ninth entry in the D-2706 / D-2801
+  / D-3001 / D-3101 / D-3201 / D-3301 / D-3401 / D-3501 precedent chain).
+- `docs/ai/post-mortems/01.6-WP-036-ai-playtesting-balance-simulation.md` —
+  mandatory post-mortem covering five required items (aliasing trace,
+  extension-seam open-endedness, D-2704 PRNG capability-gap pattern,
+  forbidden-behaviors docstring block, `// why:` comment completeness).
+
+**Test baselines:**
+
+- game-engine: `436 / 109 / 0 fail` → `444 / 110 / 0 fail` (+8 tests,
+  +1 suite)
+- repo-wide: `588 passing / 0 failing` → `596 passing / 0 failing`
+  (+8 passing)
+- registry 13/2/0, vue-sfc-loader 11/0/0, server 6/2/0,
+  replay-producer 4/2/0, preplan 52/7/0, arena-client 66/0/0 —
+  all UNCHANGED
+
+**Layer-boundary integrity (all verification-step greps zero-or-expected):**
+
+- zero `boardgame.io` imports in `packages/game-engine/src/simulation/`
+  (escaped-dot grep)
+- zero `@legendary-arena/registry` imports in simulation files
+- zero `Math.random(` calls (escaped-paren grep); simulation PRNG is
+  the file-local mulberry32 only
+- zero `.reduce(` with branching logic; aggregation uses `for...of`
+- zero `require(` (ESM only)
+- zero engine gameplay files modified (targeted `git diff --name-only`
+  against `moves/`, `rules/`, `setup/`, `turn/`, `ui/`, `scoring/`,
+  `endgame/`, `villainDeck/`, `network/`, `replay/`, `game.ts`)
+- `package.json` / `pnpm-lock.yaml` / `packages/game-engine/package.json`
+  untouched (P6-44)
+- `stash@{0..2}` intact; none of the inherited dirty-tree items staged
+  (P6-27 exact-filename staging only)
+
+**Design decisions canonicalized:**
+
+- D-3601 — Simulation Code Category (`packages/game-engine/src/simulation/`
+  classified as `engine`; ninth precedent instance).
+- D-3602 — AI Uses the Same Pipeline as Humans. No "AI-only" engine
+  path; simulation consumes the same setup + move-dispatch + UIState
+  projection + endgame + scoring stack multiplayer uses.
+- D-3603 — Random Policy Is the MVP Balance Baseline. Heuristic / MCTS /
+  neural policies deferred to future WPs; the `AIPolicy` interface
+  accommodates them without refactor.
+- D-3604 — Simulation Seed Reproducibility: Two Independent PRNG
+  Domains. Run-level shuffle PRNG (`runSimulation`) and policy-level
+  decision PRNG (`createRandomPolicy`) never share state. djb2 hash +
+  mulberry32 duplicated across `ai.random.ts` and `simulation.runner.ts`
+  per WP-036 Scope Lock (4 files + 1 test file cap).
+
+**Amendments:**
+
+- A-036-01 (landed in A0 `4e340fd`): WP-036 §D signature corrected
+  `registry: CardRegistry` → `registry: CardRegistryReader` per PS-2.
+- A-036-02 (landing in this Commit B): session-prompt pseudocode used
+  flat `ClientTurnIntent` field names (`playerID`, `moveName`,
+  `moveArgs`, `intentTurn`) but the authoritative shape is nested
+  (`matchId`, `playerId`, `turnNumber`, `move: { name, args }`,
+  `clientStateHash?`) per `network/intent.types.ts:35`. Implementation
+  followed the session prompt's binding instruction "Copy WP-032's
+  shape verbatim; do not invent field names". Scope-neutral — no
+  allowlist, test count, or wiring change.
+
+**Three-commit topology:**
+
+- A0 `4e340fd` SPEC pre-flight bundle (DECISIONS.md D-3601 +
+  02-CODE-CATEGORIES.md update + WP-036 §D signature + §Amendments
+  A-036-01 + EC-036 amendment note + pre-flight file + session
+  prompt + session-context bridge; landed 2026-04-21 in this session)
+- A `04c53c0` EC-036 execution (4 new simulation files + 1 test file
+  + types.ts re-export + index.ts public API + DECISIONS.md D-3602/
+  D-3603/D-3604)
+- B (this commit) SPEC governance close (STATUS.md + WORK_INDEX.md
+  WP-036 `[ ]` → `[x]` + EC_INDEX.md EC-036 Draft → Done + WP-036
+  §Amendments A-036-02 + mandatory 01.6 post-mortem)
+
+**Copilot Check (01.7):** CONFIRM — pre-flight reported 30/30 PASS
+after FIX cycle resolved RS-13, RS-14, and RS-15. Zero HOLD, zero
+SUSPEND. Execution produced zero mid-flight amendments beyond A-036-02
+(session-prompt reconciliation).
+
+WP-036 unblocks ten Phase 7 downstream WPs: WP-037 through WP-041
+(beta / launch / observability / product governance / architecture
+audit) and WP-049 through WP-054 (PAR simulation / storage / gate /
+identity / score submission / public leaderboards). The single-pipeline
+guarantee (D-3602) means balance measurements reflect the experience
+human players have.
+
+---
+
 ### WP-060 / EC-106 Executed — Keyword & Rule Glossary Data Migration (2026-04-20, EC-106)
 
 WP-060 lands the registry-viewer's first non-theme content-class fetch

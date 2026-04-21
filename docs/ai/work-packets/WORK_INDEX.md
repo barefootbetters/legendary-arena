@@ -1228,15 +1228,73 @@ These packets ship the game and keep it running.
   versions, never in-place edits; scales to 10k-100k scenarios; works on
   local filesystem, R2/S3, or CDN; does NOT modify engine, WP-049, or WP-048
 
-- [ ] WP-036 — AI Playtesting & Balance Simulation ✅ Reviewed
-  Dependencies: WP-035
+- [x] WP-036 — AI Playtesting & Balance Simulation ✅ Reviewed (2026-04-21 pre-flight READY TO EXECUTE with copilot-check 30/30 PASS after FIX cycle resolving RS-13 + RS-14 + RS-15; SPEC pre-flight commit `4e340fd` landed D-3601 + 02-CODE-CATEGORIES.md update + WP-036 §Amendments A-036-01 + EC-036 amendment note + session prompt + session-context bridge before execution) — Completed 2026-04-21 at commit `04c53c0` under EC-036 (see [session-wp036-ai-playtesting-balance-simulation.md](../invocations/session-wp036-ai-playtesting-balance-simulation.md))
+  Dependencies: WP-035 (complete at `d5935b5`)
   Notes: `AIPolicy` pluggable interface receives filtered UIState + legal moves,
-  returns `ClientTurnIntent`; `RandomPolicy` MVP baseline (seeded RNG);
-  `runSimulation` executes N games with aggregate stats (win rate, turns,
-  scores); AI uses same pipeline as humans — no special engine access (D-0701);
-  AI cannot inspect hidden state; decisions deterministic and reproducible;
-  no engine modifications; balance changes require simulation (D-0702); was
-  truncated at 65 lines — normalized to full PACKET-TEMPLATE
+  returns `ClientTurnIntent`; `createRandomPolicy` MVP baseline (mulberry32 PRNG
+  keyed via djb2); `runSimulation` executes N games with aggregate stats (win
+  rate, turns, scores, escaped villains average, wounds average); AI uses same
+  pipeline as humans — no special engine access (D-0701 + D-3602); AI cannot
+  inspect hidden state (receives filterUIStateForAudience player view);
+  decisions deterministic and reproducible (D-3604 two-domain PRNG — run-level
+  shuffle + policy-level decision PRNG never share state); balance changes
+  require simulation (D-0702). Four new files under
+  `packages/game-engine/src/simulation/` (D-3601 engine code category — ninth
+  precedent in the D-2706 / D-2801 / D-3001 / D-3101 / D-3201 / D-3301 /
+  D-3401 / D-3501 chain): `ai.types.ts` (pure type contracts), `ai.random.ts`
+  (createRandomPolicy + file-local mulberry32 + djb2; neither exported),
+  `ai.legalMoves.ts` (getLegalMoves + 8-entry SIMULATION_MOVE_NAMES tuple +
+  RS-13 enumeration order lock), `simulation.runner.ts` (runSimulation +
+  static 8-entry MOVE_MAP per D-2705 + local SimulationMoveContext structural
+  interface per D-2801 + 200-turn safety cap RS-7 + Fisher-Yates shuffle
+  driven by mulberry32 RS-1 + post-endgame stats sourced from
+  UIState.progress.escapedVillains + sum of UIPlayerState.woundCount per
+  RS-12). `simulation.test.ts` ships exactly 8 tests in one
+  `describe('simulation framework (WP-036)')` block using `node:test` +
+  `node:assert` only; test #7 uses canonical RS-14 assertion pattern
+  `assert.equal(player1.handCards, undefined, ...)`. Two modified files:
+  `types.ts` (re-export four simulation types) + `index.ts` (public API for
+  four types + three functions + one helper type). Engine baseline shift
+  `436 / 109 / 0 → 444 / 110 / 0 fail` (+8 tests / +1 suite); repo-wide
+  `588 / 0 → 596 / 0`. Zero engine gameplay files modified (targeted
+  `git diff --name-only` against `moves/`, `rules/`, `setup/`, `turn/`,
+  `ui/`, `scoring/`, `endgame/`, `villainDeck/`, `network/`, `replay/`,
+  `game.ts`). `package.json` / `pnpm-lock.yaml` untouched (P6-44). All 13
+  verification greps pass: zero `boardgame.io` / `@legendary-arena/registry`
+  / `Math.random(` / `.reduce(` / `require(` hits in simulation files. DECISIONS.md
+  adds four entries: D-3601 (Simulation Code Category; landed in A0), D-3602
+  (AI Uses the Same Pipeline as Humans; landed in A), D-3603 (Random Policy
+  Is the MVP Balance Baseline; landed in A), D-3604 (Simulation Seed
+  Reproducibility: Two Independent PRNG Domains — run-level shuffle domain
+  + policy-level decision domain never share state; djb2 + mulberry32
+  duplicated across ai.random.ts + simulation.runner.ts per WP-036
+  Scope Lock's 4-file cap; landed in A). Amendments: A-036-01 landed in A0
+  (PS-2: CardRegistry → CardRegistryReader signature correction per
+  WP-025/026 D-2504 precedent); A-036-02 lands in B (session-prompt
+  pseudocode used flat ClientTurnIntent field names but the authoritative
+  shape in `network/intent.types.ts:35` is nested — implementation
+  follows the session prompt's binding "Copy WP-032's shape verbatim"
+  instruction; scope-neutral reconciliation). 01.5 NOT INVOKED (four
+  criteria all absent — no LegendaryGameState field added, no
+  buildInitialGameState shape change, no new LegendaryGame.moves entry,
+  no new phase hook). 01.6 post-mortem MANDATORY (four triggers fire: new
+  long-lived abstraction `AIPolicy` + new code-category directory D-3601 +
+  new contract consumed by future WPs + D-2704 capability-gap pattern
+  documented) — verdict WP COMPLETE. Commits use `EC-036:` prefix on
+  code-changing commits (never `WP-036:` per P6-36 — commit-msg hook
+  rejects); `SPEC:` on governance / pre-flight / governance-close
+  commits. Three-commit topology: A0 `4e340fd` (SPEC pre-flight bundle) →
+  A `04c53c0` (EC-036 execution: 5 new files + 3 modified + D-3602/3/4) →
+  B (this commit, SPEC governance close: STATUS + WORK_INDEX + EC_INDEX +
+  A-036-02 + 01.6 post-mortem). Staging by exact filename only — never
+  `git add .` / `git add -A` / `git add -u` (P6-27 / P6-44). Inherited
+  dirty-tree items (untracked files + `.claude/worktrees/` + one modified
+  `session-wp079-*.md`) untouched and never staged; quarantine stashes
+  `stash@{0..2}` intact and never popped. See
+  `EC-036-ai-playtesting.checklist.md` +
+  `docs/ai/invocations/preflight-wp036-ai-playtesting-balance-simulation.md`
+  + `docs/ai/session-context/session-context-wp036.md` +
+  `docs/ai/post-mortems/01.6-WP-036-ai-playtesting-balance-simulation.md`.
 
 - [ ] WP-037 — Public Beta Strategy ✅ Reviewed
   Dependencies: WP-036
