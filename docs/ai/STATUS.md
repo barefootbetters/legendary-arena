@@ -7,6 +7,140 @@
 
 ## Current State
 
+### WP-060 / EC-106 Executed — Keyword & Rule Glossary Data Migration (2026-04-20, EC-106)
+
+WP-060 lands the registry-viewer's first non-theme content-class fetch
+migration, converting the two hardcoded glossary Maps in
+`apps/registry-viewer/src/composables/useRules.ts` into versioned JSON files
+served from R2 and fetched at startup via a new singleton client that
+mirrors `themeClient.ts`. The `HERO_CLASS_GLOSSARY` stays hardcoded per
+D-6005.
+
+**Surfaces produced:**
+
+- `data/metadata/keywords-full.json` — 113 keyword entries,
+  `{ key, description }[]`, alphabetical by `key`, 22,867 bytes. Token
+  markup (`[icon:X]`, `[hc:X]`, `[keyword:N]`, `[rule:N]`), smart quotes
+  `“ ”`, em dash `—` all preserved verbatim.
+- `data/metadata/rules-full.json` — 20 rule entries,
+  `{ key, label, summary }[]`, alphabetical by `key`, 4,302 bytes.
+- Both files uploaded to `https://images.barefootbetters.com/metadata/`
+  and confirmed HTTP 200 via `curl -sI` HEAD probes with matching
+  Content-Length before Commit A landed.
+- `apps/registry-viewer/src/lib/glossaryClient.ts` — new singleton fetcher
+  exporting `getKeywordGlossary(baseUrl)` / `getRuleGlossary(baseUrl)` /
+  `resetGlossaries()` plus the `KeywordGlossary` / `RuleGlossary` type
+  aliases. Module-scope `_keywordPromise` / `_rulePromise` singleton cache;
+  `devLog("glossary", ...)` instrumentation on load start / complete /
+  failed; throws inside the IIFE on HTTP !ok so `App.vue` can
+  `console.warn` + continue (non-blocking at the boundary — matches
+  `themeClient.ts:49–113` structure).
+- `apps/registry-viewer/src/composables/useRules.ts` — hardcoded Map bodies
+  removed; module-scope `_keywordGlossary` / `_ruleGlossary` holders +
+  `setGlossaries(keywords, rules)` exported setter + `getKeywordGlossaryMap()`
+  / `getRuleGlossaryMap()` exported getters added. `lookupKeyword` /
+  `lookupRule` algorithmic bodies preserved **byte-for-byte** (only the
+  `KEYWORD_GLOSSARY` → `_keywordGlossary` / `RULES_GLOSSARY` →
+  `_ruleGlossary` identifier substitution plus a one-line null-guard at
+  each function top). Every existing `// why:` comment preserved verbatim.
+  `HERO_CLASS_GLOSSARY`, `RuleEntry`, `parseAbilityText`, `lookupHeroClass`,
+  `AbilityToken`, `TokenType` preserved verbatim.
+- `apps/registry-viewer/src/composables/useGlossary.ts` — `allEntries`
+  converted from module-eval `const` to reactive `ref<GlossaryEntry[]>([])`;
+  new exported `rebuildGlossaryEntries()` called once from `App.vue` after
+  the async fetch resolves; `buildAllEntries()` retargeted to read via
+  `getKeywordGlossaryMap()` / `getRuleGlossaryMap()` + null-guards; dedup
+  check preserved verbatim. Scope expansion authorized under the viewer
+  analog of `docs/ai/REFERENCE/01.5-runtime-wiring-allowance.md` per
+  D-6007 — dependency-driven wiring only, no new behavior.
+- `apps/registry-viewer/src/App.vue` — `onMounted` try block gained a
+  glossary-load block parallel to `getThemes()`:
+  `Promise.all([getKeywordGlossary(), getRuleGlossary()])` →
+  `setGlossaries()` → `rebuildGlossaryEntries()`; catch `console.warn` +
+  continue. Three new imports.
+- `apps/registry-viewer/src/lib/devLog.ts` — `Category` union extended
+  with `"glossary"` (one-line EC §Out of Scope amendment; required for
+  typecheck on the new `devLog` calls).
+- `apps/registry-viewer/CLAUDE.md` — Architecture & Data Flow block gains
+  `getKeywordGlossary()` + `getRuleGlossary()` sections; Key Files table
+  gains `glossaryClient.ts` + `useGlossary.ts` rows; Keyword & Rule
+  Glossary section rewritten from hardcoded narrative to R2-fetched flow.
+- `docs/03.1-DATA-SOURCES.md` — §Registry Metadata Files table gains two
+  new rows.
+- `docs/ai/DECISIONS.md` — seven new entries D-6001 through D-6007.
+
+**Test baselines (all UNCHANGED):**
+
+- repo-wide: 588 passing / 0 failing
+- game-engine: 436 / 109 / 0 fail (zero engine code touched)
+- registry 13/2/0, vue-sfc-loader 11/0/0, server 6/2/0,
+  replay-producer 4/2/0, preplan 52/7/0, arena-client 66/0/0
+- no new tests (EC-106 §Test Expectations: optional, none authored)
+
+**Layer-boundary integrity:**
+
+- zero `packages/game-engine/` imports (P6-22 escaped-dot grep confirmed)
+- zero `boardgame.io` imports
+- zero `preplan` / `server` / `pg` / `registry` runtime imports in any
+  touched file
+- zero `require()` calls; zero `.reduce()` in migration output or lookup
+  bodies
+- `package.json` / `pnpm-lock.yaml` untouched (P6-44)
+- `stash@{0..2}` intact; none of the 11 inherited dirty-tree items staged
+- mystery untracked `docs/ai/ideas/audio-stingers-sketch.md` observed
+  (per WP-030 precedent), flagged, NOT touched
+
+**Three-commit topology:**
+
+- A0 `0654a4c` SPEC pre-flight bundle (EC-106 file + EC_INDEX row + WP-060
+  amendments + pre-flight file + copilot-check 30/30 PASS + session prompt;
+  landed before this session)
+- A `412a31c` EC-106 execution (10 files: 2 new JSONs + new
+  `glossaryClient.ts` + 5 modified TS/Vue + viewer `CLAUDE.md` +
+  `03.1-DATA-SOURCES.md` + DECISIONS.md)
+- B this SPEC governance close (STATUS.md + WORK_INDEX.md + EC_INDEX.md)
+
+**01.5 / 01.6 disposition:**
+
+- 01.5 NOT INVOKED as an engine-contract clause (no engine surface
+  touched); viewer-scope analog cited for `useGlossary.ts` only per D-6007.
+- 01.6 post-mortem NOT TRIGGERED — `glossaryClient.ts` is a new *instance*
+  of the `themeClient.ts` abstraction locked by WP-055 (not a new long-lived
+  abstraction type); viewer `src/lib/` is pre-classified; no new
+  cross-package contract; zero engine involvement. Matches WP-055 theme
+  data-migration precedent.
+
+**Manual smoke (passed):**
+
+- DEV + PROD smoke 13a–14c
+- Critical test 13c: all seven modifier keywords ("Ultimate Abomination",
+  "Double Striker", "Triple Empowered", "Focus 2", "Patrol the Bank",
+  "Danger Sense 3", "Cross-Dimensional Hulk Rampage") returned their
+  correct tooltip text — confirms `lookupKeyword` algorithm preserved
+  byte-for-byte end-to-end
+- Negative test 13g: bad `metadataBaseUrl` produces
+  `console.warn("[Glossary] Load failed (non-blocking):", ...)` and the
+  app still renders cards without throwing
+- Singleton honoured (Network tab shows exactly two glossary fetches)
+- Glossary panel total: 138 entries (20 rules + 113 keywords + 5 hero
+  classes)
+
+**Precedents applied:** P6-22 (escaped-dot grep), P6-27 (stage by exact
+filename only), P6-36 (`EC-###:` commit prefix; `WP-060:` / `EC-060:`
+rejected), P6-43 / P6-50 (paraphrase discipline), P6-44 (lockfile
+untouched), WP-028 / D-2802 (aliasing prevention — no shared-reference
+risk since `buildAllEntries()` constructs fresh objects), WP-055 (theme
+data-migration template — `themeClient.ts` structure mirrored verbatim;
+bare-array JSON convention; non-blocking fallback pattern), seven-row
+EC-slot retargeting chain (EC-060 → EC-106 first 101+ series use).
+
+**Unblocks:** downstream registry-viewer WPs that want to reference
+glossary data from R2 via a singleton. Phase 5 keyword-union WPs may now
+validate card data against R2-served `keywords-full.json` during content
+authoring without re-embedding the definitions in code.
+
+---
+
 ### WP-058 / EC-058 Executed — Pre-Plan Disruption Pipeline (2026-04-20, EC-058)
 
 WP-058 lands the disruption pipeline that closes the pre-planning layer's

@@ -218,15 +218,31 @@ These packets establish the repo-as-memory system and lock contracts before code
   deferred to consumer WPs as scope items — not standalone packets (design
   review decision 2026-04-12); parallel-safe with Phase 2+
 
-- [ ] WP-060 — Keyword & Rule Glossary Data Migration ✅ Reviewed — pending
+- [x] WP-060 — Keyword & Rule Glossary Data Migration ✅ Reviewed — Executed 2026-04-20 at commit `412a31c`
   Dependencies: WP-003
-  Notes: Migrates `keywords-full.json` (102 keywords with definitions) and
-  `rules-full.json` (18 rules with definitions) from external
-  `modern-master-strike` project into `data/metadata/`; uploads to R2;
-  updates registry viewer to fetch glossary data at runtime instead of
-  hardcoding 200+ lines of definitions in `useRules.ts`; display-only
-  content — no Zod schema, no engine integration; non-blocking fetch
-  (card view works if glossary load fails); parallel-safe with Phase 2+
+  Notes: Migrated the hardcoded `KEYWORD_GLOSSARY` (113 entries) and
+  `RULES_GLOSSARY` (20 entries) Maps from
+  `apps/registry-viewer/src/composables/useRules.ts` into
+  `data/metadata/keywords-full.json` + `data/metadata/rules-full.json`
+  (alphabetical by `key`; token markup + smart quotes preserved verbatim);
+  uploaded both files to `images.barefootbetters.com/metadata/` (verified
+  HTTP 200); added new `apps/registry-viewer/src/lib/glossaryClient.ts`
+  singleton fetcher mirroring `themeClient.ts` structure; `useRules.ts`
+  retargeted to module-scope holders populated by a new exported
+  `setGlossaries()` setter at `App.vue` mount, with `lookupKeyword` and
+  `lookupRule` algorithmic bodies preserved byte-for-byte (exact /
+  space-hyphen-stripped / prefix / suffix / substring matcher survived the
+  retargeting — confirmed by modifier-keyword smoke 13c); `useGlossary.ts`
+  gained reactive `allEntries` ref + exported `rebuildGlossaryEntries()`
+  under viewer analog of 01.5 scope allowance; `App.vue` gained one
+  glossary-load block inside existing `onMounted` try. `HERO_CLASS_GLOSSARY`
+  (5 entries) stays hardcoded per D-6005. Display-only content — no Zod
+  schema, no engine integration; non-blocking fetch (card view works if
+  glossary load fails). Seven new DECISIONS.md entries (D-6001 through
+  D-6007); `docs/03.1-DATA-SOURCES.md` §Registry Metadata updated.
+  Baseline 588 / 0 preserved; engine 436 / 109 / 0 fail unchanged.
+  Commit prefix `EC-106:` (seven-row EC-slot retargeting chain — original
+  EC-060 consumed by 6a63b1c).
 
 ---
 
