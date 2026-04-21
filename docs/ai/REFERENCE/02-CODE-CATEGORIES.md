@@ -99,7 +99,8 @@ incorrectness.
 `packages/game-engine/src/network/` (D-3201),
 `packages/game-engine/src/content/` (D-3301),
 `packages/game-engine/src/versioning/` (D-3401),
-`packages/game-engine/src/ops/` (D-3501)
+`packages/game-engine/src/ops/` (D-3501),
+`packages/game-engine/src/simulation/` (D-3601)
 
 ---
 

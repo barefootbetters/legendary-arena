@@ -186,7 +186,7 @@ Before writing a single line:
 
 ### D) `src/simulation/simulation.runner.ts` — new
 
-- `runSimulation(config: SimulationConfig, registry: CardRegistry): SimulationResult`
+- `runSimulation(config: SimulationConfig, registry: CardRegistryReader): SimulationResult`
   — executes N games with AI policies:
   1. For each game: construct seeded setup, run turns until endgame
   2. Each turn: build UIState, filter for active player, get legal moves,
@@ -194,7 +194,11 @@ Before writing a single line:
   3. After endgame: compute scores, collect statistics
   4. Aggregate across all games
   - Uses `for...of` for game and turn loops (no `.reduce()`)
-  - Registry provided as parameter (setup-time only pattern)
+  - Registry provided as parameter (setup-time only pattern). Type is
+    `CardRegistryReader` (local structural interface from
+    `matchSetup.validate.ts`), not `CardRegistry` from the registry
+    package — engine category prohibits registry imports per D-3301
+    family. Precedent: WP-025/026 D-2504 structural-interface pattern.
   - `// why:` comment: simulation uses the full engine pipeline — same as
     multiplayer
 
@@ -377,3 +381,18 @@ This packet is complete when ALL of the following are true:
       pipeline as humans (D-0701); why random policy is the MVP baseline;
       how simulation seeds ensure reproducibility
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` has WP-036 checked off with today's date
+
+---
+
+## Amendments
+
+**A-036-01 (2026-04-21, pre-session SPEC bundle):** §D signature
+corrected `registry: CardRegistry` → `registry: CardRegistryReader`.
+§Scope (In) §D registry note appended to cite the `CardRegistryReader`
+local structural interface from `matchSetup.validate.ts` and reference
+the WP-025/026 D-2504 precedent. Scope-neutral correction — no file
+allowlist change, no test count change, no wiring change, no new
+dependency, no new export surface. Resolves PS-2 of the WP-036
+pre-flight; engine category cannot import `CardRegistry` from
+`@legendary-arena/registry` per the D-3301 family and §Layer Boundary.
+Landed in the A0 SPEC commit alongside D-3601 (PS-1 resolution).

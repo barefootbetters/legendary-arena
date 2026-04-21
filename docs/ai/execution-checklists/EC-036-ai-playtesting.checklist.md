@@ -34,6 +34,13 @@ If formatting, spelling, or ordering differs, the implementation is invalid.
 - `SimulationResult = { gamesPlayed: number; winRate: number; averageTurns: number; averageScore: number; escapedVillainsAverage: number; woundsAverage: number; seed: string }`
 - AI receives filtered `UIState` (player audience) — same as human player
 - AI submits `ClientTurnIntent` through the same pipeline as humans
+- `runSimulation` accepts `registry: CardRegistryReader`, **not**
+  `CardRegistry` (scope-neutral correction per PS-2 of the WP-036
+  pre-flight; amendment A-036-01 landed 2026-04-21). Engine category
+  prohibits registry-package imports per D-3301 family, so the local
+  structural interface `CardRegistryReader` from
+  `src/matchSetup.validate.ts` is the only type `runSimulation` may
+  accept for its second positional parameter.
 
 ---
 
