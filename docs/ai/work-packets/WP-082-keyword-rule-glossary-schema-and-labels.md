@@ -667,3 +667,85 @@ pnpm -r --if-present test
 - [ ] Three-commit topology followed: A0 `SPEC:` pre-flight bundle →
   A `EC-107:` execution → B `SPEC:` governance close (commit prefix
   `WP-082:` is forbidden per P6-36)
+
+---
+
+## Amendments
+
+**A-082-01 (2026-04-21, governance-close SPEC bundle):** Three
+beyond-allowlist files were landed in Commit A (`3da6ac3`) and are
+formalized here. Each was forced by the EC's own locked design
+(*"The viewer imports from `@legendary-arena/registry`"*,
+§Non-Negotiable Constraints) interacting with Vite's browser-build
+semantics. All three are additive and zero-runtime-risk; they extend
+the §Files Expected to Change allowlist to match the design as shipped.
+
+1. **`apps/registry-viewer/package.json`** — added
+   `"@legendary-arena/registry": "workspace:*"` to `dependencies`.
+   The viewer previously had no declared dependency on the workspace
+   registry package; its `import` of `KeywordGlossarySchema` /
+   `RuleGlossarySchema` was unresolvable without this entry.
+
+2. **`packages/registry/package.json`** — added the `"./schema"`
+   subpath to the `exports` map, resolving to
+   `./dist/schema.js` / `./dist/schema.d.ts`. Required so the
+   viewer's Vite build can import the two schemas without
+   transitively pulling `impl/localRegistry.js` (which uses Node-only
+   `node:fs/promises` and `node:path`). The barrel import
+   (`@legendary-arena/registry`) fails at build time on
+   *"`resolve` is not exported by `__vite-browser-external`"* because
+   Rollup resolves the import graph before tree-shaking can prune the
+   unused Node-only factory. The dedicated subpath export has zero
+   Node-module dependencies and sidesteps the issue entirely. Per
+   `.claude/rules/registry.md` §Schema Authority, schema.ts remains
+   the single source of truth — this amendment only exposes an
+   additional *path* to the same file, not a second copy.
+
+3. **`pnpm-lock.yaml`** — 3-line delta, entirely the workspace-link
+   entry from (1). No NPM packages added, removed, or
+   version-changed. `pnpm install` downloaded zero new packages.
+
+Scope-neutral corrections — no new tests, no new dependencies
+(the workspace link is architecturally an intra-monorepo reference,
+not a new package), no new export surface beyond the explicit
+`KeywordGlossaryEntrySchema` / `KeywordGlossarySchema` /
+`RuleGlossaryEntrySchema` / `RuleGlossarySchema` / `KeywordGlossaryEntry`
+/ `RuleGlossaryEntry` list already in §Scope (In) §B. `session-context`
+§5 "pnpm-lock.yaml expectation: no diff" is superseded by this amendment
+— the session-context was authored before the Vite-resolution cascade
+surfaced.
+
+**A-082-02 (2026-04-21, governance-close SPEC bundle):** The
+RS-3 diff gate at the start of Commit A found `data/metadata/rules-full.json`
+in a **content-altering** state, not whitespace-only. A pre-session
+rewrite had replaced every `summary` with longer rulebook-verbatim
+prose (20 entries, 21 insertions / 21 deletions including the
+trailing-newline drop). Per EC §Non-Negotiable *"existing rule `label`
+/ `summary` values are byte-for-byte preserved"* and the session-context
+§2.2 RS-3 STOP clause, the rewrite was not in scope. Path 1 of the
+STOP clause was selected after operator authorization: the working-tree
+version was quarantined to `stash@{0}` with message *"WP-082 quarantine:
+rules-full.json summary rewrites (rulebook v23 verbatim) — out of
+WP-082 scope per EC-107 byte-for-byte guardrail; reclaim in a future
+governed WP"*, and the file was reverted to HEAD before Commit A
+applied only the optional `pdfPage` backfill. The quarantined content
+is recoverable with `git stash show -p stash@{0}`; a future dedicated
+WP can reclaim and govern the summary rewrite properly.
+
+**A-082-03 (2026-04-21, governance-close SPEC bundle):** Operator R2
+upload step proceeded as documented (EC §Verification Steps 20–22 all
+green: PDF HTTP 200 + `Content-Type: application/pdf` + 44,275,000
+bytes — matching EC §Assumes byte count exactly; both JSONs HTTP 200
+with republished content matching repo). One operator iteration: the
+rulebook was initially uploaded as `legendary-universal-rules-v23.md`
+at `/docs/`, which would have broken the `#page=N` RFC 3778 §3
+deep-link semantics (markdown files don't support page-fragment
+navigation in native browser viewers). The operator re-uploaded as
+`legendary-universal-rules-v23.pdf` to match the EC-locked URL; the
+orphan `.md` file on R2 is decorative and may be deleted at operator
+discretion. `Cache-Control: max-age=31536000, immutable` did not
+surface in the HEAD response — either Cloudflare strips it in HEAD
+or it was not applied at upload. The URL's `v23` version pin makes
+this a non-blocker (a future v24 rulebook is a new filename, not a
+mutation of this one); worth a check before the next rulebook drop.
+Cross-browser smoke tests 24/25 all passed per operator confirmation.
