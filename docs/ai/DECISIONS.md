@@ -6326,6 +6326,99 @@ silently drop.
 
 ---
 
+### D-3601 — Simulation Code Category
+**Decision:** `packages/game-engine/src/simulation/` (introduced by WP-036 /
+EC-036) belongs to the `engine` code category per
+`docs/ai/REFERENCE/02-CODE-CATEGORIES.md`. All engine-category rules apply
+verbatim: no `boardgame.io` imports, no `@legendary-arena/registry` imports,
+no IO (filesystem, network, environment), no `Math.random()`, no
+`performance.now()` / `Date.now()` / `new Date()`, no `.reduce()` with
+branching logic, no throwing, no `require()` (ESM only), no storing
+functions in `G`, `.test.ts` extension on test files.
+
+**Rationale:** Simulation is external consumer tooling that exercises the
+engine's full pipeline from outside `boardgame.io` (D-0701: AI is tooling,
+not gameplay; D-0702: balance changes require simulation validation). It
+mirrors the replay harness pattern (D-2706) — it calls engine APIs via the
+same setup-time + move-dispatch + UIState-projection + endgame-scoring
+flow as multiplayer, but adds zero gameplay logic. Engine-category
+constraints apply verbatim; no new category is needed.
+
+The classification mirrors the eight prior precedents that established the
+"new engine subdirectory needs a D-entry" pattern:
+
+- D-2706 — `src/replay/` (WP-027 replay harness)
+- D-2801 — `src/ui/` (WP-028 UIState contract)
+- D-3001 — `src/campaign/` (WP-030 campaign framework)
+- D-3101 — `src/invariants/` (WP-031 production invariants)
+- D-3201 — `src/network/` (WP-032 network sync)
+- D-3301 — `src/content/` (WP-033 content authoring toolkit)
+- D-3401 — `src/versioning/` (WP-034 versioning & save migration)
+- D-3501 — `src/ops/` (WP-035 release operations)
+
+D-3601 is the ninth instance of the same pattern; the precedent is fully
+steady-state.
+
+**Sub-rule embedded in this decision:** the simulation subdirectory ships
+a seeded mulberry32 PRNG as a file-local helper (not exported from the
+package). This is the D-2704 capability-gap pattern — `makeMockCtx`
+reverses arrays instead of accepting a seed, so deterministic simulation
+requires a subdirectory-local PRNG. The mulberry32 helper lives in
+`ai.random.ts` and is duplicated (not shared) into `simulation.runner.ts`
+per the WP-036 Scope Lock (4 files, no 5th helper file).
+
+**Implications for future engine WPs:**
+
+- Future engine subdirectories continue to need D-entries (D-3701, D-3801,
+  …) per the established pattern.
+- Any future AI policy (heuristic, MCTS, neural) that plugs into the
+  `AIPolicy` interface lives in `src/simulation/` under the same D-3601
+  classification — no new D-entry needed unless a new long-lived
+  abstraction or category boundary is introduced.
+- `AIPolicy` is a function interface — it must never be stored in `G`
+  (would violate serialization + the "no functions in G" invariant).
+
+**Alternatives rejected:**
+
+- **No classification (skip the D-entry):** rejected. Eight prior
+  precedents; skipping breaks the audit trail.
+- **Classify as `infra`:** rejected. `infra` is for non-shipped code
+  (scripts, hooks, CI). Simulation ships as part of the engine bundle
+  (exported on the public API surface via
+  `packages/game-engine/src/index.ts` for external balance tooling
+  consumers per D-0702).
+- **Place simulation under a new top-level package (e.g.,
+  `packages/ai/`):** rejected at MVP. Simulation's only consumer is the
+  engine's own contract surface (`ClientTurnIntent`, `UIState`,
+  `MatchSetupConfig`, `CardRegistryReader`, `FinalScoreSummary`). A
+  separate package would add a cross-package boundary without adding a
+  new testable aspect.
+- **Classify as `setup`:** rejected. `setup` is for code that runs inside
+  `Game.setup()` and produces `G.*` fields. Simulation calls
+  `buildInitialGameState` as a consumer; it never participates in
+  `Game.setup()` directly.
+
+**Implementation locations:**
+
+- Pattern reference: `docs/ai/REFERENCE/02-CODE-CATEGORIES.md` §`engine`
+  directory list — `packages/game-engine/src/simulation/` added alongside
+  the eight prior precedents.
+- Locked-value reference:
+  `docs/ai/execution-checklists/EC-036-ai-playtesting.checklist.md`
+  + `docs/ai/invocations/session-wp036-ai-playtesting-balance-simulation.md`
+  §Locked Values + §Hard Stops.
+
+**Affected WPs:** WP-036
+**Introduced:** WP-036 / EC-036
+**Status:** Immutable
+**Raised:** WP-036 / EC-036 pre-flight, 2026-04-20
+**Resolved:** 2026-04-21 (pre-flight SPEC bundle lands D-3601 +
+02-CODE-CATEGORIES.md update + WP-036 §D signature correction + EC-036
+amendment + session prompt + session-context bridge before EC-036
+execution begins)
+
+---
+
 ### D-8201 — Keyword and Rule Glossary Payloads Are Zod-Validated at the Fetch Boundary
 **Decision:** `data/metadata/keywords-full.json` and
 `data/metadata/rules-full.json` are validated against
