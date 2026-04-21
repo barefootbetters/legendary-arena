@@ -6419,6 +6419,212 @@ execution begins)
 
 ---
 
+### D-3602 — AI Uses the Same Pipeline as Humans
+**Decision:** The AI playtesting framework (`packages/game-engine/src/simulation/`)
+drives the same pipeline that multiplayer uses: `buildInitialGameState`
+for setup, `buildUIState` + `filterUIStateForAudience` for the
+player-audience projection, `getLegalMoves` enumeration, the static
+`MOVE_MAP` dispatch set, and `evaluateEndgame` + `computeFinalScores`
+for termination and VP scoring. The AI policy returns a
+`ClientTurnIntent` (WP-032 canonical shape) that is dispatched exactly
+as a human-submitted intent would be. There is no "AI-only" engine path,
+no engine-side hook that branches on whether the caller is human, and no
+backdoor that lets the policy read unfiltered G. D-0701 (AI Is Tooling,
+Not Gameplay) is enforced by construction.
+
+**Rationale:** Any engine branch that differentiates AI from human would
+silently decouple the two — balance measurements would stop reflecting
+the experience a human player has. The D-0702 invariant (balance
+changes require simulation validation) only holds if the measurement
+stack is the same stack players use. Isolating AI behind a different
+path would make "simulation says this is fine" uncorrelated with
+"players say this is fine." The single-pipeline constraint is the
+entire point of WP-036.
+
+**Implications:**
+
+- `AIPolicy.decideTurn` receives a filtered `UIState` and a
+  `LegalMove[]` — not `G`, not `ctx`, not the registry. The policy has
+  strictly human visibility.
+- `runSimulation` never bypasses `validateIntent` conceptually — the
+  move dispatch route calls the same move functions the server
+  dispatches after `validateIntent` returns ok, and the move functions
+  themselves enforce stage gating and args validation. Re-running
+  `validateIntent` in simulation would be redundant at MVP since the
+  legal-move enumerator already honors the same gates (RS-13 +
+  stage-gating table in `.claude/rules/game-engine.md`).
+- Future heuristic / MCTS / neural policies plug into the same
+  `AIPolicy` interface. They are not special-cased anywhere in the
+  engine.
+- Any future temptation to "give the AI a peek at G for performance" is
+  a D-3602 violation — raise a new D-entry before considering.
+
+**Alternatives rejected:**
+
+- **Separate AI dispatch path:** rejected. Would decouple simulation
+  from the live-match pipeline, invalidating the D-0702 balance claim.
+- **Full `validateIntent` re-run inside `runSimulation`:** rejected at
+  MVP. Double-validation is redundant given the legal-move enumerator
+  already honors stage gating; when a future WP introduces
+  intent-level invariants that are not reflected in
+  `MOVE_ALLOWED_STAGES`, re-running validate becomes the right move.
+- **Engine-side AI hook (onAiTurnStart, etc.):** rejected. Violates the
+  "functions never in G" invariant and inverts the layer boundary —
+  simulation is a consumer, not a participant.
+
+**Affected WPs:** WP-036 and every Phase 7 downstream that consumes the
+`SimulationResult` contract (WP-037 → WP-041 simulation tooling;
+WP-049 → WP-054 PAR simulation).
+**Introduced:** WP-036 / EC-036
+**Status:** Immutable
+**Raised:** WP-036 / EC-036, 2026-04-21
+**Resolved:** 2026-04-21 (EC-036 implementation lands the single-pipeline
+simulation runner).
+
+---
+
+### D-3603 — Random Policy Is the MVP Balance Baseline
+**Decision:** The MVP implementation of `AIPolicy` is a uniformly random
+selector over the legal-move set (`createRandomPolicy` in
+`src/simulation/ai.random.ts`). Sophisticated policies (heuristic
+priorities, MCTS, neural) are deliberately out of scope for WP-036 and
+will land in future Phase 7 WPs that plug into the same `AIPolicy`
+interface without refactor.
+
+**Rationale:** A random baseline is the correct first measurement stake
+for three reasons:
+
+1. **Signal floor.** Random play reveals whether the engine pipeline is
+   even reachable — if the random policy cannot drive a game to
+   termination, no heuristic could either. WP-036 establishes that
+   signal first.
+2. **Sensitivity proxy.** Balance pathologies that show up against
+   random play (infinite loops, degenerate win rates, stuck states)
+   almost always show up against heuristic play; random-play metrics
+   are a fast smoke test for those pathologies.
+3. **Interface pressure.** Building random first forces the
+   `AIPolicy` + `LegalMove` surface to be policy-agnostic. A heuristic
+   baseline would have leaked strategy-specific assumptions into the
+   contract (e.g., "the policy gets board scoring metadata"),
+   foreclosing future MCTS/neural implementations.
+
+Random is not claimed to be realistic. Its output is a baseline only.
+Future balance changes SHOULD be validated against heuristic policies
+in addition to random — `SimulationResult.averageScore` under random
+policies and under a parked heuristic policy are complementary
+measurements, not substitutes.
+
+**Alternatives rejected:**
+
+- **Heuristic as the first policy:** rejected. Heuristic design is a
+  separate WP — bundling it with the AI framework violates "one WP,
+  one concern" and would push `AIPolicy` to leak strategy-specific
+  fields. Heuristic belongs in a follow-up WP gated on a D-entry that
+  pins the heuristic's scoring weights.
+- **No policy at MVP (framework-only):** rejected. A framework without
+  a concrete policy is untestable against real game runs; the 8-test
+  suite under `simulation.test.ts` requires a policy to exercise.
+
+**Affected WPs:** WP-036 (random policy ships); future heuristic /
+MCTS / neural WPs plug into the same interface.
+**Introduced:** WP-036 / EC-036
+**Status:** Immutable
+**Raised:** WP-036 / EC-036, 2026-04-21
+**Resolved:** 2026-04-21
+
+---
+
+### D-3604 — Simulation Seed Reproducibility: Two Independent PRNG Domains
+**Decision:** `runSimulation` uses two seeded mulberry32 PRNG domains,
+deliberately independent:
+
+1. **Run-level shuffle domain.** A single mulberry32 instance created
+   at the top of `runSimulation` from `hashSeedString(config.seed)`.
+   Drives every in-game deck reshuffle via the `random.Shuffle`
+   hook inside the dispatched move context (Fisher-Yates).
+2. **Policy-level decision domain.** Each `createRandomPolicy(seed)`
+   call creates its own mulberry32 instance from
+   `hashSeedString(policySeed)` closed over inside `decideTurn`.
+   Drives the policy's uniformly random legal-move selection.
+
+The two domains are never merged, never share state, and never seed
+each other. `config.seed` and each policy's seed are independent
+inputs, and the tests MUST be able to reseed either domain without
+perturbing the other.
+
+**Rationale:** Coupling the domains would make "does this shuffle
+change the AI's next decision?" un-answerable — a reproducibility bug
+could manifest in either domain and the test matrix could not
+disambiguate. Separating them gives the test suite two orthogonal
+levers: "fix the shuffle seed, vary the policy seed" and vice versa.
+
+The hash function is djb2 (inline in both `ai.random.ts` and
+`simulation.runner.ts`), chosen for three reasons:
+
+- No crypto dependency (engine category forbids IO / env / external
+  libraries in simulation files per D-3601).
+- Deterministic: same string input → same 32-bit output, across Node
+  versions and OS boundaries.
+- Trivially inspectable: ~8 lines; no third-party surface to audit.
+
+Mulberry32 is the PRNG for the same three reasons plus its
+reproducibility guarantee (same seed + same call sequence = same
+output sequence). It is NOT cryptographic. It addresses the D-2704
+capability gap: `makeMockCtx` reverse-shuffles arrays and does not
+accept a seed, so the simulation subsystem cannot reuse it for seeded
+work.
+
+The djb2 + mulberry32 implementation is **duplicated** across
+`ai.random.ts` and `simulation.runner.ts` rather than shared via a 5th
+helper file. Per the WP-036 Scope Lock (4 simulation files + 1 test
+file), introducing a 5th file requires a WP amendment; the ~20-line
+duplication is cheaper than the governance overhead of a new file. If
+a third simulation subsystem ever needs the same PRNG, the de-dup
+becomes a follow-up WP.
+
+**Implications:**
+
+- Rerunning `runSimulation` with identical `(config, registry)` inputs
+  MUST produce a byte-identical `SimulationResult`. The simulation
+  test suite (`simulation.test.ts`) enforces this via the
+  deterministic-decisions test (test #3).
+- Changing the djb2 implementation (even cosmetically) requires an
+  amendment — every stored seed string would silently re-hash.
+- Changing the mulberry32 implementation requires an amendment for
+  the same reason.
+- The policy seed is orthogonal to the run seed: two policies with
+  the same seed make the same decisions against the same inputs
+  (proved by test #3); two policies with different seeds make
+  different decisions (proved by test #4).
+
+**Alternatives rejected:**
+
+- **Single shared PRNG:** rejected. Couples shuffle domain to
+  decision domain, as described above. Orthogonal seeding is the
+  entire point.
+- **Share the PRNG via a 5th helper file:** rejected at MVP per the
+  WP-036 Scope Lock. Revisit in a follow-up WP if a third consumer
+  appears.
+- **Use `crypto.getRandomValues` or `node:crypto` for seed hashing:**
+  rejected. Engine category forbids IO / env access, and mulberry32
+  does not need a cryptographic seed — djb2 is sufficient for a
+  reproducible 32-bit integer.
+- **Skip seeding entirely; rely on `makeMockCtx`'s reverse-shuffle:**
+  rejected. Reverse-shuffle is deterministic but not parameterizable;
+  two simulation runs with different intents would produce identical
+  shuffles, hiding any shuffle-order sensitivity.
+
+**Affected WPs:** WP-036. Future seeded-RNG consumers in
+`src/simulation/` inherit D-3604 — no new D-entry needed — but any new
+subdirectory (e.g., a hypothetical `src/simulationHeuristic/`)
+requires its own D-entry per the D-3601 family pattern.
+**Introduced:** WP-036 / EC-036
+**Status:** Immutable
+**Raised:** WP-036 / EC-036, 2026-04-21
+**Resolved:** 2026-04-21
+
+---
+
 ### D-8201 — Keyword and Rule Glossary Payloads Are Zod-Validated at the Fetch Boundary
 **Decision:** `data/metadata/keywords-full.json` and
 `data/metadata/rules-full.json` are validated against
