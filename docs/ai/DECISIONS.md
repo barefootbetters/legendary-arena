@@ -7051,6 +7051,145 @@ introduces a new PowerShell validator.
 
 ---
 
+### D-8301 — Viewer R2 Fetches Validate at the Boundary (`.safeParse(...)`, Not Interface Casts)
+**Decision:** Every R2 fetcher in the registry viewer validates its
+payload with `.safeParse(...)` against a schema owned by the registry
+package (`packages/registry/src/schema.ts` or
+`packages/registry/src/theme.schema.ts`). Inline TS-interface casts on
+fetched JSON are forbidden. The four R2 fetchers
+(`apps/registry-viewer/src/lib/registryClient.ts`,
+`apps/registry-viewer/src/lib/themeClient.ts`, and the two inside
+`apps/registry-viewer/src/lib/glossaryClient.ts`) all now satisfy this
+rule. `.parse(...)` at a fetch boundary is also forbidden because its
+automatic throw bypasses the locked error-rendering format —
+`.safeParse(...)` returns a discriminated union so each call site
+handles the failure explicitly per D-8303 severity.
+**Rationale:** Prevents silent shape drift and makes failures
+developer-actionable at the first point of ingestion. TS interface casts
+are compile-time only and do not protect against malformed R2 publishes,
+accidental schema drift upstream, or CDN corruption. Completes the
+viewer-side validation rollout initiated by WP-082 / EC-107 for the
+glossary fetchers; closes the remaining gap for viewer config + theme
+JSONs.
+**Affected WPs:** WP-083 (introduction); any future WP that adds a new
+R2 fetcher to the registry viewer. Any such WP must ship with a matching
+registry-package schema and a `.safeParse(...)` wiring at the fetch
+boundary.
+**Introduced:** WP-083 / EC-108
+**Status:** Active Policy
+
+---
+
+### D-8302 — `ViewerConfigSchema` Is Distinct from `RegistryConfigSchema` (Naming Collision Locked)
+**Decision:** `ViewerConfigSchema` in
+`packages/registry/src/schema.ts` is the schema for
+`apps/registry-viewer/public/registry-config.json` (an object shape
+with `metadataBaseUrl`, `eagerLoad?`, `rulebookPdfUrl?`).
+`RegistryConfigSchema` in the same file is the schema for a separate
+R2 artifact at `/registry-config.json` that is a flat array of set
+abbreviation strings. These two names and their shapes are locked and
+must not be conflated, renamed, or collapsed into one schema. The
+adjacent comment on `RegistryConfigSchema` explicitly disambiguates the
+two.
+**Rationale:** The two artifacts happen to share the same basename
+(`registry-config.json`) because each exists in a different directory
+(`public/` vs R2 root). Renaming `RegistryConfigSchema` would break CI
+scripts and external tooling that consume the set-abbreviation list.
+Renaming `ViewerConfigSchema` to avoid the collision would break this
+WP's retrofit. Locking both names and their distinct meanings is the
+lowest-risk resolution.
+**Affected WPs:** WP-083 (introduction); any future WP that touches
+either artifact must preserve the naming distinction or update this
+entry with a supersession.
+**Introduced:** WP-083 / EC-108
+**Status:** Immutable
+
+---
+
+### D-8303 — Validation Severity Policy by Dependency Type (Throw vs. Warn + Skip)
+**Decision:** Validation failures in the registry viewer are handled
+by dependency severity:
+- **Throw** when the payload is a hard dependency whose absence makes
+  the subsystem unusable:
+  - `public/registry-config.json` (viewer cannot boot)
+  - `themes/index.json` (Themes tab cannot populate)
+- **Warn + skip** when the failure is isolated to a single entry in a
+  batch whose other entries are independently usable:
+  - Individual `themes/{file}.json` (one bad theme must not hide the
+    other 68)
+  - Glossary payloads per EC-107 (malformed keyword / rule data degrades
+    to an empty Map; tooltips go absent but cards still render)
+
+All diagnostics render only `issue.path.join('.')` (or `"root"` if
+empty) plus `issue.message` from the **first** Zod issue. `.format()`
+dumps, multi-issue arrays, and raw `issues` prints are forbidden.
+**Rationale:** Hard dependencies must fail loudly to avoid undefined
+runtime behavior; batch entries should degrade gracefully while
+preserving operator visibility. First-issue-only rendering keeps
+operator logs scannable and matches the EC-107 `[Glossary] Rejected`
+precedent. This is the third retrofit (after EC-107 glossary + this
+packet's viewer config / themes) and the fourth R2 fetcher; the policy
+is now authoritative for all future viewer-side validation.
+**Affected WPs:** WP-082 (glossary, already matched this policy
+de facto); WP-083 (explicit lock); any future WP that adds a new
+viewer R2 fetcher.
+**Introduced:** WP-083 / EC-108
+**Status:** Active Policy
+
+---
+
+### D-8304 — Auxiliary Metadata Schemas Remain Offline-Only (Cross-Reference to D-8401 / D-8402)
+**Decision:** At WP-083 authoring time, WP-084 / EC-109 deleted five
+auxiliary metadata schemas (`CardTypeEntrySchema`,
+`HeroClassEntrySchema`, `HeroTeamEntrySchema`, `IconEntrySchema`,
+`LeadsEntrySchema`) and their JSON counterparts (see D-8401, D-8402).
+If a future WP revives any of those schemas, this decision locks the
+following: no revived auxiliary schema may be wired to a runtime R2
+fetcher as part of the revival. The revival WP and its runtime
+consumer must land together in the same WP, with a matching validated
+fetcher per D-8301.
+**Rationale:** Prevents scope creep and schema-without-consumer drift.
+Schemas that exist only for offline validation should stay offline
+until a concrete consumer exists; when the consumer arrives, the WP
+that wires it must also ship the fetch-boundary validation per D-8301
+rather than treating the schema as prior art that skips the validation
+review. Pairs with D-8405 (future-reintroduction pattern).
+**Affected WPs:** WP-083 (introduction); any future WP that revives
+one of the five deleted schemas or adds a new auxiliary metadata
+schema.
+**Introduced:** WP-083 / EC-108
+**Status:** Active Policy
+
+---
+
+### D-8305 — Theme-Schema Subpath Export for Browser-Safe Viewer Imports (A-083-04)
+**Decision:** `packages/registry/package.json` exposes theme schemas
+via a dedicated `./theme.schema` subpath export
+(`"./theme.schema": { "import": "./dist/theme.schema.js", "types":
+"./dist/theme.schema.d.ts" }`). Viewer code — and any future
+browser-bundled consumer — **must** use this subpath when importing
+`ThemeDefinitionSchema`, `ThemeDefinition`, or any other theme-schema
+binding, not the barrel `@legendary-arena/registry`. The barrel
+re-exports `createRegistryFromLocalFiles` which imports Node-only
+modules (`node:fs/promises`, `node:path`); Rollup resolves the import
+graph before tree-shaking can prune the unused factory, so a barrel
+import of theme schemas would break the viewer's production build at
+`resolve` from `__vite-browser-external`.
+**Rationale:** Locks the retrofit precedent A-082-01 established for
+general schemas (`./schema`) and extends it to theme schemas without
+modifying `theme.schema.ts` (locked by D-5504 / D-5509 / EC-055).
+Preserves file-level separation of concerns — `schema.ts` and
+`theme.schema.ts` each expose their own subpath independently. Future
+retrofit WPs consuming theme schemas in a browser bundle cite this
+decision instead of re-litigating the import-path question or
+attempting to move theme schemas into `schema.ts` (prohibited).
+**Affected WPs:** WP-083 (introduction, A-083-04 amendment); any
+future WP that imports theme schemas into a browser-bundled consumer.
+**Introduced:** WP-083 / EC-108 (A-083-04 amendment)
+**Status:** Immutable
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
