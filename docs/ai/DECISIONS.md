@@ -7671,6 +7671,219 @@ this decision + WP-085 draft)
 
 ---
 
+### D-8502 — Vision Audit Baseline Source-of-Truth Is INFRA `24996a9` on `main`
+**Decision:**
+The calibrated Vision Alignment audit baseline — exactly 6 DET-001
+findings, 4 DET-007 findings, 0 monetization findings, 0 registry
+findings, 0 engine-boundary findings — captured on `main` at INFRA
+`24996a9` is the canonical, immutable source-of-truth for WP-085's
+AC-2 / AC-3 / AC-4 acceptance contract. These values appear as named
+constants in `scripts/audit/vision/run-all.mjs` (`EXPECTED_DET_001 = 6`,
+`EXPECTED_DET_007 = 4`, `EXPECTED_MONETIZATION = 0`,
+`EXPECTED_REGISTRY = 0`, `EXPECTED_ENGINE_BOUNDARY = 0`). Any deviation
+at any future audit run is a FAIL.
+
+**Rationale:**
+A calibrated audit instrument must freeze its acceptance contract at
+the calibration point. Otherwise "passing" becomes a moving target and
+the instrument loses diagnostic value — a regression could silently
+renormalize the baseline upward and no auditor would notice. Locking
+the baseline in a named-constant form in the orchestrator (rather than
+as prose-only in WP-085) gives the contract a single mechanical
+enforcement surface: changing the baseline requires editing code, and
+code changes must land through a superseding WP per WP-085 AC-6.
+
+The six DET-001 findings are all documentation-only occurrences at the
+AC-3 allowlist file:line pairs — JSDoc warnings against runtime use of
+`Math.random`. The four DET-007 findings are snapshot and version
+metadata wall-clock reads at the AC-4 allowlist file:line pairs. Zeros
+in the remaining three scans mean the current engine has no
+monetization predicates, no registry divergence, and no forbidden
+engine↔apps imports.
+
+**Alternatives rejected:**
+
+- **Store the baseline only in WP-085 prose:** rejected. Prose drifts
+  silently; code does not. Named constants guarantee that any future
+  re-calibration is a visible diff.
+- **Allow runtime re-calibration via CLI flag:** rejected. A re-
+  calibration flag would let an operator fabricate a PASS verdict by
+  resetting the contract to whatever the current tree produces. The
+  instrument's whole purpose is to catch drift; making the baseline
+  mutable at runtime defeats that.
+- **Store the baseline in a separate `baseline.json` file:** rejected
+  for this iteration. Named constants inside the orchestrator keep the
+  contract co-located with the comparison logic; a separate config
+  file adds indirection without audit-integrity benefit. A future INFRA
+  WP may promote the baseline to a versioned JSON if CI integration
+  demands it.
+
+**Implementation locations:**
+
+- `scripts/audit/vision/run-all.mjs` lines 69–73 (named constants).
+- `scripts/audit/vision/run-all.mjs` lines 80–99 (AC-3 and AC-4
+  allowlist file:line pairs as frozen arrays).
+- `docs/ai/work-packets/WP-085-vision-alignment-audit.md` AC-2 matrix
+  + AC-3 + AC-4 allowlists.
+
+**Affected WPs:** WP-085 (primary); every Phase 7 WP whose `## Vision
+Alignment` block cites §17 (inherited enforcement contract).
+**Introduced:** EC-085 Commit B (governance close)
+**Status:** Immutable
+**Raised:** EC-085 execution, 2026-04-22
+**Resolved:** 2026-04-22 (Commit B — this decision)
+
+---
+
+### D-8503 — Two-Channel DET-001 With Single-Channel DET-007 Asymmetry
+**Decision:**
+The Vision Alignment audit uses two distinct detection channels for
+DET-001 (`Math.random(` in engine code) and exactly one channel for
+DET-007 (`new Date(` in engine code). This asymmetry is a load-bearing
+design decision, not an accident.
+
+- **DET-001 script channel** (`scripts/audit/vision/determinism.greps.mjs`)
+  applies a comment-aware filter after `git grep` returns matches. Any
+  line whose content portion — after the `path:lineno:` prefix — begins
+  with `//`, `/*`, or `*` is discarded. The script must report exactly
+  **zero** executable findings on `main`.
+- **DET-001 orchestrator channel** (`scripts/audit/vision/run-all.mjs`)
+  independently reads each of the six AC-3 allowlist files and verifies
+  the referenced line is a doc-comment. Exactly **six** doc-comment
+  matches constitute the baseline exception count. The composite
+  (script-channel executable + orchestrator-channel allowlist) must
+  equal `EXPECTED_DET_001 = 6`, and *each* channel must satisfy its
+  own invariant independently.
+- **DET-007 single channel** applies no comment-aware filter. All four
+  findings — executable or doc-comment — must match the AC-4 four-pair
+  allowlist exactly; missing or extra pairs are a FAIL.
+
+**Rationale:**
+DET-001 protects a determinism invariant: engine replay requires
+`ctx.random.*` and breaks catastrophically if any executable call to
+`Math.random(` leaks in. A doc-comment that says *"never use
+`Math.random()` in engine code"* is the warning, not the violation —
+filtering comment hits prevents the gate from firing on its own
+guardrail text. But the warning text is itself a governance artifact:
+if the warning disappears, a future contributor loses the in-file
+signal. The orchestrator channel verifies the warnings are still
+present at their canonical locations.
+
+DET-007 is different. It protects a *suspicious-pattern* invariant:
+`new Date(` in engine code is a smell that someone may have introduced
+wall-clock dependency. A doc-comment at the canonical site (e.g.,
+*"snapshotAt uses `new Date()` for derived metadata only"*) is the
+canonical site documentation and carries **equal audit meaning** to
+the executable hit one or two lines below. Filtering DET-007
+comment hits would hide the governance context — the auditor would
+see only the executable hit and lose the explanation. Keeping DET-007
+single-channel preserves the full audit signal.
+
+This asymmetry is locked with a `// why:` comment at
+`scripts/audit/vision/determinism.greps.mjs` lines 170–181 so future
+contributors do not "fix" the perceived inconsistency.
+
+**Alternatives rejected:**
+
+- **Apply the comment-aware filter to both DET-001 and DET-007:**
+  rejected. Would destroy DET-007 audit signal; doc-comment
+  occurrences at the four AC-4 sites are canonical site documentation,
+  not noise.
+- **Apply no comment-aware filter to either rule:** rejected. Would
+  make DET-001 fire on the six documentation warnings at AC-3 sites
+  (which are the invariant's own guardrail text), producing a
+  permanent six-count critical FAIL with no semantic meaning.
+- **Collapse to a single allowlist channel covering both rules:**
+  rejected. Conflates two different invariants — executable
+  forbidden-call detection (DET-001) vs. suspicious-pattern auditing
+  (DET-007) — and loses the ability to independently verify the
+  DET-001 documentation warnings still exist at their canonical sites.
+
+**Reusable pattern:** the two-channel model (script-channel executable
+detection + orchestrator-channel baseline-exception verification) is
+appropriate any time a scan rule protects an invariant whose guardrail
+text contains the forbidden token. The single-channel model is
+appropriate when the rule's doc-comment occurrences are themselves
+audit-relevant site documentation. Future audit rules should classify
+into one of these two shapes explicitly.
+
+**Implementation locations:**
+
+- `scripts/audit/vision/determinism.greps.mjs` lines 109–140
+  (`isDocCommentLine` helper).
+- `scripts/audit/vision/determinism.greps.mjs` lines 170–182 (DET-001
+  filter with asymmetry `// why:` comment).
+- `scripts/audit/vision/run-all.mjs` lines 244–280
+  (`verifyDet001Allowlist` — orchestrator channel).
+- `scripts/audit/vision/run-all.mjs` lines 290–317
+  (`verifyDet007AllowlistAgainstLines` — single-channel diff).
+
+**Affected WPs:** WP-085 (primary); any future audit WP adopting the
+scan-rule classification above.
+**Introduced:** EC-085 Commit B (governance close)
+**Status:** Immutable
+**Raised:** EC-085 execution, 2026-04-22
+**Resolved:** 2026-04-22 (Commit B — this decision)
+
+---
+
+### D-8504 — Same-Day Audit Report Overwrite Refusal Is Audit-History Immutability
+**Decision:**
+The Vision Alignment audit orchestrator refuses to overwrite an
+existing report at `docs/audits/vision-alignment-{YYYY-MM-DD}.md`. If
+a same-day report already exists when the orchestrator runs, the
+process exits with a non-zero status and a full-sentence error
+message; no file is written. Corrective action for an incorrect report
+is a new corrective WP per WP-085 AC-6, never an in-place overwrite.
+
+**Rationale:**
+Audit reports are point-in-time witnesses. Each carries an audited
+commit hash and a VERDICT line that together constitute a
+testimonial record: *"on this date, at this commit, the engine
+satisfied (or failed) the calibrated baseline."* Permitting a same-day
+overwrite would let a later run erase or amend an earlier verdict,
+destroying the report's role as an immutable record. Worse, it would
+enable a silent-drift attack surface: an operator seeing a FAIL could
+fix the underlying regression, re-run the audit, and overwrite the
+FAIL with a PASS — losing the record that the regression ever
+existed.
+
+The non-zero exit is deliberate: it surfaces the refusal as a failed
+process to any CI job that invokes the audit multiple times per day.
+The full-sentence error message tells the operator what to do
+instead (ship a corrective WP per WP-085 AC-6).
+
+**Alternatives rejected:**
+
+- **Overwrite with a backup:** rejected. A `.bak` file is not the
+  canonical audit record; downstream consumers look at the primary
+  filename, and the backup drifts out of any index.
+- **Append a timestamp suffix on collision
+  (`vision-alignment-2026-04-22-1.md`):** rejected. Fragments the
+  audit-history file namespace and forces auditors to reason about
+  "which of today's reports is canonical?" The answer should be
+  "exactly one per date."
+- **Warn and continue:** rejected. A warning that an existing report
+  was overwritten is a paper shield — the record is gone either way.
+  Hard-refusing preserves the invariant mechanically.
+
+**Implementation locations:**
+
+- `scripts/audit/vision/run-all.mjs` lines 157–172
+  (`refuseOnSameDayCollision`, including the audit-history
+  immutability `// why:` comment).
+- `scripts/audit/vision/run-all.mjs` line 451 (invocation at the top
+  of `main`).
+
+**Affected WPs:** WP-085 (primary); any future audit WP emitting a
+dated report under `docs/audits/`.
+**Introduced:** EC-085 Commit B (governance close)
+**Status:** Immutable
+**Raised:** EC-085 execution, 2026-04-22
+**Resolved:** 2026-04-22 (Commit B — this decision)
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

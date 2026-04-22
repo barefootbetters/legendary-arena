@@ -7,6 +7,92 @@
 
 ## Current State
 
+### WP-085 / EC-085 Executed — Vision Alignment Audit (Detection, Classification & Gating) (2026-04-22, EC-085)
+
+WP-085 lands the §17 Vision Alignment enforcement instrument as a
+governance / audit-tooling bundle — no engine modifications, no gameplay
+logic, no runtime behavior. The prose-level §17 gate that landed at SPEC
+`0689406` now has a programmatic single-verdict PASS/FAIL enforcer: an
+orchestrator combines the four domain greps (`determinism`,
+`monetization`, `registry`, `engine-boundary`) into one audit run that
+produces a dated combined report under `docs/audits/` and exits 0 on
+PASS or 1 on FAIL. The calibrated baseline captured at INFRA `24996a9`
+on `main` (6 DET-001 / 4 DET-007 / 0 / 0 / 0) is consumed as a locked
+acceptance contract; any deviation is a FAIL; re-calibration requires a
+superseding WP per WP-085 AC-6, never an in-place edit.
+
+**Surfaces produced:**
+
+- `scripts/audit/vision/run-all.mjs` — new — orchestrator invoking
+  each domain's `runRules` for human-readable stdout and a parallel
+  structured scan for report data. Two-channel DET-001 model
+  implemented: script-channel executable count (post comment-aware
+  filter) and orchestrator-channel allowlist verification against the
+  six `packages/game-engine/src/` doc-comment file:line pairs. DET-007
+  stays single-channel with a four-pair allowlist diff. Calibrated
+  baseline values appear as named constants
+  (`EXPECTED_DET_001`, `EXPECTED_DET_007`, `EXPECTED_MONETIZATION`,
+  `EXPECTED_REGISTRY`, `EXPECTED_ENGINE_BOUNDARY`) — no magic numbers.
+  Same-day re-run refuses to overwrite with a full-sentence error
+  message; `// why:` comment records audit-history immutability
+  rationale.
+- `scripts/audit/vision/determinism.greps.mjs` — modified — adds
+  exported `isDocCommentLine(rawLine)` helper and a DET-001-only
+  comment-aware filter guarded by `rule.id === 'DET-001'`. Doc-comment
+  hits are discarded so only executable `Math.random(` use trips the
+  gate; the six documentation warnings are verified by the orchestrator
+  against the AC-3 allowlist. A `// why:` comment records the asymmetry
+  rationale — DET-007 doc-comment hits are canonical site documentation
+  and carry equal audit meaning to executable hits, so filtering them
+  out would destroy signal. Other RULES untouched.
+- `docs/audits/vision-alignment-2026-04-22.md` — new — first audit
+  report, VERDICT: PASS, commit hash `604eaaa`, baseline matched exactly
+  (6 DET-001 / 4 DET-007 / 0 Monetization / 0 Registry / 0 Engine
+  boundary). Both DET-001 channels observable in the report
+  (executable findings: 0; baseline exceptions: 6, each verified as a
+  doc-comment). Vision trailer present: `Vision: §3, §13, §14, §22,
+  §24`.
+
+**Scope lock honored:** exactly three files in Commit A. Zero
+modifications to `packages/` or `apps/` (`git diff --name-only packages/
+apps/` empty). Orchestrator is read-only against engine code — reading
+the six DET-001 allowlist files for doc-comment form verification is
+explicitly permitted by WP-085 Scope (In) §A. No `boardgame.io` import,
+no registry/server/UI import, no persistence, no network.
+
+**Commit topology:**
+
+- Commit A0 (SPEC, `2e88aa7` + `8b84587` + `604eaaa`): pre-execution
+  bundle — WP-085 draft + D-8501 + EC-085 draft + session-context bridge.
+- Commit A (EC-085, `c836b29`): three-file execution landing the
+  orchestrator, the comment-aware filter, and the first audit report.
+  Vision trailer `Vision: §3, §13, §14, §22, §24`.
+- Commit A' (SPEC, `a3e67bb`): session execution prompt captured
+  post-execution per the `83a9b3a` / `62b68d1` invocation convention.
+- Commit B (SPEC, *this session*): STATUS.md + WORK_INDEX.md WP-085
+  `[ ]` → `[x]` + EC_INDEX.md EC-085 Draft → Done + three DECISIONS.md
+  entries (D-8502 baseline source-of-truth / D-8503 two-channel DET-001
+  and single-channel DET-007 asymmetry / D-8504 same-day overwrite
+  refusal as audit-history immutability).
+
+**Operational claim now active:** §17 Vision Alignment is enforced by
+WP-085 audit tooling. Pre-execution "queued instrument" framing in
+D-8501 is superseded for operational assertions; D-8501 remains
+immutable as the historical record of the pre-execution drafting
+decision.
+
+**Unblocks:** every Phase 7 WP whose `## Vision Alignment` block cites
+§17 now has an executable enforcer. Future audit-report runs simply
+invoke `node scripts/audit/vision/run-all.mjs`; any regression produces
+a FAIL and escalates via a corrective WP per AC-6.
+
+**Post-WP-085 follow-up (tracked separately, not in DoD):** memory file
+`feedback_audit_tooling_scaffold_first.md` rationale paragraph
+references "WP-042" pre-rename; correction to "WP-085" is a separate
+small SPEC commit per WP-085 §Post-WP-085 Follow-ups.
+
+---
+
 ### WP-037 / EC-037 Executed — Public Beta Strategy (2026-04-22, EC-037)
 
 WP-037 lands the controlled-public-beta pillar as a Contract-Only +

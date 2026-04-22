@@ -1413,7 +1413,7 @@ These packets ship the game and keep it running.
   boundaries, or invariants invented; was truncated at 69 lines and not
   registered in WORK_INDEX — normalized to full PACKET-TEMPLATE and added
 
-- [ ] WP-085 — Vision Alignment Audit (Detection, Classification & Gating) ✅ Reviewed
+- [x] WP-085 — Vision Alignment Audit (Detection, Classification & Gating) ✅ Reviewed — Executed 2026-04-22 at commit `c836b29`
   Dependencies: None (builds on the audit scaffold landed at INFRA `24996a9`
   and the §17 gate landed at SPEC `0689406`; independent of all Phase 7
   gameplay WPs)
