@@ -6631,6 +6631,146 @@ requires its own D-entry per the D-3601 family pattern.
 
 ---
 
+### D-3701 — Beta Types Code Category
+**Decision:** `packages/game-engine/src/beta/` (introduced by WP-037 /
+EC-037) belongs to the `engine` code category per
+`docs/ai/REFERENCE/02-CODE-CATEGORIES.md`. All engine-category rules apply
+verbatim: no `boardgame.io` imports, no `@legendary-arena/registry`
+imports, no `apps/server/` imports, no cross-subdirectory imports from
+any other `packages/game-engine/src/*/` subdirectory (beta is a leaf of
+the engine-export DAG — it depends on nothing engine-internal), no IO
+(filesystem, network, environment), no `Math.random()`,
+`performance.now()`, `Date.now()`, or `new Date()`, no `.reduce()` with
+branching logic, no throwing, no `require()` (ESM only), no storing
+functions in `G`, `.test.ts` extension on test files (none expected at
+MVP — WP-037 ships zero new tests per the pre-flight RS-2 lock).
+
+**Rationale:** The public-beta pillar is intentionally Contract-Only:
+it ships three JSON-serializable type declarations (`BetaFeedback`,
+`BetaCohort`, `FeedbackCategory`) and two strategy documents
+(`docs/beta/BETA_STRATEGY.md`, `docs/beta/BETA_EXIT_CRITERIA.md`). The
+types describe metadata artifacts that downstream server/ops tooling
+will construct, transport, and persist — but the engine itself never
+reads, writes, or stores a `BetaFeedback` instance at runtime. Beta
+feedback is metadata-not-state and must never appear as a field of
+`LegendaryGameState`. Beta games run the same deterministic engine as
+production — there is no "beta mode" branch anywhere. The types live
+in the engine package because they form part of the engine's public
+API surface (re-exported via `packages/game-engine/src/types.ts` and
+`packages/game-engine/src/index.ts`) consumed by future server-layer
+feedback collection; they do not live in `apps/server/` because the
+server layer is wiring-only and does not own contract definitions.
+
+The classification mirrors nine prior precedents that established the
+"new engine subdirectory needs a D-entry" pattern:
+
+- D-2706 — `src/replay/` (WP-027 replay harness)
+- D-2801 — `src/ui/` (WP-028 UIState contract)
+- D-3001 — `src/campaign/` (WP-030 campaign framework)
+- D-3101 — `src/invariants/` (WP-031 production invariants)
+- D-3201 — `src/network/` (WP-032 network sync)
+- D-3301 — `src/content/` (WP-033 content authoring toolkit)
+- D-3401 — `src/versioning/` (WP-034 versioning & save migration)
+- D-3501 — `src/ops/` (WP-035 release operations)
+- D-3601 — `src/simulation/` (WP-036 AI playtesting)
+
+D-3701 is the tenth instance of the same pattern; the precedent is
+fully steady-state. The D-3501 and D-3601 Implications sections
+explicitly anticipated this slot ("Future engine subdirectories
+continue to need D-entries (D-3701, D-3801, …)").
+
+**Sub-rule embedded in this decision:** WP-037 ships no runtime
+`BetaFeedback` instance anywhere in the engine. `beta.types.ts`
+exports types only — no constants, no functions, no module-level
+state. Any future need for an engine-side feedback instance
+(module-level singleton, field on `G`, or side-effect surface) is out
+of scope for D-3701 and requires a separate D-entry. This preserves
+the "metadata, never stored in G" invariant stated in WP-037
+§Non-Negotiable Constraints and in EC-037 §Guardrails. A future WP
+that introduces a server-side feedback collection backend wires it in
+`apps/server/` (or a future ops-tooling package), never in
+`src/beta/`.
+
+**Implications for future engine WPs:**
+
+- Any future beta-metadata type (additional feedback category values,
+  new cohort identifiers, expanded severity scale, or new
+  beta-phase observability surfaces) lives in `src/beta/` under the
+  same D-3701 classification — no new D-entry needed, but a
+  coordinated update to `docs/beta/BETA_STRATEGY.md` and
+  `docs/beta/BETA_EXIT_CRITERIA.md` is required alongside any shape
+  change. Expanding `BetaCohort` or `FeedbackCategory` also requires
+  drift-detection coverage if those unions acquire paired canonical
+  arrays in the future.
+- Server-layer code that constructs, transports, or persists
+  `BetaFeedback` instances lives in `apps/server/` or a future
+  feedback-collection package, never in `src/beta/`. `src/beta/` is
+  the contract; the construction, transport, and persistence sites
+  are elsewhere.
+- Future engine subdirectories continue to need D-entries (D-3801,
+  D-3901, …) per the established pattern. WP-038 (Launch Readiness)
+  and WP-039 (Post-Launch Metrics & Live Ops) may introduce their
+  own engine subdirectories; each will need its own D-entry.
+
+**Alternatives rejected:**
+
+- **No classification (skip the D-entry):** rejected. Nine prior
+  precedents through D-3601; skipping breaks the audit trail and
+  establishes a directory precedent that drifts from the category
+  model (01.4 §Established Patterns — "Code-category classification
+  for new engine subdirectories as pre-flight pre-condition").
+- **Classify as `infra`:** rejected. `infra` is for non-shipped code
+  (scripts, hooks, CI). Beta types ship to consumers as part of the
+  engine bundle (exported on the public API surface via
+  `packages/game-engine/src/index.ts` for downstream feedback-
+  collection tooling).
+- **Place beta types under `docs/beta/` or a separate top-level
+  package (e.g., `packages/beta/`):** rejected at MVP. Beta's only
+  consumer surface is the engine's own public API (the types flow
+  alongside `ClientTurnIntent`, `UIState`, and `MatchSetupConfig`
+  into server and tooling layers). A separate package would add a
+  cross-package boundary without adding a new testable aspect.
+- **Classify as `setup`:** rejected. `setup` is for code that runs
+  inside `Game.setup()` and produces `G.*` fields. Beta types never
+  participate in setup and never produce runtime state.
+- **Allow a module-level `currentBetaFeedback` singleton or an
+  in-engine feedback buffer in `beta.types.ts`:** rejected. A mutable
+  module-level instance in the engine bundle would violate the
+  "metadata, never stored in G" invariant, risk accidental inclusion
+  in `G` via closure capture, and break JSON-roundtrip assertions
+  for any future state snapshot that enumerates engine exports.
+  Pure-type classification keeps the boundary clean (mirrors D-3501
+  ops-types sub-rule).
+- **Define beta types inline in `apps/server/`:** rejected. The
+  server layer is wiring-only per §Layer Boundary — it consumes
+  engine contracts, it does not own them. Moving beta types to the
+  server would couple the contract surface to a specific deployment
+  target and block reuse by future tooling (CLI feedback importers,
+  ops dashboards, balance-feedback aggregators that cite D-0702
+  simulation alignment).
+
+**Implementation locations:**
+
+- Pattern reference: `docs/ai/REFERENCE/02-CODE-CATEGORIES.md`
+  §`engine` directory list — `packages/game-engine/src/beta/` added
+  alongside the nine prior precedents.
+- Locked-value reference:
+  `docs/ai/execution-checklists/EC-037-beta-strategy.checklist.md`
+  §Locked Values (BetaFeedback interface, BetaCohort union,
+  FeedbackCategory union) + §Guardrails.
+- Strategy documents: `docs/beta/BETA_STRATEGY.md` and
+  `docs/beta/BETA_EXIT_CRITERIA.md` (produced by EC-037 execution,
+  not by this decision).
+
+**Affected WPs:** WP-037
+**Introduced:** WP-037 / EC-037
+**Status:** Immutable
+**Raised:** WP-037 / EC-037 pre-flight, 2026-04-22
+**Resolved:** 2026-04-22 (pre-flight SPEC bundle lands D-3701 +
+02-CODE-CATEGORIES.md update before EC-037 execution begins)
+
+---
+
 ### D-8201 — Keyword and Rule Glossary Payloads Are Zod-Validated at the Fetch Boundary
 **Decision:** `data/metadata/keywords-full.json` and
 `data/metadata/rules-full.json` are validated against
