@@ -8,6 +8,7 @@ import { getKeywordGlossary, getKeywordPdfPages, getRuleGlossary } from "./lib/g
 import { setGlossaries } from "./composables/useRules";
 import { useGlossary, rebuildGlossaryEntries } from "./composables/useGlossary";
 import { useLightbox } from "./composables/useLightbox";
+import { useCardViewMode } from "./composables/useCardViewMode";
 import CardGrid       from "./components/CardGrid.vue";
 import CardDetail     from "./components/CardDetail.vue";
 import ThemeGrid      from "./components/ThemeGrid.vue";
@@ -15,12 +16,23 @@ import ThemeDetail    from "./components/ThemeDetail.vue";
 import HealthPanel    from "./components/HealthPanel.vue";
 import GlossaryPanel  from "./components/GlossaryPanel.vue";
 import ImageLightbox  from "./components/ImageLightbox.vue";
+import ViewModeToggle from "./components/ViewModeToggle.vue";
 
 // ── Glossary panel ───────────────────────────────────────────────────────────
 const glossary = useGlossary();
 
 // ── Lightbox ─────────────────────────────────────────────────────────────────
 const lightbox = useLightbox();
+
+// ── Card view-mode toggle ────────────────────────────────────────────────────
+// why: viewMode is read from localStorage (key 'cardViewMode') at the moment
+// useCardViewMode.ts is first imported — the composable uses a module-scoped
+// ref seeded from localStorage.getItem with narrowing + self-heal write-back.
+// That import runs during App setup (above the template), so the reactive
+// state is ready before the first render and the user's preference survives
+// page reloads without any explicit onMounted work here. See
+// src/composables/useCardViewMode.ts for the narrowing and error-swallow logic.
+const { viewMode: cardViewMode } = useCardViewMode();
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const registry      = ref<CardRegistry | null>(null);
@@ -277,6 +289,7 @@ function navigateToCard(slug: string, cardType: string) {
     <header class="header">
       <h1 class="logo">⚔️ Legendary Arena <span class="sub">Registry Viewer</span></h1>
       <div class="header-actions">
+        <ViewModeToggle v-if="!loading && !loadError" />
         <button v-if="!loading && !loadError" class="diag-btn" @click="glossary.toggle()" title="Open Rules Glossary (Ctrl+K)">
           📖 Glossary
         </button>
@@ -441,7 +454,7 @@ function navigateToCard(slug: string, cardType: string) {
         <!-- Cards content -->
         <template v-if="activeView === 'cards'">
           <CardGrid :cards="filteredCards" :selected-key="selectedCard?.key" @select="selectedCard = $event" @clear-filters="clearAllFilters" />
-          <CardDetail v-if="selectedCard" :card="selectedCard" @close="selectedCard = null" />
+          <CardDetail v-if="selectedCard" :card="selectedCard" :view-mode="cardViewMode" @close="selectedCard = null" />
         </template>
       </div>
     </template>

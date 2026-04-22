@@ -6,8 +6,9 @@ import { useGlossary } from "../composables/useGlossary";
 import { useResizable } from "../composables/useResizable";
 import { useLightbox } from "../composables/useLightbox";
 import { TYPE_COLOR, HC_COLOR, RARITY_LABEL } from "../lib/theme";
+import CardDataDisplay from "./CardDataDisplay.vue";
 
-defineProps<{ card: FlatCard }>();
+defineProps<{ card: FlatCard; viewMode: "image" | "data" }>();
 const emit = defineEmits<{ close: [] }>();
 
 // ── Resizable panel width (persisted) ───────────────────────────────────────
@@ -119,9 +120,13 @@ function tokenLabel(token: AbilityToken): string {
     </div>
 
     <div class="detail-body">
-      <!-- Image -->
+      <!-- Data view: structured FlatCard attributes (printable). -->
+      <CardDataDisplay v-if="viewMode === 'data'" :card="card" />
+
+      <!-- Image view: card art + stats + abilities (current default). -->
       <!-- why: was <div @click>; converted to <button> for native keyboard + SR support (EC-103) -->
       <button
+        v-if="viewMode === 'image'"
         type="button"
         class="img-wrap"
         @click="openLightbox(card.imageUrl, card.name)"
@@ -131,120 +136,122 @@ function tokenLabel(token: AbilityToken): string {
         <img :src="card.imageUrl" :alt="card.name" />
       </button>
 
-      <!-- Stats -->
-      <div class="stats">
-        <div class="stat">
-          <span class="stat-label">Type</span>
-          <span class="stat-value" :style="{ color: TYPE_COLOR[card.cardType] }">{{ card.cardType }}</span>
+      <template v-if="viewMode === 'image'">
+        <!-- Stats -->
+        <div class="stats">
+          <div class="stat">
+            <span class="stat-label">Type</span>
+            <span class="stat-value" :style="{ color: TYPE_COLOR[card.cardType] }">{{ card.cardType }}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Set</span>
+            <span class="stat-value">{{ card.setName }} <small>({{ card.setAbbr }})</small></span>
+          </div>
+          <div v-if="card.heroName" class="stat">
+            <span class="stat-label">Hero</span>
+            <span class="stat-value">{{ card.heroName }}</span>
+          </div>
+          <div v-if="card.team" class="stat">
+            <span class="stat-label">Team</span>
+            <span class="stat-value">{{ card.team }}</span>
+          </div>
+          <div v-if="card.hc" class="stat">
+            <span class="stat-label">Class</span>
+            <span class="stat-value" :style="{ color: HC_COLOR[card.hc] }">{{ card.hc }}</span>
+          </div>
+          <div v-if="card.cost !== undefined" class="stat">
+            <span class="stat-label">Cost</span>
+            <span class="stat-value">{{ card.cost }}</span>
+          </div>
+          <div v-if="card.attack" class="stat">
+            <span class="stat-label">Attack</span>
+            <span class="stat-value">{{ card.attack }}</span>
+          </div>
+          <div v-if="card.recruit" class="stat">
+            <span class="stat-label">Recruit</span>
+            <span class="stat-value">{{ card.recruit }}</span>
+          </div>
+          <div v-if="card.rarity" class="stat">
+            <span class="stat-label">Rarity</span>
+            <span class="stat-value">{{ RARITY_LABEL[card.rarity] }}</span>
+          </div>
+          <div v-if="card.slot" class="stat">
+            <span class="stat-label">Slot</span>
+            <span class="stat-value">{{ card.slot }}</span>
+          </div>
         </div>
-        <div class="stat">
-          <span class="stat-label">Set</span>
-          <span class="stat-value">{{ card.setName }} <small>({{ card.setAbbr }})</small></span>
-        </div>
-        <div v-if="card.heroName" class="stat">
-          <span class="stat-label">Hero</span>
-          <span class="stat-value">{{ card.heroName }}</span>
-        </div>
-        <div v-if="card.team" class="stat">
-          <span class="stat-label">Team</span>
-          <span class="stat-value">{{ card.team }}</span>
-        </div>
-        <div v-if="card.hc" class="stat">
-          <span class="stat-label">Class</span>
-          <span class="stat-value" :style="{ color: HC_COLOR[card.hc] }">{{ card.hc }}</span>
-        </div>
-        <div v-if="card.cost !== undefined" class="stat">
-          <span class="stat-label">Cost</span>
-          <span class="stat-value">{{ card.cost }}</span>
-        </div>
-        <div v-if="card.attack" class="stat">
-          <span class="stat-label">Attack</span>
-          <span class="stat-value">{{ card.attack }}</span>
-        </div>
-        <div v-if="card.recruit" class="stat">
-          <span class="stat-label">Recruit</span>
-          <span class="stat-value">{{ card.recruit }}</span>
-        </div>
-        <div v-if="card.rarity" class="stat">
-          <span class="stat-label">Rarity</span>
-          <span class="stat-value">{{ RARITY_LABEL[card.rarity] }}</span>
-        </div>
-        <div v-if="card.slot" class="stat">
-          <span class="stat-label">Slot</span>
-          <span class="stat-value">{{ card.slot }}</span>
-        </div>
-      </div>
 
-      <!-- Abilities with rich token rendering -->
-      <div v-if="card.abilities.length" class="section">
-        <div class="section-title">
-          Abilities
-          <span class="tooltip-hint">hover gold text for rules</span>
-        </div>
-        <ul class="ability-list">
-          <li
-            v-for="(abilityLine, lineIndex) in card.abilities"
-            :key="lineIndex"
-            class="ability-line"
-          >
-            <template v-if="abilityLine !== '[object Object]'">
-              <template
-                v-for="(token, tokenIndex) in parseAbilityText(abilityLine)"
-                :key="tokenIndex"
-              >
-                <!-- Plain text -->
-                <span v-if="token.type === 'text'" class="token-text">{{ token.value }}</span>
+        <!-- Abilities with rich token rendering -->
+        <div v-if="card.abilities.length" class="section">
+          <div class="section-title">
+            Abilities
+            <span class="tooltip-hint">hover gold text for rules</span>
+          </div>
+          <ul class="ability-list">
+            <li
+              v-for="(abilityLine, lineIndex) in card.abilities"
+              :key="lineIndex"
+              class="ability-line"
+            >
+              <template v-if="abilityLine !== '[object Object]'">
+                <template
+                  v-for="(token, tokenIndex) in parseAbilityText(abilityLine)"
+                  :key="tokenIndex"
+                >
+                  <!-- Plain text -->
+                  <span v-if="token.type === 'text'" class="token-text">{{ token.value }}</span>
 
-                <!-- Keyword — gold, underlined, click opens glossary panel -->
-                <!-- why: was <span @click>; converted to <button> for native keyboard + SR support (EC-103) -->
-                <button
-                  v-else-if="token.type === 'keyword'"
-                  type="button"
-                  :class="['token-btn', tokenClass(token)]"
-                  :title="tooltipTitle(token)"
-                  @click="handleTokenClick(token)"
-                >{{ tokenLabel(token) }}</button>
+                  <!-- Keyword — gold, underlined, click opens glossary panel -->
+                  <!-- why: was <span @click>; converted to <button> for native keyboard + SR support (EC-103) -->
+                  <button
+                    v-else-if="token.type === 'keyword'"
+                    type="button"
+                    :class="['token-btn', tokenClass(token)]"
+                    :title="tooltipTitle(token)"
+                    @click="handleTokenClick(token)"
+                  >{{ tokenLabel(token) }}</button>
 
-                <!-- Rule reference — purple, click opens glossary panel -->
-                <!-- why: was <span @click>; converted to <button> for native keyboard + SR support (EC-103) -->
-                <button
-                  v-else-if="token.type === 'rule'"
-                  type="button"
-                  :class="['token-btn', tokenClass(token)]"
-                  :title="tooltipTitle(token)"
-                  @click="handleTokenClick(token)"
-                >{{ tokenLabel(token) }}</button>
+                  <!-- Rule reference — purple, click opens glossary panel -->
+                  <!-- why: was <span @click>; converted to <button> for native keyboard + SR support (EC-103) -->
+                  <button
+                    v-else-if="token.type === 'rule'"
+                    type="button"
+                    :class="['token-btn', tokenClass(token)]"
+                    :title="tooltipTitle(token)"
+                    @click="handleTokenClick(token)"
+                  >{{ tokenLabel(token) }}</button>
 
-                <!-- Icon token — colored symbol -->
-                <span
-                  v-else-if="token.type === 'icon'"
-                  :class="tokenClass(token)"
-                >{{ tokenLabel(token) }}</span>
+                  <!-- Icon token — colored symbol -->
+                  <span
+                    v-else-if="token.type === 'icon'"
+                    :class="tokenClass(token)"
+                  >{{ tokenLabel(token) }}</span>
 
-                <!-- Hero class token — colored label with superpower tooltip -->
-                <span
-                  v-else-if="token.type === 'hc'"
-                  :class="tokenClass(token)"
-                  :style="{ color: HC_COLOR[token.value] }"
-                  :title="tooltipTitle(token)"
-                >{{ tokenLabel(token) }}</span>
+                  <!-- Hero class token — colored label with superpower tooltip -->
+                  <span
+                    v-else-if="token.type === 'hc'"
+                    :class="tokenClass(token)"
+                    :style="{ color: HC_COLOR[token.value] }"
+                    :title="tooltipTitle(token)"
+                  >{{ tokenLabel(token) }}</span>
 
-                <!-- Team token — teal label -->
-                <span
-                  v-else-if="token.type === 'team'"
-                  class="token-team"
-                >{{ tokenLabel(token) }}</span>
+                  <!-- Team token — teal label -->
+                  <span
+                    v-else-if="token.type === 'team'"
+                    class="token-team"
+                  >{{ tokenLabel(token) }}</span>
+                </template>
               </template>
-            </template>
-          </li>
-        </ul>
-      </div>
+            </li>
+          </ul>
+        </div>
 
-      <!-- Raw JSON -->
-      <details class="raw-json">
-        <summary>Raw JSON</summary>
-        <pre>{{ JSON.stringify(card, null, 2) }}</pre>
-      </details>
+        <!-- Raw JSON -->
+        <details class="raw-json">
+          <summary>Raw JSON</summary>
+          <pre>{{ JSON.stringify(card, null, 2) }}</pre>
+        </details>
+      </template>
     </div>
   </aside>
 </template>
