@@ -6213,19 +6213,25 @@ glossary entries.
 
 ### D-6002 — Glossary Data Lives in `data/metadata/` Alongside Registry Metadata
 **Decision:** Keyword and rule glossary JSON files live under
-`data/metadata/`, the same directory that holds `sets.json`,
-`card-types.json`, `hero-classes.json`, `hero-teams.json`, `icons-meta.json`,
-and `leads.json`. They are served from
-`images.barefootbetters.com/metadata/` at runtime, matching the registry
-metadata hosting pattern.
+`data/metadata/`, the same directory that holds `sets.json`. They are
+served from `images.barefootbetters.com/metadata/` at runtime, matching
+the registry metadata hosting pattern.
 **Rationale:** Glossary definitions are registry-layer *content*, not
 game-engine *logic*. Co-locating them with the existing registry metadata
 keeps one directory, one R2 prefix, and one upload cadence for viewer data.
 Creating a new top-level directory would have introduced classification
 ambiguity without any operational benefit.
-**Affected WPs:** WP-060
+**Historical-neighbor note (updated 2026-04-21 per WP-084):** the
+original D-6002 wording named five additional auxiliary files
+(`card-types.json`, `hero-classes.json`, `hero-teams.json`,
+`icons-meta.json`, `leads.json`) as historical neighbors of the
+glossary JSON in `data/metadata/`. Those five files were deleted by
+WP-084 (Commit A `b250bf1`, 2026-04-21) as unused surface area; the
+glossary JSON remains co-located with `sets.json` under
+`data/metadata/`.
+**Affected WPs:** WP-060, WP-084 (historical-neighbor wording update only)
 **Introduced:** WP-060 / EC-106
-**Status:** Immutable
+**Status:** Immutable (historical-neighbor wording amended by WP-084 §A-084-01 PS-9)
 
 ---
 
@@ -6840,6 +6846,207 @@ incomplete metadata is preferred to speculatively complete metadata.
   from primary sources.
 **Affected WPs:** WP-082 (introduction); any future glossary-authoring WP.
 **Introduced:** WP-082 / EC-107
+**Status:** Immutable
+
+---
+
+### D-8401 — Five Auxiliary Metadata JSON Files Deleted; Reintroduction Forbidden Without a Runtime Consumer
+**Decision:** The five auxiliary metadata JSON files
+`data/metadata/card-types.json`, `hero-classes.json`, `hero-teams.json`,
+`icons-meta.json`, and `leads.json` are **deleted** as of WP-084 (Commit A
+`b250bf1`, 2026-04-21). A 2026-04-21 audit confirmed they had no runtime
+consumer — not the server (`createRegistryFromLocalFiles`), the viewer
+(`createRegistryFromHttp`, `themeClient`, `glossaryClient`), the game
+engine, or the pre-plan package. Their sole consumer was
+`packages/registry/scripts/validate.ts` Phase 2, an opt-in manual
+validation script not wired to `pnpm build`, `pnpm test`, or CI.
+Reintroducing any of these files requires a new WP that names an actual
+runtime or fetch-time consumer in its `## Goal` section; standalone
+auxiliary metadata files without a reader are forbidden by D-8405.
+**Rationale:** Five exported-but-unused data files mislead future
+readers into believing they encode a runtime contract. The naming
+collision precedent in D-1203 (`sets.json` vs `card-types.json` silent
+failure, fixed by WP-003) demonstrates how dormant metadata files
+become latent silent-failure attractors. Removing them shrinks the
+authoritative metadata surface to the three files that have live
+consumers (`sets.json` + `keywords-full.json` + `rules-full.json` per
+WP-082 / EC-107) and aligns with the WP-083 fetch-time validation
+contract (everything that runs validates; nothing that validates is
+dormant).
+**See D-1203 for the silent-failure precedent that motivated extra
+caution around `card-types.json` specifically; the educational
+`// why:` comments in `packages/registry/src/impl/httpRegistry.ts`
+were retained per A-084-01 §K because the silent-failure pattern still
+applies to any future metadata file with a similar shape.**
+**Affected WPs:** WP-084 (introduction); any future WP that proposes
+reintroducing one of the five filenames.
+**Introduced:** WP-084 / EC-109
+**Status:** Immutable
+
+---
+
+### D-8402 — Five Auxiliary Metadata Zod Schemas Deleted; Reintroduction Requires a Named Runtime Consumer
+**Decision:** The five corresponding Zod schemas `CardTypeEntrySchema`,
+`HeroClassEntrySchema`, `HeroTeamEntrySchema`, `IconEntrySchema`, and
+`LeadsEntrySchema` are deleted from `packages/registry/src/schema.ts` as
+of WP-084 (Commit A `b250bf1`, 2026-04-21). Reintroducing any of them
+requires a new WP that names a runtime or fetch-time consumer in its
+`## Goal` section. The block-comment headers (`// ── Card type taxonomy
+(card-types.json) ──`, etc.) and any `z.infer` types based on these
+schemas are deleted with them.
+**Rationale:** A Zod schema with no consumer is technical debt — it
+appears authoritative but isn't, and contributors cannot easily tell
+whether it gates a runtime path. The author-facing-strict vs
+loader-permissive pattern (D-3303) only applies when a schema actually
+runs; an unconsumed schema fails neither path. Per `.claude/rules/registry.md`
+"Schema Authority", `schema.ts` is "immutable unless strong justification";
+the 2026-04-21 no-consumer audit is the justification, and this
+DECISIONS entry is the required record.
+**Affected WPs:** WP-084 (introduction); any future WP that proposes
+reintroducing one of the five schema names.
+**Introduced:** WP-084 / EC-109
+**Status:** Immutable
+
+---
+
+### D-8403 — `card-types-old.json` Orphan Deleted; Legacy `*-old.*` Files Are a Repo Smell
+**Decision:** `data/metadata/card-types-old.json` is deleted as an
+orphan (zero references anywhere in `apps/`, `packages/`, `scripts/`,
+or any in-scope `docs/` file at the 2026-04-21 audit). Legacy
+`*-old.*` filenames are a repo smell because they advertise legacy
+status while remaining in the working tree; routine cleanup should
+scan for them and either delete or rename to a date-stamped archive
+location.
+**Rationale:** The file existed because an earlier author kept the
+prior shape of `card-types.json` "just in case" rather than relying on
+git history. The git history is the canonical archive; co-located
+"old" copies create classification ambiguity, drift risk, and
+audit-grep noise. Same pattern applied to `scripts/Validate-R2-old.ps1`
+(see D-8407).
+**Affected WPs:** WP-084 (introduction); future cleanup WPs that
+encounter `*-old.*` artifacts.
+**Introduced:** WP-084 / EC-109
+**Status:** Immutable
+
+---
+
+### D-8404 — `validate.ts` Validates Only Live-Consumer or Cross-File-Integrity Artifacts
+**Decision:** `packages/registry/scripts/validate.ts` validates only
+artifacts that have live runtime or fetch-time consumers, or that
+enforce cross-file integrity the runtime assumes (cards, cross-refs,
+images). It is **not** wired to `pnpm build` or `pnpm test`, does not
+run in CI, and must not be used as a parking lot for unconsumed
+metadata. Per-feature validation belongs at the fetch boundary (see
+D-083A introduced by WP-083 / EC-108) or in `Game.setup()` (engine
+layer). Soft `sets.json` validation (count / invalid-entry warnings)
+moves exclusively to Phase 1's abbreviation-extraction loop after the
+WP-084 Phase 2 excision; runtime still validates at the
+`SetIndexEntrySchema.safeParse` boundary (Phase 1 local mode) or HTTP
+loader boundary (R2 mode in `httpRegistry.ts`).
+**Rationale:** Treating `validate.ts` as a catch-all validator
+dilutes its contract — failures become hard to triage because they
+mix runtime-blocking issues with informational warnings about
+auxiliary data nothing reads. Anchoring validation to live consumers
+makes the script's exit code a reliable proxy for "is the data the
+runtime depends on intact?".
+**Affected WPs:** WP-084 (introduction); any future WP that proposes
+adding a `validate.ts` phase.
+**Introduced:** WP-084 / EC-109
+**Status:** Immutable
+
+---
+
+### D-8405 — Future Reintroduction Pattern: Derived From Per-Set Data OR Wired To a Consumer In the Same WP
+**Decision:** If any of the deleted metadata concepts (card types,
+hero classes, hero teams, icon metadata, mastermind-villain leads)
+are reintroduced, the new artifact must be **either** (a) *derived*
+from per-set data at setup or fetch time (no standalone JSON file
+needed), **or** (b) wired to a runtime or fetch-time consumer in the
+same WP that reintroduces it (the WP's `## Goal` names the consumer
+and the call site). A standalone JSON file plus a Zod schema with no
+reader is forbidden by this decision. A future WP that violates this
+rule must first amend this DECISIONS entry with an explicit override
+(`Supersedes D-8405`) and a written justification.
+**Rationale:** The deleted files all originated as well-intentioned
+"future-proofing" — author imagined a future feature that might want
+the data, so the schema and JSON shipped ahead of the consumer. The
+features never landed; the data became stale; the schemas became
+ambient noise. The derived-or-wired-in-same-WP rule eliminates the
+class of failure by tying every metadata artifact to a concrete
+reader at the moment it ships.
+**Examples of the pattern done correctly:**
+- Card-type classification → engine derives `G.villainDeckCardTypes`
+  from per-set data at setup time per WP-014B (no standalone
+  `card-types.json` needed).
+- Hero-class display labels → viewer hardcodes `HERO_CLASS_GLOSSARY`
+  + `HERO_CLASS_LABELS` in `useRules.ts` per WP-082 / EC-107 (no
+  standalone `hero-classes.json` needed).
+- Mastermind→villain-group leads → declared per-set on each
+  mastermind record (`alwaysLeads[]`) and validated by the WP-014B
+  virtual-card pipeline at setup time (no standalone `leads.json`
+  needed).
+**Affected WPs:** WP-084 (introduction); any future WP that proposes
+reintroducing auxiliary metadata.
+**Introduced:** WP-084 / EC-109
+**Status:** Immutable
+
+---
+
+### D-8406 — Viewer's Drifted Duplicate `localRegistry.ts` Deleted as Orphan (A-084-01)
+**Decision:** `apps/registry-viewer/src/registry/impl/localRegistry.ts`
+is deleted as a drifted orphan duplicate of the main registry's
+`packages/registry/src/impl/localRegistry.ts`. The viewer's copy
+carried the exact WP-003 Defect 1 silent-failure bug (read
+`card-types.json` as a set index — see D-1203) and was never invoked.
+The Explore agent confirmed dead code on 2026-04-21 with seven pieces
+of evidence: (a) zero imports across the entire repo
+(`apps/registry-viewer/src/`, `packages/`, `scripts/`, `.github/`);
+(b) absent from the viewer's `dist/` bundle (browser entry
+`browser.ts` uses HTTP-only and never imported the Node-only file);
+(c) CI never invoked any code path that reached it; (d) unchanged
+since the initial commit of the viewer registry folder (`d5ea067`,
+2026-03-23); (e) the viewer's own `httpRegistry.ts` and `browser.ts`
+are the only browser-reachable factories; (f) the file's "CI
+validation" label in the viewer's `CLAUDE.md:62` was aspirational
+documentation rather than a description of an existing CI job; and
+(g) `pnpm --filter registry-viewer build` exits 0 post-deletion,
+proving no transitive consumer existed.
+**Reintroducing a Node-only CardRegistry factory inside the viewer
+package requires a new WP that also defines the actual CI validation
+job that invokes it.** The main registry's `createRegistryFromLocalFiles`
+at `packages/registry/src/impl/localRegistry.ts` remains the single
+canonical Node factory and is unaffected.
+**Rationale:** A drifted duplicate of a load-bearing file is a
+pure-downside artifact: it doubles the surface area that has to stay
+in sync, captures bugs the source has fixed, and provides zero
+runtime benefit. The viewer's local copy carried the D-1203
+silent-failure bug for over a year because no reader exercised it.
+Deletion eliminates the drift entirely.
+**Affected WPs:** WP-084 (introduction); any future WP that proposes
+reintroducing a viewer-local Node-only factory.
+**Introduced:** WP-084 / EC-109 (A-084-01 amendment)
+**Status:** Immutable
+
+---
+
+### D-8407 — Legacy `Validate-R2-old.ps1` Deleted as Superseded Orphan (A-084-01)
+**Decision:** `scripts/Validate-R2-old.ps1` is deleted as a
+superseded orphan PowerShell validator. Its replacements —
+`scripts/validate-r2.mjs` (Node variant, wired to the root
+`pnpm validate:*` scripts referenced from `package.json`) and
+`packages/registry/scripts/validate.ts` (tsx variant, wired to
+`pnpm registry:validate`) — remain the authoritative validators.
+The file name admits `-old`; its docstring referenced all five
+deleted filenames in `data/metadata/`. Any future PowerShell-specific
+validator must be a new file with a current name, not a revival of
+`Validate-R2-old.ps1`.
+**Rationale:** Same legacy-file pattern as D-8403 (`*-old.*` files
+are a repo smell). The file accumulated through three validator
+generations and was never garbage-collected; deletion completes the
+generational rotation.
+**Affected WPs:** WP-084 (introduction); any future WP that
+introduces a new PowerShell validator.
+**Introduced:** WP-084 / EC-109 (A-084-01 amendment)
 **Status:** Immutable
 
 ---

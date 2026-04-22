@@ -7,6 +7,103 @@
 
 ## Current State
 
+### WP-084 / EC-109 Executed — Delete Unused Auxiliary Metadata Schemas and Files (2026-04-21, EC-109)
+
+WP-084 deletes five unused auxiliary Zod schemas (`CardTypeEntrySchema`,
+`HeroClassEntrySchema`, `HeroTeamEntrySchema`, `IconEntrySchema`,
+`LeadsEntrySchema`), their five JSON files in `data/metadata/`, the
+orphan `card-types-old.json`, and the `validate.ts` Phase 2
+metadata-validation block (renumbers former Phases 3/4/5 → 2/3/4).
+The 2026-04-21 audit confirmed zero runtime consumers across the
+server, viewer, game engine, and pre-plan packages; the sole consumer
+was the opt-in `validate.ts` Phase 2 block.
+
+**A-084-01 amendment (in A0 SPEC bundle 2026-04-21):** expands scope
+with (a) deletion of the viewer's drifted duplicate
+`apps/registry-viewer/src/registry/impl/localRegistry.ts` (confirmed
+dead code by Explore agent — zero imports, absent from viewer `dist/`,
+CI never invokes); (b) in-packet rewrite of
+`docs/ai/REFERENCE/00.2-data-requirements.md` §§2.1 / 2.3 / 2.4 / 2.5
+/ 2.6 from active contracts to historical notes; (c) current-state
+docs sweep across `docs/01-REPO-FOLDER-STRUCTURE.md`,
+`docs/03-DATA-PIPELINE.md`, `docs/03.1-DATA-SOURCES.md`,
+`docs/08-DEPLOYMENT.md`, `docs/10-GLOSSARY.md`,
+`docs/11-TROUBLESHOOTING.md`, `docs/ai/ARCHITECTURE.md`,
+`docs/ai/REFERENCE/00.5-validation.md`,
+`docs/ai/deployment/r2-data-checklist.md`,
+`docs/ai/REFERENCE/02-CODE-CATEGORIES.md`, and
+`docs/prompts-registry-viewer/*.md`; (d) deletion of legacy
+`scripts/Validate-R2-old.ps1` (superseded orphan); (e) registry JSDoc
+cleanup in `packages/registry/src/schema.ts`,
+`packages/registry/src/impl/localRegistry.ts`, and
+`packages/registry/src/impl/httpRegistry.ts` (the latter retains the
+WP-003 educational `// why:` comment with a one-line clarifying note
+that `card-types.json` itself was deleted on 2026-04-21).
+
+**Surfaces produced / modified:**
+
+- `packages/registry/src/schema.ts` — five schemas + adjacent block
+  comments removed; file-header JSDoc `card-types.json` line removed.
+  Surviving schemas (`SetIndexEntrySchema`, `SetDataSchema`,
+  `HeroSchema`, `HeroCardSchema`, `HeroClassSchema` enum,
+  `MastermindSchema`, `MastermindCardSchema`, `VillainGroupSchema`,
+  `VillainCardSchema`, `SchemeSchema`, `CardQuerySchema`,
+  `RegistryConfigSchema`, `KeywordGlossaryEntrySchema`,
+  `KeywordGlossarySchema`, `RuleGlossaryEntrySchema`,
+  `RuleGlossarySchema`) LOCKED byte-for-byte.
+- `packages/registry/scripts/validate.ts` — five schema imports
+  removed; `checkOneMetadataFile` helper deleted; `checkMetadataFiles`
+  function deleted; `checkMetadataFiles(allFindings)` call in `main()`
+  removed; former Phases 3 / 4 / 5 renumbered to Phases 2 / 3 / 4 in
+  console headers, error prefixes, section comments, and file-header
+  JSDoc.
+- `data/metadata/` — six files deleted (`card-types.json`,
+  `card-types-old.json`, `hero-classes.json`, `hero-teams.json`,
+  `icons-meta.json`, `leads.json`); three survivors LOCKED
+  byte-for-byte (`keywords-full.json`, `rules-full.json`,
+  `sets.json`).
+- `apps/registry-viewer/src/registry/impl/localRegistry.ts` —
+  deleted; `apps/registry-viewer/src/registry/index.ts` line 27
+  re-export removed; `apps/registry-viewer/CLAUDE.md` §"Key Files"
+  row for the deleted file removed.
+- `apps/registry-viewer/src/registry/types/index.ts` and
+  `types-index.ts` — JSDoc lines 87 + 116 corrected to reference
+  `sets.json` rather than `card-types.json`.
+- `apps/registry-viewer/src/lib/glossaryClient.ts` — `// why:`
+  comment rephrased to drop the `createRegistryFromLocalFiles`
+  function-name reference (Verification Step 20 fix).
+- `scripts/Validate-R2-old.ps1` — deleted (`scripts/validate-r2.mjs`
+  and `packages/registry/scripts/validate.ts` remain the
+  authoritative validators).
+- `docs/ai/REFERENCE/00.2-data-requirements.md` — §§2.1 / 2.3 / 2.4
+  / 2.5 / 2.6 rewritten as historical notes citing the WP-084
+  deletion date; field-contract references at lines 68 (`team`), 83
+  (`hc`) updated to drop the deleted-file references; §6
+  Mastermind-Villain Group Relationship rewritten as two-level
+  model (per-set + PostgreSQL); glossary token resolution paths in
+  §5 updated to reflect per-set + viewer-hardcoded-map sources.
+- Current-state docs sweep — historical notes added to all files
+  enumerated above; `validate.ts` phase numbering updated in
+  `docs/ai/deployment/r2-data-checklist.md`.
+
+**Tests / build / validate:** baseline preserved at 596 tests
+passing / 0 failing (registry 13 / vue-sfc-loader 11 / game-engine
+444 / preplan 52 / server 6 / replay-producer 4 / arena-client 66;
+registry-viewer no test script). `pnpm -r build` exits 0;
+`pnpm registry:validate` exits 0 with four-phase output (Phase 1 / 2
+/ 3 / 4) over `sets.json` + per-set cards + cross-references +
+images. `pnpm-lock.yaml` unchanged.
+
+**Three-commit topology:** A0 `SPEC: amend WP-084 / EC-109 per
+pre-flight (A-084-01)` (commit `1a474d0`, 2026-04-21) → A `EC-109:
+delete unused auxiliary metadata schemas and files` (commit
+`b250bf1`, 2026-04-21) → B `SPEC: close WP-084 / EC-109 governance`
+(this commit). Seven new DECISIONS.md entries (D-8401..D-8407) +
+D-6002 historical-neighbor note land at Commit B. 01.5 runtime
+wiring allowance NOT INVOKED. 01.6 post-mortem NOT TRIGGERED.
+
+---
+
 ### WP-082 / EC-107 Executed — Keyword & Rule Glossary Schema, Labels, and Rulebook Deep-Links (2026-04-21, EC-107)
 
 WP-082 lands Zod validation at the glossary fetch boundary, a required
