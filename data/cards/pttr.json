@@ -11,37 +11,37 @@
       "cardCounts": null,
       "cards": [
         {
-          "name": "Casual Bank Robbery",
-          "displayName": "Casual Bank Robbery",
-          "slug": "casual-bank-robbery",
-          "rarity": 1,
-          "rarityLabel": "Common 1",
-          "slot": 1,
-          "hc": "covert",
-          "cost": 4,
-          "attack": null,
-          "recruit": "2+",
-          "imageUrl": "https://images.barefootbetters.com/pttr/pttr-hr-black-cat-4c1.webp",
-          "abilities": [
-            "[keyword:Wall-Crawl]",
-            "You get another +1[icon:recruit]usable only to recruit the Hero in the HQ Space under the Bank."
-          ]
-        },
-        {
           "name": "Pickpocket",
           "displayName": "Pickpocket",
           "slug": "pickpocket",
           "rarity": 1,
-          "rarityLabel": "Common 2",
-          "slot": 2,
+          "rarityLabel": "Common 1",
+          "slot": 1,
           "hc": "covert",
           "cost": 1,
           "attack": "0+",
           "recruit": null,
-          "imageUrl": "https://images.barefootbetters.com/pttr/pttr-hr-black-cat-1c2.webp",
+          "imageUrl": "https://images.barefootbetters.com/pttr/pttr-hr-black-cat-1c1.webp",
           "abilities": [
             "[keyword:Wall-Crawl]",
             "Reveal the top card of any player's deck. You get +[icon:attack] equal to that card's printed [icon:recruit] plus its printed [icon:attack]."
+          ]
+        },
+        {
+          "name": "Casual Bank Robbery",
+          "displayName": "Casual Bank Robbery",
+          "slug": "casual-bank-robbery",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2+",
+          "imageUrl": "https://images.barefootbetters.com/pttr/pttr-hr-black-cat-4c2.webp",
+          "abilities": [
+            "[keyword:Wall-Crawl]",
+            "You get another +1[icon:recruit]usable only to recruit the Hero in the HQ Space under the Bank."
           ]
         },
         {
@@ -239,36 +239,36 @@
       "cardCounts": null,
       "cards": [
         {
-          "name": "Bioelectric Shock",
-          "displayName": "Bioelectric Shock",
-          "slug": "bioelectric-shock",
-          "rarity": 1,
-          "rarityLabel": "Common 1",
-          "slot": 1,
-          "hc": "ranged",
-          "cost": 4,
-          "attack": "2",
-          "recruit": null,
-          "imageUrl": "https://images.barefootbetters.com/pttr/pttr-hr-spider-woman-4c1.webp",
-          "abilities": [
-            "[keyword:Wall-Crawl]",
-            "Reveal the top card of your deck. If that card has an [icon:attack] icon, draw it."
-          ]
-        },
-        {
           "name": "Radioactive Spider",
           "displayName": "Radioactive Spider",
           "slug": "radioactive-spider",
           "rarity": 1,
-          "rarityLabel": "Common 2",
-          "slot": 2,
+          "rarityLabel": "Common 1",
+          "slot": 1,
           "hc": "strength",
           "cost": 2,
           "attack": null,
           "recruit": "3",
-          "imageUrl": "https://images.barefootbetters.com/pttr/pttr-hr-spider-woman-2c2.webp",
+          "imageUrl": "https://images.barefootbetters.com/pttr/pttr-hr-spider-woman-2c1.webp",
           "abilities": [
             "To play this card, you must put a card from your hand on top of your deck."
+          ]
+        },
+        {
+          "name": "Bioelectric Shock",
+          "displayName": "Bioelectric Shock",
+          "slug": "bioelectric-shock",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/pttr/pttr-hr-spider-woman-4c2.webp",
+          "abilities": [
+            "[keyword:Wall-Crawl]",
+            "Reveal the top card of your deck. If that card has an [icon:attack] icon, draw it."
           ]
         },
         {

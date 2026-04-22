@@ -11,36 +11,36 @@
       "cardCounts": null,
       "cards": [
         {
-          "name": "Dangerous Rescue",
-          "displayName": "Dangerous Rescue",
-          "slug": "dangerous-rescue",
-          "rarity": 1,
-          "rarityLabel": "Common 1",
-          "slot": 1,
-          "hc": "covert",
-          "cost": 3,
-          "attack": "2",
-          "recruit": null,
-          "imageUrl": "https://images.barefootbetters.com/core/core-hr-black-widow-3c1.webp",
-          "abilities": [
-            "[hc:covert]: You may KO a card from your hand or discard pile. If you do, rescue a Bystander."
-          ]
-        },
-        {
           "name": "Mission Accomplished",
           "displayName": "Mission Accomplished",
           "slug": "mission-accomplished",
           "rarity": 1,
-          "rarityLabel": "Common 2",
-          "slot": 2,
+          "rarityLabel": "Common 1",
+          "slot": 1,
           "hc": "tech",
           "cost": 2,
           "attack": null,
           "recruit": null,
-          "imageUrl": "https://images.barefootbetters.com/core/core-hr-black-widow-2c2.webp",
+          "imageUrl": "https://images.barefootbetters.com/core/core-hr-black-widow-2c1.webp",
           "abilities": [
             "Draw a Card.",
             "[hc:tech]: Rescue a Bystander."
+          ]
+        },
+        {
+          "name": "Dangerous Rescue",
+          "displayName": "Dangerous Rescue",
+          "slug": "dangerous-rescue",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/core/core-hr-black-widow-3c2.webp",
+          "abilities": [
+            "[hc:covert]: You may KO a card from your hand or discard pile. If you do, rescue a Bystander."
           ]
         },
         {
@@ -247,35 +247,35 @@
           ]
         },
         {
-          "name": "Oddball",
-          "displayName": "Oddball",
-          "slug": "oddball",
-          "rarity": 1,
-          "rarityLabel": "Common 2",
-          "slot": 2,
-          "hc": "covert",
-          "cost": 5,
-          "attack": "2+",
-          "recruit": null,
-          "imageUrl": "https://images.barefootbetters.com/core/core-hr-deadpool-5c2.webp",
-          "abilities": [
-            "You get +1[icon:attack] for each other Hero with an odd-numbered [icon:vp] you played this turn."
-          ]
-        },
-        {
           "name": "Hey, Can I Get a Do-Over?",
           "displayName": "Hey, Can I Get a Do-Over?",
           "slug": "hey-can-i-get-a-do-over",
-          "rarity": 2,
-          "rarityLabel": "Uncommon",
-          "slot": 3,
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
           "hc": "instinct",
           "cost": 3,
           "attack": "2",
           "recruit": null,
-          "imageUrl": "https://images.barefootbetters.com/core/core-hr-deadpool-3u.webp",
+          "imageUrl": "https://images.barefootbetters.com/core/core-hr-deadpool-3c2.webp",
           "abilities": [
             "If this is the first Hero you played this turn, you may discard the rest of your hand and draw four cards."
+          ]
+        },
+        {
+          "name": "Oddball",
+          "displayName": "Oddball",
+          "slug": "oddball",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/core/core-hr-deadpool-5u.webp",
+          "abilities": [
+            "You get +1[icon:attack] for each other Hero with an odd-numbered [icon:vp] you played this turn."
           ]
         },
         {
@@ -377,33 +377,17 @@
       "cardCounts": null,
       "cards": [
         {
-          "name": "Card Shark",
-          "displayName": "Card Shark",
-          "slug": "card-shark",
-          "rarity": 1,
-          "rarityLabel": "Common 1",
-          "slot": 1,
-          "hc": "ranged",
-          "cost": 4,
-          "attack": "2",
-          "recruit": null,
-          "imageUrl": "https://images.barefootbetters.com/core/core-hr-gambit-4c1.webp",
-          "abilities": [
-            "Reveal the top card of your deck. If it's an [team:x-men] Hero, draw it."
-          ]
-        },
-        {
           "name": "Stack the Deck",
           "displayName": "Stack the Deck",
           "slug": "stack-the-deck",
           "rarity": 1,
-          "rarityLabel": "Common 2",
-          "slot": 2,
+          "rarityLabel": "Common 1",
+          "slot": 1,
           "hc": "covert",
           "cost": 2,
           "attack": null,
           "recruit": null,
-          "imageUrl": "https://images.barefootbetters.com/core/core-hr-gambit-2c2.webp",
+          "imageUrl": "https://images.barefootbetters.com/core/core-hr-gambit-2c1.webp",
           "abilities": [
             "Draw two cards. Then put a card from your hand on top of your deck."
           ]
@@ -412,17 +396,33 @@
           "name": "Hypnotic Charm",
           "displayName": "Hypnotic Charm",
           "slug": "hypnotic-charm",
-          "rarity": 2,
-          "rarityLabel": "Uncommon",
-          "slot": 3,
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
           "hc": "instinct",
           "cost": 3,
           "attack": null,
           "recruit": "2",
-          "imageUrl": "https://images.barefootbetters.com/core/core-hr-gambit-3u.webp",
+          "imageUrl": "https://images.barefootbetters.com/core/core-hr-gambit-3c2.webp",
           "abilities": [
             "Reveal the top card of your deck. Discard it or put it back.",
             "[hc:instinct]: Do the same thing to each other player's deck."
+          ]
+        },
+        {
+          "name": "Card Shark",
+          "displayName": "Card Shark",
+          "slug": "card-shark",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/core/core-hr-gambit-4u.webp",
+          "abilities": [
+            "Reveal the top card of your deck. If it's an [team:x-men] Hero, draw it."
           ]
         },
         {
@@ -672,35 +672,35 @@
       "cardCounts": null,
       "cards": [
         {
-          "name": "Battlefield Promotion",
-          "displayName": "Battlefield Promotion",
-          "slug": "battlefield-promotion",
-          "rarity": 1,
-          "rarityLabel": "Common 1",
-          "slot": 1,
-          "hc": "covert",
-          "cost": 4,
-          "attack": null,
-          "recruit": null,
-          "imageUrl": "https://images.barefootbetters.com/core/core-hr-nick-fury-4c1.webp",
-          "abilities": [
-            "You may KO a [team:shield] Hero from your hand or discard pile. If you do, you may gain a S.H.I.E.L.D. Officer to your hand."
-          ]
-        },
-        {
           "name": "High-Tech Weaponry",
           "displayName": "High-Tech Weaponry",
           "slug": "high-tech-weaponry",
           "rarity": 1,
-          "rarityLabel": "Common 2",
-          "slot": 2,
+          "rarityLabel": "Common 1",
+          "slot": 1,
           "hc": "tech",
           "cost": 3,
           "attack": "2+",
           "recruit": null,
-          "imageUrl": "https://images.barefootbetters.com/core/core-hr-nick-fury-3c2.webp",
+          "imageUrl": "https://images.barefootbetters.com/core/core-hr-nick-fury-3c1.webp",
           "abilities": [
             "[hc:tech]: You get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Battlefield Promotion",
+          "displayName": "Battlefield Promotion",
+          "slug": "battlefield-promotion",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 4,
+          "attack": null,
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/core/core-hr-nick-fury-4c2.webp",
+          "abilities": [
+            "You may KO a [team:shield] Hero from your hand or discard pile. If you do, you may gain a S.H.I.E.L.D. Officer to your hand."
           ]
         },
         {
@@ -745,35 +745,35 @@
       "cardCounts": null,
       "cards": [
         {
-          "name": "Borrowed Brawn",
-          "displayName": "Borrowed Brawn",
-          "slug": "borrowed-brawn",
-          "rarity": 1,
-          "rarityLabel": "Common 1",
-          "slot": 1,
-          "hc": "strength",
-          "cost": 4,
-          "attack": "1+",
-          "recruit": null,
-          "imageUrl": "https://images.barefootbetters.com/core/core-hr-rogue-4c1.webp",
-          "abilities": [
-            "[hc:strength]: You get +3[icon:attack]."
-          ]
-        },
-        {
           "name": "Energy Drain",
           "displayName": "Energy Drain",
           "slug": "energy-drain",
           "rarity": 1,
-          "rarityLabel": "Common 2",
-          "slot": 2,
+          "rarityLabel": "Common 1",
+          "slot": 1,
           "hc": "covert",
           "cost": 3,
           "attack": null,
           "recruit": "2+",
-          "imageUrl": "https://images.barefootbetters.com/core/core-hr-rogue-3c2.webp",
+          "imageUrl": "https://images.barefootbetters.com/core/core-hr-rogue-3c1.webp",
           "abilities": [
             "[hc:covert]: You may KO a card from your hand or discard pile. If you do, you get +1[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Borrowed Brawn",
+          "displayName": "Borrowed Brawn",
+          "slug": "borrowed-brawn",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": "1+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/core/core-hr-rogue-4c2.webp",
+          "abilities": [
+            "[hc:strength]: You get +3[icon:attack]."
           ]
         },
         {
@@ -1119,7 +1119,7 @@
           "name": "Dr. Doom",
           "slug": "dr-doom",
           "tactic": false,
-          "vAttack": null,
+          "vAttack": 9,
           "imageUrl": "https://images.barefootbetters.com/core/core-mm-dr-doom.webp",
           "abilities": [
             "Always Leads: Doombot Legion",
@@ -1130,7 +1130,7 @@
           "name": "Dark Technology",
           "slug": "dark-technology",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 9,
           "imageUrl": "https://images.barefootbetters.com/core/core-mt-dr-doom-dark-technology.webp",
           "abilities": [
             "Fight: You may recruit a [hc:tech] or [hc:ranged] Hero from the HQ for free."
@@ -1140,7 +1140,7 @@
           "name": "Monarch's Decree",
           "slug": "monarchs-decree",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 9,
           "imageUrl": "https://images.barefootbetters.com/core/core-mt-dr-doom-monarchs-decree.webp",
           "abilities": [
             "Fight: Choose one: each other player draws a card or each other player discards a card."
@@ -1150,7 +1150,7 @@
           "name": "Secrets of Time Travel",
           "slug": "secrets-of-time-travel",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 9,
           "imageUrl": "https://images.barefootbetters.com/core/core-mt-dr-doom-secrets-of-time-travel.webp",
           "abilities": [
             "Fight: Take another turn after this one."
@@ -1160,7 +1160,7 @@
           "name": "Treasures of Latveria",
           "slug": "treasures-of-latveria",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 9,
           "imageUrl": "https://images.barefootbetters.com/core/core-mt-dr-doom-treasures-of-latveria.webp",
           "abilities": [
             "Fight: When you draw a new hand of cards at the end of this turn, draw three extra cards."
@@ -1179,7 +1179,7 @@
           "name": "Loki",
           "slug": "loki",
           "tactic": false,
-          "vAttack": null,
+          "vAttack": 10,
           "imageUrl": "https://images.barefootbetters.com/core/core-mm-loki.webp",
           "abilities": [
             "Always Leads: Enemies of Asgard",
@@ -1190,7 +1190,7 @@
           "name": "Cruel Ruler",
           "slug": "cruel-ruler",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 10,
           "imageUrl": "https://images.barefootbetters.com/core/core-mt-loki-cruel-ruler.webp",
           "abilities": [
             "Fight: Defeat a Villain in the City for free."
@@ -1200,7 +1200,7 @@
           "name": "Maniacal Tyrant",
           "slug": "maniacal-tyrant",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 10,
           "imageUrl": "https://images.barefootbetters.com/core/core-mt-loki-maniacal-tyrant.webp",
           "abilities": [
             "Fight: KO up to four cards from your discard pile."
@@ -1210,7 +1210,7 @@
           "name": "Vanishing Illusions",
           "slug": "vanishing-illusions",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 10,
           "imageUrl": "https://images.barefootbetters.com/core/core-mt-loki-vanishing-illusions.webp",
           "abilities": [
             "Fight: Each other player KOs a Villain from their Victory Pile."
@@ -1220,7 +1220,7 @@
           "name": "Whispers and Lies",
           "slug": "whispers-and-lies",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 10,
           "imageUrl": "https://images.barefootbetters.com/core/core-mt-loki-whispers-and-lies.webp",
           "abilities": [
             "Fight: Each other player KOs two Bystanders from their Victory Pile."
@@ -1239,7 +1239,7 @@
           "name": "Magneto",
           "slug": "magneto",
           "tactic": false,
-          "vAttack": null,
+          "vAttack": 8,
           "imageUrl": "https://images.barefootbetters.com/core/core-mm-magneto.webp",
           "abilities": [
             "Always Leads: Brotherhood",
@@ -1250,7 +1250,7 @@
           "name": "Bitter Captor",
           "slug": "bitter-captor",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 8,
           "imageUrl": "https://images.barefootbetters.com/core/core-mt-magneto-bitter-captor.webp",
           "abilities": [
             "Fight: Recruit an [team:x-men] Hero from the HQ for free."
@@ -1260,7 +1260,7 @@
           "name": "Crushing Shockwave",
           "slug": "crushing-shockwave",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 8,
           "imageUrl": "https://images.barefootbetters.com/core/core-mt-magneto-crushing-shockwave.webp",
           "abilities": [
             "Fight: Each other player reveals an [team:x-men] Hero or gains two Wounds."
@@ -1270,7 +1270,7 @@
           "name": "Electromagnetic Bubble",
           "slug": "electromagnetic-bubble",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 8,
           "imageUrl": "https://images.barefootbetters.com/core/core-mt-magneto-electromagnetic-bubble.webp",
           "abilities": [
             "Fight: Choose one of your [team:x-men] Heroes. When you draw a new hand of cards at the end of this turn, add that Hero to your hand as a seventh card."
@@ -1280,7 +1280,7 @@
           "name": "Xavier's Nemesis",
           "slug": "xaviers-nemesis",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 8,
           "imageUrl": "https://images.barefootbetters.com/core/core-mt-magneto-xaviers-nemesis.webp",
           "abilities": [
             "Fight: For each of your [team:x-men] Heroes, rescue a Bystander."
@@ -1299,7 +1299,7 @@
           "name": "Red Skull",
           "slug": "red-skull",
           "tactic": false,
-          "vAttack": null,
+          "vAttack": 7,
           "imageUrl": "https://images.barefootbetters.com/core/core-mm-red-skull.webp",
           "abilities": [
             "Always Leads: HYDRA",
@@ -1310,7 +1310,7 @@
           "name": "Endless Resources",
           "slug": "endless-resources",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 7,
           "imageUrl": "https://images.barefootbetters.com/core/core-mt-red-skull-endless-resources.webp",
           "abilities": [
             "Fight: You get +4[icon:recruit]."
@@ -1320,7 +1320,7 @@
           "name": "HYDRA Conspiracy",
           "slug": "hydra-conspiracy",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 7,
           "imageUrl": "https://images.barefootbetters.com/core/core-mt-red-skull-hydra-conspiracy.webp",
           "abilities": [
             "Fight: Draw two cards. Then draw another card for each HYDRA Villain in your Victory Pile."
@@ -1330,7 +1330,7 @@
           "name": "Negablast Grenades",
           "slug": "negablast-grenades",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 7,
           "imageUrl": "https://images.barefootbetters.com/core/core-mt-red-skull-negablast-grenades.webp",
           "abilities": [
             "Fight: You get +3[icon:attack]."
@@ -1340,7 +1340,7 @@
           "name": "Ruthless Dictator",
           "slug": "ruthless-dictator",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 7,
           "imageUrl": "https://images.barefootbetters.com/core/core-mt-red-skull-ruthless-dictator.webp",
           "abilities": [
             "Fight: Look at the top three cards of your deck. KO one, discard one and put one back on top of your deck."
@@ -1704,28 +1704,36 @@
       "name": "Doombot Legion",
       "slug": "doombot-legion",
       "imageUrl": "https://images.barefootbetters.com/core/core-hm-doombot-legion.webp",
-      "abilities": []
+      "abilities": [],
+      "vAttack": "3",
+      "vp": "1"
     },
     {
       "id": 2,
       "name": "Hand Ninjas",
       "slug": "hand-ninjas",
       "imageUrl": "https://images.barefootbetters.com/core/core-hm-hand-ninjas.webp",
-      "abilities": []
+      "abilities": [],
+      "vAttack": "3",
+      "vp": "1"
     },
     {
       "id": 3,
       "name": "Savage Land Mutates",
       "slug": "savage-land-mutates",
       "imageUrl": "https://images.barefootbetters.com/core/core-hm-savage-land-mutates.webp",
-      "abilities": []
+      "abilities": [],
+      "vAttack": "3",
+      "vp": "1"
     },
     {
       "id": 4,
       "name": "Sentinel",
       "slug": "sentinel",
       "imageUrl": "https://images.barefootbetters.com/core/core-hm-sentinel.webp",
-      "abilities": []
+      "abilities": [],
+      "vAttack": "3",
+      "vp": "1"
     }
   ],
   "schemes": [

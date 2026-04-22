@@ -11,35 +11,35 @@
       "cardCounts": null,
       "cards": [
         {
-          "name": "Diving Catch",
-          "displayName": "Diving Catch",
-          "slug": "diving-catch",
-          "rarity": 1,
-          "rarityLabel": "Common 1",
-          "slot": 1,
-          "hc": "strength",
-          "cost": 4,
-          "attack": null,
-          "recruit": "2",
-          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-angel-4c1.webp",
-          "abilities": [
-            "When a card effect causes you to discard this card, rescue a Bystander and draw two cards."
-          ]
-        },
-        {
           "name": "High-Speed Chase",
           "displayName": "High-Speed Chase",
           "slug": "high-speed-chase",
           "rarity": 1,
-          "rarityLabel": "Common 2",
-          "slot": 2,
+          "rarityLabel": "Common 1",
+          "slot": 1,
           "hc": "covert",
           "cost": 3,
           "attack": null,
           "recruit": null,
-          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-angel-3c2.webp",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-angel-3c1.webp",
           "abilities": [
             "Draw two cards, then discard a card."
+          ]
+        },
+        {
+          "name": "Diving Catch",
+          "displayName": "Diving Catch",
+          "slug": "diving-catch",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-angel-4c2.webp",
+          "abilities": [
+            "When a card effect causes you to discard this card, rescue a Bystander and draw two cards."
           ]
         },
         {
@@ -84,36 +84,36 @@
       "cardCounts": null,
       "cards": [
         {
-          "name": "Absorb Energies",
-          "displayName": "Absorb Energies",
-          "slug": "absorb-energies",
-          "rarity": 1,
-          "rarityLabel": "Common 1",
-          "slot": 1,
-          "hc": "covert",
-          "cost": 3,
-          "attack": "2",
-          "recruit": "0+",
-          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-bishop-3c1.webp",
-          "abilities": [
-            "Whenever a card you own is KO'd this turn, you get +2[icon:recruit]."
-          ]
-        },
-        {
           "name": "Whatever the Cost",
           "displayName": "Whatever the Cost",
           "slug": "whatever-the-cost",
           "rarity": 1,
-          "rarityLabel": "Common 2",
-          "slot": 2,
+          "rarityLabel": "Common 1",
+          "slot": 1,
           "hc": "ranged",
           "cost": 2,
           "attack": null,
           "recruit": null,
-          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-bishop-2c2.webp",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-bishop-2c1.webp",
           "abilities": [
             "Draw a card.",
             "[hc:covert]: You may KO a card from your hand or discard pile."
+          ]
+        },
+        {
+          "name": "Absorb Energies",
+          "displayName": "Absorb Energies",
+          "slug": "absorb-energies",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 3,
+          "attack": "2",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-bishop-3c2.webp",
+          "abilities": [
+            "Whenever a card you own is KO'd this turn, you get +2[icon:recruit]."
           ]
         },
         {
@@ -159,35 +159,35 @@
       "cardCounts": null,
       "cards": [
         {
-          "name": "Night Hunter",
-          "displayName": "Night Hunter",
-          "slug": "night-hunter",
-          "rarity": 1,
-          "rarityLabel": "Common 1",
-          "slot": 1,
-          "hc": "strength",
-          "cost": 4,
-          "attack": "2",
-          "recruit": "0+",
-          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-blade-4c1.webp",
-          "abilities": [
-            "Whenever you defeat a Villain in the Sewers or Rooftops this turn, you get +2[icon:recruit]."
-          ]
-        },
-        {
           "name": "Stalk the Prey",
           "displayName": "Stalk the Prey",
           "slug": "stalk-the-prey",
           "rarity": 1,
-          "rarityLabel": "Common 2",
-          "slot": 2,
+          "rarityLabel": "Common 1",
+          "slot": 1,
           "hc": "covert",
           "cost": 3,
           "attack": "2",
           "recruit": null,
-          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-blade-3c2.webp",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-blade-3c1.webp",
           "abilities": [
             "You may move a Villain to an adjacent city space. If another Villain is already there, swap them."
+          ]
+        },
+        {
+          "name": "Night Hunter",
+          "displayName": "Night Hunter",
+          "slug": "night-hunter",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": "2",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-blade-4c2.webp",
+          "abilities": [
+            "Whenever you defeat a Villain in the Sewers or Rooftops this turn, you get +2[icon:recruit]."
           ]
         },
         {
@@ -675,19 +675,20 @@
       "cardCounts": null,
       "cards": [
         {
-          "name": "Blazing Hellfire",
-          "displayName": "Blazing Hellfire",
-          "slug": "blazing-hellfire",
+          "name": "Infernal Chains",
+          "displayName": "Infernal Chains",
+          "slug": "infernal-chains",
           "rarity": 1,
           "rarityLabel": "Common 1",
           "slot": 1,
-          "hc": "ranged",
-          "cost": 5,
-          "attack": "2+",
+          "hc": "strength",
+          "cost": 2,
+          "attack": null,
           "recruit": null,
-          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-ghost-rider-5c1.webp",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-ghost-rider-2c1.webp",
           "abilities": [
-            "You may KO a Villain from your Victory Pile. If you do, you get +3[icon:attack]."
+            "Draw a card.",
+            "[hc:strength]: Defeat a Villain of 3[icon:attack] or less for free."
           ]
         },
         {
@@ -707,20 +708,19 @@
           ]
         },
         {
-          "name": "Infernal Chains",
-          "displayName": "Infernal Chains",
-          "slug": "infernal-chains",
+          "name": "Blazing Hellfire",
+          "displayName": "Blazing Hellfire",
+          "slug": "blazing-hellfire",
           "rarity": 2,
           "rarityLabel": "Uncommon",
           "slot": 3,
-          "hc": "strength",
-          "cost": 2,
-          "attack": null,
+          "hc": "ranged",
+          "cost": 5,
+          "attack": "2+",
           "recruit": null,
-          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-ghost-rider-2u.webp",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-ghost-rider-5u.webp",
           "abilities": [
-            "Draw a card.",
-            "[hc:strength]: Defeat a Villain of 3[icon:attack] or less for free."
+            "You may KO a Villain from your Victory Pile. If you do, you get +3[icon:attack]."
           ]
         },
         {
@@ -824,17 +824,34 @@
       "cardCounts": null,
       "cards": [
         {
+          "name": "Ancient Legacy",
+          "displayName": "Ancient Legacy",
+          "slug": "ancient-legacy",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 1,
+          "attack": "0+",
+          "recruit": "0+",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-iron-fist-1c1.webp",
+          "abilities": [
+            "Draw a card.",
+            "[hc:strength][hc:strength]: [keyword:Versatile 2]"
+          ]
+        },
+        {
           "name": "Focus Chi",
           "displayName": "Focus Chi",
           "slug": "focus-chi",
           "rarity": 1,
-          "rarityLabel": "Common 1",
-          "slot": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
           "hc": "instinct",
           "cost": 3,
           "attack": null,
           "recruit": "0+",
-          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-iron-fist-3c1.webp",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-iron-fist-3c2.webp",
           "abilities": [
             "You get +1[icon:recruit] for each Hero with a different [icon:vp] you have."
           ]
@@ -843,33 +860,16 @@
           "name": "Wield the Iron Fist",
           "displayName": "Wield the Iron Fist",
           "slug": "wield-the-iron-fist",
-          "rarity": 1,
-          "rarityLabel": "Common 2",
-          "slot": 2,
-          "hc": "strength",
-          "cost": 4,
-          "attack": "0+",
-          "recruit": null,
-          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-iron-fist-4c2.webp",
-          "abilities": [
-            "You get +1[icon:attack] for each Hero with a different [icon:vp] you have."
-          ]
-        },
-        {
-          "name": "Ancient Legacy",
-          "displayName": "Ancient Legacy",
-          "slug": "ancient-legacy",
           "rarity": 2,
           "rarityLabel": "Uncommon",
           "slot": 3,
           "hc": "strength",
-          "cost": 1,
+          "cost": 4,
           "attack": "0+",
-          "recruit": "0+",
-          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-iron-fist-1u.webp",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-iron-fist-4u.webp",
           "abilities": [
-            "Draw a card.",
-            "[hc:strength][hc:strength]: [keyword:Versatile 2]"
+            "You get +1[icon:attack] for each Hero with a different [icon:vp] you have."
           ]
         },
         {
@@ -1137,36 +1137,36 @@
           ]
         },
         {
-          "name": "Hail of Bullets",
-          "displayName": "Hail of Bullets",
-          "slug": "hail-of-bullets",
-          "rarity": 1,
-          "rarityLabel": "Common 2",
-          "slot": 2,
-          "hc": "tech",
-          "cost": 5,
-          "attack": "2+",
-          "recruit": null,
-          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-punisher-5c2.webp",
-          "abilities": [
-            "Reveal the top card of the Villain Deck. If it's a Villain, you get +[icon:attack] equal to its printed [icon:piercing].",
-            "[hc:tech][hc:tech]: You may defeat that Villain for free."
-          ]
-        },
-        {
           "name": "Hostile Interrogation",
           "displayName": "Hostile Interrogation",
           "slug": "hostile-interrogation",
-          "rarity": 2,
-          "rarityLabel": "Uncommon",
-          "slot": 3,
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
           "hc": "strength",
           "cost": 3,
           "attack": null,
           "recruit": "2+",
-          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-punisher-3u.webp",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-punisher-3c2.webp",
           "abilities": [
             "[hc:strength]: Each other player reveals the top card of their deck. If that card costs 4[icon:vp] or more, discard it. You get +1[icon:recruit] for each card discarded this way."
+          ]
+        },
+        {
+          "name": "Hail of Bullets",
+          "displayName": "Hail of Bullets",
+          "slug": "hail-of-bullets",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 5,
+          "attack": "2+",
+          "recruit": null,
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-hr-punisher-5u.webp",
+          "abilities": [
+            "Reveal the top card of the Villain Deck. If it's a Villain, you get +[icon:attack] equal to its printed [icon:piercing].",
+            "[hc:tech][hc:tech]: You may defeat that Villain for free."
           ]
         },
         {
@@ -1275,7 +1275,7 @@
           "name": "Apocalypse",
           "slug": "apocalypse",
           "tactic": false,
-          "vAttack": null,
+          "vAttack": 12,
           "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mm-apocalypse.webp",
           "abilities": [
             "Always Leads: Four Horsemen",
@@ -1288,7 +1288,7 @@
           "name": "Apocalyptic Destruction",
           "slug": "apocalyptic-destruction",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 12,
           "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-apocalypse-apocalyptic-destruction.webp",
           "abilities": [
             "Fight: Each other player KOs two Heroes from their discard pile that each cost 1[icon:vp] or more."
@@ -1298,7 +1298,7 @@
           "name": "The End of All Things",
           "slug": "the-end-of-all-things",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 12,
           "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-apocalypse-the-end-of-all-things.webp",
           "abilities": [
             "Fight: Each other player reveals the top three cards of their deck, KOs each one of those cards that cost 1 [icon:vp] or more, and puts the rest back in any order."
@@ -1308,7 +1308,7 @@
           "name": "Horsemen Are Drawing Nearer",
           "slug": "horsemen-are-drawing-nearer",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 12,
           "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-apocalypse-horsemen-are-drawing-nearer.webp",
           "abilities": [
             "Fight: Each other player plays a Four Horsemen Villain from their Victory Pile as if playing it from the Villain Deck."
@@ -1318,7 +1318,7 @@
           "name": "Immortal and Undefeated",
           "slug": "immortal-and-undefeated",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 12,
           "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-apocalypse-immortal-and-undefeated.webp",
           "abilities": [
             "Fight: If this is not the final Tactic, rescue six Bystanders and shuffle this Tactic back into the other Tactics."
@@ -1337,7 +1337,7 @@
           "name": "Kingpin",
           "slug": "kingpin",
           "tactic": false,
-          "vAttack": null,
+          "vAttack": "13*",
           "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mm-kingpin.webp",
           "abilities": [
             "[keyword:Bribe]",
@@ -1349,7 +1349,7 @@
           "name": "Call a Hit",
           "slug": "call-a-hit",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 13,
           "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-kingpin-call-a-hit.webp",
           "abilities": [
             "Fight: Choose a Hero from each player's discard pile and KO it."
@@ -1359,7 +1359,7 @@
           "name": "Criminal Empire",
           "slug": "criminal-empire",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 13,
           "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-kingpin-criminal-empire.webp",
           "abilities": [
             "Fight: If this is not the final Tactic, reveal the top three cards of the Villain Deck. Play all the Villains you revealed. Put the rest back in random order."
@@ -1369,7 +1369,7 @@
           "name": "Dirty Cops",
           "slug": "dirty-cops",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 13,
           "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-kingpin-dirty-cops.webp",
           "abilities": [
             "Fight: Put a 0 [icon:vp] Hero from the KO pile on top of each other player's deck."
@@ -1379,7 +1379,7 @@
           "name": "Mob War",
           "slug": "mob-war",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 13,
           "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-kingpin-mob-war.webp",
           "abilities": [
             "Fight: Each other player plays a Henchman Villain from their Victory Pile as if playing it from the Villain Deck."
@@ -1398,7 +1398,7 @@
           "name": "Mephisto",
           "slug": "mephisto",
           "tactic": false,
-          "vAttack": null,
+          "vAttack": 10,
           "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mm-mephisto.webp",
           "abilities": [
             "Whenever a player gains a Wound, put it on top of that player's deck.",
@@ -1410,7 +1410,7 @@
           "name": "Damned If You Do...",
           "slug": "damned-if-you-do",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 10,
           "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-mephisto-damned-if-you-do.webp",
           "abilities": [
             "Fight: Each other player KOs a Bystander from their Victory Pile or gains a Wound."
@@ -1420,7 +1420,7 @@
           "name": "Devilish Torment",
           "slug": "devilish-torment",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 10,
           "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-mephisto-devilish-torment.webp",
           "abilities": [
             "Fight: Each other player puts all 0 [icon:vp] cards from their discard pile on top of their deck in any order."
@@ -1430,7 +1430,7 @@
           "name": "Pain Begets Pain",
           "slug": "pain-begets-pain",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 10,
           "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-mephisto-pain-begets-pain.webp",
           "abilities": [
             "Fight: Choose any number of Wounds from your hand and discard pile. The player to your right gains them."
@@ -1440,7 +1440,7 @@
           "name": "The Price of Failure",
           "slug": "the-price-of-failure",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 10,
           "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-mephisto-the-price-of-failure.webp",
           "abilities": [
             "Fight: Each other player without a Mastermind Tactic in their Victory Pile gains a Wound."
@@ -1471,7 +1471,7 @@
           "name": "Human Experimentation",
           "slug": "human-experimentation",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 8,
           "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-mr-sinister-human-experimentation.webp",
           "abilities": [
             "Fight: Mr. Sinister captures Bystanders equal to the number of Villains in the city."
@@ -1481,7 +1481,7 @@
           "name": "Master Geneticist",
           "slug": "master-geneticist",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 8,
           "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-mr-sinister-master-geneticist.webp",
           "abilities": [
             "Fight: Reveal the top seven cards of the Villain Deck. Mr. Sinister captures all of the Bystanders you revealed. Put the rest back in random order."
@@ -1491,7 +1491,7 @@
           "name": "Plans Within Plans",
           "slug": "plans-within-plans",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 8,
           "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-mr-sinister-plans-within-plans.webp",
           "abilities": [
             "Fight: Mr. Sinister captures a Bystander for each Mr. Sinister Tactic in players' Victory Piles, including this Tactic."
@@ -1501,7 +1501,7 @@
           "name": "Telepathic Manipulation",
           "slug": "telepathic-manipulation",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 8,
           "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-mr-sinister-telepathic-manipulation.webp",
           "abilities": [
             "Fight: Mr. Sinister captures a Bystander from each other player's Victory Pile."
@@ -1531,7 +1531,7 @@
           "name": "Furious Wrath",
           "slug": "furious-wrath",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 7,
           "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-stryfe-furious-wrath.webp",
           "abilities": [
             "Fight: Reveal the top six cards of the Villain Deck. Play all the Master Strikes you revealed. Put the rest back in random order."
@@ -1541,7 +1541,7 @@
           "name": "Psychic Torment",
           "slug": "psychic-torment",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 7,
           "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-stryfe-psychic-torment.webp",
           "abilities": [
             "Fight: Look at the top five cards of your deck. Put one into your hand and discard the rest."
@@ -1551,7 +1551,7 @@
           "name": "Swift Vengeance",
           "slug": "swift-vengeance",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 7,
           "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-stryfe-swift-vengeance.webp",
           "abilities": [
             "Fight: A Wound from the Wound Stack becomes a Master Strike that takes effect immediately."
@@ -1561,7 +1561,7 @@
           "name": "Tide of Retribution",
           "slug": "tide-of-retribution",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 7,
           "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-stryfe-tide-of-retribution.webp",
           "abilities": [
             "Fight: Each other player reveals an [team:x-force] Hero or gains a Wound."
@@ -1734,7 +1734,7 @@
           "slug": "forearm",
           "vp": "4",
           "vAttack": "4",
-          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-vi-mutant-liberation-front-forearm.webp",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-vi-mlf-forearm.webp",
           "abilities": [
             "To fight Forearm, you must also reveal four Hero cards with different card names."
           ]
@@ -1744,7 +1744,7 @@
           "slug": "reignfire",
           "vp": "4",
           "vAttack": "6",
-          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-vi-mutant-liberation-front-reignfire.webp",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-vi-mlf-reignfire.webp",
           "abilities": [
             "Escape: Reignfire becomes a Master Strike that takes effect immediately."
           ]
@@ -1754,7 +1754,7 @@
           "slug": "wildside",
           "vp": "3",
           "vAttack": "5",
-          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-vi-mutant-liberation-front-wildside.webp",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-vi-mlf-wildside.webp",
           "abilities": [
             "Fight: If you fight Wildside in the Sewers or Bank, KO two of your Heroes."
           ]
@@ -1764,7 +1764,7 @@
           "slug": "zero",
           "vp": "2",
           "vAttack": "0",
-          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-vi-mutant-liberation-front-zero.webp",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-vi-mlf-zero.webp",
           "abilities": [
             "To fight Zero, you must also discard three cards that cost 0[icon:vp]."
           ]
