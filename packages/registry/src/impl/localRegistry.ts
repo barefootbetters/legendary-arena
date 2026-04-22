@@ -6,11 +6,6 @@
  * Directory layout expected:
  *   metadataDir/     (default: data/metadata/)
  *     sets.json          ← set index (id, abbr, name, releaseDate, etc.)
- *     card-types.json    ← card type taxonomy
- *     hero-classes.json
- *     hero-teams.json
- *     icons-meta.json
- *     leads.json
  *   cardsDir/        (default: data/cards/)
  *     core.json          ← per-set card data
  *     dkcy.json
@@ -33,7 +28,7 @@ import type {
 } from "../types/index.js";
 
 export interface LocalRegistryOptions {
-  /** Path to the metadata lookup folder containing sets.json, card-types.json, etc. */
+  /** Path to the metadata lookup folder containing sets.json. */
   metadataDir: string;
   /**
    * Path to the folder containing per-set card JSON files ({abbr}.json).
@@ -58,9 +53,6 @@ export async function createRegistryFromLocalFiles(
 
   // ── Load set index from sets.json ──────────────────────────────────────────
   // why: sets.json is the canonical set index (id, abbr, name, releaseDate, type).
-  // The older code incorrectly read card-types.json here — that file is the
-  // card type taxonomy (hero-common1, villain, scheme, etc.) which is a
-  // completely different shape.
   let setIndex: SetIndexEntry[] = [];
   try {
     const raw: unknown = JSON.parse(
@@ -88,7 +80,7 @@ export async function createRegistryFromLocalFiles(
 
   // ── Load all per-set card JSON files from cardsDir ─────────────────────────
   // why: cardsDir contains only card set files — no filtering is needed.
-  // The lookup files (sets.json, card-types.json, etc.) live in metadataDir.
+  // The lookup file (sets.json) lives in metadataDir.
   const loadedSets    = new Map<string, SetData>();
   const setIndexByAbbr = new Map(setIndex.map((s) => [s.abbr, s]));
 

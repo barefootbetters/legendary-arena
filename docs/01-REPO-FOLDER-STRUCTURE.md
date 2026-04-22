@@ -184,13 +184,10 @@ data/
 │   ├── mdns.json
 │   └── ... (40 total)
 │
-├── metadata/                   # Lookup tables and taxonomies
+├── metadata/                   # Lookup tables and glossaries
 │   ├── sets.json               # Set index -- THE registry manifest (40 entries)
-│   ├── card-types.json         # Card type taxonomy (37 types)
-│   ├── hero-teams.json         # Hero team definitions
-│   ├── hero-classes.json       # Hero class definitions (5 classes)
-│   ├── icons-meta.json         # Icon/stat symbol metadata
-│   └── leads.json              # Mastermind -> villain group leads
+│   ├── keywords-full.json      # Keyword glossary (123 entries, WP-082)
+│   └── rules-full.json         # Rule glossary (20 entries, WP-082)
 │
 ├── migrations/                 # PostgreSQL migrations (applied by scripts/migrate.mjs)
 │   ├── 001_server_schema.sql   # Rules-engine DDL (legendary.* namespace)
@@ -206,8 +203,9 @@ data/
 
 **Key distinction:**
 - `metadata/sets.json` = set index (abbr, releaseDate) -- used by loaders
-- `metadata/card-types.json` = card type taxonomy (slug, displayName) -- NOT a set index
-- Confusing them causes silent registry failures (see D-1203, WP-003)
+- The historical `card-types.json` counter-example (D-1203 silent-failure
+  precedent) was deleted by WP-084 (2026-04-21). D-1203 retains the
+  narrative for auditability.
 
 ---
 

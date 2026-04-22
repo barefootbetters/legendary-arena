@@ -159,7 +159,10 @@ Load and parse JSON. Export immutable data structures.
 Mutate runtime state. Access databases.
 
 **Failure mode:** Typos, schema drift, silent data corruption, wrong file
-loaded (sets.json vs card-types.json). Bugs here manifest as wrong
+loaded where a specific metadata shape is expected (see D-1203 for the
+canonical `sets.json` vs `card-types.json` silent-failure precedent;
+`card-types.json` itself was deleted by WP-084, but the pattern still
+applies to any future metadata file). Bugs here manifest as wrong
 gameplay behavior downstream.
 
 **Directories:** `packages/registry/`, `data/cards/`, `data/metadata/`

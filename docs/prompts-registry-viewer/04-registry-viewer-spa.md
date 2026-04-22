@@ -1,5 +1,11 @@
 # Prompt 04 — Registry Viewer SPA (Vite + Vue 3)
 
+> **Historical prompt archive.** Sections that reference
+> `card-types.json` as an active filter source reflect the
+> pre-2026-04-21 state; that file was deleted by WP-084. The current
+> viewer derives card-type classification from per-set data and does
+> not fetch `card-types.json`.
+
 > **FULL CONTENTS MODE** — Output: (1) files changed, (2) full contents of every
 > changed file, (3) commands to run with expected output, (4) acceptance checklist.
 > Never output diffs. Client-only — no backend. No Vue Router required.

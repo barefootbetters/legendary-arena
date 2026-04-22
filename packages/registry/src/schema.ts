@@ -4,7 +4,6 @@
  * Data lives at:
  *   https://images.barefootbetters.com/registry-config.json      → set abbreviation list
  *   https://images.barefootbetters.com/metadata/sets.json        → set index
- *   https://images.barefootbetters.com/metadata/card-types.json  → card type taxonomy
  *   https://images.barefootbetters.com/metadata/{abbr}.json      → full set card data
  *
  * Image URLs are embedded directly in each card object (imageUrl field).
@@ -45,53 +44,6 @@ export const SetIndexEntrySchema = z.object({
   releaseDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   type:        z.string().min(1),
 });
-
-// ── Card type taxonomy (card-types.json) ──────────────────────────────────────
-// 37 entries covering all card type slugs and their 2-char image filename prefix.
-export const CardTypeEntrySchema = z.object({
-  id:          z.number().int().positive(),
-  slug:        z.string().min(1),
-  name:        z.string().min(1),
-  displayName: z.string().min(1),
-  prefix:      z.string().length(2),
-});
-
-// ── Hero classes (hero-classes.json) ──────────────────────────────────────────
-// 5 entries: covert, instinct, ranged, strength, tech
-export const HeroClassEntrySchema = z.object({
-  id:   z.number().int().min(0),
-  abbr: z.string().min(1),
-  slug: z.string().min(1),
-  name: z.string().min(1),
-});
-
-// ── Hero teams (hero-teams.json) ──────────────────────────────────────────────
-// 25 entries including id:0 for unaffiliated.
-export const HeroTeamEntrySchema = z.object({
-  id:   z.number().int().min(0),
-  slug: z.string().min(1),
-  name: z.string().min(1),
-});
-
-// ── Icons / stat symbols (icons-meta.json) ────────────────────────────────────
-// 7 entries: attack, recruit, cost, vp, focus, piercing, token.
-// The "value" field is used in [icon:X] ability markup tokens.
-export const IconEntrySchema = z.object({
-  id:    z.number().int().positive(),
-  value: z.string().min(1),
-  label: z.string().min(1),
-});
-
-// ── Mastermind leads (leads.json) ─────────────────────────────────────────────
-// Mixed entries: real mastermind entries and comment/metadata entries
-// using underscore-prefixed keys (_set, _note, _unassigned, etc.).
-// Permissive schema with catchall accepts the mixed format.
-export const LeadsEntrySchema = z.object({
-  set:           z.string().optional(),
-  mastermind:    z.string().optional(),
-  villainGroups: z.array(z.string()).optional(),
-  henchmen:      z.array(z.string()).optional(),
-}).catchall(z.unknown());
 
 // ── Hero class string enum ────────────────────────────────────────────────────
 export const HeroClassSchema = z.enum([

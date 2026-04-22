@@ -89,13 +89,16 @@ If step 2 or 3 fails, the problem is in code.
 
 **Symptom:** Registry loads successfully but contains zero sets.
 
-**Cause:** Code fetched `card-types.json` where `sets.json` was expected.
-The shapes are incompatible — `card-types.json` entries lack `abbr` and
-`releaseDate`, so Zod silently drops every entry with no error thrown.
+**Cause (historical):** Fetching a metadata file with the wrong shape
+where `sets.json` was expected — every entry fails `SetIndexEntrySchema`
+silently (missing `abbr` / `releaseDate`) and Zod drops them with no
+error thrown. The canonical counter-example was `card-types.json`
+(deleted by WP-084 on 2026-04-21; D-1203 retains the narrative). The
+silent-failure pattern still applies to any future metadata file with
+a compatible-looking shape.
 
-**Fix:** Ensure loaders fetch `metadata/sets.json` for the set index,
-never `metadata/card-types.json`. See ARCHITECTURE.md §Section 2
-"Registry Metadata File Shapes".
+**Fix:** Ensure loaders fetch `metadata/sets.json` for the set index.
+See ARCHITECTURE.md §Section 2 "Registry Metadata File Shapes".
 
 ---
 

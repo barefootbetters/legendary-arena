@@ -68,9 +68,11 @@ Versions follow `MAJOR.MINOR`. Update the table above when a prompt changes.
 
 ### Phase 0 — Data (Prompts 01–02)
 Documents the R2 bucket structure: folder layout, file naming conventions,
-JSON schema for each set type, and `sets.json` / `card-types.json` index files.
-Also documents the real-world schema variations found across 40+ sets
-(null fields, slot counts > 4, vAttack as number vs string vs null, etc.).
+JSON schema for each set type, and the `sets.json` set index. (An earlier
+`card-types.json` auxiliary index referenced in the original prompt text
+was deleted by WP-084 on 2026-04-21.) Also documents the real-world
+schema variations found across 40+ sets (null fields, slot counts > 4,
+vAttack as number vs string vs null, etc.).
 
 ### Phase 1 — Package (Prompt 03)
 The `packages/registry/` TypeScript data access layer. Exports browser-safe
@@ -102,7 +104,6 @@ ongoing "upload to R2 → auto-deploy" workflow.
 |---|---|
 | Card JSON (per set) | `https://images.barefootbetters.com/metadata/{abbr}.json` |
 | Set index | `https://images.barefootbetters.com/metadata/sets.json` |
-| Card type definitions | `https://images.barefootbetters.com/metadata/card-types.json` |
 | Card images (WebP) | `https://images.barefootbetters.com/{abbr}/{filename}.webp` |
 | Registry Viewer SPA | `https://cards.barefootbetters.com` |
 | Monorepo | `C:\pcloud\BB\DEV\legendary-arena` (pnpm workspaces) |

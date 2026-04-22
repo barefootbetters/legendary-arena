@@ -1,5 +1,12 @@
 # Prompt 01 — R2 Data Structure & Conventions
 
+> **Historical prompt archive.** This file captures the original
+> registry-viewer data-structure prompt. Portions that reference
+> `card-types.json` reflect the pre-2026-04-21 state; that file and
+> its Zod schema were deleted by WP-084. The current-state set index
+> is `sets.json` only. D-1203 retains the narrative for the
+> sets.json/card-types.json silent-failure precedent.
+
 > **FULL CONTENTS MODE** — Output: (1) files changed, (2) full contents of every
 > changed file, (3) commands to run with expected output, (4) acceptance checklist.
 > Never output diffs. Read-only validation only — do not modify R2 data.

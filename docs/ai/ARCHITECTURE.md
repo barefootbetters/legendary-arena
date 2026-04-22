@@ -342,7 +342,6 @@ tasks. Both must succeed before `Server()` begins accepting requests.
 Task 1 — Card registry (from local files or R2):
   createRegistryFromLocalFiles({ metadataDir: 'data/metadata', cardsDir: 'data/cards' })
   → Loads data/metadata/sets.json          (set index — see Registry Metadata File Shapes)
-  → Loads data/metadata/card-types.json    (card type taxonomy — NOT the set index)
   → Loads data/cards/[set-abbr].json       (per-set card records)
   → Validates all files against Zod schemas (packages/registry/src/schema.ts)
   → Returns immutable CardRegistry
@@ -369,10 +368,6 @@ Deployment prerequisites for both startup tasks are verified by the checklists i
 
 ### Registry Metadata File Shapes
 
-Two files in `data/metadata/` are easily confused because they have similar names
-but completely different shapes and purposes. Every Work Packet that touches
-registry loading must know this distinction.
-
 **`data/metadata/sets.json`** — the **set index**:
 
 ```
@@ -385,23 +380,17 @@ provides the `abbr` used to locate per-set card files (e.g., `mdns.json`).
 **This is the file `createRegistryFromLocalFiles` and `createRegistryFromHttp`
 must fetch to enumerate sets.**
 
-**`data/metadata/card-types.json`** — the **card type taxonomy**:
-
-```
-{ id: string, slug: string, name: string, displayName: string, prefix: string }
-```
-
-37 entries classifying card archetypes (`villain`, `henchman`, `hero`, `scheme`,
-`mastermind`, etc.). It has no `abbr` or `releaseDate` fields.
-**This is NOT a set index and must never be used where `sets.json` is expected.**
-
-**Why the distinction matters — the silent failure mode:**
-If code fetches `card-types.json` where `sets.json` is expected, the Zod parse
-produces **zero sets with no error thrown**. The shapes are incompatible:
-`card-types.json` entries lack `abbr` and `releaseDate`, so every entry fails
-the schema silently and is dropped. The registry appears to load successfully
-but contains no data. This was the confirmed bug in `httpRegistry.ts` fixed by
-WP-003.
+**Silent failure mode (historical counter-example):** if a loader fetches a
+metadata file whose shape does not carry `abbr` and `releaseDate` where
+`sets.json` is expected, the Zod parse produces **zero sets with no error
+thrown** — every entry fails `SetIndexEntrySchema` silently and is dropped,
+so the registry appears to load successfully but contains no data. The
+canonical example was `data/metadata/card-types.json` (the card-type
+taxonomy); that file was the WP-003 Defect 1 consumer in `httpRegistry.ts`
+and has since been deleted by WP-084 (2026-04-21). D-1203 retains the full
+narrative for auditability. The silent-failure pattern still applies to any
+future metadata file that shares a similar shape — guard the fetch site
+explicitly.
 
 **`packages/registry/src/schema.ts`** is the authoritative source for all field
 shapes and nullable/optional constraints. Read it before writing any
@@ -1026,10 +1015,12 @@ type strings are defined in `REVEALED_CARD_TYPES` (exported from
 | 3 | `'scheme-twist'` | `onCardRevealed` + `onSchemeTwistRevealed` |
 | 4 | `'mastermind-strike'` | `onCardRevealed` + `onMastermindStrikeRevealed` |
 
-Slugs use **hyphens not underscores** — confirmed against
-`data/metadata/card-types.json`. A mismatch (e.g., `'scheme_twist'`) silently
-prevents the correct trigger from firing because the type lookup in
-`revealVillainCard` will not match the string literal in the conditional branch.
+Slugs use **hyphens not underscores** — established by the historical
+`data/metadata/card-types.json` taxonomy (deleted by WP-084 on 2026-04-21;
+the hyphen convention remains locked by `REVEALED_CARD_TYPES` and the
+per-set JSON). A mismatch (e.g., `'scheme_twist'`) silently prevents the
+correct trigger from firing because the type lookup in `revealVillainCard`
+will not match the string literal in the conditional branch.
 
 Any code that reads `G.villainDeckCardTypes` or defines a `RevealedCardType`
 value must use `REVEALED_CARD_TYPES` constants — never inline string literals.

@@ -34,9 +34,8 @@ Publicly readable. No secrets required.
 |---|---|---|
 | Set index | `metadata/sets.json` | 40 sets |
 | Per-set card JSON | `metadata/{abbr}.json` | 40 files |
-| Card type taxonomy | `metadata/card-types.json` | 37 types |
-| Hero teams | `metadata/hero-teams.json` | 25 teams |
-| Hero classes | `metadata/hero-classes.json` | 5 classes |
+| Keyword glossary | `metadata/keywords-full.json` | 123 keywords |
+| Rule glossary | `metadata/rules-full.json` | 20 rules |
 | Card images | `{abbr}/{abbr}-{type}-{slug}.webp` | ~1000+ images |
 
 **Validation gate:** `pnpm validate` must pass with 0 errors before
@@ -152,7 +151,7 @@ The server completes two startup tasks before accepting requests:
 ```
 Task 1 — Card registry (from local files):
   createRegistryFromLocalFiles()
-  → Loads metadata/sets.json, card-types.json, per-set card JSON
+  → Loads metadata/sets.json + per-set card JSON
   → Validates against Zod schemas
   → Returns immutable CardRegistry
   → Log: "[server] registry loaded: X sets, Y cards"

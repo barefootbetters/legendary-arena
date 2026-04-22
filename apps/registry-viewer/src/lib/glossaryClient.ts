@@ -18,14 +18,14 @@
  */
 
 // why: import the schemas from the `@legendary-arena/registry/schema`
-// subpath rather than the barrel. The barrel (`@legendary-arena/registry`)
-// re-exports `createRegistryFromLocalFiles` from `impl/localRegistry.js`,
-// which in turn imports Node-only modules (`node:fs/promises`, `node:path`).
-// Vite externalizes those for the browser build, but Rollup resolves the
-// import graph before tree-shaking can prune the unused Node-only factory,
-// so the browser build fails on `resolve` from `__vite-browser-external`.
-// The dedicated `./schema` subpath export (defined in the package's
-// exports map) has zero Node-module dependencies and sidesteps the issue.
+// subpath rather than the barrel. The barrel re-exports a Node-only
+// local-file registry factory that pulls in `node:fs/promises` and
+// `node:path`. Vite externalizes those for the browser build, but Rollup
+// resolves the import graph before tree-shaking can prune the unused
+// Node-only factory, so the browser build fails on `resolve` from
+// `__vite-browser-external`. The dedicated `./schema` subpath export
+// (defined in the package's exports map) has zero Node-module dependencies
+// and sidesteps the issue.
 import {
   KeywordGlossarySchema,
   RuleGlossarySchema,

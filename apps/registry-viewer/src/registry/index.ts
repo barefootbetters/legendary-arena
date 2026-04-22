@@ -24,7 +24,6 @@ export type {
 
 // Factories
 export { createRegistryFromHttp        } from "./impl/httpRegistry.js";
-export { createRegistryFromLocalFiles  } from "./impl/localRegistry.js";
 
 // Schema (for external validation use)
 export {

@@ -84,7 +84,7 @@ export interface CardRegistry {
   /** High-level counts */
   info(): RegistryInfo;
 
-  /** All set index entries (from card-types.json) */
+  /** All set index entries (from sets.json) */
   listSets(): SetIndexEntry[];
 
   /** Full data for one set. Returns undefined if not loaded. */
@@ -113,7 +113,7 @@ export interface HttpRegistryOptions {
   metadataBaseUrl: string;
   /**
    * Which set abbrs to eagerly load.
-   * Pass ["*"] to load all sets listed in card-types.json (slow — many fetches).
+   * Pass ["*"] to load all sets listed in sets.json (slow — many fetches).
    * Default: load index only, sets are loaded lazily via getSet().
    */
   eagerLoad?: string[];

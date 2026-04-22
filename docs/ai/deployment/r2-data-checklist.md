@@ -52,7 +52,7 @@ below and write a machine-readable report to `dist/registry-health.json`.
 | `SETS_DIR` | Local-mode path to per-set card JSON files | `data/cards` |
 | `HEALTH_OUT` | Output path for the machine-readable report | `dist/registry-health.json` |
 | `R2_BASE_URL` | Remote base URL; non-empty string switches to R2 mode | *(unset — local mode)* |
-| `SKIP_IMAGES` | Set to `1` to skip Phase 5 image spot-checks | *(unset — images checked)* |
+| `SKIP_IMAGES` | Set to `1` to skip Phase 4 image spot-checks | *(unset — images checked)* |
 | `IMAGE_DELAY_MS` | Milliseconds between image HEAD requests | `50` |
 
 **Local mode invocation:**
@@ -83,7 +83,7 @@ $env:R2_BASE_URL = "https://images.barefootbetters.com"; pnpm registry:validate
 | `0` | Validation passed — zero errors, zero image failures. Warnings are permitted and surfaced in the report but do not fail the run. |
 | `1` | One or more errors, or at least one image HEAD request returned non-200. Promotion is blocked until the defect is repaired. |
 
-**Five-phase pipeline (executed in order):**
+**Four-phase pipeline (executed in order):**
 
 1. **Phase 1 — Registry config.** In R2 mode the script fetches
    `registry-config.json` from the R2 root and validates it with
@@ -91,26 +91,30 @@ $env:R2_BASE_URL = "https://images.barefootbetters.com"; pnpm registry:validate
    mode the script reads set abbreviations from
    `data/metadata/sets.json` via `SetIndexEntrySchema`. A zero-length
    abbreviation list is a fatal error and aborts the run.
-2. **Phase 2 — Metadata files.** Six lookup JSON files are validated
-   entry by entry against per-item Zod schemas. The expected minimum
-   entry counts are enforced as warnings; missing files are errors.
-3. **Phase 3 — Per-set card JSON.** For each set abbreviation, the
+2. **Phase 2 — Per-set card JSON.** For each set abbreviation, the
    per-set card file is fetched (R2: flat `/metadata/{abbr}.json`;
    local: `data/cards/{abbr}.json`) and validated against
    `SetDataSchema`. The script additionally checks that every
    `imageUrl` points at `images.barefootbetters.com` and flags ability
    text lines containing the literal pipeline artifact
    `[object Object]`.
-4. **Phase 4 — Cross-references.** Two checks run: `alwaysLeads` slug
+3. **Phase 3 — Cross-references.** Two checks run: `alwaysLeads` slug
    resolution (each mastermind's `alwaysLeads` entries either match a
    villain-group slug in the same set or are flagged as potential
    henchman references) and duplicate-slug detection across all sets
    (duplicates are warnings because they can cause upsert collisions
    during later PostgreSQL seeding).
-5. **Phase 5 — Image spot-checks.** Three images per set are sampled
+4. **Phase 4 — Image spot-checks.** Three images per set are sampled
    (first mastermind card, first villain card, first hero card) and a
    `HEAD` request is issued per URL. The delay between requests is
    controlled by `IMAGE_DELAY_MS`. Any non-200 response fails the run.
+
+> Historical note: an earlier Phase 2 metadata-validation block
+> validated five auxiliary lookup files (`card-types.json`,
+> `hero-classes.json`, `hero-teams.json`, `icons-meta.json`,
+> `leads.json`). Those files and the block were deleted by WP-084 on
+> 2026-04-21 as unused surface area; former Phases 3 / 4 / 5 have
+> been renumbered to 2 / 3 / 4.
 
 - [ ] Every phase listed above completes without an `error`-level
       finding in `dist/registry-health.json`.
@@ -132,51 +136,45 @@ remain the single source of truth for set abbreviations.
       `abbr`, `pkgId`, `slug`, `name`, `releaseDate`, and `type` are
       all present and typed correctly.
 - [ ] `sets.json` contains **40** entries. A lower count is a warning
-      surfaced by Phase 2; the 40 locked in the registry catalog is
-      the expected reality of the shipped repo at the date of this
-      checklist.
+      surfaced by Phase 1's abbreviation read; the 40 locked in the
+      registry catalog is the expected reality of the shipped repo at
+      the date of this checklist.
 
-> `sets.json` is **not** interchangeable with `card-types.json`.
-> Fetching `card-types.json` where `sets.json` is expected is the
-> documented silent-failure mode from WP-003 Defect 1: every entry
-> silently fails `SetIndexEntrySchema` and the loader returns zero
-> sets with no error thrown. Always confirm the manifest filename in
-> any loader site before modifying it.
-
----
-
-## §A.3 — Metadata files
-
-Six lookup JSON files live alongside `sets.json` in the metadata
-directory. Every one is validated entry by entry by the script's Phase
-2 pass. The locked minimum entry counts below are the expectations the
-script enforces.
-
-| File | Validated against | Minimum entry count |
-|---|---|---|
-| `sets.json` | `SetIndexEntrySchema` | 40 |
-| `card-types.json` | `CardTypeEntrySchema` | 37 |
-| `hero-classes.json` | `HeroClassEntrySchema` | 5 |
-| `hero-teams.json` | `HeroTeamEntrySchema` | 25 |
-| `icons-meta.json` | `IconEntrySchema` | 7 |
-| `leads.json` | `LeadsEntrySchema` | 50 |
-
-- [ ] All six files exist at the expected location for the run mode.
-- [ ] Every file parses as a JSON array at the top level (a
-      non-array is a fatal Phase 2 error).
-- [ ] Every file's valid entry count meets or exceeds the minimum in
-      the table above.
-- [ ] Zero entries across all six files fail their per-item schema
-      (Phase 2 reports invalid-entry counts per file).
+> The historical `card-types.json` counter-example (WP-003 Defect 1,
+> D-1203) was deleted by WP-084 on 2026-04-21. D-1203 retains the
+> full narrative of the silent-failure mode. The pattern still
+> applies to any future metadata file that shares a similar shape —
+> always confirm the manifest filename in any loader site before
+> modifying it.
 
 ---
 
-## §A.4 — Image assets (naming convention + Phase 5 spot-checks)
+## §A.3 — Metadata files (historical)
+
+The surviving lookup file in the metadata directory is `sets.json`,
+validated entry-by-entry in Phase 1's set-abbreviation read. The
+five historical auxiliary files (`card-types.json`,
+`hero-classes.json`, `hero-teams.json`, `icons-meta.json`,
+`leads.json`) and their Phase 2 validation block were deleted by
+WP-084 on 2026-04-21 — see DECISIONS.md (WP-084 §Governance) for the
+deletion rationale and reintroduction rule. Glossary data
+(`keywords-full.json`, `rules-full.json`) is validated by the
+registry-viewer at fetch time (WP-082 / EC-107).
+
+- [ ] `sets.json` exists at the expected location for the run mode.
+- [ ] `sets.json` parses as a JSON array at the top level.
+- [ ] `sets.json` has ≥ 40 valid entries.
+- [ ] Zero entries fail `SetIndexEntrySchema` (Phase 1 surfaces this
+      via the abbreviation-read loop).
+
+---
+
+## §A.4 — Image assets (naming convention + Phase 4 spot-checks)
 
 Card images live under `https://images.barefootbetters.com/` and are
 addressed via the `imageUrl` field on each card record. Image URLs
 use **hyphens, never underscores** — underscore-based URLs will
-400/404 and fail Phase 5.
+400/404 and fail Phase 4.
 
 **Naming convention:**
 
@@ -190,7 +188,7 @@ use **hyphens, never underscores** — underscore-based URLs will
 | Bystander | `{setAbbr}/bystanders/{bystander-slug}.jpg` | `core/bystanders/skrull-soldier.jpg` |
 | Wound | `{setAbbr}/wounds/{wound-slug}.jpg` | `core/wounds/standard-wound.jpg` |
 
-- [ ] Phase 5 issued `setCount × 3` HEAD requests (roughly 120 for
+- [ ] Phase 4 issued `setCount × 3` HEAD requests (roughly 120 for
       40 sets) and every response returned HTTP 200. The exact URLs
       probed are recorded in `dist/registry-health.json` under
       `imageFailures` (empty array means all 200).
@@ -200,7 +198,7 @@ use **hyphens, never underscores** — underscore-based URLs will
 - [ ] No card record anywhere in the registry has an `imageUrl` that
       contains an underscore instead of a hyphen. (The script's Phase
       3 flags wrong-domain URLs; underscore usage shows up downstream
-      as a Phase 5 non-200.)
+      as a Phase 4 non-200.)
 
 `SKIP_IMAGES=1` is an operator override reserved for environments
 where R2 HEAD traffic is intentionally disallowed (e.g., an isolated
@@ -209,9 +207,9 @@ release promotion gate.
 
 ---
 
-## §A.5 — Cross-reference checks (Phase 4)
+## §A.5 — Cross-reference checks (Phase 3)
 
-Phase 4 runs two cross-reference checks over the registry.
+Phase 3 runs two cross-reference checks over the registry.
 
 **`alwaysLeads` slug resolution.** Every mastermind record has an
 `alwaysLeads` array of villain-group slugs that the mastermind
@@ -288,7 +286,7 @@ The standard operator verification tool for R2 is `rclone` with the
 
 Adding a new expansion set to R2 is an ordered, verifiable sequence.
 Skipping or reordering any step can leave the registry in a state
-where Phase 3 succeeds locally but Phase 3 or Phase 5 fails against
+where Phase 2 succeeds locally but Phase 2 or Phase 4 fails against
 R2. The steps below are listed in execution order; each step must
 succeed before the next is attempted.
 

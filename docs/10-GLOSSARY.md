@@ -49,7 +49,7 @@
 | **`ext_id`** | Canonical external identifier used across database, `G`, and setup config. Type is `text` in PostgreSQL. Never changes after release. |
 | **`slug`** | Human-readable, hyphenated, lowercase identifier (e.g., `iron-man`). Used in URLs, image filenames, and metadata. Hyphens only — never underscores. |
 | **`sets.json`** | The set index file in `data/metadata/` and R2 at `metadata/sets.json`. Contains `abbr`, `name`, `releaseDate`. THE registry manifest — 40 entries. |
-| **`card-types.json`** | Card type taxonomy (37 entries: villain, hero, scheme, etc.). NOT a set index. Confusing it with `sets.json` causes silent registry failures. |
+| **`card-types.json`** (historical) | Card type taxonomy (37 entries) deleted by WP-084 on 2026-04-21. The silent-failure precedent when confused with `sets.json` is preserved in D-1203 for auditability. |
 | **`FlatCard`** | Flattened card record exposed by the registry. Numeric fields (`cost`, `attack`, `recruit`) are `string \| number \| undefined` due to modifier strings like `"2+"`. |
 
 ---

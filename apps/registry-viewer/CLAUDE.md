@@ -59,7 +59,6 @@ App Mount
 | `src/registry/schema.ts` | Zod schemas — permissive to handle inconsistent set data |
 | `src/registry/shared.ts` | `flattenSet()`, `applyQuery()`, `buildHealthReport()` |
 | `src/registry/impl/httpRegistry.ts` | Browser-safe CardRegistry factory (R2 fetches) |
-| `src/registry/impl/localRegistry.ts` | Node-only CardRegistry factory (CI validation) |
 | `src/registry/browser.ts` | Browser entry point — re-exports HTTP factory only, no Node imports |
 | `src/registry/types/` | Zod-inferred types: FlatCard, SetData, CardRegistry, HealthReport |
 | `public/registry-config.json` | Runtime config: R2 base URL + eager-load set list |

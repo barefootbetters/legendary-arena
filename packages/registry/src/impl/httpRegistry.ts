@@ -48,6 +48,9 @@ export async function createRegistryFromHttp(
   // card-types.json is the card type taxonomy ({ id, slug, name, displayName, prefix }) —
   // they are incompatible shapes. Fetching card-types.json here silently produces
   // zero sets because no entries match SetIndexEntrySchema (missing abbr and releaseDate).
+  // Note: card-types.json itself was deleted by WP-084 on 2026-04-21; this educational
+  // comment is retained because the silent-failure pattern it describes remains
+  // reachable for any future metadata file that shares the auxiliary-lookup shape.
   const indexUrl = `${base}/metadata/sets.json`;
   const indexResponse = await fetch(indexUrl);
   if (!indexResponse.ok) {

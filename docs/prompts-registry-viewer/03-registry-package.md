@@ -1,5 +1,12 @@
 # Prompt 03 — Registry Package (Data Access Layer)
 
+> **Historical prompt archive.** Portions of this prompt reference
+> `card-types.json` as an active metadata input. That file was deleted
+> by WP-084 on 2026-04-21 and is no longer read by any loader; the
+> current-state set index is `sets.json` only. See DECISIONS.md
+> (WP-084 §Governance) for the deletion rationale and reintroduction
+> rule.
+
 > **FULL CONTENTS MODE** — Output: (1) files changed, (2) full contents of every
 > changed file, (3) commands to run with expected output, (4) acceptance checklist.
 > Never output diffs. ESM only. Node v22+. Browser-safe entry point must never

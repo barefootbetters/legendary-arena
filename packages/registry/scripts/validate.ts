@@ -4,19 +4,18 @@
  * Validates the Legendary Arena data store against Checklist A items
  * from 00.2b-deployment-checklists.md.
  *
- * Five validation phases:
- *   Phase 1 — Registry config (registry-config.json)
- *   Phase 2 — Metadata files (sets.json, card-types.json, hero-classes.json, etc.)
- *   Phase 3 — Per-set card JSON (schema, imageUrl domain, data quality issues)
- *   Phase 4 — Cross-references (alwaysLeads consistency, duplicate slug detection)
- *   Phase 5 — Image spot-checks (1 HEAD request per card type per set)
+ * Four validation phases:
+ *   Phase 1 — Registry config (registry-config.json; sets.json in local mode)
+ *   Phase 2 — Per-set card JSON (schema, imageUrl domain, data quality issues)
+ *   Phase 3 — Cross-references (alwaysLeads consistency, duplicate slug detection)
+ *   Phase 4 — Image spot-checks (1 HEAD request per card type per set)
  *
  * Runs in two modes:
  *   Local (default) — reads from METADATA_DIR and SETS_DIR on disk
  *   R2              — fetches and validates the live R2 bucket via HTTP
  *
  * Directory layout (local mode):
- *   METADATA_DIR/   (default: data/metadata/)   — lookup JSON files
+ *   METADATA_DIR/   (default: data/metadata/)   — lookup JSON files (sets.json)
  *   SETS_DIR/       (default: data/cards/)       — per-set card JSON files
  *
  * R2 layout (R2 mode):
@@ -34,7 +33,7 @@
  *   SETS_DIR        Path to per-set card JSON files (default: data/cards)
  *   HEALTH_OUT      JSON report output path        (default: dist/registry-health.json)
  *   R2_BASE_URL     If set, validates live R2 instead of local files
- *   SKIP_IMAGES     Set to "1" to skip Phase 5 image HEAD checks
+ *   SKIP_IMAGES     Set to "1" to skip Phase 4 image HEAD checks
  *   IMAGE_DELAY_MS  Milliseconds between image requests (default: 50)
  *
  * Exit codes:
@@ -48,11 +47,6 @@ import { fileURLToPath }              from "node:url";
 import {
   RegistryConfigSchema,
   SetIndexEntrySchema,
-  CardTypeEntrySchema,
-  HeroClassEntrySchema,
-  HeroTeamEntrySchema,
-  IconEntrySchema,
-  LeadsEntrySchema,
   SetDataSchema,
 } from "../src/schema.js";
 import type { SetData } from "../src/types/index.js";
@@ -113,7 +107,7 @@ interface ValidationReport {
 // ── Data access ───────────────────────────────────────────────────────────────
 
 /**
- * Fetch a metadata lookup file (sets.json, card-types.json, etc.).
+ * Fetch a metadata lookup file (sets.json).
  * Local: reads from METADATA_DIR/{filename}.
  * R2:    fetches from {R2_BASE_URL}/metadata/{filename}.
  */
@@ -293,97 +287,7 @@ async function readSetAbbreviationsFromSetsJson(phase: string, findings: Finding
   }
 }
 
-// ── Phase 2: Metadata Files ───────────────────────────────────────────────────
-
-/**
- * Validate one metadata lookup file against an item-level Zod schema.
- * Parses each array entry individually so bad entries are counted, not fatal.
- */
-async function checkOneMetadataFile<T>(
-  filename:         string,
-  itemSchema:       { safeParse: (data: unknown) => { success: true; data: T } | { success: false; error: { issues: Array<{ message: string }> } } },
-  expectedMinCount: number,
-  phase:            string,
-  findings:         Finding[]
-): Promise<T[]> {
-  try {
-    const rawData = await fetchMetadataFile(filename);
-
-    if (!Array.isArray(rawData)) {
-      findings.push({
-        level:   "error",
-        phase,
-        code:    "METADATA_NOT_ARRAY",
-        message: `${filename} does not contain a JSON array at the top level.`,
-      });
-      console.log(`  ✗ ${filename} — not a JSON array`);
-      return [];
-    }
-
-    const validEntries: T[] = [];
-    let invalidCount = 0;
-
-    // why: parse each entry individually to count invalid ones rather than
-    // failing the whole file on the first bad entry
-    for (const rawEntry of rawData) {
-      const parseResult = itemSchema.safeParse(rawEntry);
-      if (parseResult.success) {
-        validEntries.push(parseResult.data);
-      } else {
-        invalidCount++;
-      }
-    }
-
-    if (invalidCount > 0) {
-      findings.push({
-        level:   "warning",
-        phase,
-        code:    "METADATA_ENTRIES_INVALID",
-        message: `${filename} has ${invalidCount} of ${rawData.length} entries that failed schema validation. These entries will be ignored.`,
-      });
-    }
-
-    if (validEntries.length < expectedMinCount) {
-      findings.push({
-        level:   "warning",
-        phase,
-        code:    "METADATA_LOW_COUNT",
-        message: `${filename} has only ${validEntries.length} valid entries but expected at least ${expectedMinCount}.`,
-      });
-      console.log(`  ⚠ ${filename} — ${validEntries.length} valid entries (expected ≥ ${expectedMinCount})`);
-    } else {
-      console.log(`  ✓ ${filename} — ${validEntries.length} entries`);
-    }
-
-    return validEntries;
-  } catch (error) {
-    findings.push({
-      level:   "error",
-      phase,
-      code:    "METADATA_FILE_MISSING",
-      message: `${filename} could not be loaded. ` +
-               (error instanceof Error ? error.message : String(error)),
-    });
-    console.log(`  ✗ ${filename} — not found or not accessible`);
-    return [];
-  }
-}
-
-async function checkMetadataFiles(findings: Finding[]): Promise<void> {
-  const phase = "Phase 2 — Metadata Files";
-  console.log(`\n── ${phase} ──`);
-
-  // why: each call passes the item schema (not z.array(schema)) because
-  // checkOneMetadataFile iterates the file array and parses each entry individually
-  await checkOneMetadataFile("sets.json",         SetIndexEntrySchema,   40, phase, findings);
-  await checkOneMetadataFile("card-types.json",   CardTypeEntrySchema,   37, phase, findings);
-  await checkOneMetadataFile("hero-classes.json", HeroClassEntrySchema,   5, phase, findings);
-  await checkOneMetadataFile("hero-teams.json",   HeroTeamEntrySchema,   25, phase, findings);
-  await checkOneMetadataFile("icons-meta.json",   IconEntrySchema,        7, phase, findings);
-  await checkOneMetadataFile("leads.json",        LeadsEntrySchema,      50, phase, findings);
-}
-
-// ── Phase 3: Per-Set Card JSON ────────────────────────────────────────────────
+// ── Phase 2: Per-Set Card JSON ────────────────────────────────────────────────
 
 function checkImageUrlDomains(setData: SetData, setAbbr: string, phase: string, findings: Finding[]): void {
   const wrongDomainUrls: string[] = [];
@@ -516,7 +420,7 @@ async function checkPerSetCardData(
   setAbbreviations: string[],
   findings:         Finding[]
 ): Promise<Map<string, SetData>> {
-  const phase      = "Phase 3 — Per-Set Card JSON";
+  const phase      = "Phase 2 — Per-Set Card JSON";
   const sourceNote = IS_R2_MODE ? "(R2)" : `(${SETS_DIR})`;
   console.log(`\n── ${phase} ${sourceNote} (${setAbbreviations.length} sets) ──`);
 
@@ -547,10 +451,10 @@ async function checkPerSetCardData(
   return loadedSets;
 }
 
-// ── Phase 4: Cross-References ─────────────────────────────────────────────────
+// ── Phase 3: Cross-References ─────────────────────────────────────────────────
 
 function checkAlwaysLeadsConsistency(allSets: Map<string, SetData>, findings: Finding[]): void {
-  const phase = "Phase 4 — Cross-References";
+  const phase = "Phase 3 — Cross-References";
 
   for (const [setAbbr, setData] of allSets) {
     const villainGroupSlugs = new Set(setData.villains.map((vg) => vg.slug));
@@ -576,7 +480,7 @@ function checkAlwaysLeadsConsistency(allSets: Map<string, SetData>, findings: Fi
 }
 
 function checkSlugUniqueness(allSets: Map<string, SetData>, findings: Finding[]): void {
-  const phase      = "Phase 4 — Cross-References";
+  const phase      = "Phase 3 — Cross-References";
   const slugToSets = new Map<string, string[]>();
 
   for (const [setAbbr, setData] of allSets) {
@@ -616,7 +520,7 @@ function checkSlugUniqueness(allSets: Map<string, SetData>, findings: Finding[])
 }
 
 async function checkCrossReferences(allSets: Map<string, SetData>, findings: Finding[]): Promise<void> {
-  const phase = "Phase 4 — Cross-References";
+  const phase = "Phase 3 — Cross-References";
   console.log(`\n── ${phase} ──`);
 
   checkAlwaysLeadsConsistency(allSets, findings);
@@ -628,7 +532,7 @@ async function checkCrossReferences(allSets: Map<string, SetData>, findings: Fin
   }
 }
 
-// ── Phase 5: Image Spot-Checks ────────────────────────────────────────────────
+// ── Phase 4: Image Spot-Checks ────────────────────────────────────────────────
 
 function collectSpotCheckUrls(allSets: Map<string, SetData>): string[] {
   const imageUrls: string[] = [];
@@ -652,7 +556,7 @@ function collectSpotCheckUrls(allSets: Map<string, SetData>): string[] {
 }
 
 async function spotCheckImages(allSets: Map<string, SetData>): Promise<ImageCheckResult> {
-  const phase = "Phase 5 — Image Spot-Checks";
+  const phase = "Phase 4 — Image Spot-Checks";
 
   if (SKIP_IMAGES) {
     console.log(`\n── ${phase} — SKIPPED (SKIP_IMAGES=1) ──`);
@@ -799,7 +703,6 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  await checkMetadataFiles(allFindings);
   const allSets = await checkPerSetCardData(setAbbreviations, allFindings);
   await checkCrossReferences(allSets, allFindings);
   const imageResult = await spotCheckImages(allSets);
