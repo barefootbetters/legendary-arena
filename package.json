@@ -10,7 +10,7 @@
     "registry:build":       "pnpm --filter @legendary-arena/registry build",
     "registry:upload":      "pnpm --filter @legendary-arena/registry upload",
     "viewer:dev":           "pnpm --filter registry-viewer dev",
-    "viewer:build":         "pnpm --filter registry-viewer build",
+    "viewer:build":         "pnpm registry:build && pnpm --filter registry-viewer build",
 
     "migrate":              "node --env-file=.env scripts/migrate.mjs",
 
