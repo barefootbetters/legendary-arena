@@ -7539,6 +7539,138 @@ future WP that imports theme schemas into a browser-bundled consumer.
 
 ---
 
+### D-8501 — WP-085 Is the Queued Governance Instrument for §17 Vision Alignment Audit Enforcement
+**Decision:**
+`docs/ai/work-packets/WP-085-vision-alignment-audit.md` is the queued
+governance Work Packet that codifies the §17 Vision Alignment gate's
+enforcement tooling. WP-085 defines the orchestrator
+(`scripts/audit/vision/run-all.mjs`), the comment-aware filter on
+DET-001 inside `scripts/audit/vision/determinism.greps.mjs`, the
+two-channel detection model (script-channel executable detection +
+orchestrator-channel allowlist verification), the combined report
+format under `docs/audits/vision-alignment-{YYYY-MM-DD}.md`, and the
+single-verdict PASS/FAIL contract. WP-085 consumes the calibrated
+audit baseline captured at INFRA `24996a9` on `main` (6 DET-001
+documentation-only baseline exceptions / 4 DET-007 warnings /
+0 monetization / 0 registry / 0 engine-boundary findings) as a locked
+acceptance contract per Scope (In) §D.
+
+**Status scope of this decision:** Pre-execution only. WP-085 is a
+**queued instrument**, not an operational enforcement tool. Until
+EC-085 executes, the §17 gate is enforced by prose governance in
+`docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §17` and the
+supporting 01.3 / 01.4 references. The operational claim "§17 Vision
+Alignment is enforced by WP-085 audit tooling" is deferred to a
+separate decision landing at Commit B of EC-085, when the claim
+becomes factually accurate. The two-channel DET-001 model as a reusable
+mechanics pattern is likewise deferred to Commit B of EC-085.
+
+**Rationale:**
+The §17 Vision Alignment gate landed at SPEC `0689406` with prose-level
+enforcement across 00.3 / 01.3 / 01.4. The audit scaffold landed at
+INFRA `24996a9` with four `.greps.mjs` scripts under
+`scripts/audit/vision/`. The gap between a prose gate and a
+programmatic enforcer was previously labeled "WP-042 queued" in the
+Phase 7 breadcrumb at
+[WORK_INDEX.md](work-packets/WORK_INDEX.md) — a reference that
+collided with the actually-completed Deployment Checklists at WP-042
+(commit `c964cf4`, 2026-04-19). The vision audit instrument is now
+registered under its own identifier, WP-085, with the breadcrumb
+corrected to match in the same SPEC commit that landed this entry.
+
+Recording this decision pre-execution serves three purposes:
+
+1. Closes the governance drift vector created by the stale "WP-042"
+   breadcrumb before any future auditor can interpret it as evidence
+   of an ownership ambiguity.
+2. Locks the calibrated baseline (6 / 4 / 0 / 0 / 0) as the canonical
+   AC-2 source-of-truth before EC-085 proceeds, preventing
+   re-calibration creep.
+3. Provides a stable identity for the queued instrument that Phase 7
+   WPs and future governance references can cite without waiting for
+   EC-085 execution.
+
+**Alternatives rejected:**
+
+- **Defer the decision until Commit B of EC-085:** rejected. Post-
+  execution, the operational claim ("§17 *is enforced* by WP-085")
+  becomes factually true and warrants its own decision. But the
+  pre-execution claim ("WP-085 *is the queued instrument*") also
+  needs recording, because (a) the stale "WP-042" breadcrumb is a
+  governance-drift vector active right now, and (b) future auditors
+  may arrive in the window between this SPEC commit and EC-085
+  executing.
+- **Subsume the two-channel DET-001 model and the "§17 is enforced
+  by WP-085" operational claim into this decision:** rejected. Those
+  describe an instrument that does not yet exist operationally; the
+  corresponding decisions land at Commit B of EC-085 when the
+  mechanics are instantiated and the claim is factually accurate.
+  Separating forward-looking intent from operational reality
+  protects against the future-dated-claim pattern that Vision §14
+  (No Silent Drift) forbids.
+- **Let WP-085 register itself in `WORK_INDEX.md` without a
+  `DECISIONS.md` entry:** rejected.
+  `.claude/rules/work-packets.md` requires `WORK_INDEX.md`
+  registration before execution, but a governance instrument as
+  load-bearing as §17 enforcement warrants an immutable record of
+  *why* the instrument exists and *what* it is bound to. The entry
+  prevents future "is this still the canonical enforcer?" ambiguity
+  and gives a stable reference target (D-8501) that downstream
+  decisions can cite.
+- **Rename or renumber WP-085 back to WP-042:** rejected outright.
+  WP-042 is an already-completed WP (Deployment Checklists, commit
+  `c964cf4`, 2026-04-19) listed under Phase 7 at
+  [WORK_INDEX.md](work-packets/WORK_INDEX.md). Reusing its identifier
+  would destroy audit-trail traceability for both WPs.
+
+**Implementation locations:**
+
+- Source of truth for the queued instrument:
+  `docs/ai/work-packets/WP-085-vision-alignment-audit.md` (draft,
+  landed at this same SPEC commit).
+- Supporting audit scaffold:
+  `scripts/audit/vision/determinism.greps.mjs`,
+  `scripts/audit/vision/monetization.greps.mjs`,
+  `scripts/audit/vision/registry.greps.mjs`,
+  `scripts/audit/vision/engine-boundary.greps.mjs` (landed at INFRA
+  `24996a9`; untouched by this decision).
+- Governance gates:
+  `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md` §17,
+  `docs/ai/REFERENCE/01.3-commit-hygiene-under-ec-mode.md` Vision
+  Trailer convention,
+  `docs/ai/REFERENCE/01.4-pre-flight-invocation.md` Vision Sanity
+  Check (all landed at SPEC `0689406`; untouched by this decision).
+- Index registration:
+  `docs/ai/work-packets/WORK_INDEX.md` Phase 7 — breadcrumb
+  terminology corrected ("documentation-only baseline exceptions"
+  replaces "false positives"; "WP-085" replaces the stale "WP-042")
+  and a formal WP-085 row landed in the same SPEC commit as this
+  decision.
+
+**Post-execution follow-ups (not in this decision's scope):**
+
+- Operational enforcement claim ("§17 Vision Alignment is enforced
+  by WP-085 audit tooling") lands at Commit B of EC-085.
+- Two-channel DET-001 model as a reusable governance pattern
+  (script-channel executable detection + orchestrator-channel
+  baseline-exception verification; single-channel DET-007 asymmetry)
+  lands at Commit B of EC-085 alongside the mechanics.
+- Memory file `feedback_audit_tooling_scaffold_first.md` rationale
+  paragraph correction ("WP-042" → "WP-085") tracked under WP-085
+  § Post-WP-085 Follow-ups.
+
+**Affected WPs:** WP-085 (introduction); all Phase 7 WPs that cite
+the §17 Vision Alignment gate (inherited enforcement scope once
+EC-085 executes).
+**Introduced:** WP-085 (pre-execution SPEC governance bundle)
+**Status:** Immutable
+**Raised:** WP-085 drafting, 2026-04-22
+**Resolved:** 2026-04-22 (pre-execution SPEC commit landing
+WORK_INDEX.md registration + breadcrumb terminology correction +
+this decision + WP-085 draft)
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

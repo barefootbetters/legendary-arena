@@ -1200,11 +1200,11 @@ These packets ship the game and keep it running.
 
 > **Vision Alignment instrument:** Audit scaffold landed (INFRA `24996a9`)
 > under `scripts/audit/vision/`. Calibrated baseline on main: 6 critical
-> (DET-001 doc-comment false positives), 4 warning (legitimate snapshot
-> timestamps). WP-042 queued to codify governance using calibration as
-> `## Acceptance Criteria` source. The §17 Vision Alignment gate
-> (`docs/ai/REFERENCE/00.3-prompt-lint-checklist.md`, commit `0689406`)
-> applies to every Phase 7 WP listed below.
+> (DET-001 documentation-only baseline exceptions), 4 warning (legitimate
+> snapshot timestamps). WP-085 queued to codify governance using
+> calibration as `## Acceptance Criteria` source (see D-8501). The §17
+> Vision Alignment gate (`docs/ai/REFERENCE/00.3-prompt-lint-checklist.md`,
+> commit `0689406`) applies to every Phase 7 WP listed below.
 
 - [ ] WP-049 — PAR Simulation Engine ✅ Reviewed
   Dependencies: WP-036, WP-048
@@ -1412,6 +1412,33 @@ These packets ship the game and keep it running.
   does NOT modify rules files; no engine modifications; no new layers,
   boundaries, or invariants invented; was truncated at 69 lines and not
   registered in WORK_INDEX — normalized to full PACKET-TEMPLATE and added
+
+- [ ] WP-085 — Vision Alignment Audit (Detection, Classification & Gating) ✅ Reviewed
+  Dependencies: None (builds on the audit scaffold landed at INFRA `24996a9`
+  and the §17 gate landed at SPEC `0689406`; independent of all Phase 7
+  gameplay WPs)
+  Notes: Governance + audit-tooling WP — no engine modifications, no
+  gameplay logic, no runtime behavior. Codifies the §17 Vision Alignment
+  gate's enforcement instrument as an executable PASS/FAIL orchestrator
+  (`scripts/audit/vision/run-all.mjs`) over the four domain greps
+  (determinism, monetization, registry, engine-boundary). Two-channel
+  DET-001 model — script-channel executable detection (comment-aware
+  filter in `determinism.greps.mjs`) + orchestrator-channel baseline-
+  exception verification against an exact six-file allowlist (see AC-2 /
+  AC-3). DET-007 remains single-channel by design (see AC-4). Calibrated
+  baseline (6 DET-001 / 4 DET-007 / 0 / 0 / 0) captured at INFRA
+  `24996a9` is consumed as a locked contract per Scope (In) §D —
+  constants `EXPECTED_DET_001`, `EXPECTED_DET_007`, `EXPECTED_MONETIZATION`,
+  `EXPECTED_REGISTRY`, `EXPECTED_ENGINE_BOUNDARY`. Three-file Commit-A
+  budget (`run-all.mjs` + comment-aware filter + first audit report
+  under `docs/audits/`) plus three-file Commit-B governance close
+  (STATUS.md + WORK_INDEX.md checkbox + DECISIONS.md entries for the
+  two-channel model and operational §17 enforcement). Same-day re-run
+  refusal (audit-history immutability). Vision trailer
+  `§3, §13, §14, §22, §24`; self-compliant `## Vision Alignment` block
+  present. Queued-instrument governance decision landed as D-8501
+  pre-execution. See
+  [WP-085-vision-alignment-audit.md](WP-085-vision-alignment-audit.md).
 
 ---
 
