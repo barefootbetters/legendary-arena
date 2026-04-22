@@ -1198,6 +1198,14 @@ These packets make the game safe to ship.
 
 These packets ship the game and keep it running.
 
+> **Vision Alignment instrument:** Audit scaffold landed (INFRA `24996a9`)
+> under `scripts/audit/vision/`. Calibrated baseline on main: 6 critical
+> (DET-001 doc-comment false positives), 4 warning (legitimate snapshot
+> timestamps). WP-042 queued to codify governance using calibration as
+> `## Acceptance Criteria` source. The §17 Vision Alignment gate
+> (`docs/ai/REFERENCE/00.3-prompt-lint-checklist.md`, commit `0689406`)
+> applies to every Phase 7 WP listed below.
+
 - [ ] WP-049 — PAR Simulation Engine ✅ Reviewed
   Dependencies: WP-036, WP-048
   Notes: Implements T2 Competent Heuristic AI policy (5 behavioral heuristics
