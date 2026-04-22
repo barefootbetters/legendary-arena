@@ -79,6 +79,51 @@ Before writing a single line:
 
 ---
 
+## Vision Alignment
+
+Per `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §17`. Clause numbers
+reference `docs/01-VISION.md`.
+
+**Vision clauses touched:** §3 (Player Trust & Fairness — beta runs the
+production engine bit-identically), §4 (Faithful Multiplayer Experience —
+beta validates multiplayer correctness including reconnection and
+late-joining), §5 (Longevity & Expandability — extension seams for cohorts
+and feedback categories are locked behind governance events, not silent
+code changes), §13 (Execution Checklist-Driven Development), §14 (Explicit
+Decisions, No Silent Drift), §18 (Replayability & Spectation —
+`reproductionReplayId` reinforces replay as the canonical reproducer; a
+dedicated spectator cohort validates spectator UX), §22 (Deterministic &
+Reproducible Evaluation), §24 (Replay-Verified Competitive Integrity —
+"all replay verifications pass" is a binary exit criterion), NG-1 (No
+Pay-to-Win), NG-3 (No Content Withheld for Competitive Advantage).
+
+**Conflict assertion:** No conflict: this WP preserves all touched
+clauses.
+
+**Non-Goal proximity (NG-1, NG-3):** The three beta cohorts
+(`'expert-tabletop'`, `'general-strategy'`, `'passive-observer'`)
+partition players **by expertise and role only — never by payer status,
+ownership, or future paid-tier intent.** The closed literal union is
+locked under `## Non-Negotiable Constraints` below and in EC-037 §Locked
+Values; widening requires a new `DECISIONS.md` entry. Beta grants no
+mechanical edge — `## Out of Scope` forbids monetization testing. No
+paid-tier access, paid cohort gating, or ownership-linked content
+variation exists in beta. NG-1 and NG-3 are not crossed. NG-2, NG-4,
+NG-5, NG-6, and NG-7 are not triggered (no randomized purchases, no
+timers, no ads, no dark patterns, no apology-requiring monetization).
+
+**Determinism preservation (§22):** `packages/game-engine/src/beta/` is
+forbidden from `Math.random()`, `Date.now()`, `performance.now()`, and
+`new Date()` per `## Non-Negotiable Constraints` below, and is forbidden
+from importing any engine gameplay subdirectory per the Layer Boundary
+(enforced by the verification greps). Beta games therefore run the
+production engine **bit-identically** — no "beta mode" exists. The
+`BetaFeedback.reproductionReplayId` field references the WP-027 replay
+harness without perturbing it; beta feedback is metadata-not-state and
+never enters `G`. Replay-verified integrity (§24) is preserved end-to-end.
+
+---
+
 ## Non-Negotiable Constraints
 
 **Engine-wide (always apply — do not remove):**
