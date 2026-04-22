@@ -4,7 +4,7 @@
   "exportName": "MarvelStudios",
   "heroes": [
     {
-      "id": -1,
+      "id": 1,
       "name": "Black Widow",
       "slug": "black-widow",
       "team": "avengers",
@@ -21,7 +21,7 @@
           "cost": 3,
           "attack": "2",
           "recruit": null,
-          "imageUrl": "https://images.barefootbetters.com/msp1/msp1-hr-black-widow-3c1.webp",
+          "imageUrl": "https://images.barefootbetters.com/msp1/msp1-hr-black-widow-2c1.webp",
           "abilities": [
             "[hc:covert]: You may KO a card from your hand or discard pile. If you do, rescue a Bystander."
           ]
@@ -37,7 +37,7 @@
           "cost": 2,
           "attack": null,
           "recruit": null,
-          "imageUrl": "https://images.barefootbetters.com/msp1/msp1-hr-black-widow-2c2.webp",
+          "imageUrl": "https://images.barefootbetters.com/msp1/msp1-hr-black-widow-3c2.webp",
           "abilities": [
             "Draw a Card.",
             "[hc:tech]: Rescue a Bystander."
@@ -78,7 +78,7 @@
       ]
     },
     {
-      "id": -1,
+      "id": 2,
       "name": "Captain America",
       "slug": "captain-america",
       "team": "avengers",
@@ -151,7 +151,7 @@
       ]
     },
     {
-      "id": -1,
+      "id": 7,
       "name": "Hawkeye",
       "slug": "hawkeye",
       "team": "avengers",
@@ -224,7 +224,7 @@
       ]
     },
     {
-      "id": -1,
+      "id": 8,
       "name": "Hulk",
       "slug": "hulk",
       "team": "avengers",
@@ -297,7 +297,7 @@
       ]
     },
     {
-      "id": -1,
+      "id": 9,
       "name": "Iron Man",
       "slug": "iron-man",
       "team": "avengers",
@@ -372,7 +372,7 @@
       ]
     },
     {
-      "id": -1,
+      "id": 10,
       "name": "Nick Fury",
       "slug": "nick-fury",
       "team": "shield",
@@ -445,7 +445,7 @@
       ]
     },
     {
-      "id": -1,
+      "id": 14,
       "name": "Thor",
       "slug": "thor",
       "team": "avengers",
@@ -542,7 +542,7 @@
           "name": "Hostile Takeover",
           "slug": "hostile-takeover",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 9,
           "imageUrl": "https://images.barefootbetters.com/msp1/msp1-mt-iron-monger-hostile-takeover.webp",
           "abilities": [
             "Fight: If there are no Villains in the bank, reveal the top card of the Villain Deck. If it’s a Villain, it enters the Bank."
@@ -552,7 +552,7 @@
           "name": "Overloaded Arsenal",
           "slug": "overloaded-arsenal",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 9,
           "imageUrl": "https://images.barefootbetters.com/msp1/msp1-mt-iron-monger-overloaded-arsenal.webp",
           "abilities": [
             "Fight: Each other player reveals a [hc:tech] Hero or gains a Wound. Then each other player reveals a [hc:ranged] Hero or gains a Wound."
@@ -562,7 +562,7 @@
           "name": "Sonic Stunner",
           "slug": "sonic-stunner",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 9,
           "imageUrl": "https://images.barefootbetters.com/msp1/msp1-mt-iron-monger-sonic-stunner.webp",
           "abilities": [
             "Fight: Each other player reveals a [hc:tech] Hero or discards down to 4 cards."
@@ -572,7 +572,7 @@
           "name": "Unexpected Betrayal",
           "slug": "unexpected-betrayal",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 9,
           "imageUrl": "https://images.barefootbetters.com/msp1/msp1-mt-iron-monger-unexpected-betrayal.webp",
           "abilities": [
             "Fight: If the Bank is empty, the player on your right chooses a Villain from their Victory Pile. That Villain enters the Bank."
@@ -581,7 +581,7 @@
       ]
     },
     {
-      "id": -1,
+      "id": 2,
       "name": "Loki",
       "slug": "loki",
       "alwaysLeads": [],
@@ -591,7 +591,7 @@
           "name": "Loki",
           "slug": "loki",
           "tactic": false,
-          "vAttack": null,
+          "vAttack": 10,
           "imageUrl": "https://images.barefootbetters.com/msp1/msp1-mm-loki.webp",
           "abilities": [
             "Always Leads: Enemies of Asgard",
@@ -602,7 +602,7 @@
           "name": "Cruel Ruler",
           "slug": "cruel-ruler",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 10,
           "imageUrl": "https://images.barefootbetters.com/msp1/msp1-mt-loki-cruel-ruler.webp",
           "abilities": [
             "Fight: Defeat a Villain in the City for free."
@@ -612,7 +612,7 @@
           "name": "Maniacal Tyrant",
           "slug": "maniacal-tyrant",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 10,
           "imageUrl": "https://images.barefootbetters.com/msp1/msp1-mt-loki-maniacal-tyrant.webp",
           "abilities": [
             "Fight: KO up to four cards from your discard pile."
@@ -622,7 +622,7 @@
           "name": "Vanishing Illusions",
           "slug": "vanishing-illusions",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 10,
           "imageUrl": "https://images.barefootbetters.com/msp1/msp1-mt-loki-vanishing-illusions.webp",
           "abilities": [
             "Fight: Each other player KOs a Villain from their Victory Pile."
@@ -632,7 +632,7 @@
           "name": "Whispers and Lies",
           "slug": "whispers-and-lies",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 10,
           "imageUrl": "https://images.barefootbetters.com/msp1/msp1-mt-loki-whispers-and-lies.webp",
           "abilities": [
             "Fight: Each other player KOs two Bystanders from their Victory Pile."
@@ -641,7 +641,7 @@
       ]
     },
     {
-      "id": -1,
+      "id": 4,
       "name": "Red Skull",
       "slug": "red-skull",
       "alwaysLeads": [],
@@ -651,7 +651,7 @@
           "name": "Red Skull",
           "slug": "red-skull",
           "tactic": false,
-          "vAttack": null,
+          "vAttack": 7,
           "imageUrl": "https://images.barefootbetters.com/msp1/msp1-mm-red-skull.webp",
           "abilities": [
             "Always Leads: HYDRA",
@@ -662,7 +662,7 @@
           "name": "Endless Resources",
           "slug": "endless-resources",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 7,
           "imageUrl": "https://images.barefootbetters.com/msp1/msp1-mt-red-skull-endless-resources.webp",
           "abilities": [
             "Fight: You get +4[icon:recruit]."
@@ -672,7 +672,7 @@
           "name": "HYDRA Conspiracy",
           "slug": "hydra-conspiracy",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 7,
           "imageUrl": "https://images.barefootbetters.com/msp1/msp1-mt-red-skull-hydra-conspiracy.webp",
           "abilities": [
             "Fight: Draw two cards. Then draw another card for each HYDRA Villain in your Victory Pile."
@@ -682,7 +682,7 @@
           "name": "Negablast Grenades",
           "slug": "negablast-grenades",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 7,
           "imageUrl": "https://images.barefootbetters.com/msp1/msp1-mt-red-skull-negablast-grenades.webp",
           "abilities": [
             "Fight: You get +3[icon:attack]."
@@ -692,7 +692,7 @@
           "name": "Ruthless Dictator",
           "slug": "ruthless-dictator",
           "tactic": true,
-          "vAttack": null,
+          "vAttack": 7,
           "imageUrl": "https://images.barefootbetters.com/msp1/msp1-mt-red-skull-ruthless-dictator.webp",
           "abilities": [
             "Fight: Look at the top three cards of your deck. KO one, discard one and put one back on top of your deck."
@@ -965,28 +965,44 @@
       "name": "Hammer Drone Army",
       "slug": "hammer-drone-army",
       "imageUrl": "https://images.barefootbetters.com/msp1/msp1-hm-hammer-drone-army.webp",
-      "abilities": []
+      "abilities": [
+        "[keyword:Fight]: Look at the top two cards of your deck. KO one of them and put the other back."
+      ],
+      "vp": 1,
+      "vAttack": 3
     },
     {
       "id": 30,
       "name": "HYDRA Pilots",
       "slug": "hydra-pilots",
       "imageUrl": "https://images.barefootbetters.com/msp1/msp1-hm-hydra-pilots.webp",
-      "abilities": []
+      "abilities": [
+        "[keyword:Fight]: You get +1[icon:recruit]."
+      ],
+      "vp": 1,
+      "vAttack": 3
     },
     {
       "id": 31,
       "name": "HYDRA Spies",
       "slug": "hydra-spies",
       "imageUrl": "https://images.barefootbetters.com/msp1/msp1-hm-hydra-spies.webp",
-      "abilities": []
+      "abilities": [
+        "[keyword:Fight]: When you draw a new hand of cards at the end of this turn, draw an extra card."
+      ],
+      "vp": 1,
+      "vAttack": 3
     },
     {
       "id": 32,
       "name": "Ten Rings Fanatics",
       "slug": "ten-rings-fanatics",
       "imageUrl": "https://images.barefootbetters.com/msp1/msp1-hm-ten-rings-fanatics.webp",
-      "abilities": []
+      "abilities": [
+        "[keyword:Fight]: KO one of your Heroes."
+      ],
+      "vp": 1,
+      "vAttack": 3
     }
   ],
   "schemes": [
@@ -1085,7 +1101,7 @@
       ]
     },
     {
-      "id": -1,
+      "id": 7,
       "name": "Super Hero Civil War",
       "slug": "super-hero-civil-war",
       "imageUrl": "https://images.barefootbetters.com/msp1/msp1-sc-super-hero-civil-war.webp",
@@ -1100,7 +1116,7 @@
       ]
     },
     {
-      "id": -1,
+      "id": 8,
       "name": "Unleash the Power of the Cosmic Cube",
       "slug": "unleash-the-power-of-the-cosmic-cube",
       "imageUrl": "https://images.barefootbetters.com/msp1/msp1-sc-unleash-the-power-of-the-cosmic-cube.webp",
@@ -1123,7 +1139,7 @@
       "name": "Bystander",
       "slug": "bystander",
       "vp": 1,
-      "imageUrl": "https://images.barefootbetters.com/msp1/msp1-by-bystander.webp",
+      "imageUrl": "https://images.barefootbetters.com/msp1/msp1-by.webp",
       "cards": [
         {
           "qtd": 30,
@@ -1197,8 +1213,8 @@
       "id": 10,
       "name": "Wound",
       "filterName": "Wound (MS)",
-      "slug": "wound-ms",
-      "imageUrl": "https://images.barefootbetters.com/msp1/msp1-wd-wound-ms.webp",
+      "slug": "wound-msp1",
+      "imageUrl": "https://images.barefootbetters.com/msp1/msp1-wd.webp",
       "cards": [
         {
           "qtd": 30,
