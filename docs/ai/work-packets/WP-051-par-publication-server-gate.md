@@ -211,6 +211,33 @@ Before writing a single line:
 
 ---
 
+## Vision Alignment
+
+> Per `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §17`. Server-layer
+> enforcement of the pre-release PAR gate — the keystone for §24
+> replay-verified integrity entering Phase 7 launch.
+
+**Vision clauses touched:** §3, §22, §24, §25, §26
+
+**Conflict assertion:** No conflict. Casual play continues when PAR is
+absent — protects §3 (no opaque difficulty imposed on non-competitive
+players). Competitive submissions fail closed when PAR is missing —
+protects §24 and §25 (no skill claim on an unpublished baseline).
+Server is read-only for PAR data; never derives or mutates it
+(preserves §22 and §26 calibration authority).
+
+**Non-Goal proximity:** N/A — server gate; no paid surface. The
+fail-closed posture structurally prevents NG-1 (no payer can bypass
+the gate by submitting against a missing PAR).
+
+**Determinism preservation:** STRONG. `checkParPublished` is index-only
+lookup — no filesystem probing, no derivation. Server is enforcer, not
+calculator; any computation is delegated to the engine. The gate's
+behavior is fully determined by the published index plus the submitted
+scenario key.
+
+---
+
 ## Files Expected to Change
 
 - `apps/server/src/par/parGate.mjs` — **new** — loadParIndex,

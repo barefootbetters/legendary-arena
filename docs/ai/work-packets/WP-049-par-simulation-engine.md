@@ -363,6 +363,34 @@ Before writing a single line:
 
 ---
 
+## Vision Alignment
+
+> Per `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §17`. This WP
+> implements Phase 2 of the PAR derivation pipeline — directly bears on
+> every Skill Measurement clause.
+
+**Vision clauses touched:** §3, §22, §23, §25, §26
+
+**Conflict assertion:** No conflict. T2 Competent Heuristic AI policy
+with five behavioral heuristics models experienced human play — never
+perfect play (preserves "PAR is beatable" per §20). 55th-percentile
+aggregation across ≥500 simulated games per scenario implements §26
+Phase 2 verbatim. PAR is scenario-only — never adapted to hero
+selection (§26).
+
+**Non-Goal proximity:** Confirmed clear of NG-1, NG-7. PAR derivation
+is transparent and version-controlled; no paid tier can alter PAR. The
+content-driven seed (§26 Phase 1) gives day-one coverage without
+monetization gating.
+
+**Determinism preservation:** STRONG. Two-domain PRNG (D-3604) — run-level
+shuffle and policy-level decision PRNGs never share state. Reproducible
+from seed + setup. AI uses the same pipeline as humans (D-0701, D-3602)
+— no special engine access. Setup is the sole configuration input
+(D-1244); invalid setups are rejected, never corrected.
+
+---
+
 ## Files Expected to Change
 
 - `packages/game-engine/src/simulation/ai.competent.ts` — **new** —

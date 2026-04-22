@@ -201,6 +201,31 @@ Comprehensive live operations document covering:
 
 ---
 
+## Vision Alignment
+
+> Per `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §17`. Live ops is
+> where post-launch drift becomes silent if metrics aren't deterministic.
+
+**Vision clauses touched:** §3, §5, §13, §14, §22, §24
+
+**Conflict assertion:** No conflict. Metrics are derived from
+deterministic sources, version-tagged per D-0901, preserving §22 and §24.
+"Hot-patches forbidden / validated content OK" enforces §14. The
+"stability > growth" stance defends §5 and the Financial Sustainability
+covenant by refusing growth-at-all-costs trade-offs.
+
+**Non-Goal proximity:** Confirmed clear of NG-1..7. Metrics are
+privacy-preserving and never tied to monetization triggers. No metric
+informs paid-surface tuning (which would risk NG-6 dark patterns).
+
+**Determinism preservation:** Confirmed. All metric categories — system
+health (P0), gameplay stability (P1), balance signals (P2), UX friction
+(P3) — derive from deterministic sources. Replay divergence is a P1
+alert (§24). Alerting reuses WP-035 severity levels — no parallel
+contract.
+
+---
+
 ## Files Expected to Change
 
 - `docs/ops/LIVE_OPS_FRAMEWORK.md` — **new** — complete live ops framework

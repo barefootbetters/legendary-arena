@@ -328,6 +328,32 @@ Before writing a single line:
 
 ---
 
+## Vision Alignment
+
+> Per `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §17`. PAR artifacts
+> are the substrate the server gate (WP-051) and leaderboards (WP-054)
+> depend on — must be immutable and bit-reproducible.
+
+**Vision clauses touched:** §3, §22, §24, §26
+
+**Conflict assertion:** No conflict. Content-addressed by ScenarioKey
+with deterministic sorted-key JSON gives bit-for-bit reproducibility
+(§22). PAR version directories (`v1/`, `v2/`) are immutable once
+published; calibration updates create new versions, never in-place
+edits — preserving "Once declared, PAR baselines are immutable for the
+purpose of competition" (§26).
+
+**Non-Goal proximity:** N/A — backing store, no user-facing or paid
+surface.
+
+**Determinism preservation:** STRONG. Deterministic JSON serialization
+is the entire correctness contract of this WP. Two implementations of
+the storage layer must produce byte-identical outputs from the same
+input. No timestamp, no host metadata, no nondeterministic field
+ordering.
+
+---
+
 ## Files Expected to Change
 
 - `packages/game-engine/src/simulation/par.storage.ts` — **new** —

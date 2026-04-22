@@ -177,6 +177,30 @@ Document any findings in DECISIONS.md.
 
 ---
 
+## Vision Alignment
+
+> Per `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §17`. Architecture
+> consolidation must reflect the authority chain that now includes
+> `01-VISION.md` (per `01.4-pre-flight-invocation.md` Authority Chain).
+
+**Vision clauses touched:** §7, §8, §13, §14, §15
+
+**Conflict assertion:** No conflict. WP-041 audits — does not redefine —
+the authority hierarchy. The audit must verify that `01-VISION.md`
+appears in the documented authority chain (CLAUDE.md > ARCHITECTURE.md >
+01-VISION.md > rules > WORK_INDEX > WPs). If the current chain omits
+01-VISION.md, that is the drift this audit must log; it is not a
+license to remove the vision from authority.
+
+**Non-Goal proximity:** N/A — WP touches no monetization or competitive
+surface. (Audit only.)
+
+**Determinism preservation:** N/A — audit only; no engine, RNG, scoring,
+or replay code is modified. WP-041 verifies the Field Classification
+table covers all 19 G fields without changing any of them.
+
+---
+
 ## Files Expected to Change
 
 - `docs/ai/ARCHITECTURE.md` — **modified** — Field Classification completeness,

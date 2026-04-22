@@ -195,6 +195,34 @@ Comprehensive change governance document covering:
 
 ---
 
+## Vision Alignment
+
+> Per `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §17`. This packet
+> defines the immutable-surface set — the very mechanism the vision
+> relies on for §22 and §24 long-term integrity.
+
+**Vision clauses touched:** §5, §13, §14, §22, §24, Financial Sustainability
+
+**Conflict assertion:** No conflict. The five change categories
+(ENGINE | RULES | CONTENT | UI | OPS) and the immutable-surfaces list
+(replay, RNG, scoring, invariants, endgame) directly enforce §22 and
+§24 — these surfaces require a major version to change (D-1002),
+preventing silent drift (§14). Per-release change budgets enforce
+sustainability (§5, "no margin, no mission").
+
+**Non-Goal proximity:** Confirmed clear of NG-1, NG-3. Primary growth
+vectors are CONTENT + UI (D-1003) — never ENGINE shortcuts. This
+structurally prevents pay-to-win (NG-1) and content-withholding (NG-3)
+because no paid surface can request an ENGINE change without major-version
+governance.
+
+**Determinism preservation:** Confirmed. Replay, RNG, scoring,
+invariants, and endgame are explicitly immutable; modification requires
+major-version bump and architecture review. No determinism-bearing path
+can drift via a content or UI release.
+
+---
+
 ## Files Expected to Change
 
 - `docs/governance/CHANGE_GOVERNANCE.md` — **new** — change classification,
