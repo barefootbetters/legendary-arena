@@ -36,16 +36,19 @@ pnpm install
 
 ## How to Run Validation
 
-Validates every card in `data/raw/` against the Zod schema.  
-Fails with exit code 1 if there are duplicate IDs, missing fields, or bad image filenames.
+Validates card data in `data/cards/` and lookup files in `data/metadata/`
+against the Zod schemas. Fails with exit code 1 on schema violations,
+unresolved cross-references, or unreachable card images (Phase 5 HEAD checks).
 
 ```bash
-# From repo root:
+# From repo root (defaults resolve to data/cards/ and data/metadata/):
 pnpm registry:validate
 
-# With explicit options:
-cd packages/registry
-CARDS_DIR=../../data/raw DATA_VERSION=1.0.0 pnpm validate
+# Skip the Phase 5 image reachability checks:
+SKIP_IMAGES=1 pnpm registry:validate
+
+# Validate against live R2 instead of local files:
+R2_BASE_URL=https://images.barefootbetters.com pnpm registry:validate
 ```
 
 Writes a `packages/registry/dist/registry-health.json` report on every run.
