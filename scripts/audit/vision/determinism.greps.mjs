@@ -10,6 +10,11 @@
  * are scanned (gitignored paths and `.claude/worktrees/` are excluded
  * automatically).
  *
+ * DET-001 additionally applies a comment-aware filter so the gate fires
+ * only on executable `Math.random(` use. Doc-comment hits are recorded
+ * separately by the orchestrator (`run-all.mjs`) against a fixed
+ * allowlist. See `isDocCommentLine` below and WP-085 Scope (In) §B.
+ *
  * Run via: node scripts/audit/vision/determinism.greps.mjs
  *
  * Exit code 0 = no critical findings. Exit code 1 = at least one
@@ -102,6 +107,39 @@ export const RULES = [
 ];
 
 /**
+ * Returns true when a `git grep -n` output line describes a JSDoc or
+ * single-line comment. The line is expected in the form
+ * `path:lineno:content`; the content portion (after the second colon) is
+ * trimmed of leading whitespace and inspected for a `//`, `/*`, or `*`
+ * prefix.
+ *
+ * @param {string} rawLine - One line of `git grep -n` output.
+ * @returns {boolean} True when the content portion is comment markup.
+ */
+export function isDocCommentLine(rawLine) {
+  const firstColon = rawLine.indexOf(':');
+  if (firstColon < 0) {
+    return false;
+  }
+  const secondColon = rawLine.indexOf(':', firstColon + 1);
+  if (secondColon < 0) {
+    return false;
+  }
+  const content = rawLine.slice(secondColon + 1);
+  const trimmed = content.replace(/^\s+/, '');
+  if (trimmed.startsWith('//')) {
+    return true;
+  }
+  if (trimmed.startsWith('/*')) {
+    return true;
+  }
+  if (trimmed.startsWith('*')) {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Runs a single rule via git grep and prints any findings.
  *
  * @param {object} rule - One entry from the RULES array.
@@ -128,7 +166,20 @@ async function runRule(rule) {
     throw error;
   }
 
-  const lines = stdout.split('\n').filter((line) => line.length > 0);
+  let lines = stdout.split('\n').filter((line) => line.length > 0);
+  if (rule.id === 'DET-001') {
+    // why: DET-001 protects the executable determinism invariant (Vision §22).
+    // Doc-comment occurrences of the forbidden call are pure documentation
+    // warnings ("never use ...") and must not trip the gate; only executable
+    // use breaks replay. DET-007 is asymmetric and does NOT apply this
+    // filter: a comment line reading "snapshotAt uses ..." is the canonical
+    // site documentation and carries equal audit meaning to the executable
+    // hit one or two lines below. Filtering DET-007 would destroy audit
+    // signal. The six doc-comment hits DET-001 removes here are verified
+    // by the orchestrator (`run-all.mjs`) against a fixed file:line
+    // allowlist per WP-085 AC-3.
+    lines = lines.filter((rawLine) => !isDocCommentLine(rawLine));
+  }
   for (const line of lines) {
     console.log(`[${rule.severity.toUpperCase()}] ${rule.id} (${rule.clause}): ${line}`);
     console.log(`    ${rule.description}`);
