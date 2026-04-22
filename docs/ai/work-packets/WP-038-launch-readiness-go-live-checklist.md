@@ -187,6 +187,21 @@ Launch day procedures:
 
 ---
 
+## Vision Alignment
+
+**Touched Vision Clauses:** §3 (Trust & Fairness), §5 (Operational Transparency), §13 (EC‑Driven Development), §14 (No Silent Drift), §18 (Replayability), §22 (Deterministic Evaluation), §24 (Replay‑Verified Integrity)
+
+**Conflict Assessment:**
+No conflict. WP‑038 is a documentation‑only launch readiness and live‑ops checklist. It does not modify engine logic, scoring rules, RNG behavior, content semantics, or persistence formats. All gates defined here validate existing invariants rather than redefining them.
+
+**Determinism Preservation:**
+Strong. WP‑038 introduces no runtime behavior, no replay-affecting code, and no numerical logic. Replay, determinism, and content‑balance gates referenced herein assert the continued satisfaction of already‑locked invariants (as enforced by prior ECs and audits), and cannot induce divergence or nondeterminism.
+
+**Non‑Goals & Guardrails:**
+This WP does not introduce monetization surfaces, rebalance content, adjust scoring, or alter competitive fairness. It operationalizes launch readiness checks only, preserving NG‑1 (No Pay‑to‑Win) and NG‑3 (No Content Withholding) by verification, not mutation.
+
+---
+
 ## Files Expected to Change
 
 - `docs/ops/LAUNCH_READINESS.md` — **new** — pre-launch readiness gates
