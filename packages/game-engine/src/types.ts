@@ -265,6 +265,20 @@ export type {
   SimulationResult,
 } from './simulation/ai.types.js';
 
+// Beta metadata (WP-037 / D-3701)
+// why: Beta metadata types (BetaFeedback, BetaCohort, FeedbackCategory)
+// are defined canonically in src/beta/beta.types.ts (WP-037 / D-3701).
+// Re-exported here so consumers importing from './types.js' have access.
+// These types are metadata-not-state — the engine never constructs or
+// mutates instances, and BetaFeedback is never a field of
+// LegendaryGameState. Construction lives in the server layer or future
+// ops tooling per the D-3701 sub-rule.
+export type {
+  BetaFeedback,
+  BetaCohort,
+  FeedbackCategory,
+} from './beta/beta.types.js';
+
 import type { TurnStage } from './turn/turnPhases.types.js';
 import type { CardExtId, PlayerZones, GlobalPiles } from './state/zones.types.js';
 import type { TurnEconomy, CardStatEntry } from './economy/economy.types.js';

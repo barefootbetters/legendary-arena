@@ -346,3 +346,10 @@ export { createRandomPolicy } from './simulation/ai.random.js';
 export { getLegalMoves } from './simulation/ai.legalMoves.js';
 export type { SimulationLifecycleContext } from './simulation/ai.legalMoves.js';
 export { runSimulation } from './simulation/simulation.runner.js';
+
+// Beta metadata (WP-037 / D-3701)
+export type {
+  BetaFeedback,
+  BetaCohort,
+  FeedbackCategory,
+} from './beta/beta.types.js';
