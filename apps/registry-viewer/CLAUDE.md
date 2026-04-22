@@ -53,9 +53,9 @@ App Mount
 | `src/components/HealthPanel.vue` | Diagnostics modal — set counts, parse errors |
 | `src/composables/useRules.ts` | Glossary lookups + ability text tokenizer; fetched keyword/rule Maps are installed at mount via `setGlossaries()` |
 | `src/composables/useGlossary.ts` | Rules Glossary panel state; `rebuildGlossaryEntries()` is called once after the async glossary fetch resolves |
-| `src/lib/registryClient.ts` | Singleton factory for HTTP-based CardRegistry |
-| `src/lib/themeClient.ts` | Singleton factory for ThemeDefinition[] from R2 |
-| `src/lib/glossaryClient.ts` | Singleton factory for KeywordGlossary + RuleGlossary Maps from R2 (non-blocking, devLog-instrumented) |
+| `src/lib/registryClient.ts` | Singleton factory for HTTP-based CardRegistry; validates `public/registry-config.json` at the fetch boundary with `ViewerConfigSchema.safeParse(...)` and throws a `[RegistryConfig] Rejected …` full-sentence `Error` on failure |
+| `src/lib/themeClient.ts` | Singleton factory for `ThemeDefinition[]` from R2; validates `themes/index.json` with `ThemeIndexSchema.safeParse(...)` (throws on failure) and each theme with `ThemeDefinitionSchema.safeParse(...)` (warns + skips on failure) |
+| `src/lib/glossaryClient.ts` | Singleton factory for KeywordGlossary + RuleGlossary Maps from R2 (non-blocking, devLog-instrumented); validates at the fetch boundary with `KeywordGlossarySchema` / `RuleGlossarySchema` `.safeParse(...)` |
 | `src/registry/schema.ts` | Zod schemas — permissive to handle inconsistent set data |
 | `src/registry/shared.ts` | `flattenSet()`, `applyQuery()`, `buildHealthReport()` |
 | `src/registry/impl/httpRegistry.ts` | Browser-safe CardRegistry factory (R2 fetches) |
@@ -147,7 +147,7 @@ the parallel `HERO_CLASS_LABELS` Map (also hardcoded, 5 entries).
 
 ## Design Patterns
 
-- **Zod-inferred types** — all types derived from schemas, giving runtime validation + static types
+- **Zod-inferred types** — all types derived from schemas, giving runtime validation + static types. All four R2 fetchers (`registryClient`, `themeClient`, keyword glossary, rule glossary) validate at the fetch boundary with `.safeParse(...)` against schemas imported from the narrow `@legendary-arena/registry/schema` and `@legendary-arena/registry/theme.schema` subpaths (never the barrel, which would pull Node-only modules into the Rollup graph per `glossaryClient.ts:20–28`). Hard dependencies (viewer config, theme index) throw; isolated batch entries (individual theme files, glossary payloads) warn + skip / degrade to an empty Map.
 - **Singleton caching** — registry and themes promises cached in module scope to prevent duplicate fetches
 - **Non-blocking themes** — `Promise.allSettled()` so card view works even if theme fetch fails
 - **Browser-safe registry** — `browser.ts` prevents accidental Node imports in the client bundle

@@ -27,8 +27,10 @@
 
 import { z } from "zod";
 
-// ── Registry config (registry-config.json at R2 root) ─────────────────────────
-// Simple array of set abbreviation strings. Not a source file — R2 artifact only.
+// ── Registry set-abbreviation list (R2 /registry-config.json artifact) ────────
+// Simple array of set abbreviation strings. R2 artifact only — not the viewer's
+// public config. For the viewer's public/registry-config.json (object shape with
+// metadataBaseUrl, eagerLoad, rulebookPdfUrl), see ViewerConfigSchema below.
 export const RegistryConfigSchema = z.array(
   z.string().min(2).max(10)
 );
@@ -194,3 +196,26 @@ export const RuleGlossarySchema    = z.array(RuleGlossaryEntrySchema);
 
 export type KeywordGlossaryEntry = z.infer<typeof KeywordGlossaryEntrySchema>;
 export type RuleGlossaryEntry    = z.infer<typeof RuleGlossaryEntrySchema>;
+
+// ── Registry-viewer public config (apps/registry-viewer/public/registry-config.json) ──
+// why: distinct from RegistryConfigSchema (R2 set-abbreviation artifact).
+// Object shape consumed by the viewer at boot to locate metadata and optional
+// rulebook PDF. rulebookPdfUrl is optional so WP-082 can add it before, after,
+// or alongside EC-108 without schema churn.
+export const ViewerConfigSchema = z
+  .object({
+    metadataBaseUrl: z.string().url(),
+    eagerLoad: z.array(z.string().min(2).max(10)).optional(),
+    rulebookPdfUrl: z.string().url().optional(),
+  })
+  .strict();
+
+export type ViewerConfig = z.infer<typeof ViewerConfigSchema>;
+
+// ── Themes directory index (R2 /themes/index.json) ────────────────────────────
+// why: root manifest of theme filenames; if malformed, the Themes subsystem
+// is considered unavailable and must fail fast. Individual theme failures are
+// non-fatal (warn + skip) because one bad theme must not hide the rest.
+export const ThemeIndexSchema = z.array(z.string().regex(/\.json$/, "theme index entries must end in .json"));
+
+export type ThemeIndex = z.infer<typeof ThemeIndexSchema>;

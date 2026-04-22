@@ -13,6 +13,10 @@
     "./schema": {
       "import": "./dist/schema.js",
       "types": "./dist/schema.d.ts"
+    },
+    "./theme.schema": {
+      "import": "./dist/theme.schema.js",
+      "types": "./dist/theme.schema.d.ts"
     }
   },
   "files": [

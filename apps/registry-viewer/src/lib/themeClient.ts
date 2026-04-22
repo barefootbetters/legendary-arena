@@ -5,46 +5,25 @@
  * An index.json manifest lists all available theme filenames.
  */
 
+// why: import schemas from the narrow `./schema` and `./theme.schema`
+// subpaths rather than the barrel `@legendary-arena/registry`. The barrel
+// re-exports a Node-only local-file registry factory (`node:fs/promises`,
+// `node:path`); Rollup resolves the import graph before tree-shaking can
+// prune the unused factory, so a barrel import would break the viewer's
+// production build at `resolve` from `__vite-browser-external`. The
+// dedicated subpath exports have zero Node-module dependencies.
+import { ThemeIndexSchema } from "@legendary-arena/registry/schema";
+import {
+  ThemeDefinitionSchema,
+  type ThemeDefinition,
+} from "@legendary-arena/registry/theme.schema";
 import { devLog } from "./devLog";
 
-// ── Types (viewer-local, not imported from packages/registry) ───────────────
-
-export interface ThemeSetupIntent {
-  mastermindId: string;
-  schemeId: string;
-  villainGroupIds: string[];
-  henchmanGroupIds?: string[];
-  heroDeckIds: string[];
-}
-
-export interface ThemePlayerCount {
-  recommended: number[];
-  min: number;
-  max: number;
-}
-
-export interface ThemePrimaryStoryReference {
-  issue?: string;
-  year?: number;
-  externalUrl?: string;
-  marvelUnlimitedUrl?: string;
-  externalIndexUrls?: string[];
-}
-
-export interface ThemeDefinition {
-  themeSchemaVersion: number;
-  themeId: string;
-  name: string;
-  description: string;
-  setupIntent: ThemeSetupIntent;
-  playerCount: ThemePlayerCount;
-  tags?: string[];
-  references?: {
-    primaryStory: ThemePrimaryStoryReference;
-  };
-  flavorText?: string;
-  comicImageUrl?: string | null;
-}
+// why: re-export so existing consumers (App.vue, ThemeGrid.vue, ThemeDetail.vue)
+// continue to `import type { ThemeDefinition } from "./themeClient"` without
+// widening the WP-083 allowlist to cover component files that never needed
+// editing for validation-wiring reasons.
+export type { ThemeDefinition };
 
 // ── Singleton loader ────────────────────────────────────────────────────────
 
@@ -60,23 +39,54 @@ export function getThemes(metadataBaseUrl: string): Promise<ThemeDefinition[]> {
     const startedAt = performance.now();
     devLog("theme", "load start", { baseUrl: metadataBaseUrl });
     try {
-      const indexResponse = await fetch(`${metadataBaseUrl}/themes/index.json`);
+      const indexUrl = `${metadataBaseUrl}/themes/index.json`;
+      const indexResponse = await fetch(indexUrl);
       if (!indexResponse.ok) {
         throw new Error(
           `Cannot load themes/index.json: HTTP ${indexResponse.status}. ` +
           'Verify that theme files have been uploaded to R2.',
         );
       }
-      const filenames: string[] = await indexResponse.json();
+      const rawIndex = await indexResponse.json();
+      const indexResult = ThemeIndexSchema.safeParse(rawIndex);
+      if (!indexResult.success) {
+        const issue = indexResult.error.issues[0];
+        // why: dot-joined path keeps viewer logs operator-readable without
+        // Zod fluency; default ["0"]-style array paths are noisy. First issue
+        // only — additional issues suppressed so operator logs stay scannable,
+        // per WP-083 §"Zod error reporting" lock.
+        const path = issue.path.length > 0 ? issue.path.join(".") : "root";
+        throw new Error(
+          `[Themes] Rejected themes/index.json from ${indexUrl}: ${path} — ${issue.message}. ` +
+          `The Themes tab cannot populate without a valid index.`,
+        );
+      }
+      const filenames = indexResult.data;
 
       const fetchResults = await Promise.allSettled(
         filenames.map(async (filename) => {
-          const themeResponse = await fetch(`${metadataBaseUrl}/themes/${filename}`);
+          const themeUrl = `${metadataBaseUrl}/themes/${filename}`;
+          const themeResponse = await fetch(themeUrl);
           if (!themeResponse.ok) {
             console.warn(`[Themes] Failed to load ${filename}: HTTP ${themeResponse.status}`);
             return null;
           }
-          return themeResponse.json() as Promise<ThemeDefinition>;
+          const rawTheme = await themeResponse.json();
+          const themeResult = ThemeDefinitionSchema.safeParse(rawTheme);
+          if (!themeResult.success) {
+            const issue = themeResult.error.issues[0];
+            // why: `console.warn` + `return null` preserves the pre-existing
+            // `Promise.allSettled` + null-filter tail below. An individual
+            // malformed theme must not hide the rest — severity is warn-and-skip
+            // per D-083C.
+            const path = issue.path.length > 0 ? issue.path.join(".") : "root";
+            console.warn(
+              `[Themes] Rejected ${filename} from ${themeUrl}: ${path} — ${issue.message}. ` +
+              `Theme skipped; Themes tab will not show it.`,
+            );
+            return null;
+          }
+          return themeResult.data;
         }),
       );
 

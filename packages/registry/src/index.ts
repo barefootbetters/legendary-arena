@@ -37,11 +37,15 @@ export {
   KeywordGlossarySchema,
   RuleGlossaryEntrySchema,
   RuleGlossarySchema,
+  ViewerConfigSchema,
+  ThemeIndexSchema,
 } from "./schema.js";
 
 export type {
   KeywordGlossaryEntry,
   RuleGlossaryEntry,
+  ViewerConfig,
+  ThemeIndex,
 } from "./schema.js";
 
 // Theme types
