@@ -320,8 +320,8 @@
           "slug": "dum-dum-dugan",
           "hc": "strength",
           "cost": 3,
-          "attack": 1,
-          "recruit": 2,
+          "attack": "1",
+          "recruit": "2",
           "rarityLabel": "S.H.I.E.L.D. Officer Special",
           "imageUrl": "https://images.barefootbetters.com/shld/shld-sp-dum-dum-dugan.webp",
           "abilities": [
@@ -341,7 +341,7 @@
           "hc": "tech",
           "cost": 3,
           "attack": null,
-          "recruit": 2,
+          "recruit": "2",
           "rarityLabel": "S.H.I.E.L.D. Officer Special",
           "imageUrl": "https://images.barefootbetters.com/shld/shld-sp-grant-ward.webp",
           "abilities": [
@@ -361,7 +361,7 @@
           "hc": "strength",
           "cost": 3,
           "attack": null,
-          "recruit": 2,
+          "recruit": "2",
           "rarityLabel": "S.H.I.E.L.D. Officer Special",
           "imageUrl": "https://images.barefootbetters.com/shld/shld-sp-gw-bridge.webp",
           "abilities": [
@@ -401,7 +401,7 @@
           "hc": "instinct",
           "cost": 3,
           "attack": null,
-          "recruit": 2,
+          "recruit": "2",
           "rarityLabel": "S.H.I.E.L.D. Officer Special",
           "imageUrl": "https://images.barefootbetters.com/shld/shld-sp-melinda-may.webp",
           "abilities": [
@@ -421,7 +421,7 @@
           "hc": "covert",
           "cost": 3,
           "attack": null,
-          "recruit": 2,
+          "recruit": "2",
           "rarityLabel": "S.H.I.E.L.D. Officer Special",
           "imageUrl": "https://images.barefootbetters.com/shld/shld-sp-sharon-carter.webp",
           "abilities": [
@@ -441,7 +441,7 @@
           "hc": "covert",
           "cost": 3,
           "attack": null,
-          "recruit": 2,
+          "recruit": "2",
           "rarityLabel": "S.H.I.E.L.D. Officer Special",
           "imageUrl": "https://images.barefootbetters.com/shld/shld-sp-victoria-hand.webp",
           "abilities": [
@@ -461,7 +461,7 @@
           "hc": "ranged",
           "cost": 3,
           "attack": null,
-          "recruit": 2,
+          "recruit": "2",
           "rarityLabel": "S.H.I.E.L.D. Officer Special",
           "imageUrl": "https://images.barefootbetters.com/shld/shld-sp-yo-yo-rodriguez.webp",
           "abilities": [
