@@ -1052,7 +1052,7 @@ These packets make the game safe to ship.
   Commit prefix `EC-072:` at execution (never `WP-080:` per P6-36).
   Unblocks WP-063 Pre-Session Gate #4 once executed.
 
-- [ ] WP-066 — Registry Viewer: Card Image-to-Data Toggle (Not yet reviewed)
+- [x] WP-066 — Registry Viewer: Card Image-to-Data Toggle (Reviewed 2026-04-22; pre-flight: docs/ai/invocations/preflight-wp066.md)
   Dependencies: None (registry viewer is independent)
   Notes: Adds a global view-mode toggle to `apps/registry-viewer/` allowing
   users to switch between image view (current behavior) and a structured
