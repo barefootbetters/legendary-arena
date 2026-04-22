@@ -6771,6 +6771,215 @@ that introduces a server-side feedback collection backend wires it in
 
 ---
 
+### D-3702 — Beta Access Is Invitation-Only for Signal Quality
+**Decision:** The controlled public beta runs on
+**invitation-only** access — no anonymous sessions, no walk-up access,
+no open signup. Every participant has a personally issued invitation
+tied to their beta account. Total concurrent participants across all
+cohorts are capped at a pre-committed ceiling well below production
+capacity.
+
+**Rationale:** The beta's primary deliverable is **attributable,
+structured feedback from known cohorts** (rules-aware tabletop
+experts, general-strategy players, passive observers), not breadth.
+Open-access would flood the feedback pipeline with low-attribution
+noise, dilute cohort-level signal, and make balance-perception
+measurement (D-0702-anchored comparison of human win rates against
+AI simulation predictions) impossible at the sample sizes the beta
+captures. Invitation-only also bounds operational risk: every beta
+build stays inside the production release cadence (WP-035) and
+remains rollbackable (D-0902) under the same procedures as
+production. Signal quality scales poorly with volume; signal
+attribution scales poorly with anonymity. Invitation-only is the
+only configuration that satisfies both.
+
+**Alternatives rejected:**
+
+- **Open beta with rate-limited signup:** rejected. Rate-limiting
+  constrains volume but does nothing to fix attribution. Without
+  cohort assignment at invitation time, feedback cannot be filtered
+  by `BetaCohort` downstream and the cohort-target-signal breakdown
+  in `BETA_STRATEGY.md` §3 collapses.
+- **Invitation for cohort 1 + cohort 3, open signup for cohort 2:**
+  rejected as an operational complication without a signal-quality
+  payoff. The general-strategy cohort is the largest contributor to
+  the UX-clarity exit criterion (task-completion rate ≥ 80%);
+  unknown-provenance participants would skew that number and the
+  confusion-feedback ceiling without a clean provenance audit trail.
+- **Paid early-access tier with optional beta participation:**
+  rejected. Violates Vision NG-1 (no pay-to-win) and NG-3 (no
+  content withheld for competitive advantage) proximity, and would
+  couple access to monetization — explicitly forbidden by
+  `BETA_STRATEGY.md` §1 non-goal #3 and Out-of-Scope "no
+  monetization testing" per WP-037.
+
+**Implementation locations:**
+
+- Strategy document: `docs/beta/BETA_STRATEGY.md` §4 (Access
+  Control — invitation-only statement + hard user cap + unique
+  build ID + opt-in diagnostics) and the invitation-only rationale
+  paragraph.
+- Contract: `packages/game-engine/src/beta/beta.types.ts` —
+  `BetaFeedback.sessionId` is an opaque identifier (participant
+  identity is upstream of the engine, resolved by the server layer
+  at invitation acceptance).
+
+**Affected WPs:** WP-037
+**Introduced:** WP-037 / EC-037
+**Status:** Immutable
+**Raised:** WP-037 Definition of Done, 2026-04-22
+**Resolved:** 2026-04-22 (Commit B governance close)
+
+---
+
+### D-3703 — Beta Partitions Participants Into Three Cohorts by Expertise and Role
+**Decision:** The controlled public beta partitions participants
+into **exactly three cohorts** in this locked order:
+
+1. `'expert-tabletop'` — rules-aware, edge-case focused.
+2. `'general-strategy'` — UX, clarity, onboarding signal.
+3. `'passive-observer'` — spectator and replay usability.
+
+The cohort identifiers match the `BetaCohort` closed literal union
+in `packages/game-engine/src/beta/beta.types.ts` verbatim. Adding a
+fourth cohort requires a new `DECISIONS.md` entry and a coordinated
+documentation update — no silent expansion.
+
+**Rationale:** The three cohorts capture **mutually distinct signal
+targets** that cannot be collapsed into a single "beta participant"
+pool without losing fidelity:
+
+- Expert tabletop players find rules-interaction defects, trigger-
+  ordering anomalies, and rare content combinations that
+  general-strategy players rarely trigger.
+- General-strategy players find UX friction, tooltip-comprehension
+  gaps, and onboarding flows that experts have long internalized
+  past.
+- Passive observers validate an entirely different UI surface
+  (spectator + replay) that active players never see. Vision §18
+  (Replayability & Spectation) requires a dedicated cohort; an
+  active-only beta would leave spectator UX and late-joining
+  semantics unverified.
+
+Sampling all three in parallel produces balanced feedback across the
+engine, UI, and replay pillars simultaneously. A single-cohort
+(or two-cohort) beta leaves at least one pillar unverified at exit
+time, directly blocking the Category 1 / Category 2 / Category 4
+exit criteria in `BETA_EXIT_CRITERIA.md`.
+
+**Alternatives rejected:**
+
+- **Two cohorts (experts + general):** rejected. Collapses spectator
+  and replay usability into general-strategy, which is a mismatch of
+  signal targets. Passive observers provide no active-play data and
+  active players provide no passive-observation data; averaging the
+  two muddies both signals.
+- **Four cohorts with a separate "multiplayer focus" group:**
+  rejected at MVP. Vision §4 multiplayer validation (reconnection,
+  late-joining, no-desync) is operationalized as binary exit
+  criteria in `BETA_EXIT_CRITERIA.md` §4.3 / §4.4 / §4.5 measured
+  across **all** cohorts, not concentrated in a separate group.
+  A dedicated multiplayer cohort would fragment the signal without
+  fixing a measurement gap.
+- **Cohorts partitioned by payer status, ownership tier, or
+  "founder" rank:** rejected outright. Violates Vision NG-1 (no
+  pay-to-win) and NG-3 (no content withheld for competitive
+  advantage). The cohort closed literal union is locked precisely
+  to prevent this widening.
+
+**Implementation locations:**
+
+- Contract: `packages/game-engine/src/beta/beta.types.ts` —
+  `BetaCohort` closed three-member literal union, ordered
+  `'expert-tabletop'` → `'general-strategy'` →
+  `'passive-observer'` (signal-target sequence).
+- Strategy document: `docs/beta/BETA_STRATEGY.md` §3 (User Cohorts
+  with signal-target descriptions) and the three-cohorts rationale
+  paragraph.
+- Exit gate: `docs/beta/BETA_EXIT_CRITERIA.md` §2 (UX clarity
+  criterion 2.1 explicitly targets cohort 2 general-strategy
+  task-completion rate).
+
+**Affected WPs:** WP-037
+**Introduced:** WP-037 / EC-037
+**Status:** Immutable
+**Raised:** WP-037 Definition of Done, 2026-04-22
+**Resolved:** 2026-04-22 (Commit B governance close)
+
+---
+
+### D-3704 — Beta Uses the Same Release Gates as Production
+**Decision:** Beta deployments pass through **the same release
+gates as production** per `docs/ops/RELEASE_CHECKLIST.md` (WP-035)
+— no beta-specific shortcuts. Every beta build completes the full
+validation sequence (build-green, test-green, invariant checks,
+replay verification, versioning stamp) before deployment, and is
+rolled back through the same procedure (D-0902) if any operational
+counter (`OpsCounters`, D-3501) trips a threshold.
+
+**Rationale:** Using production gates for beta produces three
+reinforcing guarantees:
+
+1. **Defect parity.** Any defect the beta surfaces is a defect the
+   same pipeline could have caught in production. Beta-only
+   defects that a laxer beta pipeline could permit would mask
+   shipping-blockers from the exit criteria evaluation.
+2. **Remediation portability.** Any fix shipped to beta is
+   directly portable to production without re-validation, because
+   both environments are gated identically. A looser beta pipeline
+   would force a second, different validation pass at
+   beta-to-prod promotion — a governance drift-vector WP-035
+   explicitly forecloses.
+3. **Rollback consistency.** `docs/ops/DEPLOYMENT_FLOW.md` defines
+   the sequential `dev → test → staging → prod` promotion path and
+   four rollback rules; beta deployments traverse the same path
+   (beta is a production-adjacent environment using the same
+   underlying release process). All rollback capabilities from
+   WP-035 / D-0902 apply to beta deployments verbatim.
+
+**Alternatives rejected:**
+
+- **Skip Gate 2 / Gate 4 for beta (looser release):** rejected.
+  Every gate in `RELEASE_CHECKLIST.md` is a binary pass/fail
+  safety check; skipping any of them would invalidate the exit
+  criteria (Category 4 "rollback never triggered in final
+  deployment" assumes the deployment was gated identically to
+  production).
+- **Introduce a `beta-release-checklist.md` with a subset of
+  gates:** rejected. Creates a governance-drift seam between beta
+  and production release processes; any skipped gate becomes a
+  permanent asymmetry that future WPs would have to re-bridge.
+  Single-checklist discipline is cheaper than dual-checklist
+  discipline.
+- **Allow a "hotfix without full gate traversal" exception for
+  beta:** rejected. Any defect severe enough to warrant a hotfix
+  is severe enough to warrant the full gate sequence; shortening
+  the gates is the pre-condition for the kind of silent regression
+  Vision §14 (Explicit Decisions, No Silent Drift) forbids.
+
+**Implementation locations:**
+
+- Procedure reference: `docs/ops/RELEASE_CHECKLIST.md` — no
+  modification by WP-037; beta simply consumes the existing
+  gates.
+- Procedure reference: `docs/ops/DEPLOYMENT_FLOW.md` — beta
+  deployments traverse the same path; no beta-only branch.
+- Procedure reference: `docs/ops/INCIDENT_RESPONSE.md` — the P0 /
+  P1 / P2 / P3 severity model applies to beta incidents verbatim.
+- Strategy document: `docs/beta/BETA_STRATEGY.md` §4 (the
+  same-release-gates-as-production rationale paragraph).
+- Exit gate: `docs/beta/BETA_EXIT_CRITERIA.md` §4.2 ("rollback
+  never triggered in the final deployment") and §Why these
+  criteria (Category 4 anchor to D-0902).
+
+**Affected WPs:** WP-037
+**Introduced:** WP-037 / EC-037
+**Status:** Immutable
+**Raised:** WP-037 Definition of Done, 2026-04-22
+**Resolved:** 2026-04-22 (Commit B governance close)
+
+---
+
 ### D-8201 — Keyword and Rule Glossary Payloads Are Zod-Validated at the Fetch Boundary
 **Decision:** `data/metadata/keywords-full.json` and
 `data/metadata/rules-full.json` are validated against

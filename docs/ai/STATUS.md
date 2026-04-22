@@ -7,6 +7,91 @@
 
 ## Current State
 
+### WP-037 / EC-037 Executed — Public Beta Strategy (2026-04-22, EC-037)
+
+WP-037 lands the controlled-public-beta pillar as a Contract-Only +
+Documentation bundle: a new `packages/game-engine/src/beta/`
+subdirectory under D-3701 engine code category classification plus
+two strategy documents under `docs/beta/`. Public beta is defined,
+gated, and measurable — objectives are bounded, cohorts are locked,
+access is invitation-only, feedback is structured and build-versioned,
+and exit requires ALL four binary pass/fail categories to pass. Beta
+runs the same deterministic engine as production (no "beta mode"),
+uses the same release gates as production (no shortcuts), and
+inherits all rollback capabilities from WP-035 / D-0902.
+
+**Surfaces produced:**
+
+- `packages/game-engine/src/beta/beta.types.ts` — three pure type
+  contracts: `BetaFeedback` (6 required + 1 optional fields in locked
+  order), `BetaCohort` (closed 3-member literal union), `FeedbackCategory`
+  (closed 5-member literal union). No runtime values. Required
+  `// why:` module-header comment (EC-037 line 65) verbatim: *"feedback
+  tied to build version for traceability; replay reference enables
+  reproduction."*
+- `packages/game-engine/src/types.ts` / `index.ts` — additive re-export
+  blocks appended after the WP-036 simulation block under
+  `// Beta metadata (WP-037 / D-3701)` comment headers. Zero
+  modification to `LegendaryGameState`; zero modification to any
+  pre-existing re-export.
+- `docs/beta/BETA_STRATEGY.md` — 8-section strategy doc: objectives
+  (4 primary + 4 non-goals), feature scope, three cohorts with signal
+  targets (`expert-tabletop`, `general-strategy`, `passive-observer`),
+  access control (invitation-only, hard user cap, unique build ID,
+  opt-in diagnostics), feedback collection model, timeline (closed
+  alpha → invite beta → open beta), exit-criteria summary, and the
+  three DoD-mandated rationale paragraphs.
+- `docs/beta/BETA_EXIT_CRITERIA.md` — binary pass/fail gate, 4
+  categories (Rules correctness / UX clarity / Balance perception /
+  Stability), every criterion cites a specific source signal
+  (`BetaFeedback` records, `OpsCounters` deltas, `verifyDeterminism`
+  output, `runSimulation` output, deployment logs). Includes the
+  three Vision §4 multiplayer criteria (reconnection round-trips,
+  late-joining semantics, no-desync in final 2 weeks). Category 3
+  anchored to D-0702; Category 4 anchored to D-0902 + Vision §4.
+- `docs/ai/post-mortems/01.6-WP-037-public-beta-strategy.md` — formal
+  10-section 01.6 output (mandatory per P6-35: new long-lived
+  abstraction + new code-category directory).
+- `docs/ai/DECISIONS.md` — three new minor decisions (D-3702 /
+  D-3703 / D-3704, Commit B) documenting the invitation-only signal-
+  quality rationale, the three-cohort signal-target rationale, and
+  the same-release-gates-as-production rationale.
+
+**Scope lock honored:** exactly 5 files modified in Commit A plus
+the post-mortem (see `docs/ai/post-mortems/01.6-WP-037-public-beta-strategy.md`
+§4). Zero modifications to gameplay logic — all 24 engine subdirectories
+and `matchSetup.*` clean. Zero new dependencies. Test baseline unchanged:
+444 / 110 / 0 engine (RS-2 zero-new-tests lock honored); repo-wide
+596 / 0. `BetaFeedback` never a field of `LegendaryGameState` (Verification
+Step 12). Beta games run the same deterministic engine as production.
+
+**Amendments:**
+
+- A-037-01 (landed in A0 SPEC bundle `a4f5574` 2026-04-22): D-3701 +
+  `02-CODE-CATEGORIES.md` §engine subdirectory row for `src/beta/`.
+  Pre-landed before session open so classification was unambiguous.
+- Vision Alignment retrofit (landed at `e5b0d67` 2026-04-22): WP-037
+  acquired its `## Vision Alignment` block per the 00.3 §17 gate.
+- Reality reconciliation (pre-commit in Commit A): `beta.types.ts`
+  module-header JSDoc softened to cite D-3701 for the forbidden-token
+  list rather than restate tokens inline. No governance content lost;
+  D-3701 enumerates the forbidden tokens exhaustively. See
+  post-mortem §8 and §10.
+
+**Commit topology:**
+
+- Commit A0 (SPEC, `a4f5574`): pre-flight bundle — D-3701 +
+  02-CODE-CATEGORIES.md update.
+- Commit A (EC-037, `160d9b9`): code + post-mortem (this execution).
+- Commit B (SPEC, *this session*): STATUS.md + WORK_INDEX.md +
+  EC_INDEX.md + three DECISIONS.md entries (D-3702 / D-3703 / D-3704).
+
+**Unblocks:** WP-038 (launch readiness), WP-039 (post-launch metrics /
+live ops). Both downstream WPs can consume the `BetaFeedback` contract
+surface and the strategy-document-pair template directly.
+
+---
+
 ### WP-084 / EC-109 Executed — Delete Unused Auxiliary Metadata Schemas and Files (2026-04-21, EC-109)
 
 WP-084 deletes five unused auxiliary Zod schemas (`CardTypeEntrySchema`,

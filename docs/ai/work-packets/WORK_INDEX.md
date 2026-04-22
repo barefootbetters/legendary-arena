@@ -1351,7 +1351,7 @@ These packets ship the game and keep it running.
   + `docs/ai/session-context/session-context-wp036.md` +
   `docs/ai/post-mortems/01.6-WP-036-ai-playtesting-balance-simulation.md`.
 
-- [ ] WP-037 — Public Beta Strategy ✅ Reviewed
+- [x] WP-037 — Public Beta Strategy ✅ Reviewed (2026-04-22, EC-037 at 160d9b9)
   Dependencies: WP-036
   Notes: Strategy docs + type definitions only — no engine modifications;
   invitation-only, hard user cap, unique build ID; three cohorts (expert
@@ -1360,7 +1360,15 @@ These packets ship the game and keep it running.
   category (rules, UX, balance, stability); no "beta mode" in engine — beta
   runs same deterministic engine as production; uses same release gates as
   prod (WP-035); was truncated at 114 lines — normalized to full
-  PACKET-TEMPLATE
+  PACKET-TEMPLATE. Executed as Contract-Only + Documentation bundle:
+  `packages/game-engine/src/beta/beta.types.ts` (new, D-3701), additive
+  re-export blocks in `types.ts` / `index.ts`, `docs/beta/BETA_STRATEGY.md`
+  + `docs/beta/BETA_EXIT_CRITERIA.md`, and the mandatory 01.6 post-mortem.
+  Test baseline unchanged (444/110/0 engine; 596/0 repo-wide — RS-2
+  zero-new-tests lock honored). Session prompt:
+  `docs/ai/invocations/session-wp037-public-beta-strategy.md`. Pre-flight:
+  Commit A0 SPEC bundle at `a4f5574` (D-3701 + 02-CODE-CATEGORIES.md).
+  Post-mortem: `docs/ai/post-mortems/01.6-WP-037-public-beta-strategy.md`.
 
 - [ ] WP-038 — Launch Readiness & Go-Live Checklist ✅ Reviewed
   Dependencies: WP-037
