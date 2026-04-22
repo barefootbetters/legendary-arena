@@ -125,6 +125,8 @@ apply):**
   - `team` → "Team"
   - `rarity` → "Rarity"
   - `edition` → "Edition" (refers to set or expansion; confirm field name)
+  - `name` → "Name"
+  - `type` → "Type"
 
 ---
 
