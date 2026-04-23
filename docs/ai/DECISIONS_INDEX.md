@@ -543,6 +543,15 @@ For full rationale, see `DECISIONS.md`.
 
 ---
 
+## Architecture Certification & Audit (WP-041)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-4101 | Resolved Transcription Inconsistency: `docs/ai/ARCHITECTURE.md` `*Last updated:*` footer refreshed from stale `WP-014 review` reference to `WP-041` certification; new `Architecture Version: 1.0.0 / Last Reviewed: 2026-04-23 / Verified Against: WP-001 through WP-040` stamp at top of file is now the authoritative recency marker per WP-041 §Goal §1 | WP-041 |
+| D-4102 | Rules-Architecture Drift Log: `.claude/rules/architecture.md` lags `docs/ai/ARCHITECTURE.md` on three consolidated points — (1) Layer Overview missing the Shared Tooling layer (WP-065), (2) Import Rules table missing rows for `vue-sfc-loader` and `apps/arena-client (WP-061+)`, (3) Authority Hierarchy section retains stale `00.1-master-coordination-prompt.md` at #2 and omits `01-VISION.md` and `WORK_INDEX.md`; logged for future rules-correction pass per WP-041 §Out of Scope (`.claude/rules/*.md` files are NOT modified in this packet) | WP-041 |
+
+---
+
 ## Deployment Checklists — Scope Reduction (WP-042)
 
 | Decision ID | Summary | Introduced In |

@@ -8722,6 +8722,34 @@ a change to one of the five surfaces.
 
 ---
 
+### D-4101 — Stale "Last updated" Footer in ARCHITECTURE.md Refreshed
+
+**Type:** Resolved Transcription Inconsistency
+**Packet:** WP-041
+**Date:** 2026-04-23
+
+**Finding:** The `*Last updated:*` footer at the bottom of `docs/ai/ARCHITECTURE.md` still cited `WP-014 review — villain deck reveal pipeline and RevealedCardType conventions` as the most recent update marker, even though the document had been updated through WP-065 per the in-blockquote update history at the top of the file (`Updated: WP-065 (2026-04-16) -- added Shared Tooling layer ...`).
+
+**Resolution:** Footer rewritten to reference the WP-041 certification pass (this packet) as the most recent formal review. The new `Architecture Version: 1.0.0 / Last Reviewed: 2026-04-23 / Verified Against: WP-001 through WP-040` stamp added at the top of ARCHITECTURE.md by WP-041 §Goal §1 is now the authoritative recency marker; the bottom-of-file footer is a secondary maintenance note.
+
+**Citation:** `docs/ai/ARCHITECTURE.md` footer (last paragraph before EOF, pre-WP-041 edit); WP-041 §Goal §1 (version stamp); WP-065 (Shared Tooling layer addition, 2026-04-16).
+
+---
+
+### D-4102 — Rules-Architecture Drift: `.claude/rules/architecture.md` Lags WP-065 and WP-041
+
+**Type:** Rules-Architecture Drift Log
+**Packet:** WP-041
+**Date:** 2026-04-23
+
+**Finding:** `.claude/rules/architecture.md` has drifted from `docs/ai/ARCHITECTURE.md` (the authoritative source) on three consolidated points stemming from incomplete back-propagation of WP-065 and WP-041: (1) the rules-file Layer Overview table lists 5 layers but ARCHITECTURE.md (post-WP-065) lists 6 — the Shared Tooling layer (`packages/vue-sfc-loader/**`, plus future cross-cutting dev/test packages) is missing from the rules-file table; (2) the rules-file Import Rules table is missing rows for `vue-sfc-loader` and `apps/arena-client (WP-061+)` that ARCHITECTURE.md §Package Import Rules now contains, and is missing the explicit `vue-sfc-loader` entries in the forbidden-imports columns of `game-engine`, `registry`, and `preplan`; (3) the rules-file Authority Hierarchy section still names `docs/ai/REFERENCE/00.1-master-coordination-prompt.md` at position #2 and omits `docs/01-VISION.md` and `docs/ai/work-packets/WORK_INDEX.md`, while ARCHITECTURE.md (post-WP-041) Document override hierarchy lists 7 entries (`.claude/CLAUDE.md` → `ARCHITECTURE.md` → `01-VISION.md` → `.claude/rules/*.md` → `WORK_INDEX.md` → WPs → conversation).
+
+**Resolution:** Logged for future rules-correction pass; no fix applied in this packet. WP-041 §Out of Scope and §Non-Negotiable Constraints both prohibit modifying any `.claude/rules/*.md` file in this packet ("drift between rules and architecture is logged for a separate correction pass"). A follow-up SPEC packet may apply the corrections; the rules file's role is enforcement of ARCHITECTURE.md, not redefinition, so the drift is a documentation hazard but not a runtime risk.
+
+**Citation:** `.claude/rules/architecture.md` Layer Overview table, Import Rules table, Authority Hierarchy section (all three sections drift); `docs/ai/ARCHITECTURE.md §Layer Boundary (Authoritative)` (canonical layer list), `docs/ai/ARCHITECTURE.md §Package Import Rules` (canonical import table), `docs/ai/ARCHITECTURE.md` Document override hierarchy block (post-WP-041, top of file); WP-065 (Shared Tooling layer addition); WP-041 (authority chain lock).
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

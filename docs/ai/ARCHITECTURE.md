@@ -5,16 +5,20 @@
 > rules, and dependency constraints. If this document and a Work Packet conflict,
 > this document wins.
 >
-> **Document override hierarchy** (established in WP-001):
-> 1. `docs/ai/REFERENCE/00.1-master-coordination-prompt.md` — highest authority;
->    the coordination system itself; non-negotiable constraints and session protocol
+> **Document override hierarchy** (updated by WP-041, 2026-04-23):
+> 1. `.claude/CLAUDE.md` — highest authority; root coordination for Claude Code sessions
 > 2. `docs/ai/ARCHITECTURE.md` (this file) — architectural decisions and boundaries
-> 3. Individual Work Packets (`docs/ai/work-packets/WP-NNN-*.md`)
-> 4. Active conversation context — lowest authority
+> 3. `docs/01-VISION.md` — vision goals; non-negotiable truths about what the game is
+> 4. `.claude/rules/*.md` — enforcement rules derived from this file
+> 5. `docs/ai/work-packets/WORK_INDEX.md` — execution spine: which WPs exist, in what order
+> 6. Individual Work Packets (`docs/ai/work-packets/WP-NNN-*.md`)
+> 7. Active conversation context — lowest authority
 >
-> Higher entries win in any conflict. A Work Packet may never override this
-> document or `00.1`. If a Work Packet appears to conflict with either, stop
-> and re-read this document and `00.1` before proceeding.
+> Higher entries win in any conflict. ARCHITECTURE.md wins on conflict with
+> `.claude/rules/*.md` — rules files enforce architecture, they do not redefine it.
+> `docs/ai/DECISIONS.md` records the rationale for each architectural decision;
+> ARCHITECTURE.md encodes the resulting constraint. If a Work Packet appears to
+> conflict with this file, stop and re-read this document before proceeding.
 >
 > Created: WP-013 -- Persistence Boundaries & Snapshots
 > Updated: WP-065 (2026-04-16) -- added Shared Tooling layer to the Layer
@@ -48,6 +52,10 @@
 > Updated: WP-003 review -- registry metadata file shapes and card field data quality
 > Updated: WP-002 review -- boardgame.io version lock and LegendaryGame contract
 > Updated: WP-001 review -- override hierarchy and legendary.* namespace convention
+
+Architecture Version: 1.0.0
+Last Reviewed: 2026-04-23
+Verified Against: WP-001 through WP-040
 
 ---
 
@@ -618,6 +626,8 @@ with strict constraints:
 The canonical shape is `MatchSnapshot` in `src/persistence/persistence.types.ts`.
 
 ### Field Classification Reference
+
+The Class column indicates the authoritative class first; annotations like "Snapshot (as copy)" or "Snapshot → count only" describe how a runtime value may appear in a snapshot without changing the field's own class. All 20 G-class Runtime fields remain Class 1 (Runtime) regardless of snapshot-handling annotation.
 
 | Field / Object | Class | Notes |
 |---|---|---|
@@ -1590,7 +1600,7 @@ These constraints are enforced by:
 
 ---
 
-*Last updated: WP-014 review — villain deck reveal pipeline and RevealedCardType conventions*
+*Last updated: WP-041 — formal architecture certification pass; version stamp 1.0.0; authority chain locks 01-VISION.md between ARCHITECTURE.md and .claude/rules; Field Classification table verified complete for all 20 G-class Runtime fields (WP-005B through WP-026)*
 *Maintained by: human developer — update this file when package boundaries or
 data flow decisions change. Do not let a Work Packet change what this file says
 without also updating this file.*
