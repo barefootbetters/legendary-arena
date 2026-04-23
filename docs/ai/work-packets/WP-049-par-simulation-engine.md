@@ -31,9 +31,10 @@ After this session:
 - `CompetentHeuristicPolicy` implements `AIPolicy` with behavioral heuristics
   modeling experienced, rules-faithful human play
 - `aggregateParFromSimulation` computes PAR from the 55th percentile of
-  simulated Raw Score distributions
+  simulated Raw Score distributions (nearest-rank method, integer output)
 - `generateScenarioPar` orchestrates: run simulation -> compute Raw Scores ->
-  aggregate to PAR -> produce versioned `ScenarioScoringConfig`
+  aggregate to PAR -> produce a versioned `ParSimulationResult` that includes
+  provenance (seed set hash, simulation policy version, scoring config version)
 - AI policy tiers are documented (T0-T4) with T2 as the sole PAR authority
 - PAR values can be generated for any valid scenario without human intervention
 - All simulation runs are deterministic, replayable, and versioned
@@ -118,6 +119,17 @@ Before writing a single line:
 - No `.reduce()` for accumulation with branching — use `for...of`
 - Tests use `makeMockCtx` or plain mocks — no `boardgame.io` imports
 
+**Raw Score ordering rule (explicit):**
+- **Lower Raw Score is better performance.** Tier-ordering validation compares
+  medians using `<`. PAR selects the Nth percentile of a sorted-ascending
+  distribution, so a lower PAR indicates a scenario where competent play
+  consistently produces lower (better) Raw Scores.
+
+**Legal move conformance rule (explicit):**
+- A `ClientTurnIntent` returned by T2 must correspond to exactly one of the
+  provided `LegalMove[]` entries — matching by `moveType` **and** required
+  payload fields. "Almost matching" payloads are invalid.
+
 **Locked contract values:**
 
 - **AI Policy Tiers (reference taxonomy):**
@@ -147,8 +159,13 @@ Before writing a single line:
   - Must not adapt behavior based on "knowing it is a simulation"
 
 - **PAR Percentile:** 55th percentile of simulated Raw Scores (default)
-  - Configurable range: 50th-60th percentile
+  - Configurable range: 50th-60th percentile inclusive
   - Do not use the mean
+  - Computation method is **nearest-rank** on the ascending-sorted array:
+    `rankIndex = ceil((percentile / 100) * N) - 1`, clamped to `[0, N - 1]`.
+    Output is an integer in Raw Score units — no float interpolation.
+  - `// why:` nearest-rank is deterministic and integer-preserving; avoids
+    accidental float drift in PAR values
 
 - **Minimum Sample Size:** N >= 500 simulated games per scenario
   - Recommended: N = 1000-2000 for high-variance scenarios
@@ -169,6 +186,50 @@ Before writing a single line:
 - **Immutable surface:** Raw Score semantics (event taxonomy, sign conventions,
   component definitions) are a protected trust surface. Any change requires
   explicit major-version treatment per growth governance (WP-040).
+
+**Failure semantics (per-function table — locked):**
+
+| Function | Throws? | Returns on invalid input |
+|---|---|---|
+| `createCompetentHeuristicPolicy` | No | N/A (policy construction is total) |
+| `AIPolicy.decideTurn` (T2) | No | Always returns a legal `ClientTurnIntent` drawn from the provided `LegalMove[]`; never throws |
+| `aggregateParFromSimulation` | **Yes** — `ParAggregationError` | — |
+| `generateScenarioPar` | No (propagates only `ParAggregationError` from `aggregateParFromSimulation` — never wraps or swallows) | N/A (valid inputs required per Acceptance Criteria) |
+| `validateParResult` | No | Structured `ParValidationResult` |
+| `validateTierOrdering` | No | Structured `TierOrderingResult` |
+| `generateSeedSet` | No | Empty array when `count <= 0` |
+| `computeSeedSetHash` | No | Stable hash for any input array |
+
+- `// why:` the locked table prevents inconsistent error semantics
+  from leaking into the executor's interpretation. Error messages
+  are full sentences per `00.6-code-style.md` Rule 11 regardless
+  of throw vs structured return.
+
+**Reproducibility-test protocol (locked):**
+
+- Every test in `par.aggregator.test.ts` that asserts `ParSimulationResult`
+  byte-identity MUST set `config.generatedAtOverride` to a deterministic
+  ISO string. A reproducibility test that omits the override is a
+  failing test by pre-flight lock (RS-11).
+- `// why:` without the override, `generatedAt = new Date().toISOString()`
+  is the only non-deterministic field in the result — reproducibility
+  claims would silently pass under coincidental timing.
+
+**Distribution-integrity invariants (locked):**
+
+- `generateScenarioPar` MUST assemble `rawScores: number[]` with
+  `rawScores.length === config.simulationCount` before calling
+  `aggregateParFromSimulation`. Losses are included as first-class
+  outcomes; no seed may be silently dropped.
+- The result's `ParSimulationResult` object MUST survive
+  `JSON.parse(JSON.stringify(result))` with structural equality
+  (no functions, Maps, Sets, or class instances). This invariant
+  is exercised by the byte-identical reproducibility test
+  (test #15 — `deepStrictEqual` after `JSON.parse(JSON.stringify(...))`
+  round-trip).
+- `// why:` PAR values are provenance artifacts consumed by WP-050
+  artifact writers; non-serializable fields would corrupt the on-disk
+  representation.
 
 **Session protocol:**
 - If any contract, field name, or reference is unclear, stop and ask the human
@@ -223,66 +284,208 @@ Before writing a single line:
 
   - Uses seeded RNG for any tie-breaking or randomized decisions
   - Deterministic: same seed + same state = same decision
+  - Tie-breaking randomness is derived **only** from the policy seed and
+    must not depend on call order beyond the input state
+    - `// why:` reproducibility requires stable decisions even when unrelated
+      code paths are refactored; policy RNG must never share state with
+      run-level shuffle RNG (D-3604)
   - Pure function, no boardgame.io import
 
 ### B) `src/simulation/par.aggregator.ts` — new
 
-- `interface ParSimulationConfig { scenarioKey: ScenarioKey; setupConfig: MatchSetupConfig; playerCount: number; simulationCount: number; baseSeed: string; percentile: number; scoringConfig: ScenarioScoringConfig }`
+#### Types
+
+```ts
+interface ParSimulationConfig {
+  scenarioKey: ScenarioKey;
+  setupConfig: MatchSetupConfig;
+  playerCount: number;
+  simulationCount: number;      // minimum 500
+  baseSeed: string;
+  percentile: number;           // default 55, allowed 50-60 inclusive
+  scoringConfig: ScenarioScoringConfig;
+
+  // Provenance — explicit, never guessed
+  simulationPolicyVersion: string; // e.g. "CompetentHeuristic/v1"
+  scoringConfigVersion: number;    // version of scoring config used for runs
+
+  // Reproducibility — optional injected clock for exact metadata replay
+  generatedAtOverride?: string;    // ISO string
+}
+```
+
+- `// why:` simulation policy version and scoring config version must be
+  explicit inputs for auditability without modifying WP-036 / WP-048 contracts.
+- `// why:` `generatedAtOverride` keeps reproducibility tests meaningful
+  without hard-freezing production timestamps.
+
+#### Neutral hero selection (explicit)
+
+- Hero selection for PAR simulation is non-optimized. Either:
+  - `setupConfig` already resolves the hero pool (if WP-036 models hero
+    selection), or
+  - the hero pool is treated as fixed/neutral by the orchestrator.
+- No counter-picking, no scenario-adaptive hero choice.
+- `// why:` PAR is Layer A (scenario difficulty only) — hero selection
+  happens after PAR is published (§26, D-0702)
+
+#### Seed canonicalization
 
 - `generateSeedSet(baseSeed: string, count: number): string[]`
   — deterministic, order-stable seed list derived from a single base seed
-  - Same baseSeed + same count = same seed list, always
-  - `// why:` comment: canonical seed sets make PAR reproducibility auditable;
-    seedSetHash in the result proves which seeds were used
+  - Same `baseSeed` + same `count` = same seed list, always (index-based
+    derivation)
+  - `// why:` canonical seed sets make PAR reproducibility auditable
 
 - `computeSeedSetHash(seeds: string[]): string`
-  — canonical hash of the seed list for provenance tracking
+  — deterministic, order-sensitive canonical hash of the exact seed list
+  - `// why:` `seedSetHash` in the result proves which seeds were used and
+    detects drift
 
-- `interface ParSimulationResult { scenarioKey: ScenarioKey; parValue: number; percentileUsed: number; sampleSize: number; seedSetHash: string; rawScoreDistribution: { min: number; p25: number; median: number; p55: number; p75: number; max: number; standardDeviation: number; interquartileRange: number }; needsMoreSamples: boolean; seedParDelta: number; simulationPolicyVersion: string; scoringConfigVersion: number; generatedAt: string }`
-  - `seedSetHash` — canonical hash of the seed list used for this PAR computation
-  - `interquartileRange` — p75 - p25, used for variance assessment
-  - `needsMoreSamples` — true when variance exceeds a configurable threshold,
-    signaling the pre-release gate should require more runs before publishing
+#### Result type
+
+```ts
+interface ParSimulationResult {
+  scenarioKey: ScenarioKey;
+  parValue: number;                // integer in Raw Score units (no floats)
+  percentileUsed: number;
+  sampleSize: number;
+  seedSetHash: string;
+
+  rawScoreDistribution: {
+    min: number;
+    p25: number;
+    median: number;
+    p55: number;
+    p75: number;
+    max: number;
+    standardDeviation: number;
+    interquartileRange: number;    // p75 - p25
+  };
+
+  needsMoreSamples: boolean;
+  seedParDelta: number;
+
+  simulationPolicyVersion: string;
+  scoringConfigVersion: number;
+
+  generatedAt: string;             // ISO; overrideable for reproducibility
+}
+```
+
+- `seedSetHash` — canonical hash of the seed list used for this PAR computation
+- `interquartileRange` — p75 - p25, used for variance assessment
+- `needsMoreSamples` — true when variance exceeds a deterministic threshold
+  (IQR or standard deviation), signaling the pre-release gate should require
+  more runs before publishing
+
+#### Percentile aggregation (hard contract)
 
 - `aggregateParFromSimulation(rawScores: number[], percentile: number): number`
-  — pure function that computes the Nth percentile of a sorted array of Raw Scores
-  - Validates: array non-empty, percentile in [0, 100]
-  - Returns centesimal integer
-  - `// why:` comment: percentile is robust to outliers; 55th is slightly
-    conservative (beatable but fair)
+  — pure function
+  - Validates:
+    - `rawScores.length > 0`
+    - `percentile` in `[0, 100]`
+  - Sorts ascending (lower is better) via an explicit stable numeric
+    comparator: `[...rawScores].sort((left, right) => left - right)`.
+    Input array is never mutated.
+    - `// why:` explicit comparator guarantees stable numeric ordering
+      across Node versions; `Array.prototype.sort` is stable in Node 22
+      but the default comparator is lexical, which would mis-order
+      negative or large integers. Copying first preserves caller input.
+  - Uses **nearest-rank** percentile:
+    - `rankIndex = ceil((percentile / 100) * N) - 1`, clamped to `[0, N - 1]`
+  - Returns `rawScoresSorted[rankIndex]` — an **integer** in Raw Score units
+  - **Throws** a typed validation error (`ParAggregationError`) on invalid
+    inputs. Does not return a `Result`. Does not swallow.
+  - `// why:` nearest-rank is deterministic and avoids float interpolation;
+    throwing on invalid input matches the sync, pure contract and keeps
+    `Result`-style validation confined to `validateParResult`
 
-- `generateScenarioPar(config: ParSimulationConfig, registry: CardRegistry): ParSimulationResult`
-  — orchestrates the full PAR generation pipeline:
-  1. Generate canonical seed set via `generateSeedSet(config.baseSeed, config.simulationCount)`
+##### `ParAggregationError` (locked shape)
+
+```ts
+export type ParAggregationErrorCode =
+  | 'EMPTY_DISTRIBUTION'
+  | 'PERCENTILE_OUT_OF_RANGE';
+
+export class ParAggregationError extends Error {
+  readonly name = 'ParAggregationError';
+  constructor(
+    readonly code: ParAggregationErrorCode,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+```
+
+- Tests MUST assert both `instanceof ParAggregationError` AND
+  `.code === '<expected union member>'` — never by message substring.
+- `// why:` discriminated `code` keeps failure handling exhaustive
+  and survives `JSON.stringify(error)` as a readable `name` + `code`
+  pair.
+
+#### Orchestration
+
+- `generateScenarioPar(config: ParSimulationConfig, registry: CardRegistryReader): ParSimulationResult`
+  — orchestrates the full PAR generation pipeline.
+  - `// why:` `CardRegistryReader` is the engine-category local
+    structural interface for registry access (imported from
+    `../matchSetup.validate.js`); importing `CardRegistry` from
+    `@legendary-arena/registry` is forbidden by D-3601 and matches
+    the WP-036 `runSimulation` convention (PS-2, pre-flight 2026-04-23).
+  1. Generate canonical seed set via
+     `generateSeedSet(config.baseSeed, config.simulationCount)`
   2. Compute `seedSetHash` via `computeSeedSetHash`
-  3. Create T2 policy for each seed; run N simulations via `runSimulation` (WP-036)
-  4. Compute Raw Score for each game via `computeRawScore` (WP-048)
-     — losses included as first-class outcomes (no filtering)
-  5. Aggregate to PAR via `aggregateParFromSimulation`
-  6. Compute distribution statistics (including IQR and `needsMoreSamples` flag)
-  7. Compute delta vs content-driven seed PAR
-  8. Return versioned `ParSimulationResult` with `seedSetHash`
+  3. For each seed:
+     - Create T2 policy via `createCompetentHeuristicPolicy(seed)`
+     - Run one simulation via `runSimulation` (WP-036)
+  4. For each simulation result:
+     - Build `ScoringInputs`
+     - Compute Raw Score via `computeRawScore(inputs, config.scoringConfig)`
+       (WP-048)
+     - Losses included as first-class outcomes — no filtering
+  5. Aggregate to PAR via
+     `aggregateParFromSimulation(rawScores, config.percentile)`
+  6. Compute distribution stats (min/p25/median/p55/p75/max/stddev/IQR)
+  7. Compute `needsMoreSamples` based on deterministic variance thresholds
+     (e.g., `interquartileRange > IQR_THRESHOLD` OR
+     `standardDeviation > STDEV_THRESHOLD`)
+  8. Compute `seedParDelta` vs content-driven seed PAR if the scoring config
+     provides one; otherwise `seedParDelta = 0`
+  9. Return `ParSimulationResult`, copying provenance from config:
+     - `simulationPolicyVersion` and `scoringConfigVersion` copied from
+       `config` (never derived, never inferred)
+     - `generatedAt` = `config.generatedAtOverride ?? new Date().toISOString()`
   - Uses `for...of` over simulation results — no `.reduce()` with branching
-  - `// why:` comment: PAR is determined before players choose heroes;
-    simulation uses neutral hero pool, not counter-picks
+  - `// why:` PAR is determined before players choose heroes; simulation uses
+    a neutral hero pool, not counter-picks
+
+#### Validation (structured, never throws)
 
 - `validateParResult(result: ParSimulationResult): ParValidationResult`
-  — sanity checks:
+  — sanity checks; returns a structured issues array; never throws
   - Sample size >= 500
-  - Raw Score distribution is unimodal (no exploit spikes — flag multimodal
-    distributions or extreme outliers as potential degenerate loops)
-  - PAR is within plausible range for the scenario's difficulty ratings
-  - Returns structured result, never throws
+  - Monotonic distribution bounds: `min <= p25 <= median <= p75 <= max`
+  - IQR and standard deviation within configured deterministic thresholds
+  - Multimodality smell test via fixed-bin histogram (e.g., 20 bins):
+    - Flag "suspicious multimodal" when >= 2 peaks each >= 20% of the max
+      bin count and separated by >= 2 bins
+  - Extreme-outlier flag when any score lies beyond `median +/- K * IQR`
+    (K is a deterministic constant in the module)
+  - `// why:` catches exploit loops and high-variance scenarios before
+    publishing PAR; uses only data already in `rawScoreDistribution` —
+    does not depend on external scenario difficulty metadata
 
 - `validateTierOrdering(t0Result, t1Result, t2Result, t3Result): TierOrderingResult`
-  — behavioral plausibility check across tiers:
-  - T3 median Raw Score < T2 median (T3 outperforms T2)
-  - T2 median Raw Score < T1 median (T2 outperforms T1)
-  - T1 median Raw Score < T0 median (T1 outperforms T0)
-  - Returns structured pass/fail with per-tier medians
-  - `// why:` comment: if tier ordering is violated, either the heuristics
-    are wrong or the scenario has a degenerate property — investigate before
-    publishing PAR
+  — behavioral plausibility check across tiers; returns structured pass/fail
+  with per-tier medians; never throws
+  - Each tier sample size >= 50
+  - Conditions (lower Raw Score is better):
+    - `median(T3) < median(T2) < median(T1) < median(T0)`
+  - `// why:` if tier ordering is violated, either the heuristics are wrong
+    or the scenario has a degenerate property — investigate before publishing
 
 ### C) `src/simulation/ai.tiers.ts` — new
 
@@ -298,6 +501,7 @@ Before writing a single line:
 ### D) `src/types.ts` — modified
 
 - Re-export PAR simulation types: `ParSimulationConfig`, `ParSimulationResult`,
+  `ParValidationResult`, `TierOrderingResult`, `ParAggregationError`,
   `AIPolicyTier`, `AI_POLICY_TIERS`
 
 ### E) `src/index.ts` — modified
@@ -325,24 +529,38 @@ Before writing a single line:
 ### G) Tests — `src/simulation/par.aggregator.test.ts` — new
 
 - Uses `node:test` and `node:assert` only
-- Sixteen tests:
+- Seventeen tests:
   1. `aggregateParFromSimulation` with 1000 scores returns 55th percentile
-  2. Percentile of sorted identical scores returns that score
-  3. Empty array rejects with validation error
-  4. Percentile outside [0, 100] rejects with validation error
+     via nearest-rank (`ceil((55/100) * 1000) - 1 = 549`)
+  2. Percentile of sorted identical scores returns that score (integer)
+  3. Empty array **throws** `ParAggregationError`
+  4. Percentile outside `[0, 100]` **throws** `ParAggregationError`
   5. `validateParResult` accepts valid result with N >= 500
   6. `validateParResult` rejects result with N < 500
   7. `validateParResult` passes unimodal distribution cleanly
-  8. `validateParResult` flags bimodal distribution (two clusters) as suspicious
-  9. `validateTierOrdering` passes when T3 < T2 < T1 < T0 (medians, N >= 50 per tier)
+  8. `validateParResult` flags bimodal distribution (two clusters) as
+     suspicious via histogram peak detection
+  9. `validateTierOrdering` passes when T3 < T2 < T1 < T0 (medians, N >= 50
+     per tier)
   10. `validateTierOrdering` fails when ordering is violated
   11. `AI_POLICY_TIERS` array matches `AIPolicyTier` union (drift detection)
   12. Only T2 has `usedForPar: true` in tier definitions
   13. `generateSeedSet` same baseSeed + same count = same seeds (determinism)
   14. `computeSeedSetHash` same seeds = same hash
-  15. `generateScenarioPar` run twice with identical config = identical PAR + metadata
-  16. Loss runs included in distribution — mixed win/loss list produces correct
-      percentile without filtering losses
+  15. `generateScenarioPar` run twice with identical config + identical
+      `generatedAtOverride` produces **byte-identical** `ParSimulationResult`
+      (PAR value, distribution stats, provenance, and `generatedAt`).
+      Assertion also covers JSON-serializability: the test compares
+      `JSON.parse(JSON.stringify(resultA))` to
+      `JSON.parse(JSON.stringify(resultB))` via `deepStrictEqual`, proving
+      the result contains no functions, Maps, Sets, or class instances.
+  16. `generateScenarioPar` copies `simulationPolicyVersion` and
+      `scoringConfigVersion` from `config` into the result verbatim
+  17. Loss runs included in distribution — mixed win/loss list produces
+      correct percentile without filtering losses. AND
+      `result.sampleSize === config.simulationCount` (no seed silently
+      dropped — `sampleSize` is the canonical reflection of the
+      pre-aggregation `rawScores` array length).
 
 ---
 
@@ -393,11 +611,14 @@ from seed + setup. AI uses the same pipeline as humans (D-0701, D-3602)
 
 ## Files Expected to Change
 
+**Code:**
+
 - `packages/game-engine/src/simulation/ai.competent.ts` — **new** —
   createCompetentHeuristicPolicy (T2)
 - `packages/game-engine/src/simulation/par.aggregator.ts` — **new** —
   aggregateParFromSimulation, generateScenarioPar, validateParResult,
-  validateTierOrdering, generateSeedSet, computeSeedSetHash
+  validateTierOrdering, generateSeedSet, computeSeedSetHash,
+  ParAggregationError
 - `packages/game-engine/src/simulation/ai.tiers.ts` — **new** —
   AIPolicyTier, AI_POLICY_TIERS, AI_POLICY_TIER_DEFINITIONS
 - `packages/game-engine/src/types.ts` — **modified** — re-export PAR
@@ -406,7 +627,13 @@ from seed + setup. AI uses the same pipeline as humans (D-0701, D-3602)
 - `packages/game-engine/src/simulation/ai.competent.test.ts` — **new** —
   10 tests
 - `packages/game-engine/src/simulation/par.aggregator.test.ts` — **new** —
-  16 tests
+  17 tests
+
+**Docs (required by Definition of Done):**
+
+- `docs/ai/STATUS.md` — **modified** — record T2 + PAR pipeline availability
+- `docs/ai/DECISIONS.md` — **modified** — record PAR calibration decisions
+- `docs/ai/work-packets/WORK_INDEX.md` — **modified** — check off WP-049
 
 No other files may be modified.
 
@@ -426,15 +653,23 @@ All items must be binary pass/fail. No partial credit.
 - [ ] Never produces an illegal move
 
 ### PAR Aggregation
-- [ ] `aggregateParFromSimulation` computes correct percentile
-- [ ] Default percentile is 55
-- [ ] Returns centesimal integer
+- [ ] `aggregateParFromSimulation` computes correct nearest-rank percentile
+- [ ] Default percentile is 55; allowed range 50-60 inclusive
+- [ ] Returns an integer in Raw Score units (no float interpolation)
+- [ ] Throws `ParAggregationError` on empty array or percentile outside
+      `[0, 100]`
 - [ ] `generateScenarioPar` runs simulation and produces `ParSimulationResult`
-- [ ] Result includes distribution statistics, IQR, seedSetHash, and seed PAR delta
-- [ ] Result includes `needsMoreSamples` flag based on variance threshold
+- [ ] Result includes distribution statistics, IQR, seedSetHash, and seed PAR
+      delta
+- [ ] Result includes `needsMoreSamples` flag based on deterministic variance
+      thresholds
+- [ ] Result copies `simulationPolicyVersion` and `scoringConfigVersion` from
+      the config verbatim
 - [ ] `validateParResult` enforces N >= 500 minimum
 - [ ] `validateParResult` passes unimodal distributions cleanly
 - [ ] `validateParResult` flags bimodal/multimodal distributions as suspicious
+      via histogram peak detection (deterministic, no external metadata)
+- [ ] `validateParResult` checks monotonic bounds `min <= p25 <= median <= p75 <= max`
 - [ ] Losses included in distribution as first-class outcomes (no filtering)
 
 ### Seed Set Canonicalization
@@ -443,8 +678,11 @@ All items must be binary pass/fail. No partial credit.
 - [ ] `seedSetHash` is stored in `ParSimulationResult`
 
 ### PAR Reproducibility
-- [ ] `generateScenarioPar` run twice with identical config produces identical
-      PAR value, distribution stats, and metadata
+- [ ] `generateScenarioPar` run twice with identical config **and** identical
+      `generatedAtOverride` produces byte-identical `ParSimulationResult`
+      (PAR value, distribution stats, provenance, and `generatedAt`)
+- [ ] `generateScenarioPar` run twice without an override produces identical
+      PAR value and distribution stats; `generatedAt` may differ
 
 ### Tier Ordering Validation
 - [ ] `validateTierOrdering` confirms T3 < T2 < T1 < T0 (median Raw Scores)
@@ -466,7 +704,7 @@ All items must be binary pass/fail. No partial credit.
 ### Tests
 - [ ] `pnpm --filter @legendary-arena/game-engine test` exits 0 (all test files)
 - [ ] All 10 T2 policy tests pass
-- [ ] All 16 aggregator tests pass
+- [ ] All 17 aggregator tests pass
 - [ ] All test files use `.test.ts`; no boardgame.io import
 
 ### Scope Enforcement
@@ -517,9 +755,11 @@ git diff packages/game-engine/src/simulation/simulation.runner.ts
 Select-String -Path "packages\game-engine\src\simulation" -Pattern "require(" -Recurse
 # Expected: no output
 
-# Step 9 — no files outside scope
-git diff --name-only
-# Expected: only files listed in ## Files Expected to Change
+# Step 9 — only expected files changed (sorted for easy diffing)
+git diff --name-only | Sort-Object
+# Expected: exactly the files listed in ## Files Expected to Change
+# (code files + docs/ai/STATUS.md + docs/ai/DECISIONS.md +
+#  docs/ai/work-packets/WORK_INDEX.md), nothing else
 ```
 
 ---
