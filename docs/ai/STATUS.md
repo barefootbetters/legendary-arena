@@ -7,6 +7,128 @@
 
 ## Current State
 
+### WP-040 / EC-040 Executed — Growth Governance & Change Budget (2026-04-23, EC-040)
+
+**Phase 7 complete: Growth governance enforced. Change classification mandatory. Immutable surfaces protected. D-1001 / D-1002 / D-1003 fully implemented.**
+
+WP-040 lands the growth-governance framework as a Contract-Only +
+Documentation bundle: one new reader-facing prose document
+(`docs/governance/CHANGE_GOVERNANCE.md`), one new types file
+(`packages/game-engine/src/governance/governance.types.ts` under D-4001 —
+ninth engine subdirectory classification) exporting three metadata types,
+two additive re-export edits (`types.ts` + `index.ts`), and one new 01.6
+post-mortem. The bundle produces zero engine gameplay changes, zero
+runtime logic, and zero new tests. Test baseline holds at engine 444/110/0
+and repo-wide 596/0. Engine build exits 0. Path A reuses landed version
+axes (`EngineVersion` / `DataVersion` / `ContentVersion` per D-0801) and
+landed ops surfaces (`IncidentSeverity` / `OpsCounters` per D-3501) via
+cross-link rather than parallel types.
+
+**Surfaces produced:**
+
+- `docs/governance/CHANGE_GOVERNANCE.md` — new — reader-facing prose
+  with seven top-level sections: §Change Classification (five categories
+  with category-to-layer mapping table per Copilot Issue 26 FIX and
+  `versionImpact` → version-axis mapping table per Copilot Issue 4 FIX);
+  §Immutable Surfaces (the five-surface list with major-version +
+  migration-path + DECISIONS.md-entry requirement per D-1002);
+  §Change Budget Template (per-category defaults: ENGINE 0, RULES 0 with
+  at-most-1 under simulation, CONTENT uncapped, UI uncapped, OPS
+  as-needed); §Growth Vectors (primary CONTENT + UI per D-1003,
+  secondary RULES, restricted ENGINE, forbidden under non-major versions
+  for immutable surfaces); §Review Requirements by Category (per-category
+  review surface verbatim); §Authoring Guidance for `ChangeClassification`
+  (the `exactOptionalPropertyTypes: true` omit-don't-undefined construction
+  pattern per Copilot Issue 5 FIX — WP-029 precedent); §Authority Chain
+  (subordinate to eight authoritative surfaces).
+- `packages/game-engine/src/governance/governance.types.ts` — new —
+  three metadata types: `ChangeCategory` closed union of five literals
+  (`ENGINE` / `RULES` / `CONTENT` / `UI` / `OPS`); `ChangeBudget`
+  six-field budget struct (release + engine + rules + content + ui + ops);
+  `ChangeClassification` classification metadata (id + category +
+  description + versionImpact + optional immutableSurface literal union).
+  All fields `readonly` per D-2802 / D-3501 aliasing-prevention. D-3901
+  reuse-verification recorded in file-header `// why:` comment (4/4 PASS
+  genuinely-novel at pre-flight v2). Required `// why: change budgets
+  prevent entropy during growth (D-1001)` comment sits immediately above
+  `ChangeBudget`.
+- `packages/game-engine/src/types.ts` — modify — three additive
+  re-exports grouped with other metadata re-exports, not inside
+  `LegendaryGameState`.
+- `packages/game-engine/src/index.ts` — modify — three additive
+  public-API exports.
+- `docs/ai/post-mortems/01.6-WP-040-growth-governance-change-budget.md` —
+  new — 01.6 MANDATORY post-mortem (new long-lived abstraction document
+  + new code-category directory + new type contracts).
+
+**Governance close (this commit — Commit B SPEC):**
+
+- `STATUS.md` — prepend this Phase 7 closure block.
+- `docs/ai/DECISIONS.md` — append three back-pointer entries per P6-51
+  form (2): **D-4002** (Change Classification back-pointer citing
+  `CHANGE_GOVERNANCE.md §Change Classification`); **D-4003** (Growth
+  Vectors back-pointer citing `CHANGE_GOVERNANCE.md §Growth Vectors`);
+  **D-4004** (Immutable Surfaces back-pointer citing `CHANGE_GOVERNANCE.md
+  §Immutable Surfaces`). D-4001 (code-category classification) landed
+  earlier with Commit A0 pre-flight bundle.
+- `docs/ai/DECISIONS_INDEX.md` — append three matching rows under the
+  Growth Governance section.
+- `docs/ai/work-packets/WORK_INDEX.md` — WP-040 `[ ]` → `[x]` with
+  today's date and commit hash.
+- `docs/ai/execution-checklists/EC_INDEX.md` — EC-040 Draft → Done;
+  full execution summary row.
+
+**Verification results:**
+
+All 17 Verification Steps pass on first run. Step 5 (no `require(` in
+`packages/game-engine/src/governance/`) CLEAN. Step 6 (no engine gameplay
+files modified) CLEAN. Step 9 (no subjective-language hits in
+`CHANGE_GOVERNANCE.md`) CLEAN. Step 10 (no forbidden-token enumeration
+for determinism) CLEAN. Step 11 (aggregate diff only allowlist files)
+CLEAN. Step 12 engine tests 444/110/0; repo-wide 596/0. Step 13 engine
+build exits 0.
+
+**Scope-lock adherence (P6-27):**
+
+No files outside the allowlist were modified at any commit. The inherited
+untracked `.claude/worktrees/` was never staged. Staging by exact
+filename only — no `git add .` / `git add -A` / `git add -u` at any
+commit. `pnpm-lock.yaml` absent from every commit's diff (no new
+dependencies).
+
+**01.5 NOT INVOKED.** All four 01.5 trigger criteria absent: no
+`LegendaryGameState` field added (governance types appear only in
+re-export lines in `types.ts`), no `buildInitialGameState` shape change,
+no new `LegendaryGame.moves` entry, no new phase hook.
+
+**01.7 Copilot Check CONFIRM** (27/30 PASS, 3 scope-neutral RISKs on
+Issues 4, 5, 26 with FIXes folded into session-prompt §Locked Values
+and applied verbatim during authoring). **01.6 post-mortem mandatory
+triggers fired** — new long-lived abstraction document + new
+code-category directory + new type contracts.
+
+**Four-commit topology:**
+
+- **A0a** SPEC precedent-land: `a6be850` — P6-52 + P6-53 in 01.4 +
+  back-sync of 00-INDEX / 05-ROADMAP / 05-ROADMAP-MINDMAP.
+- **A0** SPEC pre-flight bundle + D-4001: `5e1a0fa` — v1 + v2 preflights,
+  copilot check, session prompt, Path A rewrites of WP-040 + EC-040,
+  D-4001 additions to DECISIONS.md + DECISIONS_INDEX.md +
+  02-CODE-CATEGORIES.md.
+- **A** `EC-040:` content + 01.6 post-mortem: `6faaf3b` — five files
+  (CHANGE_GOVERNANCE.md + governance.types.ts + types.ts + index.ts +
+  post-mortem).
+- **B** SPEC governance close: this commit.
+
+Commit prefix `EC-040:` at execution; `SPEC:` on precedent-land,
+pre-flight bundle, and governance close (never `WP-040:` per P6-36 —
+commit-msg hook rejects). Commit-body Vision trailer on both Commit A
+and Commit B: `Vision: §5, §13, §14, §22, §24`.
+
+**Unblocks WP-041** (System Architecture Definition & Authority Model).
+
+---
+
 ### WP-039 / EC-039 Executed — Post-Launch Metrics & Live Ops (2026-04-23, EC-039)
 
 WP-039 lands the steady-state post-launch live-operations rhythm as a

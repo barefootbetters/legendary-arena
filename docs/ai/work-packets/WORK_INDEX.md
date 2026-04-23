@@ -1433,7 +1433,7 @@ These packets ship the game and keep it running.
   Commit prefix: `EC-039:` at execution; `SPEC:` for the bundle and the
   governance close (never `WP-039:` per P6-36 — commit-msg hook rejects).
 
-- [ ] WP-040 — Growth Governance & Change Budget ✅ Reviewed
+- [x] WP-040 — Growth Governance & Change Budget ✅ Completed 2026-04-23 at commit `6faaf3b` under EC-040
   Dependencies: WP-039
   Notes: Documentation + type definitions only; five change categories
   (ENGINE | RULES | CONTENT | UI | OPS) — classification mandatory before
@@ -1441,8 +1441,17 @@ These packets ship the game and keep it running.
   require major version to change (D-1002); per-release change budgets
   declared before development; primary growth vectors: CONTENT + UI (D-1003);
   ENGINE changes restricted, require architecture review; implements D-1001,
-  D-1002, D-1003; was truncated at 57 lines — normalized to full
-  PACKET-TEMPLATE
+  D-1002, D-1003; Path A reuses `EngineVersion` / `DataVersion` /
+  `ContentVersion` (D-0801) and `IncidentSeverity` / `OpsCounters` (D-3501)
+  via cross-link rather than parallel types; four-commit topology: A0a SPEC
+  precedent-land (`a6be850`) → A0 SPEC pre-flight bundle + D-4001
+  (`5e1a0fa`) → A `EC-040:` content + 01.6 post-mortem (`6faaf3b`) → B SPEC
+  governance close. D-4002 / D-4003 / D-4004 back-pointer DECISIONS.md
+  entries landed at Commit B per P6-51 form (2). Test baseline UNCHANGED
+  at engine 444/110/0 + repo-wide 596/0 (zero new tests).
+  Post-mortem: `docs/ai/post-mortems/01.6-WP-040-growth-governance-change-budget.md`.
+  Commit prefix: `EC-040:` at execution; `SPEC:` for the bundle and the
+  governance close (never `WP-040:` per P6-36 — commit-msg hook rejects).
 
 - [ ] WP-041 — System Architecture Definition & Authority Model ✅ Reviewed
   Dependencies: WP-040

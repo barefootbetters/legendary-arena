@@ -8622,6 +8622,106 @@ bundle → v2 pre-flight READY TO EXECUTE.
 
 ---
 
+### D-4002 — Five Change Categories Map to Architectural Layer Partition
+
+**Decision:** The five change categories
+(`ENGINE` / `RULES` / `CONTENT` / `UI` / `OPS`) map one-to-one to the
+five-layer partition defined in `docs/ai/ARCHITECTURE.md §Layer Boundary
+(Authoritative)`. Authoritative reader-facing prose lives in
+`docs/governance/CHANGE_GOVERNANCE.md §Change Classification` — including
+the category-to-layer mapping table and the `versionImpact` axis-mapping
+table. This DECISIONS.md entry is a back-pointer for citation resolution
+and grep-based audit per P6-51 form (2); it does not restate the prose.
+
+**Rationale:** see authoritative prose at
+`docs/governance/CHANGE_GOVERNANCE.md §Change Classification`.
+
+**Implications:**
+- Every proposed change is classified into exactly one of the five
+  categories — no hybrids, no "miscellaneous", no split ownership.
+- The category determines the required review surface, the target version
+  axis, and whether the change touches an immutable surface (see D-4004).
+- Adding a sixth category requires a new D-entry and a fresh D-3901
+  reuse-verification run against `packages/game-engine/src/`.
+
+**Affected WPs:** WP-040 (introducing WP); all future WPs that classify a
+proposed change under one of the five categories.
+**Status:** Immutable
+**Raised:** 2026-04-23 (Commit B of WP-040)
+**Resolved:** 2026-04-23 (this decision)
+
+---
+
+### D-4003 — Content and UI Are the Primary Growth Vectors
+
+**Decision:** Per D-1003, product growth is concentrated in the two
+categories with the lowest determinism-bearing risk surface —
+**CONTENT** and **UI** — which carry uncapped budgets and the lightest
+review surface. **RULES** is a secondary growth vector, permitted at most
+once per release and only with simulation-validation evidence per D-0702 /
+WP-036. **ENGINE** is a restricted vector: default budget zero,
+architecture review plus DECISIONS.md entry plus full replay verification
+required. Changes to the five immutable surfaces (see D-4004) are
+forbidden under non-major versions. Authoritative reader-facing prose
+lives in `docs/governance/CHANGE_GOVERNANCE.md §Growth Vectors`. This
+DECISIONS.md entry is a back-pointer for citation resolution and
+grep-based audit per P6-51 form (2); it does not restate the prose.
+
+**Rationale:** see authoritative prose at
+`docs/governance/CHANGE_GOVERNANCE.md §Growth Vectors`.
+
+**Implications:**
+- Release-planning workflows that propose ENGINE or RULES changes carry
+  a heavy justification burden; release-planning workflows that propose
+  CONTENT or UI changes carry the lightest gating.
+- The numeric defaults in `CHANGE_GOVERNANCE.md §Change Budget Template`
+  (ENGINE 0; RULES 0 with at-most-1 under simulation; CONTENT uncapped;
+  UI uncapped; OPS as-needed) are policy; changing a default is a new
+  D-entry and a doc amendment.
+
+**Affected WPs:** WP-040 (introducing WP); every future release-planning
+cycle that declares a `ChangeBudget` instance.
+**Status:** Immutable
+**Raised:** 2026-04-23 (Commit B of WP-040)
+**Resolved:** 2026-04-23 (this decision)
+
+---
+
+### D-4004 — Five Immutable Surfaces Require a Major Version Bump
+
+**Decision:** Per D-1002, five surfaces are immutable under non-major
+versions — replay semantics; RNG behavior (`ctx.random.*`); scoring rules
+(`computeFinalScores`); engine invariants (WP-031); endgame conditions
+(`evaluateEndgame`). Any change to one of them requires all three of: a
+major version increment on the target axis, a migration path covered by
+`packages/game-engine/src/versioning/`, and an explicit DECISIONS.md
+entry citing the change and its verification evidence. Authoritative
+reader-facing prose lives in
+`docs/governance/CHANGE_GOVERNANCE.md §Immutable Surfaces`. This
+DECISIONS.md entry is a back-pointer for citation resolution and
+grep-based audit per P6-51 form (2); it does not restate the prose.
+
+**Rationale:** see authoritative prose at
+`docs/governance/CHANGE_GOVERNANCE.md §Immutable Surfaces`.
+
+**Implications:**
+- The optional `ChangeClassification.immutableSurface` field
+  (`'replay' | 'rng' | 'scoring' | 'invariants' | 'endgame'`) is set only
+  when a change touches one of the five surfaces; omit the field entirely
+  when no surface is touched under `exactOptionalPropertyTypes: true`
+  (see `CHANGE_GOVERNANCE.md §Authoring Guidance for ChangeClassification`).
+- Adding a sixth immutable surface requires a fresh D-3901
+  reuse-verification run plus a new D-entry plus an update to
+  `CHANGE_GOVERNANCE.md §Immutable Surfaces`.
+
+**Affected WPs:** WP-040 (introducing WP); every future WP that proposes
+a change to one of the five surfaces.
+**Status:** Immutable
+**Raised:** 2026-04-23 (Commit B of WP-040)
+**Resolved:** 2026-04-23 (this decision)
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
