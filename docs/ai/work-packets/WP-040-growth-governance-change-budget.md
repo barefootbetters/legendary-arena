@@ -11,9 +11,9 @@
 WP-039 established live ops with four metric categories and cadence. WP-035
 defined the release process. WP-034 introduced versioning with three
 independent axes. WP-031 enforced engine invariants. This packet defines the
-governance framework for long-term growth — what is allowed to change, how
-fast, and under what constraints. It prevents accidental architectural
-regression via success. Every release has an explicit change budget; every
+governance framework for sustainable growth by explicitly constraining *what
+may change*, *under what review*, and *with what version impact*, preventing
+architectural regression via success. Every release has an explicit change budget; every
 change is classified before it ships. This implements D-1001 (Growth Requires
 Explicit Change Budgets), D-1002 (Immutable Surfaces Are Protected), and
 D-1003 (Content and UI Are Primary Growth Vectors).
@@ -24,8 +24,9 @@ D-1003 (Content and UI Are Primary Growth Vectors).
 
 Establish a formal growth governance framework. After this session:
 
-- A change classification system categorizes every proposed change into exactly
-  one of five categories: ENGINE, RULES, CONTENT, UI, OPS
+- A change classification system categorizes every proposed change into
+  **exactly one** of five categories — ENGINE, RULES, CONTENT, UI, OPS
+  (no hybrids, no "miscellaneous", no split ownership)
 - Each category has explicit constraints on what may change and what requires
   version increments
 - Immutable surfaces are defined: replay semantics, RNG behavior, scoring
@@ -47,6 +48,7 @@ Establish a formal growth governance framework. After this session:
   - Versioning with three independent axes exists (WP-034)
   - Engine invariants enforced (WP-031)
   - AI simulation baselines for balance validation (WP-036)
+    (required **only** for RULES-category changes)
   - `pnpm --filter @legendary-arena/game-engine build` exits 0
   - `pnpm --filter @legendary-arena/game-engine test` exits 0
 - `docs/ai/ARCHITECTURE.md` exists with "MVP Gameplay Invariants"
@@ -95,7 +97,8 @@ Before writing a single line:
   rules changes carry heavy justification burden
 - Change budgets are per-release — they expire when the release ships
 - No engine modifications in this packet
-- Classification types are metadata — never stored in `G`
+- Classification types are **out-of-band metadata** — never persisted in `G`,
+  never transmitted in replay logs, and never used to branch gameplay logic
 
 **Session protocol:**
 - If any contract, field name, or reference is unclear, stop and ask the human
@@ -108,7 +111,7 @@ Before writing a single line:
   | Category | Layer | Example changes | Version impact |
   |---|---|---|---|
   | ENGINE | game-engine core | Move contract, phase logic, invariants | Major |
-  | RULES | game-engine rules | Hook behavior, keyword semantics, conditions | Major |
+  | RULES | game-engine rules | Hook behavior, keyword semantics, conditions | Major (affects replay determinism and scoring semantics) |
   | CONTENT | registry/data | New heroes, villains, schemes, sets | Content version |
   | UI | client | Layout, animations, display, onboarding | None (unless UIState changes) |
   | OPS | server/deployment | Infrastructure, monitoring, deployment | None |
@@ -143,9 +146,10 @@ Comprehensive change governance document covering:
 
 **Change Budget Template:**
 - Per-release budget declaring: number of ENGINE changes (usually 0), number
-  of RULES changes (0 or 1 with simulation validation), number of CONTENT
-  additions (uncapped but validated), number of UI changes (encouraged), number
-  of OPS changes (as needed)
+  of RULES changes (0 by default; at most 1 per release and only with
+  simulation validation), number of CONTENT additions (uncapped but
+  validated), number of UI changes (encouraged), number of OPS changes
+  (as needed)
 - Budget is declared before release development begins
 - Overruns require explicit approval and DECISIONS.md entry
 
@@ -166,7 +170,9 @@ Comprehensive change governance document covering:
 
 - `type ChangeCategory = 'ENGINE' | 'RULES' | 'CONTENT' | 'UI' | 'OPS'`
 - `interface ChangeBudget { release: string; engine: number; rules: number; content: number; ui: number; ops: number }`
-- `interface ChangeClassification { id: string; category: ChangeCategory; description: string; versionImpact: 'major' | 'minor' | 'patch' | 'none' }`
+- `interface ChangeClassification { id: string; category: ChangeCategory; description: string; versionImpact: 'major' | 'minor' | 'patch' | 'none'; immutableSurface?: 'replay' | 'rng' | 'scoring' | 'invariants' | 'endgame' }`
+  — the optional `immutableSurface` field makes immutable-surface detection
+  explicit for audit traceability; still metadata, still never stored in `G`
 - All types JSON-serializable — metadata, never stored in G
 - `// why:` comment: change budgets prevent entropy during growth (D-1001)
 
@@ -220,6 +226,10 @@ governance.
 invariants, and endgame are explicitly immutable; modification requires
 major-version bump and architecture review. No determinism-bearing path
 can drift via a content or UI release.
+
+This packet intentionally shifts growth pressure away from ENGINE and RULES,
+ensuring that commercial success increases **content density, not system
+entropy**.
 
 ---
 
@@ -330,9 +340,10 @@ This packet is complete when ALL of the following are true:
 - [ ] No `require()` in any generated file (confirmed with `Select-String`)
 - [ ] No files outside `## Files Expected to Change` were modified
       (confirmed with `git diff --name-only`)
-- [ ] `docs/ai/STATUS.md` updated — growth governance framework defined;
-      change classification mandatory; immutable surfaces protected; D-1001,
-      D-1002, D-1003 implemented; this is the final Phase 7 governance packet
+- [ ] `docs/ai/STATUS.md` updated with canonical Phase 7 closure language:
+      "Phase 7 complete: Growth governance enforced. Change classification
+      mandatory. Immutable surfaces protected. D-1001 / D-1002 / D-1003
+      fully implemented." This is the final Phase 7 governance packet.
 - [ ] `docs/ai/DECISIONS.md` updated — at minimum: why five categories (maps
       to layer boundary); why content/UI are primary vectors (safest growth);
       what constitutes an immutable surface (replay, RNG, scoring, invariants)
