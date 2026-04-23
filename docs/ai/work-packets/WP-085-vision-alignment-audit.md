@@ -555,13 +555,23 @@ This packet is complete when ALL of the following are true:
 
 ## Post-WP-085 Follow-ups
 
-The items below are **out of EC-085 scope** and tracked separately
-from this packet's Definition of Done. They correct historical
-governance artifacts that predate WP-085 but were discovered during
-its drafting. Each should land as its own small SPEC commit, not
-bundled into EC-085 execution (Commit A) or the WP-085 governance
-close (Commit B).
+~~The items below are **out of EC-085 scope** and tracked separately
+from this packet's Definition of Done.~~
 
-- [ ] Follow-up correction made to memory file
-      `feedback_audit_tooling_scaffold_first.md` rationale paragraph
-      to reference WP-085, not WP-042.
+**No remaining follow-ups.** The original list has been fully
+closed:
+
+- WORK_INDEX breadcrumb correction (WP-042 → WP-085 references at
+  the Phase 7 breadcrumb) — landed in the WP-085 registration
+  bundle at SPEC `2e88aa7`; the corresponding bullet was removed
+  from this section in the same commit.
+- Memory-file rationale correction (`feedback_audit_tooling_scaffold_first.md`
+  WP-042 → WP-085 references) — **vacuous**: verified post-WP-085-
+  registration that the memory file contains zero `WP-042`
+  references and already cites `WP-085` at its only WP-bearing
+  line. No correction was ever required; the original follow-up
+  bullet reflected an incorrect assumption by this WP's drafter.
+
+Section header retained for consistency with the WP template
+convention. Future WP-085-scope follow-ups (if any surface) would
+be appended below this note.
