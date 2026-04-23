@@ -532,6 +532,14 @@ For full rationale, see `DECISIONS.md`.
 
 ---
 
+## Growth Governance & Change Budget (WP-040)
+
+| Decision ID | Summary | Introduced In |
+|---|---|---|
+| D-4001 | `packages/game-engine/src/governance/` classified as engine code category (ninth engine-subdirectory precedent after D-2706 / D-2801 / D-3001 / D-3101 / D-3201 / D-3301 / D-3401 / D-3501); ships pure type definitions only — `ChangeCategory`, `ChangeBudget`, `ChangeClassification` — used as out-of-band governance metadata, never stored in `LegendaryGameState`, never persisted to any database, never transmitted in replay logs, never used to branch runtime gameplay; no wall-clock / RNG / I/O / `.reduce()` / `boardgame.io` / registry / server imports | WP-040 |
+
+---
+
 ## Deployment Checklists — Scope Reduction (WP-042)
 
 | Decision ID | Summary | Introduced In |

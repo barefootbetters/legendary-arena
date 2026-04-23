@@ -8,15 +8,20 @@
 
 ## Session Context
 
-WP-039 established live ops with four metric categories and cadence. WP-035
-defined the release process. WP-034 introduced versioning with three
-independent axes. WP-031 enforced engine invariants. This packet defines the
-governance framework for sustainable growth by explicitly constraining *what
-may change*, *under what review*, and *with what version impact*, preventing
-architectural regression via success. Every release has an explicit change budget; every
-change is classified before it ships. This implements D-1001 (Growth Requires
-Explicit Change Budgets), D-1002 (Immutable Surfaces Are Protected), and
-D-1003 (Content and UI Are Primary Growth Vectors).
+WP-039 established live ops with four organizational-prose metric labels
+(System Health / Gameplay Stability / Balance Signals / UX Friction) and a
+daily / weekly / monthly review cadence. WP-035 defined the release process.
+WP-034 introduced versioning with three independent axes. WP-031 enforced
+engine invariants. This packet defines the governance framework for
+sustainable growth by explicitly constraining *what may change*, *under what
+review*, and *with what version impact*, preventing architectural regression
+via success. Every release has an explicit change budget; every change is
+classified before it ships. This implements D-1001 (Growth Requires Explicit
+Change Budgets), D-1002 (Immutable Surfaces Are Protected), and D-1003
+(Content and UI Are Primary Growth Vectors), and **inherits D-3901** (Live
+Ops Reuses Existing `IncidentSeverity` and `OpsCounters` Rather Than
+Parallel Types) as a binding reuse-not-parallel discipline on all proposed
+type definitions.
 
 ---
 
@@ -62,22 +67,55 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 
 Before writing a single line:
 
-- `docs/ai/ARCHITECTURE.md — "MVP Gameplay Invariants"` — read all sections.
-  These define what must remain true as the game grows. Growth governance
-  protects these invariants.
-- `docs/ai/ARCHITECTURE.md — "Layer Boundary (Authoritative)"` — change
-  classification maps to layers: ENGINE = game-engine, RULES = game-engine
-  rules, CONTENT = registry/data, UI = client, OPS = server/deployment.
-- `docs/ai/DECISIONS.md` — read D-1001 (Growth Requires Explicit Change
-  Budgets). Every release declares allowed change scope.
-- `docs/ai/DECISIONS.md` — read D-1002 (Immutable Surfaces Are Protected).
-  Replay semantics, rules, RNG behavior, and scoring cannot change without
-  major version.
-- `docs/ai/DECISIONS.md` — read D-1003 (Content and UI Are Primary Growth
-  Vectors). Growth prioritizes content, onboarding, and UI — not engine or
-  rules.
-- `docs/ai/DECISIONS.md` — read D-0801 (Explicit Version Axes). Change
-  classification determines which version axis is affected.
+- `docs/ai/ARCHITECTURE.md — "MVP Gameplay Invariants"` — **AUTHORITATIVE
+  for immutable engine invariants.** Read all sections. These define what
+  must remain true as the game grows; governance protects these invariants.
+- `docs/ai/ARCHITECTURE.md — "Layer Boundary (Authoritative)"` —
+  **AUTHORITATIVE for five-layer partition** (Registry / Game Engine /
+  Pre-Planning / Server / Persistence). Change classification maps to
+  layers: ENGINE = game-engine, RULES = game-engine rules, CONTENT =
+  registry/data, UI = client, OPS = server/deployment. Cross-link each
+  category to its architectural layer; do not re-derive the partition.
+- `docs/ops/LIVE_OPS_FRAMEWORK.md` §8 Change Management — **AUTHORITATIVE
+  for allowed/forbidden change matrix.** The five change categories
+  inherit §8's allowed and forbidden rows verbatim; this packet
+  cross-links, it does not restate.
+- `packages/game-engine/src/ops/ops.types.ts` — **AUTHORITATIVE for
+  `IncidentSeverity`, `OpsCounters`, `DeploymentEnvironment`.** No
+  parallel severity, counter, or environment type may be introduced; any
+  severity-relevant classification in this packet must cross-link to
+  `IncidentSeverity` via commentary (D-3901 reuse discipline).
+- `docs/ops/INCIDENT_RESPONSE.md` — **AUTHORITATIVE for P0 / P1 / P2 / P3
+  severity semantics.** If a change category maps to a severity tier,
+  cross-link; do not re-define severity.
+- `docs/ops/RELEASE_CHECKLIST.md` — **AUTHORITATIVE for the seven release
+  gates.** The change-budget discipline consumes the release gates; no
+  parallel gate list.
+- `docs/ops/DEPLOYMENT_FLOW.md` — **AUTHORITATIVE for the four-environment
+  promotion path and rollback procedure.** The OPS change category
+  cross-links; no parallel deployment-flow restatement.
+- `packages/game-engine/src/versioning/` — **AUTHORITATIVE for the three
+  version axes** (`EngineVersion`, `DataVersion`, `ContentVersion`),
+  `VersionedArtifact<T>`, `checkCompatibility`, `migrateArtifact`, and
+  `stampArtifact`. The major-version-bump language in this packet must
+  cite the landed axes; no parallel version-axis union.
+- `docs/ai/DECISIONS.md` — **AUTHORITATIVE for D-1001 / D-1002 / D-1003 /
+  D-0702 / D-0801 / D-3901.**
+  - D-1001 (Growth Requires Explicit Change Budgets) — every release
+    declares allowed change scope.
+  - D-1002 (Immutable Surfaces Are Protected) — replay semantics, RNG
+    behavior, rules, and scoring cannot change without major version.
+  - D-1003 (Content and UI Are Primary Growth Vectors) — growth prioritizes
+    content, onboarding, and UI; not engine or rules.
+  - D-0702 (Balance Changes Require Simulation) — RULES-category changes
+    inherit the simulation-validation requirement; no RULES change ships
+    without WP-036 simulation backing.
+  - D-0801 (Explicit Version Axes) — change classification determines
+    which version axis is affected; three axes are immutable.
+  - D-3901 (Live Ops Reuses Existing `IncidentSeverity` and `OpsCounters`
+    Rather Than Parallel Types) — **binding** on this packet's type
+    definitions; every proposed new type must pass a D-3901 reuse-
+    verification check recorded in EC-040 §Locked Values.
 - `docs/ai/REFERENCE/00.6-code-style.md` — Rule 4 (no abbreviations),
   Rule 13 (ESM only).
 
@@ -242,6 +280,12 @@ entropy**.
 - `packages/game-engine/src/types.ts` — **modified** — re-export governance
   types
 - `packages/game-engine/src/index.ts` — **modified** — export governance types
+- `docs/ai/post-mortems/01.6-WP-040-growth-governance-change-budget.md` —
+  **new** — post-mortem for this packet, landed in Commit A alongside the
+  execution-session content per the WP-039 Commit-A precedent; triggered by
+  three conditions (new long-lived abstraction document, new
+  `packages/game-engine/src/governance/` code-category directory, new type
+  contracts consumed by future WPs)
 
 No other files may be modified.
 

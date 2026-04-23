@@ -8546,6 +8546,82 @@ CONFIRM → session prompt → Commit A0 SPEC `9e7d9bd` → Commit A EC-039
 
 ---
 
+### D-4001 — `packages/game-engine/src/governance/` Classified as Engine Code Category
+
+**Decision:**
+The `packages/game-engine/src/governance/` subdirectory, introduced by
+WP-040, is classified as **engine** code category. It follows all engine-
+category rules defined in `docs/ai/REFERENCE/02-CODE-CATEGORIES.md §Engine`
+and in `.claude/rules/architecture.md` + `.claude/rules/game-engine.md`.
+
+Specifically, files under `packages/game-engine/src/governance/`:
+- Contain **pure type definitions only** — no runtime logic, no functions
+  with side effects, no I/O.
+- Do **not** import `boardgame.io` (the game framework), the registry
+  package, the server layer, or any other `apps/*` package.
+- Do **not** read `Math.random` (non-engine RNG), `Date.now`
+  (wall-clock helper), `performance.now` (high-resolution timing reads),
+  or any other nondeterministic source.
+- Do **not** use `.reduce()` in any form.
+- Export types that are **metadata only** — never stored in
+  `LegendaryGameState`, never persisted to any database, never transmitted
+  in replay logs, never used to branch runtime gameplay behavior.
+- May be re-exported through `packages/game-engine/src/types.ts` and
+  `packages/game-engine/src/index.ts` as additive public-API surface.
+
+**Rationale:**
+WP-040 produces `ChangeCategory`, `ChangeBudget`, and `ChangeClassification`
+type definitions as out-of-band governance metadata. These types are
+engine-visible (the type system knows about them) but runtime-invisible
+(no engine code branches on their values). Classifying the directory as
+engine matches the D-2706 / D-2801 / D-3001 / D-3101 / D-3401 / D-3501
+precedent chain for engine subdirectories that ship pure types plus
+prose-level semantics without any runtime logic. Alternatives considered:
+
+- **Docs-only category** — rejected because the types live in TypeScript
+  source under `packages/game-engine/src/`, not in `docs/`.
+- **New top-level category (e.g., `governance`)** — rejected because the
+  D-5601 pattern (new top-level category) applies only when the package
+  itself is top-level (`packages/<name>/`), not when a single
+  subdirectory is added to an existing package.
+- **Infra / test category** — rejected because the directory contains
+  type contracts that are re-exported as public-API, not test or
+  infrastructure code.
+
+**Implications:**
+- All files under `packages/game-engine/src/governance/` must pass the
+  engine-category verification greps (no `boardgame.io`, no `Math.random`,
+  no `Date.now`, no `performance.now`, no `@legendary-arena/registry`,
+  no `apps/server`, no `require(`, no `.reduce()`).
+- Future additions to the directory (new types, new files) inherit the
+  engine-category rules without requiring a fresh decision.
+- If a future WP proposes runtime logic (e.g., a change-classification
+  evaluator function) for the directory, that WP must either carve out an
+  exception with a new D-entry or place the runtime logic in a different
+  engine-category directory that already permits runtime code.
+
+**Alternatives rejected:** See Rationale section above.
+
+**Implementation locations:**
+
+- `packages/game-engine/src/governance/governance.types.ts` — new file
+  introduced by WP-040; exports `ChangeCategory`, `ChangeBudget`,
+  `ChangeClassification` type definitions.
+- `docs/ai/REFERENCE/02-CODE-CATEGORIES.md` — to be updated alongside
+  this decision to list `packages/game-engine/src/governance/` as
+  engine category (same-session update per P6-46 resolution workflow).
+
+**Affected WPs:** WP-040 (introducing WP); all future WPs that touch
+`packages/game-engine/src/governance/`.
+**Introduced:** Pre-flight v1 for WP-040, 2026-04-23 (DO NOT EXECUTE YET,
+PS-1 resolution) → Path A rewrite → D-4001 lands with Commit A0 pre-flight
+bundle → v2 pre-flight READY TO EXECUTE.
+**Status:** Immutable
+**Raised:** 2026-04-23 (pre-flight v1 of WP-040)
+**Resolved:** 2026-04-23 (this decision)
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
