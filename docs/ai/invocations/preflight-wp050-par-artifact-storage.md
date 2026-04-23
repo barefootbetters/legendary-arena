@@ -515,28 +515,75 @@ rewrite or a scope expansion beyond the A0 bundle.
 
 ### Verdict
 
-**🟡 NOT READY until A0 SPEC bundle lands.**
+**Initial verdict (A0a — 2026-04-23 AM):** 🟡 NOT READY until
+blocking findings resolve.
 
-A0 SPEC bundle must apply, in a single commit:
+**Final verdict (A0b — 2026-04-23 PM):** ✅ **READY TO EXECUTE.**
 
-1. **EC-050 surgical update** — resolves PS-1 (align test count,
-   re-export list, Locked Values, Required Comments, Failure
-   Smells with WP-050).
-2. **WP-050 updates** — resolve PS-3 (`ScenarioKey` wording),
-   PS-4 (SHA-256 rationale), PS-5 (`writeSeedParArtifact`
-   signature), PS-6 (`node:fs/promises` lock). Apply
-   PS-2-related `// why:` for the IO carve-out.
-3. **DECISIONS.md entry D-5001** — resolves PS-2 (narrow
-   carve-out permitting IO in `par.storage.ts` only, with
-   re-confirmation of IO prohibition elsewhere in simulation).
-4. **Session execution prompt** — `session-wp050-par-artifact-
-   storage.md` — drafted alongside the other A0 items in the
-   same commit so the executor has everything it needs in one
-   shot.
+The A0b SPEC bundle resolves all six pre-flight findings in a
+single commit:
 
-Once the A0 SPEC bundle lands, re-run this pre-flight's
-**Copilot Check** focus questions. Expected final verdict:
-**✅ READY TO EXECUTE**.
+1. ✅ **PS-1 — EC-050 surgical update landed.** Test count flipped
+   21 → 34. Dual source-class content added throughout §Locked
+   Values. Re-export list expanded to 9 items. §Required `// why:`
+   Comments fully populated with dual-source-class items. §Common
+   Failure Smells expanded with cross-class violations, T2 policy
+   tier guard, seed `parValue`/`parBaseline` consistency guard,
+   and D-5001 carve-out boundary smell.
 
-If a new finding surfaces during copilot check, add a PS-N and
-resolve in a follow-up A0b SPEC commit before execution.
+2. ✅ **PS-2 — D-5001 DECISIONS entry landed.** Option A adopted:
+   narrow filesystem IO carve-out permitting `node:fs/promises`
+   in `par.storage.ts` and `par.storage.test.ts` ONLY, with
+   re-confirmation of IO prohibition in every other simulation
+   file. D-5001 explicitly notes the carve-out is
+   **PAR-pipeline-specific and non-precedential** — no other
+   engine subsystem may cite it. Grep gate enforces boundary:
+   `grep -rnE "from ['\"]node:fs" packages/game-engine/src/
+   simulation/ --include="*.ts" | grep -vE "(par\.storage\.ts|
+   par\.storage\.test\.ts)"` must return zero output.
+
+3. ✅ **PS-3 — WP-050 wording corrected.** `ScenarioKey` described
+   accurately as "string type alias" (plain `export type
+   ScenarioKey = string`), not "branded type alias".
+
+4. ✅ **PS-4 — `node:crypto` citation landed.** WP-050 §Locked
+   Values `computeArtifactHash` section explicitly distinguishes
+   `node:crypto` (Node built-in, acceptable) from external crypto
+   libraries (forbidden). EC-050 adds the `// why:` requirement
+   for the citation at the helper definition site.
+
+5. ✅ **PS-5 — `writeSeedParArtifact` signature updated.**
+   Four-parameter signature locked: `(artifact, scoringConfig,
+   basePath, parVersion)`. Consistency check at write time
+   uses `computeParScore` against the caller-supplied config.
+
+6. ✅ **PS-6 — `node:fs/promises` lock landed.** WP-050
+   §Non-Negotiable Constraints and EC-050 §Locked Values both
+   pin `node:fs/promises` for production code;
+   synchronous `node:fs` permitted only in test setup. Network
+   and subprocess APIs (`node:net`, `node:http`, `node:https`,
+   `node:child_process`, `node:dns`) forbidden in all new files.
+
+**Execution is now unblocked.** The session execution prompt at
+`docs/ai/invocations/session-wp050-par-artifact-storage.md` is
+ready to drive execution following the three-commit topology
+(A0 → A → B).
+
+**Copilot Check (01.7):** all five focus questions pass:
+1. EC-050 surgical update covers all four drift sites (test
+   count + re-export list + Locked Values + Required Comments
+   + Failure Smells). ✅
+2. D-5001 names the exact path pattern (`par.storage.ts` /
+   `par.storage.test.ts`) and re-confirms IO prohibition
+   elsewhere. ✅
+3. Session prompt locks 34-test count, +1 suite, per-function
+   failure semantics table. ✅
+4. Session prompt names the exact 11 WP-049 fields consumed as
+   load-bearing, and the WP-048 `ScenarioKey`/`ParBaseline`/
+   `ScenarioScoringConfig`/`computeParScore` surfaces. ✅
+5. Session prompt forbids all overwrite-bypass paths (no
+   `fs.rm`, no `fs.truncate`, no `fs.rename`-over-existing
+   artifact). ✅
+
+No new findings surfaced during copilot check. Verdict:
+**CONFIRM**.

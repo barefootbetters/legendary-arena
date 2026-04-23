@@ -74,7 +74,9 @@ file layout. After this session:
     needsMoreSamples, scoringConfigVersion, generatedAt)
   - `generateScenarioPar` exists and produces `ParSimulationResult`
 - WP-048 complete. Specifically:
-  - `ScenarioKey` is a branded type alias with locked format:
+  - `ScenarioKey` is a string type alias (plain `export type ScenarioKey
+    = string`, not a branded type — TypeScript does not enforce
+    branding without an explicit branding tag) with locked format:
     `{schemeSlug}::{mastermindSlug}::{sorted-villainGroupSlugs-joined-by-+}`
   - `buildScenarioKey` exists and produces stable, sorted keys
   - `ParBaseline` interface is exported with fields `roundsPar`,
@@ -119,6 +121,11 @@ Before writing a single line:
 - Test files use `.test.ts` extension — never `.test.mjs`
 - Full file contents for every new or modified file — no diffs, no snippets
 - Human-style code per `docs/ai/REFERENCE/00.6-code-style.md`
+- **Filesystem API lock (PS-6):** production code in `par.storage.ts`
+  uses `node:fs/promises` exclusively — never `node:fs` synchronous
+  API. Tests may use sync API when it simplifies setup/teardown.
+  No `node:net`, `node:http`, `node:https`, `node:child_process`,
+  or `node:dns` imports anywhere in new files.
 
 **Packet-specific:**
 - **Immutability is non-negotiable:** PAR artifacts are write-once. Updates
@@ -135,7 +142,11 @@ Before writing a single line:
   also work on R2/S3/CDN without modification.
 - **Engine isolation:** no engine gameplay files modified. PAR storage utilities
   live in `packages/game-engine/src/simulation/` alongside the simulation
-  tooling (same layer).
+  tooling (same layer). Filesystem IO is permitted ONLY in `par.storage.ts`
+  and `par.storage.test.ts` per **D-5001** (simulation IO carve-out,
+  PAR-pipeline-specific and non-precedential). Every other simulation file
+  remains IO-free per D-3601. The carve-out boundary is grep-enforced in
+  `## Verification Steps`.
 - **Server boundary:** the server reads `index.json` to enforce the pre-release
   PAR gate. Writing artifacts is a tooling concern, not a server concern.
 - WP-049 contract files must NOT be modified
@@ -206,6 +217,16 @@ Before writing a single line:
   (cross-verification). Any change to any other field produces a different hash.
   Artifacts missing `artifactHash` or with an invalid hash are **corrupt and
   non-publishable**. Identical rule for both source classes.
+  - SHA-256 implementation: `node:crypto.createHash('sha256')` — **Node
+    built-in, NOT an external crypto library** (PS-4). D-3601's "no
+    crypto libraries in simulation" rule was scoped to seed-set hashing
+    where djb2 sufficed. SHA-256 tamper detection is a distinct
+    concern; `node:crypto` is a Node built-in and carries no
+    package.json impact. External crypto libraries (`crypto-js`,
+    `sha.js`, etc.) remain forbidden.
+  - `// why:` required above `computeArtifactHash` citing the
+    distinction between seed-set hashing (djb2) and tamper detection
+    (SHA-256 via Node built-in).
 
 - **Required `simulation` artifact fields:**
   - `scenarioKey` — must exactly match filename
@@ -339,17 +360,24 @@ Before writing a single line:
 
 #### Seed artifact writers/readers
 
-- `writeSeedParArtifact(artifact: SeedParArtifact, basePath: string, parVersion: string): string`
+- `writeSeedParArtifact(artifact: SeedParArtifact, scoringConfig: ScenarioScoringConfig, basePath: string, parVersion: string): Promise<string>`
   — writes a content-authored `SeedParArtifact` to the correct sharded path
     under `seed/{parVersion}/`
+  - **Four-parameter signature** (PS-5 resolution): the second parameter
+    `scoringConfig` is required so the writer can run the
+    `parValue` / `parBaseline` consistency check at write time by calling
+    `computeParScore` against a config constructed from the caller's
+    `parBaseline`. Without the parameter, the writer cannot validate
+    the stored `parValue` against its baseline.
   - Caller provides the fully-populated artifact **except** `artifactHash`,
     which is computed and embedded by this function (never trust a
     pre-computed hash from the caller — prevents drift).
   - **Refuses overwrite:** identical rule to simulation writer.
   - Validates: `parBaseline` has all four required non-negative integer
-    fields; `parValue` equals `computeParValueFromBaseline(parBaseline,
-    weights)` for the referenced scoring config version (caller supplies
-    the scoring config separately at write time — see guard below).
+    fields; stored `parValue` equals `computeParScore` applied to the
+    caller-supplied `scoringConfig` with `parBaseline` substituted from
+    the artifact. Rejects the write on any mismatch with a full-sentence
+    error.
   - Serializes with the same canonical serialization rules.
   - Returns the relative path of the written file.
   - `// why:` authoring-time validation prevents silently publishing a seed

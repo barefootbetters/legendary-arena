@@ -8906,6 +8906,40 @@ a change to one of the five surfaces.
 
 ---
 
+### D-5001 — Filesystem IO Carve-Out for `par.storage.ts` (PAR-Pipeline-Specific, Non-Precedential)
+
+**Type:** Layer-Boundary Carve-Out
+**Packet:** WP-050 (pre-flight PS-2 resolution)
+**Date:** 2026-04-23
+
+**Decision:** Filesystem IO is permitted in exactly one simulation-category file — `packages/game-engine/src/simulation/par.storage.ts` and its colocated test file `packages/game-engine/src/simulation/par.storage.test.ts`. No other file under `packages/game-engine/src/simulation/` may import `node:fs`, `node:fs/promises`, or any other IO-performing Node built-in (`node:net`, `node:http`, `node:https`, `node:child_process`, `node:dns`). The carve-out is enforced by a grep gate in the WP-050 verification steps:
+
+```bash
+grep -rnE "from ['\"]node:fs" packages/game-engine/src/simulation/ --include="*.ts" | grep -vE "(par\.storage\.ts|par\.storage\.test\.ts)"
+# Expected: no output. Any line returned is a layer violation.
+```
+
+**Rationale:** `.claude/rules/architecture.md` §Game Engine Layer forbids engine code from "Query PostgreSQL, HTTP, filesystem, or environment". D-3601 classifies `src/simulation/` as engine category. Prior simulation files (WP-036 `ai.types.ts`, `ai.random.ts`, `ai.legalMoves.ts`, `simulation.runner.ts`, `simulation.test.ts`; WP-049 `ai.tiers.ts`, `ai.competent.ts`, `par.aggregator.ts` + tests) are strictly in-memory — zero filesystem access. WP-050 introduces persistent PAR artifacts, which fundamentally require filesystem IO to implement. Three resolution options were considered during WP-050 pre-flight (option A — narrow carve-out; option B — new `@legendary-arena/par-storage` package; option C — move to `apps/par-storage-tooling/`). Option A is adopted because it matches WP-050's explicit framing ("storage lives alongside simulation tooling — same layer") with minimal structural disruption and because the carve-out boundary is naturally narrow (exactly one filename pattern: `par.storage*.ts`).
+
+**Scope (non-precedential):** This carve-out is **PAR-pipeline-specific**. It exists to support the WP-050 → WP-051 → WP-054 PAR artifact / publication / leaderboard chain. It does NOT generalize to any other engine subsystem. New future subsystems that want filesystem IO (content registry loader, replay writer, ops telemetry emitter, anything else) MUST NOT cite D-5001 as precedent. Each such subsystem must go through its own architectural review and land its own DECISIONS entry if IO is truly required at the engine layer — OR, preferably, live outside `packages/game-engine/` entirely (per the `vue-sfc-loader` Shared Tooling precedent). The D-5001 carve-out is a recognized exception, not a template.
+
+**Boundary guarantees:**
+- Filesystem IO confined to `par.storage.ts` and `par.storage.test.ts` (grep-enforced).
+- `node:fs/promises` is the only IO API permitted in production code (`par.storage.ts`); test code (`par.storage.test.ts`) may also use `node:os.tmpdir()` for isolated test directories.
+- `node:crypto` is permitted in `par.storage.ts` for `artifactHash` computation (SHA-256 via `createHash`). D-3601's "no crypto libraries in simulation" language was scoped to seed-set hashing in WP-049 where djb2 sufficed. SHA-256 tamper detection is a distinct concern; `node:crypto` is a Node built-in, not an external npm dependency, so no package.json changes.
+- No synchronous filesystem API (`fs.readFileSync`, `fs.writeFileSync`) in production code.
+- No network IO, no subprocess spawning, no environment variable reads in any simulation file.
+
+**Enforcement in WP-050 and downstream WPs:**
+- WP-050 `## Verification Steps` includes the grep gate above.
+- WP-050 `## Hard Stops` forbids `node:fs` imports outside the two carve-out files.
+- Future simulation WPs (T1 / T3 / T4 policies, additional aggregators) inherit the original engine-layer IO prohibition — they may not import `node:fs` at all.
+- WP-051 server publication gate reads PAR artifacts through the `resolveParForScenario` public API exported from `par.storage.ts`, not by directly importing `node:fs`; this keeps the server layer's dependency on WP-050 at the type/function level rather than at the filesystem level.
+
+**Citation:** `packages/game-engine/src/simulation/par.storage.ts` (to be created in WP-050 Commit A); `.claude/rules/architecture.md` §Game Engine Layer; D-3601 (Simulation Code Category); WP-050 pre-flight §PS-2; WP-049 closure at `956306c`.
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
