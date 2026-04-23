@@ -7,6 +7,131 @@
 
 ## Current State
 
+### WP-041 / EC-041 Executed — System Architecture Definition & Authority Model (2026-04-23, EC-041)
+
+**Architecture formally reviewed and versioned at 1.0.0; 20 G-class Runtime fields certified in Field Classification Reference; authority chain locks `01-VISION.md` between `ARCHITECTURE.md` and `.claude/rules`.**
+
+WP-041 is a pure documentation certification pass over `docs/ai/ARCHITECTURE.md`.
+Three structural additions to ARCHITECTURE.md: (1) version stamp at top
+(`Architecture Version: 1.0.0 / Last Reviewed: 2026-04-23 / Verified Against:
+WP-001 through WP-040`), value matches `CURRENT_ENGINE_VERSION_VALUE` at
+`packages/game-engine/src/versioning/versioning.check.ts:29` so architecture
+and engine versions are intentionally synchronized at 1.0.0; (2) Document
+override hierarchy block updated from stale 4-entry chain
+(`00.1-master-coordination-prompt.md` at #1, no `01-VISION.md`, no
+`WORK_INDEX.md`) to 7-entry authoritative chain locking `.claude/CLAUDE.md`
+→ `ARCHITECTURE.md` → `01-VISION.md` → `.claude/rules/*.md` →
+`WORK_INDEX.md` → WPs → conversation; (3) single clarifying sentence
+inserted above Field Classification Reference table body disambiguating
+Class column semantics ("`Snapshot (as copy)`" and "`Snapshot → count
+only`" annotations describe how a runtime value may appear in a snapshot
+without changing the field's own class — all 20 G-class Runtime fields
+remain Class 1 regardless of snapshot-handling annotation). Stale
+`*Last updated: WP-014 review*` footer also refreshed to reference WP-041
+certification.
+
+**Surfaces certified clean:**
+
+- Field Classification Reference table — all 20 G-class Runtime fields
+  established by WP-005B through WP-026 are present (`selection` /
+  `playerZones` / `piles` / `villainDeck` / `villainDeckCardTypes` /
+  `hookRegistry` / `currentStage` / `lobby` / `messages` / `counters` /
+  `city` / `hq` / `ko` / `attachedBystanders` / `turnEconomy` /
+  `cardStats` / `mastermind` / `heroAbilityHooks` / `cardKeywords` /
+  `schemeSetupInstructions`); all field names match `LegendaryGameState`
+  in `packages/game-engine/src/types.ts:375` verbatim. `matchConfiguration`
+  (Class 2) and `activeScoringConfig` (WP-067) intentionally excluded per
+  WP-041 §Out of Scope.
+- Authority chain — locks `01-VISION.md` between `ARCHITECTURE.md` and
+  `.claude/rules/*.md`; ARCHITECTURE.md wins on conflict with rules
+  files (rules enforce architecture, they do not redefine it);
+  DECISIONS.md records rationale, ARCHITECTURE.md encodes the result.
+- DECISIONS.md cross-references — D-0002 / D-1214 / D-1229 / D-1232 /
+  D-1310 through D-1313 / D-1405 / D-1601 / D-1602 / D-1703 / D-2501 /
+  D-2503 / D-2601 / D-3102 / D-3103 / D-4802 / D-6701 (and others) all
+  resolve to existing entries in DECISIONS.md.
+
+**Material drift logged (no fix applied per WP-041 §Out of Scope):**
+
+- D-4101 — Resolved Transcription Inconsistency: `*Last updated:*` footer
+  in ARCHITECTURE.md refreshed from stale `WP-014 review` reference to
+  `WP-041` certification.
+- D-4102 — Rules-Architecture Drift Log: `.claude/rules/architecture.md`
+  lags WP-065 and WP-041 on three consolidated points (Layer Overview
+  missing the Shared Tooling layer; Import Rules table missing rows for
+  `vue-sfc-loader` and `apps/arena-client`; Authority Hierarchy section
+  retains stale `00.1-master-coordination-prompt.md` at #2 and omits
+  `01-VISION.md` and `WORK_INDEX.md`). Logged for future
+  rules-correction pass; no fix applied in this packet.
+
+**Pre-flight bundle resolved governance drift before execution:**
+
+- PS-1 (BLOCKING) — EC-041 locked field count corrected from 19 to 20.
+  Added `selection` (WP-005B) at position #1 per PS-4 introduction-order
+  canonical lock. Discovered when pre-flight reality-check found
+  `LegendaryGameState` declares 21 Runtime fields, of which 20 fall
+  within the WP-005B..WP-026 verification range (`activeScoringConfig`
+  is WP-067 — out of scope). EC's "Exactly 19" enumeration had been
+  authored from memory of WP-005B → WP-026 scope rather than by
+  re-reading types.ts.
+- PS-2 (NON-BLOCKING) — WP-041 Assumes range refreshed from
+  D-0001..D-1102 to D-0001..D-4004 to match current DECISIONS.md tail.
+- PS-3a/b/c — three session-prompt guardrails (§B is an UPDATE not an
+  ADD; clarifying sentence is single-sentence not column restructure;
+  `activeScoringConfig` (WP-067) is out of scope).
+- PS-4 — introduction-order canonical lock for EC-041 Field
+  Classification list; future audit packets append new fields at the
+  bottom rather than inserting by introduction date.
+
+**Test baseline:** engine 444/110/0 (start) → 444/110/0 (end) — unchanged
+(zero new tests; documentation-only). Repo-wide 596/0 (start) → 596/0
+(end) — unchanged. `pnpm --filter @legendary-arena/game-engine test`
+exits 0. `pnpm -r test` exits 0. `git diff --name-only packages/ apps/`
+returns empty across all three commits — no engine, registry, server, or
+app file touched. `git diff --name-only .claude/rules/` returns empty
+across all three commits — no rules-file modification.
+
+**Three-commit topology:**
+
+- **A0** SPEC pre-flight bundle (`6cc2541`) — preflight, copilot check,
+  session prompt, PS-1/PS-2 corrections to WP-041 + EC-041 staged by
+  exact filename per P6-27 / P6-44.
+- **A** `EC-041:` content + 01.6 post-mortem (`0e8e8b1`) —
+  ARCHITECTURE.md (4 edits), DECISIONS.md (D-4101 + D-4102),
+  DECISIONS_INDEX.md (new "Architecture Certification & Audit (WP-041)"
+  section), `01.6-WP-041-architecture-audit.md` post-mortem.
+- **B** SPEC governance close (this commit) — STATUS.md + WORK_INDEX.md
+  WP-041 `[ ]` → `[x]` + EC_INDEX.md EC-041 Draft → Done + Done counter
+  12 → 13 + Draft counter 48 → 47.
+
+**Lessons learned (precedent observation):** This certification packet
+caught governance drift in its own specification (EC-041 "Exactly 19" vs.
+actual 20 fields; WP-041 Assumes range D-0001..D-1102 vs. current
+D-0001..D-4004) before execution. The pre-flight + copilot check combo
+flagged both issues as PS-1 and PS-2 before the session prompt was
+generated. The discipline works as designed; documentation packets need
+the same reality-check rigor as code packets, because their
+specifications can drift silently. **Anti-pattern lesson:** future audit
+WPs must re-read source-of-truth files (`types.ts`, ARCHITECTURE.md
+tables) when enumerating; never enumerate from prior-WP scope sections
+or memory.
+
+**Session-context lineage gap (governance finding):** No
+`session-context-wp041.md` was generated in the lineage prior to this WP
+(lineage jumped WP-040 → WP-042). A retroactive `session-context-wp041.md`
+is generated as a finalization step.
+
+01.5 NOT INVOKED (all four trigger criteria absent: no
+`LegendaryGameState` field added, no `buildInitialGameState` shape change,
+no new move, no new phase hook). 01.6 post-mortem authored at
+`docs/ai/post-mortems/01.6-WP-041-architecture-audit.md` per the WP-040 /
+WP-042 / WP-066 / WP-081 Phase 7 precedent (recommended-but-optional for
+documentation packets, run anyway). Verdict **WP COMPLETE**.
+
+Vision: §7, §8, §13, §14, §15
+
+---
+
 ### WP-040 / EC-040 Executed — Growth Governance & Change Budget (2026-04-23, EC-040)
 
 **Phase 7 complete: Growth governance enforced. Change classification mandatory. Immutable surfaces protected. D-1001 / D-1002 / D-1003 fully implemented.**

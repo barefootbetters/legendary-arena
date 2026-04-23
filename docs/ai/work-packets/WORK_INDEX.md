@@ -1453,16 +1453,48 @@ These packets ship the game and keep it running.
   Commit prefix: `EC-040:` at execution; `SPEC:` for the bundle and the
   governance close (never `WP-040:` per P6-36 — commit-msg hook rejects).
 
-- [ ] WP-041 — System Architecture Definition & Authority Model ✅ Reviewed
+- [x] WP-041 — System Architecture Definition & Authority Model ✅ Completed 2026-04-23 at commit `0e8e8b1` under EC-041
   Dependencies: WP-040
-  Notes: Architecture review and consolidation — NOT new design; verifies
-  ARCHITECTURE.md Field Classification table has all 19 G fields from
-  WP-002 through WP-026; adds version stamp; documents authority hierarchy
-  (CLAUDE.md > ARCHITECTURE.md > rules > WORK_INDEX > WPs); audits
-  consistency with DECISIONS.md and `.claude/rules/*.md`; logs drift but
-  does NOT modify rules files; no engine modifications; no new layers,
-  boundaries, or invariants invented; was truncated at 69 lines and not
-  registered in WORK_INDEX — normalized to full PACKET-TEMPLATE and added
+  Notes: Formal architecture certification pass — NOT new design; verified
+  ARCHITECTURE.md Field Classification table has all 20 G-class Runtime
+  fields from WP-005B through WP-026 (selection / playerZones / piles /
+  villainDeck / villainDeckCardTypes / hookRegistry / currentStage / lobby
+  / messages / counters / city / hq / ko / attachedBystanders / turnEconomy
+  / cardStats / mastermind / heroAbilityHooks / cardKeywords /
+  schemeSetupInstructions); added `Architecture Version: 1.0.0 / Last
+  Reviewed: 2026-04-23 / Verified Against: WP-001 through WP-040` stamp at
+  top of file; updated Document override hierarchy block to authoritative
+  7-entry chain locking 01-VISION.md between ARCHITECTURE.md and
+  .claude/rules (CLAUDE.md → ARCHITECTURE.md → 01-VISION.md →
+  .claude/rules/*.md → WORK_INDEX.md → WPs → conversation); inserted single
+  clarifying sentence above Field Classification Reference table body
+  disambiguating Class column ("Snapshot (as copy)" / "Snapshot → count
+  only" annotations describe snapshot handling, not class reassignment);
+  refreshed stale `*Last updated: WP-014 review*` footer to reference
+  WP-041 certification; logged drift between ARCHITECTURE.md and
+  `.claude/rules/architecture.md` as D-4102 (Rules-Architecture Drift Log)
+  without modifying rules files per WP-041 §Out of Scope; no engine
+  modifications; no apps modifications; no rules-file modifications; no
+  new layers, boundaries, or invariants introduced. Pre-flight (PS-1
+  EC count → 20, PS-2 Assumes range → D-4004) and copilot check (PS-4
+  ordering lock at introduction-order with `selection` at #1) caught
+  governance drift before execution. DECISIONS.md adds two entries: D-4101
+  (Resolved Transcription Inconsistency for footer refresh) and D-4102
+  (Rules-Architecture Drift Log consolidating three drift items). Test
+  baseline UNCHANGED at engine 444/110/0 + repo-wide 596/0 (zero new
+  tests; documentation-only). Three-commit topology: A0 SPEC pre-flight
+  bundle (`6cc2541`) → A `EC-041:` content + 01.6 post-mortem (`0e8e8b1`)
+  → B SPEC governance close (this commit: STATUS + WORK_INDEX WP-041
+  `[ ]` → `[x]` + EC_INDEX EC-041 Draft → Done; D-4101 / D-4102 already
+  landed at Commit A per session-prompt §Commit topology). Staging by
+  exact filename only — never `git add .` / `git add -A` / `git add -u`
+  (P6-27 / P6-44). Inherited `.claude/worktrees/` untouched and never
+  staged. Commits use `EC-041:` prefix on content commit; `SPEC:` on
+  pre-flight bundle and governance close (never `WP-041:` per P6-36 —
+  commit-msg hook rejects).
+  Post-mortem: `docs/ai/post-mortems/01.6-WP-041-architecture-audit.md`.
+  Commit prefix: `EC-041:` at execution; `SPEC:` for the bundle and the
+  governance close (never `WP-041:` per P6-36 — commit-msg hook rejects).
 
 - [x] WP-085 — Vision Alignment Audit (Detection, Classification & Gating) ✅ Reviewed — Executed 2026-04-22 at commit `c836b29`
   Dependencies: None (builds on the audit scaffold landed at INFRA `24996a9`
