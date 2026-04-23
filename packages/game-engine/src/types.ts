@@ -279,6 +279,20 @@ export type {
   FeedbackCategory,
 } from './beta/beta.types.js';
 
+// Governance metadata (WP-040 / D-4001)
+// why: Governance metadata types (ChangeCategory, ChangeBudget,
+// ChangeClassification) are defined canonically in
+// src/governance/governance.types.ts (WP-040 / D-4001). Re-exported here
+// so consumers importing from './types.js' have access. These types are
+// out-of-band metadata — the engine never constructs or mutates instances,
+// and none of them are fields of LegendaryGameState. See
+// `docs/governance/CHANGE_GOVERNANCE.md` for the reader-facing prose.
+export type {
+  ChangeCategory,
+  ChangeBudget,
+  ChangeClassification,
+} from './governance/governance.types.js';
+
 import type { TurnStage } from './turn/turnPhases.types.js';
 import type { CardExtId, PlayerZones, GlobalPiles } from './state/zones.types.js';
 import type { TurnEconomy, CardStatEntry } from './economy/economy.types.js';

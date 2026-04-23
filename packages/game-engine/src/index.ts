@@ -353,3 +353,10 @@ export type {
   BetaCohort,
   FeedbackCategory,
 } from './beta/beta.types.js';
+
+// Governance metadata (WP-040 / D-4001)
+export type {
+  ChangeCategory,
+  ChangeBudget,
+  ChangeClassification,
+} from './governance/governance.types.js';
