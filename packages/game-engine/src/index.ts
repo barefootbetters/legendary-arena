@@ -347,6 +347,40 @@ export { getLegalMoves } from './simulation/ai.legalMoves.js';
 export type { SimulationLifecycleContext } from './simulation/ai.legalMoves.js';
 export { runSimulation } from './simulation/simulation.runner.js';
 
+// PAR simulation engine (WP-049 / D-4901+)
+export { createCompetentHeuristicPolicy } from './simulation/ai.competent.js';
+export {
+  aggregateParFromSimulation,
+  generateScenarioPar,
+  validateParResult,
+  validateTierOrdering,
+  generateSeedSet,
+  computeSeedSetHash,
+  ParAggregationError,
+  PAR_PERCENTILE_DEFAULT,
+  PAR_MIN_SAMPLE_SIZE,
+  IQR_THRESHOLD,
+  STDEV_THRESHOLD,
+  MULTIMODALITY_BIN_COUNT,
+} from './simulation/par.aggregator.js';
+export type {
+  ParSimulationConfig,
+  ParSimulationResult,
+  ParValidationIssue,
+  ParValidationSeverity,
+  ParValidationResult,
+  TierOrderingResult,
+  ParAggregationErrorCode,
+} from './simulation/par.aggregator.js';
+export {
+  AI_POLICY_TIERS,
+  AI_POLICY_TIER_DEFINITIONS,
+} from './simulation/ai.tiers.js';
+export type {
+  AIPolicyTier,
+  AIPolicyTierDefinition,
+} from './simulation/ai.tiers.js';
+
 // Beta metadata (WP-037 / D-3701)
 export type {
   BetaFeedback,

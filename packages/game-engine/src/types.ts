@@ -265,6 +265,25 @@ export type {
   SimulationResult,
 } from './simulation/ai.types.js';
 
+// why: PAR simulation types (WP-049) ship the T2 Competent Heuristic
+// calibration pipeline. Pure types and the error-code union live in
+// par.aggregator.ts; the tier taxonomy lives in ai.tiers.ts. Re-exported
+// here so consumers importing from './types.js' have access to the full
+// PAR surface.
+export type {
+  ParSimulationConfig,
+  ParSimulationResult,
+  ParValidationIssue,
+  ParValidationSeverity,
+  ParValidationResult,
+  TierOrderingResult,
+  ParAggregationErrorCode,
+} from './simulation/par.aggregator.js';
+export type {
+  AIPolicyTier,
+  AIPolicyTierDefinition,
+} from './simulation/ai.tiers.js';
+
 // Beta metadata (WP-037 / D-3701)
 // why: Beta metadata types (BetaFeedback, BetaCohort, FeedbackCategory)
 // are defined canonically in src/beta/beta.types.ts (WP-037 / D-3701).

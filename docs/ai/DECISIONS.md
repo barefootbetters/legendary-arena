@@ -8752,6 +8752,160 @@ a change to one of the five surfaces.
 
 ---
 
+### D-4901 — T2 Competent Heuristic Is the Sole PAR Authority
+
+**Type:** PAR Calibration Decision
+**Packet:** WP-049
+**Date:** 2026-04-23
+
+**Decision:** Only the T2 (Competent Heuristic) AI policy may be used to compute published PAR values. T0 (Random Legal) and T1 (Naive) play too weakly to establish a valid scenario-difficulty baseline; T3 (Strong Heuristic) and T4 (Near-Optimal) play too strongly and would produce PARs no realistic human player could approach. T2 models experienced, rules-faithful play — the exact target population PAR is meant to measure.
+
+**Rationale:** D-0702 requires simulation validation for balance changes. A valid PAR must reflect what a competent human player produces, not what a machine can produce and not what a random policy produces. T2 is the point on the tier spectrum that satisfies both: deterministic enough to compute reproducibly, strong enough to avoid noise-dominated Raw Scores, weak enough that real players can approach and beat it (preserves Vision §20 "PAR is beatable"). `AI_POLICY_TIER_DEFINITIONS` encodes this with exactly one entry having `usedForPar: true`, drift-pinned by par.aggregator.test.ts test #12.
+
+**Citation:** `packages/game-engine/src/simulation/ai.tiers.ts` (canonical taxonomy); WP-049 §Non-Negotiable Constraints; Vision §20 / §26.
+
+---
+
+### D-4902 — 55th Percentile Nearest-Rank Is the PAR Aggregation Method
+
+**Type:** PAR Calibration Decision
+**Packet:** WP-049
+**Date:** 2026-04-23
+
+**Decision:** PAR is defined as the 55th percentile of the T2 Raw Score distribution, computed via the nearest-rank method on an ascending-sorted copy: `rankIndex = ceil((percentile / 100) * N) - 1`, clamped to `[0, N - 1]`. Configurable range is `[50, 60]` inclusive; the default and publication target is 55. The output is always an integer in Raw Score units — no float interpolation.
+
+**Rationale:** The mean is sensitive to outliers (a single degenerate run tilts the target); the median would measure a "typical" play that most competent players exceed. The 55th percentile is slightly conservative (harder to beat than the median) but still attainable, which matches the Skill Measurement design goal. Nearest-rank preserves integer arithmetic — no floating-point drift across Node versions — and remains deterministic under the explicit `(left, right) => left - right` numeric sort comparator (the default lexical comparator would mis-order integers). Default `Array.prototype.sort()` use is forbidden in the aggregator.
+
+**Citation:** `packages/game-engine/src/simulation/par.aggregator.ts` `aggregateParFromSimulation`; WP-049 §Non-Negotiable Constraints; EC-049 Locked Values.
+
+---
+
+### D-4903 — Neutral Hero Pool for PAR Simulation
+
+**Type:** PAR Calibration Decision
+**Packet:** WP-049
+**Date:** 2026-04-23
+
+**Decision:** `generateScenarioPar` consumes `config.setupConfig.heroDeckIds` verbatim — the caller is responsible for supplying a neutral, non-optimized hero pool. The aggregator never re-selects heroes, never counter-picks to the scenario, and never adapts the pool between runs.
+
+**Rationale:** PAR is Layer A (scenario difficulty only) in the Two-Layer Scoring Architecture. Hero choice is Layer B, and the Vision §26 scenario-then-hero ordering requires PAR to be published before players pick heroes. Allowing the simulator to counter-pick would contaminate the measurement: PAR would capture "best possible team response to scenario" rather than "scenario difficulty at a neutral skill reference". The T2 policy reads the filtered `UIState` like any other policy — no special introspection, no scenario awareness.
+
+**Citation:** `packages/game-engine/src/simulation/par.aggregator.ts` `generateScenarioPar`; `docs/12-SCORING-REFERENCE.md` Two-Layer Scoring Architecture; D-0701.
+
+---
+
+### D-4904 — N >= 500 Minimum Enforced at Validation, Not Aggregation
+
+**Type:** PAR Calibration Decision
+**Packet:** WP-049
+**Date:** 2026-04-23
+
+**Decision:** `validateParResult` enforces `sampleSize >= PAR_MIN_SAMPLE_SIZE (500)` as an error-severity issue. `generateScenarioPar` does NOT enforce the minimum — it runs whatever count the config specifies. This split preserves two capabilities simultaneously: publication-gate enforcement (no scenario published below the noise floor) and seed-bootstrapping (unit tests can run `N=10` scenarios to exercise the pipeline without producing publishable results).
+
+**Rationale:** Hard-enforcing the minimum inside `generateScenarioPar` would have forced every test to run 500+ simulations, inflating CI time; putting the check only in `validateParResult` lets bootstrap tests produce real `ParSimulationResult` records for shape assertions while still blocking under-sampled publication. Recommended production values remain 1000–2000 per scenario — configurable via `config.simulationCount`.
+
+**Citation:** `packages/game-engine/src/simulation/par.aggregator.ts` `PAR_MIN_SAMPLE_SIZE`, `validateParResult`; par.aggregator.test.ts tests #5 / #6.
+
+---
+
+### D-4905 — T2 Five Behavioral Heuristics Are the Fixed Model of Experienced Play
+
+**Type:** PAR Calibration Decision
+**Packet:** WP-049
+**Date:** 2026-04-23
+
+**Decision:** T2 implements exactly five behavioral heuristics, each with its own `// why:` citation: (1) threat prioritization — bystander villains first, imminent escape at slot 4 urgent; (2) heroism bias — bystander rescue outranks plain efficiency wins; (3) economy awareness — fight when possible, never stall; (4) limited deck awareness — coarse early/mid/late posture, never exact card counts; (5) local optimization — evaluate this turn only, no multi-turn lookahead or game-tree search. T2 is explicitly prohibited from sacrificing civilians for long-term optimization, engineering intentional losses, accessing hidden state, or adapting on "knowing it is a simulation".
+
+**Rationale:** Each heuristic models a documented pattern of experienced human play. The scoring weights (SCORE_FIGHT_VILLAIN_BASE=100, SCORE_BYSTANDER_RESCUE_BONUS=500, SCORE_IMMINENT_ESCAPE_BONUS=800, etc.) encode a strict ordering so tie-breaking is bounded and deterministic. Any behavior outside these five heuristics would either be computer-strength (T3/T4 territory, invalid for PAR) or degenerate (violating heroism-bias prohibitions). Future WPs introducing T1/T3/T4 implement different heuristic sets, not extensions to T2.
+
+**Citation:** `packages/game-engine/src/simulation/ai.competent.ts` scoring constants + heuristic comments; WP-049 §A.
+
+---
+
+### D-4906 — Losses Are First-Class Outcomes in the PAR Distribution
+
+**Type:** PAR Calibration Decision
+**Packet:** WP-049
+**Date:** 2026-04-23
+
+**Decision:** Losses (scheme victory, villain deck exhaustion, safety-cap "stuck" games) are included in the Raw Score distribution without filtering, without weighting, and without special-casing. A loss produces a high Raw Score (many penalties, few rescues) which naturally penalizes degenerate scenarios by pulling the 55th percentile upward.
+
+**Rationale:** Filtering losses would produce an artificially optimistic PAR — the Raw Score distribution would describe "competent play given the scenario is winnable", not "competent play against the scenario as designed". Some scenarios are intentionally hard; their PAR should reflect that. The `result.sampleSize === config.simulationCount` invariant guarantees no seed is silently dropped; test #17 asserts both the sampleSize identity and the mixed-win/loss percentile correctness.
+
+**Citation:** `packages/game-engine/src/simulation/par.aggregator.ts` `generateScenarioPar` (no outcome filter); par.aggregator.test.ts test #17; WP-049 §Non-Negotiable Constraints.
+
+---
+
+### D-4907 — Pre-Release PAR Gate Is Server-Layer, Not Engine-Layer
+
+**Type:** PAR Calibration Decision
+**Packet:** WP-049
+**Date:** 2026-04-23
+
+**Decision:** The rule "every official scenario must have a published PAR before competitive leaderboard entries are accepted" is enforced at the server layer (WP-051), not inside the engine. The engine provides `generateScenarioPar` + `validateParResult` as pure tooling; enforcement of "no PAR, no leaderboard" happens at the persistence boundary where leaderboard entries are written.
+
+**Rationale:** Layer Boundary discipline — the engine owns gameplay logic, the server owns wiring and persistence. Enforcing the gate inside the engine would require the engine to know about leaderboards, persistence, and release state, all of which are server concerns. The PAR publication decision is operational, not computational. `ParSimulationResult` is the engine-layer output; WP-050 writes the artifact; WP-051 gates the leaderboard.
+
+**Citation:** `.claude/rules/architecture.md` Layer Boundary; WP-049 §Non-Negotiable Constraints; WP-050 / WP-051 (future work).
+
+---
+
+### D-4908 — Seed Set Canonicalization via Index-Based Derivation
+
+**Type:** PAR Calibration Decision
+**Packet:** WP-049
+**Date:** 2026-04-23
+
+**Decision:** `generateSeedSet(baseSeed, count)` derives a deterministic, order-stable seed array where element `i` is `${baseSeed}-${i}-${djb2(baseSeed + ':' + i)}`. `computeSeedSetHash(seeds)` produces a stable, order-sensitive hash via djb2 over the joined array (`seeds.join('|')`) rendered as `djb2-<hex>`. Both functions are pure and deterministic. No crypto library is used — djb2 is sufficient for audit-trail non-repudiation per D-3601 simulation-category constraints.
+
+**Rationale:** Reproducibility requires the seed set to be an explicit, auditable input. Index-based derivation means reordering is impossible — every consumer that supplies the same `(baseSeed, count)` pair gets the same array. The hash travels in `ParSimulationResult.seedSetHash` so a downstream auditor can re-derive the seed set from the base seed + count, hash it, and compare against the recorded hash to prove the published PAR used the claimed seeds.
+
+**Citation:** `packages/game-engine/src/simulation/par.aggregator.ts` `generateSeedSet`, `computeSeedSetHash`; D-3601 simulation category.
+
+---
+
+### D-4909 — Raw Score Surface Is Immutable Without a Major Version Bump
+
+**Type:** PAR Calibration Decision
+**Packet:** WP-049
+**Date:** 2026-04-23
+
+**Decision:** The Raw Score semantics — component definitions, weight units, penalty taxonomy, sign conventions (lower = better), integer scale — are an immutable trust surface. Any change requires explicit major-version treatment per WP-040 change governance. `scoringConfigVersion` in both `ScenarioScoringConfig` and `ParSimulationResult` pins a specific config; leaderboard entries record the pin so historical results remain comparable only to peers under the same scoring rules.
+
+**Rationale:** Raw Score is the ground truth all PARs, FinalScores, and leaderboard rankings build on. Silently redefining a weight or adding a penalty category would invalidate every historical result without their authors' consent. WP-040 change governance classifies scoring changes as growth-layer / major-version events requiring announcement, migration plans, and parallel-run validation periods before the old semantics are retired.
+
+**Citation:** `packages/game-engine/src/scoring/parScoring.types.ts` `scoringConfigVersion`; WP-040 / D-4001; WP-049 §Non-Negotiable Constraints.
+
+---
+
+### D-4910 — needsMoreSamples Uses Module-Level Deterministic Thresholds
+
+**Type:** PAR Calibration Decision
+**Packet:** WP-049
+**Date:** 2026-04-23
+
+**Decision:** `needsMoreSamples` in `ParSimulationResult` is set when the interquartile range exceeds `IQR_THRESHOLD` (2000) OR the population standard deviation exceeds `STDEV_THRESHOLD` (1500). Both constants are module-level exports of `par.aggregator.ts` — NOT configuration inputs. Future changes to the thresholds require a DECISIONS.md entry and a `scoringConfigVersion` bump for affected scenarios.
+
+**Rationale:** Making the thresholds deterministic (not config inputs) closes a category of reproducibility drift — two callers with slightly different threshold choices would otherwise produce `ParSimulationResult` records with different `needsMoreSamples` flags for the same raw data. The numeric values were chosen to be loose enough that a healthy ±20% Raw Score distribution at ~5000 does not flag, and tight enough that a bimodal ~3000-IQR distribution does flag. IQR and stddev together catch both long-tailed and bimodal pathologies.
+
+**Citation:** `packages/game-engine/src/simulation/par.aggregator.ts` `IQR_THRESHOLD`, `STDEV_THRESHOLD`, `generateScenarioPar`.
+
+---
+
+### D-4911 — ParValidationResult Uses Severity Axis (error + warn)
+
+**Type:** PAR Calibration Decision
+**Packet:** WP-049
+**Date:** 2026-04-23
+
+**Decision:** `ParValidationResult` surfaces issues with a two-level severity axis: `'error'` (blocks publication — `valid: false`) and `'warn'` (does not block, but must be surfaced for operator decision). Sample-size-below-minimum, non-monotonic distribution bounds, and percentile-out-of-range are errors. Multimodality-suspicion, high-variance (`needsMoreSamples`), and omitted-rawScores-array are warnings.
+
+**Rationale:** A single flat errors array would force every caller to either publish-despite-warnings or block-on-warnings — neither captures the real operator workflow. Multimodality is a smell test that correctly flags false positives occasionally; publication workflows should route warnings to human review, not auto-reject. The severity axis is carried in `ParValidationIssue.severity`, and `ParValidationResult.valid` is derived by walking the issues array (any `'error'` ⇒ invalid).
+
+**Citation:** `packages/game-engine/src/simulation/par.aggregator.ts` `ParValidationResult`, `ParValidationIssue`, `validateParResult`.
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
