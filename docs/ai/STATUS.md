@@ -7,6 +7,125 @@
 
 ## Current State
 
+### WP-049 / EC-049 Executed — PAR Simulation Engine (2026-04-23, EC-049)
+
+**T2 Competent Heuristic policy + PAR aggregation pipeline ship. Engine baseline shifts 444/110/0 → 471/112/0; repo-wide 596/123/0 → 623/125/0. Zero gameplay changes; zero contract modifications; zero `G` mutation from new files.**
+
+WP-049 lands Phase 2 of the three-phase PAR derivation pipeline documented
+in `docs/12-SCORING-REFERENCE.md`. Three new source files added under
+`packages/game-engine/src/simulation/` (already classified as `engine` code
+category per D-3601 via WP-036 precedent):
+
+- `ai.tiers.ts` — `AIPolicyTier` union (`T0..T4`), `AI_POLICY_TIERS`
+  canonical readonly array (drift-pinned alongside `MATCH_PHASES` /
+  `TURN_STAGES` / `PENALTY_EVENT_TYPES`), `AIPolicyTierDefinition`
+  interface, `AI_POLICY_TIER_DEFINITIONS` reference taxonomy with exactly
+  one entry (T2) carrying `usedForPar: true`.
+- `ai.competent.ts` — `createCompetentHeuristicPolicy(seed): AIPolicy` T2
+  factory implementing five behavioral heuristics (threat prioritization,
+  heroism bias, economy awareness, limited deck awareness, local
+  optimization). Seeded mulberry32 decision PRNG closed over the policy
+  instance; never shares state with the run-level shuffle PRNG (D-3604
+  two-domain invariant). Scoring uses integer ranks so tie-breaking is
+  bounded and deterministic.
+- `par.aggregator.ts` — full PAR pipeline: `aggregateParFromSimulation`
+  (55th-percentile nearest-rank, integer output, explicit numeric sort
+  comparator), typed `ParAggregationError` with discriminated `code` union
+  (`'EMPTY_DISTRIBUTION' | 'PERCENTILE_OUT_OF_RANGE'`), module-level
+  deterministic constants (`PAR_PERCENTILE_DEFAULT = 55`,
+  `PAR_MIN_SAMPLE_SIZE = 500`, `IQR_THRESHOLD = 2000`,
+  `STDEV_THRESHOLD = 1500`, `MULTIMODALITY_BIN_COUNT = 20`),
+  cluster-based multimodality smell test (robust to wide unimodal
+  distributions), deterministic `generateSeedSet` + `computeSeedSetHash`
+  canonicalization, severity-tagged `ParValidationResult`, and the full
+  `generateScenarioPar` orchestration. Per-game loop replicated from
+  WP-036 `simulation.runner.ts` (RS-10) using engine primitives only —
+  `simulation.runner.ts` byte-identical pre vs post.
+
+Two new test suites:
+
+- `ai.competent.test.ts` — 10 T2 policy tests covering AIPolicy shape,
+  determinism, seed divergence, heroism bias, threat prioritization,
+  economy awareness, hidden-state isolation, all eight legal move types,
+  legal-move conformance across 50 invocations, and policy `name` literal.
+- `par.aggregator.test.ts` — 17 aggregator tests covering nearest-rank
+  correctness (rank 549 on 1000 scores), integer output on identical
+  distributions, `ParAggregationError` on empty array + out-of-range
+  percentile (both asserted `instanceof ParAggregationError` + `.code ===
+  '<expected>'`, never by message substring), validation accept/reject
+  for N >= 500, clean unimodal + suspicious bimodal smell tests, tier
+  ordering pass/fail, `AI_POLICY_TIERS` drift detection, only-T2-usedForPar
+  pin, seed-set determinism + order-sensitive hash, byte-identity +
+  JSON-roundtrip reproducibility with injected `generatedAtOverride`
+  (RS-11), provenance-verbatim pinning, and losses-included-in-distribution
+  with `result.sampleSize === config.simulationCount` invariant.
+
+`docs/ai/DECISIONS.md` gains 11 new entries (D-4901 through D-4911)
+covering: T2 as sole PAR authority, 55th-percentile nearest-rank method,
+neutral hero pool, N >= 500 enforced at validation (not aggregation) so
+bootstrap tests remain possible, five T2 behavioral heuristics rationale,
+losses as first-class outcomes, server-layer pre-release gate, seed-set
+canonicalization via index-based derivation, Raw Score surface immutable
+without major version bump, `needsMoreSamples` module-level deterministic
+thresholds, and `ParValidationResult` severity axis (error vs warn).
+
+The Runtime Wiring Allowance (01.5) is explicitly **NOT INVOKED** — all
+four trigger criteria absent: no new `LegendaryGameState` field, no
+`buildInitialGameState` shape change, no new `LegendaryGame.moves` entry,
+no new phase hook. The 01.6 post-mortem was mandatory (new long-lived
+abstraction, new contract consumed by future WPs, new canonical readonly
+array) and is delivered at
+`docs/ai/post-mortems/01.6-WP-049-par-simulation-engine.md` covering
+aliasing, JSON-roundtrip, `// why:` completeness, reproducibility
+protocol, per-game loop replication audit, and layer-boundary audit.
+
+Two strict in-allowlist refinements applied during execution without
+01.5 invocation (WP-031 precedent): (1) added `MAX_MOVES_PER_GAME = 2000`
+move-level stall cap in `simulateOneGame` to handle the deterministic-
+policy-against-empty-villain-deck trap surfaced by the mock-registry
+test fixtures — no contract surface changed; (2) rewrote the
+multimodality detector from peak-distance to cluster-based detection
+to eliminate false positives on tight single-peak distributions — no
+public signature changed.
+
+Verification gates all green: `pnpm --filter @legendary-arena/game-engine
+build` exits 0; `pnpm -r test` exits 0 with exactly `471 / 112 / 0` for
+game-engine and `623 / 125 / 0` repo-wide (+27 tests / +2 suites vs
+baseline; every other package unchanged). No `boardgame.io` /
+`@legendary-arena/registry` imports in any new file (grep verified). No
+`Math.random()` / `.reduce()` with branching / `require()` in any new
+file. WP-036 + WP-048 + WP-020 contract files byte-identical pre vs post
+(`git diff main -- ...` returns zero output on all 10 tracked files).
+Lifecycle prohibition verified — the seven new functions appear only in
+the simulation files and the two re-export modules (`types.ts`,
+`index.ts`); no call site under `moves/`, `rules/`, `phases/`, `turn/`,
+`setup/`, `endgame/`, `economy/`, `zone*`, `ui/`, `replay/`, or
+`invariants/`.
+
+Three-commit topology: A0 SPEC pre-flight bundle (`67927f1` — PS-1/PS-2
+resolved, copilot FIXes locked) → A `EC-049:` code + DECISIONS.md
+(`021555e`, 8 files: three new source files + two new test files +
+`types.ts` + `index.ts` + `DECISIONS.md`) → B SPEC governance close
+(this commit: `STATUS.md` + `WORK_INDEX.md` WP-049 `[ ]` → `[x]` +
+`EC_INDEX.md` EC-049 Draft → Done + post-mortem). Commits use `EC-049:`
+on code; `SPEC:` on governance (never `WP-049:` per P6-36 — commit-msg
+hook rejects). Lifecycle prohibition, aliasing invariance, JSON
+serializability, two-domain PRNG, and per-game loop replication all
+captured in the post-mortem.
+
+**WP-049 unblocks WP-050 (PAR Artifact Storage) and WP-051 (Pre-Release
+PAR Gate). `ParSimulationResult` field names are load-bearing for WP-050's
+artifact schema.**
+
+See `WP-049-par-simulation-engine.md` +
+`EC-049-par-simulation-engine.checklist.md` +
+`docs/ai/invocations/session-wp049-par-simulation-engine.md` +
+`docs/ai/invocations/preflight-wp049-par-simulation-engine.md` +
+`docs/ai/session-context/session-context-wp049.md` + post-mortem +
+D-4901 through D-4911.
+
+---
+
 ### WP-041 / EC-041 Executed — System Architecture Definition & Authority Model (2026-04-23, EC-041)
 
 **Architecture formally reviewed and versioned at 1.0.0; 20 G-class Runtime fields certified in Field Classification Reference; authority chain locks `01-VISION.md` between `ARCHITECTURE.md` and `.claude/rules`.**
