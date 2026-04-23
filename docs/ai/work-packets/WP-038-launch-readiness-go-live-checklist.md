@@ -28,8 +28,8 @@ After this session:
   determinism, content & balance, beta exit criteria, and ops & deployment
 - A launch day checklist defines final build verification, soft launch window
   monitoring, and go-live signal criteria
-- Post-launch guardrails define a 72-hour change freeze, elevated monitoring,
-  and rollback triggers
+- Post-launch guardrails define a 72-hour change freeze, elevated monitoring
+  cadence and alert sensitivity, and rollback triggers
 - A single launch authority model is defined — one accountable owner, not
   consensus voting
 - All gates are binary pass/fail — no "mostly ready"
@@ -53,6 +53,24 @@ After this session:
 - `docs/ai/DECISIONS.md` exists with D-0902 (Rollback Is Always Possible)
 
 If any of the above is false, this packet is **BLOCKED** and must not proceed.
+
+---
+
+## Referenced Work Packets (Authoritative)
+
+- WP-027 — Replay Verification
+- WP-028 — Deterministic UI Projection
+- WP-029 — Replay Playback Consistency
+- WP-031 — Engine Invariants
+- WP-032 — Network Turn Validation
+- WP-033 — Content Validation
+- WP-034 — Versioning & Migration Strategy
+- WP-035 — Release Process & Ops Gates
+- WP-036 — AI Balance Simulation
+- WP-037 — Public Beta Program
+
+If any referenced WP is not complete, the corresponding gate in this packet
+cannot be evaluated and launch is BLOCKED.
 
 ---
 
@@ -118,14 +136,17 @@ Pre-launch readiness gates organized in four categories:
 - No unresolved balance warnings from AI simulation (WP-036)
 - No dominant strategy exceeding defined thresholds
 - Beta balance feedback reconciled with simulation data
-- Warnings require documented acceptance
+- Content or balance warnings MAY be accepted only if explicitly classified
+  as non-invariant, non-competitive, and non-exploitable, with justification
+  recorded. Acceptance does not waive future correction and does not
+  downgrade post-launch monitoring priority.
 
 **Beta Exit Criteria:**
 - All WP-037 exit criteria satisfied
 - No open P0/P1 issues
 - UX confusion reports below agreed baseline
 - Kill switch exercised successfully
-- Partial completion = NO-GO
+- Any unmet criterion = NO-GO
 
 **Ops & Deployment:**
 - Release checklist completed (WP-035)
@@ -147,7 +168,11 @@ Launch day procedures:
 - Initial launch to limited traffic
 - Monitor: invariant violations, rejected turns, replay failures, session
   aborts
-- Any anomaly pauses rollout
+- During soft launch, anomalies trigger an immediate PAUSE of traffic
+  expansion
+- Rollback is executed ONLY if a rollback trigger condition is met (see
+  Post-Launch Guardrails below)
+- If paused, analysis must conclude before proceeding to GO-LIVE or ROLLBACK
 
 **Go-Live Signal:**
 - First clean session completes
@@ -156,15 +181,26 @@ Launch day procedures:
 
 **Post-Launch Guardrails (T+0 to T+72h):**
 - 72-hour change freeze — no feature releases
-- Elevated monitoring: invariant violations continuous, replay divergence = P1,
-  balance anomalies logged but not hot-fixed
+- Elevated monitoring cadence and alert sensitivity: invariant violations
+  continuous, replay divergence = P1, balance anomalies logged but not
+  hot-fixed
 - Bugfixes only if deterministic + backward compatible + roll-forward safe
+- Any change during the freeze requires a written Freeze Exception Record
+  including:
+  - Triggering condition
+  - Proof of determinism
+  - Proof of backward compatibility
+  - Roll-forward safety analysis
+  - Launch authority approval timestamp
 - Immediate rollback triggers: invariant violation spike, replay hash
   divergence, migration failure, client desync
 
 ### C) Launch Authority Model
 
 - Single launch authority: one accountable decision owner
+- The launch authority MAY NOT waive failing readiness gates
+- The launch authority MAY ONLY decide GO or NO-GO once all gates pass
+- Authority exists to prevent deadlock, not to override invariants
 - Required sign-offs before GO/NO-GO: engine integrity, replay determinism,
   content safety, operations readiness
 - No consensus voting — one person decides
@@ -189,7 +225,7 @@ Launch day procedures:
 
 ## Vision Alignment
 
-**Touched Vision Clauses:** §3 (Trust & Fairness), §5 (Operational Transparency), §13 (EC‑Driven Development), §14 (No Silent Drift), §18 (Replayability), §22 (Deterministic Evaluation), §24 (Replay‑Verified Integrity)
+**Touched Vision Clauses:** §3 (Player Trust & Fairness), §5 (Longevity & Expandability), §13 (Execution Checklist–Driven Development), §14 (Explicit Decisions, No Silent Drift), §18 (Replayability & Spectation), §22 (Deterministic & Reproducible Evaluation), §24 (Replay‑Verified Competitive Integrity)
 
 **Conflict Assessment:**
 No conflict. WP‑038 is a documentation‑only launch readiness and live‑ops checklist. It does not modify engine logic, scoring rules, RNG behavior, content semantics, or persistence formats. All gates defined here validate existing invariants rather than redefining them.
@@ -198,7 +234,7 @@ No conflict. WP‑038 is a documentation‑only launch readiness and live‑ops 
 Strong. WP‑038 introduces no runtime behavior, no replay-affecting code, and no numerical logic. Replay, determinism, and content‑balance gates referenced herein assert the continued satisfaction of already‑locked invariants (as enforced by prior ECs and audits), and cannot induce divergence or nondeterminism.
 
 **Non‑Goals & Guardrails:**
-This WP does not introduce monetization surfaces, rebalance content, adjust scoring, or alter competitive fairness. It operationalizes launch readiness checks only, preserving NG‑1 (No Pay‑to‑Win) and NG‑3 (No Content Withholding) by verification, not mutation.
+This WP does not introduce monetization surfaces, rebalance content, adjust scoring, or alter competitive fairness. It operationalizes launch readiness checks only, preserving NG‑1 (Pay‑to‑Win or Power Purchases) and NG‑3 (Content Withheld for Competitive Advantage) by verification, not mutation.
 
 ---
 
@@ -274,6 +310,9 @@ git diff --name-only
 > commands.
 >
 > Every item must be true before this packet is considered complete.
+>
+> The Definition of Done is satisfied ONLY after all Acceptance Criteria pass
+> and all audit artifacts listed herein are updated.
 
 This packet is complete when ALL of the following are true:
 
