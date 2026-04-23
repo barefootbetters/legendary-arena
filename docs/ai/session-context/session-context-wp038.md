@@ -71,7 +71,25 @@ git checkout -b wp-038-launch-readiness main
   sits at line 190 of
   `docs/ai/work-packets/WP-038-launch-readiness-go-live-checklist.md`.
 - **`f53af27` `SPEC:`** — This bridge's initial commit (now
-  reconciled; see end-of-file note).
+  reconciled; see end-of-file notes).
+- **`98c8a3f` `SPEC:`** — First reconciliation pass on this
+  bridge. Corrected three stale claims introduced at `f53af27`.
+- **`95ce057` `SPEC:`** — WP-085 Post-WP-085 Follow-ups closure.
+  Removed the vacuous memory-file correction bullet from WP-085
+  after verifying the memory file contained zero `WP-042`
+  references and already cited `WP-085`. Third vacuous
+  "correct WP-042 refs" item surfaced in the WP-085 governance
+  chain.
+- **`f3e59b2` `SPEC:`** — **Codification of §18 (Prose-vs-Grep
+  Discipline) and §19 (Bridge-vs-HEAD Staleness Rule) in
+  `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md`.** Both
+  rules, previously flagged in this bridge as "pending
+  codification", are now first-class governance with explicit
+  enforcement (§18 via Final Gate row 33; §19 via commit-time
+  discipline with an explanatory note below the Final Gate
+  table). This bridge's own later sections referring to them as
+  pending are stale as of this commit and are corrected in the
+  second reconciliation pass.
 
 WP-038 is downstream of only `160d9b9` + `ee099c5` for its contract
 dependencies. The WP-085 commits (`604eaaa` through `9e35928`) are
@@ -281,17 +299,18 @@ to the precedent log. WP-038 should apply at minimum:
   runtime layer. WP-038 is Documentation-only, so this applies
   strongly to any `docs/launch/*.md` prose that lists forbidden
   engine behaviors.
-- **(New from this session, not yet codified)
-  Prose-vs-grep paper-cut rule:** grep guards should match
+- **Prose-vs-grep discipline (§18 of
+  `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md`,
+  codified at SPEC `f3e59b2`):** grep guards should match
   structural violations, not words in prose. If a grep must be
-  literal, prose must reference decision IDs (`D-xxxx`) rather
-  than repeating the literal token. Surfaced during the WP-037
-  `beta.types.ts` module-header edit (post-mortem §8 and §10 of
+  literal, prose in adjacent files must cite decision IDs
+  (`D-xxxx`) rather than enumerate the literal tokens. Surfaced
+  during the WP-037 `beta.types.ts` module-header edit
+  (post-mortem §8 and §10 of
   `docs/ai/post-mortems/01.6-WP-037-public-beta-strategy.md`).
-  **Pending codification** in `00.6-code-style.md` or adjacent to
-  `00.3 §17` as a separate SPEC commit. Apply informally until
-  codified — WP-038's launch checklist prose should cite D-entries
-  for any governance-load-bearing tokens, not restate token strings.
+  WP-038's launch checklist prose **must** apply §18 — cite
+  D-entries for governance-load-bearing tokens; violations
+  produce a Final Gate row 33 FAIL.
 
 ### 01.5 / 01.6 trigger evaluation (preliminary)
 
@@ -341,14 +360,22 @@ grep -n "^## Vision Alignment" docs/ai/work-packets/WP-038-launch-readiness-go-l
 # Expected: 190:## Vision Alignment (or equivalent line number post-retrofit)
 ```
 
-### (2) Prose-vs-grep paper-cut rule codification — PENDING
+### (2) Prose-vs-grep paper-cut rule codification — ~~PENDING~~ **RESOLVED at `f3e59b2`**
 
-See P6-43/P6-50 precedent application above. Three-line addition
+~~See P6-43/P6-50 precedent application above. Three-line addition
 to `docs/ai/REFERENCE/00.6-code-style.md` or a new §18 sibling in
-`docs/ai/REFERENCE/00.3-prompt-lint-checklist.md`. Discrete SPEC
-commit. Not WP-038 scope — but WP-038 checklist prose should apply
-the rule informally (cite D-entries, not token strings) to avoid
-adding more instances for the future cleanup.
+`docs/ai/REFERENCE/00.3-prompt-lint-checklist.md`.~~
+
+**Update (second reconciliation pass):** Codified at SPEC `f3e59b2`
+as `00.3 §18` (Prose-vs-Grep Discipline) with §18.1 through §18.4
+subsections plus Final Gate row 33 enforcement. The original
+placement guess in this bullet ("either `00.6-code-style.md` or
+adjacent to `00.3 §17`") resolved in favor of `00.3 §18` because
+the rule governs how governance prose is authored rather than how
+code is written. WP-038's launch checklist prose **must** apply
+§18 per the Discipline Precedents section above; violations
+produce a Final Gate row 33 FAIL rather than an informal
+recommendation.
 
 ### (3) WP-085 execution — ~~remains queued~~ **EXECUTED at `c836b29`; governance closed at `9e35928`**
 
@@ -387,12 +414,25 @@ VERDICT: PASS and the baseline matching bit-for-bit
   # exceptions) / DET-007 = 4 / 0 / 0 / 0.
   ```
 
-### (4) Memory-file correction (tracked in WP-085)
+### (4) Memory-file correction (tracked in WP-085) — ~~PENDING~~ **RESOLVED at `95ce057` (vacuous)**
 
-The memory file `feedback_audit_tooling_scaffold_first.md` has a
+~~The memory file `feedback_audit_tooling_scaffold_first.md` has a
 rationale paragraph that still references "WP-042" where it should
 say "WP-085". Tracked under WP-085 §Post-WP-085 Follow-ups; out of
-WP-038 scope. Discrete SPEC commit when someone picks it up.
+WP-038 scope.~~
+
+**Update (second reconciliation pass):** Verified during SPEC commit
+`95ce057` that the memory file contains **zero** `WP-042`
+references. Its only WP-bearing line already cites `WP-085`. No
+correction was ever required; the original bullet (and this
+bridge's corresponding follow-up) reflected a pattern-matched
+assumption by the WP-085 drafter that did not verify against actual
+file contents. WP-085's Post-WP-085 Follow-ups section was closed
+at `95ce057` with a governance-trail-preserving closure note.
+Third vacuous "correct WP-042 refs" item surfaced in the WP-085
+governance chain — pattern worth noting if WP drafting conventions
+get formalized later: *verify each claimed correction site against
+the actual file before listing it as a follow-up*.
 
 ---
 
@@ -542,4 +582,80 @@ Future bridge authors: re-run `git log` in the same shell as
 prose-vs-grep paper-cut rule has a cousin here: **bridge-vs-HEAD
 staleness rule** — any repo-state-summarizing artifact must be
 reconciled against `HEAD` in the same atomic operation as its
-commit.*
+commit. Both rules subsequently codified in
+`docs/ai/REFERENCE/00.3-prompt-lint-checklist.md` as §18 and §19
+at SPEC `f3e59b2` (see Second Reconciliation Note below).*
+
+---
+
+## Second Reconciliation Note
+
+Performed post-`f3e59b2` on 2026-04-22. Three commits landed after
+the first reconciliation at `98c8a3f`:
+
+| Commit | Subject | Effect on this bridge |
+|---|---|---|
+| `95ce057` | SPEC: close WP-085 Post-WP-085 Follow-ups (vacuous memory-file item) | Pending Follow-Up §4 resolved vacuous |
+| `f3e59b2` | SPEC: codify prose-vs-grep (§18) and bridge-vs-HEAD (§19) rules | Discipline Precedents bullet + Pending Follow-Up §2 resolved; First Reconciliation Note's "cousin rule" reference now points at a codified sibling rather than a future item |
+
+Five stale claims found and corrected in this pass:
+
+1. §Commits landed this session list (extended to include the
+   three post-`98c8a3f` commits above, plus a forward-reference
+   to this Second Reconciliation Note from the bridge's own
+   `f53af27` entry).
+2. §Discipline Precedents "prose-vs-grep paper-cut rule" bullet
+   (relabelled as §18 discipline; placement guess retired in
+   favor of its actual `00.3 §18` home).
+3. §Pending Follow-Up §2 (prose-vs-grep codification) —
+   strikethrough + RESOLVED-at-`f3e59b2` note.
+4. §Pending Follow-Up §4 (memory-file correction) — strikethrough +
+   RESOLVED-vacuous-at-`95ce057` note plus the pattern observation
+   about "verify each claimed correction site against the actual
+   file" worth promoting to WP-drafting conventions if formalized.
+5. First Reconciliation Note's "pending a SPEC to `00.6-code-style.md`
+   or a sibling reference doc" reference — updated to point at the
+   landed codification at `f3e59b2`.
+
+Bridge reconciled against `main @ f3e59b2`. Pre-edit and pre-commit
+`git log` re-checks performed in the same shell, per §19 discipline
+(which this pass is the first post-codification application of).
+
+---
+
+## Freeze Note — Bridge Is Consumption-Frozen
+
+**As of the Second Reconciliation commit, this bridge is declared
+consumption-frozen.** No further reconciliation passes will be
+performed on `main`-trailing commits, unless one of two conditions
+is met:
+
+1. A subsequent commit lands that materially invalidates the bridge's
+   **upstream-contract-surface catalog** (e.g., a revert of WP-037
+   or WP-085 execution; a rename/delete of `BetaFeedback` or the
+   audit orchestrator; a change to the `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md`
+   §18 or §19 content that would alter WP-038's application of those
+   rules). These are substantive changes to the bridge's consumed
+   surface; they warrant a Third Reconciliation Note if they occur
+   before WP-038 pre-flight consumption.
+2. The WP-038 executor explicitly requests a pre-consumption refresh.
+
+All other drift — new commits that do not touch WP-037 / WP-085 /
+§18 / §19 / the bridge's quick-reference paths — is **out of scope**
+for this bridge's reconciliation responsibility. Such drift is the
+WP-038 pre-flight's responsibility to detect and note.
+
+**Rationale.** §19 establishes that repo-state-summarizing artifacts
+must be reconciled against HEAD in the atomic commit operation. It
+does not require that bridges remain perpetually reconciled against
+all subsequent commits — that would make every new commit a
+bridge-reconciliation event, which collapses into infinite regress.
+A bridge is useful until its consumer reads it; after that moment,
+its contents are a historical snapshot. This Freeze Note formalizes
+the end-of-useful-life marker for the bridge under the §19 regime.
+
+**Applies to this bridge specifically.** Future bridges authored for
+other WPs may adopt the same freeze-at-consumption pattern by
+appending a parallel Freeze Note at reconciliation-close time. This
+bridge does not legislate bridge practice for future bridges; it
+documents only its own terminal state.*
