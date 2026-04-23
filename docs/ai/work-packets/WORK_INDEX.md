@@ -1370,16 +1370,30 @@ These packets ship the game and keep it running.
   Commit A0 SPEC bundle at `a4f5574` (D-3701 + 02-CODE-CATEGORIES.md).
   Post-mortem: `docs/ai/post-mortems/01.6-WP-037-public-beta-strategy.md`.
 
-- [ ] WP-038 — Launch Readiness & Go-Live Checklist ✅ Reviewed
-  Dependencies: WP-037
+- [x] WP-038 — Launch Readiness & Go-Live Checklist ✅ Completed 2026-04-22 at commit `2134f33` under EC-038
+  Dependencies: WP-037 (complete at `160d9b9`)
   Notes: Documentation only — no engine modifications; 4 readiness gate
   categories (engine/determinism, content/balance, beta exit, ops/deployment);
   all gates binary pass/fail — single failure = NO-GO; single launch authority
-  (one owner, not consensus); launch day: build verification, soft launch
-  window with monitoring, go-live signal; 72h post-launch change freeze;
-  rollback triggers: invariant violation spike, replay divergence, migration
-  failure, client desync; was 157 lines but missing template sections —
-  normalized to full PACKET-TEMPLATE
+  (one owner, not consensus, three non-override clauses); launch day: build
+  verification, soft launch window with PAUSE-vs-ROLLBACK distinction,
+  go-live signal; 72h post-launch change freeze with Freeze Exception
+  Record's 5 required fields; rollback triggers verbatim: invariant
+  violation spike, replay hash divergence, migration failure, client desync.
+  Three-commit topology: A0 SPEC pre-flight bundle (`9ecbe70`) →
+  A EC-038 content + 01.6 post-mortem (`2134f33`) → B SPEC governance close
+  (this session). Test baseline UNCHANGED at engine 444/110/0 + repo-wide
+  596/0 (zero new tests). Three new DECISIONS.md entries land at Commit B:
+  D-3801 (single launch authority — accountability, not consensus),
+  D-3802 (72h freeze — stability observation window with bugfix criteria
+  deterministic + backward compatible + roll-forward safe), D-3803 (launch
+  gates inherit from beta exit gates via D-3704 — single-source-of-truth
+  consumption of `BETA_EXIT_CRITERIA.md`). 01.5 NOT INVOKED. 01.6 MANDATORY
+  (two new long-lived abstraction documents `LAUNCH_READINESS.md` and
+  `LAUNCH_DAY.md` under `docs/ops/`). Post-mortem:
+  `docs/ai/post-mortems/01.6-WP-038-launch-readiness-go-live.md`.
+  Commit prefix: `EC-038:` at execution; `SPEC:` for the bundle and the
+  governance close (never `WP-038:` per P6-36 — commit-msg hook rejects).
 
 - [ ] WP-039 — Post-Launch Metrics & Live Ops ✅ Reviewed
   Dependencies: WP-038

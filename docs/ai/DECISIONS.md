@@ -7884,6 +7884,352 @@ dated report under `docs/audits/`.
 
 ---
 
+### D-3801 — Single Launch Authority Is Accountable, Not Consensus
+**Decision:** Each launch event has exactly **one named launch
+authority** — a single accountable human who records the GO / NO-GO
+decision. Consensus voting, committee approval, and quorum-based
+sign-off are forbidden for the launch decision itself. The launch
+authority operates within three non-override clauses, all
+non-negotiable:
+
+1. The launch authority **MAY NOT waive a failing readiness gate**.
+   A failing gate is a NO-GO under the gate's own binary verdict.
+2. The launch authority **MAY ONLY decide GO or NO-GO once all
+   gates pass**. If any gate is unevaluated, mid-investigation,
+   or failing, the only available decision is NO-GO.
+3. The launch authority exists **to prevent deadlock, not to
+   override invariants**. The role exists because launch is a
+   binary moment that needs a single accountable decision; it
+   does not exist to grant subjective overrides over the gates.
+
+Four named sign-offs are required from named humans before the
+launch authority records a decision: engine integrity, replay
+determinism, content safety, and operations readiness. The launch
+authority may request re-verification of any sign-off but may not
+waive one.
+
+**Rationale:** A binary launch decision under load needs one
+accountable decision owner. Spreading accountability across a
+committee produces three reinforcing failure modes that all surface
+under launch-day pressure:
+
+- **Diffused accountability.** When a launch goes wrong, "the
+  committee approved it" is not a debuggable answer. A named
+  authority gives the post-incident review a clear starting point
+  and preserves the audit trail required by D-0902 (Rollback Is
+  Always Possible).
+- **Deadlock risk.** Consensus voting under load produces tied
+  votes, procedural arguments about quorum, and indefinite "let's
+  reconvene tomorrow" loops — all of which translate into
+  unplanned operational risk. A binary decision under pressure
+  needs one decider, not a quorum.
+- **Gate erosion.** A committee under pressure to ship is more
+  likely to negotiate around a failing gate than a single
+  authority who is on the record as accountable. The non-override
+  clauses are easier to enforce against one person than against a
+  roomful of stakeholders.
+
+The launch authority's existence is **structural**, not
+discretionary. The role exists to break ties when all gates pass
+and a decision must be recorded; it does not exist to grant
+subjective overrides. The three non-override clauses are the
+formal expression of that limit. Without them, the role would
+recreate the gate-erosion failure mode it was designed to prevent.
+
+**Alternatives rejected:**
+
+- **Consensus voting across a launch committee:** rejected for the
+  three failure modes above. Consensus voting is procedurally
+  appealing but operationally fragile under launch-day pressure;
+  the failure modes are well-documented across the launch-
+  governance literature and have been observed in adjacent
+  software-launch contexts.
+- **Tiered approval (one approver per readiness category, plus
+  a tie-breaker):** rejected. Multiplies the sign-off surface
+  without producing a single accountable decision owner; the
+  tie-breaker role becomes a de facto launch authority but
+  without the formal non-override clauses. The structural
+  failure modes recur.
+- **Authority granted permission to waive a single failing gate
+  per launch:** rejected outright. Violates the binary pass/fail
+  discipline of `LAUNCH_READINESS.md` §1–§4 and the WP-038
+  Acceptance Criteria. Any failing gate is a NO-GO; an
+  authority-waiver mechanism would convert the gates from
+  binary decisions to subjective recommendations.
+- **Authority decides without sign-offs (faster decision path):**
+  rejected. Sign-offs distribute the verification load across the
+  four expert surfaces (engine, replay determinism, content
+  safety, operations) and produce a decomposed audit trail.
+  Without them, the launch authority would be reasoning about
+  source signals they may not be expert in, and the post-incident
+  audit trail would collapse into a single decision without
+  decomposition.
+
+**Implementation locations:**
+
+- Strategy document: `docs/ops/LAUNCH_READINESS.md` §5 (Single
+  Launch Authority Model — non-override clauses, four required
+  sign-offs, decision record schema, why-a-single-authority
+  rationale).
+- Procedural document: `docs/ops/LAUNCH_DAY.md` §4 (Go-Live
+  Signal — only the launch authority may declare Go-Live) and
+  §5.4 (Freeze Exception Record — only the launch authority may
+  approve a freeze exception, and the approval is non-delegable).
+- Aggregation rule: `docs/ops/LAUNCH_READINESS.md` §6 (Final
+  GO / NO-GO Verdict Summary — `authority_decision == 'GO'` is a
+  required input to the boolean aggregation).
+
+**Affected WPs:** WP-038
+**Introduced:** WP-038 / EC-038
+**Status:** Immutable
+**Raised:** WP-038 Definition of Done, 2026-04-22
+**Resolved:** 2026-04-22 (Commit B governance close)
+
+---
+
+### D-3802 — 72-Hour Post-Launch Change Freeze Is a Stability Observation Window
+**Decision:** A **72-hour post-launch change freeze** begins at the
+recorded Go-Live timestamp and ends 72 hours later. During the
+window, **no feature releases ship to production**: no
+`dev → test → staging → prod` promotion of any artifact that adds,
+removes, or alters a feature surface (engine moves, phase hooks, UI
+affordances, content cards, scoring, RNG behavior, replay format,
+validation rules); no content republish that adds, removes, or
+modifies any card or scenario; no configuration change that alters
+runtime behavior of the launch artifact.
+
+A bugfix during the freeze is permitted only if **all** of the
+following hold:
+
+1. **Deterministic.** The fix preserves the engine's determinism
+   contract per `ARCHITECTURE.md` §Architectural Principles #1.
+2. **Backward compatible.** The fix does not bump
+   `CURRENT_DATA_VERSION` and does not alter the `UIState`
+   contract (per `RELEASE_CHECKLIST.md` Gates 4 and 5).
+3. **Roll-forward safe.** The fix can be rolled forward into the
+   next non-freeze release without conflict.
+
+Any change that ships during the freeze requires a written
+**Freeze Exception Record** with five required fields: triggering
+condition; proof of determinism; proof of backward compatibility;
+roll-forward safety analysis; launch authority approval timestamp.
+A record missing any of the five fields is not authorization to
+ship.
+
+**Rationale:** The 72-hour window is a **stability observation
+window**, not a quiet period. Three reinforcing reasons anchor the
+duration and the freeze discipline:
+
+- **Slow-surfacing failure modes need time to appear.** Live-launch
+  anomalies frequently take time to surface — they appear after the
+  artifact has been exposed to enough player hours to exercise rare
+  content combinations or rare network conditions. A 72-hour window
+  is calibrated to give the most common slow-surfacing failure
+  modes time to appear before the stability claim solidifies.
+  Shorter windows close before the signal arrives; longer windows
+  delay the next release without producing additional observation
+  value.
+- **Hot-fixing during the window introduces determinism drift.**
+  Every change shipped during T+0 to T+72h would otherwise need its
+  own mini-readiness review against a baseline that has not yet
+  stabilized. The observation window's whole purpose is to produce
+  a stable baseline; introducing drift mid-window destroys the
+  observation surface. The bugfix criteria (deterministic +
+  backward compatible + roll-forward safe) are the minimum
+  conditions under which a fix can ship without invalidating the
+  observation.
+- **The Freeze Exception Record makes pathological cases
+  auditable.** The five required fields force any exception to
+  produce a complete audit trail before shipping. The triggering
+  condition documents *why now*; the determinism + backward-
+  compatibility + roll-forward-safety proofs document *why this
+  fix is safe*; the launch authority timestamp documents *who
+  authorized it and when*. A record with all five fields is
+  defensible in post-incident review; a record missing any field
+  is an unauthorized change.
+
+The 72-hour duration is a calibrated default, not an arbitrary
+choice. It is the shortest window that reliably surfaces the most
+common slow-surfacing failure modes (rare content interactions,
+rare network conditions, rare client states) and the longest
+window that does not unduly delay the next planned release.
+
+**Alternatives rejected:**
+
+- **24-hour freeze:** rejected. Closes before the most common
+  slow-surfacing failure modes have a chance to appear. The
+  observation window would be active during the highest-traffic
+  early-launch hours but would close before late-launch traffic
+  patterns produced their characteristic signals.
+- **7-day freeze:** rejected. Longer than necessary for the
+  observation surface; would unduly delay the next planned
+  release without producing additional observation value past
+  the first 72 hours. The marginal observation per additional
+  hour drops sharply after 72 hours.
+- **No freeze, just elevated monitoring:** rejected. Hot-fixing
+  during the observation window introduces determinism drift
+  that breaks the observation surface and the audit trail
+  D-0902 depends on. The freeze and the elevated monitoring are
+  complementary disciplines, not alternatives — both are
+  required.
+- **Soft freeze (advisory, not enforced):** rejected. An advisory
+  freeze degrades to no freeze under launch-day pressure. The
+  Freeze Exception Record is the formal exception path; the
+  freeze itself is hard.
+- **Bugfix-only carve-out without the three criteria:** rejected.
+  A bugfix that fails determinism, backward compatibility, or
+  roll-forward safety is precisely the kind of change that
+  introduces silent regression — Vision §14 (Explicit Decisions,
+  No Silent Drift) forbids exactly this. The three criteria are
+  the formal expression of the silent-regression prohibition at
+  the launch boundary.
+
+**Implementation locations:**
+
+- Procedural document: `docs/ops/LAUNCH_DAY.md` §5.1 (why
+  72 hours), §5.2 (the 72-hour change freeze — scope and
+  exclusions), §5.3 (bugfix criteria during freeze), §5.4
+  (Freeze Exception Record — five required fields), §5.5
+  (elevated monitoring cadence and alert sensitivity).
+- Strategy document: `docs/ops/LAUNCH_READINESS.md` §5 (the
+  launch authority is the sole approver of Freeze Exception
+  Records — non-delegable, per D-3801).
+- Severity ladder consumption: `docs/ops/INCIDENT_RESPONSE.md`
+  P0 / P1 / P2 / P3 mapping is consumed verbatim during the
+  observation window for invariant violations, replay
+  divergence, and balance anomalies.
+
+**Affected WPs:** WP-038
+**Introduced:** WP-038 / EC-038
+**Status:** Immutable
+**Raised:** WP-038 Definition of Done, 2026-04-22
+**Resolved:** 2026-04-22 (Commit B governance close)
+
+---
+
+### D-3803 — Launch Gates Inherit from Beta Exit Gates (via D-3704)
+**Decision:** The Beta Exit Criteria readiness category in
+`docs/ops/LAUNCH_READINESS.md` §3 **consumes** the overall exit
+verdict from `docs/beta/BETA_EXIT_CRITERIA.md` directly rather
+than re-deriving beta exit criteria as launch-specific gates. The
+launch readiness review does not author parallel beta-exit logic;
+it references the existing WP-037 exit gate as its Category 3
+verdict input, with the binary `exit(rules, ux, balance, stability)`
+formula evaluating to `true` as the pass condition.
+
+This decision derives from D-3704 (Beta Uses the Same Release
+Gates as Production). D-3704 locked the principle that beta and
+production are gated identically at the deployment boundary;
+D-3803 extends the principle from the deployment boundary to the
+launch readiness review, so the same binary exit gate that
+governs beta-end also governs launch readiness.
+
+If `BETA_EXIT_CRITERIA.md` evolves (new criteria added,
+thresholds updated, source signals replaced), the Beta Exit
+readiness category in `LAUNCH_READINESS.md` evolves with it
+without requiring a separate launch checklist amendment. The
+single-source-of-truth pattern is non-negotiable.
+
+**Rationale:** A parallel launch-checklist beta-exit pipeline
+would create three reinforcing failure modes:
+
+- **Drift between two pipelines.** Two parallel pipelines for
+  the same governance question (is the beta build ready to
+  promote?) inevitably drift. Threshold updates land in one
+  pipeline but not the other; new criteria are added to one
+  pipeline but not the other; the two verdicts diverge under
+  edge cases. Vision §14 (Explicit Decisions, No Silent Drift)
+  explicitly forbids this kind of governance drift; D-3803
+  forecloses it at the structural level by inheriting rather
+  than duplicating.
+- **Re-derivation cost at every launch.** A parallel launch
+  pipeline forces every launch readiness review to re-derive
+  beta exit thresholds against the launch artifact, even
+  though the same artifact has already been gated against the
+  beta exit criteria at beta-end. The re-derivation is
+  expensive (every threshold needs re-measurement against the
+  same source signals), error-prone (re-derivation under load
+  invites silent threshold drift), and adds no information
+  (the beta exit gate already evaluated the same artifact).
+- **Disagreement on the single source of truth.** A parallel
+  pipeline forces a tie-breaker decision when the two
+  pipelines disagree. Under launch-day pressure, the
+  tie-breaker collapses into a subjective override of one of
+  the two pipelines — exactly the failure mode the binary
+  pass/fail discipline of `LAUNCH_READINESS.md` is designed to
+  prevent.
+
+D-3704's same-release-gates-as-production rationale extends
+verbatim to the launch readiness review: any defect the beta
+exit gate could surface is a defect the launch readiness review
+should also surface, and any threshold the beta exit gate
+enforces is a threshold the launch readiness review should also
+enforce. The single-pipeline discipline is the structural
+enforcement of that equivalence.
+
+**Alternatives rejected:**
+
+- **Re-derive beta-exit gates as launch-specific gates:**
+  rejected for the three failure modes above. The
+  re-derivation is governance-drift-vector incarnate; the
+  cost-benefit analysis is unfavorable in every dimension.
+- **Reference `BETA_EXIT_CRITERIA.md` informally without a
+  formal consumption clause:** rejected. Without a formal
+  inheritance clause, the launch readiness review's Category 3
+  verdict becomes ambiguous when `BETA_EXIT_CRITERIA.md` evolves
+  — does the launch review consume the new version, the version
+  current at last review, or some snapshot? Formal inheritance
+  via this decision locks the answer: the launch review consumes
+  the current `BETA_EXIT_CRITERIA.md` overall verdict at review
+  time.
+- **Inherit only the rules-correctness and stability categories,
+  re-derive UX and balance:** rejected. Partial inheritance
+  recreates the drift and re-derivation failure modes for the
+  re-derived categories without producing additional information.
+  The UX and balance categories are precisely the categories
+  where re-derivation is most error-prone (subjective UX
+  measurements, simulation-baseline balance comparisons), so
+  partial inheritance is exactly backwards from the right
+  disposition.
+- **Wait for `BETA_EXIT_CRITERIA.md` to be formalized as a
+  shared module before inheriting:** rejected. The exit gate
+  is already authoritative per WP-037 / EC-037; the
+  formalization is the consumption clause this decision
+  records. Waiting for an additional formalization step would
+  delay launch readiness for no operational gain.
+
+**Implementation locations:**
+
+- Strategy document: `docs/ops/LAUNCH_READINESS.md` §3 (Beta
+  Exit Criteria Readiness Gates — Category 3, gate 3.1
+  consumes the overall exit verdict from
+  `BETA_EXIT_CRITERIA.md`; gates 3.2 / 3.3 / 3.4 reference
+  beta-period source signals from the same document).
+- Strategy document: `docs/ops/LAUNCH_READINESS.md` §3
+  closing paragraph (D-3803 anchor — launch gates inherit
+  from beta exit gates; if the exit gate evolves, this
+  category evolves with it without a separate amendment).
+- Companion document: `docs/ops/LAUNCH_DAY.md` §1 timeline
+  table (the launch readiness review is a prerequisite to
+  T-1h, and its Category 3 verdict is the consumed beta exit
+  verdict).
+- Origin decision: D-3704 (Beta Uses the Same Release Gates
+  as Production) — D-3803 extends D-3704's principle from
+  the deployment boundary to the launch readiness review.
+- Anti-drift discipline: Vision §14 (Explicit Decisions, No
+  Silent Drift) — D-3803 is the structural enforcement of
+  this clause at the beta-to-launch boundary.
+
+**Affected WPs:** WP-038 (consumer); WP-037 (source — no
+modification by WP-038; WP-038 simply consumes the existing
+exit gate).
+**Introduced:** WP-038 / EC-038
+**Status:** Immutable
+**Raised:** WP-038 Definition of Done, 2026-04-22
+**Resolved:** 2026-04-22 (Commit B governance close)
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

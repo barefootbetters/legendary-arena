@@ -7,6 +7,113 @@
 
 ## Current State
 
+### WP-038 / EC-038 Executed — Launch Readiness & Go-Live Checklist (2026-04-22, EC-038)
+
+WP-038 lands the launch-readiness and go-live discipline as a
+Documentation-only strategy-doc pair plus three governance decisions.
+The bundle produces zero engine code, zero new tests, and zero runtime
+behavior change. Test baseline holds at engine 444/110/0 and repo-wide
+596/0. The strategy-doc-pair template established by WP-037
+(`BETA_STRATEGY.md` + `BETA_EXIT_CRITERIA.md`) is reused for the
+launch-readiness pillar, producing a strategy-style readiness document
+plus a procedural launch-day companion.
+
+**Surfaces produced:**
+
+- `docs/ops/LAUNCH_READINESS.md` — new — pre-launch authority document.
+  Eight top-level sections covering the four binary pass/fail readiness
+  gate categories: Engine & Determinism (4 gates anchored to WP-027 /
+  WP-028 / WP-029 / WP-031 / WP-032 source signals); Content & Balance
+  (4 gates anchored to WP-033 + WP-036 source signals plus the
+  warning-acceptance discipline requiring non-invariant + non-competitive
+  + non-exploitable classification with recorded justification); Beta
+  Exit Criteria (4 gates that consume `BETA_EXIT_CRITERIA.md`'s overall
+  exit verdict directly per D-3803); Ops & Deployment (5 gates anchored
+  to `RELEASE_CHECKLIST.md` + `DEPLOYMENT_FLOW.md` + `INCIDENT_RESPONSE.md`).
+  Single launch authority model with three non-override clauses
+  (MAY NOT waive failing gates; MAY ONLY decide once all gates pass;
+  exists to prevent deadlock, not to override invariants), four required
+  sign-offs (engine integrity, replay determinism, content safety,
+  operations readiness), GO / NO-GO decision record schema, and the
+  boolean aggregation rule (any input `false` short-circuits the launch
+  verdict). 17 binary pass/fail gates total. §18 prose-vs-grep discipline
+  applied — engine-determinism requirements cite ARCHITECTURE.md §MVP
+  Gameplay Invariants and D-3704 rather than enumerating literal tokens.
+- `docs/ops/LAUNCH_DAY.md` — new — procedural companion. Seven top-level
+  sections covering T-1h Final Build Verification (build hash + content
+  version + migration no-op), T-0 Soft Launch Window with the explicit
+  PAUSE-vs-ROLLBACK distinction (PAUSE on anomaly; ROLLBACK only on a
+  §5.6 trigger condition; analysis must conclude before resumption),
+  Go-Live Signal (first clean session completes; replay matches live
+  view; zero critical alerts), and T+0 to T+72h Post-Launch Guardrails
+  (72-hour change freeze per D-3802; bugfix criteria deterministic +
+  backward compatible + roll-forward safe; Freeze Exception Record's
+  five required fields — triggering condition, proof of determinism,
+  proof of backward compatibility, roll-forward safety analysis, launch
+  authority approval timestamp; elevated monitoring cadence with
+  invariant violations continuous P0 / replay divergence P1 / balance
+  anomalies logged not hot-fixed; four rollback triggers verbatim:
+  invariant violation spike, replay hash divergence, migration failure,
+  client desync).
+- `docs/ai/post-mortems/01.6-WP-038-launch-readiness-go-live.md` — new
+  — formal 12-section 01.6 output (mandatory per the two new long-lived
+  abstraction documents trigger). Documents three pre-commit reality
+  reconciliations: (10.1) "mostly ready" paraphrased to
+  "partial-readiness state" so Verification Step 5's loosely-scoped
+  subjective-language grep returns zero; (10.2) four-category headings
+  restructured from level-3 subsections to top-level `## ` headings
+  with cascading section renumbering and cross-reference updates so
+  Verification Step 4's `^## ` anchor matches; (10.3) verbatim
+  lowercase rollback-triggers lead-in sentence added so Verification
+  Step 8's case-sensitive grep matches.
+- `docs/ai/DECISIONS.md` — three new minor decisions at Commit B:
+  D-3801 (single launch authority is accountable, not consensus —
+  three non-override clauses + four required sign-offs), D-3802
+  (72-hour post-launch change freeze is a stability observation window
+  — bugfix criteria + Freeze Exception Record's five required fields),
+  D-3803 (launch gates inherit from beta exit gates via D-3704 —
+  single-source-of-truth consumption of `BETA_EXIT_CRITERIA.md`).
+
+**Scope lock honored:** exactly three files in Commit A
+(`LAUNCH_READINESS.md`, `LAUNCH_DAY.md`, post-mortem). Zero
+modifications to `packages/` or `apps/` (`git diff --name-only
+packages/ apps/` empty). Pre-flight inherited dirty-tree items
+(`docs/ai/DECISIONS.md` D-6601 entry from parallel WP-066 review,
+`docs/ai/work-packets/WP-066-registry-viewer-data-toggle.md`
+post-execution clarification appendix) are out of WP-038 scope and
+were path-stashed before Commit B's DECISIONS.md edit so my
+D-3801/3802/3803 hunks land cleanly without sweeping the D-6601
+content; the stash is popped after Commit B to restore the parallel
+work to the working tree. Four retained stashes (`stash@{0..3}`)
+untouched. Stage-by-exact-filename per **P6-27 / P6-44** honored
+throughout.
+
+**Commit topology:**
+
+- Commit A0 (SPEC, `9ecbe70`): pre-flight bundle — pre-flight + session
+  prompt + copilot check (landed before session open).
+- Commit A (EC-038, `2134f33`): three-file execution landing
+  `LAUNCH_READINESS.md` + `LAUNCH_DAY.md` + 01.6 post-mortem. Vision
+  trailer present: `Vision: §3, §5, §13, §14, §18, §22, §24, NG-1,
+  NG-3` (canonical clause titles, no paraphrases).
+- Commit B (SPEC, *this session*): STATUS.md + WORK_INDEX.md WP-038
+  `[ ]` → `[x]` + EC_INDEX.md EC-038 Draft → Done + three DECISIONS.md
+  entries (D-3801 / D-3802 / D-3803).
+
+**01.5 NOT INVOKED.** All four 01.5 trigger criteria absent: zero
+engine code touched; no `LegendaryGameState` field added; no
+`buildInitialGameState` shape change; no new `LegendaryGame.moves`
+entry; no new phase hook. **01.6 MANDATORY.** Two new long-lived
+abstraction documents become the canonical launch-readiness surface
+for the project; both will be referenced indefinitely by subsequent
+launch cycles and by WP-039 (Post-Launch Metrics & Live Ops) onward.
+
+**Unblocks:** WP-039 (post-launch metrics / live ops). The two launch
+documents and the three governance decisions become the input surface
+for WP-039's four-category metric structure.
+
+---
+
 ### WP-085 / EC-085 Executed — Vision Alignment Audit (Detection, Classification & Gating) (2026-04-22, EC-085)
 
 WP-085 lands the §17 Vision Alignment enforcement instrument as a
