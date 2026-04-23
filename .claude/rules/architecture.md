@@ -3,8 +3,9 @@
 This file exists to **enforce** the authoritative system architecture during
 AI-assisted development. It is **derived from** and **subordinate to**:
 
-- `docs/ai/ARCHITECTURE.md` (authoritative architecture)
-- `docs/ai/REFERENCE/00.1-master-coordination-prompt.md` (override hierarchy)
+- `.claude/CLAUDE.md` (root coordination for Claude Code sessions)
+- `docs/ai/ARCHITECTURE.md` (authoritative architecture; canonical authority chain)
+- `docs/01-VISION.md` (vision goals; non-negotiable truths about what the game is)
 
 This file **does not explain architecture**.
 It encodes **hard constraints Claude must never violate**.
@@ -16,16 +17,21 @@ If a Work Packet, conversation, or suggestion conflicts with the architecture,
 
 ## Authority Hierarchy (Non-Negotiable)
 
-Highest to Lowest:
+Highest to Lowest (per `docs/ai/ARCHITECTURE.md` Document override hierarchy,
+locked by WP-041 on 2026-04-23):
 
 1. `.claude/CLAUDE.md` (root coordination for Claude Code sessions)
-2. `docs/ai/REFERENCE/00.1-master-coordination-prompt.md`
-3. `docs/ai/ARCHITECTURE.md`
-4. `.claude/rules/*.md` (enforcement layer)
-5. Individual Work Packets
-6. Active conversation context
+2. `docs/ai/ARCHITECTURE.md` (architectural decisions and boundaries)
+3. `docs/01-VISION.md` (vision goals; non-negotiable truths about what the game is)
+4. `.claude/rules/*.md` (enforcement layer — derived from ARCHITECTURE.md)
+5. `docs/ai/work-packets/WORK_INDEX.md` (execution spine: which WPs exist, in what order)
+6. Individual Work Packets (`docs/ai/work-packets/WP-NNN-*.md`)
+7. Active conversation context
 
-Claude **may not** override or reinterpret entries 1 or 2.
+Claude **may not** override or reinterpret entries 1, 2, or 3. ARCHITECTURE.md
+wins on conflict with this file — rules enforce architecture, they do not
+redefine it. `docs/ai/DECISIONS.md` records the rationale for each
+architectural decision; ARCHITECTURE.md encodes the resulting constraint.
 
 ---
 
@@ -139,22 +145,32 @@ If any text here contradicts ARCHITECTURE.md, ARCHITECTURE.md wins.
 | Game Engine | `packages/game-engine/**` | Gameplay rules & state transitions | `.claude/rules/game-engine.md` |
 | Pre-Planning | `packages/preplan/**` | Speculative planning for waiting players (non-authoritative) | `DESIGN-PREPLANNING.md` |
 | Server | `apps/server/**` | Wiring, startup, networking | `.claude/rules/server.md` |
+| Shared Tooling (cross-cutting, test/build only) | `packages/vue-sfc-loader/**` (and future test/build packages) | Dev- and test-time transforms consumed only by `apps/*` test scripts or local tooling; never imported by production code | (a dedicated `.claude/rules/shared-tooling.md` may be added later when a second tooling package lands; until then, the rules in this section apply) |
 | Persistence (cross-cutting) | engine / app boundary | Data lifecycle & storage rules | `.claude/rules/persistence.md` |
 
 Each layer depends **only downward**.
 No layer may reach upward or sideways.
+The Shared Tooling layer is **orthogonal** to the main dependency chain —
+it has no runtime edges into `Registry → Engine → Server`, and no layer on
+that chain may import from it.
 
 ### Import Rules (Quick Reference)
 
 | Package | May import | Must NOT import |
 |---|---|---|
-| `game-engine` | Node built-ins only | `registry`, `preplan`, `server`, any `apps/*`, `pg` |
-| `registry` | Node built-ins, `zod` | `game-engine`, `preplan`, `server`, any `apps/*`, `pg` |
-| `preplan` | `game-engine` (types only), Node built-ins | `game-engine` (runtime), `registry`, `server`, any `apps/*`, `pg`, `boardgame.io` |
-| `apps/server` | `game-engine`, `registry`, `pg`, Node built-ins | `preplan`, UI packages, browser APIs |
-| `apps/registry-viewer` | `registry`, UI framework | `game-engine`, `preplan`, `server`, `pg` |
+| `game-engine` | Node built-ins only | `registry`, `preplan`, `server`, `vue-sfc-loader`, any `apps/*`, `pg` |
+| `registry` | Node built-ins, `zod` | `game-engine`, `preplan`, `server`, `vue-sfc-loader`, any `apps/*`, `pg` |
+| `preplan` | `game-engine` (types only), Node built-ins | `game-engine` (runtime), `registry`, `server`, `vue-sfc-loader`, any `apps/*`, `pg`, `boardgame.io` |
+| `vue-sfc-loader` (WP-065) | `@vue/compiler-sfc` (peer), `vue` (peer), `typescript` (optional, test-only), Node built-ins | `game-engine`, `registry`, `preplan`, `server`, any `apps/*`, `pg`, `boardgame.io`, any runtime UI code |
+| `apps/server` | `game-engine`, `registry`, `pg`, Node built-ins | `preplan`, `vue-sfc-loader`, UI packages, browser APIs |
+| `apps/registry-viewer` | `registry`, UI framework, `vue-sfc-loader` (devDep only, test scripts) | `game-engine`, `preplan`, `server`, `pg`, `vue-sfc-loader` at runtime |
+| `apps/arena-client` (WP-061+) | UI framework, `vue-sfc-loader` (devDep only, test scripts) | `game-engine` (runtime), `registry` (runtime), `preplan`, `server`, `pg`, `vue-sfc-loader` at runtime |
 
-Pure helpers must NOT import boardgame.io.
+Pure helpers must NOT import boardgame.io. The `vue-sfc-loader` row is
+additionally enforced at packaging time: it appears only in apps'
+`devDependencies` and their `test` scripts' `NODE_OPTIONS`, never in their
+production bundles. Any app listing `vue-sfc-loader` in `dependencies` is a
+layer violation.
 
 ### Registry Layer (Data Input)
 
@@ -271,6 +287,9 @@ Enforcement: `.claude/rules/server.md`
 Registry -> Game Engine -> Server -> Client / CLI
                     |
                     └-> Pre-Planning (types only, read-only)
+
+Shared Tooling (orthogonal):
+  packages/vue-sfc-loader/ -> apps/* (test scripts only, never runtime)
 ```
 
 Forbidden examples:
@@ -281,6 +300,8 @@ Forbidden examples:
 - Pre-planning importing engine runtime code (type-only permitted)
 - Engine importing pre-planning (engine does not know it exists)
 - Pre-planning writing to G, ctx, or any authoritative state
+- Any layer on the main dependency chain importing from Shared Tooling
+- Shared Tooling appearing in any app's runtime `dependencies` (devDeps only)
 
 ### Persistence Boundary (Cross-Layer)
 
@@ -301,6 +322,7 @@ If unsure where code belongs:
 - **If it loads or validates data** -> Registry
 - **If it speculatively plans a future turn** -> Pre-Planning
 - **If it wires components or handles process concerns** -> Server
+- **If it is a dev- or test-time transform consumed only by `apps/*`** -> Shared Tooling
 - **If it stores anything** -> re-check Persistence rules
 
 If a change touches more than one layer, **stop and re-evaluate**.
@@ -312,6 +334,7 @@ Layer violations compound silently and are expensive to unwind later.
 **Engine decides outcomes.**
 **Pre-planning speculates privately.**
 **Server connects pieces.**
+**Shared Tooling supports builds and tests without ever running in production.**
 
 If a layer starts doing another layer's job, the architecture is already broken.
 
@@ -343,8 +366,9 @@ Never guess.
 If code **compiles but violates architecture**, it is still wrong.
 
 When in doubt:
-1. Re-read `docs/ai/ARCHITECTURE.md`
-2. Re-read `00.1-master-coordination-prompt.md`
-3. Stop and correct before proceeding
+1. Re-read `.claude/CLAUDE.md`
+2. Re-read `docs/ai/ARCHITECTURE.md`
+3. Re-read `docs/01-VISION.md`
+4. Stop and correct before proceeding
 
 This file exists to keep Claude aligned — not creative.

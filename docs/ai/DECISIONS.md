@@ -8748,6 +8748,8 @@ a change to one of the five surfaces.
 
 **Citation:** `.claude/rules/architecture.md` Layer Overview table, Import Rules table, Authority Hierarchy section (all three sections drift); `docs/ai/ARCHITECTURE.md §Layer Boundary (Authoritative)` (canonical layer list), `docs/ai/ARCHITECTURE.md §Package Import Rules` (canonical import table), `docs/ai/ARCHITECTURE.md` Document override hierarchy block (post-WP-041, top of file); WP-065 (Shared Tooling layer addition); WP-041 (authority chain lock).
 
+**Resolved:** 2026-04-23 — follow-up SPEC packet applied all three drift fixes plus the related Dependency Direction diagram update, Enforcement Rule + Final Principle Shared Tooling guidance addition, and Final Enforcement Rule removal of the stale `00.1-master-coordination-prompt.md` reference. `.claude/rules/architecture.md` Authority Hierarchy section now lists 7 entries matching ARCHITECTURE.md (post-WP-041); Layer Overview table now lists 6 layers including Shared Tooling (post-WP-065); Import Rules table now includes `vue-sfc-loader` and `apps/arena-client (WP-061+)` rows plus `vue-sfc-loader` in the forbidden-imports columns of `game-engine` / `registry` / `preplan` / `apps/server`. The subordination block at the top of the rules file also refreshed to drop the stale `00.1-master-coordination-prompt.md` reference and add `.claude/CLAUDE.md` and `docs/01-VISION.md`. Drift fully resolved; no remaining drift between `.claude/rules/architecture.md` and `docs/ai/ARCHITECTURE.md` as of this date.
+
 ---
 
 ## Final Note
