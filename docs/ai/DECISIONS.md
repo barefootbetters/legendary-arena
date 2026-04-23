@@ -8230,6 +8230,134 @@ exit gate).
 
 ---
 
+### D-6601 — Post-Execution Clarification Appendix on WP-066, Not a WP Rewrite
+**Decision:**
+WP-066 — Registry Viewer Card Image-to-Data Toggle, closed on 2026-04-22
+at commit `8c5f28f`, receives a clearly-marked "Post-Execution
+Clarification" appendix rather than a pre-execution rewrite. The
+appendix lives below a horizontal rule at the foot of the WP, is dated,
+cites this decision entry, and does not modify any content authored
+before execution. All pre-execution sections of the WP remain
+byte-stable relative to the executed artifact.
+
+The appendix serves three purposes:
+
+1. Flag three ambiguities in the pre-execution WP §Non-Negotiable
+   Constraints block (`type` double-listed as required and optional;
+   "omit or em-dash" permissive language; label alternatives like
+   "Recruiting Effect / Recruitment") and record where each was actually
+   resolved during EC-066 pre-flight (PS-1..PS-4 bundle).
+2. Document a factual-correction flag raised against a suggested
+   post-hoc rewrite: the proposed "Allowed Display Fields" list named
+   `id`, `type`, `victoryPoints`, `heroClass`, `subtypes`, `edition`,
+   `abilityText`, `attackerText`, `recruiterText` — most of which do
+   not exist on `FlatCard` today. The authoritative mapping from
+   display labels to real FlatCard fields (`key`, `cardType`, `setName`,
+   `hc`, `rarityLabel`, `abilities: string[]`, etc.) lives in the
+   module-header JSDoc of
+   `apps/registry-viewer/src/components/CardDataDisplay.vue`. Adopting
+   the suggested list would have introduced latent drift against the
+   runtime interface.
+3. Forward-point to WP-086 (registry viewer card-types upgrade) as the
+   correct home for any expansion of the allowed-field list. The
+   shipped `CardDataDisplay.vue` already includes contract-aware
+   placeholder rows that will auto-light-up when `flattenSet()` begins
+   surfacing the speculative fields.
+
+**Rationale:**
+`.claude/rules/work-packets.md` hard-forbids modifying historical Work
+Packets marked complete:
+
+> Claude must never … **Modify historical Work Packets marked complete**
+
+A drop-in replacement of the WP body would have violated that rule. At
+the same time, the tightening observations raised in review were
+legitimate — three of them (empty-field rule, locked labels,
+composable-only state ownership) correspond to real pre-flight
+decisions recorded in EC-066 but *not* reflected in the WP text, and
+one of them (the suggested allowed-field list) contained concrete
+factual errors against the runtime `FlatCard` shape.
+
+Doing nothing would have meant:
+
+- Future readers of WP-066 in isolation could not see that the
+  "omit-or-em-dash" language had been narrowed to "omit only".
+- The suggested-list/real-interface mismatch would have been relitigated
+  on the next review pass.
+- The WP-086 forward-pointer would not exist, and a well-meaning future
+  reader could mistake the speculative-field placeholders in
+  `CardDataDisplay.vue` as a bug to fix.
+
+A dated, clearly-marked appendix below a horizontal rule preserves the
+immutability of the executed artifact while capturing the clarifications
+in the same file. The appendix explicitly states that it is not
+retroactive and that it does not redefine EC-066.
+
+**Alternatives rejected:**
+
+- **Drop-in replace the WP body** (option 4 from the review): rejected.
+  Violates `.claude/rules/work-packets.md`. The WP text at execution
+  time is part of the audit trail for commit `8c5f28f`.
+- **Leave WP-066 entirely unchanged** (option 1): rejected. Loses the
+  factual-correction flag against the suggested allowed-field list,
+  which is the most consequential finding. A future reader comparing
+  the WP against a later proposal would have no anchor showing the
+  proposal was reviewed and declined.
+- **Write the appendix as WP-086 scope notes instead** (option 3
+  partial): rejected as the sole action, retained as a *secondary*
+  pointer. The tightening observations are about WP-066 text, not
+  WP-086 scope; the factual-correction flag specifically concerns a
+  proposed rewrite of WP-066; and pointing to WP-086 alone would leave
+  future readers of WP-066 without the context. WP-086's scope should
+  expand the allowed-field list only if `flattenSet()` actually gains
+  those fields — a separate decision.
+- **Amend without a D-entry, citing only EC-066**: rejected. EC-066 is
+  subordinate to the WP; it cannot authorize a retroactive change to
+  the WP. Only a DECISIONS.md entry can do that. Omitting this entry
+  would also make the appendix's authorization line unverifiable.
+
+**Scope of the authorization:**
+
+- Applies only to WP-066. D-6601 is not a general precedent for
+  amending closed WPs.
+- Authorizes a single appendix block below a horizontal rule at the
+  foot of the WP, dated 2026-04-22, with explicit non-retroactivity
+  language.
+- Does not authorize any edit to pre-execution WP content, to EC-066,
+  to the post-mortem, to the session prompt, or to the commit history
+  of `8c5f28f`.
+- Any future tightening of registry-viewer display behavior beyond
+  what ships at `8c5f28f` requires a new WP (WP-086 or later), not a
+  further appendix to WP-066.
+
+**Precedent boundaries:**
+
+Future closed-WP amendments require their own DECISIONS.md entry with
+the same four-part justification (what the appendix captures, why the
+pre-execution text cannot remain silent, why a new WP is not the right
+instrument, and what the appendix explicitly does not do).
+Routine tightening ideas should be routed to a follow-up WP; only
+findings that change the *interpretation* of the closed WP itself —
+ambiguity disambiguation or factual-correction flags against proposed
+rewrites — justify the appendix path.
+
+**Implementation locations:**
+
+- `docs/ai/work-packets/WP-066-registry-viewer-data-toggle.md` §"Post-
+  Execution Clarification (appended 2026-04-22)" (the appendix).
+- `apps/registry-viewer/src/components/CardDataDisplay.vue` module
+  header JSDoc (the authoritative label-to-field mapping referenced by
+  the appendix; unchanged by this decision).
+
+**Affected WPs:** WP-066 (appendix recipient); WP-086 (forward-pointer
+recipient — no scope change authorized here).
+**Introduced:** Post-execution review of WP-066, 2026-04-22.
+**Status:** Immutable
+**Raised:** 2026-04-22 (post-execution review of WP-066)
+**Resolved:** 2026-04-22 (this decision)
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
