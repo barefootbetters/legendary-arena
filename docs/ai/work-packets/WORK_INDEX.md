@@ -1395,15 +1395,43 @@ These packets ship the game and keep it running.
   Commit prefix: `EC-038:` at execution; `SPEC:` for the bundle and the
   governance close (never `WP-038:` per P6-36 — commit-msg hook rejects).
 
-- [ ] WP-039 — Post-Launch Metrics & Live Ops ✅ Reviewed
-  Dependencies: WP-038
-  Notes: Documentation + type definitions only — no engine modifications;
-  four metric categories: system health (P0), gameplay stability (P1),
-  balance signals (P2), UX friction (P3); all metrics derived from
-  deterministic sources, version-tagged (D-0901); alerting reuses WP-035
-  severity levels; live ops cadence: daily/weekly/monthly; change management:
-  validated content OK, hot-patches forbidden; stability > growth; was 250
-  lines but missing template sections — normalized to full PACKET-TEMPLATE
+- [x] WP-039 — Post-Launch Metrics & Live Ops ✅ Completed 2026-04-23 at commit `4b1cf5c` under EC-039
+  Dependencies: WP-038 (complete at `2134f33`)
+  Notes: Documentation only — one new strategy document under `docs/ops/`
+  (`LIVE_OPS_FRAMEWORK.md`); zero TypeScript, zero new types, zero
+  re-exports, zero new tests. Path A (reuse `IncidentSeverity` and
+  `OpsCounters` from `ops.types.ts`; cross-link severity semantics to
+  `INCIDENT_RESPONSE.md` rather than restating) resolved all three v1
+  pre-flight blockers by construction: (1) `MetricPriority` would have
+  duplicated landed `IncidentSeverity`; (2) "same-version replay hash =
+  P0" contradicted `INCIDENT_RESPONSE.md:33` (replay desync = P1);
+  (3) `MetricEntry` would have created a parallel container for the
+  four counters already modeled by `OpsCounters`. Framework doc has 11
+  top-level sections (§1 Purpose — §11 Summary) with 8 foundational
+  constraints, 6 data collection rules, 6 success criteria, and 9
+  explicit non-goals. §5 metric labels (System Health / Gameplay
+  Stability / Balance Signals / UX Friction) are organizational prose
+  only — not a typed union. Live-ops cadence locked: daily
+  `OpsCounters` review, weekly baseline comparison vs WP-036/WP-037,
+  monthly balance evaluation; out-of-cadence review permitted only for
+  P0/P1. Change management locked: validated content OK (WP-033);
+  AI-simulation-validated balance tweaks OK (D-0702); UI updates that
+  preserve gameplay semantics OK (D-1002); rule changes without version
+  increment, unversioned hot-patches, silent behavior changes,
+  changes-justified-solely-by-live-metrics, auto-heal, parallel
+  severity taxonomy, and parallel counter container all forbidden.
+  Three-commit topology: A0 SPEC pre-flight bundle (`9e7d9bd`) →
+  A EC-039 content + 01.6 post-mortem (`4b1cf5c`) → B SPEC governance
+  close (this session). Test baseline UNCHANGED at engine 444/110/0 +
+  repo-wide 596/0 (zero new tests). One new DECISIONS.md entry lands at
+  Commit B documenting the Path A decision — live ops reuses
+  `IncidentSeverity` and `OpsCounters` rather than defining parallel
+  types, with the v1 drift as precedent. 01.5 NOT INVOKED (all four
+  trigger criteria absent). 01.6 MANDATORY (one new long-lived
+  abstraction document `LIVE_OPS_FRAMEWORK.md` under `docs/ops/`).
+  Post-mortem: `docs/ai/post-mortems/01.6-WP-039-post-launch-metrics-live-ops.md`.
+  Commit prefix: `EC-039:` at execution; `SPEC:` for the bundle and the
+  governance close (never `WP-039:` per P6-36 — commit-msg hook rejects).
 
 - [ ] WP-040 — Growth Governance & Change Budget ✅ Reviewed
   Dependencies: WP-039

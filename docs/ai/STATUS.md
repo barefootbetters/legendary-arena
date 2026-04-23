@@ -7,6 +7,128 @@
 
 ## Current State
 
+### WP-039 / EC-039 Executed — Post-Launch Metrics & Live Ops (2026-04-23, EC-039)
+
+WP-039 lands the steady-state post-launch live-operations rhythm as a
+single new strategy document under `docs/ops/`. The bundle is
+documentation-only and produces zero engine code, zero new types, zero
+re-exports, and zero new tests. Test baseline holds at engine 444/110/0
+and repo-wide 596/0. Severity semantics are cross-linked to the landed
+`docs/ops/INCIDENT_RESPONSE.md` (not restated); the counter surface is
+cross-linked to the landed `OpsCounters` in
+`packages/game-engine/src/ops/ops.types.ts` (not redefined). Path A
+reuses `IncidentSeverity` and `OpsCounters` rather than defining
+parallel types — a construction-time resolution of all three v1
+pre-flight blockers (duplicate severity type, severity-semantic
+contradiction with `INCIDENT_RESPONSE.md:33`, parallel counter
+container).
+
+**Surfaces produced:**
+
+- `docs/ops/LIVE_OPS_FRAMEWORK.md` — new — the steady-state live-ops
+  rhythm document. Eleven top-level sections: §1 Purpose (stability
+  over growth; four load-bearing assumptions anchored to D-0901 /
+  severity-already-modeled / counters-already-modeled / D-0902
+  rollback-preserved); §2 Foundational Constraints (8 binary
+  constraints with named authorities including D-0901, D-0902, D-1002,
+  `INCIDENT_RESPONSE.md`, `ops.types.ts` + D-3501); §3 Severity
+  Taxonomy (reference-only cross-link to `INCIDENT_RESPONSE.md` §Severity
+  Levels; replay desync classified P1 per `INCIDENT_RESPONSE.md:33` with
+  no same-version vs. cross-version split); §4 Observability Surface
+  (reference-only cross-link to `ops.types.ts` `OpsCounters`; one-line
+  orientation summary for the four fields only); §5 Metric Label
+  Conventions (four organizational-prose labels — System Health /
+  Gameplay Stability / Balance Signals / UX Friction — explicit "not a
+  typed union, not a code constant" disclaimer; severity applies per
+  event, not per label); §6 Data Collection Rules (6 binary rules
+  citing D-0901 per §18 prose-vs-grep discipline); §7 Live Ops Cadence
+  (daily / weekly / monthly rhythm with named input surface and binary
+  output per row; out-of-cadence review permitted only for P0/P1); §8
+  Change Management (allowed rows: validated content via WP-033,
+  AI-simulation-validated balance tweaks via D-0702/WP-036, semantic-
+  preserving UI updates via D-1002; forbidden rows: rule changes
+  without version increment (D-1002), unversioned hot-patches, silent
+  behavior changes, changes-justified-solely-by-live-metrics (D-0702),
+  auto-heal, parallel severity taxonomy, parallel counter container);
+  §9 Success Criteria (6 binary criteria with named source signals);
+  §10 Non-Goals (9 explicit non-goals including retention funnels,
+  monetization analytics, marketing analytics, auto-heal, parallel
+  severity taxonomy, parallel counter container, live-metric-driven
+  engine/server/client modifications, metrics collection
+  infrastructure — deferred to a future WP that will consume
+  `OpsCounters` + `IncidentSeverity` directly); §11 Summary
+  (stewardship-not-optimization restatement).
+- `docs/ai/post-mortems/01.6-WP-039-post-launch-metrics-live-ops.md` —
+  new — formal 14-section 01.6 output (mandatory per the one new
+  long-lived abstraction document trigger). Documents the three v1
+  pre-flight blockers and Path A as construction-time fix; one
+  pre-Commit-A reality reconciliation (10.1 — the `MetricCategory`
+  identifier inside §5 meta-prose tripped Verification Step 5 even
+  though the prose was advocating against the type; paraphrased to
+  "code-level union" — same meaning, zero grep match); extension seam
+  status across §5 metric labels, §3 severity taxonomy, §4 counter
+  surface, §7 cadence, §8 change management; follow-up WP pointers to
+  the future metrics collection infrastructure WP and to WP-040
+  (Growth Governance).
+- `docs/ai/DECISIONS.md` — one new D-entry at Commit B: *"Live Ops
+  Reuses Existing `IncidentSeverity` and `OpsCounters` Rather Than
+  Parallel Types"*. Records the v1 pre-flight blockers as precedent
+  and binds future ops observability surfaces (metrics, alerts,
+  dashboards) to cross-link rather than duplicate the landed types.
+
+**Scope lock honored:** exactly two files in Commit A
+(`LIVE_OPS_FRAMEWORK.md`, post-mortem). Zero modifications to
+`packages/` or `apps/` at any commit (`git diff --name-only packages/
+apps/` empty post-Commit-A). Pre-flight inherited `.claude/worktrees/`
+untracked directory untouched and never staged. Stage-by-exact-filename
+per **P6-27 / P6-44** honored throughout: no `git add .`, no `git add
+-A`, no `git add -u` at any commit.
+
+**Commit topology:**
+
+- Commit A0 (SPEC, `9e7d9bd`): pre-flight bundle — v1 preflight + v2
+  preflight + copilot check CONFIRM (29/30 PASS) + session prompt +
+  Path A rewrites of WP-039 + EC-039 (landed before session open).
+- Commit A (EC-039, `4b1cf5c`): two-file execution landing
+  `LIVE_OPS_FRAMEWORK.md` + 01.6 post-mortem. Vision trailer present:
+  `Vision: §3, §5, §13, §14, §22, §24` (canonical clause titles).
+- Commit B (SPEC, *this session*): STATUS.md + WORK_INDEX.md WP-039
+  `[ ]` → `[x]` + EC_INDEX.md EC-039 Draft → Done (Done counter
+  11 → 12) + one new DECISIONS.md entry (Path A reuse decision).
+  Same Vision trailer.
+
+**Verification status (all 15 steps pass):** framework doc has 11
+level-2 section headings; zero TS files modified
+(`git diff --name-only | grep '\.ts$'` empty); zero
+`packages/` / `apps/` files modified
+(`git diff --name-only packages/ apps/` empty); no parallel
+`MetricPriority` / `MetricSeverity` / `MetricCategory` /
+`MetricEntry` anywhere in `packages/` or the framework doc; framework
+doc cross-links `INCIDENT_RESPONSE.md` + `OpsCounters` +
+`IncidentSeverity` (47 matches); replay desync + P1 paired explicitly;
+`INCIDENT_RESPONSE.md` and `ops.types.ts` untouched; "Immediate
+rollback" appears 0 times (severity table not restated); zero
+subjective-language tokens (looks good / looks great / mostly ready /
+good enough / should be fine / probably — case-insensitive); zero
+forbidden-token enumeration (Math.random / Date.now / performance.now
+/ new Date — cites D-0901 per §18); test baselines UNCHANGED.
+
+**01.5 NOT INVOKED.** All four 01.5 trigger criteria absent: zero
+engine code touched; no `LegendaryGameState` field added; no
+`buildInitialGameState` shape change; no new `LegendaryGame.moves`
+entry; no new phase hook. **01.6 MANDATORY.** One new long-lived
+abstraction document (`LIVE_OPS_FRAMEWORK.md`) becomes the canonical
+live-ops surface for the project; every subsequent post-launch rhythm
+review and WP-040 (Growth Governance & Change Budget) will read this
+document.
+
+**Unblocks:** WP-040 (Growth Governance & Change Budget). The framework
+doc's §8 Change Management is the direct input surface for WP-040's
+five change categories (ENGINE | RULES | CONTENT | UI | OPS) and the
+per-release change budget discipline.
+
+---
+
 ### WP-038 / EC-038 Executed — Launch Readiness & Go-Live Checklist (2026-04-22, EC-038)
 
 WP-038 lands the launch-readiness and go-live discipline as a

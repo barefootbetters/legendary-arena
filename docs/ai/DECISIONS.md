@@ -8358,6 +8358,194 @@ recipient — no scope change authorized here).
 
 ---
 
+### D-3901 — Live Ops Reuses Existing `IncidentSeverity` and `OpsCounters` Rather Than Parallel Types
+
+**Decision:**
+WP-039's live-ops framework — landed 2026-04-23 at commit `4b1cf5c` as
+`docs/ops/LIVE_OPS_FRAMEWORK.md` — rejects the introduction of parallel
+severity and counter types (`MetricPriority`, `MetricSeverity`,
+`MetricCategory`, `MetricEntry`) in favor of reusing the landed
+`IncidentSeverity` and `OpsCounters` from
+`packages/game-engine/src/ops/ops.types.ts` (D-3501). The framework doc
+cross-links to these types and to `docs/ops/INCIDENT_RESPONSE.md` for
+severity semantics; it does not redefine, restate, or contradict either
+surface. Replay desync is classified P1, full stop — matching
+`INCIDENT_RESPONSE.md:33` verbatim, with no same-version vs.
+cross-version split.
+
+The framework doc's §5 metric label conventions (System Health,
+Gameplay Stability, Balance Signals, UX Friction) are organizational
+prose only — not a typed union, not a code constant, not enforced by
+any build step. Any future proposal to typify them into a code-level
+union is a separate pre-flight and requires its own DECISIONS.md entry.
+
+**Why:**
+The v1 pre-flight for WP-039
+(`docs/ai/invocations/preflight-wp039-post-launch-metrics-live-ops.md`)
+returned DO NOT EXECUTE YET with three blocking findings, all traceable
+to the same root cause — earlier WP-039 iterations did not name the
+pre-existing ops types or `INCIDENT_RESPONSE.md` as authoritative in
+Context (Read First), so the authoring pass did not re-check the landed
+surfaces before proposing parallel ones:
+
+1. **Duplicate engine-wide severity type.** The v1 WP-039 proposed
+   `MetricPriority = 'P0' | 'P1' | 'P2' | 'P3'` as a new
+   engine-category type. This would have duplicated the landed
+   `IncidentSeverity` (`ops.types.ts:84`) — same union, same ordering,
+   same semantics, different name. Reusing the same literal values did
+   not avoid the drift: the parallel type would have required every
+   live-ops consumer to choose between `IncidentSeverity` and
+   `MetricPriority` at every import site, producing silent divergence
+   every time the two types diverged.
+2. **Severity-semantic contradiction with landed `INCIDENT_RESPONSE.md`.**
+   The v1 WP-039 proposed classifying "same-version replay hash
+   divergence = P0; cross-version replay hash divergence = P1."
+   `INCIDENT_RESPONSE.md:33` classifies replay desync as P1
+   unconditionally (with a P0 escalation path only if investigation
+   determines the current `prod` artifact is implicated). The v1 split
+   contradicted the landed document.
+3. **Parallel metric container.** The v1 WP-039 proposed
+   `MetricEntry { name, priority, category, notes? }` as a new
+   engine-category type to hold what `OpsCounters` already holds. This
+   would have created a parallel counter container for the four fields
+   already modeled by `OpsCounters`, fragmenting the observability
+   surface and forcing every consumer to bridge the two containers.
+
+Path A resolved all three by construction: dropped `MetricPriority` /
+`MetricCategory` / `MetricEntry`; reused `IncidentSeverity` +
+`OpsCounters` verbatim; aligned severity with `INCIDENT_RESPONSE.md`
+(replay desync = P1, full stop); added `INCIDENT_RESPONSE.md` +
+`ops.types.ts` to Context (Read First) as **AUTHORITATIVE** (caps-tagged
+callout) to prevent the authority-chain gap from recurring in future
+WPs that touch ops observability; re-scoped WP-039 to
+documentation-only (one new doc, zero TypeScript).
+
+The v2 pre-flight
+(`docs/ai/invocations/preflight-wp039-post-launch-metrics-live-ops-v2.md`)
+returned READY TO EXECUTE — all three v1 blockers resolved by
+construction. The copilot check
+(`docs/ai/invocations/copilot-wp039-post-launch-metrics-live-ops.md`)
+returned CONFIRM with 29 / 30 PASS and one minor RISK on Issue 11 (test
+baseline phrasing) with a scope-neutral FIX already folded into WP-039
+§Build & Test Baseline before the A0 commit landed.
+
+Adding parallel types would have required a parallel severity taxonomy
+and silently divergent severity semantics — a `// why:`-commentable
+drift class that is expensive to unwind later. Reuse is the
+construction-time fix; it is not a pattern that costs anything to
+maintain because the cross-link pointers compose without upkeep.
+
+**Alternatives rejected:**
+
+- **Introduce `MetricPriority` but make it a type alias of
+  `IncidentSeverity`** (option P1 from the v1 pre-flight discussion):
+  rejected. A type alias does not prevent divergence — every consumer
+  that imports `MetricPriority` is implicitly asserting that live-ops
+  severity is a separate concept from incident-response severity, and a
+  future change to `IncidentSeverity` (adding a P4, renaming a level)
+  would have to re-validate every `MetricPriority` import site for
+  semantic equivalence. The cross-link pointer has no such cost.
+- **Keep `MetricEntry` but drop its `priority` field** (option P2):
+  rejected. Even without `priority`, the `MetricEntry` container
+  duplicates `OpsCounters`'s role and forces consumers to bridge two
+  containers. The four counters already have authoritative definitions
+  in `ops.types.ts`; adding a wrapper container adds surface without
+  adding capability.
+- **Classify replay desync as P0 for same-version, P1 for
+  cross-version** (option P3 — the v1 split): rejected. Contradicts the
+  landed `INCIDENT_RESPONSE.md:33` and the D-0802 vs. D-1234 severity-
+  mapping rationale in `INCIDENT_RESPONSE.md` §D-0802 vs. D-1234.
+  `INCIDENT_RESPONSE.md`'s P1 definition already includes the P0
+  escalation path when investigation implicates the current `prod`
+  artifact; the split was unnecessary.
+- **Amend `INCIDENT_RESPONSE.md` inside WP-039 to introduce the split**
+  (option P4): rejected on two grounds. First, `.claude/rules/work-packets.md`
+  hard-forbids modifying historical Work Packets marked complete
+  (`INCIDENT_RESPONSE.md` is an output of WP-035, complete). Second,
+  the session prompt §Non-Negotiable Constraints explicitly forbids
+  modifying `INCIDENT_RESPONSE.md` or `ops.types.ts` inside WP-039. Any
+  proposal to reclassify severity requires its own DECISIONS.md entry
+  and its own WP, not a side-effect of live-ops authoring.
+
+**Implications:**
+
+All future ops observability surfaces (metrics collection agents,
+alerting pipelines, dashboards) reference `IncidentSeverity` and
+`OpsCounters` directly. They do not introduce parallel types. Any
+proposal to introduce a new severity level, a new counter field, or a
+new severity semantic is an amendment to `INCIDENT_RESPONSE.md` or
+`ops.types.ts` — not a parallel WP.
+
+The authority chain for live-ops work now explicitly names
+`docs/ops/INCIDENT_RESPONSE.md` and
+`packages/game-engine/src/ops/ops.types.ts` in Context (Read First) as
+**AUTHORITATIVE**. Future WPs that touch ops observability must name
+both surfaces as authoritative before writing a single line — missing
+this is the authority-chain gap that produced the v1 WP-039 drift.
+
+The `LIVE_OPS_FRAMEWORK.md` §5 metric label conventions (System Health,
+Gameplay Stability, Balance Signals, UX Friction) are a non-code
+organizational seam. They are not enforced by any build step and do
+not require a type. If a future WP proposes typifying them into a
+code-level union, that WP must:
+
+- Name `LIVE_OPS_FRAMEWORK.md` §5 as the authoritative prose seam being
+  promoted.
+- Explain why prose is no longer sufficient (e.g., a specific
+  enforcement need that only a type can satisfy).
+- Land a new DECISIONS.md entry recording the promotion and binding the
+  same no-parallel-type discipline to the new union.
+
+**Scope of the authorization:**
+
+- Applies to all ops observability work downstream of WP-039 —
+  including the future metrics collection infrastructure WP explicitly
+  deferred in `LIVE_OPS_FRAMEWORK.md` §10.9.
+- Does not authorize modifications to `INCIDENT_RESPONSE.md`,
+  `ops.types.ts`, or any other landed artifact inside a live-ops WP.
+  Modifications to those surfaces require their own governance path.
+- Does not authorize the introduction of any parallel severity or
+  counter type anywhere in the repo. The forbidden names are
+  `MetricPriority`, `MetricSeverity`, `MetricCategory`, `MetricEntry`,
+  and any similar parallel construct.
+
+**Precedent boundaries:**
+
+D-3901 is the eleventh code-category-discipline precedent in the D-2706
+/ D-2801 / D-3001 / D-3101 / D-3201 / D-3301 / D-3401 / D-3501 / D-3601
+/ D-3701 / D-3901 chain, but it is the first precedent in that chain to
+land **without** a new code-category directory. The Path A fix
+deliberately re-scoped WP-039 to documentation-only, so no new
+`src/live-ops/` or equivalent directory was added. The reuse discipline
+is a governance pattern, not a code-layout pattern — future WPs that
+introduce observability tooling (agents, pipelines, dashboards) will
+produce their own code-category directories and cite D-3901 for the
+reuse discipline.
+
+**Implementation locations:**
+
+- `docs/ops/LIVE_OPS_FRAMEWORK.md` — the framework document that
+  embodies the reuse discipline (§3 Severity Taxonomy + §4 Observability
+  Surface + §5 Metric Label Conventions + §10.5 / §10.6 non-goals).
+- `docs/ai/post-mortems/01.6-WP-039-post-launch-metrics-live-ops.md` —
+  the post-mortem that records the v1 drift and the Path A fix.
+- `docs/ai/invocations/preflight-wp039-post-launch-metrics-live-ops.md`
+  (v1) and `...v2.md` — the pre-flights that surfaced and resolved the
+  drift.
+
+**Affected WPs:** WP-039 (primary); WP-040 (downstream consumer of §8
+Change Management); future metrics collection infrastructure WP
+(downstream consumer of the reuse discipline).
+**Introduced:** Pre-flight v1 for WP-039, 2026-04-23 (DO NOT EXECUTE
+YET) → Path A rewrite → v2 pre-flight READY TO EXECUTE → copilot check
+CONFIRM → session prompt → Commit A0 SPEC `9e7d9bd` → Commit A EC-039
+`4b1cf5c` → Commit B SPEC (this commit).
+**Status:** Immutable
+**Raised:** 2026-04-23 (pre-flight v1 of WP-039)
+**Resolved:** 2026-04-23 (this decision)
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
