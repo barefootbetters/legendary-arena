@@ -12,11 +12,17 @@ WP-013 created `docs/ai/ARCHITECTURE.md` with the initial 5 sections covering
 package boundaries, data flow, persistence, boardgame.io runtime, and
 dependency rules. Subsequent packets (WP-014 through WP-040) incrementally
 added content — field classification entries, MVP gameplay invariants, and
-the Layer Boundary section. This packet performs a **formal architectural
-review and consolidation** — ensuring ARCHITECTURE.md is complete,
-internally consistent, and accurately reflects the system as built by all
-40 prior packets. It does not invent new architecture — it formalizes what
-exists.
+the Layer Boundary section.
+
+This packet performs a **formal architectural review and certification
+pass** — ensuring `ARCHITECTURE.md` is complete, internally consistent, and
+accurately reflects the system **as established by previously accepted Work
+Packets and DECISIONS**. It does not invent new architecture; it formalizes
+and verifies what already exists.
+
+**This packet is an architectural certification pass, not a change
+justification.** Aspirational expectations ("the system *should* be X") are
+not license to edit ARCHITECTURE.md.
 
 ---
 
@@ -28,14 +34,17 @@ After this session:
 - `docs/ai/ARCHITECTURE.md` is verified as complete and internally consistent
   against all WP-001 through WP-040 deliverables
 - All Field Classification Reference entries are present and accurate
-  (G fields added by WP-014 through WP-026)
+  (G fields added by WP-005B through WP-026)
 - The authority model is explicit: engine authority, determinism guarantees,
   UI boundaries, network boundaries, content separation, campaign separation,
   live ops constraints
 - The document is versioned with an explicit version stamp matching the
   current `EngineVersion` (WP-034)
-- Any gaps, inconsistencies, or undocumented invariants found during review
-  are corrected
+- Undocumented invariants already established by prior WPs or DECISIONS are
+  added
+- Transcription or internal-consistency errors are corrected
+- **No new invariants are introduced** — this is a certification pass, not a
+  design pass
 - The document remains the authoritative system reference — higher authority
   than any individual Work Packet
 
@@ -47,11 +56,13 @@ After this session:
   - All WP-001 through WP-040 deliverables are in place
   - `docs/ai/ARCHITECTURE.md` exists with Sections 1-5 + MVP Gameplay
     Invariants + Layer Boundary
-  - `docs/ai/DECISIONS.md` exists with all decisions D-0001 through D-1102
+  - `docs/ai/DECISIONS.md` exists with all decisions D-0001 through D-4004
+    (the current highest D-ID as of 2026-04-23; verify actual tail with
+    `grep "^### D-" docs/ai/DECISIONS.md | tail -1` and update this line
+    if newer decisions have landed before execution)
   - `.claude/rules/*.md` files exist and cross-reference ARCHITECTURE.md
   - `pnpm --filter @legendary-arena/game-engine build` exits 0
   - `pnpm --filter @legendary-arena/game-engine test` exits 0
-- `docs/ai/DECISIONS.md` exists
 
 If any of the above is false, this packet is **BLOCKED** and must not proceed.
 
@@ -68,8 +79,10 @@ Before writing a single line:
   in the hierarchy (after CLAUDE.md). This packet verifies that relationship
   is maintained.
 - `.claude/rules/*.md` — read all 7 rules files. They must accurately
-  cross-reference ARCHITECTURE.md. Any drift between rules files and
-  architecture must be corrected (in the rules files, not in architecture).
+  cross-reference ARCHITECTURE.md. **If `ARCHITECTURE.md` conflicts with a
+  rules file, `ARCHITECTURE.md` is authoritative.** Rules drift is **logged,
+  not corrected**, in this packet; `.claude/rules/*.md` files are not
+  modified here.
 - `docs/ai/DECISIONS.md` — read all decisions. Architecture must be consistent
   with every immutable decision.
 - `docs/ai/work-packets/WORK_INDEX.md` — scan all completed/reviewed packets
@@ -112,8 +125,9 @@ higher authority wins.
 ### A) Field Classification Reference — verify completeness
 
 Verify that Section 3's Field Classification Reference table includes ALL
-`G` fields established by WP-002 through WP-026:
+`G` fields established by WP-005B through WP-026 (20 Class-1 Runtime fields):
 
+- `selection` (WP-005B)
 - `playerZones` (WP-006A)
 - `piles` (WP-006B)
 - `villainDeck` (WP-014)
@@ -134,15 +148,29 @@ Verify that Section 3's Field Classification Reference table includes ALL
 - `cardKeywords` (WP-025)
 - `schemeSetupInstructions` (WP-026)
 
-Add any missing entries. All are Class 1 (Runtime).
+Add any missing entries. **All 20 listed fields are Class 1 (Runtime)
+because they participate in authoritative state, determinism, replay, or
+turn resolution.** This rationale is recorded so future reviewers do not
+re-debate the classification on a field-by-field basis.
+
+**Out of scope for this packet:** `matchConfiguration` (Class 2 —
+Configuration) and `activeScoringConfig` (WP-067, outside the
+WP-005B..WP-026 verification range) must not be added or modified by
+this packet. A later audit packet will close those entries.
 
 ### B) Authority model section — add if missing
 
 If not already present, add a section documenting:
-- The complete authority hierarchy (CLAUDE.md > ARCHITECTURE.md > rules >
-  WORK_INDEX > WPs > conversation)
+- The complete authority hierarchy, **with `01-VISION.md` positioned
+  explicitly between `ARCHITECTURE.md` and `.claude/rules`**:
+  `CLAUDE.md > ARCHITECTURE.md > 01-VISION.md > .claude/rules > WORK_INDEX > WPs > conversation`
 - The relationship between ARCHITECTURE.md and `.claude/rules/*.md`
+  (ARCHITECTURE.md wins on conflict)
 - The relationship between ARCHITECTURE.md and DECISIONS.md
+  (DECISIONS.md records the rationale; ARCHITECTURE.md encodes the result)
+
+The VISION position is fixed here once, authoritatively, and is not
+re-derived elsewhere in the document.
 
 ### C) Version stamp
 
@@ -161,7 +189,19 @@ Review every section of ARCHITECTURE.md for:
 - Consistency with `.claude/rules/*.md` (log drift, do not fix rules files)
 - No contradictions between sections
 
-Document any findings in DECISIONS.md.
+Log **material findings only** to `DECISIONS.md`. To keep `DECISIONS.md`
+from becoming noisy, only these entry types are permitted:
+
+- **Architecture Audit Finding** — a contradiction or gap that required a
+  correction (include the WP or DECISION that established the correct
+  version)
+- **Resolved Transcription Inconsistency** — a wording, numbering, or
+  cross-reference error corrected during audit
+- **Rules/Architecture Drift Log** — a drift between `.claude/rules/*.md`
+  and `ARCHITECTURE.md`, logged for a future rules-correction pass
+
+Trivial no-change confirmations (e.g., "Section 2 was correct") are **not**
+logged.
 
 ---
 
@@ -197,7 +237,7 @@ surface. (Audit only.)
 
 **Determinism preservation:** N/A — audit only; no engine, RNG, scoring,
 or replay code is modified. WP-041 verifies the Field Classification
-table covers all 19 G fields without changing any of them.
+table covers all 20 G fields without changing any of them.
 
 ---
 
@@ -216,7 +256,7 @@ No other files may be modified.
 All items must be binary pass/fail. No partial credit.
 
 ### Field Classification
-- [ ] All 19 G fields listed in Scope (In) §A are present in the table
+- [ ] All 20 G fields listed in Scope (In) §A are present in the table
 - [ ] All entries are Class 1 (Runtime)
 - [ ] No stale or removed fields remain
 
@@ -249,9 +289,9 @@ All items must be binary pass/fail. No partial credit.
 ## Verification Steps
 
 ```pwsh
-# Step 1 — confirm Field Classification table has all 19 fields
-Select-String -Path "docs\ai\ARCHITECTURE.md" -Pattern "playerZones|piles|villainDeck|villainDeckCardTypes|hookRegistry|currentStage|lobby|messages|counters|city|hq|ko|attachedBystanders|turnEconomy|cardStats|mastermind|heroAbilityHooks|cardKeywords|schemeSetupInstructions"
-# Expected: at least 19 matches
+# Step 1 — confirm Field Classification table has all 20 fields
+Select-String -Path "docs\ai\ARCHITECTURE.md" -Pattern "selection|playerZones|piles|villainDeck|villainDeckCardTypes|hookRegistry|currentStage|lobby|messages|counters|city|hq|ko|attachedBystanders|turnEconomy|cardStats|mastermind|heroAbilityHooks|cardKeywords|schemeSetupInstructions"
+# Expected: at least 20 matches
 
 # Step 2 — confirm version stamp
 Select-String -Path "docs\ai\ARCHITECTURE.md" -Pattern "Architecture Version"
@@ -287,7 +327,7 @@ git diff --name-only
 This packet is complete when ALL of the following are true:
 
 - [ ] All acceptance criteria above pass
-- [ ] All 19 G fields present in Field Classification table
+- [ ] All 20 G fields present in Field Classification table
 - [ ] Version stamp present
 - [ ] Authority hierarchy documented
 - [ ] No contradictions found (or contradictions corrected with WP references)
