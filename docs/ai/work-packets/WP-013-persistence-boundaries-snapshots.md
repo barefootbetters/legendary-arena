@@ -1,6 +1,6 @@
 # WP-013 — Persistence Boundaries & Snapshots (Explicit, Safe)
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Architecture / Data Lifecycle
 **Dependencies:** WP-012
 

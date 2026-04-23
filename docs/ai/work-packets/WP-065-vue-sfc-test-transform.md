@@ -1,6 +1,6 @@
 # WP-065 — Vue SFC Test Transform Pipeline
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Shared internal tooling (new package
 `packages/vue-sfc-loader/`)
 **Dependencies:** None

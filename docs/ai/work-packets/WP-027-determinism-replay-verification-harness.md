@@ -1,6 +1,6 @@
 # WP-027 — Determinism & Replay Verification Harness
 
-**Status:** Ready  
+**Status:** Complete  
 **Primary Layer:** Engine Infrastructure / Verification  
 **Dependencies:** WP-026
 

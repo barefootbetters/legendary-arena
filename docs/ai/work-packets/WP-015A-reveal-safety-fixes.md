@@ -1,6 +1,6 @@
 # WP-015A — Reveal Safety Fixes (Stage Gate + No-Card-Drop)
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Game Engine / Core Gameplay
 **Dependencies:** WP-015 (City routing present)
 **Blocks:** None

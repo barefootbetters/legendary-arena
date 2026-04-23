@@ -1,6 +1,6 @@
 # WP-025 — Keywords: Patrol, Ambush, Guard
 
-**Status:** Ready  
+**Status:** Complete  
 **Primary Layer:** Game Engine / Board Keywords & Constraints  
 **Dependencies:** WP-024
 

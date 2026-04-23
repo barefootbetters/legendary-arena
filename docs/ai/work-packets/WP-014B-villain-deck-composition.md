@@ -1,6 +1,6 @@
 # WP-014B — Villain Deck Composition Rules & Registry Integration
 
-**Status:** Ready (decisions accepted in DECISIONS.md D-1410 through D-1413)
+**Status:** Complete (decisions accepted in DECISIONS.md D-1410 through D-1413)
 **Primary Layer:** Game Engine / Setup / Rules Definition
 **Dependencies:** WP-014A
 **Blocks:** Real villain deck population at runtime

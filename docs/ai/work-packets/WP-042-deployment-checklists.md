@@ -1,6 +1,6 @@
 # WP-042 — Deployment Checklists (Data, Database & Infrastructure)
 
-**Status:** Ready (amended 2026-04-19 per WP-042 pre-flight — see D-4201)
+**Status:** Complete (amended 2026-04-19 per WP-042 pre-flight — see D-4201)
 **Primary Layer:** Server / Operations
 **Dependencies:** WP-035
 

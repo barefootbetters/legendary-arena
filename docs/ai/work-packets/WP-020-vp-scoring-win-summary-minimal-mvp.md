@@ -1,6 +1,6 @@
 # WP-020 — VP Scoring & Win Summary (Minimal MVP)
 
-**Status:** Ready  
+**Status:** Complete  
 **Primary Layer:** Game Engine / Scoring  
 **Dependencies:** WP-019
 

@@ -1,6 +1,6 @@
 # WP-043 — Data Contracts Reference (Canonical Card & Metadata Shapes)
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Registry / Contracts
 **Dependencies:** WP-003
 

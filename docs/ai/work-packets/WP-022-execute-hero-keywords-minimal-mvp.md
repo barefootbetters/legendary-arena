@@ -1,6 +1,6 @@
 # WP-022 — Execute Hero Keywords (Minimal MVP)
 
-**Status:** Ready  
+**Status:** Complete  
 **Primary Layer:** Game Engine / Rules Execution (Hero Abilities)  
 **Dependencies:** WP-021
 

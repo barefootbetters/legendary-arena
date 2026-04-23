@@ -1,6 +1,6 @@
 # WP-057 — Pre-Plan Sandbox Execution (Speculative Planning Logic)
 
-**Status:** Ready for Implementation (amended 2026-04-20 per pre-flight PS-2 / PS-3)
+**Status:** Complete (amended 2026-04-20 per pre-flight PS-2 / PS-3)
 **Primary Layer:** Pre-Planning (Non-Authoritative, Per-Client)
 **Last Updated:** 2026-04-20
 **Dependencies:**

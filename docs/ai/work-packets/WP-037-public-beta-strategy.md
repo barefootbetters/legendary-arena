@@ -1,6 +1,6 @@
 # WP-037 — Public Beta Strategy
 
-**Status:** Ready  
+**Status:** Complete  
 **Primary Layer:** Release Strategy / User Feedback / Risk Management  
 **Dependencies:** WP-036
 

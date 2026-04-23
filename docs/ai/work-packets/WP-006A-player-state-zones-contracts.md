@@ -1,6 +1,6 @@
 # WP-006A — Player State & Zones Contracts
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Game Engine / Contracts
 **Dependencies:** WP-005B
 

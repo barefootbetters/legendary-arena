@@ -1,6 +1,6 @@
 # WP-010 — Victory & Loss Conditions (Minimal MVP)
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Game Engine / Endgame
 **Dependencies:** WP-009B
 

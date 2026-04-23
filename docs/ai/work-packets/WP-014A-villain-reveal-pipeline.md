@@ -1,6 +1,6 @@
 # WP-014A — Villain Reveal & Trigger Pipeline (Types + Move + Tests)
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Game Engine / Core Gameplay
 **Dependencies:** WP-013
 

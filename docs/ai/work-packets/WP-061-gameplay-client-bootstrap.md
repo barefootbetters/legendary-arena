@@ -1,6 +1,6 @@
 # WP-061 — Gameplay Client Bootstrap
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Client UI (new Vue 3 SPA)
 **Execution Checklist:** `docs/ai/execution-checklists/EC-067-gameplay-client-bootstrap.checklist.md`
 **Commit prefix:** `EC-067:` (not `EC-061:` — the `EC-061` slot is

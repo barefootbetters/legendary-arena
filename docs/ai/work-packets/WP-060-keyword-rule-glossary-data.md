@@ -1,6 +1,6 @@
 # WP-060 — Keyword & Rule Glossary Data Migration
 
-**Status:** Ready for Implementation (pre-flight 2026-04-20 DO NOT EXECUTE YET → amendments landed same day)
+**Status:** Complete (pre-flight 2026-04-20 DO NOT EXECUTE YET → amendments landed same day)
 **Primary Layer:** Content / Data (Registry) + Registry Viewer (UI Integration)
 **Schema Version:** 1
 **Last Updated:** 2026-04-20 (amended per `docs/ai/invocations/preflight-wp060-keyword-rule-glossary-data.md`)

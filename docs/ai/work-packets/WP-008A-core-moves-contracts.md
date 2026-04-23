@@ -1,6 +1,6 @@
 # WP-008A — Core Moves Contracts (Draw, Play, End Turn)
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Game Engine / Contracts
 **Dependencies:** WP-007B
 

@@ -1,6 +1,6 @@
 # WP-056 — Pre-Planning State Model & Lifecycle (Read-Only Core)
 
-**Status:** Ready for Implementation
+**Status:** Complete
 **Primary Layer:** Pre-Planning (Non-Authoritative, Per-Client) — new `preplan` code category (D-5601)
 **Last Updated:** 2026-04-20 (pre-flight amendments: PS-3 workspace correction + Finding #4/#10 documentation FIXes)
 **Dependencies:**

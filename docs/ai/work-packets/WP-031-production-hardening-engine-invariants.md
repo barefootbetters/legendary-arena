@@ -1,6 +1,6 @@
 # WP-031 — Production Hardening & Engine Invariants
 
-**Status:** Ready  
+**Status:** Complete  
 **Primary Layer:** Engine Safety / Invariants / Fail-Fast Guarantees  
 **Dependencies:** WP-029
 

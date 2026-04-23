@@ -1,6 +1,6 @@
 # WP-011 — Match Creation & Lobby Flow (Minimal MVP)
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Server + Game Engine (Match Lifecycle)
 **Dependencies:** WP-010
 

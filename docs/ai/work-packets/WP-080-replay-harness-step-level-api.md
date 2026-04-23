@@ -1,6 +1,6 @@
 # WP-080 — Replay Harness Step-Level API for Downstream Snapshot / Replay Tools
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Game Engine (`packages/game-engine/src/replay/`)
 **Dependencies:** WP-027 (replay harness exists), WP-079 (JSDoc narrowing
 must land first — both packets touch `replay.execute.ts`), D-6304 (this

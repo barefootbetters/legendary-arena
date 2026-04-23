@@ -1,6 +1,6 @@
 # WP-026 — Scheme Setup Instructions & City Modifiers
 
-**Status:** Ready  
+**Status:** Complete  
 **Primary Layer:** Game Engine / Setup & Board Configuration (Runtime Wiring)  
 **Dependencies:** WP-025
 

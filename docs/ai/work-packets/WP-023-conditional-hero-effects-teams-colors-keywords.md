@@ -1,6 +1,6 @@
 # WP-023 — Conditional Hero Effects (Teams, Colors, Keywords)
 
-**Status:** Ready  
+**Status:** Complete  
 **Primary Layer:** Game Engine / Rules Execution (Hero Abilities — Conditional Layer)  
 **Dependencies:** WP-022
 

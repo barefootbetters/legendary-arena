@@ -1,6 +1,6 @@
 # WP-036 — AI Playtesting & Balance Simulation
 
-**Status:** Ready  
+**Status:** Complete  
 **Primary Layer:** Analysis / Tooling / Balance Validation  
 **Dependencies:** WP-035
 

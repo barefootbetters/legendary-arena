@@ -1,6 +1,6 @@
 # WP-079 — Label Engine Replay Harness as Determinism-Only
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Game Engine / Documentation (doc-only, no behavior change)
 **Dependencies:** WP-027 (replay harness), D-0205 (resolved 2026-04-18)
 

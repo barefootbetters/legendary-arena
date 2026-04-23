@@ -1,6 +1,6 @@
 # WP-021 — Hero Card Text & Keywords (Hooks Only)
 
-**Status:** Ready  
+**Status:** Complete  
 **Primary Layer:** Game Engine / Rules (Hero Abilities — Contracts Only)  
 **Dependencies:** WP-020
 

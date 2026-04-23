@@ -1,6 +1,6 @@
 # WP-058 — Pre-Plan Disruption Pipeline (Detect → Invalidate → Rewind → Notify)
 
-**Status:** Ready for Implementation (amended 2026-04-20 per pre-flight PS-2/PS-3 + copilot-check HOLD fixes)
+**Status:** Complete (amended 2026-04-20 per pre-flight PS-2/PS-3 + copilot-check HOLD fixes)
 **Primary Layer:** Pre-Planning (Non-Authoritative, Per-Client)
 **Last Updated:** 2026-04-20
 **Dependencies:**

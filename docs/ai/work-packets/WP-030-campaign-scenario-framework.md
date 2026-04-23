@@ -1,6 +1,6 @@
 # WP-030 — Campaign / Scenario Framework
 
-**Status:** Ready  
+**Status:** Complete  
 **Primary Layer:** Game Orchestration / Meta-Game  
 **Dependencies:** WP-029
 

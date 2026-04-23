@@ -1,6 +1,6 @@
 # WP-028 — UI State Contract (Authoritative View Model)
 
-**Status:** Ready  
+**Status:** Complete  
 **Primary Layer:** Engine / UI Boundary (Read-Only Projection)  
 **Dependencies:** WP-027
 

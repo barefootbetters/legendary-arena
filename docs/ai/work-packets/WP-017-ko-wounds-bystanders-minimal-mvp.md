@@ -1,6 +1,6 @@
 # WP-017 — KO, Wounds & Bystander Capture (Minimal MVP)
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Game Engine / Zones + Effects
 **Dependencies:** WP-016
 

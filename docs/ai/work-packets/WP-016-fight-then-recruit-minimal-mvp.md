@@ -1,6 +1,6 @@
 # WP-016 — Fight First, Then Recruit (Minimal MVP)
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Game Engine / Core Actions
 **Dependencies:** WP-015
 

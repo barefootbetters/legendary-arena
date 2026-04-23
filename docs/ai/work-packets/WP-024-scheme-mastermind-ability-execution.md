@@ -1,6 +1,6 @@
 # WP-024 — Scheme & Mastermind Ability Execution
 
-**Status:** Ready  
+**Status:** Complete  
 **Primary Layer:** Game Engine / Rules Execution (Non-Hero Abilities)  
 **Dependencies:** WP-023
 

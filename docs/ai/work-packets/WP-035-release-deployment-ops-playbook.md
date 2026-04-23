@@ -1,6 +1,6 @@
 # WP-035 — Release, Deployment & Ops Playbook
 
-**Status:** Ready  
+**Status:** Complete  
 **Primary Layer:** Operations / Release Engineering / Reliability  
 **Dependencies:** WP-034
 

@@ -1,6 +1,6 @@
 # WP-008B — Core Moves Implementation (Draw, Play, End Turn)
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Game Engine / Moves
 **Dependencies:** WP-008A
 

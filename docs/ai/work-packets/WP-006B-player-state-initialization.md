@@ -1,6 +1,6 @@
 # WP-006B — Player State Initialization (Align to Zone Contracts)
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Game Engine / Setup
 **Dependencies:** WP-006A
 

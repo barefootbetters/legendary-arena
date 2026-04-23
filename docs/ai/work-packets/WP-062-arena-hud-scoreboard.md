@@ -1,6 +1,6 @@
 # WP-062 — Arena HUD & Scoreboard (Client Projection View)
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Client UI (Vue 3 SPA — `apps/arena-client/`)
 **Dependencies:** WP-061 (gameplay client bootstrap, commit `2e68530`),
 WP-028 (UIState), WP-029 (spectator view model — confirms HUD-visible

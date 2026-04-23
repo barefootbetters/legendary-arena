@@ -1,6 +1,6 @@
 # WP-063 — Replay Snapshot Producer
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Game Engine (type + pure helper) + new CLI app
 (`apps/replay-producer/`)
 **Dependencies:** WP-027 (determinism & replay verification harness,

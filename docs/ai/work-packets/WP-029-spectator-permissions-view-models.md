@@ -1,6 +1,6 @@
 # WP-029 — Spectator & Permissions View Models
 
-**Status:** Ready  
+**Status:** Complete  
 **Primary Layer:** Engine / UI Boundary (Permissions & Audience Views)  
 **Dependencies:** WP-028
 

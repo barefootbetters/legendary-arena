@@ -1,6 +1,6 @@
 # WP-009A — Scheme & Mastermind Rule Hooks (Contracts)
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Game Engine / Contracts
 **Dependencies:** WP-008B
 

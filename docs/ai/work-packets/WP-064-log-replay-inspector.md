@@ -1,6 +1,6 @@
 # WP-064 — Game Log & Replay Inspector
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Client UI (Vue 3 SPA — `apps/arena-client/`)
 **Dependencies:** WP-061 (gameplay client bootstrap), WP-063 (replay
 snapshot producer — defines `ReplaySnapshotSequence`), WP-028 (UIState),

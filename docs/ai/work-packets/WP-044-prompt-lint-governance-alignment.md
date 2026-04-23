@@ -1,6 +1,6 @@
 # WP-044 — Prompt Lint Governance Alignment
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Coordination / Quality Gate
 **Dependencies:** WP-001
 

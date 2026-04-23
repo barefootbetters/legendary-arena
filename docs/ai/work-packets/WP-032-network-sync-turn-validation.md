@@ -1,6 +1,6 @@
 # WP-032 — Network Sync & Turn Validation
 
-**Status:** Ready  
+**Status:** Complete  
 **Primary Layer:** Multiplayer Safety / Network Boundary / Authority  
 **Dependencies:** WP-031
 

@@ -1,6 +1,6 @@
 # WP-002 — boardgame.io Game Skeleton (Contracts Only)
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Game Engine
 **Dependencies:** WP-001, Foundation Prompts (01, 02)
 

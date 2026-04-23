@@ -1,6 +1,6 @@
 # WP-018 — Attack & Recruit Point Economy (Minimal MVP)
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Game Engine / Economy
 **Dependencies:** WP-017
 

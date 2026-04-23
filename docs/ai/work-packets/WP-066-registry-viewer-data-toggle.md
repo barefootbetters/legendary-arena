@@ -1,6 +1,6 @@
 # WP-066 — Registry Viewer: Card Image-to-Data Toggle
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Client UI (Vue 3 SPA — `apps/registry-viewer/`)
 **Dependencies:** None (registry viewer is independent; existing codebase functions)
 

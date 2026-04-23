@@ -1,6 +1,6 @@
 # WP-007A — Turn Structure & Phases Contracts
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Game Engine / Contracts
 **Dependencies:** WP-006B
 

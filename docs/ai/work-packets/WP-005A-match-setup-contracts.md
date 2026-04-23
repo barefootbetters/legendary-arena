@@ -1,6 +1,6 @@
 # WP-005A — Match Setup Contracts
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Game Engine / Contracts
 **Dependencies:** WP-002, WP-003
 

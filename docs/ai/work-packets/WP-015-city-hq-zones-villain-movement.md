@@ -1,6 +1,6 @@
 # WP-015 — City & HQ Zones (Villain Movement + Escapes)
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Game Engine / Board Zones
 **Dependencies:** WP-014A, WP-014B
 

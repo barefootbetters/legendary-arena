@@ -1,6 +1,6 @@
 # WP-012 — Match Listing, Join & Reconnect (Minimal MVP)
 
-**Status:** Ready
+**Status:** Complete
 **Primary Layer:** Server / Match Access
 **Dependencies:** WP-011
 

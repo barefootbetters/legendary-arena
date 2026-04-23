@@ -1,6 +1,6 @@
 # WP-040 — Growth Governance & Change Budget
 
-**Status:** Ready  
+**Status:** Complete  
 **Primary Layer:** Product Governance / Change Control / Sustainable Growth  
 **Dependencies:** WP-039
 
