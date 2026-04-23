@@ -49,10 +49,36 @@ git checkout -b wp-038-launch-readiness main
 - **`8b84587` `SPEC:`** — EC-085 execution checklist registered in
   `EC_INDEX.md` (Phase 7 Draft); summary counts Done 10 / Draft
   49 → 50 / Total 59 → 60.
+- **`604eaaa` `SPEC:`** — WP-085 pre-execution session-context
+  bridge (parallel session; landed after the bridge author's `8b84587`
+  snapshot and before the bridge's initial commit).
+- **`c836b29` `EC-085:`** — **WP-085 actual execution** —
+  `scripts/audit/vision/run-all.mjs` orchestrator + comment-aware
+  filter on DET-001 in `determinism.greps.mjs` + first audit report
+  at `docs/audits/vision-alignment-2026-04-22.md` with VERDICT: PASS
+  and baseline matching bit-for-bit (6 / 4 / 0 / 0 / 0).
+- **`a3e67bb` `SPEC:`** — WP-085 session execution prompt
+  (post-execution capture) — governance artifact pairing the
+  execution commit with an authoritative session-prompt record.
+- **`9e35928` `SPEC:`** — WP-085 / EC-085 governance close
+  (Commit B). Path B operational claim ("§17 Vision Alignment is
+  enforced by WP-085 audit tooling") and two-channel DET-001 model
+  decisions expected to live here; verify contents at WP-038
+  pre-flight time before citing.
+- **`485d0d0` `SPEC:`** — **WP-038 `## Vision Alignment` block
+  retrofit** — the pending §17 retrofit flagged in Pending
+  Follow-Up §1 below is RESOLVED by this commit. WP-038's block
+  sits at line 190 of
+  `docs/ai/work-packets/WP-038-launch-readiness-go-live-checklist.md`.
+- **`f53af27` `SPEC:`** — This bridge's initial commit (now
+  reconciled; see end-of-file note).
 
-WP-038 is downstream of only the first two (`160d9b9` + `ee099c5`).
-The WP-085 governance commits are independent of WP-038's scope —
-WP-038 does NOT depend on WP-085 execution.
+WP-038 is downstream of only `160d9b9` + `ee099c5` for its contract
+dependencies. The WP-085 commits (`604eaaa` through `9e35928`) are
+independent of WP-038's scope — WP-038 does NOT depend on WP-085
+execution. `485d0d0` is a WP-038 Vision-block retrofit and is a
+prerequisite for WP-038 pre-flight READY; that prerequisite is now
+satisfied.
 
 ### Test baselines at HEAD `8b84587` (must hold through WP-038)
 
@@ -292,37 +318,28 @@ should be aware of. The WP-038 executor should NOT attempt to close
 any of these as part of WP-038 execution; each is a separate SPEC
 commit belonging to its own session.
 
-### (1) WP-038 Vision Alignment block retrofit — PENDING
+### (1) WP-038 Vision Alignment block retrofit — ~~PENDING~~ **RESOLVED at `485d0d0`**
 
-Per `00.3 §17`, WP-038 requires a `## Vision Alignment` section
-before it can be executed under the current gate. Check:
+~~Per `00.3 §17`, WP-038 requires a `## Vision Alignment` section
+before it can be executed under the current gate.~~
+
+**Update (reconciliation pass):** This retrofit landed at SPEC
+`485d0d0` ("SPEC: WP-038 §17 Vision Alignment retrofit") in a
+parallel session that ran concurrently with this bridge's initial
+authoring. WP-038's `## Vision Alignment` block is present at line
+190 of `docs/ai/work-packets/WP-038-launch-readiness-go-live-checklist.md`.
+The WP-038 pre-flight author should verify the block's clause
+citations against `docs/01-VISION.md` (no paraphrases per `00.3
+§17.2`) and cite them in the Vision Sanity Check section of the
+pre-flight artifact, but **no further retrofit work is required**
+before the pre-flight READY verdict.
+
+Suggested verification command:
 
 ```bash
-grep -n "^## Vision Alignment" docs/ai/work-packets/WP-038-*.md
+grep -n "^## Vision Alignment" docs/ai/work-packets/WP-038-launch-readiness-go-live-checklist.md
+# Expected: 190:## Vision Alignment (or equivalent line number post-retrofit)
 ```
-
-If the grep returns no match, WP-038 must acquire its block before
-the WP-038 pre-flight can issue a READY verdict. Precedent: the
-WP-037 Vision Alignment block landed at SPEC `e5b0d67` ("SPEC:
-WP-037 add Vision Alignment block per §17 gate") as a discrete
-single-file commit. WP-038 should follow the same pattern. **The
-WP-038 pre-flight author (likely the same session that produces the
-pre-flight artifact) must land this retrofit SPEC commit first.**
-
-Suggested clause set for WP-038's block (to be refined at retrofit
-time; clause numbers must be verified against `docs/01-VISION.md` —
-no paraphrases per `00.3 §17.2`):
-- §3 (Player Trust & Fairness) — launch integrity
-- §4 (Faithful Multiplayer Experience) — reconnection/late-join
-  verification at go-live
-- §13 (Execution Checklist-Driven Development)
-- §14 (Explicit Decisions, No Silent Drift) — 72h freeze rationale
-- §22 (Deterministic & Reproducible Evaluation) — determinism-gate
-  category
-- §24 (Replay-Verified Competitive Integrity) — launch-build
-  replay-verification requirement
-- NG-1 (No Pay-to-Win) / NG-3 (No Content Withheld for Competitive
-  Advantage) — same proximity framing as WP-037
 
 ### (2) Prose-vs-grep paper-cut rule codification — PENDING
 
@@ -333,18 +350,42 @@ commit. Not WP-038 scope — but WP-038 checklist prose should apply
 the rule informally (cite D-entries, not token strings) to avoid
 adding more instances for the future cleanup.
 
-### (3) WP-085 execution remains queued
+### (3) WP-085 execution — ~~remains queued~~ **EXECUTED at `c836b29`; governance closed at `9e35928`**
 
-WP-085 (Vision Alignment Audit — Detection, Classification & Gating)
-is governance-complete pre-execution: WP draft landed at `2e88aa7`,
-D-8501 landed, WORK_INDEX registered, EC-085 checklist registered at
-`8b84587`. **WP-085 is dependency-free and could execute at any
-time.** WP-038 does NOT depend on WP-085. The two can proceed in
-either order. If WP-085 executes first, the §17 gate becomes
-operationally enforced (a DECISIONS entry lands at WP-085's Commit B
-making that claim factually true); WP-038's Vision Alignment block
-retrofit would then be verified by the WP-085 audit orchestrator on
-first run rather than by prose inspection only.
+~~WP-085 is dependency-free and could execute at any time.~~
+
+**Update (reconciliation pass):** WP-085 was executed in full in a
+parallel session that ran concurrently with this bridge's initial
+authoring. The execution commit is `c836b29` ("EC-085: orchestrate
+vision alignment audit with two-channel DET-001"); the Commit B
+governance close is `9e35928` ("SPEC: WP-085 / EC-085 governance
+close (Commit B)"); the post-hoc session prompt is `a3e67bb`; the
+pre-execution bridge for WP-085 is `604eaaa`. The first audit
+report landed at `docs/audits/vision-alignment-2026-04-22.md` with
+VERDICT: PASS and the baseline matching bit-for-bit
+(6 DET-001 / 4 DET-007 / 0 / 0 / 0).
+
+**Implications for WP-038:**
+
+- The §17 Vision Alignment gate is now **operationally enforced**
+  by WP-085 audit tooling — not just prose-governed. WP-038's Vision
+  block (landed at `485d0d0`) will be exercised by the next
+  `run-all.mjs` run.
+- The two-channel DET-001 model is now established repo practice;
+  WP-038 pre-flight can cite it directly without re-deriving.
+- The operational DECISIONS.md entry (Path B claim) and the
+  two-channel DET-001 model decision may have landed at `9e35928`
+  (verify by reading the commit's changeset before citing; this
+  reconciliation pass did not read `9e35928` contents in full).
+- `scripts/audit/vision/run-all.mjs` is now a live PASS/FAIL gate
+  the WP-038 pre-flight can invoke as part of its verification
+  steps:
+
+  ```bash
+  node scripts/audit/vision/run-all.mjs
+  # Expected: exit 0; VERDICT: PASS; DET-001 = 6 (baseline
+  # exceptions) / DET-007 = 4 / 0 / 0 / 0.
+  ```
 
 ### (4) Memory-file correction (tracked in WP-085)
 
@@ -442,7 +483,7 @@ come from the WP-038 pre-flight session
 
 | Artifact | Path |
 |---|---|
-| WP-038 spec | `docs/ai/work-packets/WP-038-launch-readiness-go-live.md` |
+| WP-038 spec | `docs/ai/work-packets/WP-038-launch-readiness-go-live-checklist.md` |
 | EC-038 checklist | `docs/ai/execution-checklists/EC-038-*.checklist.md` (verify slot at pre-flight) |
 | Vision (authoritative for §17) | `docs/01-VISION.md` |
 | ARCHITECTURE.md | `docs/ai/ARCHITECTURE.md` (§Layer Boundary + §Section 3 Persistence Classes) |
@@ -467,3 +508,38 @@ session that executed WP-037 (commits `160d9b9`, `ee099c5`) and
 registered WP-085 + EC-085 (commits `2998d8a`, `2e88aa7`,
 `8b84587`). Intended consumer: the next session's pre-flight on
 WP-038.*
+
+---
+
+## Reconciliation Note
+
+Bridge first committed at `f53af27` on 2026-04-22. Between the
+author's last `git log` snapshot at `8b84587` and the bridge's
+initial commit, five parallel-session commits landed on `main`:
+
+| Commit | Subject |
+|---|---|
+| `604eaaa` | SPEC: session-context-wp085 (pre-execution bridge) |
+| `c836b29` | EC-085: orchestrate vision alignment audit with two-channel DET-001 |
+| `a3e67bb` | SPEC: WP-085 session execution prompt (post-execution capture) |
+| `9e35928` | SPEC: WP-085 / EC-085 governance close (Commit B) |
+| `485d0d0` | SPEC: WP-038 §17 Vision Alignment retrofit |
+
+The initial bridge did not reflect these — specifically, Pending
+Follow-Ups §1 (WP-038 Vision Alignment retrofit) and §3 (WP-085
+execution queued) were written as pending when both were already
+resolved, and the Quick-Reference Index cited a non-existent
+`WP-038-launch-readiness-go-live.md` path (actual file is
+`-go-live-checklist.md`). This reconciliation pass updates those
+three sections and rebuilds the "Commits landed this session" list
+to include all twelve session-scope commits.
+
+**Bridge reconciled by this commit — author's error of committing
+without re-checking `git log` immediately before the initial bridge
+commit is documented here rather than silently papered over.**
+Future bridge authors: re-run `git log` in the same shell as
+`git add` / `git commit` to avoid this class of staleness. The
+prose-vs-grep paper-cut rule has a cousin here: **bridge-vs-HEAD
+staleness rule** — any repo-state-summarizing artifact must be
+reconciled against `HEAD` in the same atomic operation as its
+commit.*
