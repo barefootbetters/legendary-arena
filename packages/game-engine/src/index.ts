@@ -394,3 +394,34 @@ export type {
   ChangeBudget,
   ChangeClassification,
 } from './governance/governance.types.js';
+
+// PAR artifact storage (WP-050 / D-5001)
+export {
+  scenarioKeyToFilename,
+  scenarioKeyToShard,
+  sourceClassRoot,
+  computeArtifactHash,
+  writeSimulationParArtifact,
+  readSimulationParArtifact,
+  writeSeedParArtifact,
+  readSeedParArtifact,
+  buildParIndex,
+  lookupParFromIndex,
+  resolveParForScenario,
+  validateParStore,
+  validateParStoreCoverage,
+  ParStoreReadError,
+  PAR_ARTIFACT_SOURCES,
+} from './simulation/par.storage.js';
+export type {
+  ParArtifactSource,
+  SeedParArtifact,
+  SimulationParArtifact,
+  ParArtifact,
+  ParResolution,
+  ParIndex,
+  ParStorageConfig,
+  ParStoreValidationResult,
+  ParStoreValidationError,
+  ParCoverageResult,
+} from './simulation/par.storage.js';

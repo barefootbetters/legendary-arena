@@ -8940,6 +8940,132 @@ grep -rnE "from ['\"]node:fs" packages/game-engine/src/simulation/ --include="*.
 
 ---
 
+### D-5002 — Two Source Classes (`seed` + `simulation`) Instead of One Mixed Directory
+
+**Type:** Storage Topology
+**Packet:** WP-050 (Commit A)
+**Date:** 2026-04-23
+
+**Decision:** PAR artifacts are persisted under two independent source-class directory roots — `data/par/seed/{version}/` and `data/par/sim/{version}/` — and versioned independently (seed `v1` is unrelated to sim `v1`). Each class has its own `index.json` manifest. Cross-class access is funneled through a single `resolveParForScenario` resolver (see D-5003).
+
+**Rationale:** Phase 1 content-authored seed PAR and Phase 2 simulation-calibrated PAR have different artifact shapes, different provenance requirements, and different immutability semantics. Seed carries a full `ParBaseline` and an `authoredBy` / `rationale` audit trail; simulation carries `percentileUsed`, `sampleSize`, `seedSetHash`, and the `policyTier: 'T2'` guard. Mixing them in one directory would force union-type reads everywhere, obscure which PAR a scenario is currently using, and break the clean "seed until simulation supersedes it" mental model that `docs/12-SCORING-REFERENCE.md` encodes.
+
+**Citation:** `par.storage.ts` `sourceClassRoot`; WP-050 §Non-Negotiable Constraints / Storage layout; EC-050 §Dual source-class storage layout.
+
+---
+
+### D-5003 — Simulation-Over-Seed Precedence Locked in a Single Resolver
+
+**Type:** Cross-Class Read Contract
+**Packet:** WP-050 (Commit A)
+**Date:** 2026-04-23
+
+**Decision:** `resolveParForScenario(scenarioKey, basePath, parVersion)` is the ONLY sanctioned cross-class reader. It applies the locked precedence rule: load `sim/{parVersion}/index.json` first; if it covers the scenario, return it. Otherwise load `seed/{parVersion}/index.json`. Otherwise return `null`. No caller override, no optional `preferSource` parameter, no alternate precedence via a side-door utility.
+
+**Rationale:** Allowing callers to encode their own precedence would produce inconsistent leaderboard gate behavior across server, CI tooling, and future downstream WPs. A single resolver is the only way to guarantee that the pre-release PAR gate (WP-051), the leaderboard backfill tooling (WP-054), and any future calibration audit all see the same effective PAR for a given scenario key. This matches the three-phase PAR derivation pipeline in `docs/12-SCORING-REFERENCE.md` — seed gives day-one coverage; simulation supersedes it once calibrated; both remain on disk so historical leaderboard entries pinned to the seed-era `scoringConfigVersion` remain explainable.
+
+**Citation:** `par.storage.ts` `resolveParForScenario`; WP-050 §Non-Negotiable Constraints / Resolution rule; EC-050 §Source-class precedence.
+
+---
+
+### D-5004 — File-Based PAR Storage, Not Database
+
+**Type:** Persistence Technology
+**Packet:** WP-050 (Commit A)
+**Date:** 2026-04-23
+
+**Decision:** PAR artifacts are persisted as UTF-8 JSON files on the filesystem, not as rows in PostgreSQL or any other database. The layout is deliberately portable to R2/S3 object stores and CDNs without schema migration.
+
+**Rationale:** PAR artifacts are ship-once, read-many immutable data. A filesystem layout gives: (1) content addressability by ScenarioKey without a query planner in the loop; (2) bit-for-bit byte equivalence as the determinism proof (impossible with a typical RDBMS row serializer); (3) zero database migration overhead when a new artifact version ships; (4) trivial CDN deployment for public leaderboard consumers; (5) the ability to diff two PAR stores with `diff -r` during review. A database would add operational surface for no functional gain at MVP scale (hundreds to low-thousands of scenarios per version). If PAR volume ever grows to the point where directory scans become the bottleneck, the layout can be fronted by an object store without changing the artifact contract.
+
+**Citation:** `par.storage.ts` (entire module); WP-050 §Non-Negotiable Constraints / No database required.
+
+---
+
+### D-5005 — Sharding by Scheme-Slug Prefix (Two Characters)
+
+**Type:** Filesystem Layout Convention
+**Packet:** WP-050 (Commit A)
+**Date:** 2026-04-23
+
+**Decision:** Within each `{source-class}/{parVersion}/scenarios/` directory, artifact files are sharded into subdirectories named after the first two characters of the scheme slug (the first component of the `ScenarioKey` before the first `::` delimiter). Example: `midtown-bank-robbery::red-skull::hydra` shards into `mi/`. Identical rule across both source classes.
+
+**Rationale:** Single-directory listings degrade on most filesystems past 10k entries (ext4 `htree`, NTFS btree, and R2/S3 prefix-list APIs all exhibit measurable slowdown past that threshold). Two-character prefix sharding gives 26^2 possible shards (676) which spreads a realistic 10k–100k scenario catalog into buckets of 15–150 files each — comfortably below any filesystem's bloat threshold. Choosing the *scheme slug* (not a hash, not a random component) preserves content addressability: a reviewer reading `data/par/sim/v1/scenarios/mi/` sees all midtown-bank-robbery scenarios together, which is the natural browsing order. Hash-based sharding would also work, but would destroy the human-browsability of the layout.
+
+**Citation:** `par.storage.ts` `scenarioKeyToShard`; WP-050 §Non-Negotiable Constraints / Shard derivation; EC-050 §Path conventions.
+
+---
+
+### D-5006 — Canonical Sorted-Key JSON Serialization for Determinism
+
+**Type:** Serialization Contract
+**Packet:** WP-050 (Commit A)
+**Date:** 2026-04-23
+
+**Decision:** Every PAR artifact and every PAR index is serialized via a canonical JSON writer that recursively sorts object keys lexicographically at every level before calling `JSON.stringify`. Default `JSON.stringify` is forbidden for artifact and index writes because its output preserves insertion order, which is non-deterministic across code paths (Object literal order, `Object.assign` result order, and `{ ...spread }` result order all depend on source-code ordering that can change under refactors).
+
+**Rationale:** Determinism is the entire correctness contract of this WP. Two runs with identical inputs MUST produce byte-identical output files; two independent implementations of the storage layer MUST agree on every byte. Sorted-key canonicalization is the only way to make this invariant hold. The canonical serializer is a small internal helper (`canonicalJsonStringify`) that walks the object recursively, sorts keys at every level, and calls `JSON.stringify` on the sorted clone. Array element order is preserved (arrays are ordered by definition); only object keys are sorted. Output has no whitespace, no comments, no trailing commas.
+
+**Citation:** `par.storage.ts` `canonicalJsonStringify` + every writer; WP-050 §Non-Negotiable Constraints / Canonical serialization rules; EC-050 §Serialization and hashing.
+
+---
+
+### D-5007 — Atomic Index Writes via Temp + Rename
+
+**Type:** Write Atomicity Contract
+**Packet:** WP-050 (Commit A)
+**Date:** 2026-04-23
+
+**Decision:** `buildParIndex` writes the index file atomically via temp-file + `fs.rename`. The serialized index is written to `{indexPath}.tmp`, then renamed to the final `index.json` path. Indices may overwrite an existing `index.json` when the artifact set changes — indices are NOT immutable artifacts (only individual artifact files are immutable).
+
+**Rationale:** A partial index read during a concurrent regeneration would surface a truncated or malformed JSON file to any reader — including the `resolveParForScenario` resolver that the server's pre-release gate depends on. `fs.rename` within the same filesystem is atomic: concurrent readers either see the old index or the new index, never a half-written file. This pattern is the same atomicity recipe used by Git for ref updates and by every well-behaved config writer. The distinction between *artifact* immutability (never overwrite — writer throws) and *index* overwritability (rebuildable from the artifact set) is load-bearing and must not be collapsed.
+
+**Citation:** `par.storage.ts` `buildParIndex`; WP-050 §Non-Negotiable Constraints / Atomic index writes; EC-050 §Immutability contract.
+
+---
+
+### D-5008 — Overwrite Refusal as Immutability Enforcement
+
+**Type:** Write-Time Invariant
+**Packet:** WP-050 (Commit A)
+**Date:** 2026-04-23
+
+**Decision:** Both `writeSimulationParArtifact` and `writeSeedParArtifact` refuse to overwrite an existing artifact file. The writer checks `fs.access` on the target path first; if the file exists, it throws a full-sentence `Error` naming the path and citing the immutability rule. The error is NOT a `ParStoreReadError` (which is read-only). No `fs.rm`, no `fs.truncate`, no `fs.rename`-over-existing appears anywhere in either writer. Calibration updates create a new `parVersion` directory instead of mutating an existing artifact.
+
+**Rationale:** Immutability as convention is fragile — a future maintainer under time pressure will always be tempted to "just fix this one artifact in place". Enforcing the invariant at the write layer catches both accidental and intentional violations before they hit disk. The trust surface for PAR artifacts is load-bearing: the leaderboard gate, the replay integrity chain, and the historical explainability of past scoring entries all assume that a published artifact hash uniquely identifies a published PAR value forever. A single silent overwrite would invalidate all three chains. Throwing at write time is the only robust enforcement.
+
+**Citation:** `par.storage.ts` `writeSimulationParArtifact` / `writeSeedParArtifact`; WP-050 §Non-Negotiable Constraints / Overwrite refusal; EC-050 §Immutability contract.
+
+---
+
+### D-5009 — SHA-256 `artifactHash` via `node:crypto` for Tamper Detection
+
+**Type:** Integrity / Hashing Contract
+**Packet:** WP-050 (Commit A)
+**Date:** 2026-04-23
+
+**Decision:** Every PAR artifact carries an `artifactHash` field with format `sha256:{64-char-hex}`. The hash is computed via `node:crypto.createHash('sha256')` over the canonical JSON serialization of the artifact with the `artifactHash` field itself removed (self-hash exclusion). The hash is embedded into the artifact before writing and cross-verified in the index entry. Artifacts missing `artifactHash` OR with a hash that doesn't match the recomputed value are corrupt and flagged as non-publishable by `validateParStore`.
+
+**Rationale:** Tamper detection is a distinct correctness concern from the seed-set hashing in WP-049, which used djb2. D-3601's "no crypto libraries in simulation" language was scoped to WP-049 seed-set hashing where djb2 was sufficient (djb2 is fast and deterministic; collision resistance was not required because seed-set identities are short and bounded). PAR tamper detection IS collision-sensitive: a malicious or accidentally-edited artifact must be detectable even when the edit is structurally plausible. SHA-256 is the standard choice and is available as a Node built-in via `node:crypto` — NOT an external npm dependency. Using `node:crypto` adds zero `package.json` entries and zero supply-chain surface. External crypto libraries (`crypto-js`, `sha.js`, etc.) remain forbidden. Self-hash exclusion is required because without it, the hash would depend on its own previous value.
+
+**Citation:** `par.storage.ts` `computeArtifactHash`; WP-050 §Non-Negotiable Constraints / Artifact hash computation; EC-050 §Serialization and hashing; D-3601 (seed-set hashing scope clarification).
+
+---
+
+### D-5010 — Non-T2 Policy Tier Guard on Simulation Artifacts
+
+**Type:** Write-Time Validation
+**Packet:** WP-050 (Commit A)
+**Date:** 2026-04-23
+
+**Decision:** `writeSimulationParArtifact` consults `AI_POLICY_TIER_DEFINITIONS` (WP-049 contract) to confirm that exactly one tier entry has `usedForPar: true` and that that entry's `tier === 'T2'`. Simulation artifacts are written with the literal `simulation.policyTier: 'T2'`. `validateParStore('simulation')` additionally flags any on-disk simulation artifact whose `policyTier` is not `'T2'` as `non-t2-policy-tier` and marks the store as not publishable. Writers reject non-T2 inputs at the earliest boundary; validators catch any that bypass the writer.
+
+**Rationale:** `AI_POLICY_TIER_DEFINITIONS` pins T2 (Competent Heuristic) as the only publishable tier because only T2 models experienced human play closely enough to establish a trustworthy scenario-difficulty baseline. T0/T1 play too weakly (PAR would be inflated); T3/T4 play too strongly (PAR would be deflated). If a non-T2 artifact ever reached disk and entered the `resolveParForScenario` precedence chain, it would silently bias every leaderboard entry for that scenario. The two-layer guard (writer rejection at write time + validator flag at audit time) provides defense in depth: the writer catches the common case; the validator catches test artifacts and raw-JSON-bypass cases.
+
+**Citation:** `par.storage.ts` `buildSimulationArtifactFromResult` + `validateParStore`; `ai.tiers.ts` `AI_POLICY_TIER_DEFINITIONS` (WP-049 contract); WP-050 §Non-Negotiable Constraints / Required simulation artifact fields; EC-050 §Policy tier guard.
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

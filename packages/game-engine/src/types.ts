@@ -526,3 +526,20 @@ export interface LegendaryGameState {
   /** Optional setup-time scoring config; presence marks the match as PAR-scored. */
   readonly activeScoringConfig?: ScenarioScoringConfig;
 }
+
+// why: PAR artifact storage types (WP-050) ship the immutable artifact +
+// index layer. Pure types and the error class live in par.storage.ts.
+// Re-exported here so consumers importing from './types.js' have access to
+// the full PAR storage surface.
+export type {
+  ParArtifactSource,
+  SeedParArtifact,
+  SimulationParArtifact,
+  ParArtifact,
+  ParResolution,
+  ParIndex,
+  ParStorageConfig,
+  ParStoreValidationResult,
+  ParStoreValidationError,
+  ParCoverageResult,
+} from './simulation/par.storage.js';
