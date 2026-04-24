@@ -1712,7 +1712,7 @@ These packets ship the game and keep it running.
   (all preserved); self-compliant `## Vision Alignment` block. See
   [WP-092-lobby-loadout-intake.md](WP-092-lobby-loadout-intake.md).
 
-- [ ] WP-093 — Match-Setup Rule-Mode Envelope Field (Governance) ⬜ Draft (drafted 2026-04-24; 00.3 lint-gate PASS; planning alias "WP-090.5"; pre-flight bundle registered 2026-04-24)
+- [x] WP-093 — Match-Setup Rule-Mode Envelope Field (Governance) ✅ Done 2026-04-24 (drafted 2026-04-24; 00.3 lint-gate PASS; planning alias "WP-090.5"; pre-flight bundle registered 2026-04-24; executed 2026-04-24 with D-9301 landed and consumer byte-for-byte strings canonicalized for WP-091 / WP-092)
   Dependencies: None (governance-only prerequisite). Consumed by
   WP-091 (registry-viewer loadout builder) and WP-092 (lobby loadout
   intake) — dependency ordering, not numeric ordering.
