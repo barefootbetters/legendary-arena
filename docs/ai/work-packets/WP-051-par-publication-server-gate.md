@@ -1,8 +1,20 @@
 # WP-051 — PAR Publication & Server Gate Contract
 
-**Status:** Draft
+**Status:** Reviewed — Pre-Flight READY TO EXECUTE (2026-04-23, A0 SPEC bundle)
 **Primary Layer:** Server / Enforcement (Read-Only)
-**Dependencies:** WP-050, WP-004
+**Dependencies:** WP-050 (including A1 `loadParIndex` amendment, 2026-04-23), WP-004
+
+**A0 amendment history:**
+- 2026-04-23 — A0 SPEC bundle lands; resolves pre-flight PS-1..PS-12
+  (see [preflight-wp051-par-publication-server-gate.md](../invocations/preflight-wp051-par-publication-server-gate.md)).
+  Amendments: §Assumes re-anchored on WP-050 A1 `loadParIndex` export;
+  §Non-Negotiable locked on `PAR_VERSION` env var (D-5102);
+  `checkParPublished` return shape expanded to `{parValue, parVersion, source}`
+  (D-5101); §Scope A rewritten for dual-index load preserving D-5003
+  precedence (D-5101); §B target corrected from `index.mjs` to `server.mjs`;
+  §C test count moved from 9 to 13 (dual-class tests + aliasing test);
+  §Files Expected to Change adds `apps/server/package.json`;
+  test file extension flipped from `.test.mjs` to `.test.ts` throughout.
 
 ---
 
@@ -41,14 +53,31 @@ After this session:
 
 ## Assumes
 
-- WP-050 complete. Specifically:
+- WP-050 complete, including the A1 amendment (2026-04-23) that exports
+  `loadParIndex`. Specifically:
   - `ParIndex` type is exported from `@legendary-arena/game-engine`
-  - `lookupParFromIndex` is exported and returns `{ path, parValue, artifactHash } | null`
-  - `data/par/v1/index.json` structure is defined (may not exist yet —
-    the server must handle the missing-index case gracefully)
+    with fields `parVersion`, `source: 'seed' | 'simulation'`,
+    `generatedAt`, `scenarioCount`, `scenarios: Record<ScenarioKey, {path,
+    parValue, artifactHash}>`
+  - `loadParIndex(basePath, parVersion, source): Promise<ParIndex | null>`
+    is exported (A1 amendment) — returns `null` for a missing index file,
+    throws `ParStoreReadError` for malformed content or source-class
+    corruption. This is the startup-time primitive the gate consumes.
+  - `lookupParFromIndex(index, scenarioKey)` is exported and returns
+    `{ path, parValue } | null` — used per gate check on the already-loaded
+    in-memory index
+  - `ParArtifactSource` union, `PAR_ARTIFACT_SOURCES` canonical array, and
+    `ParStoreReadError` class are exported
+  - `data/par/{seed,sim}/{version}/index.json` dual-class structure is
+    defined (either or both indices may not exist yet at runtime — the
+    server must handle the missing-index case per D-5101)
 - WP-004 complete. Specifically:
-  - Server startup sequence exists (`apps/server/src/index.mjs`)
+  - Server startup sequence exists at `apps/server/src/server.mjs`
+    (entry point `apps/server/src/index.mjs` only installs SIGTERM and
+    calls `startServer()` — the Promise.all of startup tasks lives in
+    `server.mjs`)
   - Registry loading and rules loading are established startup tasks
+    in `startServer()` via `Promise.all([loadRegistry(), loadRules()])`
   - Server does not accept requests until all startup tasks succeed
 - `pnpm --filter @legendary-arena/game-engine build` exits 0
 - `pnpm --filter @legendary-arena/game-engine test` exits 0
@@ -109,30 +138,65 @@ Before writing a single line:
 
 **Locked contract values:**
 
-- **Startup task (PAR index loading):**
-  - Reads `data/par/{activeVersion}/index.json`
-  - Active version is configured (e.g., environment variable or config file).
-    The active PAR version is configuration-driven and treated as read-only
-    by the server. Changing the active PAR version is an operational decision,
-    not a runtime or per-request decision.
-  - On success: log `[server] PAR index loaded: N scenarios (vX)`
-  - On failure: log warning, set PAR index to `null` (fail closed — all
-    competitive checks return false)
-  - PAR index is **optional** for server startup — the server may start
-    without it (casual play is unaffected), but competitive features are
-    disabled
+- **Startup task (PAR index loading) — locked per D-5101 + D-5102:**
+  - Reads **both** `data/par/sim/{PAR_VERSION}/index.json` and
+    `data/par/seed/{PAR_VERSION}/index.json` via the engine's
+    `loadParIndex(basePath, parVersion, source)` helper
+  - `basePath` is the repo-root relative `data/par` (same root registry
+    loading already uses in `server.mjs`)
+  - `PAR_VERSION` is sourced from the `PAR_VERSION` environment variable,
+    defaulting to `'v1'` via `??`, matching the `PORT ?? '8000'` fallback
+    pattern in `server.mjs:105`. Stable for process lifetime per D-5102;
+    server does not support runtime reload.
+  - On success (both indices loaded): log
+    `[server] PAR index loaded: N scenarios (vX; sim=M, seed=K)` where N
+    is the union-unique scenario count, M and K are the per-class counts
+  - On one-class missing: warn-log
+    `[server] PAR {seed|sim} index missing at path {…}; continuing with
+    {other-class}-only coverage`; the gate operates as a single-class
+    gate for the missing side
+  - On both-missing: warn-log
+    `[server] PAR index unavailable; competitive submissions disabled`;
+    the gate returns `null` for every scenario (fail closed)
+  - On malformed index (`loadParIndex` throws `ParStoreReadError`):
+    treat the malformed class as if missing — warn-log the
+    `ParStoreReadError.message`, set that class's index to `null`,
+    continue. The server does not crash on PAR-load failures; casual
+    play is unaffected.
+  - The PAR index load task is **optional** for server startup — the
+    server may start with zero indices loaded (casual play continues;
+    competitive submissions fail closed)
 
-- **Gate check function:**
+- **Gate check function — locked per D-5101:**
   ```
-  checkParPublished(scenarioKey: string): { parValue: number; parVersion: string } | null
+  checkParPublished(scenarioKey: ScenarioKey): {
+    parValue: number;
+    parVersion: string;
+    source: 'seed' | 'simulation';
+  } | null
   ```
-  - Returns PAR data if published, `null` if not
-  - Lookup via index only — never probes filesystem
-  - Pure read-only, no side effects
+  - Queries the in-memory simulation index first. If the scenario key is
+    present, returns `{parValue: entry.parValue, parVersion:
+    simIndex.parVersion, source: 'simulation'}`.
+  - Else queries the in-memory seed index. If present, returns
+    `{parValue: entry.parValue, parVersion: seedIndex.parVersion, source:
+    'seed'}`.
+  - Else returns `null`.
+  - **Must return a fresh object literal on every call** — never return a
+    reference into the index. This prevents caller-induced corruption of
+    the in-memory index via aliasing. A dedicated test asserts two
+    sequential calls with the same key return non-identical (`!==`)
+    objects with equal (`===`) field values.
+  - Lookup via in-memory indices only — **never probes filesystem** at
+    request time
+  - Pure read-only, no side effects, synchronous
   - The server must not interpret, transform, or reason about `parValue`;
     it is returned only for recording and display purposes
   - Gate evaluation is strictly binary: published or not published.
     Probabilistic, heuristic, or partial acceptance is forbidden.
+  - Parameter typed as `ScenarioKey` (aliased `string` from WP-048
+    `parScoring.types.ts`), not raw `string`, to narrow the boundary
+    against accidental match-id / player-id misuse.
 
 - **Rejection semantics (contract for future leaderboard endpoints):**
   - If `checkParPublished` returns `null`, competitive submission must be
@@ -153,47 +217,149 @@ Before writing a single line:
 
 ### A) `apps/server/src/par/parGate.mjs` — new
 
-- `loadParIndex(basePath, parVersion)` — reads and parses `index.json`
-  - Returns `ParIndex` object or `null` on failure
-  - Logs success with scenario count, or warning on failure
-  - Read-only — never writes or modifies files
-  - `// why:` comment: PAR index is optional for startup; missing index
-    disables competitive features but does not prevent casual play
+The PAR gate module exposes exactly three functions. All PAR-file IO
+is delegated to the engine via `loadParIndex` (WP-050 A1 amendment);
+this server file imports **types and named functions** from
+`@legendary-arena/game-engine` only — no `node:fs`, no `node:fs/promises`,
+no `boardgame.io`, no `LegendaryGame`, no `ctx`.
 
-- `checkParPublished(parIndex, scenarioKey)` — checks PAR existence via index
-  - Returns `{ parValue, parVersion }` or `null`
-  - Lookup is index-only — never probes artifact files
+- `checkParPublished(simIndex, seedIndex, scenarioKey)` —
+  pure synchronous lookup across both in-memory indices per D-5101
+  sim-over-seed precedence
+  - Signature:
+    `(simIndex: ParIndex | null, seedIndex: ParIndex | null,
+    scenarioKey: ScenarioKey) => {parValue, parVersion, source} | null`
+  - Queries `simIndex` first via `lookupParFromIndex`; if hit, returns
+    `{parValue: hit.parValue, parVersion: simIndex.parVersion, source:
+    'simulation'}`. Else queries `seedIndex`; if hit, returns
+    `{parValue: hit.parValue, parVersion: seedIndex.parVersion, source:
+    'seed'}`. Else `null`.
+  - Constructs a **fresh object literal** on every hit — never returns a
+    reference into the index (aliasing guard; tested in test #13).
   - `// why:` comment: index is the canonical oracle; filesystem probing
-    is forbidden to prevent race conditions and integrity bypass
+    is forbidden to prevent race conditions and integrity bypass.
+    Sim-over-seed precedence per D-5003 / D-5101 preserves the
+    three-phase PAR derivation pipeline at the gate layer.
 
-- `createParGate(basePath, parVersion)` — factory that loads index once and
-  returns a bound `checkParPublished` function
-  - Used at startup to create the gate instance
+- `createParGate(basePath, parVersion)` — async factory that loads **both**
+  source-class indices once at startup via `loadParIndex` and returns a
+  bound gate
+  - Signature:
+    `(basePath: string, parVersion: string) => Promise<{
+      checkParPublished(scenarioKey: ScenarioKey):
+        {parValue, parVersion, source} | null;
+      readonly simulationScenarioCount: number;
+      readonly seedScenarioCount: number;
+    }>`
+  - Calls `loadParIndex(basePath, parVersion, 'simulation')` and
+    `loadParIndex(basePath, parVersion, 'seed')` in parallel via
+    `Promise.all`. Each call returns `ParIndex | null`.
+  - On `ParStoreReadError` from either load: catches the error,
+    warn-logs the error message, treats that class as missing (sets
+    its index to `null`). The gate continues to operate.
+  - On one-class missing: warn-logs `[server] PAR {seed|sim} index
+    missing at path {…}; continuing with {other-class}-only coverage`.
+  - On both-classes missing: warn-logs `[server] PAR index unavailable;
+    competitive submissions disabled`.
+  - On at least one class loaded: info-logs
+    `[server] PAR index loaded: N scenarios (vX; sim=M, seed=K)` where
+    N is the size of the union of scenario keys across both indices.
+  - The returned gate object exposes a **synchronous** `checkParPublished`
+    that is the partial-application of the module-level
+    `checkParPublished(simIndex, seedIndex, …)` over the loaded indices.
   - `// why:` comment: load once at startup, check many times per request —
-    same pattern as registry loading
+    same pattern as registry loading. Both source classes loaded to
+    preserve D-5101 sim-over-seed precedence without per-request
+    filesystem IO.
 
-### B) `apps/server/src/index.mjs` — modified
+### B) `apps/server/src/server.mjs` — modified
 
-- Add PAR index loading as a third startup task (after registry + rules)
-- PAR index loading is **non-blocking** — server starts even if PAR is missing
-  (casual play continues; competitive gate returns `null` for all scenarios)
-- Log the PAR loading result
-- Pass the PAR gate to the server wiring
+- Add PAR gate creation as a third independent startup task after
+  registry and rules. Preferred pattern: extend the existing
+  `Promise.all([loadRegistry(), loadRules()])` to
+  `Promise.all([loadRegistry(), loadRules(), createParGate(basePath,
+  parVersion)])`, destructuring the third result into a `parGate`
+  constant.
+- `basePath` is the literal `'data/par'` (same root convention as
+  `'data/metadata'` / `'data/cards'` already used by `loadRegistry`).
+- `parVersion` is sourced from `process.env.PAR_VERSION ?? 'v1'`
+  per D-5102.
+- PAR index loading is **non-blocking** — the server starts even if
+  both indices fail to load (casual play continues; competitive gate
+  returns `null` for all scenarios). `createParGate` never throws;
+  it handles `ParStoreReadError` internally per Scope A.
+- The resulting `parGate` object is **stored in server-module scope**
+  (similar to `getRules()` pattern). Future submission / leaderboard
+  WPs (WP-053, WP-054) will import an accessor (`getParGate()`) to
+  invoke `checkParPublished` from their request handlers. Exposing
+  the accessor is out of scope for this packet — `createParGate`'s
+  return value is captured and logged; no new exports from
+  `server.mjs` are required.
 
-### C) Tests — `apps/server/src/par/parGate.test.mjs` — new
+> **Note:** The entry point `apps/server/src/index.mjs` is **not**
+> modified. The startup-task Promise.all lives in `server.mjs`; the
+> entry point only installs SIGTERM handling and calls `startServer()`.
 
-- Uses `node:test` and `node:assert` only
-- Eight tests:
-  1. `loadParIndex` returns parsed index for valid `index.json`
-  2. `loadParIndex` returns `null` for missing file
-  3. `loadParIndex` returns `null` for invalid JSON
-  4. `checkParPublished` returns PAR data for published scenario
-  5. `checkParPublished` returns `null` for unpublished scenario
-  6. `checkParPublished` returns `null` when index is `null` (fail closed)
-  7. `createParGate` returns a working gate function
-  8. Gate check does not access filesystem (only uses in-memory index)
-  9. Gate check does not return PAR for a scenario published only in a
-     different PAR version than the active version (version isolation)
+### C) Tests — `apps/server/src/par/parGate.test.ts` — new
+
+- Uses `node:test` and `node:assert` only (no `boardgame.io/testing`)
+- Test file extension is **`.test.ts`** per `.claude/CLAUDE.md` — never
+  `.test.mjs`. The `apps/server/package.json` `test` script is expanded
+  to cover `src/**/*.test.ts` alongside the existing
+  `scripts/**/*.test.ts` pattern (see §Files Expected to Change).
+- Test file imports from `./parGate.mjs` — runtime code stays `.mjs`,
+  tests use the monorepo-wide `.test.ts` convention.
+- **Thirteen tests** inside one `describe('PAR publication gate (WP-051)', …)`
+  block:
+
+  **`loadParIndex` smoke (engine-surface verification)**
+  1. `loadParIndex` returns a parsed `ParIndex` with the expected
+     `source` / `parVersion` / `scenarios` fields for a valid
+     hand-authored or `buildParIndex`-produced index
+  2. `loadParIndex` returns `null` for a missing index directory
+  3. `loadParIndex` throws `ParStoreReadError` for an index file
+     whose contents are not valid JSON OR whose `source` stamp
+     disagrees with its directory (either acceptable)
+
+  **`checkParPublished` base behavior**
+  4. Returns `{parValue, parVersion, source: 'simulation'}` for a
+     scenario published only in the simulation index
+  5. Returns `null` for a scenario absent from both indices
+  6. Returns `null` when both indices are `null` (dual-null fail closed)
+
+  **`createParGate` integration**
+  7. Returns a working gate object whose `checkParPublished` matches
+     the module-level function's semantics on the loaded indices
+  8. Gate check performs zero filesystem IO at request time — asserted
+     by constructing the gate with `node:os.tmpdir()`-backed indices,
+     then deleting the backing files and confirming multiple
+     subsequent `checkParPublished` calls still return the correct
+     results (the gate is closed over in-memory data)
+  9. Version isolation — a scenario published only under `v1` does
+     NOT appear when the gate is constructed with `parVersion: 'v2'`
+
+  **Dual-class precedence (D-5101)**
+  10. Sim-only coverage: simulation index has the scenario, seed
+      does not → returns `source: 'simulation'`
+  11. Seed-only coverage: seed index has the scenario, simulation
+      does not → returns `source: 'seed'` (graceful degradation)
+  12. Both classes cover the scenario: returns `source: 'simulation'`
+      (sim-over-seed precedence per D-5003 / D-5101), and `parValue`
+      matches the simulation entry, NOT the seed entry, even when
+      the two differ
+
+  **Aliasing guard (copilot check #17)**
+  13. Two sequential `checkParPublished(key)` calls for the same
+      published `key` return two objects where
+      `result1 !== result2` (distinct identity — no shared reference
+      into the index) but every field is `===` (equal by value) —
+      mutating `result1` must not observably mutate `result2` nor
+      the in-memory index
+
+- Tests construct temporary PAR index fixtures under
+  `node:os.tmpdir()` workspaces; workspaces are cleaned up in
+  `afterEach` / `finally`. No tests depend on `data/par/` content
+  from the repo (which is empty at A0 time).
 
 ---
 
@@ -240,13 +406,33 @@ scenario key.
 
 ## Files Expected to Change
 
-- `apps/server/src/par/parGate.mjs` — **new** — loadParIndex,
-  checkParPublished, createParGate
-- `apps/server/src/index.mjs` — **modified** — add PAR index loading to
-  startup sequence
-- `apps/server/src/par/parGate.test.mjs` — **new** — 9 tests
+- `apps/server/src/par/parGate.mjs` — **new** — `checkParPublished` +
+  `createParGate` (consumes `loadParIndex` + `lookupParFromIndex` from
+  the engine; no `node:fs` imports)
+- `apps/server/src/server.mjs` — **modified** — add PAR gate creation
+  as a third independent startup task inside `startServer()` via
+  `Promise.all`; read `PAR_VERSION` env var with `?? 'v1'` fallback
+- `apps/server/src/par/parGate.test.ts` — **new** — exactly **13 tests**
+  inside one `describe('PAR publication gate (WP-051)', …)` block
+  (+1 suite)
+- `apps/server/package.json` — **modified** — expand the `test` script
+  from `"node --import tsx --test scripts/**/*.test.ts"` to cover
+  `src/**/*.test.ts` as well (e.g.,
+  `"node --import tsx --test 'scripts/**/*.test.ts' 'src/**/*.test.ts'"`).
+  Without this change, the new tests in `apps/server/src/par/` are
+  silently skipped by the test runner — a silent-green risk flagged
+  in pre-flight PS-6.
 
-No other files may be modified.
+**Governance documents** (per §Definition of Done, always permitted):
+- `docs/ai/STATUS.md` — modified
+- `docs/ai/DECISIONS.md` — modified (status entry; D-5101/D-5102/D-5103
+  were added during the A0 SPEC bundle, not during Commit A)
+- `docs/ai/work-packets/WORK_INDEX.md` — modified (status flip to
+  Completed)
+
+No other files may be modified. `git diff --name-only` at Definition of
+Done must match this list exactly. "Anything not explicitly allowed is
+forbidden."
 
 ---
 
@@ -254,71 +440,124 @@ No other files may be modified.
 
 All items must be binary pass/fail. No partial credit.
 
-### PAR Index Loading
-- [ ] `loadParIndex` reads and parses `index.json` successfully
-- [ ] Returns `null` on missing or invalid index (fail closed)
-- [ ] Logs scenario count on success, warning on failure
-- [ ] Read-only — never writes or modifies files
+### PAR Index Loading (delegated to engine `loadParIndex`)
+- [ ] `createParGate` invokes `loadParIndex` for **both** simulation and
+      seed source classes (verified by test #1 + #10 + #11 + #12)
+- [ ] Missing index directory → `loadParIndex` returns `null`; gate
+      degrades to "this class has no coverage" without throwing
+      (test #2)
+- [ ] Malformed index or source-stamp mismatch → `loadParIndex` throws
+      `ParStoreReadError`; `createParGate` catches the throw, warn-logs,
+      treats that class as missing (test #3)
+- [ ] Startup log on success: `[server] PAR index loaded: N scenarios
+      (vX; sim=M, seed=K)`; warning log on each missing / malformed
+      class; server starts successfully in all cases
+- [ ] No write operations inside `parGate.mjs` (verified with
+      `Select-String` in §Verification Steps)
 
 ### Gate Check
-- [ ] `checkParPublished` returns PAR data for published scenarios
-- [ ] Returns `null` for unpublished scenarios
-- [ ] Returns `null` when index is `null` (fail closed)
-- [ ] Uses index only — never probes artifact files or filesystem
-- [ ] Pure read-only, no side effects
+- [ ] `checkParPublished` returns `{parValue, parVersion, source}` for
+      a simulation-only scenario with `source: 'simulation'` (test #4)
+- [ ] Returns `{parValue, parVersion, source: 'seed'}` for a
+      seed-only scenario (test #11 — PS-2 graceful degradation)
+- [ ] Returns `{..., source: 'simulation'}` for a scenario in both
+      indices (test #12 — D-5101 / D-5003 precedence)
+- [ ] Returns `null` when the scenario is absent from both indices
+      (test #5)
+- [ ] Returns `null` when both indices are `null` (test #6 —
+      dual-null fail closed)
+- [ ] Returns a **fresh object literal** on every call (test #13 —
+      aliasing guard)
+- [ ] Uses in-memory indices only — **no filesystem IO at request
+      time** (test #8 — files deleted after gate construction; gate
+      still works)
+- [ ] Pure, synchronous, no side effects
+- [ ] Parameter narrows to `ScenarioKey` (not raw `string`)
 
-### Startup Integration
-- [ ] PAR index loaded at startup alongside registry and rules
-- [ ] Server starts even if PAR index is missing (non-blocking)
-- [ ] Competitive features disabled when PAR is unavailable
+### Startup Integration (`server.mjs`)
+- [ ] PAR gate created inside `startServer()` alongside
+      `loadRegistry()` + `loadRules()` via `Promise.all`
+- [ ] `PAR_VERSION` env var read with `?? 'v1'` fallback per D-5102
+- [ ] Server starts even when both PAR indices are absent
+      (non-blocking — casual play unaffected)
+- [ ] Competitive features structurally disabled when both indices
+      are `null` (every `checkParPublished` call returns `null`)
 
 ### Layer Boundaries
-- [ ] No engine files modified (confirmed with `git diff`)
-- [ ] No WP-050 contract files modified (confirmed with `git diff`)
-- [ ] No game logic in server PAR files
-- [ ] Server does not generate, modify, or repair PAR data
+- [ ] No engine files modified (`git diff --name-only
+      packages/game-engine/` returns empty)
+- [ ] No WP-050 contract files modified
+      (`packages/game-engine/src/simulation/par.storage.ts` unchanged
+      during execution — A1 amendment landed separately in the A0
+      bundle, not in Commit A)
+- [ ] No game logic, `boardgame.io` imports, `LegendaryGame` imports,
+      or `ctx.*` references in `parGate.mjs` (verified via
+      `Select-String`)
+- [ ] No `node:fs` or `node:fs/promises` imports in `parGate.mjs` —
+      PAR file IO is delegated entirely to `loadParIndex` (verified
+      via `Select-String`)
+- [ ] Server does not generate, modify, repair, or recompute PAR data;
+      hash validation is CI-time only per D-5103
 
 ### Tests
-- [ ] All 8 PAR gate tests pass
+- [ ] All **13** PAR gate tests pass
 - [ ] Tests use `node:test` and `node:assert` only
-- [ ] Test files use `.test.mjs` extension (server convention)
+- [ ] Test file uses `.test.ts` extension per `.claude/CLAUDE.md` —
+      never `.test.mjs`
+- [ ] `apps/server/package.json` `test` script covers
+      `src/**/*.test.ts` (verified by test-output summary showing
+      13 new tests passing, which would not run under the
+      pre-expansion `scripts/**/*.test.ts` glob alone)
 
 ### Scope Enforcement
-- [ ] No files outside `## Files Expected to Change` were modified
+- [ ] No files outside §Files Expected to Change were modified
       (confirmed with `git diff --name-only`)
+- [ ] The A1 `loadParIndex` amendment to `par.storage.ts` + test file
+      was already committed during the A0 SPEC bundle — it must NOT
+      appear in Commit A's diff
 
 ---
 
 ## Verification Steps
 
-```pwsh
+```bash
 # Step 1 — build
 pnpm -r build
 # Expected: exits 0
 
 # Step 2 — run server tests
-pnpm --filter legendary-arena-server test
-# Expected: all tests passing, 0 failing
+pnpm --filter @legendary-arena/server test
+# Expected: all tests passing, 0 failing. Server baseline was 6/2/0
+# pre-WP-051; post-WP-051 expected 19/3/0 (+13 tests / +1 suite).
 
-# Step 3 — confirm no engine modifications
+# Step 3 — confirm no engine modifications during Commit A
 git diff --name-only packages/game-engine/
-# Expected: no output
+# Expected: no output (the A1 loadParIndex amendment is in the
+# A0 bundle commit, NOT in WP-051 Commit A).
 
-# Step 4 — confirm no WP-050 artifact storage modifications
+# Step 4 — confirm no WP-050 artifact storage modifications during Commit A
 git diff --name-only packages/game-engine/src/simulation/par.storage.ts
 # Expected: no output
 
 # Step 5 — confirm no game logic in PAR gate
-Select-String -Path "apps\server\src\par\parGate.mjs" -Pattern "boardgame.io|LegendaryGame|ctx\."
+grep -nE "boardgame\.io|LegendaryGame|ctx\." apps/server/src/par/parGate.mjs
 # Expected: no output
 
-# Step 6 — confirm read-only (no fs.writeFile or fs.mkdir in gate)
-Select-String -Path "apps\server\src\par\parGate.mjs" -Pattern "writeFile|mkdir|unlink|rename"
-# Expected: no output
+# Step 6 — confirm read-only (no filesystem write or fs import in gate)
+grep -nE "writeFile|mkdir|unlink|rename|from ['\"]node:fs" apps/server/src/par/parGate.mjs
+# Expected: no output (fs IO is delegated entirely to loadParIndex
+# in the engine)
 
-# Step 7 — no files outside scope
+# Step 7 — confirm no files outside scope
 git diff --name-only
-# Expected: only files listed in ## Files Expected to Change
+# Expected: only files listed in §Files Expected to Change —
+#   apps/server/src/par/parGate.mjs
+#   apps/server/src/server.mjs
+#   apps/server/src/par/parGate.test.ts
+#   apps/server/package.json
+#   docs/ai/STATUS.md
+#   docs/ai/DECISIONS.md
+#   docs/ai/work-packets/WORK_INDEX.md
 ```
 
 ---

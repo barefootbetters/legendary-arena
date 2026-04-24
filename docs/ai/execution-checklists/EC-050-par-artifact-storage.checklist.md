@@ -67,7 +67,7 @@
 - Stored `parValue` must be recomputable from the stored `parBaseline` + scoring config — drift between the two is a publication-blocking error
 
 ### Test count lock (WP-050 §D)
-- **Exactly 34 tests** inside one `describe('PAR artifact storage (WP-050)', …)` block:
+- **Exactly 35 tests** (34 original + 1 A1-amendment drift test for `loadParIndex` export, back-filled during the WP-051 A0 SPEC bundle on 2026-04-23 per pre-flight PS-1) inside one `describe('PAR artifact storage (WP-050)', …)` block:
   - 6 path helpers (`scenarioKeyToFilename`, `scenarioKeyToShard`, `sourceClassRoot` for seed + sim, `PAR_ARTIFACT_SOURCES` drift)
   - 7 simulation artifact I/O (write-creates-file, sorted JSON, byte-identity, overwrite refusal, read round-trip, null-on-missing, source-field verbatim)
   - 7 seed artifact I/O (write-creates-file, writer-embeds-hash, overwrite refusal, parValue/parBaseline consistency rejection, read round-trip, null-on-missing, parBaseline round-trip)
@@ -75,6 +75,7 @@
   - 5 cross-class resolver (sim-only, seed-only, both-precedence, neither, malformed-index throws)
   - 4 store validation (valid sim store, non-T2 flag, cross-class source mismatch, coverage reporter)
   - 1 hashing (canonicalization + any-field-change)
+  - **1 (A1 amendment)** `loadParIndex` drift + round-trip (export present, null-on-missing, round-trip with matching `source` / `parVersion` / `scenarioCount`)
 
 ## Guardrails
 - No database required — filesystem layout works on local disk, R2/S3, CDN
@@ -122,14 +123,14 @@
 - `par.storage.ts` top-of-file `// why:` block: D-5001 carve-out — filesystem IO permitted here and only here within the simulation category; every other simulation file remains IO-free per D-3601
 
 ## Files to Produce
-- `src/simulation/par.storage.ts` — **new** — seed + sim writers/readers, index builders, cross-class resolver, validators, hashing, path helpers, `ParStoreReadError` class, `PAR_ARTIFACT_SOURCES` canonical array (13 function exports + 1 class + 1 constant + 9 type exports)
+- `src/simulation/par.storage.ts` — **new** — seed + sim writers/readers, index builders, cross-class resolver, validators, hashing, path helpers, `ParStoreReadError` class, `PAR_ARTIFACT_SOURCES` canonical array (13 function exports + 1 class + 1 constant + 9 type exports; **A1 amendment 2026-04-23: +1 function export `loadParIndex` for WP-051 gate consumption = 14 function exports**)
 - `src/types.ts` — **modified** — re-export 9 PAR storage types: `ParArtifactSource`, `SeedParArtifact`, `SimulationParArtifact`, `ParArtifact`, `ParResolution`, `ParIndex`, `ParStorageConfig`, `ParStoreValidationResult`, `ParCoverageResult` (plus `ParStoreValidationError`)
-- `src/index.ts` — **modified** — export the full storage API (13 functions + `ParStoreReadError` class + `PAR_ARTIFACT_SOURCES` constant + type re-exports)
-- `src/simulation/par.storage.test.ts` — **new** — exactly **34 tests** in 1 describe block (+1 suite)
+- `src/index.ts` — **modified** — export the full storage API (13 functions + `ParStoreReadError` class + `PAR_ARTIFACT_SOURCES` constant + type re-exports; **A1 amendment 2026-04-23: +`loadParIndex` = 14 functions**)
+- `src/simulation/par.storage.test.ts` — **new** — exactly **35 tests** in 1 describe block (+1 suite; 34 original + 1 A1-amendment drift test for `loadParIndex`)
 
 ## After Completing
 - [ ] `pnpm --filter @legendary-arena/game-engine build` exits 0
-- [ ] `pnpm --filter @legendary-arena/game-engine test` exits 0 — game-engine 505/113/0 (+34 tests / +1 suite); repo-wide 657/126/0
+- [ ] `pnpm --filter @legendary-arena/game-engine test` exits 0 — game-engine 506/113/0 (+35 tests / +1 suite after A1 amendment); repo-wide 658/126/0
 - [ ] No `boardgame.io` / `@legendary-arena/registry` / `Math.random` imports in new files (grep)
 - [ ] No `.reduce()` with branching in new files (grep)
 - [ ] No `require()` in new files (grep)

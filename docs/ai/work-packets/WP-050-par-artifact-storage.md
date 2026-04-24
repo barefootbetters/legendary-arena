@@ -402,6 +402,25 @@ Before writing a single line:
     loading the full artifact. Does not cross classes — callers that want
     class-agnostic lookup use `resolveParForScenario`.
 
+- `loadParIndex(basePath: string, parVersion: string, source: ParArtifactSource): Promise<ParIndex | null>`
+  (**A1 amendment — back-filled during the WP-051 A0 SPEC bundle on
+  2026-04-23, per pre-flight PS-1**)
+  — loads the persisted `index.json` for a single `(source, parVersion)`
+    pair. Returns `null` when the index file is absent; throws
+    `ParStoreReadError` when the file exists but is malformed, truncated,
+    or carries a `source` stamp that disagrees with its directory. This is
+    the startup-time primitive for consumers that need an in-memory index
+    they can query many times per process without per-lookup filesystem IO
+    (the WP-051 server gate loads both source classes once at startup via
+    this helper, then calls `lookupParFromIndex` per gate check). Consumers
+    that need on-demand cross-class precedence use `resolveParForScenario`
+    instead.
+  - `// why:` public export of the load-once-check-many primitive keeps
+    the engine as the single authority on `ParIndex` shape validation
+    and source-class stamp enforcement. Honors D-5001 "server consumes
+    PAR through the engine API, not raw node:fs" by providing a fs-free
+    public surface for startup loading.
+
 #### Cross-class resolver (the simulation-over-seed rule)
 
 - `resolveParForScenario(scenarioKey: ScenarioKey, basePath: string, parVersion: string): ParResolution | null`
@@ -493,7 +512,8 @@ Before writing a single line:
 
 - Export: `writeSimulationParArtifact`, `readSimulationParArtifact`,
   `writeSeedParArtifact`, `readSeedParArtifact`, `buildParIndex`,
-  `lookupParFromIndex`, `resolveParForScenario`, `validateParStore`,
+  `lookupParFromIndex`, `loadParIndex` (A1 amendment, 2026-04-23),
+  `resolveParForScenario`, `validateParStore`,
   `validateParStoreCoverage`, `computeArtifactHash`,
   `scenarioKeyToFilename`, `scenarioKeyToShard`, `sourceClassRoot`,
   `PAR_ARTIFACT_SOURCES`
@@ -501,7 +521,9 @@ Before writing a single line:
 ### D) Tests — `src/simulation/par.storage.test.ts` — new
 
 - Uses `node:test` and `node:assert` only; no boardgame.io import
-- Thirty-four tests:
+- Thirty-five tests (34 original + 1 A1-amendment drift test asserting
+  `loadParIndex` is exported — back-filled during the WP-051 A0 SPEC
+  bundle, 2026-04-23, per pre-flight PS-1):
 
   **Path helpers**
   1. `scenarioKeyToFilename` replaces `::` with `--` and `+` with `_`
@@ -564,6 +586,11 @@ Before writing a single line:
       identical data but different key insertion order (canonicalization
       guarantee); changes when any non-hash field changes
 
+  **A1 amendment (2026-04-23, WP-051 A0 SPEC bundle, pre-flight PS-1)**
+  35. `loadParIndex` is exported; returns `null` for a missing index
+      directory and round-trips a just-written index with matching
+      `source`, `parVersion`, and `scenarioCount` fields
+
 ---
 
 ## Out of Scope
@@ -618,7 +645,8 @@ ordering.
 - `packages/game-engine/src/index.ts` — **modified** — export storage API
   (both source classes, resolver, coverage validator)
 - `packages/game-engine/src/simulation/par.storage.test.ts` — **new** —
-  34 tests
+  35 tests (34 original + 1 A1-amendment drift test for `loadParIndex`
+  export, back-filled during WP-051 A0 SPEC bundle on 2026-04-23)
 
 **Docs (required by Definition of Done):**
 

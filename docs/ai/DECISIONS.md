@@ -9066,6 +9066,64 @@ grep -rnE "from ['\"]node:fs" packages/game-engine/src/simulation/ --include="*.
 
 ---
 
+### D-5101 — Server PAR Gate: Dual-Index In-Memory Load Preserving D-5003 Precedence
+
+**Type:** Server Wiring Contract
+**Packet:** WP-051 (A0 SPEC bundle — pre-flight PS-2 resolution)
+**Date:** 2026-04-23
+
+**Decision:** The server PAR gate loads **both** `data/par/seed/{PAR_VERSION}/index.json` and `data/par/sim/{PAR_VERSION}/index.json` once at startup via the engine's `loadParIndex` helper (D-5001 surface; A1 amendment 2026-04-23). At gate-check time, `checkParPublished(scenarioKey)` queries the in-memory simulation index first; if the scenario is present, that entry wins. If the scenario is absent from the simulation index, the seed index is queried. If the scenario is absent from both (or both indices are null), the gate returns `null` — competitive submission is rejected, casual play continues. The gate performs **zero filesystem IO per request**; all lookups are in-memory.
+
+**Rationale:** WP-050 shipped two source classes per D-5002; the cross-class precedence rule in D-5003 (simulation over seed) is load-bearing for the three-phase PAR derivation pipeline (seed for day-one coverage, simulation for calibrated updates). The gate must honor that precedence without introducing per-request filesystem IO (which would violate the `[server] PAR index loaded once` startup-log semantics locked in EC-051 and would degrade gate-check latency under load). Three alternatives were considered during pre-flight PS-2:
+
+- **Sim-only gate** — simplest; matches "publishable PAR = T2-calibrated" semantics most strictly. Rejected because it locks out day-one seed coverage that the seed class exists specifically to provide (conflict with D-5002 rationale).
+- **Operator-chooses-one-class-per-deployment** — simplest runtime; most operationally flexible. Rejected because it abandons the D-5003 precedence contract and would require seed-deployment operators to make up a different runtime trust model.
+- **Dual-index in-memory (adopted)** — honors D-5003 exactly while avoiding per-request IO. The only cost is ~2× the startup index-load work and ~2× the in-memory footprint, both acceptable for a gate whose index scales linearly with scenario count (10³–10⁵ scenarios per D-5004).
+
+**Semantics when one class is missing:** If the simulation index file is absent but the seed index is present, the gate operates as a seed-only gate for that deployment (warn-log the missing simulation index, continue serving from seed). Symmetric for the inverse case. If both indices are absent, the gate is empty and every competitive submission is rejected (fail closed per WP-051 §Non-Negotiable). Malformed indices (throw `ParStoreReadError` from `loadParIndex`) fail the startup task — the server does not degrade silently from a truncated or source-stamp-corrupted index; it fails the entire PAR load task and falls back to empty-index behavior with a warning, matching the non-blocking-startup posture in EC-051 line 15.
+
+**Return shape:** `checkParPublished(scenarioKey)` returns `{ parValue: number; parVersion: string; source: 'seed' | 'simulation' } | null`. The `source` field is included (not inferable from `parValue` or `parVersion` alone) so downstream leaderboard records (WP-053, WP-054) can distinguish "competed against seed-authored PAR" from "competed against simulation-calibrated PAR" — load-bearing for replay explainability.
+
+**Citation:** `packages/game-engine/src/simulation/par.storage.ts` `loadParIndex` (A1 amendment; see D-5001); `apps/server/src/par/parGate.mjs` (WP-051 Commit A); WP-051 pre-flight §PS-2 + §PS-3; D-5002 (dual classes); D-5003 (sim-over-seed precedence).
+
+---
+
+### D-5102 — Active PAR Version Is Operator-Configured via `PAR_VERSION` Env Var
+
+**Type:** Server Configuration
+**Packet:** WP-051 (A0 SPEC bundle — pre-flight PS-8 resolution)
+**Date:** 2026-04-23
+
+**Decision:** The server's active PAR version is sourced from the `PAR_VERSION` environment variable. Default value: `'v1'`. The env var is read **once** at startup during the PAR gate construction (`createParGate`). The resolved version is **stable for the lifetime of the server process** — the server does not support runtime PAR-version reload (no SIGHUP handling for PAR). Operators adopt a new PAR version by rolling out a new release with `PAR_VERSION=v2` (or equivalent) and restarting the server.
+
+**Rationale:** PAR versioning is an operational decision, not a runtime or per-request decision. Keeping the resolution to a single env var matches the deployment model used elsewhere in `server.mjs` (`PORT`, `NODE_ENV`) and is the cheapest config mechanism that fits Render's env-var-driven deployment. Stability-for-process-lifetime is necessary because mid-process version changes would invalidate the in-memory indices locked in D-5101 and could mix gate decisions across two PAR versions within a single match — a trust violation per §26 (PAR immutability for competition). If a future requirement for mid-process reload emerges, it must land as a separate DECISIONS entry with explicit re-entrance semantics for in-flight matches.
+
+**Default rationale (`v1`):** `v1` is the initial PAR version that WP-050 + WP-048 target. Operators need not set `PAR_VERSION` in normal development or initial production deployment; a missing env var resolves to `v1` via the `??` fallback pattern (matches how `PORT` falls back to `'8000'` at `server.mjs:105`). Once a second PAR version (`v2`, `v3`, …) is calibrated, operators set the env var explicitly at deploy time.
+
+**Non-validation:** The server does **not** validate that `PAR_VERSION` matches any semantic pattern (e.g., `^v\d+$`). An operator who sets `PAR_VERSION=banana` will see the startup task attempt to load `data/par/{seed,sim}/banana/index.json`, fail to find it, and log warnings. This fail-soft behavior is intentional — operator errors are surfaced through missing-index logs rather than a startup crash, consistent with the non-blocking startup posture in EC-051 line 15.
+
+**Citation:** `apps/server/src/par/parGate.mjs` (WP-051 Commit A, `createParGate` factory); WP-051 §Non-Negotiable line 114; EC-051 §Locked Values; WP-051 pre-flight §PS-8; D-5101 (dual-index load uses this value).
+
+---
+
+### D-5103 — Server PAR Gate Trusts the Index Verbatim at Load (Existence-Based, Not Integrity-Based)
+
+**Type:** Trust Boundary
+**Packet:** WP-051 (A0 SPEC bundle — pre-flight PS-10 resolution)
+**Date:** 2026-04-23
+
+**Decision:** The server PAR gate performs **shape validation only** at index load time (via `loadParIndex`, which applies `isParIndexShape` + source-stamp verification per D-5001/D-5002). The server does **not** recompute `artifactHash` values, does **not** read artifact files from disk to verify the index's `scenarios[*].path` entries resolve, and does **not** reimplement `validateParStore` logic at startup or at request time. Artifact-level integrity validation is **CI-time only** via the WP-050 `validateParStore` entrypoint.
+
+**Rationale:** The server is an **enforcer**, not a calculator. Duplicating `validateParStore` at startup would (a) slow cold starts substantially as scenario counts scale (D-5004 targets 10³–10⁵ scenarios per version per class), (b) create two places where integrity rules could drift out of sync, and (c) blur the boundary between CI trust (which proves the published store is internally consistent) and runtime trust (which proves the server sees the store it was meant to see). The gate's fail-closed posture is therefore **existence-based**: "is this scenario in the active-version index?" not "does the artifact file on disk still match the hash recorded in the index?". The latter is CI's job.
+
+**Scope of shape validation at load:** `loadParIndex` throws `ParStoreReadError` when (a) the file is present but not parseable as JSON, (b) the parsed JSON does not match `isParIndexShape`, or (c) the `source` field does not match the directory the index was loaded from (cross-class corruption). These three cases represent *structural* corruption that would prevent any meaningful gate operation. Everything else — mismatched `artifactHash` values, missing artifact files, malformed individual scenarios — is silently trusted by the server. CI is expected to run `validateParStore` + `validateParStoreCoverage` before any deployment that ships a new PAR version.
+
+**Silent trust implications:** If a broken index is deployed (say, an `artifactHash` was corrupted in transit but the JSON remains structurally valid), the gate will return PAR values that do not correspond to the real artifact on disk. This is an acceptable trade-off because (a) PAR artifacts are content-addressed and served alongside the index under the same immutable publish step (D-5004), (b) CI `validateParStore` is the canonical integrity check before publish, and (c) a full server-side integrity check would require reading every artifact file at startup, which conflicts with the "non-blocking startup" posture. Operators who detect a suspected corruption must redeploy with a validated store; the server intentionally provides no runtime repair path.
+
+**Citation:** `apps/server/src/par/parGate.mjs` (WP-051 Commit A); WP-050 `validateParStore` + `validateParStoreCoverage`; EC-051 §Guardrails; WP-051 pre-flight §PS-10; D-5001 line 8937 (server consumes via engine API, not raw `node:fs`).
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
