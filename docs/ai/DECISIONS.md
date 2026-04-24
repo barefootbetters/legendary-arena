@@ -9389,6 +9389,26 @@ If a future registry change introduces leading whitespace on Ambush ability stri
 
 ---
 
+### D‑8901 — Engine-Level `playerView` Projection
+
+**Type:** Architectural Decision
+**Packet:** WP-089 — Engine PlayerView Wiring (UIState Projection)
+**Date:** 2026-04-24
+
+**Decision:** The engine registers a `playerView` function on `LegendaryGame` that reshapes the client-visible state from `LegendaryGameState` to `UIState`. Audience filtering is performed exclusively via `filterUIStateForAudience`; boardgame.io's built-in secret-stripping helper is not used. This establishes `UIState` as the sole authoritative projection contract from engine to client.
+
+**Rationale:**
+
+- `filterUIStateForAudience` (D-0302) encodes the project's audience rules — per-player visibility, spectator redaction, active-player economy exposure. boardgame.io's built-in helper would apply an orthogonal second filter and create two parallel rules where the project has deliberately chosen one.
+- Casting at the `playerView:` assignment site only (not the `Game<…>` generic) keeps the reshape local and avoids ripple through every consumer of `LegendaryGameState`. During execution the cast was refined from `as unknown as Game<LegendaryGameState>['playerView']` to `as NonNullable<Game<LegendaryGameState>['playerView']>` because `exactOptionalPropertyTypes: true` rejects the `| undefined` half of the indexed-access type. The refinement preserves the architectural intent ("anchor to boardgame.io's property type; do NOT modify the `Game<...>` generic"); the `NonNullable<...>` strip is TS-language variance, not an architectural change. See `docs/ai/post-mortems/01.6-WP-089-engine-playerview-wiring.md` §13.1 for the full finding.
+- `null` and any non-string `playerID` both map to spectator because boardgame.io's transport layer dispatches `null` on the WebSocket path for unseated clients; runtime paths that accidentally pass `undefined` are defended by the same `typeof playerID === 'string'` check. Empty string `''` is a valid seat ID in the 0.50.x `"0" | "1" | ...` convention and routes to `{ kind: 'player', playerId: '' }` — **not** to spectator.
+
+**Status:** Immutable (execution contract for WP-089; consumed by WP-090 Live Match Client Wiring).
+
+**Citation:** `packages/game-engine/src/game.ts` (`buildPlayerView` function + `LegendaryGame.playerView` field); `packages/game-engine/src/game.playerView.test.ts` (six contract-enforcement tests); D-0301 (UI Consumes Projections Only); D-0302 (Single UIState, Multiple Audiences); WP-028 (`buildUIState` contract); WP-029 (`filterUIStateForAudience` + `UIAudience` contract).
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

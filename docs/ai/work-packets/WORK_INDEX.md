@@ -1599,7 +1599,7 @@ These packets ship the game and keep it running.
   [EC-088](../execution-checklists/EC-088-build-card-keywords-hardening.checklist.md) +
   D-8801 / D-8802 / D-8803.
 
-- [ ] WP-089 — Engine PlayerView Wiring ⬜ Ready (drafted 2026-04-23; lint-gate PASS)
+- [x] WP-089 — Engine PlayerView Wiring ✅ Done 2026-04-24 (drafted 2026-04-23; lint-gate PASS; executed EC-089 bundled commit)
   Dependencies: WP-028 (UIState + buildUIState), WP-029 (filterUIStateForAudience)
   Notes: Engine-only. Wires `LegendaryGame.playerView = buildPlayerView` so
   every state frame boardgame.io pushes to a connected client is an

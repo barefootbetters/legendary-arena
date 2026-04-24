@@ -16,6 +16,9 @@ import { recruitHero } from './moves/recruitHero.js';
 import { fightMastermind } from './moves/fightMastermind.js';
 import { resetTurnEconomy } from './economy/economy.logic.js';
 import { runAllInvariantChecks } from './invariants/runAllChecks.js';
+import { buildUIState } from './ui/uiState.build.js';
+import { filterUIStateForAudience } from './ui/uiState.filter.js';
+import type { UIState } from './ui/uiState.types.js';
 
 // why: The registry must be available to Game.setup() for ext_id validation,
 // but boardgame.io's setup function signature does not include a registry
@@ -68,6 +71,64 @@ type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
  */
 function advanceStage({ G, events }: MoveContext): void {
   advanceTurnStage(G, { events: { endTurn: () => events.endTurn() } });
+}
+
+/**
+ * Reshapes the client-visible state from LegendaryGameState to
+ * audience-filtered UIState. Registered on LegendaryGame.playerView so
+ * every state frame boardgame.io pushes to a connected client is already
+ * audience-filtered — clients never observe raw G.
+ *
+ * Pure function: no I/O, no RNG, no mutation of G or ctx, no entries
+ * appended to G.messages, never throws. Given identical (G, ctx, playerID),
+ * the output is byte-identical.
+ *
+ * Runs on every state push — keep cheap. Delegates to WP-028 / WP-029
+ * helpers which already carry the copy discipline that prevents aliasing
+ * G into the projection.
+ *
+ * // why: parameter shape is the single context object { G, ctx, playerID }
+ * because boardgame.io 0.50.2's Game<G>['playerView'] is declared as
+ * `(context: { G, ctx, playerID }) => any`. The engine call-site is the
+ * boardgame.io runtime itself — it passes a single object. A three-arg
+ * positional signature would be type-compatible only via a double-cast and
+ * would still be wrong at runtime. WP-089 / EC-089 / RS-3 locked a
+ * three-arg signature that reflected the WP's design intent but conflicted
+ * with the library's actual runtime shape under TS `exactOptionalPropertyTypes`;
+ * resolved during execution per user-authorized RS-3 refinement (see
+ * 01.6 post-mortem — "RS-3 cast refinement").
+ *
+ * @param context - boardgame.io single-argument context: { G, ctx, playerID }.
+ * @returns Audience-filtered UIState for the viewing client.
+ */
+function buildPlayerView({
+  G,
+  ctx,
+  playerID,
+}: {
+  G: LegendaryGameState;
+  ctx: Ctx;
+  playerID: PlayerID | null;
+}): UIState {
+  const uiBuildContext = {
+    phase: ctx.phase,
+    turn: ctx.turn,
+    currentPlayer: ctx.currentPlayer,
+  };
+  const fullUIState = buildUIState(G, uiBuildContext);
+
+  // why: null and any non-string playerID map to spectator because
+  // boardgame.io represents unauthenticated / unseated clients as null
+  // on the WebSocket transport; runtime paths that accidentally pass
+  // undefined are defended by the same typeof check. Empty string '' is
+  // NOT mapped to spectator: it is a valid seat ID in the 0.50.x
+  // "0" | "1" | ... convention and routes to { kind: 'player', playerId: '' }.
+  // EC-089 §Locked Values line 25 locks the typeof check verbatim.
+  const audience = typeof playerID === 'string'
+    ? { kind: 'player' as const, playerId: playerID }
+    : { kind: 'spectator' as const };
+
+  return filterUIStateForAudience(fullUIState, audience);
 }
 
 /**
@@ -172,6 +233,24 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     });
     return initialState;
   },
+
+  // why: playerView is the sole engine→client projection boundary.
+  // Clients never observe raw LegendaryGameState — this hook reshapes
+  // every state frame into audience-filtered UIState via buildUIState
+  // (WP-028) + filterUIStateForAudience (WP-029). filterUIStateForAudience
+  // is the project's audience authority per D-0302 / D-8901; boardgame.io's
+  // built-in secret-stripping helper is intentionally not used (see D-8901).
+  //
+  // why: cast anchor is NonNullable<Game<LegendaryGameState>['playerView']>
+  // (narrowest refinement of RS-3's locked `Game<...>['playerView']` anchor).
+  // The refinement strips the `| undefined` half of the indexed-access type
+  // that exactOptionalPropertyTypes: true otherwise carries onto the object
+  // literal field. It preserves RS-3's intent (anchor to boardgame.io's
+  // Game<...>.playerView property type; do NOT modify the Game<...> generic)
+  // while satisfying the compiler. Documented as an RS-3 cast refinement in
+  // the 01.6 post-mortem; no DECISIONS entry needed — tooling variance, not
+  // architecture.
+  playerView: buildPlayerView as NonNullable<Game<LegendaryGameState>['playerView']>,
 
   moves: {
     drawCards,
