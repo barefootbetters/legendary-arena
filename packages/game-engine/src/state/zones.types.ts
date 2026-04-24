@@ -8,6 +8,8 @@
  * No boardgame.io imports allowed — these are pure data contracts.
  */
 
+import type { PlayerId } from '../types.js';
+
 // why: Zones store ext_id strings rather than full card objects because G must
 // remain JSON-serializable and small. Card display data (images, text, costs)
 // is resolved by the UI via the card registry at render time. Storing full card
@@ -96,7 +98,7 @@ export type ZoneValidationError = {
  */
 export interface GameStateShape {
   /** Per-player card zones, keyed by player ID ("0", "1", ...). */
-  playerZones: Record<string, PlayerZones>;
+  playerZones: Record<PlayerId, PlayerZones>;
   /** Shared global card piles (bystanders, wounds, officers, sidekicks). */
   piles: GlobalPiles;
 }

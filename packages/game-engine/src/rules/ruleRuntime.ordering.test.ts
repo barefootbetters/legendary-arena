@@ -50,12 +50,8 @@ function buildTestGameState(hooks: HookDefinition[]): LegendaryGameState {
   const config = createTestConfig();
   const context = makeMockCtx({ numPlayers: 1 });
   const registry = createMockRegistry();
-  const gameState = buildInitialGameState(config, registry, context);
-
-  // Override hookRegistry with the test-specific hooks
-  gameState.hookRegistry = createHookRegistry(hooks);
-
-  return gameState;
+  const baseState = buildInitialGameState(config, registry, context);
+  return { ...baseState, hookRegistry: createHookRegistry(hooks) };
 }
 
 describe('executeRuleHooks — ordering', () => {

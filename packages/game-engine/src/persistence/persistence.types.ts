@@ -13,6 +13,7 @@
  */
 
 import type { MatchSetupConfig } from '../matchSetup.types.js';
+import type { PlayerId } from '../types.js';
 
 // why: The three persistence classes are the canonical data classification for
 // all data in Legendary Arena. They govern what may be persisted, how, and
@@ -55,7 +56,7 @@ export interface PersistableMatchConfig {
   /** The 9-field setup payload used to configure this match. */
   setupConfig: MatchSetupConfig;
   /** Map of player IDs to display names. */
-  playerNames: Record<string, string>;
+  playerNames: Record<PlayerId, string>;
   /** ISO 8601 timestamp of when the match was created. */
   createdAt: string;
 }

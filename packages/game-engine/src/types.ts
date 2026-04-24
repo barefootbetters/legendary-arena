@@ -342,6 +342,15 @@ import type { ScenarioScoringConfig } from './scoring/parScoring.types.js';
  */
 export type MatchConfiguration = MatchSetupConfig;
 
+// why: boardgame.io 0.50.x uses the string player-index convention
+// ("0" | "1" | "2" | ... — the index of the seat within a match's
+// playerOrder array) for every G-scoped player key. This alias names
+// that convention without narrowing it — deliberately non-branded to
+// avoid rippling into every test factory. A future WP may upgrade to
+// `string & { readonly __brand: unique symbol }` or
+// `` `${number}` `` if the ripple cost becomes justified.
+export type PlayerId = string;
+
 /**
  * Minimal setup-time context interface for deterministic operations.
  *
@@ -413,7 +422,7 @@ export interface LegendaryGameState {
   // etc.). Each player has exactly 5 zone arrays. Only deck is non-empty after
   // setup — cards enter other zones via moves only.
   /** Per-player card zones, keyed by player ID ("0", "1", ...). */
-  playerZones: Record<string, PlayerZones>;
+  playerZones: Record<PlayerId, PlayerZones>;
 
   // why: piles contains the shared global card piles sized from config count
   // fields. Each pile array contains CardExtId strings. Piles are consumed by
