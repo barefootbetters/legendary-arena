@@ -1272,7 +1272,7 @@ These packets ship the game and keep it running.
   write operations; no engine imports; no scoring logic; does NOT modify
   WP-053 or WP-052 contracts
 
-- [ ] WP-050 — PAR Artifact Storage & Indexing ✅ Reviewed
+- [x] WP-050 — PAR Artifact Storage & Indexing ✅ Reviewed ✅ Completed 2026-04-23 (Commit A `ccdf44e`)
   Dependencies: WP-049, WP-048
   Notes: Defines how PAR simulation results are stored, indexed, versioned,
   and accessed as immutable file-based artifacts; content-addressed by

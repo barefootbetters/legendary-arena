@@ -7,6 +7,128 @@
 
 ## Current State
 
+### WP-050 / EC-050 Executed — PAR Artifact Storage & Indexing (2026-04-23, EC-050)
+
+**Dual source-class PAR artifact storage layer ships. Engine baseline shifts 471/112/0 → 505/113/0; repo-wide 623/125/0 → 657/126/0. Zero gameplay changes; zero WP-036/WP-048/WP-049 contract modifications; zero `G` mutation from new files; no moves, no phase hooks, no new `LegendaryGameState` fields.**
+
+WP-050 lands Phase 2/3 of the three-phase PAR derivation pipeline documented
+in `docs/12-SCORING-REFERENCE.md` — the persistence substrate the pre-release
+PAR gate (WP-051) and public leaderboards (WP-054) depend on. One new source
+file + one new test file added under `packages/game-engine/src/simulation/`,
+permitted to perform filesystem IO by the newly landed **D-5001** simulation
+IO carve-out (every other simulation file remains IO-free per D-3601):
+
+- `par.storage.ts` — 13 exported functions (`scenarioKeyToFilename`,
+  `scenarioKeyToShard`, `sourceClassRoot`, `computeArtifactHash`,
+  `writeSimulationParArtifact`, `readSimulationParArtifact`,
+  `writeSeedParArtifact`, `readSeedParArtifact`, `buildParIndex`,
+  `lookupParFromIndex`, `resolveParForScenario`, `validateParStore`,
+  `validateParStoreCoverage`) + `ParStoreReadError` class + `PAR_ARTIFACT_SOURCES`
+  canonical readonly array (drift-pinned against `ParArtifactSource` union,
+  same pattern as `AI_POLICY_TIERS` / `PENALTY_EVENT_TYPES` / `MATCH_PHASES`).
+- `par.storage.test.ts` — exactly 34 tests in one `describe` block
+  (6 path + 7 sim I/O + 7 seed I/O + 4 index + 5 resolver + 4 validation
+  + 1 hashing).
+
+**Dual source-class storage layout (locked).** Two independent class roots:
+`data/par/seed/{parVersion}/` (content-authored Phase 1 baseline — hand
+maintained, `authoredBy` / `rationale` provenance) and `data/par/sim/{parVersion}/`
+(Phase 2 simulation-calibrated — `percentileUsed`, `sampleSize`, `seedSetHash`,
+`policyTier: 'T2'` guard). Versioned independently — `seed/v1` is unrelated
+to `sim/v1`. `sourceClassRoot(basePath, source, parVersion)` is the single
+choke-point for `seed/` vs `sim/` directory names; no other code path
+constructs those strings.
+
+**Single-resolver cross-class precedence (D-5003).** `resolveParForScenario`
+is the ONLY sanctioned cross-class reader. Simulation-over-seed precedence
+is locked: sim index first, seed index second, `null` otherwise. No
+optional `preferSource` override; no alternate reader. Missing index files
+are treated as "class has no coverage" (resolver advances); truncated or
+malformed indices throw `ParStoreReadError` — never silent fall-through.
+
+**Trust surface guarantees.**
+- **Byte-identical serialization** — recursive sorted-key canonical JSON
+  writer replaces default `JSON.stringify` (default preserves insertion
+  order, non-deterministic across refactors).
+- **Overwrite refusal at write layer** (D-5008) — both writers `fs.access`-check
+  the target path; if the file exists they throw a full-sentence `Error`.
+  No `fs.rm` / `fs.truncate` / `fs.rename`-over-existing anywhere in writer
+  paths. Calibration updates create new version directories, never in-place edits.
+- **SHA-256 `artifactHash` via `node:crypto`** (D-5009) — self-hash
+  exclusion avoids circular dependency; `node:crypto` is a Node built-in,
+  NOT an external crypto library (external crypto like `crypto-js` / `sha.js`
+  remains forbidden per D-3601 scope clarification).
+- **Non-T2 policy tier guard** (D-5010) — `writeSimulationParArtifact` rejects
+  non-T2 inputs at write time via `AI_POLICY_TIER_DEFINITIONS.find(usedForPar)`;
+  `validateParStore('simulation')` flags any on-disk non-T2 artifact that
+  bypassed the writer.
+- **Seed consistency guard** — `writeSeedParArtifact` four-parameter signature
+  `(artifact, scoringConfig, basePath, parVersion)` per PS-5 enables the
+  write-time check that `artifact.parValue === computeParScore(scoringConfig
+  with parBaseline)`. Drift between stored value and baseline is a
+  publication-blocking error.
+- **Atomic index writes** (D-5007) — `buildParIndex` serializes to
+  `{indexPath}.tmp` and `fs.rename`s to final. Concurrent readers see the
+  old index or the new index, never a half-written file. Indices are not
+  immutable (rebuildable); individual artifact files are.
+- **Read-only validator** — `validateParStore` reports every inconsistency
+  (completeness, exclusivity, `parValue` match, hash integrity, filename /
+  ScenarioKey mismatch, cross-class `source` drift, non-T2 for simulation,
+  seed baseline completeness). Never silently repairs data.
+
+**Coverage reporter.** `validateParStoreCoverage(basePath, parVersion,
+expectedScenarios)` answers "do we have PAR for every scenario we plan to
+ship?" in one call. WP-051 consumes this as a single oracle for the
+pre-release gate — no parallel class probes that could drift.
+
+**D-5001 IO carve-out boundary.** Filesystem IO is permitted only in
+`par.storage.ts` and `par.storage.test.ts` under `src/simulation/`.
+Grep-enforced:
+
+```bash
+grep -rnE "from ['\"]node:fs" packages/game-engine/src/simulation/ --include="*.ts" \
+  | grep -vE "(par\.storage\.ts|par\.storage\.test\.ts)"
+# Expected: no output.
+```
+
+Production code uses `node:fs/promises` exclusively (PS-6 lock); synchronous
+APIs are forbidden in `par.storage.ts` but permitted in tests. No
+`node:net` / `node:http` / `node:https` / `node:child_process` / `node:dns`
+anywhere in new files.
+
+**Lifecycle prohibition (carried from WP-028 precedent).** None of the 13
+storage functions are called from `game.ts`, `LegendaryGame.moves`, phase
+hooks, or any engine runtime file. Consumers are test files, future WP-051
+(server publication gate), future WP-054 (public leaderboards), and
+content-authoring tooling.
+
+**Pre-flight resolution.** Six PS items resolved in the A0b SPEC commit
+(`cd7965a`) before execution began: PS-1 (EC drift 21→34 tests + dual
+source classes), PS-2 (D-5001 IO carve-out), PS-3 (`ScenarioKey` format
+wording), PS-4 (`node:crypto` vs external crypto citation), PS-5
+(four-parameter `writeSeedParArtifact` signature), PS-6 (`node:fs/promises`
+production lock).
+
+**01.5 NOT INVOKED.** Zero new `LegendaryGameState` field, zero
+`buildInitialGameState` shape change, zero moves, zero phase hooks. WP-050
+is external consumer tooling per D-0701.
+
+**01.6 post-mortem MANDATORY** per four triggers (new long-lived abstraction,
+new contract consumed by future WPs, new canonical readonly array, first
+filesystem carve-out) — delivered at
+`docs/ai/post-mortems/01.6-WP-050-par-artifact-storage.md` covering
+aliasing, JSON-roundtrip, `// why:` completeness (19 comments vs 10
+required), determinism, per-source-class isolation, layer-boundary +
+D-5001 carve-out audit, hash integrity. All seven mandatory checks PASS.
+
+**Four-commit topology:** A0a SPEC pre-flight bundle (`3552fc2`) → A0b SPEC
+PS-1..PS-6 resolution (`cd7965a`) → A `EC-050:` execution (`ccdf44e`, 5
+files, 2284 insertions) → B SPEC governance close (this commit: STATUS.md
++ WORK_INDEX.md WP-050 `[ ]` → `[x]` + EC_INDEX.md EC-050 Draft → Done +
+post-mortem).
+
+---
+
 ### WP-049 / EC-049 Executed — PAR Simulation Engine (2026-04-23, EC-049)
 
 **T2 Competent Heuristic policy + PAR aggregation pipeline ship. Engine baseline shifts 444/110/0 → 471/112/0; repo-wide 596/123/0 → 623/125/0. Zero gameplay changes; zero contract modifications; zero `G` mutation from new files.**
