@@ -1613,6 +1613,37 @@ These packets ship the game and keep it running.
   self-compliant `## Vision Alignment` block. See
   [WP-089-engine-playerview-wiring.md](WP-089-engine-playerview-wiring.md).
 
+- [ ] WP-090 — Live Match Client Wiring ⬜ Ready (drafted 2026-04-23; lint-gate PASS; pre-flight bundle registered 2026-04-24)
+  Dependencies: WP-011 (lobby HTTP endpoints), WP-032 (ClientTurnIntent +
+  `validateIntent`), WP-061 (arena-client skeleton + `useUiStateStore`),
+  WP-089 (engine `playerView` wiring — clients receive `UIState`, not
+  raw G)
+  Notes: First browser gameplay client to connect to the boardgame.io
+  game server. `apps/arena-client/` gains a lobby view listing open
+  matches with "Create match" / "Join match" affordances hitting the
+  boardgame.io lobby HTTP API, a `boardgame.io/client` `Client({ game:
+  LegendaryGame, multiplayer: SocketIO(...) })` wiring that subscribes
+  to state frames via `client.subscribe()` and writes `state.G` (already
+  `UIState` per WP-089's `playerView`) into `useUiStateStore()` via
+  `setSnapshot`, and query-string routing (`?match=&player=&credentials=`)
+  between a lobby view, a live-match branch (renders `<ArenaHud />`
+  unchanged under live state), and the existing fixture path
+  (`?fixture=<name>` preserved as a zero-network regression guard per
+  WP-061). Player actions submit via `client.moves[name](args)` — never
+  raw WebSocket messages, never client-side `UIState` derivation. No
+  auth / identity / reconnect UI / spectator toggle / lobby chat /
+  rematch / replay playback — pure wiring. Single runtime engine-import
+  site (`src/client/bgioClient.ts`); every other file stays
+  `import type` only. Credentials live in URL for MVP (WP-052 defers
+  durable identity). Session protocol resolves the pre-existing CLI
+  `credentials` vs `playerCredentials` field drift by verifying against
+  the running server before the client `joinMatch` helper is written;
+  buggy CLI fix deferred to a follow-up WP placeholder in WORK_INDEX.
+  Nine `MatchSetupConfig` fields render verbatim in the create-match
+  form. Vision clauses touched: §3, §4; self-compliant `## Vision
+  Alignment` block. See
+  [WP-090-live-match-client-wiring.md](WP-090-live-match-client-wiring.md).
+
 ---
 
 ## Pre-Planning System (Parallel-Safe with Phase 4+)
