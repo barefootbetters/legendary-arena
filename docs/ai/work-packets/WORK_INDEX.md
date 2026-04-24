@@ -1644,6 +1644,40 @@ These packets ship the game and keep it running.
   Alignment` block. See
   [WP-090-live-match-client-wiring.md](WP-090-live-match-client-wiring.md).
 
+- [ ] WP-091 — Loadout Builder in Registry Viewer ⬜ Draft (drafted 2026-04-24; 00.3 lint-gate PASS; pre-flight bundle registered 2026-04-24)
+  Dependencies: WP-003 (CardRegistry), WP-005A (`MatchSetupConfig` 9-field
+  contract), WP-055 (theme data model — `setupIntent`), WP-065
+  (vue-sfc-loader — test-tooling context only, not runtime), WP-093
+  (Match-Setup Rule-Mode Envelope Field — prerequisite even though its
+  number is higher). Compatible with (not dependent on) WP-086 and
+  WP-090. Prerequisite for WP-092.
+  Notes: Two-half packet — registry contract + registry-viewer UI.
+  Contract half creates `packages/registry/src/setupContract/` (zod
+  schema + types + pure `validateMatchSetupDocument()` mirroring
+  `MATCH-SETUP-JSON-SCHEMA.json` byte-for-byte; registry-side ext_id
+  lookups via the existing `CardRegistryReader` surface; drift-
+  detection test asserts the 9 composition field names match
+  `00.2 §8.1` and the engine's `MatchSetupConfig`). UI half adds a
+  third "Loadout" tab to `apps/registry-viewer` alongside Cards and
+  Themes (no router per existing convention); two-column builder with
+  card-browse picker panels; download a schema-valid MATCH-SETUP JSON
+  (emits `heroSelectionMode: "GROUP_STANDARD"` explicitly per WP-093
+  for auditability — never relies on the absent-default); upload/
+  paste JSON to rehydrate a draft; "Start from theme" pre-fills five
+  `setupIntent` fields from cached theme data. Validator upgrades
+  zod's enum rejection into the WP-093 verbatim error-message
+  template; absent `heroSelectionMode` normalizes to
+  `"GROUP_STANDARD"` on validator output so downstream code never
+  handles `undefined`. Seed uses `crypto.randomUUID()` (Web Crypto).
+  No new npm dependencies (zod already present in both touched
+  packages); no `@legendary-arena/game-engine` imports in
+  `apps/registry-viewer/**` or `packages/registry/**`; no
+  persistence / auth / user-profile / saved-loadout library — JSON
+  download/upload is the MVP bridge, forward-compatible with a future
+  profile system. Vision clauses touched: §3, §10a, §22, NG-1..7 (all
+  preserved); self-compliant `## Vision Alignment` block. See
+  [WP-091-loadout-builder-registry-viewer.md](WP-091-loadout-builder-registry-viewer.md).
+
 - [ ] WP-093 — Match-Setup Rule-Mode Envelope Field (Governance) ⬜ Draft (drafted 2026-04-24; 00.3 lint-gate PASS; planning alias "WP-090.5"; pre-flight bundle registered 2026-04-24)
   Dependencies: None (governance-only prerequisite). Consumed by
   WP-091 (registry-viewer loadout builder) and WP-092 (lobby loadout
