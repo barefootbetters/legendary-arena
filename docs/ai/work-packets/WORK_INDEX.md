@@ -1678,6 +1678,40 @@ These packets ship the game and keep it running.
   preserved); self-compliant `## Vision Alignment` block. See
   [WP-091-loadout-builder-registry-viewer.md](WP-091-loadout-builder-registry-viewer.md).
 
+- [ ] WP-092 — Lobby Loadout Intake (JSON → Create Match) ⬜ Draft (drafted 2026-04-24; 00.3 lint-gate PASS; pre-flight bundle registered 2026-04-24)
+  Dependencies: WP-011 (lobby HTTP endpoints — `POST
+  /games/legendary-arena/create`), WP-090 (arena-client lobby view
+  + 9-field create-match form), WP-091 (registry-viewer loadout
+  builder producing MATCH-SETUP JSON documents), WP-093 (Match-Setup
+  Rule-Mode Envelope Field — transitive prerequisite via WP-091)
+  Notes: Arena-client-only packet — no server, no engine, no
+  registry changes. Adds `parseLoadoutJson()` pure shape-guard
+  parser (never throws, accumulates typed errors) plus a "Create
+  match from loadout JSON (recommended)" affordance above WP-090's
+  manual form (which stays but collapses into a "Fill in manually
+  (advanced)" `<details>` block; all WP-090 form field IDs,
+  bindings, and submission logic preserved byte-for-byte). Parser
+  hand-rolls type predicates rather than importing
+  `@legendary-arena/registry` at runtime (layer rule — arena-client
+  may not import registry at runtime per the Layer Boundary table).
+  Shape guard rejects unrecognized `heroSelectionMode` with WP-093's
+  verbatim error-message template byte-for-byte (including
+  non-string values); absent `heroSelectionMode` normalizes to
+  `"GROUP_STANDARD"` per WP-093 backward-compat semantics so
+  `ParsedLoadout.heroSelectionMode` is always set. Composition block
+  forwarded verbatim as `setupData` to the existing create endpoint;
+  envelope `playerCount` maps to `numPlayers` at the call site with
+  a `// why:` comment. Other envelope fields (`setupId`, `seed`,
+  `createdAt`, `createdBy`, `themeId`, `expansions`) dropped on
+  submission — envelope archival deferred to a future WP alongside
+  user profiles. Server-side Stage 1 envelope validation is not
+  implemented (remains a future server-layer WP per
+  `MATCH-SETUP-VALIDATION.md`). No new npm dependencies;
+  authoritative validation remains server-side via
+  `matchSetup.validate.ts`. Vision clauses touched: §3, §4, NG-1..7
+  (all preserved); self-compliant `## Vision Alignment` block. See
+  [WP-092-lobby-loadout-intake.md](WP-092-lobby-loadout-intake.md).
+
 - [ ] WP-093 — Match-Setup Rule-Mode Envelope Field (Governance) ⬜ Draft (drafted 2026-04-24; 00.3 lint-gate PASS; planning alias "WP-090.5"; pre-flight bundle registered 2026-04-24)
   Dependencies: None (governance-only prerequisite). Consumed by
   WP-091 (registry-viewer loadout builder) and WP-092 (lobby loadout
@@ -1840,6 +1874,15 @@ WP-001 (coordination — complete)        │
 
                     Engine→Client Projection Wiring (prerequisite for WP-090):
                     WP-028 + WP-029 → WP-089 (LegendaryGame.playerView)
+
+                    Loadout Authoring + Intake (Registry Viewer → Lobby):
+                    WP-093 (governance: heroSelectionMode envelope field)
+                       │
+                       ├→ WP-091 (+ WP-003, WP-005A, WP-055) — loadout builder in registry-viewer
+                       │
+                       └→ WP-092 (+ WP-011, WP-090, WP-091) — lobby JSON intake
+                    (WP-093 is a hard prerequisite for both despite higher
+                     number — governance-first ordering, not numeric)
 ```
 
 **Parallel-safe packets** (no dependency on each other):
