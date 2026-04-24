@@ -18,7 +18,15 @@
 
 ## 1. State as of authoring
 
-**Branch:** `main` at `389527e` (post-WP-089 close).
+**Branch:** ~~`main` at `389527e` (post-WP-089 close).~~
+
+> **UPDATED 2026-04-24 (post-session):** `main` is now at **`2385776`**
+> (post-WP-090/091/092/093 A0 pre-flight bundles). Four SPEC commits
+> landed after this file's initial commit at `887539a`:
+> `887539a` (WP-090) → `09c6a51` (WP-093) → `6770fa6` (WP-091) →
+> `2385776` (WP-092). Baseline test counts (513 / 115 / 0 engine;
+> 678 / 129 / 0 repo-wide) are unchanged — all four commits were
+> governance-only.
 
 - WP-089 (Engine PlayerView Wiring — UIState Projection) — **executed
   and merged to `main`** as a bundled single commit: `389527e`
@@ -32,15 +40,30 @@
   `389527e`) pending user push.
 - WP-088, WP-087, WP-051, WP-050, WP-049, etc. — all merged. See
   `STATUS.md` for full recent history.
-- WP-090 / WP-091 / WP-092 / WP-059 — **drafted but not executed.**
+- ~~WP-090 / WP-091 / WP-092 / WP-059 — **drafted but not executed.**
   Their work packet files and execution checklists exist as untracked
-  files in the working tree:
-  - `docs/ai/work-packets/WP-090-live-match-client-wiring.md`
-  - `docs/ai/execution-checklists/EC-090-live-match-client-wiring.checklist.md`
-  - `docs/ai/work-packets/WP-091-loadout-builder-registry-viewer.md`
-  - `docs/ai/work-packets/WP-092-lobby-loadout-intake.md`
-  - `docs/ai/work-packets/WP-059-preplan-ui-integration.md`
-  - `docs/ai/execution-checklists/EC-059-preplan-ui-integration.checklist.md`
+  files in the working tree:~~
+  - ~~`docs/ai/work-packets/WP-090-live-match-client-wiring.md`~~ — landed at `887539a`
+  - ~~`docs/ai/execution-checklists/EC-090-live-match-client-wiring.checklist.md`~~ — landed at `887539a`
+  - ~~`docs/ai/work-packets/WP-091-loadout-builder-registry-viewer.md`~~ — **drafted 2026-04-24, landed at `6770fa6`** (file did not exist at this section's authoring time; see Reconciliation Note below)
+  - ~~`docs/ai/work-packets/WP-092-lobby-loadout-intake.md`~~ — **drafted 2026-04-24, landed at `2385776`**
+  - `docs/ai/work-packets/WP-059-preplan-ui-integration.md` — **still untracked** (WP-059 remains deferred pending UI framework decision)
+  - `docs/ai/execution-checklists/EC-059-preplan-ui-integration.checklist.md` — **still untracked** (same reason as WP-059)
+
+> **UPDATED 2026-04-24 (post-session):** A fourth packet was drafted
+> alongside WP-091 / WP-092 that did not exist at authoring time:
+> **WP-093 — Match-Setup Rule-Mode Envelope Field** (planning alias
+> "WP-090.5"). It's a governance-only packet canonicalizing
+> `heroSelectionMode` as an optional envelope field on the MATCH-SETUP
+> document (v1 enum `["GROUP_STANDARD"]`; reserved future token
+> `"HERO_DRAFT"` in prose only). WP-093 is a prerequisite for WP-091
+> and WP-092 (dependency ordering, not numeric). It does not affect
+> WP-090 directly — WP-090 continues to emit the 9 `MatchSetupConfig`
+> composition fields verbatim; the envelope wrapper is added by
+> WP-091's loadout builder and consumed by WP-092's lobby intake.
+> WP-093 landed at `09c6a51`. See `WP-093-*.md` / `EC-093-*.md` and
+> the new "Loadout Authoring + Intake" block in `WORK_INDEX.md`'s
+> Dependency Chain Quick Reference section.
 - Session invocation for WP-090: **not yet authored.** A pre-flight +
   copilot check + session prompt bundle is the prerequisite for EC-090
   execution, mirroring the WP-089 A0 pattern.
@@ -80,7 +103,28 @@ pattern during the WP-088 and WP-089 sessions; it continues to apply.
 
 ---
 
-## 2. WP-090 A0 Governance — Pending Reintroduction
+## 2. WP-090 A0 Governance — ~~Pending Reintroduction~~ **LANDED 2026-04-24**
+
+> **UPDATED 2026-04-24 (post-session):** This entire section described
+> the pre-SPEC-bundle state where WP-090's governance rows were not
+> yet on `main`. **Reintroduction is now complete** as commit
+> `887539a` (`SPEC: WP-090 pre-flight bundle — register WP-090 / EC-090
+> governance rows`). An EC-090 executor can **disregard
+> reintroduction steps 1–3 below** — `WORK_INDEX.md` and `EC_INDEX.md`
+> already contain WP-090 rows in their canonical slots. The original
+> section content is preserved below for historical reference.
+>
+> Additionally, **three sibling WPs were drafted and registered in
+> the same session:** WP-091 (loadout builder, `6770fa6`), WP-092
+> (lobby loadout intake, `2385776`), and WP-093 (rule-mode envelope
+> governance, `09c6a51`; planning alias "WP-090.5"). A new "Loadout
+> Authoring + Intake" block was added to `WORK_INDEX.md`'s Dependency
+> Chain Quick Reference, showing `WP-093 → {WP-091, WP-092}` with
+> `WP-092` additionally depending on `WP-090`. This does not change
+> WP-090's scope — the dependency edge is downstream.
+>
+> **Current row counts at `main @ 2385776`: Done 17 / Draft 50 /
+> Total 67** (not Done 17 / Draft 46 / Total 63 as stated below).
 
 **WP-090's governance rows do not yet exist on `main`.** The WP-088 A0
 trim (commit `88580a9`, documented in `session-context-wp089.md §2`)
@@ -390,3 +434,54 @@ This file is **not authoritative**. If a conflict arises:
 This bridge file is effectively operational-only; once WP-090 executes
 and any D-NNNN entries are captured formally, the file serves as a
 historical record of the handoff from WP-089 → WP-090, not a live guide.
+
+---
+
+## Reconciliation Note (2026-04-24, post-session)
+
+Per `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §19.3 Path 2`
+(Bridge-vs-HEAD Staleness Rule — "acceptable" remediation), the
+following sections of this file were amended additively after three
+SPEC-bundle commits landed between this file's initial commit at
+`887539a` and this reconciliation:
+
+| Commit | Scope |
+|---|---|
+| `887539a` | `SPEC: WP-090 pre-flight bundle — register WP-090 / EC-090 governance rows` (this file's own initial commit) |
+| `09c6a51` | `SPEC: WP-093 pre-flight bundle — register WP-093 / EC-093 governance rows` |
+| `6770fa6` | `SPEC: WP-091 pre-flight bundle — register WP-091 / EC-091 governance rows (loadout builder)` |
+| `2385776` | `SPEC: WP-092 pre-flight bundle — register WP-092 / EC-092 governance rows (lobby loadout intake)` |
+
+**Sections amended (strikethrough + inline UPDATED callout):**
+
+- **§1 State as of authoring** — `main` SHA updated from `389527e` to
+  `2385776`; untracked-files bullet struck through with per-file
+  landed-commit annotations; WP-093 acknowledged as a sibling that did
+  not exist at the original authoring time.
+- **§2 WP-090 A0 Governance** — section header's "Pending
+  Reintroduction" framing struck through; LANDED banner added at the
+  top of the section referring an EC-090 executor away from the now-
+  obsolete reintroduction steps 1–3; original content preserved below
+  the banner for historical reference; row counts updated in the
+  banner from `Done 17 / Draft 46 / Total 63` → `Done 17 / Draft 50 /
+  Total 67`.
+
+**Sections unchanged (still load-bearing for WP-090 execution):**
+
+- §3 Operational Handoff From WP-089 (all five subsections)
+- §4 Active Risks for the Executor (all six subsections)
+- §5 Patterns Still in Effect
+- §6 Authoritative References (the authority chain is unchanged)
+
+**Why this reconciliation is Path 2 ("acceptable") rather than Path 1
+("preferred" revert-and-rewrite):** Path 1 would require reverting
+`887539a` and re-authoring the file against current `main`. Since
+three subsequent commits have been built on top of `887539a`
+(`09c6a51`, `6770fa6`, `2385776`), revert would require a chain of
+dependent-commit amendments — far more invasive than the
+strikethrough-plus-banner pattern. Per §19.3, Path 2 is explicitly
+acceptable when the stale commit has been built upon.
+
+**No operational guidance is weakened by this reconciliation.** §3
+through §5 remain the canonical pre-flight reference for the eventual
+EC-090 executor.
