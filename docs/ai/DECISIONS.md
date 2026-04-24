@@ -9175,6 +9175,8 @@ A follow-up WP (WP-087b or similar) should (a) widen the `HookRegistry` type ali
 
 **Citation:** `packages/game-engine/src/types.ts:441,510,515` (pre-change state preserved); WP-087 §Locked Values (three `readonly` entries — deferred); preflight-wp087-engine-type-hardening.md §3.5 (test-factory scan — did not cover consumer signatures); `packages/game-engine/src/game.ts:237,252`, `src/hero/heroConditions.evaluate.ts:71`, `src/hero/heroEffects.execute.ts:146`, `src/villainDeck/villainDeck.reveal.ts:203,218,233` (the seven ripple call sites that motivated the deferral).
 
+**Superseded (in part) by D-8705 (2026-04-23):** the "follow-up WP" path described above — widen consumer signatures, then apply `readonly`, then add drift tests — is replaced by a single drift-detection test that grep-scans production source on every `pnpm test`. `readonly` will not be applied; consumer signatures will not be widened. The session-drift record captured in this entry remains accurate for the moment of WP-087 execution close; the forward commitment is re-homed in D-8705.
+
 ---
 
 ### D-8703 — `MatchSetupConfig` Is Non-Applicable to the `PlayerId` Alias Surface
@@ -9218,6 +9220,78 @@ This decision is captured explicitly because a future "tighten all player-keyed 
 - **Leave the communal-pool semantic implicit and rely on setup code comments:** rejected. Setup code already uses the field correctly (`buildInitialGameState` constructs a single communal recruit deck from `heroDeckIds`), but nothing explicitly forbids a future "per-seat hero assignment" WP from re-keying it. An explicit decision gives future WPs a concrete "this is a prior contract you must override, not a default you can redefine" reference.
 
 **Citation:** `docs/ai/REFERENCE/00.2-data-requirements.md §8.1` (heroDeckIds field lock); `packages/game-engine/src/setup/buildInitialGameState.ts` (communal-pool construction site); session-context-wp087.md §3.3; D-8703 (MatchSetupConfig non-applicability to PlayerId — related).
+
+---
+
+### D-8705 — Drift Test Supersedes the WP-087 `readonly` Follow-Up WP
+
+**Type:** Enforcement Substitution
+**Packet:** WP-087 follow-up (post-execution refinement of D-8702)
+**Date:** 2026-04-23
+
+**Decision:** The "follow-up WP" path proposed in D-8702 — (a) widen `HookRegistry` + two hero-hook consumer parameter types to `readonly` forms, (b) apply `readonly` to the three `LegendaryGameState` array fields, (c) add drift-prevention tests — is **superseded** by a single drift-detection test that grep-scans production TypeScript source for the mutation pattern on every `pnpm test`. The `readonly` type-level modifier will **not** be applied; `HookRegistry` and the two hero-hook parameter types will **not** be widened to `readonly` forms. The compile-time guarantee that `readonly` would provide is replaced by a test-time guarantee that is strictly equivalent in coverage (same three fields, same mutation operations, same scan scope excluding test files) and strictly cheaper to land (one new `.test.ts` file, zero consumer-signature changes, zero allowlist expansion).
+
+**Rationale:** D-8702 correctly captured the deferral rationale at the moment of WP-087 execution, but it pre-committed to a follow-up path whose cost-benefit ratio did not survive post-execution review:
+
+- **Cost of the follow-up WP:** four production files widened (`game.ts`, `villainDeck/villainDeck.reveal.ts`, `hero/heroConditions.evaluate.ts`, `hero/heroEffects.execute.ts`), one type alias widened (`HookRegistry`), three state-type fields tightened, a new WP cycle (pre-flight + execution + close), a new session-context bridge, plus drift-prevention tests that would need to exist anyway.
+- **Benefit of `readonly`:** compile-time enforcement on a mutation surface that was already provably zero at WP-087 close — the narrowed invariant grep returned zero in production code AND in test files after the factory refactor eliminated the lone pre-change hit at `ruleRuntime.ordering.test.ts:56`.
+- **Alternative benefit (drift test):** test-time enforcement on the same mutation surface, runs on every `pnpm test` without human invocation, fails loudly with the offending file and line, costs exactly one new `.test.ts` file with ~60 lines of `node:fs/promises`-based source scanning.
+
+The drift test approximates `readonly` so closely in practice — the same three fields, the same six mutation operations (`=`, `.push`, `.pop`, `.splice`, `.shift`, `.unshift`), the same `G.` / `gameState.` qualifier from PS-1 — that the compile-time vs test-time distinction does not warrant the ripple cost. The one class of mutation `readonly` catches that the regex does not is *destructuring-based mutation* (`const { hookRegistry } = G; hookRegistry.push(…)`), but this pattern does not appear anywhere in the current codebase and is sufficiently unidiomatic that the drift test would catch the resulting `.push` call anyway (because the `G.hookRegistry` or `gameState.hookRegistry` read would still appear upstream of the mutation at the destructuring site).
+
+**Scope of the drift test:** `packages/game-engine/src/rules/ruleRuntime.setupOnlyFields.drift.test.ts` scans all `.ts` files under `packages/game-engine/src/` recursively, excludes `*.test.ts` (test fixtures may legitimately construct variant states), and asserts zero matches of the PS-1 narrowed pattern. First-run baseline at landing: zero hits. Game-engine test baseline shifts `506 / 113 / 0` → `507 / 114 / 0` (+1 test / +1 suite); repo-wide `671 / 127 / 0` → `672 / 128 / 0`.
+
+**Alternatives rejected:**
+
+- **Land the D-8702 follow-up WP as originally described:** rejected per the cost-benefit analysis above. Compile-time enforcement is marginally stronger than test-time enforcement here, but the marginal gain does not justify a full WP cycle + four consumer widenings when the mutation surface has been provably zero since WP-087's factory refactor.
+- **Do nothing — rely on the WP-087 close-time grep as a point-in-time check:** rejected. The WP-087 close-time grep was run once and never again; a future mutation introduced in a different WP would not trigger any failure. Automated test-time enforcement is required for ongoing drift prevention.
+- **Add the drift test AND apply `readonly` in a future WP:** rejected as redundant belt-and-suspenders. If the drift test covers the mutation surface (it does), `readonly` adds no incremental protection against any pattern the codebase actually uses. Belt-and-suspenders here produces more code to maintain (consumer-signature widenings, TS ripple re-checks at every downstream WP) with no observable defect reduction.
+- **Amend D-8702 in place rather than writing a successor decision:** rejected. D-8702 captured the accurate state at WP-087 execution close; amending it would erase the session-drift record that motivated the decision. D-8705 as a successor preserves the historical reasoning while correcting the forward-looking commitment.
+
+**Citation:** `packages/game-engine/src/rules/ruleRuntime.setupOnlyFields.drift.test.ts` (the drift test); D-8702 (superseded follow-up-WP path); D-8706 (fs-import carve-out that authorizes the drift test's source-scanning); WP-087 pre-flight PS-1 (narrowed grep pattern); `packages/game-engine/src/rules/ruleRuntime.ordering.test.ts` (the factory refactor that already eliminated the lone pre-D-8705 mutation site).
+
+---
+
+### D-8706 — Narrow `node:fs` Carve-Out for Source-Scanning Drift Tests in Engine Test Files
+
+**Type:** Layer-Boundary Carve-Out (test-time only)
+**Packet:** WP-087 follow-up (companion to D-8705)
+**Date:** 2026-04-23
+
+**Decision:** Engine test files (`packages/game-engine/src/**/*.test.ts`) may import `node:fs/promises` **only** for the purpose of read-only source-file scanning that enforces an architectural invariant. The carve-out is bounded to:
+
+1. **Read-only operations only:** `readdir`, `readFile` (and the synchronous equivalents only when no async path exists). No `writeFile`, `mkdir`, `rm`, `rename`, `unlink`, `truncate`, `access`, `chmod`, or any other mutating API.
+2. **Scope to engine source tree:** scans must be rooted under `packages/game-engine/src/` — no reads of `data/`, `content/`, `node_modules/`, `apps/`, or outside-package paths. The scan root is derived from `import.meta.url` relative to the test file's location, never from an absolute path, `process.cwd()`, or an environment variable.
+3. **Drift-detection purpose only:** the test must assert a grep-style invariant about source contents (e.g., forbidden mutation patterns, forbidden imports, forbidden string literals). Tests that read source for any other purpose — fixture loading, snapshot comparison, schema validation — must get fixtures from in-memory constants or use `node:os.tmpdir()` per the existing `par.storage.test.ts` precedent.
+4. **No production-code reach-through:** the test file must not export any fs-using helper that production code could import. Production code under `packages/game-engine/src/**` remains fs-free outside the D-5001 `par.storage.ts` + `par.storage.test.ts` carve-out.
+
+**Rationale:** `.claude/rules/architecture.md` §Game Engine Layer forbids engine code from querying the filesystem at runtime. D-5001 carved out `src/simulation/par.storage.ts` (+ its test file) as the sole PAR-pipeline exception and explicitly stated its non-precedential scope: "new future subsystems that want filesystem IO... must go through its own architectural review and land its own DECISIONS entry". Source-scanning drift tests are categorically different from PAR storage:
+
+- **PAR storage** is *runtime* engine code that happens to live in `src/simulation/`. The carve-out is a real layer-boundary exception because production code reads artifacts from disk.
+- **Source-scanning drift tests** are *test-harness* code that executes only during `pnpm test`. The fs imports never enter a compiled bundle, never ship to clients or servers, and never execute under boardgame.io. They are authoring-time / CI-time verification tools that happen to be located in the engine test tree so that `pnpm --filter @legendary-arena/game-engine test` picks them up automatically.
+
+The existing `par.storage.test.ts` precedent already establishes that test files in engine src may use `node:fs/promises` without violating the layer rule — the difference there is that the test is colocated with production fs-using code. D-8706 generalizes the same "test-time fs is outside the layer rule" intuition to the source-scanning pattern, with guardrails (read-only, engine-src-only, drift-purpose-only) that prevent drift-test tooling from accidentally gaining production-reach.
+
+**Current scope (landed at D-8706 authorship time):** exactly one file qualifies under this carve-out — `packages/game-engine/src/rules/ruleRuntime.setupOnlyFields.drift.test.ts` (D-8705). Any future drift test that imports `node:fs/promises` under this entry must: (a) match all four bounds above, (b) cite D-8706 in a header comment explaining which architectural invariant it enforces, (c) pass the same no-production-reach-through grep that enforces D-8706's guardrail #4.
+
+**Enforcement:** The grep that enforces D-8706's no-production-reach-through rule is itself cheap:
+
+```bash
+grep -rnE "from 'node:fs" --include="*.ts" packages/game-engine/src/ | grep -v "\.test\.ts" | grep -v "par\.storage\.ts"
+# Expected: no output. Any match is a layer violation — either a production
+# file gained an fs import (forbidden) or a drift test's fs helper leaked
+# into production via re-export.
+```
+
+This grep should be added to a future audit-orchestrator pass (WP-085 pattern) or folded into the drift-test itself as a self-guard. For now, the drift-test's own scan excludes `.test.ts` files, so its existence does not fire its own invariant signal.
+
+**Alternatives rejected:**
+
+- **Move the drift test out of `packages/game-engine/src/` entirely:** rejected. Options considered were (a) relocate to `scripts/audit/drift/` as a `.mjs` file, (b) create a new `packages/drift-tests/` package, (c) fold into WP-085's `scripts/audit/vision/` orchestrator. All three share the same drawback: the test no longer runs on `pnpm test` — it requires a separate invocation (or `pnpm test` extended to run audit scripts at the monorepo root, which is a bigger architectural change than this carve-out). The whole value of the drift test vs. the deferred follow-up WP is that it runs on every test cycle with zero human invocation; moving it out of engine src loses that value.
+- **Declare the carve-out only for the specific filename pattern `*.drift.test.ts`:** rejected as premature. Only one drift test exists today. If future drift tests proliferate and the pattern becomes useful, a follow-up amendment can narrow D-8706's scope at that time. Today, the four bounds above are stricter and more verifiable than a filename-glob guard would be.
+- **Use `node:child_process` to shell out to `git grep` / `rg` instead of reading files directly:** rejected. `child_process` is explicitly listed in D-5001's prohibited-Node-builtins set; adding it would be strictly worse than `readdir` + `readFile`. The scan is fast (<200ms on a ~500-file engine src tree) and avoids a cross-platform shell-dependency.
+
+**Citation:** `packages/game-engine/src/rules/ruleRuntime.setupOnlyFields.drift.test.ts` (the sole current consumer); D-5001 (original PAR-pipeline IO carve-out; non-precedential clause motivates this entry); D-8705 (the decision whose enforcement mechanism depends on this carve-out); `.claude/rules/architecture.md` §Game Engine Layer (the runtime fs-free invariant that remains undisturbed).
 
 ---
 
