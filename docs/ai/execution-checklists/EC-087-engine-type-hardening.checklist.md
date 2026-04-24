@@ -3,7 +3,17 @@
 **Source:** `docs/ai/work-packets/WP-087-engine-type-hardening.md`
 **Layer:** Game Engine
 
-> **Status: READY TO EXECUTE** (A0 pre-flight bundle landed 2026-04-23). All four gating items resolved: (a) WP-049 merged to `main` at `956306c` (also WP-050 `0bf9020`, WP-051 `372bf71`); (b) WP-087 registered in `WORK_INDEX.md` under Gameplay; (c) 00.3 lint gate PASS recorded in [preflight-wp087-engine-type-hardening.md](../invocations/preflight-wp087-engine-type-hardening.md); (d) EC-087 registered in `EC_INDEX.md` as `Draft`.
+> **Status: DONE 2026-04-23** (Commit A `73aeada`; governance close `0b7fe22`; A1 amendment `d5880d2`).
+>
+> **Scope deviation at execution (post-close amendment, 2026-04-23):** the three `readonly` modifiers on `hookRegistry`, `schemeSetupInstructions`, and `heroAbilityHooks` listed in `## Locked Values` below were **reverted mid-session** after applying them surfaced seven TS errors in four production-code files outside the 4-file allowlist (`game.ts`, `hero/heroConditions.evaluate.ts`, `hero/heroEffects.execute.ts`, `villainDeck/villainDeck.reveal.ts`). Per session prompt §AI Agent Warning #1 and generic-ripple Hard Stop, the tightening was deferred. The `PlayerId` alias, the three `Record<PlayerId, …>` swaps, and the factory-time `hookRegistry` construction all landed cleanly per `## Locked Values`. See **D-8702** for the deferral rationale.
+>
+> **Superseding decision (A1 amendment):** **D-8705** replaces the compile-time `readonly` path with a test-time drift-detection scan at [`packages/game-engine/src/rules/ruleRuntime.setupOnlyFields.drift.test.ts`](../../../packages/game-engine/src/rules/ruleRuntime.setupOnlyFields.drift.test.ts). Same three fields, same six mutation operations, zero consumer ripple. **D-8706** authorizes the narrow `node:fs` carve-out that makes the drift scan possible in engine test files. The `readonly` modifiers will not be applied in any future WP.
+>
+> The body below preserves the original executor contract as the authoring record. Read `D-8701..D-8706` for the authoritative post-execution contract.
+>
+> ---
+>
+> **(Original ready-to-execute status — preserved for historical record):** READY TO EXECUTE (A0 pre-flight bundle landed 2026-04-23). All four gating items resolved: (a) WP-049 merged to `main` at `956306c` (also WP-050 `0bf9020`, WP-051 `372bf71`); (b) WP-087 registered in `WORK_INDEX.md` under Gameplay; (c) 00.3 lint gate PASS recorded in [preflight-wp087-engine-type-hardening.md](../invocations/preflight-wp087-engine-type-hardening.md); (d) EC-087 registered in `EC_INDEX.md` as `Draft`.
 
 ## Before Starting
 

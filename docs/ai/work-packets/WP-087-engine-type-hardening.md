@@ -1,6 +1,20 @@
 # WP-087 — Engine Type Hardening: `PlayerId` Alias + Setup-Only Array `readonly`
 
-> **Status: READY TO EXECUTE** (A0 pre-flight bundle landed 2026-04-23;
+> **Status: DONE 2026-04-23** (executed at Commit A `73aeada`, governance close `0b7fe22`, A1 amendment `d5880d2`).
+>
+> **Scope deviation at execution (post-close amendment, 2026-04-23):** the three `readonly` modifiers on `LegendaryGameState.{hookRegistry, schemeSetupInstructions, heroAbilityHooks}` described in §Goal, §Scope (In), §Locked Values, and §Implementation Tasks below were **reverted mid-session** after applying them surfaced seven TS errors in four production-code files outside the WP-087 allowlist (`game.ts`, `hero/heroConditions.evaluate.ts`, `hero/heroEffects.execute.ts`, `villainDeck/villainDeck.reveal.ts`). Per the session prompt's §AI Agent Warning #1 and generic-ripple Hard Stop, the `readonly` tightening was deferred. See **D-8702** for the deferral rationale.
+>
+> **Superseding decision (A1 amendment):** the readonly-follow-up path proposed in D-8702 is superseded by **D-8705**, which replaces compile-time `readonly` enforcement with a test-time drift-detection scan in [`packages/game-engine/src/rules/ruleRuntime.setupOnlyFields.drift.test.ts`](../../../packages/game-engine/src/rules/ruleRuntime.setupOnlyFields.drift.test.ts). The drift test covers the same three fields and the same six mutation operations at test-time with zero consumer ripple. The `readonly` modifiers will not be applied in any future WP. **D-8706** authorizes the narrow `node:fs` carve-out that makes source-scanning drift tests possible in engine test files.
+>
+> **What landed (scope-narrowed execution):** `PlayerId` alias (non-branded per D-8701); three `Record<string, …>` → `Record<PlayerId, …>` swaps at the three canonical sites; factory-time `hookRegistry` construction in `rules/ruleRuntime.ordering.test.ts` (eliminates the sole pre-change post-setup mutation). Test baseline `671 / 127 / 0` unchanged at Commit A; +1/+1 at the A1 amendment via the drift test. Zero runtime behavior change; zero serialization / replay / snapshot shape change.
+>
+> **Pre-flight gap captured (lessons-learned):** the pre-flight scan at §3.5 covered test-factory construction sites (covariant positions that work against `readonly`) but did not extend to production consumer call sites (contravariant parameter positions that fail against `readonly`). Future `readonly`-introducing pre-flights should include a consumer-signature scan — see the update at [01.4-pre-flight-invocation.md §Consumer-Signature Scan](../REFERENCE/01.4-pre-flight-invocation.md).
+>
+> The body below preserves the original WP specification as the authoring record. Read `D-8701..D-8706` for the authoritative post-execution contract.
+>
+> ---
+>
+> **(Original ready-to-execute status header — preserved for historical record):** READY TO EXECUTE (A0 pre-flight bundle landed 2026-04-23;
 > registered in `WORK_INDEX.md` and `EC_INDEX.md`; 00.3 lint gate PASS
 > — see [preflight-wp087-engine-type-hardening.md](../invocations/preflight-wp087-engine-type-hardening.md)).
 >
