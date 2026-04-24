@@ -1,8 +1,10 @@
 /**
  * Tests for the PAR artifact storage and indexing layer (WP-050).
  *
- * Exactly thirty-four tests inside one describe block, per WP-050 §D +
- * EC-050 §Test count lock. Tests cover:
+ * Exactly thirty-five tests inside one describe block, per WP-050 §D +
+ * EC-050 §Test count lock (34 original + 1 A1-amendment drift test
+ * asserting `loadParIndex` is exported for WP-051; see DECISIONS D-5101
+ * rationale). Tests cover:
  *   - Path helpers (scenarioKeyToFilename, scenarioKeyToShard,
  *     sourceClassRoot, PAR_ARTIFACT_SOURCES drift)
  *   - Simulation artifact I/O (write placement, deterministic byte-identity,
@@ -13,6 +15,8 @@
  *     null-on-missing, parBaseline round-trip)
  *   - Index building and lookup (per-class independence, sorted keys,
  *     artifactHash presence, hit/miss lookups)
+ *   - Public `loadParIndex` startup-time primitive (null-on-missing,
+ *     source-stamp validation) — back-fill for WP-051 gate consumer
  *   - Cross-class resolver (sim-only, seed-only, both-precedence, neither,
  *     malformed-index throws)
  *   - Store validation (valid sim store, non-T2 flag, cross-class source
@@ -41,6 +45,7 @@ import {
   ParStoreReadError,
   buildParIndex,
   computeArtifactHash,
+  loadParIndex,
   lookupParFromIndex,
   readSeedParArtifact,
   readSimulationParArtifact,
@@ -867,5 +872,31 @@ describe('PAR artifact storage (WP-050)', () => {
     };
     const hashWithField = computeArtifactHash(withArtifactHashField);
     assert.equal(hashWithField, hashA);
+  });
+
+  test('loadParIndex is exported as the startup-time primitive; returns null for a missing index; round-trips a written index', async () => {
+    assert.equal(typeof loadParIndex, 'function', 'loadParIndex must be exported');
+
+    const workspace = await createTempWorkspace();
+    try {
+      const missing = await loadParIndex(workspace, PAR_VERSION, 'simulation');
+      assert.equal(missing, null);
+
+      const scenarioKey = 'alpha::m::g';
+      const baseline = createTestParBaseline();
+      const scoringConfig = createTestScoringConfig(scenarioKey, baseline);
+      const artifact = createSeedArtifact(scenarioKey, baseline, scoringConfig);
+      await writeSeedParArtifact(artifact, scoringConfig, workspace, PAR_VERSION);
+      await buildParIndex(workspace, 'seed', PAR_VERSION);
+
+      const loaded = await loadParIndex(workspace, PAR_VERSION, 'seed');
+      assert.notEqual(loaded, null);
+      assert.equal(loaded?.source, 'seed');
+      assert.equal(loaded?.parVersion, PAR_VERSION);
+      assert.equal(loaded?.scenarioCount, 1);
+      assert.ok(loaded?.scenarios[scenarioKey], 'scenario must appear in loaded index');
+    } finally {
+      await removeWorkspace(workspace);
+    }
   });
 });

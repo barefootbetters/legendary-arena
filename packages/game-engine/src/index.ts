@@ -407,6 +407,7 @@ export {
   readSeedParArtifact,
   buildParIndex,
   lookupParFromIndex,
+  loadParIndex,
   resolveParForScenario,
   validateParStore,
   validateParStoreCoverage,

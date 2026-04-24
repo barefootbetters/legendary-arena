@@ -726,6 +726,44 @@ export function lookupParFromIndex(
   return { path: entry.path, parValue: entry.parValue };
 }
 
+/**
+ * Loads the persisted `index.json` for a single `(source, parVersion)` pair.
+ * Returns the parsed `ParIndex` on success, `null` when the index file does
+ * not exist, and throws `ParStoreReadError` when the file exists but is
+ * malformed, truncated, or carries a `source` field that disagrees with the
+ * directory it was read from.
+ *
+ * This is the startup-time primitive for consumers that need an in-memory
+ * index they can query many times per process without hitting the filesystem
+ * per lookup — the server PAR gate (WP-051) loads both source classes at
+ * startup via this helper, then calls `lookupParFromIndex` per gate check.
+ * Consumers that need on-demand cross-class precedence should use
+ * `resolveParForScenario` instead.
+ *
+ * Pure IO wrapper — never writes, never repairs, never recomputes the index
+ * by scanning the scenarios directory. Use `buildParIndex` for rebuild
+ * workflows.
+ */
+// why: public export of the load-once-check-many primitive keeps the engine
+// as the single authority on ParIndex shape validation and source-class
+// stamp enforcement. Without this export, server-layer consumers would have
+// to reimplement shape validation (drift risk) or consume the per-call
+// resolveParForScenario (which performs filesystem IO on every gate check,
+// incompatible with the non-blocking-startup pattern locked in EC-051).
+// Honors D-5001 "server consumes PAR through the engine API, not raw
+// node:fs" by providing a fs-free public surface for startup loading.
+export async function loadParIndex(
+  basePath: string,
+  parVersion: string,
+  source: ParArtifactSource,
+): Promise<ParIndex | null> {
+  const indexPath = posix.join(
+    sourceClassRoot(basePath, source, parVersion),
+    'index.json',
+  );
+  return tryLoadIndex(indexPath, source);
+}
+
 // ---------------------------------------------------------------------------
 // Cross-class resolver (exported)
 // ---------------------------------------------------------------------------
