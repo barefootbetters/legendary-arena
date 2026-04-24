@@ -1221,7 +1221,7 @@ These packets ship the game and keep it running.
   no simulation may derive or mutate setup composition; seed-to-PRNG wiring
   limitations documented in D-1248 and must not be masked
 
-- [ ] WP-051 — PAR Publication & Server Gate Contract ✅ Reviewed
+- [x] WP-051 — PAR Publication & Server Gate Contract ✅ Reviewed — Done 2026-04-23 (Commit A `ce3bffb`)
   Dependencies: WP-050, WP-004
   Notes: Server-layer enforcement of the pre-release PAR gate; loads PAR
   index at startup (non-blocking — casual play continues without PAR);
@@ -1230,7 +1230,23 @@ These packets ship the game and keep it running.
   server is read-only for PAR data; does NOT implement leaderboard endpoint
   (future work); does NOT modify engine or WP-050 contracts; server files
   use `.mjs` extension per WP-004; closes the chain from simulation →
-  artifact → enforcement
+  artifact → enforcement. Executed 2026-04-23: two new files under
+  `apps/server/src/par/` (`parGate.mjs`, `parGate.test.ts` with 13 tests);
+  two surgical modifications (`server.mjs` Promise.all extension +
+  `package.json` test glob expansion). Server baseline 6/2/0 → 19/3/0;
+  repo-wide 658/126/0 → 671/127/0; engine 506/113/0 unchanged (A1
+  amendment already in A0-engine commit `5e468a7`). Zero `node:fs`
+  imports in `parGate.mjs`; all PAR file IO delegated to engine
+  `loadParIndex` per D-5001 line 8937. D-5101 (dual-index in-memory
+  load with sim-over-seed precedence) + D-5102 (`PAR_VERSION` env var
+  with `?? 'v1'` fallback) + D-5103 (existence-based trust) landed
+  in A0-governance `db83d9a`. 01.6 post-mortem at
+  `docs/ai/post-mortems/01.6-WP-051-par-publication-server-gate.md`
+  covers 8 mandatory checks including the pnpm-on-Windows + cmd.exe
+  test-glob quoting refinement (quoted form from Locked Values was
+  silently matching zero files; unquoted form matches proven
+  pre-WP-051 precedent). Commits use `EC-051:` on code; `SPEC:` on
+  pre-flight and governance close; `WP-051:` never used (P6-36).
 
 - [ ] WP-052 — Player Identity, Replay Ownership & Access Control ✅ Reviewed
   Dependencies: WP-051, WP-004, WP-027
