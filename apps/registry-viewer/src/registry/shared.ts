@@ -13,7 +13,13 @@ export function flattenSet(set: SetData, setName: string): FlatCard[] {
   for (const hero of set.heroes) {
     for (const card of hero.cards) {
       cards.push({
-        key:         `${abbr}-hero-${hero.slug}-${card.slot}`,
+        // why: use card.slug (not card.slot) — a few heroes (wwhk Caiera,
+        // Miek The Unhived, Rick Jones) have two cards sharing the same
+        // slot because one Transforms into the other. Keying on slot
+        // produced duplicate Vue v-for keys and stranded DOM nodes that
+        // survived filtering, making those cards appear to match every
+        // search term.
+        key:         `${abbr}-hero-${hero.slug}-${card.slug}`,
         cardType:    "hero",
         setAbbr:     abbr,
         setName,
