@@ -281,24 +281,42 @@ If a game can be replayed, it must produce the same score. Anything else is inva
 
 #### 23. Competitive Leaderboards & Submission
 
-Legendary Arena supports **optional competitive benchmarking**, not player-vs-player combat.
+Legendary Arena supports **optional competitive benchmarking** — never
+real-time or turn-based player-vs-player combat.
+
+Two competitive surfaces are sanctioned:
+
+**(a) Scenario benchmarking (primary).** Players compete by selecting
+a defined scenario (Scheme + Mastermind + Villains) and a chosen hero
+composition. The competitive question is always:
+
+> "Who can achieve the best performance **against this scenario** with
+> **this team**?"
+
+**(b) Asynchronous player-vs-player comparison (secondary).** Players
+may be compared against one another through aggregate views over their
+independently played, replay-verified scenario runs — seasonal ladders,
+year-end honors, cross-scenario archives. In this surface:
+
+- Players never interact during gameplay
+- Players never share a game state
+- Players never act as opponents inside a match
+- Competition occurs only by comparing outcomes after the fact
+
+This is **competition via comparison**, not combat. The underlying
+inputs remain scenario-specific and replay-verified per §22 and §24.
+
+The competitive question, in either surface, is never:
+
+> "Who unlocked or purchased more advantages?"
 
 Supported structures include:
 - Scenario-specific leaderboards
+- Aggregate seasonal leaderboards over verified scenario runs
 - Public or private scoreboards
 - Player-submitted results verified by replay data
 
-Players compete by selecting:
-- A defined scenario (Scheme + Mastermind + Villains)
-- A chosen hero composition
-
-The competitive question is always:
-
-> "Who can achieve the best performance **against this scenario** with **this team**?"
-
-Never:
-
-> "Who unlocked or purchased more advantages?"
+See D-0005 for the decision record authorizing surface (b).
 
 #### 24. Replay-Verified Competitive Integrity
 
@@ -323,6 +341,26 @@ It must never reward:
 - Exploit-driven optimization
 
 Legendary Arena measures **how well** a game was played — never **how long** or **how often** it was played.
+
+This applies to every competitive surface, including §23(b) asynchronous
+comparison. Specifically:
+
+- Repeated attempts may improve play quality, but repetition alone
+  confers no competitive advantage.
+- Seasonal and aggregate comparison metrics must be
+  **quality-normalized** — for example: best-N-runs, average PAR delta,
+  per-attempt efficiency, or equivalent. Cumulative counts of wins,
+  sessions, or attempts alone are not valid ranking inputs.
+- Any seasonal, ladder, or archive format that would reward sheer
+  volume of play over quality of play is a violation of this goal,
+  regardless of how the format is framed.
+- **Non-ranking telemetry carve-out.** Volume statistics — total runs
+  completed, hours played, lifetime scenario coverage, engagement
+  milestones, achievement badges tied to repetition — may still be
+  recorded and displayed as **non-ranking player profile data**. The
+  prohibition in this clause applies only to inputs of ranking,
+  title-awarding, or archive-honors computations. Telemetry and
+  profile stats are not rankings.
 
 #### 26. Simulation-Calibrated PAR Determination
 

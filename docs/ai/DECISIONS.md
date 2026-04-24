@@ -112,6 +112,92 @@ the Sole Authority)
 
 ---
 
+### D‑0005 — Asynchronous PvP Comparison Authorized; Live PvP Combat Forbidden
+**Decision:** Vision §23 is amended to explicitly sanction
+**asynchronous player‑vs‑player competitive comparison** — aggregate
+views over independently played, replay‑verified scenario runs — as a
+secondary competitive surface alongside the primary scenario‑benchmarking
+surface. Real‑time and turn‑based player‑vs‑player combat remain
+prohibited.
+
+Under this decision:
+- Players never share game state or act inside each other's matches.
+- Competition exists only at the leaderboard / archive / aggregate
+  layer, after the fact.
+- Every input to an aggregate metric is a scenario‑specific,
+  replay‑verified run governed by §22, §24, and the existing PAR /
+  scenario‑scoring surfaces (WP‑048, WP‑054).
+- Aggregate metrics must be quality‑normalized per §25 — cumulative
+  counts of wins, sessions, or attempts alone are not valid ranking
+  inputs.
+
+**Scope:**
+- Authorizes seasonal ladders, Player‑of‑the‑Year honors, cross‑scenario
+  archives, "best overall performer" views, strength‑of‑field weighting,
+  and similar aggregate comparison surfaces.
+- Does **not** authorize any form of real‑time, turn‑based, or
+  interactive PvP. The cooperative gameplay model is preserved.
+- Does **not** alter WP‑048 / WP‑054 authority — those remain the
+  scenario‑scoped competitive foundation, and aggregate surfaces
+  project over them rather than replacing them.
+- Any future ranking Work Packet must treat PvP as a projection layer
+  over independent runs; raw volume‑based scoring is forbidden by §25
+  and by this decision.
+- **Non‑ranking telemetry is unaffected.** Volume statistics (total
+  runs completed, hours played, lifetime scenario coverage, engagement
+  milestones) may continue to be recorded and displayed as player
+  profile data, provided they never feed into a ranking, title‑awarding,
+  or archive‑honors computation. See Vision §25 carve‑out.
+
+**Rationale:**
+1. **Gap in the original Vision.** §23 prohibited "player‑vs‑player
+   combat" but did not explicitly sanction the async‑comparison surface
+   that a cooperative game can legitimately support. A draft
+   `docs/ai/DESIGN-RANKING.md` surfaced the gap by proposing PvP
+   rankings without any explicit vision authorization.
+2. **Correct resolution is amendment, not reinterpretation.** Silently
+   re‑reading §23 to permit aggregate comparison would create authority
+   debt; amending it makes the distinction binding and auditable.
+3. **Cooperative gameplay preserved.** Marvel Legendary is cooperative.
+   Async comparison does not introduce in‑match adversarial mechanics;
+   it aggregates independent cooperative runs. The gameplay contract is
+   unchanged.
+4. **Determinism and replay integrity preserved.** Aggregate surfaces
+   consume replay‑verified scenario runs as inputs. No new authority
+   over game state is introduced; the engine remains sole authority
+   (D‑0101) and replays remain the integrity substrate (§24).
+5. **Anti‑grind principle hardened, not weakened.** §25 is simultaneously
+   tightened to explicitly forbid volume‑based ranking inputs across
+   every competitive surface. The amendment opens a competitive form
+   only on the condition that quality normalization is mandatory.
+
+**How to apply:**
+- A WP that proposes a PvP competitive surface is **admissible** only
+  if it is async, projection‑only, and quality‑normalized.
+- A WP that proposes real‑time or turn‑based PvP combat must be
+  rejected at intake.
+- A WP that proposes cumulative‑win or cumulative‑attempt ranking
+  (regardless of framing) must be rejected or returned for
+  quality‑normalized redesign.
+- `docs/ai/DESIGN-RANKING.md` is valid **only** if it describes async
+  comparison over independently played runs with quality‑normalized
+  metrics. Its current draft predates this decision and must be revised
+  before any derived WP may execute.
+
+**Revisiting:** This decision may be revisited only by a new
+`DECISIONS.md` entry that (a) identifies a concrete competitive surface
+outside the async‑comparison model that would require sanction, and
+(b) addresses how cooperative gameplay, determinism, and anti‑grind
+principles are preserved under the proposed expansion.
+
+**Introduced:** 2026‑04‑24 — vision amendment during
+`docs/ai/DESIGN-RANKING.md` review.  
+**Reinforces:** §23, §24, §25 (Vision primary goals); D‑0002
+(Determinism), D‑0101 (Engine Authority).  
+**Status:** Active
+
+---
+
 ## Engine & Core Architecture Decisions
 
 ### D‑0101 — Engine Is the Sole Authority
