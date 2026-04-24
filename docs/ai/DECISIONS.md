@@ -9409,6 +9409,34 @@ If a future registry change introduces leading whitespace on Ambush ability stri
 
 ---
 
+### D-9401 — Viewer-Only Fix for Duplicate Hero `FlatCard.key` on Transform-Pair Cards
+
+**Packet:** WP-094
+
+**Decision:** The hero `FlatCard.key` duplicate-collision bug — three `wwhk` heroes (Caiera slot 4, Miek The Unhived slot 4, Rick Jones slot 6) have two cards sharing the same `slot` because one Transforms into the other, producing two `FlatCard` entries with identical `key` under the original `${abbr}-hero-${hero.slug}-${card.slot}` format — is fixed **only** in the registry-viewer's local `flattenSet` copy at `apps/registry-viewer/src/registry/shared.ts`. The sibling copy at `packages/registry/src/shared.ts` remains on the slot-based format. The viewer's new hero-key format is `${abbr}-hero-${hero.slug}-${card.slug}`.
+
+**Rationale:**
+
+- The user-visible symptom ("these hero cards appear in every search on cards.barefootbetters.com") is a **Vue reconciliation** problem: `CardGrid.vue` runs `v-for` keyed on `card.key`, and duplicate keys in the same render list collapse two logical entries into a single DOM identity, stranding one of the two DOM nodes when the filter excludes them. This is a client-rendering concern, not a data-shape concern.
+- The engine-side copy at `packages/registry/src/shared.ts` feeds `extractHeroSlug()` in `packages/game-engine/src/economy/economy.logic.ts`, which parses the hero slug by taking everything after `{setAbbr}-hero-` up to the last `-`. That parser relies on the slot suffix being a single dash-free segment. Swapping the suffix to `card.slug` would break every multi-word card slug (`shadow-queen`, `vengeful-destructor`) and every multi-word hero slug (`spider-man`, `captain-america`) because the parser would swallow the first dash of the card slug as the slot boundary. Fixing the packages/registry copy therefore requires a coordinated consumer migration (`extractHeroSlug` + the documented contract at `packages/registry/src/types/index.ts:51`) that is out of scope for a drive-by viewer bug fix.
+- The two `flattenSet` copies are already independent: the viewer has never imported `@legendary-arena/registry`'s `flattenSet` at runtime; it has its own local copy for browser-safe bundling. The copies are now **deliberately divergent** in their hero-key format, with each copy matching the uniqueness guarantee its consumer needs — Vue keyed rendering in the viewer, last-dash-slot-suffix parsing in the engine.
+- The duplicate-slot data pattern in `data/cards/wwhk.json` is a legitimate Transform-pair representation (one card with `[keyword:Transform]` references the other by name at slot 4); deduplicating upstream would lose that linkage. The upstream data is authoritative; both viewer and engine must tolerate it, not fight it.
+
+**Alternatives considered:**
+
+- **Fix `packages/registry/src/shared.ts` in lockstep:** rejected for this packet. The migration is cross-layer (registry type contract + engine consumer + documented format string) and would need its own WP with consumer-signature changes, test coverage for multi-dash hero and card slugs, and a drift check against the three affected `wwhk` entries. WP-094's scope is deliberately minimal: fix the symptom the user reported, do not harmonize copies speculatively.
+- **Append a differentiator that preserves slot (e.g., `...-${slot}-${slug}`):** rejected. Any slot-retaining scheme still breaks the engine parser's last-dash assumption the moment a card slug contains a dash, so the engine-side migration cannot be avoided either way. A future harmonization WP would pick a uniform scheme across both copies.
+- **Deduplicate upstream in `data/cards/wwhk.json`:** rejected. The Transform pair is a real game mechanic; collapsing the two cards loses data. The viewer must tolerate the pattern.
+- **Add a Vue-side workaround (e.g., `key="card.key + '-' + index"` in `CardGrid.vue`):** rejected. That masks the data-shape problem with a rendering-only hack, loses the ability to use `key` for Vue transition identity, and would drift from the other grid/list components in the app. Fixing at the `flattenSet` source is the correct seam.
+
+**Status:** Immutable (execution contract for WP-094; viewer-only scope). If a future WP harmonizes the two `flattenSet` copies, that WP must include the engine consumer migration in its own scope and cite this entry when converging the formats.
+
+**Follow-up path (not scheduled):** If harmonization becomes desirable (for example, to simplify cross-copy reasoning or to eliminate the divergence as a surprise factor), the successor WP must: (a) change `packages/registry/src/shared.ts` hero key to a uniqueness-preserving format, (b) update `extractHeroSlug()` in `packages/game-engine/src/economy/economy.logic.ts` to parse the new format correctly for multi-dash hero and card slugs, (c) update the documented key format at `packages/registry/src/types/index.ts:51`, (d) add test coverage for multi-dash slugs, and (e) cite this entry when converging the two copies.
+
+**Citation:** `apps/registry-viewer/src/registry/shared.ts` (the modified hero key line + its `// why:` comment); `packages/registry/src/shared.ts` (unchanged; the engine-consumer format the viewer deliberately diverges from); `packages/game-engine/src/economy/economy.logic.ts` (`extractHeroSlug` — the consumer whose contract is preserved); `apps/registry-viewer/src/components/CardGrid.vue` (the Vue `v-for` site that requires unique keys); `data/cards/wwhk.json` (the three duplicate-slot Transform pairs: Caiera / Miek The Unhived / Rick Jones); WP-094 + EC-094 (the packet that landed this decision).
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

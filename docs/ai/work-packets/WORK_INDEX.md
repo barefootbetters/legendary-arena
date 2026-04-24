@@ -1744,6 +1744,28 @@ These packets ship the game and keep it running.
   §10a (indirect via WP-091), NG-1..7 (all preserved). See
   [WP-093-match-setup-rule-mode-envelope-field.md](WP-093-match-setup-rule-mode-envelope-field.md).
 
+- [ ] WP-094 — Viewer Hero FlatCard Key Uniqueness ⬜ Ready (drafted 2026-04-24)
+  Dependencies: WP-003 (CardRegistry + `FlatCard` type). Compatible
+  with (not dependent on) WP-086 and WP-091.
+  Notes: Single-file bug fix in `apps/registry-viewer/src/registry/shared.ts`.
+  Three heroes in `wwhk` (Caiera, Miek The Unhived, Rick Jones) have
+  two cards sharing the same `slot` because one Transforms into the
+  other; the viewer's `flattenSet` keyed each hero `FlatCard` on
+  `${abbr}-hero-${hero.slug}-${card.slot}`, producing duplicate Vue
+  `v-for` keys and stranded DOM nodes that survived filter updates —
+  the symptom was "these cards appear in every search result on
+  cards.barefootbetters.com". Fix changes the viewer-side key suffix
+  from `card.slot` to `card.slug`. Scope deliberately excludes
+  `packages/registry/src/shared.ts`: its engine consumer
+  `extractHeroSlug` in `packages/game-engine/src/economy/economy.logic.ts`
+  parses the slot suffix via last-dash and would break under the new
+  format. Harmonizing the two `flattenSet` copies is tracked as a
+  future follow-up, not this packet. No new npm deps. No test-file
+  additions (viewer has no Vue component-test harness). Vision
+  clauses touched: §10a (Registry Viewer public surface). NG-1..7
+  all preserved. See
+  [WP-094-viewer-hero-flatcard-key-uniqueness.md](WP-094-viewer-hero-flatcard-key-uniqueness.md).
+
 ---
 
 ## Pre-Planning System (Parallel-Safe with Phase 4+)
