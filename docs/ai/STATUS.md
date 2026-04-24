@@ -7,6 +7,10 @@
 
 ## Current State
 
+### WP-088 / EC-088 Executed — `buildCardKeywords` Setup Module Hardening (2026-04-23, EC-088)
+
+Setup-time hardening only; no runtime behavior change for well-formed card data. Adds `isKeywordSetData` + per-iteration shape guards, replaces `findFlatCardForVillainCard` with a function-local `villainExtIds: Set<string>` pre-index (O(V·F) → O(V+F); D-8802 locality), and pivots to a canonical emission order `['patrol', 'ambush', 'guard']` byte-identical to `BOARD_KEYWORDS` per D-8801. Every `result[extId]` is a freshly-constructed `BoardKeyword[]` per D-8802 (WP-028 aliasing precedent). `KeywordSetData.abbr` and `.henchmen` deleted; `findFlatCardForVillainCard` fully removed; `extractKeywordsFromAbilities` renamed `detectAmbush` (returns boolean). Ambush prefix-match and Patrol/Guard safe-skip `// why:` comments preserved verbatim (D-8803 locks whitespace-tolerance deferral). `buildCardKeywords` signature byte-identical; caller at `buildInitialGameState.ts:173` untouched. Test baseline `507 / 114 / 0` engine + `672 / 128 / 0` repo-wide unchanged (adjusted post-WP-087 A1 amendment `d5880d2`).
+
 ### WP-087 / EC-087 Executed — Engine Type Hardening (2026-04-23, EC-087)
 
 `PlayerId` string alias added to `packages/game-engine/src/types.ts` with a `// why:` comment citing the boardgame.io 0.50.x player-index convention; three `Record<string, …>` → `Record<PlayerId, …>` swaps at the three canonical sites (`LegendaryGameState.playerZones`, `GameStateShape.playerZones`, `PersistableMatchConfig.playerNames`); factory-time `hookRegistry` construction in `rules/ruleRuntime.ordering.test.ts` eliminates the sole non-setup `hookRegistry` assignment grep-hit. Test baseline `671 / 127 / 0` unchanged. Zero runtime behavior change; zero serialization / replay / snapshot shape change.

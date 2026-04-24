@@ -1565,7 +1565,7 @@ These packets ship the game and keep it running.
   [WP-087-engine-type-hardening.md](WP-087-engine-type-hardening.md) +
   [EC-087](../execution-checklists/EC-087-engine-type-hardening.checklist.md).
 
-- [ ] WP-088 — Setup Module Hardening: `buildCardKeywords` Runtime Guards, Villain Pre-Index, Output Ordering ⬜ Ready (drafted 2026-04-23; A0 SPEC bundle complete 2026-04-23; lint-gate PASS per WP-088 §Appendix A)
+- [x] WP-088 — Setup Module Hardening: `buildCardKeywords` Runtime Guards, Villain Pre-Index, Output Ordering ✅ Completed 2026-04-23 (Commit A `d183991`; A0 SPEC bundle `88580a9`; adjusted test baseline `507 / 114 / 0` engine, `672 / 128 / 0` repo-wide — rebased from invocation's pre-drift `506 / 113 / 0` + `671 / 127 / 0` per post-WP-087 A1 amendment `d5880d2`)
   Dependencies: WP-025 (originating packet — `buildCardKeywords` + `BoardKeyword` / `BOARD_KEYWORDS`), WP-050 (merged to `main` 2026-04-23 at `ccdf44e` — clears §Assumes gate), WP-087 (`readonly` deferral per D-8702 — bounds WP-088's type surface)
   Notes: Single-file internal-hardening pass on
   `packages/game-engine/src/setup/buildCardKeywords.ts` — seven numbered
