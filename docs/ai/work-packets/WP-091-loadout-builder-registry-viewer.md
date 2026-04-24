@@ -54,10 +54,18 @@ After this session:
 - `packages/registry` exports a new `setupContract` module (types + zod
   schema + `validateMatchSetupDocument()` function) that mirrors
   `MATCH-SETUP-JSON-SCHEMA.json` structurally and additionally verifies
-  every composition `ext_id` against a `CardRegistryReader`. The module is
-  browser-safe (zod only, no Node built-ins) so it is the single source
-  of truth for both the registry-viewer UI and any future tooling that
-  needs structural + registry-aware validation of a MATCH-SETUP document.
+  every composition `ext_id` against a local `CardRegistryReader`
+  structural interface defined inside the `setupContract/` module (see
+  §Amendments A-091-01: the name mirrors the engine-side minimal
+  `CardRegistryReader` at `packages/game-engine/src/matchSetup.validate.ts:28`
+  per D-1209, but this copy lives registry-side to avoid a layer-
+  boundary crossing; the real `CardRegistry` from
+  `@legendary-arena/registry` satisfies it structurally via
+  `listCards(): FlatCard[]` whose elements include `{ key: string }`).
+  The module is browser-safe (zod only, no Node built-ins) so it is the
+  single source of truth for both the registry-viewer UI and any
+  future tooling that needs structural + registry-aware validation of
+  a MATCH-SETUP document.
 - `apps/registry-viewer` renders a third top-level tab, "Loadout", that
   opens a builder view. The user picks a scheme, a mastermind, one or
   more villain groups, one or more henchman groups, one or more hero
@@ -82,16 +90,30 @@ export/import.
 ## Assumes
 
 - WP-003 complete. Specifically:
-  - `packages/registry/src/index.ts` exports a `CardRegistryReader`
-    interface with a method for reading flat cards by ext_id
+  - `packages/registry/src/index.ts` exports `CardRegistry` (per
+    D-1209 this is the registry-side public interface; the engine-side
+    minimal `CardRegistryReader` mirror at
+    `packages/game-engine/src/matchSetup.validate.ts:28` is **not**
+    directly consumed by WP-091 — engine imports are forbidden from
+    both `packages/registry/**` and `apps/registry-viewer/**`). WP-091
+    defines its own local `CardRegistryReader` inside
+    `packages/registry/src/setupContract/` whose shape mirrors the
+    engine-side interface exactly (`listCards(): Array<{ key: string }>`)
+    so both validators perform identical lookups against
+    `FlatCard.key`; the real `CardRegistry` satisfies the local
+    interface structurally via its `listCards(): FlatCard[]` surface
+    (each `FlatCard` carries a `key: string` field)
   - The registry-viewer already consumes registry via
     `apps/registry-viewer/src/lib/registryClient.ts`
 - WP-005A complete. Specifically:
-  - `packages/game-engine/src/setup/matchSetup.types.ts` defines
-    `MatchSetupConfig` with the 9 locked fields. This packet does **not**
-    modify that file — the engine's type remains authoritative for the
-    composition block; this packet adds a **registry-side mirror** and a
-    drift-detection test that asserts the two share the same field set.
+  - `packages/game-engine/src/matchSetup.types.ts` defines
+    `MatchSetupConfig` with the 9 locked fields. (Note: this file lives
+    at `packages/game-engine/src/matchSetup.types.ts`, **not** under a
+    `setup/` subdirectory — see §Amendments A-091-02 for the pre-flight
+    path correction.) This packet does **not** modify that file — the
+    engine's type remains authoritative for the composition block; this
+    packet adds a **registry-side mirror** and a drift-detection test
+    that asserts the two share the same field set.
 - WP-055 complete. Specifically:
   - `packages/registry/src/theme.schema.ts` defines `ThemeDefinition` with
     a `setupIntent` block containing `mastermindId`, `schemeId`,
@@ -188,11 +210,10 @@ Before writing a single line:
   validator shape. The new `validateMatchSetupDocument()` follows the
   same `ok: true | ok: false + errors` convention used elsewhere in
   this repo.
-- `packages/game-engine/src/setup/matchSetup.types.ts` — read the
-  engine-side `MatchSetupConfig` to confirm field names and types. Do
-  not modify it. The registry-side mirror must declare the same 9
-  fields; a drift-detection test asserts the two share identical
-  fields.
+- `packages/game-engine/src/matchSetup.types.ts` — read the engine-side
+  `MatchSetupConfig` to confirm field names and types. Do not modify it.
+  The registry-side mirror must declare the same 9 fields; a
+  drift-detection test asserts the two share identical fields.
 - `docs/ai/REFERENCE/00.1-master-coordination-prompt.md` — non-
   negotiable constraints: the client submits intent, not outcomes;
   engine is the sole authority; no client-side rule execution. A
@@ -288,10 +309,16 @@ Before writing a single line:
   the human before choosing a side. The three governance docs must
   agree; reconciliation is a DECISIONS.md-scoped decision, not a
   WP-091 call.
-- If `CardRegistryReader` does not expose the method needed to look up
-  a scheme / mastermind / villain group / henchman group / hero group
-  by ext_id, stop and ask before adding a new registry surface. The
-  validator must work with the **existing** reader contract.
+- If the existing `CardRegistry.listCards()` surface does not yield
+  `FlatCard[]` elements whose `key: string` field covers every ext_id
+  the composition arrays can carry (scheme / mastermind / villain /
+  henchman / hero), stop and ask before adding a new registry surface.
+  The local `CardRegistryReader` inside `setupContract/` must mirror
+  the engine-side minimal shape at
+  `packages/game-engine/src/matchSetup.validate.ts:28`
+  (`listCards(): Array<{ key: string }>`) byte-for-byte so both
+  validators perform identical ext_id lookups; drift in that shape is
+  a separate engine-side decision (amend D-1209), not a WP-091 call.
 
 **Locked contract values (paste verbatim — do not paraphrase):**
 
@@ -434,6 +461,17 @@ by this builder is the same shape consumed by the authoritative
 ### A) Registry-side setup contract module
 
 - **`packages/registry/src/setupContract/setupContract.types.ts`** — new:
+  - `export interface CardRegistryReader { listCards(): Array<{ key:
+    string }>; }` — local registry-side structural interface mirroring
+    the engine-side minimal interface at
+    `packages/game-engine/src/matchSetup.validate.ts:28` (D-1209)
+    byte-for-byte. Declared locally instead of imported so that
+    `packages/registry/**` and `apps/registry-viewer/**` never cross
+    the layer boundary. The public `CardRegistry` from
+    `@legendary-arena/registry` satisfies this interface structurally
+    via its `listCards(): FlatCard[]` surface (each `FlatCard` carries
+    a `key: string` field). Add a `// why:` comment citing D-1209, the
+    engine-side file + line, and the layer-boundary rationale.
   - `export interface SetupCompositionInput` with exactly the nine
     composition fields from Locked Contract Values, typed to match
     `MATCH-SETUP-JSON-SCHEMA.json`
@@ -496,7 +534,15 @@ by this builder is the same shape consumed by the authoritative
 
 - **`packages/registry/src/setupContract/setupContract.validate.ts`** — new:
   - `export function validateMatchSetupDocument(input: unknown, registry:
-    CardRegistryReader): ValidateMatchSetupDocumentResult`
+    CardRegistryReader): ValidateMatchSetupDocumentResult` — where
+    `CardRegistryReader` is the **local registry-side structural
+    interface** declared in `setupContract.types.ts` with shape
+    `{ listCards(): Array<{ key: string }> }`, mirroring the engine's
+    D-1209 interface at
+    `packages/game-engine/src/matchSetup.validate.ts:28` byte-for-byte.
+    Add a `// why:` comment referencing D-1209, the engine-side mirror
+    file + line, and the layer-boundary reason the interface is
+    redeclared registry-side instead of imported.
   - Pure function. Never throws. Accumulates all errors (does not
     early-return on first failure) so the UI can render a complete
     error list.
@@ -509,11 +555,54 @@ by this builder is the same shape consumed by the authoritative
     message template (detect the issue via its field path
     `"heroSelectionMode"` and its `invalid_enum_value` code, then
     substitute the canonical error into the returned list).
-  - Step 2: registry ext_id lookups. For each of the five composition
-    ext_id surfaces (`schemeId`, `mastermindId`, and every entry in
-    `villainGroupIds`, `henchmanGroupIds`, `heroDeckIds`), look up via
-    the existing `CardRegistryReader` surface. Unknown ext_ids produce
-    `code: "unknown_extid"` errors.
+  - Step 1b — **Zod-upgrade-detector defensive fallback (copilot Issue 22
+    FIX, pre-flight-locked).** Immediately after the zod failure path, before
+    returning, inspect the *raw* `input` independently of the zod issue
+    list:
+    ```
+    if (typeof input === 'object' && input !== null) {
+      const raw = (input as { heroSelectionMode?: unknown }).heroSelectionMode;
+      if (typeof raw === 'string' && raw !== 'GROUP_STANDARD') {
+        // why: belt-and-suspenders against zod minor-version drift —
+        // if a future zod release renames `invalid_enum_value`, reshapes
+        // `issue.path`, or reorders issues such that the Step 1 detector
+        // misses the heroSelectionMode rejection, this raw-input check
+        // still force-emits the WP-093 template. Deduplicated by
+        // code + field so we never emit the same error twice.
+        const alreadyEmitted = errors.some(
+          (e) => e.code === 'unsupported_hero_selection_mode'
+              && e.field === 'heroSelectionMode',
+        );
+        if (!alreadyEmitted) {
+          errors.push(buildUnsupportedHeroSelectionModeError(raw));
+        }
+      }
+    }
+    ```
+    The `buildUnsupportedHeroSelectionModeError` helper is a tiny pure
+    function that substitutes `<value>` into the locked WP-093 template
+    constant — the template itself lives in a single exported `const`
+    (e.g., `UNSUPPORTED_HERO_SELECTION_MODE_TEMPLATE`) so Step 1 and
+    Step 1b both reference the identical string. This guarantees
+    byte-for-byte consistency with D-9301 regardless of which detector
+    branch fires.
+  - Step 2: registry ext_id lookups, using the **engine-identical
+    algorithm** from `packages/game-engine/src/matchSetup.validate.ts`
+    `buildKnownExtIds()` / `validateMatchSetup()` so the registry-side
+    and engine-side validators agree on every input by construction:
+    (i) call `registry.listCards()` once; (ii) build
+    `const knownIds = new Set<string>()` and add every `card.key` to
+    it with a `for...of` loop (no `.reduce()` per §Code Style §7);
+    (iii) for each of the five composition ext_id surfaces
+    (`schemeId`, `mastermindId` as scalars, and every entry in
+    `villainGroupIds`, `henchmanGroupIds`, `heroDeckIds` as array
+    members), check `knownIds.has(extId)`. Membership failures produce
+    `code: "unknown_extid"` errors whose `field` path identifies the
+    exact surface (e.g., `"composition.villainGroupIds[2]"`). Add a
+    `// why:` comment stating this mirrors the engine's Stage 2 exactly
+    so a document accepted here is accepted by the engine's
+    authoritative validator at match creation time — any divergence is
+    a contract bug that must be fixed on both sides simultaneously.
   - Step 3: rule-mode default normalization. If the parsed document
     has `heroSelectionMode === undefined`, the returned `value` field
     carries `heroSelectionMode: "GROUP_STANDARD"` explicitly (default
@@ -558,9 +647,22 @@ by this builder is the same shape consumed by the authoritative
     this is the WP-093 backward-compat contract.
   - Invalid: `heroSelectionMode: "HERO_DRAFT"` → error code
     `"unsupported_hero_selection_mode"` and message body matches the
-    WP-093 template verbatim (test uses `assert.match` or
-    `assert.strictEqual` on the exact string).
+    WP-093 template verbatim (test uses `assert.strictEqual` on the
+    exact string; `assert.match` and `.includes()` are forbidden).
   - Invalid: `heroSelectionMode: "MADE_UP"` → same rejection.
+  - **Compound failure — zod-upgrade-detector defensive fallback
+    (copilot Issue 22 test case).** Construct a compound-invalid
+    document where `heroSelectionMode: "HERO_DRAFT"` coexists with
+    another envelope-level violation (e.g., `seed` missing, or
+    `schemaVersion` absent) so zod's issue-ordering is not guaranteed
+    to surface the `heroSelectionMode` rejection first. Assert that the
+    returned `errors` array contains **exactly one** entry with
+    `code === "unsupported_hero_selection_mode"` (deduplication works)
+    AND its `message` is byte-identical to the WP-093 template with
+    `<value>` substituted to `HERO_DRAFT` (the Step 1b fallback still
+    fires even if the Step 1 zod-path detector's assumptions shift).
+    `// why:` comment on the test references the copilot Issue 22 FIX
+    rationale.
   - Invalid: missing envelope field (e.g., `seed`).
   - Invalid: missing composition field (e.g., `schemeId`).
   - Invalid: unknown top-level field (strict object rejects).
@@ -584,18 +686,22 @@ by this builder is the same shape consumed by the authoritative
     if tests refuse "almost the same" messages. `// why:` comment
     on at least one such test referencing this rule so future
     readers do not "relax" it into a substring check.
-  - All tests use a small in-memory stub `CardRegistryReader` (no
-    network, no filesystem beyond JSON fixtures already present in the
-    registry package).
+  - All tests use a small in-memory stub that satisfies the local
+    `CardRegistryReader` interface (typically a plain object literal
+    `{ listCards: () => [{ key: 'scheme-x' }, { key: 'mastermind-y' },
+    ...] }` built inline per-test; no network, no filesystem beyond
+    JSON fixtures already present in the registry package). The stub
+    is local to the test file — no shared helper is introduced.
 
 - **`packages/registry/src/index.ts`** — modified:
   - Re-export the public surface of `setupContract`:
+    `CardRegistryReader` (the local structural interface),
     `SetupCompositionInput`, `SetupEnvelope`, `MatchSetupDocument`,
-    `MatchSetupValidationError`, `MatchSetupErrorCode`,
-    `ValidateMatchSetupDocumentResult`, `validateMatchSetupDocument`,
-    `MatchSetupDocumentSchema`. Use named exports only — no barrel
-    indirection beyond the top-level `index.ts` the project already
-    uses.
+    `HeroSelectionMode`, `MatchSetupValidationError`,
+    `MatchSetupErrorCode`, `ValidateMatchSetupDocumentResult`,
+    `validateMatchSetupDocument`, `MatchSetupDocumentSchema`. Use named
+    exports only — no barrel indirection beyond the top-level
+    `index.ts` the project already uses.
   - Add `// why:` comment block at the top of the new export section
     stating the module is browser-safe and serves both registry-viewer
     authoring and future server-side envelope validation.
@@ -604,7 +710,11 @@ by this builder is the same shape consumed by the authoritative
 
 - **`apps/registry-viewer/src/composables/useLoadoutDraft.ts`** — new:
   - `export function useLoadoutDraft(registryReader: CardRegistryReader)`
-    returning a ref-based draft API:
+    — where `CardRegistryReader` is the local registry-side interface
+    re-exported from `@legendary-arena/registry` (declared in
+    `setupContract.types.ts` per §Scope A). The registry-viewer passes
+    the already-loaded `CardRegistry` singleton, which satisfies the
+    interface structurally. Returns a ref-based draft API:
     - `draft: Ref<MatchSetupDocument>` — the current in-memory
       loadout (initialized with blank strings, empty arrays, default
       counts from Locked Contract Values, a generated `seed`,
@@ -639,7 +749,17 @@ by this builder is the same shape consumed by the authoritative
       composable API to bind to without reshaping the composable.
     - `prefillFromTheme(theme: ThemeDefinition): void` — copies the
       five `setupIntent` fields into the draft; does not touch counts,
-      player count, seed, or expansions (the user keeps those as-is)
+      player count, seed, or expansions (the user keeps those as-is).
+      **Array fields must be spread-copied (`[...theme.setupIntent.
+      villainGroupIds]`, `[...theme.setupIntent.henchmanGroupIds]`,
+      `[...theme.setupIntent.heroDeckIds]`) before assignment to the
+      draft — copilot Issue 17 FIX; direct reference assignment would
+      alias the registry-loaded theme singleton and let subsequent
+      draft edits corrupt every other registry-viewer consumer holding
+      that reference.** Scalar fields (`schemeId`, `mastermindId`) are
+      immutable strings and need no copy. `// why:` comment on the
+      spread-copy block cites the WP-028 projection-aliasing
+      post-mortem precedent.
     - `loadFromJson(jsonText: string): { ok: true } | { ok: false;
       errors: MatchSetupValidationError[] }` — parses the text, runs
       `validateMatchSetupDocument`, and if valid replaces the draft
@@ -845,8 +965,14 @@ No other files may be modified.
 - [ ] Every error message in the validator is a full sentence (no
       single-word messages)
 - [ ] `packages/registry/src/index.ts` re-exports exactly the names
-      listed in Scope §A (including `HeroSelectionMode` and
-      `MatchSetupDocumentSchema`)
+      listed in Scope §A (including `CardRegistryReader`,
+      `HeroSelectionMode`, and `MatchSetupDocumentSchema`)
+- [ ] The local `CardRegistryReader` interface is declared in
+      `setupContract.types.ts` with shape exactly
+      `{ listCards(): Array<{ key: string }> }` — byte-identical to
+      the engine-side interface at
+      `packages/game-engine/src/matchSetup.validate.ts:28` (verified by
+      reading both files during post-mortem)
 
 ### A.1) Rule-mode validation (WP-093 compliance)
 - [ ] Valid document with `heroSelectionMode: "GROUP_STANDARD"` →
@@ -1120,3 +1246,179 @@ This packet is complete when ALL of the following are true:
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` has WP-091 added in the
       correct phase slot (alongside or after WP-090), dependencies
       listed, and checked off with today's date
+
+---
+
+## Test Expectations (Pre-Flight Locked)
+
+> Locked by the 2026-04-24 pre-flight as PS-1. Deviations require pre-flight
+> escalation; the executor does not get to choose a different shape.
+
+- **Prior baseline (HEAD = `739335f`):** `packages/registry` passes
+  **13 tests across 2 suites with 0 failures** (confirmed by the pre-flight's
+  running of `pnpm --filter @legendary-arena/registry test`).
+- **Post-execution baseline (locked):** **31 tests across 3 suites with 0
+  failures** — the +18 test delta and +1 suite delta are exact (17
+  WP-authored cases + 1 copilot Issue 22 defensive-fallback case). Any
+  other count is a drift.
+- **Suite-wrapping discipline:** all new test cases must live inside exactly
+  one `describe('setupContract (WP-091)', () => { … })` block in
+  `setupContract.test.ts`. Bare top-level `test()` calls do NOT register as
+  suites under `node:test`, so the suite count would become 2 instead of 3
+  (WP-031 P6-31 precedent). If the executor believes splitting the suite is
+  appropriate, they must escalate to pre-flight, not silently restructure.
+- **Test case inventory (18 cases):** drift-detection (1) + valid minimal
+  (1) + valid with all optional fields populated (1) + valid with
+  `heroSelectionMode` absent / default-materialized (1) + `"HERO_DRAFT"`
+  rejection (1) + `"MADE_UP"` rejection (1) + **compound-failure
+  zod-upgrade-detector fallback (1 — copilot Issue 22 FIX)** + missing
+  envelope field (1) + missing composition field (1) + unknown top-level
+  field (1) + unknown composition field (1) + duplicate `villainGroupIds`
+  (1) + unknown ext_id scheme (1) + unknown ext_id mastermind (1) +
+  unknown ext_id array entry (1) + `playerCount` out-of-range (1) +
+  malformed/non-integer/negative count (1) + round-trip deep-equals (1).
+  The exact ordering is executor discretion; the count is not.
+- **Existing test changes:** **zero**. `registry.smoke.test.ts` (1 suite,
+  ~3 tests) and `theme.schema.ts` / `theme.validate.ts` tests (1 suite,
+  ~10 tests) must pass unchanged — no structural assertion updates, no
+  logic edits.
+- **Repo-wide baselines (all unchanged — WP-091 touches none of these):**
+  `game-engine` 513/115/0; `arena-client` 66/0/0; `preplan` 52/7/0; `server`
+  19/3/0; `replay-producer` 4/2/0; `vue-sfc-loader` 11/0/0. Expected
+  repo-wide total after WP-091: **696/130/0** (from 678/129/0).
+- **No `boardgame.io`/`@legendary-arena/game-engine` imports in test files.**
+- **Exact-string assertions** (`assert.strictEqual`) on the WP-093 error
+  template — substring / `assert.match` / `.includes()` are forbidden.
+
+---
+
+## Amendments
+
+### A-091-01 — Local registry-side `CardRegistryReader` mirror (2026-04-24, pre-flight)
+
+**Triggered by:** 2026-04-24 pre-flight RS-1.
+
+**Change:** WP-091's original text assumed `packages/registry/src/index.ts`
+exported a `CardRegistryReader` interface. The registry actually exports
+`CardRegistry` (not `CardRegistryReader`); the minimal `CardRegistryReader`
+structural interface exists **engine-side** at
+`packages/game-engine/src/matchSetup.validate.ts:28` per D-1209 and must
+**not** be imported by `packages/registry/**` or `apps/registry-viewer/**`
+(layer boundary). This amendment redefines the consumer contract:
+WP-091 declares its own local `CardRegistryReader` inside
+`setupContract.types.ts` with the byte-identical shape
+`{ listCards(): Array<{ key: string }> }`. The real `CardRegistry` from
+`@legendary-arena/registry` satisfies this interface structurally via its
+`listCards(): FlatCard[]` surface (each `FlatCard` carries a `key: string`
+field). The local interface is re-exported from the top-level
+`packages/registry/src/index.ts`.
+
+**Scope impact:** none. No files added to or removed from the allowlist.
+The interface declaration lives inside an already-in-scope file
+(`setupContract.types.ts`).
+
+**Touched sections:** §Goal, §Assumes (WP-003 bullet), §Non-Negotiable
+Constraints (session protocol), §Scope A (types file + validator +
+re-exports), §Scope A.4 (test stub), §Scope B (composable parameter),
+§Acceptance Criteria §A.
+
+### A-091-02 — `MatchSetupConfig` file-path correction (2026-04-24, pre-flight)
+
+**Triggered by:** 2026-04-24 pre-flight RS-2.
+
+**Change:** WP-091's original text cited
+`packages/game-engine/src/setup/matchSetup.types.ts` in three places. The
+actual file lives at `packages/game-engine/src/matchSetup.types.ts`
+(no `setup/` subdirectory). Fix is prose-only; the drift-detection test
+now imports from the correct path.
+
+**Scope impact:** none.
+
+**Touched sections:** §Assumes (WP-005A bullet), §Context (read-first list).
+
+**Follow-up (not WP-091 scope):** D-9301 in `docs/ai/DECISIONS.md:9580`
+inherits the stale `setup/matchSetup.types.ts` citation. Flagged for a
+separate one-line `SPEC:` commit; not touched by WP-091.
+
+### A-091-03 — Explicit registry-lookup algorithm (2026-04-24, pre-flight)
+
+**Triggered by:** 2026-04-24 pre-flight RS-3.
+
+**Change:** WP-091's original §Scope A.3 Step 2 said "look up via the
+existing `CardRegistryReader` surface" without specifying the algorithm.
+This amendment pins the lookup to the engine-identical strategy from
+`packages/game-engine/src/matchSetup.validate.ts` `buildKnownExtIds()` /
+`validateMatchSetup()`: call `listCards()` once → build
+`Set<string>` of every `card.key` via `for...of` (no `.reduce()`) → check
+membership for each of the five composition ext_id surfaces → emit
+`code: "unknown_extid"` errors with a dot-path `field`. This guarantees
+that a document accepted by the registry-side validator is also accepted
+by the engine-side authoritative validator at match creation — any
+divergence is a contract bug that fails both validators.
+
+**Scope impact:** none. Algorithm fits inside the already-scoped
+`setupContract.validate.ts`.
+
+**Touched sections:** §Scope A.3 Step 2.
+
+### A-091-04 — `prefillFromTheme` spread-copy aliasing discipline (2026-04-24, copilot Issue 17 FIX)
+
+**Triggered by:** 2026-04-24 copilot check finding on Issue 17 (Hidden
+Mutation via Aliasing).
+
+**Change:** `useLoadoutDraft.prefillFromTheme(theme)` must spread-copy every
+array field from `theme.setupIntent` before writing to the draft —
+`[...theme.setupIntent.villainGroupIds]`, `[...theme.setupIntent.
+henchmanGroupIds]`, `[...theme.setupIntent.heroDeckIds]`. Direct reference
+assignment would alias the registry-loaded theme singleton; subsequent
+draft mutations (`addVillainGroup`, `removeHenchmanGroup`, etc.) would
+propagate into the shared theme object and corrupt every other
+registry-viewer consumer that holds the reference. Scalar fields
+(`schemeId`, `mastermindId`) are immutable strings and need no copy.
+A composable-level `// why:` comment on the spread-copy block cites
+WP-028's projection-aliasing post-mortem precedent.
+
+**Scope impact:** none. Pattern change inside the already-scoped
+`useLoadoutDraft.ts`. No new file; no new test (registry-viewer has no
+Vue-component test harness).
+
+**Touched sections:** §Scope B (`prefillFromTheme` bullet), EC-091
+§Guardrails, EC-091 §Required `// why:` Comments, EC-091 §Common Failure
+Smells.
+
+### A-091-05 — Zod-upgrade-detector defensive fallback (2026-04-24, copilot Issue 22 FIX)
+
+**Triggered by:** 2026-04-24 copilot check finding on Issue 22 (Silent
+Failure vs Loud Failure).
+
+**Change:** `validateMatchSetupDocument()` §Scope A.3 Step 1 originally
+relied on a zod-issue-path/code-based detector to upgrade an
+`invalid_enum_value` on `heroSelectionMode` into the WP-093-canonical
+`unsupported_hero_selection_mode` error with the verbatim template. A
+future zod minor release could rename `invalid_enum_value`, reshape
+`issue.path`, or reorder the issue list such that the detector silently
+stops matching; the validator would then emit zod's default message
+instead of the locked WP-093 template, breaking WP-092's byte-for-byte
+shape-guard contract. This amendment adds **Step 1b** — a raw-input
+defensive fallback that checks `input.heroSelectionMode` independently
+of the zod issue list. If the raw value is a string and not
+`"GROUP_STANDARD"`, and no `unsupported_hero_selection_mode` error has
+already been emitted (dedup by `code + field`), the validator
+force-injects the WP-093 template. Both Step 1 and Step 1b reference a
+single exported template constant so byte-for-byte equality with D-9301
+is guaranteed regardless of which detector fires. A dedicated test case
+(compound invalid where `"HERO_DRAFT"` coexists with another envelope
+violation) exercises the fallback.
+
+**Scope impact:** +1 test case. The pre-flight test-count lock (PS-1)
+updates from 30/3/0 → **31/3/0** (17 WP-authored + 1 copilot-added =
+18 new cases). Repo-wide total updates from 695/130/0 → **696/130/0**.
+The defensive code fits inside the already-scoped
+`setupContract.validate.ts`; the new constant
+(`UNSUPPORTED_HERO_SELECTION_MODE_TEMPLATE`) lives alongside the other
+exported setup-contract types.
+
+**Touched sections:** §Scope A.3 Step 1 (+ new Step 1b), §Scope A.4
+(new compound-failure test case), §Test Expectations (baseline +1 test,
+inventory +1 case), EC-091 §Guardrails (test count), EC-091 §After
+Completing (assertion), EC-091 §Common Failure Smells (new anti-pattern).
