@@ -1644,6 +1644,38 @@ These packets ship the game and keep it running.
   Alignment` block. See
   [WP-090-live-match-client-wiring.md](WP-090-live-match-client-wiring.md).
 
+- [ ] WP-093 — Match-Setup Rule-Mode Envelope Field (Governance) ⬜ Draft (drafted 2026-04-24; 00.3 lint-gate PASS; planning alias "WP-090.5"; pre-flight bundle registered 2026-04-24)
+  Dependencies: None (governance-only prerequisite). Consumed by
+  WP-091 (registry-viewer loadout builder) and WP-092 (lobby loadout
+  intake) — dependency ordering, not numeric ordering.
+  Notes: Governance-only packet — **zero code changes**. Adds
+  optional `heroSelectionMode` to the MATCH-SETUP envelope with v1
+  enum `["GROUP_STANDARD"]`; defaults to `"GROUP_STANDARD"` when
+  absent; reserves `"HERO_DRAFT"` in prose for a future WP (not in
+  the allowed enum in v1). Preserves the 9-field composition lock
+  verbatim — composition is untouched; the clarification added to
+  `.claude/rules/code-style.md` is additive (scope-narrows the lock
+  to composition), not a rescission. No `schemaVersion` bump
+  (additive + backward compatible per `MATCH-SETUP-SCHEMA.md
+  §Extensibility Rules`). Canonicalizes the error code
+  `"unsupported_hero_selection_mode"` and full-sentence error-message
+  template consumed verbatim by WP-091's validator and WP-092's
+  shape guard. New D-9300-range DECISIONS entry documents the
+  rationale, schemaVersion non-bump analysis, consumer list, and
+  SCREAMING_SNAKE_CASE convention for rule-mode tokens (contrast
+  with the `^[a-z0-9-]+$` ext_id pattern for content identifiers).
+  Touches: `docs/ai/REFERENCE/MATCH-SETUP-SCHEMA.md`,
+  `docs/ai/REFERENCE/MATCH-SETUP-JSON-SCHEMA.json`,
+  `docs/ai/REFERENCE/MATCH-SETUP-VALIDATION.md`,
+  `docs/ai/REFERENCE/00.2-data-requirements.md` (envelope section
+  only — the 9-field composition table is unchanged),
+  `.claude/rules/code-style.md`, `docs/ai/DECISIONS.md`,
+  `docs/ai/work-packets/WORK_INDEX.md`. No `packages/` or `apps/`
+  changes. Lint-gate self-pass on §1–§17; §18 N/A; §19 N/A
+  (not a state-summary artifact). Vision clauses touched: §3, §22,
+  §10a (indirect via WP-091), NG-1..7 (all preserved). See
+  [WP-093-match-setup-rule-mode-envelope-field.md](WP-093-match-setup-rule-mode-envelope-field.md).
+
 ---
 
 ## Pre-Planning System (Parallel-Safe with Phase 4+)
