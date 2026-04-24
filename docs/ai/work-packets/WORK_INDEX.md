@@ -1744,7 +1744,7 @@ These packets ship the game and keep it running.
   §10a (indirect via WP-091), NG-1..7 (all preserved). See
   [WP-093-match-setup-rule-mode-envelope-field.md](WP-093-match-setup-rule-mode-envelope-field.md).
 
-- [ ] WP-094 — Viewer Hero FlatCard Key Uniqueness ⬜ Ready (drafted 2026-04-24)
+- [x] WP-094 — Viewer Hero FlatCard Key Uniqueness ✅ Reviewed — Executed 2026-04-24 at commit `eac678c`
   Dependencies: WP-003 (CardRegistry + `FlatCard` type). Compatible
   with (not dependent on) WP-086 and WP-091.
   Notes: Single-file bug fix in `apps/registry-viewer/src/registry/shared.ts`.
