@@ -1644,7 +1644,7 @@ These packets ship the game and keep it running.
   Alignment` block. See
   [WP-090-live-match-client-wiring.md](WP-090-live-match-client-wiring.md).
 
-- [ ] WP-091 — Loadout Builder in Registry Viewer ⬜ Draft (drafted 2026-04-24; 00.3 lint-gate PASS; pre-flight bundle registered 2026-04-24)
+- [x] WP-091 — Loadout Builder in Registry Viewer ✅ Done 2026-04-24 (drafted 2026-04-24; 00.3 lint-gate PASS; pre-flight bundle registered 2026-04-24; executed 2026-04-24 with D-9101 landed and 18 new setupContract tests bringing packages/registry baseline to 31/3/0)
   Dependencies: WP-003 (CardRegistry), WP-005A (`MatchSetupConfig` 9-field
   contract), WP-055 (theme data model — `setupIntent`), WP-065
   (vue-sfc-loader — test-tooling context only, not runtime), WP-093
