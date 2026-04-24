@@ -9295,6 +9295,100 @@ This grep should be added to a future audit-orchestrator pass (WP-085 pattern) o
 
 ---
 
+### D-8801 — `buildCardKeywords` Emission Order Aligned with `BOARD_KEYWORDS`
+
+**Type:** Canonical-Value Lock (setup-time data shape)
+**Packet:** WP-088 A0 SPEC pre-flight bundle
+**Date:** 2026-04-23
+
+**Decision:** The canonical keyword emission order inside `packages/game-engine/src/setup/buildCardKeywords.ts` is **`['patrol', 'ambush', 'guard']`** — byte-identical to the `BOARD_KEYWORDS` canonical readonly array at `packages/game-engine/src/board/boardKeywords.types.ts:24`. Any future addition to the `BoardKeyword` union must update both arrays together in the same WP (the drift-detection test already pins the pair).
+
+**Rationale:** WP-088 §Scope item 4 requires a locked emission order so that future Patrol / Guard activation does not introduce non-semantic diffs between otherwise-equivalent `cardKeywords` records on cards that carry multiple keywords simultaneously. Three candidate orders were considered during pre-flight:
+
+1. **Listed order `['ambush', 'patrol', 'guard']`** (WP-088 initial draft) — matches the order of introduction in D-2302 / WP-025, but creates a two-order canonical divergence against `BOARD_KEYWORDS` (declared `['patrol', 'ambush', 'guard']`).
+2. **Alphabetical `['ambush', 'guard', 'patrol']`** — simple mnemonic; diverges from both `BOARD_KEYWORDS` *and* the drift-detection contract.
+3. **Align with `BOARD_KEYWORDS`: `['patrol', 'ambush', 'guard']`** — reuses the single canonical array the engine already declares and the drift-detection test already enforces. Zero new canonical values introduced by WP-088.
+
+Option 3 wins by construction: one canonical order across the engine, one drift-detection test, one failure site if a keyword is added to the union without updating the array. The emission-order array inside `buildCardKeywords.ts` must be written as `[...BOARD_KEYWORDS]` (spread copy, never a direct reference — see D-8802 for the aliasing prohibition) or as a verbatim inline literal whose contents match `BOARD_KEYWORDS`; the existing drift-detection test makes either form self-correcting.
+
+For well-formed card data today, only Ambush is functional (Patrol / Guard safe-skip per D-2302), so the output for every real villain card is either `['ambush']` or `[]` — byte-identical pre/post WP-088. The change is structural: it locks the emission contract against future multi-keyword drift.
+
+**Alternatives rejected:**
+- **Leave the order unspecified and emit in insertion order:** rejected. The current implementation emits in detection order (Ambush first via early `break`), which is the accidental status quo — not a locked contract. Future Patrol / Guard activation would introduce non-semantic diffs the moment a card carries two keywords, regressing snapshot stability.
+- **Alphabetical:** rejected (divergence from `BOARD_KEYWORDS` with no offsetting benefit).
+- **Introduction order:** rejected (divergence from `BOARD_KEYWORDS` with only a historical-narrative benefit; the canonical array already captures "this is the order engine code should enumerate keywords in").
+
+**Citation:** `packages/game-engine/src/board/boardKeywords.types.ts` (`BOARD_KEYWORDS` canonical array); WP-088 §Scope item 4; EC-088 §Locked Values; `.claude/rules/code-style.md` §Drift Detection (canonical readonly arrays); D-2302 (Patrol / Guard safe-skip — preserved unchanged).
+
+---
+
+### D-8802 — Villain Pre-Index Locality and Per-Card Fresh-Array Construction in `buildCardKeywords`
+
+**Type:** Aliasing-Prevention Invariant (setup-time purity)
+**Packet:** WP-088 A0 SPEC pre-flight bundle
+**Date:** 2026-04-23
+
+**Decision:** Two complementary invariants govern `buildCardKeywords`'s use of mutable data structures:
+
+1. **Villain pre-index `Set<string>` locality:** the local `const villainExtIds = new Set<string>()` introduced by WP-088 §Scope item 3 is **strictly function-local** — never assigned to any field of `G`, never returned, never exported, never passed across the function boundary. The `Set` ceases to exist when `buildCardKeywords` returns. This preserves the engine's JSON-serializability invariant (`G` cannot contain `Set` / `Map` / class instances — `.claude/rules/architecture.md` §Game State).
+
+2. **Per-card fresh-array construction:** every `result[extId]: BoardKeyword[]` value is a **freshly-constructed array**, not a reference to a shared module-level or function-scope constant. The canonical emission-order array (D-8801) is referenced for iteration order only — the values pushed into each `result[extId]` must live in their own array object. The simplest safe pattern is a new `const keywords: BoardKeyword[] = []` per card with `push()` driven by the D-8801 order plus local boolean flags (`hasAmbush`, etc.).
+
+**Rationale:**
+
+The `Set` locality invariant is the direct application of the engine's JSON-serializability rule to a performance optimization. The pre-index converts the villain-card lookup from O(V·F) (rescan all flat cards for every villain-group member) to O(V+F) (build the set once, look up by key). That optimization is valuable, but it introduces the first `Set` inside a setup-time function; without an explicit locality guardrail, a well-meaning future edit could promote it to `G.villainExtIds` "for debuggability" and break every persistence and snapshot test in the engine. The locality invariant keeps the optimization visible and auditable without exposing the `Set` to the rest of the system.
+
+The per-card fresh-array invariant is the direct precedent application of WP-028's post-mortem aliasing discovery. In WP-028, `cardKeywords` was returned from a projection as a direct reference to `G.cardKeywords[space]`, allowing consumers to mutate `G` through the projection. Standard JSON-equality tests — including `JSON.stringify` roundtrips — compare values, not references, so they could not detect the aliasing. The fix was a spread copy (`[...cardKeywords]`); the lesson was that projection purity requires explicit array-identity discipline, not just value-identity tests.
+
+WP-088 replaces the current push-and-break loop with a locked emission-order array. Without an explicit per-card fresh-array rule, a future editor could "optimize" by hoisting the canonical-order array to module scope and returning it directly from `buildCardKeywords` whenever all three keywords fire. That would alias every multi-keyword card's entry to the same array instance — a post-WP-028-class bug waiting to happen. The fresh-array invariant pins the discipline at specification time.
+
+**Enforcement:**
+
+- EC-088 `## Guardrails` carries the fresh-array rule as an explicit bullet.
+- EC-088 `## Required // why: Comments` requires the `// why:` comment on the canonical-order reference site to cite both D-8801 (the order lock) and D-8802 (the aliasing prohibition).
+- Post-execution, a test-time array-identity assertion is a reasonable follow-up (outside WP-088 scope per the "no new tests" acceptance bar); for WP-088, the spec-time guardrail is the enforcement mechanism.
+
+**Alternatives rejected:**
+- **Shared module-level emission array returned by reference:** rejected. Fast but aliasing-fragile; the optimization's benefit is meaningless at the scale of villain-card counts, and the bug surface is large.
+- **`Object.freeze` on every returned array:** rejected. Stops mutation but doesn't restore purity — consumers would crash instead of silently mutating, which is louder but still signals a contract violation. The fresh-array rule prevents the contract violation entirely.
+- **`readonly BoardKeyword[]` return type propagation:** rejected for this WP. That belongs in a WP-087-class type-hardening pass (per WP-088 §Out of Scope); WP-088 is behavior-preserving at the type surface.
+
+**Citation:** WP-028 post-mortem (`cardKeywords` aliasing discovery and fix); `.claude/rules/architecture.md` §Game State (JSON-serializability invariant); WP-088 §Non-Negotiable Constraints (packet-specific — `Set<string>` function-local); EC-088 §Guardrails + §Required `// why:` Comments; D-8801 (the emission-order lock this invariant is paired with).
+
+---
+
+### D-8803 — Whitespace-Tolerant Ambush Detection Deferred from WP-088
+
+**Type:** Scope Deferral (with reversal conditions)
+**Packet:** WP-088 A0 SPEC pre-flight bundle
+**Date:** 2026-04-23
+
+**Decision:** WP-088 does **not** add whitespace tolerance (e.g., `ability.trimStart().startsWith('Ambush')`) to the Ambush prefix-match predicate in `extractKeywordsFromAbilities`. The existing `// why:` comment at `packages/game-engine/src/setup/buildCardKeywords.ts:209-212` asserts a verified data invariant ("consistently start with 'Ambush' (capital A) across all 304 occurrences") and is preserved verbatim by WP-088.
+
+**Rationale:**
+
+The existing comment is not a defensive assumption — it is a claim about the shape of real registry data that was empirically verified at WP-025 authoring time (304 occurrences, case-sensitive match). Adding `trimStart()` would silently absorb any future upstream whitespace drift (leading space, tab, zero-width whitespace, etc.) without surfacing it. The engine would produce correct keyword classifications against malformed registry data, hiding the drift from the data-side owners and leaving no audit trail.
+
+WP-088's hardening goal is **structural**: guard against missing / non-array / wrong-type registry fields by narrow `typeof` / `Array.isArray` checks plus `continue`. Those guards are about registry *shape* — they fail closed without hiding drift because each `continue` represents a card that did not receive a keyword (observably empty `result[extId]`, which the drift-detection test exercises). Whitespace tolerance is categorically different: it would accept *malformed content* that a strict predicate would otherwise reject, and produce the *same* keyword as the well-formed case. That is indistinguishable from correct behavior at the engine boundary but represents upstream registry drift.
+
+**Reversal conditions:**
+
+If a future registry change introduces leading whitespace on Ambush ability strings (for example, a data-pipeline refactor that inadvertently prepends indentation, or a localization pass that ships non-breaking-space prefixes), the reversal must:
+
+1. Open a new WP scoped to the whitespace-tolerance change (not a mid-execution amendment to WP-088).
+2. Register a new `D-NNNN` entry explicitly overturning D-8803, citing the concrete registry drift that motivated the reversal.
+3. Update the existing `// why:` comment body to reflect the new invariant (e.g., "strings may carry leading whitespace as of <date>; `trimStart()` applied before prefix match").
+4. Audit whether the drift suggests a registry-side cleanup is warranted before engine-side tolerance is adopted. Engine-side tolerance is the fallback, not the first response.
+
+**Alternatives considered:**
+- **Add `trimStart()` preemptively in WP-088:** rejected. No drift evidence; preemptive tolerance hides future drift. WP-088's hardening is structural, not defensive-against-content.
+- **Add `trimStart()` and log `G.messages` when trimming actually changed anything:** rejected. Runs at setup time where `G.messages` is either empty or unusable, and introduces runtime observability for what should be a data-side concern.
+- **Make the prefix predicate case-insensitive instead of whitespace-tolerant:** rejected. Different failure mode (capitalization vs leading whitespace); D-2302 / WP-025's verified invariant is "capital A, no prefix", so case-insensitive match would also hide drift.
+
+**Citation:** `packages/game-engine/src/setup/buildCardKeywords.ts:209-212` (the existing `// why:` comment this decision preserves); WP-088 §Out of Scope item 1; WP-088 Appendix A item #4 (human-approval request resolved by this entry); D-2302 (Patrol / Guard safe-skip); WP-025 authoring precedent (304-occurrence Ambush invariant).
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

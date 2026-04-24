@@ -1565,6 +1565,40 @@ These packets ship the game and keep it running.
   [WP-087-engine-type-hardening.md](WP-087-engine-type-hardening.md) +
   [EC-087](../execution-checklists/EC-087-engine-type-hardening.checklist.md).
 
+- [ ] WP-088 — Setup Module Hardening: `buildCardKeywords` Runtime Guards, Villain Pre-Index, Output Ordering ⬜ Ready (drafted 2026-04-23; A0 SPEC bundle complete 2026-04-23; lint-gate PASS per WP-088 §Appendix A)
+  Dependencies: WP-025 (originating packet — `buildCardKeywords` + `BoardKeyword` / `BOARD_KEYWORDS`), WP-050 (merged to `main` 2026-04-23 at `ccdf44e` — clears §Assumes gate), WP-087 (`readonly` deferral per D-8702 — bounds WP-088's type surface)
+  Notes: Single-file internal-hardening pass on
+  `packages/game-engine/src/setup/buildCardKeywords.ts` — seven numbered
+  in-file edits, zero caller touches, zero new tests, byte-identical
+  output for well-formed registry data. Adds private `isKeywordSetData`
+  type guard + per-iteration `typeof` / `Array.isArray` guards with
+  `continue` on mismatch (no `try/catch`; fail-closed). Replaces the
+  `findFlatCardForVillainCard` O(V·F) rescan with a local
+  `Set<string>` pre-index built once before the `listSets()` loop
+  (O(V+F)); `Set` is strictly function-local per **D-8802** — never
+  placed in `G`, returned, or exported (JSON-serializability invariant).
+  Replaces the push-and-break ordering with local boolean flags +
+  canonical emission order `['patrol', 'ambush', 'guard']` —
+  byte-identical to `BOARD_KEYWORDS` per **D-8801** so the engine
+  carries one canonical order, not two; each `result[extId]` is a
+  freshly-constructed `BoardKeyword[]` per D-8802 (WP-028 `cardKeywords`
+  aliasing precedent). Deletes `KeywordSetData.abbr` and
+  `KeywordSetData.henchmen` (unused); preserves the four other
+  structural interfaces verbatim. Tightens `buildCardKeywords` JSDoc's
+  return-contract sentence to stop asserting caller behavior.
+  Whitespace-tolerance deferral (no `trimStart()`) locked by
+  **D-8803** with explicit reversal conditions. No `boardgame.io` or
+  `@legendary-arena/registry` imports; no `.reduce(`; no `try/catch`.
+  Function signature byte-identical pre/post; caller at
+  `buildInitialGameState.ts:173` untouched. Test baseline locked:
+  engine `506 / 113 / 0` + repo-wide `671 / 127 / 0` at `ce3bffb`;
+  no test count change permitted. Self-compliant `## Vision Alignment`
+  block cites `§1, §2` with explicit "No conflict" /
+  byte-identical-for-well-formed-data assertion. See
+  [WP-088-build-card-keywords-hardening.md](WP-088-build-card-keywords-hardening.md) +
+  [EC-088](../execution-checklists/EC-088-build-card-keywords-hardening.checklist.md) +
+  D-8801 / D-8802 / D-8803.
+
 ---
 
 ## Pre-Planning System (Parallel-Safe with Phase 4+)
