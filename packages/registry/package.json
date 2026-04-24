@@ -17,6 +17,10 @@
     "./theme.schema": {
       "import": "./dist/theme.schema.js",
       "types": "./dist/theme.schema.d.ts"
+    },
+    "./setupContract": {
+      "import": "./dist/setupContract/index.js",
+      "types": "./dist/setupContract/index.d.ts"
     }
   },
   "files": [

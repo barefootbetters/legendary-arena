@@ -17,6 +17,7 @@ import HealthPanel    from "./components/HealthPanel.vue";
 import GlossaryPanel  from "./components/GlossaryPanel.vue";
 import ImageLightbox  from "./components/ImageLightbox.vue";
 import ViewModeToggle from "./components/ViewModeToggle.vue";
+import LoadoutBuilder from "./components/LoadoutBuilder.vue";
 
 // ── Glossary panel ───────────────────────────────────────────────────────────
 const glossary = useGlossary();
@@ -58,7 +59,10 @@ const HC_OPTIONS    = ["covert","instinct","ranged","strength","tech"];
 const rulebookPdfUrl = ref<string | null>(null);
 
 // ── View toggle ──────────────────────────────────────────────────────────────
-type ActiveView = "cards" | "themes";
+// why: "loadout" is an additive third tab (WP-091); Cards/Themes tabs are
+// unaffected. No router library is added (EC-091 L7) — the existing tab
+// switcher is extended in place.
+type ActiveView = "cards" | "themes" | "loadout";
 const activeView = ref<ActiveView>("cards");
 
 // ── Theme state ──────────────────────────────────────────────────────────────
@@ -359,6 +363,11 @@ function navigateToCard(slug: string, cardType: string) {
         <button class="view-tab" :class="{ active: activeView === 'themes' }" @click="activeView = 'themes'">
           🎭 Themes <span class="tab-count">{{ allThemes.length }}</span>
         </button>
+        <!-- why: Loadout tab is additive authoring surface per WP-091; Cards
+             and Themes tabs are unaffected. -->
+        <button class="view-tab" :class="{ active: activeView === 'loadout' }" @click="activeView = 'loadout'">
+          🧰 Loadout
+        </button>
       </div>
 
       <!-- ══════════════════════════════════════════════════════════════════════ -->
@@ -455,6 +464,11 @@ function navigateToCard(slug: string, cardType: string) {
         <template v-if="activeView === 'cards'">
           <CardGrid :cards="filteredCards" :selected-key="selectedCard?.key" @select="selectedCard = $event" @clear-filters="clearAllFilters" />
           <CardDetail v-if="selectedCard" :card="selectedCard" :view-mode="cardViewMode" @close="selectedCard = null" />
+        </template>
+
+        <!-- Loadout content -->
+        <template v-if="activeView === 'loadout' && registry">
+          <LoadoutBuilder :registry="registry!" :themes="allThemes" />
         </template>
       </div>
     </template>
