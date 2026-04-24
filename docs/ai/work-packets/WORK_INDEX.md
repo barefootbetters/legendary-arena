@@ -1599,6 +1599,20 @@ These packets ship the game and keep it running.
   [EC-088](../execution-checklists/EC-088-build-card-keywords-hardening.checklist.md) +
   D-8801 / D-8802 / D-8803.
 
+- [ ] WP-089 — Engine PlayerView Wiring ⬜ Ready (drafted 2026-04-23; lint-gate PASS)
+  Dependencies: WP-028 (UIState + buildUIState), WP-029 (filterUIStateForAudience)
+  Notes: Engine-only. Wires `LegendaryGame.playerView = buildPlayerView` so
+  every state frame boardgame.io pushes to a connected client is an
+  audience-filtered `UIState` instead of raw `LegendaryGameState`. New
+  top-level `buildPlayerView(G, ctx, playerID)` in `game.ts` is pure,
+  never-throwing, and composes `buildUIState` + `filterUIStateForAudience`;
+  `null` / `undefined` `playerID` map to `{ kind: 'spectator' }`. No change
+  to `buildUIState`, `filterUIStateForAudience`, or any other engine
+  subsystem. Prerequisite for WP-090 (arena-client cannot receive
+  `UIState`-shaped state frames without this). Lint trailer: §3, §4;
+  self-compliant `## Vision Alignment` block. See
+  [WP-089-engine-playerview-wiring.md](WP-089-engine-playerview-wiring.md).
+
 ---
 
 ## Pre-Planning System (Parallel-Safe with Phase 4+)
@@ -1726,6 +1740,9 @@ WP-001 (coordination — complete)        │
                                               │
                     WP-027 + WP-028 → WP-063 ─┘
                     (WP-063 defines ReplaySnapshotSequence consumed by WP-064)
+
+                    Engine→Client Projection Wiring (prerequisite for WP-090):
+                    WP-028 + WP-029 → WP-089 (LegendaryGame.playerView)
 ```
 
 **Parallel-safe packets** (no dependency on each other):
