@@ -9124,6 +9124,103 @@ grep -rnE "from ['\"]node:fs" packages/game-engine/src/simulation/ --include="*.
 
 ---
 
+### D-8701 — `PlayerId` Type Alias Is Non-Branded (Plain `string`)
+
+**Type:** Type Contract
+**Packet:** WP-087 (Engine Type Hardening)
+**Date:** 2026-04-23
+
+**Decision:** `packages/game-engine/src/types.ts` exports `PlayerId` as a **plain** `string` alias — specifically `export type PlayerId = string;` — with a `// why:` comment citing the boardgame.io 0.50.x string player-index convention (`"0" | "1" | "2" | …`, the index of the seat within a match's `playerOrder` array). The alias is **not** branded (not `string & { readonly __brand: unique symbol }`), **not** template-narrowed (not `` `${number}` ``), and carries no runtime-distinct identity from `string`.
+
+**Rationale:** A branded or template-narrowed `PlayerId` would force every test factory and every caller that constructs a player-keyed object literal to route through a `makePlayerId(seat: number): PlayerId` helper or a cast. The pre-flight scan across `packages/game-engine/src/**/*.test.ts` surfaced 40+ existing player-keyed construction sites. The ripple cost of narrowing the alias — turning a type-only WP into a codebase-wide refactor with its own TS errors to chase, test-factory rewrites, and serialization-boundary considerations — is not justified by the benefit a branded alias would deliver in this packet: `Record<PlayerId, …>` as a **named** keying contract. The name alone is the load-bearing change; branding is an orthogonal, deferrable tightening.
+
+A future WP may upgrade `PlayerId` to a branded form if a concrete bug (e.g., a stringly-typed mix-up between `playerId` and `matchId`) justifies the ripple cost at that time. This decision establishes the baseline as non-branded and makes the upgrade path explicit.
+
+**Alternatives rejected:**
+
+- **`string & { readonly __brand: unique symbol }`:** rejected. Would require `makePlayerId(seat: number): PlayerId` at every construction site (boardgame.io's `playerOrder[seat]` → `PlayerId`), a cast pattern at every boundary (HTTP request body → `PlayerId`), and a re-cast at every JSON-deserialize site (snapshot load → `PlayerId`). Ripple cost estimated at 40+ sites with no current defect to motivate it.
+- **`` `${number}` `` template literal:** rejected. Technically closer to the boardgame.io convention but fails when the convention is violated externally (e.g., a stringly-typed HTTP body carries `"player1"` instead of `"1"`). The alias would then either reject legitimate inputs at type-check time or require a runtime coercion that defeats the purpose of narrowing. Also ripples into every construction site just like branding.
+- **Leave the type as `string` with no alias:** rejected. The named alias is the entire point of the WP — it turns `Record<string, PlayerZones>` into a self-documenting `Record<PlayerId, PlayerZones>` that a future branding upgrade can edit in one place. Without the alias, a future WP that wanted to brand would need to find and rewrite every `Record<string, PlayerZones>` / `Record<string, string>` / `Record<string, MatchSnapshotPlayer>` site by hand.
+
+**Citation:** `packages/game-engine/src/types.ts:345-352` (`PlayerId` declaration with `// why:`); WP-087 §Locked Values; EC-087 §Locked Values; preflight-wp087-engine-type-hardening.md §3.1, §3.5.
+
+---
+
+### D-8702 — `LegendaryGameState` Array `readonly` Modifiers Deferred to Follow-Up WP
+
+**Type:** Scope Deviation
+**Packet:** WP-087 (Engine Type Hardening — execution-time scope narrowing)
+**Date:** 2026-04-23
+
+**Decision:** WP-087 as executed **does not** apply the `readonly` modifier to `hookRegistry`, `schemeSetupInstructions`, or `heroAbilityHooks` on `LegendaryGameState`. The three `readonly` swaps listed in WP-087 §Locked Values and EC-087 §Locked Values are **deferred** to a follow-up Work Packet. The factory-time `hookRegistry` construction in `packages/game-engine/src/rules/ruleRuntime.ordering.test.ts` (Task D) was applied as specified because it stands on its own as a post-setup-mutation elimination; the session's mid-execution decision narrowed scope to exclude the `readonly` modifier itself.
+
+**Rationale:** Applying `readonly` to the three array fields produced seven TS errors in production code files that are **not** on the WP-087 §Files Expected to Change allowlist:
+
+- `packages/game-engine/src/game.ts:237,252` — passes `G.hookRegistry` to a `HookRegistry`-typed parameter (`HookRegistry = HookDefinition[]`, mutable)
+- `packages/game-engine/src/hero/heroConditions.evaluate.ts:71` — passes `G.heroAbilityHooks` to a `HeroAbilityHook[]`-typed parameter
+- `packages/game-engine/src/hero/heroEffects.execute.ts:146` — same ripple as above
+- `packages/game-engine/src/villainDeck/villainDeck.reveal.ts:203,218,233` — passes `G.hookRegistry` to a `HookRegistry`-typed parameter
+
+The session prompt's §AI Agent Warning #1 is explicit: widen the callee's parameter to `readonly HookDefinition[]` only if the callee is in the 4-file allowlist; otherwise STOP — the ripple belongs in a separate WP. The pre-flight's §3.5 test-factory scan caught only construction sites (covariant assignment, which works against `readonly`), not these consumer call sites that treat the field type as mutable (contravariant parameter position, which fails against `readonly`).
+
+Reverting the three `readonly` modifiers preserved strict WP-087 scope discipline (four files modified, zero out-of-allowlist edits) and kept the test baseline at `671 / 127 / 0` identical to pre-change. The `PlayerId` alias, the three `Record<PlayerId, …>` swaps, and the factory-time `hookRegistry` construction all landed as specified — the non-readonly portion of WP-087 is complete and shippable.
+
+A follow-up WP (WP-087b or similar) should (a) widen the `HookRegistry` type alias and the two hero-hook consumer parameters to `readonly` forms, (b) apply `readonly` to the three `LegendaryGameState` array fields, and (c) add drift-prevention tests that grep for `.push` / `.pop` / `.splice` / `.shift` / `.unshift` on those fields in production code. Splitting the widen-consumers work from the tighten-state-type work is the architecturally correct decomposition: consumer-signature widening is a safe refactor with no behavioral impact; state-type tightening is then a one-line change that passes tsc cleanly.
+
+**Alternatives rejected:**
+
+- **Expand WP-087 scope to include the four ripple files:** rejected. Expanding from 4 to 8 files during execution violates the session prompt's §Scope Lock Hard Stop ("Any file outside the 4 code + 2 governance docs allowed in Commit A scope"). Mid-session scope expansion also bypasses the pre-flight governance gate — the ripple files were not lint-checked, not session-context-bridged, and not consumer-audited under the expanded scope. The right path for a surprise ripple is to stop, record the deviation, and re-plan.
+- **Revert everything and re-run pre-flight with a corrected consumer-signature scan:** rejected. The `PlayerId` alias, three `Record` swaps, and factory-time `hookRegistry` construction all passed verification cleanly and represent independent value that does not depend on the `readonly` modifier. Reverting them would discard complete, tested, scope-compliant work in order to re-land it identically after a pre-flight re-run. The scope deviation is captured here; the remaining work is tracked as a follow-up WP.
+- **Widen only the `HookRegistry` type alias itself to `readonly HookDefinition[]`:** rejected in this packet. `HookRegistry` lives in `packages/game-engine/src/rules/ruleHooks.registry.ts` (or a peer) and is outside the WP-087 allowlist. Widening it without an allowlist amendment would set a precedent for "widening is safe and scope-neutral" that bypasses pre-flight governance. Safe or not, the amendment belongs in a follow-up WP with its own consumer audit.
+
+**Citation:** `packages/game-engine/src/types.ts:441,510,515` (pre-change state preserved); WP-087 §Locked Values (three `readonly` entries — deferred); preflight-wp087-engine-type-hardening.md §3.5 (test-factory scan — did not cover consumer signatures); `packages/game-engine/src/game.ts:237,252`, `src/hero/heroConditions.evaluate.ts:71`, `src/hero/heroEffects.execute.ts:146`, `src/villainDeck/villainDeck.reveal.ts:203,218,233` (the seven ripple call sites that motivated the deferral).
+
+---
+
+### D-8703 — `MatchSetupConfig` Is Non-Applicable to the `PlayerId` Alias Surface
+
+**Type:** Scope Boundary
+**Packet:** WP-087 (Engine Type Hardening)
+**Date:** 2026-04-23
+
+**Decision:** `MatchSetupConfig`, `MatchSetupError`, and `ValidateMatchSetupResult` in `packages/game-engine/src/matchSetup.types.ts` **do not** receive the `PlayerId` alias. These types operate strictly pre-engine and pre-player-instantiation: they describe the 9-field setup payload that a human or admin tool constructs before boardgame.io creates seats. At that point, there is no "player" in the boardgame.io sense — no `playerOrder` array, no seat indices, no `G`. `MatchSetupConfig` contains zero player-keyed fields; it references heroes, villains, schemes, and masterminds as ext_id strings, plus four numeric count fields. There is no player-keyed surface in `matchSetup.types.ts` for `PlayerId` to formalize.
+
+**Rationale:** The `PlayerId` alias names the **boardgame.io player-index string convention** — the `"0" | "1" | …` string used as a key for `G.playerZones`, `MatchSnapshot.playerNames`, and similar post-seat-assignment surfaces. `MatchSetupConfig` predates seat assignment: it is the deterministic input handed to `Game.setup(config, registry, context)`, which **creates** the player seats. A `PlayerId` reference in `MatchSetupConfig` would either (a) be vacuous (the field is already `string`, unchanged by the alias) or (b) imply a semantic link between setup-time identifiers and seat indices that does not exist. Either way, the alias should not leak there.
+
+This decision is captured explicitly because a future "tighten all player-keyed surfaces" WP could mistakenly pattern-match `MatchSetupConfig.heroDeckIds` (a `string[]`) as a candidate for `PlayerId[]` under the intuition "there are N players, there are N deck IDs, therefore `heroDeckIds[i]` is player i's deck". D-8704 records the correct communal-pool semantic that refutes that intuition.
+
+**Alternatives rejected:**
+
+- **Add `PlayerId` to `matchSetup.types.ts` defensively for future-proofing:** rejected. Adding a type alias with no call site is dead code and a drift vector — a future editor may assume the alias is used somewhere and preserve it through refactors it would otherwise delete. Aliases earn their keep at their first call site; none exist in `matchSetup.types.ts`.
+- **Document the non-applicability in a comment inside `matchSetup.types.ts` instead of DECISIONS.md:** rejected. The non-applicability crosses a layer boundary (setup vs runtime) and a temporal boundary (pre-seat vs post-seat). A file-local comment could not capture the cross-layer rationale without essentially duplicating this entry. DECISIONS.md is the canonical place for architecture-level non-applicability claims.
+
+**Citation:** `packages/game-engine/src/matchSetup.types.ts` (unchanged by WP-087); D-1207 (MatchSetupConfig canonical); D-8704 (heroDeckIds communal-pool semantic — related).
+
+---
+
+### D-8704 — `MatchSetupConfig.heroDeckIds` Is a Communal Pool, Not a Per-Seat Assignment
+
+**Type:** Semantic Contract
+**Packet:** WP-087 (Engine Type Hardening — captured during alias scope analysis)
+**Date:** 2026-04-23
+
+**Decision:** `MatchSetupConfig.heroDeckIds` is a **pool** of chosen hero decks that get shuffled together into **one communal recruit deck** during `Game.setup()`. This is the standard Legendary mechanic: players share a single face-down Hero deck from which the HQ market is filled. Consequently:
+
+- `heroDeckIds.length` is **decoupled** from `ctx.numPlayers`. A 2-player game may use 5 hero decks; a 4-player game may use 3. The chosen hero-deck count is a scenario-design variable, not a function of seat count.
+- `heroDeckIds[N]` is **not** "player N's deck". There is no per-seat hero-deck assignment in canonical Legendary. `heroDeckIds[0]` is simply the first (by admin input order) hero deck shuffled into the communal pool.
+- Indexing `heroDeckIds` by `PlayerId` (e.g., `Record<PlayerId, CardExtId>`) would misrepresent the field's semantic and silently produce incorrect behavior in any consumer that treated the mapping as authoritative.
+
+**Rationale:** Captured during WP-087's scope analysis as a defensive anchor. The `PlayerId` alias's introduction makes player-keyed surfaces more discoverable across the codebase; a future editor skimming for "fields the alias should apply to" may pattern-match any `string[]` field whose length could plausibly equal `numPlayers` and mistakenly propose a per-seat keying. `heroDeckIds` is one such trap: the field is a `string[]` whose array ordering is meaningful for setup determinism (deck-order affects shuffle output given the RNG seed) but is **not** seat-ordered. Any future WP proposing per-seat hero-deck assignment must consciously override this decision rather than silently redefine it.
+
+**Alternatives rejected:**
+
+- **Rename `heroDeckIds` to `heroDeckPool` or similar to make the communal semantic visible at the field name:** rejected. `MatchSetupConfig` field names are **locked** by `docs/ai/REFERENCE/00.2-data-requirements.md §8.1`. Renaming would violate the data-requirements contract, ripple into every consumer (setup orchestrators, registry loaders, JSON fixtures, test builders), and require a separate DECISIONS entry documenting the rename — net negative compared to a single semantic-anchor entry here.
+- **Leave the communal-pool semantic implicit and rely on setup code comments:** rejected. Setup code already uses the field correctly (`buildInitialGameState` constructs a single communal recruit deck from `heroDeckIds`), but nothing explicitly forbids a future "per-seat hero assignment" WP from re-keying it. An explicit decision gives future WPs a concrete "this is a prior contract you must override, not a default you can redefine" reference.
+
+**Citation:** `docs/ai/REFERENCE/00.2-data-requirements.md §8.1` (heroDeckIds field lock); `packages/game-engine/src/setup/buildInitialGameState.ts` (communal-pool construction site); session-context-wp087.md §3.3; D-8703 (MatchSetupConfig non-applicability to PlayerId — related).
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

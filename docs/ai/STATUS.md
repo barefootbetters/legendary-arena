@@ -7,6 +7,12 @@
 
 ## Current State
 
+### WP-087 / EC-087 Executed — Engine Type Hardening (2026-04-23, EC-087)
+
+`PlayerId` string alias added to `packages/game-engine/src/types.ts` with a `// why:` comment citing the boardgame.io 0.50.x player-index convention; three `Record<string, …>` → `Record<PlayerId, …>` swaps at the three canonical sites (`LegendaryGameState.playerZones`, `GameStateShape.playerZones`, `PersistableMatchConfig.playerNames`); factory-time `hookRegistry` construction in `rules/ruleRuntime.ordering.test.ts` eliminates the sole non-setup `hookRegistry` assignment grep-hit. Test baseline `671 / 127 / 0` unchanged. Zero runtime behavior change; zero serialization / replay / snapshot shape change.
+
+**Scope deviation:** the three `readonly` modifiers on `LegendaryGameState.{hookRegistry, schemeSetupInstructions, heroAbilityHooks}` were planned but **deferred** to a follow-up WP — applying them surfaced seven TS errors in four production-code files outside the WP-087 §Files Expected to Change allowlist (`game.ts`, `hero/heroConditions.evaluate.ts`, `hero/heroEffects.execute.ts`, `villainDeck/villainDeck.reveal.ts`). Per the session prompt's §AI Agent Warning #1 and generic-ripple Hard Stop, the `readonly` tightening was reverted; the `PlayerId` alias, three `Record` swaps, and factory refactor all landed as specified. See D-8702 for the deferral rationale and the follow-up WP scope.
+
 ### WP-051 / EC-051 Executed — PAR Publication & Server Gate Contract (2026-04-23, EC-051)
 
 **Pre-submission PAR gate ships at the server layer. Server test baseline shifts 6/2/0 → 19/3/0 (+13 tests / +1 suite); repo-wide 658/126/0 → 671/127/0. Engine baseline 506/113/0 unchanged. Zero gameplay changes; zero moves added; zero phase hooks; zero new `LegendaryGameState` fields; zero engine / registry / preplan / arena-client / replay-producer / registry-viewer files modified during Commit A.**

@@ -1539,7 +1539,7 @@ These packets ship the game and keep it running.
   pre-execution. See
   [WP-085-vision-alignment-audit.md](WP-085-vision-alignment-audit.md).
 
-- [ ] WP-087 — Engine Type Hardening: `PlayerId` Alias + Setup-Only Array `readonly` ⬜ Ready (drafted 2026-04-23; lint-gate PASS 2026-04-23 post-A0)
+- [x] WP-087 — Engine Type Hardening: `PlayerId` Alias + Setup-Only Array `readonly` ✅ Done 2026-04-23 (Commit A `73aeada`; scope-narrowed — `readonly` deferred per D-8702)
   Dependencies: WP-049 (PAR Simulation Engine — merged to main as `956306c`)
   Notes: Engine-only type-contract tightening. Zero runtime behavior change.
   Adds `export type PlayerId = string;` to `packages/game-engine/src/types.ts`
