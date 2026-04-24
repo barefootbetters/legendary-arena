@@ -39,12 +39,10 @@ interface KeywordVillainGroupEntry {
 
 /**
  * Minimal structural type for set data returned by getSet().
- * Only the fields needed for keyword extraction from villain/henchman data.
+ * Only the fields needed for keyword extraction from villain data.
  */
 interface KeywordSetData {
-  abbr: string;
   villains: KeywordVillainGroupEntry[];
-  henchmen: unknown[];
 }
 
 /**
@@ -74,7 +72,7 @@ interface CardKeywordsRegistryReader {
 }
 
 // ---------------------------------------------------------------------------
-// Runtime type guard
+// Runtime type guards
 // ---------------------------------------------------------------------------
 
 /**
@@ -102,6 +100,24 @@ function isCardKeywordsRegistryReader(
   );
 }
 
+/**
+ * Runtime type guard for KeywordSetData values returned by
+ * CardKeywordsRegistryReader.getSet().
+ *
+ * Returns true when the candidate exposes a `villains` array — the only
+ * field buildCardKeywords actually reads from set data.
+ */
+// why: the registry package is not imported at this layer, so shape
+// must be validated structurally at runtime before the narrowed cast.
+// Only the fields buildCardKeywords actually reads are checked —
+// growing this guard to check additional fields would create
+// false-negative `continue` paths on legitimate data.
+function isKeywordSetData(x: unknown): x is KeywordSetData {
+  if (!x || typeof x !== 'object') return false;
+  const candidate = x as Record<string, unknown>;
+  return Array.isArray(candidate.villains);
+}
+
 // ---------------------------------------------------------------------------
 // buildCardKeywords — setup-time keyword resolution
 // ---------------------------------------------------------------------------
@@ -118,8 +134,9 @@ function isCardKeywordsRegistryReader(
  * - Guard: no data source in current card data (safe-skip, D-2302)
  *
  * @param registry - Setup-time registry reader. Accepts unknown to support
- *   narrow test mocks. If the registry does not satisfy
- *   CardKeywordsRegistryReader structurally, returns empty record.
+ *   narrow test mocks. Returns an empty record when the registry does not
+ *   satisfy `CardKeywordsRegistryReader`; callers must treat a missing
+ *   entry as no keywords.
  * @param _matchConfig - Match setup configuration (unused in MVP — all
  *   villain/henchman cards in the deck are scanned, not filtered by config).
  * @returns Record keyed by CardExtId with detected board keywords.
@@ -135,36 +152,84 @@ export function buildCardKeywords(
   const result: Record<CardExtId, BoardKeyword[]> = {};
   const allFlatCards = registry.listCards();
 
+  // why: avoid O(V·F) rescan of allFlatCards for every villain-card member.
+  // Scan once, build a Set<string>, look up O(1) inside the inner loop.
+  // This Set is strictly function-local and never placed in G (D-8802;
+  // JSON-serializability invariant). It ceases to exist when
+  // buildCardKeywords returns.
+  const villainExtIds = new Set<string>();
+  for (const card of allFlatCards) {
+    if (card.cardType === 'villain') {
+      villainExtIds.add(card.key);
+    }
+  }
+
   // --- Villain cards: check ability text for keyword patterns ---
   for (const setEntry of registry.listSets()) {
-    const setData = registry.getSet(setEntry.abbr) as KeywordSetData | undefined;
-
-    if (!setData || !Array.isArray(setData.villains)) {
+    const rawSetData = registry.getSet(setEntry.abbr);
+    if (!isKeywordSetData(rawSetData)) {
       continue;
     }
+    const setData = rawSetData;
 
     for (const villainGroup of setData.villains) {
+      if (typeof villainGroup.slug !== 'string') {
+        continue;
+      }
       if (!Array.isArray(villainGroup.cards)) {
         continue;
       }
 
       for (const villainCard of villainGroup.cards) {
-        const keywords = extractKeywordsFromAbilities(villainCard.abilities);
-
-        if (keywords.length === 0) {
+        if (typeof villainCard.slug !== 'string') {
           continue;
         }
 
-        // Find the matching FlatCard key (ext_id) for this villain card
-        const flatCard = findFlatCardForVillainCard(
-          allFlatCards,
-          setEntry.abbr,
-          villainGroup.slug,
-          villainCard.slug,
-        );
+        const abilities: string[] | undefined = Array.isArray(
+          villainCard.abilities,
+        )
+          ? villainCard.abilities
+          : undefined;
 
-        if (flatCard) {
-          result[flatCard.key as CardExtId] = keywords;
+        const hasAmbush = detectAmbush(abilities);
+        // Patrol + Guard safe-skip per D-2302 — no hasPatrol / hasGuard
+        // flags because they have no data source in current card data.
+        // See detectAmbush() for the full verbatim rationale.
+
+        if (!hasAmbush) {
+          continue;
+        }
+
+        const expectedKey = `${setEntry.abbr}-villain-${villainGroup.slug}-${villainCard.slug}`;
+        if (!villainExtIds.has(expectedKey)) {
+          continue;
+        }
+
+        // why: canonical keyword emission order is locked to match
+        // BOARD_KEYWORDS (['patrol', 'ambush', 'guard']) per D-8801 so
+        // the engine carries one canonical order, not two. Adding a
+        // new BoardKeyword requires revising both this array and
+        // BOARD_KEYWORDS together — the drift-detection test fires on
+        // mismatch. The canonical-order array is referenced for
+        // iteration order only; each result[extId] below is a
+        // freshly-constructed BoardKeyword[] per D-8802 (WP-028
+        // cardKeywords aliasing precedent).
+        const canonicalOrder: readonly BoardKeyword[] = [
+          'patrol',
+          'ambush',
+          'guard',
+        ];
+
+        const keywords: BoardKeyword[] = [];
+        for (const keyword of canonicalOrder) {
+          if (keyword === 'ambush' && hasAmbush) {
+            keywords.push('ambush');
+          }
+          // 'patrol' and 'guard' safe-skip — no flag, no push.
+        }
+
+        if (keywords.length > 0) {
+          result[expectedKey as CardExtId] = keywords;
         }
       }
     }
@@ -180,26 +245,26 @@ export function buildCardKeywords(
 }
 
 // ---------------------------------------------------------------------------
-// Keyword extraction from ability text
+// Ambush detection from ability text
 // ---------------------------------------------------------------------------
 
 /**
- * Extracts board keywords from a card's ability text strings.
+ * Detects whether a card's ability text array indicates the Ambush keyword.
  *
  * MVP: only detects Ambush via "Ambush" prefix. Patrol and Guard have no
- * data source in current card data (safe-skip per D-2302).
+ * data source in current card data (safe-skip per D-2302); detection for
+ * those keywords is deferred until a future WP adds structured keyword
+ * classification to the registry.
  *
- * @param abilities - Array of ability text strings from card data.
- * @returns Array of detected BoardKeyword values.
+ * @param abilities - Array of ability text strings from card data, or
+ *   undefined when the registry field was missing / non-array.
+ * @returns true when at least one ability starts with "Ambush"
+ *   (case-sensitive).
  */
-function extractKeywordsFromAbilities(
-  abilities: string[] | undefined,
-): BoardKeyword[] {
+function detectAmbush(abilities: string[] | undefined): boolean {
   if (!abilities || !Array.isArray(abilities)) {
-    return [];
+    return false;
   }
-
-  const keywords: BoardKeyword[] = [];
 
   for (const ability of abilities) {
     if (typeof ability !== 'string') {
@@ -211,8 +276,7 @@ function extractKeywordsFromAbilities(
     // avoids false positives from ability text mentioning ambush in
     // other contexts.
     if (ability.startsWith('Ambush')) {
-      keywords.push('ambush');
-      break; // why: MVP treats keywords as present/absent only — no stacking
+      return true;
     }
   }
 
@@ -222,52 +286,5 @@ function extractKeywordsFromAbilities(
   // and tested with synthetic data but dormant with real cards until a
   // future WP adds structured keyword classification (safe-skip, D-2302).
 
-  return keywords;
-}
-
-// ---------------------------------------------------------------------------
-// Flat card lookup helper
-// ---------------------------------------------------------------------------
-
-/**
- * Finds a FlatCard matching a villain card by set, group slug, and card slug.
- *
- * Villain FlatCard key format: {setAbbr}-villain-{groupSlug}-{cardSlug}
- */
-function findFlatCardForVillainCard(
-  allFlatCards: KeywordFlatCard[],
-  setAbbr: string,
-  groupSlug: string,
-  cardSlug: string,
-): KeywordFlatCard | undefined {
-  for (const card of allFlatCards) {
-    if (card.cardType !== 'villain') {
-      continue;
-    }
-
-    if (card.setAbbr !== setAbbr) {
-      continue;
-    }
-
-    const prefix = `${setAbbr}-villain-`;
-    if (!card.key.startsWith(prefix)) {
-      continue;
-    }
-
-    const afterPrefix = card.key.slice(prefix.length);
-    const expectedSuffix = `-${cardSlug}`;
-
-    if (afterPrefix.endsWith(expectedSuffix)) {
-      const extractedGroupSlug = afterPrefix.slice(
-        0,
-        afterPrefix.length - expectedSuffix.length,
-      );
-
-      if (extractedGroupSlug === groupSlug) {
-        return card;
-      }
-    }
-  }
-
-  return undefined;
+  return false;
 }
