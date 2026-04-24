@@ -74,6 +74,12 @@
       "uniqueItems": true
     },
 
+    "heroSelectionMode": {
+      "type": "string",
+      "description": "Optional rule mode indicating how the composition's hero selection is interpreted. v1 allows exactly one value; the field is backward compatible (absent means GROUP_STANDARD).",
+      "enum": ["GROUP_STANDARD"]
+    },
+
     "composition": {
       "type": "object",
       "description": "Authoritative component selection for this match. Maps 1:1 to MatchSetupConfig (the engine's 9-field contract). Frozen once the match begins. Passed as boardgame.io setupData.",

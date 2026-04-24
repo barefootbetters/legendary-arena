@@ -195,6 +195,12 @@ The following files must never import `boardgame.io`:
   - `officersCount`
   - `sidekicksCount`
 - Do not rename, abbreviate, or add fields
+- The 9-field lock applies specifically to the **composition block**
+  (`MatchSetupConfig`). The match-setup **envelope** is extensible per
+  `MATCH-SETUP-SCHEMA.md §Extensibility Rules` and currently includes
+  the additive optional field `heroSelectionMode` (introduced in
+  WP-093; see `DECISIONS.md` D-9301). This clarification does not
+  alter the composition lock.
 - If a field name in `00.2` seems wrong, STOP — raise it as a question, update
   `00.2` first with a `DECISIONS.md` entry, then update code
 - Zones contain **CardExtId strings only** — never full card objects

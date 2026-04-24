@@ -131,6 +131,8 @@ Changing the meaning of a schema version requires a
 
   "expansions": ["base", "dark-city"],
 
+  "heroSelectionMode": "GROUP_STANDARD",
+
   "composition": {
     "schemeId": "dark-phoenix-rises",
     "mastermindId": "dark-phoenix-jean-grey",
@@ -156,6 +158,22 @@ Changing the meaning of a schema version requires a
   }
 }
 ```
+
+The example above includes `heroSelectionMode: "GROUP_STANDARD"` for
+illustrative purposes; the field is **optional** and defaults to
+`"GROUP_STANDARD"` when omitted, so documents authored before this
+field existed continue to validate and are interpreted identically.
+
+### Optional Fields
+
+The envelope supports optional fields that are additive and backward
+compatible. Each optional field has a documented default that applies
+when the field is absent; consumers must treat an absent field and the
+default value identically.
+
+| Field | Type | Required | Default | Purpose |
+|---|---|---|---|---|
+| `heroSelectionMode` | `string` (enum) | false | `"GROUP_STANDARD"` | Declares the interpretation rule for the composition's hero selection. `"GROUP_STANDARD"` (the only v1-allowed value) means the engine expands each `heroDeckIds` entry into the canonical group card set (classic Legendary rules). `"HERO_DRAFT"` is reserved for a future WP and is **not** in the v1 allowed enum. See §Field Semantics / Hero Selection Mode below and `DECISIONS.md` D-9301. |
 
 ### Composition Field Alignment
 
@@ -257,6 +275,50 @@ by `validateMatchSetup()` in `matchSetup.validate.ts`, which checks:
 2. Array fields are non-empty string arrays
 3. Count fields are non-negative integers
 4. All ext_ids exist in the card registry
+
+---
+
+### Hero Selection Mode
+
+`heroSelectionMode` declares **how** the composition's hero selection
+is interpreted by the engine. It is an interpretation flag, not a
+ruleset selector: it narrows how the existing composition data is read,
+and may not be used by any future WP as a branch point for engine-level
+ruleset changes outside composition-interpretation scope.
+
+In v1, the allowed enum has exactly one member:
+
+- `"GROUP_STANDARD"` — the engine expands each entry of `heroDeckIds`
+  into its canonical group card set at match start. This matches the
+  current engine behavior (classic Legendary hero groups). The short UI
+  label for this mode is `"Classic Legendary hero groups"`; the long
+  explanation surfaces to help copy / tooltips as
+  `"The engine expands each selected hero group into its canonical
+  card set at match start."`
+
+The value `"HERO_DRAFT"` is **reserved** for a future WP that introduces
+player-curated hero card selection (individual hero cards chosen by
+rarity or constraint rather than pre-defined groups). It is **not** in
+the v1 allowed enum and any document whose `heroSelectionMode` is
+`"HERO_DRAFT"` is rejected by Stage 1 envelope validation with the
+error code `"unsupported_hero_selection_mode"` and the message template
+documented in `MATCH-SETUP-VALIDATION.md §Validation Stages / Stage 1`.
+The one-sentence future-notice UX copy is
+`"Hero Draft rules are planned for a future update."` The naming and
+semantics for `"HERO_DRAFT"` — including the in-universe flavor framing
+"Contest of Champions", which is narrative UI copy only and must never
+appear in enums, error messages, JSON, schema validation, lookup keys,
+branch conditions, analytics dimensions, telemetry fields, or log
+tokens — are locked by `DECISIONS.md` D-9301.
+
+Documents that omit `heroSelectionMode` are treated as
+`heroSelectionMode: "GROUP_STANDARD"` by every downstream consumer.
+This preserves backward compatibility with any MATCH-SETUP JSON
+authored before this field existed and keeps the `schemaVersion` at
+`"1.0"` (the change is additive + backward compatible). See
+`DECISIONS.md` D-9301 for the full rationale, the four-point
+naming-governance policy for rule-mode tokens, and the
+schemaVersion-no-bump analysis.
 
 ---
 
@@ -379,6 +441,15 @@ Breaking changes require:
 
 Composition field changes additionally require updating
 `MatchSetupConfig` in `matchSetup.types.ts` and 00.2 section 8.1.
+
+The first envelope-level additive field governed by this rule is
+`heroSelectionMode` (v1 enum `["GROUP_STANDARD"]`, optional, default
+`"GROUP_STANDARD"`, `schemaVersion` unchanged at `"1.0"`). See
+`DECISIONS.md` D-9301 for the decision, rationale,
+schemaVersion-no-bump analysis, SCREAMING_SNAKE_CASE rule-mode token
+convention, and four-point naming-governance policy. Future envelope
+additions must follow the same additive + backward-compatible
+discipline and reference a dedicated DECISIONS entry.
 
 ---
 

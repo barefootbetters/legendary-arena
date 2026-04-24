@@ -125,6 +125,16 @@ This stage ensures:
 - `playerCount` is between 1 and 5 (per D-1245, matching engine limits)
 - `themeId` exists in THEME-SCHEMA (if provided)
 - `expansions` is non-empty and all entries are recognized
+- if `heroSelectionMode` is present, it must be one of the allowed enum
+  values (`GROUP_STANDARD` in v1); if absent, the envelope is treated
+  as `heroSelectionMode: "GROUP_STANDARD"` for downstream consumers.
+  An unrecognized value is rejected with error code
+  `"unsupported_hero_selection_mode"` and the full-sentence error
+  message template (normative, verbatim; `<value>` is the only
+  permitted substitution):
+  `The loadout envelope's heroSelectionMode is <value>, which is not a supported rule mode in v1 of the match setup schema. Supported modes: GROUP_STANDARD. (HERO_DRAFT is reserved for a future release and is not yet implemented.)`
+  See `DECISIONS.md` D-9301 and
+  `MATCH-SETUP-SCHEMA.md §Field Semantics / Hero Selection Mode`.
 
 **Owner:** Server layer (`apps/server`)
 **Output:** Validated envelope + extracted composition block
@@ -255,6 +265,12 @@ The following test cases are mandatory for any validation implementation.
   group, 1 hero deck, valid counts
 - Valid setup with optional `themeId`
 - Valid setup with `createdBy: "simulation"`
+- Valid envelope with `heroSelectionMode: "GROUP_STANDARD"` explicitly
+  present (the only v1-allowed value)
+- Valid envelope with `heroSelectionMode` absent (backward-compat case:
+  consumers must treat the absent field as `heroSelectionMode:
+  "GROUP_STANDARD"` per `MATCH-SETUP-SCHEMA.md §Field Semantics / Hero
+  Selection Mode`)
 
 ### Invalid Cases -- Structural
 
@@ -264,6 +280,12 @@ The following test cases are mandatory for any validation implementation.
 - Unknown composition field (e.g. `villainGroups` instead of `villainGroupIds`)
 - Duplicate `villainGroupIds` or `heroDeckIds` entries
 - Invalid `playerCount` (0, negative, or > 5)
+- Unrecognized `heroSelectionMode` value (e.g. `"HERO_DRAFT"`,
+  `"MADE_UP"`, or any other non-`"GROUP_STANDARD"` string) — Stage 1
+  rejects with error code `"unsupported_hero_selection_mode"` and the
+  full-sentence error message template documented above. `"HERO_DRAFT"`
+  is reserved for a future release and is deliberately **not** in the
+  v1 allowed enum; see `DECISIONS.md` D-9301.
 
 ### Invalid Cases -- Registry
 

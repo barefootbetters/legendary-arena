@@ -9437,6 +9437,64 @@ If a future registry change introduces leading whitespace on Ambush ability stri
 
 ---
 
+### D-9301 — Match-Setup Rule-Mode Envelope Field — heroSelectionMode (v1)
+
+**Packet:** WP-093
+
+**Decision:** `heroSelectionMode` is added as an **optional envelope field** on the MATCH-SETUP document with v1 enum `["GROUP_STANDARD"]`. The field is **not** added to the root `required` array of `MATCH-SETUP-JSON-SCHEMA.json`; when absent, every downstream consumer must treat the envelope as `heroSelectionMode: "GROUP_STANDARD"`. The value `"HERO_DRAFT"` is **reserved** for a future WP that introduces player-curated hero card selection; it is deliberately **not** in the v1 allowed enum, and any v1 document whose `heroSelectionMode` is anything other than `"GROUP_STANDARD"` (or absent) is rejected by Stage 1 envelope validation with the locked error code `"unsupported_hero_selection_mode"` and the full-sentence error message template: `The loadout envelope's heroSelectionMode is <value>, which is not a supported rule mode in v1 of the match setup schema. Supported modes: GROUP_STANDARD. (HERO_DRAFT is reserved for a future release and is not yet implemented.)` (`<value>` is the only permitted substitution; every other byte of the template is normative and consumed verbatim by WP-091's registry-side validator and WP-092's lobby-side shape guard).
+
+**Rationale:**
+
+- Authoring surfaces (WP-091 registry-viewer loadout builder) and intake surfaces (WP-092 arena-client lobby loadout parser) need an **explicit interpretation flag** for hero selection so that a future `HERO_DRAFT` ruleset can coexist in the same schema without ambiguity. Without this field, there is no stable way to ask "which hero-selection ruleset does this document intend?" — downstream consumers would have to infer from composition shape, which is brittle and couples the envelope's meaning to composition details it is supposed to be orthogonal from.
+- **Envelope placement (not composition)** preserves the 9-field composition lock byte-for-byte (`schemeId`, `mastermindId`, `villainGroupIds`, `henchmanGroupIds`, `heroDeckIds`, `bystandersCount`, `woundsCount`, `officersCount`, `sidekicksCount`). The composition block stays immutable at 9 fields and keeps its replay-stability guarantee: envelope metadata is consumed by the server before the composition reaches the engine, so a rule-mode interpretation flag on the envelope can never alter the frozen setup data that drives determinism. `MatchSetupConfig` (`packages/game-engine/src/setup/matchSetup.types.ts`) and `matchSetup.validate.ts` are unchanged.
+- **`heroSelectionMode` is an interpretation flag, not a ruleset selector.** It declares *how the existing composition data is interpreted* by the engine; it does not by itself introduce new mechanics, phases, scoring rules, win/loss conditions, card effects, or zone behaviors. Any future WP that reads the field may switch interpretation of composition data but may not use it as a branch point for engine-level ruleset changes outside that interpretation scope. This constraint shuts down an entire category of future misuse (e.g., "if `heroSelectionMode === X`, also change the villain deck shuffle algorithm") — such coupling requires a separate WP that introduces engine behavior alongside an enum expansion.
+
+**`schemaVersion` stays at `"1.0"` — no bump.** The change is additive and backward compatible per `MATCH-SETUP-SCHEMA.md §Extensibility Rules`:
+
+- Documents authored before this change still validate successfully, because the field is optional at the JSON Schema level (not in the root `required` array) and `additionalProperties: false` now recognizes `heroSelectionMode` as a known property.
+- Documents without `heroSelectionMode` are interpreted identically to their pre-change meaning — every consumer normalizes an absent field to `"GROUP_STANDARD"` (the current engine behavior's explicit name), so the observable outcome for any pre-change document is unchanged.
+- Therefore this change **does not constitute a semantic schema break** and does not require a `"1.1"` bump. Any future change that *rejects* documents which previously validated, or reinterprets their outcomes, would require the bump; this one does not. This analysis is recorded here so the non-bump is auditable and future reviewers do not need to re-derive it.
+
+**Enum-value convention — SCREAMING_SNAKE_CASE for rule-mode tokens.** `"GROUP_STANDARD"` and the reserved `"HERO_DRAFT"` use the SCREAMING_SNAKE_CASE convention deliberately. This contrasts with the `^[a-z0-9-]+$` kebab-case pattern that applies to content ext_ids (scheme, mastermind, villain group, hero deck, expansion, theme identifiers). The visual distinction makes rule-mode tokens unambiguously non-content at every grep and every diff, and it prevents a drafting mistake where a future content ext_id accidentally shadows a rule-mode enum value. All future rule-mode enum additions must follow this convention.
+
+**Human-readable label mapping (authoritative; consumed byte-for-byte by WP-091 and WP-092).** Every UI or parser surface that names a rule mode must source the strings below from this decision record. Consumers may compose them (e.g., render `"<machine name> — <short UI label>"`) but must not paraphrase, rename, abbreviate, or invent alternates.
+
+- `"GROUP_STANDARD"`
+  - machine name: `"GROUP_STANDARD"`
+  - short UI label: `"Classic Legendary hero groups"`
+  - long explanation (tooltip / help copy): `"The engine expands each selected hero group into its canonical card set at match start."`
+- `"HERO_DRAFT"` (reserved for a future release — prose only; NOT in the v1 allowed enum)
+  - machine name: `"HERO_DRAFT"`
+  - short UI label: `"Hero Draft"`
+  - long explanation (tooltip / help copy): `"Player-curated hero card selection — individual hero cards chosen by rarity or constraint rather than pre-defined groups. Reserved for a future release."`
+  - future-notice UX copy (the one sentence v1 UI surfaces may use to acknowledge the reserved mode without describing its mechanics; consumed byte-for-byte by WP-091's rule-mode info icon): `"Hero Draft rules are planned for a future update."`
+
+**Flavor / lore framing is narrative-only.** The project may use **"Contest of Champions"** as in-universe flavor text for `"HERO_DRAFT"` matches when a future WP enables Hero Draft gameplay. That label is **not** a ruleset identifier and must never appear in enums, error messages, JSON property names or values, schema validation constraints, lookup keys, branch conditions, analytics dimensions, telemetry fields, log tokens, or any other machine-readable surface. Every machine distinction is made via the locked enum value (`heroSelectionMode === "HERO_DRAFT"`), never via the flavor string. This discipline is enshrined by WP-093 as a reusable pattern for all future rule-mode work: each future rule mode may have its own in-universe flavor label, and that label is likewise narrative-only.
+
+**Consumers.**
+
+- **WP-091 (Loadout Builder in Registry Viewer)** — emits `heroSelectionMode: "GROUP_STANDARD"` explicitly in downloaded JSON and rejects any other value at the registry-side validator using the byte-for-byte error template above. Its rule-mode indicator tooltip surfaces the `"GROUP_STANDARD"` label mapping strings verbatim.
+- **WP-092 (Lobby Loadout Intake)** — shape guard accepts absent or `"GROUP_STANDARD"`, normalizes absent to `"GROUP_STANDARD"` so downstream code never sees `undefined`, and rejects any other value with the locked error code and message.
+- **Server-side Stage 1 envelope validation** — deferred alongside the broader Stage 1 rollout. When implemented, it must use the same error code, message template, and normalization rule.
+- **Engine** — does not read `heroSelectionMode` in v1. The field is forward-declarative at the engine layer. `Game.setup()`, moves, phases, hooks, and zone operations are unchanged. A replay produced before this field existed and a replay produced after — for the same composition — are byte-identical at the engine level.
+
+**Forward compatibility.** `"HERO_DRAFT"` will be enabled by a future WP that (1) expands the enum here, (2) defines `heroCardPool` / `heroDraftRules` structures in a new composition- or envelope-level field per the governance process below, (3) implements engine-side interpretation. Nothing in this decision assumes `"HERO_DRAFT"` is the only possible future rule mode. Additional modes (hypothetical `"SEALED"`, `"CUBE_DRAFT"`, `"SCENARIO_FIXED"`, etc.) follow the same governance process described next.
+
+**Naming-governance policy (locked by this entry; applies to all future rule-mode work).**
+
+1. WP-093 (this packet) is the **sole** place where rule-mode machine names, human-readable labels, and reserved-future tokens are introduced. The authoritative lookup is the "Human-readable label mapping" block in this decision record, reflected verbatim into `MATCH-SETUP-SCHEMA.md §Field Semantics / Hero Selection Mode`.
+2. WP-091, WP-092, and any future UI or parser WP may **consume** the names and labels defined here verbatim — they may never invent, rename, paraphrase, or abbreviate them.
+3. A future WP that adds a new rule mode (e.g., enabling `"HERO_DRAFT"` or introducing a hypothetical `"SEALED"` or `"CUBE_DRAFT"`) must first amend this packet's governance blocks (enum, label mapping, reserved-future prose) and land a new DECISIONS entry extending this one before any UI or parser WP is drafted against the new name.
+4. Flavor / lore framing (e.g., `"Contest of Champions"` for `"HERO_DRAFT"` matches) is explicitly separate from the machine name and lives only in narrative UI copy. Flavor strings never appear in enums, error messages, JSON, schema validation, lookup keys, branch conditions, analytics dimensions, telemetry fields, or log tokens.
+
+This policy prevents schema drift, wording forks, and retroactive renames across the registry / engine / client / server / leaderboard boundary. It is designed to scale to N rule modes, not only to two.
+
+**Status:** Immutable (execution contract for WP-093; consumed byte-for-byte by WP-091 registry-side validator, WP-092 arena-client shape guard, and future server-side Stage 1 envelope validation). Any amendment to the enum, label mapping, error code, error message template, or naming-governance policy requires a new WP that extends this entry per item 3 of the policy above.
+
+**Citation:** `docs/ai/REFERENCE/MATCH-SETUP-SCHEMA.md` (§Authoritative Match Setup Schema / Optional Fields, §Field Semantics / Hero Selection Mode, §Extensibility Rules); `docs/ai/REFERENCE/MATCH-SETUP-JSON-SCHEMA.json` (`properties.heroSelectionMode` with `enum: ["GROUP_STANDARD"]`, not in root `required`); `docs/ai/REFERENCE/MATCH-SETUP-VALIDATION.md` (§Validation Stages / Stage 1 — Envelope Validation rule-mode bullet, §Test Coverage Requirements valid + invalid entries); `docs/ai/REFERENCE/00.2-data-requirements.md` (§7 Match Configuration / Envelope Extensibility); `.claude/rules/code-style.md` (§Data Contracts — additive clarification scope-narrowing the 9-field lock to composition); `packages/game-engine/src/setup/matchSetup.types.ts` (unchanged; composition-only 9-field contract); WP-093 + EC-093 (the packet that landed this decision); WP-091 + WP-092 (downstream consumer packets).
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
