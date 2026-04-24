@@ -1539,6 +1539,32 @@ These packets ship the game and keep it running.
   pre-execution. See
   [WP-085-vision-alignment-audit.md](WP-085-vision-alignment-audit.md).
 
+- [ ] WP-087 — Engine Type Hardening: `PlayerId` Alias + Setup-Only Array `readonly` ⬜ Ready (drafted 2026-04-23; lint-gate PASS 2026-04-23 post-A0)
+  Dependencies: WP-049 (PAR Simulation Engine — merged to main as `956306c`)
+  Notes: Engine-only type-contract tightening. Zero runtime behavior change.
+  Adds `export type PlayerId = string;` to `packages/game-engine/src/types.ts`
+  as a non-branded alias for boardgame.io's `"0" | "1" | …` player index
+  strings. Applies `readonly` to three provably setup-only
+  `LegendaryGameState` array fields (`hookRegistry`,
+  `schemeSetupInstructions`, `heroAbilityHooks`). Swaps `Record<string, …>`
+  → `Record<PlayerId, …>` in exactly three canonical sites
+  (`LegendaryGameState.playerZones` in `types.ts`, `GameStateShape.playerZones`
+  in `state/zones.types.ts`, `MatchSnapshot.playerNames` in
+  `persistence/persistence.types.ts`). Moves the sole non-setup
+  `hookRegistry` assignment (`rules/ruleRuntime.ordering.test.ts:56`) into
+  factory-time construction to satisfy the strengthened immutability
+  contract. Out of scope: branded `PlayerId`, any other `readonly`
+  propagation, `MatchSetupConfig` types (pre-engine, pre-player-instantiation;
+  `heroDeckIds` is communal pool, not per-seat), `types.ts` file split,
+  move/phase/endgame/setup/effect logic, serialization / replay /
+  snapshot shape. `pnpm -r build` + `pnpm test` identical counts to
+  pre-change baseline. DECISIONS.md entry will record: non-branded
+  rationale, three-array-only scope, `MatchSetupConfig` non-applicability,
+  `heroDeckIds` communal-pool semantic. Lint trailer: §3, §11;
+  self-compliant `## Vision Alignment` block. See
+  [WP-087-engine-type-hardening.md](WP-087-engine-type-hardening.md) +
+  [EC-087](../execution-checklists/EC-087-engine-type-hardening.checklist.md).
+
 ---
 
 ## Pre-Planning System (Parallel-Safe with Phase 4+)
