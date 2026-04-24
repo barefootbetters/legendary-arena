@@ -21,6 +21,19 @@ match view, and the boardgame.io `Client()` wiring that feeds
 `useUiStateStore` from the engine's `playerView` instead of from
 fixtures.
 
+**Forward-reference (post-authoring, added 2026-04-24):** the 9-field
+create-match form this packet ships is a **locked contract consumed
+by WP-092** (Lobby Loadout Intake). WP-092 wraps the form in a
+`<details>` titled "Fill in manually (advanced)" and adds a primary
+"Create match from loadout JSON (recommended)" affordance above it,
+preserving every field ID, `v-model` binding, and submission handler
+byte-for-byte. Executors of this packet should treat the form's
+internals as downstream-gated: any deviation from the 9-field shape
+or submission signature will break WP-092's preservation contract.
+WP-091 (loadout builder in registry-viewer) and WP-093 (rule-mode
+envelope governance) are siblings registered in the same SPEC
+bundle as this packet but do not interact with its scope directly.
+
 ---
 
 ## Goal
@@ -542,6 +555,15 @@ All test files:
 - No changes to `apps/arena-client/src/components/hud/**` — `<ArenaHud />`
   and its children render unchanged under live state
 - No `boardgame.io/react` import — this is a Vue app
+- No MATCH-SETUP envelope emission — this packet's create-match form
+  submits the raw `MatchSetupConfig` composition block as `setupData`;
+  envelope-wrapped JSON authoring (`schemaVersion`, `setupId`, `seed`,
+  `heroSelectionMode`, etc.) is WP-091's scope, and envelope-aware
+  intake (JSON upload/paste that extracts the composition block before
+  submission) is WP-092's scope. The 9-field manual form in this
+  packet is a locked contract consumed by WP-092 byte-for-byte — do
+  not anticipate WP-092 by adding envelope fields, JSON controls, or
+  loadout-builder affordances here.
 - Refactors, cleanups, or "while I'm here" improvements are **out of
   scope** unless explicitly listed in Scope (In) above
 
