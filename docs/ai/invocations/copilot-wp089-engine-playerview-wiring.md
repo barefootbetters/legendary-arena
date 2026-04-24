@@ -149,3 +149,131 @@
 2. Commit the A0 SPEC bundle as `SPEC: WP-089 A0 pre-flight bundle — register WP-089 / EC-089 governance rows (PS-1, PS-2)` — staging `WORK_INDEX.md`, `EC_INDEX.md`, the two pre-flight / copilot artifacts, the session prompt, the session-context file, and the untracked WP-089 / EC-089 markdown files by exact filename only.
 3. Re-run the copilot check against the committed artifacts (expect CONFIRM; all 30 issues PASS).
 4. Open the WP-089 execution session in a fresh Claude Code session (step 3 per 01.4 workflow table).
+
+---
+
+## Re-Run 2026-04-24 (Post-A0 SPEC Commit `f5c6304`)
+
+**Re-run trigger:** A0 SPEC bundle landed at commit `f5c6304` (2026-04-24) registering WP-089 in `WORK_INDEX.md` (line 1602) and EC-089 (Draft) in `EC_INDEX.md` (line 154, Summary `Draft 47 / Total 63`), plus the `Engine→Client Projection Wiring` Dependency Chain subsection (WORK_INDEX.md:1744-1745). Session execution prompt has **not yet been drafted** — that is step 2 of the 01.4 workflow and is pending this re-run's disposition.
+
+**Re-scan delta vs. first-run:** Only Issue 30 changes state. The other 29 findings' dispositions are unchanged and not re-stated here (see first-run Findings above).
+
+### Changed findings
+
+30. **PASS** (was RISK) — Issue 30 (Missing Pre-Session Governance Fixes). PS-1 and PS-2 resolved in-tree and committed at `f5c6304`. `WORK_INDEX.md` now carries WP-089 as Ready with a 14-line notes block inherited verbatim from the preserved backup at `.claude/worktrees/wp088-handoff-preserve/WORK_INDEX.md.with-all-wp-a0:1602-1614`; the Dependency Chain ASCII block carries `WP-028 + WP-029 → WP-089 (LegendaryGame.playerView)` under a new `Engine→Client Projection Wiring (prerequisite for WP-090)` subsection. `EC_INDEX.md` now carries EC-089 as Draft with a freshly composed row (the preserved EC_INDEX backup did not contain an EC-089 row — documented as a session-context §2 back-sync candidate). `.claude/rules/work-packets.md` prohibition "Execute a packet not listed in WORK_INDEX.md" and EC-089 §Before Starting gate (d) are both satisfied. No governance drift detected — the committed row count matches the expected `Draft 47 / Total 63 / Done 16`.
+
+### Unchanged RISK findings (still pending)
+
+4. **RISK (unchanged)** — Issue 4 (Contract Drift). RS-1 (`UIAudience` inline literal) and RS-2 (dual-context test fixture) are explicitly locked in the pre-flight artifact and called out in §Authorized Next Step as mandatory session-prompt fold-ins, but the session prompt does not yet exist. The WP text at line 216 still reads "Import `UIAudience` from `./ui/uiState.filter.js` (type-only) if it is exported there; otherwise construct the audience literal inline", and the EC text at line 48 still reads "Uses `makeMockCtx` from `packages/game-engine/src/test/mockCtx.ts` for constructing the `ctx`-like fixture" — both carry the drift source text unchanged. Without a session prompt carrying the locks forward, the executor's primary reading path (EC + session prompt) does not see the RS-# resolutions.
+
+   **FIX (unchanged):** Fold RS-1 and RS-2 into the forthcoming session prompt's §Locked Values verbatim. The WP / EC text remains as-authored (their back-sync is a non-blocking post-execution item per the pre-flight's Authorized Next Step list).
+
+21. **RISK (unchanged)** — Issue 21 (Type Widening at Boundaries). RS-3 (exact cast pattern `buildPlayerView as unknown as Game<LegendaryGameState>['playerView']`, `as any` forbidden, generic-parameter change out of scope) is locked in the pre-flight but not yet present in a session prompt. Same disposition as Issue 4 — FIX carries forward to the session-prompt draft.
+
+   **FIX (unchanged):** Fold RS-3 into the session prompt's §Locked Values as a mandatory cast pattern with the `// why:` comment form specified in the pre-flight.
+
+### Re-Run Findings Summary
+
+| Issue | First-run | Re-run 2026-04-24 | Δ |
+|---|---|---|---|
+| 4(a) — `UIAudience` import path | RISK | RISK | — |
+| 4(b) — `makeMockCtx` vs `Ctx` | RISK | RISK | — |
+| 21 — Type widening / cast form | RISK | RISK | — |
+| 30 — Pre-session governance fixes | RISK | **PASS** | ✓ resolved via `f5c6304` |
+| All other 26 issues | PASS | PASS | — |
+
+**Re-run verdict: HOLD (unchanged).** Three scope-neutral RISK findings remain, all with a common resolution: draft the session prompt with RS-1 / RS-2 / RS-3 as mandatory §Locked Values entries. After the session prompt is drafted (still step 2 of 01.4 workflow), re-run the copilot check a second time against the EC + WP + pre-flight + session-prompt union — expected final verdict is **CONFIRM** with all 30 issues PASS.
+
+**No pre-flight re-run required.** All remaining FIXes are scope-neutral session-prompt drafting items; they do not change the WP-089 file allowlist, test-count lock, mutation boundary, or code-category taxonomy. The pre-flight READY TO EXECUTE verdict stands.
+
+### Re-Run Pre-Flight Verdict Disposition
+
+- [x] **HOLD** — Session prompt draft pending. Session-prompt author is bound by pre-flight §Authorized Next Step to fold in RS-1 / RS-2 / RS-3. No other artifact changes required. After session-prompt drafting, re-run copilot check a second time; expect CONFIRM.
+- [ ] CONFIRM — Withheld pending session-prompt draft carrying the RS-# locks.
+- [ ] SUSPEND — Not applicable; scope has not changed.
+
+**Next action in the workflow:** Draft `docs/ai/invocations/session-wp089-engine-playerview-wiring.md` folding in RS-1 / RS-2 / RS-3 / RS-4 (01.5 INVOKED) / RS-6 (01.6 post-mortem MANDATORY) per the pre-flight's Authorized Next Step list. Then re-run this copilot check for final CONFIRM.
+
+---
+
+## Re-Run 2026-04-24 #2 (Post-Session-Prompt Draft)
+
+**Re-run trigger:** Session execution prompt drafted at `docs/ai/invocations/session-wp089-engine-playerview-wiring.md` folding in RS-1 / RS-2 / RS-3 / RS-4 / RS-6 locks verbatim per pre-flight §Authorized Next Step. Inputs reviewed are now four: EC-089, WP-089, pre-flight, and the new session prompt. This re-run closes the HOLD opened in first-run Disposition.
+
+**Re-scan delta vs. Re-Run #1 (post-A0 commit):** Issues 4(a), 4(b), and 21 re-scanned against the session-prompt union.
+
+### Changed findings
+
+4. **PASS** (was RISK in both first-run and Re-Run #1) — Issue 4 (Contract Drift Between Types, Tests, and Runtime).
+   - **4(a) `UIAudience` import path drift:** Session prompt §Locked Values "RS-1 — `UIAudience` Imports (Inline-Literal Lock)" locks "Do NOT import `UIAudience` into `game.ts`", enumerates the exact three imports that DO land (`buildUIState`, `filterUIStateForAudience`, `UIState` type-only), and specifies the inline-literal form at the `filterUIStateForAudience(...)` call site with `as const` narrowing. Session prompt §Hard Stops row 6 grep-enforces "Any `import` of `UIAudience` anywhere in `game.ts` — violates RS-1". Session prompt §Verification Steps "Invariant greps" block includes `grep -n "UIAudience" packages/game-engine/src/game.ts` with "Expected: no output". Session prompt §Implementation Tasks Task A explicitly adds "No `UIAudience` import (RS-1)". Session prompt §AI Agent Warning row 2 catches the tempting-but-wrong import. **Prevention by construction** — the executor cannot complete the task while importing `UIAudience` into `game.ts`; the grep gate would fail.
+   - **4(b) `makeMockCtx` shape vs. runtime `Ctx`:** Session prompt §Locked Values "RS-2 — Dual-Context Test Fixture Lock" locks the dual-context pattern with an annotated code example (`makeMockCtx()` for `SetupContext` → `buildInitialGameState`; inline `ctxLike` literal for the runtime `Ctx` subset → `LegendaryGame.playerView!(...)`). Explicitly forbids four alternative paths: modifying `makeMockCtx`, creating a new shared helper, importing `boardgame.io/testing`, replacing `as any` with `as Ctx`. Session prompt §AI Agent Warning row 3 catches the tempting misreading of EC-089 line 48. Session prompt §Hard Stops row 5 locks "Any modification to `packages/game-engine/src/test/mockCtx.ts`". Session prompt §Implementation Tasks Task D carries the full test-file outline including the `ctxLike` block with its required `// why:` comment. **Prevention by construction** — the test template is literally in the prompt.
+
+21. **PASS** (was RISK) — Issue 21 (Type Widening at Boundaries).
+    Session prompt §Locked Values "RS-3 — Local Type Assertion Lock (Exact Cast Pattern)" specifies the only permitted cast form verbatim — `buildPlayerView as unknown as Game<LegendaryGameState>['playerView']` — along with its three-sentence mandatory `// why:` comment block citing WP-089 §Type Safety Note + D-0301 / D-8901 + the `game.ts:213` `endIf` precedent. Explicitly forbids four cast alternatives: `as any`, `as Game<UIState>['playerView']`, modifying the `Game<...>` generic, wrapper `Game()` instance / parallel object. Session prompt §Hard Stops rows 12-14 each grep-enforce one of the forbidden patterns. Session prompt §AI Agent Warning row 1 explicitly calls out "Casting too wide (`as any`) at the `playerView:` assignment" and explains why the `as unknown as Game<LegendaryGameState>['playerView']` preserves the signature guarantee. Session prompt §Implementation Tasks Task C carries the exact wiring line including the RS-3 `// why:` comment block. Session prompt §Final Instruction row 3 restates the RS-3 lock. **Prevention by construction** — every narrow path to the wrong cast form is grep-gated or guard-rail-warned.
+
+### Unchanged findings
+
+30. **PASS (unchanged)** — Issue 30 (Pre-Session Governance Fixes). `f5c6304` resolved PS-1 / PS-2 in Re-Run #1. No change.
+
+All 26 first-run PASS findings remain PASS (no scope change, no new drift introduced by the session prompt).
+
+### Additional verification against the 30-issue lens
+
+Scanning the session prompt's ~640-line text against the other 26 issues:
+
+- **Issue 1** (Engine / UI boundary drift) — Session prompt §Hard Stops row 8 grep-enforces no `apps/server/` / `@legendary-arena/registry` imports in `game.ts`; §Lifecycle-isolation audit in §Verification Steps grep-enforces `buildPlayerView` is called only from the `LegendaryGame` literal field. PASS.
+- **Issue 2** (Non-determinism by convenience) — Session prompt §Hard Stops row 13 forbids `ctx.random.*`, `Math.random()`, `Date.now()`, `performance.now()`, `new Date()` inside `buildPlayerView`; §Verification Steps greps enforce. §AI Agent Warning "Do NOT" row 3 restates. PASS.
+- **Issue 3** (Pure vs Immer confusion) — Session prompt §Goal item 3 locks "No intermediate mutation"; §Hard Stops rows 11-12 forbid mutation of `gameState` / `ctx` / `playerID`; Tests #5 / #6 in §Locked test baseline assert no-mutation via `JSON.stringify` identity. PASS.
+- **Issue 5** (Optional field ambiguity) — Not triggered; `buildPlayerView` composes helpers that already handle optional `UIState.gameOver?` and `UIPlayerState.handCards?`. `as const` narrowing in the audience ternary avoids `exactOptionalPropertyTypes` pitfalls. PASS.
+- **Issue 6** (Undefined merge semantics) — No merging. PASS.
+- **Issue 7** (Persisting runtime state by accident) — Session prompt §WP Class line explicitly calls out "No serialization / replay / snapshot shape change"; §Implementation Tasks Task B's JSDoc cites "no mutation of gameState or ctx, no entries appended to gameState.messages". PASS.
+- **Issue 8** (No single debugging truth) — Session prompt §Implementation Tasks Task B's JSDoc cites "Given identical (gameState, ctx, playerID), the output is byte-identical"; reproducibility locked via Test #4 determinism assertion. PASS.
+- **Issue 9** (UI re-implements engine logic) — Session prompt §Goal item 4 locks delegation-only semantics; Test #1 asserts byte-equality with `filterUIStateForAudience(buildUIState(...))`; §AI Agent Warning "Do NOT" row 7 forbids asserting zone contents (that's WP-028 / WP-029 territory). PASS.
+- **Issue 10** (Stringly-typed outcomes) — Audience derivation uses `typeof === 'string'` + `as const` narrowing to produce a properly-typed `UIAudience` discriminated union literal. PASS.
+- **Issue 11** (Tests validate behavior not invariants) — Session prompt §Locked test baseline frames all six tests as contract-enforcement, not illustration (test file header literally says "If tests fail, the implementation is incorrect by definition. Do NOT weaken assertions to make tests pass — fix the implementation instead"). PASS.
+- **Issue 12** (Scope creep during small packets) — Session prompt §Pre-Session Gate 6 locks `git diff --name-only` output to exactly 7 files (bundled) or 3+4 (split); §Verification Steps §Scope lock re-enforces; §Hard Stops row 1 catches generic ripple. PASS.
+- **Issue 13** (Unclassified directories) — N/A, no new directory. PASS.
+- **Issue 14** (No extension seams) — `UIAudience` discriminated union is the extension seam; future audiences add union members and route through the `typeof playerID === 'string'` branch without refactoring. Pre-flight §Maintainability item 1 PASS carries. PASS.
+- **Issue 15** (Missing "why" for invariants) — Session prompt §Locked Values §Required `// why:` Comments enumerates three mandatory comment anchors with three-sentence-minimum specs; §Implementation Tasks Tasks B + C carry the verbatim comment text. PASS.
+- **Issue 16** (Lifecycle wiring creep) — Session prompt §Hard Stops row 16 grep-enforces `buildPlayerView` not wired into phase / turn / move hooks; §Verification Steps §Lifecycle-isolation audit runs the grep; §AI Agent Warning row 4 explicitly forbids the pattern. PASS.
+- **Issue 17** (Hidden mutation via aliasing) — Session prompt §Verification Steps §Aliasing self-audit RS-5 documents the upstream copy discipline; post-mortem §Aliasing self-audit section makes the audit mandatory. PASS.
+- **Issue 18** (Outcome evaluation timing) — `playerView` runs on every state push — a well-defined lifecycle moment. PASS.
+- **Issue 19** (Weak JSON-serializability) — `UIState` is JSON-serializable by WP-028 construction; projection does not introduce functions / Maps / Sets / class instances. PASS.
+- **Issue 20** (Ambiguous authority chain) — Session prompt §Authority Chain lists 17 documents in strict order; §first line block names EC-089 as primary execution authority. PASS.
+- **Issue 22** (Silent vs loud failure) — Session prompt §Goal item 1 locks "never throws"; §Hard Stops row 10 grep-enforces "Any `throw` statement introduced inside `buildPlayerView`"; §Verification Steps grep asserts. Malformed input produces best-effort spectator projection — explicit fail-soft pattern. PASS.
+- **Issue 23** (Deterministic ordering) — Inherits from `buildUIState` / `filterUIStateForAudience`; Test #4 asserts. PASS.
+- **Issue 24** (Mixed persistence concerns) — Projection is not persistence; no `G` field added; no `MatchSetupConfig` touch; no snapshot change. PASS.
+- **Issue 25** (Overloaded function responsibilities) — `buildPlayerView` does exactly four locked steps in order. Session prompt §Locked Values §Projection order locks the body to those four steps; §Goal item 3 restates; §AI Agent Warning "Do NOT" row 6 forbids caching / memoization. PASS.
+- **Issue 26** (Implicit content semantics) — `'player'` / `'spectator'` locked as closed-union members; `typeof playerID === 'string'` is the exact derivation with explicit `''` empty-seat-is-player carve-out. PASS.
+- **Issue 27** (Weak canonical naming) — `playerID` (boardgame.io type name) vs `playerId` (audience field) distinction preserved verbatim; session prompt §Locked Values §Function signature calls out "`playerID` matches boardgame.io's type name and the audience-field `playerId` distinction is intentional per code-style Rule 14". PASS.
+- **Issue 28** (No upgrade / deprecation story) — Additive change; clients that don't receive `playerView` simply got raw `G` before (documented in WP-089 §Session Context). No migration required. PASS.
+- **Issue 29** (Assumptions leaking across layers) — Session prompt §Hard Stops rows 7-8 grep-enforce no server / registry imports; §WP Class locks engine-layer only. PASS.
+
+### Re-Run #2 Findings Summary
+
+| Issue | First-run | Re-Run #1 (2026-04-24 post-`f5c6304`) | Re-Run #2 (2026-04-24 post-session-prompt) | Δ #2 |
+|---|---|---|---|---|
+| 4(a) — `UIAudience` import path | RISK | RISK | **PASS** | ✓ prevented by RS-1 lock in session prompt |
+| 4(b) — `makeMockCtx` vs `Ctx` | RISK | RISK | **PASS** | ✓ prevented by RS-2 dual-context lock in session prompt |
+| 21 — Type widening / cast form | RISK | RISK | **PASS** | ✓ prevented by RS-3 exact cast lock in session prompt |
+| 30 — Pre-session governance fixes | RISK | PASS | PASS | — (held from #1) |
+| All other 26 issues | PASS | PASS | PASS | — |
+
+**Re-run #2 verdict: 30 / 30 PASS.** No RISK findings. No FIX items outstanding. Session prompt's §Hard Stops, §Verification Steps, §Definition of Done, and §AI Agent Warning blocks collectively grep-gate every RS-# lock such that the executing agent cannot complete Commit A while violating any RS-# constraint.
+
+### Re-Run #2 Pre-Flight Verdict Disposition
+
+- [ ] HOLD — No, all RISK findings resolved.
+- [x] **CONFIRM** — Pre-flight READY TO EXECUTE verdict stands. Session prompt generation complete. **Execution session is authorized to open in a fresh Claude Code session (step 3 per 01.4 workflow table).**
+- [ ] SUSPEND — Not applicable; scope unchanged throughout.
+
+**Sequencing after CONFIRM:**
+
+1. Commit the session prompt + updated copilot check as a companion `SPEC:` commit (e.g., `SPEC: WP-089 A0 completion — session prompt + copilot check CONFIRM`) OR bundle with the next EC-089 code commit. Stage by exact filename only.
+2. Open a fresh Claude Code session with `docs/ai/invocations/session-wp089-engine-playerview-wiring.md` as the working prompt.
+3. Execute per the session prompt's §Implementation Tasks A-F.
+4. Run §Verification Steps; confirm all pass.
+5. Author 01.6 post-mortem before the governance-close commit.
+6. Commit A (`EC-089:` prefix) ± Commit B (`SPEC:` prefix) per the executor's chosen commit topology.
+
+The WP-089 pre-execution governance gate is fully satisfied. Execution authorization stands.
