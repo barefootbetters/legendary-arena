@@ -1766,7 +1766,58 @@ These packets ship the game and keep it running.
   all preserved. See
   [WP-094-viewer-hero-flatcard-key-uniqueness.md](WP-094-viewer-hero-flatcard-key-uniqueness.md).
 
+- [x] WP-096 — Registry Viewer: Grid Data View Mode ✅ Done 2026-04-25 (drafted 2026-04-25; 00.3 lint-gate PASS; pre-flight + 01.7 copilot check 30/30 PASS post PS-1..PS-3 + FIX 4 resolution; executed 2026-04-25 at commit `6c6b003`)
+  Dependencies: WP-066 (image-to-data view toggle — established `useCardViewMode`,
+  `ViewModeToggle.vue`, `CardDataDisplay.vue`, and the `localStorage`
+  `cardViewMode` key that this packet extends to a second consumer),
+  WP-003 (CardRegistry + `FlatCard` type — the data shape rendered in
+  tile-mode). Soft-dep WP-094 (sibling registry-viewer single-component
+  fix — pattern reference only). Compatible with (not dependent on)
+  WP-086 (queued registry viewer card-types upgrade — same component
+  surface on a different axis; merge order does not matter).
+  Notes: Corrective follow-up to WP-066. WP-066 deliberately scoped
+  the toggle to the sidebar (per EC-066 §Guardrails "CardGrid.vue NOT
+  modified — do NOT touch unless necessary") but the public-facing
+  "Data view" / "Image view" labels implied coverage of the main grid;
+  user reported the gap on 2026-04-24. WP-096 wires `CardGrid.vue` to
+  the existing `useCardViewMode` composable directly (no prop plumbing
+  through `App.vue`) and introduces `CardDataTile.vue` as the
+  tile-sized cousin of `CardDataDisplay.vue`. Eight locked fields
+  rendered in order under AND-semantics: `name` (heading) + seven
+  labelled rows `Type` / `Set` / `Class` / `Cost` / `Attack` /
+  `Recruit` / `Rarity`. Six labels byte-identical to `CardDataDisplay.vue`;
+  the `Set` / `setAbbr` row is the deliberate tile-compaction
+  divergence from sidebar `Edition` / `setName` — the 130px-min
+  `.img-wrap` 3:4 box cannot accommodate full set names without
+  ellipsis defenses or grid reflow (D-9601). Ability text intentionally
+  omitted from the tile (sidebar remains the place for full ability
+  text). Conditional placement inside `.img-wrap` preserves grid
+  column track (`minmax(130px, 1fr)`) and 3:4 swap-area dimensions
+  byte-for-byte; `.tile-info` footer renders unconditionally; `.selected`
+  border glow remains on the outer `.card-tile`. Five required `// why:`
+  comments across the two files. Verification: `pnpm --filter
+  registry-viewer typecheck` 0 errors; `build` 0 errors / 78 modules
+  (baseline 75; +3 from new SFC); `lint` 11 errors / 227 warnings —
+  all 11 errors pre-existing on `main` from EC-091 in `LoadoutBuilder.vue`
+  (off-allowlist), no new errors introduced. Calibrated baseline at
+  HEAD `26e4584` was 11 / 221; +6 warnings stylistic on `CardDataTile.vue`
+  consistent with codebase pattern. Manual smoke a–h not performed
+  by the executor (no browser available); user must run `pnpm --filter
+  registry-viewer dev` and walk through the eight smoke steps before
+  pushing. Forbidden-imports greps (`game-engine`, `preplan`, `server`,
+  registry barrel, `boardgame.io`, `node:`, `pg`, `Math.random`,
+  `Date.now`) all zero against the two scope files. No new npm deps;
+  no test-file additions (viewer has no Vue component-test harness).
+  Vision clauses touched: §10a (Registry Viewer public surface — completes
+  WP-066's "global toggle" intent). NG-1..7 all preserved. 01.5 NOT
+  INVOKED — all four triggers absent. See
+  [WP-096-registry-viewer-grid-data-view.md](WP-096-registry-viewer-grid-data-view.md)
+  + [EC-096-registry-viewer-grid-data-view.checklist.md](../execution-checklists/EC-096-registry-viewer-grid-data-view.checklist.md)
+  + D-9601.
+
 - [ ] **(deferred placeholder)** Fix CLI credentials field drift in `apps/server/scripts/join-match.mjs` — D-9001 identifies the buggy script. Two issues: (1) the script omits `playerID` from its POST body; the server auto-assigns a seat which is functionally OK but inconsistent with `create-match.mjs`'s shape; (2) the script reads `result.credentials` after the join response, but the canonical field name is `result.playerCredentials` — meaning the script's printed `credentials:` value is always `undefined`. Scope is CLI-only — no engine, no client, no server logic touched. A future packet may either fix the two bugs in place (preferred — matches `create-match.mjs` shape) or delete the script outright if the lobby UI obsoletes its use case. No dependencies; can land standalone.
+
+- [ ] **(deferred placeholder)** Classify `apps/registry-viewer/` in `docs/ai/REFERENCE/02-CODE-CATEGORIES.md` — pre-existing governance gap surfaced as WP-066 copilot finding #13, inherited silently by WP-094 and WP-096 (third inheritance pass; flagged in WP-096 pre-flight RS-3 + copilot check finding #13). Two acceptable resolutions: (a) extend the existing `client-app` row (D-6511) to cover both `apps/arena-client/` and `apps/registry-viewer/`; (b) add a new `client-app-viewer` row with its own DECISIONS.md entry. Either path needs an authorising D-entry plus updates to the table at `02-CODE-CATEGORIES.md:36-49` and the per-category prose at `:234-270`. Scope is docs-only — no engine, registry, server, or app code touched. No dependencies; can land standalone. The next viewer-touching WP should arrive with the classification already landed rather than inheriting the gap a fourth time.
 
 ---
 
