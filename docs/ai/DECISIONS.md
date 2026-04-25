@@ -9833,6 +9833,32 @@ The three persistence classes in `.claude/rules/persistence.md` remain unchanged
 
 ---
 
+### D-10301 — `apps/server/src/replay/` Classified Under `server` Code Category
+
+**Type:** Code Category Classification
+**Packet:** WP-103 (pre-flight resolution — PS-2)
+**Date:** 2026-04-25
+
+**Decision:** The new directory `apps/server/src/replay/` introduced by WP-103 falls under the `server` code category as defined in `docs/ai/REFERENCE/02-CODE-CATEGORIES.md §server`. All three files (`replay.types.ts`, `replay.logic.ts`, `replay.logic.test.ts`) inherit the server-category rules: may access PostgreSQL via the caller-injected `DatabaseClient` (`pg.Pool`), may type-only re-export `ReplayInput` from `@legendary-arena/game-engine` at the contract boundary (the *runtime* engine import boundary remains forbidden), must not import `boardgame.io`, must not import `@legendary-arena/registry`, must not import `@legendary-arena/preplan`, must not import UI packages, must not contain gameplay logic, must not mutate `G` or `ctx`. Status: Immutable.
+
+**Rationale:** The `server` category in `02-CODE-CATEGORIES.md` is mapped at the path level to `apps/server/`, and a `apps/server/src/replay/` directory inherits that mapping implicitly. WP-103 could rely on the same precedent that `apps/server/src/par/` (WP-051) and `apps/server/src/rules/` (FP-01) used. However, D-5202 (`apps/server/src/identity/`) established that *explicit* classification of new server subdirectories has become the project's preferred discipline because it (a) creates a search-index entry that future Claude sessions hit when looking for boundary rules, (b) prevents drift if `02-CODE-CATEGORIES.md` is edited later in a way that narrows the parent directory's mapping, and (c) makes the boundary auditable from the citation chain alone. The same engine-subdirectory precedents D-5202 cited — D-2706 (`src/replay/`), D-2801 (`src/ui/`), D-3001 (`src/campaign/`), D-3101 (`src/invariants/`), D-3201 (`src/network/`), D-3301 (`src/content/`), D-3401 (`src/versioning/`), D-3501 (`src/ops/`), D-3601 (`src/simulation/`), D-3701 (`src/beta/`), D-4001 (`src/governance/`) — apply.
+
+This decision codifies the same discipline for `apps/server/src/replay/`. It introduces no new category and no new rule; it asserts that the existing `server` category's constraints govern this directory and any future replay-storage subfile.
+
+**Naming-collision note:** The directory name `replay/` exists in three places across the monorepo: `packages/game-engine/src/replay/` (engine — replay harness, `ReplayInput`, `replayGame`, `computeStateHash`; classified under D-2706), `apps/arena-client/src/replay/` (client — `parseReplayJson` consumer-side parser for `ReplaySnapshotSequence`; client-app category per D-6511), and `apps/server/src/replay/` (server — WP-103 hash-indexed `storeReplay` / `loadReplay` against `legendary.replay_blobs`; classified by *this* decision). The three are distinct categories with distinct rules; the directory-name parallelism is conventional. Function-name collisions are zero (engine has `replayGame`; client has `parseReplayJson`; server has `storeReplay` / `loadReplay`).
+
+**Forbidden imports (locked):** `boardgame.io`, `@legendary-arena/game-engine` runtime (any non-`import type` form), `@legendary-arena/registry`, `@legendary-arena/preplan`, `@legendary-arena/vue-sfc-loader`, any UI / arena-client / replay-producer / registry-viewer package, `pg` directly (use the `DatabaseClient` alias re-exported from `../identity/identity.types.js` per WP-103 Locked Values), browser APIs, `Math.random`, `Date.now`, external UUID libraries.
+
+**Permitted imports:** `import type { ReplayInput }` from `@legendary-arena/game-engine` (type-only, zero runtime emit, scoped to `replay.types.ts` only — `replay.logic.ts` re-imports it from `./replay.types.js`), `DatabaseClient` (alias for `pg.Pool`) from `../identity/identity.types.js` via the `replay.types.ts` re-export, `node:` built-ins as needed, sibling `apps/server/src/*` modules under server-category rules, future WP-defined `apps/server/src/replay/*` siblings (e.g., a future `replay.purge.logic.ts` or HTTP request-handler module).
+
+**Failure mode:** Boundary violations would manifest as a runtime `boardgame.io` or engine-runtime import landing in `replay.logic.ts` (which would pull engine code into the server bundle and defeat the layer separation that keeps replay storage from depending on gameplay execution), or as engine code reaching into `apps/server/src/replay/` (which would couple the deterministic engine to durable replay storage — a direction-of-flow inversion). The grep gates in WP-103 §Verification Steps catch both directions: `grep -nE "from ['\"]boardgame\.io" apps/server/src/replay/*.ts` (expected: no output) and `grep -nE "from ['\"]@legendary-arena/game-engine'" apps/server/src/replay/*.ts` (expected: at least one match — the type re-export of `ReplayInput` in `replay.types.ts` — and the executor must verify it is `import type`, not a runtime import).
+
+**Status:** Immutable for the WP-103 surface. The classification applies to any future replay-storage file introduced under `apps/server/src/replay/`.
+
+**Citation:** `docs/ai/REFERENCE/02-CODE-CATEGORIES.md §server`; `docs/ai/work-packets/WP-103-replay-storage-loader.md` §Files Expected to Change; D-5202 (`apps/server/src/identity/` server-subdirectory classification — direct precedent for this decision); D-2706 / D-2801 / D-3001 / D-3101 / D-3201 / D-3301 / D-3401 / D-3501 / D-3601 / D-3701 / D-4001 (engine-subdirectory classification precedent chain); D-6511 (`apps/arena-client/` client-app classification, naming-collision context); `.claude/rules/server.md` (server layer enforcement); WP-103 ↔ EC-111 mismatch matches WP-068 ↔ EC-070 / WP-082 ↔ EC-107 retargeting precedent (PS-1 paired pre-flight resolution).
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

@@ -11,6 +11,20 @@
 > with a mock implementation; WP-103 lands the real loader. After WP-103
 > ships, WP-053 can open against a green `Before Starting` checklist.
 
+> **Numbering note (PS-1 resolution, 2026-04-25):** This packet's
+> Execution Checklist is **EC-111**, not EC-103. The EC was retargeted
+> from EC-103 → EC-111 to resolve a filename collision with
+> `docs/ai/execution-checklists/EC-103-viewer-a11y-and-ci-gating.checklist.md`
+> (Done; ad-hoc viewer EC). The WP retains its WP-103 number because
+> WP-103 is unused in `WORK_INDEX.md`. The WP-103 ↔ EC-111 mismatch
+> matches the WP-068 ↔ EC-070 / WP-082 ↔ EC-107 retargeting precedents
+> (8 prior EC retarget cases including EC-061→EC-067, EC-066→EC-068,
+> EC-062→EC-069, EC-063→EC-071, EC-080→EC-072, EC-079→EC-073,
+> EC-064→EC-074, EC-060→EC-106). Commit prefix at execution is
+> `EC-111:`; both `WP-103:` and `EC-103:` are forbidden by the
+> commit-msg hook (legacy `EC-103:` would collide with the viewer
+> EC-103 commit history).
+
 ---
 
 ## Session Context
@@ -186,6 +200,16 @@ Before writing a single line:
   comprehensive `// why:` comments, no `boardgame.io` import.
 - `apps/server/src/identity/identity.types.ts` — read entirely.
   Source of the `DatabaseClient` type alias WP-103 reuses.
+- `apps/arena-client/src/replay/loadReplay.ts` — read once. **Naming
+  overlap, not behavioral overlap.** This file lives in arena-client's
+  `src/replay/` and is named `loadReplay.ts`, but its sole export is
+  `parseReplayJson(raw, source?)` — a consumer-side string-to-
+  `ReplaySnapshotSequence` parser used by the in-browser replay
+  inspector (WP-074-era). WP-103's `loadReplay` is a server-side
+  hash-indexed `ReplayInput` reader against `legendary.replay_blobs`.
+  Different layer, different signature, different return type. The
+  directory-name parallelism (`apps/*/src/replay/`) is conventional;
+  the function-name conflict is **zero**.
 - `data/migrations/004_create_players_table.sql` and
   `005_create_replay_ownership_table.sql` — read both for migration
   format precedent (uppercase SQL, `legendary.*` namespace,
@@ -275,8 +299,8 @@ Before writing a single line:
 
 > **Duplication notice:** The SQL blocks and function signatures
 > below appear verbatim in three places — this Locked Values block,
-> the §Acceptance Criteria checks, and the EC-103 Locked Values
-> section. Any divergence between WP-103 and EC-103 is a hard STOP;
+> the §Acceptance Criteria checks, and the EC-111 Locked Values
+> section. Any divergence between WP-103 and EC-111 is a hard STOP;
 > the WP wins per the EC-TEMPLATE authority chain, but executors
 > should treat any difference as a sign one document is stale and
 > escalate before proceeding.
@@ -438,6 +462,14 @@ DB tests use `before` / `after` for `pg.Pool` lifecycle and
 DB-dependent tests use the locked `{ skip: 'requires test database' }`
 pattern via `hasTestDatabase ? {} : { skip: 'requires test database' }`.
 
+**Test fixture sourcing (locked).** All `ReplayInput` fixtures used by
+these five tests must be inline literals constructed inside
+`replay.logic.test.ts`. Do not import, read, or reference
+`apps/replay-producer/samples/three-turn-sample.inputs.json` or any
+other file outside `apps/server/src/replay/`. The minimal `ReplayInput`
+covering all four fields fits in ≤ 20 lines of TypeScript; cross-app
+fixture coupling is a layer-boundary smell.
+
 ---
 
 ## Out of Scope
@@ -478,6 +510,16 @@ pattern via `hasTestDatabase ? {} : { skip: 'requires test database' }`.
 - **No bulk operations** — no `storeReplays(...replays)`, no
   `listReplaysByAccountId`, no batched `loadReplays(...hashes)`.
   Single-replay surface only.
+- **No `ReplayInputsFile` ingestion.** The producer's input shape
+  (`packages/game-engine/src/replay/replaySnapshot.types.ts:62`) is a
+  strict superset of `ReplayInput` (adds `version: 1` + optional
+  `metadata`). A future WP may land an
+  `ingestReplayInputsFile(file, db)` shim that strips the wrapper
+  and calls `storeReplay`. WP-103 does not include that shim —
+  `storeReplay` accepts `ReplayInput` only. Do not add a `version`
+  field, do not add a `metadata` field, do not add a stripping
+  helper. Adding any of these is a scope expansion that needs its
+  own WP.
 - **No engine, registry, preplan, arena-client, replay-producer,
   registry-viewer, or vue-sfc-loader changes**.
 - Refactors, cleanups, or "while I'm here" improvements are **out
@@ -493,9 +535,9 @@ pattern via `hasTestDatabase ? {} : { skip: 'requires test database' }`.
 - `data/migrations/006_create_replay_blobs_table.sql` — **new** — `legendary.replay_blobs` DDL
 
 Governance close (Commit B):
-- `docs/ai/STATUS.md` — **modified** — prepend WP-103 / EC-103 current-state block
+- `docs/ai/STATUS.md` — **modified** — prepend WP-103 / EC-111 current-state block
 - `docs/ai/work-packets/WORK_INDEX.md` — **modified** — flip WP-103 row `[ ]` → `[x]`
-- `docs/ai/execution-checklists/EC_INDEX.md` — **modified** — flip EC-103 row Draft → Done
+- `docs/ai/execution-checklists/EC_INDEX.md` — **modified** — flip EC-111 row Draft → Done
 - `docs/ai/post-mortems/01.6-WP-103-replay-storage-loader.md` — **new** — mandatory per 01.6 (new long-lived abstraction + new contract consumed by WP-053 + new persistence surface)
 
 No other files may be modified.
@@ -517,6 +559,12 @@ No other files may be modified.
   codec returns deserialized JS objects (no manual `JSON.parse`
   call): `pg` deserializes `jsonb` columns at the driver level;
   manual parsing would double-decode and break.
+- `replay.logic.ts` `loadReplay` (additional, adjacent line) —
+  clarify that this is the server-layer hash-indexed loader,
+  distinct from `apps/arena-client/src/replay/loadReplay.ts`'s
+  `parseReplayJson` (consumer-side `ReplaySnapshotSequence` parser,
+  WP-074). The two share a directory name by convention; nothing
+  else.
 - `006_create_replay_blobs_table.sql` `replay_hash text PRIMARY KEY`
   line — explain why this PK choice diverges from WP-052's
   `bigserial player_id` + `ext_id text UNIQUE` pattern: replays
@@ -730,23 +778,29 @@ This packet is complete when ALL of the following are true:
 - [ ] Post-mortem written at
       `docs/ai/post-mortems/01.6-WP-103-replay-storage-loader.md`
       (mandatory per 01.6) before Commit B
-- [ ] Commit A subject line starts with `EC-103:`; Commit B subject
-      line starts with `SPEC:`; `WP-103:` is forbidden per the
-      commit-msg hook
+- [ ] Commit A subject line starts with `EC-111:`; Commit B subject
+      line starts with `SPEC:`; both `WP-103:` and `EC-103:` are
+      forbidden per the commit-msg hook (WP-103 retargets to EC-111
+      per the EC-061→EC-067 / WP-082→EC-107 precedent; legacy
+      `EC-103:` would collide with the viewer-a11y EC-103 commit
+      history)
 - [ ] `git diff --name-only main` shows exactly 4 lines for Commit A
       (3 `.ts` source/test + 1 `.sql` migration)
 - [ ] WP-027, WP-051, WP-052 contract files unmodified;
       `packages/game-engine/src/types.ts` unmodified
-- [ ] `docs/ai/STATUS.md` updated with WP-103 / EC-103 current-state block
-- [ ] `docs/ai/DECISIONS.md` updated if any new architectural decision
-      is made during execution (e.g., `text PRIMARY KEY` divergence
-      from WP-052's `bigserial` precedent — author D-10301 if not
-      already filed at A0). If A0 lands D-10301 + D-10302 (jsonb
-      choice + immutability) before Commit A, no further DECISIONS
-      changes are needed at execution time.
+- [ ] `docs/ai/STATUS.md` updated with WP-103 / EC-111 current-state block
+- [ ] `docs/ai/DECISIONS.md` already includes **D-10301** (directory
+      classification for `apps/server/src/replay/` — landed via PS-2
+      pre-flight resolution on 2026-04-25; mirrors D-5202 for
+      `apps/server/src/identity/`). Additionally, updated if any new
+      architectural decision is made during execution (e.g., `text
+      PRIMARY KEY` divergence from WP-052's `bigserial` precedent —
+      author D-10302 if not already filed at A0). If A0 lands D-10302
+      + D-10303 (jsonb choice + immutability) before Commit A, no
+      further DECISIONS changes are needed at execution time.
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` has WP-103 checked off
       with execution date + Commit A hash
-- [ ] `docs/ai/execution-checklists/EC_INDEX.md` has EC-103 row
+- [ ] `docs/ai/execution-checklists/EC_INDEX.md` has EC-111 row
       flipped Draft → Done with execution date
 
 ---

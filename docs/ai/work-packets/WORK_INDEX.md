@@ -1890,16 +1890,18 @@ These packets ship the game and keep it running.
   baseline shifts post-WP-052 `31/5/0` → **`36/6/0`** (+5 tests /
   +1 suite; with 10 skipped if no test DB). Engine baseline
   `513/115/0` unchanged. Two-commit topology at execution: A
-  `EC-103:` (4 files: types, logic, test, migration); B `SPEC:`
+  `EC-111:` (4 files: types, logic, test, migration); B `SPEC:`
   governance close (STATUS.md + WORK_INDEX WP-103 `[ ]` → `[x]`
-  + EC_INDEX EC-103 Draft → Done + 01.6 post-mortem; mandatory per
+  + EC_INDEX EC-111 Draft → Done + 01.6 post-mortem; mandatory per
   three triggers — new long-lived abstraction `storeReplay` /
   `loadReplay` consumed by WP-053 + new contract consumed by
   future WPs + new persistence surface `legendary.replay_blobs`).
-  Optional A0 SPEC for D-10301 (text PK divergence rationale) +
-  D-10302 (jsonb choice + immutability rationale) if landing the
-  decisions before Commit A is preferred over inline DECISIONS
-  updates at Commit B. Out-of-scope (explicit): no replay write-back
+  D-10301 (directory classification for `apps/server/src/replay/`)
+  landed via PS-2 pre-flight resolution on 2026-04-25 (mirrors
+  D-5202). Optional A0 SPEC for D-10302 (text PK divergence
+  rationale) + D-10303 (jsonb choice + immutability rationale) if
+  landing the decisions before Commit A is preferred over inline
+  DECISIONS updates at Commit B. Out-of-scope (explicit): no replay write-back
   from `apps/replay-producer/`, no HTTP endpoints, no FK additions
   to WP-052's `replay_ownership`, no replay-blob deletion / retention
   / GDPR purge integration (deferred per PS-12 / D-5207-pending),
@@ -1910,8 +1912,12 @@ These packets ship the game and keep it running.
   (NG-1..7 not crossed). 01.5 NOT INVOKED (zero `LegendaryGameState`
   field, zero `buildInitialGameState` shape change, zero new moves,
   zero new phase hooks — engine package entirely untouched). 01.6
-  post-mortem MANDATORY. See [WP-103-replay-storage-loader.md](WP-103-replay-storage-loader.md)
-  + [EC-103-replay-storage-loader.checklist.md](../execution-checklists/EC-103-replay-storage-loader.checklist.md).
+  post-mortem MANDATORY. **EC retargeted EC-103 → EC-111 on
+  2026-04-25 (PS-1 resolution) to resolve filename collision with
+  `EC-103-viewer-a11y-and-ci-gating.checklist.md` (Done; ad-hoc
+  viewer EC); WP-103 ↔ EC-111 mismatch matches WP-068 ↔ EC-070 /
+  WP-082 ↔ EC-107 precedents.** See [WP-103-replay-storage-loader.md](WP-103-replay-storage-loader.md)
+  + [EC-111-replay-storage-loader.checklist.md](../execution-checklists/EC-111-replay-storage-loader.checklist.md).
 
 ---
 

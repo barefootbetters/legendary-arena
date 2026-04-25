@@ -1,4 +1,12 @@
-# EC-103 — Server-Side Replay Storage & Loader (Execution Checklist)
+# EC-111 — Server-Side Replay Storage & Loader (Execution Checklist)
+
+> **Numbering note:** Originally drafted as EC-103. Retargeted to EC-111
+> on 2026-04-25 to resolve a filename collision with the existing
+> `EC-103-viewer-a11y-and-ci-gating.checklist.md` (Done; ad-hoc viewer
+> EC). Follows the EC-061 → EC-067 / EC-066 → EC-068 / EC-068 → EC-070 /
+> EC-082 → EC-107 retargeting precedent. WP-103 retains its WP number;
+> the WP-103 ↔ EC-111 mismatch matches WP-068 ↔ EC-070 / WP-082 ↔
+> EC-107.
 
 **Source:** docs/ai/work-packets/WP-103-replay-storage-loader.md
 **Layer:** Server / Replay Storage
@@ -65,11 +73,11 @@
 - [ ] All grep gates from WP-103 §Verification Steps pass
 - [ ] `git diff --name-only main` shows exactly 4 Commit-A files
 - [ ] 01.6 post-mortem written at `docs/ai/post-mortems/01.6-WP-103-replay-storage-loader.md` (mandatory per new long-lived abstraction + new contract for WP-053 + new persistence surface)
-- [ ] `docs/ai/STATUS.md` updated with WP-103 / EC-103 current-state block
-- [ ] `docs/ai/DECISIONS.md` updated if A0 did not pre-land D-10301 (text PK divergence) and D-10302 (jsonb choice + immutability)
+- [ ] `docs/ai/STATUS.md` updated with WP-103 / EC-111 current-state block
+- [ ] `docs/ai/DECISIONS.md` already includes D-10301 (directory classification for `apps/server/src/replay/`, landed via PS-2 pre-flight resolution; mirrors D-5202). Additionally updated if A0 did not pre-land D-10302 (text PK divergence) and D-10303 (jsonb choice + immutability)
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` WP-103 row flipped `[ ]` → `[x]` with date + Commit A hash
-- [ ] `docs/ai/execution-checklists/EC_INDEX.md` EC-103 row flipped Draft → Done
-- [ ] Commit A prefix `EC-103:`; Commit B prefix `SPEC:`; `WP-103:` forbidden per commit-msg hook
+- [ ] `docs/ai/execution-checklists/EC_INDEX.md` EC-111 row flipped Draft → Done
+- [ ] Commit A prefix `EC-111:`; Commit B prefix `SPEC:`; `WP-103:` and `EC-103:` both forbidden per commit-msg hook (WP-103 retargets to EC-111; legacy EC-103 prefix would collide with the viewer-a11y EC-103 commit history)
 
 ## Common Failure Smells
 - `ON CONFLICT (replay_hash) DO UPDATE` anywhere → immutability violation; rewrite as `DO NOTHING`
