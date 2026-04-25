@@ -40,34 +40,42 @@ a player's pre-plan entirely client-side. Specifically:
    getter (`isActive`).
 2. A pure lifecycle adapter module
    (`apps/arena-client/src/preplan/preplanLifecycle.ts`) wraps
-   `createPrePlan` (WP-057) and `executeDisruptionPipeline` (WP-058)
-   behind two functions: `startPrePlanForActiveViewer` and
-   `applyDisruptionToStore`. Both are pure given their store argument
-   and input data; neither performs I/O.
+   `createPrePlan` (WP-057) behind `startPrePlanForActiveViewer` and
+   freezes the disruption integration seam behind
+   `applyDisruptionToStore`. Both functions are pure given their store
+   argument and input data; neither performs I/O.
+   `applyDisruptionToStore` consumes a `DisruptionPipelineResult`
+   produced elsewhere (future live-mutation middleware), but does not
+   invoke the disruption pipeline itself in this WP.
 3. Two Vue 3 components:
    - `<PrePlanNotification />` renders the current
      `DisruptionNotification` in an `aria-live="assertive"` region with
      a dismiss button, or nothing when `lastNotification` is `null`.
    - `<PrePlanStepList />` renders `current.planSteps` as a passive
      ordered reference list, or an empty-state message when no plan
-     exists.
+     exists. These components are shipped and verified in isolation
+     via fixture-driven tests; mounting them into the main
+     `<ArenaHud />` surface is deferred until live transport /
+     middleware exists.
 4. A reusable fixture module
-   (`apps/arena-client/src/fixtures/preplan/index.ts`) exports one
-   `PrePlan` instance (active, with two plan steps) and one
-   `DisruptionPipelineResult` instance (invalid, with a populated
-   `DisruptionNotification`) for deterministic rendering and store
-   tests.
+   (`apps/arena-client/src/fixtures/preplan/index.ts`) exports six
+   named fixtures: three `PrePlan` variants
+   (active / consumed / invalidated), one `DisruptionPipelineResult`
+   (invalid, with a populated `DisruptionNotification`), and supporting
+   `PlayerStateSnapshot` and `PrePlanContext` fixtures for deterministic
+   rendering and store / adapter tests. (Authoritative list in §I.)
 5. `apps/arena-client/package.json` lists `@legendary-arena/preplan`
    under `dependencies` (promoted from absent). Two preplan runtime
    symbols are actually invoked from new code in this WP —
    `createPrePlan` (in the lifecycle adapter) and `invalidatePrePlan`
-   (in the store's `recordDisruption` action). `executeDisruptionPipeline`
-   is **not called** by WP-059; its result type
-   (`DisruptionPipelineResult`) is consumed at the type level only, and
-   the actual invocation will come from the future live-mutation
-   middleware that WP-090 unblocks. The dependency promotion covers
-   both current runtime use and the frozen import surface that
-   middleware will reuse.
+   (in the store's `recordDisruption` action).
+   `executeDisruptionPipeline` is **not invoked** by WP-059; its
+   result type (`DisruptionPipelineResult`) is consumed as the input
+   to `applyDisruptionToStore` at the type level only, and the actual
+   invocation will come from the future live-mutation middleware that
+   WP-090 unblocks. The dependency promotion covers both current
+   runtime use and the frozen import surface that middleware will
+   reuse.
 6. `docs/ai/ARCHITECTURE.md` §Layer Boundary and
    `.claude/rules/architecture.md` are updated to permit
    `apps/arena-client` to runtime-import `@legendary-arena/preplan`,
@@ -151,8 +159,13 @@ Before writing a single line:
   `arena-client → preplan` runtime import path. No prior decision is
   overturned.
 - `docs/ai/work-packets/WP-028-ui-state-contract-authoritative-view-model.md`
-  — `UIState.game.activePlayerId` is the field the lifecycle adapter
-  reads to determine whether the local viewer is active.
+  — `UIState.game.activePlayerId` is the field future client wiring
+  will observe for turn-based lifecycle events; WP-059 does **not**
+  yet gate `startPrePlanForActiveViewer` on turn state. The adapter
+  signature in §C does not accept `UIState`; the caller decides when
+  to invoke. "Active viewer" in this packet means "a viewer with a
+  valid `UIState` snapshot and derived `PrePlanContext`" — turn
+  gating is deferred to the live-middleware follow-up WP.
 - `docs/ai/work-packets/WP-056-preplan-state-model.md` — `PrePlan` shape
   and the three status values.
 - `docs/ai/work-packets/WP-057-preplan-sandbox-execution.md` §Scope (In)
@@ -340,13 +353,14 @@ Before writing a single line:
 
 ## Debuggability & Diagnostics
 
-- **Determinism:** `startPrePlanForActiveViewer(snapshot, ctx)` is pure.
-  Given identical `snapshot` and `ctx`, it produces identical
-  `PrePlan`. `applyDisruptionToStore(store, result)` is pure given the
-  store reference and input — it reads `current.status` and writes
-  exactly `current` and/or `lastNotification` based on the two rules
-  in §Non-Negotiable Constraints. Two tests assert these determinism
-  properties explicitly.
+- **Determinism:** `startPrePlanForActiveViewer(args)` is pure (signature
+  per §C: `args: { snapshot; ctx; store }`). Given identical `snapshot`
+  and `ctx`, it produces identical `PrePlan` written into the store.
+  `applyDisruptionToStore(args)` (signature: `args: { store; result }`)
+  is pure given the store reference and input — it reads `current.status`
+  and writes exactly `current` and/or `lastNotification` based on the
+  two rules in §Non-Negotiable Constraints. Two tests assert these
+  determinism properties explicitly.
 - **No hidden state:** the Pinia store holds only the two documented
   keys. No module-level caches, no memoized selectors, no derived-state
   Maps. `isActive` is a pure getter derived from `current`.
@@ -386,8 +400,10 @@ Before writing a single line:
    *
    * Write invariants (relied on by future middleware, e.g., the
    * disruption detector WP-090 will add):
-   *   - `current` is written ONLY by `startPlan`, `consumePlan`, and
-   *     `recordDisruption`.
+   *   - `current` is written ONLY by `startPlan`, `consumePlan`,
+   *     `recordDisruption`, and `clearPlan`.
+   *   - `lastNotification` is written ONLY by `recordDisruption`,
+   *     `dismissNotification`, and `clearPlan`.
    *   - External callers route disruption events through
    *     `applyDisruptionToStore` in `preplanLifecycle.ts`, never by
    *     calling `recordDisruption` directly from component code.
@@ -815,8 +831,10 @@ remains a follow-up once WP-090 lands.
   WORK_INDEX.md to replace `WP-059 (deferred — needs WP-028 + UI
   framework decision)` with `WP-059 → (future WP: live-mutation
   middleware)`.
-- Do NOT mark WP-059 as complete — this packet drafts it; execution
-  is a separate session.
+- Execution-status transitions (flipping `[ ]` → `[x]`, recording the
+  date and SHA, etc.) are owned by the associated EC, not by this
+  WP — see `EC-059-preplan-ui-integration.checklist.md` §After
+  Completing.
 
 ---
 
@@ -926,9 +944,9 @@ No other files may be modified.
       in the store file (confirmed via `Select-String`)
 
 ### Lifecycle adapter
-- [ ] `preplanLifecycle.ts` exports exactly three named exports:
-      `startPrePlanForActiveViewer`, `applyDisruptionToStore`, and
-      `PrePlanContext` (the last as a type)
+- [ ] `preplanLifecycle.ts` exports exactly two runtime named exports
+      (`startPrePlanForActiveViewer`, `applyDisruptionToStore`) and one
+      type export (`PrePlanContext`)
 - [ ] `startPrePlanForActiveViewer` invokes `createPrePlan` and
       `store.startPlan` exactly once each per call (verified by test
       counters)
@@ -1064,10 +1082,10 @@ Select-String -Path "apps\arena-client\src\components\preplan" -Pattern "localSt
 # Expected: no output from any of the three commands
 
 # Step 9 — confirm no `$subscribe` listener registered
-Select-String -Path "apps\arena-client\src" -Pattern "\\\$subscribe" -Recurse
-# Expected: no output (no new subscribers introduced; WP-061/062/064
-# did not use $subscribe either — if a pre-existing match appears,
-# confirm it was present at HEAD before this WP)
+Select-String -Path "apps\arena-client\src" -Pattern "\$subscribe" -Recurse
+# Expected: no output (no new subscribers introduced; if a pre-existing
+# match appears, confirm it was present at HEAD before this WP and was
+# not introduced by this packet)
 
 # Step 10 — confirm D-5901 is in DECISIONS.md
 Select-String -Path "docs\ai\DECISIONS.md" -Pattern "^## D-5901"
@@ -1077,9 +1095,12 @@ Select-String -Path "docs\ai\DECISIONS.md" -Pattern "^## D-5901"
 Select-String -Path "docs\ai\work-packets\WORK_INDEX.md" -Pattern "WP-059 \(Pre-Plan UI Integration\) is deferred"
 # Expected: no output
 
-# Step 12 — confirm Layer Boundary row was updated
-Select-String -Path "docs\ai\ARCHITECTURE.md" -Pattern "apps/arena-client.*May import.*preplan"
-# Expected: at least one match (the updated row)
+# Step 12 — confirm Layer Boundary row was updated (table rows can wrap)
+Select-String -Path "docs\ai\ARCHITECTURE.md" -Pattern "apps/arena-client" -Context 0,8
+# Expected: within the captured row context, `preplan` is absent from
+# "Must NOT import" and present in "May import" with the D-5901
+# annotation. Pattern matches the row label only; the captured
+# trailing context is what carries the verification evidence.
 
 # Step 13 — confirm no files outside the expected set were modified
 git diff --name-only

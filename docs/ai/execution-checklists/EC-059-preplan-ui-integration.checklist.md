@@ -34,9 +34,11 @@
       typecheck` exits 0; `pnpm --filter @legendary-arena/arena-client
       test` exits 0; `pnpm --filter @legendary-arena/preplan build`
       exits 0; `pnpm --filter @legendary-arena/preplan test` exits 0;
-      `pnpm -r test` exits 0. **Record `PRE_COUNT`** (the `pnpm -r
-      test` total) — the §After Completing arithmetic check depends
-      on it.
+      `pnpm -r test` exits 0. **Record both
+      `PRE_ARENA_CLIENT_COUNT`** (arena-client filter total) **and
+      `PRE_COUNT`** (`pnpm -r test` total) — the §After Completing
+      arithmetic checks depend on both. Hard-coded baselines drift;
+      capture against current `HEAD`.
 - [ ] **D-5901 slot is unclaimed** in `docs/ai/DECISIONS.md`
       (verified via `Select-String -Path docs\ai\DECISIONS.md -Pattern
       "^## D-5901"` → no match). If claimed, STOP and pick the next
@@ -271,11 +273,14 @@ must match the above exactly — nothing more, nothing less.
 
 - [ ] `pnpm --filter @legendary-arena/arena-client typecheck` exits 0
 - [ ] `pnpm --filter @legendary-arena/arena-client test` exits 0.
-      **Record `POST_ARENA_CLIENT_COUNT`.** The arena-client baseline
-      pre-WP-059 is 13 tests (from WP-061/062/064/067). Expected:
-      `POST_ARENA_CLIENT_COUNT >= 45` (13 + 32). Strict arithmetic:
-      `POST_ARENA_CLIENT_COUNT - 13 === 32`. Any overage must be
-      justifiable as strengthening declared test intent.
+      **Record `PRE_ARENA_CLIENT_COUNT` before changes (in §Before
+      Starting baseline-green) and `POST_ARENA_CLIENT_COUNT` after.**
+      Strict arithmetic:
+      `POST_ARENA_CLIENT_COUNT - PRE_ARENA_CLIENT_COUNT === 32`. Any
+      delta mismatch must be explained (parallel session landed
+      arena-client tests during execution, harness glob missed a new
+      file, etc.) and reconciled before proceeding. Do NOT "fix" the
+      count by deleting, renaming, or reclassifying tests.
 - [ ] `pnpm -r test` exits 0. **Record `POST_COUNT`.** Assert:
       `POST_COUNT - PRE_COUNT === 32` (strict equality). If the delta
       is not 32, STOP — either a test regressed elsewhere or a test
