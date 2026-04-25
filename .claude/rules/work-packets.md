@@ -127,6 +127,37 @@ If any step is missing, Claude must stop.
 
 ---
 
+## Invocation Artifacts (Commit Policy)
+
+Files under `docs/ai/invocations/` and `docs/ai/session-context/` follow
+two different commit dispositions. The rule exists to keep governance
+artifacts separable from working memory.
+
+| File pattern | Disposition |
+|---|---|
+| `docs/ai/session-context/session-context-wp*.md` | **Committed** governance artifact. Captures the reconciled state at session start; future sessions read it. |
+| `docs/ai/invocations/preflight-wp*.md` | **Scratchpad by default. Not committed** unless an EC or WP explicitly cites it as a normative input or output. |
+| `docs/ai/invocations/copilot-wp*.md` | **Scratchpad by default. Not committed** (same reason). |
+| `docs/ai/invocations/session-wp*.md` | **Scratchpad by default. Not committed** unless cited normatively (e.g., as the canonical session-prompt artifact for an EC). |
+
+**Why scratchpad-by-default:** preflight, copilot, and session-prompt
+invocation files behave like REPL transcripts and compiler logs — they
+help the executor that day, but rarely carry information that future
+WPs depend on. The reconciled session-context file is the artifact
+future WPs read.
+
+**Enforcement:** `.gitignore` excludes the three scratchpad patterns
+under `docs/ai/invocations/`. Already-tracked files from earlier WPs
+are unaffected (gitignore applies only to untracked files); they remain
+in history but are not the convention going forward.
+
+**Override:** if a specific WP or EC needs an invocation file as a
+normative artifact (e.g., a copilot conversation cited verbatim by the
+EC for traceability), commit it via `git add -f <path>` and document
+the override in the WP / EC body. Otherwise, do not retro-commit.
+
+---
+
 ## Final Rule
 
 WORK_INDEX.md is the execution spine of the project.
