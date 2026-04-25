@@ -20,6 +20,7 @@ Reference docs:
 |---|---|
 | [`Start-SmokeTest.ps1`](Start-SmokeTest.ps1) | Boots the boardgame.io game server (and optionally spawns the arena-client Vite dev in a new window). Clears any process-scope `DATABASE_URL` override so `--env-file=.env` wins. |
 | [`Start-DevClient.ps1`](Start-DevClient.ps1) | Starts the arena-client Vite dev server on port 5173 with `--strictPort` (fails fast if 5173 is held; CORS-aligned with the game server's allow-list). |
+| [`Start-DevViewer.ps1`](Start-DevViewer.ps1) | Starts the registry-viewer Vite dev server (loadout authoring + card/theme browsing). No CORS coupling — Vite bumps to the next free port if 5173 is taken; typically lands on 5174 when run alongside `Start-DevClient.ps1`. |
 
 **Recommended smoke-test pairing:**
 
@@ -27,12 +28,15 @@ Reference docs:
 # Window A — game server
 pwsh scripts/Start-SmokeTest.ps1 -ServerOnly
 
-# Window B — Vite dev (strict 5173)
+# Window B — arena-client (strict 5173 — CORS-locked)
 pwsh scripts/Start-DevClient.ps1
+
+# Window C — registry viewer (auto-bumps to 5174 since 5173 is taken)
+pwsh scripts/Start-DevViewer.ps1
 ```
 
-Pass `-KillStaleListeners` to either script if zombie processes are
-holding the relevant ports.
+Pass `-KillStaleListeners` to any of the three scripts if zombie
+processes are holding the relevant ports.
 
 ---
 

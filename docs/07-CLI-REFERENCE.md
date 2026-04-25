@@ -285,6 +285,24 @@ silently break every fetch and WebSocket from the browser.
 
 - `-KillStaleListeners` — reclaim 5173-5176 before starting
 
+### `scripts/Start-DevViewer.ps1` — Registry Viewer Vite dev
+
+```pwsh
+pwsh scripts/Start-DevViewer.ps1
+```
+
+Runs `pnpm --filter registry-viewer dev`. The Registry Viewer is the
+authoring surface for cards, themes, and (post-WP-091) MATCH-SETUP
+loadout JSON documents. Unlike the arena-client, it has no CORS
+coupling to the game server, so Vite's default port-bumping is
+harmless — when run alongside `Start-DevClient.ps1` it typically lands
+on 5174. The viewer also doesn't read `DATABASE_URL`, so no
+environment-variable clearing is needed.
+
+**Flags:**
+
+- `-KillStaleListeners` — reclaim 5173-5176 before starting
+
 ### Recommended pairing
 
 ```pwsh
@@ -293,12 +311,16 @@ pwsh scripts/Start-SmokeTest.ps1 -ServerOnly
 
 # Window B — arena-client Vite dev on strict 5173
 pwsh scripts/Start-DevClient.ps1
+
+# Window C — registry viewer Vite dev (auto-bumps to 5174)
+pwsh scripts/Start-DevViewer.ps1
 ```
 
-Open `http://localhost:5173/` in a browser and follow the smoke-test
+Open `http://localhost:5173/` (arena-client) and the port Vite reports
+for the viewer (typically 5174) in browser tabs. Follow the smoke-test
 steps in the relevant Work Packet's session prompt or post-mortem
 §Manual Smoke Test (e.g., post-mortem §10 of WP-090 for the live
-match flow).
+match flow; WP-091's post-mortem for the loadout-authoring flow).
 
 ---
 

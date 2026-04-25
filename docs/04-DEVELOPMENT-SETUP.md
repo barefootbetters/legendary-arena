@@ -186,6 +186,9 @@ pwsh scripts/Start-SmokeTest.ps1 -ServerOnly
 
 # Window B — arena-client Vite dev on strict port 5173 (CORS-aligned)
 pwsh scripts/Start-DevClient.ps1
+
+# Window C (optional) — registry viewer Vite dev (auto-bumps to 5174)
+pwsh scripts/Start-DevViewer.ps1
 ```
 
 Pass `-KillStaleListeners` to either script to first reclaim the
