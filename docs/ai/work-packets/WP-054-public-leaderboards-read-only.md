@@ -2,8 +2,8 @@
 
 **Status:** Ready for Implementation
 **Primary Layer:** Server / Read-Only Public Access
-**Version:** 1.1
-**Last Updated:** 2026-04-11
+**Version:** 1.2
+**Last Updated:** 2026-04-24
 **Dependencies:** WP-053, WP-052, WP-051, WP-004
 
 ---
@@ -51,8 +51,10 @@ session, Legendary Arena has publicly viewable leaderboards:
 All truth originates in WP-053's verified competitive records.
 
 **Clarification:** Leaderboard `rank` is a presentational value computed at
-query time only. It is not persisted and has no gameplay, scoring, or
-competitive authority.
+query time only. It is not persisted, cached, memoized, denormalized, or
+stored in any table, record, or external cache (Redis, in-memory, CDN, or
+otherwise). Rank is derived strictly from query-time ordering and pagination,
+and has no gameplay, scoring, or competitive authority.
 
 ---
 
@@ -154,8 +156,11 @@ Before writing a single line:
   (including missing joins or ownership records) must result in an empty
   leaderboard or `null` response — never best-effort output.
 - **No inference of ownership:** leaderboard queries must read ownership and
-  visibility from `legendary.replay_ownership` directly; ownership must never
-  be reconstructed, inferred, or assumed.
+  visibility from `legendary.replay_ownership` directly via a SQL join;
+  ownership must never be reconstructed, inferred, or assumed. Visibility in
+  particular must never be inferred from `legendary.competitive_scores`
+  alone — the join against `legendary.replay_ownership` is mandatory for
+  every public read.
 - **No new tables:** leaderboard results are query projections of existing
   tables — no materialized views or denormalized copies.
 - **Layer boundary:** leaderboard types live in `apps/server/` — never in
@@ -173,7 +178,9 @@ Before writing a single line:
 - **Leaderboard sort order (canonical):**
   1. `final_score` ascending (lower is better)
   2. `created_at` ascending (earlier submission wins ties)
-  No alternative ordering is permitted.
+  No alternative ordering is permitted. Time-based variants that prefer
+  recency over score quality (e.g., `created_at DESC`, "latest", "recent")
+  are explicitly forbidden.
 
 - **Eligible visibility values:** `'link'` | `'public'`
   `'private'` replays are never included in public results.

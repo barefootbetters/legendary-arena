@@ -2,8 +2,8 @@
 
 **Status:** Ready for Implementation
 **Primary Layer:** Server / Identity + Storage
-**Version:** 1.1
-**Last Updated:** 2026-04-11
+**Version:** 1.2
+**Last Updated:** 2026-04-24
 **Dependencies:** WP-051, WP-004, WP-027
 
 ---
@@ -162,6 +162,10 @@ Before writing a single line:
   `13-REPLAYS-REFERENCE.md` §Privacy and Consent Controls.
 - **Replay ownership is immutable:** once assigned, ownership cannot be
   transferred, reassigned, or revoked (except by GDPR deletion).
+- **PlayerAccount immutability:** for `PlayerAccount`, only `updatedAt` may
+  change after creation. All other fields (`playerId`, `email`, `displayName`,
+  `authProvider`, `authProviderId`, `createdAt`) are immutable once
+  established. No mutation function for these fields is defined in this packet.
 - **No UI implementation:** this packet defines data contracts and server
   logic — no frontend, no forms, no OAuth UI flows.
 - **No leaderboard logic:** score submission and leaderboard queries are
@@ -237,8 +241,12 @@ The following requirements are mandatory:
 
 ### A) `apps/server/src/identity/identity.types.ts` — new
 
-- `PlayerId = string` (branded type alias — server-assigned UUID v4)
-  - `// why:` comment: UUID v4 avoids sequential ID enumeration attacks
+- `PlayerId` is a branded string type
+  (e.g., `type PlayerId = string & { readonly __brand: 'PlayerId' }`) —
+  server-assigned UUID v4
+  - `// why:` branding prevents accidental interchange with other string
+    identifiers at compile time
+  - `// why:` UUID v4 avoids sequential ID enumeration attacks
 - `interface PlayerAccount { playerId: PlayerId; email: string; displayName: string; authProvider: AuthProvider; authProviderId: string; createdAt: string; updatedAt: string }`
   - `// why:` comment: `authProviderId` is the external IdP subject identifier,
     not a password — passwords are never stored
@@ -284,6 +292,8 @@ The following requirements are mandatory:
   - Returns structured error if email already exists — never throws
   - `// why:` comment: email uniqueness enforced at DB level (unique constraint),
     not application level
+  - `updatedAt` is modified only on explicit identity mutations (none defined
+    in this packet); read access must never mutate identity records
 
 - `findPlayerByEmail(email: string, database: DatabaseClient): Promise<PlayerAccount | null>`
   — looks up by email, returns null if not found
@@ -313,9 +323,18 @@ The following requirements are mandatory:
 - `listPlayerReplays(playerId: PlayerId, database: DatabaseClient): Promise<ReplayOwnershipRecord[]>`
   — returns all non-expired ownership records for a player, ordered by
   `createdAt` descending
+  - Expiration is enforced at read time: records with `expiresAt < now()` must
+    be excluded even if still present in the database
+  - `// why:` read-time enforcement avoids implicit background purge jobs and
+    keeps deletion semantics observable from the query layer
 
 - `findReplayOwnership(replayHash: string, database: DatabaseClient): Promise<ReplayOwnershipRecord | null>`
   — looks up ownership by replay hash
+  - Returns ownership metadata only; callers are responsible for enforcing
+    visibility and access checks
+  - `// why:` keeps identity strictly an access-input layer; embedding
+    visibility checks here would couple lookup to policy and risk leaks at
+    other call sites
 
 - `deletePlayerData(playerId: PlayerId, database: DatabaseClient): Promise<{ deletedReplays: number; accountDeleted: boolean }>`
   — GDPR-compliant deletion: removes all ownership records and the player

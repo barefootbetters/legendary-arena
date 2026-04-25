@@ -2,8 +2,8 @@
 
 **Status:** Ready for Implementation
 **Primary Layer:** Server / Competition Enforcement
-**Version:** 1.2
-**Last Updated:** 2026-04-11
+**Version:** 1.3
+**Last Updated:** 2026-04-24
 **Dependencies:** WP-048, WP-051, WP-052, WP-027, WP-004
 
 ---
@@ -79,9 +79,15 @@ must never re-implement scoring logic.
   - Missing PAR → fail closed (competitive submissions rejected)
 - WP-052 complete. Specifically:
   - `PlayerId` branded string maps to `legendary.players.ext_id`
+  - `PlayerIdentity` discriminated union (`PlayerAccount | GuestIdentity`) and
+    `isGuest(identity)` type guard are exported from
+    `apps/server/src/identity/identity.types.ts`
   - `findReplayOwnership(replayHash, database)` returns ownership record or null
   - `ReplayOwnershipRecord` with `visibility` field exists
   - Guest identities cannot submit competitively (no `PlayerId`)
+- Server can load replay data by `replayHash` via an existing storage adapter.
+  This packet does not implement storage; if no loader exists, WP-053 is
+  **BLOCKED** until one lands.
 - `docs/13-REPLAYS-REFERENCE.md` exists (normative governance)
 - `pnpm -r build` exits 0
 - `pnpm test` exits 0
@@ -154,6 +160,10 @@ Before writing a single line:
 - **Replay integrity is mandatory:** if deterministic re-execution fails,
   produces a different `stateHash`, or throws, submission must be rejected
   with `replay_verification_failed`. Any ambiguity defaults to rejection.
+- **No scoring formula constants in server:** server code must not contain any
+  scoring weights, formula coefficients, or per-scenario tuning values. The
+  only allowed numeric operations are plumbing (passing values to engine
+  functions, storing engine results, comparing equality).
 - **Visibility gating:** replays with `visibility = 'private'` are not eligible
   for competitive submission until the owner explicitly changes visibility.
 - **No re-submission across scoring versions:** once a replay has produced a
@@ -207,6 +217,15 @@ Before writing a single line:
 - **Submission idempotency:**
   `UNIQUE (player_id, replay_hash)` on `legendary.competitive_scores`
 
+- **Replay hash semantics:**
+  - `replayHash` is the canonical replay reference hash and must equal
+    `computeStateHash` of the re-executed replay's final state. Any mismatch
+    → reject with `replay_verification_failed`.
+  - `stateHash` is stored on the competitive record for audit transparency
+    and must equal `replayHash` for every accepted record. The two columns
+    exist for redundancy and explicit provenance, not because they may
+    differ.
+
 ---
 
 ## Debuggability & Diagnostics
@@ -256,40 +275,68 @@ The following requirements are mandatory:
     scoring context used at verification time
   - `// why:` comment: `scoreBreakdown` stored as JSON column for full
     transparency and auditability of how the score was computed
-- `type SubmissionResult = { ok: true; record: CompetitiveScoreRecord } | { ok: false; reason: SubmissionRejectionReason }`
-  - `// why:` comment: structured result with typed rejection reasons —
-    never throws on expected failures
-- `type SubmissionRejectionReason = 'replay_not_found' | 'not_owner' | 'guest_not_eligible' | 'visibility_not_eligible' | 'par_not_published' | 'replay_verification_failed' | 'already_submitted'`
+- `type SubmissionResult =
+    | { ok: true; record: CompetitiveScoreRecord; wasExisting: boolean }
+    | { ok: false; reason: SubmissionRejectionReason }`
+  - `// why:` comment: success carries `wasExisting` so retries are safe and
+    callers can surface "already submitted" UX without introducing a failure
+    path; rejection reasons represent hard eligibility / verification
+    failures only
+- `type SubmissionRejectionReason = 'replay_not_found' | 'not_owner' | 'guest_not_eligible' | 'visibility_not_eligible' | 'par_not_published' | 'replay_verification_failed'`
   - `// why:` comment: typed reasons enable precise client error messages
-    without exposing server internals
+    without exposing server internals; "already submitted" is intentionally
+    absent — duplicate submissions are idempotent successes, not failures
+- `SUBMISSION_REJECTION_REASONS: readonly SubmissionRejectionReason[]` — canonical
+  array with drift-detection test
+  - `// why:` comment: TypeScript unions are not enumerable at runtime; the
+    canonical array enables exhaustiveness tests and matches the pattern used
+    by `AUTH_PROVIDERS` and `REPLAY_VISIBILITY_VALUES`
 
 ### B) `apps/server/src/competition/competition.logic.ts` — new
 
-- `submitCompetitiveScore(playerId: PlayerId, replayHash: string, database: DatabaseClient): Promise<SubmissionResult>`
+- `submitCompetitiveScore(identity: PlayerIdentity, replayHash: string, database: DatabaseClient): Promise<SubmissionResult>`
   — orchestrates the full verification pipeline:
-  1. `findReplayOwnership(replayHash, database)` — verify ownership
-  2. Verify `ownershipRecord.playerId === playerId` — not someone else's replay
-  3. Verify player is not a guest (has a `PlayerId`, not `GuestIdentity`)
-  4. Verify `ownershipRecord.visibility !== 'private'` — private replays
-     are not eligible until visibility is explicitly changed
+  1. Reject if `isGuest(identity)` → `{ ok: false, reason: 'guest_not_eligible' }`
+     (fail fast — no DB hits before identity check)
+  2. `findReplayOwnership(replayHash, database)` — if null,
+     `{ ok: false, reason: 'replay_not_found' }`
+  3. Verify `ownershipRecord.playerId === identity.playerId` — else
+     `{ ok: false, reason: 'not_owner' }`
+  4. Verify `ownershipRecord.visibility !== 'private'` — else
+     `{ ok: false, reason: 'visibility_not_eligible' }` (private replays are
+     not eligible until visibility is explicitly changed)
   5. Extract `scenarioKey` from ownership record
-  6. `checkParPublished(scenarioKey)` — enforce PAR gate
-  7. Load replay data from storage by `replayHash`
+  6. `checkParPublished(scenarioKey)` — enforce PAR gate; on null,
+     `{ ok: false, reason: 'par_not_published' }`; on success returns
+     `{ parValue, version }`
+  7. Load replay data from storage by `replayHash` (loader is a prerequisite
+     per `## Assumes`)
   8. `replayGame(replayInput)` — re-execute deterministically
-  9. `computeStateHash(replayResult.finalState)` — verify integrity;
-     reject with `replay_verification_failed` if hash mismatch
+  9. `computeStateHash(replayResult.finalState)` — must equal `replayHash`;
+     otherwise `{ ok: false, reason: 'replay_verification_failed' }`
   10. `deriveScoringInputs(replayResult, gameLog)` — extract scoring inputs
-  11. `computeRawScore(inputs, config)` — compute raw score
-  12. `computeFinalScore(rawScore, parScore)` — normalize against PAR
-  13. `buildScoreBreakdown(inputs, config)` — full breakdown for transparency
-  14. Insert `CompetitiveScoreRecord` into `legendary.competitive_scores`
-  - Returns `{ ok: true, record }` on success
+  11. `computeRawScore(inputs, config)` — compute raw score via engine
+  12. `computeParScore(config)` must equal `parValue` from step 6 — drift
+     guard; mismatch → `{ ok: false, reason: 'replay_verification_failed' }`
+  13. `computeFinalScore(rawScore, parValue)` — normalize against the
+     **published** PAR (server enforces, never derives)
+  14. `buildScoreBreakdown(inputs, config)` — full breakdown for transparency
+  15. Insert `CompetitiveScoreRecord` into `legendary.competitive_scores`
+     with `stateHash === replayHash`
+  - Returns `{ ok: true, record, wasExisting: false }` on a fresh accepted
+    submission
   - Returns `{ ok: false, reason }` on any rejection — never throws
   - Idempotent: if `(player_id, replay_hash)` already exists, returns
-    `{ ok: true, record: existingRecord }`
-  - `// why:` comment: idempotency prevents double submissions from retries
+    `{ ok: true, record: existingRecord, wasExisting: true }` without
+    re-executing the replay
+  - `// why:` comment: idempotency prevents double submissions from retries;
+    `wasExisting` lets callers surface "already submitted" without a failure
+    branch
   - `// why:` comment: every scoring call delegates to engine contracts —
     server never re-implements scoring
+  - `// why:` comment: step 12 PAR equality check catches drift between the
+    stored scoring config and the published PAR artifact (e.g., config
+    shipped without re-publishing PAR), per "server enforces, never derives"
 
 - `findCompetitiveScore(replayHash: string, database: DatabaseClient): Promise<CompetitiveScoreRecord | null>`
   — looks up competitive record by replay hash
@@ -331,11 +378,14 @@ Uses `node:test` and `node:assert` only. No boardgame.io import.
   2. Reject submission if player is a guest → `{ ok: false, reason: 'guest_not_eligible' }`
   3. Reject submission if replay visibility is `private` → `{ ok: false, reason: 'visibility_not_eligible' }`
   4. Reject submission if PAR not published → `{ ok: false, reason: 'par_not_published' }`
-  5. Successful submission produces correct `stateHash` (matches `computeStateHash`)
+  5. Successful submission produces a record whose `stateHash` equals both
+     `computeStateHash(finalState)` and the request's `replayHash`
   6. Successful submission recomputes `rawScore` via engine — client value ignored
-  7. Idempotent submission returns existing record unchanged
+  7. Idempotent submission returns existing record unchanged with
+     `{ ok: true, wasExisting: true }`; replay is not re-executed
   8. Competitive record is immutable — no UPDATE function exists
-  9. `SubmissionRejectionReason` values match typed union (drift detection)
+  9. `SUBMISSION_REJECTION_REASONS` array matches `SubmissionRejectionReason`
+     union members (drift detection via exhaustive switch)
 
 - Tests 1–7 require a test PostgreSQL database. If unavailable, they must be
   marked with `{ skip: 'requires test database' }` — never silently omitted.
@@ -364,8 +414,9 @@ Uses `node:test` and `node:assert` only. No boardgame.io import.
 ## Files Expected to Change
 
 - `apps/server/src/competition/competition.types.ts` — **new** —
-  CompetitiveSubmissionRequest, CompetitiveScoreRecord, SubmissionResult,
-  SubmissionRejectionReason
+  CompetitiveSubmissionRequest, CompetitiveScoreRecord, SubmissionResult
+  (with `wasExisting` on the success variant), SubmissionRejectionReason,
+  SUBMISSION_REJECTION_REASONS
 - `apps/server/src/competition/competition.logic.ts` — **new** —
   submitCompetitiveScore, findCompetitiveScore, listPlayerCompetitiveScores
 - `data/migrations/NNN_create_competitive_scores_table.sql` — **new** —
@@ -385,6 +436,7 @@ All items must be binary pass/fail. No partial credit.
 - [ ] Client-reported scores are never used — all values recomputed server-side
 - [ ] Replay is re-executed via `replayGame` for every submission
 - [ ] `stateHash` is recomputed via `computeStateHash` and stored in the record
+- [ ] `stateHash` equals `replayHash` on every accepted record
 - [ ] Replay re-execution failure or hash mismatch → `{ ok: false, reason: 'replay_verification_failed' }`
 - [ ] Raw Score is recomputed via `computeRawScore` — never from client
 - [ ] Final Score is recomputed via `computeFinalScore` — never from client
@@ -394,11 +446,18 @@ All items must be binary pass/fail. No partial credit.
 ### PAR Gate
 - [ ] `checkParPublished(scenarioKey)` is called before scoring
 - [ ] Missing PAR → `{ ok: false, reason: 'par_not_published' }`
+- [ ] `parValue` from `checkParPublished` is the value passed to
+      `computeFinalScore` — server enforces published PAR, never derives
+- [ ] `computeParScore(config)` equality with `parValue` is asserted; mismatch
+      → `replay_verification_failed`
 - [ ] `parVersion` and `scoringConfigVersion` are stored in the competitive record
 
 ### Identity & Eligibility
+- [ ] `submitCompetitiveScore` accepts `PlayerIdentity` (not `PlayerId`) so
+      guest rejection is enforceable inside the server, not delegated upstream
+- [ ] Guest players are rejected before any DB read →
+      `{ ok: false, reason: 'guest_not_eligible' }`
 - [ ] Replay ownership is verified before submission proceeds
-- [ ] Guest players are rejected → `{ ok: false, reason: 'guest_not_eligible' }`
 - [ ] Non-owner submissions rejected → `{ ok: false, reason: 'not_owner' }`
 - [ ] Private replays rejected → `{ ok: false, reason: 'visibility_not_eligible' }`
 - [ ] `PlayerId` is used for eligibility only — never passed to scoring functions
@@ -407,7 +466,10 @@ All items must be binary pass/fail. No partial credit.
 - [ ] `CompetitiveScoreRecord` is immutable — no UPDATE function exists
 - [ ] `UNIQUE (player_id, replay_hash)` prevents duplicate submissions and
       re-submission under new scoring/PAR versions
-- [ ] Retry returns existing record unchanged
+- [ ] Retry returns `{ ok: true, record: existingRecord, wasExisting: true }`
+      without re-executing the replay
+- [ ] `'already_submitted'` is **not** a member of `SubmissionRejectionReason`
+      — duplicates are idempotent successes, not failures
 - [ ] `submitCompetitiveScore` never throws on expected failures — returns
       structured `SubmissionResult`
 
@@ -419,7 +481,9 @@ All items must be binary pass/fail. No partial credit.
 - [ ] Migration follows existing numbering convention
 
 ### Drift Detection
-- [ ] `SubmissionRejectionReason` values match typed union (drift-detection test)
+- [ ] `SUBMISSION_REJECTION_REASONS` array matches `SubmissionRejectionReason`
+      union members (drift-detection test via exhaustive switch — runtime
+      list, not aspirational)
 
 ### Layer Boundary
 - [ ] No competition types in `packages/game-engine/`

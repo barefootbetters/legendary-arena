@@ -26,6 +26,7 @@ Failure to satisfy any item below is a failed execution of WP-052.
 
 All items below must be copied verbatim from WP-052.
 
+- `PlayerId` is a nominal/branded string type (not `type PlayerId = string`); compile-time branding must prevent accidental interchange with other strings
 - `PlayerId` maps to `legendary.players.ext_id` — never to `player_id bigint`
 - `PlayerId` is distinct from boardgame.io's `playerID` (engine-local turn identifier)
 - `AuthProvider`: `'email' | 'google' | 'discord'` — no other values
@@ -46,6 +47,9 @@ All items below must be copied verbatim from WP-052.
 - Guest play is fully functional and ungated; local replay export is immediate and unconditional
 - Guest-to-account migration requires explicit user-initiated replay import — never silent server attach
 - Replay ownership is metadata only; no UPDATE path may exist for any field except `visibility`
+- PlayerAccount immutability: after creation, only `updatedAt` may change; `playerId`, `email`, `displayName`, `authProvider`, `authProviderId`, and `createdAt` must never be mutated
+- `updatedAt` is modified only by explicit identity mutation logic; read operations must never update identity records
+- `findReplayOwnership` returns ownership metadata only; it must not be treated as an authorization or visibility check
 - Retention expiration affects storage eligibility only — never replay validity or score verification
 - Extended retention (Supporter tier) is convenience only, never a gameplay advantage
 - Adding an `AuthProvider` is a governance event requiring `DECISIONS.md` — not a config change
@@ -85,6 +89,7 @@ All items below must be copied verbatim from WP-052.
 - [ ] No identity types leaked into `packages/game-engine/src/`; no `boardgame.io`, `@legendary-arena/game-engine`, or `require()` in `apps/server/src/identity/` (Select-String confirms all)
 - [ ] Migrations use `legendary.*` namespace, `bigserial` PKs, `DEFAULT 'private'`
 - [ ] Replay expiration does not invalidate ability to re-execute or verify scores
+- [ ] `listPlayerReplays` excludes records where `expiresAt < now()`, even if such rows still exist in the database
 - [ ] WP-027 and WP-051 contract files unmodified; no files outside scope changed (`git diff` confirms)
 - [ ] `STATUS.md` updated; `DECISIONS.md` updated (UUID v4, ephemeral guest, ownership immutability, private default, 30-day minimum, server-only identity, GDPR blob purge separate); `WORK_INDEX.md` WP-052 checked off
 
@@ -97,3 +102,4 @@ All items below must be copied verbatim from WP-052.
 - Guest replay appears in `legendary.replay_ownership` without account → silent attach; migration must be explicit import
 - `updateReplayVisibility` touches fields besides `visibility` → ownership immutability violated
 - `AUTH_PROVIDERS` array length differs from `AuthProvider` union members → drift-detection test missing or broken
+- PlayerAccount fields updated outside creation flow → identity immutability violated

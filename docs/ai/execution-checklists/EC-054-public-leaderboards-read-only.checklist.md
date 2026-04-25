@@ -49,6 +49,8 @@ All items below must be copied verbatim from WP-054.
 - Visibility enforced by reading `legendary.replay_ownership` directly — never inferred or assumed
 - Deterministic ordering explicit in both code and SQL
 - No authentication required for public viewing; no account inference
+- `totalEligibleEntries` must be computed using the **same** visibility, scenario, and PAR constraints as the paginated query — no approximations, no `COUNT(*)` over an unfiltered universe
+- Player display names come directly from `legendary.players.display_name`. Fallbacks (`"Anonymous"`, `playerId`-derived placeholders, hashed handles) are not permitted; an entry without a display name fails closed (excluded from results) rather than rendering a substitute
 - WP-051, WP-052, WP-053 contract files must not be modified
 
 ---
@@ -60,7 +62,7 @@ All items below must be copied verbatim from WP-054.
 - Sort order: `final_score ASC, created_at ASC` is canonical and non-negotiable
 - Visibility filter: `visibility IN ('link', 'public')` required; `private` excluded
 - PAR check: missing PAR means empty public results, not best-effort
-- `rank` computation: derived at query time only, not persisted
+- `rank` computation: derived at query time only, not persisted; reflects **global** ordering within eligible results (i.e., `offset + i + 1`), never the index within the returned page
 - `getPublicScoreBySubmissionId`: permalink access for sharing; respects visibility gate
 
 ---
@@ -80,7 +82,8 @@ All items below must be copied verbatim from WP-054.
 - [ ] No leaderboard types in `packages/game-engine/src/`; no `boardgame.io`, `require()`, or SQL writes in `apps/server/src/leaderboards/` (Select-String confirms all)
 - [ ] No sensitive fields (`playerId`, `email`, `replayHash`, `stateHash`, `scoreBreakdown`) in public types (Select-String confirms)
 - [ ] Deterministic `ORDER BY final_score ASC, created_at ASC` present; visibility filter `IN ('link', 'public')` present
-- [ ] Rate limiting present on public query paths and stateless (no auth/identity dependency)
+- [ ] Rate limiting is observable in code (explicit middleware or query guard) and stateless (no auth/identity dependency); a TODO comment, placeholder, or "to be added later" note does not satisfy this requirement
+- [ ] No imports from `apps/server/src/competition/competition.logic.ts` in leaderboard code (confirmed with `Select-String "from .*competition\\.logic"` over `apps/server/src/leaderboards/`)
 - [ ] WP-051, WP-052, WP-053 contract files unmodified; no files outside scope changed (`git diff` confirms)
 - [ ] `STATUS.md` updated; `DECISIONS.md` updated (read-only access, verified-only scores, deterministic ordering, sensitive field stripping, PAR-empty fail-closed, no auth for public); `WORK_INDEX.md` WP-054 checked off
 
@@ -96,3 +99,6 @@ All items below must be copied verbatim from WP-054.
 - Leaderboard code imports scoring weights or WP-053 submission logic → authority/layering violation
 - `ORDER BY final_score` without secondary `created_at ASC` → nondeterministic ordering under ties
 - Ownership or visibility inferred without joining `legendary.replay_ownership` → trust boundary violation
+- `totalEligibleEntries` does not match the visibility / PAR-filtered universe of entries (e.g., uses an unfiltered `COUNT(*)` while `entries[]` is filtered) → pagination integrity violation
+- `rank` computed as the page-local index rather than the global position (`offset + i + 1`) → ranks become misleading on every page after the first
+- Player display name rendered as `"Anonymous"`, a `playerId`-derived placeholder, or any other fallback when `legendary.players.display_name` is missing → identity-inference loophole; entries without a display name must fail closed instead
