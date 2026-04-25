@@ -9753,6 +9753,86 @@ This policy prevents schema drift, wording forks, and retroactive renames across
 
 ---
 
+### D-5201 — Server-Side Identity Type Is `AccountId`, Not `PlayerId`
+
+**Type:** Cross-Layer Naming Discipline
+**Packet:** WP-052 (pre-flight v1.3 resolution — PS-2)
+**Date:** 2026-04-25
+
+**Decision:** The server-side identity type introduced by WP-052 is named `AccountId` (branded: `string & { readonly __brand: 'AccountId' }`), and corresponding fields on `PlayerAccount`, `ReplayOwnershipRecord`, and identity-logic function parameters are named `accountId`. The draft-time name `PlayerId` is rejected. This decision applies only to TypeScript-layer identifiers in `apps/server/src/identity/`; SQL column names (`legendary.players.player_id` bigint PK, `legendary.replay_ownership.player_id` bigint FK, `legendary.players.ext_id` text UUID) are unchanged from WP-052's draft schema. The TS-to-SQL mapping is `accountId: AccountId` ↔ `legendary.players.ext_id`; the bigint `player_id` column is internal to the database layer and never exposed at the TypeScript surface.
+
+**Rationale:** `packages/game-engine/src/types.ts:352` already exports `export type PlayerId = string;` per D-8701 — a deliberate non-branded alias for boardgame.io 0.50.x's per-match seat-string convention (`"0" | "1" | "2" | …`). Introducing a *second* type also called `PlayerId` in `apps/server/src/identity/identity.types.ts`, with a completely different shape (branded UUID v4) and completely different semantics (cross-match persistent account identity, never a seat), would produce two `PlayerId` types living in two layers with no lexical signal that one is the engine seat alias and the other is the server account identity. Even with strict layer-import rules preventing cross-layer use, the name collision creates an ongoing readability hazard: every reader encountering `PlayerId` in the codebase must check the import path to know which kind of identifier they are looking at, and any future WP that brands the engine alias (D-8701 explicitly preserves that upgrade path) would compile cleanly while still meaning something semantically incompatible with the server brand.
+
+The rename to `AccountId` resolves the collision by construction. The two identifiers are now lexically distinct (`PlayerId` = engine seat per D-8701; `AccountId` = server account identity per this decision); a future engine-side branding upgrade per D-8701's preserved upgrade path can proceed independently without ever touching server identity code; cross-layer type confusion becomes a typo away from a compile error rather than a silent semantic mismatch.
+
+The decision applies only to the TypeScript layer because (a) the draft's SQL schema (`legendary.players` table, `player_id bigint` PK / FK) reflects the user-facing concept "a registered player"; that semantic is acceptable at the storage layer where there is no engine `PlayerId` to collide with, (b) renaming SQL would have ripple effects on migration filenames, integration test fixtures, and any future ORM/query code that hard-codes column names — costs that are not justified by the collision, which lives entirely in TypeScript.
+
+**Alternatives rejected:**
+
+- **Keep `PlayerId` as the server-side type and rely on layer-import rules to prevent collision:** rejected. The `apps/server/src/identity/` directory does not currently import from `packages/game-engine`, and that boundary is enforced. But name collision is a *readability* problem in addition to an *import* problem — every future reader of either `PlayerId` must verify the path. The cost of the rename (one WP / EC text edit pre-execution) is much smaller than the cumulative cost of every future reader reasoning about which `PlayerId` they are looking at.
+- **Add `// why:` comments at every `PlayerId` declaration in both layers explaining the collision:** rejected. Comments rot. The structural fix (two distinct names) is permanent.
+- **Brand the engine `PlayerId` first per D-8701's preserved upgrade path, then keep server `PlayerId` as a separate brand:** rejected. D-8701 explicitly defers the engine branding upgrade because of its 40+-site ripple cost. WP-052's pre-flight is not the right place to take on that ripple. The rename is the cheap fix.
+- **Rename to `PlayerAccountId`:** rejected as more verbose without clarity gain. `AccountId` is unambiguous given the surrounding `PlayerAccount` interface.
+- **Rename SQL too (`legendary.players` → `legendary.accounts`, `player_id` → `account_id`):** rejected as out of scope for WP-052's pre-flight resolution. The collision is a TypeScript-layer concern; the SQL schema can keep its existing draft naming. A future WP may revisit if storage-layer naming becomes confusing in practice.
+
+**Status:** Immutable for the WP-052 server identity surface. Future server WPs that introduce additional identity types (e.g., `OrganizationId`, `SessionTokenId`) follow the same discipline: each branded identity gets a distinct name; reuse of an engine type name without a `D-NNNN` decision is forbidden.
+
+**Citation:** `docs/ai/work-packets/WP-052-player-identity-replay-ownership.md` v1.3 §Goal / §Non-Negotiable Constraints / §Scope A; `docs/ai/execution-checklists/EC-052-player-identity-replay-ownership.checklist.md` §Locked Values / §Guardrails; `packages/game-engine/src/types.ts:345-352` (engine `PlayerId` per D-8701); D-8701 (engine `PlayerId` is non-branded, upgrade path preserved).
+
+---
+
+### D-5202 — `apps/server/src/identity/` Classified Under `server` Code Category
+
+**Type:** Code Category Classification
+**Packet:** WP-052 (pre-flight v1.3 resolution — PS-3)
+**Date:** 2026-04-25
+
+**Decision:** The new directory `apps/server/src/identity/` introduced by WP-052 falls under the `server` code category as defined in `docs/ai/REFERENCE/02-CODE-CATEGORIES.md §server`. All four files (`identity.types.ts`, `replayOwnership.types.ts`, `identity.logic.ts`, `replayOwnership.logic.ts`) and their `.test.ts` counterparts inherit the server-category rules: may access PostgreSQL, may use `node:crypto`, must not import `boardgame.io`, must not import `@legendary-arena/game-engine`, must not import UI packages, must not contain gameplay logic, must not mutate `G` or `ctx`. Status: Immutable.
+
+**Rationale:** The `server` category in `02-CODE-CATEGORIES.md` is mapped at the path level to `apps/server/`, and prior WPs that introduced server subdirectories (`apps/server/src/par/` from WP-051, `apps/server/src/rules/` from FP-01) inherited that mapping implicitly without dedicated `D-NNNN` entries. WP-052 could rely on the same precedent. However, the parallel pattern for engine subdirectories — D-2706 (`src/replay/`), D-2801 (`src/ui/`), D-3001 (`src/campaign/`), D-3101 (`src/invariants/`), D-3201 (`src/network/`), D-3301 (`src/content/`), D-3401 (`src/versioning/`), D-3501 (`src/ops/`), D-3601 (`src/simulation/`), D-3701 (`src/beta/`), D-4001 (`src/governance/`) — shows that *explicit* classification of new subdirectories has become the project's preferred discipline because it (a) creates a search-index entry that future Claude sessions hit when looking for boundary rules, (b) prevents drift if `02-CODE-CATEGORIES.md` is edited later in a way that narrows the parent directory's mapping, and (c) makes the boundary auditable from the citation chain alone.
+
+This decision codifies the same discipline for `apps/server/src/identity/`. It introduces no new category and no new rule; it asserts that the existing `server` category's constraints govern this directory and any future identity subfile.
+
+**Forbidden imports (locked):** `boardgame.io`, `@legendary-arena/game-engine` (any subpath, including the engine `PlayerId` per D-8701 / D-5201), `@legendary-arena/registry` (identity does not consume card data), `@legendary-arena/preplan`, any UI package, browser APIs.
+
+**Permitted imports:** `pg` (PostgreSQL client), `node:crypto` (UUID source per WP-052 locked contract), other `node:` built-ins as needed, sibling `apps/server/src/*` modules under server-category rules, future WP-defined `apps/server/src/identity/*` siblings.
+
+**Failure mode:** Boundary violations would manifest as importing engine internals into identity code (defeating the layer separation that keeps identity from leaking into gameplay) or as engine code reaching into identity (which would couple the deterministic engine to non-deterministic identity assignment). The grep gates in WP-052 §Verification Steps catch both directions.
+
+**Citation:** `docs/ai/REFERENCE/02-CODE-CATEGORIES.md §server`; `docs/ai/work-packets/WP-052-player-identity-replay-ownership.md` v1.3 §Files Expected to Change; D-2706 / D-2801 / D-3001 / D-3101 / D-3201 / D-3301 / D-3401 / D-3501 / D-3601 / D-3701 / D-4001 (engine-subdirectory classification precedent); `.claude/rules/server.md` (server layer enforcement).
+
+---
+
+### D-5203 — Identity Records Are Server-Persisted Player-Scoped Bookkeeping (Distinct From Class 2 Configuration)
+
+**Type:** Persistence Taxonomy Clarification
+**Packet:** WP-052 (pre-flight v1.3 resolution — PS-4)
+**Date:** 2026-04-25
+
+**Decision:** The `legendary.players` (PlayerAccount) and `legendary.replay_ownership` (ReplayOwnershipRecord) tables introduced by WP-052 are classified as **server-persisted player-scoped bookkeeping**. They are explicitly **not** Class 1 (Runtime State — they are not `G` / `ctx` / `ImplementationMap`), explicitly **not** Class 2 (Configuration — Class 2 per `.claude/rules/persistence.md` is *match-scoped* and covers `MatchSetupConfig`, player-name maps, and match `createdAt` only), and explicitly **not** Class 3 (Snapshot — they are mutable in defined ways and are not derived audit records). Identity records are durable, server-managed, player-scoped data whose lifecycle is independent of any single match.
+
+The three persistence classes in `.claude/rules/persistence.md` remain unchanged. This decision *clarifies* that identity bookkeeping is a separate persistence concern that the existing taxonomy was not written to cover, and locks the operational rules that apply to it without amending the rules file.
+
+**Operational rules for identity bookkeeping (locked):**
+
+- **Storage:** PostgreSQL only, under the `legendary.*` namespace, using `bigserial` PKs and `ext_id text` cross-service identifiers per `00.2-data-requirements.md §1`.
+- **Mutability:** `PlayerAccount` is immutable after creation except for `updatedAt`; this packet exports no mutation function, so even `updatedAt` is not changed by anything in WP-052 — the column exists for future identity-mutation WPs. `ReplayOwnershipRecord` is immutable except for `visibility`. All other fields on both tables are write-once.
+- **Read-time enforcement:** `listAccountReplays` filters on `expires_at < now()` rather than relying on a background purge job. Read-time filtering keeps deletion semantics observable from the query layer (D-5203 inherits this principle from WP-052 §Scope D rationale).
+- **GDPR boundary:** `deletePlayerData` removes identity rows in a single transaction and returns audit counts. It does **not** trigger replay blob purge — blob purge is out of scope per WP-052.
+- **No appearance in `G` or `ctx`:** identity values must never enter the game engine. The engine produces replays; the server stores ownership of those replays. The two are linked only by the cryptographic `replay_hash` (the server reads the hash from the engine output and stores ownership against it).
+
+**Why not extend Class 2:** Class 2 is defined in `.claude/rules/persistence.md` as "deterministic **inputs** to a match" with examples `MatchSetupConfig`, player names + seat assignments, and match creation timestamp. Stretching the definition to cover identity bookkeeping would dilute the class's invariant ("inputs to a match"), require updating the rules file, and add ambiguity to what counts as Configuration in future audits. Holding the rules file at the original three classes and clarifying via this decision is the lighter change.
+
+**Why not amend `.claude/rules/persistence.md`:** Amending a `.claude/rules/*.md` file is a higher-impact change that affects all future Claude sessions' interpretation of persistence rules. The boundary this decision draws is real but narrow (one new pair of tables, one new lifecycle class). Documenting it as a `D-NNNN` clarification rather than a rules-file amendment keeps the rules file stable and lets WP-052 ship without governance drift.
+
+**Future direction:** If identity-bookkeeping tables proliferate (e.g., session tokens, OAuth refresh tokens, audit logs) and the operational rules above need to apply uniformly, a future WP may amend `.claude/rules/persistence.md` to add a Class 4 (Identity / Bookkeeping) entry and reframe this decision as the source citation. This decision pre-authorizes that future amendment but does not require it.
+
+**Status:** Immutable for the WP-052 surface. The classification applies to any future identity-bookkeeping table introduced under `apps/server/src/identity/` until or unless `.claude/rules/persistence.md` is amended.
+
+**Citation:** `docs/ai/work-packets/WP-052-player-identity-replay-ownership.md` v1.3 §Context (Read First) / §Scope D / §Acceptance Criteria; `docs/ai/execution-checklists/EC-052-player-identity-replay-ownership.checklist.md` §Locked Values / §Guardrails; `.claude/rules/persistence.md` §The Three Data Classes (taxonomy this decision clarifies without amending); `docs/ai/ARCHITECTURE.md §Persistence Boundaries`; `docs/13-REPLAYS-REFERENCE.md §Storage and Access Architecture`; D-5202 (server identity directory classification); D-5201 (`AccountId` rename — paired pre-flight resolution).
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
