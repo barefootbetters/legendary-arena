@@ -1,5 +1,5 @@
 <script lang="ts">
-import { defineComponent, ref, onMounted } from 'vue';
+import { defineComponent, ref, computed, onMounted } from 'vue';
 import type { MatchSetupConfig } from '@legendary-arena/game-engine';
 import {
   createMatch,
@@ -7,6 +7,8 @@ import {
   listMatches,
 } from './lobbyApi';
 import type { LobbyMatchSummary } from './lobbyApi';
+import { parseLoadoutJson } from './parseLoadoutJson';
+import type { ParsedLoadout } from './parseLoadoutJson';
 
 // why: defineComponent({ setup() { return {...} } }) is required (NOT
 // <script setup>) because the template references non-prop bindings under
@@ -69,6 +71,27 @@ export default defineComponent({
     const matches = ref<LobbyMatchSummary[]>([]);
     const errorMessage = ref<string | null>(null);
     const isSubmitting = ref(false);
+
+    // why: JSON-first layout per WP-092. The Registry Viewer loadout
+    // builder (WP-091) is the expected authoring path; users export a
+    // MATCH-SETUP JSON document and either upload the file or paste its
+    // contents here. The 9-field manual form below is preserved as a
+    // power-user fallback wrapped in a <details> titled "Fill in manually
+    // (advanced)" — closed by default, all WP-090 bindings byte-for-byte
+    // unchanged. parsedLoadout caches the most recent successful parse so
+    // the submit button stays disabled (per the gate below) until a valid
+    // shape-guard pass is in hand.
+    const pasteText = ref('');
+    const parsedLoadout = ref<ParsedLoadout | null>(null);
+    // why: disabling the submit button until parse success prevents
+    // partially parsed or stale JSON from being submitted, ensuring
+    // createMatch is never called with unchecked input. The button also
+    // re-disables during submission so a double-click cannot create two
+    // matches.
+    const canSubmitFromJson = computed(
+      (): boolean =>
+        parsedLoadout.value !== null && !isSubmitting.value,
+    );
 
     function buildConfig(): MatchSetupConfig {
       return {
@@ -166,6 +189,109 @@ export default defineComponent({
       return typeof seat.name !== 'string';
     }
 
+    function applyParseResult(input: string): void {
+      const result = parseLoadoutJson(input);
+      if (result.ok === true) {
+        parsedLoadout.value = result.value;
+        errorMessage.value = null;
+        return;
+      }
+      parsedLoadout.value = null;
+      errorMessage.value = result.error.message;
+    }
+
+    function readUploadedFile(file: File): Promise<string> {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result;
+          if (typeof result === 'string') {
+            resolve(result);
+            return;
+          }
+          reject(
+            new Error(
+              'The uploaded file could not be read as text. Re-export the loadout JSON from the Registry Viewer.',
+            ),
+          );
+        };
+        reader.onerror = () => {
+          reject(
+            new Error(
+              'The browser failed to read the uploaded file. Try uploading again or paste the JSON contents instead.',
+            ),
+          );
+        };
+        reader.readAsText(file);
+      });
+    }
+
+    async function handleFileUpload(event: Event): Promise<void> {
+      const input = event.target as HTMLInputElement | null;
+      if (input === null || input.files === null || input.files.length === 0) {
+        return;
+      }
+      const file = input.files[0]!;
+      try {
+        const text = await readUploadedFile(file);
+        applyParseResult(text);
+      } catch (readError) {
+        const cause =
+          readError instanceof Error ? readError.message : String(readError);
+        parsedLoadout.value = null;
+        errorMessage.value = cause;
+      }
+    }
+
+    function parsePasted(): void {
+      applyParseResult(pasteText.value);
+    }
+
+    async function submitFromJson(): Promise<void> {
+      if (isSubmitting.value) {
+        return;
+      }
+      const parsed = parsedLoadout.value;
+      if (parsed === null) {
+        return;
+      }
+      if (playerName.value.trim() === '') {
+        errorMessage.value =
+          'The "playerName" field must not be empty before creating a match.';
+        return;
+      }
+
+      isSubmitting.value = true;
+      try {
+        // why: envelope `playerCount` maps to `numPlayers` at this call
+        // site per docs/ai/REFERENCE/MATCH-SETUP-SCHEMA.md §Player Count
+        // and the verified `createMatch(config, numPlayers)` signature at
+        // apps/arena-client/src/lobby/lobbyApi.ts:45-47. The wire body
+        // becomes `{ numPlayers, setupData: composition }`; envelope
+        // fields other than playerCount are dropped on submission per
+        // D-9201 (envelope archival is a future server-side concern).
+        const created = await createMatch(parsed.composition, parsed.playerCount);
+        const joined = await joinMatch(
+          created.matchID,
+          '0',
+          playerName.value.trim(),
+        );
+        const query =
+          `?match=${encodeURIComponent(created.matchID)}` +
+          `&player=0` +
+          `&credentials=${encodeURIComponent(joined.playerCredentials)}`;
+        window.location.search = query;
+      } catch (submitError) {
+        const cause =
+          submitError instanceof Error
+            ? submitError.message
+            : String(submitError);
+        errorMessage.value = `Failed to create and join the match. ${cause}`;
+      } finally {
+        isSubmitting.value = false;
+      }
+    }
+
     onMounted(() => {
       void refreshMatches();
     });
@@ -185,6 +311,12 @@ export default defineComponent({
       matches,
       errorMessage,
       isSubmitting,
+      pasteText,
+      parsedLoadout,
+      canSubmitFromJson,
+      handleFileUpload,
+      parsePasted,
+      submitFromJson,
       refreshMatches,
       submitCreate,
       joinExisting,
@@ -218,6 +350,65 @@ export default defineComponent({
         aria-label="Display name for this player"
       />
     </section>
+
+    <section
+      class="create-from-json"
+      aria-labelledby="create-from-json-heading"
+      data-testid="lobby-create-from-json"
+    >
+      <h2 id="create-from-json-heading">
+        Create match from loadout JSON (recommended)
+      </h2>
+
+      <label for="loadoutFile">Upload a loadout JSON file</label>
+      <input
+        id="loadoutFile"
+        type="file"
+        accept="application/json,.json"
+        data-testid="lobby-loadout-file"
+        @change="handleFileUpload"
+      />
+
+      <details class="loadout-paste">
+        <summary>Paste loadout JSON instead</summary>
+        <label for="loadoutPaste">Paste loadout JSON</label>
+        <textarea
+          id="loadoutPaste"
+          v-model="pasteText"
+          rows="8"
+          aria-label="Paste loadout JSON"
+          data-testid="lobby-loadout-paste"
+        ></textarea>
+        <button
+          type="button"
+          data-testid="lobby-loadout-parse"
+          @click="parsePasted"
+        >
+          Parse pasted JSON
+        </button>
+      </details>
+
+      <p
+        v-if="parsedLoadout !== null"
+        class="loadout-parsed-summary"
+        data-testid="lobby-loadout-parsed-summary"
+      >
+        Loadout parsed: {{ parsedLoadout.playerCount }} seat(s),
+        rule mode {{ parsedLoadout.heroSelectionMode }}.
+      </p>
+
+      <button
+        type="button"
+        :disabled="!canSubmitFromJson"
+        data-testid="lobby-submit-from-json"
+        @click="submitFromJson"
+      >
+        Create match from loadout
+      </button>
+    </section>
+
+    <details class="manual-form-wrapper" data-testid="lobby-manual-form-wrapper">
+      <summary>Fill in manually (advanced)</summary>
 
     <section class="create-match" aria-labelledby="create-match-heading">
       <h2 id="create-match-heading">Create match</h2>
@@ -312,6 +503,7 @@ export default defineComponent({
         Create match
       </button>
     </section>
+    </details>
 
     <section class="join-existing" aria-labelledby="join-existing-heading">
       <h2 id="join-existing-heading">Join existing match</h2>
@@ -377,10 +569,26 @@ export default defineComponent({
 
 .create-match,
 .join-existing,
-.player-identity {
+.player-identity,
+.create-from-json {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+}
+
+.loadout-paste {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.manual-form-wrapper {
+  margin-top: 0.5rem;
+}
+
+.loadout-parsed-summary {
+  padding: 0.25rem 0.5rem;
+  border: 1px dashed var(--color-foreground, #666);
 }
 
 .match-list,

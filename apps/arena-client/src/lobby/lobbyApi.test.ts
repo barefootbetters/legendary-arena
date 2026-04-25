@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { createMatch, joinMatch, listMatches, serverUrl } from './lobbyApi';
 import type { LobbyMatchSummary } from './lobbyApi';
 import type { MatchSetupConfig } from '@legendary-arena/game-engine';
+import { parseLoadoutJson } from './parseLoadoutJson';
 
 const SAMPLE_CONFIG: MatchSetupConfig = {
   schemeId: 'scheme-midtown-bank-robbery',
@@ -192,5 +193,120 @@ describe('lobbyApi (WP-090)', () => {
         return true;
       },
     );
+  });
+});
+
+// why: WP-092 scope-guard regression. Verifies the end-to-end shape mapping
+// produced by composing parseLoadoutJson + createMatch — specifically that
+// a valid MATCH-SETUP JSON document round-trips through the parser and into
+// a wire body of `{ numPlayers: <envelope.playerCount>, setupData:
+// <composition> }`, with envelope-only fields (setupId, createdAt, seed,
+// themeId, expansions, schemaVersion, heroSelectionMode) dropped on
+// submission per D-9201 (envelope archival is a future server-side WP).
+// Pre-existing WP-090 tests above are unmodified.
+describe('parseLoadoutJson + createMatch (WP-092)', () => {
+  beforeEach(() => {
+    calls = [];
+  });
+
+  afterEach(() => {
+    restoreFetch();
+  });
+
+  test('valid loadout JSON parses and createMatch posts only { numPlayers, setupData: composition } — envelope extras are dropped', async () => {
+    const loadoutJson = JSON.stringify({
+      schemaVersion: '1.0',
+      setupId: 'setup-xyz',
+      createdAt: '2026-04-24T00:00:00Z',
+      createdBy: 'tester',
+      seed: 12345,
+      themeId: 'theme-default',
+      expansions: ['core'],
+      playerCount: 2,
+      heroSelectionMode: 'GROUP_STANDARD',
+      composition: SAMPLE_CONFIG,
+    });
+
+    const parsed = parseLoadoutJson(loadoutJson);
+    assert.equal(parsed.ok, true);
+    if (parsed.ok !== true) {
+      return;
+    }
+    assert.equal(parsed.value.playerCount, 2);
+    assert.equal(parsed.value.heroSelectionMode, 'GROUP_STANDARD');
+    assert.deepEqual(parsed.value.composition, SAMPLE_CONFIG);
+
+    installFetchStub(() => jsonResponse(200, { matchID: 'match-from-json' }));
+    const created = await createMatch(
+      parsed.value.composition,
+      parsed.value.playerCount,
+    );
+
+    assert.equal(created.matchID, 'match-from-json');
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]!.url, `${serverUrl}/games/legendary-arena/create`);
+    assert.equal(calls[0]!.init?.method, 'POST');
+
+    const bodyText = String(calls[0]!.init?.body);
+    const wireBody = JSON.parse(bodyText) as Record<string, unknown>;
+
+    // Wire body shape lock: exactly two top-level keys.
+    assert.deepEqual(Object.keys(wireBody).sort(), [
+      'numPlayers',
+      'setupData',
+    ]);
+    assert.equal(wireBody['numPlayers'], 2);
+    assert.deepEqual(wireBody['setupData'], SAMPLE_CONFIG);
+
+    // Envelope-only fields must NOT appear in the wire body.
+    const droppedFields = [
+      'schemaVersion',
+      'setupId',
+      'createdAt',
+      'createdBy',
+      'seed',
+      'themeId',
+      'expansions',
+      'heroSelectionMode',
+      'playerCount',
+      'composition',
+    ];
+    for (const droppedField of droppedFields) {
+      assert.equal(
+        Object.prototype.hasOwnProperty.call(wireBody, droppedField),
+        false,
+        `wire body must not include envelope field "${droppedField}"`,
+      );
+    }
+  });
+
+  test('valid loadout JSON with absent heroSelectionMode submits unchanged (default normalization happens in parser, never on the wire)', async () => {
+    const loadoutJson = JSON.stringify({
+      schemaVersion: '1.0',
+      playerCount: 3,
+      composition: SAMPLE_CONFIG,
+    });
+
+    const parsed = parseLoadoutJson(loadoutJson);
+    assert.equal(parsed.ok, true);
+    if (parsed.ok !== true) {
+      return;
+    }
+    assert.equal(parsed.value.heroSelectionMode, 'GROUP_STANDARD');
+
+    installFetchStub(() => jsonResponse(200, { matchID: 'match-default-mode' }));
+    const created = await createMatch(
+      parsed.value.composition,
+      parsed.value.playerCount,
+    );
+
+    assert.equal(created.matchID, 'match-default-mode');
+    const bodyText = String(calls[0]!.init?.body);
+    const wireBody = JSON.parse(bodyText) as {
+      numPlayers: number;
+      setupData: MatchSetupConfig;
+    };
+    assert.equal(wireBody.numPlayers, 3);
+    assert.deepEqual(wireBody.setupData, SAMPLE_CONFIG);
   });
 });
