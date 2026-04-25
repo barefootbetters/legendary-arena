@@ -1833,9 +1833,29 @@ code, never `boardgame.io`).
   speculative operations; all functions pure; acceptance scenario test
   required (create → plan → disrupt → verify); 2 test files
 
-  WP-059 (Pre-Plan UI Integration) is deferred until WP-028 (UI State
-  Contract) is executed and a UI framework decision is made. Integration
-  guidance preserved in `docs/ai/DESIGN-PREPLANNING.md` Section 11.
+  **Deferral lifted 2026-04-24** — WP-028 (UI State Contract) shipped
+  2026-04-14, and the UI-framework decision was made by WP-061
+  (Vue 3 + Vite + Pinia, executed 2026-04-17 at `2e68530`). Integration
+  guidance in `docs/ai/DESIGN-PREPLANNING.md` Section 11 remains
+  authoritative for the WP-059 implementation.
+
+- [ ] WP-059 — Pre-Plan UI Integration (Store, Notification, Step Display) — Drafted 2026-04-24
+  Dependencies: WP-028 ✅, WP-056 ✅, WP-057 ✅, WP-058 ✅, WP-061 ✅, WP-065 ✅
+  Notes: Client-side wiring of `@legendary-arena/preplan` into
+  `apps/arena-client/`. Adds a second Pinia store (`usePreplanStore()`)
+  for client-local speculative state, a pure lifecycle adapter
+  (`preplanLifecycle.ts`) wrapping `createPrePlan` + status transitions,
+  two Vue 3 components (`<PrePlanNotification />` with `aria-live`
+  region + `<PrePlanStepList />` passive reference list), and fixture
+  module for deterministic component tests. Live boardgame.io client
+  middleware that triggers `executeDisruptionPipeline` on real mutation
+  is **out of scope** here — depends on the live-match transport
+  landing in WP-090 (now done; future follow-up WP can wire it). New
+  D-5901 (tentative) records the runtime-import carve-out permitting
+  `apps/arena-client` to import `@legendary-arena/preplan`. WP file +
+  EC drafted 2026-04-24; awaiting Prompt Lint Gate (00.3) and
+  pre-flight bundle before execution. See
+  [WP-059-preplan-ui-integration.md](WP-059-preplan-ui-integration.md).
 
 ---
 
