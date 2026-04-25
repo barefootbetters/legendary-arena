@@ -6,10 +6,10 @@
 **Last Updated:** 2026-04-25
 **Dependencies:** WP-027, WP-052, WP-004
 
-> Predecessor packet for WP-053. WP-053's EC-053 §Before Starting line 21
-> requires "an existing replay loader by `replayHash`" with no mocks
-> accepted; WP-103 lands that loader. After WP-103 ships, WP-053 can
-> open against a green `Before Starting` checklist.
+> **Hard predecessor packet for WP-053.** WP-053's EC-053 §Before Starting
+> line 21 explicitly forbids satisfying the replay loader prerequisite
+> with a mock implementation; WP-103 lands the real loader. After WP-103
+> ships, WP-053 can open against a green `Before Starting` checklist.
 
 ---
 
@@ -112,9 +112,10 @@ inputs by their cryptographic hash. Specifically:
   and is idempotent (`CREATE TABLE IF NOT EXISTS`).
 - `apps/server/src/replay/replay.logic.test.ts` exercises 5 tests
   in one `describe('replay storage logic (WP-103)', …)` block —
-  1 pure (validation / shape) + 4 DB-dependent (round-trip,
-  idempotent re-store, null-on-miss, jsonb shape preservation)
-  using the locked `{ skip: 'requires test database' }` pattern.
+  1 logic-pure (DB-stubbed null-on-miss) + 4 DB-dependent
+  (round-trip, idempotent re-store, null-on-miss against real DB,
+  jsonb shape preservation) using the locked
+  `{ skip: 'requires test database' }` pattern.
 
 ---
 
@@ -272,6 +273,14 @@ Before writing a single line:
 
 **Locked contract values (verbatim — do not paraphrase or re-derive):**
 
+> **Duplication notice:** The SQL blocks and function signatures
+> below appear verbatim in three places — this Locked Values block,
+> the §Acceptance Criteria checks, and the EC-103 Locked Values
+> section. Any divergence between WP-103 and EC-103 is a hard STOP;
+> the WP wins per the EC-TEMPLATE authority chain, but executors
+> should treat any difference as a sign one document is stale and
+> escalate before proceeding.
+
 - **legendary.\* namespace** — all tables in `legendary.*` schema per
   `00.2-data-requirements.md §1`
 - **`replay_blobs` schema** — locked verbatim:
@@ -343,15 +352,22 @@ deterministic reproduction and state inspection.
 
 ### A) Create `apps/server/src/replay/replay.types.ts` (new)
 
-- Re-export `ReplayInput` from `@legendary-arena/game-engine` (type
-  re-export only — no runtime import beyond the engine package's
-  public barrel)
+- Re-export `ReplayInput` from `@legendary-arena/game-engine` using
+  the `export type { ReplayInput }` form — a type-only re-export
+  that produces zero runtime emit and prevents an accidental
+  runtime dependency on the game-engine package. Plain
+  `export { ReplayInput }` is forbidden because TypeScript would
+  preserve the runtime binding even when `verbatimModuleSyntax` is
+  off, and a future bundler change could pull engine code into the
+  server bundle.
 - Re-export `DatabaseClient` from `../identity/identity.types.js`
-  (type-only)
+  using `export type { DatabaseClient }` for the same reason
+  (type-only, zero runtime emit).
 - Add `// why:` comment at the file head explaining: this module
   exists so `replay.logic.ts` and any future `replay.*.ts` siblings
   reference one canonical pair of types without re-importing from
-  multiple sources
+  multiple sources, and the `export type` form keeps both re-exports
+  type-only by construction.
 
 ### B) Create `apps/server/src/replay/replay.logic.ts` (new)
 
@@ -391,18 +407,23 @@ decision point per §Required `// why:` Comments below.
 Structure (one `describe('replay storage logic (WP-103)', …)`
 block, no bare top-level `test()` calls):
 
-1. **`loadReplay returns null for an unknown replayHash` (pure)** —
-   uses a stub `DatabaseClient` whose `query` returns `{ rows: [] }`.
-   Asserts the return is exactly `null`.
+1. **`loadReplay returns null for an unknown replayHash` (logic-pure)** —
+   "logic-pure" here means no real DB; the test uses a stub
+   `DatabaseClient` whose `query` returns `{ rows: [] }`. The test
+   exercises the `loadReplay` decision logic but does not perform
+   I/O. Asserts the return is exactly `null`.
 2. **`storeReplay → loadReplay round-trip preserves ReplayInput shape` (DB)** —
    constructs a sample `ReplayInput` (small but covers all four
    fields), calls `storeReplay`, then `loadReplay`, asserts
    `assert.deepEqual(loaded, original)`.
 3. **`storeReplay is idempotent — second call with same args is a no-op` (DB)** —
    calls `storeReplay` twice with identical args; both succeed
-   without error. After the second call, `loadReplay` returns the
-   same record (no duplicate row created — confirmed by
-   `SELECT count(*) FROM legendary.replay_blobs WHERE replay_hash = $1`).
+   without error. After the second call, asserts
+   `count === 1` from
+   `SELECT count(*) FROM legendary.replay_blobs WHERE replay_hash = $1`
+   (locked: not "≥ 1", not "exists" — exactly one row). Then
+   `loadReplay` returns the same record `assert.deepEqual` to the
+   pre-second-call state.
 4. **`loadReplay for unknown replayHash returns null against real DB` (DB)** —
    distinct from test 1; uses real DB to confirm no row materializes
    from a missing key.
@@ -468,7 +489,7 @@ pattern via `hasTestDatabase ? {} : { skip: 'requires test database' }`.
 
 - `apps/server/src/replay/replay.types.ts` — **new** — type re-exports
 - `apps/server/src/replay/replay.logic.ts` — **new** — `storeReplay` + `loadReplay`
-- `apps/server/src/replay/replay.logic.test.ts` — **new** — 5 tests (1 pure + 4 DB-dependent)
+- `apps/server/src/replay/replay.logic.test.ts` — **new** — 5 tests (1 logic-pure + 4 DB-dependent)
 - `data/migrations/006_create_replay_blobs_table.sql` — **new** — `legendary.replay_blobs` DDL
 
 Governance close (Commit B):
@@ -549,15 +570,21 @@ No other files may be modified.
 - [ ] No `updated_at` column (immutability per Vision Alignment)
 - [ ] No FK references (no `REFERENCES` clause)
 - [ ] No seed inserts
-- [ ] At least 4 `-- why:` comments per the §Required `// why:`
-      Comments list
+- [ ] At least 4 `-- why:` comments, one per locked decision:
+      (1) PK choice (`replay_hash text PRIMARY KEY` divergence from
+      WP-052's `bigserial + ext_id text UNIQUE` precedent),
+      (2) `jsonb` over `bytea` / `text` / `json`,
+      (3) immutability (no `updated_at` column; mutation is
+      conceptually invalid for content-addressed rows),
+      (4) `legendary.*` schema namespace per
+      `00.2-data-requirements.md §1`
 
 ### Tests
 - [ ] `apps/server/src/replay/replay.logic.test.ts` exists with
       exactly 5 tests in one `describe('replay storage logic (WP-103)', …)`
       block
-- [ ] 1 pure test always runs; 4 DB-dependent tests use the locked
-      `{ skip: 'requires test database' }` reason
+- [ ] 1 logic-pure test always runs (DB-stubbed); 4 DB-dependent
+      tests use the locked `{ skip: 'requires test database' }` reason
 - [ ] DB-dependent tests use the inline form
       `hasTestDatabase ? {} : { skip: 'requires test database' }`
       established by WP-052 §3.1 post-mortem

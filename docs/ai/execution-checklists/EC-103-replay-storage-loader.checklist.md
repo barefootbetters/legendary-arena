@@ -12,6 +12,7 @@
 - [ ] `data/migrations/` contains exactly migrations 001..005
 
 ## Locked Values (do not re-derive)
+> Duplicated verbatim from WP-103 §Non-Negotiable Constraints. Any divergence is a hard STOP; the WP wins.
 - `legendary.*` namespace; new migration appended at number `006`
 - `replay_blobs` schema verbatim:
   ```sql
@@ -25,7 +26,7 @@
 - `loadReplay` SQL verbatim: `SELECT replay_input FROM legendary.replay_blobs WHERE replay_hash = $1 LIMIT 1;`
 - `storeReplay` signature: `(replayHash: string, replayInput: ReplayInput, database: DatabaseClient): Promise<void>`
 - `loadReplay` signature: `(replayHash: string, database: DatabaseClient): Promise<ReplayInput | null>`
-- `apps/server/src/replay/replay.types.ts` re-exports `ReplayInput` (type-only from `@legendary-arena/game-engine`) and `DatabaseClient` (from `../identity/identity.types.js`); does not redefine them
+- `apps/server/src/replay/replay.types.ts` re-exports `ReplayInput` from `@legendary-arena/game-engine` and `DatabaseClient` from `../identity/identity.types.js` using `export type { … }` (type-only; zero runtime emit); plain `export { … }` is forbidden
 - DB-dependent test skip pattern verbatim: `hasTestDatabase ? {} : { skip: 'requires test database' }` — places the literal substring `skip: 'requires test database'` on each test line; established by WP-052 §3.1 post-mortem
 - Tests wrapped in exactly one `describe('replay storage logic (WP-103)', …)` block — no bare top-level `test()`
 - Test count + suite count: 5 tests / 1 suite. Server baseline shifts `31/5/0` → `36/6/0` (with 10 skipped if no test DB: `36/6/pass 26/skipped 10/fail 0`)
@@ -54,7 +55,7 @@
 ## Files to Produce
 - `apps/server/src/replay/replay.types.ts` — **new** — type re-exports
 - `apps/server/src/replay/replay.logic.ts` — **new** — `storeReplay` + `loadReplay`
-- `apps/server/src/replay/replay.logic.test.ts` — **new** — 5 tests in one describe block (1 pure + 4 DB-dependent)
+- `apps/server/src/replay/replay.logic.test.ts` — **new** — 5 tests in one describe block (1 logic-pure + 4 DB-dependent)
 - `data/migrations/006_create_replay_blobs_table.sql` — **new** — `legendary.replay_blobs` DDL
 
 ## After Completing
