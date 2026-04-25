@@ -9,9 +9,11 @@
 > **For WP-080 execution, use:**
 > `docs/ai/invocations/session-wp080-ec072-execution-step-level-api.md`
 >
-> This file is retained as a historical audit artifact only. Renamed with
-> the `.DRAFTING-DONE.old.md` suffix on 2026-04-19 to prevent accidental
-> re-invocation in a new Claude Code session.
+> This file is retained as a historical audit artifact only. Originally
+> renamed with the `.DRAFTING-DONE.old.md` suffix on 2026-04-19 to prevent
+> accidental re-invocation in a new Claude Code session; renamed again to
+> `.archived.md` on 2026-04-24 to comply with D-8403 (`*-old.*` repo-smell
+> rule, introduced by WP-084).
 
 ---
 
