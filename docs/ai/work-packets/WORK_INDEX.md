@@ -1766,7 +1766,7 @@ These packets ship the game and keep it running.
   all preserved. See
   [WP-094-viewer-hero-flatcard-key-uniqueness.md](WP-094-viewer-hero-flatcard-key-uniqueness.md).
 
-- [x] WP-096 — Registry Viewer: Grid Data View Mode ✅ Done 2026-04-25 (drafted 2026-04-25; 00.3 lint-gate PASS; pre-flight + 01.7 copilot check 30/30 PASS post PS-1..PS-3 + FIX 4 resolution; executed 2026-04-25 at commit `6c6b003`)
+- [x] WP-096 — Registry Viewer: Grid Data View Mode ✅ Done 2026-04-25 (drafted 2026-04-25; 00.3 lint-gate PASS; pre-flight + 01.7 copilot check 30/30 PASS post PS-1..PS-3 + FIX 4 resolution; executed 2026-04-25 at commit `4fe8382`)
   Dependencies: WP-066 (image-to-data view toggle — established `useCardViewMode`,
   `ViewModeToggle.vue`, `CardDataDisplay.vue`, and the `localStorage`
   `cardViewMode` key that this packet extends to a second consumer),
@@ -1802,7 +1802,7 @@ These packets ship the game and keep it running.
   (off-allowlist), no new errors introduced. Calibrated baseline at
   HEAD `26e4584` was 11 / 221; +6 warnings stylistic on `CardDataTile.vue`
   consistent with codebase pattern. Manual smoke a–h **user-verified
-  passed 2026-04-25** against the post-Commit-A branch at `6c6b003`
+  passed 2026-04-25** against the post-Commit-A branch at `4fe8382`
   (toggle flips entire grid, selection persists, reload preserves,
   filter survives, console clean, print preview parity).
   Forbidden-imports greps (`game-engine`, `preplan`, `server`,
