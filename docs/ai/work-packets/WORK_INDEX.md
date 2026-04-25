@@ -1801,10 +1801,11 @@ These packets ship the game and keep it running.
   all 11 errors pre-existing on `main` from EC-091 in `LoadoutBuilder.vue`
   (off-allowlist), no new errors introduced. Calibrated baseline at
   HEAD `26e4584` was 11 / 221; +6 warnings stylistic on `CardDataTile.vue`
-  consistent with codebase pattern. Manual smoke a–h not performed
-  by the executor (no browser available); user must run `pnpm --filter
-  registry-viewer dev` and walk through the eight smoke steps before
-  pushing. Forbidden-imports greps (`game-engine`, `preplan`, `server`,
+  consistent with codebase pattern. Manual smoke a–h **user-verified
+  passed 2026-04-25** against the post-Commit-A branch at `6c6b003`
+  (toggle flips entire grid, selection persists, reload preserves,
+  filter survives, console clean, print preview parity).
+  Forbidden-imports greps (`game-engine`, `preplan`, `server`,
   registry barrel, `boardgame.io`, `node:`, `pg`, `Math.random`,
   `Date.now`) all zero against the two scope files. No new npm deps;
   no test-file additions (viewer has no Vue component-test harness).
