@@ -1678,7 +1678,7 @@ These packets ship the game and keep it running.
   preserved); self-compliant `## Vision Alignment` block. See
   [WP-091-loadout-builder-registry-viewer.md](WP-091-loadout-builder-registry-viewer.md).
 
-- [ ] WP-092 — Lobby Loadout Intake (JSON → Create Match) ⬜ Draft (drafted 2026-04-24; 00.3 lint-gate PASS; pre-flight bundle registered 2026-04-24)
+- [x] WP-092 — Lobby Loadout Intake (JSON → Create Match) ✅ Done 2026-04-24 (drafted 2026-04-24; 00.3 lint-gate PASS; pre-flight bundle registered 2026-04-24; executed 2026-04-24 with D-9201 landed; arena-client baseline 77 / 3 / 0 → 109 / 5 / 0 (+32 tests / +2 suites); WP-090 manual form preserved byte-for-byte under "Fill in manually (advanced)" `<details>` collapse)
   Dependencies: WP-011 (lobby HTTP endpoints — `POST
   /games/legendary-arena/create`), WP-090 (arena-client lobby view
   + 9-field create-match form), WP-091 (registry-viewer loadout
