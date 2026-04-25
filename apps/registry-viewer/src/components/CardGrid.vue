@@ -3,9 +3,20 @@ import { watch, nextTick } from "vue";
 import type { FlatCard } from "../registry/browser";
 import { TYPE_COLOR, HC_COLOR, RARITY_DOT } from "../lib/theme";
 import { devLog } from "../lib/devLog";
+// why: useCardViewMode is the module-scoped single source of truth for
+// the image-vs-data toggle established in WP-066. The sidebar consumes
+// it via prop flow from App.vue, but the grid reads it directly here to
+// avoid threading a `view-mode` prop through App.vue → CardGrid.vue.
+// Direct consumption preserves WP-066's "global toggle" intent: a single
+// click on ViewModeToggle.vue now flips both the sidebar and every grid
+// tile in lockstep, with no prop plumbing.
+import { useCardViewMode } from "../composables/useCardViewMode";
+import CardDataTile from "./CardDataTile.vue";
 
 const props = defineProps<{ cards: FlatCard[]; selectedKey?: string }>();
 const emit = defineEmits<{ select: [card: FlatCard]; clearFilters: [] }>();
+
+const { viewMode } = useCardViewMode();
 
 // why: when a card is selected (either by clicking or via cross-link from
 // themes view), scroll it into view so the user can see which tile is active
@@ -38,11 +49,28 @@ watch(() => props.selectedKey, (newKey) => {
         @click="emit('select', card)"
       >
         <div class="img-wrap">
-          <img :src="card.imageUrl" :alt="card.name" loading="lazy"
-            @error="($event.target as HTMLImageElement).style.opacity = '0.2'; devLog('render', 'image load failed', { card: card.name, url: card.imageUrl })" />
-          <span class="type-badge" :style="{ background: TYPE_COLOR[card.cardType] + '22', color: TYPE_COLOR[card.cardType] }">
-            {{ card.cardType }}
-          </span>
+          <template v-if="viewMode === 'image'">
+            <img :src="card.imageUrl" :alt="card.name" loading="lazy"
+              @error="($event.target as HTMLImageElement).style.opacity = '0.2'; devLog('render', 'image load failed', { card: card.name, url: card.imageUrl })" />
+            <span class="type-badge" :style="{ background: TYPE_COLOR[card.cardType] + '22', color: TYPE_COLOR[card.cardType] }">
+              {{ card.cardType }}
+            </span>
+          </template>
+          <!--
+            why: the viewMode swap is confined to the inside of .img-wrap
+            (the 3:4 aspect-ratio box). .img-wrap itself remains in the
+            DOM in both modes, so its sizing rule (`aspect-ratio: 3/4`)
+            and any background / overflow / position rules attached to
+            it continue to apply identically. The .tile-info footer
+            below renders unconditionally in both branches, and the grid
+            column track (`minmax(130px, 1fr)`) is unchanged. Net effect:
+            outer tile dimensions and grid layout are byte-identical
+            between image and data modes — only the inside-tile content
+            differs.
+          -->
+          <template v-else>
+            <CardDataTile :card="card" />
+          </template>
         </div>
         <div class="tile-info">
           <span class="tile-name">{{ card.name }}</span>
