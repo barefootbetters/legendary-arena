@@ -1295,8 +1295,8 @@ These packets ship the game and keep it running.
   Sustainability`. Commits use `EC-052:` on code; `SPEC:` on
   pre-flight and governance close (`WP-052:` forbidden per P6-36).
 
-- [ ] WP-053 — Competitive Score Submission & Verification ✅ Reviewed
-  Dependencies: WP-048, WP-051, WP-052, WP-027, WP-004
+- [ ] WP-053 — Competitive Score Submission & Verification ✅ Reviewed (BLOCKED on WP-103 — replay loader prerequisite per EC-053 §Before Starting line 21)
+  Dependencies: WP-048, WP-051, WP-052, WP-027, WP-004, WP-103
   Notes: Keystone trust surface for competition — every competitive score is
   replay-verified; server re-executes replays via `replayGame`, recomputes
   scores via WP-048 engine contracts (`deriveScoringInputs`, `computeRawScore`,
@@ -1852,6 +1852,66 @@ These packets ship the game and keep it running.
 - [ ] **(deferred placeholder)** Fix CLI credentials field drift in `apps/server/scripts/join-match.mjs` — D-9001 identifies the buggy script. Two issues: (1) the script omits `playerID` from its POST body; the server auto-assigns a seat which is functionally OK but inconsistent with `create-match.mjs`'s shape; (2) the script reads `result.credentials` after the join response, but the canonical field name is `result.playerCredentials` — meaning the script's printed `credentials:` value is always `undefined`. Scope is CLI-only — no engine, no client, no server logic touched. A future packet may either fix the two bugs in place (preferred — matches `create-match.mjs` shape) or delete the script outright if the lobby UI obsoletes its use case. No dependencies; can land standalone.
 
 - [ ] **(deferred placeholder)** Classify `apps/registry-viewer/` in `docs/ai/REFERENCE/02-CODE-CATEGORIES.md` — pre-existing governance gap surfaced as WP-066 copilot finding #13, inherited silently by WP-094 and WP-096 (third inheritance pass; flagged in WP-096 pre-flight RS-3 + copilot check finding #13). Two acceptable resolutions: (a) extend the existing `client-app` row (D-6511) to cover both `apps/arena-client/` and `apps/registry-viewer/`; (b) add a new `client-app-viewer` row with its own DECISIONS.md entry. Either path needs an authorising D-entry plus updates to the table at `02-CODE-CATEGORIES.md:36-49` and the per-category prose at `:234-270`. Scope is docs-only — no engine, registry, server, or app code touched. No dependencies; can land standalone. The next viewer-touching WP should arrive with the classification already landed rather than inheriting the gap a fourth time.
+
+- [ ] WP-103 — Server-Side Replay Storage & Loader — Drafted 2026-04-25; lint-gate self-review PASS; pre-flight pending.
+  Dependencies: WP-027, WP-052, WP-004
+  Notes: Predecessor packet for WP-053. WP-053's EC-053 §Before
+  Starting line 21 requires "an existing replay loader by
+  `replayHash`" with no mocks accepted; WP-103 lands that loader
+  so WP-053 can open against a green Before Starting checklist.
+  Scope: 4 new files — `apps/server/src/replay/replay.types.ts`
+  (re-exports `ReplayInput` from `@legendary-arena/game-engine` +
+  `DatabaseClient` from `../identity/identity.types.js`),
+  `apps/server/src/replay/replay.logic.ts` (`storeReplay`
+  idempotent insert via `ON CONFLICT (replay_hash) DO NOTHING` +
+  `loadReplay` returning `Promise<ReplayInput | null>`),
+  `apps/server/src/replay/replay.logic.test.ts` (5 tests / 1
+  suite — 1 pure + 4 DB-dependent using the locked WP-052
+  `hasTestDatabase ? {} : { skip: 'requires test database' }`
+  pattern), and `data/migrations/006_create_replay_blobs_table.sql`
+  (idempotent `CREATE TABLE IF NOT EXISTS legendary.replay_blobs`
+  with three locked columns: `replay_hash text PRIMARY KEY`,
+  `replay_input jsonb NOT NULL`, `created_at timestamptz NOT NULL DEFAULT now()`;
+  no `updated_at`, no FK from existing tables — content-addressed
+  rows are immutable). PK is `text` (the hash itself), diverging
+  from WP-052's `bigserial player_id` + `ext_id text UNIQUE`
+  pattern because replays are content-addressed with no use case
+  for a separate internal bigint. `jsonb` chosen over `bytea` /
+  `text` / `json` for shape queryability + storage efficiency.
+  Storage backend is PostgreSQL `jsonb`; preserves the option of
+  migrating to R2 / object storage later behind the same
+  `loadReplay` interface. No `Result<T>` wrapper on either function
+  — `storeReplay` returns `Promise<void>` and `loadReplay` returns
+  `Promise<ReplayInput | null>`; infra failures propagate via
+  thrown exceptions. No FK from `legendary.replay_ownership.replay_hash`
+  → `legendary.replay_blobs.replay_hash` because WP-052 is a locked
+  contract; application logic in WP-053 ensures `storeReplay`
+  precedes `assignReplayOwnership` on the submission path. Server
+  baseline shifts post-WP-052 `31/5/0` → **`36/6/0`** (+5 tests /
+  +1 suite; with 10 skipped if no test DB). Engine baseline
+  `513/115/0` unchanged. Two-commit topology at execution: A
+  `EC-103:` (4 files: types, logic, test, migration); B `SPEC:`
+  governance close (STATUS.md + WORK_INDEX WP-103 `[ ]` → `[x]`
+  + EC_INDEX EC-103 Draft → Done + 01.6 post-mortem; mandatory per
+  three triggers — new long-lived abstraction `storeReplay` /
+  `loadReplay` consumed by WP-053 + new contract consumed by
+  future WPs + new persistence surface `legendary.replay_blobs`).
+  Optional A0 SPEC for D-10301 (text PK divergence rationale) +
+  D-10302 (jsonb choice + immutability rationale) if landing the
+  decisions before Commit A is preferred over inline DECISIONS
+  updates at Commit B. Out-of-scope (explicit): no replay write-back
+  from `apps/replay-producer/`, no HTTP endpoints, no FK additions
+  to WP-052's `replay_ownership`, no replay-blob deletion / retention
+  / GDPR purge integration (deferred per PS-12 / D-5207-pending),
+  no replay-content validation (`storeReplay` does not verify
+  `computeStateHash(replayGame(input).finalState) === replayHash`
+  — that is WP-053's caller-side responsibility), no bulk
+  operations. Vision clauses touched: §3, §18, §19, §22, §24
+  (NG-1..7 not crossed). 01.5 NOT INVOKED (zero `LegendaryGameState`
+  field, zero `buildInitialGameState` shape change, zero new moves,
+  zero new phase hooks — engine package entirely untouched). 01.6
+  post-mortem MANDATORY. See [WP-103-replay-storage-loader.md](WP-103-replay-storage-loader.md)
+  + [EC-103-replay-storage-loader.checklist.md](../execution-checklists/EC-103-replay-storage-loader.checklist.md).
 
 ---
 

@@ -1,0 +1,76 @@
+# EC-103 — Server-Side Replay Storage & Loader (Execution Checklist)
+
+**Source:** docs/ai/work-packets/WP-103-replay-storage-loader.md
+**Layer:** Server / Replay Storage
+
+## Before Starting
+- [ ] WP-027 complete: `ReplayInput` exported from `@legendary-arena/game-engine`
+- [ ] WP-052 complete: `apps/server/src/identity/identity.types.ts` exports `DatabaseClient`
+- [ ] WP-004 complete: `apps/server/src/index.mjs` exists (not modified by this packet)
+- [ ] `pnpm -r build` exits 0
+- [ ] `pnpm --filter @legendary-arena/server test` reports `31 / 5 / 0` (with 6 skipped if no test DB) — the post-WP-052 baseline
+- [ ] `data/migrations/` contains exactly migrations 001..005
+
+## Locked Values (do not re-derive)
+- `legendary.*` namespace; new migration appended at number `006`
+- `replay_blobs` schema verbatim:
+  ```sql
+  CREATE TABLE IF NOT EXISTS legendary.replay_blobs (
+      replay_hash   text         PRIMARY KEY,
+      replay_input  jsonb        NOT NULL,
+      created_at    timestamptz  NOT NULL DEFAULT now()
+  );
+  ```
+- `storeReplay` SQL verbatim: `INSERT INTO legendary.replay_blobs (replay_hash, replay_input) VALUES ($1, $2) ON CONFLICT (replay_hash) DO NOTHING;`
+- `loadReplay` SQL verbatim: `SELECT replay_input FROM legendary.replay_blobs WHERE replay_hash = $1 LIMIT 1;`
+- `storeReplay` signature: `(replayHash: string, replayInput: ReplayInput, database: DatabaseClient): Promise<void>`
+- `loadReplay` signature: `(replayHash: string, database: DatabaseClient): Promise<ReplayInput | null>`
+- `apps/server/src/replay/replay.types.ts` re-exports `ReplayInput` (type-only from `@legendary-arena/game-engine`) and `DatabaseClient` (from `../identity/identity.types.js`); does not redefine them
+- DB-dependent test skip pattern verbatim: `hasTestDatabase ? {} : { skip: 'requires test database' }` — places the literal substring `skip: 'requires test database'` on each test line; established by WP-052 §3.1 post-mortem
+- Tests wrapped in exactly one `describe('replay storage logic (WP-103)', …)` block — no bare top-level `test()`
+- Test count + suite count: 5 tests / 1 suite. Server baseline shifts `31/5/0` → `36/6/0` (with 10 skipped if no test DB: `36/6/pass 26/skipped 10/fail 0`)
+- No `updated_at` column on `replay_blobs` — content-addressed rows are immutable
+- No FK from `legendary.replay_ownership.replay_hash` to `legendary.replay_blobs.replay_hash` — WP-052 contract is locked
+
+## Guardrails
+- No `boardgame.io` / `@legendary-arena/registry` / `@legendary-arena/preplan` / `@legendary-arena/vue-sfc-loader` imports in any WP-103 file
+- `@legendary-arena/game-engine` import is type-only (`import type { ReplayInput }`); no runtime engine import
+- No `pg` direct import in `replay.logic.ts` — use `DatabaseClient` alias only
+- No `Math.random` / `Date.now` / `require()` / external UUID library in any new file
+- No modifications to `packages/`, `apps/arena-client/`, `apps/replay-producer/`, `apps/registry-viewer/`, or any existing file under `apps/server/src/{server.mjs,index.mjs,rules/,par/,game/,identity/}` / `apps/server/scripts/` / `apps/server/package.json`
+- No modifications to migrations 001..005
+- `storeReplay` uses `ON CONFLICT (replay_hash) DO NOTHING` — never `DO UPDATE`; content-addressed rows are immutable
+- `storeReplay` returns `Promise<void>`; `loadReplay` returns `Promise<ReplayInput | null>`. No `Result<T>` wrapper on either surface — there are no expected application-side failure modes
+- Infra-level errors propagate via thrown exceptions — never swallowed, never wrapped in a Result branch
+
+## Required `// why:` Comments
+- `replay.types.ts` head: single canonical pair re-export rationale (mirror WP-052 `identity.types.ts` precedent)
+- `replay.logic.ts` `storeReplay`: `DO NOTHING` rationale (content-addressed immutability; SHA-256 collision is statistically infeasible)
+- `replay.logic.ts` `loadReplay`: `pg` `jsonb` codec returns deserialized JS objects (no manual `JSON.parse`)
+- `006_create_replay_blobs_table.sql` `replay_hash text PRIMARY KEY`: PK choice diverges from WP-052's `bigserial + ext_id text UNIQUE` because replays are content-addressed; no use case for a separate internal bigint
+- `006_create_replay_blobs_table.sql` `replay_input jsonb NOT NULL`: `jsonb` chosen over `bytea` / `text` / `json` for shape queryability + storage efficiency
+- `006_create_replay_blobs_table.sql` immutability comment: no `updated_at` column because mutation is conceptually invalid for content-addressed rows
+
+## Files to Produce
+- `apps/server/src/replay/replay.types.ts` — **new** — type re-exports
+- `apps/server/src/replay/replay.logic.ts` — **new** — `storeReplay` + `loadReplay`
+- `apps/server/src/replay/replay.logic.test.ts` — **new** — 5 tests in one describe block (1 pure + 4 DB-dependent)
+- `data/migrations/006_create_replay_blobs_table.sql` — **new** — `legendary.replay_blobs` DDL
+
+## After Completing
+- [ ] `pnpm -r build` exits 0
+- [ ] `pnpm --filter @legendary-arena/game-engine test` reports `513 / 115 / 0` (unchanged)
+- [ ] `pnpm --filter @legendary-arena/server test` reports `36 / 6 / 0` (with 10 skipped if no test DB)
+- [ ] All grep gates from WP-103 §Verification Steps pass
+- [ ] `git diff --name-only main` shows exactly 4 Commit-A files
+- [ ] 01.6 post-mortem written at `docs/ai/post-mortems/01.6-WP-103-replay-storage-loader.md` (mandatory per new long-lived abstraction + new contract for WP-053 + new persistence surface)
+- [ ] `docs/ai/STATUS.md` updated with WP-103 / EC-103 current-state block
+- [ ] `docs/ai/DECISIONS.md` updated if A0 did not pre-land D-10301 (text PK divergence) and D-10302 (jsonb choice + immutability)
+- [ ] `docs/ai/work-packets/WORK_INDEX.md` WP-103 row flipped `[ ]` → `[x]` with date + Commit A hash
+- [ ] `docs/ai/execution-checklists/EC_INDEX.md` EC-103 row flipped Draft → Done
+- [ ] Commit A prefix `EC-103:`; Commit B prefix `SPEC:`; `WP-103:` forbidden per commit-msg hook
+
+## Common Failure Smells
+- `ON CONFLICT (replay_hash) DO UPDATE` anywhere → immutability violation; rewrite as `DO NOTHING`
+- Manual `JSON.parse(row.replay_input)` in `loadReplay` → double-decode bug; `pg` `jsonb` codec already deserializes
+- Skip pattern using ternary `{ skip: !hasTestDatabase ? 'requires test database' : undefined }` → grep gate `skip: 'requires test database'` fails to match; use the inline conditional options form per WP-052 §3.1

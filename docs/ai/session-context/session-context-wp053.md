@@ -110,23 +110,30 @@ will be at minimum `40 / 6 / 0` (with skips when no test DB).
 
 ---
 
-## 4. Migration Numbering
+## 4. Migration Numbering — Updated 2026-04-25 (WP-103 takes 006)
 
 EC-053's `Files to Produce` line refers to the new migration as
-`data/migrations/NNN_create_competitive_scores_table.sql`. Resolve
-the `NNN` placeholder to **`006`** at the WP-053 session start —
-existing migrations on `main` at `a8f81ff` are `001..005`:
+`data/migrations/NNN_create_competitive_scores_table.sql`. With
+WP-103 (Server-Side Replay Storage & Loader) drafted as the
+predecessor (see §6), WP-103 takes migration **`006`** for
+`legendary.replay_blobs`, and WP-053's `competitive_scores`
+migration shifts to **`007`**.
+
+Migration sequence after WP-103 + WP-053 land:
 
 ```
 data/migrations/
-  001_server_schema.sql              (existing)
-  002_seed_rules.sql                 (existing)
-  003_game_sessions.sql              (existing)
-  004_create_players_table.sql       (WP-052)
-  005_create_replay_ownership_table.sql (WP-052)
+  001_server_schema.sql                         (existing)
+  002_seed_rules.sql                            (existing)
+  003_game_sessions.sql                         (existing)
+  004_create_players_table.sql                  (WP-052)
+  005_create_replay_ownership_table.sql         (WP-052)
+  006_create_replay_blobs_table.sql             (WP-103, planned)
+  007_create_competitive_scores_table.sql       (WP-053, planned — was 006 before WP-103 drafting)
 ```
 
-So the WP-053 file lands as `006_create_competitive_scores_table.sql`.
+The WP-053 executor must update EC-053 §Files to Produce at A0
+SPEC time to reflect `007` (not `NNN` and not `006`).
 
 ---
 
@@ -193,7 +200,7 @@ player_id` mapping pattern.
 
 ---
 
-## 6. Hard Prerequisite Blocker
+## 6. Hard Prerequisite Blocker — Resolved by WP-103
 
 EC-053 §Before Starting line 21 (verbatim):
 
@@ -204,45 +211,59 @@ EC-053 §Before Starting line 21 (verbatim):
 > must have a real loader at runtime; mocks may not be the way this
 > gate is satisfied.
 
-**Status of this prerequisite on `main` at `a8f81ff`: NOT SATISFIED.**
+**Status update (2026-04-25): resolution decision = Option 1
+(predecessor WP).** WP-103 — Server-Side Replay Storage & Loader —
+has been drafted and registered in `WORK_INDEX.md` and `EC_INDEX.md`
+to land the loader. WP-053 is now formally **BLOCKED on WP-103
+execution** (WORK_INDEX row updated 2026-04-25 with this
+dependency). Once WP-103 ships (`legendary.replay_blobs` table +
+`storeReplay` / `loadReplay` server-side helpers in
+`apps/server/src/replay/`), WP-053's §Before Starting line 21 can
+be satisfied without re-scoping or re-interpreting the prerequisite.
 
-`grep -rnE "loadReplay|getReplay|fetchReplay" apps/server/src/`
-returns zero matches. There is no replay loader on the server side.
-WP-052 stored ownership metadata (`replay_hash`, `scenario_key`,
-visibility, retention) but explicitly **did not** store replay
-content — replay blob persistence and loading were deferred
-(WP-052 §Non-Negotiable Constraints; see also D-5207-pending). The
-replay-producer app (`apps/replay-producer/`) writes replays but the
-server has no read path back from `replayHash` to a `ReplayInput`.
+**WP-103 surface (4 files, mirrors WP-052's clean shape):**
 
-**WP-053 cannot satisfy its `Before Starting` gate against `main`
-as it stands.** The next executor's first decision is which of these
-three resolutions to pursue, in conversation with the user:
+- `apps/server/src/replay/replay.types.ts` — re-exports
+  `ReplayInput` from `@legendary-arena/game-engine` (type-only) and
+  `DatabaseClient` from `../identity/identity.types.js`
+- `apps/server/src/replay/replay.logic.ts` —
+  `storeReplay(replayHash, replayInput, db): Promise<void>` (locked
+  SQL `INSERT … ON CONFLICT (replay_hash) DO NOTHING`) +
+  `loadReplay(replayHash, db): Promise<ReplayInput | null>` (deserialized
+  by `pg`'s `jsonb` codec; no manual `JSON.parse`)
+- `apps/server/src/replay/replay.logic.test.ts` — 5 tests in one
+  describe block (1 pure + 4 DB-dependent)
+- `data/migrations/006_create_replay_blobs_table.sql` —
+  `legendary.replay_blobs (replay_hash text PRIMARY KEY,
+  replay_input jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now())`
 
-1. **Predecessor WP for replay storage + loader.** Author a new WP
-   (e.g., WP-052.5 or WP-053a) scoped to: blob storage location
-   (PostgreSQL `bytea`, R2 object store, or filesystem); read path
-   `loadReplay(replayHash) → ReplayInput | null`; corresponding
-   migration if the storage is DB-backed; tests. Then WP-053 can
-   start cleanly.
-2. **Re-scope WP-053 to include a minimal real loader.** Bundle the
-   loader into `apps/server/src/competition/`'s scope. Risk: blurs
-   WP-053's "submission & verification" surface with a "storage"
-   surface; EC-053 §Files to Produce would need to expand; the WP's
-   layer-boundary story becomes more complicated.
-3. **Re-interpret EC-053's prerequisite as a writer, not a reader.**
-   If `apps/replay-producer/` already writes replay artifacts to a
-   location the server can read directly (filesystem path keyed by
-   replayHash), the "loader" may be a thin wrapper around `readFile`
-   that does not need its own WP. Verify this against the actual
-   `apps/replay-producer/` output path before committing to this
-   path.
+**Migration sequence shifts as a result:** WP-103 takes migration
+`006`. WP-053's `competitive_scores` migration shifts to `007` (was
+documented as `006` in this file's §4 before WP-103 was drafted).
+See §4 below — that section is now stale and superseded by this
+update.
 
-The bridge artifact does not pick a resolution. The next executor
-should raise the question with the user **before** drafting WP-053's
-A0 SPEC bundle or a pre-flight report. A wrong choice here cascades
-through WP-053's commit topology, file allowlist, and post-mortem
-audits.
+**Decision rationale (paths not taken):**
+
+- **Option 2 (re-scope WP-053):** rejected — would blur WP-053's
+  "submission + verification" surface with "blob storage", expand
+  the file allowlist, and force the post-mortem to defend storage
+  backend + writer + reader + verification + idempotency in one
+  audit pass. The WP-052 post-mortem's clean shape (12 distinct
+  audits over a focused 8-file Commit A) is the precedent we want
+  to preserve, not violate.
+- **Option 3 (re-interpret as a thin reader of producer output):**
+  rejected after `apps/replay-producer/` investigation — the
+  producer is a CLI that writes a `ReplaySnapshotSequence` to a
+  user-supplied `--out` path, **not** keyed by `replayHash`, and
+  it produces a *sequence*, not the `ReplayInput` shape that
+  EC-053 needs. Reusing the producer would require either a key
+  scheme retrofit (non-trivial) or a hash-to-path lookup table
+  (a smaller WP than WP-103 in name only). Option 1's predecessor
+  WP is cleaner.
+
+WP-053 sessions cannot start until WP-103 is in main. See WP-103's
+Files Expected to Change for the full content surface.
 
 ---
 
@@ -286,18 +307,30 @@ In conflict, higher-authority documents win:
 
 In strict order:
 
-1. Run `pnpm -r build && pnpm -r test` against the current `main` to
-   confirm the §3 baseline. If it doesn't match, STOP — the
-   environment has drifted since this bridge was authored
-   (`a8f81ff`).
-2. Read this file's §5 and §6. Raise §6 with the user **before**
-   drafting any A0 SPEC commit. A predecessor WP for replay storage +
-   loader is the cleanest of the three resolutions.
-3. After §6 resolves, draft A0 SPEC updates for EC-053 to fix the
-   `PlayerId → AccountId` references in §5.1. Land A0 SPEC on `main`
-   per the WP-052 commit topology pattern.
-4. Cut the WP-053 execution branch from `main` after A0 lands.
-5. Stash unrelated WP-097 / WP-098 governance work-in-progress in
+1. **Confirm WP-103 has landed on `main`.** Run
+   `git log --oneline -- data/migrations/006_create_replay_blobs_table.sql`;
+   non-empty output means WP-103 shipped and the §6 blocker is
+   resolved. If empty, STOP — WP-103 must execute first; WP-053
+   cannot start until then.
+2. Run `pnpm -r build && pnpm -r test` against the current `main`
+   to confirm the post-WP-103 baseline (engine `513/115/0`,
+   server `36/6/0` with 10 skipped if no test DB). If it doesn't
+   match, STOP — the environment has drifted since WP-103 closure.
+3. Read this file's §5 and §6. The drift fixes in §5
+   (`PlayerId → AccountId`) and the migration-number update from
+   §4 (`006 → 007` for `competitive_scores`) must both land in the
+   WP-053 A0 SPEC commit.
+4. Draft A0 SPEC updates for EC-053:
+   - Fix `PlayerId → AccountId` references at lines 19, 64, 123 per §5.1.
+   - Add WP-103 to EC-053 §Before Starting (currently absent).
+   - Update EC-053 §Files to Produce to `007_create_competitive_scores_table.sql`.
+   - Confirm the `loadReplay` import boundary: WP-053's
+     `competition.logic.ts` imports `loadReplay` from
+     `../replay/replay.logic.js` (intra-server-layer dependency,
+     allowed; mirrors WP-052 cross-directory pattern).
+5. Land A0 SPEC on `main` per the WP-052 commit topology pattern.
+6. Cut the WP-053 execution branch from `main` after A0 lands.
+7. Stash unrelated WP-097 / WP-098 governance work-in-progress in
    the working tree (per §1) before staging anything for Commit A.
 6. Mirror the WP-052 implementation patterns where applicable:
    `ext_id ↔ player_id` CTE inside SQL; `Result<T>` discriminated
