@@ -161,7 +161,7 @@ psql -U postgres -d legendary_arena -c "SELECT count(*) FROM legendary.rules;"
 ### Step 3b — Start the game server locally
 
 ```pwsh
-node --env-file=.env apps/server/src/server.mjs
+node --env-file=.env apps/server/src/index.mjs
 ```
 
 The server should log: port, rules count, and NODE_ENV. Verify the
@@ -171,6 +171,27 @@ health endpoint in a second terminal:
 curl http://localhost:8000/health
 # Expected: {"status":"ok"}
 ```
+
+#### Smoke-test helper scripts
+
+For repeated browser smoke tests, two PowerShell helpers in `scripts/`
+wrap the manual commands above with port-collision handling and
+environment-variable hygiene (a persistent User-scope `DATABASE_URL`
+otherwise shadows the `.env` localhost binding and breaks the rules
+loader):
+
+```pwsh
+# Window A — game server (clears DATABASE_URL override, runs index.mjs)
+pwsh scripts/Start-SmokeTest.ps1 -ServerOnly
+
+# Window B — arena-client Vite dev on strict port 5173 (CORS-aligned)
+pwsh scripts/Start-DevClient.ps1
+```
+
+Pass `-KillStaleListeners` to either script to first reclaim the
+relevant ports from zombie processes. See
+[docs/07-CLI-REFERENCE.md](07-CLI-REFERENCE.md#local-smoke-test-scripts)
+for details.
 
 ### Step 3c — External connections
 

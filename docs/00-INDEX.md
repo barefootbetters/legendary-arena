@@ -82,6 +82,7 @@ mindmap
 - **Theme Data Model** → `docs/ai/work-packets/WP-055-theme-data-model.md`
 - **Keyword & Rule Glossary** → `docs/ai/work-packets/WP-060-keyword-rule-glossary-data.md`
 - **Registry Viewer** → `apps/registry-viewer/CLAUDE.md` (architecture) + `HISTORY-modern-master-strike.md` (predecessor)
+- **Local tooling & smoke tests** → [`scripts/README.md`](../scripts/README.md) — PowerShell helpers (`Start-SmokeTest.ps1`, `Start-DevClient.ps1`) + diagnostics; full descriptions in [07-CLI-REFERENCE.md §Local Smoke Test Scripts](07-CLI-REFERENCE.md#local-smoke-test-scripts).
 
 ---
 

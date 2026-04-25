@@ -235,6 +235,73 @@ and exit with code 1 on failure with full-sentence error messages.
 
 ---
 
+## Local Smoke Test Scripts
+
+PowerShell helpers for the manual smoke-test workflow described in
+[docs/04-DEVELOPMENT-SETUP.md](04-DEVELOPMENT-SETUP.md#step-3b--start-the-game-server-locally).
+They wrap the raw `node --env-file=.env apps/server/src/index.mjs` and
+`pnpm --filter @legendary-arena/arena-client dev` commands with
+port-collision handling and environment-variable hygiene.
+
+### `scripts/Start-SmokeTest.ps1` — Game server + optional Vite spawn
+
+```pwsh
+pwsh scripts/Start-SmokeTest.ps1
+```
+
+**What it does:**
+
+| Step | Action |
+|---|---|
+| 1 | Verify `.env` exists at the repo root |
+| 2 | (Optional, `-KillStaleListeners`) Kill any process holding 8000 / 5173-5176 |
+| 3 | Clear process-scope `DATABASE_URL` override (so `--env-file=.env` wins) |
+| 4 | (Default) Spawn arena-client Vite dev in a new PowerShell window |
+| 5 | Run the boardgame.io server in the current window (Ctrl+C to stop) |
+
+**Flags:**
+
+- `-ServerOnly` — skip the Vite spawn (pair with `Start-DevClient.ps1` instead)
+- `-KillStaleListeners` — reclaim ports before starting
+
+**Why the DATABASE_URL clear matters:** Node's `--env-file` is fallback-only;
+it never overrides existing process env vars. A persistent User-scope
+`DATABASE_URL` (e.g., pointing at a remote dev Postgres) shadows the .env
+localhost binding and the rules loader fails with `getaddrinfo ENOTFOUND`.
+
+### `scripts/Start-DevClient.ps1` — Arena client Vite dev (strict 5173)
+
+```pwsh
+pwsh scripts/Start-DevClient.ps1
+```
+
+Runs `pnpm --filter @legendary-arena/arena-client dev --port 5173 --strictPort`.
+The `--strictPort` flag makes Vite fail fast if 5173 is held rather than
+silently bumping to 5174 — important because the boardgame.io server's
+CORS allow-list permits only `http://localhost:5173`. A bumped port would
+silently break every fetch and WebSocket from the browser.
+
+**Flags:**
+
+- `-KillStaleListeners` — reclaim 5173-5176 before starting
+
+### Recommended pairing
+
+```pwsh
+# Window A — game server only (skip the auto-spawn)
+pwsh scripts/Start-SmokeTest.ps1 -ServerOnly
+
+# Window B — arena-client Vite dev on strict 5173
+pwsh scripts/Start-DevClient.ps1
+```
+
+Open `http://localhost:5173/` in a browser and follow the smoke-test
+steps in the relevant Work Packet's session prompt or post-mortem
+§Manual Smoke Test (e.g., post-mortem §10 of WP-090 for the live
+match flow).
+
+---
+
 ## Script Conventions
 
 All CLI tools in this project follow these rules:
