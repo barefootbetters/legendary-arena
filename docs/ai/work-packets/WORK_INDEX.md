@@ -1248,19 +1248,52 @@ These packets ship the game and keep it running.
   pre-WP-051 precedent). Commits use `EC-051:` on code; `SPEC:` on
   pre-flight and governance close; `WP-051:` never used (P6-36).
 
-- [ ] WP-052 — Player Identity, Replay Ownership & Access Control ✅ Reviewed
+- [x] WP-052 — Player Identity, Replay Ownership & Access Control ✅ Reviewed — Done 2026-04-25 (Commit A `fd769f1`)
   Dependencies: WP-051, WP-004, WP-027
-  Notes: Introduces `PlayerId` (branded string, UUID v4), `PlayerAccount`,
-  `GuestIdentity`, `PlayerIdentity` discriminated union; `ReplayOwnership`
-  contracts with `ReplayVisibility` (`private` | `link` | `public`),
-  defaulting to `private`; guest players can play and export replays without
-  an account — core gameplay is never gated; account players unlock
-  server-side replay persistence, leaderboard submission, and shareable
-  links; PostgreSQL tables `legendary.players` and `legendary.replay_ownership`;
-  identity affects access and visibility only — never gameplay, RNG, scoring,
-  or engine execution; identity types live in `apps/server/` — never in
-  `packages/game-engine/`; GDPR-compliant deletion; 30-day minimum retention
-  per `13-REPLAYS-REFERENCE.md`; does NOT modify WP-027 or WP-051 contracts
+  Notes: Introduces `AccountId` (branded string per D-5201; renamed
+  from draft-time `PlayerId` to avoid collision with the engine
+  `PlayerId` per D-8701; UUID v4 from `node:crypto.randomUUID()` with
+  injectable test stub), `PlayerAccount` (7 readonly fields),
+  `GuestIdentity` (3 readonly fields with `isGuest: true` discriminant),
+  `PlayerIdentity` discriminated union, `Result<T>` + `IdentityErrorCode`
+  structured error shape; `ReplayOwnershipRecord` (7 readonly fields,
+  `expiresAt: string | null`) with `ReplayVisibility` (`private` |
+  `link` | `public`) defaulting to `private`; `DEFAULT_RETENTION_POLICY`
+  (`{minimumDays: 30, defaultDays: 90, extendedDays: null}`); guest
+  players play and export replays without an account — core gameplay
+  never gated; account players unlock server-side replay persistence,
+  leaderboard submission, and shareable links; PostgreSQL tables
+  `legendary.players` (UNIQUE email + ext_id; idempotent CREATE TABLE)
+  and `legendary.replay_ownership` (UNIQUE (player_id, replay_hash) for
+  race-safe idempotency via the locked `INSERT … ON CONFLICT DO UPDATE
+  … RETURNING` pattern per PS-6); identity affects access and visibility
+  only — never gameplay, RNG, scoring, or engine execution; all eight
+  identity files live under `apps/server/src/identity/` per D-5202 —
+  zero `boardgame.io` / `@legendary-arena/game-engine` imports
+  (grep-verified); GDPR `deletePlayerData` runs in a single
+  BEGIN/COMMIT transaction and returns audit counts only — no queue,
+  no scheduler, no blob purge (PS-12 / D-5207-pending). Email
+  canonicalized (trim + lowercase) on every insert AND every lookup
+  per PS-9; `displayName` validated for length 1-64 and control-character
+  rejection per PS-10. Server baseline `19/3/0` → `31/5/0` (with 6
+  skipped when `TEST_DATABASE_URL` unset; locked `{ skip: 'requires
+  test database' }` reason); engine baseline `513/115/0` unchanged.
+  Three-commit topology: A0 SPEC `17604ca` (WP-052 v1.3 + EC-052
+  rewrite + DECISIONS D-5201/5202/5203); A `EC-052:` `fd769f1`
+  (8 files: 4 `.ts` source + 2 `.test.ts` + 2 `.sql` migrations);
+  B SPEC governance close (this commit: STATUS.md + WORK_INDEX.md
+  WP-052 `[ ]` → `[x]` + EC_INDEX.md EC-052 row + 01.6 post-mortem).
+  01.5 NOT INVOKED (zero `LegendaryGameState` field, zero
+  `buildInitialGameState` shape change, zero new moves, zero new phase
+  hooks). 01.6 post-mortem MANDATORY per four triggers (new long-lived
+  abstractions, new contract consumed by future WPs, new canonical
+  readonly arrays `AUTH_PROVIDERS` + `REPLAY_VISIBILITY_VALUES`, new
+  persistence surface) — delivered at
+  `docs/ai/post-mortems/01.6-WP-052-player-identity-replay-ownership.md`
+  covering all 12 mandatory checks. Vision trailer on Commit A:
+  `Vision: §3, §11, §18, §19, §22, §24, NG-1, NG-3, Financial
+  Sustainability`. Commits use `EC-052:` on code; `SPEC:` on
+  pre-flight and governance close (`WP-052:` forbidden per P6-36).
 
 - [ ] WP-053 — Competitive Score Submission & Verification ✅ Reviewed
   Dependencies: WP-048, WP-051, WP-052, WP-027, WP-004
