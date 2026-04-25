@@ -1,9 +1,170 @@
-<script setup lang="ts">
+<script lang="ts">
+import { defineComponent, onBeforeUnmount, onMounted, ref } from 'vue';
+
 import ArenaHud from './components/hud/ArenaHud.vue';
+import LobbyView from './lobby/LobbyView.vue';
+import {
+  createLiveClient,
+  type LiveClientHandle,
+} from './client/bgioClient';
+import { serverUrl } from './lobby/lobbyApi';
+
+type AppRoute = 'fixture' | 'live' | 'lobby';
+
+interface LiveRouteParams {
+  matchID: string;
+  playerID: string;
+  credentials: string;
+}
+
+interface ParsedQuery {
+  fixtureName: string | null;
+  live: LiveRouteParams | null;
+}
+
+// why: defineComponent({ setup() { return {...} } }) is required (NOT
+// <script setup>) because the template references non-prop bindings — the
+// `route`, `matchID`, `playerID`, and `hasSnapshot` values — that under the
+// @legendary-arena/vue-sfc-loader separate-compile pipeline only reach
+// `_ctx` when explicitly returned from setup() (D-6512 / P6-30; precedent
+// matches ArenaHud + ReplayFileLoader).
+
+function readQueryParam(
+  params: URLSearchParams,
+  key: string,
+): string | null {
+  const value = params.get(key);
+  if (value === null || value === '') {
+    return null;
+  }
+  return value;
+}
+
+function parseQuery(search: string): ParsedQuery {
+  const params = new URLSearchParams(search);
+
+  const fixtureName = readQueryParam(params, 'fixture');
+
+  const matchID = readQueryParam(params, 'match');
+  const playerID = readQueryParam(params, 'player');
+  const credentials = readQueryParam(params, 'credentials');
+
+  let live: LiveRouteParams | null = null;
+  if (matchID !== null && playerID !== null && credentials !== null) {
+    live = { matchID, playerID, credentials };
+  }
+
+  return { fixtureName, live };
+}
+
+function selectRoute(parsed: ParsedQuery): AppRoute {
+  // why: route discriminator precedence is `fixture > live > lobby`. The
+  // fixture branch short-circuits live wiring so WP-061's offline/testing
+  // UX and the team's reproducible bug-report mechanism stay intact even
+  // when live query params are also present.
+  if (parsed.fixtureName !== null) {
+    return 'fixture';
+  }
+  if (parsed.live !== null) {
+    return 'live';
+  }
+  // why: missing or empty `match`/`player`/`credentials` fall back to the
+  // lobby silently. Half-mounting the live branch with partial params would
+  // propagate undefined strings into boardgame.io and into the URL, so the
+  // admission gate rejects any incomplete set (matches WP-061's fixture
+  // silent-no-op precedent).
+  return 'lobby';
+}
+
+export default defineComponent({
+  name: 'App',
+  components: { ArenaHud, LobbyView },
+  props: {
+    // why: `searchOverride` is a testing seam. Production callers never pass
+    // it — `null` means "read from window.location.search at setup time".
+    // Tests inject the query string directly because jsdom's window.location
+    // is non-configurable, which rules out redefining it per-test.
+    searchOverride: {
+      type: String as () => string | null,
+      default: null,
+    },
+  },
+  setup(props) {
+    const rawSearch =
+      props.searchOverride ??
+      (typeof window !== 'undefined' ? window.location.search : '');
+    const parsed = parseQuery(rawSearch);
+    const route: AppRoute = selectRoute(parsed);
+    const liveParams = parsed.live;
+
+    const matchID = liveParams?.matchID ?? '';
+    const playerID = liveParams?.playerID ?? '';
+
+    const liveClient = ref<LiveClientHandle | null>(null);
+    // why: `import.meta.env` is Vite-provided; in the node:test runner there
+    // is no Vite transform, so the property is undefined. Optional chaining
+    // keeps tests (and any non-Vite consumer) from crashing at setup time.
+    const isDev = Boolean(import.meta.env?.DEV);
+
+    onMounted(() => {
+      if (route === 'live' && liveParams !== null) {
+        const handle = createLiveClient({
+          matchID: liveParams.matchID,
+          playerID: liveParams.playerID,
+          credentials: liveParams.credentials,
+          serverUrl,
+        });
+        handle.start();
+        liveClient.value = handle;
+      }
+    });
+
+    onBeforeUnmount(() => {
+      const handle = liveClient.value;
+      if (handle !== null) {
+        handle.stop();
+        liveClient.value = null;
+      }
+    });
+
+    return {
+      route,
+      matchID,
+      playerID,
+      isDev,
+    };
+  },
+});
 </script>
 
 <template>
-  <main>
-    <ArenaHud />
+  <main data-testid="app-root" :data-route="route">
+    <template v-if="route === 'fixture'">
+      <ArenaHud />
+    </template>
+    <template v-else-if="route === 'live'">
+      <ArenaHud />
+      <footer
+        v-if="isDev"
+        class="live-diagnostics"
+        data-testid="app-live-diagnostics"
+      >
+        <span>match: {{ matchID }}</span>
+        <span>player: {{ playerID }}</span>
+      </footer>
+    </template>
+    <template v-else>
+      <LobbyView />
+    </template>
   </main>
 </template>
+
+<style scoped>
+.live-diagnostics {
+  display: flex;
+  gap: 1rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  opacity: 0.65;
+}
+</style>
