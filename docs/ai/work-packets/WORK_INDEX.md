@@ -1853,7 +1853,7 @@ These packets ship the game and keep it running.
 
 - [ ] **(deferred placeholder)** Classify `apps/registry-viewer/` in `docs/ai/REFERENCE/02-CODE-CATEGORIES.md` — pre-existing governance gap surfaced as WP-066 copilot finding #13, inherited silently by WP-094 and WP-096 (third inheritance pass; flagged in WP-096 pre-flight RS-3 + copilot check finding #13). Two acceptable resolutions: (a) extend the existing `client-app` row (D-6511) to cover both `apps/arena-client/` and `apps/registry-viewer/`; (b) add a new `client-app-viewer` row with its own DECISIONS.md entry. Either path needs an authorising D-entry plus updates to the table at `02-CODE-CATEGORIES.md:36-49` and the per-category prose at `:234-270`. Scope is docs-only — no engine, registry, server, or app code touched. No dependencies; can land standalone. The next viewer-touching WP should arrive with the classification already landed rather than inheriting the gap a fourth time.
 
-- [ ] WP-103 — Server-Side Replay Storage & Loader — Drafted 2026-04-25; lint-gate self-review PASS; pre-flight pending.
+- [x] WP-103 — Server-Side Replay Storage & Loader — **Done 2026-04-25 (Commit A `fe7db3e`).** Drafted 2026-04-25; lint-gate self-review PASS; pre-flight READY TO EXECUTE; A0 SPEC bundle landed at `d150704`; Commit A landed at `fe7db3e`; Commit B (governance close) lands D-10302 + D-10303 + STATUS block + 01.6 post-mortem.
   Dependencies: WP-027, WP-052, WP-004
   Notes: Predecessor packet for WP-053. WP-053's EC-053 §Before
   Starting line 21 requires "an existing replay loader by

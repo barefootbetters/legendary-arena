@@ -9859,6 +9859,54 @@ This decision codifies the same discipline for `apps/server/src/replay/`. It int
 
 ---
 
+### D-10302 — `legendary.replay_blobs.replay_hash` is `text PRIMARY KEY` (not `bigserial + text UNIQUE`)
+
+**Type:** Persistence Schema
+**Packet:** WP-103 / EC-111 (post-execution governance close)
+**Date:** 2026-04-25
+
+**Decision:** The `legendary.replay_blobs` table introduced by WP-103 uses `replay_hash text PRIMARY KEY` as its sole identifier. There is no separate internal `bigserial` `replay_blob_id` column and no `text UNIQUE` secondary key. The `replay_hash` IS the natural key. Status: Immutable for the WP-103 surface and any future replay-storage table that addresses the same content-addressed namespace.
+
+**Rationale:** WP-052's `legendary.players` and `legendary.replay_ownership` tables (D-5202 / D-5203) follow a deliberate `bigserial player_id PRIMARY KEY + ext_id text UNIQUE` pattern: the bigint is internal (efficient FK target, never exposed at the application surface), and the text `ext_id` (UUID v4) is the cross-service identifier exposed as `AccountId`. That two-column pattern is correct for identity, where the application layer needs a stable cross-service handle (`AccountId`) and the database wants a compact internal handle (`player_id`).
+
+WP-103's content-addressed replay-storage surface has no analogous use case. The `replay_hash` is *already* a cryptographic hash from WP-027's `computeStateHash`; it is already the application-layer identifier (`storeReplay(replayHash, …)`, `loadReplay(replayHash, …)`); it is already collision-resistant by construction (SHA-256). Introducing a `bigserial` parallel identifier would (a) add a column with no consumer, (b) require a `UNIQUE (replay_hash)` constraint anyway to keep `loadReplay`'s `WHERE replay_hash = $1` query efficient, (c) double the join complexity if a future surface needs to reference the row, and (d) blur the content-addressed semantic by suggesting the row has an identity independent of its content.
+
+The single-column `text PRIMARY KEY` schema is structurally simpler, has equivalent index efficiency under PostgreSQL (B-tree index on a `text` column is functionally equivalent to a B-tree index on `bigserial` for point lookups), and matches the content-addressed semantic exactly.
+
+**Failure mode if violated:** Adding a `bigserial replay_blob_id` later would require a migration that introduces the column, populates it for all existing rows, swaps the PK, and updates every reader. Future WPs (WP-053, WP-054) would have to choose whether to reference the bigint or the hash, fragmenting the API surface. Locking the text-PK choice at WP-103 establishes the contract before any consumer arrives.
+
+**Status:** Immutable.
+
+**Citation:** WP-103-replay-storage-loader.md §Locked Contract Values; EC-111 §Locked Values; `data/migrations/006_create_replay_blobs_table.sql`; D-5202 (the `bigserial + ext_id text UNIQUE` precedent that this decision deliberately diverges from, with rationale); D-2706 (`packages/game-engine/src/replay/replay.types.ts:34` — canonical `ReplayInput` declaration); WP-027 (`computeStateHash` — the source of `replay_hash` values); `docs/ai/REFERENCE/00.2-data-requirements.md §1` (the `legendary.*` PostgreSQL namespace; this decision documents the divergence from the bigserial-PK convention noted there).
+
+---
+
+### D-10303 — `legendary.replay_blobs.replay_input` is `jsonb NOT NULL` (immutable; no `updated_at`)
+
+**Type:** Persistence Schema
+**Packet:** WP-103 / EC-111 (post-execution governance close)
+**Date:** 2026-04-25
+
+**Decision:** The `legendary.replay_blobs.replay_input` column is declared `jsonb NOT NULL`. The table has no row-mutation timestamp column (no `updated_at`, no equivalent), and `storeReplay` uses `INSERT … ON CONFLICT (replay_hash) DO NOTHING` semantics — the alternative update-on-conflict pattern is forbidden. Rows are content-addressed and immutable by design: a stored blob's hash IS its identity, so any "mutation" would by definition produce a different row, not modify an existing one. Status: Immutable for the WP-103 surface.
+
+**Rationale:** Three storage-shape alternatives were considered:
+
+- **`bytea`** would store an opaque byte stream. It saves no space relative to `jsonb` (PostgreSQL's `jsonb` is already a compact binary representation), and it loses *all* shape queryability — future audit, analytics, or schema-evolution tooling would have to deserialize every row in application code to inspect any field. Rejected.
+- **`text`** would store the JSON serialization as a string. It still loses query-time indexability (no `->`, `->>`, `@>`, or GIN index over JSON paths) and adds runtime cost on every read (manual JSON deserialization in the application layer, with the double-decode hazard documented in WP-103's `loadReplay` `// why:` comment). Rejected.
+- **`json`** (without the binary `b`) preserves shape but stores the original text exactly, including whitespace and key ordering. It does not decompose into the indexable binary tree representation. Rejected — `jsonb` strictly dominates `json` for this use case.
+
+`jsonb` was chosen because it (a) preserves JS-object shape on read via `pg`'s `jsonb` codec at the driver level (no manual deserialization in application code; no double-decode hazard), (b) supports future GIN-indexed queries against `replay_input` paths if audit / analytics use cases emerge, and (c) preserves the `JSON.stringify` round-trip property of `ReplayInput` as a Class 2 Configuration value per `.claude/rules/persistence.md`.
+
+The immutability guarantee — no row-mutation column, `DO NOTHING` semantic — is locked at the schema and the SQL pattern simultaneously. Content-addressed rows are immutable by definition: mutating the blob would change the canonical `replay_hash` identifier, so the resulting row is a *different* row, not an updated version of the same one. Observing two distinct `replay_input` values for the same `replay_hash` should be treated as a security incident (a SHA-256 collision, statistically infeasible) rather than a data-update opportunity. The `DO NOTHING` semantic preserves the first-writer-wins invariant: the first successful insert defines the row's content forever.
+
+**Failure mode if violated:** A future WP that swapped `jsonb` for `bytea` or `text` would lose query-time shape access, breaking any audit or schema-evolution tooling that relies on path queries; adding an `updated_at` column without explicit DECISIONS approval would imply that rows are mutable and would invite update-on-conflict patterns that violate the content-addressed invariant; switching to `DO UPDATE` would mean a same-hash insert with different content silently overwrites instead of raising the security-incident signal that two distinct contents share a hash.
+
+**Status:** Immutable.
+
+**Citation:** WP-103-replay-storage-loader.md §Locked Contract Values; EC-111 §Locked Values + §Common Failure Smells; `data/migrations/006_create_replay_blobs_table.sql`; `apps/server/src/replay/replay.logic.ts` (`storeReplay` SQL pattern verbatim); `.claude/rules/persistence.md §Class 2 — Configuration State` (`ReplayInput` is JSON-serializable Configuration data); WP-027 (`computeStateHash` — content addressing); D-2801 (engine projection-aliasing precedent — does not apply to server-layer DB queries because `pg`'s `jsonb` codec returns a fresh JS object on every read).
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
