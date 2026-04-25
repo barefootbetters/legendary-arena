@@ -10,6 +10,14 @@
 - [ ] `pnpm --filter @legendary-arena/registry build` exits 0
 - [ ] `pnpm --filter @legendary-arena/registry test` exits 0 (baseline: 3 tests / 1 suite / 0 failing)
 - [ ] `apps/registry-viewer/src/lib/themeClient.ts` and `apps/registry-viewer/CLAUDE.md` are quarantined in `stash@{0}` "wp-055-quarantine-viewer" (stashed 2026-04-20 per pre-flight PS-4; do NOT pop during WP-055 execution)
+- [ ] Pre-flight grep completed (WP-042 reality-reconciliation precedent — confirm
+      every Locked Value below appears verbatim in current source before coding;
+      session prompts written days earlier may have drifted from `main`):
+      - `packages/registry/src/schema.ts` — Zod patterns, export shape
+      - `packages/registry/src/index.ts` — public-surface ordering and grouping
+      - One representative `content/themes/*.json` — current v2 field shape
+      - `apps/registry-viewer/src/` (read-only) — confirm no inbound imports
+        will break when `theme.schema.ts` exports land
 
 ## Locked Values (do not re-derive)
 - `themeSchemaVersion: 2` (literal; `z.literal(2)`, not generic `number`)
@@ -69,7 +77,17 @@
 - [ ] `docs/ai/STATUS.md` updated — theme data model v2 established
 - [ ] `docs/ai/DECISIONS.md` updated — D-5501 … D-5509 confirmed still valid; no new D-entries required unless pre-flight surfaces new decisions
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` WP-055 checked off with date + v2 title correction
-- [ ] `docs/ai/post-mortems/01.6-WP-055-theme-data-model.md` produced (mandatory per pre-flight — new long-lived abstraction + contract consumed by future WPs)
+- [ ] `docs/ai/post-mortems/01.6-WP-055-theme-data-model.md` produced
+      (mandatory per pre-flight — new long-lived abstraction + contract
+      consumed by future WPs). The post-mortem must be analytical, not
+      ceremonial; document at minimum:
+      - schema-versioning friction points (v1→v2 migration cost, what would
+        change if a v3 bump landed tomorrow)
+      - test-count preservation effectiveness (Part A/B/C wrapping per
+        WP-033 P6-23 — did the convention hold up under execution?)
+      - any authoring pain discovered during the v1→v2 migration of all 68
+        shipped themes (manual-edit cost per file, drift between
+        `index.json` and on-disk filenames, etc.)
 
 ## Common Failure Smells
 - §D.8 directory scan uses `readdir()` instead of `index.json` manifest → aggregate files (`00-ALL_THEMES_COMBINED.json`, `01-ALL_THEMES_COMBINED.json`, `index.json` itself) fail validation

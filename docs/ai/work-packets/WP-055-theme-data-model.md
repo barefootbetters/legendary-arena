@@ -48,6 +48,25 @@ Goal 10: "Content as Data."** Themes become first-class citizens in the registry
 
 This packet converts comic-accurate theming from a wishlist into architecture.
 
+### Music Field Semantics (Non-Normative)
+
+The three v2 music fields carry an implicit editorial relationship that the
+schema deliberately does **not** enforce. Future consumers must not infer
+validation rules from this section — it exists solely to prevent a later WP
+from "tightening" the schema with ordering constraints.
+
+- `musicTheme` — human-readable mood or category label (e.g., "Terror / Horror Sting")
+- `musicAIPrompt` — authoring provenance and intent (the prompt used to
+  generate the score)
+- `musicAssets` — published audio URLs hosted at `music.barefootbetters.com`
+
+**No dependency or ordering is enforced between these fields at the registry
+layer.** A theme may ship `musicAssets` without `musicTheme`, or `musicTheme`
+without `musicAssets`. Consumers must treat all three as independent, optional
+editorial data. Any future WP proposing a cross-field rule (e.g., "if assets
+exist, theme must exist") must first land a `DECISIONS.md` entry and a
+schema-version bump per D-5504.
+
 ---
 
 ## Goal
@@ -133,6 +152,12 @@ Before writing a single line:
 - **No PAR scoring** — difficulty scoring deferred to later WPs
 - **Immutable IDs** — once published, `themeId` never changes
 - **Schema evolution via versioning only**, never mutation
+- **Array order is intentional and must be preserved by consumers.** Themes
+  express authorial emphasis through ordering — `villainGroupIds[0]` may be
+  the featured or primary group, `heroDeckIds[0]` may be the marquee hero.
+  Arrays in `setupIntent` and `playerCount.recommended` are sequences, not
+  sets. Loaders, projectors, and UI surfaces must never sort, deduplicate by
+  identity, or otherwise reorder them.
 
 **Session protocol:**
 - If any contract, field name, or reference is unclear, stop and ask the human
