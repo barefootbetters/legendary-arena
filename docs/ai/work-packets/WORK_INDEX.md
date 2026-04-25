@@ -1613,7 +1613,7 @@ These packets ship the game and keep it running.
   self-compliant `## Vision Alignment` block. See
   [WP-089-engine-playerview-wiring.md](WP-089-engine-playerview-wiring.md).
 
-- [ ] WP-090 — Live Match Client Wiring ⬜ Ready (drafted 2026-04-23; lint-gate PASS; pre-flight bundle registered 2026-04-24)
+- [x] WP-090 — Live Match Client Wiring ✅ Done 2026-04-24 (drafted 2026-04-23; lint-gate PASS; pre-flight bundle registered 2026-04-24; executed at `54b266a`)
   Dependencies: WP-011 (lobby HTTP endpoints), WP-032 (ClientTurnIntent +
   `validateIntent`), WP-061 (arena-client skeleton + `useUiStateStore`),
   WP-089 (engine `playerView` wiring — clients receive `UIState`, not
@@ -1766,6 +1766,8 @@ These packets ship the game and keep it running.
   all preserved. See
   [WP-094-viewer-hero-flatcard-key-uniqueness.md](WP-094-viewer-hero-flatcard-key-uniqueness.md).
 
+- [ ] **(deferred placeholder)** Fix CLI credentials field drift in `apps/server/scripts/join-match.mjs` — D-9001 identifies the buggy script. Two issues: (1) the script omits `playerID` from its POST body; the server auto-assigns a seat which is functionally OK but inconsistent with `create-match.mjs`'s shape; (2) the script reads `result.credentials` after the join response, but the canonical field name is `result.playerCredentials` — meaning the script's printed `credentials:` value is always `undefined`. Scope is CLI-only — no engine, no client, no server logic touched. A future packet may either fix the two bugs in place (preferred — matches `create-match.mjs` shape) or delete the script outright if the lobby UI obsoletes its use case. No dependencies; can land standalone.
+
 ---
 
 ## Pre-Planning System (Parallel-Safe with Phase 4+)
@@ -1885,7 +1887,7 @@ WP-001 (coordination — complete)        │
                     WP-028 + WP-065 → WP-061 → WP-062 (+ WP-029, WP-048)
                                         │          │
                                         │          └── future spectator HUD WP (+ WP-029)
-                                        │          └── future lobby client WP (+ WP-011)
+                                        │          └── WP-090 (+ WP-011, WP-032, WP-061, WP-089)
                                         │          └── future card-tooltip WP (+ registry client access)
                                         │
                                         └── WP-064 (+ WP-028, WP-027)

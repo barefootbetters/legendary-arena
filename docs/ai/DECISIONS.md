@@ -9609,6 +9609,87 @@ This policy prevents schema drift, wording forks, and retroactive renames across
 
 ---
 
+## D-9001 — Lobby Join & List Endpoint Contract (verified against running server)
+
+**Decision:** The arena-client's lobby HTTP helpers consume the boardgame.io v0.50.2 lobby API at three endpoints with the following exact contract, verified against a running `apps/server/src/index.mjs` instance during WP-090 Session Protocol on 2026-04-24. (1) `POST /games/legendary-arena/create` accepts `{ numPlayers: number, setupData: MatchSetupConfig }` and returns `{ matchID: string }`. (2) `POST /games/legendary-arena/:matchID/join` accepts `{ playerID: string, playerName: string }` and returns `{ playerID: string, playerCredentials: string }`. The credentials field is `playerCredentials` — *not* `credentials`. The server also accepts `{ playerName }` alone (auto-assigns next open seat) but the explicit-`playerID` form is canonical. (3) `GET /games/legendary-arena` returns `{ matches: Array<{ matchID: string, players: Array<{ id: number, name?: string }>, setupData?: MatchSetupConfig | null, gameover?: unknown, gameName: string, unlisted: boolean, createdAt: number, updatedAt: number }> }`. The `players[].id` field is a **number**; the `name` key is *absent* from open seats; the `gameover` key is *absent* when the match is ongoing. `apps/arena-client/src/lobby/lobbyApi.ts:listMatches` normalizes to the `LobbyMatchSummary` shape (string ids, explicit-null `gameover`) at exactly one site.
+
+**Rationale:**
+
+- **Verification, not derivation.** The two existing CLI scripts in `apps/server/scripts/` disagree on the join contract: `create-match.mjs` sends `{ playerID, playerName }` and reads `joinResult.playerCredentials`; `join-match.mjs` sends `{ playerName }` alone and reads `result.credentials`. Both cannot be right. Rather than choose one based on inspection, the WP-090 Session Protocol booted the actual server, POSTed both shapes via curl, and inspected the raw responses. Outcome: `create-match.mjs` is correct (`playerCredentials` is the field name); `join-match.mjs` reads a non-existent property and would always return undefined credentials. The CLI fix is filed as a follow-up WP placeholder in WORK_INDEX.md, scope-isolated from arena-client.
+- **`players[].id: number` requires explicit stringification.** Every other ID in the system (engine `CardExtId`, lobby `playerID` request body, URL `?player=` query param) is a `string`. The boardgame.io lobby API surfaces seat indices as numbers, but propagating that exception into the UI would corrupt downstream consumers. `LobbyMatchSummary.players[].id: string` after `String(seat.id)` keeps the typing uniform.
+- **Open-seat detection by `name` absence, not a sentinel.** boardgame.io marks open seats by *omitting* the `name` key, not by setting it to `null` or `""`. `LobbyView.isOpenSeat(seat)` therefore checks `typeof seat.name !== 'string'` — a primitive type guard that handles both the open-seat case and any future server response that erroneously emits `name: null`.
+
+**Status:** Immutable for the v0.50.2 lobby API. An upgrade to a future boardgame.io major version will need a new D-90xx entry that re-verifies the contract against the new server.
+
+**Citation:** WP-090 + EC-090; `apps/arena-client/src/lobby/lobbyApi.ts` (`createMatch`, `listMatches`, `joinMatch`, `LobbyMatchSummary`); `apps/server/scripts/create-match.mjs` (canonical join shape); `apps/server/scripts/join-match.mjs` (buggy — flagged for follow-up); `apps/arena-client/src/lobby/lobbyApi.test.ts` (4 stubbed-fetch tests pinning the contract).
+
+---
+
+## D-9002 — Single Runtime Engine-Import Site in arena-client (carve-out via bgioClient.ts)
+
+**Decision:** `apps/arena-client/src/client/bgioClient.ts` is the **sole** runtime import site for `@legendary-arena/game-engine` in the entire arena-client source tree. Every other arena-client file that needs engine types uses `import type` exclusively. Any future arena-client gameplay WP that requires engine functionality must route through `createLiveClient`'s `submitMove` pass-through or extend `bgioClient.ts` in place. Adding a second runtime engine-import site is a Session Abort Condition.
+
+**Rationale:**
+
+- **Tree-shaking discipline.** Before WP-090, every engine import in arena-client was `import type`, which TypeScript erases at build time. The browser bundle never traversed the engine barrel. WP-090 crosses the threshold by needing the runtime `LegendaryGame` value to wire boardgame.io's `Client({ game: LegendaryGame, ... })`. Concentrating the runtime import to one file keeps the bundle's engine surface minimal and grep-verifiable.
+- **Mixed-import masking defense.** `import { type UIState, LegendaryGame } from '@legendary-arena/game-engine'` and the split form `import { LegendaryGame } from '@legendary-arena/game-engine'; import type { UIState } from '@legendary-arena/game-engine'` compile to identical runtime behavior, but the mixed form can mask a runtime import from a `| grep -v "import type"` filter (FIX-10 copilot guidance). `bgioClient.ts` uses split form only.
+- **Multiline-aware grep gate.** EC-090 §Verification Step 4 specifies a line-by-line PowerShell `Select-String` filter that returns a false positive on `apps/arena-client/src/components/hud/SharedScoreboard.vue:6` (multi-line `import type { ... }` continuation). The multiline-aware regex `^import\s+\{[^}]*\}\s+from\s+'@legendary-arena/game-engine'` returns exactly one match (bgioClient.ts:16) and is the authoritative form going forward. Future EC authoring should adopt it; the line-by-line version is a known measurement defect.
+
+**Status:** Immutable for WP-090 and every future arena-client packet until a deliberate amendment lands.
+
+**Citation:** WP-090 + EC-090; `apps/arena-client/src/client/bgioClient.ts:16`; `apps/arena-client/src/components/hud/SharedScoreboard.vue:2-6` (legitimate multi-line `import type` — false-positive source); `docs/ai/post-mortems/01.6-WP-090-live-match-client-wiring.md` §6.
+
+---
+
+## D-9003 — Credentials in URL Query String (MVP; durable identity deferred to WP-052)
+
+**Decision:** For the WP-090 MVP, the boardgame.io match credentials returned by the join endpoint are propagated to the arena-client at the live route via the URL query string: `?match=<matchID>&player=<playerID>&credentials=<playerCredentials>`. The arena-client does not write `localStorage`, `sessionStorage`, `IndexedDB`, or cookies. Bookmarking or sharing the URL hands credentials to anyone who receives it. Reloading the tab preserves the session because the URL is preserved; closing the tab loses it.
+
+**Rationale:**
+
+- **WP-052 (durable identity) is the right home, not WP-090.** A proper auth/session-token flow (cookies + server-side session table + login UI + logout + refresh) is a multi-WP epic that depends on PostgreSQL persistence, an auth library, a login route, and security review. Squeezing it into WP-090 would balloon scope and delay the first end-to-end live match by weeks. The URL-borne form is the MVP bridge until WP-052 lands.
+- **Browser storage forbidden by EC-090 §Verification Step 7.** `localStorage` / `sessionStorage` / `IndexedDB` are explicit Session Abort Conditions. URL-as-credential-store sidesteps the persistence question entirely.
+- **Trust boundary preserved.** Credentials are still a server-issued opaque secret; the client never computes them, persists them, or exposes them on a network surface other than the WebSocket the boardgame.io client opens. URL-borne credentials are no less secure than the equivalent cookie in a single-tab dev workflow — the tradeoff is durability, not confidentiality.
+
+**Status:** MVP-only. WP-052 (Durable Player Identity) supersedes this entry when it lands; WP-052's first task should be migrating `App.vue`'s URL parser to a session-token reader and deleting the `?credentials=` propagation in `LobbyView.vue`'s submit handler.
+
+**Citation:** WP-090 + EC-090; `apps/arena-client/src/App.vue` (URL parser); `apps/arena-client/src/lobby/LobbyView.vue:submitCreate` + `:joinExisting` (URL writer); `docs/ai/work-packets/WORK_INDEX.md` WP-052 (durable identity placeholder).
+
+---
+
+## D-9004 — `VITE_SERVER_URL` as Sole Origin Variable for arena-client → server
+
+**Decision:** `apps/arena-client/.env.example` declares exactly one environment variable: `VITE_SERVER_URL`, the base URL of the boardgame.io game server. `apps/arena-client/src/lobby/lobbyApi.ts` reads it as `import.meta.env?.VITE_SERVER_URL ?? 'http://localhost:8000'` and exports it as `serverUrl`; every other arena-client file consumes the constant rather than re-deriving the URL. The fallback `http://localhost:8000` is a dev-time convenience matching the Vite dev server's default; production builds (Cloudflare Pages) must inject `VITE_SERVER_URL` as a build-time environment variable so the fallback never reaches production. The optional chain `?.` is required because `import.meta.env` is undefined under `node:test` (the Vite transform does not run there).
+
+**Rationale:**
+
+- **Single source of truth for the origin.** Multiple URL constants drift; one constant cannot. The HTTP helpers (`createMatch` / `listMatches` / `joinMatch`) and the WebSocket transport (`SocketIO({ server: serverUrl })`) all consume the same `serverUrl` import. CORS, environment routing, and reverse-proxy rewrites all key off this single binding.
+- **Per-environment sourcing.** Local: copy `.env.example` to `.env`; the fallback covers the default `pnpm dev` workflow without further config. Cloudflare Pages: the project's build settings inject `VITE_SERVER_URL` (Vite statically inlines it). Production cutover: the production hostname (TBD) is set in the deployment env *before* the build runs. The header comment in `.env.example` documents all three.
+- **Naming follows the Vite convention.** Vite inlines only env vars prefixed with `VITE_`; any other prefix is rejected at build time. `VITE_SERVER_URL` is the minimum-friction form. The codebase's other Vite env consumer (`apps/registry-viewer`) follows the same convention; future arena-client env vars should adopt the same prefix.
+
+**Status:** Immutable until the production deployment hostname is finalized; that change is additive (set the env var in the deployment) and does not require an entry update.
+
+**Citation:** WP-090 + EC-090; `apps/arena-client/.env.example`; `apps/arena-client/src/lobby/lobbyApi.ts:serverUrl`; `apps/arena-client/src/App.vue` + `apps/arena-client/src/client/bgioClient.ts` (consumers).
+
+---
+
+## D-9005 — Query-String Routing Over Vue Router for arena-client App.vue
+
+**Decision:** `apps/arena-client/src/App.vue` selects between three routes (`fixture`, `live`, `lobby`) by parsing `window.location.search` once at component setup time, with a fixed precedence `fixture > live > lobby` and a strict admission gate for the live route (all three of `?match=`, `?player=`, `?credentials=` must be non-empty strings; any missing or empty value falls back silently to `lobby`). No `vue-router` is added, no nested route definitions, no programmatic navigation API beyond `window.location.search = ...` in `LobbyView`'s submit handlers. App.vue exposes a `searchOverride: string | null` prop (default `null`) as a test seam; production callers never pass it.
+
+**Rationale:**
+
+- **Three routes do not justify a router.** The arena-client has exactly three top-level routes today. `vue-router` would add ~20 KB to the bundle, a routing config, navigation guards, and a learning curve, all to replicate what a 30-line `parseQuery` + `selectRoute` pair does in `App.vue` setup. WP-091 used the same minimalism for its Cards/Themes/Loadout three-tab switch (no router); arena-client follows the precedent.
+- **Precedence `fixture > live > lobby` preserves WP-061 invariants.** The fixture path was introduced by WP-061 as the team's reproducible bug-report mechanism (`http://localhost:5173/?fixture=mid-turn` regresses to a committed snapshot). If live params and a fixture name are both present in the URL, fixture wins so the bug-report mechanism is never silently overridden. EC-090 RS-5 locks this precedence; the four bgioClient App-routing tests pin it.
+- **Live admission gate is fail-closed.** Any of the three live params being missing or empty triggers a silent fallback to the lobby, never a half-mounted live branch. Half-mounting would propagate undefined strings into boardgame.io's `Client({ matchID: undefined, ... })` and the URL would become `?credentials=undefined` after the next join. The gate enforces all-three-or-none semantics. Documented in EC-090 RS-6.
+- **Test seam (`searchOverride`) is forced by jsdom constraints.** jsdom's default URL is `about:blank`, and `window.history.replaceState` rejects relative or HTTP URLs against that base; `Object.defineProperty(window, 'location', ...)` fails because `location` is non-configurable. The `searchOverride: string | null` prop lets tests pass the query string directly via `mount(App, { props: { searchOverride: '?match=...' } })`. Production code never uses it.
+
+**Status:** Immutable for the three-route surface. Adding a fourth route (e.g., a future spectator path) extends the `AppRoute` union and the `selectRoute` switch in one place; vue-router remains deferred until the route count or feature complexity justifies the dependency.
+
+**Citation:** WP-090 + EC-090; `apps/arena-client/src/App.vue` (`AppRoute`, `parseQuery`, `selectRoute`, `searchOverride` prop); `apps/arena-client/src/client/bgioClient.test.ts` (`describe('App routing')` 4 tests pinning the precedence + admission gate); `apps/arena-client/src/main.ts:25` (WP-061 fixture harness — gated by `import.meta.env.DEV`).
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
