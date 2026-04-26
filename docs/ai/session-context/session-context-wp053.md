@@ -24,6 +24,28 @@
 > Substantive guidance unchanged — only the temporal framing and
 > the new prerequisite chain.
 >
+> **Revised:** 2026-04-25 — post-WP-053a-execution reconciliation.
+> WP-053a (PAR Artifact Carries Full `ScenarioScoringConfig`) executed
+> 2026-04-25 with three commits on the `wp-053a-par-artifact-scoring-config`
+> topic branch, fast-forwarded into `main`: `fbbedb5` (`INFRA:` —
+> commit-msg hook now accepts lowercase letter suffix in EC-### prefix
+> + lookup, unblocking `EC-053a:` commits), `e5b9d15` (Commit A
+> `EC-053a:` — eleven files extending PAR artifact + index + gate
+> end-to-end with `scoringConfig: ScenarioScoringConfig`; D-5306b
+> inline materialization preserves D-5103 fs-free gate; engine
+> baseline `513/115/0` → `522/116/0` and server `36/6/0` → `38/6/0`
+> per the PS-5 lock), `d896690` (Commit B `SPEC:` governance close
+> — STATUS / WORK_INDEX / EC_INDEX flips + 01.6 post-mortem covering
+> all 14 mandatory audits + pre-commit review artifact). D-5306
+> status flipped from "Active" to "Active — landed at `e5b9d15`".
+> WP-053 is now **UNBLOCKED**: `submitCompetitiveScore` can source
+> `scoringConfig` directly from `checkParPublished(scenarioKey).scoringConfig`,
+> making the WP-053 flow step 12 (`computeParScore(config) === parValue`)
+> defense-in-depth rather than a primary safety net. §1 main-HEAD
+> reference and §6 prerequisite status are updated below.
+> Substantive WP-053 guidance unchanged — only the prerequisite
+> chain reflects WP-053a's actual landing.
+>
 > **This file is not authoritative.** If conflict arises with
 > `docs/ai/ARCHITECTURE.md`, `.claude/rules/*.md`, WP-053, or EC-053,
 > those documents win. See §8 priority chain.
@@ -38,13 +60,19 @@
 
 `main` HEAD at session-context original authoring: **`a8f81ff`** (`INFRA: document retained topic branches in docs/ai/BRANCHES.md`).
 
-Post-WP-103 + post-WP-053a-A0-SPEC `main` HEAD (current): **`49ee0be`** (`SPEC: WP-053 + EC-053 — fold WP-103 + WP-053a as explicit prerequisites in §Assumes / §Before Starting`). Intermediate landed commits relevant to WP-053, in chronological order:
+Post-WP-103 + post-WP-053a-A0-SPEC `main` HEAD (intermediate): **`49ee0be`** (`SPEC: WP-053 + EC-053 — fold WP-103 + WP-053a as explicit prerequisites in §Assumes / §Before Starting`).
+
+Post-WP-053a-execution `main` HEAD (current): **`d896690`** (`SPEC: WP-053a / EC-053a governance close — D-5306 marked landed; post-mortem; STATUS / WORK_INDEX / EC_INDEX flips`). Intermediate landed commits relevant to WP-053, in chronological order:
 
 - WP-103 (Replay Storage & Loader) Commit A `EC-111:` at `fe7db3e` (2026-04-25)
 - WP-103 Commit B `SPEC:` governance close at `f74d180` (2026-04-25)
 - WP-103 retrospective pre-commit review `SPEC:` at `c8a2421` (2026-04-25)
 - WP-053a A0 SPEC bundle at `1734475` (2026-04-25; introduces D-5306 / D-5306a-d and the WP-053a packet draft)
-- WP-053 / EC-053 prerequisite folds `SPEC:` at `49ee0be` (2026-04-25; this very revision's parent)
+- WP-053a A0 amendment `SPEC: eafe0ee` (2026-04-25; PS-1..PS-5 corrections per pre-flight)
+- WP-053 / EC-053 prerequisite folds `SPEC:` at `49ee0be` (2026-04-25)
+- WP-053a `INFRA:` hook fix at `fbbedb5` (2026-04-25; commit-msg accepts lowercase EC-### letter suffix)
+- WP-053a Commit A `EC-053a:` at `e5b9d15` (2026-04-25; eleven-file contract extension end-to-end across the PAR pipeline)
+- WP-053a Commit B `SPEC:` governance close at `d896690` (2026-04-25; this is the new main HEAD)
 
 Recent landed history relevant to WP-053:
 
@@ -247,7 +275,7 @@ player_id` mapping pattern.
 
 ---
 
-## 6. Hard Prerequisite Blockers — WP-103 Resolved (landed 2026-04-25); WP-053a Now Blocking
+## 6. Hard Prerequisite Blockers — WP-103 Resolved (landed 2026-04-25); WP-053a Resolved (landed 2026-04-25)
 
 EC-053 §Before Starting line 21 (original verbatim text):
 
@@ -275,13 +303,32 @@ is preserved in spirit — a test-only mock still does not satisfy the
 prerequisite; the application must use the real `loadReplay` at
 runtime.
 
-### 6.2 New Blocker — WP-053a (D-5306 Option A)
+### 6.2 New Blocker — WP-053a (D-5306 Option A) — RESOLVED 2026-04-25
 
-**Status (2026-04-25): BLOCKING.** D-5306 was resolved 2026-04-25
-as Option A: `ScenarioScoringConfig` is bundled into the PAR
-publication and flows to the server through `checkParPublished`'s
-extended return shape `{ parValue, parVersion, source, scoringConfig }`,
-making config / PAR drift structurally impossible.
+**Status (2026-04-25): RESOLVED.** WP-053a executed 2026-04-25 with
+three commits on the `wp-053a-par-artifact-scoring-config` topic
+branch, fast-forwarded into `main`:
+
+- `fbbedb5` `INFRA:` — commit-msg hook accepts lowercase EC-### letter
+  suffix (`[A-Za-z]?` + `find -iname`), unblocking `EC-053a:` commits
+- `e5b9d15` Commit A `EC-053a:` — eleven-file end-to-end PAR contract
+  extension across `data/scoring-configs/` (README + canonical example
+  JSON), `packages/game-engine/src/scoring/scoringConfigLoader.{ts,test.ts}`,
+  `packages/game-engine/src/simulation/par.{storage,storage.test,aggregator.test}.ts`,
+  `packages/game-engine/src/index.ts`, and
+  `apps/server/src/par/parGate.{mjs,test.ts}`. Vision trailer
+  `Vision: §3, §22, §24` per WP-053a §Vision Alignment.
+- `d896690` Commit B `SPEC:` — governance close (DECISIONS D-5306
+  status flip + STATUS + WORK_INDEX flip + EC_INDEX flip + 01.6
+  post-mortem covering all 14 mandatory audits + pre-commit review
+  artifact at `docs/ai/reviews/pre-commit-review-wp053a-ec053a.md`)
+
+D-5306 was resolved 2026-04-25 as Option A: `ScenarioScoringConfig` is
+bundled into the PAR publication and flows to the server through
+`checkParPublished`'s extended return shape
+`{ parValue, parVersion, source, scoringConfig }`, making config / PAR
+drift structurally impossible. The contract is **in production effect
+on `main` as of `e5b9d15`**.
 
 WP-053a (PAR Artifact Carries Full ScenarioScoringConfig) is the
 predecessor packet that delivers Option A across the PAR pipeline
@@ -295,17 +342,15 @@ on `main` at `1734475` on 2026-04-25, introducing:
 - WP-053a row in `WORK_INDEX.md` (Phase Server, before WP-053)
 - EC-053a placeholder row in `EC_INDEX.md` (Draft status)
 
-WP-053 is now formally **BLOCKED on WP-053a execution**. EC-053
-§Before Starting was updated by `49ee0be` to cite WP-053a as a hard
-prerequisite alongside WP-103. Once WP-053a ships (~10 files
-extending the PAR artifact format end-to-end), WP-053's §Before
-Starting line for WP-053a can be satisfied; the
-`scoringConfig` field returned by `checkParPublished` will be the
-authoritative source of `ScenarioScoringConfig` for WP-053's
-`submitCompetitiveScore` flow.
+WP-053 is now formally **UNBLOCKED**: WP-053a shipped at `e5b9d15`
+on 2026-04-25, EC-053 §Before Starting line for WP-053a is satisfied
+by the `scoringConfig` field returned by `checkParPublished`, which
+is the authoritative source of `ScenarioScoringConfig` for WP-053's
+`submitCompetitiveScore` flow. Both prerequisites (WP-103's
+`loadReplay` and WP-053a's extended `ParGateHit`) are landed.
 
-**Implication for the locked WP-053 9-step flow:** under Option A,
-WP-053's flow step 12 (`computeParScore(config) === parValue`)
+**Implication for the locked WP-053 9-step flow:** under Option A
+(now landed), WP-053's flow step 12 (`computeParScore(config) === parValue`)
 becomes defense-in-depth rather than a primary safety net — drift
 between `scoringConfig` and `parValue` is structurally impossible
 because both flow from the same PAR artifact. The WP-053 pre-flight
@@ -313,6 +358,45 @@ session locked the 9-step flow before D-5306 resolved; under Option
 A, the flow needs re-walking. Some locked tests (notably any
 exercising the config / PAR drift-catch path) may collapse or
 change shape. See §3's projected post-WP-053 baseline note.
+
+**WP-053a surface as landed (10 files in Commit A `e5b9d15`):**
+
+- `data/scoring-configs/README.md` + canonical example JSON file —
+  the D-5306a authoring origin
+- `packages/game-engine/src/scoring/scoringConfigLoader.ts` (new) +
+  `scoringConfigLoader.test.ts` (new, 4 tests in fresh
+  `describe('scoringConfigLoader (WP-053a)', …)` block — drives the
+  +1 suite delta in the engine baseline)
+- `packages/game-engine/src/simulation/par.storage.ts` — extended
+  shapes (`SeedParArtifact.scoringConfig`, `SimulationParArtifact.scoringConfig`,
+  `ParIndex.scenarios[key].scoringConfig` per D-5306b inline
+  materialization), extended `validateParStore` with three new
+  errorTypes (`'scoring_config_invalid'`,
+  `'scoring_config_version_mismatch'`,
+  `'par_baseline_redundancy_drift'` — D-5306c one-cycle audit),
+  extended `writeSimulationParArtifact` with `scoringConfig` as 3rd
+  positional parameter (PS-3 mirroring `writeSeedParArtifact`'s
+  precedent), extended `buildParIndex` to materialize `scoringConfig`
+  from each artifact into the index entry
+- `packages/game-engine/src/simulation/par.storage.test.ts` — +3
+  validator tests + mechanical fixture updates (centralized factory
+  weights updated so embedded configs satisfy
+  `validateScoringConfig`'s structural invariants now that the
+  validator runs against them)
+- `packages/game-engine/src/simulation/par.aggregator.test.ts` — +2
+  integration tests (writer embeds verbatim; writer throws on version
+  mismatch). par.aggregator.ts itself UNCHANGED per PS-3 — the
+  field already existed at `par.aggregator.ts:136`.
+- `packages/game-engine/src/index.ts` — exports
+  `loadScoringConfigForScenario` + `loadAllScoringConfigs`
+- `apps/server/src/par/parGate.mjs` — extended `ParGateHit` JSDoc
+  typedef + `checkParPublished` returns `scoringConfig` from index
+  entry + `createParGate` hard-throws on missing-config index entry
+  (defense-in-depth behind the engine's `isParIndexShape` shape
+  validator, which catches first in practice). D-5103 fs-free
+  invariant preserved.
+- `apps/server/src/par/parGate.test.ts` — +2 tests + mechanical
+  fixture updates including a new `createTestScoringConfig` factory.
 
 **WP-103 surface as landed (4 files, mirrors WP-052's clean shape):**
 
@@ -354,11 +438,10 @@ See §4 above for the updated migration sequence.
   (a smaller WP than WP-103 in name only). Option 1's predecessor
   WP is cleaner.
 
-WP-053 sessions cannot start until **both** WP-103 (replay loader
-prerequisite — landed at `fe7db3e`) **and** WP-053a (extended
-`ParGateHit` with `scoringConfig` per D-5306 / Option A — pending
-execution) are on `main`. See WP-103 + WP-053a Files Expected to
-Change for the full content surfaces.
+**Both prerequisites are now on `main`:** WP-103 (replay loader,
+landed at `fe7db3e`) and WP-053a (extended `ParGateHit` with
+`scoringConfig` per D-5306 / Option A, landed at `e5b9d15`). WP-053
+sessions may now start.
 
 ---
 
