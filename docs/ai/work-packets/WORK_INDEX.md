@@ -1306,14 +1306,16 @@ These packets ship the game and keep it running.
   only at WP-053 flow step 12. Scope: ~10 files (3 new, 7 modified)
   spanning `data/scoring-configs/`, `packages/game-engine/src/scoring/`,
   `packages/game-engine/src/simulation/`, and `apps/server/src/par/`.
-  Engine baseline shifts `513/115/0` → `520/115/0` (+7 tests; +0
-  suites if all new tests land in existing describe blocks).
-  Server baseline shifts `36/6/0` → `38/6/0` (+2 tests). New tests:
+  Engine baseline shifts `513/115/0` → `522/115/0` (+9 tests; +0
+  suites *if* `scoringConfigLoader.test.ts` lands inside an
+  existing describe block, +1 suite if it gets its own top-level
+  describe — pre-flight commits to one outcome). Server baseline
+  shifts `36/6/0` → `38/6/0` (+2 tests). New tests:
   `scoringConfigLoader.test.ts` (4 tests, new file); extensions to
   `par.storage.test.ts` (+3), `par.aggregator.test.ts` (+2),
-  `parGate.test.ts` (+2). Mechanical fixture updates to existing
-  `parGate.test.ts` and `par.storage.test.ts` tests do not change
-  pass/fail counts. Vision clauses touched: §3, §22, §24
+  `parGate.test.ts` (+2) — total +11 across 4 files. Mechanical
+  fixture updates to existing `parGate.test.ts` and `par.storage.test.ts`
+  tests do not change pass/fail counts. Vision clauses touched: §3, §22, §24
   (NG-1..7 not crossed). 01.5 NOT INVOKED. 01.6 post-mortem
   MANDATORY (new long-lived abstraction `scoringConfigLoader`; new
   contract surface consumed by WP-053; new on-disk authoring source

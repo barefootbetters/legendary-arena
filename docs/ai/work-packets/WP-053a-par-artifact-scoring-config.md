@@ -23,6 +23,9 @@ D-5306 chose Option A: bundle `ScenarioScoringConfig` into the PAR publication s
 
 ## Goal
 
+**Primary Invariant (Load-Bearing):**
+A published PAR is the atomic tuple `(scenarioKey, parValue, scoringConfig)`. There is no valid runtime, validation, or storage path where any one of these exists without the others. Every acceptance criterion, layer-boundary check, and drift-detection clause in this packet exists to enforce this invariant by construction.
+
 After this session:
 
 - Every PAR artifact (`SeedParArtifact` + `SimulationParArtifact`) carries the full `ScenarioScoringConfig` it was authored / calibrated against, validated structurally at write time.
@@ -30,8 +33,6 @@ After this session:
 - `checkParPublished(scenarioKey)` returns `{ parValue, parVersion, source, scoringConfig }`. The new field is non-optional; gates loaded from indices missing it fail closed at startup with a structured error.
 - A new on-disk source `data/scoring-configs/<scenario_key>.json` is the canonical authoring origin for `ScenarioScoringConfig` instances. The PAR aggregator (seed + simulation) reads this directory and embeds the config into each artifact it produces.
 - `validateParStore` is extended to verify (a) every artifact carries a structurally valid `scoringConfig` per `validateScoringConfig`, and (b) `scoringConfig.scoringConfigVersion === artifact.scoring.scoringConfigVersion` (no internal drift within an artifact).
-
-**Invariant:** PAR is a publication of `(scenarioKey, parValue, scoringConfig)` as one unit. There is no path where any of the three exists without the other two.
 
 ---
 
@@ -88,8 +89,8 @@ If any of the above is false, this packet is **BLOCKED**.
 
 ### B) `packages/game-engine/src/scoring/scoringConfigLoader.ts` — new
 
-- `loadScoringConfigForScenario(scenarioKey: ScenarioKey, basePath: string): ScenarioScoringConfig` — pure function that reads `<basePath>/<scenario_key>.json`, parses, and validates via `validateScoringConfig`. Throws on parse failure or validation failure (this is authoring-time / startup-time code; throwing is appropriate, mirrors `Game.setup()` precedent).
-- `loadAllScoringConfigs(basePath: string): Record<ScenarioKey, ScenarioScoringConfig>` — directory scan + per-file load + return frozen map.
+- `loadScoringConfigForScenario(scenarioKey: ScenarioKey, basePath: string): ScenarioScoringConfig` — deterministic loader with filesystem IO confined to authoring / startup time only. Reads `<basePath>/<scenario_key>.json`, parses the JSON payload, and validates via `validateScoringConfig`. Throws on parse failure or validation failure (this is authoring-time / startup-time code; throwing is appropriate and mirrors the `Game.setup()` precedent for setup-time failures). Not a "pure helper" in the engine-wide-purity sense (it performs IO); the engine-wide pure-helper rule applies to `parScoring.logic.ts` and similar modules called inside moves / phases / hooks, not to startup loaders.
+- `loadAllScoringConfigs(basePath: string): Record<ScenarioKey, ScenarioScoringConfig>` — directory scan + per-file load + return frozen map. Same IO-at-startup semantic.
 - No `boardgame.io` import. Uses `node:fs/promises` and `node:path` only.
 - Belongs to the engine layer because the PAR aggregator (engine) is the primary consumer.
 
@@ -121,6 +122,7 @@ If any of the above is false, this packet is **BLOCKED**.
 - `ParGateHit` typedef gains `scoringConfig: ScenarioScoringConfig` (non-optional).
 - `checkParPublished(simulationIndex, seedIndex, scenarioKey)` returns `{ parValue, parVersion, source, scoringConfig }` — sourced from the index's per-scenario entry.
 - The gate constructor (`createParGate`) verifies at startup that every scenario in both indices has a non-null `scoringConfig`; missing configs fail closed (gate construction throws) — consistent with the existing fail-closed posture.
+- Gate construction failure is a hard throw during startup — the server does not enter a partially-armed state where some scenarios have configs and others do not. Either every scenario across both indices passes the `scoringConfig`-presence check and the gate constructs, or the constructor throws and the server fails to start.
 
 ### H) Tests
 
@@ -197,7 +199,10 @@ apps/server/src/par/parGate.test.ts                           (modified — +2 t
 - [ ] Drift-detection test pins the locked error type strings against their union
 
 ### Tests
-- [ ] Engine baseline shifts `513 / 115 / 0` → `520 / 115 / 0` (+7 tests, +0 suites if all new tests land in existing describe blocks; +N suites if new files need new top-level describes)
+- [ ] Engine baseline shifts `513 / 115 / 0` → `522 / 115 / 0` (+9 tests; +0 suites *if* `scoringConfigLoader.test.ts` lands inside an existing describe block, otherwise +1 suite for `522 / 116 / 0` — the WP-053a pre-flight session must commit to one of the two suite-count outcomes)
+  - +4 from new `packages/game-engine/src/scoring/scoringConfigLoader.test.ts` (one new top-level test file; suite count contribution depends on whether its tests are wrapped in a fresh `describe('scoringConfigLoader (WP-053a)', …)` block per the post-WP-031 wrap-in-describe convention)
+  - +3 from extended `packages/game-engine/src/simulation/par.storage.test.ts` (existing describe blocks — no suite count change)
+  - +2 from extended `packages/game-engine/src/simulation/par.aggregator.test.ts` (existing describe blocks — no suite count change)
 - [ ] Server baseline shifts `36 / 6 / 0` → `38 / 6 / 0` (+2 tests in `parGate.test.ts`'s existing describe; +0 suites)
 - [ ] Mechanical fixture updates to existing tests do not change pass/fail counts
 - [ ] All new tests use `node:test` and `node:assert/strict`
@@ -231,7 +236,8 @@ pnpm -r build
 
 # Engine tests
 pnpm --filter @legendary-arena/game-engine test
-# Expected: 520 / 115 / 0 (or +N suites if new files land outside existing describes)
+# Expected: 522 / 115 / 0 — or 522 / 116 / 0 if scoringConfigLoader.test.ts
+# wraps its 4 tests in a new top-level describe block (pre-flight commits to one outcome)
 
 # Server tests
 pnpm --filter @legendary-arena/server test
@@ -277,8 +283,8 @@ git diff main -- apps/server/src/replay/ apps/server/src/identity/
 ## Estimated Scope
 
 - **Files to produce / modify:** ~10 (3 new, 7 modified)
-- **New tests:** +11 (across 4 files)
-- **Test baseline shifts:** engine `+7`, server `+2`
+- **New tests:** +11 (across 4 files): +4 in new `scoringConfigLoader.test.ts`, +3 in `par.storage.test.ts`, +2 in `par.aggregator.test.ts`, +2 in `parGate.test.ts`
+- **Test baseline shifts:** engine `+9` (513/115/0 → 522/115/0; suite count +0 or +1 depending on `scoringConfigLoader.test.ts` describe-block wrapping), server `+2` (36/6/0 → 38/6/0)
 - **Risk:** Medium. The artifact shape change is structurally bounded but touches three layers (aggregator, storage, gate). Existing test fixtures need mechanical updates. The fs-free invariant on the gate is the single highest-risk constraint — easy to violate accidentally if the loader leaks across the layer.
 - **Estimated session length:** 1 execution session, comparable to WP-103.
 
