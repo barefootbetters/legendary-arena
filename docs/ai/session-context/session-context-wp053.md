@@ -8,6 +8,22 @@
 > hard prerequisite blocker so the next executor does not start a
 > session against a known-blocked EC.
 >
+> **Revised:** 2026-04-25 — post-WP-103 + post-WP-053a-A0-SPEC
+> reconciliation. WP-103 (Server-Side Replay Storage & Loader)
+> landed on `main` via fast-forward 2026-04-25 with three commits
+> (`fe7db3e` Commit A `EC-111:` + `f74d180` Commit B `SPEC:` +
+> `c8a2421` `SPEC:` retrospective pre-commit review). The §6
+> "Hard Prerequisite Blocker — Resolved by WP-103" status flipped
+> from prophetic to literally true. D-5306 was resolved 2026-04-25
+> as Option A (PAR artifact carries full `ScenarioScoringConfig`);
+> the WP-053a A0 SPEC bundle landed at `1734475` introducing a new
+> hard prerequisite that supersedes the WP-103-only blocker. WP-053
+> is now BLOCKED on WP-053a's execution rather than on WP-103. §1
+> main-HEAD reference, §4 migration numbering, §6 prerequisite
+> status, and §pre-flight Step 1 / Step 5 are all updated below.
+> Substantive guidance unchanged — only the temporal framing and
+> the new prerequisite chain.
+>
 > **This file is not authoritative.** If conflict arises with
 > `docs/ai/ARCHITECTURE.md`, `.claude/rules/*.md`, WP-053, or EC-053,
 > those documents win. See §8 priority chain.
@@ -18,9 +34,17 @@
 
 ---
 
-## 1. State on `main` (as of authoring)
+## 1. State on `main` (as of authoring + revisions)
 
-`main` HEAD: **`a8f81ff`** (`INFRA: document retained topic branches in docs/ai/BRANCHES.md`).
+`main` HEAD at session-context original authoring: **`a8f81ff`** (`INFRA: document retained topic branches in docs/ai/BRANCHES.md`).
+
+Post-WP-103 + post-WP-053a-A0-SPEC `main` HEAD (current): **`49ee0be`** (`SPEC: WP-053 + EC-053 — fold WP-103 + WP-053a as explicit prerequisites in §Assumes / §Before Starting`). Intermediate landed commits relevant to WP-053, in chronological order:
+
+- WP-103 (Replay Storage & Loader) Commit A `EC-111:` at `fe7db3e` (2026-04-25)
+- WP-103 Commit B `SPEC:` governance close at `f74d180` (2026-04-25)
+- WP-103 retrospective pre-commit review `SPEC:` at `c8a2421` (2026-04-25)
+- WP-053a A0 SPEC bundle at `1734475` (2026-04-25; introduces D-5306 / D-5306a-d and the WP-053a packet draft)
+- WP-053 / EC-053 prerequisite folds `SPEC:` at `49ee0be` (2026-04-25; this very revision's parent)
 
 Recent landed history relevant to WP-053:
 
@@ -96,41 +120,64 @@ runtime contract surface that WP-053 plans to consume exists.
 
 ## 3. Test & Build Baseline (LOCKED)
 
-Captured against `main` at `a8f81ff`:
+Originally captured against `main` at `a8f81ff` (pre-WP-103). **Updated 2026-04-25** for the post-WP-103 + post-WP-053a-A0-SPEC state:
 
-| Surface | Expected | Notes |
-|---|---|---|
-| `pnpm -r build` | exits 0 | All packages |
-| `pnpm --filter @legendary-arena/game-engine test` | `513 / 115 / 0` | Unchanged since WP-052 |
-| `pnpm --filter @legendary-arena/server test` | `31 / 5 / 0` (6 skipped when no test DB) | Achieved post-WP-052; the 6 skips are the DB-dependent identity / replayOwnership tests with locked reason `'requires test database'` |
+| Surface | At a8f81ff (original) | At c8a2421 (post-WP-103) | At post-WP-053a execution (projected) | Notes |
+|---|---|---|---|---|
+| `pnpm -r build` | exits 0 | exits 0 | exits 0 | All packages |
+| `pnpm --filter @legendary-arena/game-engine test` | `513 / 115 / 0` | `513 / 115 / 0` (unchanged) | `520 / 115 / 0` (+7 from WP-053a) | WP-053a adds 4 `scoringConfigLoader` tests + 3 `par.storage` extensions + 2 `par.aggregator` extensions; mostly inside existing describes (suite count likely unchanged) |
+| `pnpm --filter @legendary-arena/server test` | `31 / 5 / 0` (6 skipped when no test DB) | `36 / 6 / 0` (10 skipped when no test DB) | `38 / 6 / 0` (10 skipped — WP-053a adds 2 `parGate.test.ts` tests in the existing suite) | Pre-WP-053 baseline shifts twice |
 
-WP-053's expected delta is +1 suite (`describe('competition logic (WP-053)', ...)`)
-and +N tests (EC-053 calls for at least 9). Server total post-WP-053
-will be at minimum `40 / 6 / 0` (with skips when no test DB).
+WP-053's pre-flight session (run before D-5306 was resolved) locked
+WP-053's own delta as **+9 tests / +1 suite** (`describe('competition
+logic (WP-053)', ...)`), giving a post-WP-053 server total of
+`45 / 7 / 0` *if Option B had been chosen*. **Under Option A
+(D-5306 resolved 2026-04-25), the +9/+1 figure may need
+re-derivation**: WP-053's flow step 12 (`computeParScore(config) ===
+parValue`) becomes defense-in-depth rather than a primary safety
+net, so some of the locked tests (notably any that exercised the
+config / PAR drift-catch path) may collapse or change shape. The
+WP-053 pre-flight session must re-walk the locked test plan against
+the post-WP-053a state before committing to a final baseline target.
+
+Projected post-WP-053 server total under Option A (best estimate
+pending pre-flight re-walk): `47 / 7 / 0` (+9 tests / +1 suite from
+the post-WP-053a baseline of `38 / 6 / 0`). This is the same +9/+1
+delta the pre-flight locked, applied to the new starting line. If
+the pre-flight re-walk reduces the count (likely — drift-catch
+tests may collapse), the post-WP-053 total drops correspondingly.
 
 ---
 
-## 4. Migration Numbering — Updated 2026-04-25 (WP-103 takes 006)
+## 4. Migration Numbering — Updated 2026-04-25 (WP-103 took 006; landed at fe7db3e)
 
 EC-053's `Files to Produce` line refers to the new migration as
 `data/migrations/NNN_create_competitive_scores_table.sql`. With
-WP-103 (Server-Side Replay Storage & Loader) drafted as the
-predecessor (see §6), WP-103 takes migration **`006`** for
-`legendary.replay_blobs`, and WP-053's `competitive_scores`
+WP-103 (Server-Side Replay Storage & Loader) landed as the
+predecessor on 2026-04-25 (see §6), WP-103 took migration **`006`**
+for `legendary.replay_blobs`, and WP-053's `competitive_scores`
 migration shifts to **`007`**.
 
-Migration sequence after WP-103 + WP-053 land:
+Migration sequence post-WP-103 (current state on `main`) +
+projected after WP-053 lands:
 
 ```
 data/migrations/
   001_server_schema.sql                         (existing)
   002_seed_rules.sql                            (existing)
   003_game_sessions.sql                         (existing)
-  004_create_players_table.sql                  (WP-052)
-  005_create_replay_ownership_table.sql         (WP-052)
-  006_create_replay_blobs_table.sql             (WP-103, planned)
-  007_create_competitive_scores_table.sql       (WP-053, planned — was 006 before WP-103 drafting)
+  004_create_players_table.sql                  (WP-052, landed)
+  005_create_replay_ownership_table.sql         (WP-052, landed)
+  006_create_replay_blobs_table.sql             (WP-103, landed 2026-04-25 at fe7db3e)
+  007_create_competitive_scores_table.sql       (WP-053, planned — was 006 before WP-103 took 006)
 ```
+
+WP-053a (PAR Artifact Carries Full ScenarioScoringConfig — the
+new D-5306 / Option A predecessor between WP-103 and WP-053) does
+**not** land a new migration. Its scope is engine + server PAR
+contract extension only (see §6 and the WP-053a packet body).
+Migration `007` is therefore still WP-053's even after WP-053a
+lands.
 
 The WP-053 executor must update EC-053 §Files to Produce at A0
 SPEC time to reflect `007` (not `NNN` and not `006`).
@@ -200,9 +247,9 @@ player_id` mapping pattern.
 
 ---
 
-## 6. Hard Prerequisite Blocker — Resolved by WP-103
+## 6. Hard Prerequisite Blockers — WP-103 Resolved (landed 2026-04-25); WP-053a Now Blocking
 
-EC-053 §Before Starting line 21 (verbatim):
+EC-053 §Before Starting line 21 (original verbatim text):
 
 > Server has an existing replay loader by `replayHash`; storage
 > implementation is out of scope for WP-053. If no loader exists,
@@ -211,17 +258,63 @@ EC-053 §Before Starting line 21 (verbatim):
 > must have a real loader at runtime; mocks may not be the way this
 > gate is satisfied.
 
-**Status update (2026-04-25): resolution decision = Option 1
-(predecessor WP).** WP-103 — Server-Side Replay Storage & Loader —
-has been drafted and registered in `WORK_INDEX.md` and `EC_INDEX.md`
-to land the loader. WP-053 is now formally **BLOCKED on WP-103
-execution** (WORK_INDEX row updated 2026-04-25 with this
-dependency). Once WP-103 ships (`legendary.replay_blobs` table +
-`storeReplay` / `loadReplay` server-side helpers in
-`apps/server/src/replay/`), WP-053's §Before Starting line 21 can
-be satisfied without re-scoping or re-interpreting the prerequisite.
+### 6.1 Original Blocker — RESOLVED 2026-04-25 by WP-103
 
-**WP-103 surface (4 files, mirrors WP-052's clean shape):**
+**Status (2026-04-25): RESOLVED.** WP-103 — Server-Side Replay
+Storage & Loader — landed on `main` via fast-forward 2026-04-25 as
+three commits:
+
+- `fe7db3e` Commit A `EC-111:` — `apps/server/src/replay/{replay.types,replay.logic,replay.logic.test}.ts` + `data/migrations/006_create_replay_blobs_table.sql`
+- `f74d180` Commit B `SPEC:` — governance close (DECISIONS D-10302 + D-10303 + STATUS + WORK_INDEX flip + EC_INDEX flip + 01.6 post-mortem)
+- `c8a2421` `SPEC:` — retrospective pre-commit review artifact at `docs/ai/reviews/pre-commit-review-wp103-ec111.md`
+
+EC-053 §Before Starting was updated by `49ee0be` (`SPEC: WP-053 +
+EC-053 — fold WP-103 + WP-053a as explicit prerequisites`) to cite
+WP-103's `loadReplay` directly. The original §Before Starting line 21
+is preserved in spirit — a test-only mock still does not satisfy the
+prerequisite; the application must use the real `loadReplay` at
+runtime.
+
+### 6.2 New Blocker — WP-053a (D-5306 Option A)
+
+**Status (2026-04-25): BLOCKING.** D-5306 was resolved 2026-04-25
+as Option A: `ScenarioScoringConfig` is bundled into the PAR
+publication and flows to the server through `checkParPublished`'s
+extended return shape `{ parValue, parVersion, source, scoringConfig }`,
+making config / PAR drift structurally impossible.
+
+WP-053a (PAR Artifact Carries Full ScenarioScoringConfig) is the
+predecessor packet that delivers Option A across the PAR pipeline
+(artifact shape extension + index inline materialization + server
+gate return-shape extension + on-disk authoring origin at
+`data/scoring-configs/` + engine loader). Its A0 SPEC bundle landed
+on `main` at `1734475` on 2026-04-25, introducing:
+
+- The WP-053a packet draft at `docs/ai/work-packets/WP-053a-par-artifact-scoring-config.md`
+- DECISIONS entries D-5306 + D-5306a (configs live in `data/scoring-configs/`) + D-5306b (inline materialization for fs-free gate) + D-5306c (`SeedParArtifact.parBaseline` retained one cycle) + D-5306d (`competitive_scores` retains both `par_version` and `scoring_config_version` columns as audit redundancy)
+- WP-053a row in `WORK_INDEX.md` (Phase Server, before WP-053)
+- EC-053a placeholder row in `EC_INDEX.md` (Draft status)
+
+WP-053 is now formally **BLOCKED on WP-053a execution**. EC-053
+§Before Starting was updated by `49ee0be` to cite WP-053a as a hard
+prerequisite alongside WP-103. Once WP-053a ships (~10 files
+extending the PAR artifact format end-to-end), WP-053's §Before
+Starting line for WP-053a can be satisfied; the
+`scoringConfig` field returned by `checkParPublished` will be the
+authoritative source of `ScenarioScoringConfig` for WP-053's
+`submitCompetitiveScore` flow.
+
+**Implication for the locked WP-053 9-step flow:** under Option A,
+WP-053's flow step 12 (`computeParScore(config) === parValue`)
+becomes defense-in-depth rather than a primary safety net — drift
+between `scoringConfig` and `parValue` is structurally impossible
+because both flow from the same PAR artifact. The WP-053 pre-flight
+session locked the 9-step flow before D-5306 resolved; under Option
+A, the flow needs re-walking. Some locked tests (notably any
+exercising the config / PAR drift-catch path) may collapse or
+change shape. See §3's projected post-WP-053 baseline note.
+
+**WP-103 surface as landed (4 files, mirrors WP-052's clean shape):**
 
 - `apps/server/src/replay/replay.types.ts` — re-exports
   `ReplayInput` from `@legendary-arena/game-engine` (type-only) and
@@ -230,18 +323,17 @@ be satisfied without re-scoping or re-interpreting the prerequisite.
   `storeReplay(replayHash, replayInput, db): Promise<void>` (locked
   SQL `INSERT … ON CONFLICT (replay_hash) DO NOTHING`) +
   `loadReplay(replayHash, db): Promise<ReplayInput | null>` (deserialized
-  by `pg`'s `jsonb` codec; no manual `JSON.parse`)
+  by `pg`'s `jsonb` codec; no manual JSON deserialization)
 - `apps/server/src/replay/replay.logic.test.ts` — 5 tests in one
   describe block (1 pure + 4 DB-dependent)
 - `data/migrations/006_create_replay_blobs_table.sql` —
   `legendary.replay_blobs (replay_hash text PRIMARY KEY,
   replay_input jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now())`
 
-**Migration sequence shifts as a result:** WP-103 takes migration
-`006`. WP-053's `competitive_scores` migration shifts to `007` (was
-documented as `006` in this file's §4 before WP-103 was drafted).
-See §4 below — that section is now stale and superseded by this
-update.
+**Migration sequence as a result:** WP-103 took migration `006`.
+WP-053's `competitive_scores` migration shifts to `007` (was
+documented as `006` in this file's §4 before WP-103 took 006).
+See §4 above for the updated migration sequence.
 
 **Decision rationale (paths not taken):**
 
@@ -262,8 +354,11 @@ update.
   (a smaller WP than WP-103 in name only). Option 1's predecessor
   WP is cleaner.
 
-WP-053 sessions cannot start until WP-103 is in main. See WP-103's
-Files Expected to Change for the full content surface.
+WP-053 sessions cannot start until **both** WP-103 (replay loader
+prerequisite — landed at `fe7db3e`) **and** WP-053a (extended
+`ParGateHit` with `scoringConfig` per D-5306 / Option A — pending
+execution) are on `main`. See WP-103 + WP-053a Files Expected to
+Change for the full content surfaces.
 
 ---
 
@@ -307,37 +402,76 @@ In conflict, higher-authority documents win:
 
 In strict order:
 
-1. **Confirm WP-103 has landed on `main`.** Run
-   `git log --oneline -- data/migrations/006_create_replay_blobs_table.sql`;
-   non-empty output means WP-103 shipped and the §6 blocker is
-   resolved. If empty, STOP — WP-103 must execute first; WP-053
-   cannot start until then.
+1. **Confirm WP-103 is on `main` (verified 2026-04-25 at `c8a2421`).**
+   Run `git log --oneline -- data/migrations/006_create_replay_blobs_table.sql`;
+   expect at least three commits including `fe7db3e`. If empty or
+   missing the WP-103 commits, STOP — the environment has drifted
+   from the post-WP-103 baseline established by `c8a2421`.
+1b. **Confirm WP-053a has landed on `main`.** Run
+   `grep -n "scoringConfig" apps/server/src/par/parGate.mjs`;
+   expect at least three matches (typedef, return shape, gate
+   construction guard). If zero matches, STOP — WP-053a must
+   execute first; WP-053 cannot start until then. Also run
+   `git log --oneline -- packages/game-engine/src/scoring/scoringConfigLoader.ts`
+   and expect at least one commit. If empty, WP-053a has not landed
+   yet.
 2. Run `pnpm -r build && pnpm -r test` against the current `main`
-   to confirm the post-WP-103 baseline (engine `513/115/0`,
-   server `36/6/0` with 10 skipped if no test DB). If it doesn't
-   match, STOP — the environment has drifted since WP-103 closure.
-3. Read this file's §5 and §6. The drift fixes in §5
-   (`PlayerId → AccountId`) and the migration-number update from
-   §4 (`006 → 007` for `competitive_scores`) must both land in the
-   WP-053 A0 SPEC commit.
+   to confirm the post-WP-053a baseline (engine `520/115/0`,
+   server `38/6/0` with 10 skipped if no test DB — see §3 for the
+   full table). If it doesn't match, STOP — the environment has
+   drifted since WP-053a closure or the test plan needs
+   re-derivation.
+3. Read this file's §3 (re-derive test count under Option A if
+   needed), §5 (drift items), and §6 (resolved + pending
+   blockers). The drift fixes in §5 (`PlayerId → AccountId`) and
+   the migration-number update from §4 (`006 → 007` for
+   `competitive_scores`) must both land in the WP-053 A0 SPEC
+   commit. The §3 test plan re-walk under Option A may shift
+   WP-053's locked +9/+1 figure — that is also A0 SPEC scope.
 4. Draft A0 SPEC updates for EC-053:
    - Fix `PlayerId → AccountId` references at lines 19, 64, 123 per §5.1.
-   - Add WP-103 to EC-053 §Before Starting (currently absent).
+   - WP-103 + WP-053a §Before Starting prerequisites already added by
+     `49ee0be` (separate SPEC commit on 2026-04-25); verify they
+     are still present and accurate.
    - Update EC-053 §Files to Produce to `007_create_competitive_scores_table.sql`.
    - Confirm the `loadReplay` import boundary: WP-053's
      `competition.logic.ts` imports `loadReplay` from
      `../replay/replay.logic.js` (intra-server-layer dependency,
      allowed; mirrors WP-052 cross-directory pattern).
+   - Confirm the `checkParPublished` import boundary: WP-053's
+     `competition.logic.ts` consumes `scoringConfig` from
+     `checkParPublished(scenarioKey).scoringConfig`; no separate
+     config catalog import is permitted (per D-5306 Option A,
+     server is enforcer, never derives — extends to *which config
+     applies*).
+   - Re-walk WP-053 §B's 9-step submission flow under Option A:
+     flow step 12 (`computeParScore(config) === parValue`) becomes
+     defense-in-depth; some locked tests may collapse.
 5. Land A0 SPEC on `main` per the WP-052 commit topology pattern.
 6. Cut the WP-053 execution branch from `main` after A0 lands.
-7. Stash unrelated WP-097 / WP-098 governance work-in-progress in
-   the working tree (per §1) before staging anything for Commit A.
-6. Mirror the WP-052 implementation patterns where applicable:
+7. Stash unrelated WP-097 / WP-098 / WP-101 governance
+   work-in-progress in the working tree (per §1) before staging
+   anything for Commit A. The WP-103 session's Pre-Session Gate 8
+   is the canonical precedent for this stash discipline.
+8. Mirror the WP-052 implementation patterns where applicable:
    `ext_id ↔ player_id` CTE inside SQL; `Result<T>` discriminated
    union for fallible operations; `// why:` comments at every
    non-obvious decision; `.test.ts` extension; locked
    `{ skip: 'requires test database' }` reason for DB-dependent
    tests; tests wrapped in exactly one `describe()` block.
+9. Cite `docs/ai/prompts/PRE-COMMIT-REVIEW.template.md` in the
+   WP-053 session prompt's Authority Chain and add a Pre-Session
+   Gate or §Authorized Next Step that runs the template between
+   "all gates green" and "stage Commit A". This closes the
+   structural gap that caused WP-103's retrospective review at
+   `c8a2421`. See `docs/ai/post-mortems/01.6-WP-103-replay-storage-loader.md`
+   §3 for the carry-forward rationale.
+10. Pre-screen Hard Stop greps for likely `// why:` comment
+    substring collisions (WP-103 carry-forward §3.1) — if any Hard
+    Stop would match comment text containing forbidden literal
+    substrings, either reword the gate to anchor to actual code
+    structure or explicitly note that comments must avoid the
+    literal substring.
 
 The WP-052 post-mortem at
 `docs/ai/post-mortems/01.6-WP-052-player-identity-replay-ownership.md`
