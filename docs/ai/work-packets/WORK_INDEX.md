@@ -2116,6 +2116,153 @@ These packets ship the game and keep it running.
   [WP-101-handle-claim-flow.md](WP-101-handle-claim-flow.md) +
   [EC-101-handle-claim-flow.checklist.md](../execution-checklists/EC-101-handle-claim-flow.checklist.md).
 
+- [ ] WP-102 — Public Player Profile Page (Read-Only) — Drafted 2026-04-25; lint-gate self-review PASS; pre-flight pending.
+  Dependencies: WP-052 (identity model + `legendary.replay_ownership`); WP-101 (handle claim + `findAccountByHandle` + the public-surface invariants in WP-101 §"Public surfaces must not treat handle as a stable identity key"). Soft-dep on WP-100 (session token validation) — **not required**, because this packet's only endpoint is unauthenticated.
+  Notes: First WP to expose handles in HTTP and first profile
+  surface in the Vue SPA. Scope intentionally narrow: a public
+  read-only `/players/:handle` page that composes
+  `PublicProfileView` (4 fields: `handleCanonical`,
+  `displayHandle`, `displayName`, `publicReplays`) from
+  `legendary.players` (via WP-101 `findAccountByHandle`) +
+  `legendary.replay_ownership` (locked SQL filter:
+  `visibility IN ('public', 'link') AND (expires_at IS NULL OR
+  expires_at > now())`). Single new HTTP route
+  `GET /api/players/:handle/profile` returns 200 with the view or
+  404 with body `{ "error": "player_not_found" }` (no information
+  leak distinguishing unclaimed vs deleted handles). Six locked
+  empty-state tabs anchored to future WPs (`Rank — coming soon
+  (WP-054 / WP-055)`, `Badges — WP-105`, `Tournaments`,
+  `Comments`, `Integrity — WP-107+`, `Support — WP-108+`); the
+  six tab sections must contain zero `fetch` / XHR / WebSocket
+  references (verified). Vue route at `/players/:handle` lazy-loads
+  `PlayerProfilePage.vue`; typed `fetchPublicProfile(handle)`
+  wrapper in `apps/arena-client/src/lib/api/profileApi.ts`.
+  **Critical invariant** (locked verbatim from WP-101):
+  every server code path dereferences handle → `AccountId` once
+  per request via `findAccountByHandle`; no `(handle, content)`
+  cache beyond request scope. Per WP-101's no-tombstone policy, a
+  reclaimed handle MUST NOT serve the prior account's content
+  under any code path introduced here. Per `DESIGN-RANKING.md`
+  lines 485–487, rankings use `AccountId`, never the handle —
+  the "Rank" empty-state stub displays nothing rankings-shaped.
+  Read-only against `legendary.players` and
+  `legendary.replay_ownership`: no `INSERT`/`UPDATE`/`DELETE`
+  permitted under `apps/server/src/profile/` (verified via grep);
+  no new tables; no new migrations; no new npm dependencies.
+  No authenticated endpoint; no `requireAuthenticatedSession`
+  import; no Hanko reference (per WP-099 D-9904, Hanko code lives
+  only under `apps/server/src/auth/hanko/`, not yet created).
+  `PublicProfileView` excludes `email`, `auth_provider`,
+  `auth_provider_id`, `accountId`, `createdAt` — handle is the
+  public identifier on this surface. `PublicReplaySummary`
+  excludes `expiresAt` (server filters before return) and types
+  `visibility` as `'public' | 'link'` (no `'private'` at the type
+  level — server-side filter expressed in the type). 8 new tests
+  in one `describe('public profile logic (WP-102)', …)` block (3
+  pure drift tests + 5 DB-dependent: 404, empty, visibility filter,
+  expiration filter, case-insensitive lookup); DB tests use the
+  locked WP-052 `hasTestDatabase ? {} : { skip: 'requires test
+  database' }` pattern. Server baseline shifts post-WP-101
+  `48/7/0` → **`56/8/0`** (+8 tests / +1 suite). Engine baseline
+  `522/116/0` unchanged. WP-052 contract files NOT modified;
+  WP-101 contract files NOT modified; WP-103 contract files NOT
+  modified; `packages/game-engine/src/types.ts` NOT modified.
+  Vision clauses touched: §3 (Player Trust & Fairness), §11
+  (Stateless Client Philosophy), §14 (Explicit Decisions), §18
+  (Replayability & Spectation), §22 (Replay determinism — N/A by
+  construction; metadata-only display), §24 (Replay-Verified
+  Competitive Integrity), §25 (Non-Ranking Telemetry Carve-Out
+  — handle display is non-ranking telemetry); NG-1, NG-3, NG-6
+  preserved. Funding Surface Gate (WP-098 §20, drafted): **N/A
+  declared** with explicit justification — "Support" tab is inert
+  (no fetch, no schema, no donation/subscription/tournament-
+  funding affordance), renders only "Coming soon — see WP-108".
+  01.5 NOT INVOKED (engine entirely untouched). 01.6 post-mortem
+  MANDATORY at execution per at least two triggers (new
+  long-lived abstraction `getPublicProfileByHandle` consumed by
+  future profile WPs; new HTTP-surface contract; first arena-client
+  page outside the live-match flow). Pre-flight item: a new
+  D-entry is required at execution to classify
+  `apps/server/src/profile/` as a server-layer directory (mirrors
+  D-5202 for `identity/` and D-10301 for `replay/`); the D-NNNN
+  number is assigned at execution time. See
+  [WP-102-public-profile-page.md](WP-102-public-profile-page.md).
+
+- [ ] **(deferred placeholder)** WP-104 — Owner Profile Data Model
+  & `/me` Edit. Splits the owner-edit half of the original
+  WP-PLAYER-PROFILE proposal into its own scoped packet.
+  Dependencies: **WP-102 must land first** (establishes profile
+  module + page conventions); WP-100 (session token validation —
+  for `requireAuthenticatedSession` on `PATCH /api/me/profile`).
+  Scope (target ≤8 files): new `legendary.player_profiles` table
+  (`avatar_url text NULL`, `about_me text NULL`, privacy toggles,
+  `updated_at`); new `legendary.player_links` table (provider,
+  url, `is_public`); owner-only `GET /api/me/profile`,
+  `PATCH /api/me/profile`, `PUT /api/me/links` endpoints; Vue
+  `MyProfilePage.vue` at `/me` with edit forms.
+  Out-of-scope (deferred to dedicated WPs): avatar **upload**
+  (URL-only here — WP-106 owns R2 pipeline); badges (WP-105);
+  integrity admin (WP-107+); payments (WP-108+).
+  Will draft when WP-102 has landed and the arena-client
+  framework conventions referenced by WP-102 are confirmed.
+
+- [ ] **(deferred placeholder)** WP-105 — Player Badges Data Model
+  & Display. Dependencies: WP-104 (owner profile surface to
+  display badges on); decision on issuer model (admin-only vs
+  rule-driven) — currently unresolved.
+  Scope (target ≤7 files): new `legendary.player_badges` table
+  (`badge_key text` stable, `badge_name text` snapshot,
+  `badge_category text`, `awarded_at`, optional issuer FK,
+  optional `reason text`, `is_public boolean`); read-only display
+  on public profile (WP-102) and owner profile (WP-104); admin
+  issuance is a downstream concern.
+  **Will not draft until** an issuer-model decision lands in
+  `DECISIONS.md`. Drafting earlier risks fabricating an issuance
+  workflow that gets reworked.
+
+- [ ] **(deferred placeholder)** WP-106 — Avatar Upload Pipeline
+  (R2 + MIME / size validation). Dependencies: WP-104 (avatar URL
+  field in `legendary.player_profiles`); existing R2 storage
+  policy.
+  Scope (target ≤8 files): server-side presigned-URL endpoint;
+  MIME / size validation; client-side upload widget on
+  `/me` profile editor; image deletion on overwrite.
+  Out-of-scope: image moderation (separate concern), CDN
+  caching policy. **Will not draft until** WP-104 has landed and
+  R2 storage governance for user-uploaded content is recorded
+  in a new `D-NNNN` entry.
+
+- [ ] **(deferred placeholder)** WP-107 — Profile Integrity /
+  Anti-Cheat Surface (Public Status + Admin Review). Dependencies:
+  **a future admin-auth WP must exist first** — no admin RBAC
+  mechanism is currently defined; introducing
+  `/api/admin/players/:accountId/integrity` here would fabricate
+  the admin-auth surface.
+  Scope (target ≤8 files when ready): new
+  `legendary.player_integrity_reviews` table (status enum, public
+  short note, admin-only notes); coarse public status surfaced on
+  WP-102 / WP-104; admin endpoints under `/api/admin/...` gated
+  by the admin-auth contract. **Will not draft until** the
+  admin-auth WP exists and a `D-NNNN` decision records the RBAC
+  shape. Security-review-required at draft time.
+
+- [ ] **(deferred placeholder)** WP-108 — Profile Funding Surface
+  (Subscriptions / Donations / Tournament Funding History).
+  Dependencies: **WP-097 must land** (D-9701 anchors the funding
+  policy and the §F Funding Surface Gate); **WP-098 must land**
+  (the §20 Funding Surface Gate Trigger in `00.3` must exist for
+  this WP to declare applicability without a §17 lint FAIL); a
+  payment-integration WP must exist (PayPal / Stripe / OpenCollective
+  webhook ingestion is its own governance surface and is not yet
+  scoped). Scope (target ≤8 files when ready): new
+  `legendary.player_payments` table storing references and
+  amounts only (never card / bank instruments); owner-only view
+  surface on `/me`; never gates gameplay (NG-1 / D-9905 invariant).
+  **Will not draft until** WP-097 + WP-098 land and a
+  payment-integration WP is queued. The §F gate F-1..F-7 (or
+  whatever it lands as) MUST be applicable-declared in the WP
+  body at draft time.
+
 - [ ] **(deferred placeholder)** Fix CLI credentials field drift in `apps/server/scripts/join-match.mjs` — D-9001 identifies the buggy script. Two issues: (1) the script omits `playerID` from its POST body; the server auto-assigns a seat which is functionally OK but inconsistent with `create-match.mjs`'s shape; (2) the script reads `result.credentials` after the join response, but the canonical field name is `result.playerCredentials` — meaning the script's printed `credentials:` value is always `undefined`. Scope is CLI-only — no engine, no client, no server logic touched. A future packet may either fix the two bugs in place (preferred — matches `create-match.mjs` shape) or delete the script outright if the lobby UI obsoletes its use case. No dependencies; can land standalone.
 
 - [ ] **(deferred placeholder)** Classify `apps/registry-viewer/` in `docs/ai/REFERENCE/02-CODE-CATEGORIES.md` — pre-existing governance gap surfaced as WP-066 copilot finding #13, inherited silently by WP-094 and WP-096 (third inheritance pass; flagged in WP-096 pre-flight RS-3 + copilot check finding #13). Two acceptable resolutions: (a) extend the existing `client-app` row (D-6511) to cover both `apps/arena-client/` and `apps/registry-viewer/`; (b) add a new `client-app-viewer` row with its own DECISIONS.md entry. Either path needs an authorising D-entry plus updates to the table at `02-CODE-CATEGORIES.md:36-49` and the per-category prose at `:234-270`. Scope is docs-only — no engine, registry, server, or app code touched. No dependencies; can land standalone. The next viewer-touching WP should arrive with the classification already landed rather than inheriting the gap a fourth time.
