@@ -2,8 +2,8 @@
 
 **Status:** Ready for Implementation
 **Primary Layer:** Server / Competition Enforcement
-**Version:** 1.4
-**Last Updated:** 2026-04-25
+**Version:** 1.5
+**Last Updated:** 2026-04-26
 **Dependencies:** WP-048, WP-051, WP-052, WP-027, WP-004, WP-103, WP-053a
 
 ---
@@ -31,6 +31,68 @@ integrity could be bypassed. With it, every competitive score is
 replay-verified — cheating is structurally impossible, not heuristically
 detected. This fulfills Vision Goal 22 (Deterministic Scoring) and Vision
 Goal 24 (Replay-Verified Competitive Integrity).
+
+---
+
+## Vision Alignment
+
+Required by `00.3 §17.2` because this WP touches multiple §17.1 trigger
+surfaces (scoring/PAR/leaderboards, replays/replay verification, player
+identity/ownership/visibility, determinism). The vision document is
+`docs/01-VISION.md`; clauses are cited by number, not paraphrased.
+
+**Vision clauses touched:** §3 (Trust & Fairness), §11 (Identity &
+Account Integrity), §18 (Replays), §20–26 (Scoring & Skill Measurement),
+§22 (Deterministic Scoring), §24 (Replay-Verified Competitive Integrity).
+
+**Conflict assertion:** No conflict — this WP preserves all touched
+clauses. Server-side replay re-execution is the structural enforcement
+mechanism for §22 and §24. No client-reported value is trusted (§3); only
+account-owned, non-`private` replays may be submitted (§11, §18); all
+scoring is delegated read-only to the engine contracts locked by WP-048
+(§20–26). The competitive record (`CompetitiveScoreRecord`) is a Class 3
+Snapshot per `.claude/rules/persistence.md` — immutable, never re-hydrated
+as live state.
+
+**Non-Goal proximity:** N/A — WP-053 touches no monetization, paid tier,
+cosmetic, or persuasion surface. NG-1 (No Pay-to-Win) through NG-7 are
+not crossed; competitive submission is gameplay enforcement, not a paid
+feature. The packet adds no leaderboard read surface (deferred to WP-055)
+and no public ranking, sorting, or pagination affordance.
+
+**Determinism preservation:** Confirmed (Vision §22 / §24).
+- Replay re-execution via `replayGame` is deterministic by construction
+  per WP-027.
+- `computeStateHash(replayResult.finalState)` must equal the submitted
+  `replayHash`; any mismatch fails closed with
+  `replay_verification_failed`.
+- The defense-in-depth check `computeParScore(scoringConfig) === parValue`
+  (D-5306 Option A) detects corruption / mismatched-artifact bugs without
+  altering the deterministic-replay invariant — both `parValue` and
+  `scoringConfig` flow from the same PAR artifact, so structural drift is
+  impossible.
+- No `Math.random`, `Date.now`, or locale-sensitive code paths are
+  introduced. The migration's `created_at timestamptz NOT NULL DEFAULT
+  now()` is an audit-only timestamp produced at INSERT time at the SQL
+  layer; it does not enter gameplay state, replay verification, or
+  scoring math.
+
+---
+
+## Funding Surface Gate (§20 — N/A)
+
+**Status:** N/A by construction. WP-053 introduces no payment, donation,
+subscription, tournament-funding, or supporter-tier affordance; it is a
+competition-enforcement pipeline. The packet adds one new server-layer
+logic file orchestrating engine contracts plus one Class 3 Snapshot
+record type — none of which expose a funding surface or affect any
+monetization invariant.
+
+The §20 funding-surface lint trigger anticipated by WP-098 has not yet
+landed in `00.3-prompt-lint-checklist.md`; this declaration is therefore
+forward-compatible. If WP-098 lands before WP-053 executes, no
+re-derivation is required — the N/A justification is structural, not
+contingent on the gate's exact wording.
 
 ---
 
@@ -448,9 +510,9 @@ The following requirements are mandatory:
 
 ### C) Database migration — new
 
-- `data/migrations/NNN_create_competitive_scores_table.sql`:
+- `data/migrations/007_create_competitive_scores_table.sql`:
   ```sql
-  CREATE TABLE legendary.competitive_scores (
+  CREATE TABLE IF NOT EXISTS legendary.competitive_scores (
     submission_id         bigserial    PRIMARY KEY,
     player_id             bigint       NOT NULL REFERENCES legendary.players(player_id),
     replay_hash           text         NOT NULL,
@@ -550,8 +612,13 @@ Uses `node:test` and `node:assert` only. No boardgame.io import.
   SUBMISSION_REJECTION_REASONS
 - `apps/server/src/competition/competition.logic.ts` — **new** —
   submitCompetitiveScore, findCompetitiveScore, listPlayerCompetitiveScores
-- `data/migrations/NNN_create_competitive_scores_table.sql` — **new** —
-  legendary.competitive_scores table
+- `data/migrations/007_create_competitive_scores_table.sql` — **new** —
+  legendary.competitive_scores table. Slot `007` follows WP-103's `006`
+  (replay_blobs); idempotent via `CREATE TABLE IF NOT EXISTS` per the
+  WP-052 / WP-103 / FP-01 migration precedent. If WP-101 (Handle Claim
+  Flow) lands its migration before WP-053 executes, this slot must be
+  re-confirmed at A0-stage time against a fresh `data/migrations/`
+  listing — see WP-101 in `WORK_INDEX.md` line 2038.
 - `apps/server/src/competition/competition.logic.test.ts` — **new** —
   `node:test` coverage (9 tests)
 

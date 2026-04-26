@@ -94,7 +94,7 @@ All items below must be copied verbatim from WP-053.
 
 - `apps/server/src/competition/competition.types.ts` — **new** — CompetitiveSubmissionRequest, CompetitiveScoreRecord, SubmissionResult (with `wasExisting` on the success variant), SubmissionRejectionReason, `SUBMISSION_REJECTION_REASONS`
 - `apps/server/src/competition/competition.logic.ts` — **new** — submitCompetitiveScore, findCompetitiveScore, listPlayerCompetitiveScores
-- `data/migrations/NNN_create_competitive_scores_table.sql` — **new** — legendary.competitive_scores
+- `data/migrations/007_create_competitive_scores_table.sql` — **new** — legendary.competitive_scores. Slot `007` follows WP-103 `006` (replay_blobs); idempotent via `CREATE TABLE IF NOT EXISTS` per WP-052 / WP-103 / FP-01 precedent. If WP-101 lands its migration first, re-confirm slot at A0 stage against a fresh `data/migrations/` listing.
 - `apps/server/src/competition/competition.logic.test.ts` — **new** — 9 tests covering eligibility rejection, PAR enforcement, replay verification, idempotency, immutability, and drift detection
 
 ---
