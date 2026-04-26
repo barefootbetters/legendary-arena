@@ -2,9 +2,9 @@
 
 **Status:** Ready for Implementation
 **Primary Layer:** Server / Competition Enforcement
-**Version:** 1.3
-**Last Updated:** 2026-04-24
-**Dependencies:** WP-048, WP-051, WP-052, WP-027, WP-004
+**Version:** 1.4
+**Last Updated:** 2026-04-25
+**Dependencies:** WP-048, WP-051, WP-052, WP-027, WP-004, WP-103, WP-053a
 
 ---
 
@@ -68,23 +68,39 @@ must never re-implement scoring logic.
   - `replayGame(input): ReplayResult` exists and is pure
   - `computeStateHash(G)` exists with canonical serialization
 - WP-048 complete. Specifically:
-  - `deriveScoringInputs(replayResult, gameLog): ScoringInputs` is exported
+  - `deriveScoringInputs(replayResult: ReplayResult, gameState: LegendaryGameState): ScoringInputs`
+    is exported. Per **D-4801**, this function reads `G` state directly and
+    has **no event-log dependency** — the second argument is the
+    `LegendaryGameState` value (in practice, `replayResult.finalState`).
+    There is no `gameLog` / `GameMessage[]` parameter.
   - `computeRawScore(inputs, config): number` is exported
   - `computeParScore(config): number` is exported
   - `computeFinalScore(rawScore, parScore): number` is exported
   - `buildScoreBreakdown(inputs, config): ScoreBreakdown` is exported
   - `ScenarioScoringConfig` is exported with `scoringConfigVersion`
 - WP-051 complete. Specifically:
-  - `checkParPublished(scenarioKey)` returns `{ parValue, version }` or `null`
+  - **Baseline (WP-051):** `checkParPublished(scenarioKey)` returns
+    `{ parValue, version }` or `null`
   - Missing PAR → fail closed (competitive submissions rejected)
+  - The baseline shape above is **superseded for WP-053** by the
+    WP-053a-extended shape recorded under §"WP-053a complete" below.
 - WP-052 complete. Specifically:
-  - `PlayerId` branded string maps to `legendary.players.ext_id`
+  - `AccountId` branded string maps to `legendary.players.ext_id`
+    (per **D-5201** — formerly named `PlayerId`; this WP uses
+    `AccountId` throughout to match the post-rename codebase
+    exported by `apps/server/src/identity/identity.types.ts`)
   - `PlayerIdentity` discriminated union (`PlayerAccount | GuestIdentity`) and
     `isGuest(identity)` type guard are exported from
-    `apps/server/src/identity/identity.types.ts`
-  - `findReplayOwnership(replayHash, database)` returns ownership record or null
-  - `ReplayOwnershipRecord` with `visibility` field exists
-  - Guest identities cannot submit competitively (no `PlayerId`)
+    `apps/server/src/identity/identity.types.ts`. The `PlayerAccount`
+    variant carries `accountId: AccountId` (not `playerId`).
+  - `findReplayOwnership(replayHash, database)` returns
+    `ReplayOwnershipRecord | null` per
+    `apps/server/src/identity/replayOwnership.logic.ts`
+  - `ReplayOwnershipRecord` shape (locked):
+    `{ ownershipId, accountId: AccountId, replayHash, scenarioKey,
+    visibility, createdAt, expiresAt }`. The owner reference is the
+    `accountId` field — not `playerId`.
+  - Guest identities cannot submit competitively (no `AccountId`)
 - WP-103 complete. Specifically:
   - `storeReplay(replayHash, replayInput, database): Promise<void>` and
     `loadReplay(replayHash, database): Promise<ReplayInput | null>` are
@@ -95,17 +111,25 @@ must never re-implement scoring logic.
   - The replay-loader prerequisite is satisfied by `loadReplay`; this
     packet consumes that function, never re-implements storage.
 - WP-053a complete. Specifically:
-  - `checkParPublished(scenarioKey)` returns
-    `{ parValue, parVersion, source, scoringConfig }` — the
-    `scoringConfig: ScenarioScoringConfig` field is non-optional
+  - **Effective contract for WP-053:**
+    `checkParPublished(scenarioKey)` returns
+    `{ parValue, parVersion, source, scoringConfig }` or `null`. The
+    `scoringConfig: ScenarioScoringConfig` field is non-optional.
+    This shape **supersedes** the baseline `{ parValue, version }`
+    documented under §"WP-051 complete" above; WP-053 callers use the
+    extended shape exclusively.
+  - WP-053 algorithm fields actually consumed: `parValue`,
+    `parVersion`, `scoringConfig`. The `source` field is available
+    for audit/logging but is not used by the verification flow.
   - PAR artifacts (`SeedParArtifact` and `SimulationParArtifact`) carry
     `scoringConfig` end-to-end; the gate returns it from the in-memory
     index materialized at startup
-  - Per D-5306 (Option A), drift between `scoringConfig` and `parValue`
-    is structurally impossible because both flow from the same PAR
-    artifact. Flow step 12 (`computeParScore(config) === parValue`)
-    becomes defense-in-depth rather than a primary safety net.
-  - Per D-5306d, `legendary.competitive_scores` retains both
+  - Per **D-5306 (Option A)**, drift between `scoringConfig` and
+    `parValue` is structurally impossible because both flow from the
+    same PAR artifact. Flow step 12 (`computeParScore(config) ===
+    parValue`) is therefore **defense-in-depth / corruption
+    detection** — not the primary safety net.
+  - Per **D-5306d**, `legendary.competitive_scores` retains both
     `par_version` and `scoring_config_version` columns as audit
     redundancy; no `CHECK` constraint enforcing equality.
 - `docs/13-REPLAYS-REFERENCE.md` exists (normative governance)
@@ -171,8 +195,8 @@ Before writing a single line:
   `buildScoreBreakdown`). Server code must never re-implement scoring logic.
 - **PAR is mandatory:** `checkParPublished(scenarioKey)` must return non-null
   before any competitive submission proceeds. No PAR → no score.
-- **Identity affects eligibility, never scoring:** `PlayerId` determines who
-  may submit; it is never passed to scoring functions.
+- **Identity affects eligibility, never scoring:** `AccountId` determines
+  who may submit; it is never passed to scoring functions.
 - **Idempotency required:** `UNIQUE (player_id, replay_hash)` enforces that
   retries return the existing record unchanged.
 - **Competitive records are immutable:** once created, a `CompetitiveScoreRecord`
@@ -215,20 +239,29 @@ Before writing a single line:
   Lower is always better. All arithmetic is centesimal integer.
 
 - **Scoring function signatures (from WP-048):**
-  - `deriveScoringInputs(replayResult: ReplayResult, gameLog: GameMessage[]): ScoringInputs`
+  - `deriveScoringInputs(replayResult: ReplayResult, gameState: LegendaryGameState): ScoringInputs`
+    — per **D-4801**, second arg is the final state (`replayResult.finalState`); no event-log dependency
   - `computeRawScore(inputs: ScoringInputs, config: ScenarioScoringConfig): number`
   - `computeParScore(config: ScenarioScoringConfig): number`
   - `computeFinalScore(rawScore: number, parScore: number): number`
   - `buildScoreBreakdown(inputs: ScoringInputs, config: ScenarioScoringConfig): ScoreBreakdown`
 
-- **PAR gate (from WP-051):**
-  `checkParPublished(scenarioKey)` returns `{ parValue, version }` or `null`
-  `null` → reject competitive submission (fail closed)
+- **PAR gate (baseline from WP-051; extended by WP-053a — effective contract for this packet):**
+  - **Baseline (WP-051):** `checkParPublished(scenarioKey)` returns `{ parValue, version }` or `null`
+  - **Effective for WP-053 (post-WP-053a, commit `e5b9d15`):**
+    `checkParPublished(scenarioKey)` returns
+    `{ parValue, parVersion, source, scoringConfig }` or `null`.
+    Fields consumed by WP-053: `parValue`, `parVersion`, `scoringConfig`.
+    The `source` field is audit-only and is not used by the algorithm.
+  - `null` → reject competitive submission (fail closed)
 
 - **Identity (from WP-052):**
-  `PlayerId` maps to `legendary.players.ext_id`
-  `findReplayOwnership(replayHash, database)` returns ownership record or `null`
-  Guest identities cannot submit competitively
+  `AccountId` (formerly `PlayerId`, renamed per **D-5201**) maps to
+  `legendary.players.ext_id`
+  `findReplayOwnership(replayHash, database)` returns
+  `ReplayOwnershipRecord | null` whose owner reference is
+  `accountId: AccountId` (not `playerId`)
+  Guest identities cannot submit competitively (no `AccountId`)
 
 - **`legendary.*` namespace** (PostgreSQL):
   All tables live in the `legendary.*` schema. PKs use `bigserial`.
@@ -289,12 +322,19 @@ The following requirements are mandatory:
 - `interface CompetitiveSubmissionRequest { replayHash: string }`
   - `// why:` comment: request references replay by hash only; replay content
     is never re-sent by the client — the server loads it from storage
-- `interface CompetitiveScoreRecord { submissionId: number; playerId: PlayerId; replayHash: string; scenarioKey: string; rawScore: number; finalScore: number; scoreBreakdown: ScoreBreakdown; parVersion: string; scoringConfigVersion: number; stateHash: string; createdAt: string }`
+- `interface CompetitiveScoreRecord { submissionId: number; accountId: AccountId; replayHash: string; scenarioKey: string; rawScore: number; finalScore: number; scoreBreakdown: ScoreBreakdown; parVersion: string; scoringConfigVersion: number; stateHash: string; createdAt: string }`
   - `// why:` comment: record is an immutable snapshot of verified execution;
     includes both `parVersion` and `scoringConfigVersion` to pin the exact
     scoring context used at verification time
   - `// why:` comment: `scoreBreakdown` stored as JSON column for full
     transparency and auditability of how the score was computed
+  - `// why:` comment: owner reference uses `accountId: AccountId`
+    (the WP-052 cross-service ID mapped to `legendary.players.ext_id`,
+    renamed from `PlayerId` per D-5201). The SQL column is
+    `player_id bigint REFERENCES legendary.players(player_id)` —
+    the application maps between SQL bigint PK and the
+    `AccountId` text at the persistence boundary, mirroring
+    WP-052's `ReplayOwnershipRecord` pattern.
 - `type SubmissionResult =
     | { ok: true; record: CompetitiveScoreRecord; wasExisting: boolean }
     | { ok: false; reason: SubmissionRejectionReason }`
@@ -317,51 +357,92 @@ The following requirements are mandatory:
 - `submitCompetitiveScore(identity: PlayerIdentity, replayHash: string, database: DatabaseClient): Promise<SubmissionResult>`
   — orchestrates the full verification pipeline:
   1. Reject if `isGuest(identity)` → `{ ok: false, reason: 'guest_not_eligible' }`
-     (fail fast — no DB hits before identity check)
+     (fail fast — no DB hits before identity check). After this guard,
+     `identity` narrows to `PlayerAccount` and `identity.accountId` is
+     available.
   2. `findReplayOwnership(replayHash, database)` — if null,
      `{ ok: false, reason: 'replay_not_found' }`
-  3. Verify `ownershipRecord.playerId === identity.playerId` — else
+  3. Verify `ownershipRecord.accountId === identity.accountId` — else
      `{ ok: false, reason: 'not_owner' }`
   4. Verify `ownershipRecord.visibility !== 'private'` — else
      `{ ok: false, reason: 'visibility_not_eligible' }` (private replays are
      not eligible until visibility is explicitly changed)
-  5. Extract `scenarioKey` from ownership record
+  4b. **Idempotency fast-path:** look up an existing competitive record
+     keyed on `(accountId, replayHash)`. If present, return
+     `{ ok: true, record: existingRecord, wasExisting: true }`
+     immediately — no `loadReplay` call, no `replayGame` re-execution,
+     no PAR gate I/O, no record mutation. Implementation choice
+     between a JOIN against `legendary.players` (resolving
+     `accountId → player_id` in SQL) versus a two-query lookup is
+     left to the implementer; both satisfy the contract.
+     - `// why:` placed here so retries short-circuit *before* any
+       expensive replay load or re-execution. PAR is monotonic per
+       WP-051 (once published, always published), so re-validating
+       PAR for a record that already passed it on its original
+       submission is wasted work.
+  5. Extract `scenarioKey` from `ownershipRecord.scenarioKey` (the
+     literal field name on `ReplayOwnershipRecord` per WP-052) —
+     do **not** re-derive from the replay; ownership is the
+     authority for which scenario this replay belongs to.
   6. `checkParPublished(scenarioKey)` — enforce PAR gate; on null,
      `{ ok: false, reason: 'par_not_published' }`; on success returns
-     `{ parValue, version }`
-  7. Load replay data from storage by `replayHash` (loader is a prerequisite
-     per `## Assumes`)
+     `{ parValue, parVersion, source, scoringConfig }` (per WP-053a).
+     WP-053 algorithm consumes `parValue`, `parVersion`, and
+     `scoringConfig`; `source` is audit-only.
+  7. `loadReplay(replayHash, database)` — load `ReplayInput` from
+     `legendary.replay_blobs` (per WP-103). On `null` →
+     `{ ok: false, reason: 'replay_verification_failed' }` (the
+     ownership record exists but the blob is missing — treat as a
+     verification failure, never silently 404).
   8. `replayGame(replayInput)` — re-execute deterministically
   9. `computeStateHash(replayResult.finalState)` — must equal `replayHash`;
      otherwise `{ ok: false, reason: 'replay_verification_failed' }`
-  10. `deriveScoringInputs(replayResult, gameLog)` — extract scoring inputs
-  11. `computeRawScore(inputs, config)` — compute raw score via engine
-  12. `computeParScore(config)` must equal `parValue` from step 6 — drift
-     guard; mismatch → `{ ok: false, reason: 'replay_verification_failed' }`
+  10. `deriveScoringInputs(replayResult, replayResult.finalState)` —
+     extract scoring inputs. Per **D-4801**, the second argument is
+     the final `LegendaryGameState` (read directly from
+     `replayResult.finalState`); there is no `gameLog` /
+     `GameMessage[]` parameter.
+  11. `computeRawScore(inputs, scoringConfig)` — compute raw score via
+     the engine, using the `scoringConfig` returned by the gate in
+     step 6
+  12. **Defense-in-depth check (corruption detection):**
+     `computeParScore(scoringConfig)` must equal `parValue` from
+     step 6; mismatch → `{ ok: false, reason: 'replay_verification_failed' }`.
+     Per **D-5306 Option A**, drift is *structurally* impossible
+     because both `parValue` and `scoringConfig` flow from the same
+     PAR artifact. This check is therefore a corruption / bit-flip
+     / mismatched-artifact safety net, not the primary integrity
+     mechanism.
   13. `computeFinalScore(rawScore, parValue)` — normalize against the
-     **published** PAR (server enforces, never derives)
-  14. `buildScoreBreakdown(inputs, config)` — full breakdown for transparency
+     **published** `parValue` from step 6 (server enforces, never derives)
+  14. `buildScoreBreakdown(inputs, scoringConfig)` — full breakdown for
+     transparency
   15. Insert `CompetitiveScoreRecord` into `legendary.competitive_scores`
      with `stateHash === replayHash`
   - Returns `{ ok: true, record, wasExisting: false }` on a fresh accepted
     submission
   - Returns `{ ok: false, reason }` on any rejection — never throws
-  - Idempotent: if `(player_id, replay_hash)` already exists, returns
-    `{ ok: true, record: existingRecord, wasExisting: true }` without
-    re-executing the replay
+  - **Race condition (post-step-4b):** if step 4b's existence check
+    misses a row that another process inserts before step 15, the
+    INSERT raises a `UNIQUE (player_id, replay_hash)` violation
+    (`23505`). Application logic must treat this violation as an
+    idempotent success — re-read the existing row and return
+    `{ ok: true, record: existingRecord, wasExisting: true }`.
+    Never re-throw; never re-execute verification.
   - `// why:` comment: idempotency prevents double submissions from retries;
     `wasExisting` lets callers surface "already submitted" without a failure
     branch
   - `// why:` comment: every scoring call delegates to engine contracts —
     server never re-implements scoring
-  - `// why:` comment: step 12 PAR equality check catches drift between the
-    stored scoring config and the published PAR artifact (e.g., config
-    shipped without re-publishing PAR), per "server enforces, never derives"
+  - `// why:` comment: step 12 is defense-in-depth per D-5306 Option A —
+    structural drift is impossible because `parValue` and `scoringConfig`
+    flow from the same PAR artifact; the equality check guards against
+    corruption, bit-flips, and mismatched-artifact hand-off bugs only
 
 - `findCompetitiveScore(replayHash: string, database: DatabaseClient): Promise<CompetitiveScoreRecord | null>`
   — looks up competitive record by replay hash
 
-- `listPlayerCompetitiveScores(playerId: PlayerId, database: DatabaseClient): Promise<CompetitiveScoreRecord[]>`
+- `listPlayerCompetitiveScores(accountId: AccountId, database: DatabaseClient): Promise<CompetitiveScoreRecord[]>`
   — returns all competitive records for a player, ordered by `createdAt`
   descending
 
@@ -388,13 +469,29 @@ The following requirements are mandatory:
     idempotent submission; scores are immutable records of verified execution
   - `// why:` comment: `score_breakdown` stored as `jsonb` for full auditability;
     `scoring_config_version` pins the scoring context
+  - `// why:` comment: `replay_hash` and `state_hash` are stored
+    redundantly to make verification provenance explicit. Equality
+    (`state_hash === replay_hash`) is asserted at write time by
+    application logic, never inferred at read time. The two columns
+    exist to make audit queries trivial (`WHERE replay_hash !=
+    state_hash` returns zero rows by construction); a future
+    integrity audit job can rely on this without joining engine code.
+  - `// why:` comment: SQL FK uses `player_id bigint REFERENCES
+    legendary.players(player_id)` (the WP-052 `bigserial` PK), not
+    the `AccountId` text. The application maps between SQL bigint
+    and `AccountId` at the persistence boundary (mirrors WP-052's
+    `legendary.replay_ownership` shape). Per WP-052 §1, the
+    `legendary.*` namespace owns this mapping convention.
 
 ### D) Tests — `apps/server/src/competition/competition.logic.test.ts` — new
 
 Uses `node:test` and `node:assert` only. No boardgame.io import.
 
 - Nine tests:
-  1. Reject submission if replay not owned by player → `{ ok: false, reason: 'not_owner' }`
+  1. Reject submission when the replay **exists but is not owned by**
+     the submitting account → `{ ok: false, reason: 'not_owner' }`
+     (fixture: account A owns the replay; account B attempts
+     submission with the same `replayHash`)
   2. Reject submission if player is a guest → `{ ok: false, reason: 'guest_not_eligible' }`
   3. Reject submission if replay visibility is `private` → `{ ok: false, reason: 'visibility_not_eligible' }`
   4. Reject submission if PAR not published → `{ ok: false, reason: 'par_not_published' }`
@@ -402,10 +499,24 @@ Uses `node:test` and `node:assert` only. No boardgame.io import.
      `computeStateHash(finalState)` and the request's `replayHash`
   6. Successful submission recomputes `rawScore` via engine — client value ignored
   7. Idempotent submission returns existing record unchanged with
-     `{ ok: true, wasExisting: true }`; replay is not re-executed
+     `{ ok: true, wasExisting: true }` and **does not call `loadReplay`
+     or `replayGame`** (verified via spies / counters on the injected
+     dependencies)
   8. Competitive record is immutable — no UPDATE function exists
   9. `SUBMISSION_REJECTION_REASONS` array matches `SubmissionRejectionReason`
      union members (drift detection via exhaustive switch)
+
+- **Coverage gap (intentional):** the `'replay_not_found'` rejection
+  path is not covered by the test list above. Step 2 of the flow
+  produces it when `findReplayOwnership` returns `null`; the
+  surrounding logic is identical to the `not_owner` path (Step 3).
+  A 10th test for `replay_not_found` is a defensible addition but
+  would expand the test count beyond the locked 9; deferring this
+  test to a follow-up coverage WP rather than scope-creeping
+  WP-053. Drift-detection test #9 ensures the union member is
+  reachable; integration tests in a follow-up WP (or in WP-054
+  when the leaderboard read path covers similar lookups) close
+  the gap.
 
 - Tests 1–7 require a test PostgreSQL database. If unavailable, they must be
   marked with `{ skip: 'requires test database' }` — never silently omitted.
@@ -464,30 +575,49 @@ All items must be binary pass/fail. No partial credit.
 - [ ] No scoring logic exists in server code — all scoring delegates to engine
 
 ### PAR Gate
-- [ ] `checkParPublished(scenarioKey)` is called before scoring
+- [ ] `checkParPublished(scenarioKey)` is called before scoring (post
+      idempotency fast-path; not called on retries that hit existing records)
 - [ ] Missing PAR → `{ ok: false, reason: 'par_not_published' }`
 - [ ] `parValue` from `checkParPublished` is the value passed to
       `computeFinalScore` — server enforces published PAR, never derives
-- [ ] `computeParScore(config)` equality with `parValue` is asserted; mismatch
-      → `replay_verification_failed`
+- [ ] `scoringConfig` returned by the gate is the value passed to
+      `computeRawScore`, `computeParScore`, and `buildScoreBreakdown`
+      (per WP-053a — both `parValue` and `scoringConfig` flow from the
+      same PAR artifact)
+- [ ] `computeParScore(scoringConfig)` equality with `parValue` is asserted
+      as **defense-in-depth** (D-5306 Option A — structural drift is
+      impossible; this check guards against corruption / mismatched-
+      artifact bugs only); mismatch → `replay_verification_failed`
 - [ ] `parVersion` and `scoringConfigVersion` are stored in the competitive record
 
 ### Identity & Eligibility
-- [ ] `submitCompetitiveScore` accepts `PlayerIdentity` (not `PlayerId`) so
+- [ ] `submitCompetitiveScore` accepts `PlayerIdentity` (not bare `AccountId`) so
       guest rejection is enforceable inside the server, not delegated upstream
 - [ ] Guest players are rejected before any DB read →
       `{ ok: false, reason: 'guest_not_eligible' }`
 - [ ] Replay ownership is verified before submission proceeds
+- [ ] Ownership comparison uses `ownershipRecord.accountId === identity.accountId`
+      (the post-D-5201 field name; never `playerId`)
 - [ ] Non-owner submissions rejected → `{ ok: false, reason: 'not_owner' }`
 - [ ] Private replays rejected → `{ ok: false, reason: 'visibility_not_eligible' }`
-- [ ] `PlayerId` is used for eligibility only — never passed to scoring functions
+- [ ] `AccountId` is used for eligibility only — never passed to scoring functions
 
 ### Immutability & Idempotency
 - [ ] `CompetitiveScoreRecord` is immutable — no UPDATE function exists
+      (verified via `Select-String` against any `UPDATE legendary.competitive_scores`
+      or `updateCompetitive*` symbol)
 - [ ] `UNIQUE (player_id, replay_hash)` prevents duplicate submissions and
       re-submission under new scoring/PAR versions
 - [ ] Retry returns `{ ok: true, record: existingRecord, wasExisting: true }`
       without re-executing the replay
+- [ ] **Idempotent retry returns existing record without loading replay
+      blob** (no `loadReplay` call, no `replayGame` call — verified via
+      injected dependency spies in test #7)
+- [ ] Race-condition path on `(player_id, replay_hash)` UNIQUE
+      violation (`23505`) at INSERT time is treated as an idempotent
+      success: re-read the row and return
+      `{ ok: true, wasExisting: true }` — never re-throw, never
+      re-execute verification
 - [ ] `'already_submitted'` is **not** a member of `SubmissionRejectionReason`
       — duplicates are idempotent successes, not failures
 - [ ] `submitCompetitiveScore` never throws on expected failures — returns
@@ -568,7 +698,19 @@ git diff packages/game-engine/src/replay/
 git diff apps/server/src/identity/
 # Expected: no changes
 
-# Step 10 — confirm no files outside scope were changed
+# Step 10 — confirm no UPDATE path exists for competitive scores
+# (immutability invariant — any update path is a contract violation)
+Select-String -Path "apps\server\src" -Pattern "updateCompetitive|UPDATE\s+legendary\.competitive_scores|UPDATE\s+competitive_scores" -Recurse
+# Expected: no output
+
+# Step 11 — confirm no `gameLog` parameter or `GameMessage[]` reference
+# leaked into competition code (the WP-053a-aware signature is
+# `deriveScoringInputs(replayResult, replayResult.finalState)`; the
+# event-log dependency was removed by D-4801)
+Select-String -Path "apps\server\src\competition" -Pattern "gameLog|GameMessage\[\]" -Recurse
+# Expected: no output
+
+# Step 12 — confirm no files outside scope were changed
 git diff --name-only
 # Expected: only files listed in ## Files Expected to Change
 ```

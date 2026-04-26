@@ -46,6 +46,26 @@
 > Substantive WP-053 guidance unchanged — only the prerequisite
 > chain reflects WP-053a's actual landing.
 >
+> **Revised:** 2026-04-25 — post-WP-053-+-EC-053-surgical-revision
+> reconciliation. WP-053 (Version 1.3 → **1.4**) and EC-053 were
+> surgically revised in the working tree on 2026-04-25 to (a) fold
+> all §5.1 drift items in-place, (b) correct three additional drift
+> items not surfaced in the original §5 list, and (c) propagate the
+> WP-053a / D-5306 Option A reframing from §Assumes into §Locked
+> contract values, the §Flow numbered steps, the migration `// why:`
+> comments, the §Acceptance Criteria, and the §Verification Steps.
+> The header `Dependencies` line now lists WP-103 + WP-053a
+> explicitly (was missing both). EC-053 received parallel updates
+> across §Before Starting / §Locked Values / §Guardrails / §After
+> Completing / §Common Failure Smells. **The revisions are
+> uncommitted in the working tree as of this revision.** They are
+> A0 SPEC scope per §9 step 4–5 and should land before any WP-053
+> execution branch is cut. Full inventory of changes — and the two
+> pre-existing lint gaps surfaced but **not** addressed in this
+> revision pass — recorded in new §11 below. §5 is preserved
+> verbatim as the historical drift record; §11 supersedes §5 for
+> items now reconciled.
+>
 > **This file is not authoritative.** If conflict arises with
 > `docs/ai/ARCHITECTURE.md`, `.claude/rules/*.md`, WP-053, or EC-053,
 > those documents win. See §8 priority chain.
@@ -663,3 +683,250 @@ file (`parGate.test.ts` for new submission paths,
 expect ~10-30 fixture-update lines per affected test file even for
 small contract extensions. Pre-budget that into the WP-053
 pre-flight session's expected-blast-radius estimate.
+
+---
+
+## 11. Post-2026-04-25 WP-053 + EC-053 Surgical Revision Pass
+
+This section supersedes §5 for items now reconciled and documents
+three additional drift items that the original §5 did not surface.
+Authored 2026-04-25 in the working tree; uncommitted at write time.
+
+### 11.1 Inventory of changes landed in the working tree
+
+WP-053 (`docs/ai/work-packets/WP-053-competitive-score-submission-verification.md`)
+revised from **Version 1.3 → 1.4**:
+
+| Locus | Change |
+|---|---|
+| Header `Dependencies` line | Added `WP-103, WP-053a`. Was previously inconsistent with §Assumes (which already listed both). |
+| §Assumes — WP-048 `deriveScoringInputs` | Signature corrected to `(replayResult, gameState: LegendaryGameState)` per **D-4801**. The pre-revision text claimed a `gameLog: GameMessage[]` second parameter — no such parameter exists in the engine codebase. See §11.3 below. |
+| §Assumes — WP-051 PAR gate | Marked baseline `{ parValue, version }` as superseded for WP-053 by the WP-053a-extended shape. |
+| §Assumes — WP-052 | `PlayerId` → `AccountId` per **D-5201**. `ReplayOwnershipRecord` shape made explicit (owner field is `accountId: AccountId`, not `playerId`). |
+| §Assumes — WP-053a | Marked as the **effective contract** for WP-053; the four fields actually consumed by the algorithm (`parValue`, `parVersion`, `scoringConfig`) called out; `source` flagged as audit-only. Step 12 reframed inline as defense-in-depth per D-5306 Option A. |
+| §Non-Negotiable Constraints — Identity | `PlayerId` → `AccountId`. |
+| §Locked contract values — Scoring signatures | `gameLog: GameMessage[]` removed; `gameState: LegendaryGameState` substituted; D-4801 cited inline. |
+| §Locked contract values — PAR gate | Restructured into two sub-bullets: `Baseline (WP-051)` and `Effective for WP-053 (post-WP-053a)`. The effective shape `{ parValue, parVersion, source, scoringConfig }` is now stated verbatim in the locked-values section (was only in §Assumes pre-revision). |
+| §Locked contract values — Identity | `PlayerId` → `AccountId` with D-5201 citation. |
+| §A `CompetitiveScoreRecord` | Owner field renamed `playerId: PlayerId` → `accountId: AccountId`. New `// why:` comment documenting the SQL-vs-TS persistence-boundary mapping (SQL column stays `player_id bigint REFERENCES legendary.players(player_id)` per WP-052's `replay_ownership` precedent; TS field is `accountId: AccountId` mapped to `legendary.players.ext_id`). |
+| §B `submitCompetitiveScore` flow | Eight substantive changes — see §11.2 below for the full diff narrative. |
+| §B `listPlayerCompetitiveScores` | Parameter renamed `playerId: PlayerId` → `accountId: AccountId`. |
+| §C migration `// why:` comments | Two additions: (1) explicit rationale for the redundant `replay_hash` / `state_hash` columns ("equality is asserted at write time, not inferred at read time"); (2) explicit rationale for the SQL-bigint / TS-AccountId boundary mapping. |
+| §D test #1 wording | Clarified to "replay **exists but is not owned by** the submitting account" — disambiguates from the `replay_not_found` rejection path (step 2 of the flow). Coverage gap for `replay_not_found` documented inline; deferred to a follow-up coverage WP rather than expanding WP-053's locked 9-test count. |
+| §D test #7 wording | Now requires verifying via injected dependency spies that `loadReplay` and `replayGame` are **not** called on the idempotent-retry path. |
+| §AC PAR Gate group | Idempotency-fast-path-precondition AC added; `scoringConfig` flow AC added; defense-in-depth framing applied. |
+| §AC Identity & Eligibility group | All `PlayerId` references → `AccountId`. New AC asserting ownership comparison uses `ownershipRecord.accountId === identity.accountId`. |
+| §AC Immutability & Idempotency group | New AC: idempotent retry returns existing record without `loadReplay` call. New AC: race-condition path on `(player_id, replay_hash)` UNIQUE violation (`23505`) treated as idempotent success. |
+| §Verification Steps | Two new steps: **Step 10** greps for any UPDATE path under `apps/server/src` (`updateCompetitive*` symbols, `UPDATE legendary.competitive_scores`); **Step 11** greps for any `gameLog` / `GameMessage[]` reference under `apps/server/src/competition` (must return zero matches per D-4801). Existing scope-enforcement step renumbered to Step 12. |
+
+EC-053 (`docs/ai/execution-checklists/EC-053-competitive-score-submission.checklist.md`)
+parallel updates:
+
+| Locus | Change |
+|---|---|
+| §Before Starting line for WP-048 | `deriveScoringInputs` verify-grep targets `gameState: LegendaryGameState` (not `gameLog`); D-4801 cited. |
+| §Before Starting line for WP-052 | Adds explicit verify-grep for `AccountId` export presence and `PlayerId` export absence; D-5201 cited. Reframes the WP-052 dependency around `accountId: AccountId` — including in `ReplayOwnershipRecord`. |
+| §Locked Values — `submitCompetitiveScore` | `identity.playerId` → `identity.accountId`; D-5201 cited. |
+| §Locked Values — `ReplayOwnershipRecord` | Explicit statement that owner field is `accountId: AccountId`, used in flow step 3. |
+| §Locked Values — Scoring contract | `deriveScoringInputs(replayResult, replayResult.finalState)` locked verbatim; D-4801 cited; "any reference to `gameLog` is a contract violation" added. |
+| §Locked Values — Published PAR | `scoringConfig` returned by the gate is the value passed to `computeRawScore` / `computeParScore` / `buildScoreBreakdown` (per WP-053a). |
+| §Locked Values — Defense-in-depth | Step 12 reframing applied; D-5306 Option A cited as authority. |
+| §Locked Values — Idempotent retry | Now states that `loadReplay` and `replayGame` are not called on retry; race-condition path on `23505` documented; flow step 4b placement called out. |
+| §Locked Values — Scoring signatures | `gameLog` removed; per-D-4801 framing applied. |
+| §Guardrails | PAR equality reframed as defense-in-depth / corruption-detection, not the primary drift safety net. |
+| §After Completing | Three new pre-merge gates added: (1) no UPDATE path for competitive scores; (2) no `gameLog` / `GameMessage[]` reference in competition code; (3) no `PlayerId` / `playerId` references except `// why:` prose citing D-5201. Each gate ships with the exact `Select-String` invocation. |
+| §Common Failure Smells | Three new smells added: (1) code references `PlayerId` or `ownershipRecord.playerId` (stale post-D-5201); (2) `deriveScoringInputs` called with a `gameLog` / `GameMessage[]` argument (wrong signature); (3) idempotent-retry path calls `loadReplay` or `replayGame` before the existence check (fast-path mis-placement). |
+
+### 11.2 §B Flow — eight substantive changes
+
+The pre-revision flow had 15 steps (1–15). The post-revision flow
+has 16 steps (1–4, 4b, 5–15) with eight substantive changes:
+
+1. **Step 1 enhanced.** The `isGuest(identity)` early-rejection guard
+   now explicitly notes that after this guard `identity` narrows to
+   `PlayerAccount` and `identity.accountId` is available — closes
+   the type-narrowing question that made step 3 ambiguous.
+2. **Step 3 corrected.** `ownershipRecord.playerId === identity.playerId`
+   → `ownershipRecord.accountId === identity.accountId`. Resolves §5.1.
+3. **Step 4b inserted (new — idempotency fast-path).** Looks up
+   existing competitive record by `(accountId, replayHash)` and
+   short-circuits before any PAR-gate I/O or replay load.
+   Implementation choice between SQL JOIN vs two-query lookup left
+   to the implementer. Inline `// why:` documents that PAR is
+   monotonic per WP-051, so re-checking PAR for an existing record
+   is wasted work.
+4. **Step 5 sourced.** "Extract `scenarioKey` from ownership record"
+   → "Extract `scenarioKey` from `ownershipRecord.scenarioKey` (the
+   literal field name on `ReplayOwnershipRecord` per WP-052) — do
+   not re-derive from the replay". Closes a guess-the-field-name
+   trap.
+5. **Step 6 shape corrected.** Returns `{ parValue, parVersion, source,
+   scoringConfig }` per WP-053a (was `{ parValue, version }`). Algorithm
+   consumes `parValue` / `parVersion` / `scoringConfig`; `source` is
+   audit-only.
+6. **Step 7 named.** Explicitly invokes `loadReplay(replayHash, database)`
+   from WP-103 and treats `null` as `replay_verification_failed`
+   (closes a "what if the ownership record exists but the blob is
+   missing?" question).
+7. **Step 10 corrected.** `deriveScoringInputs(replayResult, gameLog)`
+   → `deriveScoringInputs(replayResult, replayResult.finalState)`.
+   Resolves §11.3.
+8. **Step 12 reframed.** "Drift guard" framing replaced with
+   "defense-in-depth / corruption detection" framing per D-5306
+   Option A. The check is preserved (mismatch still → `replay_verification_failed`)
+   but the rationale is now consistent with §Assumes. The post-step-15
+   `// why:` comment block was also updated.
+
+A new tail subsection on `submitCompetitiveScore` documents the
+post-step-4b race-condition handling: if step 4b's existence check
+loses a race, the INSERT raises `UNIQUE (player_id, replay_hash)`
+(`23505`); application logic re-reads the row and returns `{ ok:
+true, wasExisting: true }`. Never re-throws; never re-executes.
+
+### 11.3 Three drift items NOT surfaced in original §5 — now resolved
+
+The original §5 (authored 2026-04-25 pre-execution) caught the
+`PlayerId → AccountId` rename from D-5201 but did not surface three
+other drift items. All three are now resolved in the working-tree
+revision; recording them here so they don't get re-introduced
+during execution.
+
+#### 11.3.1 `deriveScoringInputs` second parameter is `gameState`, not `gameLog`
+
+The pre-revision WP-053 documented `deriveScoringInputs(replayResult,
+gameLog: GameMessage[])` in three places: §Assumes, §Locked contract
+values, and §B flow step 10. The actual engine signature at
+`packages/game-engine/src/scoring/parScoring.logic.ts:51` is:
+
+```ts
+export function deriveScoringInputs(
+  replayResult: ReplayResult,
+  gameState: LegendaryGameState,
+): ScoringInputs
+```
+
+Per D-4801, the function reads G state directly and has **no event-log
+dependency**. The function header literally states *"there is no
+structured event log dependency (D-4801)"*. There is no
+`GameMessage[]` type to obtain.
+
+Pre-revision risk: the implementer would either (a) get blocked
+trying to find the (nonexistent) `gameLog` field on `ReplayResult`,
+or (b) invent it and produce code that fails type-check immediately.
+The session protocol explicitly forbids guessing field names — but
+the WP itself was the source of the wrong name.
+
+Post-revision: `deriveScoringInputs(replayResult, replayResult.finalState)`
+is locked across §Assumes, §Locked contract values, and §B flow
+step 10. EC-053 §Locked Values carries the same correction with a
+verify-grep and a "any reference to `gameLog` in implementation is
+a contract violation" callout. Verification Step 11 in WP-053 and
+the corresponding §After Completing gate in EC-053 enforce zero
+`gameLog` / `GameMessage[]` matches in `apps/server/src/competition`.
+
+#### 11.3.2 `checkParPublished` shape inconsistency between §Assumes and §Locked / §Flow
+
+The pre-revision WP-053 was internally inconsistent on the
+`checkParPublished` return shape:
+
+- §Assumes (post-WP-053a-execution revision): `{ parValue, parVersion, source, scoringConfig }`
+- §Locked contract values (pre-WP-053a baseline language preserved): `{ parValue, version }`
+- §B flow step 6 (pre-WP-053a baseline language preserved): `{ parValue, version }`
+- §A `CompetitiveScoreRecord` field: `parVersion: string` (consistent with WP-053a)
+
+The drift originated in the previous revision pass: §Assumes was
+updated to reflect WP-053a's `e5b9d15` landing, but §Locked and §B
+flow were not propagated. Pre-revision risk: the implementer would
+either (a) follow §Locked / §B and miss the `scoringConfig` field
+entirely (forcing a separate config-catalog import that violates
+WP-053a's "server doesn't derive which config applies" boundary),
+or (b) follow §Assumes and produce code inconsistent with the
+locked-values section that the lint gate is supposed to enforce.
+
+Post-revision: §Locked carries both shapes explicitly — "Baseline
+(WP-051)" and "Effective for WP-053 (post-WP-053a, commit
+`e5b9d15`)" — making the supersession audit-trail explicit. §B
+flow step 6 returns the post-WP-053a shape verbatim.
+
+#### 11.3.3 Idempotency fast-path described in narrative but not in numbered flow
+
+The pre-revision WP-053 §B documented the idempotency contract in
+post-numbered-flow narrative ("Idempotent: if `(player_id, replay_hash)`
+already exists, returns ... without re-executing the replay"), but
+the numbered steps proceeded directly through ownership / visibility
+/ PAR gate / replay load / re-execution before the INSERT. An
+implementer reading the steps top-to-bottom would re-execute the
+replay before checking for an existing record — wasted compute, and
+ambiguous on whether re-execution is allowed at all on the retry
+path.
+
+Pre-revision risk: the implementer would naturally place the
+existence check at the `INSERT` site (relying on `ON CONFLICT (...)
+DO NOTHING` + `RETURNING`), which technically satisfies the
+idempotency contract but loads the replay blob and runs `replayGame`
+on every retry — a real cost on a hot path.
+
+Post-revision: a new step 4b sits between visibility check and
+scenario-key extraction, short-circuiting the entire replay-load /
+re-execution / scoring branch when an existing record is found. The
+inline `// why:` documents the placement rationale (PAR is monotonic;
+re-validating PAR on retry is wasted work). Test #7 now requires
+verifying via dependency spies that `loadReplay` and `replayGame`
+are **not** called on the idempotent-retry path. EC-053's §Common
+Failure Smells calls out fast-path mis-placement explicitly.
+
+### 11.4 Pre-existing lint gaps surfaced — NOT addressed in this revision
+
+Two §17 / §20 lint-checklist gaps surfaced during the lint
+self-walkthrough on the post-revision WP-053. **Both predate this
+revision pass.** They are recorded here so the next executor or a
+future cleanup-pass author has a known starting point.
+
+- **§17 Vision Alignment block missing as a structured section.**
+  WP-053 cites Vision Goal 22 (Deterministic Scoring) and Vision
+  Goal 24 (Replay-Verified Competitive Integrity) inline under
+  §"Why This Packet Matters", but does not present a structured
+  `## Vision Alignment` block with explicit clause-numbered list +
+  conflict assertion + non-goal proximity check + determinism-
+  preservation line as §17.2 requires. Lint §17 trigger surfaces
+  applicable: scoring (§17.1 line 1), replays (§17.1 line 2),
+  player identity (§17.1 line 3), determinism (§17.1 line 5).
+
+- **§20 Funding Surface Gate N/A not declared.** WP-098's §20
+  trigger requires every server-touching WP to either declare
+  applicability and run the gate, or declare N/A with a one-line
+  justification. WP-053 is N/A by construction (no payment surface,
+  no donation/subscription/tournament-funding affordance — it is a
+  competition-enforcement pipeline) but the declaration is missing.
+
+Recommended disposition: fold both into a single small SPEC-only
+revision pass (Version 1.4 → 1.5) before WP-053 execution, alongside
+any other §17 / §20 lint cleanup that surfaces. Out of scope for
+the current revision because (a) the current revision was tightly
+scoped to drift / consistency corrections, and (b) the §17 / §20
+additions are structural-template work that benefits from running
+as its own focused pass.
+
+### 11.5 Recommended next action
+
+Before any WP-053 execution branch is cut:
+
+1. Land an A0 SPEC commit on `main` containing the WP-053 + EC-053
+   surgical revisions documented in §11.1. Suggested commit
+   message: `SPEC: WP-053 + EC-053 v1.4 — fold post-WP-053a
+   contract drift (gameLog→gameState per D-4801, PlayerId→AccountId
+   per D-5201, idempotency fast-path step 4b, defense-in-depth
+   reframe) + add no-UPDATE / no-gameLog verification gates`.
+2. (Optional) Land a follow-up SPEC commit addressing §11.4's
+   pre-existing §17 / §20 lint gaps (Version 1.4 → 1.5). May be
+   bundled into the same A0 SPEC commit if the executor prefers a
+   single round-trip; either way works.
+3. Cut the WP-053 execution branch from `main` after A0 lands.
+4. Resume the §9 step 5+ sequence (stash unrelated WIP, mirror
+   WP-052 patterns, run the pre-commit-review template, etc.)
+
+§9's existing step 4 wording is partially superseded by §11 — the
+`PlayerId → AccountId` and migration-number drift it lists is now
+resolved in the working tree, awaiting commit. Re-read §9 step 4
+in light of §11.1's full inventory before authoring the A0 SPEC
+commit.
