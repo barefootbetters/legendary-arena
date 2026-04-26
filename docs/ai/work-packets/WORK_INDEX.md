@@ -1889,6 +1889,233 @@ These packets ship the game and keep it running.
   + [EC-096-registry-viewer-grid-data-view.checklist.md](../execution-checklists/EC-096-registry-viewer-grid-data-view.checklist.md)
   + D-9601.
 
+- [ ] WP-097 — Tournament Funding Policy (Governance) — Drafted 2026-04-25; lint-gate self-review PASS; EC-097 drafted 2026-04-26 (≤60 content lines per EC-TEMPLATE; two-commit topology per EC-085 precedent); pre-flight pending.
+  Dependencies: None. `docs/01-VISION.md §Financial Sustainability` and `§Non-Goals: Exploitative Monetization` (NG-1..NG-7) must already exist (they do). Can land standalone.
+  Notes: Retrospective governance for `docs/TOURNAMENT-FUNDING.md` — the
+  funding contract was authored during a 2026-04-25 conversation outside
+  the WP system. WP-097 reconciles the doc against Vision §Financial
+  Sustainability (which uses "No margin, no mission" in the standard
+  nonprofit-margin sense) by adding a `## Scope` section explicitly
+  distinguishing **tournament-level community funding** (organizer-side,
+  no-margin, infrastructure-only — governed by this doc) from
+  **platform-level revenue** (supporter subscriptions, cosmetics,
+  organized-play licensing, IP royalties — governed by Vision). Tightens
+  the "Infrastructure" definition to "incremental tournament-specific
+  costs" so it doesn't overlap the platform's always-on infrastructure.
+  Anchors the contract to **D-9701** (lands at execution time per the
+  WP's Definition of Done). Forbids the slogan "No margin, no mission"
+  in the funding doc to prevent semantic collision with Vision (the
+  funding doc uses "no organizer margin" instead). Five files in scope
+  at execution time: `docs/TOURNAMENT-FUNDING.md` (modified),
+  `docs/ai/DECISIONS.md` (D-9701 added), `docs/ai/STATUS.md` (entry
+  added), `WORK_INDEX.md` (this row flipped to `[x]`), and
+  `WP-097-tournament-funding-policy.md` (the WP file itself, already
+  created at draft time). No engine, registry, server, app, Vision,
+  Architecture, or rules files touched. Vision clauses touched:
+  §Financial Sustainability (peer-authority, no conflict — see WP's
+  `## Vision Alignment` block); NG-1, NG-2, NG-3, NG-5, NG-6, NG-7 all
+  preserved. NG-4 (energy systems / friction) N/A. Determinism N/A
+  (engine untouched). 01.5 not invoked (no `LegendaryGameState` field,
+  no `buildInitialGameState` change, no new `LegendaryGame.moves`, no
+  new phase hooks). Also authorizes (without implementing) three
+  future user-facing funding surfaces under a forbidden-semantics
+  fence cross-referencing NG-1/NG-3/NG-6/NG-7: §A Global Navigation
+  Donate / Support button (top-right region permitted; non-intrusive,
+  Open-Collective-default); §B Registry Viewer affordance
+  (discovery-only, never per-card or modal); §C Account / Profile
+  attribution (presentation-only, never in comparison contexts,
+  opt-in for public visibility). Future UI WPs implementing any of
+  these must cite WP-097 + D-9701 in their Authority block and stand
+  alone as scoped UI WPs; D-9701 timing caveat — those WPs are
+  blocked from passing §17 Vision Alignment until WP-097 executes and
+  D-9701 lands. §F Funding Surface Gate adds a seven-item pre-merge
+  checklist (G-1 label discipline, G-2 no-subscription framing, G-3
+  no entitlement, G-4 no registry gating / no per-content donor
+  attribution, G-5 no dark patterns, G-6 platform/tournament scope
+  clarity, G-7 attribution informational only) that downstream UI
+  WPs MUST satisfy and map per-surface in their `## Vision Alignment`
+  or dedicated `## Funding Surface Gate` block; deviations require a
+  Vision amendment or a new D-entry carve-out, never silent
+  exceptions. See
+  [WP-097-tournament-funding-policy.md](WP-097-tournament-funding-policy.md)
+  + [EC-097-tournament-funding-policy.checklist.md](../execution-checklists/EC-097-tournament-funding-policy.checklist.md).
+
+- [ ] WP-098 — Funding Surface Gate Trigger (00.3 §20) — Drafted 2026-04-26; lint-gate self-review PASS; EC-098 drafted 2026-04-26 (≤60 content lines per EC-TEMPLATE; two-commit topology per EC-085 / EC-097 precedent); pre-flight pending.
+  Dependencies: **Hard dep on WP-097 execution** — D-9701 must exist in
+  `docs/ai/DECISIONS.md` before §20 can cite it. WP-098 cannot execute
+  until WP-097 has landed. No other deps.
+  Notes: Closes the gap where WP-097 §F's Funding Surface Gate
+  (G-1..G-7) is self-described in the WP but not auto-applied at
+  lint-gate time. WP-098 adds `## §20 — Funding Surface Gate Trigger`
+  to `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md`, structurally
+  parallel to §17 Vision Alignment: §20.1 trigger conditions
+  (touches WP-097 §A / §B / §C surfaces, tournament funding-channel
+  integrations, or user-visible "donate" / "support tournaments"
+  copy); §20.2 required content (surface inventory + G-1..G-7
+  disposition + copy-deferral declaration + authority citation);
+  §20.3 boundary (does not redefine §F, does not replace §17, does
+  not apply to non-trigger WPs, does not apply retroactively). At
+  least four new fail-condition rows added to the Final Gate table.
+  §20 cites WP-097 §F G-1..G-7 by ID — never duplicates the gate
+  items (single-source-of-truth principle locked at AC-2). New
+  decision **D-9801** anchors §20 itself, distinct from D-9701:
+  D-9701 = "what the policy is"; D-9801 = "how the lint gate enforces
+  it." Seven files in scope at execution time:
+  `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md` (modified;
+  Commit A); `docs/ai/DECISIONS.md` (D-9801 added; Commit B);
+  `docs/ai/STATUS.md` (entry; Commit B); `WORK_INDEX.md` (this row
+  flipped to `[x]`; Commit B); `EC_INDEX.md` (EC-098 row flipped
+  Draft → Done; Commit B); `WP-098-funding-surface-gate-trigger.md`
+  (the WP file itself, already created at draft time);
+  `EC-098-funding-surface-gate-trigger.checklist.md` (the EC, already
+  created at draft time). No engine, registry, server, app, Vision,
+  Architecture, `.claude/`, WP-097, or funding-doc files touched.
+  Vision clauses touched: §Financial Sustainability (peer-authority
+  boundary preserved by extension of WP-097 §F enforcement); NG-1,
+  NG-3, NG-5, NG-6, NG-7 (gate items §20 enforces all cross-reference
+  these). NG-2 / NG-4 N/A. Determinism N/A (engine untouched). 01.5
+  not invoked. Self-application: WP-098 itself contains a `## Funding
+  Surface Gate` declaration marked **N/A with justification**
+  ("WP-098 codifies the §20 trigger; it implements no UI surface")
+  per WP-097 §F "Applicability is declared, never inferred" —
+  proof-of-concept demonstration that §20 self-applies cleanly. See
+  [WP-098-funding-surface-gate-trigger.md](WP-098-funding-surface-gate-trigger.md)
+  + [EC-098-funding-surface-gate-trigger.checklist.md](../execution-checklists/EC-098-funding-surface-gate-trigger.checklist.md).
+
+- [ ] WP-099 — Auth Provider Selection (Governance) — Drafted 2026-04-25; lint-gate self-review PASS; EC-099 drafted 2026-04-25 (≤60 content lines per EC-TEMPLATE — 50 content lines; two-commit topology per EC-097 / EC-098 precedent); pre-flight pending.
+  Dependencies: WP-052 (identity model exists; provider-agnostic envelope established). No hard dep on WP-097 / WP-098. Can land standalone.
+  Notes: Selects **Hanko** as the project's authentication broker
+  (open-source, self-hostable, OIDC-compliant, passkey-first). Locks
+  the integration boundary so Hanko is **invisible at rest**: the
+  `legendary.players.auth_provider` enum stays at WP-052's
+  `'email' | 'google' | 'discord'` (unchanged); Hanko-mediated users
+  are recorded under the federated IdP claim Hanko exposes (Google →
+  `'google'`, Discord → `'discord'`, email+passkey direct →
+  `'email'`); the broker never appears as an `auth_provider` value.
+  `AccountId` remains server-generated via `node:crypto.randomUUID()`
+  per WP-052 D-5201 — Hanko's `sub` becomes `authProviderId` only,
+  never primary identity. Hanko-specific code is confined to a
+  locked module path `apps/server/src/auth/hanko/` (sibling to
+  `identity/`, never under it) so swapping brokers later requires
+  zero `legendary.players` migration. Auth0 / Clerk / Passport
+  remain forbidden under `00.3 §7`; the §7 amendment landed by this
+  WP is a **Hanko-specific carve-out**, not a category-wide
+  permission for managed-credential providers. Guests are never
+  gated — core gameplay and immediate local replay export remain
+  unconditional per WP-052 / `13-REPLAYS-REFERENCE.md` §Account and
+  Guest Policy. Scope: docs-only (`docs/ai/REFERENCE/00.3-prompt-lint-checklist.md
+  §7` surgical append + `docs/ai/DECISIONS.md` `D-9901..D-9905` +
+  `docs/ai/STATUS.md` block + `docs/ai/work-packets/WORK_INDEX.md`
+  row flip + `docs/ai/execution-checklists/EC_INDEX.md` row flip).
+  No code changes; no new npm dependencies; no migrations; no
+  WP-052 contract files modified. Two-commit topology at execution:
+  A `EC-099:` (single file — `00.3 §7` amendment); B `SPEC:`
+  (DECISIONS.md `D-9901..D-9905` + STATUS.md `### WP-099 / EC-099
+  Executed` block + WORK_INDEX.md WP-099 row `[ ]` → `[x]` +
+  EC_INDEX.md EC-099 row `Draft` → `Done`). Vision clauses touched:
+  §3 (Player Trust & Fairness), §11 (Stateless Client Philosophy),
+  §14 (Explicit Decisions, No Silent Drift), §15 (Built for
+  Contributors); NG-1, NG-3, NG-6 not crossed. 01.5 NOT INVOKED
+  (engine entirely untouched). 01.6 post-mortem OPTIONAL per the
+  WP-093 / WP-097 governance-WP precedent (no executable code; no
+  long-lived abstraction beyond the decision record itself).
+  Authorizes future surfaces (policy-only, NOT implemented here):
+  WP-100 (session token validation; the
+  `requireAuthenticatedSession` provider referenced by WP-101) and
+  a future implementation WP (Hanko SDK wiring + JWT validation +
+  claim extraction; locked module path
+  `apps/server/src/auth/hanko/`); both must satisfy the §C
+  Future-Auth Gate F-1..F-7 in WP-099. Decision IDs landed at
+  execution: D-9901 (Hanko selected; replacement-safety structural),
+  D-9902 (`AccountId` server-generated, Hanko `sub` is
+  `authProviderId` only), D-9903 (`00.3 §7` Hanko carve-out),
+  D-9904 (Hanko code confined to `apps/server/src/auth/hanko/`),
+  D-9905 (guest policy preserved). See
+  [WP-099-auth-provider-selection.md](WP-099-auth-provider-selection.md)
+  + [EC-099-auth-provider-selection.checklist.md](../execution-checklists/EC-099-auth-provider-selection.checklist.md).
+
+- [ ] WP-101 — Handle Claim Flow & Global Uniqueness — Drafted 2026-04-25; lint-gate self-review PASS; EC-101 drafted 2026-04-25 (60 content lines exactly per EC-TEMPLATE cap); pre-flight pending.
+  Dependencies: WP-052 (identity model exists); WP-103 (migration `006_create_replay_blobs_table.sql` already landed at `fe7db3e` — WP-101 uses migration slot **`007`**, not `006`). Soft-dep on WP-100 (session token validation) for the runtime caller, but WP-101 does not require WP-100 to land first — uses caller-injected `requireAuthenticatedSession(req): Promise<AccountId>` contract with stubbed test fixtures (mirrors WP-052 `DatabaseClient` injection precedent).
+  Notes: Server-only packet adding immutable, globally unique,
+  URL-safe `handle` to `legendary.players` via migration `007`. Three
+  new columns: `handle_canonical text` (nullable until claim; partial
+  UNIQUE index on `WHERE handle_canonical IS NOT NULL` permits
+  multiple pre-claim NULLs while enforcing global uniqueness once
+  any handle is claimed); `display_handle text` (case-preserved for
+  presentation); `handle_locked_at timestamptz` (set to `now()` at
+  first successful claim; never updated thereafter). Application-layer
+  canonicalization (`trim().toLowerCase()`) per WP-052 email
+  precedent — no `citext`, no extension privilege required. Locked
+  format regex `^[a-z][a-z0-9_]{2,23}$` (3–24 chars, lowercase
+  alphanumeric + underscore, no leading digit, no leading
+  underscore, no consecutive underscores via separate substring
+  check). Locked 15-entry alphabetical reserved set: `admin`,
+  `administrator`, `anonymous`, `api`, `arena`, `guest`, `legendary`,
+  `mod`, `moderator`, `null`, `root`, `staff`, `support`, `system`,
+  `undefined`. Reserved-set check runs **before** uniqueness check;
+  reserved hits return `code: 'reserved_handle'` regardless of DB
+  state. Four exports under new `apps/server/src/identity/`:
+  `handle.types.ts` (`HandleClaim` 4-field interface;
+  `HandleErrorCode` 5-value union; `HANDLE_ERROR_CODES`,
+  `RESERVED_HANDLES`, `HANDLE_REGEX` canonical readonly arrays /
+  RegExp; `Result<T>` re-imported from `identity.types.ts`, never
+  redeclared); `handle.logic.ts` (`validateHandleFormat` pure;
+  `claimHandle` returns `Result<HandleClaim>` via locked idempotent
+  UPDATE pattern + `findPlayerByAccountId` disambiguation;
+  `findAccountByHandle` and `getHandleForAccount` read-only).
+  Locked idempotent SQL: `UPDATE legendary.players SET handle_canonical
+  = $2, display_handle = $3, handle_locked_at = now() WHERE ext_id =
+  $1 AND handle_canonical IS NULL RETURNING …`; `'23505'` on
+  `handle_canonical` UNIQUE → `code: 'handle_taken'`; empty
+  `RETURNING` + `findPlayerByAccountId` disambiguates `unknown_account`
+  vs `handle_already_locked` vs idempotent re-claim. Handle is
+  permanently locked at first successful claim — no rename, no admin
+  override, no GDPR-motivated rename. Account deletion (WP-052
+  `deletePlayerData`) deletes the row entirely; **no tombstone table
+  preserves the canonical value**, so a deleted handle naturally
+  vanishes from the partial UNIQUE index and is technically
+  re-claimable by a different account. Anti-impersonation reservation
+  is **out of scope** for this packet and requires a future WP +
+  `DECISIONS.md` entry. Two complementary public-surface invariants
+  published for downstream WPs (WP-102 etc.) to honor: (1) per
+  `DESIGN-RANKING.md` lines 485–487, rankings use `AccountId` (stable
+  player ID), never the handle; (2) per WP-101 itself, public surfaces
+  (`/players/{handle}`, replay attribution, leaderboard displays,
+  shareable replay links per `13-REPLAYS-REFERENCE.md` line 248) MUST
+  use `AccountId` as the authoritative identity and treat handle as
+  a presentation alias that may be reused after deletion. Terminology
+  disambiguation locked: `DESIGN-RANKING.md` lines 145, 205 use
+  "replay handle" to mean `replayHash`; WP-101's `handle` / `Handle*`
+  symbols always refer to the user-facing account identifier — no
+  symbol introduced here is named with "replay" as a prefix. 12 new
+  tests in one `describe('handle logic (WP-101)', …)` block (3 drift
+  + 6 pure validation + 3 DB-dependent claim-flow); tests 10–12 use
+  the locked WP-052 `hasTestDatabase ? {} : { skip: 'requires test
+  database' }` non-silent skip. Server baseline shifts post-WP-103
+  `36/6/0` → **`48/7/0`** (+12 tests / +1 suite); engine baseline
+  `522/116/0` (post-WP-053a) unchanged. Two-commit topology at
+  execution: A `EC-101:` (4 files: `handle.types.ts`, `handle.logic.ts`,
+  `handle.logic.test.ts`, `007_add_handle_to_players.sql`); B `SPEC:`
+  (STATUS.md `### WP-101 / EC-101 Executed` block + WORK_INDEX.md
+  WP-101 row `[ ]` → `[x]` + EC_INDEX.md EC-101 row `Draft` → `Done`;
+  optional `D-101NN` decision recording the no-tombstone policy if
+  the executor judges it worth a DECISIONS.md anchor). WP-052
+  contract files (`identity.types.ts`, `identity.logic.ts`) NOT
+  modified; WP-052 migrations `004` and `005` NOT modified; WP-103
+  migration `006_create_replay_blobs_table.sql` NOT modified;
+  `packages/game-engine/src/types.ts` NOT modified. Vision clauses
+  touched: §3 (Player Trust & Fairness), §11 (Stateless Client
+  Philosophy), §14 (Explicit Decisions, No Silent Drift), §25 (Skill
+  Over Repetition — Non-Ranking Telemetry Carve-Out); NG-1..7 not
+  crossed. 01.5 NOT INVOKED (engine entirely untouched). 01.6
+  post-mortem MANDATORY at execution per at least two triggers (new
+  long-lived abstraction `claimHandle` consumed by future
+  request-handler / profile-page WPs; new contract surface for
+  handle uniqueness; new persistence-column extension on
+  `legendary.players`). See
+  [WP-101-handle-claim-flow.md](WP-101-handle-claim-flow.md) +
+  [EC-101-handle-claim-flow.checklist.md](../execution-checklists/EC-101-handle-claim-flow.checklist.md).
+
 - [ ] **(deferred placeholder)** Fix CLI credentials field drift in `apps/server/scripts/join-match.mjs` — D-9001 identifies the buggy script. Two issues: (1) the script omits `playerID` from its POST body; the server auto-assigns a seat which is functionally OK but inconsistent with `create-match.mjs`'s shape; (2) the script reads `result.credentials` after the join response, but the canonical field name is `result.playerCredentials` — meaning the script's printed `credentials:` value is always `undefined`. Scope is CLI-only — no engine, no client, no server logic touched. A future packet may either fix the two bugs in place (preferred — matches `create-match.mjs` shape) or delete the script outright if the lobby UI obsoletes its use case. No dependencies; can land standalone.
 
 - [ ] **(deferred placeholder)** Classify `apps/registry-viewer/` in `docs/ai/REFERENCE/02-CODE-CATEGORIES.md` — pre-existing governance gap surfaced as WP-066 copilot finding #13, inherited silently by WP-094 and WP-096 (third inheritance pass; flagged in WP-096 pre-flight RS-3 + copilot check finding #13). Two acceptable resolutions: (a) extend the existing `client-app` row (D-6511) to cover both `apps/arena-client/` and `apps/registry-viewer/`; (b) add a new `client-app-viewer` row with its own DECISIONS.md entry. Either path needs an authorising D-entry plus updates to the table at `02-CODE-CATEGORIES.md:36-49` and the per-category prose at `:234-270`. Scope is docs-only — no engine, registry, server, or app code touched. No dependencies; can land standalone. The next viewer-touching WP should arrive with the classification already landed rather than inheriting the gap a fourth time.
