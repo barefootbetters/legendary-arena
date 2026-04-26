@@ -195,3 +195,91 @@ Each was in the original sketch and is removed here:
 2. Update `WORK_INDEX.md` WP-105 placeholder to reference D-1004 and replace the "issuer model unresolved" line with "Tier 1 only per D-1004."
 3. Draft WP-105 against §3's criteria sketch and the file budget at the end of §3.
 4. Open a separate proposal for Tier 2 issuer model when the first admin-attested badge category is genuinely needed (no earlier).
+
+---
+
+## Addendum — 2026-04-26 polish pass
+
+**Non-normative status.** This addendum is non-normative for the WP-105 first slice: it does not add requirements, predicates, or storage contracts that bind WP-105 implementation. Forward notes (A4, A6) describe possibilities outside the first slice; clarifications (A6) restate constraints already implied by D-1004 / D-0006 in a form that's easier for WP-105 implementers to find. Authoritative criteria remain in §3 above and in PROPOSAL-VISION-25-AMENDMENT.md §5.
+
+This addendum was added in a follow-up review to fold non-conflicting **naming and flavor polish** from a subsequent rewrite suggestion. It does **not** alter D-1004, D-0006, D-0007, or any criteria. It adds candidate flavor titles (still pending registry verification) and forward-pointer notes for post-WP-105 reframings.
+
+The rewrite that prompted this addendum proposed several elements that were rejected on review (five-category ratification, public canonical URLs, single-issuer claim with Marvel-IP exposure, romantic-couple badges, Youth category, volume-based party criteria); none of those are admitted here. Only the items below are folded in.
+
+### A1. Naming convention (canonical key vs flavor title)
+
+Every Tier 1 badge has two layers:
+
+- A **canonical key** (e.g., `gameplay.sub-par-run`) used in code, storage, APIs, and `legendary.player_badges.badge_key`. Stable, machine-readable, never displayed.
+- A **flavor title** (e.g., "The 2099 Deck-Runner") shown to players, tied to a real card via the card-tie-in lookup. May be revised over time; the canonical key never changes.
+
+This separation is consistent with how the rest of the platform handles ext_id vs display name (e.g., `CardExtId` strings vs card display names in the registry).
+
+### A2. Candidate flavor titles for the 10 Tier 1 badges
+
+All card slugs remain `TBD: verify against registry` until WP-105 draft runs the verification cross-check script. Candidate titles below are taken from the original sketch where the predicate-to-title fit is clean. **None of these card-tie pairings are committed** — they are starting points for the WP-105 verification pass.
+
+| Canonical key | Candidate flavor title | Card-tie candidate |
+|---|---|---|
+| `gameplay.sub-par-run` | The 2099 Deck-Runner | TBD (verify "Spider-Man 2099" exists) |
+| `gameplay.pristine-defense` | Flitting Sting Tamer | TBD (verify "Wasp" — multiple candidates) |
+| `gameplay.master-strike-ironwall` | Silent Sniper First Turn | TBD (verify "Black Widow" — multiple candidates) |
+| `gameplay.bystander-guardian` | Unstoppable Hulk Veteran | TBD (verify "Hulk" — multiple candidates) |
+| `gameplay.multiverse-mastery` | Conqueror of the Multiverse | TBD (multiverse-themed Hero or Mastermind) |
+| `gameplay.steady-crew` (deferred) | Steady Crew | TBD (party / fellowship-themed Hero) |
+| `gameplay.veteran.seasoned-defender` (V-1) | Seasoned Defender | TBD |
+| `gameplay.veteran.decade-legend` (V-2) | Decade Legend | TBD |
+| `gameplay.veteran.hall-of-sustained-mastery` (V-3) | Hall of Sustained Mastery | TBD |
+| `gameplay.veteran.crossroads-of-multiverse` (V-4) | Crossroads of the Multiverse | TBD (multiverse-themed) |
+
+Where multiple cards share a Hero name (e.g., several "Hulk" cards across sets), the WP-105 verification pass selects the specific card whose subtitle and ability text best match the badge's predicate. Subtitle + set must both be recorded on `cardTieIn`.
+
+### A3. Flavor text convention
+
+A short flavor line under each badge reinforces the card-tie-in. The line quotes or paraphrases the **real** card's subtitle / ability text — never invented prose. Example shape (illustrative only; final text written from verified card data at WP-105 draft):
+
+> The 2099 Deck-Runner — *Spider-Man 2099*
+> "{verbatim or close paraphrase of the actual card's subtitle / ability line}"
+
+Per the no-invented-cards rule, candidate flavor lines from the original badge sketch are **not** retained in this addendum. Final card-tied flavor lines are written at WP-105 draft time once each card's subtitle / ability text is confirmed against `data/cards/*.json`.
+
+### A4. Forward notes (post-WP-105 reframings)
+
+These are **not** Tier 1 / WP-105 work. They are recorded here so the canonical model has explicit forward pointers and future proposals do not accidentally reinvent overlapping predicates.
+
+- **Contest-themed reframing of `multiverse-mastery`.** A future Tier 2 (admin-attested) "Schemebreaker" badge series could reuse the `multiverse-mastery` predicate (sub-PAR on N distinct scenarios) scoped to admin-curated "contest" scenarios once a contest concept exists. This is a *presentation overlay*, not a new predicate. The underlying issuance contract is unchanged. No D-1004 change required.
+
+- **Combined-quality "Flawless Run" badge.** A stricter Tier 1 per-run badge could be added later: `gameplay.flawless-run` = `pristine-defense AND master-strike-ironwall AND bystander-guardian` (zero escapes AND zero Master Strikes AND all bystanders rescued, on the same scenario). It composes the existing per-run predicates and needs no new trust surface. **Not added to the WP-105 first slice** to keep the file budget at ten badges; can be added in a successor WP without amendment to D-1004.
+
+- **Group-play recognition.** Once a Party / Group registration concept exists on the platform, the deferred `gameplay.steady-crew` badge becomes implementable per PROPOSAL-VISION-25-AMENDMENT.md §5. The original "Party Thor — Thor 2099" sketch is recorded as a candidate flavor title only; the underlying card needs registry verification before adoption, and the criteria must remain quality-gated per §25(b).
+
+### A5. Implementer clarifications (restating D-1004 / D-0006 constraints)
+
+These clarifications restate constraints already implied by D-1004 and D-0006 in a form WP-105 implementers can find quickly. They do not change scope; they reduce the surface where a future reader could misread the existing rules.
+
+**A5.1 — Tier 1 evidence-source definition.** A badge is Tier 1 if and only if its evidence originates solely from `legendary.competitive_scores` rows and engine-computed `ScoreBreakdown` projections. Per-run Tier 1 badges read a single row; veteran Tier 1 badges aggregate over multiple rows from the same player's history — both still derive solely from this substrate. Any badge whose evidence comes from operator attestation, GitHub state, off-platform action, or any source other than `competitive_scores` + `ScoreBreakdown` is **by definition not Tier 1**, regardless of how it is presented. This forecloses "Tier 1 by reclassification" as a back-door for admin-attested or external-attested badges.
+
+**A5.2 — Aggregation rule for veteran (per-history) Tier 1 badges.** Veteran badges aggregate over **distinct, quality-gated achievements**, never over raw counts. Aggregation over history is permitted only when each contributing element independently satisfies a non-volume predicate (the per-run quality floor of §25(b) and D-0006). A "veteran" badge whose criterion would be satisfiable by repeating the same low-quality scenario, or by binge play in a short window, is by construction **not** a veteran badge under this proposal — regardless of name. This forecloses "play N games" being resurrected under the banner of "veteran."
+
+**A5.3 — Per-run vs per-history storage shape (conceptual; constraint shape deferred).** Per-run Tier 1 badges set `source_kind = 'competitive_score'` and reference the originating row via `source_ref = competitive_scores.submission_id`. Per-history (veteran) Tier 1 badges set `source_kind = 'competitive_history'`, leave `source_ref` NULL, and use `qualifying_window_start` (per D-0006) as the temporal anchor for the aggregate. The exact UNIQUE-constraint shape for veteran rows (whether `(player_id, badge_key)` or `(player_id, badge_key, awarded_under_config_version)`) is **deferred to WP-105 draft**, contingent on resolution of §5 open question 3 (re-derivation under new `scoring_config_version`). Either shape is consistent with D-1004; locking it here would pre-decide that question.
+
+**A5.4 — Prerequisite-gated deferrals are no-ship, no-row, no-key-reservation.** Badges whose predicates depend on platform concepts that do not yet exist — most notably `gameplay.steady-crew`, which depends on a registered-party concept that is not on any current WORK_INDEX track — are defined for conceptual completeness only. Until the prerequisite WP lands, such badges:
+
+- MUST NOT ship as part of any WP-105 (or successor) first-slice deliverable
+- MUST NOT have rows inserted into `legendary.player_badges` under any circumstance (placeholder rows, "reservation" rows, demo data, etc.)
+- MUST NOT have their `badge_key` reserved or pre-registered in any code or schema artifact
+
+This closes a "reserve the slot now" loophole that would create dangling badge keys with no implementable predicate.
+
+---
+
+### A6. Addendum compliance check
+
+Before this addendum was added, the candidate items were checked against the live governance record:
+
+- ✅ No volume criteria introduced (all candidate titles overlay existing quality-gated predicates).
+- ✅ No new public-URL or sole-issuer language (D-1004's deferral preserved).
+- ✅ No romantic-couple / Youth / five-category ratification (prior review cuts preserved).
+- ✅ No card-tie commitments (all candidates marked TBD pending registry verification).
+- ✅ No criteria changes (predicates from §3 remain authoritative; only flavor titles added).
+- ✅ No WP renaming (WP-105 remains the canonical slot per WORK_INDEX).
