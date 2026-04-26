@@ -1326,7 +1326,7 @@ These packets ship the game and keep it running.
   See [WP-053a-par-artifact-scoring-config.md](WP-053a-par-artifact-scoring-config.md)
   + EC-053a (drafted by WP-053a pre-flight session; not yet authored).
 
-- [ ] WP-053 — Competitive Score Submission & Verification ✅ Reviewed (UNBLOCKED 2026-04-25 by WP-053a Commit A `e5b9d15` — `checkParPublished(scenarioKey).scoringConfig` is now the authoritative source; WP-103 replay loader prerequisite already satisfied on `main` at `fe7db3e`)
+- [x] WP-053 — Competitive Score Submission & Verification ✅ Reviewed ✅ Completed 2026-04-26 at Commit A `56e8134` (A0 SPEC v1.5 at `27d3004`; `EC-053:` prefix). Server baseline `38/6/0` → `47/7/0` (with 16 skipped if no test DB: 10 inherited + 6 new); engine `522/116/0` unchanged. Post-mortem at `docs/ai/post-mortems/01.6-WP-053-competitive-score-submission-verification.md`.
   Dependencies: WP-048, WP-051, WP-052, WP-027, WP-004, WP-103, WP-053a
   Notes: Keystone trust surface for competition — every competitive score is
   replay-verified; server re-executes replays via `replayGame`, recomputes

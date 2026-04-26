@@ -10022,6 +10022,110 @@ The cost (negligible storage + one additional INSERT parameter) is dominated by 
 
 ---
 
+### D-5301 — Server Is Enforcer, Not Calculator (Competitive Submission Pipeline)
+
+**Type:** Architecture / Trust Surface
+**Packet:** WP-053
+**Date:** 2026-04-26
+
+**Decision:** The server-layer competitive submission pipeline (`apps/server/src/competition/competition.logic.ts`) MUST NOT contain scoring math. Every numeric output stored on a `CompetitiveScoreRecord` (`rawScore`, `finalScore`, `scoreBreakdown`) MUST trace to an engine function call (`computeRawScore`, `computeFinalScore`, `buildScoreBreakdown`). The server orchestrates engine contracts and persists the result; it never re-implements the formula, never names a scoring weight, and never performs arithmetic that could substitute for an engine computation.
+
+**Rationale:** Competitive ranking does not survive heuristic detection of cheating after the fact. Trust is structural: if every numeric output is provably the engine's, the server cannot accidentally diverge from the engine's contract. Re-implementing scoring in the server would create two formulas that must stay in sync — a drift surface with no trust-preserving recovery path. The post-Vision-§22 / §24 architecture treats the engine as the sole owner of scoring logic; the server's role is enforcement (re-execute, recompute hash, reject mismatches), not calculation.
+
+**Implementation:** Verified by grep gates at WP-053 verification step:
+
+- `grep -nE "W_R|W_BP|W_VP|bystanderReward|roundCost" apps/server/src/competition/*.ts` — zero matches in production source (test fixtures use the array-join workaround documented at `competition.logic.test.ts` and post-mortem §3.1)
+- `grep -nE "\* 0\.5|\* 2\.0|Math\.max|Math\.min" apps/server/src/competition/competition.logic.ts` — zero matches
+- `grep -nE "raw\s*=\s*[0-9]|raw\s*\+=" apps/server/src/competition/competition.logic.ts` — zero matches
+
+The 16-step submission flow's steps 11, 13, and 14 each invoke an engine function and pass the result forward without modification; step 12's defense-in-depth equality check reads `computeParScore(hit.scoringConfig)` and compares against `hit.parValue` from the gate (both flow from the same PAR artifact per D-5306 Option A).
+
+**Status:** Active for WP-053 and any future server-layer competitive surface (WP-054 leaderboards, future submission HTTP endpoints).
+
+**Citation:** WP-053 §B (16-step flow); EC-053 §Locked Values + §Guardrails; `apps/server/src/competition/competition.logic.ts` (file-head `// why:` block); D-5306 Option A (config flows from PAR artifact); ARCHITECTURE.md §Layer Boundary (Server is wiring, never decides outcomes).
+
+---
+
+### D-5302 — Competitive Records Are Immutable; Visibility Checked at Submission Time Only
+
+**Type:** Persistence / Trust Surface
+**Packet:** WP-053
+**Date:** 2026-04-26
+
+**Decision:** Rows in `legendary.competitive_scores` are write-once. The application layer exposes no UPDATE function (no `updateCompetitive*` export; verified by drift test #8). The locked CTE INSERT's `ON CONFLICT (player_id, replay_hash) DO UPDATE SET player_id = legendary.competitive_scores.player_id` is a no-op self-assignment that exists solely to force `RETURNING` to emit the conflicting row's columns on the race-recovery path; it does not mutate the row's actual data. Replay visibility is checked exactly once, at submission time (flow step 4); a later visibility change does NOT retroactively invalidate an accepted competitive record.
+
+**Rationale:** Competitive integrity requires two structural properties that immutability provides simultaneously:
+
+- *Append-only audit history*: every accepted score is permanently recorded; no after-the-fact rescoring under a new config (which would create a new record per D-5306d, never modify an old one).
+- *Trust under visibility transitions*: a player whose replay was `'public'` at submission time and is later changed to `'private'` cannot retroactively erase their competitive record. The competition record is its own object; visibility is a separate (mutable) property of the underlying ownership row.
+
+Recheck-after-insert is explicitly forbidden because it would create a footgun where a brief `'public'` window followed by a `'private'` flip could cause the record to disappear from leaderboards while remaining in the table — the visibility query at the leaderboard layer (WP-054) is the point of access control, not a recheck on the record itself.
+
+**Implementation:** Verified by grep gates:
+
+- `grep -nE "updateCompetitive|UPDATE\s+legendary\.competitive_scores|UPDATE\s+competitive_scores" apps/server/src/` — only the no-op self-assignment in `competition.logic.ts:496` (CTE INSERT prose); no application UPDATE path
+- Test #8 (`competitive record is immutable — no UPDATE function exists`): `Object.keys(await import('./competition.logic.js')).filter(name => /^update/.test(name))` returns `[]`
+- Test #5 (`successful submission anchors stateHash to replayHash`): the record's `stateHash`, `parVersion`, `scoringConfigVersion` are pinned at insert and cannot drift
+
+Step 4's visibility check is the only `ownership.visibility === 'private'` test in the flow; no equivalent check appears after step 15's INSERT. The `// why:` comment at step 4 cites D-5302 explicitly.
+
+**Status:** Active for WP-053 and any future server-layer write surface against `legendary.competitive_scores`.
+
+**Citation:** WP-053 §B (flow step 4 visibility) + §B (flow step 15 INSERT); EC-053 §Locked Values ("Competitive records are immutable") + §Guardrails ("Visibility gating enforced at submission time"); `data/migrations/007_create_competitive_scores_table.sql` (UNIQUE constraint + immutability `// why:` block); `apps/server/src/competition/competition.logic.ts` (step 4 + step 15 `// why:` comments).
+
+---
+
+### D-5304 — Idempotent Retry Returns `{ ok: true, wasExisting: true }`; Never Re-Executes
+
+**Type:** API Contract / Trust Surface
+**Packet:** WP-053
+**Date:** 2026-04-26
+
+**Decision:** Resubmitting a `replayHash` that was already accepted for the same `accountId` is a success, not a rejection. The retry returns `{ ok: true, record: <existing>, wasExisting: true }` with the original record's `submissionId` and all other fields unchanged. The retry path MUST NOT call `loadReplay`, `replayGame`, or `checkParPublished`; the existing record is returned directly via the step-4b idempotency fast-path query. The `SubmissionRejectionReason` union does NOT contain a retry-rejection string (the literal `'already_submitted'` is forbidden across the entire competition directory; verified by grep gate).
+
+**Rationale:** Competitive submission UX requires retry semantics that are forgiving of network drops, double-clicks, and replay-runner re-attempts. Modeling retry as a rejection would force callers to special-case the rejection code in every consumer site (request handler, CLI script, future bot integration) and would create a footgun where a transient failure during step 7 (`loadReplay`) followed by a successful retry could be misclassified by a naïve caller. The `wasExisting` flag on the success branch lets callers surface "already submitted" UX without a failure path.
+
+The fast-path placement at step 4b (BEFORE step 6 PAR gate, step 7 replay load, step 8 replay re-execution) is load-bearing for two reasons:
+
+- *Cost*: replay re-execution is expensive; an unconditional re-execute on every retry would multiply server cost by retry rate
+- *Monotonic-PAR guarantee*: PAR versions only advance forward, so the existing record's pinned `parVersion` + `scoringConfigVersion` are equal to or older than the current PAR; re-scoring under a newer config would be a NEW record (a future feature), never an UPDATE on this one
+
+**Implementation:** Three structural guards enforce the contract:
+
+- *Step 4b query*: `findExistingByAccountAndHash(accountId, replayHash, database)` runs immediately after the visibility check (step 4) and before scenario-key extraction (step 5). If non-null, returns `{ ok: true, record, wasExisting: true }` immediately.
+- *Race-recovery via locked CTE*: if step 4b loses a race against a concurrent insert, the step-15 INSERT's `ON CONFLICT (player_id, replay_hash) DO UPDATE SET player_id = legendary.competitive_scores.player_id` self-assignment forces `RETURNING` to emit the existing row; `(xmax = 0) AS was_inserted` distinguishes fresh inserts (`true`) from race-lost retries (`false`); the application maps to `wasExisting: !was_inserted`. No `23505` `try`/`catch` is needed because the locked clause turns the conflict into a successful UPDATE.
+- *Test #7 spy verification*: the second submission call uses `submitCompetitiveScoreImpl` with `loadReplay` / `replayGame` / `checkParPublished` stubs that throw if invoked; the test asserts `loadReplayCalled === false`, `replayGameCalled === false`, `checkParPublishedCalled === false`, and that the returned `record.submissionId` equals the first call's `submissionId`.
+
+**Status:** Active for WP-053 and any future caller of `submitCompetitiveScoreImpl` (the contract carries forward to production-wired request handlers).
+
+**Citation:** WP-053 §B (flow steps 4b + 15); EC-053 §Locked Values ("Idempotent retry behavior") + §Common Failure Smells ("Retry returns a rejection ... → idempotency contract violated"); `apps/server/src/competition/competition.logic.ts` (step-4b + step-15 + race-recovery `// why:` comments); `apps/server/src/competition/competition.logic.test.ts` (test #7 spy contract); WP-052's `assignReplayOwnership` precedent (locked CTE + self-assignment pattern); D-5302 (immutability — retry returns the existing record unchanged).
+
+---
+
+### D-5305 — `legendary.competitive_scores` Schema Lock
+
+**Type:** Schema / Persistence
+**Packet:** WP-053
+**Date:** 2026-04-26
+
+**Decision:** The `legendary.competitive_scores` table created by `data/migrations/007_create_competitive_scores_table.sql` has the following locked column structure: `submission_id bigserial PRIMARY KEY`, `player_id bigint NOT NULL REFERENCES legendary.players(player_id)`, `replay_hash text NOT NULL`, `scenario_key text NOT NULL`, `raw_score integer NOT NULL`, `final_score integer NOT NULL`, `score_breakdown jsonb NOT NULL`, `par_version text NOT NULL`, `scoring_config_version integer NOT NULL`, `state_hash text NOT NULL`, `created_at timestamptz NOT NULL DEFAULT now()`, `UNIQUE (player_id, replay_hash)`. Schema changes require a new migration with full review.
+
+**Rationale:** The schema mirrors WP-052's `bigserial PK + bigint FK + ext_id-bridge` precedent rather than WP-103's content-addressed `text PRIMARY KEY` — the natural key for a competitive submission is `(player_id, replay_hash)` (enforced via UNIQUE), and the application uses `accountId` (text `ext_id`) at the API boundary while the CTE bridges to the bigint FK at every write site. This keeps cross-service identifier discipline consistent across `legendary.players` / `legendary.replay_ownership` / `legendary.competitive_scores`.
+
+The choice of integer `raw_score`, `final_score`, and `scoring_config_version` (vs floating-point or numeric) reflects the engine's centesimal-arithmetic contract per `parScoring.types.ts:46` — display layers divide by 100 to render decimal point values; the engine never produces fractional weights, so integer storage is exact. The choice of `jsonb` for `score_breakdown` (vs `bytea` / `text` / `json`) follows WP-103's D-10303 reasoning: shape queryability for future audit / analytics use cases, and `pg`'s `jsonb` codec deserializes to JS objects on read with no manual JSON parsing.
+
+The `state_hash` column duplicates `replay_hash` (they are equal for every accepted record by construction — the application's step-9 verification asserts equality before INSERT) for redundant audit provenance per D-5306d's reasoning. Future audits can confirm the stored hash without re-executing the replay.
+
+The absence of an FK from `replay_hash` to `legendary.replay_blobs` or `legendary.replay_ownership` is deliberate: the application sequencing in `submitCompetitiveScore` ensures `findReplayOwnership` succeeds before INSERT, but the FK-free schema preserves the locked WP-052 / WP-103 contracts byte-for-byte. The same convention applies between `legendary.replay_blobs` and `legendary.replay_ownership` (no inter-table FK either).
+
+**Implementation:** Locked SQL in `data/migrations/007_create_competitive_scores_table.sql` (10 `-- why:` blocks) with `CREATE TABLE IF NOT EXISTS` for idempotent migration runner re-execution. WP-053's `submitCompetitiveScoreImpl` consumes the table via the locked CTE INSERT pattern (D-5302 + D-5304); `findCompetitiveScore` and `listPlayerCompetitiveScores` are the read surfaces.
+
+**Status:** Active for WP-053. Schema additions (e.g., a future `team_key text` column for team scoring) require a new migration with `ADD COLUMN IF NOT EXISTS` + `// why:` block + DECISIONS entry; no backfill of historical rows.
+
+**Citation:** WP-053 §C (locked DDL); EC-053 §Locked Values ("`legendary.*` schema namespace; PKs use `bigserial`; `score_breakdown` stored as `jsonb`"); `data/migrations/007_create_competitive_scores_table.sql`; D-5306d (audit redundancy for `par_version` + `scoring_config_version`); D-10302 (WP-103 PK choice precedent — divergent reasoning); D-10303 (WP-103 jsonb choice precedent — same reasoning applied here); WP-052 `bigserial + ext_id` mirroring precedent.
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
