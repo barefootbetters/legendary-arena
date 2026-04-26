@@ -85,9 +85,29 @@ must never re-implement scoring logic.
   - `findReplayOwnership(replayHash, database)` returns ownership record or null
   - `ReplayOwnershipRecord` with `visibility` field exists
   - Guest identities cannot submit competitively (no `PlayerId`)
-- Server can load replay data by `replayHash` via an existing storage adapter.
-  This packet does not implement storage; if no loader exists, WP-053 is
-  **BLOCKED** until one lands.
+- WP-103 complete. Specifically:
+  - `storeReplay(replayHash, replayInput, database): Promise<void>` and
+    `loadReplay(replayHash, database): Promise<ReplayInput | null>` are
+    exported from `apps/server/src/replay/replay.logic.ts`
+  - `legendary.replay_blobs` table exists via
+    `data/migrations/006_create_replay_blobs_table.sql` (content-addressed;
+    immutable inserts via `ON CONFLICT (replay_hash) DO NOTHING`)
+  - The replay-loader prerequisite is satisfied by `loadReplay`; this
+    packet consumes that function, never re-implements storage.
+- WP-053a complete. Specifically:
+  - `checkParPublished(scenarioKey)` returns
+    `{ parValue, parVersion, source, scoringConfig }` — the
+    `scoringConfig: ScenarioScoringConfig` field is non-optional
+  - PAR artifacts (`SeedParArtifact` and `SimulationParArtifact`) carry
+    `scoringConfig` end-to-end; the gate returns it from the in-memory
+    index materialized at startup
+  - Per D-5306 (Option A), drift between `scoringConfig` and `parValue`
+    is structurally impossible because both flow from the same PAR
+    artifact. Flow step 12 (`computeParScore(config) === parValue`)
+    becomes defense-in-depth rather than a primary safety net.
+  - Per D-5306d, `legendary.competitive_scores` retains both
+    `par_version` and `scoring_config_version` columns as audit
+    redundancy; no `CHECK` constraint enforcing equality.
 - `docs/13-REPLAYS-REFERENCE.md` exists (normative governance)
 - `pnpm -r build` exits 0
 - `pnpm test` exits 0
