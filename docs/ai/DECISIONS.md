@@ -9935,9 +9935,9 @@ Option A makes WP-053's flow step 12 (`computeParScore(config) === parValue`) de
 
 **Failure mode:** A future regression that allowed `scoringConfig` to be omitted from an artifact would be caught at three layers: write-time validation (`validateParStore` rejects), index-build-time verification (the index loader would fail), and gate-construction guard (gate constructor throws when an entry is missing the field). Triple defense; structural impossibility for a drifted `(parValue, config)` pair to reach `submitCompetitiveScore`.
 
-**Status:** Active. Lands with WP-053a execution. WP-053 references this decision in its §Assumes block.
+**Status:** Active — landed at Commit A `e5b9d15` (`EC-053a:` prefix; 2026-04-25). Engine baseline `522/116/0`, server baseline `38/6/0` (with skips). PS-5 lock honored. The contract is now in production effect; WP-053 may consume `checkParPublished(scenarioKey).scoringConfig` directly. WP-053 references this decision in its §Assumes block.
 
-**Citation:** WP-053a §Goal, §Scope (In) §C–G; WP-053 §B step 12; D-4805 (`ScenarioScoringConfig` self-contained); D-5101 (PAR sim-over-seed precedence — preserved); D-5103 (PAR gate fs-free at request time — preserved); WP-103 §pre-commit-review-template-gap carry-forward (the same governance discipline informs this decision's audit trail).
+**Citation:** WP-053a §Goal, §Scope (In) §C–G; WP-053 §B step 12; D-4805 (`ScenarioScoringConfig` self-contained); D-5101 (PAR sim-over-seed precedence — preserved); D-5103 (PAR gate fs-free at request time — preserved); WP-103 §pre-commit-review-template-gap carry-forward (the same governance discipline informs this decision's audit trail). Post-mortem `docs/ai/post-mortems/01.6-WP-053a-par-artifact-scoring-config.md` audits #6 and #7 record the version-equality and parBaseline-redundancy invariants under test.
 
 ---
 
