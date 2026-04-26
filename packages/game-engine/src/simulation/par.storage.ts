@@ -34,7 +34,7 @@ import type {
   ScenarioScoringConfig,
 } from '../scoring/parScoring.types.js';
 
-import { computeParScore } from '../scoring/parScoring.logic.js';
+import { computeParScore, validateScoringConfig } from '../scoring/parScoring.logic.js';
 import { AI_POLICY_TIER_DEFINITIONS } from './ai.tiers.js';
 import type { ParSimulationResult } from './par.aggregator.js';
 
@@ -99,6 +99,13 @@ export interface SeedParArtifact {
   readonly authoredAt: string;
   readonly authoredBy: string;
   readonly rationale: string;
+  // why: D-5306c retains parBaseline alongside scoringConfig.parBaseline for
+  // one cycle as audit redundancy. validateParStore enforces equality with
+  // errorType 'par_baseline_redundancy_drift'; a future cleanup WP collapses
+  // the two fields into one. The field above is structurally redundant with
+  // scoringConfig.parBaseline below — do not remove either side without
+  // landing the cleanup WP.
+  readonly scoringConfig: ScenarioScoringConfig;
   readonly artifactHash: string;
 }
 
@@ -126,6 +133,12 @@ export interface SimulationParArtifact {
     readonly scoringConfigVersion: number;
     readonly rawScoreSemanticsVersion: number;
   };
+  // why: D-5306 bundles the full ScenarioScoringConfig into every published
+  // PAR artifact so (scenarioKey, parValue, scoringConfig) form an atomic
+  // tuple. The version-equality invariant scoringConfig.scoringConfigVersion
+  // === scoring.scoringConfigVersion is enforced at write time and audited
+  // by validateParStore.
+  readonly scoringConfig: ScenarioScoringConfig;
   readonly artifactHash: string;
 }
 
@@ -148,10 +161,16 @@ export interface ParIndex {
   readonly source: ParArtifactSource;
   readonly generatedAt: string;
   readonly scenarioCount: number;
+  // why: D-5306b inline materialization places the full ScenarioScoringConfig
+  // on every per-scenario index entry at index-build time. The server gate
+  // (D-5103 fs-free at request time) returns scoringConfig from this entry
+  // without a second filesystem hit; loadParIndex is the only IO the gate
+  // performs across its entire request lifetime.
   readonly scenarios: Readonly<Record<ScenarioKey, {
     readonly path: string;
     readonly parValue: number;
     readonly artifactHash: string;
+    readonly scoringConfig: ScenarioScoringConfig;
   }>>;
 }
 
@@ -310,6 +329,7 @@ function stripArtifactHashField(
  */
 function buildSimulationArtifactFromResult(
   result: ParSimulationResult,
+  scoringConfig: ScenarioScoringConfig,
 ): Omit<SimulationParArtifact, 'artifactHash'> {
   // why: AI_POLICY_TIER_DEFINITIONS pins T2 as the only publishable tier;
   // the writer rejects non-T2 inputs at the earliest boundary so that no
@@ -320,6 +340,16 @@ function buildSimulationArtifactFromResult(
   if (publishableTierDefinition === undefined || publishableTierDefinition.tier !== 'T2') {
     throw new Error(
       'writeSimulationParArtifact cannot determine the publishable AI policy tier: AI_POLICY_TIER_DEFINITIONS has no entry with usedForPar === true mapped to T2. Check the WP-049 contract for drift.',
+    );
+  }
+  // why: D-5306 version-equality invariant — the embedded scoringConfig's
+  // scoringConfigVersion must match result.scoringConfigVersion verbatim.
+  // This mirrors the writeSeedParArtifact parValue-vs-baseline drift check
+  // (par.storage.ts ~line 573); enforcing here at the build boundary
+  // prevents any non-equality state from reaching disk.
+  if (scoringConfig.scoringConfigVersion !== result.scoringConfigVersion) {
+    throw new Error(
+      `buildSimulationArtifactFromResult refused to build artifact for scenario ${result.scenarioKey}: scoringConfig.scoringConfigVersion ${scoringConfig.scoringConfigVersion} does not equal result.scoringConfigVersion ${result.scoringConfigVersion}. Re-author the config or re-run the aggregator with the matching pipeline version before writing.`,
     );
   }
   return {
@@ -338,6 +368,12 @@ function buildSimulationArtifactFromResult(
       scoringConfigVersion: result.scoringConfigVersion,
       rawScoreSemanticsVersion: CURRENT_RAW_SCORE_SEMANTICS_VERSION,
     },
+    // why: scoringConfig is embedded verbatim. ParSimulationResult is NOT
+    // modified per WP-049 contract lock; the config flows from the caller's
+    // ParSimulationConfig reference (already-required field) directly to
+    // the writer alongside the result. No transformation, no defaults, no
+    // derivation — drift impossibility relies on identity copy here.
+    scoringConfig,
   };
 }
 
@@ -463,12 +499,19 @@ export function computeArtifactHash(artifact: Record<string, unknown>): string {
 // why: overwrite refusal enforces immutability at the write layer, not just
 // as a convention — catches both accidental and intentional violations
 // before they hit disk.
+// why: PS-3 four-parameter signature (scoringConfig as 3rd positional) mirrors
+// the writeSeedParArtifact(artifact, scoringConfig, basePath, parVersion)
+// precedent. Symmetric writer call-shape across both source classes; the
+// caller's ParSimulationConfig.scoringConfig flows directly to the writer
+// alongside the result, since ParSimulationResult is locked at the WP-049
+// contract and cannot carry the field.
 export async function writeSimulationParArtifact(
   result: ParSimulationResult,
+  scoringConfig: ScenarioScoringConfig,
   basePath: string,
   parVersion: string,
 ): Promise<string> {
-  const artifactWithoutHash = buildSimulationArtifactFromResult(result);
+  const artifactWithoutHash = buildSimulationArtifactFromResult(result, scoringConfig);
   const artifactHash = computeArtifactHash(
     artifactWithoutHash as unknown as Record<string, unknown>,
   );
@@ -574,6 +617,16 @@ export async function writeSeedParArtifact(
     );
   }
 
+  // why: D-5306c — embed the caller-supplied scoringConfig with parBaseline
+  // forced to the artifact's parBaseline so the artifact's parBaseline and
+  // scoringConfig.parBaseline are byte-equal at write time. validateParStore
+  // enforces this equality with errorType 'par_baseline_redundancy_drift';
+  // forcing it here at the writer prevents any pre-existing drift between
+  // the caller's config and artifact baseline from reaching disk.
+  const embeddedScoringConfig: ScenarioScoringConfig = {
+    ...scoringConfig,
+    parBaseline: artifact.parBaseline,
+  };
   const withoutHash: Omit<SeedParArtifact, 'artifactHash'> = {
     scenarioKey: artifact.scenarioKey,
     source: 'seed',
@@ -583,6 +636,7 @@ export async function writeSeedParArtifact(
     authoredAt: artifact.authoredAt,
     authoredBy: artifact.authoredBy,
     rationale: artifact.rationale,
+    scoringConfig: embeddedScoringConfig,
   };
   const artifactHash = computeArtifactHash(
     withoutHash as unknown as Record<string, unknown>,
@@ -669,7 +723,18 @@ export async function buildParIndex(
   const scenariosRoot = posix.join(classRoot, 'scenarios');
   const artifactFiles = await collectArtifactFiles(scenariosRoot);
 
-  const scenarios: Record<string, { path: string; parValue: number; artifactHash: string }> = {};
+  // why: D-5306b inline materialization — buildParIndex extracts the
+  // scoringConfig field from each artifact and writes it into the index
+  // entry. The fs-free server gate (D-5103) returns the config from the
+  // index without re-reading the artifact file, preserving the per-request
+  // zero-IO invariant.
+  type IndexEntry = {
+    path: string;
+    parValue: number;
+    artifactHash: string;
+    scoringConfig: ScenarioScoringConfig;
+  };
+  const scenarios: Record<string, IndexEntry> = {};
   for (const artifactFile of artifactFiles) {
     const raw = await readFile(artifactFile.fullPath, 'utf8');
     const parsed = parseJsonOrThrow(raw, artifactFile.fullPath);
@@ -678,16 +743,26 @@ export async function buildParIndex(
         `PAR artifact at ${artifactFile.fullPath} is missing required fields (scenarioKey, parValue, or artifactHash) and cannot be indexed.`,
       );
     }
+    const parsedRecord = parsed as unknown as Record<string, unknown>;
+    if (
+      parsedRecord.scoringConfig === null
+      || typeof parsedRecord.scoringConfig !== 'object'
+    ) {
+      throw new ParStoreReadError(
+        `PAR artifact at ${artifactFile.fullPath} is missing required field scoringConfig (D-5306) and cannot be indexed. Re-author the artifact via writeSeedParArtifact / writeSimulationParArtifact with a structurally valid ScenarioScoringConfig.`,
+      );
+    }
     const entryPath = posix.join(artifactFile.shard, artifactFile.filename);
     scenarios[parsed.scenarioKey] = {
       path: entryPath,
       parValue: parsed.parValue,
       artifactHash: parsed.artifactHash,
+      scoringConfig: parsedRecord.scoringConfig as ScenarioScoringConfig,
     };
   }
 
   const sortedKeys = Object.keys(scenarios).sort();
-  const sortedScenarios: Record<string, { path: string; parValue: number; artifactHash: string }> = {};
+  const sortedScenarios: Record<string, IndexEntry> = {};
   for (const key of sortedKeys) {
     sortedScenarios[key] = scenarios[key]!;
   }
@@ -1003,6 +1078,77 @@ export async function validateParStore(
         }
       }
     }
+
+    // why: D-5306 scoringConfig presence + structural validity check —
+    // every artifact must carry a scoringConfig that passes the sole
+    // structural validator (validateScoringConfig from WP-048). A missing
+    // or invalid config blocks publication; the version-equality and
+    // baseline-redundancy invariants below depend on the field being
+    // present and structurally valid first.
+    const parsedRecord = parsed as unknown as Record<string, unknown>;
+    const embeddedConfig = parsedRecord.scoringConfig;
+    if (embeddedConfig === null || typeof embeddedConfig !== 'object') {
+      errors.push({
+        scenarioKey,
+        errorType: 'scoring_config_invalid',
+        message: `PAR artifact ${scenarioKey} is missing required field scoringConfig (D-5306). Re-author via writeSeedParArtifact / writeSimulationParArtifact with a structurally valid ScenarioScoringConfig.`,
+      });
+    } else {
+      const typedConfig = embeddedConfig as ScenarioScoringConfig;
+      let configValidation;
+      try {
+        configValidation = validateScoringConfig(typedConfig);
+      } catch (validatorError) {
+        configValidation = {
+          valid: false as const,
+          errors: [
+            `validator threw before returning a structured result: ${validatorError instanceof Error ? validatorError.message : 'unknown'}. The file's scoringConfig shape is incompatible with ScenarioScoringConfig.`,
+          ] as readonly string[],
+        };
+      }
+      if (!configValidation.valid) {
+        errors.push({
+          scenarioKey,
+          errorType: 'scoring_config_invalid',
+          message: `PAR artifact ${scenarioKey} has structurally invalid scoringConfig: ${configValidation.errors.join('; ')}`,
+        });
+      } else {
+        const scoringRecord = parsedRecord.scoring as Record<string, unknown> | null;
+        const artifactScoringVersion =
+          scoringRecord !== null && typeof scoringRecord === 'object'
+            ? scoringRecord.scoringConfigVersion
+            : undefined;
+        if (typedConfig.scoringConfigVersion !== artifactScoringVersion) {
+          errors.push({
+            scenarioKey,
+            errorType: 'scoring_config_version_mismatch',
+            message: `PAR artifact ${scenarioKey} has scoringConfig.scoringConfigVersion ${typedConfig.scoringConfigVersion} but scoring.scoringConfigVersion ${String(artifactScoringVersion)}; the two must match (D-5306 version-equality invariant).`,
+          });
+        }
+        // why: D-5306c one-cycle audit — SeedParArtifact's parBaseline must
+        // equal scoringConfig.parBaseline byte-for-byte. Validates each of
+        // the four ParBaseline numeric fields explicitly; deep-equality via
+        // JSON.stringify would mask field-shape drift in scoringConfig.
+        if (source === 'seed' && isSeedArtifactShape(parsed)) {
+          const configBaseline = typedConfig.parBaseline;
+          const artifactBaseline = parsed.parBaseline;
+          const baselineEqual =
+            configBaseline !== null
+            && typeof configBaseline === 'object'
+            && configBaseline.roundsPar === artifactBaseline.roundsPar
+            && configBaseline.bystandersPar === artifactBaseline.bystandersPar
+            && configBaseline.victoryPointsPar === artifactBaseline.victoryPointsPar
+            && configBaseline.escapesPar === artifactBaseline.escapesPar;
+          if (!baselineEqual) {
+            errors.push({
+              scenarioKey,
+              errorType: 'par_baseline_redundancy_drift',
+              message: `Seed artifact ${scenarioKey} has parBaseline that does not equal scoringConfig.parBaseline (D-5306c one-cycle redundancy audit). Recompute the artifact's parBaseline or re-embed the scoringConfig before publication.`,
+            });
+          }
+        }
+      }
+    }
   }
 
   if (persistedIndex !== null) {
@@ -1231,6 +1377,7 @@ function isSimulationArtifactShape(value: unknown): value is SimulationParArtifa
   const scoringRecord = scoring as Record<string, unknown>;
   if (typeof scoringRecord.scoringConfigVersion !== 'number') return false;
   if (typeof scoringRecord.rawScoreSemanticsVersion !== 'number') return false;
+  if (record.scoringConfig === null || typeof record.scoringConfig !== 'object') return false;
   return true;
 }
 
@@ -1254,6 +1401,7 @@ function isSeedArtifactShape(value: unknown): value is SeedParArtifact {
   const scoringRecord = scoring as Record<string, unknown>;
   if (typeof scoringRecord.scoringConfigVersion !== 'number') return false;
   if (typeof scoringRecord.rawScoreSemanticsVersion !== 'number') return false;
+  if (record.scoringConfig === null || typeof record.scoringConfig !== 'object') return false;
   return true;
 }
 
@@ -1272,6 +1420,7 @@ function isParIndexShape(value: unknown): value is ParIndex {
     if (typeof entryRecord.path !== 'string') return false;
     if (typeof entryRecord.parValue !== 'number') return false;
     if (typeof entryRecord.artifactHash !== 'string') return false;
+    if (entryRecord.scoringConfig === null || typeof entryRecord.scoringConfig !== 'object') return false;
   }
   return true;
 }

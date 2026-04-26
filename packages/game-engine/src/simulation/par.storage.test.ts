@@ -81,6 +81,13 @@ function createTestParBaseline(): ParBaseline {
   };
 }
 
+// why: weights satisfy validateScoringConfig's structural invariants
+// (WP-048): bystanderReward > villainEscaped; bystanderLost > villainEscaped;
+// bystanderLost > bystanderReward. Pre-WP-053a these tests never ran the
+// embedded config through the validator; the WP-053a validator extension
+// (Step 5) now does, so the factory must produce a structurally valid
+// config. penaltyEventWeights values are positive to satisfy the per-key
+// presence + positivity checks.
 function createTestScoringConfig(
   scenarioKey: string,
   parBaseline: ParBaseline,
@@ -89,7 +96,7 @@ function createTestScoringConfig(
     scenarioKey,
     weights: {
       roundCost: 100,
-      bystanderReward: 50,
+      bystanderReward: 400,
       victoryPointReward: 10,
     },
     caps: {
@@ -99,9 +106,9 @@ function createTestScoringConfig(
     penaltyEventWeights: {
       villainEscaped: 300,
       bystanderLost: 500,
-      schemeTwistNegative: 0,
-      mastermindTacticUntaken: 0,
-      scenarioSpecificPenalty: 0,
+      schemeTwistNegative: 50,
+      mastermindTacticUntaken: 25,
+      scenarioSpecificPenalty: 40,
     },
     parBaseline,
     scoringConfigVersion: 1,
@@ -130,6 +137,20 @@ function createSeedArtifact(
     rationale: 'Hand-authored seed baseline for WP-050 testing.',
     artifactHash: '',
   };
+}
+
+/**
+ * Returns a ScenarioScoringConfig matching the given simulation result's
+ * scoringConfigVersion (always 1 in test fixtures). The scenarioKey on the
+ * config matches the result's scenarioKey for traceability; validateParStore
+ * does not require this equality but it keeps test fixtures self-consistent.
+ *
+ * Centralizing this factory keeps the WP-053a four-arg writer call shape
+ * `writeSimulationParArtifact(result, scoringConfig, workspace, PAR_VERSION)`
+ * uniform across every simulation test in this file.
+ */
+function buildSimScoringConfig(result: ParSimulationResult): ScenarioScoringConfig {
+  return createTestScoringConfig(result.scenarioKey, createTestParBaseline());
 }
 
 function createSimulationResult(scenarioKey: string): ParSimulationResult {
@@ -207,7 +228,12 @@ describe('PAR artifact storage (WP-050)', () => {
     try {
       const scenarioKey = 'midtown-bank-robbery::red-skull::hydra';
       const result = createSimulationResult(scenarioKey);
-      const returnedPath = await writeSimulationParArtifact(result, workspace, PAR_VERSION);
+      const returnedPath = await writeSimulationParArtifact(
+        result,
+        buildSimScoringConfig(result),
+        workspace,
+        PAR_VERSION,
+      );
       const expectedRelative = posix.join(
         'sim',
         PAR_VERSION,
@@ -229,7 +255,12 @@ describe('PAR artifact storage (WP-050)', () => {
     try {
       const scenarioKey = 'alpha-scheme::loki::enemies';
       const result = createSimulationResult(scenarioKey);
-      const relative = await writeSimulationParArtifact(result, workspace, PAR_VERSION);
+      const relative = await writeSimulationParArtifact(
+        result,
+        buildSimScoringConfig(result),
+        workspace,
+        PAR_VERSION,
+      );
       const fileContent = await readFile(posix.join(workspace, relative), 'utf8');
       const parsed = JSON.parse(fileContent) as Record<string, unknown>;
       const topLevelKeys = Object.keys(parsed);
@@ -250,8 +281,9 @@ describe('PAR artifact storage (WP-050)', () => {
       const scenarioKey = 'alpha-scheme::red-skull::hydra';
       const resultA = createSimulationResult(scenarioKey);
       const resultB = createSimulationResult(scenarioKey);
-      const relativeA = await writeSimulationParArtifact(resultA, workspaceA, PAR_VERSION);
-      const relativeB = await writeSimulationParArtifact(resultB, workspaceB, PAR_VERSION);
+      const sharedConfig = buildSimScoringConfig(resultA);
+      const relativeA = await writeSimulationParArtifact(resultA, sharedConfig, workspaceA, PAR_VERSION);
+      const relativeB = await writeSimulationParArtifact(resultB, sharedConfig, workspaceB, PAR_VERSION);
       const bytesA = await readFile(posix.join(workspaceA, relativeA), 'utf8');
       const bytesB = await readFile(posix.join(workspaceB, relativeB), 'utf8');
       assert.equal(bytesA, bytesB);
@@ -266,9 +298,10 @@ describe('PAR artifact storage (WP-050)', () => {
     try {
       const scenarioKey = 'alpha-scheme::overwrite-test::villain';
       const result = createSimulationResult(scenarioKey);
-      await writeSimulationParArtifact(result, workspace, PAR_VERSION);
+      const config = buildSimScoringConfig(result);
+      await writeSimulationParArtifact(result, config, workspace, PAR_VERSION);
       await assert.rejects(
-        writeSimulationParArtifact(result, workspace, PAR_VERSION),
+        writeSimulationParArtifact(result, config, workspace, PAR_VERSION),
         (error: unknown) => {
           return (
             error instanceof Error
@@ -287,7 +320,12 @@ describe('PAR artifact storage (WP-050)', () => {
     try {
       const scenarioKey = 'alpha-scheme::readback::enemies';
       const result = createSimulationResult(scenarioKey);
-      await writeSimulationParArtifact(result, workspace, PAR_VERSION);
+      await writeSimulationParArtifact(
+        result,
+        buildSimScoringConfig(result),
+        workspace,
+        PAR_VERSION,
+      );
       const readBack = await readSimulationParArtifact(scenarioKey, workspace, PAR_VERSION);
       assert.notEqual(readBack, null);
       assert.equal(readBack?.scenarioKey, scenarioKey);
@@ -318,7 +356,12 @@ describe('PAR artifact storage (WP-050)', () => {
     try {
       const scenarioKey = 'alpha-scheme::verbatim::gang';
       const result = createSimulationResult(scenarioKey);
-      const relative = await writeSimulationParArtifact(result, workspace, PAR_VERSION);
+      const relative = await writeSimulationParArtifact(
+        result,
+        buildSimScoringConfig(result),
+        workspace,
+        PAR_VERSION,
+      );
       const fileContent = await readFile(posix.join(workspace, relative), 'utf8');
       const parsed = JSON.parse(fileContent) as { source: unknown };
       assert.equal(parsed.source, 'simulation');
@@ -486,8 +529,10 @@ describe('PAR artifact storage (WP-050)', () => {
     try {
       const simKey = 'alpha-scheme::sim-only::group';
       const seedKey = 'beta-scheme::seed-only::group';
+      const simResult = createSimulationResult(simKey);
       await writeSimulationParArtifact(
-        createSimulationResult(simKey),
+        simResult,
+        buildSimScoringConfig(simResult),
         workspace,
         PAR_VERSION,
       );
@@ -523,8 +568,10 @@ describe('PAR artifact storage (WP-050)', () => {
         'mu-scheme::mastermind::group',
       ];
       for (const key of keys) {
+        const simResult = createSimulationResult(key);
         await writeSimulationParArtifact(
-          createSimulationResult(key),
+          simResult,
+          buildSimScoringConfig(simResult),
           workspace,
           PAR_VERSION,
         );
@@ -556,8 +603,10 @@ describe('PAR artifact storage (WP-050)', () => {
     const workspace = await createTempWorkspace();
     try {
       const key = 'alpha-scheme::hash-in-index::group';
+      const hashResult = createSimulationResult(key);
       await writeSimulationParArtifact(
-        createSimulationResult(key),
+        hashResult,
+        buildSimScoringConfig(hashResult),
         workspace,
         PAR_VERSION,
       );
@@ -574,8 +623,10 @@ describe('PAR artifact storage (WP-050)', () => {
     const workspace = await createTempWorkspace();
     try {
       const presentKey = 'alpha-scheme::present::group';
+      const presentResult = createSimulationResult(presentKey);
       await writeSimulationParArtifact(
-        createSimulationResult(presentKey),
+        presentResult,
+        buildSimScoringConfig(presentResult),
         workspace,
         PAR_VERSION,
       );
@@ -594,8 +645,10 @@ describe('PAR artifact storage (WP-050)', () => {
     const workspace = await createTempWorkspace();
     try {
       const key = 'alpha-scheme::sim-resolve::group';
+      const simRes = createSimulationResult(key);
       await writeSimulationParArtifact(
-        createSimulationResult(key),
+        simRes,
+        buildSimScoringConfig(simRes),
         workspace,
         PAR_VERSION,
       );
@@ -633,8 +686,10 @@ describe('PAR artifact storage (WP-050)', () => {
     const workspace = await createTempWorkspace();
     try {
       const key = 'alpha-scheme::both-classes::group';
+      const bothSimResult = createSimulationResult(key);
       await writeSimulationParArtifact(
-        createSimulationResult(key),
+        bothSimResult,
+        buildSimScoringConfig(bothSimResult),
         workspace,
         PAR_VERSION,
       );
@@ -689,8 +744,10 @@ describe('PAR artifact storage (WP-050)', () => {
     const workspace = await createTempWorkspace();
     try {
       const key = 'alpha-scheme::valid-store::group';
+      const validResult = createSimulationResult(key);
       await writeSimulationParArtifact(
-        createSimulationResult(key),
+        validResult,
+        buildSimScoringConfig(validResult),
         workspace,
         PAR_VERSION,
       );
@@ -733,6 +790,7 @@ describe('PAR artifact storage (WP-050)', () => {
           scoringConfigVersion: 1,
           rawScoreSemanticsVersion: 1,
         },
+        scoringConfig: createTestScoringConfig(scenarioKey, createTestParBaseline()),
       };
       const artifactHash = computeArtifactHash(artifactWithoutHash);
       const artifact = { ...artifactWithoutHash, artifactHash };
@@ -782,6 +840,7 @@ describe('PAR artifact storage (WP-050)', () => {
           scoringConfigVersion: 1,
           rawScoreSemanticsVersion: 1,
         },
+        scoringConfig: createTestScoringConfig(scenarioKey, createTestParBaseline()),
       };
       const artifactHash = computeArtifactHash(mismatchArtifact);
       const finalArtifact = { ...mismatchArtifact, artifactHash };
@@ -810,8 +869,10 @@ describe('PAR artifact storage (WP-050)', () => {
       const seedKey = 'beta-scheme::covered-seed::group';
       const missingKey = 'gamma-scheme::missing::group';
 
+      const coverageSimResult = createSimulationResult(simKey);
       await writeSimulationParArtifact(
-        createSimulationResult(simKey),
+        coverageSimResult,
+        buildSimScoringConfig(coverageSimResult),
         workspace,
         PAR_VERSION,
       );
@@ -895,6 +956,213 @@ describe('PAR artifact storage (WP-050)', () => {
       assert.equal(loaded?.parVersion, PAR_VERSION);
       assert.equal(loaded?.scenarioCount, 1);
       assert.ok(loaded?.scenarios[scenarioKey], 'scenario must appear in loaded index');
+    } finally {
+      await removeWorkspace(workspace);
+    }
+  });
+
+  // why: WP-053a +3 validator tests for the D-5306 / D-5306c invariants.
+  // These tests bypass the writer guards by constructing artifacts inline
+  // via writeFile, then assert validateParStore surfaces the locked error
+  // type strings ('scoring_config_invalid' / 'scoring_config_version_mismatch'
+  // / 'par_baseline_redundancy_drift'). The writers refuse to produce
+  // drift-broken artifacts in production; these tests exercise the
+  // post-tamper detection path that protects the trust surface.
+
+  test('validateParStore rejects artifact missing scoringConfig with errorType scoring_config_invalid', async () => {
+    const workspace = await createTempWorkspace();
+    try {
+      const scenarioKey = 'alpha-scheme::missing-config::group';
+      const shard = scenarioKeyToShard(scenarioKey);
+      const filename = scenarioKeyToFilename(scenarioKey);
+      const scenarioDir = posix.join(
+        sourceClassRoot(workspace, 'simulation', PAR_VERSION),
+        'scenarios',
+        shard,
+      );
+      await mkdir(scenarioDir, { recursive: true });
+      // why: hand-built artifact that omits scoringConfig entirely. buildParIndex
+      // will throw before validateParStore can run, so this test calls validate
+      // against an artifact written without index materialization (skips the
+      // index-presence check via separate index.json placeholder).
+      const baseArtifact = {
+        scenarioKey,
+        source: 'simulation',
+        parValue: 5500,
+        percentileUsed: 55,
+        sampleSize: 500,
+        generatedAt: '2026-04-23T12:00:00.000Z',
+        simulation: {
+          policyTier: 'T2',
+          policyVersion: 'CompetentHeuristic/v1',
+          seedSetHash: 'djb2:abc',
+        },
+        scoring: {
+          scoringConfigVersion: 1,
+          rawScoreSemanticsVersion: 1,
+        },
+      };
+      const artifactHash = computeArtifactHash(baseArtifact);
+      const finalArtifact = { ...baseArtifact, artifactHash };
+      await writeFile(
+        posix.join(scenarioDir, filename),
+        JSON.stringify(finalArtifact),
+        'utf8',
+      );
+      // why: hand-written index.json so validateParStore can run; the index
+      // entry includes a placeholder scoringConfig so isParIndexShape passes,
+      // but the on-disk artifact lacks it — that is the drift case under test.
+      const placeholderConfig = createTestScoringConfig(scenarioKey, createTestParBaseline());
+      const indexPath = posix.join(
+        sourceClassRoot(workspace, 'simulation', PAR_VERSION),
+        'index.json',
+      );
+      await writeFile(
+        indexPath,
+        JSON.stringify({
+          parVersion: PAR_VERSION,
+          source: 'simulation',
+          generatedAt: '2026-04-23T12:00:00.000Z',
+          scenarioCount: 1,
+          scenarios: {
+            [scenarioKey]: {
+              path: posix.join(shard, filename),
+              parValue: 5500,
+              artifactHash,
+              scoringConfig: placeholderConfig,
+            },
+          },
+        }),
+        'utf8',
+      );
+
+      const result = await validateParStore(workspace, 'simulation', PAR_VERSION);
+      assert.equal(result.isValid, false);
+      const configMissingErrors = result.errors.filter(
+        (entry) => entry.errorType === 'scoring_config_invalid',
+      );
+      assert.equal(configMissingErrors.length, 1);
+      assert.equal(configMissingErrors[0]?.scenarioKey, scenarioKey);
+    } finally {
+      await removeWorkspace(workspace);
+    }
+  });
+
+  test('validateParStore rejects artifact whose scoringConfig.scoringConfigVersion disagrees with scoring.scoringConfigVersion', async () => {
+    const workspace = await createTempWorkspace();
+    try {
+      const scenarioKey = 'alpha-scheme::version-mismatch::group';
+      const shard = scenarioKeyToShard(scenarioKey);
+      const filename = scenarioKeyToFilename(scenarioKey);
+      const scenarioDir = posix.join(
+        sourceClassRoot(workspace, 'simulation', PAR_VERSION),
+        'scenarios',
+        shard,
+      );
+      await mkdir(scenarioDir, { recursive: true });
+      // why: artifact carries scoring.scoringConfigVersion = 1 but
+      // scoringConfig.scoringConfigVersion = 99 — the locked invariant
+      // requires the two to match (D-5306).
+      const driftConfig: ScenarioScoringConfig = {
+        ...createTestScoringConfig(scenarioKey, createTestParBaseline()),
+        scoringConfigVersion: 99,
+      };
+      const baseArtifact = {
+        scenarioKey,
+        source: 'simulation',
+        parValue: 5500,
+        percentileUsed: 55,
+        sampleSize: 500,
+        generatedAt: '2026-04-23T12:00:00.000Z',
+        simulation: {
+          policyTier: 'T2',
+          policyVersion: 'CompetentHeuristic/v1',
+          seedSetHash: 'djb2:def',
+        },
+        scoring: {
+          scoringConfigVersion: 1,
+          rawScoreSemanticsVersion: 1,
+        },
+        scoringConfig: driftConfig,
+      };
+      const artifactHash = computeArtifactHash(baseArtifact);
+      const finalArtifact = { ...baseArtifact, artifactHash };
+      await writeFile(
+        posix.join(scenarioDir, filename),
+        JSON.stringify(finalArtifact),
+        'utf8',
+      );
+      await buildParIndex(workspace, 'simulation', PAR_VERSION);
+
+      const result = await validateParStore(workspace, 'simulation', PAR_VERSION);
+      assert.equal(result.isValid, false);
+      const versionErrors = result.errors.filter(
+        (entry) => entry.errorType === 'scoring_config_version_mismatch',
+      );
+      assert.equal(versionErrors.length, 1);
+      assert.equal(versionErrors[0]?.scenarioKey, scenarioKey);
+    } finally {
+      await removeWorkspace(workspace);
+    }
+  });
+
+  test('validateParStore rejects SeedParArtifact whose parBaseline disagrees with scoringConfig.parBaseline (D-5306c)', async () => {
+    const workspace = await createTempWorkspace();
+    try {
+      const scenarioKey = 'alpha-scheme::baseline-drift::group';
+      const shard = scenarioKeyToShard(scenarioKey);
+      const filename = scenarioKeyToFilename(scenarioKey);
+      const scenarioDir = posix.join(
+        sourceClassRoot(workspace, 'seed', PAR_VERSION),
+        'scenarios',
+        shard,
+      );
+      await mkdir(scenarioDir, { recursive: true });
+      // why: seed artifact carries parBaseline.roundsPar = 5 but the
+      // embedded scoringConfig.parBaseline.roundsPar = 99 — the D-5306c
+      // one-cycle audit invariant requires field-wise equality.
+      const artifactBaseline = createTestParBaseline();
+      const driftedConfigBaseline = {
+        ...artifactBaseline,
+        roundsPar: 99,
+      };
+      const driftedConfig: ScenarioScoringConfig = {
+        ...createTestScoringConfig(scenarioKey, driftedConfigBaseline),
+        parBaseline: driftedConfigBaseline,
+      };
+      const baseArtifact = {
+        scenarioKey,
+        source: 'seed',
+        parBaseline: artifactBaseline,
+        parValue: computeParScore({
+          ...createTestScoringConfig(scenarioKey, artifactBaseline),
+          parBaseline: artifactBaseline,
+        }),
+        scoring: {
+          scoringConfigVersion: 1,
+          rawScoreSemanticsVersion: 1,
+        },
+        authoredAt: '2026-04-23T10:00:00.000Z',
+        authoredBy: 'test-author',
+        rationale: 'WP-053a baseline drift fixture.',
+        scoringConfig: driftedConfig,
+      };
+      const artifactHash = computeArtifactHash(baseArtifact);
+      const finalArtifact = { ...baseArtifact, artifactHash };
+      await writeFile(
+        posix.join(scenarioDir, filename),
+        JSON.stringify(finalArtifact),
+        'utf8',
+      );
+      await buildParIndex(workspace, 'seed', PAR_VERSION);
+
+      const result = await validateParStore(workspace, 'seed', PAR_VERSION);
+      assert.equal(result.isValid, false);
+      const driftErrors = result.errors.filter(
+        (entry) => entry.errorType === 'par_baseline_redundancy_drift',
+      );
+      assert.equal(driftErrors.length, 1);
+      assert.equal(driftErrors[0]?.scenarioKey, scenarioKey);
     } finally {
       await removeWorkspace(workspace);
     }

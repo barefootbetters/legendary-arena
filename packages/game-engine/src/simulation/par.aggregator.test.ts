@@ -18,11 +18,18 @@
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
 import type { ScenarioScoringConfig } from '../scoring/parScoring.types.js';
 import type { ParSimulationConfig, ParSimulationResult } from './par.aggregator.js';
+import {
+  writeSimulationParArtifact,
+  readSimulationParArtifact,
+} from './par.storage.js';
 
 import {
   aggregateParFromSimulation,
@@ -449,6 +456,68 @@ describe('PAR aggregator (WP-049)', () => {
     // 55th percentile of an 8-element array: ceil(0.55 * 8) - 1 = 4 →
     // sortedAscending[4] = 9000.
     assert.equal(par, 9000, 'mixed distribution must produce nearest-rank percentile without filtering');
+  });
+
+  // why: WP-053a +2 tests for the simulation-side embed plumbing locked
+  // by PS-3. The aggregator itself is unchanged (ParSimulationConfig
+  // already carries scoringConfig); the new contract surface lives at the
+  // writer (par.storage.ts) which now takes scoringConfig as a 3rd
+  // positional parameter. These integration tests exercise the
+  // aggregator → writer → readback round-trip.
+
+  test('writeSimulationParArtifact embeds the input scoringConfig verbatim into the persisted artifact', async () => {
+    const config = createTestParConfig();
+    const registry = createMockRegistry();
+    const result = generateScenarioPar(config, registry);
+    const workspace = await mkdtemp(join(tmpdir(), 'wp053a-embed-'));
+    try {
+      await writeSimulationParArtifact(result, config.scoringConfig, workspace, 'v1');
+      const readBack = await readSimulationParArtifact(
+        result.scenarioKey,
+        workspace,
+        'v1',
+      );
+      assert.notEqual(readBack, null);
+      // why: deepEqual confirms verbatim embed — no transformation, no
+      // reordering, no defaulting. Drift impossibility relies on identity
+      // copy from ParSimulationConfig.scoringConfig through the writer.
+      assert.deepEqual(
+        readBack?.scoringConfig,
+        config.scoringConfig,
+        'Persisted scoringConfig must equal the input config field-for-field.',
+      );
+    } finally {
+      await rm(workspace, { recursive: true, force: true });
+    }
+  });
+
+  test('writeSimulationParArtifact throws when scoringConfig.scoringConfigVersion disagrees with result.scoringConfigVersion (D-5306 version-equality invariant)', async () => {
+    const config = createTestParConfig();
+    const registry = createMockRegistry();
+    const result = generateScenarioPar(config, registry);
+    // why: hand-crafted scoringConfig with a version that disagrees with
+    // the pipeline's scoringConfigVersion. The writer must throw before
+    // any disk write so that no drift-broken artifact ever reaches disk
+    // (mirrors the writeSeedParArtifact parValue-vs-baseline rejection).
+    const driftingConfig: ScenarioScoringConfig = {
+      ...config.scoringConfig,
+      scoringConfigVersion: result.scoringConfigVersion + 99,
+    };
+    const workspace = await mkdtemp(join(tmpdir(), 'wp053a-vmismatch-'));
+    try {
+      await assert.rejects(
+        writeSimulationParArtifact(result, driftingConfig, workspace, 'v1'),
+        (error: unknown) => {
+          return (
+            error instanceof Error
+            && /scoringConfigVersion/.test(error.message)
+            && /does not equal/.test(error.message)
+          );
+        },
+      );
+    } finally {
+      await rm(workspace, { recursive: true, force: true });
+    }
   });
 });
 

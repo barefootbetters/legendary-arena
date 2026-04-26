@@ -163,6 +163,12 @@ export {
   buildScoreBreakdown,
   validateScoringConfig,
 } from './scoring/parScoring.logic.js';
+
+// ScenarioScoringConfig loader (WP-053a / D-5306a)
+export {
+  loadScoringConfigForScenario,
+  loadAllScoringConfigs,
+} from './scoring/scoringConfigLoader.js';
 export type { MastermindState } from './mastermind/mastermind.types.js';
 export { buildMastermindState } from './mastermind/mastermind.setup.js';
 export { defeatTopTactic, areAllTacticsDefeated } from './mastermind/mastermind.logic.js';

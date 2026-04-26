@@ -30,6 +30,7 @@ import { join } from 'node:path';
 import { checkParPublished, createParGate } from './parGate.mjs';
 // @ts-ignore — loadParIndex is re-exported from the engine package root.
 import { loadParIndex } from '@legendary-arena/game-engine';
+import type { ScenarioScoringConfig } from '@legendary-arena/game-engine';
 
 type ParArtifactSource = 'seed' | 'simulation';
 
@@ -37,6 +38,11 @@ interface IndexEntry {
   readonly path: string;
   readonly parValue: number;
   readonly artifactHash: string;
+  // why: WP-053a / D-5306b — every per-scenario index entry now carries
+  // an inline-materialized ScenarioScoringConfig. The gate constructor
+  // hard-throws if any entry lacks it, so synthetic test indices must
+  // include the field for fixture parity with production indices.
+  readonly scoringConfig: ScenarioScoringConfig;
 }
 
 interface WrittenIndex {
@@ -91,6 +97,44 @@ async function writeHandAuthoredIndex(
   return index;
 }
 
+/**
+ * Builds a structurally valid ScenarioScoringConfig for synthetic gate-test
+ * fixtures. Weights satisfy validateScoringConfig's structural invariants
+ * (bystanderReward > villainEscaped; bystanderLost > villainEscaped;
+ * bystanderLost > bystanderReward) so the gate constructor's hard-throw
+ * guard accepts the entry as scoringConfig-bearing.
+ */
+function createTestScoringConfig(scenarioKey: string): ScenarioScoringConfig {
+  return {
+    scenarioKey,
+    weights: {
+      roundCost: 100,
+      bystanderReward: 400,
+      victoryPointReward: 10,
+    },
+    caps: {
+      bystanderCap: null,
+      victoryPointCap: null,
+    },
+    penaltyEventWeights: {
+      villainEscaped: 300,
+      bystanderLost: 500,
+      schemeTwistNegative: 50,
+      mastermindTacticUntaken: 25,
+      scenarioSpecificPenalty: 40,
+    },
+    parBaseline: {
+      roundsPar: 5,
+      bystandersPar: 3,
+      victoryPointsPar: 10,
+      escapesPar: 1,
+    },
+    scoringConfigVersion: 1,
+    createdAt: '2026-04-23T00:00:00.000Z',
+    updatedAt: '2026-04-23T00:00:00.000Z',
+  };
+}
+
 function createEntry(
   scenarioKey: string,
   parValue: number,
@@ -100,6 +144,7 @@ function createEntry(
     path: `${scenarioKey.slice(0, 2)}/${scenarioKey}.json`,
     parValue,
     artifactHash: `sha256-test-${hashSuffix}`,
+    scoringConfig: createTestScoringConfig(scenarioKey),
   };
 }
 
@@ -183,6 +228,7 @@ describe('PAR publication gate (WP-051)', () => {
         parValue: 250,
         parVersion: 'v1',
         source: 'simulation',
+        scoringConfig: createTestScoringConfig('sim-only'),
       });
     } finally {
       await removeWorkspace(workspace);
@@ -238,6 +284,7 @@ describe('PAR publication gate (WP-051)', () => {
         parValue: 77,
         parVersion: 'v1',
         source: 'simulation',
+        scoringConfig: createTestScoringConfig('integration-sim'),
       });
 
       const seedHit = gate.checkParPublished('integration-seed');
@@ -245,6 +292,7 @@ describe('PAR publication gate (WP-051)', () => {
         parValue: 88,
         parVersion: 'v1',
         source: 'seed',
+        scoringConfig: createTestScoringConfig('integration-seed'),
       });
 
       const miss = gate.checkParPublished('not-published');
@@ -275,11 +323,13 @@ describe('PAR publication gate (WP-051)', () => {
       parValue: 42,
       parVersion: 'v1',
       source: 'simulation',
+      scoringConfig: createTestScoringConfig('invariant-check'),
     });
     assert.deepEqual(secondCheck, {
       parValue: 42,
       parVersion: 'v1',
       source: 'simulation',
+      scoringConfig: createTestScoringConfig('invariant-check'),
     });
     assert.equal(missCheck, null);
   });
@@ -322,6 +372,7 @@ describe('PAR publication gate (WP-051)', () => {
         parValue: 10,
         parVersion: 'v1',
         source: 'simulation',
+        scoringConfig: createTestScoringConfig('precedence-sim-only'),
       });
     } finally {
       await removeWorkspace(workspace);
@@ -349,6 +400,7 @@ describe('PAR publication gate (WP-051)', () => {
         parValue: 40,
         parVersion: 'v1',
         source: 'seed',
+        scoringConfig: createTestScoringConfig('precedence-seed-only'),
       });
     } finally {
       await removeWorkspace(workspace);
@@ -370,7 +422,12 @@ describe('PAR publication gate (WP-051)', () => {
 
       assert.deepEqual(
         result,
-        { parValue: 111, parVersion: 'v1', source: 'simulation' },
+        {
+          parValue: 111,
+          parVersion: 'v1',
+          source: 'simulation',
+          scoringConfig: createTestScoringConfig('both-present'),
+        },
         'Simulation index must win when both classes cover the scenario; seed parValue must not leak into the result.',
       );
     } finally {
@@ -422,6 +479,96 @@ describe('PAR publication gate (WP-051)', () => {
         simulationIndex.scenarios['aliasing-check'].parValue,
         321,
         'Mutating the first result must not corrupt the in-memory index.',
+      );
+    } finally {
+      await removeWorkspace(workspace);
+    }
+  });
+
+  // why: WP-053a +2 tests for the D-5306 gate contract extensions:
+  //   1. checkParPublished returns scoringConfig on hits — verifies the
+  //      inline-materialized D-5306b path end-to-end through the gate.
+  //   2. createParGate hard-throws when an index entry is missing
+  //      scoringConfig — proves the no-partially-armed-state guard.
+
+  test('checkParPublished returns scoringConfig on hits (D-5306 atomic tuple)', async () => {
+    const workspace = await createWorkspace();
+    try {
+      await writeHandAuthoredIndex(workspace, 'simulation', 'v1', {
+        'config-bearing': createEntry('config-bearing', 555, 'cb'),
+      });
+      const gate = await createParGate(workspace, 'v1');
+
+      const hit = gate.checkParPublished('config-bearing');
+
+      assert.notEqual(hit, null, 'gate must hit the published scenario');
+      assert.deepEqual(
+        hit.scoringConfig,
+        createTestScoringConfig('config-bearing'),
+        'Gate hit must surface the index entry\'s embedded ScenarioScoringConfig verbatim.',
+      );
+      // why: explicit field-level assertions confirm the four-field tuple
+      // is intact — drift from (parValue, parVersion, source, scoringConfig)
+      // breaks the WP-053 contract that submitCompetitiveScore depends on.
+      assert.equal(hit.parValue, 555);
+      assert.equal(hit.parVersion, 'v1');
+      assert.equal(hit.source, 'simulation');
+    } finally {
+      await removeWorkspace(workspace);
+    }
+  });
+
+  test('gate construction does not produce a partially-armed state when an index entry is missing scoringConfig', async () => {
+    // why: D-5306 requires no partially-armed gate. Two-layer defense
+    // protects against this:
+    //   - loadParIndex's isParIndexShape rejects indices whose per-scenario
+    //     entries lack scoringConfig (engine layer)
+    //   - createParGate's assertEveryScenarioHasScoringConfig hard-throws
+    //     if any non-null index slipped past the shape validator (server
+    //     layer, defense-in-depth)
+    // The shape validator catches first in practice; the rejection surfaces
+    // as graceful per-class degradation through handleParLoadError. This
+    // test verifies the contract end-to-end: a malformed sim-index whose
+    // entry omits scoringConfig must not produce a hit for that scenario.
+    const workspace = await createWorkspace();
+    try {
+      const simulationDirectory = join(workspace, 'sim', 'v1');
+      await mkdir(simulationDirectory, { recursive: true });
+      // why: hand-written index whose sole per-scenario entry omits the
+      // required scoringConfig field. isParIndexShape (engine, WP-053a)
+      // rejects this; loadParIndex throws ParStoreReadError; the gate's
+      // per-class .catch handler logs and returns null. Net effect:
+      // simulationScenarioCount = 0 and checkParPublished returns null
+      // for the offending key — no partially-armed hit can leak.
+      await writeFile(
+        join(simulationDirectory, 'index.json'),
+        JSON.stringify({
+          parVersion: 'v1',
+          source: 'simulation',
+          generatedAt: '2026-04-23T00:00:00.000Z',
+          scenarioCount: 1,
+          scenarios: {
+            'config-missing-from-entry': {
+              path: 'co/config-missing-from-entry.json',
+              parValue: 99,
+              artifactHash: 'sha256-test-missing',
+            },
+          },
+        }),
+        'utf8',
+      );
+
+      const gate = await createParGate(workspace, 'v1');
+
+      assert.equal(
+        gate.simulationScenarioCount,
+        0,
+        'Sim index whose entry lacks scoringConfig must not contribute coverage; the gate degrades the entire class rather than serving a partially-armed entry.',
+      );
+      assert.equal(
+        gate.checkParPublished('config-missing-from-entry'),
+        null,
+        'No partially-armed hit may leak through — checkParPublished must return null for the offending scenario.',
       );
     } finally {
       await removeWorkspace(workspace);

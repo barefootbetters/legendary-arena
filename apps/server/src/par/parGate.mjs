@@ -26,6 +26,7 @@ import {
 /** @typedef {import('@legendary-arena/game-engine').ParIndex} ParIndex */
 /** @typedef {import('@legendary-arena/game-engine').ParArtifactSource} ParArtifactSource */
 /** @typedef {import('@legendary-arena/game-engine').ScenarioKey} ScenarioKey */
+/** @typedef {import('@legendary-arena/game-engine').ScenarioScoringConfig} ScenarioScoringConfig */
 
 /**
  * @typedef {Object} ParGateHit
@@ -36,6 +37,13 @@ import {
  *                                the scenario; 'seed' when only the seed index
  *                                covered it. Load-bearing for WP-053 / WP-054
  *                                leaderboard records.
+ * @property {ScenarioScoringConfig} scoringConfig  Inline-materialized config
+ *                                from the winning index entry per D-5306b.
+ *                                Non-optional: every published PAR is the atomic
+ *                                tuple (scenarioKey, parValue, scoringConfig).
+ *                                The gate sources this from the in-memory
+ *                                ParIndex loaded once at startup; D-5103
+ *                                fs-free invariant preserved.
  */
 
 /**
@@ -85,10 +93,16 @@ export function checkParPublished(simulationIndex, seedIndex, scenarioKey) {
       // into the index. Returning it directly would let a caller mutate the
       // in-memory index by writing to the returned reference (aliasing guard
       // per copilot #17 / EC-051 Locked Values).
+      // why: scoringConfig sourced from the full per-scenario index entry
+      // (not lookupParFromIndex which returns only path/parValue) so the
+      // gate emits the D-5306b-materialized config without a second lookup.
+      // The reference is shared with the index — readonly typing on
+      // ScenarioScoringConfig protects against caller mutation.
       return {
         parValue: simulationEntry.parValue,
         parVersion: simulationIndex.parVersion,
         source: 'simulation',
+        scoringConfig: simulationIndex.scenarios[scenarioKey].scoringConfig,
       };
     }
   }
@@ -101,6 +115,7 @@ export function checkParPublished(simulationIndex, seedIndex, scenarioKey) {
         parValue: seedEntry.parValue,
         parVersion: seedIndex.parVersion,
         source: 'seed',
+        scoringConfig: seedIndex.scenarios[scenarioKey].scoringConfig,
       };
     }
   }
@@ -244,6 +259,16 @@ export async function createParGate(basePath, parVersion) {
 
   console.log(formatStartupLogLine(simulationIndex, seedIndex, parVersion));
 
+  // why: D-5306 hard-throw guard — if any scenario in either loaded index
+  // lacks scoringConfig, the gate constructor refuses to build a partially-
+  // armed gate. The Primary Invariant requires (scenarioKey, parValue,
+  // scoringConfig) atomicity; degrading to "some scenarios have config,
+  // some don't" would silently break that invariant for the missing
+  // entries. Fail-closed at startup so the server fails to start rather
+  // than serving a half-broken gate at request time.
+  assertEveryScenarioHasScoringConfig(simulationIndex, 'simulation');
+  assertEveryScenarioHasScoringConfig(seedIndex, 'seed');
+
   const simulationScenarioCount =
     simulationIndex === null ? 0 : simulationIndex.scenarioCount;
   const seedScenarioCount = seedIndex === null ? 0 : seedIndex.scenarioCount;
@@ -254,4 +279,34 @@ export async function createParGate(basePath, parVersion) {
     simulationScenarioCount,
     seedScenarioCount,
   };
+}
+
+/**
+ * Throws when any scenario in the loaded index lacks a non-null
+ * `scoringConfig`. Null indices (class had no coverage at startup) skip the
+ * check — the per-class graceful-degradation contract is preserved.
+ *
+ * Belongs adjacent to `createParGate` so the gate's startup contract is
+ * fully expressed at one site: load both classes, then guard, then return.
+ *
+ * @param {ParIndex | null} index
+ * @param {ParArtifactSource} source
+ * @returns {void}
+ */
+function assertEveryScenarioHasScoringConfig(index, source) {
+  if (index === null) {
+    return;
+  }
+  for (const [scenarioKey, entry] of Object.entries(index.scenarios)) {
+    if (
+      entry === null
+      || typeof entry !== 'object'
+      || entry.scoringConfig === null
+      || typeof entry.scoringConfig !== 'object'
+    ) {
+      throw new Error(
+        `createParGate refused to construct a partially-armed gate: ${source} index entry for scenario ${scenarioKey} is missing required field scoringConfig (D-5306). Re-build the PAR index from artifacts that embed a structurally valid ScenarioScoringConfig before starting the server.`,
+      );
+    }
+  }
 }
