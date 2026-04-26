@@ -10,6 +10,23 @@
 > limiting deferral so the executor does not start a session against a
 > stale baseline.
 >
+> **Revised:** 2026-04-26 — post-A0-SPEC-commit + post-pre-flight +
+> post-copilot-check reconciliation. The WP-054 v1.3 A0 SPEC bundle
+> (this file + WP-054 v1.3 + EC-054 v1.3) landed on `main` via single
+> `SPEC:` commit `f56a955`. Pre-flight (`01.4`) re-ran 2026-04-26
+> against the v1.3 artifacts and returned **READY TO EXECUTE** — all
+> four prior blockers (CV-1 PlayerId→AccountId, CV-2 checkParPublished
+> shape/signature, SR-1 rate-limiting scope contradiction, Vision
+> Sanity §17.2 block missing) resolved; all three non-blocking polish
+> items (SR-2 replayHash permalink, SR-3 INNER JOIN defense-in-depth,
+> drift-detection test #9 per copilot #11) folded in. Copilot check
+> (`01.7`) re-ran 2026-04-26 against the post-A0 artifacts and
+> returned **CONFIRM** with **30/30 PASS** — disposition CONFIRM,
+> session prompt generation authorized. §1 main-HEAD reference, §6
+> Steps 1 / 1b status, and §10 steps 1-3 are all updated below.
+> Substantive guidance in §2-§5, §7-§9 unchanged — only the temporal
+> framing reflects the post-A0 state.
+>
 > **This file is not authoritative.** If conflict arises with
 > `docs/ai/ARCHITECTURE.md`, `.claude/rules/*.md`, WP-054, or EC-054,
 > those documents win. See §7 priority chain.
@@ -22,13 +39,15 @@
 
 ## 1. State on `main` (as of authoring)
 
-`main` HEAD at session-context authoring: **`6c217b7`**
+`main` HEAD at session-context original authoring: **`6c217b7`**
 (`SPEC: WP-109 / EC-109 + roadmap back-sync — team affiliation draft
 (3/4/5-player cohorts)`).
 
-The WP-054 v1.3 A0 SPEC is **uncommitted in the working tree** at
-authoring time (the bundle including this file is intended to land as
-a single A0 SPEC commit before the WP-054 execution branch is cut).
+Post-A0-SPEC `main` HEAD (current): **`f56a955`** (`SPEC: WP-054 +
+EC-054 v1.3 — fold post-WP-053 contract drift … + author session-
+context-wp054 bridge`). The A0 SPEC bundle (this file + WP-054 v1.3
++ EC-054 v1.3) landed as a single `SPEC:` commit on 2026-04-26 per
+the recommended commit topology in §10 step 1.
 
 Recent landed history relevant to WP-054:
 
@@ -284,10 +303,10 @@ count `8 → 9`; suite count locked at `+1` (single
 
 | Step | Gate | Status |
 |---|---|---|
-| 0 | Session context | **This file (DONE).** |
-| 1 | Pre-flight (`01.4`) | **Pending re-run** — initial pre-flight 2026-04-26 returned NOT READY for the four §5 blockers; v1.3 A0 SPEC resolves all four. Re-run pre-flight after A0 SPEC commit lands. |
-| 1b | Copilot check (`01.7`) | Pending — runs after the pre-flight re-run reaches READY-TO-EXECUTE. The early-sanity-pass copilot check from 2026-04-26 returned BLOCK pending the same §5 fixes; the post-A0 re-run should clear all 30 issues. |
-| 2 | Session prompt | Pending — author after pre-flight + copilot reach READY-TO-EXECUTE / CONFIRM. |
+| 0 | Session context | **DONE** — this file landed in the A0 SPEC commit `f56a955`. |
+| 1 | Pre-flight (`01.4`) | **DONE 2026-04-26 — verdict: READY TO EXECUTE.** Initial pre-flight returned NOT READY for the four §5 blockers (CV-1, CV-2, SR-1, Vision Sanity); v1.3 A0 SPEC resolved all four; re-run against `f56a955` confirmed all dependencies green, all four blockers closed, all three non-blocking polish items folded in. |
+| 1b | Copilot check (`01.7`) | **DONE 2026-04-26 — disposition: CONFIRM, 30/30 PASS.** Early-sanity-pass against v1.2 returned BLOCK with 10 RISKs (#4, #11, #12, #15, #16, #17, #21, #22, #27, #30); post-A0 re-run against `f56a955` cleared all 10 RISKs to PASS. Two non-blocking carry-forwards remain: EC_INDEX row for EC-054 (deferred to governance close, Commit B); index on `(scenario_key, final_score, created_at)` (deferred to future tuning WP). |
+| 2 | Session prompt | **Pending — authorized.** Author at `docs/ai/invocations/session-wp054-public-leaderboards-read-only.md` citing `f56a955` as the A0 SPEC anchor, the locked test count (`55/8/0`), the `01.5 NOT INVOKED` declaration, and the pre-commit-review template integration per §9.7. |
 | 3 | Execution | Pending — fresh Claude Code session against the session prompt. |
 | 4 | Post-mortem | **MANDATORY per 01.6** for WP-054: new long-lived abstractions (`PublicLeaderboardEntry`, `ScenarioLeaderboard`, `LeaderboardQueryOptions`, `LeaderboardDependencies`); new contract surface consumed by future request-handler WP; new dependency-injection seam pattern (mirrors WP-053). Same trigger profile as WP-053. |
 | 5 | Pre-commit review | Pending — separate session as needed. |
@@ -535,29 +554,30 @@ Same closing discipline as WP-053.
 
 Before any WP-054 execution branch is cut:
 
-1. Land an A0 SPEC commit on `main` containing this bundle:
-   - WP-054 v1.2 → v1.3 surgical revisions (PS-1..PS-6 fixes)
-   - EC-054 parallel revisions (drift detection, aliasing why,
-     replayHash permalink, INNER JOIN guard, `Select-String`
-     enforcement gates for transport/middleware/playerId)
-   - This `session-context-wp054.md` file
+1. ✅ **DONE** — A0 SPEC commit `f56a955` landed on `main` 2026-04-26
+   containing the v1.3 bundle (WP-054 v1.3 + EC-054 v1.3 + this
+   session-context file). Three files, single `SPEC:` commit, hooks
+   clean, unrelated working-tree files held aside per P6-27.
 
-   Suggested commit message:
-   `SPEC: WP-054 + EC-054 v1.3 — fold post-WP-053 contract drift
-   (PlayerId→AccountId per D-5201, checkParPublished shape per
-   D-5306, replayHash permalinks, lifecycle prohibition + rate-
-   limiting deferral, Vision Alignment block, drift-detection test
-   #9) + author session-context-wp054 bridge`.
+2. ✅ **DONE 2026-04-26** — Pre-flight (`01.4`) re-run on the v1.3
+   artifacts at `f56a955`. Verdict: **READY TO EXECUTE.** All four
+   prior blockers closed; baseline confirmed (engine `522/116/0`,
+   server `47/7/0` with 16 skipped); all dependencies green.
 
-2. Re-run pre-flight (`01.4`) on the v1.3 artifacts. Expected:
-   READY TO EXECUTE.
-3. Re-run copilot check (`01.7`) on the post-A0 artifacts. Expected:
-   30/30 PASS.
-4. Author the WP-054 session prompt at
+3. ✅ **DONE 2026-04-26** — Copilot check (`01.7`) re-run on the
+   post-A0 artifacts at `f56a955`. Disposition: **CONFIRM**, 30/30
+   PASS. Session prompt generation authorized.
+
+4. **NEXT STEP** — Author the WP-054 session prompt at
    `docs/ai/invocations/session-wp054-public-leaderboards-read-only.md`
-   citing the v1.3 A0 SPEC commit hash, the locked test count
-   (`55/8/0`), the `01.5 NOT INVOKED` declaration, and the pre-commit
-   review integration per §9.7.
-5. Cut the WP-054 execution branch from `main` after A0 lands.
+   citing the v1.3 A0 SPEC commit hash (`f56a955`), the locked test
+   count (`55/8/0`), the `01.5 NOT INVOKED` declaration, and the
+   pre-commit-review integration per §9.7. Land it as a separate
+   `SPEC:` commit (or fold it into the same SPEC commit as a future
+   minor session-context revision; either works).
+
+5. Cut the WP-054 execution branch from `main` after the session
+   prompt lands.
+
 6. Resume the §8 step 5+ sequence (stash unrelated WIP, mirror WP-053
    patterns, run the pre-commit-review template, etc.).
