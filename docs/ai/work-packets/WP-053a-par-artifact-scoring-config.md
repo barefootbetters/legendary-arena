@@ -31,7 +31,7 @@ After this session:
 - Every PAR artifact (`SeedParArtifact` + `SimulationParArtifact`) carries the full `ScenarioScoringConfig` it was authored / calibrated against, validated structurally at write time.
 - The `ParIndex` (loaded into the gate at server startup) carries the full config inline per scenario — preserving the gate's fs-free runtime invariant (D-5103).
 - `checkParPublished(scenarioKey)` returns `{ parValue, parVersion, source, scoringConfig }`. The new field is non-optional; gates loaded from indices missing it fail closed at startup with a structured error.
-- A new on-disk source `data/scoring-configs/<scenario_key>.json` is the canonical authoring origin for `ScenarioScoringConfig` instances. The PAR aggregator (seed + simulation) reads this directory and embeds the config into each artifact it produces.
+- A new on-disk source `data/scoring-configs/<encoded-scenario-key>.json` is the canonical authoring origin for `ScenarioScoringConfig` instances. The PAR aggregator (seed + simulation) reads this directory and embeds the config into each artifact it produces.
 - `validateParStore` is extended to verify (a) every artifact carries a structurally valid `scoringConfig` per `validateScoringConfig`, and (b) `scoringConfig.scoringConfigVersion === artifact.scoring.scoringConfigVersion` (no internal drift within an artifact).
 
 ---
@@ -68,7 +68,7 @@ If any of the above is false, this packet is **BLOCKED**.
 
 **Packet-specific:**
 - The gate must remain **fs-free at request time** (D-5103). Any new field on `ParIndex.scenarios[key]` must be loaded once at startup, never queried from disk during a `checkParPublished` call.
-- The new `data/scoring-configs/<scenario_key>.json` source must be **load-once at aggregator/authoring time**, not at gate runtime. The server gate consumes the config exclusively via the in-memory `ParIndex` it received from the engine's loader.
+- The new `data/scoring-configs/<encoded-scenario-key>.json` source must be **load-once at aggregator/authoring time**, not at gate runtime. The server gate consumes the config exclusively via the in-memory `ParIndex` it received from the engine's loader.
 - `validateScoringConfig` is the **sole structural validator** for embedded configs. Re-implementing validation in this packet is forbidden.
 - Existing artifact files on disk (if any) must be regenerated, not migrated in place. PAR data is not yet present in `data/par/` (verified at session start), so this is a clean slate.
 
@@ -80,17 +80,20 @@ If any of the above is false, this packet is **BLOCKED**.
 
 ## Scope (In)
 
-### A) `data/scoring-configs/<scenario_key>.json` — new directory + initial seed files
+### A) `data/scoring-configs/<encoded-scenario-key>.json` — new directory + initial seed files
 
 - One JSON file per scenario currently authored in the seed PAR set.
+- **Filename encoding (PS-4 — locked):** filenames use the **`scenarioKeyToFilename` encoding** from `par.storage.ts:375` (replaces `::` → `--` and `+` → `_`) for consistency with PAR artifact storage layout and filesystem portability across Windows / Linux / macOS / R2 / S3 / CDN. Example: scenario key `test-scheme-par::test-mastermind-par::test-villain-group-par` maps to filename `test-scheme-par--test-mastermind-par--test-villain-group-par.json`.
+- The loader (§B) reuses the same encoding helper (a re-export or a local equivalent named `scoringConfigKeyToFilename` at the loader's discretion — the WP-053a executor commits to one form during execution; the encoded result must match `scenarioKeyToFilename` byte-for-byte).
 - Structurally a serialized `ScenarioScoringConfig`. Keys are alphabetically sorted on write (determinism contract — mirrors `ParIndex.scenarios` ordering).
-- Initial content: at minimum, one example file per scenario covered by today's seed PAR authoring. If no seed scenarios exist yet, a single representative example is sufficient — the file proves the loader works; production files land as scenarios are authored.
-- `// why:` documented in a sibling `data/scoring-configs/README.md`: this directory is the single authoring origin for `ScenarioScoringConfig`; PAR aggregator and seed artifact authoring scripts read from here; consumers (server gate, WP-053) never read from here directly — they get configs through PAR artifacts.
+- Initial content: at minimum, one example file using the canonical test scenario key `test-scheme-par::test-mastermind-par::test-villain-group-par` (the format used by existing PAR test fixtures at `par.aggregator.test.ts:73` + `par.storage.test.ts:107`). Production files land as scenarios are authored.
+- `// why:` documented in a sibling `data/scoring-configs/README.md`: this directory is the single authoring origin for `ScenarioScoringConfig`; PAR aggregator and seed artifact authoring scripts read from here; consumers (server gate, WP-053) never read from here directly — they get configs through PAR artifacts. The README also documents the `scenarioKeyToFilename` encoding rule so authors know how to name new scenario files.
 
 ### B) `packages/game-engine/src/scoring/scoringConfigLoader.ts` — new
 
-- `loadScoringConfigForScenario(scenarioKey: ScenarioKey, basePath: string): ScenarioScoringConfig` — deterministic loader with filesystem IO confined to authoring / startup time only. Reads `<basePath>/<scenario_key>.json`, parses the JSON payload, and validates via `validateScoringConfig`. Throws on parse failure or validation failure (this is authoring-time / startup-time code; throwing is appropriate and mirrors the `Game.setup()` precedent for setup-time failures). Not a "pure helper" in the engine-wide-purity sense (it performs IO); the engine-wide pure-helper rule applies to `parScoring.logic.ts` and similar modules called inside moves / phases / hooks, not to startup loaders.
-- `loadAllScoringConfigs(basePath: string): Record<ScenarioKey, ScenarioScoringConfig>` — directory scan + per-file load + return frozen map. Same IO-at-startup semantic.
+- `loadScoringConfigForScenario(scenarioKey: ScenarioKey, basePath: string): Promise<ScenarioScoringConfig>` — async deterministic loader with filesystem IO confined to authoring / startup time only. Resolves the on-disk path via `scoringConfigKeyToFilename(scenarioKey)` (reuses the `::` → `--` encoding from `par.storage.ts:scenarioKeyToFilename` per PS-4 — see §A), reads `<basePath>/<encoded>.json` via `node:fs/promises` `readFile`, parses the JSON payload, and validates via `validateScoringConfig`. The validator returns `ScoringConfigValidationResult` with shape `{ valid: boolean; errors: readonly string[] }` (per PS-1 — *not* a `Result<T>`-style `{ ok, reason }`); the loader joins `errors` with `'; '` for the thrown message. Throws on parse failure or validation failure (this is authoring-time / startup-time code; throwing is appropriate and mirrors the `Game.setup()` precedent for setup-time failures). Not a "pure helper" in the engine-wide-purity sense (it performs IO); the engine-wide pure-helper rule applies to `parScoring.logic.ts` and similar modules called inside moves / phases / hooks, not to startup loaders.
+- `loadAllScoringConfigs(basePath: string): Promise<Record<ScenarioKey, ScenarioScoringConfig>>` — async; directory scan via `readdir` + per-file load + return frozen map. Same IO-at-startup semantic.
+- Async signatures match the existing `par.storage.ts` IO conventions (`writeSimulationParArtifact`, `readSimulationParArtifact`, `writeSeedParArtifact`, `readSeedParArtifact`, `buildParIndex` — all return `Promise<…>`). The aggregator (`generateScenarioPar`) is synchronous, but the authoring pipeline composing `generateScenarioPar` + the storage writers is async by virtue of the storage writers; the loader fits naturally into that async layer.
 - No `boardgame.io` import. Uses `node:fs/promises` and `node:path` only.
 - Belongs to the engine layer because the PAR aggregator (engine) is the primary consumer.
 
@@ -100,6 +103,12 @@ If any of the above is false, this packet is **BLOCKED**.
 - `SimulationParArtifact` gains `readonly scoringConfig: ScenarioScoringConfig`. No prior redundancy to manage.
 - Both gain a structural invariant validated at write time: `scoringConfig.scoringConfigVersion === scoring.scoringConfigVersion`.
 
+**Sim embed plumbing (PS-3 — locked):**
+- `writeSimulationParArtifact` gains `scoringConfig: ScenarioScoringConfig` as a **third positional parameter** (between `result` and `basePath`) — mirrors the existing `writeSeedParArtifact(artifact, scoringConfig, basePath, parVersion)` four-parameter precedent. Symmetric writer call-shape across both source classes.
+- `buildSimulationArtifactFromResult(result, scoringConfig)` gains the same parameter and embeds `scoringConfig` verbatim into the returned `Omit<SimulationParArtifact, 'artifactHash'>` shape.
+- **`ParSimulationResult` is NOT modified.** WP-049's output type is locked; `scoringConfig` flows from the caller's `ParSimulationConfig` reference directly to the writer, not through the result.
+- The aggregator's caller (the future authoring pipeline) retains the `ParSimulationConfig` reference and passes `config.scoringConfig` to the writer alongside the result.
+
 ### D) `ParIndex` extension — same file
 
 - `ParIndex.scenarios[key]` gains `readonly scoringConfig: ScenarioScoringConfig` per D-5306b. The full config is materialized into the index at index-build time so the gate can return it without a second filesystem hit.
@@ -107,9 +116,13 @@ If any of the above is false, this packet is **BLOCKED**.
 
 ### E) PAR aggregator extensions — `packages/game-engine/src/simulation/par.aggregator.ts`
 
-- `ParSimulationConfig` gains `readonly scoringConfig: ScenarioScoringConfig` as a required input. Today the aggregator implicitly knows the config via `scoringConfigVersion`; under WP-053a it receives the full object from the caller (the authoring CLI).
-- The aggregator embeds `scoringConfig` into the output `SimulationParArtifact` verbatim.
-- Invariant added: `scoringConfig.scoringConfigVersion === <output>.scoring.scoringConfigVersion`.
+**No changes required (PS-3 surprise — discovered during pre-flight).** Pre-flight inspection confirmed `ParSimulationConfig.scoringConfig: ScenarioScoringConfig` already exists at `par.aggregator.ts:136` and is consumed by `generateScenarioPar` at line 787 (`computeRawScore(inputs, config.scoringConfig)`). The aggregator's *input* shape and *output* shape (`ParSimulationResult`) are both locked — WP-053a does not modify either.
+
+The simulation-side embed plumbing instead lives in `par.storage.ts` (see §C above): `writeSimulationParArtifact` and `buildSimulationArtifactFromResult` gain a `scoringConfig: ScenarioScoringConfig` parameter that the caller threads through from `ParSimulationConfig.scoringConfig` to the writer.
+
+Invariant validated at write time: `scoringConfig.scoringConfigVersion === <output>.scoring.scoringConfigVersion`.
+
+**Aggregator unwired status:** pre-flight grep confirms `generateScenarioPar` is exported but has no production caller today (no CLI / authoring pipeline). The future PAR-publishing CLI WP that wires the pipeline will pass `config.scoringConfig` through to `writeSimulationParArtifact` per the writer's new signature; that wiring is out of scope for WP-053a.
 
 ### F) Validator extensions — `packages/game-engine/src/simulation/par.storage.ts` (`validateParStore` / friends)
 
@@ -154,7 +167,7 @@ Total new tests: 4 + 3 + 2 + 2 = **+11 tests across 4 files**, with mechanical u
 ```
 data/scoring-configs/                                  (new directory)
 data/scoring-configs/README.md                         (new)
-data/scoring-configs/<scenario_key>.json               (new — at least one example file)
+data/scoring-configs/<encoded-scenario-key>.json               (new — at least one example file)
 
 packages/game-engine/src/scoring/scoringConfigLoader.ts       (new)
 packages/game-engine/src/scoring/scoringConfigLoader.test.ts  (new)
@@ -199,10 +212,10 @@ apps/server/src/par/parGate.test.ts                           (modified — +2 t
 - [ ] Drift-detection test pins the locked error type strings against their union
 
 ### Tests
-- [ ] Engine baseline shifts `513 / 115 / 0` → `522 / 115 / 0` (+9 tests; +0 suites *if* `scoringConfigLoader.test.ts` lands inside an existing describe block, otherwise +1 suite for `522 / 116 / 0` — the WP-053a pre-flight session must commit to one of the two suite-count outcomes)
-  - +4 from new `packages/game-engine/src/scoring/scoringConfigLoader.test.ts` (one new top-level test file; suite count contribution depends on whether its tests are wrapped in a fresh `describe('scoringConfigLoader (WP-053a)', …)` block per the post-WP-031 wrap-in-describe convention)
-  - +3 from extended `packages/game-engine/src/simulation/par.storage.test.ts` (existing describe blocks — no suite count change)
-  - +2 from extended `packages/game-engine/src/simulation/par.aggregator.test.ts` (existing describe blocks — no suite count change)
+- [ ] Engine baseline shifts `513 / 115 / 0` → `522 / 116 / 0` (+9 tests / +1 suite — pre-flight committed to the +1 suite outcome per the post-WP-031 wrap-in-describe convention; `scoringConfigLoader.test.ts` wraps its 4 tests in a fresh top-level `describe('scoringConfigLoader (WP-053a)', …)` block)
+  - +4 from new `packages/game-engine/src/scoring/scoringConfigLoader.test.ts` (+1 suite — fresh top-level describe)
+  - +3 from extended `packages/game-engine/src/simulation/par.storage.test.ts` (existing describe blocks — no suite delta)
+  - +2 from extended `packages/game-engine/src/simulation/par.aggregator.test.ts` (existing describe blocks — no suite delta)
 - [ ] Server baseline shifts `36 / 6 / 0` → `38 / 6 / 0` (+2 tests in `parGate.test.ts`'s existing describe; +0 suites)
 - [ ] Mechanical fixture updates to existing tests do not change pass/fail counts
 - [ ] All new tests use `node:test` and `node:assert/strict`
@@ -236,8 +249,8 @@ pnpm -r build
 
 # Engine tests
 pnpm --filter @legendary-arena/game-engine test
-# Expected: 522 / 115 / 0 — or 522 / 116 / 0 if scoringConfigLoader.test.ts
-# wraps its 4 tests in a new top-level describe block (pre-flight commits to one outcome)
+# Expected: 522 / 116 / 0 (pre-flight committed to +1 suite via fresh top-level
+# describe('scoringConfigLoader (WP-053a)', …) block per the post-WP-031 convention)
 
 # Server tests
 pnpm --filter @legendary-arena/server test
@@ -284,7 +297,7 @@ git diff main -- apps/server/src/replay/ apps/server/src/identity/
 
 - **Files to produce / modify:** ~10 (3 new, 7 modified)
 - **New tests:** +11 (across 4 files): +4 in new `scoringConfigLoader.test.ts`, +3 in `par.storage.test.ts`, +2 in `par.aggregator.test.ts`, +2 in `parGate.test.ts`
-- **Test baseline shifts:** engine `+9` (513/115/0 → 522/115/0; suite count +0 or +1 depending on `scoringConfigLoader.test.ts` describe-block wrapping), server `+2` (36/6/0 → 38/6/0)
+- **Test baseline shifts:** engine `+9 / +1 suite` (513/115/0 → 522/116/0 — pre-flight committed to the fresh-top-level-describe outcome per the post-WP-031 wrap-in-describe convention), server `+2 / +0 suites` (36/6/0 → 38/6/0)
 - **Risk:** Medium. The artifact shape change is structurally bounded but touches three layers (aggregator, storage, gate). Existing test fixtures need mechanical updates. The fs-free invariant on the gate is the single highest-risk constraint — easy to violate accidentally if the loader leaks across the layer.
 - **Estimated session length:** 1 execution session, comparable to WP-103.
 
@@ -294,7 +307,7 @@ git diff main -- apps/server/src/replay/ apps/server/src/identity/
 
 These were settled in the WP-053a A0 SPEC bundle and are now load-bearing:
 
-1. **D-5306a — `ScenarioScoringConfig` instances live in `data/scoring-configs/<scenario_key>.json`.** One file per scenario; alphabetical key ordering on write. PAR aggregator (engine) reads from here at authoring time and embeds into every artifact it produces. Server gate never reads this directory; configs flow exclusively through the in-memory `ParIndex` loaded at startup.
+1. **D-5306a — `ScenarioScoringConfig` instances live in `data/scoring-configs/<encoded-scenario-key>.json`.** One file per scenario; alphabetical key ordering on write. PAR aggregator (engine) reads from here at authoring time and embeds into every artifact it produces. Server gate never reads this directory; configs flow exclusively through the in-memory `ParIndex` loaded at startup.
 
 2. **D-5306b — Config reaches the fs-free server gate via inline materialization into `ParIndex.scenarios[key].scoringConfig`** at index-build time. The gate returns it without a second filesystem hit. D-5103 fs-free invariant preserved.
 

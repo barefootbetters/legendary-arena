@@ -1306,10 +1306,10 @@ These packets ship the game and keep it running.
   only at WP-053 flow step 12. Scope: ~10 files (3 new, 7 modified)
   spanning `data/scoring-configs/`, `packages/game-engine/src/scoring/`,
   `packages/game-engine/src/simulation/`, and `apps/server/src/par/`.
-  Engine baseline shifts `513/115/0` → `522/115/0` (+9 tests; +0
-  suites *if* `scoringConfigLoader.test.ts` lands inside an
-  existing describe block, +1 suite if it gets its own top-level
-  describe — pre-flight commits to one outcome). Server baseline
+  Engine baseline shifts `513/115/0` → **`522/116/0`** (+9 tests / +1
+  suite — pre-flight committed to the fresh top-level
+  `describe('scoringConfigLoader (WP-053a)', …)` block outcome per
+  the post-WP-031 wrap-in-describe convention; PS-5). Server baseline
   shifts `36/6/0` → `38/6/0` (+2 tests). New tests:
   `scoringConfigLoader.test.ts` (4 tests, new file); extensions to
   `par.storage.test.ts` (+3), `par.aggregator.test.ts` (+2),

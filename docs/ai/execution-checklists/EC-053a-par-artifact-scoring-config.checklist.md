@@ -17,18 +17,22 @@
 ## Locked Values (do not re-derive)
 > Duplicated verbatim from WP-053a §Goal + §Scope. Any divergence is a hard STOP; the WP wins.
 - **Primary Invariant:** PAR is the atomic tuple `(scenarioKey, parValue, scoringConfig)` — no valid runtime / validation / storage path where any one exists without the others
-- `loadScoringConfigForScenario(scenarioKey: ScenarioKey, basePath: string): ScenarioScoringConfig` — deterministic loader; throws on parse / validation failure
-- `loadAllScoringConfigs(basePath: string): Record<ScenarioKey, ScenarioScoringConfig>` — directory scan; returns frozen map
+- `loadScoringConfigForScenario(scenarioKey: ScenarioKey, basePath: string): Promise<ScenarioScoringConfig>` — async deterministic loader; throws on parse / validation failure (PS-2)
+- `loadAllScoringConfigs(basePath: string): Promise<Record<ScenarioKey, ScenarioScoringConfig>>` — async directory scan; returns frozen map (PS-2)
+- `validateScoringConfig` returns `ScoringConfigValidationResult { valid: boolean; errors: readonly string[] }` (PS-1 — *not* a `Result<T>`-style `{ ok, reason }`); the loader joins `errors` with `'; '` for thrown messages
 - `SeedParArtifact.scoringConfig: ScenarioScoringConfig` (non-optional)
 - `SimulationParArtifact.scoringConfig: ScenarioScoringConfig` (non-optional)
 - `ParIndex.scenarios[key].scoringConfig: ScenarioScoringConfig` (inline materialization at index-build time per D-5306b)
 - `ParGateHit` extended return: `{ parValue, parVersion, source, scoringConfig }` (non-optional)
-- `ParSimulationConfig.scoringConfig: ScenarioScoringConfig` (required input — aggregator embeds verbatim)
+- `ParSimulationConfig.scoringConfig: ScenarioScoringConfig` — **already exists** at `par.aggregator.ts:136` (PS-3); aggregator unchanged
+- `writeSimulationParArtifact(result, scoringConfig, basePath, parVersion): Promise<string>` — `scoringConfig` added as **3rd positional parameter** mirroring the existing `writeSeedParArtifact(artifact, scoringConfig, basePath, parVersion)` four-param precedent (PS-3)
+- `buildSimulationArtifactFromResult(result, scoringConfig)` — gains the same parameter; embeds `scoringConfig` verbatim. `ParSimulationResult` is NOT modified (WP-049 contract locked).
 - Version equality invariant: `scoringConfig.scoringConfigVersion === artifact.scoring.scoringConfigVersion`
-- Authoring origin: `data/scoring-configs/<scenario_key>.json` per D-5306a; alphabetical key ordering on write
+- Authoring origin: `data/scoring-configs/<encoded-scenario-key>.json` per D-5306a; **filename encoding reuses `scenarioKeyToFilename` from `par.storage.ts:375` (`::` → `--`, `+` → `_`)** (PS-4); alphabetical key ordering inside each JSON file (determinism contract)
+- Example file: `test-scheme-par--test-mastermind-par--test-villain-group-par.json` (encoded form of canonical test scenario key `test-scheme-par::test-mastermind-par::test-villain-group-par`)
 - `validateParStore` error type strings: `'scoring_config_invalid'`, `'scoring_config_version_mismatch'`, `'par_baseline_redundancy_drift'` (D-5306c one-cycle audit)
-- Engine baseline shifts `513 / 115 / 0` → `522 / 115 / 0` (+9 tests; +0 or +1 suite outcome — pre-flight commits)
-- Server baseline shifts `36 / 6 / 0` → `38 / 6 / 0` (+2 tests in `parGate.test.ts`; +0 suites)
+- Engine baseline shifts `513 / 115 / 0` → **`522 / 116 / 0`** (+9 tests / +1 suite — pre-flight committed to the fresh top-level `describe('scoringConfigLoader (WP-053a)', …)` block outcome per the post-WP-031 wrap-in-describe convention) (PS-5)
+- Server baseline shifts `36 / 6 / 0` → `38 / 6 / 0` (+2 tests in `parGate.test.ts`'s existing describe; +0 suites)
 
 ## Guardrails
 - Server gate stays fs-free at request time (D-5103); `apps/server/src/par/parGate.mjs` MUST NOT import `node:fs` or `scoringConfigLoader`
@@ -52,7 +56,7 @@
 
 ## Files to Produce
 - `data/scoring-configs/README.md` — **new** — D-5306a authoring origin documentation
-- `data/scoring-configs/<scenario_key>.json` — **new** — at least one example file
+- `data/scoring-configs/test-scheme-par--test-mastermind-par--test-villain-group-par.json` — **new** — example file (encoded form per `scenarioKeyToFilename`; PS-4)
 - `packages/game-engine/src/scoring/scoringConfigLoader.ts` — **new** — `loadScoringConfigForScenario` + `loadAllScoringConfigs`
 - `packages/game-engine/src/scoring/scoringConfigLoader.test.ts` — **new** — 4 tests
 - `packages/game-engine/src/simulation/par.storage.ts` — **modified** — artifact + index shape extensions; validator updates
@@ -65,7 +69,7 @@
 
 ## After Completing
 - [ ] `pnpm -r build` exits 0
-- [ ] `pnpm --filter @legendary-arena/game-engine test` reports `522 / 115 / 0` (or `522 / 116 / 0` if `scoringConfigLoader.test.ts` adds a new top-level describe — pre-flight commits to one outcome)
+- [ ] `pnpm --filter @legendary-arena/game-engine test` reports `522 / 116 / 0` (PS-5 locked outcome — fresh top-level `describe('scoringConfigLoader (WP-053a)', …)` block)
 - [ ] `pnpm --filter @legendary-arena/server test` reports `38 / 6 / 0` (10 skipped if no test DB)
 - [ ] All grep gates from WP-053a §Verification Steps pass (boundary, contract surface, locked WP-048 / WP-103 / WP-052 surfaces)
 - [ ] `git diff --name-only main` shows only the files listed in §Files to Produce

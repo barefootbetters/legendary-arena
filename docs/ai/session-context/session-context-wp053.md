@@ -125,7 +125,7 @@ Originally captured against `main` at `a8f81ff` (pre-WP-103). **Updated 2026-04-
 | Surface | At a8f81ff (original) | At c8a2421 (post-WP-103) | At post-WP-053a execution (projected) | Notes |
 |---|---|---|---|---|
 | `pnpm -r build` | exits 0 | exits 0 | exits 0 | All packages |
-| `pnpm --filter @legendary-arena/game-engine test` | `513 / 115 / 0` | `513 / 115 / 0` (unchanged) | `522 / 115 / 0` (+9 from WP-053a) | WP-053a adds 4 `scoringConfigLoader` tests + 3 `par.storage` extensions + 2 `par.aggregator` extensions; the par.* extensions land inside existing describes (no suite delta), the new `scoringConfigLoader.test.ts` adds either 0 or 1 suite depending on whether the WP-053a pre-flight commits to wrapping its 4 tests in a fresh top-level describe block |
+| `pnpm --filter @legendary-arena/game-engine test` | `513 / 115 / 0` | `513 / 115 / 0` (unchanged) | `522 / 116 / 0` (+9 tests / +1 suite from WP-053a — PS-5 locked) | WP-053a adds 4 `scoringConfigLoader` tests + 3 `par.storage` extensions + 2 `par.aggregator.test.ts` extensions; the par.* extensions land inside existing describes (no suite delta); the new `scoringConfigLoader.test.ts` wraps its 4 tests in a fresh top-level `describe('scoringConfigLoader (WP-053a)', …)` block per the post-WP-031 wrap-in-describe convention (+1 suite). Pre-flight committed to this outcome on 2026-04-25. |
 | `pnpm --filter @legendary-arena/server test` | `31 / 5 / 0` (6 skipped when no test DB) | `36 / 6 / 0` (10 skipped when no test DB) | `38 / 6 / 0` (10 skipped — WP-053a adds 2 `parGate.test.ts` tests in the existing suite) | Pre-WP-053 baseline shifts twice |
 
 WP-053's pre-flight session (run before D-5306 was resolved) locked
@@ -416,10 +416,10 @@ In strict order:
    and expect at least one commit. If empty, WP-053a has not landed
    yet.
 2. Run `pnpm -r build && pnpm -r test` against the current `main`
-   to confirm the post-WP-053a baseline (engine `522/115/0` or
-   `522/116/0` per the suite-count outcome WP-053a's pre-flight
-   committed to, server `38/6/0` with 10 skipped if no test DB —
-   see §3 for the full table). If it doesn't match, STOP — the
+   to confirm the post-WP-053a baseline (engine **`522/116/0`** per
+   the PS-5 lock — fresh top-level `describe('scoringConfigLoader
+   (WP-053a)', …)` block; server `38/6/0` with 10 skipped if no
+   test DB — see §3 for the full table). If it doesn't match, STOP — the
    environment has drifted since WP-053a closure or the test plan
    needs re-derivation.
 3. Read this file's §3 (re-derive test count under Option A if
