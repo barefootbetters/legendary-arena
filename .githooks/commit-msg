@@ -43,7 +43,10 @@ echo "$SUBJECT" | grep -qiE "$FORBIDDEN" && {
 }
 
 # --- Rule 2: Must match an allowed prefix ---
-IS_EC=$(echo "$SUBJECT" | grep -cE '^EC-[0-9]+[A-Z]?:')
+# Letter suffix accepts either case to match either uppercase (WP-007A
+# precedent) or lowercase (EC-053a precedent) EC file naming. The Rule 4
+# file lookup uses -iname so case-insensitive matches resolve correctly.
+IS_EC=$(echo "$SUBJECT" | grep -cE '^EC-[0-9]+[A-Za-z]?:')
 IS_SPEC=$(echo "$SUBJECT" | grep -cE '^SPEC:')
 IS_INFRA=$(echo "$SUBJECT" | grep -cE '^INFRA:')
 
@@ -60,7 +63,7 @@ if [ "$IS_EC" -eq 0 ] && [ "$IS_SPEC" -eq 0 ] && [ "$IS_INFRA" -eq 0 ]; then
 fi
 
 # --- Rule 3: Subject must be meaningful (>= 12 chars after prefix) ---
-AFTER_PREFIX=$(echo "$SUBJECT" | sed -E 's/^(EC-[0-9]+[A-Z]?|SPEC|INFRA):[[:space:]]*//')
+AFTER_PREFIX=$(echo "$SUBJECT" | sed -E 's/^(EC-[0-9]+[A-Za-z]?|SPEC|INFRA):[[:space:]]*//')
 AFTER_LEN=$(echo -n "$AFTER_PREFIX" | wc -c | tr -d ' ')
 
 if [ "$AFTER_LEN" -lt 12 ]; then
@@ -75,10 +78,12 @@ fi
 
 # --- Rule 4: EC-### commits must reference an existing EC ---
 if [ "$IS_EC" -gt 0 ]; then
-  EC_NUM=$(echo "$SUBJECT" | sed -E 's/^EC-([0-9]+[A-Z]?).*/\1/')
+  EC_NUM=$(echo "$SUBJECT" | sed -E 's/^EC-([0-9]+[A-Za-z]?).*/\1/')
 
-  # Check EC file exists
-  EC_FILE=$(find docs/ai/execution-checklists -name "EC-${EC_NUM}-*.checklist.md" 2>/dev/null | head -n 1)
+  # Check EC file exists. -iname makes the lookup case-insensitive so an
+  # EC-053A: subject resolves the EC-053a-*.checklist.md file (and vice
+  # versa) — letter-suffix case is normalized to a single canonical match.
+  EC_FILE=$(find docs/ai/execution-checklists -iname "EC-${EC_NUM}-*.checklist.md" 2>/dev/null | head -n 1)
   if [ -z "$EC_FILE" ]; then
     echo ""
     echo "${RED}COMMIT BLOCKED:${NC} No EC file found for EC-${EC_NUM}."
@@ -88,10 +93,11 @@ if [ "$IS_EC" -gt 0 ]; then
     exit 1
   fi
 
-  # Check EC appears in EC_INDEX.md
+  # Check EC appears in EC_INDEX.md (case-insensitive for the same reason
+  # the file lookup above is — matches both EC-NNNa and EC-NNNA forms).
   EC_INDEX="docs/ai/execution-checklists/EC_INDEX.md"
   if [ -f "$EC_INDEX" ]; then
-    grep -q "EC-${EC_NUM}" "$EC_INDEX" 2>/dev/null
+    grep -qi "EC-${EC_NUM}" "$EC_INDEX" 2>/dev/null
     if [ $? -ne 0 ]; then
       echo ""
       echo "${YELLOW}WARNING:${NC} EC-${EC_NUM} not found in EC_INDEX.md."
