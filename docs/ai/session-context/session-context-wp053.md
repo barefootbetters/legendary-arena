@@ -131,17 +131,19 @@ session prompt's pre-session gates §8 for the `git stash push --
 
 ---
 
-## 2. Dependencies (all five are complete)
+## 2. Dependencies (all seven are complete)
 
 | Dep | Status | Surface used by WP-053 |
 |---|---|---|
 | WP-004 | Done 2026-04-09 | `apps/server/src/index.mjs` startup wiring exists; WP-053 does not modify it |
 | WP-027 | Done 2026-04-14 | `replayGame`, `ReplayInput`, `computeStateHash` |
 | WP-048 | Done 2026-04-17 (`c5f7ca4`) | `deriveScoringInputs`, `computeRawScore`, `computeFinalScore`, `buildScoreBreakdown`, `ScenarioScoringConfig` |
-| WP-051 | Done 2026-04-23 (`ce3bffb`) | `checkParPublished` (returns fresh `{parValue, parVersion, source}` literal) |
+| WP-051 | Done 2026-04-23 (`ce3bffb`) | `checkParPublished` (returns fresh literal — see WP-053a row for the post-extension shape) |
 | WP-052 | Done 2026-04-25 (`fd769f1`) | `AccountId` (NOT `PlayerId`), `PlayerIdentity` discriminated union, `isGuest` type guard, `findReplayOwnership`, `ReplayOwnershipRecord` |
+| WP-103 | Done 2026-04-25 (`fe7db3e`) | `loadReplay(replayHash, db): Promise<ReplayInput \| null>` — server-layer hash-indexed read against `legendary.replay_blobs`; satisfies EC-053 §Before Starting line 21 prerequisite |
+| WP-053a | Done 2026-04-25 (`e5b9d15`) | Extended `ParGateHit` return shape `{ parValue, parVersion, source, scoringConfig }` from `checkParPublished` — `scoringConfig` is the authoritative `ScenarioScoringConfig` for `submitCompetitiveScore`; D-5306 Option A is in production effect |
 
-All five dependencies are reachable on `main` at HEAD `a8f81ff`. The
+All seven dependencies are reachable on `main` at HEAD `5b8fa9e`. The
 runtime contract surface that WP-053 plans to consume exists.
 
 ---
@@ -150,11 +152,11 @@ runtime contract surface that WP-053 plans to consume exists.
 
 Originally captured against `main` at `a8f81ff` (pre-WP-103). **Updated 2026-04-25** for the post-WP-103 + post-WP-053a-A0-SPEC state:
 
-| Surface | At a8f81ff (original) | At c8a2421 (post-WP-103) | At post-WP-053a execution (projected) | Notes |
+| Surface | At a8f81ff (original) | At c8a2421 (post-WP-103) | At 5b8fa9e (post-WP-053a, actual) | Notes |
 |---|---|---|---|---|
 | `pnpm -r build` | exits 0 | exits 0 | exits 0 | All packages |
-| `pnpm --filter @legendary-arena/game-engine test` | `513 / 115 / 0` | `513 / 115 / 0` (unchanged) | `522 / 116 / 0` (+9 tests / +1 suite from WP-053a — PS-5 locked) | WP-053a adds 4 `scoringConfigLoader` tests + 3 `par.storage` extensions + 2 `par.aggregator.test.ts` extensions; the par.* extensions land inside existing describes (no suite delta); the new `scoringConfigLoader.test.ts` wraps its 4 tests in a fresh top-level `describe('scoringConfigLoader (WP-053a)', …)` block per the post-WP-031 wrap-in-describe convention (+1 suite). Pre-flight committed to this outcome on 2026-04-25. |
-| `pnpm --filter @legendary-arena/server test` | `31 / 5 / 0` (6 skipped when no test DB) | `36 / 6 / 0` (10 skipped when no test DB) | `38 / 6 / 0` (10 skipped — WP-053a adds 2 `parGate.test.ts` tests in the existing suite) | Pre-WP-053 baseline shifts twice |
+| `pnpm --filter @legendary-arena/game-engine test` | `513 / 115 / 0` | `513 / 115 / 0` (unchanged) | `522 / 116 / 0` (+9 tests / +1 suite from WP-053a — PS-5 lock honored exactly) | WP-053a added 4 `scoringConfigLoader` tests + 3 `par.storage` extensions + 2 `par.aggregator.test.ts` extensions; the par.* extensions landed inside existing describes (no suite delta); the new `scoringConfigLoader.test.ts` wraps its 4 tests in a fresh top-level `describe('scoringConfigLoader (WP-053a)', …)` block (+1 suite). |
+| `pnpm --filter @legendary-arena/server test` | `31 / 5 / 0` (6 skipped when no test DB) | `36 / 6 / 0` (10 skipped when no test DB) | `38 / 6 / 0` (10 skipped — WP-053a added 2 `parGate.test.ts` tests in the existing suite) | Pre-WP-053 baseline shifted twice |
 
 WP-053's pre-flight session (run before D-5306 was resolved) locked
 WP-053's own delta as **+9 tests / +1 suite** (`describe('competition
@@ -564,3 +566,100 @@ WP-053 executor will encounter the same gate and should adopt the
 same inline conditional options form
 (`hasTestDatabase ? {} : { skip: 'requires test database' }`)
 without rediscovering the asymmetry.
+
+---
+
+## 10. Lessons Carried Forward From WP-053a Execution (2026-04-25)
+
+These observations surfaced during WP-053a execution and apply
+directly to WP-053. The full WP-053a post-mortem is at
+`docs/ai/post-mortems/01.6-WP-053a-par-artifact-scoring-config.md`;
+this section extracts the items WP-053's executor most needs.
+
+### 10.1 Pre-screen every `ScenarioScoringConfig` test fixture against `validateScoringConfig`
+
+**Lesson:** the pre-existing `createTestScoringConfig` factory in
+`packages/game-engine/src/simulation/par.storage.test.ts` had
+`bystanderReward: 50, villainEscaped: 300` — violating WP-048's
+structural invariant `bystanderReward > villainEscaped`. Pre-WP-053a
+this was harmless because `validateScoringConfig` was never run
+against embedded artifact configs; WP-053a's new `validateParStore`
+extension ran the validator on every embedded config and surfaced
+the under-spec as **three test failures mid-execution**. The fix
+was a one-line factory weight bump (`bystanderReward: 50 → 400`).
+
+**Implication for WP-053:** `submitCompetitiveScore` will likely be
+tested against fixture `ScenarioScoringConfig` instances (one per
+scenario under test). Two reuse paths are available, both already
+validator-clean on `main` post-WP-053a:
+
+- `packages/game-engine/src/simulation/par.storage.test.ts`'s
+  `createTestScoringConfig(scenarioKey, parBaseline)` factory —
+  the corrected WP-053a version with `bystanderReward: 400`.
+- `packages/game-engine/src/simulation/par.aggregator.test.ts`'s
+  `createTestScoringConfig()` factory at line 71 — also valid
+  (uses `bystanderReward: 200, villainEscaped: 100`).
+- `data/scoring-configs/test-scheme-par--test-mastermind-par--test-villain-group-par.json`
+  — the canonical authoring-origin example file from WP-053a.
+
+If WP-053 authors a new factory, **call `validateScoringConfig` on
+the output as part of the test setup** to catch under-spec early.
+The structural invariants are: `bystanderReward > villainEscaped`,
+`bystanderLost > villainEscaped`, `bystanderLost > bystanderReward`,
+plus all four `parBaseline` fields ≥ 0 and `scoringConfigVersion > 0`
+and every `PenaltyEventType` key present with positive weight.
+
+### 10.2 Layered defense pattern for fail-closed contracts
+
+**Lesson:** WP-053a added a `assertEveryScenarioHasScoringConfig`
+guard inside `createParGate` that hard-throws when any index entry
+lacks `scoringConfig`. In practice this guard is **structurally
+redundant** with the engine's `isParIndexShape` validator, which
+catches the same condition first via `loadParIndex`'s shape check.
+The shape validator surfaces the failure as graceful per-class
+degradation (`handleParLoadError` warn-logs and degrades to
+zero-coverage); the gate-side guard then sees `null` and skips. The
+layered defense is preserved as belt-and-suspenders for any future
+code path that constructs a `ParIndex` programmatically and bypasses
+the shape validator.
+
+**Implication for WP-053:** if `submitCompetitiveScore` adds any
+fail-closed guards (e.g., "submission rejected if `scoringConfig`
+is missing"), be aware that `checkParPublished` already returns
+`null` for any scenario whose class degraded due to malformed
+input. The submission code can rely on `checkParPublished(scenarioKey)
+=== null` as the terminal check; a separate "config missing on hit"
+guard inside `submitCompetitiveScore` would be triple-redundant.
+The WP-053a precedent is to keep the guard anyway as
+defense-in-depth — small cost, no behavior change in normal
+operation.
+
+### 10.3 INFRA hook fix for lowercase EC-### letter suffixes (now active on `main`)
+
+**Lesson:** the commit-msg hook regex was originally uppercase-only
+(`[A-Z]?`) and the EC file lookup used case-sensitive `find -name`.
+WP-053a's `EC-053a:` (lowercase `a`) commit prefix was rejected at
+both rules. The fix landed as `INFRA:` commit `fbbedb5` updating
+the regex to `[A-Za-z]?` and switching to `find -iname`.
+
+**Implication for WP-053:** EC-053 has no letter suffix so this
+doesn't directly matter. But if WP-053 ever spawns a sub-numbered
+follow-up (EC-053b, EC-053A, etc.), both casings now work
+identically. No further hook work needed.
+
+### 10.4 Mechanical-fixture-update calibration
+
+**Lesson:** WP-053a's contract extension touched two existing test
+files (`par.storage.test.ts` and `parGate.test.ts`); the mechanical
+fixture-update diff was **41 added lines mentioning `scoringConfig`**
+across the two files, including the +5 net-new tests. Centralized
+factories (`createTestScoringConfig`, `buildSimScoringConfig`,
+`createEntry`) absorbed most of the repetition; without them the
+per-call-site fixture updates would have been ~3-4× larger.
+
+**Implication for WP-053:** if WP-053 extends any existing test
+file (`parGate.test.ts` for new submission paths,
+`replay.logic.test.ts` for new join-with-replay queries, etc.),
+expect ~10-30 fixture-update lines per affected test file even for
+small contract extensions. Pre-budget that into the WP-053
+pre-flight session's expected-blast-radius estimate.
