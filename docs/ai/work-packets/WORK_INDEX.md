@@ -1295,18 +1295,56 @@ These packets ship the game and keep it running.
   Sustainability`. Commits use `EC-052:` on code; `SPEC:` on
   pre-flight and governance close (`WP-052:` forbidden per P6-36).
 
-- [ ] WP-053 — Competitive Score Submission & Verification ✅ Reviewed (BLOCKED on WP-103 — replay loader prerequisite per EC-053 §Before Starting line 21)
-  Dependencies: WP-048, WP-051, WP-052, WP-027, WP-004, WP-103
+- [ ] WP-053a — PAR Artifact Carries Full ScenarioScoringConfig — Drafted 2026-04-25; A0 SPEC bundle landed; pre-flight pending; lint-gate self-review pending.
+  Dependencies: WP-048, WP-049, WP-050, WP-051
+  Notes: Predecessor packet for WP-053 per D-5306 (Option A). Extends
+  the PAR artifact format end-to-end (artifact shape + index +
+  aggregator + validator + server gate) so that
+  `ScenarioScoringConfig` flows from publication through to
+  `checkParPublished` as a single authoritative source. Eliminates
+  the config / PAR drift surface that Option B would have caught
+  only at WP-053 flow step 12. Scope: ~10 files (3 new, 7 modified)
+  spanning `data/scoring-configs/`, `packages/game-engine/src/scoring/`,
+  `packages/game-engine/src/simulation/`, and `apps/server/src/par/`.
+  Engine baseline shifts `513/115/0` → `520/115/0` (+7 tests; +0
+  suites if all new tests land in existing describe blocks).
+  Server baseline shifts `36/6/0` → `38/6/0` (+2 tests). New tests:
+  `scoringConfigLoader.test.ts` (4 tests, new file); extensions to
+  `par.storage.test.ts` (+3), `par.aggregator.test.ts` (+2),
+  `parGate.test.ts` (+2). Mechanical fixture updates to existing
+  `parGate.test.ts` and `par.storage.test.ts` tests do not change
+  pass/fail counts. Vision clauses touched: §3, §22, §24
+  (NG-1..7 not crossed). 01.5 NOT INVOKED. 01.6 post-mortem
+  MANDATORY (new long-lived abstraction `scoringConfigLoader`; new
+  contract surface consumed by WP-053; new on-disk authoring source
+  `data/scoring-configs/`). Deferred placeholders: D-5306c
+  (collapse `SeedParArtifact.parBaseline` one cycle after WP-053a)
+  + D-5306d (audit-redundancy review of `par_version` /
+  `scoring_config_version` columns in a future analytics WP).
+  See [WP-053a-par-artifact-scoring-config.md](WP-053a-par-artifact-scoring-config.md)
+  + EC-053a (drafted by WP-053a pre-flight session; not yet authored).
+
+- [ ] WP-053 — Competitive Score Submission & Verification ✅ Reviewed (BLOCKED on WP-053a — PAR artifact must carry `ScenarioScoringConfig` per D-5306 / Option A; WP-103 replay loader prerequisite already satisfied on `main` at `fe7db3e`)
+  Dependencies: WP-048, WP-051, WP-052, WP-027, WP-004, WP-103, WP-053a
   Notes: Keystone trust surface for competition — every competitive score is
   replay-verified; server re-executes replays via `replayGame`, recomputes
   scores via WP-048 engine contracts (`deriveScoringInputs`, `computeRawScore`,
-  `computeFinalScore`, `buildScoreBreakdown`); client-reported values never
+  `computeFinalScore`, `buildScoreBreakdown`); `ScenarioScoringConfig`
+  sourced from `checkParPublished(scenarioKey).scoringConfig` per D-5306
+  (Option A landed via WP-053a); flow step 12
+  (`computeParScore(config) === parValue`) becomes defense-in-depth
+  rather than a primary safety net — drift is structurally impossible
+  under Option A; client-reported values never
   trusted; PAR publication enforced via `checkParPublished`; `CompetitiveScoreRecord`
   is immutable once created; idempotent via `UNIQUE (player_id, replay_hash)`;
-  guest identities cannot submit competitively; private replays not eligible
-  until visibility changed; server is enforcer, not calculator — delegates
-  scoring to engine; PostgreSQL table `legendary.competitive_scores`;
-  does NOT modify WP-048, WP-051, WP-052, or WP-027 contracts
+  retains both `par_version` and `scoring_config_version` columns as
+  audit redundancy per D-5306d (no CHECK constraint enforcing
+  equality — preserves forensic visibility if the invariant ever
+  broke); guest identities cannot submit competitively; private
+  replays not eligible until visibility changed; server is enforcer,
+  not calculator — delegates scoring to engine; PostgreSQL table
+  `legendary.competitive_scores`; does NOT modify WP-048, WP-051,
+  WP-052, WP-027, WP-103, or WP-053a contracts
 
 - [ ] WP-054 — Public Leaderboards & Read-Only Web Access ✅ Reviewed
   Dependencies: WP-053, WP-052, WP-051, WP-004

@@ -9907,6 +9907,121 @@ The immutability guarantee — no row-mutation column, `DO NOTHING` semantic —
 
 ---
 
+### D-5306 — `ScenarioScoringConfig` Bundled Into PAR Publication (Option A)
+
+**Type:** Configuration / Trust Surface
+**Packet:** WP-053a (A0 SPEC — pre-execution resolution); referenced by WP-053
+**Date:** 2026-04-25
+
+**Decision:** WP-053's `submitCompetitiveScore` obtains the `ScenarioScoringConfig` it needs (for `computeRawScore`, `computeParScore`, `buildScoreBreakdown`) by reading the field returned from `checkParPublished(scenarioKey)` — extended in WP-053a to include `scoringConfig: ScenarioScoringConfig` alongside the existing `parValue` / `parVersion` / `source` fields. The PAR publication is the unit of versioning: every published artifact carries the full config it was authored / calibrated against, and the gate returns both PAR and config from the same authoritative source. Drift between config and `parValue` is structurally impossible because the two flow from one artifact, not two independent stores.
+
+**Rationale:** Three alternatives were considered in the WP-053 pre-flight session (D-5306 question):
+
+- **Option B (server-loaded JSON catalog at startup)** — pragmatic, self-contained, but introduces drift surface that must be caught at flow step 12 as a runtime check rather than prevented structurally. Rejected as the unblocking stopgap; the upstream cost of Option A is bounded and worth paying once.
+- **Option C (new `legendary.scoring_configs` PostgreSQL table)** — added persistence weight without solving drift any better than Option B. Rejected.
+- **Option D (engine exposes `getScoringConfigForScenario`)** — leaks "scenario catalog" responsibility into the engine, conflicts with the engine's "decide outcomes" charter. Rejected.
+
+Option A makes WP-053's flow step 12 (`computeParScore(config) === parValue`) defense-in-depth — a tautology under Option A's construction. Server is enforcer, never derives — extends to *which config applies*, not just *how to compute*. Aligns Vision §3 / §22 / §24 (server is enforcer; replay-verified competitive integrity).
+
+**Implementation:** WP-053a delivers Option A as a contract extension across the PAR pipeline:
+
+- New on-disk source `data/scoring-configs/<scenario_key>.json` (D-5306a)
+- Engine loader `loadScoringConfigForScenario` / `loadAllScoringConfigs`
+- Artifact shape extensions: `SeedParArtifact.scoringConfig` and `SimulationParArtifact.scoringConfig` (both non-optional)
+- `ParIndex.scenarios[key].scoringConfig` for fs-free gate access at request time (D-5306b)
+- Aggregator (WP-049) takes `scoringConfig` as required input and embeds it in the output artifact
+- Validator (WP-050) checks structural validity + version match invariant
+- Gate (WP-051) returns `scoringConfig` on `ParGateHit`; gate construction fails closed if any index entry is missing it
+
+**Failure mode:** A future regression that allowed `scoringConfig` to be omitted from an artifact would be caught at three layers: write-time validation (`validateParStore` rejects), index-build-time verification (the index loader would fail), and gate-construction guard (gate constructor throws when an entry is missing the field). Triple defense; structural impossibility for a drifted `(parValue, config)` pair to reach `submitCompetitiveScore`.
+
+**Status:** Active. Lands with WP-053a execution. WP-053 references this decision in its §Assumes block.
+
+**Citation:** WP-053a §Goal, §Scope (In) §C–G; WP-053 §B step 12; D-4805 (`ScenarioScoringConfig` self-contained); D-5101 (PAR sim-over-seed precedence — preserved); D-5103 (PAR gate fs-free at request time — preserved); WP-103 §pre-commit-review-template-gap carry-forward (the same governance discipline informs this decision's audit trail).
+
+---
+
+### D-5306a — `ScenarioScoringConfig` Authoring Origin: `data/scoring-configs/<scenario_key>.json`
+
+**Type:** Authoring / Data Source
+**Packet:** WP-053a (A0 SPEC)
+**Date:** 2026-04-25
+
+**Decision:** The single canonical authoring origin for `ScenarioScoringConfig` instances is `data/scoring-configs/<scenario_key>.json`. One file per scenario; structurally a serialized `ScenarioScoringConfig`; alphabetical key ordering on write (determinism contract — mirrors `ParIndex.scenarios` ordering). The PAR aggregator (engine) reads from here at authoring / calibration time and embeds the config into every artifact it produces. The server gate never reads this directory; configs flow into the gate exclusively through the in-memory `ParIndex` loaded at startup.
+
+**Rationale:** Three sub-alternatives were considered:
+
+- TypeScript constants in `@legendary-arena/game-engine` — rejected because configs are content-driven (game-design data) and authoring them in code would couple every config edit to a package release.
+- Inline within seed PAR artifact authoring scripts (the artifact IS the source) — rejected because it couples config authoring to PAR authoring and prevents config reuse across scenarios with similar profiles.
+- JSON files on disk under `data/` — accepted. Matches existing precedents (rules text loader, PAR indices, registry data). Ops can author / edit configs without recompiling. The aggregator reads on demand at PAR generation time; no runtime-server dependency on the directory.
+
+**Status:** Active. Documented in `data/scoring-configs/README.md` (landed by WP-053a Commit A).
+
+**Citation:** WP-053a §Scope (In) §A; `apps/server/src/rules/loader.mjs` (loader-from-data precedent); D-4805.
+
+---
+
+### D-5306b — Config Reaches Gate Via Inline Materialization Into `ParIndex`
+
+**Type:** Layer Boundary / Performance
+**Packet:** WP-053a (A0 SPEC)
+**Date:** 2026-04-25
+
+**Decision:** `ParIndex.scenarios[key]` carries `scoringConfig: ScenarioScoringConfig` inline. The full config is materialized into the index at index-build time so the server gate (`checkParPublished`) can return it without a second filesystem hit. The fs-free invariant (D-5103) is preserved.
+
+**Rationale:** Two alternatives:
+
+- Gate reads the full artifact from disk on demand at request time — rejected because it breaks D-5103 (fs-free at request time) and adds latency / fs-error surface to every PAR-gate check.
+- Gate reads only `parValue` from the index (status quo) and uses a separate config catalog — rejected because it splits the authoritative source into two stores, exactly the drift surface D-5306 (Option A) is designed to eliminate.
+
+Inline materialization keeps the gate fully in-memory at request time and preserves the single-source-of-truth invariant. The index file size grows by ~1 KB per scenario (config payload); acceptable.
+
+**Status:** Active.
+
+**Citation:** WP-053a §Scope (In) §D; D-5103 (fs-free gate); `apps/server/src/par/parGate.mjs:11–14`.
+
+---
+
+### D-5306c — `SeedParArtifact.parBaseline` Retained One Cycle Post-WP-053a
+
+**Type:** Cleanup / Deferred
+**Packet:** WP-053a (A0 SPEC)
+**Date:** 2026-04-25
+
+**Decision:** `SeedParArtifact.parBaseline` is kept for one cycle after WP-053a lands, despite being structurally redundant with `scoringConfig.parBaseline`. A `// why:` comment notes the equality invariant; `validateParStore` enforces `parBaseline === scoringConfig.parBaseline` with `errorType: 'par_baseline_redundancy_drift'`. A future cleanup WP collapses the redundancy.
+
+**Rationale:** Collapsing in WP-053a expands the packet's blast radius (every existing seed artifact authoring script + every test fixture must stop emitting `parBaseline` simultaneously). Keeping both for one cycle keeps WP-053a bounded; the redundancy is auditable (validator verifies equality) and harmless. The cleanup is a separate small WP scoped purely to field removal.
+
+**Failure mode:** A future regression that allowed `parBaseline !== scoringConfig.parBaseline` would be caught by the validator's equality check, emitted as a structured `ParStoreValidationError`. No silent drift.
+
+**Status:** Active for one cycle. Cleanup tracked as a deferred placeholder in `WORK_INDEX.md`.
+
+**Citation:** WP-053a §Scope (In) §C, §F; §Out of Scope.
+
+---
+
+### D-5306d — `competitive_scores` Retains Both `par_version` and `scoring_config_version` Columns
+
+**Type:** Schema / Audit Redundancy
+**Packet:** WP-053a (A0 SPEC); informs WP-053 schema design
+**Date:** 2026-04-25
+
+**Decision:** WP-053's `legendary.competitive_scores` table retains both `par_version` and `scoring_config_version` as separate columns despite Option A making them structurally equal under correct operation (`par_version === scoring_config_version` for any record produced from a valid PAR publication). The columns stay distinct as audit redundancy.
+
+**Rationale:** Under Option A's structural invariant, the two versions cannot legitimately differ. Storing them separately costs ~4 bytes per row and provides:
+
+- Audit forensics: a future bug that broke the invariant would be detectable as `par_version != scoring_config_version` in recorded rows
+- Forward compatibility: if a future WP introduces multi-config-per-PAR (unlikely but not architecturally precluded), the schema is already shaped to support it
+- Clarity: each column documents its own provenance independent of the other
+
+The cost (negligible storage + one additional INSERT parameter) is dominated by the audit value. WP-053's schema lands both columns; a CHECK constraint asserting `par_version = scoring_config_version` is rejected (would prevent forensic recording of drift if the invariant broke).
+
+**Status:** Active for WP-053. Reviewable in a future audit-log / analytics WP that examines competitive_scores integrity.
+
+**Citation:** WP-053 §B (`CompetitiveScoreRecord`); D-5306 (Option A structural invariant); WP-053a §Goal (one-truth justification).
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
