@@ -21,6 +21,9 @@ For full rationale, see `DECISIONS.md`.
 | D‑0002 | Determinism is non‑negotiable | WP‑027 |
 | D‑0003 | Data outlives code | WP‑034 |
 | D‑0004 | No post‑shuffle seed filtering or fairness gating | 2026‑04‑16 intake review |
+| D‑0005 | Asynchronous PvP comparison authorized; live PvP combat forbidden | 2026‑04‑24 vision amendment |
+| D‑0006 | Veteran recognition authorized; bot‑resistance is the discriminator (§25 amendment) | 2026‑04‑26 vision amendment |
+| D‑0007 | Profile, identity, and recognition boundary‑freeze pass (§7a, §19a, §25, NG‑8 additions) | 2026‑04‑26 vision amendment |
 
 ---
 
@@ -119,6 +122,7 @@ For full rationale, see `DECISIONS.md`.
 | D‑1001 | Growth requires change budgets | WP‑040 | — |
 | D‑1002 | Immutable surfaces protected | WP‑040 | WP‑041 |
 | D‑1003 | Content & UI are growth vectors | WP‑040 | WP‑042 |
+| D‑1004 | Badge issuer model is tiered; gameplay badges ship first | 2026‑04‑26 (informs WP‑105) | — |
 
 ---
 

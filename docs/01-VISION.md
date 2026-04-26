@@ -99,6 +99,26 @@ The system enforces clear boundaries between:
 
 Cross‑layer shortcuts and leakage are not permitted.
 
+#### 7a. Identity Boundary — Authentication ≠ Identity ≠ Progression
+
+**Authentication is infrastructural; player identity is game-native.**
+External authentication providers (e.g., Hanko) may verify access, but
+all player identity, reputation, rank, badges, and competitive history
+are owned, computed, and displayed exclusively by Legendary Arena.
+
+This boundary is permanent:
+
+- Authentication providers verify *access*; they never define *identity*.
+- Player identity is *progression*-bearing only when that progression
+  has been earned through replay-verified play or attested contribution
+  per §25 and the badge tier model (D-1004).
+- Profile surfaces never accrete social-network semantics (followers,
+  likes, OAuth-derived identity, influence scores) — see NG-8.
+
+If an authentication provider is replaced, no identity, reputation,
+rank, or recognition is lost: those live in Legendary Arena's own
+records, keyed by stable internal account identifiers.
+
 #### 8. Deterministic Game Engine
 
 - Game logic is UI‑agnostic
@@ -227,6 +247,27 @@ and `apps/registry-viewer/HISTORY-modern-master-strike.md`.
 - Exports are designed for use with external LLMs for post-game analysis, setup generation, and strategy review
 - No in-game AI assistance or prompting — all AI interaction is external and player-initiated, preserving Primary Goals 3 and 4
 
+#### 19a. Player Profiles Are Reflective, Not Authoritative
+
+**A profile is a compiled, queryable view derived from replays,
+scoring records, and verified actions. Editing a profile cannot alter
+history, standing, or recognition.**
+
+The distinction is precise:
+
+- **Decorative profile fields** (handle, bio, avatar, outbound links)
+  remain user-editable. They describe the player; they do not measure
+  the player.
+- **Merit-bearing surfaces** (badges, rank, replay history,
+  competitive submissions) are derived from immutable underlying
+  records (`legendary.competitive_scores`, `legendary.replay_blobs`,
+  `legendary.player_badges`) and are not editable from the profile.
+- A profile change cannot retroactively change a leaderboard
+  position, revoke a badge that was earned, or rewrite a replay
+  outcome.
+
+Profiles reflect proven history; they do not produce it.
+
 ---
 
 ### Skill Measurement & Competitive Benchmarking
@@ -234,6 +275,15 @@ and `apps/registry-viewer/HISTORY-modern-master-strike.md`.
 Legendary Arena is not only a faithful digital implementation of *Marvel Legendary* — it is designed to become the **definitive environment for measuring player skill, strategic decision‑making, and team composition effectiveness** across all valid game scenarios.
 
 To support this, Legendary Arena adopts a standardized performance framework inspired by **PAR scoring in golf**: a shared, scenario-specific benchmark against which skillful play can be objectively measured.
+
+**Public competitive recognition and personal achievement recognition
+are distinct.** Only replay-verified, scenario-normalized outcomes may
+appear in comparative competitive contexts (leaderboards, ladders,
+year-end honors, archive standings). Personal milestones (veteran
+recognition badges, profile achievements) may appear on profiles
+without altering any comparison surface. The two surfaces are
+governed separately: comparison by §25(a), recognition by §25(b),
+and they never feed each other.
 
 #### 20. PAR-Based Scenario Scoring
 
@@ -328,39 +378,94 @@ All leaderboard entries must be:
 
 Competitive integrity is enforced by mathematics and reproducibility, not trust.
 
-#### 25. Skill Over Repetition
+#### 25. Skill Over Repetition (Anti-Bot, Not Anti-Veteran)
 
 This system exists to:
 - Reward strategic mastery
 - Expose meaningful differences in player decision-making
 - Encourage experimentation with hero teams and approaches
+- Honor seasoned players whose sustained, high-quality play has
+  contributed to Legendary Arena over months and years
 
 It must never reward:
-- Time grinding
-- Repetitive farming
+- Bot scripts, automation, or alt-account farming
+- Repetitive low-quality play of the same scenario for cumulative-count credit
 - Exploit-driven optimization
 
-Legendary Arena measures **how well** a game was played — never **how long** or **how often** it was played.
+The intent of this clause is anti-bot and anti-farm, not anti-veteran.
+A player who has invested years in Legendary Arena and accumulated
+demonstrably high-quality play across many scenarios is exactly the
+kind of player this system exists to recognize. The language *"how
+long or how often"* below targets bots gamifying the system, not the
+veteran whose long history of skilled play is itself the achievement.
 
-This applies to every competitive surface, including §23(b) asynchronous
-comparison. Specifically:
+Legendary Arena measures **how well** a game was played as the
+primary axis. **Sustained quality over time** is recognized as a
+secondary axis when — and only when — every contributing run has
+independently met a quality floor.
 
-- Repeated attempts may improve play quality, but repetition alone
-  confers no competitive advantage.
-- Seasonal and aggregate comparison metrics must be
-  **quality-normalized** — for example: best-N-runs, average PAR delta,
-  per-attempt efficiency, or equivalent. Cumulative counts of wins,
-  sessions, or attempts alone are not valid ranking inputs.
-- Any seasonal, ladder, or archive format that would reward sheer
-  volume of play over quality of play is a violation of this goal,
-  regardless of how the format is framed.
-- **Non-ranking telemetry carve-out.** Volume statistics — total runs
-  completed, hours played, lifetime scenario coverage, engagement
-  milestones, achievement badges tied to repetition — may still be
-  recorded and displayed as **non-ranking player profile data**. The
-  prohibition in this clause applies only to inputs of ranking,
-  title-awarding, or archive-honors computations. Telemetry and
-  profile stats are not rankings.
+This applies to every competitive surface, including §23(b)
+asynchronous comparison, under three distinct rules:
+
+(a) **Rankings — volume input forbidden.** Seasonal ladders, year-end
+    honors, archive standings, and any other competitive ranking
+    surface MUST use quality-normalized inputs only — best-N-runs,
+    average PAR delta, per-attempt efficiency, or equivalent.
+    Cumulative counts of wins, sessions, or attempts alone are NOT
+    valid ranking inputs. (This rule is unchanged from the
+    pre-amendment §25 and is reinforced by D-0005.)
+
+**All badges represent verifiable claims.** Every earned badge
+corresponds to replay-validated performance, attested community
+contribution, or deterministic project-state evidence. Badges are
+never cosmetic achievements without objective backing. The three
+evidence classes map to the badge issuer tiers defined in D-1004
+(rule-driven, admin-attested, external-system-attested). A badge
+proposal that cannot identify its evidence class is not a badge
+proposal under this vision.
+
+(b) **Recognition — volume permitted under bot-resistance constraints.**
+    Veteran-recognition badges, profile milestones, and similar
+    non-competitive honors MAY count qualifying runs, provided ALL
+    of the following hold:
+
+    - **Quality floor.** Each contributing run independently passes
+      a quality predicate (e.g., sub-PAR final score, zero villain
+      escapes, zero Master Strikes resolved, all bystanders rescued,
+      or a scenario-specific equivalent declared in the badge's
+      criteria). Runs that fail the floor do not count toward the
+      threshold.
+    - **Distinct-scenario breadth.** Thresholds are stated in
+      distinct `ScenarioKey`s (per `parScoring.types.ts`), not in
+      repeats of the same scenario. The same scenario beaten 1,000
+      times advances the badge by exactly one.
+    - **Real-time elapsed window.** The badge is issued only after a
+      stated minimum wall-clock window has passed since the player's
+      first qualifying run. A binge-in-a-day cannot satisfy a
+      veteran badge regardless of run count.
+    - **No feed into rankings.** Recognition badges issued under this
+      clause do not feed any ranking, ladder, or honors computation.
+      They live on the profile surface; rankings are governed by (a).
+
+(c) **Telemetry — display only.** Volume statistics — total runs
+    completed, hours played, lifetime scenario coverage — may be
+    recorded and displayed as non-ranking, non-recognition profile
+    data. They never feed rankings (governed by (a)) and they do not
+    by themselves issue badges (governed by (b)).
+
+Bot-resistance is the test that distinguishes (a) from (b). A
+criterion is permitted under (b) if a bot script optimizing for it
+would still have to produce a long, distributed history of
+high-quality play that materially benefits the community. A
+criterion is forbidden under (b) if it can be satisfied by
+repetitive low-quality play, by a single binge, or by farming the
+same scenario.
+
+Repetition alone is worthless. Repetition layered on quality,
+sustained over years across many scenarios, is exactly what veteran
+recognition rewards.
+
+See D-0006 for the decision record authorizing rule (b).
 
 #### 26. Simulation-Calibrated PAR Determination
 
@@ -614,6 +719,31 @@ Monetization must be:
 - Honest
 - Respectful
 - Self-justifying through value alone
+
+---
+
+### NG‑8. Social Influence & Network Mechanics
+
+**Legendary Arena supports descriptive identity, not social
+networking.**
+
+Profiles may link outward (personal sites, Discord, LinkedIn,
+YouTube, Steam, etc.), but the Arena itself does not host:
+
+- Follower or following graphs
+- Like / heart / upvote / endorsement counters
+- Karma, influence, or reputation scores derived from social activity
+- Trending feeds, "popular players," or any amplification mechanic
+  driven by attention rather than play
+- Comment threads on profiles that produce visible reputation signal
+
+Outbound links describe a player; they do not rank or amplify them.
+Recognition flows from skill (§25(a)) and from sustained quality
+(§25(b)) — never from popularity, follower count, or social signal.
+
+The reason is the same as NG‑6: any system that rewards attention
+will eventually drift into rewarding manipulation of attention. Merit
+must remain the only currency.
 
 ---
 

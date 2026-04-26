@@ -184,6 +184,16 @@ Under this decision:
   metrics. Its current draft predates this decision and must be revised
   before any derived WP may execute.
 
+**Clarifying note (added with D‑0006, 2026‑04‑26):**
+The phrase "title‑awarding computation" in this decision refers to
+**competitive titles** — leaderboard placements, year‑end honors,
+seasonal‑ladder positions, archive standings — not to recognition
+badges that satisfy the bot‑resistance constraints of §25(b). Veteran
+recognition badges issued under §25(b) and D‑0006 do not violate this
+decision's anti‑volume rule, because their inputs (each qualifying
+run) are themselves quality‑gated and the badge does not feed any
+ranking. See D‑0006.
+
 **Revisiting:** This decision may be revisited only by a new
 `DECISIONS.md` entry that (a) identifies a concrete competitive surface
 outside the async‑comparison model that would require sanction, and
@@ -194,6 +204,265 @@ principles are preserved under the proposed expansion.
 `docs/ai/DESIGN-RANKING.md` review.  
 **Reinforces:** §23, §24, §25 (Vision primary goals); D‑0002
 (Determinism), D‑0101 (Engine Authority).  
+**Status:** Active
+
+---
+
+### D‑0006 — Veteran Recognition Authorized; Bot‑Resistance Is the Discriminator
+
+**Decision:** Vision §25 is amended to authorize **non‑ranking veteran
+recognition** (badges, profile milestones, "seasoned player" honors)
+that may count qualifying runs over time, provided each contributing
+run independently meets a quality floor, the threshold counts distinct
+scenarios, and a real‑time elapsed window has passed since the player's
+first qualifying run. The §25 prohibition on volume‑as‑ranking‑input is
+unchanged; only the recognition surface is opened.
+
+Under this decision:
+
+- A run that fails the quality floor does not count toward any veteran
+  threshold; quality is the gate, time is the surface.
+- Veteran badges are issued by the existing Tier 1 issuance path
+  defined in D‑1004 (rule‑driven, post‑INSERT projection over
+  `legendary.competitive_scores` + `ScoreBreakdown`). No new trust
+  surface is introduced.
+- Veteran badges never feed rankings, ladders, or year‑end honors.
+  The DESIGN‑RANKING.md framework is unaffected — its inputs remain
+  quality‑normalized per §25(a).
+- The carve‑out language in D‑0005 referring to "title‑awarding
+  computation" is read narrowly: "title‑awarding" means **competitive**
+  titles (Player of the Year, leaderboard placements, archive honors),
+  not recognition badges that satisfy §25(b). See D‑0005's clarifying
+  note added with this decision.
+
+**Scope:**
+
+- Authorizes veteran‑recognition badges, "seasoned player" tiers on
+  the player profile, milestone markers tied to sustained quality, and
+  similar non‑competitive honors.
+- Does **not** authorize any volume input to a ranking computation.
+  Cumulative‑count rankings remain forbidden by §25(a) and D‑0005.
+- Does **not** authorize any badge that can be earned by farming a
+  single scenario, by binge play in a short window, or by low‑quality
+  repetition.
+- Does **not** alter §22, §23(b), §24, or §26 — PAR scoring, replay
+  verification, asynchronous‑comparison surface, and PAR calibration
+  are unchanged.
+
+**Rationale:**
+
+1. **Recognition gap in original §25.** §25's anti‑grind language was
+   written to defeat bot‑driven ranking inputs and was correctly tight
+   on that axis. The same language read literally also denies
+   recognition to long‑tenured high‑quality players, which is contrary
+   to the project's growth posture and to the directive that produced
+   this amendment. Veteran recognition is a legitimate growth surface
+   that the original clause unintentionally closed.
+2. **Bot‑resistance is the right test, not absence‑of‑volume.** The
+   risk §25 was guarding against is bots gamifying a system by
+   accumulating count‑based credit. The real defense is not "no volume
+   ever" — it's "every counted run must be hard for a bot to fake."
+   A quality floor (sub‑PAR, zero escapes, etc.) makes each run cost
+   something a bot has to actually achieve. A distinct‑scenario
+   requirement raises the breadth cost. A real‑time window raises the
+   wall‑clock cost. The combination approaches the cost of a real
+   player playing well, which is the intended threshold.
+3. **The pre‑amendment telemetry carve‑out was too narrow.** §25's
+   pre‑amendment carve‑out permitted volume display but excluded
+   "title‑awarding" computations. Veteran badges are title‑awarding by
+   construction; they could not ride on the carve‑out without
+   violating it. A first‑class authorization is the honest path.
+4. **No new trust surface is required.** Tier 1 badge issuance under
+   D‑1004 already projects deterministically over immutable
+   `legendary.competitive_scores` rows. A veteran‑tier badge is the
+   same projection with a different predicate (multi‑row aggregate
+   over the same player's history). Trust, immutability, and
+   replay‑verification properties are inherited unchanged.
+5. **DESIGN‑RANKING.md is unaffected.** Rankings remain volume‑forbidden.
+   The amendment opens only the recognition surface. The two surfaces
+   (ranking and recognition) are now formally distinct in §25 (rules
+   (a) vs (b)).
+
+**How to apply:**
+
+- A WP that proposes a recognition badge using volume signals is
+  **admissible** only if it specifies (i) the per‑run quality
+  predicate, (ii) the distinct‑scenario count threshold, (iii) the
+  real‑time elapsed window, and (iv) explicit non‑feed‑into‑rankings
+  text.
+- A WP that proposes a ranking surface using volume signals must be
+  **rejected** under §25(a) and D‑0005 — this amendment does not
+  change that rule.
+- A WP that proposes a recognition badge satisfiable by farming a
+  single scenario, by binge play, or by low‑quality repetition must
+  be **rejected** as a §25(b) bot‑resistance failure.
+- WP‑105 may include veteran‑tier badges in its first slice; criteria
+  sketch and bot‑resistance analysis live in `PROPOSAL-BADGES.md` §3.
+
+**Implementation surface:**
+
+- No engine change required. Veteran badge predicates are pure
+  aggregations over `legendary.competitive_scores` rows that already
+  pass §22 / §24 / D‑5301 / D‑5302 trust gates.
+- No new persistence surface beyond `legendary.player_badges` (defined
+  in D‑1004's implementation notes).
+- New required column in the badge issuance contract:
+  `qualifying_window_start timestamptz NOT NULL` (the timestamp of the
+  player's earliest qualifying run that contributes to this badge), so
+  the real‑time elapsed window is auditable and replayable from the
+  row alone. Additive to D‑1004's column list and incorporated when
+  WP‑105 is drafted.
+
+**Revisiting:** This decision may be revisited only by a new
+`DECISIONS.md` entry that (a) identifies a concrete veteran‑recognition
+format that bot‑resistance constraints fail to protect, and (b)
+proposes a tighter discriminator. Removing veteran recognition entirely
+is admissible only with vision‑level justification (since this decision
+restores recognition that the original §25 unintentionally denied).
+
+**Introduced:** 2026‑04‑26 — vision amendment in response to a
+directive that §25's anti‑grind language was being read as anti‑veteran
+when it was authored as anti‑bot.  
+**Reinforces:** §25 (revised), §22 (replay verification), §24
+(deterministic state hashing), D‑5301 (Server is enforcer, not
+calculator), D‑5302 (Competitive records immutable), D‑1004 (Tier 1
+issuance path).  
+**Status:** Active
+
+---
+
+### D‑0007 — Profile, Identity, and Recognition Boundary‑Freeze Pass
+
+**Decision:** Vision is amended with five clarifying additions that
+freeze boundaries around player identity, profiles, badges, and
+recognition surfaces *before* UI, polish, or scale pressure can
+reinterpret them. Each addition tightens an existing principle by
+stating it one layer earlier in the authority chain. The five
+additions are admitted as a single decision because they share one
+purpose: protect merit‑based recognition from the latent drift vectors
+that success introduces (social‑network thinking, profile
+authoritativeness creep, decorative‑badge proposals, identity
+provider conflation).
+
+**The five additions** (live in `docs/01-VISION.md`):
+
+1. **§7a — Identity Boundary (Authentication ≠ Identity ≠ Progression).**
+   External authentication providers verify access; Legendary Arena owns
+   identity, reputation, rank, badges, and competitive history.
+   Replacing an auth provider loses no identity or recognition.
+2. **§19a — Profiles Are Reflective, Not Authoritative.** A profile is
+   a compiled view derived from immutable underlying records. Editing
+   decorative profile fields (handle, bio, links) is permitted; merit‑
+   bearing surfaces (badges, rank, replay history) are derived and
+   immutable to profile edits.
+3. **Public vs Private Recognition paragraph** added to the
+   *Skill Measurement & Competitive Benchmarking* section header.
+   Public competitive recognition (leaderboards, honors, archives)
+   and personal recognition (veteran badges, milestones) are distinct
+   surfaces, governed separately by §25(a) and §25(b), and never feed
+   each other.
+4. **"All badges represent verifiable claims"** statement added to §25
+   between rules (a) and (b). Badges correspond to replay‑validated
+   performance, attested community contribution, or deterministic
+   project‑state evidence (mapping to D‑1004 tiers 1/2/3). Badges are
+   never cosmetic without objective backing.
+5. **NG‑8 — Social Influence & Network Mechanics.** Forbids follower
+   graphs, like / endorsement counters, karma / influence scores,
+   trending / amplification feeds, and any reputation signal derived
+   from social activity rather than play. Outbound profile links
+   remain permitted as descriptive identity; the Arena hosts no
+   inbound social graph.
+
+**Scope:**
+
+- Authorizes no new behavior; restates and tightens existing principles.
+- Does **not** alter any technical contract or schema. No code change
+  required.
+- Does **not** widen the badge surface (D‑1004 still governs tiers and
+  issuance); it sharpens what badges *mean*.
+- Does **not** reopen the §25(a) anti‑volume rule for rankings or the
+  §25(b) bot‑resistance gate for recognition (D‑0005 / D‑0006 unchanged).
+
+**Rationale:**
+
+1. **Latent drift vectors compound silently.** Each of the five
+   additions closes a specific drift path that is currently open *by
+   omission* in the vision: social‑network thinking creeping in
+   alongside Discord/LinkedIn links; profile editing eroding into
+   merit editing; cosmetic badges proposed under the recognition
+   surface; identity conflated with auth provider identity; rankings
+   and recognition being designed as one surface in the UI. Each is
+   the kind of soft drift that survives code review because the rule
+   it would violate isn't written down yet.
+2. **The technical enforcement already exists; the semantic contract
+   does not.** D‑5302 (competitive records immutable), D‑1004 (tiered
+   issuer model), §23(b) (cooperative gameplay), §25 (skill over
+   repetition) — together these technically enforce most of what the
+   five additions state. But UI and product decisions are made against
+   *vision*, not against decision records buried in DECISIONS.md.
+   Pulling the rules up to the vision document raises their visibility
+   to the layer where they're most likely to be violated.
+3. **NG‑8 is the only addition that closes genuinely new ground.**
+   The other four restate existing principles at a more authoritative
+   layer. NG‑8 forbids a category of mechanic (social‑network
+   amplification) that no current rule explicitly closed. Bundling it
+   with the four restatements is correct because all five share the
+   same protective purpose: preserving merit as the only currency on
+   recognition surfaces.
+4. **Single‑decision admission keeps the audit trail clean.** Five
+   separate DECISIONS entries for what is conceptually one tightening
+   pass would dilute the audit signal. The composed decision states
+   the unified purpose and lists the additions; future readers can
+   evaluate them as a coherent set rather than as five unrelated
+   amendments.
+
+**How to apply:**
+
+- A WP that proposes profile editing affecting badges, rank, or
+  history must be **rejected** under §19a. Profile editing applies to
+  decorative fields only.
+- A WP that proposes "follow", "like", "endorse", "trending players",
+  or any social‑amplification mechanic must be **rejected** under
+  NG‑8.
+- A WP that proposes a badge without identifying its evidence class
+  (replay‑validated / attested community contribution / deterministic
+  project‑state) must be **rejected** under §25's "verifiable claims"
+  statement and D‑1004.
+- A WP that conflates authentication identity with player identity
+  (e.g., displaying email address as the canonical handle, or storing
+  reputation under the auth provider's user ID) must be **rejected**
+  under §7a. Stable internal account identifiers are the identity key.
+- A WP that surfaces ranking‑shaped UI alongside recognition‑shaped UI
+  in a way that suggests they feed each other must be **rejected**
+  under the *Public vs Private Recognition* paragraph.
+
+**Implementation surface:**
+
+- No engine change required.
+- No persistence change required.
+- WP‑102 / WP‑104 / WP‑105 inherit these constraints automatically; no
+  retroactive amendment of those WPs is required.
+- Future profile‑editing WPs (WP‑104 for `/me`) must explicitly cite
+  §19a in their scope sections to confirm they edit only decorative
+  fields.
+
+**Revisiting:** This decision may be revisited only by a new
+`DECISIONS.md` entry that identifies a specific UI or product
+requirement that one of the five additions blocks unintentionally. A
+proposal to remove NG‑8 specifically requires vision‑level
+justification (since social‑network mechanics' compatibility with
+merit‑based recognition is the exact question NG‑8 answers in the
+negative).
+
+**Introduced:** 2026‑04‑26 — governance‑grade boundary‑freeze pass in
+response to surfacing of player profile, identity (Hanko), and
+profile‑level recognition surfaces in concurrent WPs (WP‑101 area,
+WP‑102, WP‑104, WP‑105).  
+**Reinforces:** §3 (Player Trust & Fairness), §7 (Strict Layer
+Separation), §22 (replay verification), §23(b) (cooperative gameplay),
+§24 (replay‑verified competitive integrity), §25 (revised, anti‑bot /
+anti‑veteran), NG‑6 (no dark patterns); D‑0005, D‑0006, D‑1004 (tiered
+badge issuer), D‑5302 (competitive records immutable).  
 **Status:** Active
 
 ---
@@ -450,6 +719,190 @@ server fail-closed gate (WP-051) and the immutable artifact store (WP-050).
 **Rationale:** Safest way to scale while preserving guarantees.  
 **Introduced:** WP‑040  
 **Status:** Active Policy
+
+---
+
+### D‑1004 — Badge Issuer Model Is Tiered; Gameplay Badges Ship First
+
+**Type:** Growth / Governance  
+**Packet:** WP‑105 (and successors WP‑105a..n if a split is later authorized)  
+**Date:** 2026‑04‑26
+
+**Decision:** Legendary Arena badges are issued under a **tiered issuer
+model**. Three issuance tiers are defined, each with a distinct trust
+surface, verification path, and storage contract. WP‑105 (and any
+single‑WP successor) ships **only Tier 1 (rule‑driven gameplay
+badges)**. Tiers 2 and 3 are deferred to dedicated, separately‑scoped
+Work Packets and may not be conflated with Tier 1 in the same
+migration, table, or issuance code path.
+
+**The three tiers:**
+
+| Tier | Class | Issuer | Trust substrate | Source of truth | First WP |
+|---|---|---|---|---|---|
+| 1 | Rule‑driven gameplay | Engine / server (automated) | `legendary.competitive_scores` (immutable per D‑5302) + `ScoreBreakdown` fields (engine‑computed per D‑5301) | Replay verification | WP‑105 |
+| 2 | Admin‑attested community | Operator (manual) | Out‑of‑band evidence + admin signature | Operator review | Future WP — not before WP‑105 lands |
+| 3 | External‑system‑attested | Webhook / CI ingestor | GitHub merges, pull request closures, schema‑file blame | Third‑party API + signed event | Future WP — depends on Tier 2 admin‑auth contract |
+
+**Constraints binding all tiers:**
+
+- **Volume rules per §25.** No badge in any tier may be issued solely
+  on a volume metric without satisfying §25's branching rules. Tier 1
+  ranking‑facing artifacts are forbidden by §25(a). Tier 1 recognition
+  badges are permitted under §25(b) and D‑0006 only when each
+  contributing run independently passes a quality floor, the threshold
+  counts distinct scenarios, and a real‑time elapsed window has passed
+  since the player's first qualifying run. Pure count‑without‑quality
+  criteria remain forbidden across all tiers.
+- **No live‑PvP framing.** Badge titles, criteria text, and flavor
+  must conform to §23(b) — players never act as opponents inside a
+  match. Hero‑vs‑villain framing is permitted; head‑to‑head sport
+  metaphors (e.g., "Mixed Doubles", "ladder duel") are not.
+- **Sole‑issuer scope is in‑platform only.** Legendary Arena is the
+  sole issuer of Legendary Arena badges *as displayed on the player
+  profile and in‑game surfaces*. Public canonical badge URLs
+  (`legendary-arena.dev/badges/<slug>`), cross‑platform mirroring
+  (LinkedIn, Steam, Credly), and any outward‑facing
+  badge‑as‑credential surface are **explicitly deferred** to a
+  post‑WP‑105 governance review that includes a Marvel‑IP licensing
+  check. WP‑105 must not bake any URL‑routing or credential‑export
+  shape into its first migration or DTO.
+- **Issuance is append‑only.** Badge rows are write‑once. Revocation
+  is recorded as a *new* row of class `revocation` referencing the
+  original `badge_id`; the original row is never UPDATEd or DELETEd.
+  (Mirrors D‑5302's competitive‑records immutability precedent.)
+
+**Tier 1 — issuance path (the only one shipping in WP‑105):**
+
+- **Trigger surface:** a Tier 1 badge is awarded by an
+  engine‑or‑server function that reads an immutable
+  `legendary.competitive_scores` row (post‑INSERT) and the
+  corresponding `ScoreBreakdown` from `score_breakdown jsonb`. The
+  function is a pure projection over already‑verified data; it never
+  re‑executes a replay and never recomputes a score.
+- **Trust inheritance:** because every numeric input traces to engine
+  code (D‑5301: server is enforcer, not calculator) and the source row
+  is immutable (D‑5302), Tier 1 badge issuance inherits the existing
+  competitive‑submission trust surface. **No new trust‑surface
+  decisions are required to ship Tier 1.**
+- **Determinism:** badge eligibility is a deterministic function of
+  `(ScoreBreakdown, ScoringConfigVersion, ScenarioKey, playerId)` for
+  per‑run badges, or a deterministic aggregation over the same
+  player's prior `legendary.competitive_scores` rows for veteran
+  badges (per D‑0006). A given competitive history produces the same
+  eligibility set on every read. (Re‑derivation under a *new*
+  `ScoringConfigVersion` is a future feature; it would create new
+  badge rows, never modify old ones — same precedent as D‑5306d.)
+- **Categories permitted in Tier 1:** "Gameplay" only. The
+  five‑category sketch (Gameplay, Contests & Challenges, Community &
+  Support, Creator & Artist, Contributor & Developer) is **not**
+  ratified by this decision — only Gameplay has a Tier 1 issuance
+  path. Other categories may exist later under Tier 2 / Tier 3 but are
+  not assumed.
+
+**Rationale:**
+
+1. **Trust surfaces don't compose.** A single‑issuer model presented
+   as "Legendary Arena is the sole authority" hides the fact that the
+   *evidence* for a Bug Hunter badge (GitHub PR merge), a Community
+   Mentor badge (a stream happened), and a Sub‑PAR Run badge (an
+   immutable replay row) come from three categorically different
+   places. Treating them as one system means the weakest link defines
+   the whole system's trust ceiling. Tiering them keeps Tier 1's
+   high‑trust substrate clean.
+2. **Vision §25 governs volume usage.** Volume‑without‑quality is
+   forbidden across the board (§25(a) for rankings, §25(b)'s
+   bot‑resistance gate for recognition). Tier 1 issuance must respect
+   the rule that produced D‑0006: per‑run quality floor, distinct
+   scenarios, real‑time window.
+3. **Live‑PvP framing leaks into recognition systems easily.** "Mixed
+   Doubles", "ladder", "duel", "rival" all evoke head‑to‑head sport.
+   The cooperative gameplay model is preserved by §23(b) and
+   reinforced by D‑0005; badge naming has to inherit that.
+4. **Public‑URL / credential‑export is a separate problem.**
+   Outward‑facing badge URLs are simultaneously a Marvel‑IP question
+   (badges named after Marvel characters, mirrored on LinkedIn /
+   Credly, are derivative branding outside the in‑game license
+   envelope) and a UX‑routing question (slug schema, redirect
+   contracts, OG‑image generation). Bundling them with the data model
+   risks shipping a migration whose shape is wrong for whichever
+   answer comes back from licensing review. Defer.
+5. **Append‑only mirrors the rest of the platform.** D‑5302
+   (competitive records), D‑5304 (idempotent retry), D‑10302 (replay
+   blobs as immutable PK) all treat issued artifacts as write‑once.
+   Badges follow the same pattern; revocation‑as‑new‑row preserves
+   audit history.
+
+**Implementation (Tier 1, WP‑105 scope):**
+
+- New table `legendary.player_badges` (locked column structure to be
+  specified in the WP‑105 draft per the ≤7‑file budget). Minimum
+  columns implied by this decision and D‑0006:
+  `badge_id bigserial PRIMARY KEY`,
+  `player_id bigint NOT NULL REFERENCES legendary.players(player_id)`,
+  `badge_key text NOT NULL` (stable slug; e.g.,
+  `gameplay.sub-par-run`),
+  `tier int NOT NULL CHECK (tier IN (1, 2, 3))` (only `1` accepted at
+  INSERT in WP‑105),
+  `source_kind text NOT NULL CHECK (source_kind IN ('competitive_score', 'competitive_history', ...))`
+  (only `'competitive_score'` and `'competitive_history'` accepted in
+  WP‑105 — the latter for veteran badges per D‑0006),
+  `source_ref bigint NULL` (the originating
+  `competitive_scores.submission_id` for per‑run Tier 1; null and
+  replaced by `qualifying_window_start` for veteran badges),
+  `qualifying_window_start timestamptz NOT NULL` (per D‑0006: the
+  timestamp of the player's earliest qualifying run that contributes
+  to this badge — for per‑run badges this equals the source row's
+  `created_at`; for veteran badges this is the earliest qualifier in
+  the aggregate),
+  `awarded_at timestamptz NOT NULL DEFAULT now()`,
+  `awarded_under_config_version int NOT NULL`,
+  `is_revoked boolean NOT NULL DEFAULT false` (set true only by a
+  sibling revocation row's trigger; original row's other columns
+  never change).
+- New issuance function
+  `issueTier1BadgesForSubmission(submissionId, database) → BadgeId[]`
+  invoked by `submitCompetitiveScoreImpl` AFTER the step‑15 INSERT
+  succeeds (or AFTER the race‑recovery `wasExisting` retrieval —
+  re‑issuance is a no‑op due to a
+  `UNIQUE (player_id, badge_key, source_ref)` constraint for per‑run
+  badges and a per‑badge‑key uniqueness rule for veteran badges).
+  The function reads the immutable competitive row and any necessary
+  history, projects eligibility from `ScoreBreakdown` and prior
+  qualifiers, and INSERTs zero or more badge rows in a single
+  transaction.
+- Read surface:
+  `getPlayerBadges(accountId, database) → PlayerBadge[]` consumed by
+  the public profile page (WP‑102) and owner profile (WP‑104) as a
+  read‑only list. WP‑102's existing "Badges — coming soon (WP‑105)"
+  empty‑state stub is replaced by the live list when WP‑105 lands.
+- Forbidden in WP‑105: any HTTP route under `/badges/*`; any
+  export‑format DTO (Open Badges, Credly JSON, etc.); any
+  cross‑platform sharing logic; any admin issuance endpoint; any
+  `tier IN (2, 3)` row ever inserted; any UPDATE path against
+  `legendary.player_badges`.
+
+**Revisiting:** This decision may be revisited only by a new
+`DECISIONS.md` entry that (a) identifies a concrete badge category
+whose evidence cannot be modeled by any of the three tiers, or (b)
+proposes a public‑URL / cross‑platform export surface after Marvel‑IP
+licensing review. Tier 2 and Tier 3 first‑WP drafting requires their
+own decision entries with their own trust‑surface analyses.
+
+**Introduced:** 2026‑04‑26 — proposal review unblocking WP‑105's
+"issuer model unresolved" placeholder in `WORK_INDEX.md`.  
+**Reinforces:** §25 (revised), D‑0005 (anti‑volume in rankings),
+D‑0006 (veteran recognition), D‑5301 (server is enforcer), D‑5302
+(competitive records immutable), D‑5304 (idempotent retry), D‑5306d
+(re‑scoring under new config creates new records), D‑1003 (content & UI
+as growth vectors).  
+**Status:** Active
+
+**Citation:** `WORK_INDEX.md` (WP‑105 placeholder, issuer‑model
+resolved here); `docs/01-VISION.md` §23(b), §24, §25; D‑0005, D‑0006;
+D‑5301, D‑5302, D‑5304, D‑5306d;
+`packages/game-engine/src/scoring/parScoring.types.ts`
+(`ScoreBreakdown`, `ScoringInputs`, `ScenarioKey`).
 
 ---
 

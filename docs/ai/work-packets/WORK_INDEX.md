@@ -2208,17 +2208,27 @@ These packets ship the game and keep it running.
 
 - [ ] **(deferred placeholder)** WP-105 — Player Badges Data Model
   & Display. Dependencies: WP-104 (owner profile surface to
-  display badges on); decision on issuer model (admin-only vs
-  rule-driven) — currently unresolved.
-  Scope (target ≤7 files): new `legendary.player_badges` table
-  (`badge_key text` stable, `badge_name text` snapshot,
-  `badge_category text`, `awarded_at`, optional issuer FK,
-  optional `reason text`, `is_public boolean`); read-only display
-  on public profile (WP-102) and owner profile (WP-104); admin
-  issuance is a downstream concern.
-  **Will not draft until** an issuer-model decision lands in
-  `DECISIONS.md`. Drafting earlier risks fabricating an issuance
-  workflow that gets reworked.
+  display badges on). Issuer model resolved by D-1004 (tiered:
+  WP-105 ships Tier 1 / rule-driven gameplay badges only).
+  Anti-volume / veteran-recognition rules resolved by §25 (revised
+  2026-04-26) and D-0006. Criteria sketch and bot-resistance
+  analysis live in `docs/ai/PROPOSAL-BADGES.md` §3.
+  Scope (target ≤7 files per D-1004): new
+  `legendary.player_badges` table (locked column set per D-1004
+  implementation notes; includes `qualifying_window_start
+  timestamptz NOT NULL` per D-0006); engine/server issuance hook
+  invoked after `submitCompetitiveScoreImpl` step-15 INSERT;
+  `getPlayerBadges` read function; live list replacing the
+  empty-state stub on WP-102 / WP-104.
+  Tier 1 first slice: 6 per-run gameplay badges + 4 veteran
+  recognition badges (per `PROPOSAL-BADGES.md` §3 + `PROPOSAL-
+  VISION-25-AMENDMENT.md` §5). Public canonical badge URLs and
+  cross-platform mirroring (LinkedIn / Steam / Credly) explicitly
+  out of scope per D-1004 (deferred pending Marvel-IP review).
+  Tier 2 (admin-attested) and Tier 3 (external-attested) deferred
+  to future WPs; D-1004 forbids any `tier IN (2, 3)` row in WP-105.
+  **Ready to draft** once WP-104 lands and the arena-client
+  framework conventions are confirmed.
 
 - [ ] **(deferred placeholder)** WP-106 — Avatar Upload Pipeline
   (R2 + MIME / size validation). Dependencies: WP-104 (avatar URL
