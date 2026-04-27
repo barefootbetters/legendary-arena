@@ -1889,6 +1889,57 @@ These packets ship the game and keep it running.
   + [EC-096-registry-viewer-grid-data-view.checklist.md](../execution-checklists/EC-096-registry-viewer-grid-data-view.checklist.md)
   + D-9601.
 
+- [ ] WP-100 — Interactive Gameplay Surface (Click-to-Play UI Scaffold) — Drafted 2026-04-26; 00.3 lint-gate self-review PASS; engine-source pre-review 2026-04-26 (move payloads + UIState paths grounded against `coreMoves.types.ts`, `fightVillain.ts`, `recruitHero.ts`, `fightMastermind.ts`, `uiState.types.ts`); engine draw-mechanics pre-review 2026-04-26 (no auto-draw — Draw button locked at `count: 6`); Q1 resolved via sibling WP-111 draft; pre-flight pending.
+  Dependencies: WP-089 (engine `playerView` wiring — UIState
+  `handCards` / `city` / `hq` / `mastermind` fields consumed verbatim);
+  WP-090 (live match client wiring — `LiveClientHandle.submitMove`
+  factory; arena-client's single sanctioned runtime engine import
+  remains in `bgioClient.ts`); WP-062 (arena HUD scaffolds —
+  `ArenaHud.vue`, `PlayerPanel.vue`, et al. compose with new play
+  surface, not replaced by it); WP-092 (lobby loadout intake — match
+  creation entry path remains unchanged). Soft-coexists with EC-059
+  pre-plan UI surface (commit `5c5fc1e`) — pre-plan files under
+  `apps/arena-client/src/{stores,preplan,components/preplan,fixtures/preplan}/`
+  are explicitly out of scope; live-flow wiring is queued as WP-070.
+  Notes: First interactive gameplay surface for arena-client. Adds
+  six new components under `apps/arena-client/src/components/play/`:
+  `HandRow.vue` (iterates `UIPlayerState.handCards`, emits
+  `submitMove('playCard', { cardId })`), `CityRow.vue` (iterates
+  `UICityState.spaces` by positional index 0–4 with empty-slot
+  placeholders, emits `submitMove('fightVillain', { cityIndex })`),
+  `HQRow.vue` (iterates `UIHQState.slots` by positional index,
+  emits `submitMove('recruitHero', { hqIndex })`), `MastermindTile.vue`
+  (single button, emits `submitMove('fightMastermind', {})`),
+  `TurnActionBar.vue` (Draw → `submitMove('drawCards', { count: 6 })`,
+  End Turn → `submitMove('endTurn', {})`), and `PlayView.vue` (composer
+  reading `useUiStateStore()`, prop-drilling `submitMove`, suppressing
+  interactive children when `uiState.game.phase !== 'play'`). One
+  modified file: `apps/arena-client/src/lobby/LiveMatchView.vue` —
+  prop-pass only, no logic changes. Locks the prop-drilled
+  `submitMove` pattern for all future gameplay UI WPs (no `provide` /
+  `inject` seam, no direct `bgioClient.ts` import in components — keeps
+  components pure, prop-driven, and stub-testable). Card display
+  fidelity scaffolded with `CardExtId` strings; the engine-side
+  card-display projection is drafted as WP-111 (sibling, deferred); a
+  trivial follow-up UI WP binds component labels to `display.name` /
+  `display.imageUrl` once WP-111 lands. Draw button is a scaffold
+  artifact pending a future engine WP that adds `turn.onBegin`
+  auto-draw to a canonical `HAND_SIZE`. Cost-based affordability
+  gating is deferred — `UICityCard`, `UIHQState.slots`, and
+  `UIMastermindState` carry no cost field today; components apply
+  stage-only gating (Q4 a11y also deferred to a follow-up WP). Vision
+  clauses touched: §3 (Player Trust & Fairness), §4 (Faithful
+  Multiplayer Experience), §8 (Deterministic Game Engine), §10
+  (Content as Data), §11 (Stateless Client Philosophy), §17
+  (Accessibility & Inclusivity — explicit deferral with named
+  follow-up). NG-1..7 all preserved. 13 files projected (above ~8
+  soft limit; inline justification block in WP body — natural split
+  boundary at A–E vs F–G if reviewer disagrees at pre-flight); ~29 AC
+  items (above 6–12 soft limit; inline justification block — count
+  reflects 6 deliverables × ~3 binary checks each, preserves
+  per-component fault isolation). See
+  [WP-100-interactive-gameplay-surface.md](WP-100-interactive-gameplay-surface.md).
+
 - [ ] WP-097 — Tournament Funding Policy (Governance) — Drafted 2026-04-25; lint-gate self-review PASS; EC-097 drafted 2026-04-26 (≤60 content lines per EC-TEMPLATE; two-commit topology per EC-085 precedent); pre-flight pending.
   Dependencies: None. `docs/01-VISION.md §Financial Sustainability` and `§Non-Goals: Exploitative Monetization` (NG-1..NG-7) must already exist (they do). Can land standalone.
   Notes: Retrospective governance for `docs/TOURNAMENT-FUNDING.md` — the
