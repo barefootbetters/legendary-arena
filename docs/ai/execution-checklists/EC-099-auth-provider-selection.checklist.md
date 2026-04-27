@@ -15,7 +15,7 @@ Failure to satisfy any item below is a failed execution of WP-099.
 - [ ] WP-099 status flipped Draft → Executing; pre-flight bundle registered
 - [ ] WP-052 complete; `auth_provider` enum at `'email' | 'google' | 'discord'`; migrations 004 and 005 applied
 - [ ] `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §7` contains the existing `No Passport / Auth0 / Clerk — use jsonwebtoken or credentials-only` line verbatim (verified with grep at session start)
-- [ ] `docs/ai/DECISIONS.md` highest current ID is `D-9601` (D-9901..D-9905 not yet present)
+- [ ] `docs/ai/DECISIONS.md` does not yet contain `D-9901..D-9905` (verified by `grep -nE "^## D-990[1-5] " docs/ai/DECISIONS.md` returning zero matches). The file's last decision before `## Final Note` is `D-9701` (WP-097, commit `c5344cc`); D-10001..D-10014 (WP-100 cluster) sit higher in the file because decisions are appended chronologically, not in numeric order — D-9901..D-9905 will land **after** D-9701 in the same chronological-append slot.
 - [ ] `docs/ai/STATUS.md` and `docs/ai/work-packets/WORK_INDEX.md` exist
 - [ ] `git diff --name-only packages/ apps/ data/migrations/` empty at start
 
@@ -33,8 +33,8 @@ Failure to satisfy any item below is a failed execution of WP-099.
 ## Guardrails
 
 - Docs-only. No `packages/`, `apps/`, or `data/migrations/` files modified. No `docs/01-VISION.md`, `docs/ai/ARCHITECTURE.md`, or `.claude/` files modified.
-- §7 amendment is a surgical append ONLY — preserve every existing forbidden-package bullet (axios, ORMs, Jest/Vitest/Mocha, Passport/Auth0/Clerk) byte-for-byte. The new Hanko bullet immediately follows the Auth0/Clerk/Passport line.
-- D-9901..D-9905 are inserted in numeric order at the foot of `DECISIONS.md` (after D-9601, before any trailing content).
+- §7 amendment is a surgical append ONLY — preserve every existing forbidden-package bullet (axios, ORMs, Jest/Vitest/Mocha, Passport/Auth0/Clerk) byte-for-byte, **including the inline backticks around package names** (`` `axios` ``, `` `node-fetch` ``, `` `pg` ``, `` `node:test` ``, `` `jsonwebtoken` ``). Do NOT re-paste the existing bullets in the diff — apply the change as a pure append. The new Hanko bullet immediately follows the `No Passport / Auth0 / Clerk — use \`jsonwebtoken\` or credentials-only` line.
+- D-9901..D-9905 are inserted as a contiguous numeric-order block (`D-9901` → `D-9902` → `D-9903` → `D-9904` → `D-9905`) **immediately before `## Final Note`** at the foot of `DECISIONS.md`. This matches the WP-097 / D-9701 placement precedent (commit `c5344cc`): chronological-append at the foot, NOT strict numeric ordering. Do not attempt to interleave with D-10001..D-10014.
 - WP-099 implements zero auth surfaces. `grep -rE "@teamhanko|hanko\.io" apps/ packages/` MUST return zero matches at execution time.
 - Hanko-specific code does not exist anywhere in the repo at WP-099 close. The §A/§B surfaces in WP-099 are policy authorizations for *future* WPs (WP-112 — renumbered from "WP-100" per D-10002 — and a future implementation WP), not deliverables.
 - "Auth broker" vs "identity authority" terminology is canonical (per WP-099 §Authorized Future Surfaces opening Definitions). Do not coin synonyms ("auth provider" is acceptable in narrative; "identity provider"/"IdP" must refer to the federated provider behind Hanko, not Hanko itself).
@@ -75,6 +75,8 @@ Failure to satisfy any item below is a failed execution of WP-099.
 ## Common Failure Smells
 
 - §7 amendment is a rewrite instead of a surgical append — STOP; existing Auth0/Clerk/Passport ban must be byte-preserved. Re-read WP-099 §Scope §A; the Hanko bullet immediately follows the existing line.
+- §7 amendment silently strips inline backticks from sibling bullets (e.g., `` `jsonwebtoken` `` → `jsonwebtoken`, `` `pg` `` → `pg`) — STOP; the four existing forbidden-package bullets at lines 165–168 use inline backticks around package names. The pre-flight review log calls this out explicitly. Re-run Verification §Step 1 — both grep checks must match the backtick-bearing form.
+- D-9901..D-9905 inserted in strict numeric order (e.g., between D-9601 and D-10001) instead of chronological append before `## Final Note` — STOP; the convention established by WP-097 / D-9701 (commit `c5344cc`) is **chronological at the foot, before `## Final Note`**, regardless of numeric value. D-9701 itself sits below D-10001..D-10014 in the file because of this convention; D-9901..D-9905 join the same chronological tail.
 - D-9901..D-9905 added but `'hanko'` appears as a code literal somewhere in `apps/` or `data/migrations/` — STOP; the broker is invisible at rest by D-9902 and the F-1 gate item. Re-read WP-099 Non-Negotiable Constraints "Hanko is invisible at rest" and remove the literal.
 - A future implementation WP cited in WP-099 §Authorized Future Surfaces appears to be drafted as part of this session — STOP; WP-099 is policy-only. WP-112 (renumbered from "WP-100" per D-10002) and the Hanko-implementation WP are separate sessions.
 - §7 carve-out is rephrased as category-wide ("managed auth providers are permitted") — STOP; the carve-out is Hanko-specific by D-9903. Auth0 / Clerk / Passport remain forbidden. Re-read the locked carve-out wording verbatim from WP-099 §Scope §A.
