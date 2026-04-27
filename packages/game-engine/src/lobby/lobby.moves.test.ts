@@ -39,11 +39,16 @@ function createTestGameState(requiredPlayers: number): { lobby: LobbyState } {
 }
 
 describe('setPlayerReady', () => {
-  it('sets G.lobby.ready[playerId] to true when called with { ready: true }', () => {
+  it('sets G.lobby.ready[playerID] to true when called with { ready: true }', () => {
     const gameState = createTestGameState(2);
+    // why: per D-10010, the move uses `playerID` from FnContext (the
+    // authenticated dispatching player), not `ctx.currentPlayer` (the
+    // turn-holder). Tests mock both for completeness; the assertion
+    // checks the dispatching player's slot.
     const mockContext = {
       G: gameState,
       ctx: { currentPlayer: '0' },
+      playerID: '0',
       events: { setPhase: () => {} },
     };
 
@@ -52,12 +57,13 @@ describe('setPlayerReady', () => {
     assert.equal(gameState.lobby.ready['0'], true);
   });
 
-  it('sets G.lobby.ready[playerId] to false when called with { ready: false }', () => {
+  it('sets G.lobby.ready[playerID] to false when called with { ready: false }', () => {
     const gameState = createTestGameState(2);
     gameState.lobby.ready['0'] = true;
     const mockContext = {
       G: gameState,
       ctx: { currentPlayer: '0' },
+      playerID: '0',
       events: { setPhase: () => {} },
     };
 
@@ -66,12 +72,43 @@ describe('setPlayerReady', () => {
     assert.equal(gameState.lobby.ready['0'], false);
   });
 
+  it('writes to the dispatching player\'s slot, not the turn-holder\'s slot (D-10010)', () => {
+    // why: D-10010 regression guard. In multi-active-player phases (lobby
+    // with `activePlayers: { all: 'lobbyReady' }`), player 1 dispatches
+    // setPlayerReady but ctx.currentPlayer remains '0'. The move MUST
+    // write to ready['1'], not ready['0'] (overwriting). Pre-D-10010
+    // the move used ctx.currentPlayer and silently wrote to the wrong
+    // slot, leaving validateCanStartMatch unable to count player 1+ as
+    // ready and blocking the lobby → play transition forever.
+    const gameState = createTestGameState(2);
+    const mockContext = {
+      G: gameState,
+      ctx: { currentPlayer: '0' },
+      playerID: '1',
+      events: { setPhase: () => {} },
+    };
+
+    setPlayerReady(mockContext as never, { ready: true });
+
+    assert.equal(
+      gameState.lobby.ready['1'],
+      true,
+      'player 1 dispatching must write to ready["1"]',
+    );
+    assert.equal(
+      gameState.lobby.ready['0'],
+      undefined,
+      'player 1 dispatching must NOT write to ready["0"] (the turn-holder)',
+    );
+  });
+
   it('does not mutate G when args contain a non-boolean ready value', () => {
     const gameState = createTestGameState(2);
     const originalLobby = JSON.stringify(gameState.lobby);
     const mockContext = {
       G: gameState,
       ctx: { currentPlayer: '0' },
+      playerID: '0',
       events: { setPhase: () => {} },
     };
 

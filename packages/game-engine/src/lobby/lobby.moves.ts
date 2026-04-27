@@ -6,23 +6,35 @@
  * then return void. They never throw.
  */
 
-import type { FnContext } from 'boardgame.io';
+import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
 import type { SetPlayerReadyArgs } from './lobby.types.js';
 import { validateSetPlayerReadyArgs } from './lobby.validate.js';
 import { validateCanStartMatch } from './lobby.validate.js';
 
 /**
- * Sets the current player's readiness status in the lobby.
+ * Sets the dispatching player's readiness status in the lobby.
  *
  * Validates that args.ready is a boolean. If valid, sets
- * G.lobby.ready[ctx.currentPlayer] to the provided value.
+ * G.lobby.ready[playerID] to the provided value, where playerID is the
+ * authenticated dispatching player from boardgame.io's FnContext.
  *
- * @param context - boardgame.io move context with G and ctx.
+ * @param context - boardgame.io move context with G, ctx, and playerID.
  * @param args - The move arguments containing a boolean ready field.
  */
 export function setPlayerReady(
-  { G, ctx }: FnContext<LegendaryGameState>,
+  // why: per D-10010, the move uses `playerID` from FnContext (the
+  // authenticated dispatching player) rather than `ctx.currentPlayer`
+  // (the turn-holder). In multi-active-player phases like lobby with
+  // `activePlayers: { all: 'lobbyReady' }`, ANY seated player can
+  // dispatch this move — but ctx.currentPlayer remains the original
+  // turn-holder regardless of who clicked. Using ctx.currentPlayer
+  // would overwrite player 0's ready slot every time, leaving
+  // validateCanStartMatch perpetually unable to count player 1+ as
+  // ready. boardgame.io's MoveFn signature includes playerID on the
+  // context for exactly this case (see boardgame.io's
+  // dist/types/src/types.d.ts MoveFn definition).
+  { G, playerID }: FnContext<LegendaryGameState> & { playerID: PlayerID },
   args: SetPlayerReadyArgs,
 ): void {
   const validationResult = validateSetPlayerReadyArgs(args);
@@ -30,9 +42,10 @@ export function setPlayerReady(
     return;
   }
 
-  // why: ctx.currentPlayer ensures each player only sets their own readiness;
-  // boardgame.io passes the authenticated player ID through ctx.currentPlayer.
-  G.lobby.ready[ctx.currentPlayer] = args.ready;
+  // why: G.lobby.ready[playerID] writes to the dispatching player's slot
+  // per D-10010. With activePlayers config, this slot is the seat the
+  // click came from, not the turn-holder.
+  G.lobby.ready[playerID] = args.ready;
 }
 
 /**

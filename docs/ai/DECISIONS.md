@@ -10991,6 +10991,79 @@ The four 01.5 triggers were verified absent on the §D-10009 change:
 
 ---
 
+### D-10010 — setPlayerReady Uses playerID, Not ctx.currentPlayer (Multi-Active-Player Slot Targeting Fix)
+
+**Type:** Engine surgical patch / multi-active-player move semantics
+**Packet:** WP-100 (smoke-test fix-forward post-D-10009)
+**Date:** 2026-04-27
+
+**Decision:** The `setPlayerReady` move in `packages/game-engine/src/lobby/lobby.moves.ts` now writes to `G.lobby.ready[playerID]` rather than `G.lobby.ready[ctx.currentPlayer]`. The `playerID` is the **authenticated dispatching player** that boardgame.io passes through `FnContext` (per its `MoveFn<G>` signature: `(context: FnContext<G> & { playerID: PlayerID }, ...args) => void`). The `ctx.currentPlayer` is the **turn-holder**, set by `playOrder` and unchanged by activePlayers configuration.
+
+**Rationale:** The fifth boardgame.io v0.50 behavior gap that smoke testing on 2026-04-27 surfaced. After D-10006 + D-10007 + D-10008 + D-10009 fixed the dispatch-path mechanics, an in-process simulation of the lobby flow revealed that even after both browsers click **Mark Ready**, `G.lobby.ready` only ever contained `{ '0': true }`:
+
+```
+=== After player 0 setPlayerReady ===
+G.lobby.ready: {"0":true}
+
+=== After player 1 setPlayerReady ===
+G.lobby.ready: {"0":true}    ← unchanged!
+
+=== After startMatchIfReady ===
+phase: lobby                 ← did NOT transition
+```
+
+In multi-active-player phases (lobby has `activePlayers: { all: 'lobbyReady' }` per D-10007), boardgame.io permits ANY seated player to dispatch lobby moves. But `ctx.currentPlayer` is set by `playOrder.first()` and remains `'0'` regardless of who clicked. When player 1's setPlayerReady move runs, `ctx.currentPlayer` is still `'0'`, so the line `G.lobby.ready[ctx.currentPlayer] = args.ready` writes to player 0's slot (overwriting same value). Player 1's slot stays absent. `validateCanStartMatch` counts ready players: 1. `requiredPlayers`: 2. Fails the check. `events.setPhase('play')` never fires. Phase stays lobby. The Draw button never appears (PlayView's `v-if="isPlayPhase"` is false), but the user clicked something that dispatched drawCards anyway — boardgame.io's reducer rejects with "disallowed move: drawCards" because lobby phase has no drawCards in its moves block.
+
+The fix uses `playerID` from FnContext, which boardgame.io always populates with the authenticated dispatching player's seat ID. Per `node_modules/boardgame.io/dist/types/src/types.d.ts`:
+
+```ts
+export type MoveFn<G, ...> = (
+  context: FnContext<G> & { playerID: PlayerID },
+  ...args: any[]
+) => void | G | typeof INVALID_MOVE;
+```
+
+`playerID` is the seat that submitted the action (validated by boardgame.io's auth layer). It correctly identifies the dispatching player even when `ctx.currentPlayer` differs.
+
+The four 01.5 triggers were verified absent on the §D-10010 change:
+
+- ❌ No new `LegendaryGameState` field — `G.lobby.ready` already exists.
+- ❌ No `buildInitialGameState` shape change — initial state construction unchanged.
+- ❌ No new `LegendaryGame.moves` entry — move name + body unchanged in shape; only the index key changed (`ctx.currentPlayer` → `playerID`).
+- ❌ No new phase hook — single-line change inside an existing move body.
+
+**01.5 NOT INVOKED.**
+
+**How to apply:**
+
+- Lobby moves (and any future multi-active-player phase moves) MUST use `playerID` from FnContext to identify the dispatching player. NEVER use `ctx.currentPlayer` for per-player state mutations in such phases — `ctx.currentPlayer` is the turn-holder, which is a single seat unrelated to who clicked.
+- Single-active-player phases (play phase under D-10009's `activePlayers: { currentPlayer: 'playTurn' }`) can interchangeably use either `playerID` or `ctx.currentPlayer` — they're guaranteed equal there. But for forward-compatibility with phase-config refactors, prefer `playerID`.
+- Future `MoveFn<G>` signatures should destructure `playerID` from the context: `({ G, playerID }: FnContext<G> & { playerID: PlayerID }, args) => { ... }`. The PlayerID type import comes from `boardgame.io` (type-only).
+- A drift-detection unit test in `lobby.moves.test.ts` ("writes to the dispatching player's slot, not the turn-holder's slot (D-10010)") locks the regression — it dispatches setPlayerReady with `playerID: '1'` while `ctx.currentPlayer: '0'` and asserts the write goes to `ready['1']`, never `ready['0']`.
+
+**Why this gap was missed (compounding with D-10006/7/8/9).** The original lobby.moves.ts comment was actually MISLEADING:
+
+> "// why: ctx.currentPlayer ensures each player only sets their own readiness;
+> // boardgame.io passes the authenticated player ID through ctx.currentPlayer."
+
+This was wrong. boardgame.io passes the authenticated player ID through `playerID`, not `ctx.currentPlayer`. The mistake compiled fine because both are strings. Unit tests passed because they manually constructed mockContext with `ctx.currentPlayer: '0'` and dispatched as player 0 — the two values happened to be equal in single-player tests, masking the bug. Multi-player smoke testing in two browsers is the only path that exposes the divergence, and it does so deterministically. This is the fifth such gap in the WP-100 smoke-test cycle and the strongest evidence yet that an **in-process Server() + Client() integration test harness** is the right structural prevention. The harness would simulate two-player dispatch and catch the slot-targeting bug in CI without manual smoke testing.
+
+**Cumulative reflection (D-10006 → D-10010).** WP-100 surfaced five distinct boardgame.io v0.50 behavior collisions, each invisible to existing engine unit tests:
+
+- D-10006: empty `setup` phase with no exit (lobby → play transition gap).
+- D-10007: empty `activePlayers` config blocks lobby moves (multi-player ready-up gap).
+- D-10008: `playerView` returns UIState (different shape than G), client-side optimistic move execution crashes (`client: false` fix).
+- D-10009: missing `activePlayers` config in play phase falls through to `SetActivePlayers(ctx, {})` and blocks all moves (turn-based phase gap).
+- D-10010: moves use `ctx.currentPlayer` instead of `playerID` and target wrong slot in multi-active-player phases (slot-targeting bug).
+
+The pattern is that boardgame.io's documented "default" behaviors have subtle semantics in multi-phase + multi-active-player + state-shape-mismatching-playerView contexts that aren't apparent from unit-testing move functions in isolation. A future engine WP MUST build the integration harness; without it, every new state-mutating move is a potential D-1001N gap waiting to be discovered by smoke testing.
+
+**Status:** Active. Closes when an in-process Server() + Client() integration test harness lands and the structural drift tests are replaced by behavioral tests that simulate the full multi-player lifecycle.
+
+**Citation:** [lobby.moves.ts](packages/game-engine/src/lobby/lobby.moves.ts) `setPlayerReady` body (now `G.lobby.ready[playerID]`); [lobby.moves.test.ts](packages/game-engine/src/lobby/lobby.moves.test.ts) "writes to the dispatching player's slot, not the turn-holder's slot (D-10010)" (the regression guard); [boardgame.io MoveFn type](node_modules/boardgame.io/dist/types/src/types.d.ts) (canonical playerID semantics); D-10006 + D-10007 + D-10008 + D-10009 (the four prior fix-forwards in this cycle — together D-10006 + D-10007 + D-10008 + D-10009 + D-10010 close the full lobby → play → turn-rotation flow for multi-player matches end-to-end).
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
