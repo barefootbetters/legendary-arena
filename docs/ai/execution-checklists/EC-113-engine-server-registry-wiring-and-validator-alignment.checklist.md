@@ -19,12 +19,15 @@
 - `setRegistryForSetup` import path: `@legendary-arena/game-engine` (top-level export)
 - `setRegistryForSetup` registry guard: do NOT remove `if (gameRegistry) { ... }` at `game.ts:201-210` — server wiring is the runtime fix, not the engine guard
 - **Set-qualified ID format (LOCKED):** all five entity-ID fields on `MatchSetupConfig` use `<setAbbr>/<slug>`. Bare slugs, display names, and flat-card keys are ALL rejected. Format-error messages name the canonical form + concrete example.
+- **Qualified IDs are exclusive (LOCKED):** no fallback / compatibility / lenient / best-effort path for bare slugs, display names, or flat-card keys exists anywhere in the validator or builders. Reviewers reject any PR that introduces such a path regardless of how isolated it appears.
 - Empirical collision evidence (2026-04-27 probe): 23 hero slugs, 11 mastermind slugs, 4 villain group slugs, 2 scheme slugs collide across loaded sets. Bare slugs are nondeterministic by construction; qualified format is mandatory regardless of present-day disambiguation.
 - `parseQualifiedId(input)` rejects empty / no-slash / multiple-slash / empty-part inputs. Validator emits a format error before existence check on parse failure.
 - Validator distinguishes "set not loaded" vs "slug not in that set" in error messages.
-- Slug-extractor exports: `extractVillainGroupSlug` from `villainDeck.setup.ts`; equivalents from `mastermind.setup.ts`, `buildSchemeSetupInstructions.ts`, hero-deck builder. Type-stable, no signature changes. Single source of truth for the slug half of qualified IDs.
-- Builder filtering order: parse `<setAbbr>/<slug>` → filter cards by `setAbbr` first → match by `<slug>` within that set's cards only. No accidental cross-set matches.
-- Diagnostic constraint: full-sentence `G.messages` entry on each `isXRegistryReader → empty fallback`. No new state fields, no signature-breaking changes to builders. Per-builder emission site (inside builder vs orchestration) per pre-flight Q3.
+- **Authority lock (LOCKED):** the per-builder slug-extractor helpers are the ONLY authoritative definition of acceptable slug semantics. `matchSetup.validate.ts` MUST NOT independently parse, normalize, or reinterpret slug formats beyond delegating to these helpers (and to `parseQualifiedId` for the surrounding envelope).
+- Slug-extractor exports: `extractVillainGroupSlug` from `villainDeck.setup.ts`; equivalents from `mastermind.setup.ts`, `buildSchemeSetupInstructions.ts`, hero-deck builder. Type-stable, no signature changes.
+- **Builder filtering order (LOCKED, hard constraint):** parse `<setAbbr>/<slug>` → filter cards by `setAbbr` first → match by `<slug>` within that set's cards only. Builders that parse the qualified ID but match across all sets (e.g., global `findCardBySlug` after parse) are in violation of the determinism contract. Reviewers reject regardless of test pass/fail.
+- Diagnostic constraint: full-sentence `G.messages` entry on each `isXRegistryReader → empty fallback`. No new state fields, no signature-breaking changes to builders. Per-builder *emission site* (inside builder vs orchestration) resolved at pre-flight Q3.
+- **Uniformity rule (LOCKED):** all four setup builders MUST use the SAME failure-reporting *mode*. Pre-flight Q3 picks ONE mode (throw vs `G.messages` diagnostics) and applies it uniformly. Mixing modes across helpers is forbidden; mixing within one helper is also forbidden. Q3 resolves emission site per builder; mode is a single global choice.
 - 01.5 NOT INVOKED: no new `LegendaryGameState` field, no `buildInitialGameState` shape change, no new `LegendaryGame.moves` entry, no new phase hook
 
 ## Guardrails
@@ -58,7 +61,8 @@
 - [ ] `pnpm --filter @legendary-arena/server test` exits 0; baseline `47 → ~48 / 7 / 0` (+1 wiring test)
 - [ ] `pnpm --filter @legendary-arena/arena-client test` exits 0; baseline `182 / 17 / 0` UNCHANGED
 - [ ] `pnpm -r build` exits 0
-- [ ] Manual smoke test (`scripts/Start-SmokeTest.ps1 -KillStaleListeners`): clicking Reveal in `start` produces a villain or henchman in the City; fightVillain defeats the target; fightMastermind decrements tactics
+- [ ] Manual smoke test (`scripts/Start-SmokeTest.ps1 -KillStaleListeners`), **bare-slug case**: match creation FAILS with a validator format error naming the qualified-ID form + an example. (Successful match creation here is a contract violation, NOT an acceptable outcome.)
+- [ ] Manual smoke test, **set-qualified case**: match creation succeeds; clicking Reveal in `start` produces a villain or henchman in the City; fightVillain defeats the target; fightMastermind decrements tactics
 - [ ] `git diff --name-only -- apps/arena-client packages/registry` returns no output
 - [ ] `docs/ai/STATUS.md` updated — match creation now produces non-empty matches end-to-end
 - [ ] `docs/ai/DECISIONS.md` updated — D-10014 (engine-server registry wiring + slug-vs-key contract per field, with per-builder diagnostic emission sites)
@@ -72,5 +76,7 @@
 - arena-client test count drifted → WP-113 touched a UI file. STOP and revert; this WP is engine + server only.
 - Bare slug / display name / flat-card key fixture rejected by validator → **expected.** Update fixture to `<setAbbr>/<slug>` qualified format per D-10014 and document each migration in test JSDoc. Do NOT add the bare slug to a fallback list to "make the test pass."
 - Validator returns "set 'wwhk' not loaded" or "format invalid: expected `<setAbbr>/<slug>`, got 'black-widow'" → expected when fixture omits the `<setAbbr>/` prefix. Format error fires before existence check on parse failure; "set not loaded" fires before "slug not in that set" — the two error kinds carry different remediations.
-- Builder accepts `<setAbbr>/<slug>` but silently filters across all sets (e.g., parses qualifier then ignores it) → contract violation. Builder MUST filter by `setAbbr` first, THEN match `<slug>` within that set's cards only. Cross-set collision protection is the entire reason for the qualified format.
 - "Cannot read properties of undefined (G.messages)" inside a builder → builder doesn't actually receive G; per pre-flight Q3, that builder's diagnostic emits at the orchestration site instead. Move the push to `buildInitialGameState.ts`.
+- Two helpers throw, two helpers push to `G.messages` → **uniformity violation.** Per the Uniformity Rule, all four helpers MUST use the same failure-reporting mode. Pre-flight Q3 chose one mode globally; revert any helper that diverges. Tests asserting "diagnostic present" should fail in exactly the same way for all four helpers, or fail in exactly the same way for none.
+- Validator parses `<setAbbr>/<slug>` with its own ad-hoc `split('/')` instead of calling `parseQualifiedId`, OR re-implements bare-slug normalization → **authority lock violation.** Validator delegates to `parseQualifiedId` + builder-owned slug-extractors; it does not own slug grammar.
+- A "lenient mode" / "legacy compatibility" / "best-effort" / "try-bare-slug-as-fallback" branch appears anywhere in validator or builders → **exclusivity violation.** No fallback paths exist; bare-slug input is a hard reject. Delete the branch; do not gate it behind a flag.

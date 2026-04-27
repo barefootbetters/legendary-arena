@@ -215,9 +215,15 @@ Before writing a single line:
   already route through this path. Surfaced silent-failure paths in
   the four setup helpers either (a) throw and let the existing
   catch in `setup()` handle propagation, OR (b) push diagnostic
-  entries to `G.messages` and continue with empty state — author
-  picks one path per helper at execution time and documents in
-  DECISIONS. Mixing within one helper is forbidden.
+  entries to `G.messages` and continue with empty state.
+  **Uniformity rule (LOCKED):** all four setup builders MUST use
+  the SAME failure-reporting mode. The chosen mode (throw vs
+  `G.messages` diagnostics) is decided ONCE at pre-flight Q3 and
+  applies uniformly to all four helpers. Mixing modes across
+  helpers is forbidden — a per-helper choice would force tests
+  (and future readers) to track which helper does what, which is
+  exactly the inconsistency this WP exists to retire. Mixing within
+  one helper is also forbidden (carryover constraint).
 - No new `LegendaryGameState` field. No `buildInitialGameState`
   shape change. No new `LegendaryGame.moves` entry. No new phase
   hook. **01.5 NOT INVOKED** — verified by the four-trigger check
@@ -254,10 +260,14 @@ Before writing a single line:
   `matchSetup.validate.ts` can consume it. Same for any
   henchman / mastermind / scheme / hero equivalents. The exports
   are type-stable (no signature change) and live alongside their
-  existing builder. **The slug-extraction helpers are the single
-  source of truth for ID format** — validator (option (a)) consumes
-  them; builders remain authoritative. No new ID-resolution module
-  is introduced.
+  existing builder. **Authority lock (LOCKED):** the per-builder
+  slug-extractor helpers are the ONLY authoritative definition of
+  acceptable slug semantics. `matchSetup.validate.ts` MUST NOT
+  independently parse, normalize, or reinterpret slug formats
+  beyond delegating to these helpers (and to `parseQualifiedId` for
+  the surrounding `<setAbbr>/<slug>` envelope). The validator does
+  not own slug grammar; it consumes it. Builders remain
+  authoritative; no new ID-resolution module is introduced.
 - **Silent-failure surfacing minimum (locked).** When a setup
   builder must return empty/minimal state due to an unusable
   registry (the `isXRegistryReader → empty fallback` paths), a
@@ -271,8 +281,10 @@ Before writing a single line:
   state to `buildInitialGameState` and never sees `G`, the
   orchestration site (which owns `G.messages`) emits the
   diagnostic on the builder's behalf. Pre-flight Q3 resolves the
-  per-builder choice. Throwing instead of pushing is permitted but
-  not required.
+  per-builder *emission site* (inside vs orchestration). The
+  *failure-reporting mode itself* (throw vs diagnostic) is uniform
+  across all four helpers per the Uniformity Rule above —
+  pre-flight Q3 picks ONE mode, not four.
 - No changes to `LegendaryGame.moves` registration, lobby phase
   configuration, or any UI code in `apps/arena-client/`. WP-113 is
   strictly server-wiring + engine-validation alignment + setup-
@@ -335,12 +347,31 @@ Before writing a single line:
   E.g., `"heroDeckIds[2] rejected: \"black-widow\". Hero IDs must be
   set-qualified slugs in the form \"<setAbbr>/<heroSlug>\", e.g.,
   \"core/black-widow\" or \"wwhk/black-widow\"."`
+- **Qualified IDs are exclusive (LOCKED).** There are no fallback or
+  compatibility paths for bare slugs, display names, or flat-card
+  keys anywhere in the validator or builders. Any attempt to accept
+  alternative formats — at any point in the pipeline, in any
+  helper, in any test fixture — is a contract violation and must
+  fail loudly. The format is one-way: qualified in, validated, then
+  consumed. There is no "lenient mode," no "legacy compatibility
+  shim," and no "best-effort guess" path. Reviewers reject any PR
+  that introduces a bare-slug fallback regardless of how isolated
+  it appears.
 - **Silent-failure surfacing minimum** (locked): each of the four
   setup helpers' early-return paths gains AT LEAST a `G.messages`
   entry with a full-sentence message naming what was skipped and
   why. The arena-client HUD already renders `G.messages` (via the
   log panel from WP-064), so the entry is observable in smoke
   testing. Throwing is permitted but not required.
+- **Builders MUST filter by `setAbbr` first, slug second (LOCKED).**
+  After parsing `<setAbbr>/<slug>`, the builder iterates ONLY that
+  set's cards/entities and matches the slug within that set's scope.
+  Any builder that parses a qualified ID but matches across all
+  loaded sets (e.g., calls a global `findCardBySlug(slug)` after
+  parsing) is in violation of the determinism contract — the
+  qualified format exists precisely to prevent cross-set matches,
+  and stripping the set qualifier mid-pipeline defeats the entire
+  fix. Reviewers reject this regardless of test pass/fail status.
 
 ---
 
@@ -643,7 +674,18 @@ locked here.
 - [ ] arena-client baseline `182 / 17 / 0` UNCHANGED — this WP doesn't touch the client
 
 ### End-to-end smoke test
-- [ ] Manual smoke test (`scripts/Start-SmokeTest.ps1`) reproduces the WP-100 flow with bare-slug loadout JSON, and clicking **Reveal** in `start` stage now produces a villain or henchman card in the City row (not a "Villain deck reveal skipped" log entry)
+- [ ] Manual smoke test with **bare-slug loadout JSON** (e.g.,
+      `villainGroupIds: ["brotherhood"]`) FAILS at match creation
+      with a validator error message naming the qualified-ID format
+      and an example (e.g., `"core/brotherhood"`). Per the Qualified
+      IDs Are Exclusive lock, the bare-slug JSON must NOT produce a
+      match at all — successful match creation here is a contract
+      violation, not an acceptable outcome.
+- [ ] Manual smoke test with **set-qualified loadout JSON** (e.g.,
+      `villainGroupIds: ["core/brotherhood"]`) succeeds at match
+      creation, AND clicking **Reveal** in `start` stage produces a
+      villain or henchman card in the City row (not a "Villain deck
+      reveal skipped" log entry).
 - [ ] Clicking **fightVillain** with sufficient attack defeats the villain (it appears in the player's victory pile)
 - [ ] Clicking **fightMastermind** with sufficient attack defeats a tactic (mastermind tactics-remaining count decrements)
 
@@ -702,9 +744,16 @@ Select-String -Path "packages\game-engine\src\villainDeck\villainDeck.setup.ts",
 git diff --name-only -- apps/arena-client packages/registry
 # Expected: no output
 
-# Step 10 — manual smoke test with corrected loadout JSON
-# (run pwsh scripts/Start-SmokeTest.ps1 -KillStaleListeners; create match
-# with bare-slug JSON; click Reveal; verify a villain appears in City)
+# Step 10 — manual smoke test, two cases (per the smoke-test
+# acceptance criteria above):
+#   (a) bare-slug loadout JSON: match creation FAILS with a validator
+#       error naming the qualified-ID format. (NOT an acceptable
+#       success — bare slugs are exclusive-rejected by D-10014.)
+#   (b) set-qualified loadout JSON: match creation succeeds; click
+#       Reveal in `start` and verify a villain appears in City;
+#       fightVillain defeats target; fightMastermind decrements
+#       tactics.
+# (run pwsh scripts/Start-SmokeTest.ps1 -KillStaleListeners for both)
 ```
 
 ---
@@ -718,7 +767,8 @@ This packet is complete when ALL of the following are true:
 - [ ] `pnpm --filter @legendary-arena/game-engine test` exits 0
 - [ ] `pnpm --filter @legendary-arena/server test` exits 0
 - [ ] `pnpm --filter @legendary-arena/arena-client test` exits 0 (baseline preserved)
-- [ ] Manual smoke test: clicking **Reveal** in `start` stage produces a villain or henchman in the City (not a log entry); `fightVillain` defeats the target; `fightMastermind` decrements tactics
+- [ ] Manual smoke test (bare-slug case): match creation FAILS with a validator format error naming the qualified-ID form
+- [ ] Manual smoke test (set-qualified case): match creation succeeds; clicking **Reveal** in `start` stage produces a villain or henchman in the City (not a log entry); `fightVillain` defeats the target; `fightMastermind` decrements tactics
 - [ ] `docs/ai/STATUS.md` updated — match creation now produces non-empty matches; smoke testable end-to-end
 - [ ] `docs/ai/DECISIONS.md` updated — D-10014 records the engine-server registry wiring + validator alignment, AND clarifies the slug-vs-key contract for each MatchSetupConfig field
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` has WP-113 checked off with today's date
