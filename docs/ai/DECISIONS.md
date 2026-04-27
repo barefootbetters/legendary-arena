@@ -11284,6 +11284,39 @@ The original WP draft cited "11 / 584" for masterminds — that figure counted i
 
 ---
 
+## D-9701 — Tournament Funding Policy: Community-Funded, Infrastructure-Only, No Organizer Margin
+
+**Decision:** `docs/TOURNAMENT-FUNDING.md` is the authoritative funding contract for Legendary Arena tournaments. The contract is governed by four pillars:
+
+1. **Tournament-level scope distinction from platform-level Vision §Financial Sustainability.** This decision and the funding doc govern **tournament-level community funding** — the money community organizers raise to cover incremental costs incurred specifically by running a tournament. The platform's own revenue model (supporter subscriptions, cosmetics, organized-play licensing, IP royalties to Upper Deck / Marvel) is governed by `docs/01-VISION.md §Financial Sustainability` and is out of scope here. The two coexist: the platform MAY sell organized-play licensing *to* tournament organizers per Vision; organizers MUST NOT extract profit from tournament participants per this decision.
+
+2. **Infrastructure-only spending with two narrow carve-outs.** Tournament funds MUST be spent only on **incremental tournament-specific** infrastructure — dedicated or surge hosting, prize-administration tooling, event-specific bandwidth, and equivalent line items that would not exist absent the tournament. Two carve-outs apply: (a) payment-processor fees on the contributions themselves are permissible; (b) direct-expense reimbursement is permitted when an individual pays an infrastructure invoice out of pocket — reimbursement covers only third-party, verifiable out-of-pocket expenses, **not labor, time, or opportunity cost**. Always-on platform infrastructure (general hosting, baseline storage, shared R2 buckets, observability, metrics tooling) is funded through the Vision's revenue model and is **not** a tournament-funding line item, even when a tournament incidentally consumes it.
+
+3. **Channel approval — Open Collective primary, PayPal supplemental.** Open Collective is the primary funding channel because it provides a public ledger, clear separation of project funds from individuals, and governance designed for community-funded projects. A PayPal donate link is approved as a lower-friction supplemental channel; PayPal funds MUST be reconciled against published infrastructure expenses on the same cadence as Open Collective funds. No additional channel is approved by this decision; introducing one requires a new `D-NNNN` entry citing the funding doc.
+
+4. **Sunset / dissolution rule.** If the project is wound down, any remaining balance MUST be either (a) refunded pro-rata to identifiable contributors where practical, or (b) donated to an aligned non-profit at organizer discretion with the recipient disclosed publicly. **Distribution to organizers is not permitted under any wind-down scenario.**
+
+**Locked anchors:**
+
+- `docs/TOURNAMENT-FUNDING.md` — the contract this decision anchors. Material amendments to the funding doc require a new `D-NNNN` entry referenced from the section being amended.
+- `docs/01-VISION.md §Financial Sustainability` — the platform-level peer authority. Vision is authority #3; this decision and the funding doc are authority #6 per `.claude/rules/architecture.md`. Conflicts between this decision and Vision are resolved in Vision's favor.
+- Vision §Non-Goals: NG-1 (pay-to-win), NG-2 (gacha), NG-3 (content withheld), NG-5 (ads / sponsorships), NG-6 (dark patterns), NG-7 (apologetic monetization) — all preserved. The Disallowed Models section of the funding doc explicitly forbids organizer-profit entry fees, margin-funded prize pools, gameplay-conditioning sponsorships, advertorial / pay-to-win mechanisms, and opaque custodial handling — each cross-referenced to its corresponding NG.
+
+**Slogan-collision note (byte-identical to WP-097's Non-Negotiable Constraints "slogan" item, per AC-5).** The slogan "No margin, no mission" MUST NOT appear in the funding doc. Vision §Financial Sustainability uses this exact phrase in the standard nonprofit-margin sense ("you need a margin to sustain the mission") and the funding doc uses "no margin" in the opposite sense ("no organizer profit"). Repeating the slogan in the funding doc would create a documented semantic collision between two governance-tier documents.
+
+**Rationale:**
+
+- **Scope distinction is load-bearing.** Without a clear tournament-vs-platform split, every future funding-related WP would re-litigate "is a Donate button monetization?" or "does the platform fund event hosting?" at execution time. This decision and the funding doc fix the boundary so downstream WPs land against a stable contract.
+- **Nonprofit-by-design at the organizer layer prevents extraction creep.** Once an organizer is permitted to take *any* margin from tournament funds — even nominally for "their time" — the cost-recovery framing erodes and the participant-facing optics change. Volunteer labor stays unmonetized; reimbursement covers third-party expenses only, never labor.
+- **Transparency is the consent mechanism.** Contributors fund infrastructure in good faith; the public-ledger discipline (Open Collective as the authoritative public view, PayPal reconciled on the same cadence) is what makes that consent informed. Without transparency, the no-margin claim is unverifiable.
+- **Sunset behavior matters before sunset.** Pre-committing to pro-rata refund or aligned-non-profit donation — never to organizers — removes the wind-down window as an extraction vector. Organizers cannot accumulate balance under "infrastructure" framing and then claim the residual.
+
+**Status:** Active. Amendments to this decision require a new `D-NNNN` entry and a citation in the amended section of `docs/TOURNAMENT-FUNDING.md`.
+
+**Citation:** `WP-097`; `docs/TOURNAMENT-FUNDING.md`; `docs/01-VISION.md §Financial Sustainability`.
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
