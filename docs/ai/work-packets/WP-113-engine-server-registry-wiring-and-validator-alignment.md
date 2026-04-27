@@ -207,37 +207,61 @@ Before writing a single line:
 **Packet-specific:**
 
 - The server's `setRegistryForSetup(registry)` call MUST happen
-  after `loadRegistry()` resolves and BEFORE `Server({ games:
-  [LegendaryGame], ... })` is constructed. boardgame.io's setup
-  invocation can fire as soon as the server starts accepting
-  POST /create requests, so the engine must already see the
-  registry by then.
+  after `loadRegistry()` resolves and BEFORE the boardgame.io
+  `Server({ games: [LegendaryGame], ... })` is constructed and/or
+  starts accepting create requests. boardgame.io's setup invocation
+  can fire as soon as the server begins serving, so the engine must
+  already see the registry by then. The change must be a **minimal
+  diff** — import addition + call site + `// why:` comment —
+  with no unrelated refactors in server startup.
 - `validateMatchSetup` retains its existing structural validation
   (9 fields present, types correct, counts non-negative). Only the
   registry-existence-check loops are restructured to recognize
-  group slugs vs flat-card keys vs whatever each field actually
-  needs. Existing engine tests pass without modification (or with
-  documented test-data updates if the test fixtures used the wrong
-  ID format).
+  per-field canonical ID shapes (group slugs / scheme slugs /
+  mastermind slugs / hero slugs / flat-card keys where applicable).
+  Existing engine tests pass without modification (or with
+  documented test-fixture updates where the fixture used the wrong
+  ID shape — flagged in the validator-test JSDoc with a D-10014
+  reference).
 - `extractVillainGroupSlug` (currently a private helper in
-  `villainDeck.setup.ts`) is promoted to an export so
+  `villainDeck.setup.ts`) is promoted to a named export so
   `matchSetup.validate.ts` can consume it. Same for any
-  henchman / mastermind / scheme equivalents. The exports are
-  type-stable (no signature change) and live alongside the
-  existing builder.
-- The four `isXRegistryReader` guards in
-  `buildVillainDeck` / `buildMastermindState` /
-  `buildSchemeSetupInstructions` / hero-deck construction either
-  (a) remain as silent-empty fallbacks (existing test mocks rely
-  on them) AND additionally push a `G.messages` entry naming the
-  gap, OR (b) throw if `Game.setup()` is the runtime path (detect
-  via a flag passed in from `setup()`). Author chooses; option (a)
-  is the safer minimum.
+  henchman / mastermind / scheme / hero equivalents. The exports
+  are type-stable (no signature change) and live alongside their
+  existing builder. **The slug-extraction helpers are the single
+  source of truth for ID format** — validator (option (a)) consumes
+  them; builders remain authoritative. No new ID-resolution module
+  is introduced.
+- **Silent-failure surfacing minimum (locked).** When a setup
+  builder must return empty/minimal state due to an unusable
+  registry (the `isXRegistryReader → empty fallback` paths), a
+  full-sentence diagnostic must be present in initial `G.messages`
+  naming the gap and the remediation. **Implementation constraint:
+  the diagnostic must be emitted during setup without changing any
+  builder signature and without adding new state fields.** The WP
+  does NOT prescribe *where* the push occurs — if a builder has
+  access to `G.messages` (because it receives `G` directly), the
+  push happens inside the builder; if a builder returns partial
+  state to `buildInitialGameState` and never sees `G`, the
+  orchestration site (which owns `G.messages`) emits the
+  diagnostic on the builder's behalf. Pre-flight Q3 resolves the
+  per-builder choice. Throwing instead of pushing is permitted but
+  not required.
 - No changes to `LegendaryGame.moves` registration, lobby phase
   configuration, or any UI code in `apps/arena-client/`. WP-113 is
-  strictly server-wiring + engine-validation alignment. The arena-
-  client smoke test is the verification surface, not the change
-  surface.
+  strictly server-wiring + engine-validation alignment + setup-
+  diagnostic surfacing. The arena-client smoke test is the
+  verification surface, not the change surface.
+
+**Decision record:**
+
+- **D-10014 is reserved for this WP.** It does not exist yet —
+  WP-113 creates it during execution as part of the Definition of
+  Done. All `// why:` comments referencing D-10014 must land in the
+  same commit set as the decision entry (Commit B governance close,
+  per the EC-113 sequencing). Pre-promotion drafts MAY reference
+  D-10014 in WP / EC body text; runtime code MAY NOT reference
+  D-10014 until the entry exists.
 
 **Locked contract values (do not paraphrase or re-derive):**
 
@@ -273,21 +297,24 @@ Before writing a single line:
 
 ### A) Server registry wiring — `apps/server/src/server.mjs`
 
-- **`apps/server/src/server.mjs`** — modified:
+- **`apps/server/src/server.mjs`** — modified (minimal diff):
   - Add `setRegistryForSetup` to the existing
     `import { LegendaryGame } from '@legendary-arena/game-engine'`
     line. The export already exists (verified 2026-04-27).
   - Inside `startServer()`, after `loadRegistry()` resolves and
     BEFORE the `Server({ games: [LegendaryGame], ... })` constructor
-    call, insert:
+    call (or before the server is otherwise made ready to accept
+    create requests, whichever is earlier), insert:
     ```js
     setRegistryForSetup(registry);
     ```
   - Add a `// why:` comment naming D-10014 and the WP-100 smoke-test
     discovery that surfaced the gap.
-  - **One-line code change + comment block.** No other modifications
-    to `server.mjs`. No changes to `index.mjs`, `rules/loader.mjs`,
-    `par/parGate.mjs`, or any other server file.
+  - **Minimal diff** — import addition + call site + comment block.
+    No other modifications to `server.mjs`. No changes to
+    `index.mjs`, `rules/loader.mjs`, `par/parGate.mjs`, or any other
+    server file. No structural reorganization of `startServer()`'s
+    Promise.all / sequencing.
 
 ### B) Validator alignment — `packages/game-engine/src/matchSetup.validate.ts`
 
@@ -332,31 +359,45 @@ Before writing a single line:
     citing D-10014's "single source of truth for ID format"
     discipline.
 
-### C) Silent-failure surfacing — four setup helpers
+### C) Silent-failure surfacing — setup-time diagnostics
 
+For each of the four setup builders that currently performs a
+`isXRegistryReader → empty/minimal fallback`, a setup-time
+diagnostic must be present in initial `G.messages` whenever the
+fallback fires. The diagnostic is a full sentence naming:
+- **what was skipped** (which builder),
+- **why** (registry interface incomplete / registry not injected),
+- **how to fix** (verify server called `setRegistryForSetup` before
+  accepting create requests, or that the test mock implements the
+  full registry-reader interface).
+
+**Implementation choice (per builder, resolved at pre-flight Q3):**
+the diagnostic is emitted EITHER
+
+- **inside the builder** if the builder receives a `G` reference or
+  a writable `messages` accumulator that the orchestration site
+  reads, OR
+- **at the orchestration site** (`buildInitialGameState.ts` or
+  `Game.setup()`) by inspecting the builder's return shape and
+  pushing a synthetic message naming the silently-skipped builder.
+
+**Constraint:** no new state fields, no signature-breaking changes
+to the four builders. Pre-flight Q3 confirms which path applies per
+builder by reading their current signatures.
+
+**Builders to surface:**
 - **`packages/game-engine/src/villainDeck/villainDeck.setup.ts`** —
-  modified:
-  - The existing `if (!isVillainDeckRegistryReader(registry)) return
-    { state: { deck: [], discard: [] }, cardTypes: {} };` early
-    return gets a `G.messages.push(...)` call BEFORE the return,
-    naming the gap: `"buildVillainDeck skipped: registry interface
-    incomplete (missing listCards / listSets / getSet). Match was
-    created without a usable card registry."`
-  - Same `// why:` comment block referencing D-10014 and the WP-100
-    smoke-test discovery.
+  the `isVillainDeckRegistryReader → empty deck` path.
 - **`packages/game-engine/src/mastermind/mastermind.setup.ts`** —
-  modified:
-  - Same pattern for `isMastermindRegistryReader` early return.
+  the `isMastermindRegistryReader → minimal mastermind` path.
 - **`packages/game-engine/src/setup/buildSchemeSetupInstructions.ts`**
-  — modified:
-  - Same pattern for the registry-reader guard if present.
-- **Hero-deck builder** — modified:
-  - Same pattern.
+  — the registry-reader guard if present (verify at pre-flight).
+- **Hero-deck builder** (file located at pre-flight Q2) — same
+  pattern if a registry-reader guard exists.
 
-These pushes happen at setup time (within `Game.setup()`), so they
-end up in the initial `G.messages` and are visible from the very
-first UIState frame — the arena-client HUD's log panel renders them
-without further wiring.
+Each modified file gains a `// why:` comment block referencing
+D-10014 and the WP-100 smoke-test discovery, regardless of where
+the diagnostic emission lands.
 
 ### D) Tests
 
@@ -366,15 +407,23 @@ without further wiring.
     `Server()`. Mocks the import to spy the call.
 - **`packages/game-engine/src/matchSetup.validate.test.ts`** —
   modified:
-  - Five new tests, one per field-category, each asserting that the
-    correct slug-set helper is consulted:
+  - **At least 10 new tests** organized as 2 per field category
+    (5 fields × accept-bare-slug + reject-flat-card-key) — final
+    count locked at pre-flight when the per-field acceptance shape
+    is verified against the canonical builder semantics:
     - `validateMatchSetup accepts schemeId as a bare scheme slug`
     - `validateMatchSetup rejects schemeId given as a flat-card key`
+    - `validateMatchSetup accepts mastermindId as a bare mastermind slug`
+    - `validateMatchSetup rejects mastermindId given as a flat-card key`
     - `validateMatchSetup accepts villainGroupIds as bare group slugs`
-    - (similar for mastermind / henchman / hero — 5 total minimum)
+    - `validateMatchSetup rejects villainGroupIds given as flat-card keys`
+    - `validateMatchSetup accepts henchmanGroupIds as bare henchman slugs`
+    - `validateMatchSetup rejects henchmanGroupIds given as flat-card keys`
+    - `validateMatchSetup accepts heroDeckIds as bare hero slugs`
+    - `validateMatchSetup rejects heroDeckIds given as flat-card keys`
   - Existing tests that used flat-card keys for these fields are
     updated to use slugs. Document each fixture change in the test
-    file's top JSDoc with a `D-10014` reference.
+    file's top JSDoc with a D-10014 reference.
 - **`packages/game-engine/src/villainDeck/villainDeck.setup.test.ts`**
   (and three peer files) — modified:
   - Add one regression test per helper asserting that the silent-empty
@@ -451,9 +500,9 @@ Estimated 12 files. Final count locked at pre-flight.
 
 ### Server wiring
 - [ ] `apps/server/src/server.mjs` imports `setRegistryForSetup` from `@legendary-arena/game-engine`
-- [ ] `startServer()` calls `setRegistryForSetup(registry)` after `loadRegistry()` resolves and before `Server({ games: [LegendaryGame] })`
+- [ ] `startServer()` calls `setRegistryForSetup(registry)` after `loadRegistry()` resolves and before the server begins serving create requests
 - [ ] A `// why:` comment names D-10014 and the WP-100 smoke-test discovery
-- [ ] Server-side test verifies the call ordering
+- [ ] Server-side test asserts `setRegistryForSetup` was called during `startServer()` execution and prior to the function returning. Mock the imported binding (e.g., via `mock.module` or a re-exported test seam) to spy the call. **Do NOT require deep boardgame.io constructor spying** — that's awkward under ESM and not necessary; ordering "after loadRegistry, before startServer returns" is sufficient to prove the gap is closed.
 
 ### Validator alignment
 - [ ] `validateMatchSetup` validates `schemeId` against scheme slugs (not flat-card keys)
@@ -466,11 +515,10 @@ Estimated 12 files. Final count locked at pre-flight.
 - [ ] Field-specific error messages name the rejected value and the canonical format
 
 ### Silent-failure surfacing
-- [ ] `buildVillainDeck`'s `isVillainDeckRegistryReader` early-return pushes a full-sentence `G.messages` entry
-- [ ] `buildMastermindState`'s `isMastermindRegistryReader` early-return pushes a full-sentence `G.messages` entry
-- [ ] `buildSchemeSetupInstructions`'s registry-reader early-return pushes a full-sentence `G.messages` entry
-- [ ] Hero-deck builder's registry-reader early-return pushes a full-sentence `G.messages` entry
-- [ ] Each message names the gap and the path to fix it (e.g., "Match was created without a usable card registry. Verify that the server called setRegistryForSetup before accepting create requests.")
+- [ ] When `buildVillainDeck` returns empty/minimal due to an unusable registry, initial `G.messages` contains a full-sentence diagnostic naming cause (which builder + interface gap) and remediation
+- [ ] Same diagnostic invariant for `buildMastermindState`, `buildSchemeSetupInstructions`, and the hero-deck builder
+- [ ] When the registry IS wired and usable, the loadout integration test produces non-empty decks AND `G.messages` contains NO "skipped" diagnostic from any of the four builders
+- [ ] Each diagnostic message follows the `00.6 §11` full-sentence error-message contract — names what failed, what to check or do, no terse single-word entries
 
 ### Builder exports
 - [ ] `extractVillainGroupSlug` is exported from `villainDeck.setup.ts`
@@ -603,35 +651,50 @@ time. The silent-failure surfacings push deterministic
 
 ## Open Questions
 
-1. **(Pre-flight resolution required.) Validator delegation strategy
-   (a) vs (b).** Author commits to (a) at draft time (validator
-   imports builder slug-extractors). At pre-flight, verify that the
-   four setup helpers can each expose a single slug-extractor that
-   matches the validator's needs. If any helper's slug semantics are
-   too coupled to its builder logic to expose cleanly (e.g., scheme
-   setup also resolves campaign instructions), author may pivot to
-   (b) and define a shared ID-resolution layer. The decision is
-   logged in DECISIONS as part of D-10014.
-2. **(Pre-flight resolution recommended.) Hero-deck builder
-   location.** The hero-deck setup file path is not visible from a
-   quick grep — author locates and reads it at pre-flight, confirms
-   the slug convention matches the canonical pattern, and updates
-   the §Files Expected to Change list with the resolved path.
-3. **(Resolved at draft time.) 01.5 not invoked.** All four triggers
+1. **(Pre-flight resolution required.) Validator delegation strategy.**
+   Default is **(a): validator consumes builder-owned slug-extractor
+   helpers; builders remain authoritative for their ID format**. The
+   "single source of truth" is the per-builder extractor — NOT a new
+   ID-resolution module. Pivot to **(b): introduce a shared
+   ID-resolution layer** ONLY if a setup helper's slug semantics
+   cannot be expressed as a stable, self-contained extractor without
+   entangling builder logic (e.g., scheme setup also resolves
+   campaign instructions in a way that can't be cleanly factored).
+   The pre-flight reads each of the four setup helpers and confirms
+   (a) is feasible per-field. The decision is logged in D-10014.
+2. **(Pre-flight resolution required.) Hero-deck builder location.**
+   The hero-deck setup file path is not visible from a quick grep —
+   author locates and reads it at pre-flight, confirms the slug
+   convention matches the canonical pattern, and updates the
+   §Files Expected to Change list with the resolved path.
+3. **(Pre-flight resolution required.) Diagnostics injection
+   feasibility per builder.** The "silent-failure surfacing minimum"
+   constraint is shape-agnostic: the diagnostic must be in initial
+   `G.messages`. Pre-flight must confirm, **per builder**, whether
+   the existing signature provides access to `G` / a writable
+   `messages` accumulator (in which case the push happens inside the
+   builder) OR whether the diagnostic must be emitted at the
+   orchestration site (`buildInitialGameState.ts` or `Game.setup()`)
+   based on the builder's return shape. Either path is acceptable;
+   pre-flight locks the per-builder choice and records it in the
+   §Scope (In) §C body. If a builder requires a signature change to
+   support the diagnostic, that's a scope expansion — STOP and
+   re-evaluate.
+4. **(Resolved at draft time.) 01.5 not invoked.** All four triggers
    absent — no new `LegendaryGameState` field, no
    `buildInitialGameState` shape change (config still has the same 9
    fields with the same types), no new `LegendaryGame.moves` entry,
    no new phase hook. The validator's per-field semantics change
    their interpretation of strings; the type signatures are
    unchanged.
-4. **(Acknowledged-deferred.) Engine integration harness.** D-10010
+5. **(Acknowledged-deferred.) Engine integration harness.** D-10010
    and D-10013 both flagged the need for an in-process `Server() +
    Client()` simulation harness as the structural prevention for
    smoke-test-only-discoverable regressions. WP-113 doesn't build
    that harness — its loadout integration test (§Scope D, end-to-end
    `Game.setup()` flow) is a tactical surrogate. A separate
    infrastructure WP should follow.
-5. **(Acknowledged-deferred.) Three scaffold-artifact buttons in
+6. **(Acknowledged-deferred.) Three scaffold-artifact buttons in
    TurnActionBar.** D-10003 (Draw), D-10011 (Advance), D-10012
    (Reveal) are all decision-logged for deletion when the engine
    adds automatic turn-start mechanics (auto-reveal, auto-draw,
