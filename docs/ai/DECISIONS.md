@@ -10579,6 +10579,32 @@ The absence of an FK from `replay_hash` to `legendary.replay_blobs` or `legendar
 
 ---
 
+## D-5901 — apps/arena-client runtime imports of @legendary-arena/preplan are permitted
+
+**Context:** WP-059 wires pre-planning state into the arena client.
+Runtime functions (`createPrePlan`, `invalidatePrePlan`,
+`executeDisruptionPipeline`) must be callable from the client for
+the integration to exist. The prior layer table forbade it, dating
+from when WP-059 was deferred.
+
+**Decision:** `apps/arena-client` may runtime-import
+`@legendary-arena/preplan`. No other package or app gains this
+right. The preplan package's non-authoritative, read-only-toward-
+engine nature is unchanged.
+
+**Why a separate package rather than folding preplan into the
+client:** preplan ships types and pure logic that are testable
+without a DOM or a framework. Keeping it as a package preserves that
+testability and leaves the door open for a second client (spectator,
+mobile, CLI) to consume the same surface.
+
+**Why not extend UIState:** UIState is the authoritative engine
+projection. PrePlan is client-side advisory. Mixing them would
+violate the Layer Boundary; a separate Pinia store is the clean
+split.
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

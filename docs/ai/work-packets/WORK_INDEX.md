@@ -2418,7 +2418,7 @@ code, never `boardgame.io`).
   guidance in `docs/ai/DESIGN-PREPLANNING.md` Section 11 remains
   authoritative for the WP-059 implementation.
 
-- [ ] WP-059 — Pre-Plan UI Integration (Store, Notification, Step Display) — Drafted 2026-04-24
+- [x] WP-059 — Pre-Plan UI Integration (Store, Notification, Step Display) — Executed 2026-04-26 at commit `5c5fc1e`
   Dependencies: WP-028 ✅, WP-056 ✅, WP-057 ✅, WP-058 ✅, WP-061 ✅, WP-065 ✅
   Notes: Client-side wiring of `@legendary-arena/preplan` into
   `apps/arena-client/`. Adds a second Pinia store (`usePreplanStore()`)
@@ -2478,7 +2478,7 @@ WP-001 (coordination — complete)        │
                     Pre-Planning (parallel with Phase 4+):
                     WP-006A + WP-008B → WP-056 → WP-057 → WP-058
                                                             │
-                    WP-059 (deferred — needs WP-028 + UI framework decision)
+                    WP-059 → (future WP: live-mutation middleware)
 
                     UI Implementation Chain (Phase 6, parallel with Phase 7 where deps allow):
                     WP-065 (Vue SFC Test Transform — prerequisite for all UI test packets)

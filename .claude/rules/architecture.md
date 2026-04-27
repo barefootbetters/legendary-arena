@@ -164,7 +164,7 @@ that chain may import from it.
 | `vue-sfc-loader` (WP-065) | `@vue/compiler-sfc` (peer), `vue` (peer), `typescript` (optional, test-only), Node built-ins | `game-engine`, `registry`, `preplan`, `server`, any `apps/*`, `pg`, `boardgame.io`, any runtime UI code |
 | `apps/server` | `game-engine`, `registry`, `pg`, Node built-ins | `preplan`, `vue-sfc-loader`, UI packages, browser APIs |
 | `apps/registry-viewer` | `registry`, UI framework, `vue-sfc-loader` (devDep only, test scripts) | `game-engine`, `preplan`, `server`, `pg`, `vue-sfc-loader` at runtime |
-| `apps/arena-client` (WP-061+) | UI framework, `vue-sfc-loader` (devDep only, test scripts) | `game-engine` (runtime), `registry` (runtime), `preplan`, `server`, `pg`, `vue-sfc-loader` at runtime |
+| `apps/arena-client` (WP-061+) | UI framework, `vue-sfc-loader` (devDep only, test scripts), `@legendary-arena/preplan` (runtime — per D-5901) | `game-engine` (runtime), `registry` (runtime), `server`, `pg`, `vue-sfc-loader` at runtime |
 
 Pure helpers must NOT import boardgame.io. The `vue-sfc-loader` row is
 additionally enforced at packaging time: it appears only in apps'
