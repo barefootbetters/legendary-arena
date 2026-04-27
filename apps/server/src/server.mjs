@@ -89,6 +89,18 @@ export async function startServer() {
     loadRules(),
     createParGate('data/par', process.env.PAR_VERSION ?? 'v1'),
   ]);
+  // TODO(WP-054-followup): once WP-102 lands and establishes the HTTP
+  // framework + route conventions in apps/server/, draft the leaderboard
+  // request-handler WP. It must (a) spread-extend
+  // apps/server/src/leaderboards/leaderboard.logic.ts PRODUCTION_DEPENDENCIES
+  // with `parGate.checkParPublished` (the bound 1-arg form on this gate
+  // object), never mutate the const; (b) expose three GET endpoints
+  // (scenario leaderboard, replayHash permalink, scenario-keys
+  // discoverability) following WP-102's route conventions verbatim;
+  // (c) land the stateless IP-based rate limiting deferred per D-5402.
+  // No auth required (public surface). Until that WP lands, parGate is
+  // intentionally unused at this seam; the leaderboard helpers fail closed
+  // via PRODUCTION_DEPENDENCIES.checkParPublished = () => null.
   void parGate;
 
   const rules = getRules();
