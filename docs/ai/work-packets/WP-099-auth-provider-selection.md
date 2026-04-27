@@ -1,6 +1,6 @@
 # WP-099 — Auth Provider Selection (Governance)
 
-**Status:** Draft (drafted 2026-04-25; pre-flight pending; lint-gate self-review complete — see §Lint Self-Review below)
+**Status:** Draft (drafted 2026-04-25; lint-gate self-review complete — see §Lint Self-Review below; pre-flight + copilot-check applied 2026-04-27 against `01.4-pre-flight-invocation.md` and `01.7-copilot-check.md` — see §Pre-Flight & Copilot Check Review Log at foot)
 **Primary Layer:** Governance / Policy (no code; no engine, registry, server, or app touch)
 **Dependencies:** WP-052 (identity model exists; provider-agnostic envelope established)
 
@@ -162,8 +162,17 @@ construction.
 - `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §7` exists and
   currently states: "No Passport / Auth0 / Clerk — use jsonwebtoken
   or credentials-only" (verified at draft time)
-- `docs/ai/DECISIONS.md` exists; the highest current decision ID is
-  `D-9601` (verified by `grep -nE "^## D-96" docs/ai/DECISIONS.md`)
+- `docs/ai/DECISIONS.md` exists; `D-9901` through `D-9905` are not
+  yet present (verified by `grep -nE "^## D-990[1-5] " docs/ai/DECISIONS.md`
+  returning zero matches). The file currently contains entries through
+  the WP-100 cluster (D-10001..D-10014, drafted chronologically before
+  D-9701 from WP-097) and D-9701 (WP-097, the most recent governance
+  decision, sitting immediately before `## Final Note`). The highest
+  numeric ID is **not** the same as the last entry in the file —
+  decisions are appended in **chronological** order at the foot,
+  immediately before `## Final Note`, regardless of numeric value
+  (precedent: D-9701 inserted after D-10014 at WP-097 close, commit
+  `c5344cc`)
 - `docs/ai/work-packets/WORK_INDEX.md` exists; the auth/identity
   area near WP-052 is the appropriate insertion point
 - `.claude/rules/work-packets.md` is the governing rules file for
@@ -474,14 +483,18 @@ packages are explicitly excluded where relevant" subsection.
 
 Required modifications:
 
-- **Preserve verbatim** the existing forbidden-package bans:
-  - `No axios or node-fetch — use Node.js built-in fetch`
-  - `No ORMs — use pg only`
-  - `No Jest / Vitest / Mocha — use node:test only`
-  - `No Passport / Auth0 / Clerk — use jsonwebtoken or
-    credentials-only`
-- **Append a new bullet** immediately after the Auth0 / Clerk /
-  Passport line:
+- **Leave the existing four forbidden-package bullets unchanged
+  byte-for-byte.** They live at lines 165–168 of
+  `00.3-prompt-lint-checklist.md` (verified at draft time) and use
+  inline backticks around package names (`` `axios` ``, `` `node-fetch` ``,
+  `` `pg` ``, `` `node:test` ``, `` `jsonwebtoken` ``). Do **not**
+  re-paste them in the diff and do **not** strip or alter the
+  backtick formatting. The §7 amendment is an *append*, not a
+  rewrite.
+- **Append a new bullet** immediately after the existing
+  `No Passport / Auth0 / Clerk — use \`jsonwebtoken\` or credentials-only`
+  line. The new bullet uses the same checklist-bullet pattern
+  (`- [ ]`) and the same indentation as its siblings:
   - `Hanko is permitted as an authentication broker only —
     governed by docs/ai/work-packets/WP-099-auth-provider-selection.md
     and D-9901..D-9905. Hanko-specific code MUST live under
@@ -489,14 +502,20 @@ Required modifications:
     auth_provider value in legendary.players; AccountId MUST remain
     server-generated. Auth0 / Clerk / Passport remain forbidden.`
 - **No other lint-checklist sections modified.** Existing §1–§6,
-  §8–§19 wording is byte-identical.
+  §8–§19 wording is byte-identical. The byte-identity check at
+  AC-1 covers this.
 
 ### B) `docs/ai/DECISIONS.md` — modified
 
-Add five new decision entries immediately before the next
-to-be-numbered slot (after `D-9601`, before any `## Final Note`-style
-trailer). Each entry follows the format used by recent decisions
-(D-9601, D-9201).
+Add five new decision entries as a contiguous block in numeric order
+(`D-9901` → `D-9902` → `D-9903` → `D-9904` → `D-9905`), inserted
+**immediately before `## Final Note`** at the foot of the file. This
+matches the WP-097 precedent (commit `c5344cc`) — D-9701 was inserted
+in the same slot at WP-097 close, even though numerically it sits
+below D-10001..D-10014 which were drafted earlier in chronological
+time. The placement convention is **chronological at the foot, before
+the Final Note**, not strict numeric ordering. Each entry follows the
+format used by recent decisions (D-9701, D-9601).
 
 - **D-9901 — Hanko selected as the project's authentication broker.**
   Body: rationale (passkey-first, open-source, self-hostable, OIDC
@@ -650,8 +669,10 @@ after each commit.
 ### AC-2 — DECISIONS anchors
 
 - [ ] `docs/ai/DECISIONS.md` contains five new entries: `D-9901`,
-      `D-9902`, `D-9903`, `D-9904`, `D-9905` — in that order.
-- [ ] Each entry follows the format used by `D-9601` / `D-9201`
+      `D-9902`, `D-9903`, `D-9904`, `D-9905` — in that order, as a
+      contiguous block, inserted **immediately before `## Final Note`**
+      (per the WP-097 / D-9701 placement precedent at commit `c5344cc`).
+- [ ] Each entry follows the format used by `D-9701` / `D-9601`
       (header `## D-99NN — Title`, body, status, amendment rule).
 - [ ] `D-9901` cites WP-099 and the structural replacement-safety
       constraint.
@@ -751,8 +772,14 @@ after each commit.
 
 ```bash
 # Step 1 — confirm the §7 amendment landed (Hanko bullet present, prior bullets preserved)
-grep -nE "^- \[ \] No Passport / Auth0 / Clerk" docs/ai/REFERENCE/00.3-prompt-lint-checklist.md
-# Expected: exactly one match (the existing ban, preserved verbatim)
+grep -nE "^  - \[ \] No Passport / Auth0 / Clerk — use \`jsonwebtoken\` or credentials-only$" docs/ai/REFERENCE/00.3-prompt-lint-checklist.md
+# Expected: exactly one match — the existing ban, byte-identical INCLUDING the
+# inline backticks around `jsonwebtoken`. A match without backticks indicates
+# the §7 amendment silently rewrote the existing line — STOP and revert.
+
+grep -cE "^  - \[ \] No \`(axios|node-fetch)\`|^  - \[ \] No ORMs — use \`pg\` only|^  - \[ \] No Jest / Vitest / Mocha — use \`node:test\` only" docs/ai/REFERENCE/00.3-prompt-lint-checklist.md
+# Expected: 3 — the three sibling forbidden-package bullets are also
+# byte-preserved with their inline backticks intact.
 
 grep -nE "Hanko is permitted as an authentication broker only" docs/ai/REFERENCE/00.3-prompt-lint-checklist.md
 # Expected: exactly one match (the new carve-out bullet)
@@ -877,3 +904,88 @@ This packet is complete when ALL of the following are true:
 **Final Gate verdict:** PASS at draft time. Re-confirm before
 execution by re-running the §1–§19 walkthrough against the
 post-amendment state of `00.3-prompt-lint-checklist.md`.
+
+---
+
+## Pre-Flight & Copilot Check Review Log
+
+> Applied 2026-04-27 against
+> `docs/ai/REFERENCE/01.4-pre-flight-invocation.md` and
+> `docs/ai/REFERENCE/01.7-copilot-check.md`. This block captures
+> the verdict in the WP body so future readers do not need to
+> reconstruct it from WORK_INDEX or commit history.
+
+### 01.4 Pre-Flight (Governance / Policy class)
+
+- **Authority chain (must read):** `.claude/CLAUDE.md`,
+  `docs/ai/ARCHITECTURE.md`, `docs/01-VISION.md`,
+  `docs/ai/REFERENCE/02-CODE-CATEGORIES.md`, `EC-099`,
+  `WP-099`. All confirmed present and consulted.
+- **Vision sanity check:** clauses §3 / §11 / §14 / §15 +
+  NG-1 / NG-3 / NG-6 cited in §Vision Alignment with explicit
+  no-conflict assertion. Determinism N/A (no engine/replay
+  surface). NG proximity confirmed clear. PASS.
+- **Dependency & sequencing:** WP-052 complete (commit
+  `fd769f1`); `apps/server/src/identity/identity.types.ts`
+  exports `authProvider: 'email' | 'google' | 'discord'` at
+  line 91 (verified). WP-097 complete (commit `c5344cc`) —
+  D-9701 placement convention available as precedent. PASS.
+- **Dependency contract verification:**
+  `00.3-prompt-lint-checklist.md` line 168 contains the
+  forbidden-package bullet with inline backticks
+  (`` `jsonwebtoken` ``); WP-099 §Scope §A revised to lock
+  the byte-identity (no re-paste of existing bullets).
+  `legendary.players.auth_provider` enum at WP-052 source
+  unchanged (`'email' | 'google' | 'discord'`). PASS.
+- **Input data traceability:** N/A — governance WP, no
+  runtime data inputs.
+- **Structural readiness:** N/A — no types/contracts touched.
+- **Runtime readiness:** N/A — no runtime wiring.
+- **Code category boundary:** `apps/server/` is classified
+  `server` category at `02-CODE-CATEGORIES.md:44`; future
+  `apps/server/src/auth/hanko/` inherits the classification.
+  No new directory classification needed. PASS.
+- **Scope lock:** seven files in §Files Expected to Change;
+  `git diff --name-only packages/ apps/ docs/01-VISION.md
+  docs/ai/ARCHITECTURE.md .claude/ data/migrations/` must
+  return empty. PASS.
+- **Test expectations:** N/A — no test deliverables
+  (governance WP, doc-only).
+- **Mutation boundary:** N/A — no `G` mutation.
+- **Risks resolved:** (RS-1) D-9601 staleness in §Assumes
+  fixed — replaced with verifiable "D-9901..D-9905 not
+  present" claim plus accurate description of file state
+  (D-9701 + D-10001..D-10014 present). (RS-2) Backtick
+  byte-identity bug in §Scope §A fixed — instruction
+  rewritten to forbid re-paste, with byte-identity
+  verification step added at Verification §Step 1.
+  (RS-3) Placement convention in §Scope §B and AC-2
+  clarified — "immediately before `## Final Note`" per
+  WP-097 / D-9701 precedent.
+
+**Verdict: READY TO EXECUTE.** No PS-# items outstanding.
+
+### 01.7 Copilot Check (30-issue lens)
+
+| # | Category | Verdict |
+|---|---|---|
+| 1, 9, 16, 29 | Boundary / Lifecycle | N/A — governance WP, no engine touch |
+| 2, 8, 23 | Determinism | N/A — no engine/replay surface (locked at §Vision Alignment) |
+| 3, 17 | Mutation discipline | N/A — no executable code |
+| 4, 5, 6, 10, 21 | Type / contract integrity | N/A — no types touched; WP-052 enum byte-locked |
+| 7, 19, 24 | Persistence | PASS — WP-099 explicitly forbids `'hanko'` from `auth_provider` rows + fixtures + types (D-9902 / F-1 gate) |
+| 11 | Test invariants | N/A — no tests |
+| 12 | Scope creep | PASS — explicit allowlist + four `git diff --name-only` guards at AC-4 |
+| 13 | Unclassified directories | PASS — `apps/server/` already classified `server` per `02-CODE-CATEGORIES.md:44`; subdirs inherit |
+| 14, 28 | Extension / upgrade story | PASS — replacement-safety locked structurally (§B + F-2 + F-6) |
+| 15 | Why for invariants | PASS — every constraint carries rationale |
+| 18, 22 | Failure semantics | N/A — no executable code |
+| 20 | Authority chain | PASS — explicit hierarchy citation in §Context (Read First) |
+| 25 | Single responsibility | N/A — no functions |
+| 26 | Implicit semantics | PASS — auth-broker / identity-authority / federated-IdP terminology locked in §Authorized Future Surfaces opening Definitions |
+| 27 | Naming discipline | PASS — `apps/server/src/auth/hanko/` path locked; `'hanko'` literal forbidden as enum value |
+| 30 | Pre-session governance | PASS — three RS items resolved in §Pre-Flight Review Log above; no PS-# residue |
+
+**Disposition: CONFIRM.** No `RISK` or `BLOCK` findings.
+Pre-flight `READY TO EXECUTE` verdict stands. Session
+prompt generation authorized when an executor is assigned.
