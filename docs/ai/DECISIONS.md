@@ -10714,6 +10714,97 @@ References to "WP-100" in `WP-100-interactive-gameplay-surface.md`, `WP-111-uist
 
 ---
 
+### D-10003 — TurnActionBar.Draw Hardcoded count: 6 (Scaffold-Artifact for Engine MVP Gap)
+
+**Type:** UI scaffold artifact / engine MVP-gap mitigation
+**Packet:** WP-100
+**Date:** 2026-04-26
+
+**Decision:** The `Draw` button in `apps/arena-client/src/components/play/TurnActionBar.vue` emits `submitMove('drawCards', { count: 6 })` with the count hardcoded to **6** to match Legendary's standard hand size. The button is explicitly classified as a **scaffold artifact** under the WP-100 §Constraints scaffold-artifact policy: it is decision-logged here, labeled in a `// why:` comment at the call site, and **targeted for deletion** (not refactoring) when a follow-up engine WP lands an automatic draw mechanic.
+
+**Rationale:** Engine pre-review on 2026-04-26 (recorded in WP-100 Open Question Q3) verified the engine has no automatic draw today:
+
+- `packages/game-engine/src/state/playerInit.ts` initializes every hand to `[]`.
+- `packages/game-engine/src/game.ts` `turn.onBegin` resets `G.currentStage` and `G.turnEconomy` but does not draw.
+- `packages/game-engine/src/moves/coreMoves.impl.ts:131` `endTurn` empties hand and inPlay into discard but does not draw the next hand.
+- No `HAND_SIZE` constant exists anywhere in `packages/game-engine/src/`.
+
+Without an explicit `drawCards` call, every player begins every turn (including turn 1) with **zero cards in hand** — the game is unplayable in the browser without either a UI Draw button or a new engine auto-draw hook. Adding a UI button is the correct stopgap for a UI-scaffold WP; a pure engine fix belongs in a separate engine WP that touches `game.ts` `turn.onBegin` (or `turn.onEnd`) and adds the `HAND_SIZE` constant.
+
+**How to apply:**
+
+- Future maintainers who see the `Draw` button or its `count: 6` constant: do NOT generalize it (e.g., to a configurable hand size, a player-customizable draw count, or a phase-aware affordability gate). The button has exactly one job — keeping the game playable until the engine adds auto-draw.
+- When a follow-up engine WP adds `turn.onBegin` (or `turn.onEnd`) auto-draw to a `HAND_SIZE` constant, the WP also DELETES `apps/arena-client/src/components/play/TurnActionBar.vue`'s `Draw` button (and its tests) entirely. The remaining `End Turn` button stays. `drawCards` becomes an internal engine call only; no UI surface emits it.
+- This decision authorizes the scaffold but does not bound its lifetime. The user's intuition — "what's keeping me from playing Legendary Arena?" (the question that surfaced WP-100) — should drive the priority of the engine auto-draw WP. As long as the Draw button exists, the engine has an MVP gap.
+- The same scaffold-artifact pattern (label in `// why:`, decision-log, remove-not-refactor) may be cited by future UI WPs that compensate for engine MVP gaps. WP-100 is the authoring precedent.
+
+**Status:** Active for the lifetime of the `Draw` button. Closes when a follow-up engine WP adds auto-draw and the button is deleted.
+
+**Citation:** [WP-100-interactive-gameplay-surface.md](docs/ai/work-packets/WP-100-interactive-gameplay-surface.md) §Scope E (`TurnActionBar.vue` `Draw` button), §Constraints "Scaffold artifacts" (the policy), Open Question Q3 (the engine pre-review that established the gap); [TurnActionBar.vue](apps/arena-client/src/components/play/TurnActionBar.vue) `onDraw()` `// why:` comment at the call site.
+
+---
+
+### D-10004 — Card Tiles Render CardExtId Strings (Registry Display Projection Deferred to WP-111)
+
+**Type:** UI surface scope / registry-projection boundary
+**Packet:** WP-100
+**Date:** 2026-04-26
+
+**Decision:** All six interactive components in WP-100 (`HandRow`, `CityRow`, `HQRow`, `MastermindTile`, plus the labels surfaced by `TurnActionBar` and `PlayView`) render `CardExtId` strings as plain-text labels. They do not render card names, images, attack costs, recruit costs, fight costs, ability text, or any registry-derived display data. The `apps/arena-client` package is not granted a runtime registry seam in this packet.
+
+**Rationale:** The WP-100 scaffold delivers the smallest interactive surface that turns arena-client from a spectator into a playable game. Granting the client a runtime registry import would be a layer-boundary expansion (today only `apps/registry-viewer` and the engine registry types are runtime-coupled to `@legendary-arena/registry`). Two paths to richer card display were evaluated in Open Question Q1:
+
+- *(a)* Extend the engine `playerView` to embed a small card-display sub-record per visible card (engine reaches the registry at setup time and snapshots display fields into UIState — mirrors the existing `G.cardStats` / `G.villainDeckCardTypes` setup-snapshot pattern). **Selected.**
+- *(b)* Grant the client a runtime registry import. Rejected: layer boundary expansion; duplicates registry-loading work the server / engine already does at setup; couples UI rendering to disk I/O.
+
+Path (a) is drafted as **WP-111** ([WP-111-uistate-card-display-projection.md](docs/ai/work-packets/WP-111-uistate-card-display-projection.md)): adds `G.cardDisplayData: Record<CardExtId, UICardDisplay>`, surfaces it through `buildUIState` on `UICityCard`, `UIHQState`, `UIPlayerState.handDisplay`, and `UIMastermindState`, and redacts `handDisplay` alongside opponent `handCards`. WP-111 is engine-only; a trivial follow-up UI WP binds the WP-100 components to the new display fields (~5 button labels + image tags).
+
+**How to apply:**
+
+- Until WP-111 lands, WP-100 components MUST render `CardExtId` strings as labels. No defensive registry call, no fetch, no localStorage cache, no cross-package import.
+- When WP-111 lands, the follow-up UI WP edits the six WP-100 components in place (no replacement, no rewrite — additive prop binding). Card image URLs come from `UICardDisplay.imageUrl`; names from `UICardDisplay.name`; costs from `UICardDisplay.fightCost` / `UICardDisplay.cost`. The follow-up WP also extends the disabled expression in CityRow / HQRow / MastermindTile to apply affordability gating (`economy.availableAttack` < projected `fightCost`, etc.).
+- This decision does not authorize any other client-side registry coupling. Components that need card display data wait for the projection.
+
+**Status:** Active. Closes when WP-111 lands and the follow-up UI WP wires the projection.
+
+**Citation:** [WP-100-interactive-gameplay-surface.md](docs/ai/work-packets/WP-100-interactive-gameplay-surface.md) §Constraints "Card tiles render CardExtId text labels", Open Question Q1 (Path-(a) selection rationale); [WP-111-uistate-card-display-projection.md](docs/ai/work-packets/WP-111-uistate-card-display-projection.md) (the engine-side projection WP); [ARCHITECTURE.md §Layer Boundary (Authoritative)](docs/ai/ARCHITECTURE.md) (the apps/arena-client row that locks "type-only engine imports plus the single sanctioned runtime import in `bgioClient.ts`").
+
+---
+
+### D-10005 — submitMove Is Prop-Drilled Through PlayView, Not Provide / Inject
+
+**Type:** UI architecture / testability boundary
+**Packet:** WP-100
+**Date:** 2026-04-26
+
+**Decision:** The `submitMove` function (the typed wrapper around `LiveClientHandle.submitMove(...)` from WP-090) is passed to `PlayView` and its five interactive children as a **plain Vue prop** rather than injected via Vue's `provide` / `inject` API. The shared `SubmitMove` type is defined once at `apps/arena-client/src/components/play/uiMoveName.types.ts` and imported by every component that consumes or forwards it.
+
+**Rationale:** Two patterns were considered:
+
+- *Prop-drilled* (selected): App.vue holds the `LiveClientHandle` ref and exposes a stable `submitMove` closure. PlayView receives it as a `submit-move` prop and forwards it to each interactive child as their own `submit-move` prop. Each child receives a typed function via `Function as PropType<SubmitMove>`.
+- *Provide / inject* (rejected): App.vue would `provide('submitMove', closure)` and the children would `inject('submitMove')`. The provider key is a string; the consumer wraps the inject result in a runtime type-assert.
+
+Prop-drilling was selected because:
+
+- *Testability.* Every component test can mount the component with a stub `submitMove` function passed via `props.submitMove = recorder().submitMove`. No Pinia plugin install, no inject-context override, no global teardown. The PlayerPanel / ArenaHud / PlayerPanelList test pattern already establishes this convention in the arena-client codebase.
+- *Compile-time discoverability.* The prop signature appears at every interaction site (`submitMove: { type: Function as PropType<SubmitMove>, required: true }`). A reader navigating from `App.vue` to a leaf component sees the wiring at every layer. With `provide` / `inject`, the binding is implicit and grep-only.
+- *Component purity.* Children remain pure props-only Vue components. They do not require a runtime context (Vue app instance with the provider installed) to function. They can be reused under a different parent (e.g., a future replay-mode play view) by passing a different `submitMove`.
+- *Drift protection.* The `UiMoveName` typed union (D-10001 / WP-100 peer-review pass) is the move-name boundary; combined with `SubmitMove = (name: UiMoveName, args: unknown) => void`, every call site has compile-time drift protection. With `provide` / `inject`, the runtime cast loses this guarantee.
+
+The depth of prop-drilling is two levels (App.vue → PlayView → child). The cost is six `submit-move` prop declarations across six components, each two lines. The benefit is full prop-driven testability and explicit wiring.
+
+**How to apply:**
+
+- Any future component added under `apps/arena-client/src/components/play/` that needs to emit a move MUST receive `submitMove: SubmitMove` as a prop, NOT `inject('submitMove')`. PlayView is responsible for forwarding the prop.
+- Any future arena-client play surface (e.g., a target-picker overlay, a multi-card-selection dialog) that emits engine intents MUST follow the same pattern. The `SubmitMove` type alias and the `UiMoveName` union are the shared contract.
+- If a future surface needs a *different* submission seam (e.g., a speculative pre-plan submission that does NOT route through the live client), the component receives a *separate* prop with its own typed function — never a generic injection that obscures which seam is in use.
+
+**Status:** Active for the arena-client play surface. Provide / inject may be appropriate for cross-cutting concerns elsewhere in the app (e.g., theme, locale, feature flags), but is forbidden for move-emission seams.
+
+**Citation:** [WP-100-interactive-gameplay-surface.md](docs/ai/work-packets/WP-100-interactive-gameplay-surface.md) §Definition of Done bullet "Why `submitMove` is prop-drilled instead of injected via a Vue provide / inject seam (testability)"; [PlayView.vue](apps/arena-client/src/components/play/PlayView.vue) and the five interactive children's `submitMove` prop declarations; [App.vue](apps/arena-client/src/App.vue) the `submitMove` closure plus prop-passing site.
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
