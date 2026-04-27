@@ -104,4 +104,29 @@ describe('LegendaryGame', () => {
       'LegendaryGame must define exactly 8 moves',
     );
   });
+
+  it('configures lobby phase with activePlayers: { all: null } per D-10007', () => {
+    // why: drift-detection lock for the WP-100 fix-forward (D-10007). Without
+    // this config, boardgame.io rejects setPlayerReady / startMatchIfReady
+    // from any player other than ctx.currentPlayer with "player not active",
+    // making lobby ready-up impossible for player 1+. The literal
+    // `{ all: null }` is the value of boardgame.io's ActivePlayers.ALL
+    // (verified in turn-order-*.js where ALL: { all: Stage.NULL } and
+    // Stage.NULL: null). Inlined as a literal because boardgame.io v0.50
+    // proxy-directory subpaths don't resolve under Node's native ESM.
+    const phases = LegendaryGame.phases as
+      | Record<string, { turn?: { activePlayers?: unknown } }>
+      | undefined;
+    const lobbyPhase = phases?.lobby;
+    assert.notEqual(
+      lobbyPhase,
+      undefined,
+      'lobby phase must be configured on LegendaryGame',
+    );
+    assert.deepStrictEqual(
+      lobbyPhase?.turn?.activePlayers,
+      { all: null },
+      'lobby phase turn.activePlayers must be { all: null } per D-10007 — without it, only the turn-holder can submit setPlayerReady/startMatchIfReady',
+    );
+  });
 });

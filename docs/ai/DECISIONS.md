@@ -10817,6 +10817,56 @@ The four 01.5 triggers were verified absent on the §Scope J change:
 
 ---
 
+### D-10007 — Lobby Phase Configured with activePlayers: { all: null } (Smoke-Test Gap Fix-Forward)
+
+**Type:** Engine surgical patch / phase configuration
+**Packet:** WP-100 (smoke-test fix-forward post-revision-close)
+**Date:** 2026-04-27
+
+**Decision:** The `lobby` phase on `LegendaryGame` is configured with `turn: { activePlayers: { all: null } }`. The literal `{ all: null }` is the runtime value of boardgame.io's `ActivePlayers.ALL` constant (verified in `node_modules/boardgame.io/dist/cjs/turn-order-*.js` where `ALL: { all: Stage.NULL }` and `Stage.NULL: null`). The value is inlined as a literal rather than imported from `boardgame.io/core` because boardgame.io v0.50 proxy-directory subpaths lack an `exports` field in their `package.json` and do not resolve under Node's native ESM (the same issue `apps/arena-client/src/client/bgioClient.ts:18-37` documents and works around with `import * as ... from 'boardgame.io/dist/cjs/...'`).
+
+**Rationale:** Surfaced during the WP-100 revised execution's post-close smoke test on 2026-04-27. Two browsers connected to the same match (Browser 1 as player 0, Browser 2 as player 1). Browser 1 successfully clicked Mark Ready; Browser 2 then clicked Mark Ready and the boardgame.io server logged:
+
+```
+ERROR: player not active - playerID=[1] - action[setPlayerReady]
+```
+
+By default, boardgame.io's server-side move dispatch restricts moves to `ctx.currentPlayer` only. The lobby phase had no `turn.activePlayers` configuration, so only the starting player (`ctx.currentPlayer === '0'`) could submit `setPlayerReady` / `startMatchIfReady`. Player 1 — and any future player 2..N — was structurally blocked from readying up, making multi-player lobby progression impossible despite the WP-100 §Scope I `<LobbyControls>` UI being functional and §Scope J's setPhase retarget being correct.
+
+The lobby phase semantically requires **all** seated players to ready up simultaneously; this is exactly what `ActivePlayers.ALL` (`{ all: null }`) authorizes — "the turn stays with one player, but any player can play (in any order) until the phase ends" per boardgame.io's `turn-order.d.ts`. Other `ActivePlayers.*` constants (`ALL_ONCE`, `OTHERS`, `OTHERS_ONCE`) impose constraints that don't match lobby semantics (`ALL_ONCE` blocks players from toggling ready/not-ready; `OTHERS` excludes the current player). `ALL` is the unique correct config.
+
+The four 01.5 triggers were verified absent on the §D-10007 change:
+
+- ❌ No new `LegendaryGameState` field — `G.lobby` already exists.
+- ❌ No `buildInitialGameState` shape change — initial state construction unchanged.
+- ❌ No new `LegendaryGame.moves` entry — the two lobby-phase moves (`setPlayerReady`, `startMatchIfReady`) were already registered.
+- ❌ No new phase hook — `turn.activePlayers` is a phase-configuration property (data, not a function callback). Hooks are `onBegin` / `onEnd` / `endIf` / `onMove` callbacks; `activePlayers` sits alongside `next`, `start`, `moves`, etc. as data configuration.
+
+**01.5 NOT INVOKED.** This is a phase-configuration property addition, structurally similar to the original `next: 'setup'` declaration that already existed.
+
+**Why this gap was missed twice.** The original WP-100 (2026-04-26) didn't surface lobby moves to the UI at all, so the `setPlayerReady` rejection never happened. The revised WP-100 (2026-04-27) added `<LobbyControls>` and the §Scope J retarget but tested in unit-test mode (`lobby.moves.test.ts` calls move functions directly with mocked `ctx.currentPlayer`, bypassing boardgame.io's server-side dispatch). The active-player check is enforced by boardgame.io's server, not the move function — so unit tests can't catch it. Manual smoke testing was the only path to discovery. A future engine integration test that runs through a real `Server()` instance with multi-player credentials would prevent this class of regression; it's deferred to a follow-up infrastructure WP because the test harness for in-process boardgame.io server simulation requires non-trivial setup.
+
+**How to apply:**
+
+- The `lobby` phase config now reads:
+  ```ts
+  lobby: {
+    start: true,
+    next: 'setup', // bypassed at runtime per D-10006
+    turn: { activePlayers: { all: null } }, // D-10007
+    moves: { setPlayerReady, startMatchIfReady },
+  },
+  ```
+- A drift-detection test in `packages/game-engine/src/game.test.ts` asserts the literal `{ all: null }` value, locking the config so a future maintainer who refactors phase definitions can't silently regress the multi-player lobby semantics.
+- Future phases that need multi-player simultaneous moves (e.g., a hypothetical "select hero" pre-game phase, or a "spend wounds" reactive phase) should follow the same `turn: { activePlayers: { all: null } }` pattern. The play phase deliberately does NOT use this config — gameplay is turn-based and only `ctx.currentPlayer` may submit moves.
+- If a follow-up WP imports `ActivePlayers` from boardgame.io (e.g., to use `ALL_ONCE` or `OTHERS`), it must adopt the CJS-bundle workaround from `bgioClient.ts:33` — `import * as boardgameioCore from 'boardgame.io/dist/cjs/core.js'` — and unwrap the namespace. The literal-inline approach used here is the pragmatic minimum.
+
+**Status:** Active. Closes when an engine integration test harness (in-process `Server()` simulation with multi-player credentials) lands and the structural drift test in `game.test.ts` is replaced by a behavioral test. No deadline; the inline config + drift test are sufficient until then.
+
+**Citation:** [game.ts](packages/game-engine/src/game.ts) lobby phase config (the `turn: { activePlayers: { all: null } }` block); [game.test.ts](packages/game-engine/src/game.test.ts) drift-detection test "configures lobby phase with activePlayers: { all: null } per D-10007"; [bgioClient.ts:18-37](apps/arena-client/src/client/bgioClient.ts) (precedent for boardgame.io v0.50 subpath-import workaround); [WP-100-interactive-gameplay-surface.md](docs/ai/work-packets/WP-100-interactive-gameplay-surface.md) §Scope I + §Scope J (the surrounding lobby-flow scaffolding); D-10006 (the sibling setPhase retarget — together D-10006 + D-10007 close the lobby → play transition gap).
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
