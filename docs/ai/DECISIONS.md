@@ -10918,6 +10918,79 @@ The four 01.5 triggers were verified absent on the §D-10008 change:
 
 ---
 
+### D-10009 — Play Phase Configured with activePlayers: { currentPlayer: 'playTurn' } (Empty-Object Fallback Fix)
+
+**Type:** Engine surgical patch / phase configuration
+**Packet:** WP-100 (smoke-test fix-forward post-D-10008)
+**Date:** 2026-04-27
+
+**Decision:** The `play` phase on `LegendaryGame` is configured with `turn: { activePlayers: { currentPlayer: 'playTurn' }, stages: { playTurn: {} } }`. This explicitly tells boardgame.io that during each play turn, only `ctx.currentPlayer` is in the (anonymous) `'playTurn'` stage, restoring standard turn-based "only the current player can submit moves" semantics. The empty `stages.playTurn: {}` block adds no behavior — the top-level `LegendaryGame.moves` bag remains the active move vocabulary per boardgame.io's `getMove` precedence chain (stage.moves → phase.moves → global moves).
+
+**Rationale:** Surfaced during the WP-100 revised execution's post-close smoke test on 2026-04-27. After D-10006 (setPhase retarget), D-10007 (lobby activePlayers config), and D-10008 (long-form moves with `client: false`) all landed and the lobby → play transition succeeded, clicking **Draw** in the play phase failed with:
+
+```
+ERROR: disallowed move: drawCards
+```
+
+Reading boardgame.io v0.50's source confirmed the cause. In `dist/cjs/turn-order-*.js`, `InitTurnOrderState` is the function that initializes turn state when entering a new phase. It contains:
+
+```js
+ctx = SetActivePlayers(ctx, turn.activePlayers || {});
+```
+
+When the new phase has no `turn.activePlayers` (the play phase here, before this fix), `turn.activePlayers || {}` evaluates to `{}` — an empty object literal. Inside `SetActivePlayers`, an empty-object arg passes through every `if (arg.currentPlayer) ... if (arg.others) ... if (arg.all) ...` branch without firing any of them, leaving `ctx.activePlayers = {}` (the function-local initial value).
+
+`IsPlayerActive` then checks:
+
+```js
+if (ctx.activePlayers) {
+    return playerID in ctx.activePlayers;  // empty object, no keys → always false
+}
+return ctx.currentPlayer === playerID;
+```
+
+`{}` is truthy, so the check enters the first branch. `'0' in {}` is false. **Every player is blocked from every move.** This is a boardgame.io v0.50 quirk: the documented "no `activePlayers` config means default turn-based behavior" only holds when `ctx.activePlayers` is `null`, but `InitTurnOrderState` writes `{}` instead of `null` when `turn.activePlayers` is undefined. The two states are observationally identical to a developer reading the docs but produce opposite runtime behavior in `IsPlayerActive`.
+
+The lobby phase didn't hit this (per D-10007) because `turn.activePlayers: { all: 'lobbyReady' }` is configured — `SetActivePlayers` writes `{ '0': 'lobbyReady', '1': 'lobbyReady' }`, both players pass `IsPlayerActive`. The play phase originally had no `activePlayers` configured because we wanted default turn-based behavior. But "no config" = `{}` = empty object = blocks everyone.
+
+The fix: explicitly configure `activePlayers: { currentPlayer: 'playTurn' }` so `SetActivePlayers` writes `{ '<currentPlayer>': 'playTurn' }`, and `IsPlayerActive` returns true for `ctx.currentPlayer` only — the intended default behavior. The empty `stages.playTurn: {}` block is required because `StageArg = StageName | object` rejects bare-null values (same TypeScript constraint as D-10007's lobby config).
+
+The four 01.5 triggers were verified absent on the §D-10009 change:
+
+- ❌ No new `LegendaryGameState` field — engine state shape unchanged.
+- ❌ No `buildInitialGameState` shape change — initial state construction unchanged.
+- ❌ No new `LegendaryGame.moves` entry — move names + bodies unchanged.
+- ❌ No new phase hook — `activePlayers` and `stages` are phase-configuration properties (data, not function callbacks).
+
+**01.5 NOT INVOKED.**
+
+**How to apply:**
+
+- The `play` phase config now reads:
+  ```ts
+  play: {
+    next: 'end',
+    endIf: ...,
+    turn: {
+      activePlayers: { currentPlayer: 'playTurn' }, // D-10009
+      stages: { playTurn: {} },
+      onBegin: ...,
+      onEnd: ...,
+    },
+  },
+  ```
+- Future phases that want **default turn-based behavior** (only current player active) MUST explicitly configure `activePlayers: { currentPlayer: '<stageName>' }` plus `stages: { '<stageName>': {} }`. Omitting `activePlayers` triggers the empty-object fallback bug. The pattern's stage name should describe the phase (e.g., `'playTurn'`, `'setupTurn'`, `'endgameTurn'`) for readability.
+- Phases that want **all-players-active** behavior follow D-10007's pattern: `activePlayers: { all: '<stageName>' }`, same empty-stage block.
+- A drift-detection test in `game.test.ts` could lock the play phase config the same way D-10007's test locks the lobby config; deferred because the existing test for D-10007 already exercises this pattern and adding more would mostly duplicate it. The integration-test harness referenced in D-10007 (in-process `Server() + Client()` simulation) would catch this class of regression structurally.
+
+**Why this gap was missed (compounding with D-10006/7/8).** WP-100 introduced the first actual gameplay-move dispatch through bgioClient. Each subsequent fix (D-10006 setPhase retarget, D-10007 lobby activePlayers, D-10008 client: false) unblocked one layer of the dispatch path, exposing the next layer. D-10009 is the fourth and (so far) final boardgame.io v0.50 behavior gap that smoke testing has surfaced. The pattern is: "default" boardgame.io config has subtle semantics in multiplayer + multi-phase + state-shape-mismatching-playerView contexts that aren't apparent until real moves dispatch through real clients. Engine unit tests bypass all four issues because they construct contexts manually. The post-mortem and D-10007 already flagged the in-process Server() + Client() integration harness as the structural prevention; this reinforces that recommendation. After D-10006 + D-10007 + D-10008 + D-10009, every layer of the lobby → play → turn-rotation flow has been verified working in the smoke test.
+
+**Status:** Active. Closes when an in-process Server() + Client() integration harness lands and replaces the structural drift tests with behavioral tests.
+
+**Citation:** [game.ts](packages/game-engine/src/game.ts) play phase `turn.activePlayers + turn.stages` block; [boardgame.io InitTurnOrderState](node_modules/.pnpm/boardgame.io@0.50.2/node_modules/boardgame.io/dist/cjs/turn-order-*.js) (the `turn.activePlayers || {}` fallback that creates the empty-object trap); [boardgame.io IsPlayerActive](node_modules/.pnpm/boardgame.io@0.50.2/node_modules/boardgame.io/dist/cjs/reducer-*.js) (the `if (ctx.activePlayers)` truthy check that misclassifies `{}`); D-10006 + D-10007 + D-10008 (the cascading fix-forwards — together D-10006 + D-10007 + D-10008 + D-10009 close the full lobby → play → turn-rotation flow for multi-player matches).
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

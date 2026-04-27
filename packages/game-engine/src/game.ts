@@ -346,6 +346,29 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
         return (result ?? undefined) as unknown as boolean | void;
       },
       turn: {
+        // why: explicit `activePlayers: { currentPlayer: 'playTurn' }` plus
+        // empty `stages.playTurn: {}` per D-10009. Without it,
+        // boardgame.io's InitTurnOrderState falls back to
+        // `SetActivePlayers(ctx, turn.activePlayers || {})` — passing the
+        // empty object literal. SetActivePlayers with `{}` returns
+        // `ctx.activePlayers = {}` (truthy empty object, NOT null). Then
+        // IsPlayerActive evaluates `if (ctx.activePlayers)` → truthy
+        // branch → `playerID in {}` → false for ALL players, blocking
+        // every move including drawCards from the seated current player.
+        // The explicit `{ currentPlayer: 'playTurn' }` config writes
+        // `ctx.activePlayers = { '<currentPlayer>': 'playTurn' }`, so
+        // IsPlayerActive correctly returns true only for ctx.currentPlayer
+        // — restoring turn-based "only current player can move" semantics.
+        // The empty `stages.playTurn: {}` block adds no behavior; the
+        // top-level LegendaryGame.moves bag remains the active move
+        // vocabulary (drawCards, playCard, fightVillain, etc.) per the
+        // getMove precedence chain (stage.moves → phase.moves → global
+        // moves). The 01.5 triggers remain absent: this is a
+        // phase-configuration property, not a phase hook.
+        activePlayers: { currentPlayer: 'playTurn' },
+        stages: {
+          playTurn: {},
+        },
         // why: Each new turn must begin at the first canonical turn stage.
         // TURN_STAGES[0] is used instead of a hardcoded string to prevent
         // drift if stage names ever change in turnPhases.types.ts.
