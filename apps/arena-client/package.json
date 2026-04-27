@@ -12,6 +12,7 @@
     "test": "node --import tsx --import @legendary-arena/vue-sfc-loader/register --test src/**/*.test.ts"
   },
   "dependencies": {
+    "@legendary-arena/preplan": "workspace:*",
     "boardgame.io": "^0.50.0",
     "pinia": "^2.1.7",
     "vue": "^3.4.27"
