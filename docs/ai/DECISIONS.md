@@ -10579,6 +10579,73 @@ The absence of an FK from `replay_hash` to `legendary.replay_blobs` or `legendar
 
 ---
 
+## D-5401 — Public Permalink Lookups Key on `replayHash` (Cryptographic), Never `submissionId` (Sequential)
+
+**Decision:** Public permalink access to a single competitive result is exposed via `getPublicScoreByReplayHash(replayHash: string, database)` only. There is no `getPublicScoreBySubmissionId` variant in any file under `apps/server/src/leaderboards/`; the verification gate `grep -nE "getPublicScoreBySubmissionId" apps/server/src/leaderboards/` returning zero is the binding contract.
+
+**Why:** `legendary.competitive_scores.submission_id` is a `bigserial` primary key — a strictly increasing integer that grows by one per accepted submission. Exposing it in any public surface (URL path, query parameter, response payload, share link) would let an unauthenticated attacker enumerate submissions by incrementing the integer; the per-submission PII risk surface is small in WP-053 (no email or auth-provider value crosses the projection layer per WP-054 field exclusion), but the **competitive-integrity** risk is non-trivial: an enumeration walk discloses the absolute order of all accepted submissions across all scenarios, including private ones whose visibility was later flipped.
+
+`replayHash` is the cryptographic SHA-256 of the deterministic replay re-execution — unguessable, deterministic, and consistent with the visibility model (any replay whose hash is reachable through the leaderboard helpers has already been opted into `'link'` or `'public'` visibility through `legendary.replay_ownership`; the `INNER JOIN` filter at every read site enforces this structurally per D-5403). Cryptographic permalinks are the same defensive choice WP-052 made for `AccountId` (UUID v4 via `node:crypto.randomUUID()`) at `apps/server/src/identity/identity.types.ts:40` — that comment cites "UUID v4 avoids sequential ID enumeration attacks; sourced from node:crypto.randomUUID() per locked contract value" as the precedent this decision extends to permalink keys.
+
+**Scope:** Applies to every public surface that exposes a single-record reference to a competitive result. The future request-handler WP that publishes `getPublicScoreByReplayHash` over HTTP MUST route on `/scores/{replayHash}` (or equivalent), never `/scores/{submissionId}`. Future profile pages, embed widgets, share links, and tournament-aggregation surfaces follow the same constraint.
+
+**Out of scope:** Internal application surfaces that already hold a server-side `AccountId` and have a legitimate reason to query by `submissionId` (e.g., `findCompetitiveScore` from WP-053, which is consumed by submission flow itself, not by public callers) are unaffected.
+
+**Implementation:** `apps/server/src/leaderboards/leaderboard.logic.ts` exports `getPublicScoreByReplayHash(replayHash: string, database): Promise<PublicLeaderboardEntry | null>`. The locked SQL filters on `cs.replay_hash = $1 AND ro.visibility IN ('link', 'public')`; private replays return `null`. The drift-detection test #9 asserts `replayHash` is present on `PublicLeaderboardEntry` (intentionally public-safe per the cryptographic-permalink rationale here).
+
+**Status:** Active for WP-054 and every future WP that exposes public single-record references to competitive results. Status changes (e.g., introducing a `getPublicScoreBySubmissionId` variant for an authenticated owner-only context) require a new DECISIONS entry that explicitly carves out the exception and a verification gate that distinguishes the public surface from the carve-out.
+
+**Citation:** WP-054 §A; EC-054 §Locked Values ("Permalink key: `replayHash` (cryptographic SHA-256, unguessable) — never `submissionId` (sequential `bigserial`, enables enumeration)"); pre-flight finding SR-2; WP-052 D-5201 / `apps/server/src/identity/identity.types.ts:40` (precedent for cryptographic identifier choice); 01-VISION.md §3 (Trust & Fairness — load-bearing).
+
+---
+
+## D-5402 — Rate Limiting Deferred to the Future Request-Handler WP, Not Owned by WP-054
+
+**Decision:** WP-054 ships a library surface only. Stateless IP-based rate limiting (and any other transport, content-type negotiation, CORS, cache-control, or middleware concern) is the future request-handler WP's responsibility. The verification gate `grep -nE "express|fastify|middleware|rate-?limit|throttle" apps/server/src/leaderboards/` returning zero matches is the binding contract.
+
+**Why:** Mixing the projection layer with the transport layer in a single packet would (i) violate the locked Lifecycle Prohibition (none of the three leaderboard helpers may be called from `server.mjs` / `index.mjs` / any apps/* package / any packages/** package today); (ii) couple the read API to a specific HTTP framework choice before that choice has been litigated in its own WP; (iii) invite "creative compliance" via dummy guards inside the helpers themselves (e.g., a per-call counter that pretends to be rate limiting but drops counts on process restart). The deferral keeps the contract clean: the helpers do exactly one thing — project from `legendary.competitive_scores` rows — and the request-handler WP layers HTTP, throttling, and cache-control on top without modifying the helpers.
+
+This mirrors WP-053's lifecycle prohibition pattern verbatim: WP-053's `submitCompetitiveScore` is the library surface; the future submission-HTTP WP wires it to a request handler and owns rate limiting, CORS, and content-type negotiation for that surface. WP-054 extends the same boundary to the read side.
+
+**Scope:** Applies until a future request-handler WP for the public leaderboard surface is authored. That WP MUST own:
+- Rate limiting (stateless, IP-based middleware) for every public read endpoint exposing `getScenarioLeaderboard` / `getPublicScoreByReplayHash` / `listScenarioKeys`
+- Bound `parGate.checkParPublished` injection from server startup into a spread-extension of `PRODUCTION_DEPENDENCIES` (never mutation of the const)
+- HTTP serialization, content-type negotiation, and CORS
+- Cache-control headers (the helpers themselves never cache)
+
+**Out of scope:** Authenticated / owner-only surfaces (e.g., a future "my submissions" page) may have different rate-limiting and authentication requirements; this decision applies to the public read surface only.
+
+**Implementation:** `apps/server/src/leaderboards/leaderboard.logic.ts` and `leaderboard.types.ts` import nothing from `express`, `fastify`, any rate-limiting middleware, or any HTTP framework. The `// why:` JSDoc on `LeaderboardDependencies` (line ~50) cites this decision and the WP-053 lifecycle precedent. The `PRODUCTION_DEPENDENCIES.checkParPublished = () => null` fail-closed default is structurally safe today because no production caller exists; the future request-handler WP wires the real bound gate.
+
+**Status:** Active until the future request-handler WP lands. That WP's A0 SPEC must cite this decision and explicitly own the deferred concerns.
+
+**Citation:** WP-054 §Lifecycle Prohibition; EC-054 §Guardrails ("No transport, no middleware, no rate limiting"); pre-flight finding SR-1; WP-053 lifecycle prohibition precedent (D-5302-equivalent); 01.6 post-mortem §Audit 11 (no-transport).
+
+---
+
+## D-5403 — Every Leaderboard JOIN Uses `INNER JOIN`; `LEFT JOIN ... COALESCE` Is Forbidden
+
+**Decision:** Every JOIN in the WP-054 SQL surface uses `INNER JOIN`. `LEFT JOIN`, `LEFT OUTER JOIN`, and `COALESCE(display_name, '<placeholder>')` are forbidden in `apps/server/src/leaderboards/leaderboard.logic.ts`. The verification gates `grep -nE "LEFT JOIN" apps/server/src/leaderboards/leaderboard.logic.ts` and `grep -nE "COALESCE\s*\(" apps/server/src/leaderboards/leaderboard.logic.ts` returning zero are the binding contracts. The minimum `INNER JOIN` count is 4 (two in `getScenarioLeaderboard`'s main SQL, plus the parallel COUNT(*) and the two single-record / discoverability SQLs); WP-054 ships with 8.
+
+**Why:** The schema constraint `display_name text NOT NULL` at `data/migrations/004_create_players_table.sql:30` makes the missing-display-name state structurally impossible at the DB layer — every row in `legendary.players` has a non-null display name by construction. But the schema constraint is **not** the load-bearing safety guard for the leaderboard projection; the `INNER JOIN` is. Two reasons:
+
+1. **Defense-in-depth.** A future schema migration could lift the `NOT NULL` constraint (e.g., for GDPR-style display-name redaction). If the leaderboard SQL relied on the schema, it would silently start emitting NULL display names with whatever row joined. With `INNER JOIN`, the row would simply not appear in the projection — fail-closed by SQL construction, no application-side check required.
+2. **Identity-inference loophole prevention.** A hypothetical `LEFT JOIN ... COALESCE(display_name, 'Anonymous')` (or any equivalent placeholder) would expose **the existence of an account** that has not claimed a display name yet, even if the account chose to remain undiscoverable. The `INNER JOIN` excludes such rows entirely from the public projection — the absence of a display name is treated as a privacy signal, not a data-quality bug to paper over with a fallback string.
+
+The same reasoning extends to `legendary.replay_ownership`: every read uses `INNER JOIN` on `(player_id, replay_hash)` filtered by `visibility IN ('link', 'public')` — replay rows whose ownership row is private or absent simply do not appear in the projection. No `LEFT JOIN ... WHERE ro.visibility IS NULL OR ro.visibility IN (...)` workaround is allowed.
+
+**Scope:** Applies to every leaderboard SQL surface in `apps/server/src/leaderboards/` (current and future). Future WPs that add new read surfaces here MUST use `INNER JOIN` for any join touching `legendary.players` or `legendary.replay_ownership`. New JOINs against tables introduced by future packets follow the same principle: fail-closed via INNER JOIN, never recover via COALESCE.
+
+**Out of scope:** Internal authenticated surfaces (e.g., owner-only views that legitimately need to display a placeholder for the owner's own un-named identity) are unaffected — those operate in a different trust context. WP-053's `findCompetitiveScore` and `listPlayerCompetitiveScores` are unaffected (they do not project a `playerDisplayName` field).
+
+**Implementation:** `apps/server/src/leaderboards/leaderboard.logic.ts` contains 8 `INNER JOIN` references across four SQL queries. The `// why:` JSDoc above the `getScenarioLeaderboard` function and the corresponding 01.6 post-mortem §Audit 14 cite this decision. The drift-detection test #9 doesn't directly assert SQL shape (it's logic-pure), but the test #2 (visibility filter) exercises the INNER JOIN behavior end-to-end against a real DB.
+
+**Status:** Active for WP-054 and every future WP that adds public read surfaces under `apps/server/src/leaderboards/`.
+
+**Citation:** WP-054 §B (locked SQL); EC-054 §Guardrails ("Display-name handling: use `INNER JOIN` against `legendary.players`; … `LEFT JOIN ... COALESCE(display_name, 'Anonymous')` is not permitted"); pre-flight finding SR-3; `data/migrations/004_create_players_table.sql:30` (`display_name text NOT NULL`); 01.6 post-mortem §Audit 14 (INNER JOIN defense-in-depth); 01-VISION.md §3 (Trust & Fairness).
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

@@ -1348,18 +1348,24 @@ These packets ship the game and keep it running.
   `legendary.competitive_scores`; does NOT modify WP-048, WP-051,
   WP-052, WP-027, WP-103, or WP-053a contracts
 
-- [ ] WP-054 — Public Leaderboards & Read-Only Web Access ✅ Reviewed
+- [x] WP-054 — Public Leaderboards & Read-Only Web Access ✅ Reviewed ✅ Completed 2026-04-26 at Commit A `e50e93e` (A0 SPEC bundle `f56a955` + `cbd4f7d`; `EC-054:` prefix). Library surface only — HTTP wiring deferred per locked Lifecycle Prohibition. Server baseline `47/7/0` → `56/8/0` (+9 tests / +1 suite; with 24 skipped if no test DB: 16 inherited + 8 of WP-054's 8 DB-dependent tests; test #9 logic-pure drift detection always runs). Engine baseline `522/116/0` unchanged. Three new files in `apps/server/src/leaderboards/` (types, logic, test). Zero migrations, zero engine changes, zero modifications to any file outside the new directory. Three new DECISIONS landed in Commit B (D-5401 replayHash permalink choice, D-5402 rate-limiting deferral, D-5403 INNER JOIN defense-in-depth). Post-mortem at `docs/ai/post-mortems/01.6-WP-054-public-leaderboards-read-only.md` covering all 14 mandatory audits + pre-commit review verdict ("Safe to commit as-is").
   Dependencies: WP-053, WP-052, WP-051, WP-004
   Notes: Read-only public access to verified competitive results;
   scenario-scoped leaderboards sorted by `finalScore` ascending,
   `createdAt` ascending tie-break; only scores with `visibility IN
   ('link', 'public')` included — private replays never exposed; PAR-missing
   scenarios return empty results (fail closed); no authentication required
-  for public queries; `PublicLeaderboardEntry` strips sensitive fields
-  (`playerId`, `email`, `replayHash`, `stateHash`, `scoreBreakdown`);
-  no new database tables — query projections of existing tables; no SQL
-  write operations; no engine imports; no scoring logic; does NOT modify
-  WP-053 or WP-052 contracts
+  for public queries; `PublicLeaderboardEntry` strips the seven never-expose
+  fields from WP-053's `CompetitiveScoreRecord` 11-key set per D-5201
+  (engine identifier per D-8701 never imported); permalink lookup keyed on
+  cryptographic `replayHash` (D-5401), never sequential `submissionId`;
+  every JOIN is `INNER JOIN` against `legendary.players` and
+  `legendary.replay_ownership` (D-5403 — no `LEFT JOIN ... COALESCE`
+  fallback); no new database tables — query projections of existing tables;
+  no SQL write operations; no engine runtime imports (only `import type
+  { ScenarioScoringConfig }`); no scoring logic; does NOT modify
+  WP-053 or WP-052 contracts; no transport / middleware / rate-limiting
+  dependencies (D-5402 — deferred to future request-handler WP)
 
 - [x] WP-050 — PAR Artifact Storage & Indexing ✅ Reviewed ✅ Completed 2026-04-23 (Commit A `ccdf44e`)
   Dependencies: WP-049, WP-048
