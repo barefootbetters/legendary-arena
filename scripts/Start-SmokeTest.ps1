@@ -51,11 +51,87 @@ if (-not (Test-Path '.env')) {
 }
 
 if ($KillStaleListeners) {
-    Write-Host "Killing stale listeners on 8000, 5173-5176..." -ForegroundColor Yellow
     $stalePorts = @(8000, 5173, 5174, 5175, 5176)
-    Get-NetTCPConnection -LocalPort $stalePorts -ErrorAction SilentlyContinue |
-        ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }
-    Start-Sleep -Milliseconds 500
+    Write-Host "Killing stale listeners on $($stalePorts -join ', ')..." -ForegroundColor Yellow
+
+    # why: per-port loop with explicit diagnostics so failures are visible.
+    # The previous one-liner suppressed all errors with `-ErrorAction
+    # SilentlyContinue`, which masked permission denials, missing PIDs,
+    # and process-already-exited cases. Now each kill prints what it
+    # found and what happened.
+    $killedPids = New-Object 'System.Collections.Generic.HashSet[int]'
+    foreach ($port in $stalePorts) {
+        $connections = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
+        if ($null -eq $connections) {
+            Write-Host "  port $port : free" -ForegroundColor DarkGray
+            continue
+        }
+        foreach ($conn in @($connections)) {
+            $procId = $conn.OwningProcess
+            if ($procId -eq 0 -or $procId -eq 4) {
+                # PID 0 = Idle, PID 4 = System; cannot kill, indicates
+                # something deeper holding the port (rare).
+                Write-Host "  port $port : held by SYSTEM PID $procId (cannot kill)" -ForegroundColor Red
+                continue
+            }
+            if ($killedPids.Contains([int]$procId)) {
+                Write-Host "  port $port : already killed PID $procId" -ForegroundColor DarkGray
+                continue
+            }
+            try {
+                $proc = Get-Process -Id $procId -ErrorAction Stop
+                Write-Host "  port $port : killing PID $procId ($($proc.ProcessName))..." -ForegroundColor Yellow -NoNewline
+                Stop-Process -Id $procId -Force -ErrorAction Stop
+                $null = $killedPids.Add([int]$procId)
+                Write-Host " ok" -ForegroundColor Green
+            }
+            catch {
+                # Fall back to taskkill /F /PID — sometimes succeeds when
+                # Stop-Process fails (e.g. cross-session ownership on some
+                # Windows configurations).
+                Write-Host " Stop-Process failed: $($_.Exception.Message)" -ForegroundColor Red
+                Write-Host "  port $port : retrying via taskkill PID $procId..." -ForegroundColor Yellow -NoNewline
+                $tkOutput = & taskkill /F /PID $procId 2>&1
+                if ($LASTEXITCODE -eq 0) {
+                    $null = $killedPids.Add([int]$procId)
+                    Write-Host " ok (taskkill)" -ForegroundColor Green
+                }
+                else {
+                    Write-Host " taskkill failed: $tkOutput" -ForegroundColor Red
+                }
+            }
+        }
+    }
+
+    # why: 2-second wait gives Windows time to release LISTENING sockets
+    # after process termination. The prior 500ms was occasionally too
+    # short on slower systems, leaving the next bind to fail with
+    # EADDRINUSE.
+    Start-Sleep -Seconds 2
+
+    # why: post-kill verification — re-check that the ports are actually
+    # free. If any are still held, fail loudly so the user doesn't get a
+    # confusing "Vite bumped to 5174" surprise downstream. The arena-
+    # client server's CORS allowlist permits only http://localhost:5173;
+    # a bumped port silently breaks every fetch from the browser.
+    $stillHeld = @()
+    foreach ($port in $stalePorts) {
+        $check = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
+        if ($null -ne $check) {
+            $stillHeld += $port
+        }
+    }
+    if ($stillHeld.Count -gt 0) {
+        Write-Host ""
+        Write-Host "WARNING: ports still held after kill: $($stillHeld -join ', ')" -ForegroundColor Red
+        Write-Host "Inspect with: Get-NetTCPConnection -LocalPort $($stillHeld[0]) | Select-Object OwningProcess" -ForegroundColor DarkGray
+        Write-Host "And:          Get-Process -Id <PID>" -ForegroundColor DarkGray
+        Write-Host "If owned by a process you don't recognize (e.g. a stuck node from a crashed Vite), reboot if Stop-Process / taskkill won't release it." -ForegroundColor DarkGray
+        Write-Host ""
+    }
+    else {
+        Write-Host "  all ports verified free." -ForegroundColor Green
+    }
 }
 
 # why: --env-file is fallback-only. A pre-set User-scope DATABASE_URL
