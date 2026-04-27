@@ -60,22 +60,30 @@ a player's pre-plan entirely client-side. Specifically:
 4. A reusable fixture module
    (`apps/arena-client/src/fixtures/preplan/index.ts`) exports six
    named fixtures: three `PrePlan` variants
-   (active / consumed / invalidated), one `DisruptionPipelineResult`
-   (invalid, with a populated `DisruptionNotification`), and supporting
-   `PlayerStateSnapshot` and `PrePlanContext` fixtures for deterministic
-   rendering and store / adapter tests. (Authoritative list in §I.)
+   (active / consumed / invalidated), two `DisruptionPipelineResult`
+   variants (with and without `affectedCardExtId` on the embedded
+   notification — the second variant exercises the optional-field
+   render path in `<PrePlanNotification />`), and a
+   `PlayerStateSnapshot` fixture for the lifecycle adapter tests.
+   (Authoritative list in §I.)
 5. `apps/arena-client/package.json` lists `@legendary-arena/preplan`
-   under `dependencies` (promoted from absent). Two preplan runtime
-   symbols are actually invoked from new code in this WP —
-   `createPrePlan` (in the lifecycle adapter) and `invalidatePrePlan`
-   (in the store's `recordDisruption` action).
-   `executeDisruptionPipeline` is **not invoked** by WP-059; its
-   result type (`DisruptionPipelineResult`) is consumed as the input
-   to `applyDisruptionToStore` at the type level only, and the actual
-   invocation will come from the future live-mutation middleware that
-   WP-090 unblocks. The dependency promotion covers both current
-   runtime use and the frozen import surface that middleware will
-   reuse.
+   under `dependencies` (promoted from absent). Exactly **one**
+   preplan runtime symbol is invoked from new code in this WP —
+   `createPrePlan` (in the lifecycle adapter
+   `startPrePlanForActiveViewer`). `invalidatePrePlan` is **not
+   invoked**; the store's `recordDisruption` consumes
+   `result.invalidatedPlan` directly from the
+   `DisruptionPipelineResult` (which the future live-mutation
+   middleware will populate by calling `executeDisruptionPipeline`,
+   which itself calls `invalidatePrePlan` internally per
+   `disruptionPipeline.ts:208-228`). `executeDisruptionPipeline` is
+   **not invoked** by WP-059; its result type
+   (`DisruptionPipelineResult`) is consumed as the input to
+   `applyDisruptionToStore` at the type level only, and the actual
+   invocation will come from the future live-mutation middleware
+   that WP-090 unblocks. The dependency promotion covers both
+   current runtime use and the frozen import surface that middleware
+   will reuse.
 6. `docs/ai/ARCHITECTURE.md` §Layer Boundary and
    `.claude/rules/architecture.md` are updated to permit
    `apps/arena-client` to runtime-import `@legendary-arena/preplan`,
@@ -100,11 +108,24 @@ contract's final design are explicitly deferred to a follow-up WP
   `createPrePlan(playerStateSnapshot, ctx): PrePlan` and speculative
   operations that return `null` when `plan.status !== 'active'`.
 - WP-058 complete. `@legendary-arena/preplan` exports runtime
-  `executeDisruptionPipeline(plan, mutation): DisruptionPipelineResult`
-  and the type `DisruptionNotification { message: string; cause:
-  string; targetCard?: CardExtId }`. `DisruptionPipelineResult.notification`
-  is always populated; `requiresImmediateNotification: true` is a
-  data-level contract.
+  `executeDisruptionPipeline(plan, mutation): DisruptionPipelineResult
+  | null` (returns `null` when `plan.status !== 'active'`), runtime
+  `invalidatePrePlan(plan, mutation): PrePlan | null`, and the
+  following types (verified against
+  `packages/preplan/src/disruption.types.ts`):
+  - `PlayerAffectingMutation { sourcePlayerId: string;
+    affectedPlayerId: string; effectType: 'discard' | 'ko' | 'gain' |
+    'other'; effectDescription: string; affectedCardExtId?: CardExtId }`
+  - `DisruptionNotification { prePlanId: string; affectedPlayerId:
+    string; sourcePlayerId: string; message: string;
+    affectedCardExtId?: CardExtId }`
+  - `SourceRestoration { playerDeckReturns: CardExtId[];
+    sharedSourceReturns: Record<string, CardExtId[]> }`
+  - `DisruptionPipelineResult { invalidatedPlan: PrePlan;
+    sourceRestoration: SourceRestoration; notification:
+    DisruptionNotification; requiresImmediateNotification: true }`
+    — `requiresImmediateNotification` is typed as the literal `true`
+    (not `boolean`); fixtures must use the literal.
 - WP-061 complete (commit `2e68530`). `apps/arena-client/` has a Pinia
   root, a single store module at `src/stores/uiState.ts`, and a test
   harness that runs `.vue` files via
@@ -164,8 +185,9 @@ Before writing a single line:
   yet gate `startPrePlanForActiveViewer` on turn state. The adapter
   signature in §C does not accept `UIState`; the caller decides when
   to invoke. "Active viewer" in this packet means "a viewer with a
-  valid `UIState` snapshot and derived `PrePlanContext`" — turn
-  gating is deferred to the live-middleware follow-up WP.
+  valid `UIState` snapshot, a caller-supplied `prePlanId`, and a
+  caller-supplied `prngSeed`" — turn gating and seed-management are
+  both deferred to the live-middleware follow-up WP.
 - `docs/ai/work-packets/WP-056-preplan-state-model.md` — `PrePlan` shape
   and the three status values.
 - `docs/ai/work-packets/WP-057-preplan-sandbox-execution.md` §Scope (In)
@@ -264,14 +286,21 @@ Before writing a single line:
 - `recordDisruption(result: DisruptionPipelineResult)` must:
   1. Set `lastNotification = result.notification` unconditionally.
   2. Only mutate `current` when `current !== null` AND
-     `current.status === 'active'` AND
-     `result.isValid === false`. In that case, set
-     `current = invalidatePrePlan(current, reason)` using the preplan
-     export — not by setting `status` directly. (WP-058 owns the
-     transition.)
-- The lifecycle adapter `applyDisruptionToStore` is the ONLY path that
-  writes to `current` after `startPlan`. Components never write
-  `current` directly; they never invoke `invalidatePrePlan` directly.
+     `current.status === 'active'`. In that case, set
+     `current = result.invalidatedPlan` directly (the pipeline has
+     already produced the invalidated plan with full nested copies
+     per `disruptionPipeline.ts:42-82`). The store does NOT call
+     `invalidatePrePlan` itself — see §A `recordDisruption` for the
+     full rationale and the required `// why:` block.
+- The lifecycle adapter `applyDisruptionToStore` is the only
+  integration seam for **disruption-driven** updates to `current`.
+  Components must not call `recordDisruption` directly; disruption
+  events flow through `applyDisruptionToStore`. (`startPlan`,
+  `consumePlan`, and `clearPlan` remain valid call sites for
+  non-disruption transitions; the lifecycle adapter is specifically
+  the disruption seam, not a universal proxy.) Components never
+  write `current` directly and never invoke `invalidatePrePlan`
+  directly.
 - Every call to `ctx.events.setPhase()` or `ctx.events.endTurn()` — there
   should be zero such calls in this WP because all work is client-side,
   but if one appears it must have a `// why:` comment. Executor must
@@ -337,8 +366,10 @@ Before writing a single line:
 - `usePreplanStore` action names (exact strings): `startPlan`,
   `consumePlan`, `recordDisruption`, `dismissNotification`, `clearPlan`
 - `usePreplanStore` getter name (exact string): `isActive`
-- `PREPLAN_STATUS_VALUES` members (exact strings, from WP-057):
-  `'active'`, `'consumed'`, `'invalidated'`
+- `PREPLAN_STATUS_VALUES` members (exact strings, in canonical
+  array order verified against
+  `packages/preplan/src/preplanStatus.ts:15`): `'active'`,
+  `'invalidated'`, `'consumed'`
 - `<PrePlanNotification />` accessibility attributes:
   `role="alert"`, `aria-live="assertive"`
 - Component file locations (exact paths):
@@ -438,23 +469,44 @@ Before writing a single line:
     // explicitly. Construction (vs. in-place mutation) preserves
     // JSON serializability and avoids aliasing shared references
     // that may have been captured by components via storeToRefs.
-    // The action is idempotent: calling it on a null, already-
-    // consumed, or already-invalidated plan is a no-op.
+    // revision is preserved (not bumped) — status transitions are
+    // not in the revision-bump list per preplan.types.ts:33-46, and
+    // invalidatePrePlan deliberately does not bump revision either
+    // (disruptionPipeline.ts:24-27). consumePlan matches that
+    // convention. The action is idempotent: calling it on a null,
+    // already-consumed, or already-invalidated plan is a no-op.
     ```
   - `recordDisruption(result: DisruptionPipelineResult): void` — sets
     `lastNotification = result.notification` unconditionally
     (overwriting — see the notification-overwrite invariant in the
     module header); when `current !== null` AND
-    `current.status === 'active'` AND `result.isValid === false`,
-    replaces `current` with `invalidatePrePlan(current, reason)`
-    (importing `invalidatePrePlan` from `@legendary-arena/preplan`).
-    `reason` is constructed inline from `result.notification.cause`
-    as a plain string — structured restoration data
-    (`result.restoration`) is intentionally ignored at this layer
-    (restoration application is out of scope per §Out of Scope;
-    future middleware owns it). No-op on `current` when it is
-    already non-active; `lastNotification` is still set so the UI
-    can display causal context.
+    `current.status === 'active'`, replaces `current` with
+    `result.invalidatedPlan` (the pipeline already produced the
+    invalidated plan with full nested copies per
+    `disruptionPipeline.ts:42–82`). The store does **not** call
+    `invalidatePrePlan` itself — that helper has already run inside
+    `executeDisruptionPipeline`, and calling it again would either
+    return `null` (because the plan's status flipped to
+    `'invalidated'` in the pipeline's prior call) or duplicate work.
+    Required `// why:` comment (verbatim):
+
+    ```
+    // why: result.invalidatedPlan is the authoritative invalidated
+    // form (disruptionPipeline.ts:42-82 produces fresh nested copies
+    // for every field). Reusing it avoids a second invalidatePrePlan
+    // call that would either return null or shadow the pipeline's
+    // already-correct restoration metadata. The store's job here is
+    // assignment, not transformation. Structured restoration
+    // (result.sourceRestoration) is intentionally ignored at this
+    // layer — restoration application against authoritative engine
+    // state is out of scope per §Out of Scope; the future live-
+    // mutation middleware (WP-090 follow-up) owns that path.
+    ```
+
+    No-op on `current` when it is already non-active (already
+    invalidated, consumed, or null); `lastNotification` is still set
+    unconditionally so the UI can display causal context for the
+    most recent event regardless of plan state.
   - `dismissNotification(): void` — sets `lastNotification = null`.
     Does not touch `current`.
   - `clearPlan(): void` — sets `current = null` and
@@ -477,8 +529,11 @@ Before writing a single line:
    `"Cannot start a plan while another plan is active"`.
 4. `consumePlan()` on an active plan sets `current.status === 'consumed'`
    and preserves every other `PrePlan` field (deep-equal check of
-   `planSteps`, `sandboxState`, `revealLedger`, `playerId`,
-   `baseStateFingerprint`, `createdAtTurn`, `revision`).
+   `prePlanId`, `revision`, `playerId`, `appliesToTurn`,
+   `baseStateFingerprint`, `sandboxState`, `revealLedger`,
+   `planSteps`). Field list mirrors the canonical `PrePlan` type at
+   `packages/preplan/src/preplan.types.ts:29-116`; `revision` is
+   preserved unchanged (status transitions do not bump revision).
 5. `consumePlan()` when `current === null` is a no-op.
 6. `consumePlan()` on an already-`'invalidated'` plan is a no-op.
 7. `recordDisruption(fixtureInvalidResult)` sets `lastNotification`
@@ -507,17 +562,32 @@ not import from `boardgame.io`.
 Two pure adapter functions:
 
 - `startPrePlanForActiveViewer(args: { snapshot: PlayerStateSnapshot;
-  ctx: PrePlanContext; store: ReturnType<typeof usePreplanStore> }):
-  void`
-  - Calls `createPrePlan(snapshot, ctx)` from
-    `@legendary-arena/preplan`.
+  prePlanId: string; prngSeed: number; store: ReturnType<typeof
+  usePreplanStore> }): void`
+  - Calls `createPrePlan(snapshot, prePlanId, prngSeed)` from
+    `@legendary-arena/preplan` (signature verified against
+    `packages/preplan/src/preplanSandbox.ts:37-41`; three positional
+    parameters).
   - Calls `store.startPlan(plan)` with the result.
   - No return value; errors propagate from `createPrePlan` or
     `startPlan`.
-  - JSDoc documents each parameter, the side effect, and the fact that
-    the function does not read the engine's `G` or `ctx` objects; the
-    `PrePlanContext` is a minimal client-side stand-in defined in
-    §C.1 below.
+  - JSDoc documents each parameter, the side effect, and the fact
+    that the function does not read the engine's `G` or `ctx`
+    objects. `prePlanId` and `prngSeed` are caller-supplied — the
+    preplan package intentionally pushes both to the caller per
+    `preplanSandbox.ts:34-35` (callers who need rewind reproducibility
+    must retain their seed).
+  - Required `// why:` comment (verbatim) on the args type:
+
+    ```
+    // why: prePlanId and prngSeed are passed through from the caller
+    // because createPrePlan takes them as positional parameters
+    // (preplanSandbox.ts:37-41). This adapter is a one-line wrapper
+    // that names the call site and routes the result into the store;
+    // it does not generate either value itself. Future middleware
+    // (WP-090 follow-up) is responsible for choosing the seed source
+    // and the prePlanId convention.
+    ```
 - `applyDisruptionToStore(args: { store: ReturnType<typeof
   usePreplanStore>; result: DisruptionPipelineResult }): void`
   - Calls `store.recordDisruption(result)`. Nothing else.
@@ -534,30 +604,26 @@ Two pure adapter functions:
     // "Notification delivery timing".
     ```
 
-#### C.1) `PrePlanContext` type alias
+#### C.1) No PrePlanContext type — passes scalar parameters directly
 
-Define and export inside the same file:
+The original v1 draft introduced a `PrePlanContext = { turn: number;
+playerId: string }` type intended as a client-side stand-in for engine
+`ctx`. Pre-flight CV-1 verified that `createPrePlan`'s actual signature
+takes `(snapshot, prePlanId: string, prngSeed: number)` — three
+positional scalars — not a `ctx` object. `turn` is computed inside
+`createPrePlan` as `snapshot.currentTurn + 1` and `playerId` is read
+from `snapshot.playerId`; neither is taken as a separate parameter.
 
-```
-/**
- * Client-local stand-in for the narrow subset of engine `ctx` that
- * `createPrePlan` reads. The field names mirror the engine's ctx
- * shape that WP-057 consumes, but the values are supplied by the
- * client from UIState-observable data.
- */
-export type PrePlanContext = {
-  readonly turn: number;
-  readonly playerId: string;
-};
-```
+This WP therefore does **not** define a `PrePlanContext` type.
+`startPrePlanForActiveViewer` accepts `prePlanId` and `prngSeed` as
+top-level args fields and forwards them positionally to
+`createPrePlan`. The lifecycle adapter file exports exactly two
+runtime symbols and no types.
 
-Pre-flight must verify the exact shape `createPrePlan` requires by
-reading `packages/preplan/src/preplanSandbox.ts`. If it requires more
-than `{ turn, playerId }`, extend `PrePlanContext` to match — but do
-NOT widen it to include `G`, zones, or RNG state. If the required
-shape is strictly smaller, narrow `PrePlanContext` accordingly. Update
-the WP body + `MatchSetupConfig` — no wait, `MatchSetupConfig` is
-unrelated — update only `PrePlanContext` and the test fixtures.
+If a future WP wants to introduce a named context type to bundle
+`prePlanId` + `prngSeed` (e.g., for transport over a middleware
+boundary), it owns that decision; this WP intentionally does not
+prejudge it.
 
 ### D) `apps/arena-client/src/preplan/preplanLifecycle.test.ts` — **new**
 
@@ -565,41 +631,63 @@ Compile-time drift sentinel at the top of the file, above the
 `describe` block:
 
 ```
-// why: compile-time drift sentinel. If `createPrePlan`'s second
-// parameter shape drifts (WP-057 adds or renames a required field),
+// why: compile-time drift sentinel. If createPrePlan's parameter
+// list drifts (WP-057 adds, removes, renames, or reorders any of
+// the three positional parameters: snapshot, prePlanId, prngSeed),
 // this assignment fails typecheck before any runtime test has to
-// catch it. Zero runtime cost — the variable is type-only.
-const _assertPrePlanContextShape: Parameters<typeof createPrePlan>[1] =
-  {} as PrePlanContext;
-void _assertPrePlanContextShape;
+// catch it. Mirrors the preplanStatus.ts:25-31 drift-proof pattern.
+// Zero runtime cost — the value is asserted at type level only.
+type _ExpectedCreatePrePlanParams = [
+  PlayerStateSnapshot,
+  string,
+  number,
+];
+type _ActualCreatePrePlanParams = Parameters<typeof createPrePlan>;
+type _CreatePrePlanDriftCheck =
+  _ActualCreatePrePlanParams extends _ExpectedCreatePrePlanParams
+    ? _ExpectedCreatePrePlanParams extends _ActualCreatePrePlanParams
+      ? true
+      : never
+    : never;
+const _createPrePlanDriftProof: _CreatePrePlanDriftCheck = true;
+void _createPrePlanDriftProof;
 ```
 
 Then `node:test` tests (one top-level `describe`):
-1. `startPrePlanForActiveViewer` with a fixture snapshot + fixture ctx
-   + fresh store produces a store whose `current !== null` and
-   `current.status === 'active'`.
-2. `startPrePlanForActiveViewer` called twice in a row (same store)
-   throws on the second call — the error from `usePreplanStore.startPlan`
-   propagates.
+1. `startPrePlanForActiveViewer` with a fixture snapshot + fixture
+   `prePlanId` + fixture `prngSeed` + fresh store produces a store
+   whose `current !== null` and `current.status === 'active'`.
+2. `startPrePlanForActiveViewer` called twice in a row (same store,
+   distinct `prePlanId` values) throws on the second call — the
+   error from `usePreplanStore.startPlan` propagates.
 3. `applyDisruptionToStore` with a fresh store (no current plan) +
-   a fixture invalid-result updates `store.lastNotification` and
-   leaves `store.current === null`.
-4. `applyDisruptionToStore` with an active plan + invalid result
-   transitions `store.current.status` to `'invalidated'` and sets
-   `store.lastNotification` to the fixture's notification.
+   a fixture `DisruptionPipelineResult` updates `store.lastNotification`
+   and leaves `store.current === null`.
+4. `applyDisruptionToStore` with an active plan + fixture
+   `DisruptionPipelineResult` sets `store.current` to
+   `result.invalidatedPlan` (deep-equal check, not just status check)
+   and sets `store.lastNotification` to `result.notification`. The
+   active plan in the store is replaced wholesale; the previous
+   `current` reference is no longer reachable.
 5. Determinism: two runs of `startPrePlanForActiveViewer` against the
-   same snapshot + ctx + fresh store produce byte-equal `store.$state`
-   (via `JSON.stringify`). This validates `createPrePlan`'s purity
-   downstream of the adapter.
+   same snapshot + `prePlanId` + `prngSeed` + fresh store produce
+   byte-equal `store.$state` (via `JSON.stringify`). This validates
+   `createPrePlan`'s purity downstream of the adapter and confirms
+   that the same `prngSeed` produces the same speculative deck shuffle.
 6. Privacy: after `startPrePlanForActiveViewer`, the store's
    `$state.current.sandboxState` exists but is never broadcast —
    checked by asserting `store.$subscribe` has not been called (no
    listener registered). The adapter must not wire any subscription.
-7. Notification overwrite: calling `applyDisruptionToStore` twice in a
-   row with two distinct invalid-result fixtures leaves
-   `store.lastNotification` equal to the **second** fixture's
+7. Notification overwrite: calling `applyDisruptionToStore` twice in
+   a row with two distinct fixture results leaves
+   `store.lastNotification` equal to the **second** result's
    notification; the first is dropped, not queued. This test locks
    the notification-overwrite invariant from the store JSDoc header.
+   The second call's `current` mutation is a no-op because the first
+   call already transitioned `current.status` to `'invalidated'`
+   (the `current.status === 'active'` guard short-circuits the
+   second update); `lastNotification` still updates per the
+   unconditional-overwrite rule.
 
 ### E) `apps/arena-client/src/components/preplan/PrePlanNotification.vue` — **new**
 
@@ -610,20 +698,32 @@ Then `node:test` tests (one top-level `describe`):
   - When `lastNotification === null`: renders nothing (empty
     `<template>`).
   - Otherwise: renders a `<div role="alert" aria-live="assertive"
-    class="preplan-notification">` containing:
+    class="preplan-notification">` containing exactly the following
+    elements (field names verified against
+    `packages/preplan/src/disruption.types.ts:57-72`):
     - `<p class="preplan-notification__message">{{
-      lastNotification.message }}</p>`
-    - `<p class="preplan-notification__cause">{{
-      lastNotification.cause }}</p>`
-    - When `lastNotification.targetCard` is present: `<p
-      class="preplan-notification__card">{{ lastNotification.targetCard
-      }}</p>`. Rendering the raw `CardExtId` string is sufficient for
-      MVP; a future WP (registry-client access) may replace it with a
-      display-name lookup.
+      lastNotification.message }}</p>` — the human-readable summary
+      built by `buildNotificationMessage` in WP-058 (always present).
+    - `<p class="preplan-notification__source">From player {{
+      lastNotification.sourcePlayerId }}</p>` — attribution of the
+      disrupting actor (always present per the type's required
+      `sourcePlayerId: string`).
+    - When `lastNotification.affectedCardExtId` is present: `<p
+      class="preplan-notification__card">{{
+      lastNotification.affectedCardExtId }}</p>`. Rendering the raw
+      `CardExtId` string is sufficient for MVP; a future WP
+      (registry-client access) may replace it with a display-name
+      lookup.
     - `<button type="button" class="preplan-notification__dismiss"
       @click="dismiss">Dismiss</button>`
   - `dismiss` calls `store.dismissNotification()`.
-- `<style scoped>` defines the four class selectors. Colors match
+  - `prePlanId` and `affectedPlayerId` from `lastNotification` are
+    deliberately not rendered. They identify the disrupted plan +
+    its owner, which the viewer already knows (the viewer IS the
+    owner). They remain available on the store object for tests
+    and future audit surfaces.
+- `<style scoped>` defines the four class selectors
+  (`__message`, `__source`, `__card`, `__dismiss`). Colors match
   `apps/arena-client/src/components/hud/hudColors.ts` tokens if any
   apply; otherwise literal hex values are used and a `// why:` comment
   flags that hudColors does not cover alert surfaces.
@@ -637,25 +737,36 @@ Then `node:test` tests (one top-level `describe`):
 per WP-061):
 1. When `lastNotification === null`, the mounted component renders no
    `role="alert"` element.
-2. When `lastNotification` is a fixture with `message`, `cause`, and
-   no `targetCard`, the component renders the `message`, the `cause`,
-   and no `.preplan-notification__card` element.
-3. When `lastNotification.targetCard` is present, the component
-   renders the `.preplan-notification__card` element with the literal
-   `CardExtId` string.
+2. When `lastNotification` is a fixture with `message`,
+   `sourcePlayerId`, and no `affectedCardExtId` (the four required
+   fields of `DisruptionNotification` plus the optional one omitted),
+   the component renders the `message`, the source-attribution line
+   containing `sourcePlayerId`, and **no** `.preplan-notification__card`
+   element.
+3. When `lastNotification.affectedCardExtId` is present, the
+   component renders the `.preplan-notification__card` element with
+   the literal `CardExtId` string.
 4. Clicking the dismiss button calls `store.dismissNotification` and
    `lastNotification` becomes `null`; the component re-renders to
    empty.
 5. The root alert element has `role="alert"` and
    `aria-live="assertive"`.
 
+(A field-set drift sentinel for `DisruptionNotification` lives in §J
+alongside the `PREPLAN_STATUS_VALUES` drift test — both are
+`@legendary-arena/preplan` shape sentinels and belong in the
+fixture-drift test file rather than the component test file.)
+
 ### G) `apps/arena-client/src/components/preplan/PrePlanStepList.vue` — **new**
 
 - Vue 3 Composition API SFC.
-- `<script setup lang="ts">` reads `useUiStateStore()` and
-  `usePreplanStore()` and derives two refs via `storeToRefs`:
-  `current` from preplan, `snapshot` from uiState (snapshot is
-  optional, used only for the header `"Plan for player <id>"`).
+- `<script setup lang="ts">` reads `usePreplanStore()` only and
+  derives one ref via `storeToRefs`: `current` from preplan. The
+  header reads `current.playerId` directly; no `useUiStateStore()`
+  import is needed and adding one would introduce dead-code lint
+  noise. Future WPs that gate display on viewer-vs-owner identity
+  will add the `useUiStateStore()` dependency at that point with a
+  concrete consumer.
 - Required `// why:` comment at the top of the `<script setup>` block
   (verbatim):
 
@@ -704,41 +815,123 @@ per WP-061):
 
 ### I) `apps/arena-client/src/fixtures/preplan/index.ts` — **new**
 
-Exports four named fixtures:
-- `activePrePlanFixture: PrePlan` — two plan steps, one speculative
-  draw reveal recorded in `revealLedger`, status `'active'`,
-  `revision: 1`, `createdAtTurn: 3`, `playerId: 'player-0'`.
-- `consumedPrePlanFixture: PrePlan` — same as active but status
-  `'consumed'`.
-- `invalidatedPrePlanFixture: PrePlan` — same as active but status
-  `'invalidated'`.
-- `sampleDisruptionResultFixture: DisruptionPipelineResult` — with
-  `isValid: false`, `requiresImmediateNotification: true`, a
-  `DisruptionNotification` containing a non-empty `message`, `cause`,
-  and a `targetCard: CardExtId` value (literal `'hero:IRONMAN_01'` or
-  whatever format the registry tests use). `restoration` is an empty
-  array (acceptable per WP-058's contract).
-- `samplePlayerStateSnapshotFixture: PlayerStateSnapshot` and
-  `samplePrePlanContextFixture: PrePlanContext` — supporting fixtures
-  for the lifecycle tests.
+Exports six named fixtures. All field names verified against
+`packages/preplan/src/preplan.types.ts` and
+`packages/preplan/src/disruption.types.ts`. All values are string
+and number literals; no imports of runtime functions, no invocation
+of `createPrePlan`. Every fixture uses a `satisfies` clause against
+its preplan type.
 
-All fixture values are string and number literals; no imports of
-runtime functions, no invocation of `createPrePlan`. Every fixture
-satisfies its type via a `satisfies` clause.
+- `activePrePlanFixture: PrePlan` — exact field set:
+  - `prePlanId: 'wp059-active-fixture'`
+  - `revision: 1`
+  - `playerId: 'player-0'`
+  - `appliesToTurn: 4` (= `samplePlayerStateSnapshotFixture.currentTurn + 1`
+    per `preplanSandbox.ts:52`; the +1 relationship is fixture-locked)
+  - `status: 'active'`
+  - `baseStateFingerprint: 'wp059-active-fingerprint'` (literal;
+    fixture does not invoke `computeStateFingerprint`)
+  - `sandboxState: { hand: [...], deck: [...], discard: [...],
+    inPlay: [], counters: { attack: 0, recruit: 0 } }` — concrete
+    `CardExtId` literals; `inPlay` empty per the active-plan
+    convention; counters use the two known keys per
+    `preplan.types.ts:148-149`
+  - `revealLedger: [{ source: 'player-deck', cardExtId:
+    'hero:IRONMAN_01', revealIndex: 0 }]` — one reveal record
+  - `planSteps: [{ intent: 'playCard', targetCardExtId:
+    'hero:IRONMAN_01', description: 'Play Iron Man',
+    isValid: true }, { intent: 'recruitHero', targetCardExtId:
+    'hero:CAPTAIN_AMERICA_01', description: 'Recruit Cap',
+    isValid: true }]` — two plan steps
+  - `invalidationReason` field is **omitted** (optional; absent for
+    active status)
+- `consumedPrePlanFixture: PrePlan` — identical to active but with
+  `prePlanId: 'wp059-consumed-fixture'` and `status: 'consumed'`.
+  `revision`, `appliesToTurn`, `baseStateFingerprint`, and the
+  `sandboxState` / `revealLedger` / `planSteps` arrays are
+  byte-equal to the active fixture (consumed transition preserves
+  these per the §A `consumePlan` contract).
+- `invalidatedPrePlanFixture: PrePlan` — identical to active but
+  with `prePlanId: 'wp059-invalidated-fixture'`,
+  `status: 'invalidated'`, and a populated `invalidationReason`:
+  `{ sourcePlayerId: 'player-1', effectType: 'discard',
+  effectDescription: 'discards a card from your hand' }` (no
+  `affectedCardExtId` — tests the optional-field-absent path).
+- `sampleDisruptionResultFixture: DisruptionPipelineResult` — exact
+  field set per `disruption.types.ts:108-126`:
+  - `invalidatedPlan`: a fresh `PrePlan` literal matching the
+    `invalidatedPrePlanFixture` shape (do not alias — copy the
+    fields inline so the fixture is self-contained)
+  - `sourceRestoration: { playerDeckReturns: [], sharedSourceReturns: {} }`
+    (the field is `sourceRestoration`, not `restoration`; an empty
+    restoration is valid per WP-058)
+  - `notification: { prePlanId: 'wp059-invalidated-fixture',
+    affectedPlayerId: 'player-0', sourcePlayerId: 'player-1',
+    message: "Player player-1's discards a card from your hand." }`
+    — matches the `buildNotificationMessage` format from
+    `disruptionPipeline.ts:138-144`; no `affectedCardExtId` in this
+    fixture
+  - `requiresImmediateNotification: true` — must be the literal
+    `true`, not a typed `boolean`, so the type narrows correctly
+- `sampleDisruptionResultWithCardFixture: DisruptionPipelineResult` —
+  same shape as above, but `notification.affectedCardExtId:
+  'hero:IRONMAN_01'` is set, and `notification.message:
+  "Player player-1's discards a card from your hand
+  (hero:IRONMAN_01)."` matches the WP-058 format with the card in
+  parentheses. This fixture is used by §F test #3 (renders the card
+  paragraph) and by §J's drift sentinel for the with-card field set.
+- `samplePlayerStateSnapshotFixture: PlayerStateSnapshot` — exact
+  field set per `preplanSandbox.ts:14-21` (six fields, no `inPlay`
+  in the snapshot; `inPlay` exists only on the resulting
+  `PrePlan.sandboxState`):
+  - `playerId: 'player-0'`
+  - `hand: [...]` — concrete `CardExtId` literals
+  - `deck: [...]` — concrete `CardExtId` literals
+  - `discard: []`
+  - `counters: { attack: 0, recruit: 0 }`
+  - `currentTurn: 3`
+
+The original v1 §I listed a sixth fixture `samplePrePlanContextFixture:
+PrePlanContext`. That type no longer exists (see §C.1). The replacement
+sixth fixture is `sampleDisruptionResultWithCardFixture`, which the
+§F test #3 + §J drift sentinel now consume.
 
 ### J) `apps/arena-client/src/fixtures/preplan/index.test.ts` — **new**
 
-Single drift-detection test:
-- `PREPLAN_STATUS_VALUES` (imported from `@legendary-arena/preplan`)
-  has exactly three members: `'active'`, `'consumed'`, `'invalidated'`,
-  in that order. A literal fixture `{ active: 1, consumed: 1,
-  invalidated: 1 } satisfies { [K in PrePlanStatusValue]: number }`
-  is asserted to have exactly three keys (via `Object.keys(...).length
-  === 3`). This test fails typecheck or runtime if WP-056/057's
-  status surface drifts.
-- `// why:` comment: failure here means a status value was added to
-  the union without updating the canonical array, or vice versa, and
-  a corresponding UI surface likely also needs updates.
+Three drift-detection tests in one top-level `describe('preplan
+fixtures drift sentinels', ...)`:
+
+1. **`PREPLAN_STATUS_VALUES` shape:**
+   `PREPLAN_STATUS_VALUES` (imported from `@legendary-arena/preplan`)
+   has exactly three members. Their string values are `'active'`,
+   `'invalidated'`, `'consumed'` (verified order against
+   `packages/preplan/src/preplanStatus.ts:15`). A literal fixture
+   `{ active: 1, invalidated: 1, consumed: 1 } satisfies
+   { [K in PrePlanStatusValue]: number }` is asserted to have
+   exactly three keys (via `Object.keys(...).length === 3`).
+   `// why:` comment: failure here means a status value was added
+   to the union without updating the canonical array, or vice versa,
+   and a corresponding UI surface likely also needs updates.
+
+2. **`DisruptionNotification` field-set (no-card variant):**
+   `Object.keys(sampleDisruptionResultFixture.notification).sort()
+   .join(',') === 'affectedPlayerId,message,prePlanId,sourcePlayerId'`.
+   Asserts the four required fields per
+   `disruption.types.ts:57-72`, with `affectedCardExtId` correctly
+   absent. `// why:` failure here means
+   `DisruptionNotification` drifted (field renamed, added, or
+   removed) since this WP was authored; reconcile the fixture, the
+   `<PrePlanNotification />` template, and the WP body before
+   re-running.
+
+3. **`DisruptionNotification` field-set (with-card variant):**
+   `Object.keys(sampleDisruptionResultWithCardFixture.notification)
+   .sort().join(',') ===
+   'affectedCardExtId,affectedPlayerId,message,prePlanId,sourcePlayerId'`.
+   Asserts the four required fields plus the optional
+   `affectedCardExtId`, exact set, no extras. Same `// why:`
+   rationale as #2; this variant additionally protects the
+   conditional-render path in `<PrePlanNotification />`.
 
 ### K) `apps/arena-client/package.json` — **modified**
 
@@ -886,10 +1079,13 @@ remains a follow-up once WP-090 lands.
 - `apps/arena-client/src/stores/preplan.test.ts` — **new** — store
   unit tests (13 cases in one `describe`)
 - `apps/arena-client/src/preplan/preplanLifecycle.ts` — **new** —
-  two pure adapters + `PrePlanContext` type
+  two pure adapters (`startPrePlanForActiveViewer`,
+  `applyDisruptionToStore`); no type exports (the v1 `PrePlanContext`
+  type was dropped per CV-1)
 - `apps/arena-client/src/preplan/preplanLifecycle.test.ts` — **new** —
   adapter tests (7 cases) plus one compile-time drift sentinel at
-  file top
+  file top (asserts `Parameters<typeof createPrePlan>` matches the
+  three-positional `[PlayerStateSnapshot, string, number]` shape)
 - `apps/arena-client/src/components/preplan/PrePlanNotification.vue`
   — **new** — disruption banner SFC (`role="alert"`,
   `aria-live="assertive"`)
@@ -900,9 +1096,10 @@ remains a follow-up once WP-090 lands.
 - `apps/arena-client/src/components/preplan/PrePlanStepList.test.ts`
   — **new** — component tests (6 cases)
 - `apps/arena-client/src/fixtures/preplan/index.ts` — **new** — 6
-  named fixtures
+  named fixtures (see §I for the authoritative list)
 - `apps/arena-client/src/fixtures/preplan/index.test.ts` — **new** —
-  drift-detection test for `PREPLAN_STATUS_VALUES`
+  three drift-detection tests (`PREPLAN_STATUS_VALUES` shape +
+  `DisruptionNotification` field-set in two variants)
 - `apps/arena-client/package.json` — **modified** — promote
   `@legendary-arena/preplan` to `dependencies`
 - `docs/ai/ARCHITECTURE.md` — **modified** — update Layer Boundary
@@ -945,16 +1142,18 @@ No other files may be modified.
 
 ### Lifecycle adapter
 - [ ] `preplanLifecycle.ts` exports exactly two runtime named exports
-      (`startPrePlanForActiveViewer`, `applyDisruptionToStore`) and one
-      type export (`PrePlanContext`)
+      (`startPrePlanForActiveViewer`, `applyDisruptionToStore`) and
+      no type exports (the v1 `PrePlanContext` type was dropped per
+      CV-1; see §C.1)
 - [ ] `startPrePlanForActiveViewer` invokes `createPrePlan` and
       `store.startPlan` exactly once each per call (verified by test
       counters)
 - [ ] `applyDisruptionToStore` invokes `store.recordDisruption` and
       nothing else (verified by store-state assertions)
-- [ ] No `store.$subscribe` listener is registered anywhere under
-      `apps/arena-client/src/preplan/` (confirmed via
-      `Select-String` for `\$subscribe`)
+- [ ] No `store.$subscribe` listener is registered in production
+      code introduced by this WP (confirmed via `Select-String` for
+      `\$subscribe` with `-Exclude "*.test.ts"`; test files may
+      reference `$subscribe` to assert non-registration)
 
 ### Components
 - [ ] `PrePlanNotification.vue` renders nothing when
@@ -1008,15 +1207,17 @@ No other files may be modified.
       file introduced by this WP (confirmed via `Select-String` for
       `localStorage`, `sessionStorage`, `document.cookie`, `fetch(`,
       `XMLHttpRequest`)
-- [ ] `store.$subscribe` is not called anywhere in new code
-      (confirmed via `Select-String`)
+- [ ] `store.$subscribe` is not registered anywhere in production
+      code introduced by this WP (confirmed via `Select-String`
+      with `-Exclude "*.test.ts"`; test references that assert
+      non-registration are permitted)
 
 ### Tests
 - [ ] `pnpm --filter @legendary-arena/arena-client typecheck` exits 0
 - [ ] `pnpm --filter @legendary-arena/arena-client test` exits 0
-- [ ] New test files contribute at minimum: 13 store tests, 7
-      lifecycle tests, 5 notification tests, 6 step-list tests, 1
-      drift test (**32 new tests total**), plus one compile-time
+- [ ] New test files contribute exactly: 13 store tests, 7
+      lifecycle tests, 5 notification tests, 6 step-list tests, 3
+      drift tests (**34 new tests total**), plus one compile-time
       drift sentinel in `preplanLifecycle.test.ts` that has no
       runtime assertion
 - [ ] `pnpm -r test` exits 0 (no regressions elsewhere)
@@ -1039,9 +1240,9 @@ pnpm --filter @legendary-arena/arena-client typecheck
 
 # Step 2 — run arena-client tests
 pnpm --filter @legendary-arena/arena-client test
-# Expected: all tests pass; count includes at least 32 new tests
+# Expected: all tests pass; count grows by exactly 34 new tests
 # introduced by this packet (13 store + 7 lifecycle + 5 notification
-# + 6 step-list + 1 drift = 32; one compile-time drift sentinel in
+# + 6 step-list + 3 drift = 34; one compile-time drift sentinel in
 # preplanLifecycle.test.ts has no runtime assertion and is not counted)
 
 # Step 3 — run the full repo test suite (regression check)
@@ -1056,10 +1257,13 @@ Select-String -Path "apps\arena-client\src\components\preplan" -Pattern "boardga
 # Expected: no output from any of the three commands
 
 # Step 5 — confirm no runtime import of game-engine in preplan store,
-# adapter, or components (only `import type` is allowed)
-Select-String -Path "apps\arena-client\src\stores\preplan.ts" -Pattern "^import\s+\{" | Select-String -Pattern "@legendary-arena/game-engine"
-Select-String -Path "apps\arena-client\src\preplan" -Pattern "^import\s+\{" -Recurse | Select-String -Pattern "@legendary-arena/game-engine"
-Select-String -Path "apps\arena-client\src\components\preplan" -Pattern "^import\s+\{" -Recurse | Select-String -Pattern "@legendary-arena/game-engine"
+# adapter, or components (only `import type` is allowed). The negative
+# lookahead `(?!\s+type)` matches any non-type-only import form
+# (default imports, namespace imports, named-binding imports), which
+# the prior `^import\s+\{` filter missed.
+Select-String -Path "apps\arena-client\src\stores\preplan.ts" -Pattern "^import(?!\s+type)\b.*@legendary-arena/game-engine"
+Select-String -Path "apps\arena-client\src\preplan" -Pattern "^import(?!\s+type)\b.*@legendary-arena/game-engine" -Recurse
+Select-String -Path "apps\arena-client\src\components\preplan" -Pattern "^import(?!\s+type)\b.*@legendary-arena/game-engine" -Recurse
 # Expected: no output — only `import type { ... } from
 # '@legendary-arena/game-engine'` is permitted
 
@@ -1081,11 +1285,12 @@ Select-String -Path "apps\arena-client\src\preplan" -Pattern "localStorage|sessi
 Select-String -Path "apps\arena-client\src\components\preplan" -Pattern "localStorage|sessionStorage|document\.cookie" -Recurse
 # Expected: no output from any of the three commands
 
-# Step 9 — confirm no `$subscribe` listener registered
-Select-String -Path "apps\arena-client\src" -Pattern "\$subscribe" -Recurse
-# Expected: no output (no new subscribers introduced; if a pre-existing
-# match appears, confirm it was present at HEAD before this WP and was
-# not introduced by this packet)
+# Step 9 — confirm no `$subscribe` listener registered in production code
+Select-String -Path "apps\arena-client\src" -Pattern "\$subscribe" -Recurse -Exclude "*.test.ts"
+# Expected: no output. Test files (excluded) MAY reference `$subscribe`
+# to assert it was not called — see preplanLifecycle.test.ts §D #6.
+# Production code (stores, adapters, components, fixtures) must not
+# register any subscription listener.
 
 # Step 10 — confirm D-5901 is in DECISIONS.md
 Select-String -Path "docs\ai\DECISIONS.md" -Pattern "^## D-5901"
