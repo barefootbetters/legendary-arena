@@ -115,6 +115,43 @@ test('TurnActionBar Advance click emits advanceStage with empty-object payload (
   assert.deepEqual(calls[0]!.args, {});
 });
 
+test('TurnActionBar Reveal click emits revealVillainCard with empty-object payload (D-10012)', () => {
+  const { calls, submitMove } = recorder();
+  const wrapper = mount(TurnActionBar, {
+    props: { currentStage: 'start', submitMove },
+  });
+
+  void wrapper.find('[data-testid="play-action-reveal"]').trigger('click');
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0]!.name, 'revealVillainCard');
+  assert.deepEqual(calls[0]!.args, {});
+});
+
+test('TurnActionBar Reveal is enabled only in start (D-10012)', () => {
+  const { submitMove } = recorder();
+  const startWrapper = mount(TurnActionBar, {
+    props: { currentStage: 'start', submitMove },
+  });
+  assert.equal(
+    startWrapper.find('[data-testid="play-action-reveal"]').attributes('disabled'),
+    undefined,
+    'Reveal should be enabled in start',
+  );
+
+  const blockedStages: ReadonlyArray<'main' | 'cleanup'> = ['main', 'cleanup'];
+  for (const stage of blockedStages) {
+    const wrapper = mount(TurnActionBar, {
+      props: { currentStage: stage, submitMove },
+    });
+    assert.equal(
+      wrapper.find('[data-testid="play-action-reveal"]').attributes('disabled'),
+      '',
+      `Reveal should be disabled in stage '${stage}'`,
+    );
+  }
+});
+
 test('TurnActionBar Advance is enabled in start and main, disabled in cleanup (D-10011)', () => {
   const { submitMove } = recorder();
   const enabledStages: ReadonlyArray<'start' | 'main'> = ['start', 'main'];

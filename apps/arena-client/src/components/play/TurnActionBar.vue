@@ -36,6 +36,26 @@ export default defineComponent({
     }
 
     /**
+     * Emit a `revealVillainCard` intent. The engine pops a card from the
+     * villain deck and places it in the City (or applies scheme-twist /
+     * mastermind-strike effects per the rule pipeline). Gated to
+     * `start` stage by the engine.
+     */
+    function onReveal(): void {
+      // why: empty-object payload — revealVillainCard takes no arguments
+      // by engine design (see villainDeck.reveal.ts). Per D-10012, this
+      // button surfaces villain reveal that the original WP-100
+      // vocabulary excluded as "internal." Without it, the City stays
+      // empty after match start and fightVillain has nothing to target.
+      // In tabletop Legendary this happens automatically at the start
+      // of each turn; the engine MVP requires a manual call. When a
+      // future engine WP wires `turn.onBegin` to auto-reveal, this
+      // button is DELETED, not refactored — same scaffold-artifact
+      // policy as the Draw button (D-10003).
+      props.submitMove('revealVillainCard', {});
+    }
+
+    /**
      * Emit an `advanceStage` intent. The engine's advanceTurnStage helper
      * (turnLoop.ts) cycles G.currentStage through the canonical sequence
      * (`start → main → cleanup`) and calls events.endTurn() if invoked
@@ -67,7 +87,7 @@ export default defineComponent({
       props.submitMove('endTurn', {});
     }
 
-    return { onDraw, onAdvance, onEndTurn };
+    return { onDraw, onReveal, onAdvance, onEndTurn };
   },
 });
 </script>
@@ -87,6 +107,20 @@ export default defineComponent({
       <!-- why: stage gating per WP-100 §Locked contract values — drawCards
            is enabled in 'start' or 'main'. -->
       Draw
+    </button>
+    <button
+      type="button"
+      data-testid="play-action-reveal"
+      :disabled="currentStage !== 'start'"
+      @click="onReveal"
+    >
+      <!-- why: stage gating per D-10012 — revealVillainCard is enabled in
+           'start' only (engine gating per coreMoves.types.ts). The City
+           starts empty after match setup; this button populates it so
+           fightVillain has a target. Future engine WP that wires
+           turn.onBegin to auto-reveal makes this button obsolete (same
+           scaffold-artifact policy as Draw per D-10003). -->
+      Reveal
     </button>
     <button
       type="button"

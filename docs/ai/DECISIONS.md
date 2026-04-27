@@ -11111,6 +11111,50 @@ The user-facing flow now reads:
 
 ---
 
+### D-10012 — UI Adds revealVillainCard Button (Villain Reveal Surface)
+
+**Type:** UI scaffold extension / engine-move vocabulary expansion
+**Packet:** WP-100 (smoke-test fix-forward post-D-10011)
+**Date:** 2026-04-27
+
+**Decision:** The `revealVillainCard` engine move is added to WP-100's `UiMoveName` union (9 → 10 names) and surfaced as a fourth button labelled **Reveal** in `TurnActionBar.vue` between the Draw and Advance buttons. The button is enabled in stage `'start'` only (per the engine's gating in `coreMoves.types.ts`); disabled in `'main'` and `'cleanup'`. The button emits `submitMove('revealVillainCard', {})` with an empty-object payload.
+
+**Rationale:** Surfaced in the WP-100 smoke test on 2026-04-27 — the seventh fix-forward in the cycle. After D-10011 added the Advance button and the user could progress through stages, the City stayed empty (no villain to fight) because `revealVillainCard` had never been called. In tabletop Legendary, the villain reveals automatically at the start of each turn; in the engine MVP, the move is manual.
+
+The original WP-100 vocabulary excluded `revealVillainCard` for the same misclassified-as-"internal" reason that excluded `advanceStage`:
+
+> "internal engine moves (`advanceStage`, `revealVillainCard`) that are explicitly **out of UI scope**"
+
+Both exclusions were smoke-test gaps. Without explicit reveal, the City matrix is `[null, null, null, null, null]` after match setup, and `fightVillain` silently no-ops (no card at the target index). The user's question — "I don't see who the villain is" — pinpointed exactly this gap.
+
+The four 01.5 triggers were verified absent:
+
+- ❌ No new `LegendaryGameState` field — `G.villainDeck` and `G.city` already exist.
+- ❌ No `buildInitialGameState` shape change.
+- ❌ No new `LegendaryGame.moves` entry — `revealVillainCard` was already registered (just not surfaced).
+- ❌ No new phase hook — UI button addition only.
+
+**01.5 NOT INVOKED.**
+
+The user-facing flow now reads:
+
+1. **start**: click **Reveal** (City gets a villain) → click **Draw** (hand → 6) → click **Advance** → main
+2. **main**: click hand cards → fight villain in City → recruit hero in HQ → fight mastermind → click **Advance** → cleanup
+3. **cleanup**: click **End Turn** → next player
+
+**How to apply:**
+
+- Like Draw (D-10003) and Advance (D-10011), the Reveal button is a **scaffold artifact**: in tabletop Legendary, villain reveal is automatic at turn start. The button exists only because the engine MVP requires the manual call. When a future engine WP wires `turn.onBegin` to invoke `revealVillainCard` (or moves it to `phase.onBegin`), the button is DELETED, not refactored. D-10003 and D-10011 set the same scaffold-artifact precedent.
+- The Reveal button is gated by stage in addition to the engine's own gating, mirroring the D-10003 / D-10011 pattern: visual gating from UIState + behavioral gating from the engine.
+
+**Cumulative reflection (D-10006 → D-10012).** Seventh WP-100 smoke-test gap. The pattern: WP-100's vocabulary was deliberately minimal ("internal" engine moves excluded), but the engine MVP's automatic mechanics aren't built yet — so "internal" moves that tabletop players never see are mandatory UI surfaces in the MVP. **Three scaffold-artifact buttons exist solely to compensate for engine MVP gaps**: Draw (D-10003 — engine has no auto-draw), Advance (D-10011 — engine has no auto-stage-transition), Reveal (D-10012 — engine has no auto-villain-reveal). All three are decision-logged for deletion when the engine catches up. A consolidated engine WP that adds `turn.onBegin` auto-mechanics (revealVillainCard + drawCards + initial stage advance) would retire all three buttons in one stroke and dramatically simplify the play surface.
+
+**Status:** Active for the lifetime of the Reveal button. Closes when a future engine WP adds automatic villain reveal (likely as a `turn.onBegin` or `phase.onBegin` hook on the play phase) and the button is deleted.
+
+**Citation:** [TurnActionBar.vue](apps/arena-client/src/components/play/TurnActionBar.vue) Reveal button + `onReveal` handler; [TurnActionBar.test.ts](apps/arena-client/src/components/play/TurnActionBar.test.ts) D-10012 regression tests; [uiMoveName.types.ts](apps/arena-client/src/components/play/uiMoveName.types.ts) `UiMoveName` union (now 10 members); [villainDeck.reveal.ts](packages/game-engine/src/villainDeck/villainDeck.reveal.ts) `revealVillainCard` (the engine move that powers the button); D-10003 + D-10011 (sibling scaffold-artifact precedents); D-10006 + D-10007 + D-10008 + D-10009 + D-10010 + D-10011 (six prior fix-forwards in this cycle).
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
