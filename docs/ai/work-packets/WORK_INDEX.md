@@ -2436,6 +2436,42 @@ code, never `boardgame.io`).
   pre-flight bundle before execution. See
   [WP-059-preplan-ui-integration.md](WP-059-preplan-ui-integration.md).
 
+- [ ] **(deferred placeholder)** WP-070 — Live Mutation Middleware
+  (Pre-Plan ↔ Engine Disruption Wiring). Dependencies: **WP-059
+  ✅** (frozen contract surface: `usePreplanStore` shape +
+  `applyDisruptionToStore` lifecycle adapter signature); **WP-090
+  ✅** (live-match transport providing the boardgame.io client +
+  state-update stream).
+  Scope (target ≤6 files under `apps/arena-client/src/preplan/`
+  and `apps/arena-client/src/client/`): a new middleware module
+  that subscribes to the boardgame.io client's state-update
+  stream (via the WP-090 `bgioClient.ts` carve-out, not a second
+  runtime engine import); a mutation-detection helper that
+  diffs `current G` vs `new G` per-player to construct
+  `PlayerAffectingMutation` envelopes (binary per-player
+  semantics per DESIGN-CONSTRAINT #4 — never inspects plan steps
+  or sandbox contents); the wiring that calls
+  `executeDisruptionPipeline(currentPlan, mutation)` and forwards
+  the result through `applyDisruptionToStore`; co-located tests
+  exercising the subscribe → diff → pipeline → store path against
+  fixture state-update streams (no live server). Ships the first
+  runtime invocation of `executeDisruptionPipeline` from the arena
+  client.
+  Out of scope (deferred to a separate follow-up): speculative
+  draw / play / recruit gestures (require a private-projection
+  contract — per-player deck / hand / HQ / shared piles — that
+  does not yet exist; WP-059 §Out of Scope captures the blocker);
+  cross-turn plan regeneration auto-flow; turn-start
+  auto-consumption watcher tied to `UIState.game.activePlayerId`
+  changes.
+  Read first when authoring: WP-059 §Out of Scope, WP-059 §Scope
+  (In) §C (lifecycle adapter contract), WP-058 §D
+  (`executeDisruptionPipeline` signature), DESIGN-PREPLANNING §11
+  (notification delivery timing + invalidated-plan interaction
+  gate), and the WP-059 01.6 post-mortem §13 forward-safety notes
+  for the consumer expectations. WP file + EC not yet drafted;
+  pre-flight + lint-gate pending.
+
 ---
 
 ## Dependency Chain (Quick Reference)
@@ -2478,7 +2514,7 @@ WP-001 (coordination — complete)        │
                     Pre-Planning (parallel with Phase 4+):
                     WP-006A + WP-008B → WP-056 → WP-057 → WP-058
                                                             │
-                    WP-059 → (future WP: live-mutation middleware)
+                    WP-059 → WP-070 (live-mutation middleware, deferred placeholder)
 
                     UI Implementation Chain (Phase 6, parallel with Phase 7 where deps allow):
                     WP-065 (Vue SFC Test Transform — prerequisite for all UI test packets)
