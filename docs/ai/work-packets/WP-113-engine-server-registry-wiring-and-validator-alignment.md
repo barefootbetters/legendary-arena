@@ -1,8 +1,9 @@
 # WP-113 — Engine-Server Registry Wiring + Match-Setup Validator / Builder ID Alignment
 
-**Status:** Draft (drafted 2026-04-27 in response to WP-100 smoke-test discovery; pre-flight pending)
-**Primary Layer:** Server (`apps/server/src/server.mjs`) + Game Engine (`packages/game-engine/src/matchSetup.validate.ts` + four setup helpers under `packages/game-engine/src/{villainDeck,mastermind,scheme,setup}/*setup*.ts`)
+**Status:** Pre-flight READY TO EXECUTE 2026-04-27 (conditional on PS-1..8 — all resolved into this body)
+**Primary Layer:** Server (`apps/server/src/server.mjs`) + Game Engine (`packages/game-engine/src/matchSetup.validate.ts` + `matchSetup.types.ts` + `game.ts` `EMPTY_REGISTRY` + `setup/buildInitialGameState.ts` orchestration + four setup helpers under `packages/game-engine/src/{villainDeck,mastermind,setup}/*setup*.ts`)
 **Dependencies:** WP-004 (server bootstrap), WP-014 / WP-015 (villain deck setup), WP-007 (mastermind setup), WP-005 (initial game state), WP-100 (the smoke test that surfaced this gap)
+**Pre-flight resolutions baked in:** PS-1 Q2 path lock, PS-2 slug-source Class A/B distinction, PS-3 `CardRegistryReader` widening (Option (i)), PS-4 Q3 orchestration-only lock, PS-5 server destructure-rename, PS-6 test-count reconciliation, PS-7 builder internal-iterator updates, PS-8 collision-probe re-measure at session start. Plus three copilot folds: Finding 10 (`MatchSetupConfig` field JSDoc), Finding 24 (`buildKnownExtIds` deprecation marker), Finding 30 (validator structural split).
 
 ---
 
@@ -40,17 +41,28 @@ together render every match created today structurally empty:
    `brotherhood`. The two surfaces are contradictory.
 
    **And both formats are wrong** — bare slugs collide across sets
-   in the actual registry data. Empirical probe 2026-04-27:
-   - **23 / 279 hero slugs** appear in 2+ sets. `black-widow` exists
-     in `3dtc`, `bkwd`, `core`, `msp1`. `hulk` in 3 sets.
-     `captain-america` / `thor` / `deadpool` / `wasp` / `ant-man` /
-     `nova` all collide.
-   - **11 / 584 mastermind slugs** collide. `loki` in `core` +
-     `msp1` plus four stage-variant slugs.
-   - **4 villain group slugs** collide
-     (e.g., `enemies-of-asgard` in `core` + `msp1`).
-   - **2 scheme slugs** collide
-     (`super-hero-civil-war` in `core` + `msp1`).
+   in the actual registry data. Empirical probe 2026-04-27 (pre-flight
+   re-verification):
+   - **23 / 279 hero slugs** appear in 2+ sets (verified at pre-flight).
+     `black-widow` exists in `3dtc`, `bkwd`, `core`, `msp1`. `hulk` in
+     3 sets. `captain-america` / `thor` / `deadpool` / `wasp` /
+     `ant-man` / `nova` all collide.
+   - **3 / 103 mastermind entity slugs** collide (pre-flight re-probe).
+     The original WP draft cited "11 / 584" — that figure counted
+     individual mastermind cards (~5-6 cards per entity × ~100
+     entities), not unique mastermind entity slugs. **PS-8 LOCKED:**
+     re-measure all four collision counts at session start using the
+     actual loaded data and record the measured numbers verbatim in
+     the D-10014 entry. Do NOT repeat the original "11 / 584" figure
+     — it is probe-shape-dependent and unverified.
+   - **~2-4 villain group slugs** collide depending on probe shape
+     (group-level vs card-level). Re-measure at session start.
+   - **2 / 189 scheme slugs** collide (verified at pre-flight):
+     `super-hero-civil-war` in `core` + `msp1`.
+
+   The determinism argument stands on hero-collision data alone (23 /
+   279 verified) and does NOT depend on the higher mastermind/villain
+   numbers. Set-qualified `<setAbbr>/<slug>` IDs are required regardless.
 
    Even with a perfectly-aligned validator-vs-builder contract, a
    bare-slug ID like `villainGroupIds: ['brotherhood']` would be
@@ -86,19 +98,77 @@ silent-failure paths loudly. The WP author may choose between two
 shape-equivalent approaches at execution time:
 
 - **(a) Validator delegates to builders.** `validateMatchSetup`
-  imports `extractVillainGroupSlug` (and equivalents for henchman /
-  scheme / mastermind / hero-deck) and accepts entries that any
-  builder will accept. Pro: minimal blast radius; the builders stay
-  authoritative. Con: validator needs to know each builder's slug
-  conventions.
+  imports builder-owned slug-source helpers (Class A key-decoders +
+  Class B set-data slug iterators per PS-2) and accepts entries that
+  any builder will accept. Pro: minimal blast radius; the builders
+  stay authoritative. Con: validator needs to know each builder's
+  slug conventions.
 - **(b) Builders delegate to a shared ID-resolution layer.** A new
   module exports `resolveMatchSetupIdFormat()` returning a structural
   description of acceptable ID shapes per field. Both validator and
   builders consume it. Pro: single source of truth. Con: a real
   refactor across five files; harder to scope.
 
-The WP author commits to (a) at pre-flight unless Open Question Q1
-(below) determines (b) is necessary.
+**Q1 RESOLVED at pre-flight 2026-04-27 → Option (a).** Pivot to (b)
+is forbidden without WP body amendment + new pre-flight. PS-3 widens
+`CardRegistryReader` in-place (Option (i)) to expose `listSets` /
+`getSet` so the validator can build per-field qualified-ID sets.
+
+---
+
+## Mid-Execution Amendment (Spec Gap Fix — 2026-04-27)
+
+During execution, a fifth internal-iterator site was discovered:
+
+- `packages/game-engine/src/economy/economy.logic.ts`
+  `buildCardStats()` consumes `matchConfig.heroDeckIds`,
+  `matchConfig.villainGroupIds`, and `matchConfig.henchmanGroupIds`
+  as bare slugs at lines 179, 195, 224. After this WP's
+  set-qualified ID contract lands, `buildCardStats()` would
+  silently produce empty `G.cardStats`, breaking the loadout
+  integration test and runtime move costs (fight*, recruit*).
+
+**Amendment:**
+
+- Add `economy.logic.ts` to the PS-7 internal-iterator update set.
+- Add `economy.logic.ts` to `## Files Expected to Change`.
+- Increase the hard cap by +1 file (16 → 17) for this WP only,
+  because the fix is mechanically identical to the existing PS-7
+  transforms and is required to satisfy the WP's locked
+  acceptance criteria. Authorized inline per D-3103 (WP-031
+  precedent for scope-neutral mid-execution amendments).
+
+**Verified blast radius (independent grep against main HEAD,
+2026-04-27):** `economy.logic.ts` is the **only** missed
+iterator. Other consumers of the five entity-ID fields are
+format-agnostic:
+
+- `campaign/campaign.logic.ts` — spread/merge only; opaque
+  string handling. SAFE.
+- `rules/ruleRuntime.impl.ts:58,65` — `sourceId` flows opaquely
+  through hook definitions; no equality checks against bare
+  slugs anywhere. SAFE.
+- `ui/uiState.build.ts:256` — `scheme.id` flows to UI projection
+  in qualified form. **Cosmetic ripple only**: UI will display
+  `"core/midtown-bank-robbery"` instead of `"midtown-bank-robbery"`.
+  Not a determinism issue. UI strip-prefix-for-display is a
+  follow-up polish WP, **not** WP-113 scope expansion. Tracked
+  in D-10014 as a known display-side ripple.
+- `types.ts`, `matchSetup.types.ts` — type definitions only
+  (string). String typing already accommodates the qualified
+  format. SAFE.
+- `game.ts`, `setup/buildInitialGameState.ts` — already in scope
+  via PS-3 / PS-4.
+
+**Spec-gap detection note:** the gap was discovered via runtime
+trace from `buildCardStats` consuming `matchConfig` fields, not
+from a static enumeration check. Process improvement candidate
+for the 01.6 post-mortem: future WPs introducing contract changes
+on `MatchSetupConfig` fields should grep ALL source files for
+`matchConfig.{fieldName}` consumption, not just `/setup`-named
+directories. The "builder" mental model missed `/economy` because
+it is a sibling stats-computation directory, not a setup builder
+per se.
 
 ---
 
@@ -133,10 +203,32 @@ tactics to defeat.
   immediately after the registry resolves is structurally safe.
 - `packages/game-engine/src/index.ts` already exports
   `setRegistryForSetup` and `clearRegistryForSetup` (verified
-  2026-04-27).
-- `packages/game-engine/src/villainDeck/villainDeck.setup.ts`
-  exports `extractVillainGroupSlug` (verified — internal helper, may
-  need to be promoted to an export for validator consumption).
+  2026-04-27, line 1).
+- `packages/game-engine/src/villainDeck/villainDeck.setup.ts` declares
+  `extractVillainGroupSlug` and `isVillainDeckRegistryReader` as local
+  functions (verified at pre-flight 2026-04-27 — both currently NOT
+  exported; this WP promotes them per PS-2 / PS-4).
+- `packages/game-engine/src/setup/heroAbility.setup.ts` declares
+  `extractHeroSlug` and `isHeroAbilityRegistryReader` as local
+  functions (verified at pre-flight — both currently NOT exported;
+  promoted per PS-2 / PS-4). This is the canonical "hero-deck builder"
+  per Q2 LOCK below.
+- `packages/game-engine/src/mastermind/mastermind.setup.ts` declares
+  `isMastermindRegistryReader` as a local function (NOT exported;
+  promoted per PS-4). It does NOT have a card-key extractor —
+  mastermind slugs are matched against `setData.masterminds[].slug`
+  directly. PS-2 introduces `listMastermindSlugsInSet` (Class B
+  set-data slug iterator) as a NEW exported helper.
+- `packages/game-engine/src/setup/buildSchemeSetupInstructions.ts`
+  declares `isSchemeRegistryReader` as a local function (NOT exported;
+  promoted per PS-4). It does NOT have a card-key extractor — scheme
+  slugs match `setData.schemes[].slug` directly. PS-2 introduces
+  `listSchemeSlugsInSet` (Class B) as a NEW exported helper.
+- Henchman group slugs match `setData.henchmen[].slug` directly. They
+  are co-located with villain-deck construction in
+  `villainDeck.setup.ts` (`findHenchmanGroupSlug` is internal). PS-2
+  introduces `listHenchmanGroupSlugsInSet` (Class B) as a NEW
+  exported helper inside `villainDeck.setup.ts`.
 - The card registry's `listCards()` returns flat cards with `.key`
   matching the pattern `<setAbbr>-<cardType>-<groupSlug>-<cardSlug>`
   for villains; similar conventions for other card types (verified
@@ -255,36 +347,98 @@ Before writing a single line:
   documented test-fixture updates where the fixture used the wrong
   ID shape — flagged in the validator-test JSDoc with a D-10014
   reference).
-- `extractVillainGroupSlug` (currently a private helper in
-  `villainDeck.setup.ts`) is promoted to a named export so
-  `matchSetup.validate.ts` can consume it. Same for any
-  henchman / mastermind / scheme / hero equivalents. The exports
-  are type-stable (no signature change) and live alongside their
-  existing builder. **Authority lock (LOCKED):** the per-builder
-  slug-extractor helpers are the ONLY authoritative definition of
-  acceptable slug semantics. `matchSetup.validate.ts` MUST NOT
-  independently parse, normalize, or reinterpret slug formats
-  beyond delegating to these helpers (and to `parseQualifiedId` for
-  the surrounding `<setAbbr>/<slug>` envelope). The validator does
-  not own slug grammar; it consumes it. Builders remain
-  authoritative; no new ID-resolution module is introduced.
-- **Silent-failure surfacing minimum (locked).** When a setup
-  builder must return empty/minimal state due to an unusable
-  registry (the `isXRegistryReader → empty fallback` paths), a
-  full-sentence diagnostic must be present in initial `G.messages`
-  naming the gap and the remediation. **Implementation constraint:
-  the diagnostic must be emitted during setup without changing any
-  builder signature and without adding new state fields.** The WP
-  does NOT prescribe *where* the push occurs — if a builder has
-  access to `G.messages` (because it receives `G` directly), the
-  push happens inside the builder; if a builder returns partial
-  state to `buildInitialGameState` and never sees `G`, the
-  orchestration site (which owns `G.messages`) emits the
-  diagnostic on the builder's behalf. Pre-flight Q3 resolves the
-  per-builder *emission site* (inside vs orchestration). The
-  *failure-reporting mode itself* (throw vs diagnostic) is uniform
-  across all four helpers per the Uniformity Rule above —
-  pre-flight Q3 picks ONE mode, not four.
+- **Slug-source helpers — Class A + Class B (PS-2 LOCKED).** The
+  per-builder slug-source authority is the union of two helper
+  classes; the validator consumes both:
+  - **Class A — slug key-decoders** (decode `{setAbbr}-{cardType}-{slug}-{cardSlug}`
+    flat-card keys):
+    - `extractVillainGroupSlug` — promote to export from
+      `villainDeck.setup.ts`. Type-stable, no signature change.
+    - `extractHeroSlug` — promote to export from
+      `setup/heroAbility.setup.ts`. Type-stable, no signature change.
+  - **Class B — set-data slug iterators** (enumerate
+    `setData.{masterminds|schemes|henchmen}[].slug`):
+    - `listMastermindSlugsInSet(setData: unknown): string[]` — NEW
+      exported helper in `mastermind.setup.ts`. Returns `[]` on
+      malformed `setData` shape (no throws).
+    - `listSchemeSlugsInSet(setData: unknown): string[]` — NEW
+      exported helper in `setup/buildSchemeSetupInstructions.ts`.
+      Same `[]`-on-malformed contract.
+    - `listHenchmanGroupSlugsInSet(setData: unknown): string[]` —
+      NEW exported helper in `villainDeck.setup.ts` (henchmen are
+      co-located with villain-deck construction; preserved). Same
+      `[]`-on-malformed contract.
+
+  Inventing fictitious key-decoders for mastermind / scheme is
+  forbidden — those slugs are NOT encoded in flat-card keys.
+
+- **Registry-reader guard exports (PS-4 LOCKED).** All four type
+  guards must be promoted to named exports for orchestration-side
+  diagnostic emission:
+  - `isVillainDeckRegistryReader` — export from
+    `villainDeck.setup.ts`.
+  - `isMastermindRegistryReader` — export from
+    `mastermind.setup.ts`.
+  - `isSchemeRegistryReader` — export from
+    `setup/buildSchemeSetupInstructions.ts`.
+  - `isHeroAbilityRegistryReader` — export from
+    `setup/heroAbility.setup.ts`.
+  Type-stable, no signature change.
+
+- **`CardRegistryReader` widening — Option (i) in-place (PS-3 LOCKED).**
+  Widen the existing `CardRegistryReader` interface in
+  `matchSetup.validate.ts` to:
+  ```ts
+  export interface CardRegistryReader {
+    listCards(): Array<{ key: string }>;
+    listSets(): Array<{ abbr: string }>;
+    getSet(abbr: string): unknown | undefined;
+  }
+  ```
+  The real `CardRegistry` already satisfies the wider shape
+  structurally (same shape `VillainDeckRegistryReader` reads).
+  `EMPTY_REGISTRY` in `game.ts:56-58` must add
+  `listSets: () => []` and `getSet: () => undefined`. The
+  `if (gameRegistry)` guard at `game.ts:201-210` is preserved
+  unchanged.
+
+- **Authority lock (LOCKED):** the slug-source helpers (Class A +
+  Class B) are the ONLY authoritative definition of acceptable
+  slug semantics. `matchSetup.validate.ts` MUST NOT independently
+  parse, normalize, or reinterpret slug formats beyond delegating
+  to these helpers (and to `parseQualifiedId` for the surrounding
+  `<setAbbr>/<slug>` envelope). The validator does not own slug
+  grammar; it consumes it. Builders remain authoritative; no new
+  ID-resolution module is introduced.
+- **Silent-failure surfacing — Q3 LOCKED orchestration-only (PS-4).**
+  When a setup builder must return empty/minimal state due to an
+  unusable registry (the `isXRegistryReader → empty fallback`
+  paths), a full-sentence diagnostic must be present in initial
+  `G.messages` naming the gap and the remediation. **Pre-flight
+  determined that NONE of the four builders receives `G`** —
+  emission inside the builder is structurally impossible without
+  a forbidden signature change. Therefore the locked emission
+  site for ALL FOUR builders is the orchestration site
+  (`setup/buildInitialGameState.ts`). Implementation pattern:
+  1. Build a local `setupMessages: string[] = []` accumulator
+     BEFORE constructing `baseState`.
+  2. Run each of the four exported `isXRegistryReader` guards
+     against `registry`. On `false`, push a full-sentence
+     diagnostic to `setupMessages` naming (a) which builder was
+     skipped, (b) why (registry-reader interface incomplete /
+     registry not injected by server), (c) how to fix (verify
+     `setRegistryForSetup(registry)` was called at server startup
+     OR that the test mock implements the full reader interface).
+  3. Assign `baseState.messages = setupMessages` (replacing the
+     current `messages: []` literal).
+  4. Builders' internal `isXRegistryReader → empty` paths remain
+     unchanged for defense-in-depth (orchestration-side detection
+     + builder-side fallback).
+  This satisfies the Uniformity Rule (one mode, one site, four
+  builders treated identically). No builder signature changes; no
+  new state fields; `baseState` shape unchanged (only the
+  `messages` field's content differs from `[]` to a populated
+  accumulator on registry-narrow paths).
 - No changes to `LegendaryGame.moves` registration, lobby phase
   configuration, or any UI code in `apps/arena-client/`. WP-113 is
   strictly server-wiring + engine-validation alignment + setup-
@@ -379,32 +533,63 @@ Before writing a single line:
 
 ### A) Server registry wiring — `apps/server/src/server.mjs`
 
-- **`apps/server/src/server.mjs`** — modified (minimal diff):
+- **`apps/server/src/server.mjs`** — modified (minimal diff per PS-5):
   - Add `setRegistryForSetup` to the existing
     `import { LegendaryGame } from '@legendary-arena/game-engine'`
-    line. The export already exists (verified 2026-04-27).
-  - Inside `startServer()`, after `loadRegistry()` resolves and
-    BEFORE the `Server({ games: [LegendaryGame], ... })` constructor
-    call (or before the server is otherwise made ready to accept
-    create requests, whichever is earlier), insert:
+    line. The export already exists (verified at `index.ts:1`,
+    2026-04-27).
+  - **Destructure rename in `Promise.all` (PS-5).** The current
+    `await Promise.all([loadRegistry(), loadRules(), createParGate(...)])`
+    destructures as `[, , parGate]` — discarding the resolved
+    registry. Rename to `[registry, , parGate]` to capture it. This
+    is part of the minimal diff, not a structural change.
+  - After the `await Promise.all(...)` completes (and `registry`
+    is in scope), insert:
     ```js
+    // why: D-10014 — engine's setRegistryForSetup() must be called
+    // before Server() is constructed so Game.setup() sees the
+    // registry on every match-create. WP-100 smoke test on
+    // 2026-04-27 surfaced this gap: the server loaded the registry
+    // but never wired it, so validateMatchSetup was silently
+    // skipped via the `if (gameRegistry)` guard at game.ts:201-210
+    // and every match was structurally empty.
     setRegistryForSetup(registry);
     ```
-  - Add a `// why:` comment naming D-10014 and the WP-100 smoke-test
-    discovery that surfaced the gap.
-  - **Minimal diff** — import addition + call site + comment block.
-    No other modifications to `server.mjs`. No changes to
-    `index.mjs`, `rules/loader.mjs`, `par/parGate.mjs`, or any other
-    server file. No structural reorganization of `startServer()`'s
-    Promise.all / sequencing.
+  - **Minimal diff scope (PS-5):** import addition + Promise.all
+    destructure rename + call site + `// why:` comment. No other
+    modifications to `server.mjs`. No changes to `index.mjs`,
+    `rules/loader.mjs`, `par/parGate.mjs`, or any other server
+    file. No structural reorganization of `startServer()`'s
+    Promise.all sequencing.
 
-### B) Validator alignment — `packages/game-engine/src/matchSetup.validate.ts`
+### B) Validator alignment — `packages/game-engine/src/matchSetup.validate.ts` + `matchSetup.types.ts` + `game.ts`
 
 - **`packages/game-engine/src/matchSetup.validate.ts`** — modified:
+  - **Widen `CardRegistryReader` (PS-3 LOCKED).** The existing
+    interface has only `listCards()`. Widen in-place to:
+    ```ts
+    export interface CardRegistryReader {
+      listCards(): Array<{ key: string }>;
+      listSets(): Array<{ abbr: string }>;
+      getSet(abbr: string): unknown | undefined;
+    }
+    ```
+    Add a `// why:` comment citing D-10014 and "validator needs
+    `listSets`/`getSet` to build per-field qualified-ID sets."
+    The real `CardRegistry` already satisfies the wider shape
+    structurally (verified — `VillainDeckRegistryReader` reads the
+    same shape).
   - The existing `buildKnownExtIds(registry)` function returns a
-    `Set<string>` of flat-card keys. Keep it as-is (some
-    flat-card-direct fields may still consume it; not used for the
-    five entity-ID fields after this WP).
+    `Set<string>` of flat-card keys. **After WP-113, no entity-ID
+    field consumes it** — preserve as a forensic-debugging aid
+    with a deprecation `// why:` comment (Finding 24 LOCKED):
+    ```ts
+    // why: D-10014 — deprecated; remove in follow-up cleanup WP.
+    // No current consumers after WP-113 — all five entity-ID
+    // fields now use buildKnownXxxQualifiedIds. Retained for one
+    // release cycle as a forensic-debugging aid.
+    ```
+    Do NOT remove the function in this WP.
   - Add `parseQualifiedId(input: string): { setAbbr: string; slug:
     string } | null` — parses `<setAbbr>/<slug>` and returns null
     on any malformed input (empty string, no `/`, multiple `/`,
@@ -412,17 +597,22 @@ Before writing a single line:
     "format" error before the existence check when parse fails.
   - Add five helpers, each returning `Set<string>` of fully-qualified
     `<setAbbr>/<slug>` IDs:
-    - `buildKnownSchemeQualifiedIds(registry)`
-    - `buildKnownMastermindQualifiedIds(registry)`
-    - `buildKnownVillainGroupQualifiedIds(registry)`
-    - `buildKnownHenchmanGroupQualifiedIds(registry)`
-    - `buildKnownHeroQualifiedIds(registry)`
-    Each iterates the registry's flat cards (or `getSet(...)`
-    results for henchmen) and emits one entry per
-    `(setAbbr, slug)` pair. The bare-slug extractors imported from
-    builder modules (`extractVillainGroupSlug`, etc.) provide the
-    slug half; the flat card's `setAbbr` field provides the
-    set half.
+    - `buildKnownSchemeQualifiedIds(registry)` — iterates
+      `registry.listSets()` and uses `listSchemeSlugsInSet(getSet(abbr))`
+      (Class B) to enumerate scheme slugs per set.
+    - `buildKnownMastermindQualifiedIds(registry)` — iterates
+      `listSets()` + `listMastermindSlugsInSet(getSet(abbr))`
+      (Class B).
+    - `buildKnownVillainGroupQualifiedIds(registry)` — uses
+      `listCards()` filtered to `cardType: 'villain'` + Class A
+      `extractVillainGroupSlug` to derive `(setAbbr, groupSlug)`
+      pairs; deduplicates.
+    - `buildKnownHenchmanGroupQualifiedIds(registry)` — iterates
+      `listSets()` + `listHenchmanGroupSlugsInSet(getSet(abbr))`
+      (Class B).
+    - `buildKnownHeroQualifiedIds(registry)` — uses `listCards()`
+      filtered to `cardType: 'hero'` + Class A `extractHeroSlug`
+      to derive `(setAbbr, heroSlug)` pairs; deduplicates.
   - Restructure the per-field validation loops. For each entity-ID
     field:
     1. Parse the entry as `<setAbbr>/<slug>`. If parse fails, emit
@@ -431,92 +621,203 @@ Before writing a single line:
        \"<setAbbr>/<slug>\", e.g., \"core/<example>\"."`
     2. If parse succeeds but the parsed ID is not in the
        corresponding `buildKnownXxxQualifiedIds` set, emit an
-       existence error naming the parsed `setAbbr` and `slug`
-       separately so the user can distinguish "set not loaded"
-       from "slug not in that set."
+       existence error distinguishing "set not loaded" from "slug
+       not in that set" by checking set membership separately:
+       - First check `registry.listSets()` — if `setAbbr` is not
+         loaded, emit `"<field>[<i>] rejected: \"<value>\". Set
+         \"<setAbbr>\" is not loaded."`
+       - Otherwise emit `"<field>[<i>] rejected: \"<value>\".
+         <Entity> slug \"<slug>\" not found in set
+         \"<setAbbr>\"."`
   - Bare slugs (`black-widow`), display names (`Black Widow`), and
     flat-card keys (`core-hero-black-widow-1`) are ALL rejected by
     the parse step. The error message contract is locked above.
+  - **Structural sub-function split (Finding 30).** Preserve the
+    existing `// --- Shape validation: ... ---` comment-block
+    sub-structure. As the per-field qualified-ID validation grows,
+    extract `validateShape(input, errors)` and
+    `validateExistence(input, registry, errors)` into named
+    sub-functions to stay under the 30-line per-function limit per
+    `00.6 §5`. No new abstractions — same convention already
+    partially present.
+
+- **`packages/game-engine/src/matchSetup.types.ts`** — modified
+  (Finding 10 LOCKED):
+  - Add a one-line JSDoc on each of the five entity-ID fields in
+    `MatchSetupConfig` documenting the locked `<setAbbr>/<slug>`
+    format and citing D-10014:
+    ```ts
+    /** Set-qualified slug — `<setAbbr>/<schemeSlug>`. D-10014. */
+    schemeId: string;
+    /** Set-qualified slug — `<setAbbr>/<mastermindSlug>`. D-10014. */
+    mastermindId: string;
+    // ... etc for villainGroupIds[], henchmanGroupIds[], heroDeckIds[]
+    ```
+  - Documentation-only change. No type-shape change. The 9-field
+    lock (D-1244) is preserved.
+
+- **`packages/game-engine/src/game.ts`** — modified (PS-3 LOCKED):
+  - Widen `EMPTY_REGISTRY` at lines 56-58 to satisfy the widened
+    `CardRegistryReader`:
+    ```ts
+    const EMPTY_REGISTRY: CardRegistryReader = {
+      listCards: () => [],
+      listSets: () => [],
+      getSet: () => undefined,
+    };
+    ```
+  - Add a `// why:` comment citing D-10014 and "satisfies wider
+    CardRegistryReader for test-context skip path."
+  - **Do NOT modify the `gameRegistry` guard at lines 201-210.**
+    Server wiring (§A) is the runtime fix; the engine guard is
+    preserved for test contexts that intentionally skip validation.
 
 - **`packages/game-engine/src/villainDeck/villainDeck.setup.ts`** —
   modified:
-  - Promote `extractVillainGroupSlug` from internal helper to a
-    named export. No signature change.
+  - Promote `extractVillainGroupSlug` (Class A) and
+    `isVillainDeckRegistryReader` (guard) to named exports. No
+    signature change.
+  - Add new exported `listHenchmanGroupSlugsInSet(setData: unknown):
+    string[]` (Class B) — returns `[]` on malformed `setData`.
   - Update `buildVillainDeck` to parse each `villainGroupIds` entry
-    as `<setAbbr>/<groupSlug>` (use the same `parseQualifiedId`
-    helper — exported from `matchSetup.validate.ts` and re-imported,
-    OR re-implemented locally if cross-module imports are awkward;
-    author's choice at execution time. The helper is small enough
-    to safely duplicate if needed.) The deck-construction loop
-    filters flat cards by BOTH `setAbbr` (top-level) AND the
-    extracted `groupSlug` (within set), iterating only that set's
-    cards. No accidental cross-set matches.
-- **`packages/game-engine/src/mastermind/mastermind.setup.ts`,
-  `packages/game-engine/src/setup/buildSchemeSetupInstructions.ts`,
-  and the hero-deck setup file (located at pre-flight Q2)** —
-  modified with the same pattern:
-  - Promote bare-slug extractor to named export.
-  - Parse `<setAbbr>/<slug>` at the builder boundary using
+    as `<setAbbr>/<groupSlug>` (import `parseQualifiedId` from
+    `matchSetup.validate.ts` OR duplicate locally — author's choice;
+    helper is small).
+  - **Builder Filtering Order (PS-7).** Update internal iterators
+    to accept `(setAbbr, slug)` and iterate the named set only:
+    - `filterVillainCardsByGroupSlug` — filter by `setAbbr` first
+      (top-level FlatCard field), then `extractVillainGroupSlug`
+      within that set's cards only.
+    - `findHenchmanGroupSlug` — receive `setAbbr` parameter; call
+      `getSet(setAbbr)` once and iterate ONLY that set's
+      `henchmen[]`. Throw if not found in the named set (no
+      cross-set fallback).
+    - `findSchemeSlug` — same pattern, constrained to the named
+      set's `schemes[]`.
+
+- **`packages/game-engine/src/mastermind/mastermind.setup.ts`** —
+  modified:
+  - Promote `isMastermindRegistryReader` (guard) to named export.
+    No signature change.
+  - Add new exported `listMastermindSlugsInSet(setData: unknown):
+    string[]` (Class B) — iterates `setData.masterminds[].slug`;
+    returns `[]` on malformed shape.
+  - Update `buildMastermindState` to parse `mastermindId` as
+    `<setAbbr>/<mastermindSlug>` at the builder boundary using
     `parseQualifiedId`.
-  - Iterate the named set first, match the slug within that set's
-    cards/entities only.
+  - **Builder Filtering Order (PS-7).** Update `findMastermindCards`
+    to receive `setAbbr` parameter; call `getSet(setAbbr)` once;
+    iterate ONLY that set's `masterminds[]`. No cross-set scan
+    after parse.
+
+- **`packages/game-engine/src/setup/buildSchemeSetupInstructions.ts`**
+  — modified:
+  - Promote `isSchemeRegistryReader` (guard) to named export. No
+    signature change.
+  - Add new exported `listSchemeSlugsInSet(setData: unknown):
+    string[]` (Class B) — iterates `setData.schemes[].slug`;
+    returns `[]` on malformed shape.
+  - Update `buildSchemeSetupInstructions` to parse `schemeId` as
+    `<setAbbr>/<schemeSlug>` at the builder boundary using
+    `parseQualifiedId`.
+  - **Builder Filtering Order (PS-7).** Any internal scheme lookup
+    added (the MVP returns `[]` so this may remain a no-op) MUST
+    constrain to the named set's `schemes[]`.
+
+- **`packages/game-engine/src/setup/heroAbility.setup.ts`** — modified
+  (this is the "hero-deck builder" per Q2 LOCKED):
+  - Promote `extractHeroSlug` (Class A) and
+    `isHeroAbilityRegistryReader` (guard) to named exports. No
+    signature change.
+  - Update `buildHeroAbilityHooks` to parse each `heroDeckIds` entry
+    as `<setAbbr>/<heroSlug>` at the builder boundary using
+    `parseQualifiedId`.
+  - **Builder Filtering Order (PS-7).** Update the hero-card filter
+    inside `buildHeroAbilityHooks` to filter `allFlatCards` by
+    `setAbbr` first, then by `extractHeroSlug(card) === heroSlug`,
+    iterating ONLY the named set's hero cards.
+
 - **No signature change to the four builders' top-level entry
   points.** Each takes the same `MatchSetupConfig` slice it took
   before; only the internal parsing/matching changes.
 
-### C) Silent-failure surfacing — setup-time diagnostics
+### C) Silent-failure surfacing — setup-time diagnostics (Q3 LOCKED orchestration-only per PS-4)
 
-For each of the four setup builders that currently performs a
-`isXRegistryReader → empty/minimal fallback`, a setup-time
-diagnostic must be present in initial `G.messages` whenever the
-fallback fires. The diagnostic is a full sentence naming:
-- **what was skipped** (which builder),
-- **why** (registry interface incomplete / registry not injected),
-- **how to fix** (verify server called `setRegistryForSetup` before
-  accepting create requests, or that the test mock implements the
-  full registry-reader interface).
+**Pre-flight Q3 RESOLVED 2026-04-27:** none of the four setup
+builders receives `G`. Emission inside any builder would require a
+forbidden signature change. **Therefore the locked emission site
+for ALL FOUR builders is the orchestration site
+(`packages/game-engine/src/setup/buildInitialGameState.ts`).** The
+Uniformity Rule is satisfied by orchestration-only emission — one
+mode, one site, four builders treated identically.
 
-**Implementation choice (per builder, resolved at pre-flight Q3):**
-the diagnostic is emitted EITHER
+**Implementation pattern in `buildInitialGameState.ts` (PS-4):**
 
-- **inside the builder** if the builder receives a `G` reference or
-  a writable `messages` accumulator that the orchestration site
-  reads, OR
-- **at the orchestration site** (`buildInitialGameState.ts` or
-  `Game.setup()`) by inspecting the builder's return shape and
-  pushing a synthetic message naming the silently-skipped builder.
+1. Import the four exported registry-reader guards
+   (`isVillainDeckRegistryReader` from `villainDeck.setup.ts`,
+   `isMastermindRegistryReader` from `mastermind.setup.ts`,
+   `isSchemeRegistryReader` from
+   `setup/buildSchemeSetupInstructions.ts`,
+   `isHeroAbilityRegistryReader` from `setup/heroAbility.setup.ts`).
+2. Build a local `setupMessages: string[] = []` accumulator BEFORE
+   constructing `baseState`.
+3. Run each guard against `registry`. On `false`, push a
+   full-sentence diagnostic to `setupMessages` naming:
+   - **what was skipped** (which builder),
+   - **why** (registry-reader interface incomplete / registry not
+     injected by server),
+   - **how to fix** (verify `setRegistryForSetup(registry)` was
+     called at server startup OR that the test mock implements
+     the full registry-reader interface).
+4. Replace the `messages: []` literal in the existing `baseState`
+   construction with `messages: setupMessages` (or assign
+   post-construction — author's choice).
+5. Add a single `// why:` comment block on the orchestration-side
+   diagnostic emission referencing D-10014, the WP-100 smoke-test
+   discovery, the Uniformity Rule, and "builder signatures don't
+   accept G" rationale.
 
-**Constraint:** no new state fields, no signature-breaking changes
-to the four builders. Pre-flight Q3 confirms which path applies per
-builder by reading their current signatures.
+**Constraints (LOCKED):** no new state fields, no signature changes
+to the four builders, no new `LegendaryGame.moves` entry, no new
+phase hook (the four 01.5 triggers, all absent). The builders'
+existing internal `isXRegistryReader → empty` fallbacks remain
+unchanged (defense-in-depth — orchestration-side detection +
+builder-side fallback both present).
 
-**Builders to surface:**
+**Builders surfaced:**
 - **`packages/game-engine/src/villainDeck/villainDeck.setup.ts`** —
-  the `isVillainDeckRegistryReader → empty deck` path.
+  detects `isVillainDeckRegistryReader → empty deck` path at
+  orchestration.
 - **`packages/game-engine/src/mastermind/mastermind.setup.ts`** —
-  the `isMastermindRegistryReader → minimal mastermind` path.
+  detects `isMastermindRegistryReader → minimal mastermind` path at
+  orchestration.
 - **`packages/game-engine/src/setup/buildSchemeSetupInstructions.ts`**
-  — the registry-reader guard if present (verify at pre-flight).
-- **Hero-deck builder** (file located at pre-flight Q2) — same
-  pattern if a registry-reader guard exists.
+  — detects `isSchemeRegistryReader → []` path at orchestration
+  (note: MVP returns `[]` even on success per D-2601, so the
+  diagnostic fires only when the GUARD itself fails, not on every
+  empty result).
+- **`packages/game-engine/src/setup/heroAbility.setup.ts`** (the
+  "hero-deck builder" per Q2 LOCKED) — detects
+  `isHeroAbilityRegistryReader → []` path at orchestration.
 
-Each modified file gains a `// why:` comment block referencing
-D-10014 and the WP-100 smoke-test discovery, regardless of where
-the diagnostic emission lands.
+### D) Tests (PS-6 test-count reconciliation LOCKED)
 
-### D) Tests
+**Total minimum new tests: 35** (24 short of the previous WP estimate
+of "+10" — that earlier number was understated; the reconciliation
+below is authoritative).
 
-- **`apps/server/src/server.mjs.test.ts`** — modified or created:
+- **`apps/server/src/server.mjs.test.ts`** — modified or created
+  (**+1 test**):
   - One new test asserting that `startServer()` calls
     `setRegistryForSetup` with the loaded registry before constructing
-    `Server()`. Mocks the import to spy the call.
+    `Server()`. Use `mock.module` or a re-exported test seam to spy
+    the call. Do NOT require deep boardgame.io constructor spying.
 - **`packages/game-engine/src/matchSetup.validate.test.ts`** —
-  modified:
+  modified (**≥30 new tests**):
   - **At least 25 new tests** organized as 5 per field category
     (5 fields × accept-qualified + reject-bare-slug + reject-display-
     name + reject-flat-card-key + reject-cross-set-collision-
-    sensitivity) — final count locked at pre-flight when the
-    per-field shape is verified against builder semantics:
+    sensitivity):
     - `validateMatchSetup accepts schemeId as set-qualified slug
       (e.g., "core/midtown-bank-robbery")`
     - `validateMatchSetup rejects schemeId given as a bare slug`
@@ -539,25 +840,45 @@ the diagnostic emission lands.
     reference. The fixture migration is part of WP-113's scope —
     test-data drift from the new contract is expected and intended.
 - **`packages/game-engine/src/villainDeck/villainDeck.setup.test.ts`**
-  (and three peer files) — modified:
-  - Add one regression test per helper asserting that the silent-empty
-    early-return now also pushes a `G.messages` entry. The test
-    constructs an incomplete-interface mock registry, calls the
-    builder, and asserts both the empty-state return AND the
-    `G.messages` entry.
+  (and three peer files: `mastermind.setup.test.ts`,
+  `buildSchemeSetupInstructions.test.ts`,
+  `setup/heroAbility.setup.test.ts`) — modified (**+4 tests, one
+  per builder**):
+  - Add one regression test per builder asserting that on the
+    `isXRegistryReader → empty` path, the orchestration-side
+    diagnostic (per Q3 LOCKED) appears in `G.messages`. The test
+    constructs an incomplete-interface mock registry, calls
+    `buildInitialGameState` (NOT the builder directly — the
+    diagnostic emission is at the orchestration site, not inside
+    the builder), and asserts both the empty-state result AND the
+    `G.messages` entry naming the skipped builder.
 - **End-to-end loadout integration test** (new file:
-  `packages/game-engine/src/setup/buildInitialGameState.loadout.test.ts`):
-  - Constructs a real `MatchSetupConfig` with bare slugs (e.g.,
-    `villainGroupIds: ['brotherhood']`), passes through `Game.setup()`
-    with a fixture `CardRegistryReader` that exposes a small set of
-    cards, and asserts:
+  `packages/game-engine/src/setup/buildInitialGameState.loadout.test.ts`,
+  **+1 test minimum, recommended ~3-4 tests**):
+  - Constructs a real `MatchSetupConfig` with **set-qualified slugs**
+    (e.g., `villainGroupIds: ['core/brotherhood']`), passes through
+    `Game.setup()` with a fixture `CardRegistryReader` that exposes
+    a small set of cards (satisfying ALL FOUR registry-reader
+    interfaces), and asserts:
     - `G.villainDeck.deck.length > 0`
     - `G.mastermind.tacticsDeck.length > 0`
     - `G.cardStats` populated for the chosen cards
-    - `G.messages` does NOT contain any "skipped" entry
+    - `G.messages` does NOT contain ANY of the four "skipped"
+      diagnostic prefixes (substring match per builder, asserting
+      none appear) — Finding 11 fold from copilot check.
   - This test is the structural prevention for the silent-empty-deck
     class of regression. Future engine WPs that touch setup helpers
     must keep it green.
+
+**Reconciled test totals (PS-6):**
+- New tests: ≥25 field-validation + ≥5 parse-error + 4 diagnostic
+  regression + ≥1 loadout integration + 1 server wiring = **≥36 new
+  tests** (engine ≥35 + server +1).
+- Engine baseline: `524 → ≥559 / 117 / 0` (the `~555` figure cited
+  elsewhere is approximate; the floor is 559).
+- Server baseline: `47 → 48 / 7 / 0` pass; 16 skipped DB-tests
+  preserved.
+- Arena-client: `182 / 17 / 0` UNCHANGED.
 
 All tests use `node:test` and `node:assert` only.
 
@@ -590,26 +911,76 @@ All tests use `node:test` and `node:assert` only.
 
 ---
 
-## Files Expected to Change
+## Files Expected to Change (PS-1..7 LOCKED — 14 files; hard cap 16)
 
-- `apps/server/src/server.mjs` — modified — registry wiring
-- `apps/server/src/server.mjs.test.ts` — new or modified — wiring test
-- `packages/game-engine/src/matchSetup.validate.ts` — modified — slug-set helpers + per-field alignment
-- `packages/game-engine/src/matchSetup.validate.test.ts` — modified — 5 new field-format tests + existing-test fixture updates
-- `packages/game-engine/src/villainDeck/villainDeck.setup.ts` — modified — export `extractVillainGroupSlug` + `G.messages` push
-- `packages/game-engine/src/villainDeck/villainDeck.setup.test.ts` — modified — silent-failure regression test
-- `packages/game-engine/src/mastermind/mastermind.setup.ts` — modified — export slug-extractor + `G.messages` push
-- `packages/game-engine/src/mastermind/mastermind.setup.test.ts` — modified — silent-failure regression test
-- `packages/game-engine/src/setup/buildSchemeSetupInstructions.ts` — modified — same pattern
-- `packages/game-engine/src/setup/buildSchemeSetupInstructions.test.ts` — modified — same pattern
-- `packages/game-engine/src/setup/<heroDeckBuilder>.ts` — modified — same pattern (file path TBD at pre-flight)
-- `packages/game-engine/src/setup/<heroDeckBuilder>.test.ts` — modified — same pattern
-- `packages/game-engine/src/setup/buildInitialGameState.loadout.test.ts` — new — end-to-end loadout integration test
+**Engine modifications (10 files):**
 
-Estimated 12-13 files (the qualified-format scope expansion may
-also touch the henchman-group resolution path inside
-`villainDeck.setup.ts` if it lives separately from villain
-parsing). Final count locked at pre-flight.
+- `packages/game-engine/src/matchSetup.types.ts` — modified —
+  Finding 10 — JSDoc on each of the five entity-ID fields
+  documenting `<setAbbr>/<slug>` format + D-10014 reference
+- `packages/game-engine/src/matchSetup.validate.ts` — modified —
+  PS-3 widen `CardRegistryReader`; add `parseQualifiedId` + 5
+  `buildKnownXxxQualifiedIds` helpers; per-field alignment;
+  Finding 24 deprecation marker on `buildKnownExtIds`; Finding 30
+  structural sub-function split if length grows
+- `packages/game-engine/src/matchSetup.validate.test.ts` — modified
+  — ≥30 new tests + fixture migrations (each documented in test
+  JSDoc with D-10014 reference)
+- `packages/game-engine/src/game.ts` — modified — PS-3 — widen
+  `EMPTY_REGISTRY` to `{ listCards, listSets, getSet }`. Do NOT
+  modify the `gameRegistry` guard at lines 201-210.
+- `packages/game-engine/src/setup/buildInitialGameState.ts` —
+  modified — PS-4 / Q3 LOCKED — orchestration-side diagnostic
+  accumulator; assigns to `baseState.messages`. No shape change.
+- `packages/game-engine/src/villainDeck/villainDeck.setup.ts` —
+  modified — promote `extractVillainGroupSlug` (Class A) +
+  `isVillainDeckRegistryReader` (guard) to exports; add new
+  exported `listHenchmanGroupSlugsInSet` (Class B); update
+  `filterVillainCardsByGroupSlug`, `findHenchmanGroupSlug`,
+  `findSchemeSlug` to accept `(setAbbr, slug)` and iterate the
+  named set only (PS-7)
+- `packages/game-engine/src/villainDeck/villainDeck.setup.test.ts`
+  — modified — orchestration-side diagnostic-presence regression
+  test
+- `packages/game-engine/src/mastermind/mastermind.setup.ts` —
+  modified — promote `isMastermindRegistryReader` (guard) to
+  export; add new exported `listMastermindSlugsInSet` (Class B);
+  update `findMastermindCards` to accept `(setAbbr, slug)` and
+  iterate the named set only (PS-7)
+- `packages/game-engine/src/mastermind/mastermind.setup.test.ts` —
+  modified — orchestration-side diagnostic-presence regression
+  test
+- `packages/game-engine/src/setup/buildSchemeSetupInstructions.ts`
+  — modified — promote `isSchemeRegistryReader` (guard) to export;
+  add new exported `listSchemeSlugsInSet` (Class B); parse
+  `<setAbbr>/<schemeSlug>` at builder boundary (PS-7)
+- `packages/game-engine/src/setup/buildSchemeSetupInstructions.test.ts`
+  — modified — orchestration-side diagnostic-presence regression
+  test
+- `packages/game-engine/src/setup/heroAbility.setup.ts` —
+  modified — Q2 LOCKED — promote `extractHeroSlug` (Class A) +
+  `isHeroAbilityRegistryReader` (guard) to exports; update hero-card
+  filter to filter by `setAbbr` first, then hero slug (PS-7)
+- `packages/game-engine/src/setup/heroAbility.setup.test.ts` —
+  modified or created if absent — orchestration-side
+  diagnostic-presence regression test (note: this file may not
+  yet exist as `heroAbility.setup.test.ts` per current Glob —
+  if the existing test file uses a different name like
+  `rules/heroAbility.setup.test.ts`, modify in place; do NOT
+  create a duplicate)
+- `packages/game-engine/src/setup/buildInitialGameState.loadout.test.ts`
+  — **new** — end-to-end loadout integration test
+
+**Server modifications (2 files):**
+
+- `apps/server/src/server.mjs` — modified — PS-5 — minimal diff
+  (import addition + Promise.all destructure rename + call site +
+  `// why:` comment)
+- `apps/server/src/server.mjs.test.ts` — new or modified — wiring
+  test
+
+**Total: 14 modified-or-new files.** Hard cap: 16. If scope grows
+beyond 16, STOP and escalate.
 
 **WP-100 retrospective note.** The smoke-test recipe in
 [docs/ai/invocations/session-wp100-interactive-gameplay-surface.md](../invocations/session-wp100-interactive-gameplay-surface.md)
@@ -669,8 +1040,8 @@ locked here.
 - [ ] `pnpm --filter @legendary-arena/server test` exits 0
 - [ ] `pnpm --filter @legendary-arena/arena-client test` exits 0 (unchanged from WP-100 baseline)
 - [ ] `pnpm -r build` exits 0
-- [ ] Engine baseline `524 / 116 / 0` → `~534 / 117 / 0` (estimate +10 tests / +1 suite for the new loadout integration test + 9 per-field validator and silent-failure tests)
-- [ ] Server baseline `47 / 7 / 0` → `~48 / 7 / 0` (one new wiring test)
+- [ ] Engine baseline `524 / 116 / 0` → `≥559 / 117 / 0` (PS-6 reconciled — minimum +35 tests, +1 suite: ≥25 per-field validator tests + ≥5 parse-error tests + 4 diagnostic-presence regression tests + ≥1 loadout integration test). Higher counts are fine; the floor is 559.
+- [ ] Server baseline `47 / 7 / 0` pass → `48 / 7 / 0` pass (one new wiring test); 16 skipped DB-tests preserved
 - [ ] arena-client baseline `182 / 17 / 0` UNCHANGED — this WP doesn't touch the client
 
 ### End-to-end smoke test
@@ -809,35 +1180,31 @@ time. The silent-failure surfacings push deterministic
 
 ## Open Questions
 
-1. **(Pre-flight resolution required.) Validator delegation strategy.**
-   Default is **(a): validator consumes builder-owned slug-extractor
-   helpers; builders remain authoritative for their ID format**. The
-   "single source of truth" is the per-builder extractor — NOT a new
-   ID-resolution module. Pivot to **(b): introduce a shared
-   ID-resolution layer** ONLY if a setup helper's slug semantics
-   cannot be expressed as a stable, self-contained extractor without
-   entangling builder logic (e.g., scheme setup also resolves
-   campaign instructions in a way that can't be cleanly factored).
-   The pre-flight reads each of the four setup helpers and confirms
-   (a) is feasible per-field. The decision is logged in D-10014.
-2. **(Pre-flight resolution required.) Hero-deck builder location.**
-   The hero-deck setup file path is not visible from a quick grep —
-   author locates and reads it at pre-flight, confirms the slug
-   convention matches the canonical pattern, and updates the
-   §Files Expected to Change list with the resolved path.
-3. **(Pre-flight resolution required.) Diagnostics injection
-   feasibility per builder.** The "silent-failure surfacing minimum"
-   constraint is shape-agnostic: the diagnostic must be in initial
-   `G.messages`. Pre-flight must confirm, **per builder**, whether
-   the existing signature provides access to `G` / a writable
-   `messages` accumulator (in which case the push happens inside the
-   builder) OR whether the diagnostic must be emitted at the
-   orchestration site (`buildInitialGameState.ts` or `Game.setup()`)
-   based on the builder's return shape. Either path is acceptable;
-   pre-flight locks the per-builder choice and records it in the
-   §Scope (In) §C body. If a builder requires a signature change to
-   support the diagnostic, that's a scope expansion — STOP and
-   re-evaluate.
+1. **Q1 RESOLVED 2026-04-27 (pre-flight) → Option (a) + PS-3
+   widening.** Validator delegates to builder-owned slug-source
+   helpers (Class A key-decoders + Class B set-data slug iterators
+   per PS-2). `CardRegistryReader` widened in-place to
+   `{ listCards, listSets, getSet }` (Option (i)). Pivot to (b) is
+   forbidden without WP body amendment + new pre-flight. Pre-flight
+   verified per-builder feasibility: villain group + hero use Class
+   A (existing extractors); mastermind + scheme + henchman use
+   Class B (new exported iterators). Logged in D-10014 at Commit B.
+2. **Q2 RESOLVED 2026-04-27 (pre-flight) → `setup/heroAbility.setup.ts`
+   (PS-1).** The "hero-deck builder" is `buildHeroAbilityHooks` in
+   `packages/game-engine/src/setup/heroAbility.setup.ts`. There is
+   no separate hero-deck-construction file; `heroDeckIds` is
+   consumed only by `buildHeroAbilityHooks`. Slug-extractor is
+   `extractHeroSlug` (currently local, promoted to export per PS-2).
+   Files-Expected-to-Change list updated.
+3. **Q3 RESOLVED 2026-04-27 (pre-flight) → Orchestration-only for
+   ALL FOUR builders (PS-4).** None of the four builders receives
+   `G` (verified by reading `buildVillainDeck`,
+   `buildMastermindState`, `buildSchemeSetupInstructions`,
+   `buildHeroAbilityHooks` signatures). Emission inside any builder
+   would require a forbidden signature change. The Uniformity Rule
+   is satisfied by orchestration-only emission in
+   `setup/buildInitialGameState.ts` (one mode, one site, four
+   builders). Implementation pattern locked in §Scope (In) §C.
 4. **(Resolved at draft time.) 01.5 not invoked.** All four triggers
    absent — no new `LegendaryGameState` field, no
    `buildInitialGameState` shape change (config still has the same 9
@@ -860,6 +1227,22 @@ time. The silent-failure surfacings push deterministic
    `turn.onBegin` to do all three retires the buttons. WP-113 is
    not that WP — it focuses on the orthogonal validator/wiring
    issue.
+7. **(Pre-flight LOGGED.) `buildKnownExtIds` post-WP-113 fate
+   (Finding 24).** After WP-113 lands, `buildKnownExtIds` has no
+   consumers — all five entity-ID fields use
+   `buildKnownXxxQualifiedIds`. Retained in this WP for one release
+   cycle as a forensic-debugging aid with a deprecation `// why:`
+   comment. A follow-up cleanup WP should remove it.
+8. **(Pre-flight LOGGED.) Stringly-typed validator error kinds
+   (Copilot Finding 13).** The per-field error kinds ("format
+   invalid", "set not loaded", "slug not in that set") are
+   stringly-typed in error messages. Adding a discriminated-union
+   `ValidationErrorKind = 'shape' | 'format' | 'set-not-loaded' |
+   'slug-not-in-set'` to `MatchSetupError` would lock the error
+   shape compile-time. Out of scope for WP-113 (touches
+   `matchSetup.types.ts` contract surface beyond the JSDoc-only
+   change in Finding 10); deferred to a follow-up WP. Document the
+   deferral in D-10014.
 
 ---
 
@@ -882,7 +1265,33 @@ time. The silent-failure surfacings push deterministic
   debugging time" (WP-100 D-10006/7/8/9/10/11/12/13 cumulative
   reflection).
 - 00.3 lint-gate self-review: PENDING (will run at pre-flight).
-- Pre-flight pending. The WP author should also verify each setup
-  helper's actual slug convention before locking the validator's
-  per-field categories — schema mismatches like the
-  villain-flat-key-vs-group-slug one may exist for other fields too.
+- **Pre-flight 2026-04-27 — READY TO EXECUTE conditional on PS-1..8.**
+  Eight scope-neutral pre-session actions resolved into this WP body
+  + EC-113:
+  - PS-1 (Q2 path): hero-deck builder = `setup/heroAbility.setup.ts`.
+  - PS-2 (slug-source semantics): split into Class A key-decoders
+    + Class B set-data iterators; three new exported `listXxxSlugsInSet`
+    helpers added.
+  - PS-3 (`CardRegistryReader` widening): Option (i) widen-in-place
+    to `{ listCards, listSets, getSet }`; `EMPTY_REGISTRY` widened
+    in `game.ts`.
+  - PS-4 (Q3 emission site): orchestration-only in
+    `setup/buildInitialGameState.ts` (forced — no builder receives
+    `G`); four registry-reader guards exported.
+  - PS-5 (server minimal diff): destructure rename `[, , parGate]`
+    → `[registry, , parGate]` is part of the minimal diff.
+  - PS-6 (test counts): reconciled to engine `≥559 / 117 / 0`
+    (≥+35 tests, +1 suite); server `48 / 7 / 0` pass (+1 wiring).
+  - PS-7 (builder internal-iterator updates): `filterVillainCardsByGroupSlug`,
+    `findHenchmanGroupSlug`, `findSchemeSlug`, `findMastermindCards`,
+    and the hero-card filter in `buildHeroAbilityHooks` all updated
+    to accept `(setAbbr, slug)` and iterate the named set only.
+  - PS-8 (collision re-probe): re-measure all four collision counts
+    at session start; record measured numbers in D-10014. Original
+    "11/584 mastermind" figure is probe-shape-dependent; 23/279 hero
+    is verified.
+  - Plus three copilot folds: Finding 10 (`MatchSetupConfig` field
+    JSDoc), Finding 24 (`buildKnownExtIds` deprecation marker),
+    Finding 30 (validator structural sub-function split).
+- Final file scope: 14 modified-or-new files (hard cap 16).
+- Authorized to generate session execution prompt next.
