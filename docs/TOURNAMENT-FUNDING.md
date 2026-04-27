@@ -22,6 +22,40 @@ require a DECISIONS.md entry referenced from the section being amended.
 If this document conflicts with `docs/ai/ARCHITECTURE.md` or
 `docs/01-VISION.md`, those documents win.
 
+For platform-level revenue (supporter subscriptions, cosmetics,
+organized-play licensing, IP royalties), see `docs/01-VISION.md
+§Financial Sustainability` — that document is authoritative for the
+platform; this document is authoritative for tournament-level
+community funding.
+
+## Scope
+
+This document governs **tournament-level community funding only** —
+the money community organizers raise to cover incremental costs
+incurred specifically by running a tournament.
+
+The **platform's own revenue model** (supporter subscriptions,
+cosmetics, organized-play licensing, IP royalties) is governed by
+`docs/01-VISION.md §Financial Sustainability` and is out of scope
+here. The two coexist: the platform MAY sell organized-play licensing
+*to* tournament organizers per Vision; organizers MUST NOT extract
+profit from tournament participants per this document.
+
+A tournament's "infrastructure costs" are **incremental costs
+incurred specifically for that tournament** — for example, bandwidth
+surge during peak rounds, prize-administration tooling, dedicated
+hosting capacity provisioned for the event. The platform's always-on
+infrastructure (general hosting, baseline storage, R2 buckets,
+shared observability, long-lived metrics tooling) is funded through
+the Vision's revenue model and is **not** a tournament-funding line
+item.
+
+**Explicit exclusion.** Infrastructure does **not** include amortized
+or shared platform costs (always-on hosting, general observability,
+baseline storage, shared R2 buckets, long-lived metrics tooling),
+even if a tournament incidentally consumes them. A cost qualifies
+only if it would not exist absent the tournament.
+
 ## Definitions
 
 - **Tournament** — A scheduled, organizer-run Legendary Arena competition
@@ -29,9 +63,13 @@ If this document conflicts with `docs/ai/ARCHITECTURE.md` or
   play is out of scope.
 - **Organizer** — A person with operational authority to run tournaments:
   scheduling, moderating, or holding credentials for shared infrastructure.
-- **Infrastructure** — The shared technical resources required to operate
-  the platform: hosting, compute, storage, bandwidth, domains, monitoring,
-  and equivalent line items.
+- **Infrastructure** — **Incremental tournament-specific** technical
+  resources required to host a tournament: dedicated or surge hosting,
+  prize-administration tooling, event-specific bandwidth, and equivalent
+  line items that would not exist absent the tournament. Always-on
+  platform infrastructure (baseline hosting, shared storage, general
+  monitoring) is governed by `docs/01-VISION.md §Financial
+  Sustainability`, not this document — see `## Scope` above.
 - **Contribution** — Money received through any approved funding channel.
 
 ## Funding Principles
@@ -200,6 +238,8 @@ Amendments MUST preserve:
 
 Material changes require a `docs/ai/DECISIONS.md` entry and a reference to
 that entry in the amended section.
+
+Anchored in `docs/ai/DECISIONS.md §D-9701`.
 
 ## Sunset / Dissolution
 
