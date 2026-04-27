@@ -28,20 +28,46 @@ together render every match created today structurally empty:
      `buildSchemeSetupInstructions`, hero-deck construction) all
      interpret as "registry not provided → return empty/minimal state
      silently."
-2. **Validator and builder disagree about ID format.** Even when the
-   registry is wired (e.g., in test contexts that bypass server
-   wiring), `validateMatchSetup` builds its `knownExtIds` set from
+2. **Validator and builder disagree about ID format AND bare slugs
+   are ambiguous across sets.** Even when the registry is wired
+   (e.g., in test contexts that bypass server wiring),
+   `validateMatchSetup` builds its `knownExtIds` set from
    `registry.listCards()` keys ([matchSetup.validate.ts:82-88](packages/game-engine/src/matchSetup.validate.ts))
    — full flat-card keys like `core-villain-brotherhood-blob` — and
-   rejects any field entry not in that set. But `buildVillainDeck`
+   rejects any field entry not in that set. `buildVillainDeck`
    ([villainDeck.setup.ts:165-175](packages/game-engine/src/villainDeck/villainDeck.setup.ts))
    expects `villainGroupIds` to contain **bare group slugs** like
-   `brotherhood` (extracted from card keys via
-   `extractVillainGroupSlug`). The two surfaces are contradictory: any
-   payload that satisfies one fails the other. The same mismatch
-   applies to `henchmanGroupIds`, and to a lesser extent `schemeId` /
-   `mastermindId` / `heroDeckIds` (whose ID formats also need
-   verification).
+   `brotherhood`. The two surfaces are contradictory.
+
+   **And both formats are wrong** — bare slugs collide across sets
+   in the actual registry data. Empirical probe 2026-04-27:
+   - **23 / 279 hero slugs** appear in 2+ sets. `black-widow` exists
+     in `3dtc`, `bkwd`, `core`, `msp1`. `hulk` in 3 sets.
+     `captain-america` / `thor` / `deadpool` / `wasp` / `ant-man` /
+     `nova` all collide.
+   - **11 / 584 mastermind slugs** collide. `loki` in `core` +
+     `msp1` plus four stage-variant slugs.
+   - **4 villain group slugs** collide
+     (e.g., `enemies-of-asgard` in `core` + `msp1`).
+   - **2 scheme slugs** collide
+     (`super-hero-civil-war` in `core` + `msp1`).
+
+   Even with a perfectly-aligned validator-vs-builder contract, a
+   bare-slug ID like `villainGroupIds: ['brotherhood']` would be
+   nondeterministic the moment two sets ship a `brotherhood` group
+   and both are loaded. Ranking-affecting state determinism (Vision
+   §22) requires that match-setup IDs deterministically resolve to
+   exactly one card collection.
+
+   **The correct contract is set-qualified slugs.** Every entity ID
+   in `MatchSetupConfig` (scheme, mastermind, villain group, henchman
+   group, hero) takes the form `<setAbbr>/<slug>` — e.g.,
+   `core/brotherhood`, `wwhk/black-widow`,
+   `core/midtown-bank-robbery`. The format collapses three failure
+   modes into one: collision-free across sets, parser-trivial for
+   builders (single `string.split('/')`), and validator-checkable in
+   two independent existence checks (set exists; slug exists in that
+   set).
 
 The combined effect: every match created via the lobby today builds
 with `G.villainDeck.deck = []`, `G.mastermind = <minimal empty
@@ -271,19 +297,44 @@ Before writing a single line:
   3. `loadRules()` and `createParGate()` resolve in parallel
   4. `Server({ games: [LegendaryGame], ... })` constructed
   5. `server.run({ port })` — accepts requests
-- **Validator field categories** (verified against engine source
-  2026-04-27 — confirm at pre-flight):
-  - `schemeId`: bare slug (e.g., `midtown-bank-robbery`) — buildScheme
-    expects this; verified by inspecting setData.schemes[].slug pattern
-  - `mastermindId`: bare slug (e.g., `magneto`) — buildMastermind
-    expects this; verify at execution time
-  - `villainGroupIds`: bare group slugs (e.g., `[brotherhood]`) —
-    buildVillainDeck calls `extractVillainGroupSlug` to filter
-  - `henchmanGroupIds`: bare henchman slugs (e.g., `[hand-ninjas]`) —
-    verify the format against henchman builder code at execution time
-  - `heroDeckIds`: bare hero slugs (e.g., `[spider-man, hulk, ...]`)
-    — verify the format against hero-deck builder code at execution
-    time
+- **Set-qualified ID format (LOCKED).** All five entity-ID fields on
+  `MatchSetupConfig` use the form `<setAbbr>/<slug>` — collision-free
+  across sets, builder-parseable via a single `string.split('/')`,
+  validator-checkable in two existence steps (set exists; slug
+  exists in that set). Bare slugs and flat-card keys are BOTH
+  rejected. The format is mandatory regardless of whether the slug
+  happens to be unambiguous today — future set additions can
+  introduce collisions and the format must be stable.
+
+  Canonical examples (verify each against the registry at
+  pre-flight; these are illustrative, not normative):
+  - `schemeId: "core/midtown-bank-robbery"` — `<setAbbr>` is `core`,
+    slug matches `setData.schemes[].slug`.
+  - `mastermindId: "core/magneto"` — slug matches a mastermind
+    entity slug, NOT a flat-card key.
+  - `villainGroupIds: ["core/brotherhood", "core/hydra"]` — each
+    entry is `<setAbbr>/<groupSlug>`.
+  - `henchmanGroupIds: ["core/hand-ninjas"]` — same shape.
+  - `heroDeckIds: ["core/spider-man", "wwhk/black-widow", ...]` —
+    each entry is `<setAbbr>/<heroSlug>`. **Bare hero slugs are
+    EXPLICITLY forbidden** — `black-widow` alone collides across
+    `3dtc, bkwd, core, msp1` per 2026-04-27 empirical probe.
+
+  Forbidden ID shapes (validator MUST reject with field-specific
+  error messages naming the canonical form):
+  - Display names (`"Black Widow"`, `"Captain America"`).
+  - Bare slugs without set prefix (`"black-widow"`, `"brotherhood"`).
+  - Flat-card keys (`"core-hero-black-widow-1"`,
+    `"core-villain-brotherhood-blob"`).
+  - Bare set abbreviations (`"core"` alone).
+  - Empty strings, whitespace-only strings, paths with extra
+    components (`"core/sub/black-widow"`).
+
+  Error message contract (per `00.6 §11`): full sentence naming the
+  rejected value, the field, the canonical form, and an example.
+  E.g., `"heroDeckIds[2] rejected: \"black-widow\". Hero IDs must be
+  set-qualified slugs in the form \"<setAbbr>/<heroSlug>\", e.g.,
+  \"core/black-widow\" or \"wwhk/black-widow\"."`
 - **Silent-failure surfacing minimum** (locked): each of the four
   setup helpers' early-return paths gains AT LEAST a `G.messages`
   entry with a full-sentence message naming what was skipped and
@@ -320,44 +371,67 @@ Before writing a single line:
 
 - **`packages/game-engine/src/matchSetup.validate.ts`** — modified:
   - The existing `buildKnownExtIds(registry)` function returns a
-    `Set<string>` of flat-card keys. Keep it as-is (some fields may
-    legitimately consume flat-card keys).
-  - Add new helpers:
-    - `buildKnownVillainGroupSlugs(registry): Set<string>` — extracts
-      group slugs from villain card keys via the (now-exported)
-      `extractVillainGroupSlug` from `villainDeck.setup.ts`.
-    - `buildKnownHenchmanGroupSlugs(registry): Set<string>` — same
-      pattern for henchmen.
-    - `buildKnownSchemeSlugs(registry): Set<string>` — same for
-      schemes.
-    - `buildKnownMastermindSlugs(registry): Set<string>` — same for
-      masterminds.
-    - `buildKnownHeroSlugs(registry): Set<string>` — same for heroes.
-  - Restructure the per-field validation loops:
-    - `schemeId`: validate against `buildKnownSchemeSlugs`.
-    - `mastermindId`: validate against `buildKnownMastermindSlugs`.
-    - `villainGroupIds[]`: validate each entry against
-      `buildKnownVillainGroupSlugs`.
-    - `henchmanGroupIds[]`: validate each entry against
-      `buildKnownHenchmanGroupSlugs`.
-    - `heroDeckIds[]`: validate each entry against
-      `buildKnownHeroSlugs`.
-  - Error messages remain full-sentence and field-specific (the
-    existing pattern). Each error names the field, the rejected
-    value, and the canonical format the validator expected ("group
-    slug", "card key", etc.).
+    `Set<string>` of flat-card keys. Keep it as-is (some
+    flat-card-direct fields may still consume it; not used for the
+    five entity-ID fields after this WP).
+  - Add `parseQualifiedId(input: string): { setAbbr: string; slug:
+    string } | null` — parses `<setAbbr>/<slug>` and returns null
+    on any malformed input (empty string, no `/`, multiple `/`,
+    empty parts, leading/trailing whitespace). Validator emits a
+    "format" error before the existence check when parse fails.
+  - Add five helpers, each returning `Set<string>` of fully-qualified
+    `<setAbbr>/<slug>` IDs:
+    - `buildKnownSchemeQualifiedIds(registry)`
+    - `buildKnownMastermindQualifiedIds(registry)`
+    - `buildKnownVillainGroupQualifiedIds(registry)`
+    - `buildKnownHenchmanGroupQualifiedIds(registry)`
+    - `buildKnownHeroQualifiedIds(registry)`
+    Each iterates the registry's flat cards (or `getSet(...)`
+    results for henchmen) and emits one entry per
+    `(setAbbr, slug)` pair. The bare-slug extractors imported from
+    builder modules (`extractVillainGroupSlug`, etc.) provide the
+    slug half; the flat card's `setAbbr` field provides the
+    set half.
+  - Restructure the per-field validation loops. For each entity-ID
+    field:
+    1. Parse the entry as `<setAbbr>/<slug>`. If parse fails, emit
+       a format error: `"<field>[<i>] rejected: \"<value>\". IDs
+       must be set-qualified slugs in the form
+       \"<setAbbr>/<slug>\", e.g., \"core/<example>\"."`
+    2. If parse succeeds but the parsed ID is not in the
+       corresponding `buildKnownXxxQualifiedIds` set, emit an
+       existence error naming the parsed `setAbbr` and `slug`
+       separately so the user can distinguish "set not loaded"
+       from "slug not in that set."
+  - Bare slugs (`black-widow`), display names (`Black Widow`), and
+    flat-card keys (`core-hero-black-widow-1`) are ALL rejected by
+    the parse step. The error message contract is locked above.
 
 - **`packages/game-engine/src/villainDeck/villainDeck.setup.ts`** —
   modified:
-  - Promote `extractVillainGroupSlug` from internal helper to named
-    export. No signature change. Add JSDoc noting external consumers.
-- **`packages/game-engine/src/mastermind/mastermind.setup.ts`**,
+  - Promote `extractVillainGroupSlug` from internal helper to a
+    named export. No signature change.
+  - Update `buildVillainDeck` to parse each `villainGroupIds` entry
+    as `<setAbbr>/<groupSlug>` (use the same `parseQualifiedId`
+    helper — exported from `matchSetup.validate.ts` and re-imported,
+    OR re-implemented locally if cross-module imports are awkward;
+    author's choice at execution time. The helper is small enough
+    to safely duplicate if needed.) The deck-construction loop
+    filters flat cards by BOTH `setAbbr` (top-level) AND the
+    extracted `groupSlug` (within set), iterating only that set's
+    cards. No accidental cross-set matches.
+- **`packages/game-engine/src/mastermind/mastermind.setup.ts`,
   `packages/game-engine/src/setup/buildSchemeSetupInstructions.ts`,
-  and the hero-deck setup file — modified:
-  - Each promotes its slug-extraction helper to a named export, OR if
-    no such helper exists yet, creates one with a `// why:` comment
-    citing D-10014's "single source of truth for ID format"
-    discipline.
+  and the hero-deck setup file (located at pre-flight Q2)** —
+  modified with the same pattern:
+  - Promote bare-slug extractor to named export.
+  - Parse `<setAbbr>/<slug>` at the builder boundary using
+    `parseQualifiedId`.
+  - Iterate the named set first, match the slug within that set's
+    cards/entities only.
+- **No signature change to the four builders' top-level entry
+  points.** Each takes the same `MatchSetupConfig` slice it took
+  before; only the internal parsing/matching changes.
 
 ### C) Silent-failure surfacing — setup-time diagnostics
 
@@ -407,23 +481,32 @@ the diagnostic emission lands.
     `Server()`. Mocks the import to spy the call.
 - **`packages/game-engine/src/matchSetup.validate.test.ts`** —
   modified:
-  - **At least 10 new tests** organized as 2 per field category
-    (5 fields × accept-bare-slug + reject-flat-card-key) — final
-    count locked at pre-flight when the per-field acceptance shape
-    is verified against the canonical builder semantics:
-    - `validateMatchSetup accepts schemeId as a bare scheme slug`
+  - **At least 25 new tests** organized as 5 per field category
+    (5 fields × accept-qualified + reject-bare-slug + reject-display-
+    name + reject-flat-card-key + reject-cross-set-collision-
+    sensitivity) — final count locked at pre-flight when the
+    per-field shape is verified against builder semantics:
+    - `validateMatchSetup accepts schemeId as set-qualified slug
+      (e.g., "core/midtown-bank-robbery")`
+    - `validateMatchSetup rejects schemeId given as a bare slug`
+    - `validateMatchSetup rejects schemeId given as a display name`
     - `validateMatchSetup rejects schemeId given as a flat-card key`
-    - `validateMatchSetup accepts mastermindId as a bare mastermind slug`
-    - `validateMatchSetup rejects mastermindId given as a flat-card key`
-    - `validateMatchSetup accepts villainGroupIds as bare group slugs`
-    - `validateMatchSetup rejects villainGroupIds given as flat-card keys`
-    - `validateMatchSetup accepts henchmanGroupIds as bare henchman slugs`
-    - `validateMatchSetup rejects henchmanGroupIds given as flat-card keys`
-    - `validateMatchSetup accepts heroDeckIds as bare hero slugs`
-    - `validateMatchSetup rejects heroDeckIds given as flat-card keys`
-  - Existing tests that used flat-card keys for these fields are
-    updated to use slugs. Document each fixture change in the test
-    file's top JSDoc with a D-10014 reference.
+    - `validateMatchSetup rejects schemeId for a slug that exists
+      in a different set than the one named` (collision-sensitivity:
+      e.g., `"core/super-hero-civil-war"` accepts but
+      `"msp1/midtown-bank-robbery"` rejects if `msp1` doesn't have
+      that scheme)
+    - (similar 5-test groups for mastermindId, villainGroupIds,
+      henchmanGroupIds, heroDeckIds — 25 total minimum)
+  - **At least 5 parse-error tests** asserting `parseQualifiedId`
+    rejects malformed inputs: empty string, no slash, multiple
+    slashes (`"core/sub/black-widow"`), empty setAbbr
+    (`"/black-widow"`), empty slug (`"core/"`).
+  - Existing tests that used flat-card keys or bare slugs for these
+    fields are updated to use the qualified format. Document each
+    fixture change in the test file's top JSDoc with a D-10014
+    reference. The fixture migration is part of WP-113's scope —
+    test-data drift from the new contract is expected and intended.
 - **`packages/game-engine/src/villainDeck/villainDeck.setup.test.ts`**
   (and three peer files) — modified:
   - Add one regression test per helper asserting that the silent-empty
@@ -492,7 +575,27 @@ All tests use `node:test` and `node:assert` only.
 - `packages/game-engine/src/setup/<heroDeckBuilder>.test.ts` — modified — same pattern
 - `packages/game-engine/src/setup/buildInitialGameState.loadout.test.ts` — new — end-to-end loadout integration test
 
-Estimated 12 files. Final count locked at pre-flight.
+Estimated 12-13 files (the qualified-format scope expansion may
+also touch the henchman-group resolution path inside
+`villainDeck.setup.ts` if it lives separately from villain
+parsing). Final count locked at pre-flight.
+
+**WP-100 retrospective note.** The smoke-test recipe in
+[docs/ai/invocations/session-wp100-interactive-gameplay-surface.md](../invocations/session-wp100-interactive-gameplay-surface.md)
+included a sample loadout JSON using bare slugs
+(`villainGroupIds: ["villains-brotherhood"]`, `heroDeckIds:
+["hero-spider-man", ...]`). That JSON was always ambiguous per the
+2026-04-27 collision data above and only "worked" in the WP-100
+smoke test because the registry-not-wired bug (closed by §Scope A)
+silently skipped validation. WP-100 is closed and not reopened by
+this WP; the smoke-test artifact is scratchpad-by-default per
+`.claude/rules/work-packets.md` so editing it has no governance
+overhead, but it is also self-correcting once WP-113 lands —
+future smoke testers will see the validator's format-error message
+and update the JSON. No retroactive changes to WP-100 spec are
+required. This note exists to record the precedent: scaffold
+smoke-test JSON in any future WP must use the qualified format
+locked here.
 
 ---
 
@@ -504,15 +607,20 @@ Estimated 12 files. Final count locked at pre-flight.
 - [ ] A `// why:` comment names D-10014 and the WP-100 smoke-test discovery
 - [ ] Server-side test asserts `setRegistryForSetup` was called during `startServer()` execution and prior to the function returning. Mock the imported binding (e.g., via `mock.module` or a re-exported test seam) to spy the call. **Do NOT require deep boardgame.io constructor spying** — that's awkward under ESM and not necessary; ordering "after loadRegistry, before startServer returns" is sufficient to prove the gap is closed.
 
-### Validator alignment
-- [ ] `validateMatchSetup` validates `schemeId` against scheme slugs (not flat-card keys)
-- [ ] `validateMatchSetup` validates `mastermindId` against mastermind slugs
-- [ ] `validateMatchSetup` validates each `villainGroupIds[]` entry against villain group slugs
-- [ ] `validateMatchSetup` validates each `henchmanGroupIds[]` entry against henchman group slugs
-- [ ] `validateMatchSetup` validates each `heroDeckIds[]` entry against hero slugs
-- [ ] Bare-slug loadouts (`villainGroupIds: ['brotherhood']`, `mastermindId: 'magneto'`, etc.) pass the validator
-- [ ] Flat-card-key loadouts (`villainGroupIds: ['core-villain-brotherhood-blob']`) FAIL the validator with a "rejected: did not match any known group slug" error message
-- [ ] Field-specific error messages name the rejected value and the canonical format
+### Validator alignment (set-qualified ID format, locked)
+- [ ] `validateMatchSetup` accepts each entity-ID field in the form `<setAbbr>/<slug>` (e.g., `schemeId: "core/midtown-bank-robbery"`)
+- [ ] `validateMatchSetup` REJECTS bare slugs (`"midtown-bank-robbery"`) for ALL five entity-ID fields with a format-error message naming the canonical form
+- [ ] `validateMatchSetup` REJECTS display names (`"Black Widow"`) and flat-card keys (`"core-hero-black-widow-1"`) for the five entity-ID fields
+- [ ] `parseQualifiedId` rejects malformed inputs (empty, no slash, multiple slashes, empty parts) with format-error messaging
+- [ ] Validator distinguishes "set not loaded" from "slug not in that set" in its error messages — e.g., `"heroDeckIds[0] rejected: \"missing-set/black-widow\". Set \"missing-set\" is not loaded."` vs `"heroDeckIds[0] rejected: \"core/nonexistent-hero\". Hero slug \"nonexistent-hero\" not found in set \"core\"."`
+- [ ] Cross-set collision protection: `villainGroupIds: ["core/brotherhood"]` validates against `core` set only, regardless of whether `brotherhood` exists in any other set
+- [ ] All five field-specific error messages follow the `00.6 §11` full-sentence contract — name the field index, the rejected value, the canonical form, and a concrete example
+
+### Builder alignment
+- [ ] `buildVillainDeck` parses `villainGroupIds` entries as `<setAbbr>/<groupSlug>` and filters cards by `setAbbr` first, `groupSlug` second
+- [ ] `buildMastermindState`, `buildSchemeSetupInstructions`, and the hero-deck builder follow the same `<setAbbr>/<slug>` parsing pattern
+- [ ] No top-level signature changes to any of the four builders — `MatchSetupConfig` argument shape is unchanged, only the internal interpretation of strings changes
+- [ ] Cross-set deck-construction safety: a `villainGroupIds` entry of `"core/brotherhood"` produces a deck containing ONLY `core` set's brotherhood cards, even when `msp1`'s `brotherhood` (if it existed) is loaded in the same registry
 
 ### Silent-failure surfacing
 - [ ] When `buildVillainDeck` returns empty/minimal due to an unusable registry, initial `G.messages` contains a full-sentence diagnostic naming cause (which builder + interface gap) and remediation

@@ -18,9 +18,13 @@
 - Server wiring sequence: `loadRegistry()` resolves → `setRegistryForSetup(registry)` → registry/rules/PAR Promise.all → `Server({ games, origins })` → `server.run({ port })`
 - `setRegistryForSetup` import path: `@legendary-arena/game-engine` (top-level export)
 - `setRegistryForSetup` registry guard: do NOT remove `if (gameRegistry) { ... }` at `game.ts:201-210` — server wiring is the runtime fix, not the engine guard
-- Slug-extractor exports: `extractVillainGroupSlug` from `villainDeck.setup.ts`; equivalents from `mastermind.setup.ts`, `buildSchemeSetupInstructions.ts`, hero-deck builder. Type-stable, no signature changes. **Single source of truth for ID format.**
-- Validator field categories: `schemeId` → scheme slugs; `mastermindId` → mastermind slugs; `villainGroupIds[]` → villain group slugs; `henchmanGroupIds[]` → henchman group slugs; `heroDeckIds[]` → hero slugs. `buildKnownExtIds` (flat-card-key set) retained for any field that legitimately needs it.
-- Diagnostic constraint: full-sentence `G.messages` entry on each `isXRegistryReader → empty fallback`. **No new state fields, no signature-breaking changes to builders.** Per-builder emission site (inside builder vs orchestration) per pre-flight Q3.
+- **Set-qualified ID format (LOCKED):** all five entity-ID fields on `MatchSetupConfig` use `<setAbbr>/<slug>`. Bare slugs, display names, and flat-card keys are ALL rejected. Format-error messages name the canonical form + concrete example.
+- Empirical collision evidence (2026-04-27 probe): 23 hero slugs, 11 mastermind slugs, 4 villain group slugs, 2 scheme slugs collide across loaded sets. Bare slugs are nondeterministic by construction; qualified format is mandatory regardless of present-day disambiguation.
+- `parseQualifiedId(input)` rejects empty / no-slash / multiple-slash / empty-part inputs. Validator emits a format error before existence check on parse failure.
+- Validator distinguishes "set not loaded" vs "slug not in that set" in error messages.
+- Slug-extractor exports: `extractVillainGroupSlug` from `villainDeck.setup.ts`; equivalents from `mastermind.setup.ts`, `buildSchemeSetupInstructions.ts`, hero-deck builder. Type-stable, no signature changes. Single source of truth for the slug half of qualified IDs.
+- Builder filtering order: parse `<setAbbr>/<slug>` → filter cards by `setAbbr` first → match by `<slug>` within that set's cards only. No accidental cross-set matches.
+- Diagnostic constraint: full-sentence `G.messages` entry on each `isXRegistryReader → empty fallback`. No new state fields, no signature-breaking changes to builders. Per-builder emission site (inside builder vs orchestration) per pre-flight Q3.
 - 01.5 NOT INVOKED: no new `LegendaryGameState` field, no `buildInitialGameState` shape change, no new `LegendaryGame.moves` entry, no new phase hook
 
 ## Guardrails
@@ -66,5 +70,7 @@
 - "Validator now rejects every loadout" → step 5 ran before steps 1-4 (extractors not yet exported). Re-order; the 10-step sequence is load-bearing.
 - Diagnostic appears in `G.messages` on every match (even with registry wired) → diagnostic emission ran unconditionally instead of inside the `isXRegistryReader → empty` branch. Loadout integration test catches this.
 - arena-client test count drifted → WP-113 touched a UI file. STOP and revert; this WP is engine + server only.
-- Test fixture using a flat-card key for a slug field now fails → expected; update the fixture per D-10014 and document in test JSDoc.
+- Bare slug / display name / flat-card key fixture rejected by validator → **expected.** Update fixture to `<setAbbr>/<slug>` qualified format per D-10014 and document each migration in test JSDoc. Do NOT add the bare slug to a fallback list to "make the test pass."
+- Validator returns "set 'wwhk' not loaded" or "format invalid: expected `<setAbbr>/<slug>`, got 'black-widow'" → expected when fixture omits the `<setAbbr>/` prefix. Format error fires before existence check on parse failure; "set not loaded" fires before "slug not in that set" — the two error kinds carry different remediations.
+- Builder accepts `<setAbbr>/<slug>` but silently filters across all sets (e.g., parses qualifier then ignores it) → contract violation. Builder MUST filter by `setAbbr` first, THEN match `<slug>` within that set's cards only. Cross-set collision protection is the entire reason for the qualified format.
 - "Cannot read properties of undefined (G.messages)" inside a builder → builder doesn't actually receive G; per pre-flight Q3, that builder's diagnostic emits at the orchestration site instead. Move the push to `buildInitialGameState.ts`.
