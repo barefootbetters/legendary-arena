@@ -11155,6 +11155,46 @@ The user-facing flow now reads:
 
 ---
 
+### D-10013 — Draw Button Caps at HAND_SIZE 6 (UI-Side Hand-Size Enforcement)
+
+**Type:** UI scaffold refinement / UX bugfix
+**Packet:** WP-100 (smoke-test fix-forward post-D-10012)
+**Date:** 2026-04-27
+
+**Decision:** The Draw button in `TurnActionBar.vue` now computes its `count` argument dynamically: `count = Math.max(0, 6 - handCount)`. The button is also disabled when `handCount >= 6`. Both changes enforce Legendary's standard hand size of 6 from the UI side. To support this, `TurnActionBar` gains a new required prop `handCount: number` which `PlayView` passes from `viewer.handCount` (the viewing player's hand-card count from `UIPlayerState`).
+
+**Rationale:** Eighth WP-100 smoke-test fix-forward. After the user could click through to play phase and hit Draw, they discovered that clicking Draw twice produced a 12-card hand — violating Legendary's tabletop hand-size cap of 6. Root cause: D-10003's original Draw button hardcoded `count: 6` regardless of current hand size, which is correct only on the first click (hand was empty). Subsequent clicks compounded.
+
+The engine's `drawCards` move has no `HAND_SIZE` constant or cap (per D-10003 — that's a deliberate engine MVP gap). Until a follow-up engine WP adds auto-draw to a canonical `HAND_SIZE` constant, the cap MUST be enforced UI-side. Two complementary mechanisms:
+
+1. **Dynamic count computation** (`max(0, 6 - handCount)`): clicking Draw fills to exactly 6 cards regardless of starting hand size. With handCount=0, emits `count: 6`. With handCount=2, emits `count: 4`. With handCount=6, emits `count: 0` (and the early-return in `onDraw` prevents the dispatch).
+2. **Button disabled when full** (`handCount >= 6`): visual feedback that the action is unavailable. Belt-and-suspenders against any path that bypasses the count computation.
+
+The four 01.5 triggers were verified absent:
+
+- ❌ No new `LegendaryGameState` field — `handCount` already projected on `UIPlayerState` (WP-089).
+- ❌ No `buildInitialGameState` shape change.
+- ❌ No new `LegendaryGame.moves` entry — `drawCards` unchanged.
+- ❌ No new phase hook — UI-side cap only.
+
+**01.5 NOT INVOKED.**
+
+**How to apply:**
+
+- The `handCount` prop on TurnActionBar is required (no default). `PlayView` passes `viewer.handCount` from the resolved viewing player. Tests construct `TurnActionBar` directly with `handCount: 0` (empty hand) for the simple cases or with explicit values for the cap-specific regression tests.
+- The Draw button is STILL a scaffold artifact per D-10003. When a future engine WP adds `turn.onBegin` auto-draw to a canonical `HAND_SIZE` constant, both the button AND the handCount-based cap are deleted in one stroke. The cap logic does not survive the deletion.
+- Future scaffold buttons that emit moves with bounded counts (e.g., a hypothetical "Discard 2" button) should follow the same pattern: receive the relevant UIState count as a prop, compute the move arg dynamically, disable the button when the action is unavailable.
+
+**Why this gap was missed.** D-10003 explicitly hardcoded `count: 6` as a one-shot "fill the hand" semantic. The mistake was treating the click as a one-time event when it's actually idempotent UI input — the user can click Draw multiple times. The original `// why:` comment described "one click = full refill" which is correct AS A SEMANTIC INTENT but the implementation didn't enforce idempotence. Engine unit tests don't cover the UI behavior; the gap was UI-only and surfaced through smoke testing.
+
+**Cumulative reflection (D-10006 → D-10013).** Eighth WP-100 fix-forward. The pattern continues: each fix unblocks the next layer. D-10013 differs from the prior gaps in that it's not a boardgame.io quirk or a missing UI surface — it's a scaffold-correctness bug in WP-100's own code. The Draw button's `count: 6` hardcode was always wrong; it just took multi-click smoke testing to expose it. The lesson reinforces D-10010's recommendation: an in-process Server() + Client() integration test harness would catch this class of regression by exercising the full multi-click + multi-frame state-update cycle.
+
+**Status:** Active for the lifetime of the Draw button. Closes when a future engine WP adds `turn.onBegin` auto-draw and the button + cap logic are both deleted (D-10003's commitment).
+
+**Citation:** [TurnActionBar.vue](apps/arena-client/src/components/play/TurnActionBar.vue) `onDraw` handler + `handCount` prop + button disabled condition; [PlayView.vue](apps/arena-client/src/components/play/PlayView.vue) `:hand-count="viewer.handCount"` prop pass; [TurnActionBar.test.ts](apps/arena-client/src/components/play/TurnActionBar.test.ts) "Draw caps count at hand-size 6 (D-10013)" + "Draw is disabled when hand is full (handCount >= 6, D-10013)" regression tests; D-10003 (the parent scaffold-artifact decision that this refines); D-10006 + D-10007 + D-10008 + D-10009 + D-10010 + D-10011 + D-10012 (seven prior fix-forwards in this cycle).
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

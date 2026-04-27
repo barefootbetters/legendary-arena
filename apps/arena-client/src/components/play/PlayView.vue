@@ -140,6 +140,7 @@ export default defineComponent({
         />
         <TurnActionBar
           :current-stage="currentStage"
+          :hand-count="viewer.handCount"
           :submit-move="submitMove"
         />
       </template>

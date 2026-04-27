@@ -11,6 +11,15 @@ export default defineComponent({
       type: String,
       required: true,
     },
+    handCount: {
+      // why: per D-10013, the Draw button computes `count` from the
+      // current hand size to cap the hand at 6 cards (Legendary's
+      // standard hand size). Without this, two clicks = 12 cards
+      // (illegal in tabletop Legendary). The engine's drawCards move
+      // has no HAND_SIZE check; the cap is enforced UI-side.
+      type: Number,
+      required: true,
+    },
     submitMove: {
       type: Function as PropType<SubmitMove>,
       required: true,
@@ -18,21 +27,26 @@ export default defineComponent({
   },
   setup(props) {
     /**
-     * Emit a `drawCards` intent for a full hand. The hardcoded count
-     * compensates for the engine MVP gap — see `onDraw` `// why:` comment
-     * below.
+     * Emit a `drawCards` intent that fills the hand to exactly 6 cards.
+     * Computes `count = max(0, 6 - handCount)` so the button is
+     * idempotent — re-clicking with a full hand is a no-op.
      */
     function onDraw(): void {
-      // why: count hardcoded to 6 to match Legendary's standard hand size
-      // (one click = full refill). This Draw button is a SCAFFOLD ARTIFACT
-      // per WP-100 §Constraints "Scaffold artifacts" — it exists only
-      // because the engine has no automatic draw mechanic today
-      // (`playerInit.ts` initializes hand to [], `turn.onBegin` does not
-      // draw, `endTurn` empties hand without refilling, and there is no
-      // HAND_SIZE constant). When a follow-up engine WP adds a
-      // `turn.onBegin` auto-draw to a canonical HAND_SIZE constant, this
-      // button must be DELETED, not refactored. See DECISIONS.md D-10003.
-      props.submitMove('drawCards', { count: 6 });
+      // why: count is dynamic per D-10013 — fills to 6 cards exactly,
+      // capping at Legendary's standard hand size. The engine's
+      // drawCards move has no HAND_SIZE check, so without this UI-side
+      // cap, repeated clicks produced illegal hand sizes (12, 18, ...).
+      // The original D-10003 hardcoded count: 6 was correct only on
+      // initial draw (when hand=0); D-10013 generalizes to any hand
+      // size. This Draw button remains a SCAFFOLD ARTIFACT per WP-100
+      // §Constraints — it exists only because the engine has no
+      // automatic turn-start draw. When a follow-up engine WP adds
+      // `turn.onBegin` auto-draw to a canonical HAND_SIZE constant,
+      // both this button AND the handCount-based cap are DELETED, not
+      // refactored. See DECISIONS.md D-10003 + D-10013.
+      const cardsToDraw = Math.max(0, 6 - props.handCount);
+      if (cardsToDraw === 0) return;
+      props.submitMove('drawCards', { count: cardsToDraw });
     }
 
     /**
@@ -101,11 +115,13 @@ export default defineComponent({
     <button
       type="button"
       data-testid="play-action-draw"
-      :disabled="currentStage !== 'start' && currentStage !== 'main'"
+      :disabled="(currentStage !== 'start' && currentStage !== 'main') || handCount >= 6"
       @click="onDraw"
     >
       <!-- why: stage gating per WP-100 §Locked contract values — drawCards
-           is enabled in 'start' or 'main'. -->
+           is enabled in 'start' or 'main'. Per D-10013, also disabled when
+           handCount >= 6 so the button is idempotent and prevents illegal
+           hand sizes from repeated clicks. -->
       Draw
     </button>
     <button

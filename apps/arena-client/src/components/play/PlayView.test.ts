@@ -200,7 +200,10 @@ test('PlayView prop-drills submitMove through to children (typed UiMoveName invo
   void wrapper.find('[data-testid="play-action-draw"]').trigger('click');
   assert.equal(calls.length, 1);
   assert.equal(calls[0]!.name, 'drawCards');
-  assert.deepEqual(calls[0]!.args, { count: 6 });
+  // why: per D-10013, Draw now computes count from handCount
+  // (`max(0, 6 - handCount)`) — fixture has handCount: 2, so the click
+  // emits count: 4 (fills to exactly 6).
+  assert.deepEqual(calls[0]!.args, { count: 4 });
 });
 
 test('PlayView prop-drills submitMove through to LobbyControls (lobby phase)', () => {
