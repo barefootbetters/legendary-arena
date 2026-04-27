@@ -10714,6 +10714,109 @@ References to "WP-100" in `WP-100-interactive-gameplay-surface.md`, `WP-111-uist
 
 ---
 
+### D-10003 — TurnActionBar.Draw Hardcoded count: 6 (Scaffold-Artifact for Engine MVP Gap)
+
+**Type:** UI scaffold artifact / engine MVP-gap mitigation
+**Packet:** WP-100
+**Date:** 2026-04-27 (landed in revised execution at Commit A `5f9cdd4`)
+
+**Decision:** The `Draw` button in `apps/arena-client/src/components/play/TurnActionBar.vue` emits `submitMove('drawCards', { count: 6 })` with the count hardcoded to **6** to match Legendary's standard hand size. The button is explicitly classified as a **scaffold artifact** under the WP-100 §Constraints scaffold-artifact policy: it is decision-logged here, labeled in a `// why:` comment at the call site, and **targeted for deletion** (not refactoring) when a follow-up engine WP lands an automatic draw mechanic.
+
+**Rationale:** Engine pre-review on 2026-04-26 (recorded in WP-100 Open Question Q3) verified the engine has no automatic draw today. `playerInit.ts` initializes every hand to `[]`; `turn.onBegin` does not draw; `endTurn` empties hand and inPlay into discard but does not draw the next hand. No `HAND_SIZE` constant exists anywhere in `packages/game-engine/src/`. Without an explicit `drawCards` call, every player begins every turn (including turn 1) with **zero cards in hand** — the game is unplayable in the browser without either a UI Draw button or a new engine auto-draw hook.
+
+**How to apply:**
+
+- Future maintainers who see the `Draw` button or its `count: 6` constant: do NOT generalize it. The button has exactly one job — keeping the game playable until the engine adds auto-draw.
+- When a follow-up engine WP adds `turn.onBegin` (or `turn.onEnd`) auto-draw to a `HAND_SIZE` constant, the WP also DELETES the `Draw` button and its tests entirely. The remaining `End Turn` button stays.
+- The same scaffold-artifact pattern (label in `// why:`, decision-log, remove-not-refactor) may be cited by future UI WPs that compensate for engine MVP gaps.
+
+**Status:** Active for the lifetime of the `Draw` button.
+
+**Citation:** [WP-100-interactive-gameplay-surface.md](docs/ai/work-packets/WP-100-interactive-gameplay-surface.md) §Scope E + §Constraints "Scaffold artifacts" + Open Question Q3; [TurnActionBar.vue](apps/arena-client/src/components/play/TurnActionBar.vue) `onDraw()` `// why:` comment.
+
+---
+
+### D-10004 — Card Tiles Render CardExtId Strings (Registry Display Projection Deferred to WP-111)
+
+**Type:** UI surface scope / registry-projection boundary
+**Packet:** WP-100
+**Date:** 2026-04-27 (landed in revised execution at Commit A `5f9cdd4`)
+
+**Decision:** All seven interactive components in WP-100 (`HandRow`, `CityRow`, `HQRow`, `MastermindTile`, `LobbyControls`, plus the labels surfaced by `TurnActionBar` and `PlayView`) render `CardExtId` strings as plain-text labels. They do not render card names, images, attack costs, recruit costs, fight costs, ability text, or any registry-derived display data. The `apps/arena-client` package is not granted a runtime registry seam in this packet.
+
+**Rationale:** Granting the client a runtime registry import would be a layer-boundary expansion (today only `apps/registry-viewer` and the engine registry types are runtime-coupled to `@legendary-arena/registry`). Path (a) — extending the engine `playerView` to embed display data — is drafted as **WP-111** ([WP-111-uistate-card-display-projection.md](docs/ai/work-packets/WP-111-uistate-card-display-projection.md)). The engine reaches the registry at setup time and snapshots display fields into UIState, mirroring the existing `G.cardStats` / `G.villainDeckCardTypes` setup-snapshot pattern.
+
+**How to apply:**
+
+- Until WP-111 lands, WP-100 components MUST render `CardExtId` strings as labels. No defensive registry call, no fetch, no localStorage cache, no cross-package import.
+- When WP-111 lands, the follow-up UI WP edits the seven WP-100 components in place (no replacement, no rewrite — additive prop binding).
+
+**Status:** Active. Closes when WP-111 lands and the follow-up UI WP wires the projection.
+
+**Citation:** [WP-100-interactive-gameplay-surface.md](docs/ai/work-packets/WP-100-interactive-gameplay-surface.md) §Constraints "Card tiles render CardExtId text labels" + Open Question Q1; [WP-111-uistate-card-display-projection.md](docs/ai/work-packets/WP-111-uistate-card-display-projection.md).
+
+---
+
+### D-10005 — submitMove Is Prop-Drilled Through PlayView, Not Provide / Inject
+
+**Type:** UI architecture / testability boundary
+**Packet:** WP-100
+**Date:** 2026-04-27 (landed in revised execution at Commit A `5f9cdd4`)
+
+**Decision:** The `submitMove` function (the typed wrapper around `LiveClientHandle.submitMove(...)` from WP-090) is passed to `PlayView` and its six interactive children as a **plain Vue prop** rather than injected via Vue's `provide` / `inject` API. The shared `SubmitMove` type is defined once at `apps/arena-client/src/components/play/uiMoveName.types.ts` and imported by every component that consumes or forwards it.
+
+**Rationale:** Prop-drilling was selected because:
+
+- *Testability.* Every component test can mount the component with a stub `submitMove` function passed via `props.submitMove = recorder().submitMove`. No Pinia plugin install, no inject-context override, no global teardown.
+- *Compile-time discoverability.* The prop signature appears at every interaction site.
+- *Component purity.* Children remain pure props-only Vue components.
+- *Drift protection.* The `UiMoveName` typed union is the move-name boundary; combined with `SubmitMove = (name: UiMoveName, args: unknown) => void`, every call site has compile-time drift protection.
+
+The depth of prop-drilling is two levels (App.vue → PlayView → child). The cost is seven `submit-move` prop declarations across seven components, each two lines. The benefit is full prop-driven testability and explicit wiring.
+
+**How to apply:**
+
+- Any future component added under `apps/arena-client/src/components/play/` that needs to emit a move MUST receive `submitMove: SubmitMove` as a prop, NOT `inject('submitMove')`. PlayView is responsible for forwarding the prop.
+
+**Status:** Active for the arena-client play surface.
+
+**Citation:** [WP-100-interactive-gameplay-surface.md](docs/ai/work-packets/WP-100-interactive-gameplay-surface.md) §Definition of Done; [PlayView.vue](apps/arena-client/src/components/play/PlayView.vue); [App.vue](apps/arena-client/src/App.vue).
+
+---
+
+### D-10006 — startMatchIfReady Retargets setPhase('setup') → setPhase('play') (Skip-Empty-Setup-Phase)
+
+**Type:** Engine surgical patch / phase-transition architecture
+**Packet:** WP-100 (revised execution 2026-04-27)
+**Date:** 2026-04-27
+
+**Decision:** The `startMatchIfReady` move in `packages/game-engine/src/lobby/lobby.moves.ts` retargets its `events.setPhase` call from `'setup'` to `'play'`. The lobby phase now transitions directly to play when all required players are ready, bypassing the empty `setup` phase entirely. The paired test assertion in `lobby.moves.test.ts:110` flips from `'setup'` to `'play'` to match.
+
+**Rationale:** WP-100's revised execution on 2026-04-27 surfaced a smoke-test gap that the original 2026-04-26 execution missed: the `setup` phase declared at [game.ts:279-281](packages/game-engine/src/game.ts) is empty — no `onBegin`, no `endIf`, no exit move, and an empty moves block. Grep across `packages/game-engine/src/` confirms zero production-code calls to `events.setPhase('play')`. Routing through setup created a dead-end phase that blocked every smoke-test path: matches stalled in `setup` forever and the click-to-play surface in WP-100 was unreachable end-to-end.
+
+The four 01.5 triggers were verified absent on the §Scope J change:
+
+- ❌ No new `LegendaryGameState` field — `G.lobby` already exists.
+- ❌ No `buildInitialGameState` shape change — initial state construction unchanged.
+- ❌ No new `LegendaryGame.moves` entry — the two lobby-phase moves (`setPlayerReady`, `startMatchIfReady`) were already registered.
+- ❌ No new phase hook — `setup.onBegin` / `setup.endIf` / `setup.moves` all remain absent. The §Scope J change is a one-line target retarget inside an existing move's body, not a new hook.
+
+**01.5 NOT INVOKED.** The retarget is structurally identical to a constant-string change.
+
+**How to apply:**
+
+- The `setup` phase is now **unreachable** in production code. The phase declaration in `game.ts:279-281` is preserved (`setup: { next: 'play' }`) but no production-code path enters it.
+- Future deck-construction WPs that want setup-phase logic have **two evolution paths**, neither locked out:
+  1. **Reroute through setup** — change `lobby.moves.ts:72` back to `setPhase('setup')` and add the necessary setup-phase machinery (an `onBegin` hook that runs deck construction, plus an `endIf` or exit move that transitions to `'play'`). This restores the lobby → setup → play sequence with real setup work.
+  2. **Take ownership of the lobby → play seam differently** — keep the direct lobby → play transition and run deck construction inside `startMatchIfReady` itself (or via a phase-scoped hook on the play phase's `onBegin`). This treats setup as a permanently-vestigial phase declaration.
+- The decision between paths (1) and (2) belongs to the future deck-construction WP. WP-100 does not lock either out. The deferral is documented here so future WP authors don't have to re-derive why setup is currently bypassed.
+
+**Status:** Active. Closes when a future deck-construction WP either restores the lobby → setup → play sequence (path 1) or formally retires the setup phase declaration (path 2).
+
+**Citation:** [WP-100-interactive-gameplay-surface.md](docs/ai/work-packets/WP-100-interactive-gameplay-surface.md) §Scope J + §"Revision context (2026-04-27)" + §Promotion Record (2026-04-27 Revision); [lobby.moves.ts:72](packages/game-engine/src/lobby/lobby.moves.ts) (the retargeted setPhase call); [game.ts:279-281](packages/game-engine/src/game.ts) (the empty setup phase declaration that the retarget bypasses); [01.6 post-mortem](docs/ai/post-mortems/01.6-WP-100-interactive-gameplay-surface.md) §"Engine surgical patch confidence".
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

@@ -1,7 +1,7 @@
 # WP-100 — Interactive Gameplay Surface (Click-to-Play UI Scaffold)
 
-**Status:** Ready (promoted 2026-04-26 — drafted 2026-04-26; 00.3 lint-gate self-review PASS; engine-source pre-review 2026-04-26 (Q2 + Q3 grounded against `coreMoves.types.ts`, `fightVillain.ts`, `recruitHero.ts`, `fightMastermind.ts`, `playerInit.ts`, `game.ts`); Q1 resolved via sibling WP-111-uistate-card-display-projection draft; pre-flight pending)
-**Primary Layer:** Arena Client (`apps/arena-client/**`)
+**Status:** Ready (revised 2026-04-27; original Draft → Ready 2026-04-26; original Commit A `378729a` + Commit B `1dffb3a` reverted 2026-04-27 via `541d67c` + `19d1f66` after smoke-test discovery surfaced a lobby/setup phase-transition gap that the original scope did not cover; pre-A governance commit `7ff4006` retained — D-10001 amendment, EC-100 stub, D-10002 renumber, and PS-1/2/3 fold-ins all still apply)
+**Primary Layer:** Arena Client (`apps/arena-client/**`) — primary; Game Engine (`packages/game-engine/src/lobby/`) — surgical patch only (one-line `setPhase` retarget in an existing move + paired test assertion flip; no new move, no new field, no new phase hook)
 **Dependencies:** WP-089 (engine playerView wiring), WP-090 (live match client wiring), WP-062 (arena HUD scaffolds), WP-092 (lobby loadout intake)
 
 ---
@@ -15,26 +15,75 @@ the single intent submission seam in `apps/arena-client/src/client/bgioClient.ts
 this packet adds the first interactive components that consume that projection
 and call `submitMove` so a human can click through a turn end-to-end.
 
+**Revision context (2026-04-27).** The original WP-100 scope shipped on
+2026-04-26 (Commits A `378729a` + B `1dffb3a`) and passed `pnpm test` with
+`169/16/0`. Manual smoke testing in two browsers surfaced a gap WP-100's
+original scope did not cover: the engine's lobby phase has two moves
+(`setPlayerReady`, `startMatchIfReady`) that transition lobby → setup, but
+the setup phase is empty (no `onBegin`, no `endIf`, no exit move) and no
+production code anywhere calls `setPhase('play')`. Once a match enters
+`setup`, it never reaches `play` — the click-to-play surface never renders.
+WP-100's locked six-name UI vocabulary (`drawCards`, `playCard`, `endTurn`,
+`fightVillain`, `recruitHero`, `fightMastermind`) also has no surface to
+emit `setPlayerReady` / `startMatchIfReady` from the browser. Commits A + B
+were reverted on 2026-04-27 (`541d67c` + `19d1f66`); the pre-A governance
+commit `7ff4006` was retained because D-10001, the EC-100 stub, D-10002,
+and the PS-1/2/3 fold-ins all still apply to the revised WP. This revision
+extends WP-100's scope with two minimal additions that close the gap:
+
+1. **UI:** a `LobbyControls.vue` component plus its test that surfaces
+   `setPlayerReady` (Mark Ready / Mark Not Ready) and `startMatchIfReady`
+   (Start Match) from the browser. Renders only when
+   `uiState.game.phase === 'play'` is **false** — i.e., during the lobby
+   phase. The locked `UiMoveName` union expands from six names to eight.
+2. **Engine (surgical):** `apps/arena-client/...` is the primary layer, but
+   one engine file gets a one-line retarget — `lobby.moves.ts:64` flips
+   `events.setPhase('setup')` → `events.setPhase('play')`. Setup phase is
+   reserved for future deck-construction work that doesn't exist today;
+   skipping it keeps the smoke-test path open without adding a new phase
+   hook (which would invoke 01.5). The paired `lobby.moves.test.ts:110`
+   assertion flips to match. **D-10006** (landed at Commit B) records the
+   skip-setup decision and the evolution path for the eventual
+   deck-construction WP. No new move added; no new `LegendaryGameState`
+   field; no `buildInitialGameState` shape change; no new phase hook —
+   01.5 NOT INVOKED on the revised scope as well.
+
+The revised WP is still one cohesive scaffold sized for one session; the
+Definition of Done expands to cover the engine baseline + the new lobby
+controls.
+
 ---
 
 ## Goal
 
 After this session, `apps/arena-client` exposes a minimal interactive gameplay
-surface that lets the active player play a complete turn through the browser.
-Specifically, the client renders the active player's hand as clickable card
-tiles, renders the City row, the HQ row, and the Mastermind tile as clickable
-targets, exposes `Draw`, `End Turn`, and per-card action buttons, and wires
-every interaction through the existing `LiveClientHandle.submitMove(...)`
-factory from WP-090. The six already-registered moves (`drawCards`, `playCard`,
-`endTurn`, `fightVillain`, `recruitHero`, `fightMastermind`) each have exactly
-one UI surface that emits them. No new engine work, no new server work, no new
-moves — the client begins consuming the projection it could already see.
+surface that lets the active player play a complete turn through the browser
+**including readying up and starting a match from the lobby phase**.
+Specifically, the client renders a lobby-phase controls block (Mark Ready,
+Mark Not Ready, Start Match), and once the match transitions to play phase,
+renders the active player's hand as clickable card tiles, the City row, the
+HQ row, and the Mastermind tile as clickable targets, plus `Draw`, `End Turn`,
+and per-card action buttons. Every interaction routes through the existing
+`LiveClientHandle.submitMove(...)` factory from WP-090. **Eight** already-
+registered moves (`setPlayerReady`, `startMatchIfReady`, `drawCards`,
+`playCard`, `endTurn`, `fightVillain`, `recruitHero`, `fightMastermind`)
+each have exactly one UI surface that emits them. The engine gains a single
+surgical patch at [lobby.moves.ts:64](packages/game-engine/src/lobby/lobby.moves.ts:64)
+— `events.setPhase('setup')` → `events.setPhase('play')` — to close the
+lobby → play transition gap (the empty setup phase has no `onBegin` /
+`endIf` / exit-move and never advanced today). No new engine moves, no new
+server work, no `LegendaryGameState` field changes, no new phase hooks —
+01.5 stays NOT INVOKED.
 
 This WP delivers the smallest surface that turns the arena-client from a
 spectator into a playable game. Card display fidelity (names, images, costs
 sourced from the registry) is intentionally out of scope; this scaffold renders
 `CardExtId` strings as text labels and is followed by a registry-projection WP
-(see Open Questions) that supplies card display data.
+(see Open Questions) that supplies card display data. Lobby UI feedback
+(showing per-player readiness state) is also out of scope; the lobby controls
+emit intent and rely on the phase transition itself as the "it worked"
+signal — when all players have readied and one clicks Start Match, the
+phase advances to `play` and `PlayView` swaps to the main play surface.
 
 ---
 
@@ -62,11 +111,38 @@ sourced from the registry) is intentionally out of scope; this scaffold renders
     view that hosts `ArenaHud`
 - `pnpm --filter @legendary-arena/arena-client build` exits 0
 - `pnpm --filter @legendary-arena/arena-client test` exits 0
+- `pnpm --filter @legendary-arena/game-engine test` exits 0
 - arena-client test baseline at session start: **143 / 10 / 0** (143
-  tests, 10 suites, 0 failed, 0 skipped — captured at HEAD `bceee60`
-  on 2026-04-26 by pre-flight). Post-execution baseline must equal
-  this count plus the new tests added by §Scope H (estimated +18 to
-  +30 tests, +6 suites). A drop in pre-existing tests is a regression.
+  tests, 10 suites, 0 failed, 0 skipped — captured at HEAD `541d67c`
+  on 2026-04-27 after the original-WP-100 reverts). Post-execution
+  baseline must equal this count plus the new tests added by §Scope H
+  + §Scope I (estimated +30 to +40 tests, +7 suites — six original
+  component suites + one new LobbyControls suite). A drop in
+  pre-existing tests is a regression.
+- game-engine test baseline at session start: **522 / 116 / 0**.
+  Post-execution baseline must equal this count exactly (the
+  `lobby.moves.test.ts:110` change is an assertion-target fixture
+  flip, not a new test). A drop is a regression.
+- Engine source contracts verified at session start (2026-04-27):
+  - [lobby.moves.ts:64](packages/game-engine/src/lobby/lobby.moves.ts:64)
+    today reads `events.setPhase('setup')` — the line WP-100 retargets
+    to `'play'`.
+  - [lobby.moves.test.ts:110](packages/game-engine/src/lobby/lobby.moves.test.ts:110)
+    today asserts `setPhaseTarget === 'setup'` — the assertion WP-100
+    flips to `'play'`.
+  - [game.ts:279-281](packages/game-engine/src/game.ts) declares
+    `setup: { next: 'play' }` with no `onBegin`, no `endIf`, and no
+    moves block. No code anywhere in `packages/game-engine/src/`
+    calls `events.setPhase('play')` (verified by grep).
+  - The engine's `LegendaryGame.moves` bag (8 entries: drawCards,
+    playCard, endTurn, advanceStage, revealVillainCard, fightVillain,
+    recruitHero, fightMastermind) does NOT contain
+    `setPlayerReady` or `startMatchIfReady` — those live as
+    phase-scoped moves on the `lobby` phase per
+    [game.ts:271-278](packages/game-engine/src/game.ts). The UI
+    nevertheless emits them through `submitMove(name, args)`;
+    boardgame.io routes phase-scoped moves the same way as global
+    moves at the client API surface.
 - `docs/ai/ARCHITECTURE.md` exists (created in WP-013, codified in WP-041)
 - `docs/ai/DECISIONS.md` exists
 
@@ -112,8 +188,37 @@ Before writing a single line:
   `playCard`, `endTurn`, `fightVillain`, `recruitHero`, `fightMastermind`)
   plus internal engine moves (`advanceStage`, `revealVillainCard`) that
   are explicitly **out of UI scope**. The UI must not call any move name
-  outside the six-name subset above. Confirm the six the UI emits match
-  the names registered on the engine before writing any component.
+  outside the eight-name subset locked in this revision (six play-phase
+  + two lobby-phase). Confirm the eight names match the engine moves
+  bag plus the lobby-phase moves block before writing any component.
+  Read [game.ts:271-281](packages/game-engine/src/game.ts) — the `phases`
+  block declares `lobby.moves: { setPlayerReady, startMatchIfReady }` and
+  `setup: { next: 'play' }` with no `onBegin`, no `endIf`, no exit move.
+  This is the gap that the §Scope J surgical patch closes.
+- `packages/game-engine/src/lobby/lobby.moves.ts` — read entirely. Two
+  exported moves: `setPlayerReady({ G, ctx }, args: { ready: boolean })`
+  mutates `G.lobby.ready[ctx.currentPlayer]`; `startMatchIfReady({ G,
+  events })` validates `validateCanStartMatch(G.lobby)`, sets
+  `G.lobby.started = true`, and currently calls
+  `events.setPhase('setup')`. §Scope J retargets the setPhase call to
+  `'play'`. Read the `// why:` comment context on the setPhase line so
+  the replacement comment in §Scope J cites the same architectural
+  rationale (boardgame.io's phase-transition mechanism) plus the new
+  rationale (skip-empty-setup-phase per D-10006).
+- `packages/game-engine/src/lobby/lobby.moves.test.ts` — read the
+  `startMatchIfReady` describe block (line 88). The test at line 110
+  asserts `setPhaseTarget === 'setup'`; §Scope J flips this to `'play'`.
+  No other tests reference the setPhase target — confirm by grep before
+  editing.
+- `packages/game-engine/src/lobby/lobby.types.ts` — `LobbyState` shape
+  and `SetPlayerReadyArgs` payload type. The UI emits `setPlayerReady`
+  with `{ ready: boolean }`; the engine validates via
+  `validateSetPlayerReadyArgs` and silently no-ops on invalid input.
+- `packages/game-engine/src/lobby/lobby.validate.ts` — read the
+  `validateCanStartMatch` function. It enforces "all required players
+  ready" and silently no-ops if not satisfied. The UI's `Start Match`
+  button is unconditionally enabled (no UIState lobby projection in
+  this scaffold) — engine validation is the authority.
 - `docs/ai/REFERENCE/00.6-code-style.md` — key rules: Rule 4 (no
   abbreviations), Rule 5 (every function has JSDoc), Rule 6 (`// why:` on
   non-obvious decisions), Rule 11 (full-sentence error messages), Rule 13
@@ -169,8 +274,12 @@ Before writing a single line:
   derived from it) via prop or composable injection — never imports the live
   client directly. This keeps components testable with a stub function.
 - The set of move names the UI may emit is locked to exactly:
-  `'drawCards'`, `'playCard'`, `'endTurn'`, `'fightVillain'`, `'recruitHero'`,
-  `'fightMastermind'`. Any extension requires a new WP.
+  `'setPlayerReady'`, `'startMatchIfReady'`, `'drawCards'`, `'playCard'`,
+  `'endTurn'`, `'fightVillain'`, `'recruitHero'`, `'fightMastermind'`.
+  Any extension requires a new WP. (Revised 2026-04-27: original lock
+  was six names; the lobby controls added in §Scope I extend the union
+  to eight to surface the lobby-phase moves
+  `setPlayerReady` / `startMatchIfReady`.)
 - The `submitMove` prop type uses a locally-defined `UiMoveName` union of the
   six locked move names rather than a bare `string`, so typos are caught at
   compile time. The union is a UI-side mirror of the engine move bag — it is
@@ -225,11 +334,18 @@ Before writing a single line:
 
 **Locked contract values (do not paraphrase or re-derive):**
 
-- **Move names registered on `LegendaryGame`** (lock — UI must call only these):
-  `'drawCards'` | `'playCard'` | `'endTurn'` | `'fightVillain'` |
-  `'recruitHero'` | `'fightMastermind'`
-- **All six move payloads** (verified against engine source 2026-04-26 — see
-  Open Question Q2 resolution at the foot of this packet):
+- **Move names the UI may call** (lock — strict subset of the engine's
+  registered moves; six come from the `LegendaryGame.moves` bag, two
+  come from the `lobby` phase moves block in `game.ts`):
+  - Lobby-phase: `'setPlayerReady'` | `'startMatchIfReady'`
+  - Play-phase + cross-phase: `'drawCards'` | `'playCard'` | `'endTurn'` |
+    `'fightVillain'` | `'recruitHero'` | `'fightMastermind'`
+- **All eight move payloads** (six verified against engine source on
+  2026-04-26; lobby-pair verified on 2026-04-27):
+  - `setPlayerReady`: `{ ready: boolean }` (`lobby.types.ts:37-40`)
+  - `startMatchIfReady`: `{}` — no arguments; the move reads
+    `G.lobby.ready` and silently no-ops if not all required players
+    are ready (`lobby.moves.ts:48-65` + `lobby.validate.ts:57-75`)
   - `drawCards`: `{ count: number }` (`coreMoves.types.ts`)
   - `playCard`: `{ cardId: string }` — CardExtId from
     `UIPlayerState.handCards` (`coreMoves.types.ts`)
@@ -263,6 +379,27 @@ Before writing a single line:
   - `playCard` enabled in `'main'`
   - `fightVillain`, `recruitHero`, `fightMastermind` enabled in `'main'`
   - `endTurn` enabled in `'cleanup'`
+- **Phase gating for lobby moves** (UI must compute visibility from
+  `uiState.game.phase`):
+  - `setPlayerReady` and `startMatchIfReady` are emitted only when
+    `uiState.game.phase === 'lobby'`. PlayView gates the
+    `<LobbyControls>` block on the lobby phase; in non-lobby phases
+    the lobby controls are not rendered. Click handlers in
+    `<LobbyControls>` always emit (no per-button stage / phase check
+    inside the component) — the engine validates phase scoping on
+    receipt.
+- **Engine surgical patch — `lobby.moves.ts:64`** (verified
+  2026-04-27): today reads `events.setPhase('setup');` — WP-100
+  retargets to `events.setPhase('play');`. The replacement `// why:`
+  comment cites D-10006 (skip-empty-setup-phase) plus the existing
+  rationale (boardgame.io setPhase mechanism).
+- **Engine assertion flip — `lobby.moves.test.ts:110`** (verified
+  2026-04-27): today reads `assert.equal(setPhaseTarget, 'setup',
+  'Phase target must be "setup"');` — WP-100 retargets to
+  `assert.equal(setPhaseTarget, 'play', 'Phase target must be
+  "play"');`. No other tests in `packages/game-engine/src/` reference
+  the setPhase target string `'setup'` (verified by grep before
+  editing).
 - **Cost data is NOT in UIState** (verified 2026-04-26): `UICityCard`,
   `UIHQState.slots`, and `UIMastermindState` do not expose `fightCost` or
   `cost`. Per the cost-gating fallback constraint above, all six
@@ -430,13 +567,24 @@ The following requirements are mandatory:
     `uiState.game` per `uiState.types.ts`)
   - Resolves the active viewer's `UIPlayerState` from `uiState.players`
     matching the local player's id
-  - Conditionally suppresses all interactive children (`MastermindTile`,
-    `CityRow`, `HQRow`, `HandRow`, `TurnActionBar`) when
-    `uiState.game.phase !== 'play'`. In non-play phases, only `ArenaHud`
-    and the existing end / lobby components may render. Add `// why:`
-    comment on the phase-gate expression citing the locked phase
-    vocabulary (`'lobby'` | `'setup'` | `'play'` | `'end'`) and the
-    nested `uiState.game.phase` path.
+  - **Phase-branch rendering (revised 2026-04-27):**
+    - When `uiState.game.phase === 'lobby'`: renders `<LobbyControls>`
+      (per §Scope I) below `<ArenaHud />`. The play-surface children
+      (`MastermindTile`, `CityRow`, `HQRow`, `HandRow`,
+      `TurnActionBar`) are NOT rendered.
+    - When `uiState.game.phase === 'play'` AND the viewer is
+      identified: renders the five play-surface children below
+      `<ArenaHud />`.
+    - In any other phase (`'setup'`, `'end'`): renders only
+      `<ArenaHud />`. The setup phase is unreachable in the revised
+      WP-100 (per §Scope J retarget) but the branch is preserved
+      defensively in case a future WP reroutes the lobby → setup
+      transition.
+    - Add `// why:` comment on the phase-branch expression citing the
+      locked phase vocabulary (`'lobby'` | `'setup'` | `'play'` |
+      `'end'`), the nested `uiState.game.phase` path, and the
+      WP-100-revision intent (lobby controls visible during lobby
+      phase to unblock the smoke-test path).
 
 ### G) Live-match route wiring
 
@@ -468,9 +616,17 @@ Add `node:test` tests under `apps/arena-client/src/components/play/`:
 - **`TurnActionBar.test.ts`** — two buttons; `Draw` emits
   `('drawCards', { count: 6 })`; `End Turn` emits `('endTurn', {})`; stage
   gating asserted.
+- **`LobbyControls.test.ts`** — three buttons; `Mark Ready` emits
+  `('setPlayerReady', { ready: true })`; `Mark Not Ready` emits
+  `('setPlayerReady', { ready: false })`; `Start Match` emits
+  `('startMatchIfReady', {})`; all three buttons unconditionally
+  enabled (no stage / phase check inside the component — the engine
+  validates).
 - **`PlayView.test.ts`** — given a UIState fixture, mounts `PlayView`,
-  asserts that the five interactive children receive their expected props
-  (use prop-spy mounting, not full DOM assertion).
+  asserts that the five interactive children receive their expected
+  props in play phase (use prop-spy mounting, not full DOM assertion);
+  asserts `<LobbyControls>` renders in lobby phase and the five play
+  children do NOT render; asserts `<ArenaHud />` renders in every phase.
 - All tests use `node:test` and `node:assert` only — this is the
   project-wide test runner per `.claude/CLAUDE.md` ("Test runner:
   `node:test` (native Node.js test runner)") and the existing
@@ -480,15 +636,103 @@ Add `node:test` tests under `apps/arena-client/src/components/play/`:
 - No test imports `@legendary-arena/game-engine` runtime — types only.
 - No test imports `boardgame.io`.
 
+### I) Lobby controls component — `LobbyControls.vue` (added 2026-04-27)
+
+- **`apps/arena-client/src/components/play/LobbyControls.vue`** — new:
+  - Receives `submitMove: SubmitMove` as a prop (typed via the shared
+    `SubmitMove` alias from `uiMoveName.types.ts`). No other props.
+    The component is intentionally stateless — it does NOT receive a
+    `lobby: UILobbyState` projection because UIState does not project
+    `G.lobby` today (deferred to a future engine projection WP; the
+    UX trade-off is documented in the §Out of Scope block below).
+  - Renders three `<button>` elements:
+    - **Mark Ready** — click handler calls
+      `submitMove('setPlayerReady', { ready: true })`.
+    - **Mark Not Ready** — click handler calls
+      `submitMove('setPlayerReady', { ready: false })`.
+    - **Start Match** — click handler calls
+      `submitMove('startMatchIfReady', {})`.
+  - All three buttons are unconditionally enabled. The engine
+    validates: `setPlayerReady` requires `args.ready: boolean` and
+    only mutates the calling player's slot in `G.lobby.ready`;
+    `startMatchIfReady` requires all required players ready
+    (`validateCanStartMatch`) and silently no-ops otherwise.
+  - Add `// why:` comment on each button's click handler citing the
+    move name + the engine validation that makes the button safe to
+    click unconditionally.
+  - Add `// why:` comment on the empty-object payload for
+    `startMatchIfReady` (no arguments by engine design).
+  - Component uses the same `defineComponent({ setup() { return {...} } })`
+    form as the other interactive components (D-6512 / P6-30
+    separate-compile constraint); does NOT use `<script setup>`.
+  - The component renders `<button>` elements only — no styling beyond
+    a minimal default CSS class set; no ARIA labels beyond Vue's
+    default `<button>` semantics. A11y polish is deferred per
+    Open Question Q4.
+
+### J) Engine surgical patch — `lobby.moves.ts` setPhase retarget (added 2026-04-27)
+
+- **`packages/game-engine/src/lobby/lobby.moves.ts`** — modified:
+  - Line 64 retargets the `setPhase` call inside `startMatchIfReady`
+    from `events.setPhase('setup')` to `events.setPhase('play')`. The
+    paired `// why:` comment is rewritten to cite:
+    1. boardgame.io's `events.setPhase` is the canonical phase
+       transition mechanism (preserved from the original comment).
+    2. **D-10006 — skip-empty-setup-phase rationale.** Setup phase is
+       declared at [game.ts:279-281](packages/game-engine/src/game.ts)
+       with no `onBegin`, no `endIf`, no exit move, and an empty
+       moves block. No code anywhere in `packages/game-engine/src/`
+       calls `events.setPhase('play')` (verified by grep). Routing
+       through setup created a dead-end phase that blocked every
+       smoke-test path. WP-100 retargets directly to play; setup is
+       reserved for a future deck-construction WP that will either
+       (a) reroute through setup once setup gains real phase
+       machinery, or (b) take ownership of the lobby → play seam
+       differently. WP-100 does not lock either evolution path out.
+    3. The `// why:` comment must explicitly name D-10006 so future
+       maintainers can locate the decision.
+  - No other lines in `lobby.moves.ts` are modified. The
+    `validateCanStartMatch` precondition, the `G.lobby.started = true`
+    write, and the `setPlayerReady` move are all unchanged.
+
+- **`packages/game-engine/src/lobby/lobby.moves.test.ts`** — modified:
+  - Line 110 retargets the assertion target string from `'setup'` to
+    `'play'` plus the matching error message from `'Phase target must
+    be "setup"'` to `'Phase target must be "play"'`. No new test cases
+    added; no test cases removed; the assertion itself remains
+    structurally identical (`assert.equal(setPhaseTarget, ...)`).
+  - The `'does not call setPhase when not all players are ready'` test
+    is unchanged (no setPhase call → no target to verify).
+  - No other lines in `lobby.moves.test.ts` are modified.
+
+This patch is **surgical and intentionally minimal**: two lines of
+production code change (one in `.ts`, one in `.test.ts`) plus comment
+rewrites. It does not add any new move, any new phase hook, any new
+`LegendaryGameState` field, or any `buildInitialGameState` shape change
+— **01.5 NOT INVOKED**. The engine test baseline `522 / 116 / 0`
+shifts to `522 / 116 / 0` (assertion-target fixture flip, not a new
+test).
+
 ---
 
 ## Out of Scope
 
-- No new moves added to the engine — the six existing moves are the entire
-  vocabulary
-- No engine changes — `playerView`, UIState shape, and move signatures
-  remain locked. If the UI needs a field that does not exist, file a
-  separate WP for the engine change
+- No new moves added to the engine — the eight existing moves
+  (six on `LegendaryGame.moves` + two on the lobby phase moves block)
+  are the entire UI vocabulary
+- No engine changes beyond the surgical setPhase retarget in §Scope J
+  — `playerView`, UIState shape, move signatures, and move
+  implementations all remain locked. If the UI needs a field that does
+  not exist, file a separate WP for the engine change.
+- No UIState `lobby` projection — `G.lobby` is NOT projected into
+  UIState by this packet. `LobbyControls` is intentionally stateless
+  (renders three buttons unconditionally; engine validates on
+  receipt). The UX trade-off — the user does not see who-is-ready
+  feedback before clicking Start Match — is acceptable because the
+  phase transition itself (lobby → play, when validation passes) is
+  the visible "it worked" signal. Adding `uiState.lobby?: UILobbyState`
+  is a future engine-projection WP (parallel to WP-111's UIState card
+  display projection).
 - No card display fidelity — names, images, attack-cost / recruit-cost
   surfaced via the registry are tracked under Open Questions and assigned
   to a follow-up WP
@@ -520,6 +764,7 @@ Add `node:test` tests under `apps/arena-client/src/components/play/`:
 
 ## Files Expected to Change
 
+- `apps/arena-client/src/components/play/uiMoveName.types.ts` — **new** — shared `UiMoveName` (8 names) + `SubmitMove` types
 - `apps/arena-client/src/components/play/HandRow.vue` — **new** — interactive hand row
 - `apps/arena-client/src/components/play/HandRow.test.ts` — **new** — component test
 - `apps/arena-client/src/components/play/CityRow.vue` — **new** — interactive City row
@@ -530,16 +775,21 @@ Add `node:test` tests under `apps/arena-client/src/components/play/`:
 - `apps/arena-client/src/components/play/MastermindTile.test.ts` — **new** — component test
 - `apps/arena-client/src/components/play/TurnActionBar.vue` — **new** — Draw + End Turn buttons
 - `apps/arena-client/src/components/play/TurnActionBar.test.ts` — **new** — component test
-- `apps/arena-client/src/components/play/PlayView.vue` — **new** — in-match composer
-- `apps/arena-client/src/components/play/PlayView.test.ts` — **new** — composer test
-- `apps/arena-client/src/lobby/LiveMatchView.vue` — **modified** — pass `submitMove` into `PlayView` (WP author confirms exact filename before editing)
+- `apps/arena-client/src/components/play/LobbyControls.vue` — **new** — Mark Ready / Mark Not Ready / Start Match buttons (added 2026-04-27)
+- `apps/arena-client/src/components/play/LobbyControls.test.ts` — **new** — component test (added 2026-04-27)
+- `apps/arena-client/src/components/play/PlayView.vue` — **new** — in-match composer with phase-branch rendering (lobby vs play)
+- `apps/arena-client/src/components/play/PlayView.test.ts` — **new** — composer test (covers lobby + play branches)
+- `apps/arena-client/src/App.vue` — **modified** — pass `submitMove` into `PlayView` in the live route (WP-100 §Scope G "or the equivalent file" — `LiveMatchView.vue` does not exist; `App.vue` is the live-route holder per WP-090)
+- `packages/game-engine/src/lobby/lobby.moves.ts` — **modified** — surgical setPhase retarget per §Scope J (added 2026-04-27)
+- `packages/game-engine/src/lobby/lobby.moves.test.ts` — **modified** — paired assertion-target flip (added 2026-04-27)
 
 No other files may be modified.
 
-**Note on file count.** This WP lists 13 files (6 `.vue` components + 6
-`.test.ts` companions + 1 modified route file), which exceeds the
-lint-guideline soft limit of ~8 in `00.3-prompt-lint-checklist.md §5`. The
-count is intentional and the WP is **not** split because:
+**Note on file count.** This WP lists 18 files (7 `.vue` components +
+7 `.test.ts` companions + 1 shared types file + 1 modified route file
++ 2 modified engine files), which exceeds the lint-guideline soft
+limit of ~8 in `00.3-prompt-lint-checklist.md §5`. The count is
+intentional and the WP is **not** split because:
 
 - The six interactive components (`HandRow`, `CityRow`, `HQRow`,
   `MastermindTile`, `TurnActionBar`, `PlayView`) form a single cohesive
@@ -627,13 +877,47 @@ component failed.
 
 ### Play view composer
 - [ ] `PlayView.vue` reads UIState from `useUiStateStore()`
-- [ ] Renders `<ArenaHud />` plus the five new interactive children
+- [ ] Renders `<ArenaHud />` in every phase (lobby, setup, play, end)
 - [ ] Renders empty-state message when snapshot is `null`
 - [ ] Reads `currentStage` from `uiState.game.currentStage` (NOT
       `uiState.currentStage`) before passing it down as a prop
-- [ ] Interactive children (`MastermindTile`, `CityRow`, `HQRow`, `HandRow`,
-      `TurnActionBar`) are not rendered when
-      `uiState.game.phase !== 'play'`
+- [ ] Renders the five play-surface children (`MastermindTile`, `CityRow`,
+      `HQRow`, `HandRow`, `TurnActionBar`) only when
+      `uiState.game.phase === 'play'` AND a viewer is identified
+- [ ] Renders `<LobbyControls>` only when `uiState.game.phase === 'lobby'`
+      (revised 2026-04-27)
+- [ ] Never renders both `<LobbyControls>` and the play-surface children
+      simultaneously (mutually exclusive phase branches)
+
+### Lobby controls (added 2026-04-27)
+- [ ] `LobbyControls.vue` exists and exports a Vue component with exactly
+      the prop `submitMove: SubmitMove`
+- [ ] Renders three `<button>` elements: Mark Ready, Mark Not Ready,
+      Start Match
+- [ ] Mark Ready emits `submitMove('setPlayerReady', { ready: true })`
+- [ ] Mark Not Ready emits `submitMove('setPlayerReady', { ready: false })`
+- [ ] Start Match emits `submitMove('startMatchIfReady', {})`
+- [ ] All three buttons are unconditionally enabled (no stage / phase
+      check inside the component — engine validates)
+- [ ] No UIState read inside `LobbyControls` (component is stateless)
+
+### Engine surgical patch (added 2026-04-27)
+- [ ] `packages/game-engine/src/lobby/lobby.moves.ts` retargets the
+      `setPhase` call from `'setup'` to `'play'` (exactly one production-
+      code line modified)
+- [ ] `// why:` comment on the retargeted line explicitly cites D-10006
+- [ ] `packages/game-engine/src/lobby/lobby.moves.test.ts` flips the
+      assertion target string from `'setup'` to `'play'` plus the matching
+      error-message string (exactly one test-fixture line modified)
+- [ ] No other lines in `lobby.moves.ts` or `lobby.moves.test.ts` are
+      modified
+- [ ] No new move added to `LegendaryGame.moves` or to any phase moves
+      block
+- [ ] No new phase hook added to `game.ts` (verified by grep — `setup`
+      remains `{ next: 'play' }` with no `onBegin` / `endIf` / moves
+      block)
+- [ ] `pnpm --filter @legendary-arena/game-engine test` exits 0; engine
+      baseline `522 / 116 / 0` unchanged
 
 ### Engine-import discipline
 - [ ] No new file under `apps/arena-client/**` introduces a runtime import of
@@ -662,21 +946,33 @@ component failed.
 ### Scope Enforcement
 - [ ] No files outside `## Files Expected to Change` were modified (confirmed
       with `git diff --name-only`)
-- [ ] Engine package, server package, and registry package are unchanged
-- [ ] No new moves registered on `LegendaryGame`
+- [ ] Engine package modifications limited to `lobby.moves.ts` and
+      `lobby.moves.test.ts` per §Scope J (one production-code line +
+      one test-fixture line + paired comment rewrites). Server package
+      and registry package are unchanged.
+- [ ] No new moves registered on `LegendaryGame.moves` or on any phase
+      moves block
 
 ---
 
 ## Verification Steps
 
 ```pwsh
-# Step 1 — build
+# Step 1 — arena-client build
 pnpm --filter @legendary-arena/arena-client build
 # Expected: exits 0, no TypeScript errors
 
-# Step 2 — full test run
+# Step 1b — game-engine build (added 2026-04-27 — surgical engine patch)
+pnpm --filter @legendary-arena/game-engine build
+# Expected: exits 0, no TypeScript errors
+
+# Step 2 — arena-client test run
 pnpm --filter @legendary-arena/arena-client test
-# Expected: all tests pass, 0 failing
+# Expected: all tests pass, 0 failing; baseline 143 → ~177 (+34 tests, +7 suites)
+
+# Step 2b — game-engine test run (added 2026-04-27)
+pnpm --filter @legendary-arena/game-engine test
+# Expected: all tests pass, 0 failing; baseline 522 / 116 / 0 unchanged
 
 # Step 3 — confirm no second runtime engine import in arena-client
 Select-String -Path "apps\arena-client\src\components\play\*.vue", "apps\arena-client\src\components\play\*.ts" -Pattern "^import \{[^}]*\} from '@legendary-arena/game-engine'"
@@ -695,9 +991,29 @@ Select-String -Path "apps\arena-client\src\components\play" -Pattern "client\.mo
 Select-String -Path "apps\arena-client\src\components\play" -Pattern "Math\.random" -Recurse
 # Expected: no output
 
-# Step 7 — confirm engine and server unchanged
+# Step 7 — confirm engine modifications limited to the two files in §Scope J
 git diff --name-only -- packages/game-engine apps/server packages/registry
-# Expected: no output
+# Expected: exactly two paths, both under packages/game-engine/src/lobby/:
+#   packages/game-engine/src/lobby/lobby.moves.ts
+#   packages/game-engine/src/lobby/lobby.moves.test.ts
+# Any third path under packages/game-engine/, OR any path under
+# apps/server/ or packages/registry/, is a scope violation — STOP.
+
+# Step 7b — confirm the engine retarget is exactly the one-line setPhase change
+git diff packages/game-engine/src/lobby/lobby.moves.ts
+# Expected: a single production-code line change retargeting
+# events.setPhase('setup') to events.setPhase('play'), plus the paired
+# // why: comment rewrite citing D-10006. No other production-code
+# changes inside the diff. Helper imports, validateCanStartMatch call,
+# G.lobby.started write all unchanged.
+
+# Step 7c — confirm no new setPhase calls anywhere in the engine
+Select-String -Path "packages\game-engine\src\**\*.ts" -Pattern "events\.setPhase" -Recurse
+# Expected: exactly one match — packages/game-engine/src/lobby/lobby.moves.ts
+# at the retargeted line. The pre-existing test mocks
+# (events: { setPhase: () => {} }) live in *.test.ts files and may
+# also match; those are not production code and do not count as new
+# setPhase calls.
 
 # Step 8 — confirm pre-plan UI surface (EC-059) is untouched
 git diff --name-only -- apps/arena-client/src/preplan apps/arena-client/src/components/preplan apps/arena-client/src/fixtures/preplan apps/arena-client/src/stores/preplan.ts
@@ -717,30 +1033,49 @@ This packet is complete when ALL of the following are true:
 - [ ] All acceptance criteria above pass
 - [ ] `pnpm --filter @legendary-arena/arena-client build` exits 0
 - [ ] `pnpm --filter @legendary-arena/arena-client test` exits 0
+- [ ] `pnpm --filter @legendary-arena/game-engine build` exits 0
+- [ ] `pnpm --filter @legendary-arena/game-engine test` exits 0; engine
+      baseline `522 / 116 / 0` unchanged
 - [ ] `pnpm -r build` exits 0 (full monorepo still builds)
 - [ ] No second runtime engine import in arena-client (Select-String verified)
 - [ ] No `client.moves` direct access in any component (Select-String verified)
 - [ ] No `Math.random` in any new file (Select-String verified)
-- [ ] Engine, server, and registry packages unchanged (`git diff` verified)
+- [ ] Engine modifications limited to `packages/game-engine/src/lobby/lobby.moves.ts`
+      and `packages/game-engine/src/lobby/lobby.moves.test.ts` (`git diff` verified)
+- [ ] Server and registry packages unchanged (`git diff` verified)
 - [ ] WP-090 outputs (`bgioClient.ts`, `LobbyView.vue`, etc.) were not modified
-      beyond the documented `LiveMatchView.vue` prop-passing change
+      beyond the documented App.vue prop-passing change
 - [ ] No files outside `## Files Expected to Change` were modified
-- [ ] Manual smoke test: dev server starts, two browsers join a match, the
-      active player can click Draw, click a hand card, click a villain in the
-      City, click a hero in the HQ, click End Turn, and the next player gets
-      control with state visible to both clients
+- [ ] Manual smoke test: dev server starts (use
+      `scripts/Start-SmokeTest.ps1`), two browsers join the same match
+      via `Create match from loadout` (player 0) + `Refresh / Join`
+      (player 1). Both players click `Mark Ready`. One clicks `Start
+      Match`; phase transitions to `play`; the play surface
+      (MastermindTile + CityRow + HQRow + HandRow + TurnActionBar)
+      replaces LobbyControls. Active player clicks Draw → playCard →
+      fightVillain → recruitHero → fightMastermind → End Turn; turn
+      rotates; second browser becomes active.
 - [ ] `docs/ai/STATUS.md` updated — what is now playable end-to-end through
-      the browser; what was not playable before
+      the browser; what was not playable before; the lobby/setup gap
+      that the revision closes
 - [ ] `docs/ai/DECISIONS.md` updated — at minimum:
-      - Why the UI emits `drawCards` with `count: 6` hardcoded (matches
-        Legendary's standard hand size; engine has no `HAND_SIZE`
-        constant and no `turn.onBegin` auto-draw today; the button is a
-        scaffold artifact pending a follow-up engine WP that adds
-        automatic draw-to-hand-size — see Open Question Q3)
-      - Why card tiles render `CardExtId` strings rather than card names /
-        images (registry-projection path is a separate WP — see Open Questions)
-      - Why `submitMove` is prop-drilled instead of injected via a Vue provide
-        / inject seam (testability — components remain pure and prop-driven)
+      - **D-10003** — Why the UI emits `drawCards` with `count: 6`
+        hardcoded (matches Legendary's standard hand size; engine has
+        no `HAND_SIZE` constant and no `turn.onBegin` auto-draw today;
+        the button is a scaffold artifact pending a follow-up engine
+        WP that adds automatic draw-to-hand-size — see Open Question
+        Q3)
+      - **D-10004** — Why card tiles render `CardExtId` strings rather
+        than card names / images (registry-projection path is a
+        separate WP — see Open Questions)
+      - **D-10005** — Why `submitMove` is prop-drilled instead of
+        injected via a Vue provide / inject seam (testability —
+        components remain pure and prop-driven)
+      - **D-10006** (added 2026-04-27) — Why `startMatchIfReady`
+        retargets `setPhase('setup')` → `setPhase('play')` and the
+        evolution path for the future deck-construction WP (skip
+        the empty setup phase to unblock the smoke-test path; setup
+        machinery is reserved for a future WP)
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` has WP-100 checked off with today's
       date
 
@@ -760,10 +1095,15 @@ Data), §11 (Stateless Client Philosophy), §17 (Accessibility & Inclusivity).
   validation. The constraints in this packet make any local reconciliation
   attempt a packet-lint violation.
 - §4 is advanced by introducing the first interactive multiplayer surface —
-  active player drives a turn through the browser; spectator and waiting
+  players ready up and start a match through the browser, then the active
+  player drives a turn through the browser; spectator and waiting
   players see the resulting state via the same `UIState` projection. No
   reconnection or late-joining behavior is changed; the WP relies on
-  WP-090's existing wiring.
+  WP-090's existing wiring. The 2026-04-27 revision genuinely advances §4:
+  before the revision, the click-to-play surface was unreachable because
+  matches stalled in the empty setup phase; the surgical engine retarget
+  (§Scope J) closes the lobby → play transition gap so a smoke test can
+  actually exercise §4 end-to-end.
 - §10 is preserved by treating `CardExtId` strings as the canonical content
   identifier flowing through `UIState`. Card display fidelity (names,
   images, costs) is deferred to a follow-up registry-projection WP — the
@@ -946,3 +1286,100 @@ named follow-up commitment, not a blocker. Kept here as audit trail.
   Select-String steps already specified in `## Verification Steps`. The
   decision should be mirrored as a `DECISIONS.md` entry by the
   executing session so future reviewers do not re-litigate.
+
+---
+
+## Promotion Record (2026-04-27 Revision)
+
+- **Original execution.** WP-100 originally executed on 2026-04-26
+  (Commit A `378729a` + Commit B `1dffb3a`); arena-client baseline
+  `143/10/0` → `169/16/0`; engine baseline unchanged at `522/116/0`;
+  pre-A governance `7ff4006` carried D-10001 amendment + D-10002
+  renumber + EC-100 stub + PS-1/2/3 fold-ins. The original scope
+  shipped six interactive components (HandRow, CityRow, HQRow,
+  MastermindTile, TurnActionBar, PlayView) plus the shared
+  `uiMoveName.types.ts` and the App.vue prop-passing edit. All
+  acceptance criteria, verification steps, and definition-of-done
+  items passed. Commits A + B were correctly scoped to the
+  click-to-play surface.
+- **Smoke-test discovery.** Manual smoke testing on 2026-04-26
+  revealed that the click-to-play surface was unreachable end-to-end:
+  the engine's lobby phase has `setPlayerReady` and
+  `startMatchIfReady` moves but the locked six-name UI vocabulary
+  did not surface them, AND `startMatchIfReady` retargeted to the
+  empty `setup` phase which has no exit path (no `onBegin`, no
+  `endIf`, no exit move; verified by grep that no production code
+  calls `setPhase('play')` anywhere in `packages/game-engine/src/`).
+  The match stalled in lobby phase regardless of how many players
+  joined; `PlayView.isPlayPhase` stayed false; the click-to-play
+  surface never rendered. The smoke test was unable to exercise the
+  WP's stated goal.
+- **Revert decision.** On 2026-04-27 the user (jeff@barefootbetters.com)
+  authorized "revise WP-100 to the beginning and re-run preflight
+  and execution". Commits A + B were reverted via `git revert` —
+  `541d67c` (revert Commit A code) and `19d1f66` (revert Commit B
+  governance close). Pre-A `7ff4006` was retained because D-10001
+  amendment, the EC-100 stub, D-10002 renumber, and PS-1/2/3 fold-ins
+  all remain valid load-bearing governance for the revised WP. The
+  reverted tree returns to baseline `143/10/0` arena-client tests with
+  no `apps/arena-client/src/components/play/` directory, no D-10003 /
+  D-10004 / D-10005 entries in DECISIONS, and EC-100 stub status
+  back to `Stub` in EC_INDEX.
+- **Revision scope (2026-04-27).** Two minimal additions on top of
+  the original 14 files:
+  - **§Scope I** — new `LobbyControls.vue` + `LobbyControls.test.ts`
+    surfacing `setPlayerReady` (Mark Ready / Mark Not Ready) and
+    `startMatchIfReady` (Start Match) for browser-side lobby
+    progression. Stateless component (no UIState lobby projection
+    in this scaffold; engine validates phase scoping on receipt).
+  - **§Scope J** — surgical engine patch at
+    [lobby.moves.ts:64](packages/game-engine/src/lobby/lobby.moves.ts:64)
+    retargeting `events.setPhase('setup')` → `events.setPhase('play')`
+    plus the paired assertion-target flip in
+    [lobby.moves.test.ts:110](packages/game-engine/src/lobby/lobby.moves.test.ts:110).
+    Setup phase becomes unreachable in WP-100; reserved for a future
+    deck-construction WP per D-10006 evolution path.
+  - **PlayView phase-branch rendering** — extended from "suppress
+    interactive children when not play" to "render LobbyControls in
+    lobby phase; render the five play-surface children in play phase;
+    render ArenaHud only in setup/end". The `<PlayView>` and
+    `<PlayView.test>` files in §Scope F gain the lobby branch and
+    paired test.
+  - **`UiMoveName` union expanded** from six names to eight
+    (`'setPlayerReady' | 'startMatchIfReady'` added); the type
+    definition in `uiMoveName.types.ts` is the single source of
+    truth.
+- **01.5 status (revised scope).** Still NOT INVOKED. Verified
+  against the four 01.5 triggers per
+  `docs/ai/REFERENCE/01.5-runtime-wiring-allowance.md`:
+  - ❌ No new `LegendaryGameState` field. (`G.lobby` already exists.)
+  - ❌ No `buildInitialGameState` shape change. (Initial state
+    construction is unchanged; the existing `G.lobby = { ... }`
+    initialization is untouched.)
+  - ❌ No new `LegendaryGame.moves` entry. (The two lobby-phase moves
+    `setPlayerReady` and `startMatchIfReady` were already registered;
+    the UI gains visibility into them, not the engine.)
+  - ❌ No new phase hook. (`setup.onBegin` / `setup.endIf` /
+    `setup.moves` all remain absent in `game.ts`. The §Scope J change
+    is a one-line target retarget inside an existing move's body —
+    not a new hook.)
+- **Test baseline shift (revised scope).** arena-client
+  `143/10/0` → estimated **`~177/17/0`** (+34 tests, +7 suites — six
+  original component suites + one new LobbyControls suite); engine
+  `522/116/0` → **`522/116/0`** unchanged (assertion-target fixture
+  flip, not a new test).
+- **File count (revised scope).** 14 → 18 in Commit A (15 UI files
+  including the new LobbyControls pair + 1 modified App.vue + 2
+  modified engine files); 16 with the post-mortem.
+- **EC-100 stub remains stub-only.** The D-10001 Amendment carve-out
+  authorizes a minimal hook-satisfaction stub; the revision does
+  NOT promote EC-100 to a full Execution Checklist. WP-100 remains
+  the sole authoritative execution contract.
+- **Pre-flight re-run authorized.** The expanded scope warrants a
+  new pre-flight pass against the revised dependency contracts
+  (`lobby.moves.ts` current shape, `lobby.types.ts` `SetPlayerReadyArgs`
+  payload, `lobby.validate.ts` `validateCanStartMatch` precondition,
+  game.ts phases block). The pre-flight artifact at
+  `docs/ai/invocations/preflight-wp100-interactive-gameplay-surface.md`
+  is updated in the same documentation pass with a 2026-04-27 revision
+  block.
