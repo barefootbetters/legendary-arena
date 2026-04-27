@@ -31,11 +31,12 @@ Failure to satisfy any item below is a failed execution of WP-097.
 - §A forbidden lexicon: `Buy`, `Purchase`, `Order`, `Subscribe`, `Upgrade`, `Unlock`, `Get Access`
 - D-9701 must cite both `docs/TOURNAMENT-FUNDING.md` and `docs/01-VISION.md §Financial Sustainability` and explicitly note the slogan-sense divergence
 - Canonical UI term: **funding affordance** (per WP-097 §Authorized Future Surfaces opening Definition). "Funding surface" is reserved for the §F **Funding Surface Gate** proper noun. Do not introduce alternate phrasings ("funding-related UI", "funding element") in any artifact this EC produces.
+- **Commit ordering lock.** Commit A (funding-doc reconciliation) MUST land before Commit B (SPEC governance close). D-9701 MUST cite the reconciled funding document as it stands after Commit A, never a pre-reconciliation draft. Landing Commit B first would leave D-9701 anchored to a doc that does not yet contain the Scope section, Infrastructure narrowing, Vision citation, or D-9701 back-citation — a governance sequencing footgun.
 
 ## Guardrails
 
 - Docs-only. No `packages/` or `apps/` files modified. No `docs/01-VISION.md`, `docs/ai/ARCHITECTURE.md`, or `.claude/` files modified.
-- Funding-doc additions are surgical inserts only: `## Scope` section between Authority and Definitions; tightened `Infrastructure` definition; Vision citation in `## Authority`; D-9701 citation in `## Governance and Amendments`. The Cost Baseline, Public Blurb, and all other sections are byte-identical to the 2026-04-26 baseline — do NOT rewrite them.
+- Funding-doc additions are surgical inserts only: `## Scope` section between Authority and Definitions; tightened `Infrastructure` definition; Vision citation in `## Authority`; D-9701 citation in `## Governance and Amendments`. The Cost Baseline, Public Blurb, and all other sections are byte-identical to the 2026-04-26 baseline — do NOT rewrite them. **Any diff outside these four explicitly named insertion points is a hard STOP, regardless of how semantically neutral the change appears** (typo fixes, whitespace normalization, link reformatting, Markdown re-styling all count). Helpful cleanup is forbidden under this EC; route it to a successor WP.
 - D-9701 lands immediately before `## Final Note` in `docs/ai/DECISIONS.md`.
 - Profile-attribution language in WP-097 §C stays presentation-only; never authorize comparison-context display, never authorize entitlement framing.
 - WP-097 itself implements zero UI surfaces. `grep -nE "Donate|Support Tournaments|Tournament Supporter" apps/ packages/` MUST return zero matches at execution.

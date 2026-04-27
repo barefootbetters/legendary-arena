@@ -183,9 +183,10 @@ Constraints:
 
 ### B) Registry Viewer Funding Affordance
 
-The card registry viewer (`apps/registry-viewer/`,
-`cards.barefootbetters.com`) MAY surface an identical funding
-affordance, scoped as **contextual discovery only**.
+The card registry viewer application (e.g.,
+`apps/registry-viewer/`; current deployment hostname is illustrative,
+not policy-locked) MAY surface an identical funding affordance, scoped
+as **contextual discovery only**.
 
 Constraints:
 
@@ -230,6 +231,12 @@ Constraints:
 - Contribution amounts MUST NOT be displayed publicly by default. If a
   contributor opts in to amount disclosure, it is a separate opt-in
   from the attribution opt-in itself.
+- **Behavioral invariant for "presentation-only".** If removing the
+  attribution from a profile does not change any visible list ordering,
+  access path, sort key, filter result, or interaction flow anywhere in
+  the product, the attribution qualifies as presentation-only. If
+  removing it would change any of those, the attribution has crossed
+  into entitlement and is forbidden under this section.
 
 ### D) Forbidden Semantics (Applies to All Authorized Surfaces)
 
@@ -406,6 +413,7 @@ The 2026-04-25 baseline (post-cost-baseline-revision committed
   - The **platform's own revenue model** (supporter subscriptions, cosmetics, organized-play licensing, IP royalties) is governed by `docs/01-VISION.md §Financial Sustainability` and is out of scope here.
   - The two coexist: the platform may sell organized-play licensing *to* tournament organizers per Vision; organizers may not extract profit from tournament participants per this document.
   - A tournament's "infrastructure costs" are **incremental costs incurred specifically for that tournament** (e.g., bandwidth surge, prize-administration tooling, dedicated hosting). The platform's always-on infrastructure (general hosting, storage, R2, etc.) is funded through the Vision's revenue model and is not a tournament-funding line item.
+  - **Explicit exclusion.** Infrastructure does **not** include amortized or shared platform costs (always-on hosting, general observability, baseline storage, shared R2 buckets, long-lived metrics tooling), even if a tournament incidentally consumes them. A cost qualifies only if it would not exist absent the tournament.
 - **Tighten the `## Definitions` section** to align: rewrite the "Infrastructure" definition to specify "incremental tournament-specific" scope per the bullet above.
 - **Add a citation line** at the foot of the `## Authority` section: `For platform-level revenue (supporter subscriptions, cosmetics, organized-play licensing, IP royalties), see docs/01-VISION.md §Financial Sustainability — that document is authoritative for the platform; this document is authoritative for tournament-level community funding.`
 - **Add `D-9701` citation** at the foot of the `## Governance and Amendments` section: `Anchored in docs/ai/DECISIONS.md §D-9701.`
@@ -424,7 +432,7 @@ The 2026-04-25 baseline (post-cost-baseline-revision committed
   ("intended for verbatim reuse" and the "SHOULD NOT paraphrase"
   rule) is also locked. Modifying the blurb wording at execution
   time would require amending this WP first.
-- All other content (Funding Principles, Approved Channels, Disallowed Models, Reconciliation, Cost Baseline, Sunset / Dissolution, Summary, Public Blurb) is preserved byte-for-byte from the 2026-04-26 baseline.
+- All other content (Funding Principles, Approved Channels, Disallowed Models, Reconciliation, Cost Baseline, Sunset / Dissolution, Summary, Public Blurb) is preserved byte-identical to the 2026-04-26 baseline.
 - The slogan "No margin, no mission" must not appear anywhere in the doc (already absent from the 2026-04-26 baseline — verify with grep at execution).
 
 ### B) `docs/ai/DECISIONS.md` — modified
@@ -432,7 +440,7 @@ The 2026-04-25 baseline (post-cost-baseline-revision committed
 Add a new `## D-9701` entry immediately before the `## Final Note` block at the foot of the file. The entry must include:
 
 - **Title:** `D-9701 — Tournament Funding Policy: Community-Funded, Infrastructure-Only, No Organizer Margin`
-- **Decision body** stating the four pillars: (1) tournament-level scope distinction from platform-level Vision §Financial Sustainability; (2) infrastructure-only spending with payment-processor fees and direct-expense reimbursement carve-outs; (3) Open Collective primary + PayPal supplemental channel approval; (4) sunset / dissolution rule (pro-rata refund where practical, otherwise donation to an aligned non-profit, never to organizers).
+- **Decision body** stating the four pillars: (1) tournament-level scope distinction from platform-level Vision §Financial Sustainability; (2) infrastructure-only spending with payment-processor fees and direct-expense reimbursement carve-outs — reimbursement covers only third-party, verifiable out-of-pocket expenses, **not labor, time, or opportunity cost**; (3) Open Collective primary + PayPal supplemental channel approval; (4) sunset / dissolution rule (pro-rata refund where practical, otherwise donation to an aligned non-profit, never to organizers).
 - **Locked anchor list:** `docs/TOURNAMENT-FUNDING.md` (the contract); `docs/01-VISION.md §Financial Sustainability` (the platform-level peer authority); NG-1, NG-2, NG-3, NG-5, NG-6, NG-7 (Non-Goals preserved).
 - **Slogan-collision note:** explicit acknowledgement that Vision §Financial Sustainability uses "No margin, no mission" in the standard nonprofit-margin sense and that WP-097's funding doc uses "no organizer margin" as its governing phrase to avoid semantic collision.
 - **Rationale:** four bullets covering scope-distinction; nonprofit-by-design at the organizer layer; transparency requirements; sunset behavior.
@@ -473,7 +481,7 @@ Add a `### WP-097 / EC-097 Executed — Tournament Funding Policy (YYYY-MM-DD, E
 
 ## Files Expected to Change
 
-- `docs/TOURNAMENT-FUNDING.md` — **modified** — add `## Scope` section; tighten `## Definitions` "Infrastructure" entry; add Vision citation in `## Authority`; add D-9701 citation in `## Governance and Amendments`; preserve all other content byte-for-byte from the 2026-04-25 baseline.
+- `docs/TOURNAMENT-FUNDING.md` — **modified** — add `## Scope` section; tighten `## Definitions` "Infrastructure" entry; add Vision citation in `## Authority`; add D-9701 citation in `## Governance and Amendments`; preserve all other content byte-identical to the 2026-04-26 baseline.
 - `docs/ai/DECISIONS.md` — **modified** — add `## D-9701` entry immediately before `## Final Note`.
 - `docs/ai/STATUS.md` — **modified** — add `### WP-097 / EC-097 Executed` block at top of `## Current State`.
 - `docs/ai/work-packets/WORK_INDEX.md` — **modified** — add `WP-097` row under Phase 7; flip `[ ]` → `[x]` on completion.
@@ -521,7 +529,7 @@ No other files may be modified. Verified by `git diff --name-only` after each co
 ### AC-5 — Vision Alignment self-compliance
 
 - [ ] WP-097 contains a `## Vision Alignment` block citing §Financial Sustainability, NG-1, NG-2, NG-3, NG-5, NG-6, NG-7 with an explicit no-conflict assertion and an N/A determinism line.
-- [ ] D-9701's "slogan-collision note" matches WP-097's Non-Negotiable Constraints "slogan" item byte-for-byte (no paraphrasing).
+- [ ] D-9701's "slogan-collision note" matches WP-097's Non-Negotiable Constraints "slogan" item byte-identical (no paraphrasing).
 
 ### AC-6 — Lint gate
 
