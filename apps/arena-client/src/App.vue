@@ -3,16 +3,11 @@ import { defineComponent, onBeforeUnmount, onMounted, ref } from 'vue';
 
 import ArenaHud from './components/hud/ArenaHud.vue';
 import LobbyView from './lobby/LobbyView.vue';
-import PlayView from './components/play/PlayView.vue';
 import {
   createLiveClient,
   type LiveClientHandle,
 } from './client/bgioClient';
 import { serverUrl } from './lobby/lobbyApi';
-import type {
-  SubmitMove,
-  UiMoveName,
-} from './components/play/uiMoveName.types';
 
 type AppRoute = 'fixture' | 'live' | 'lobby';
 
@@ -83,7 +78,7 @@ function selectRoute(parsed: ParsedQuery): AppRoute {
 
 export default defineComponent({
   name: 'App',
-  components: { ArenaHud, LobbyView, PlayView },
+  components: { ArenaHud, LobbyView },
   props: {
     // why: `searchOverride` is a testing seam. Production callers never pass
     // it — `null` means "read from window.location.search at setup time".
@@ -132,22 +127,11 @@ export default defineComponent({
       }
     });
 
-    // why: prop-drill submitMove into <PlayView> rather than letting the
-    // play components reach into the live client factory. Components stay
-    // pure and prop-driven for testability (a stub function is enough);
-    // the bgioClient remains the sole runtime engine-import site per the
-    // WP-090 grep invariant. The closure reads liveClient.value at call
-    // time so clicks before mount silently no-op rather than crashing.
-    const submitMove: SubmitMove = (name: UiMoveName, args: unknown): void => {
-      liveClient.value?.submitMove(name, args);
-    };
-
     return {
       route,
       matchID,
       playerID,
       isDev,
-      submitMove,
     };
   },
 });
@@ -159,7 +143,7 @@ export default defineComponent({
       <ArenaHud />
     </template>
     <template v-else-if="route === 'live'">
-      <PlayView :submit-move="submitMove" />
+      <ArenaHud />
       <footer
         v-if="isDev"
         class="live-diagnostics"
