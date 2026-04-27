@@ -63,7 +63,7 @@ only if it would not exist absent the tournament.
   play is out of scope.
 - **Organizer** — A person with operational authority to run tournaments:
   scheduling, moderating, or holding credentials for shared infrastructure.
-- **Infrastructure** — **Incremental tournament-specific** technical
+- **Infrastructure** — **incremental tournament-specific** technical
   resources required to host a tournament: dedicated or surge hosting,
   prize-administration tooling, event-specific bandwidth, and equivalent
   line items that would not exist absent the tournament. Always-on
