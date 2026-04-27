@@ -36,6 +36,26 @@ export default defineComponent({
     }
 
     /**
+     * Emit an `advanceStage` intent. The engine's advanceTurnStage helper
+     * (turnLoop.ts) cycles G.currentStage through the canonical sequence
+     * (`start → main → cleanup`) and calls events.endTurn() if invoked
+     * from cleanup.
+     */
+    function onAdvance(): void {
+      // why: empty-object payload — advanceStage takes no arguments by
+      // engine design (see game.ts advanceStage wrapper + turnLoop.ts
+      // advanceTurnStage). Per D-10011, this button surfaces stage
+      // progression that the original WP-100 vocabulary excluded as
+      // "internal." Without it, after Draw fills the hand in `start`,
+      // the player is stuck — `main` (where playCard / fightVillain /
+      // recruitHero / fightMastermind are gated) is unreachable. The
+      // button is enabled in `start` and `main`; in `cleanup` the End
+      // Turn button is the proper exit (it does the discard work that
+      // advanceStage-from-cleanup skips).
+      props.submitMove('advanceStage', {});
+    }
+
+    /**
      * Emit an `endTurn` intent. The engine's `endTurn` move empties hand
      * and inPlay into discard before rotating players (see
      * `coreMoves.impl.ts:131`); the UI does not perform any cleanup
@@ -47,7 +67,7 @@ export default defineComponent({
       props.submitMove('endTurn', {});
     }
 
-    return { onDraw, onEndTurn };
+    return { onDraw, onAdvance, onEndTurn };
   },
 });
 </script>
@@ -67,6 +87,18 @@ export default defineComponent({
       <!-- why: stage gating per WP-100 §Locked contract values — drawCards
            is enabled in 'start' or 'main'. -->
       Draw
+    </button>
+    <button
+      type="button"
+      data-testid="play-action-advance"
+      :disabled="currentStage !== 'start' && currentStage !== 'main'"
+      @click="onAdvance"
+    >
+      <!-- why: stage gating per D-10011 — advanceStage is enabled in
+           'start' (advances to main) and 'main' (advances to cleanup).
+           In 'cleanup' the End Turn button is the proper exit since it
+           does the discard work that advanceStage-from-cleanup skips. -->
+      Advance
     </button>
     <button
       type="button"

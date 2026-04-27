@@ -102,4 +102,42 @@ test('TurnActionBar End Turn is enabled only in cleanup', () => {
   );
 });
 
+test('TurnActionBar Advance click emits advanceStage with empty-object payload (D-10011)', () => {
+  const { calls, submitMove } = recorder();
+  const wrapper = mount(TurnActionBar, {
+    props: { currentStage: 'start', submitMove },
+  });
+
+  void wrapper.find('[data-testid="play-action-advance"]').trigger('click');
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0]!.name, 'advanceStage');
+  assert.deepEqual(calls[0]!.args, {});
+});
+
+test('TurnActionBar Advance is enabled in start and main, disabled in cleanup (D-10011)', () => {
+  const { submitMove } = recorder();
+  const enabledStages: ReadonlyArray<'start' | 'main'> = ['start', 'main'];
+  for (const stage of enabledStages) {
+    const wrapper = mount(TurnActionBar, {
+      props: { currentStage: stage, submitMove },
+    });
+    const advance = wrapper.find('[data-testid="play-action-advance"]');
+    assert.equal(
+      advance.attributes('disabled'),
+      undefined,
+      `Advance should be enabled in stage '${stage}'`,
+    );
+  }
+
+  const cleanupWrapper = mount(TurnActionBar, {
+    props: { currentStage: 'cleanup', submitMove },
+  });
+  assert.equal(
+    cleanupWrapper.find('[data-testid="play-action-advance"]').attributes('disabled'),
+    '',
+    'Advance should be disabled in cleanup (End Turn is the proper exit there)',
+  );
+});
+
 });

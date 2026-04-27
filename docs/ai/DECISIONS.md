@@ -11064,6 +11064,53 @@ The pattern is that boardgame.io's documented "default" behaviors have subtle se
 
 ---
 
+### D-10011 — UI Adds advanceStage Button (Stage Progression Surface)
+
+**Type:** UI scaffold extension / engine-move vocabulary expansion
+**Packet:** WP-100 (smoke-test fix-forward post-D-10010)
+**Date:** 2026-04-27
+
+**Decision:** The `advanceStage` engine move is added to WP-100's `UiMoveName` union (8 → 9 names) and surfaced as a third button labelled **Advance** in `TurnActionBar.vue` between the Draw and End Turn buttons. The button is enabled in stages `'start'` and `'main'` (where it advances `start → main` and `main → cleanup` respectively); disabled in `'cleanup'` because the End Turn button is the proper exit there (it does the discard work that `advanceStage`-from-cleanup skips). The button emits `submitMove('advanceStage', {})` with an empty-object payload — the engine move takes no arguments.
+
+**Rationale:** Surfaced in the WP-100 smoke test on 2026-04-27 after the prior five fix-forwards (D-10006 → D-10010) unblocked the lobby → play transition path. The user successfully clicked Draw in the play surface (filling their hand to 6 cards) but had no way to progress to `main` stage where `playCard`, `fightVillain`, `recruitHero`, and `fightMastermind` are gated. The original WP-100 vocabulary excluded `advanceStage` thinking it was an "internal" engine move:
+
+> "internal engine moves (`advanceStage`, `revealVillainCard`) that are explicitly **out of UI scope**"
+
+This was a smoke-test gap. `advanceStage` IS internal in the sense that it doesn't represent a "game decision" — it's a stage-progression seam — but without a UI surface for it, the player gets stuck in `start` after drawing. Looking at the engine's `turnLoop.ts` `advanceTurnStage` function, the canonical sequence is `start → main → cleanup → events.endTurn()`. Only `advanceStage` (registered on `LegendaryGame.moves`) calls `advanceTurnStage`. Nothing else in the engine progresses stages automatically.
+
+The four 01.5 triggers were verified absent on the §D-10011 change:
+
+- ❌ No new `LegendaryGameState` field — `G.currentStage` already exists.
+- ❌ No `buildInitialGameState` shape change.
+- ❌ No new `LegendaryGame.moves` entry — `advanceStage` was already registered (just not surfaced in the UI vocabulary).
+- ❌ No new phase hook — UI button addition only.
+
+**01.5 NOT INVOKED.**
+
+The semantic distinction between Advance and End Turn is preserved:
+
+- **Advance (start/main → next stage)**: emits `advanceStage`, walks G.currentStage forward by one. From cleanup, it would call `events.endTurn()` *without* the discard work — so the button disables itself there.
+- **End Turn (cleanup only)**: emits `endTurn`, which empties hand + inPlay into discard, then calls `events.endTurn()`. The proper end-of-turn exit.
+
+The user-facing flow now reads:
+
+1. **start**: click Draw (fills hand) — click Advance → main
+2. **main**: click hand cards / villains / heroes / mastermind to act — click Advance → cleanup
+3. **cleanup**: click End Turn (discards + rotates to next player)
+
+**How to apply:**
+
+- Future engine WPs that introduce new phase-stage machinery MUST evaluate whether each engine move that progresses state needs a UI surface. Internal-only engine moves (e.g., a hypothetical `revealVillainCard` that fires automatically as part of stage transition) stay out of the UI vocabulary; engine moves that the player drives explicitly (turn progression, scaffold compensation for missing auto-mechanics) need a button.
+- The `Advance` button is itself somewhat scaffold-shaped — in tabletop Legendary, stage progression is implicit (you draw, then play cards, then discard, all within "your turn"). The engine's three-stage model is an MVP intermediate: a future engine WP could collapse stages or add automatic transitions (e.g., `turn.onMove` or `turn.endIf` driving the progression), and the Advance button would be deleted as an obsolete scaffold. D-10003 (Draw button) and D-10011 (Advance button) are both scaffold artifacts targeted for removal once the engine catches up. Both are decision-logged so future maintainers can locate the rationale.
+
+**Cumulative reflection (D-10006 → D-10011).** Sixth WP-100 smoke-test gap. The pattern continues: each fix unblocks the next layer of the dispatch path, exposing a previously-latent issue. D-10011 is the first gap that's NOT a boardgame.io v0.50 quirk — it's a real WP-100 scope omission (the original vocabulary explicitly excluded `advanceStage` and shipped). All six gaps share the underlying root cause noted in D-10010's reflection: engine unit tests construct mock contexts manually and bypass the full multi-player + multi-phase + state-shape-mismatching-playerView dispatch chain. Manual smoke testing surfaces them deterministically; an in-process Server() + Client() integration test harness would catch them in CI. That harness is now beyond "nice to have" — it's the structural prevention for the dominant class of post-WP-100 regressions.
+
+**Status:** Active for the lifetime of the Advance button. Closes when (a) the engine implements automatic stage progression (e.g., `turn.onMove` driving the cycle) and the button is deleted, OR (b) the integration test harness lands and structural drift tests are replaced by behavioral tests.
+
+**Citation:** [TurnActionBar.vue](apps/arena-client/src/components/play/TurnActionBar.vue) Advance button + `onAdvance` handler; [TurnActionBar.test.ts](apps/arena-client/src/components/play/TurnActionBar.test.ts) D-10011 regression tests; [uiMoveName.types.ts](apps/arena-client/src/components/play/uiMoveName.types.ts) `UiMoveName` union (now 9 members); [turnLoop.ts](packages/game-engine/src/turn/turnLoop.ts) `advanceTurnStage` (the engine helper that powers the move); D-10003 (Draw button scaffold-artifact precedent — same removal pattern); D-10006 + D-10007 + D-10008 + D-10009 + D-10010 (five prior fix-forwards in this cycle).
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

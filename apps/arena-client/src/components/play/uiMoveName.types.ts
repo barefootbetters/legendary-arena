@@ -11,11 +11,17 @@
  *   revision added these two names; the original WP-100 locked vocabulary at
  *   six names and the smoke test could not progress past the lobby phase as a
  *   result.
- * - Six **play-phase + cross-phase** moves (registered on `LegendaryGame.moves`):
- *   `'drawCards'`, `'playCard'`, `'endTurn'`, `'fightVillain'`, `'recruitHero'`,
- *   `'fightMastermind'`. The engine bag also registers two internal moves
- *   (`'advanceStage'`, `'revealVillainCard'`) that this UI vocabulary
- *   intentionally does not surface.
+ * - Seven **play-phase + cross-phase** moves (registered on `LegendaryGame.moves`):
+ *   `'drawCards'`, `'advanceStage'`, `'playCard'`, `'endTurn'`,
+ *   `'fightVillain'`, `'recruitHero'`, `'fightMastermind'`. The engine bag
+ *   also registers `'revealVillainCard'` which this UI vocabulary
+ *   intentionally does not surface (the engine reveals villain cards
+ *   automatically as part of stage transitions). Per D-10011,
+ *   `'advanceStage'` was added on 2026-04-27 after smoke testing surfaced
+ *   that the original WP-100 vocabulary's exclusion of stage progression
+ *   left the player stuck in `start` stage after drawing — `main` (where
+ *   playCard / fightVillain / recruitHero / fightMastermind are gated) is
+ *   unreachable without an explicit advance.
  *
  * The union is type-only and creates no runtime coupling. Every interactive
  * component under `apps/arena-client/src/components/play/` declares its
@@ -26,7 +32,7 @@
  */
 
 /**
- * The eight engine move names the click-to-play UI surface is permitted to
+ * The nine engine move names the click-to-play UI surface is permitted to
  * emit. Strict subset of the engine's `LegendaryGame.moves` bag plus the
  * `LegendaryGame.phases.lobby.moves` block. Any extension requires a new
  * Work Packet.
@@ -35,6 +41,7 @@ export type UiMoveName =
   | 'setPlayerReady'
   | 'startMatchIfReady'
   | 'drawCards'
+  | 'advanceStage'
   | 'playCard'
   | 'endTurn'
   | 'fightVillain'
