@@ -36,7 +36,7 @@ Failure to satisfy any item below is a failed execution of WP-099.
 - §7 amendment is a surgical append ONLY — preserve every existing forbidden-package bullet (axios, ORMs, Jest/Vitest/Mocha, Passport/Auth0/Clerk) byte-for-byte. The new Hanko bullet immediately follows the Auth0/Clerk/Passport line.
 - D-9901..D-9905 are inserted in numeric order at the foot of `DECISIONS.md` (after D-9601, before any trailing content).
 - WP-099 implements zero auth surfaces. `grep -rE "@teamhanko|hanko\.io" apps/ packages/` MUST return zero matches at execution time.
-- Hanko-specific code does not exist anywhere in the repo at WP-099 close. The §A/§B surfaces in WP-099 are policy authorizations for *future* WPs (WP-100 and a future implementation WP), not deliverables.
+- Hanko-specific code does not exist anywhere in the repo at WP-099 close. The §A/§B surfaces in WP-099 are policy authorizations for *future* WPs (WP-112 — renumbered from "WP-100" per D-10002 — and a future implementation WP), not deliverables.
 - "Auth broker" vs "identity authority" terminology is canonical (per WP-099 §Authorized Future Surfaces opening Definitions). Do not coin synonyms ("auth provider" is acceptable in narrative; "identity provider"/"IdP" must refer to the federated provider behind Hanko, not Hanko itself).
 
 ## Required `// why:` Comments
@@ -76,6 +76,6 @@ Failure to satisfy any item below is a failed execution of WP-099.
 
 - §7 amendment is a rewrite instead of a surgical append — STOP; existing Auth0/Clerk/Passport ban must be byte-preserved. Re-read WP-099 §Scope §A; the Hanko bullet immediately follows the existing line.
 - D-9901..D-9905 added but `'hanko'` appears as a code literal somewhere in `apps/` or `data/migrations/` — STOP; the broker is invisible at rest by D-9902 and the F-1 gate item. Re-read WP-099 Non-Negotiable Constraints "Hanko is invisible at rest" and remove the literal.
-- A future implementation WP cited in WP-099 §Authorized Future Surfaces appears to be drafted as part of this session — STOP; WP-099 is policy-only. WP-100 and the Hanko-implementation WP are separate sessions.
+- A future implementation WP cited in WP-099 §Authorized Future Surfaces appears to be drafted as part of this session — STOP; WP-099 is policy-only. WP-112 (renumbered from "WP-100" per D-10002) and the Hanko-implementation WP are separate sessions.
 - §7 carve-out is rephrased as category-wide ("managed auth providers are permitted") — STOP; the carve-out is Hanko-specific by D-9903. Auth0 / Clerk / Passport remain forbidden. Re-read the locked carve-out wording verbatim from WP-099 §Scope §A.
 - D-9904's locked module path is changed to `apps/server/src/identity/hanko/` or similar — STOP; the path `apps/server/src/auth/hanko/` is locked precisely to keep `identity/` Hanko-free (structural replacement-safety, F-2 gate item).

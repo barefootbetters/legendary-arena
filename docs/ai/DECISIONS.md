@@ -10605,6 +10605,115 @@ split.
 
 ---
 
+### D-10001 — EC-100 Not Required for WP-100 (Interactive Gameplay Surface)
+
+**Type:** Process / EC governance
+**Packet:** WP-100
+**Date:** 2026-04-26
+
+**Decision:** WP-100 (Interactive Gameplay Surface — Click-to-Play UI Scaffold) ships without a paired Execution Checklist. No EC-100 file is created; no EC-100 row is added to `EC_INDEX.md`. The Work Packet itself ([WP-100-interactive-gameplay-surface.md](docs/ai/work-packets/WP-100-interactive-gameplay-surface.md)) is the sole authoritative execution contract for the session.
+
+**Rationale:** Per `docs/ai/execution-checklists/EC-TEMPLATE.md` and `docs/ai/REFERENCE/01.1-how-to-use-ecs-while-coding.md`, an EC is warranted when a packet introduces drift-prone elements that benefit from quick-reference extraction — typically engine state mutation, data migration, ordering-sensitive multi-step procedures, or irreversible side effects across files / packages / databases. WP-100 introduces none of those:
+
+- *No engine mutation*: the packet is pure UI scaffolding under `apps/arena-client/src/components/play/`. The engine, server, and registry packages are unchanged (asserted by the `git diff --name-only` step in WP-100 §Verification Steps).
+- *No data migration or persistence*: no migration files, no schema changes, no PostgreSQL writes, no R2 writes, no localStorage / sessionStorage / IndexedDB. All UI state flows from server-pushed frames into the Pinia store; nothing is persisted beyond the runtime session.
+- *No ordering-sensitive procedure*: each new component is independently buildable and testable. There is no required execution order across the six new `.vue` files; the `LiveMatchView.vue` prop-passing edit is a one-line, idempotent change.
+- *No irreversible side effects*: every change is reversible by `git revert`. The packet adds no network calls, no external service writes, no scheduled jobs.
+- *Binary-verifiable surface*: WP-100 already inlines the verification machinery an EC would normally extract. `## Verification Steps` carries eight Select-String / `git diff` / `pnpm` checks; `## Acceptance Criteria` carries ~32 binary checks across seven sub-groups (Hand / City / HQ / Mastermind / TurnActionBar / PlayView + engine-import discipline + determinism / authority + tests + scope-enforcement); `## Definition of Done` re-asserts the build / test / grep / scope gates. A separate EC would duplicate these without adding new safeguards.
+- *Locked contract values inline*: the six move payloads, the four-stage gating contract, and the UIState field paths are pinned in the WP body's `## Non-Negotiable Constraints` → `Locked contract values` block — the same mechanism an EC would use, applied directly in the WP.
+
+The EC discipline exists to prevent re-derivation errors on drift-prone artifacts. WP-100's drift-prone artifacts (move payloads, UIState paths, stage gating, scaffold-artifact policy) are already pinned at the source.
+
+**How to apply:**
+
+- The WP-100 executing session reads `WP-100-interactive-gameplay-surface.md` end-to-end as the authoritative execution contract. No EC read is required because no EC exists.
+- Do NOT create `EC-100-*.checklist.md` retroactively. If a follow-up reviewer believes one is needed, raise a new decision (or amendment to this one) rather than adding the file.
+- Future WPs whose risk profile matches WP-100 (pure UI scaffolding, no engine / persistence / ordering surface, binary-verifiable) may cite this decision when omitting an EC.
+- Future WPs that touch engine, server, persistence, or any irreversible surface remain subject to the standard EC requirement per `EC-TEMPLATE.md` — this decision does not weaken the general rule.
+
+**Numbering note (resolved by D-10002):** `EC-099-auth-provider-selection.checklist.md` and `EC-101-handle-claim-flow.checklist.md` originally referenced a "future WP-100" in their bodies meaning a session-token-validation / Hanko-implementation packet. The WP-100 slot was reassigned to Interactive Gameplay Surface on 2026-04-26, and the session-token-validation packet has been renumbered to **WP-112** per D-10002 below. Cross-references in `WP-099`, `WP-101`, `WP-102`, `EC-099`, `EC-101`, `WORK_INDEX.md`, and `docs/05-ROADMAP.md` have been updated in the same documentation pass.
+
+**Status:** Active for WP-100. Reusable as a precedent for future packets matching the criteria above.
+
+**Citation:** `docs/ai/execution-checklists/EC-TEMPLATE.md` (EC purpose and scope); `docs/ai/REFERENCE/01.1-how-to-use-ecs-while-coding.md` (EC workflow and applicability); [WP-100-interactive-gameplay-surface.md](docs/ai/work-packets/WP-100-interactive-gameplay-surface.md) §Verification Steps + §Acceptance Criteria + §Definition of Done + §Non-Negotiable Constraints (the inlined EC-equivalent surface); [WP-100-interactive-gameplay-surface.md](docs/ai/work-packets/WP-100-interactive-gameplay-surface.md) §Promotion Record (peer-review pass that surfaced and recorded this decision).
+
+---
+
+#### Amendment 2026-04-26 — Hook Integration Carve-Out
+
+**Context:** The WP-100 session prompt drafting (2026-04-26) surfaced a conflict between this decision and the repo's `commit-msg` hook at `.githooks/commit-msg`. The hook enforces:
+
+- **Rule 5:** staged files under `packages/` or `apps/` require an `EC-###:` commit prefix; `SPEC:` and `INFRA:` are blocked for code commits.
+- **Rule 4:** `EC-###:` prefixes require a matching `docs/ai/execution-checklists/EC-NNN-*.checklist.md` file to exist.
+
+The original D-10001 reasoning ("EC discipline exists to prevent re-derivation errors on drift-prone artifacts; WP-100's drift-prone artifacts are pinned at the source") considered the WP-vs-EC governance tradeoff but did not consider hook integration. As stated, the decision blocks any code commit on WP-100: `EC-100:` would fail Rule 4 (no file), and `SPEC:` / `INFRA:` would fail Rule 5 (code present).
+
+**Amendment:** A **minimal EC-100 stub** is permitted at `docs/ai/execution-checklists/EC-100-interactive-gameplay-surface.checklist.md` whose sole purpose is to satisfy the hook's file-existence check. The stub MUST:
+
+- Contain no independent locked values, scope statements, verification steps, or acceptance criteria.
+- Redirect all execution authority to WP-100 by explicit citation.
+- Be ≤ 20 content lines (well under the EC-TEMPLATE 60-line cap).
+- Carry status `Stub` in `EC_INDEX.md` (not `Draft` — `Draft` would imply independent execution authority).
+- Flip from `Stub → Done` at WP-100 governance close, not `Draft → Done`.
+
+The amendment preserves the spirit of D-10001 (WP-100 is the sole authoritative execution contract; no EC-derived rederivation discipline applies) while conforming to the hook's mechanical requirements. The stub does not add an EC discipline burden — it is purely a redirect.
+
+**Reusability:** Future "no-EC" WPs that match D-10001's risk profile (pure UI scaffolding, no engine / persistence / ordering surface, binary-verifiable) may apply the same stub pattern under this amendment. Each such case must (a) cite this D-10001 amendment in its WP body, (b) land a corresponding `EC-NNN-*.checklist.md` stub with `Stub` status, and (c) flip `Stub → Done` at execution close.
+
+**Implementation:** Three files updated 2026-04-26 in this same documentation pass:
+
+- `docs/ai/DECISIONS.md` — D-10001 amendment block (this entry).
+- `docs/ai/execution-checklists/EC-100-interactive-gameplay-surface.checklist.md` — new minimal stub.
+- `docs/ai/execution-checklists/EC_INDEX.md` — new EC-100 row, status `Stub`.
+
+**Status:** Active. Closes the hook-integration gap surfaced by the WP-100 session prompt PG-1 finding.
+
+---
+
+### D-10002 — Session Token Validation Packet Renumbered from WP-100 to WP-112
+
+**Type:** Process / WP-numbering reassignment
+**Packet:** WP-099 (originator); WP-101, WP-102, EC-099, EC-101 (downstream cross-references)
+**Date:** 2026-04-26
+
+**Decision:** The Session Token Validation Middleware packet — the implementation WP that supplies `requireAuthenticatedSession(req): Promise<AccountId>` to authenticated request handlers — is renumbered from **WP-100** to **WP-112**. The WP-100 slot is permanently reassigned to Interactive Gameplay Surface (Click-to-Play UI Scaffold). All prose references in `WP-099`, `WP-101`, `WP-102`, `EC-099`, `EC-101`, `WORK_INDEX.md`, and `docs/05-ROADMAP.md` are updated to read "WP-112" in this same documentation pass. A deferred-placeholder row for WP-112 is added to `WORK_INDEX.md` so the slot is reserved and discoverable.
+
+**Rationale:** When `WP-099-auth-provider-selection.md`, `WP-101-handle-claim-flow.md`, `WP-102-public-profile-page.md`, `EC-099-auth-provider-selection.checklist.md`, and `EC-101-handle-claim-flow.checklist.md` were drafted on 2026-04-25, they cited a "future WP-100" as the planned home for session token validation middleware. None of those references created the WP-100 file — they were forward references to a slot that was open at the time. On 2026-04-26 the WP-100 slot was claimed by `WP-100-interactive-gameplay-surface.md` (which then went through 00.3 lint-gate and engine-source pre-review and was promoted to Ready). The auth-implementation packet still does not exist, but its prior label is now stale.
+
+Three options were considered:
+
+- *Option A — leave the references and disambiguate by context.* Rejected: future readers grepping for "WP-100" in `EC-099` would land on the gameplay-surface WP, then have to re-derive the contradiction. Silent collisions of this kind are exactly what `WORK_INDEX.md` is supposed to prevent.
+- *Option B — renumber the gameplay-surface WP.* Rejected: WP-100 is already promoted to Ready, has a stable filename, and is actively cited from `WP-111-uistate-card-display-projection.md`'s "Recommended sequencing" notes. Renumbering it would invalidate more cross-references than it fixes.
+- *Option C — assign the auth-implementation packet a new free slot.* Selected. The next clean slot is WP-112 (WP-100..103 claimed; WP-104..108 are Profile family placeholders; WP-109 is Team Affiliation; WP-110 is provisionally earmarked for team-play attribution per `WORK_INDEX.md:2329`; WP-111 is the UIState card display projection drafted 2026-04-26). WP-112 is sequential, free, and creates no name collisions.
+
+**How to apply:**
+
+- Any future Work Packet, EC, DECISIONS entry, or roadmap line referring to "session token validation" or `requireAuthenticatedSession` MUST cite **WP-112**, never "WP-100".
+- The WP-099 §A Session Validation Middleware contract (the F-1..F-7 Future-Auth Gates, the `AccountId` resolution requirement, the cryptographic-key-fetch-path authorization, the no-WP-052-contract-modification rule) carries forward to WP-112 unchanged. WP-112 is the implementing WP, not a re-policy WP.
+- WP-101's `requireAuthenticatedSession` injection seam (caller-injected provider; tests inject a fixture `AccountId`) is unchanged. Once WP-112 lands, runtime callers wire the production provider in place of the fixture; the WP-101 contract is stable across the renumber.
+- WP-102's "soft-dep on WP-100 — not required because the public profile endpoint is unauthenticated" survives as a soft-dep on WP-112 with the same reasoning. No WP-102 logic changes.
+- The deferred-placeholder row for WP-112 in `WORK_INDEX.md` should be promoted to a full `[ ] WP-112 — Session Token Validation Middleware` row once a draft exists. Until then the placeholder reserves the slot and names the contract origin (WP-099 §A) so the next reader can navigate.
+- This decision does not impose a draft deadline on WP-112. It exists only to lock the number.
+
+**Implementation:** Documentation-only change. Files updated in the same pass:
+
+- `docs/ai/DECISIONS.md` — D-10001 numbering note rewritten ("resolved by D-10002"); D-10002 added (this entry).
+- `docs/ai/work-packets/WORK_INDEX.md` — WP-112 deferred-placeholder row added; four "WP-100 (session token validation)" prose references updated to WP-112.
+- `docs/ai/work-packets/WP-099-auth-provider-selection.md` — all "WP-100" references meaning auth/session-token-validation updated to "WP-112" (heading "§A) Session Validation Middleware (Future WP-100)" rewritten to "§A) Session Validation Middleware (Future WP-112)"; body prose updated; lint checklist item updated).
+- `docs/ai/work-packets/WP-101-handle-claim-flow.md` — all "WP-100" references updated to "WP-112" (front-matter callout, §Assumes, §Constraints, §Rationale prose, §Tests).
+- `docs/ai/work-packets/WP-102-public-profile-page.md` — all "WP-100" references updated to "WP-112" (Dependencies line, §Constraints, §Out-of-Scope, §Vision Alignment).
+- `docs/ai/execution-checklists/EC-099-auth-provider-selection.checklist.md` — both "WP-100" mentions updated to "WP-112".
+- `docs/ai/execution-checklists/EC-101-handle-claim-flow.checklist.md` — single "WP-100" mention updated to "WP-112".
+- `docs/05-ROADMAP.md` — single "future WP-100" mention updated to "future WP-112".
+
+References to "WP-100" in `WP-100-interactive-gameplay-surface.md`, `WP-111-uistate-card-display-projection.md`, `WORK_INDEX.md` (the WP-100 row + the WP-100 file link), `D-10001`, and `session-context-wp059.md` are correct (they refer to the gameplay-surface WP) and are NOT modified.
+
+**Status:** Active. Closes the cross-reference inconsistency flagged in D-10001's "Numbering note" block.
+
+**Citation:** D-10001 (the EC-100-not-required decision that surfaced the cross-reference inconsistency); [WP-099-auth-provider-selection.md](docs/ai/work-packets/WP-099-auth-provider-selection.md) §A (the Session Validation Middleware policy contract that WP-112 implements); [WP-100-interactive-gameplay-surface.md](docs/ai/work-packets/WP-100-interactive-gameplay-surface.md) (the WP that now owns the WP-100 slot); [WORK_INDEX.md](docs/ai/work-packets/WORK_INDEX.md) WP-112 deferred-placeholder row.
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

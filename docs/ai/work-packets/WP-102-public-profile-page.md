@@ -2,7 +2,7 @@
 
 **Status:** Draft (drafted 2026-04-25; lint-gate self-review PASS — see §Lint Self-Review at foot; pre-flight pending)
 **Primary Layer:** Server (read-only profile composition) + App (Vue SPA route + page)
-**Dependencies:** WP-052 (identity model + `legendary.replay_ownership`); WP-101 (handle claim + `findAccountByHandle`). Soft-dep on WP-100 (session token validation) — **not required to land first**, because this packet's only public endpoint is unauthenticated; the WP-100 contract is not invoked.
+**Dependencies:** WP-052 (identity model + `legendary.replay_ownership`); WP-101 (handle claim + `findAccountByHandle`). Soft-dep on WP-112 (session token validation; renumbered from "WP-100" per D-10002) — **not required to land first**, because this packet's only public endpoint is unauthenticated; the WP-112 contract is not invoked.
 
 ---
 
@@ -342,8 +342,9 @@ Before writing a single line:
   handlers introduced. The single new endpoint is `GET
   /api/players/:handle/profile`.
 - **No authenticated endpoint.** The endpoint is public; no
-  `requireAuthenticatedSession` import, no WP-100 contract
-  invocation. Owner-only views (`/me`, profile editing) are WP-104+.
+  `requireAuthenticatedSession` import, no WP-112 contract
+  invocation (WP-112 renumbered from "WP-100" per D-10002).
+  Owner-only views (`/me`, profile editing) are WP-104+.
 - **Empty-state stubs make zero network requests.** The
   rank/badges/tournaments/comments/integrity/support tabs render
   static "Coming soon — see WP-NNN" text. They MUST NOT call any
@@ -732,10 +733,11 @@ pre-flight; precedent: WP-103 modified the same file to register
   enhancement WP that consumes those reads. WP-102 displays only
   the locked "Rank — coming soon" empty-state stub.
 - **Authenticated endpoints.** No `requireAuthenticatedSession`,
-  no WP-100 contract invocation, no owner-only endpoints. Public
-  surface only.
-- **Session middleware.** WP-100 (session token validation) is
-  not introduced or required by this packet.
+  no WP-112 contract invocation (WP-112 renumbered from "WP-100"
+  per D-10002), no owner-only endpoints. Public surface only.
+- **Session middleware.** WP-112 (session token validation;
+  renumbered from "WP-100" per D-10002) is not introduced or
+  required by this packet.
 - **Hanko integration.** WP-099 governance — Hanko-specific code
   lives under `apps/server/src/auth/hanko/` (not yet created).
   WP-102 introduces no Hanko import, type, string literal, or
@@ -1090,7 +1092,7 @@ This packet is complete when ALL of the following are true:
 | §8 | Layer boundaries respected (server reads PostgreSQL only; arena-client uses fetch only; no engine import; no registry import) | PASS |
 | §9 | Cross-platform commands (verification uses `pwsh` `Select-String` and `git diff`) | PASS |
 | §10 | Env vars: N/A — no new env vars introduced | N/A |
-| §11 | Auth: explicitly N/A — single endpoint is public, no `requireAuthenticatedSession` invoked, no WP-100 contract used | N/A (declared) |
+| §11 | Auth: explicitly N/A — single endpoint is public, no `requireAuthenticatedSession` invoked, no WP-112 contract used (WP-112 renumbered from "WP-100" per D-10002) | N/A (declared) |
 | §12 | Tests: `node:test` + `node:assert` only; no boardgame.io import; no network access; DB-dependent tests skip via WP-052 pattern | PASS |
 | §13 | Verification commands are exact (`pwsh` Select-String + git diff) with expected output | PASS |
 | §14 | Acceptance criteria are binary observable items grouped by sub-task | PASS (~38 items across 8 groups; each is binary; matches WP-099 / WP-101 precedent of larger-than-12 item totals when grouped) |

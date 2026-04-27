@@ -36,7 +36,7 @@ Failure to satisfy any item below is a failed execution of WP-101.
 
 - No `boardgame.io` / `@legendary-arena/game-engine` / engine `PlayerId` import in any new file under `apps/server/src/identity/handle*` (verified by `Select-String`).
 - WP-052 contract files (`identity.types.ts`, `identity.logic.ts`) NOT modified; WP-052 migrations `004` and `005` NOT modified; WP-103 migration `006` NOT modified; `packages/game-engine/src/types.ts` NOT modified — all verified by `git diff`.
-- `claimHandle` accepts a verified `AccountId` parameter only; never an arbitrary string from an HTTP body. The caller-injected `requireAuthenticatedSession` (future WP-100) is the source of truth; tests inject a fixture `AccountId` directly.
+- `claimHandle` accepts a verified `AccountId` parameter only; never an arbitrary string from an HTTP body. The caller-injected `requireAuthenticatedSession` (future WP-112; renumbered from "WP-100" per D-10002) is the source of truth; tests inject a fixture `AccountId` directly.
 - Single locked UPDATE statement is the only code path that writes handle columns. No second UPDATE may set `handle_canonical`, `display_handle`, or `handle_locked_at` on rows where they are non-NULL.
 - `validateHandleFormat` is pure (no DB access, no async); reserved-set check runs **before** regex; consecutive-underscore (`__`) substring check is in code, not regex.
 - Tombstone behavior: deleted handles drop out of the partial UNIQUE index along with the row and become re-claimable by a different account. Anti-impersonation reservation is **out of scope** for WP-101.

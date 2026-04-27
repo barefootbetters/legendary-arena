@@ -2071,8 +2071,9 @@ These packets ship the game and keep it running.
   WP-093 / WP-097 governance-WP precedent (no executable code; no
   long-lived abstraction beyond the decision record itself).
   Authorizes future surfaces (policy-only, NOT implemented here):
-  WP-100 (session token validation; the
-  `requireAuthenticatedSession` provider referenced by WP-101) and
+  WP-112 (session token validation; the
+  `requireAuthenticatedSession` provider referenced by WP-101 —
+  renumbered from "WP-100" per D-10002) and
   a future implementation WP (Hanko SDK wiring + JWT validation +
   claim extraction; locked module path
   `apps/server/src/auth/hanko/`); both must satisfy the §C
@@ -2086,7 +2087,7 @@ These packets ship the game and keep it running.
   + [EC-099-auth-provider-selection.checklist.md](../execution-checklists/EC-099-auth-provider-selection.checklist.md).
 
 - [ ] WP-101 — Handle Claim Flow & Global Uniqueness — Drafted 2026-04-25; lint-gate self-review PASS; EC-101 drafted 2026-04-25 (60 content lines exactly per EC-TEMPLATE cap); pre-flight pending.
-  Dependencies: WP-052 (identity model exists); WP-103 (migration `006_create_replay_blobs_table.sql` already landed at `fe7db3e` — WP-101 uses migration slot **`007`**, not `006`). Soft-dep on WP-100 (session token validation) for the runtime caller, but WP-101 does not require WP-100 to land first — uses caller-injected `requireAuthenticatedSession(req): Promise<AccountId>` contract with stubbed test fixtures (mirrors WP-052 `DatabaseClient` injection precedent).
+  Dependencies: WP-052 (identity model exists); WP-103 (migration `006_create_replay_blobs_table.sql` already landed at `fe7db3e` — WP-101 uses migration slot **`007`**, not `006`). Soft-dep on WP-112 (session token validation; renumbered from "WP-100" per D-10002) for the runtime caller, but WP-101 does not require WP-112 to land first — uses caller-injected `requireAuthenticatedSession(req): Promise<AccountId>` contract with stubbed test fixtures (mirrors WP-052 `DatabaseClient` injection precedent).
   Notes: Server-only packet adding immutable, globally unique,
   URL-safe `handle` to `legendary.players` via migration `007`. Three
   new columns: `handle_canonical text` (nullable until claim; partial
@@ -2168,7 +2169,7 @@ These packets ship the game and keep it running.
   [EC-101-handle-claim-flow.checklist.md](../execution-checklists/EC-101-handle-claim-flow.checklist.md).
 
 - [ ] WP-102 — Public Player Profile Page (Read-Only) — Drafted 2026-04-25; lint-gate self-review PASS; pre-flight pending.
-  Dependencies: WP-052 (identity model + `legendary.replay_ownership`); WP-101 (handle claim + `findAccountByHandle` + the public-surface invariants in WP-101 §"Public surfaces must not treat handle as a stable identity key"). Soft-dep on WP-100 (session token validation) — **not required**, because this packet's only endpoint is unauthenticated.
+  Dependencies: WP-052 (identity model + `legendary.replay_ownership`); WP-101 (handle claim + `findAccountByHandle` + the public-surface invariants in WP-101 §"Public surfaces must not treat handle as a stable identity key"). Soft-dep on WP-112 (session token validation; renumbered from "WP-100" per D-10002) — **not required**, because this packet's only endpoint is unauthenticated.
   Notes: First WP to expose handles in HTTP and first profile
   surface in the Vue SPA. Scope intentionally narrow: a public
   read-only `/players/:handle` page that composes
@@ -2243,8 +2244,9 @@ These packets ship the game and keep it running.
   & `/me` Edit. Splits the owner-edit half of the original
   WP-PLAYER-PROFILE proposal into its own scoped packet.
   Dependencies: **WP-102 must land first** (establishes profile
-  module + page conventions); WP-100 (session token validation —
-  for `requireAuthenticatedSession` on `PATCH /api/me/profile`).
+  module + page conventions); WP-112 (session token validation —
+  for `requireAuthenticatedSession` on `PATCH /api/me/profile`;
+  renumbered from "WP-100" per D-10002).
   Scope (target ≤8 files): new `legendary.player_profiles` table
   (`avatar_url text NULL`, `about_me text NULL`, privacy toggles,
   `updated_at`); new `legendary.player_links` table (provider,
@@ -2327,6 +2329,8 @@ These packets ship the game and keep it running.
 - [ ] WP-109 — Team Affiliation (Profile-Level Cooperative Cohorts) — Drafted 2026-04-26; lint-gate self-review **PASS**; EC-109 drafted 2026-04-26; **BLOCKED on WP-104** (hard dependency — extends WP-104's profile schema and shares the same migration / table family).
   Dependencies: **WP-104 must land first** (deferred placeholder above; profile schema + `legendary.player_profiles` table + `apps/server/src/profile/` module are extension targets); WP-052 (identity model); WP-101 (handle claim flow); WP-102 (public profile page — soft-dep, reuse target for the read surface).
   Notes: Adds a Server-layer team-identity surface (Team entity + member event log + audit log + profile extension `teamAffiliations[]`) plus a read-only block on the public profile page. Variable team size declared at creation as `teamSize: 3 | 4 | 5` (immutable post-creation; maps to Legendary's three meaningful cooperative formats — 3-handed, 4-handed, 5-handed). Substitute cap = `min(2, teamSize − 2)` (1 / 2 / 2). Validity rule generalized: `liveMembers ≥ teamSize − 2 AND liveMembers + liveSubs ≥ teamSize − 1`. Vision-aligned per §3 / §4 / §23(b) / §25; D-0005 preserved trivially (no comparison surface introduced); DESIGN-RANKING.md §12 deferral honored (no team rankings, no inter-team comparison, no rewards, no MMR — identity and history only). Team-play attribution onto run records explicitly out of scope and deferred to a future WP (provisionally WP-110+). `cohortLabel` field name avoids collision with DESIGN-RANKING §2 Season. `friends` visibility falls back to `private` server-side until a friend-graph surface exists. Operator-override paths exist in code but HTTP exposure is gated behind a future admin-auth WP. Eight files projected (within ≤8 cap): `apps/server/src/teams/{team.types.ts, team.logic.ts, team.routes.ts, team.logic.test.ts}`, `data/migrations/NNN-team-affiliation.sql`, `apps/server/src/profile/{profile.types.ts, profile.logic.ts}` (modified), `apps/arena-client/src/pages/PublicProfile.vue` (modified). New D-entry required at execution to classify `apps/server/src/teams/` as a server-layer directory (mirrors D-5202 for `identity/` and D-10301 for `replay/`); D-NNNN number assigned at execution. Migration slot, route prefix, and several §17 Open Questions (friend-graph existence at execution time, cohort overlap rules, invalidity recovery state) are pre-flight items. See [WP-109-team-affiliation.md](WP-109-team-affiliation.md) and [EC-109-team-affiliation.checklist.md](../execution-checklists/EC-109-team-affiliation.checklist.md).
+
+- [ ] **(deferred placeholder)** WP-112 — Session Token Validation Middleware. Implements the `requireAuthenticatedSession(req): Promise<AccountId>` provider that WP-101 / WP-102 / WP-104 cite as a soft-dep. Renumbered from "WP-100" by D-10002 (the WP-100 slot was reassigned to Interactive Gameplay Surface on 2026-04-26). Authorizing contract: WP-099 §A "Session Validation Middleware" (F-1..F-7 Future-Auth Gates locked there); WP-099 D-9904 (Hanko code confined to `apps/server/src/auth/hanko/`). Scope (target ≤8 files): the middleware itself plus its tests; resolves the verified caller to an `AccountId` via the WP-052 identity model (one of the F-gates dictates which path — Hanko-token-direct or post-auth session token); MUST NOT modify WP-052 contract files; MUST NOT modify WP-099 governance artifacts. Hanko SDK wiring + JWT validation + claim extraction may live in a separate sibling implementation WP per WP-099 (WP-112 is permitted to either inline that wiring or call into a sibling — choice locked at draft time). Dependencies: WP-099 (policy contract); WP-052 (identity model). Soft-consumers (none of which require WP-112 to land first because all use the caller-injected provider pattern): WP-101, WP-102, WP-104. **Not yet drafted** — this row exists to reserve the WP-112 slot and pin the contract origin so future readers do not re-derive the renumber. See D-10002 in `DECISIONS.md`.
 
 - [ ] **(deferred placeholder)** Fix CLI credentials field drift in `apps/server/scripts/join-match.mjs` — D-9001 identifies the buggy script. Two issues: (1) the script omits `playerID` from its POST body; the server auto-assigns a seat which is functionally OK but inconsistent with `create-match.mjs`'s shape; (2) the script reads `result.credentials` after the join response, but the canonical field name is `result.playerCredentials` — meaning the script's printed `credentials:` value is always `undefined`. Scope is CLI-only — no engine, no client, no server logic touched. A future packet may either fix the two bugs in place (preferred — matches `create-match.mjs` shape) or delete the script outright if the lobby UI obsoletes its use case. No dependencies; can land standalone.
 

@@ -4,10 +4,11 @@
 **Primary Layer:** Server / Identity
 **Dependencies:** WP-052
 
-> WP-100 (session token validation) is not yet drafted. This packet treats
+> WP-112 (session token validation; renumbered from "WP-100" per D-10002)
+> is not yet drafted. This packet treats
 > `requireAuthenticatedSession(req): Promise<AccountId>` as a caller-injected
 > contract — same dependency-injection pattern WP-052 used for `DatabaseClient`.
-> Tests stub it; the real implementation arrives with WP-100.
+> Tests stub it; the real implementation arrives with WP-112.
 
 ---
 
@@ -41,9 +42,10 @@ later use of the word "lock" / "locked" / "locked_at" in this packet.
 
 **This packet intentionally stops at server-internal logic and
 persistence.** Request handlers, HTTP route wiring, session middleware,
-and any UI surface are deferred to future WPs (WP-100 for session
-validation; a future request-handler WP for the claim endpoint;
-WP-102 for the public profile page). The reviewer should expect to
+and any UI surface are deferred to future WPs (WP-112 for session
+validation — renumbered from "WP-100" per D-10002; a future
+request-handler WP for the claim endpoint; WP-102 for the public
+profile page). The reviewer should expect to
 find no Express routes, no middleware registration, and no
 `apps/server/src/index.mjs` modification in this packet.
 
@@ -108,9 +110,10 @@ server-layer access metadata and never enter `G`, `ctx`, RNG, or scoring.
     `31 / 5 / 0`; with skips when `TEST_DATABASE_URL` is unset)
 - `docs/ai/DECISIONS.md` exists
 - `docs/ai/ARCHITECTURE.md` exists
-- WP-100 (session token validation) is **not** required to land before
-  this packet. WP-101 treats authenticated session resolution as an
-  injected contract; tests stub a fixture `AccountId` directly.
+- WP-112 (session token validation; renumbered from "WP-100" per
+  D-10002) is **not** required to land before this packet. WP-101
+  treats authenticated session resolution as an injected contract;
+  tests stub a fixture `AccountId` directly.
 
 If any of the above is false, this packet is **BLOCKED** and must not
 proceed.
@@ -205,9 +208,10 @@ Before writing a single line:
   `AccountId` argument supplied by the injected session resolver. It
   never accepts an arbitrary `accountId` string from an HTTP body, query
   parameter, or request header. The caller-injected
-  `requireAuthenticatedSession` (WP-100) is the sole source of truth for
+  `requireAuthenticatedSession` (WP-112; renumbered from "WP-100"
+  per D-10002) is the sole source of truth for
   the caller's identity; claim endpoints (introduced by a future WP)
-  call it before invoking `claimHandle`. Until WP-100 lands, tests
+  call it before invoking `claimHandle`. Until WP-112 lands, tests
   inject a fixture `AccountId` directly.
 - **Handles are immutable after first successful claim** (i.e.,
   permanently locked, per the definition in `## Goal`). No rename
@@ -581,7 +585,8 @@ run.
 - **No HTTP route wiring** — the claim endpoint that calls `claimHandle`
   belongs to a future request-handler WP.
 - **No session validation implementation** — `requireAuthenticatedSession`
-  is WP-100. Tests inject a fixture `AccountId` directly.
+  is WP-112 (renumbered from "WP-100" per D-10002). Tests inject a
+  fixture `AccountId` directly.
 - **No auth provider integration** — Hanko vs `jsonwebtoken` selection
   is WP-099 governance.
 - **No public profile page** — read-only `/players/{handle}` is the

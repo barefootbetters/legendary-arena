@@ -62,6 +62,11 @@ sourced from the registry) is intentionally out of scope; this scaffold renders
     view that hosts `ArenaHud`
 - `pnpm --filter @legendary-arena/arena-client build` exits 0
 - `pnpm --filter @legendary-arena/arena-client test` exits 0
+- arena-client test baseline at session start: **143 / 10 / 0** (143
+  tests, 10 suites, 0 failed, 0 skipped — captured at HEAD `bceee60`
+  on 2026-04-26 by pre-flight). Post-execution baseline must equal
+  this count plus the new tests added by §Scope H (estimated +18 to
+  +30 tests, +6 suites). A drop in pre-existing tests is a regression.
 - `docs/ai/ARCHITECTURE.md` exists (created in WP-013, codified in WP-041)
 - `docs/ai/DECISIONS.md` exists
 
@@ -102,10 +107,13 @@ Before writing a single line:
   `packages/game-engine/src/moves/fightMastermind.ts` — read each move's
   argument type signature so the UI emits the correct payload shape. Do not
   re-derive payloads from memory.
-- `packages/game-engine/src/game.ts` — confirm the moves bag registered on
-  `LegendaryGame` exactly matches: `drawCards`, `playCard`, `endTurn`,
-  `fightVillain`, `recruitHero`, `fightMastermind`. The UI must not call any
-  move name not in this list.
+- `packages/game-engine/src/game.ts` — the moves bag registered on
+  `LegendaryGame` includes the six moves the UI surfaces (`drawCards`,
+  `playCard`, `endTurn`, `fightVillain`, `recruitHero`, `fightMastermind`)
+  plus internal engine moves (`advanceStage`, `revealVillainCard`) that
+  are explicitly **out of UI scope**. The UI must not call any move name
+  outside the six-name subset above. Confirm the six the UI emits match
+  the names registered on the engine before writing any component.
 - `docs/ai/REFERENCE/00.6-code-style.md` — key rules: Rule 4 (no
   abbreviations), Rule 5 (every function has JSDoc), Rule 6 (`// why:` on
   non-obvious decisions), Rule 11 (full-sentence error messages), Rule 13
@@ -163,6 +171,21 @@ Before writing a single line:
 - The set of move names the UI may emit is locked to exactly:
   `'drawCards'`, `'playCard'`, `'endTurn'`, `'fightVillain'`, `'recruitHero'`,
   `'fightMastermind'`. Any extension requires a new WP.
+- The `submitMove` prop type uses a locally-defined `UiMoveName` union of the
+  six locked move names rather than a bare `string`, so typos are caught at
+  compile time. The union is a UI-side mirror of the engine move bag — it is
+  type-only and creates no runtime coupling. Where this union lives (a small
+  shared types file under `apps/arena-client/src/components/play/` or inline
+  in `PlayView.vue`) is an implementation choice; the constraint is that the
+  six prop signatures all reference the same `UiMoveName`, not `string`.
+- Scaffold artifacts: some UI elements in this packet (notably the `Draw`
+  button) exist solely to compensate for known MVP gaps in the engine. They
+  are explicitly documented in the WP body, decision-logged in
+  `DECISIONS.md`, and **targeted for deletion** by a follow-up engine WP.
+  Scaffold artifacts must be:
+  - Clearly labeled as such in a `// why:` comment at the call site
+  - Backed by a `DECISIONS.md` entry naming the engine gap they cover
+  - **Removed**, not refactored, when the engine capability lands
 - Disable buttons rather than hiding them when a move is gated by phase, stage,
   or insufficient currency. Disabled state must be derivable purely from
   `UIState` — no local "guess" state.
@@ -278,8 +301,9 @@ The following requirements are mandatory:
 - **`apps/arena-client/src/components/play/HandRow.vue`** — new:
   - Receives `handCards: readonly string[]` and `currentStage: TurnStage` as
     props (typed via `import type` from the game-engine UIState module)
-  - Receives `submitMove: (name: string, args: unknown) => void` as a prop
-    (no direct client import)
+  - Receives `submitMove: (name: UiMoveName, args: unknown) => void` as a prop
+    (no direct client import; `UiMoveName` is the locally-defined union of the
+    six locked move names — see Packet-specific constraints)
   - Renders one clickable `<button>` per card in `handCards`, label = the
     `CardExtId` string
   - Click handler calls `submitMove('playCard', { cardId })` exactly once
@@ -302,7 +326,7 @@ The following requirements are mandatory:
       labelled with the `UICityCard.extId` string. Click handler calls
       `submitMove('fightVillain', { cityIndex })` exactly once per click.
     - **Empty slot** (`spaces[cityIndex] === null`): a non-interactive
-      placeholder element (e.g., a `<div>`) labelled "Empty space". Empty
+      placeholder element (e.g., a `<div>`) labelled "Empty slot". Empty
       slots must remain visible so the City row's slot positions stay
       stable across renders.
   - Each occupied-slot button is disabled when `currentStage !== 'main'`.
@@ -442,7 +466,7 @@ Add `node:test` tests under `apps/arena-client/src/components/play/`:
 - **`MastermindTile.test.ts`** — single button emits `('fightMastermind',
   <args>)`; disabled gating asserted.
 - **`TurnActionBar.test.ts`** — two buttons; `Draw` emits
-  `('drawCards', { count: 1 })`; `End Turn` emits `('endTurn', {})`; stage
+  `('drawCards', { count: 6 })`; `End Turn` emits `('endTurn', {})`; stage
   gating asserted.
 - **`PlayView.test.ts`** — given a UIState fixture, mounts `PlayView`,
   asserts that the five interactive children receive their expected props
@@ -543,9 +567,10 @@ materialises.
 ## Acceptance Criteria
 
 **Note on AC count.** The lint-guideline soft limit in
-`00.3-prompt-lint-checklist.md §14` is 6–12 binary checks. This WP has ~29
+`00.3-prompt-lint-checklist.md §14` is 6–12 binary checks. This WP has ~32
 binary checks distributed across 6 component sub-tasks (~3 checks each)
-plus engine-import discipline, tests, and scope-enforcement groups. Each
+plus engine-import discipline, determinism / authority, tests, and
+scope-enforcement groups. Each
 check is binary, observable, and tied to a specific component or
 constraint — none are subjective. The count reflects breadth across the
 six deliverables in `## Files Expected to Change`, not depth within any
@@ -616,6 +641,17 @@ component failed.
       for `^import {` lines without `type`)
 - [ ] No file under `apps/arena-client/src/components/play/**` imports
       `bgioClient.ts` directly — `submitMove` is always passed in as a prop
+- [ ] All six new components (`HandRow`, `CityRow`, `HQRow`, `MastermindTile`,
+      `TurnActionBar`, `PlayView`) declare `submitMove` with the locally-defined
+      `UiMoveName` union, not a bare `string`
+
+### Determinism & Authority
+- [ ] No component mutates the Pinia `uiState` store, derives local optimistic
+      state, or maintains a "preview" buffer in response to a click; all UI
+      changes occur only after a server frame updates `uiState`
+- [ ] No scaffold artifact (e.g., the `Draw` button) is introduced without a
+      `// why:` comment at the call site naming the engine gap it covers and a
+      matching `DECISIONS.md` entry
 
 ### Tests
 - [ ] `pnpm --filter @legendary-arena/arena-client test` exits 0 (all test files
@@ -663,7 +699,11 @@ Select-String -Path "apps\arena-client\src\components\play" -Pattern "Math\.rand
 git diff --name-only -- packages/game-engine apps/server packages/registry
 # Expected: no output
 
-# Step 8 — confirm no files outside scope changed
+# Step 8 — confirm pre-plan UI surface (EC-059) is untouched
+git diff --name-only -- apps/arena-client/src/preplan apps/arena-client/src/components/preplan apps/arena-client/src/fixtures/preplan apps/arena-client/src/stores/preplan.ts
+# Expected: no output (EC-059 contract surface is locked per §Out of Scope)
+
+# Step 9 — confirm no files outside scope changed
 git diff --name-only
 # Expected: only files listed in ## Files Expected to Change
 ```
@@ -881,3 +921,28 @@ named follow-up commitment, not a blocker. Kept here as audit trail.
   6. Recommended follow-up engine WP to add `turn.onBegin` auto-draw
   to a canonical `HAND_SIZE` constant, after which this button is
   removed entirely.
+- Peer-review pass run 2026-04-26 (post-promotion). Five surgical
+  improvements applied; none expanded scope:
+  1. **Test/spec mismatch fixed.** `TurnActionBar.test.ts` Draw
+     assertion corrected from `{ count: 1 }` to `{ count: 6 }` to
+     match Scope E, Open Question Q3, and Definition of Done.
+  2. **Scaffold-artifact policy named.** New constraint under
+     Packet-specific naming the policy explicitly (label, decision-log,
+     remove-not-refactor) so the `Draw` button cannot quietly become
+     permanent.
+  3. **`submitMove` typed via local `UiMoveName` union.** Replaces the
+     bare `string` move-name type with a UI-side mirror of the engine's
+     six-move bag. Type-only, no runtime coupling, catches typos at
+     compile time.
+  4. **Determinism & Authority AC group added.** Makes the no-optimistic-UI
+     and scaffold-artifact rules binary-auditable rather than
+     prose-only.
+  5. **"Empty space" → "Empty slot" naming standardised** between
+     City and HQ rows for accessibility-label and test-text consistency.
+- **EC-100 decision (recorded 2026-04-26):** No EC-100 is required.
+  Rationale: WP-100 introduces no engine mutation, no data migration,
+  no ordering-sensitive steps, and no irreversible side effects. All
+  execution risk is detectable via the tests, static analysis, and
+  Select-String steps already specified in `## Verification Steps`. The
+  decision should be mirrored as a `DECISIONS.md` entry by the
+  executing session so future reviewers do not re-litigate.

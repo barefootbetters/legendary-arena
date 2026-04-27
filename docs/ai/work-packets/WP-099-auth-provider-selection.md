@@ -24,9 +24,10 @@ boundary so Hanko remains invisible to the data model and the engine,
 and amends `00.3-prompt-lint-checklist.md §7` (which currently bans
 Auth0 / Clerk / Passport) to permit Hanko under the explicit boundary
 constraints recorded here. The packet does no code work; it produces
-governance artifacts that future implementation WPs (WP-100 session
-validation, a future "WP-1XX External Authentication Integration —
-Hanko" wiring packet) cite as their authority.
+governance artifacts that future implementation WPs (WP-112 session
+validation — renumbered from "WP-100" per D-10002; a future
+"WP-1XX External Authentication Integration — Hanko" wiring
+packet) cite as their authority.
 
 No engine, registry, server, app, or test code is touched. No new npm
 dependencies. No Vue / TypeScript / SQL files modified. The Hanko SDK
@@ -74,8 +75,9 @@ boundaries locked in `docs/ai/DECISIONS.md` and the lint checklist:
 
 This WP itself contains no Hanko SDK installation, no middleware code,
 no environment configuration, and no UI changes. Implementation is
-deferred to WP-100 (session token validation — the
-`requireAuthenticatedSession` provider) and a future Hanko-wiring WP.
+deferred to WP-112 (session token validation — the
+`requireAuthenticatedSession` provider; renumbered from "WP-100"
+per D-10002) and a future Hanko-wiring WP.
 
 ---
 
@@ -257,7 +259,8 @@ Before writing a single line:
   `legendary.players.auth_provider` column records only `'email'`,
   `'google'`, or `'discord'` — never `'hanko'`. Hanko's role is
   confined to the session-validation middleware layer (introduced
-  by WP-100 and the future Hanko-wiring WP).
+  by WP-112 — renumbered from "WP-100" per D-10002 — and the
+  future Hanko-wiring WP).
 - **`AccountId` remains server-generated.** Hanko's `sub` is the
   `authProviderId` value, never the `AccountId`. Per WP-052 D-5201,
   `AccountId` is generated via `node:crypto.randomUUID()` by the
@@ -335,26 +338,28 @@ below exists so those future WPs land against a fixed semantic
 contract rather than re-litigating "should we put Hanko here?" at
 execution time.
 
-### A) Session Validation Middleware (Future WP-100)
+### A) Session Validation Middleware (Future WP-112)
 
-A future WP-100 — "Session Token Validation" — implements the
+A future WP-112 — "Session Token Validation" (renumbered from
+"WP-100" per D-10002 because the WP-100 slot was reassigned to
+Interactive Gameplay Surface on 2026-04-26) — implements the
 caller-injected `requireAuthenticatedSession(req): Promise<AccountId>`
 contract referenced by WP-101 and any future authenticated endpoint.
 
-Constraints (locked here; WP-100 must honor):
+Constraints (locked here; WP-112 must honor):
 
-- WP-100 MAY validate either Hanko-issued tokens directly OR a
+- WP-112 MAY validate either Hanko-issued tokens directly OR a
   server-issued downstream session token bound to an `AccountId`.
-  The choice is WP-100's design decision; either path satisfies the
+  The choice is WP-112's design decision; either path satisfies the
   contract.
-- WP-100 MUST resolve the verified caller to an `AccountId`. The
+- WP-112 MUST resolve the verified caller to an `AccountId`. The
   intermediate Hanko `sub` may appear in middleware-local variables
   but must never leak into the `Result<T>` returned to handlers.
-- WP-100 MAY introduce one or more cryptographic-key fetch paths
+- WP-112 MAY introduce one or more cryptographic-key fetch paths
   (Hanko JWKS endpoint, etc.). Those paths MUST be cached in-memory
   with a documented refresh policy and MUST NOT involve `G`, `ctx`,
   or any engine surface.
-- WP-100 MUST NOT modify WP-052 contract files.
+- WP-112 MUST NOT modify WP-052 contract files.
 
 ### B) Hanko Wiring Module (Future Implementation WP)
 
@@ -567,7 +572,8 @@ draft time, flipped `Draft` → `Done {YYYY-MM-DD}` at execution close.
 - **No code changes.** No `.ts`, `.vue`, `.mjs`, `.sql`, `.json`
   files modified. No new npm dependencies installed.
 - **No middleware implementation.** Session token validation is
-  WP-100. Hanko SDK wiring is the future implementation WP.
+  WP-112 (renumbered from "WP-100" per D-10002). Hanko SDK wiring
+  is the future implementation WP.
 - **No Hanko tenant configuration.** No environment variables, no
   `render.yaml` modifications, no JWKS URL hardcoded, no API keys.
 - **No engine, registry, server, app, Vision, Architecture, or
@@ -707,9 +713,10 @@ after each commit.
 - [ ] WP-099 contains an `## Authorized Future Surfaces (Policy)`
       section listing two authorized surface classes: §A Session
       Validation Middleware and §B Hanko Wiring Module.
-- [ ] §A Session Validation Middleware names WP-100 as the
-      implementing packet and locks the `requireAuthenticatedSession`
-      contract referenced by WP-101.
+- [ ] §A Session Validation Middleware names WP-112 as the
+      implementing packet (renumbered from "WP-100" per D-10002)
+      and locks the `requireAuthenticatedSession` contract
+      referenced by WP-101.
 - [ ] §B Hanko Wiring Module locks `apps/server/src/auth/hanko/`
       as the module path (per `D-9904`).
 - [ ] §B explicitly forbids Hanko-specific imports in
