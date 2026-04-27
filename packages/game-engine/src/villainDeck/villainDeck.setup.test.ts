@@ -99,14 +99,20 @@ function createMockRegistry(): VillainDeckRegistryReader {
 
 /**
  * Creates a valid test MatchSetupConfig targeting the mock registry data.
+ *
+ * @amended WP-113 PS-7: bare slug fixtures (`'test-scheme'`,
+ *   `'test-mm'`, `'test-group-alpha'`, `'test-henchman-group'`,
+ *   `'test-hero-deck'`) migrated to set-qualified form
+ *   `'<testSetAbbr>/<slug>'` per the qualified-ID contract
+ *   (per D-10014).
  */
 function createTestConfig(): MatchSetupConfig {
   return {
-    schemeId: 'test-scheme',
-    mastermindId: 'test-mm',
-    villainGroupIds: ['test-group-alpha'],
-    henchmanGroupIds: ['test-henchman-group'],
-    heroDeckIds: ['test-hero-deck'],
+    schemeId: 'test/test-scheme',
+    mastermindId: 'test/test-mm',
+    villainGroupIds: ['test/test-group-alpha'],
+    henchmanGroupIds: ['test/test-henchman-group'],
+    heroDeckIds: ['test/test-hero-deck'],
     bystandersCount: 5,
     woundsCount: 5,
     officersCount: 5,

@@ -13,7 +13,7 @@ import { createRequire } from 'node:module';
 import { createRegistryFromLocalFiles } from '@legendary-arena/registry';
 import { loadRules, getRules } from './rules/loader.mjs';
 import { createParGate } from './par/parGate.mjs';
-import { LegendaryGame } from '@legendary-arena/game-engine';
+import { LegendaryGame, setRegistryForSetup } from '@legendary-arena/game-engine';
 
 // why: boardgame.io v0.50 only ships a CJS server bundle (dist/cjs/server.js)
 // with no ESM entrypoint. Node v22+ ESM does not resolve CJS-only subpackage
@@ -84,12 +84,21 @@ export async function startServer() {
   // pattern below. The returned gate is captured for future request handlers
   // (WP-053 submission, WP-054 leaderboards); no consumers exist yet so the
   // binding is intentionally unused at this seam.
-  const [, , parGate] = await Promise.all([
+  const [registry, , parGate] = await Promise.all([
     loadRegistry(),
     loadRules(),
     createParGate('data/par', process.env.PAR_VERSION ?? 'v1'),
   ]);
   void parGate;
+
+  // why: D-10014 — engine's setRegistryForSetup() must be called
+  // before Server() is constructed so Game.setup() sees the
+  // registry on every match-create. WP-100 smoke test on
+  // 2026-04-27 surfaced this gap: the server loaded the registry
+  // but never wired it, so validateMatchSetup was silently
+  // skipped via the `if (gameRegistry)` guard at game.ts:201-210
+  // and every match was structurally empty.
+  setRegistryForSetup(registry);
 
   const rules = getRules();
   const rulesCount = Object.keys(rules.rules).length;

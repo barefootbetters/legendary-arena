@@ -173,11 +173,19 @@ export function buildCardStats(
   const stats: Record<CardExtId, CardStatEntry> = {};
 
   // --- 1. Hero cards (from listCards — FlatCard has attack/recruit/cost) ---
+  // why: WP-113 PS-7 mid-execution amendment — buildCardStats consumes
+  //   set-qualified <setAbbr>/<slug> entity IDs; filter setAbbr first to
+  //   avoid cross-set slug collisions (51/307 hero-slug instances collide
+  //   per the PS-8 probe). Graceful-skip on parse failure: the validator
+  //   is the authoritative format-error reporter, this builder is
+  //   defense-in-depth (per D-10014).
   const allFlatCards = registry.listCards();
   const heroFlatCards = filterCardsByType(allFlatCards, 'hero');
 
   for (const heroDeckId of matchConfig.heroDeckIds) {
-    const deckCards = filterHeroCardsByDeckSlug(heroFlatCards, heroDeckId);
+    const parsed = parseQualifiedIdForSetup(heroDeckId);
+    if (parsed === null) continue;
+    const deckCards = filterHeroCardsByDeckSlug(heroFlatCards, parsed.setAbbr, parsed.slug);
 
     for (const card of deckCards) {
       const extId = card.key as CardExtId;
@@ -192,15 +200,20 @@ export function buildCardStats(
   }
 
   // --- 2. Villain cards (from getSet — vAttack is not on FlatCard) ---
+  // why: WP-113 PS-7 mid-execution amendment — set-qualified ID + named-set
+  //   filter (per D-10014).
   for (const villainGroupId of matchConfig.villainGroupIds) {
-    const villainCards = findVillainGroupCards(registry, villainGroupId);
+    const parsed = parseQualifiedIdForSetup(villainGroupId);
+    if (parsed === null) continue;
+    const villainCards = findVillainGroupCards(registry, parsed.setAbbr, parsed.slug);
 
     for (const villainCard of villainCards) {
       // why: villain ext_id format matches FlatCard key convention
       // {setAbbr}-villain-{groupSlug}-{cardSlug}
       const matchingFlatCard = findFlatCardForVillain(
         allFlatCards,
-        villainGroupId,
+        parsed.setAbbr,
+        parsed.slug,
         villainCard.slug,
       );
 
@@ -221,8 +234,12 @@ export function buildCardStats(
   // why: henchmen are virtual copies (WP-014B). Their ext_id format is
   // henchman-{groupSlug}-{index}. vAttack comes from the group definition,
   // not individual cards, because henchmen are identical within a group.
+  // why: WP-113 PS-7 mid-execution amendment — set-qualified ID + named-set
+  //   filter (per D-10014).
   for (const henchmanGroupId of matchConfig.henchmanGroupIds) {
-    const henchmanResult = findHenchmanGroupVAttack(registry, henchmanGroupId);
+    const parsed = parseQualifiedIdForSetup(henchmanGroupId);
+    if (parsed === null) continue;
+    const henchmanResult = findHenchmanGroupVAttack(registry, parsed.setAbbr, parsed.slug);
 
     if (henchmanResult !== null) {
       const parsedFightCost = parseCardStatValue(henchmanResult.vAttack);
@@ -244,6 +261,30 @@ export function buildCardStats(
   }
 
   return stats;
+}
+
+/**
+ * Parses a set-qualified ID `<setAbbr>/<slug>` into its components.
+ *
+ * Returns null on any malformed input — empty string, missing slash,
+ * multiple slashes, empty parts, or leading/trailing whitespace.
+ *
+ * Locally duplicated per WP-113 §6 (mid-execution amendment) — keeps
+ * `economy.logic.ts` free of validator coupling. Identical rejection
+ * rules to the validator's `parseQualifiedId`. Test seam.
+ */
+// why: WP-113 PS-7 mid-execution amendment — duplicated locally to avoid
+//   validator coupling at the economy layer (per D-10014).
+function parseQualifiedIdForSetup(input: string): { setAbbr: string; slug: string } | null {
+  if (typeof input !== 'string' || input.length === 0) return null;
+  if (input !== input.trim()) return null;
+  const slashIndex = input.indexOf('/');
+  if (slashIndex === -1) return null;
+  if (input.indexOf('/', slashIndex + 1) !== -1) return null;
+  const setAbbr = input.slice(0, slashIndex);
+  const slug = input.slice(slashIndex + 1);
+  if (setAbbr.length === 0 || slug.length === 0) return null;
+  return { setAbbr, slug };
 }
 
 // ---------------------------------------------------------------------------
@@ -385,17 +426,22 @@ function filterCardsByType(
 }
 
 /**
- * Filters hero flat cards by hero deck slug.
+ * Filters hero flat cards by setAbbr first, then by hero deck slug.
  *
- * Hero FlatCard key format: {setAbbr}-hero-{heroSlug}-{slot}
- * heroDeckId matches the heroSlug portion of the key.
+ * Hero FlatCard key format: {setAbbr}-hero-{heroSlug}-{slot}.
+ * Per WP-113 PS-7 (mid-execution amendment): filter by setAbbr first to
+ * avoid cross-set hero-slug collisions (51/307 instances).
  */
+// why: WP-113 PS-7 mid-execution amendment — Builder Filtering Order —
+//   iterate named set only (per D-10014).
 function filterHeroCardsByDeckSlug(
   heroCards: CardStatsFlatCard[],
+  targetSetAbbr: string,
   heroDeckSlug: string,
 ): CardStatsFlatCard[] {
   const result: CardStatsFlatCard[] = [];
   for (const card of heroCards) {
+    if (card.setAbbr !== targetSetAbbr) continue;
     const heroSlug = extractHeroSlug(card);
     if (heroSlug === heroDeckSlug) {
       result.push(card);
@@ -427,39 +473,46 @@ function extractHeroSlug(card: CardStatsFlatCard): string {
 }
 
 /**
- * Finds villain cards for a group by searching all sets via getSet().
+ * Finds villain cards for a group within the named set's villains[].
  *
- * villainGroupId matches SetData.villains[].slug.
+ * No cross-set fallback exists — returns [] if the named set is not
+ * loaded or the group slug is not present in it.
  */
+// why: WP-113 PS-7 mid-execution amendment — Builder Filtering Order —
+//   iterate named set only (per D-10014).
 function findVillainGroupCards(
   registry: CardStatsRegistryReader,
-  villainGroupId: string,
+  setAbbr: string,
+  villainGroupSlug: string,
 ): VillainCardEntry[] {
-  for (const setEntry of registry.listSets()) {
-    const setData = registry.getSet(setEntry.abbr) as CardStatsSetData | undefined;
-    if (!setData || !Array.isArray(setData.villains)) continue;
+  const setData = registry.getSet(setAbbr) as CardStatsSetData | undefined;
+  if (!setData || !Array.isArray(setData.villains)) return [];
 
-    for (const group of setData.villains) {
-      if (group.slug === villainGroupId && Array.isArray(group.cards)) {
-        return group.cards;
-      }
+  for (const group of setData.villains) {
+    if (group.slug === villainGroupSlug && Array.isArray(group.cards)) {
+      return group.cards;
     }
   }
   return [];
 }
 
 /**
- * Finds a FlatCard matching a villain card by group slug and card slug.
+ * Finds a FlatCard matching a villain card by setAbbr first, then group
+ * slug, then card slug.
  *
- * Villain FlatCard key format: {setAbbr}-villain-{groupSlug}-{cardSlug}
+ * Villain FlatCard key format: {setAbbr}-villain-{groupSlug}-{cardSlug}.
  */
+// why: WP-113 PS-7 mid-execution amendment — Builder Filtering Order —
+//   iterate named set only (per D-10014).
 function findFlatCardForVillain(
   allFlatCards: CardStatsFlatCard[],
+  setAbbr: string,
   villainGroupSlug: string,
   cardSlug: string,
 ): CardStatsFlatCard | undefined {
   for (const card of allFlatCards) {
     if (card.cardType !== 'villain') continue;
+    if (card.setAbbr !== setAbbr) continue;
 
     // Check if this card's key contains the group slug and card slug
     const prefix = `${card.setAbbr}-villain-`;
@@ -482,32 +535,33 @@ function findFlatCardForVillain(
 }
 
 /**
- * Finds henchman group vAttack by searching all sets via getSet().
+ * Finds henchman group vAttack within the named set's henchmen[].
  *
- * henchmanGroupId matches SetData.henchmen[].slug.
- * Returns the group slug and vAttack value, or null if not found.
+ * No cross-set fallback exists — returns null if the named set is not
+ * loaded or the group slug is not present in it.
  */
+// why: WP-113 PS-7 mid-execution amendment — Builder Filtering Order —
+//   iterate named set only (per D-10014).
 function findHenchmanGroupVAttack(
   registry: CardStatsRegistryReader,
-  henchmanGroupId: string,
+  setAbbr: string,
+  henchmanGroupSlug: string,
 ): { groupSlug: string; vAttack: string | number | null } | null {
-  for (const setEntry of registry.listSets()) {
-    const setData = registry.getSet(setEntry.abbr);
-    if (!setData || typeof setData !== 'object') continue;
+  const setData = registry.getSet(setAbbr);
+  if (!setData || typeof setData !== 'object') return null;
 
-    const castSetData = setData as { henchmen?: unknown[] };
-    if (!Array.isArray(castSetData.henchmen)) continue;
+  const castSetData = setData as { henchmen?: unknown[] };
+  if (!Array.isArray(castSetData.henchmen)) return null;
 
-    for (const entry of castSetData.henchmen) {
-      if (!entry || typeof entry !== 'object') continue;
+  for (const entry of castSetData.henchmen) {
+    if (!entry || typeof entry !== 'object') continue;
 
-      const henchmanEntry = entry as HenchmanGroupEntry;
-      if (henchmanEntry.slug === henchmanGroupId) {
-        return {
-          groupSlug: henchmanEntry.slug,
-          vAttack: henchmanEntry.vAttack ?? null,
-        };
-      }
+    const henchmanEntry = entry as HenchmanGroupEntry;
+    if (henchmanEntry.slug === henchmanGroupSlug) {
+      return {
+        groupSlug: henchmanEntry.slug,
+        vAttack: henchmanEntry.vAttack ?? null,
+      };
     }
   }
   return null;

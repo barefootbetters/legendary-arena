@@ -23,25 +23,48 @@ import { makeMockCtx } from '../test/mockCtx.js';
 // hash. Not a permanent pattern — future WPs should not propagate it.
 // This constant is WP-080's byte-identity anchor through the loop-delegation
 // refactor; updating it casually would silently defeat the regression guard.
-const PRE_WP080_HASH = 'a56f949e';
+//
+// @amended WP-113 PS-7: hash updated from 'a56f949e' → 'ba921e90' because
+//   the standardInput fixture's bare-slug entity IDs were migrated to
+//   set-qualified form per the qualified-ID contract. The hashed state
+//   includes `matchConfiguration` which now contains the qualified
+//   strings; the WP-080 byte-identity property still holds against the
+//   migrated fixture (per D-10014).
+const PRE_WP080_HASH = 'ba921e90';
 
 /**
  * Minimal mock registry for replay tests. Mirrors replay.verify.test.ts.
+ *
+ * @amended WP-113 PS-4: now satisfies all four orchestration-side
+ *   registry-reader guards (`listCards`, `listSets`, `getSet`) so
+ *   `buildInitialGameState` does not push "skipped" diagnostics into
+ *   `G.messages`. Preserves the WP-080 byte-identity anchor by keeping
+ *   the empty-state shape identical. (`isSchemeRegistryReader` was
+ *   realigned to `listSets`/`getSet` in the WP-113 follow-up alignment
+ *   fix; per D-10014.)
  */
-const mockRegistry: CardRegistryReader = { listCards: () => [] };
+const mockRegistry: CardRegistryReader = {
+  listCards: () => [],
+  listSets: () => [],
+  getSet: (_abbr: string) => undefined,
+};
 
 /**
  * Standard test ReplayInput. Mirrors replay.verify.test.ts verbatim so the
  * Case 2 regression guard is anchored to the same fixture WP-027 exercises.
+ *
+ * @amended WP-113 PS-7: bare slug fixtures migrated to set-qualified
+ *   form `'<setAbbr>/<slug>'` per the qualified-ID contract
+ *   (per D-10014).
  */
 const standardInput: ReplayInput = {
   seed: 'test-seed-001',
   setupConfig: {
-    schemeId: 'test-scheme-001',
-    mastermindId: 'test-mastermind-001',
-    villainGroupIds: ['test-villain-group-001'],
-    henchmanGroupIds: ['test-henchman-group-001'],
-    heroDeckIds: ['test-hero-deck-001', 'test-hero-deck-002'],
+    schemeId: 'test/test-scheme-001',
+    mastermindId: 'test/test-mastermind-001',
+    villainGroupIds: ['test/test-villain-group-001'],
+    henchmanGroupIds: ['test/test-henchman-group-001'],
+    heroDeckIds: ['test/test-hero-deck-001', 'test/test-hero-deck-002'],
     bystandersCount: 10,
     woundsCount: 15,
     officersCount: 20,

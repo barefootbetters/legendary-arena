@@ -55,8 +55,17 @@ const EXIT_OUTPUT_WRITE = 4;
  * deterministic sample fixtures do not require registry resolution. See
  * D-6305 for the rationale (no registry import at runtime; mirror
  * replay.execute.test.ts precedent).
+ *
+ * @amended WP-113 PS-3: widened to satisfy the new CardRegistryReader
+ *   shape (`listCards` + `listSets` + `getSet`); produces the same
+ *   empty-state behaviour at runtime — no real data is loaded
+ *   (per D-10014).
  */
-const minimalRegistry: CardRegistryReader = { listCards: () => [] };
+const minimalRegistry: CardRegistryReader = {
+  listCards: () => [],
+  listSets: () => [],
+  getSet: () => undefined,
+};
 
 /**
  * Lightweight shape check for a parsed JSON object claiming to be a

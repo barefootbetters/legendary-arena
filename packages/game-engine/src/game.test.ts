@@ -11,13 +11,19 @@ import { makeMockCtx } from './test/mockCtx.js';
  * MatchConfiguration interface. These are not real card ext_ids — they exist
  * only to exercise the setup contract.
  */
+/**
+ * @amended WP-113 PS-7: bare slug fixtures migrated to set-qualified
+ *   form `'<setAbbr>/<slug>'` per the qualified-ID contract
+ *   (per D-10014). Assertions below
+ *   were updated to match.
+ */
 function createMockMatchConfiguration(): MatchConfiguration {
   return {
-    schemeId: 'test-scheme-001',
-    mastermindId: 'test-mastermind-001',
-    villainGroupIds: ['test-villain-group-001', 'test-villain-group-002'],
-    henchmanGroupIds: ['test-henchman-group-001'],
-    heroDeckIds: ['test-hero-deck-001', 'test-hero-deck-002', 'test-hero-deck-003'],
+    schemeId: 'test/test-scheme-001',
+    mastermindId: 'test/test-mastermind-001',
+    villainGroupIds: ['test/test-villain-group-001', 'test/test-villain-group-002'],
+    henchmanGroupIds: ['test/test-henchman-group-001'],
+    heroDeckIds: ['test/test-hero-deck-001', 'test/test-hero-deck-002', 'test/test-hero-deck-003'],
     bystandersCount: 30,
     woundsCount: 30,
     officersCount: 30,
@@ -61,11 +67,11 @@ describe('LegendaryGame', () => {
       mockConfiguration,
     );
 
-    assert.equal(gameState.matchConfiguration.schemeId, 'test-scheme-001');
-    assert.equal(gameState.matchConfiguration.mastermindId, 'test-mastermind-001');
-    assert.deepStrictEqual(gameState.matchConfiguration.villainGroupIds, ['test-villain-group-001', 'test-villain-group-002']);
-    assert.deepStrictEqual(gameState.matchConfiguration.henchmanGroupIds, ['test-henchman-group-001']);
-    assert.deepStrictEqual(gameState.matchConfiguration.heroDeckIds, ['test-hero-deck-001', 'test-hero-deck-002', 'test-hero-deck-003']);
+    assert.equal(gameState.matchConfiguration.schemeId, 'test/test-scheme-001');
+    assert.equal(gameState.matchConfiguration.mastermindId, 'test/test-mastermind-001');
+    assert.deepStrictEqual(gameState.matchConfiguration.villainGroupIds, ['test/test-villain-group-001', 'test/test-villain-group-002']);
+    assert.deepStrictEqual(gameState.matchConfiguration.henchmanGroupIds, ['test/test-henchman-group-001']);
+    assert.deepStrictEqual(gameState.matchConfiguration.heroDeckIds, ['test/test-hero-deck-001', 'test/test-hero-deck-002', 'test/test-hero-deck-003']);
     assert.equal(gameState.matchConfiguration.bystandersCount, 30);
     assert.equal(gameState.matchConfiguration.woundsCount, 30);
     assert.equal(gameState.matchConfiguration.officersCount, 30);

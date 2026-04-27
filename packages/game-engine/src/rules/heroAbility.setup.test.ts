@@ -72,14 +72,22 @@ function createMockRegistry(): { listCards(): HeroAbilityFlatCard[] } {
 
 /**
  * Creates a valid mock MatchSetupConfig for tests.
+ *
+ * @amended WP-113 PS-7: bare slug fixtures migrated to set-qualified
+ *   form `'<setAbbr>/<slug>'` per the qualified-ID contract
+ *   (per D-10014). The hero card mock
+ *   uses `setAbbr: 'core'` and slug `'spider-man'`, so the qualified ID
+ *   is `'core/spider-man'`. Other entity fixtures use `'test'` since
+ *   they only flow through the validator (which is bypassed) and the
+ *   builders here only consume `heroDeckIds`.
  */
 function createTestConfig(): MatchSetupConfig {
   return {
-    schemeId: 'test-scheme-001',
-    mastermindId: 'test-mastermind-001',
-    villainGroupIds: ['test-villain-group-001'],
-    henchmanGroupIds: ['test-henchman-group-001'],
-    heroDeckIds: ['spider-man'],
+    schemeId: 'test/test-scheme-001',
+    mastermindId: 'test/test-mastermind-001',
+    villainGroupIds: ['test/test-villain-group-001'],
+    henchmanGroupIds: ['test/test-henchman-group-001'],
+    heroDeckIds: ['core/spider-man'],
     bystandersCount: 10,
     woundsCount: 15,
     officersCount: 20,

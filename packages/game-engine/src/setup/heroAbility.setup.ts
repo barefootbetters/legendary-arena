@@ -229,8 +229,14 @@ function deduplicateKeywords(keywords: HeroKeyword[]): HeroKeyword[] {
  *
  * Key format: {setAbbr}-hero-{heroSlug}-{slot}
  * The heroSlug is between "hero-" and the last "-{slot}" segment.
+ *
+ * Promoted to a named export for WP-113 — the validator's
+ * `buildKnownHeroQualifiedIds` consumes this as the single source of
+ * truth for hero-slug grammar (Class A: flat-card-key decoder). Inventing
+ * a parallel decoder is contract drift per D-10014 Authority Lock.
  */
-function extractHeroSlug(card: HeroAbilityFlatCard): string {
+// why: D-10014 — single source of truth — flat-card-key decoder.
+export function extractHeroSlug(card: HeroAbilityFlatCard): string {
   const prefix = `${card.setAbbr}-hero-`;
   if (!card.key.startsWith(prefix)) {
     return '';
@@ -246,6 +252,25 @@ function extractHeroSlug(card: HeroAbilityFlatCard): string {
   return afterPrefix.slice(0, lastDashIndex);
 }
 
+/**
+ * Parses a set-qualified ID `<setAbbr>/<slug>` into its components.
+ *
+ * Returns null on malformed input. Locally duplicated per WP-113 §6 step 1.
+ */
+// why: D-10014 — duplicated locally to avoid a circular import between
+// builders and matchSetup.validate.ts.
+function parseQualifiedId(input: string): { setAbbr: string; slug: string } | null {
+  if (typeof input !== 'string' || input.length === 0) return null;
+  if (input !== input.trim()) return null;
+  const slashIndex = input.indexOf('/');
+  if (slashIndex === -1) return null;
+  if (input.indexOf('/', slashIndex + 1) !== -1) return null;
+  const setAbbr = input.slice(0, slashIndex);
+  const slug = input.slice(slashIndex + 1);
+  if (setAbbr.length === 0 || slug.length === 0) return null;
+  return { setAbbr, slug };
+}
+
 // ---------------------------------------------------------------------------
 // Runtime type guard
 // ---------------------------------------------------------------------------
@@ -256,7 +281,10 @@ function extractHeroSlug(card: HeroAbilityFlatCard): string {
  * Returns true if the registry object has the required listCards method
  * and returns cards with abilities arrays.
  */
-function isHeroAbilityRegistryReader(
+// why: D-10014 — orchestration-side diagnostic detection seam. The
+// orchestration layer (buildInitialGameState) imports this guard to detect
+// registry-reader interface mismatches and emit G.messages diagnostics.
+export function isHeroAbilityRegistryReader(
   registry: unknown,
 ): registry is HeroAbilityRegistryReader {
   if (!registry || typeof registry !== 'object') return false;
@@ -310,12 +338,25 @@ export function buildHeroAbilityHooks(
   }
 
   // Iterate selected hero decks deterministically
+  // why: D-10014 — Builder Filtering Order — iterate named set only.
+  // Each heroDeckIds entry is `<setAbbr>/<heroSlug>`. We parse the
+  // qualified form, filter hero cards to that setAbbr first, then match
+  // by heroSlug within that set's cards only. Hero slugs collide across
+  // sets (51 / 307 instances per the D-10014 PS-8 probe), so the filter
+  // order is non-negotiable for determinism.
   for (const heroDeckId of matchConfig.heroDeckIds) {
-    // Filter hero cards belonging to this deck
+    const parsed = parseQualifiedId(heroDeckId);
+    if (parsed === null) {
+      // Malformed input: skip silently. The validator is the authoritative
+      // format-error reporter; this builder is defense-in-depth.
+      continue;
+    }
+    // Filter hero cards belonging to this deck — setAbbr first, then slug
     const deckCards: HeroAbilityFlatCard[] = [];
     for (const card of heroFlatCards) {
+      if (card.setAbbr !== parsed.setAbbr) continue;
       const heroSlug = extractHeroSlug(card);
-      if (heroSlug === heroDeckId) {
+      if (heroSlug === parsed.slug) {
         deckCards.push(card);
       }
     }

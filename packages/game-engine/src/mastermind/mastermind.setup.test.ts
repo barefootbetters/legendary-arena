@@ -4,6 +4,10 @@
  * Tests buildMastermindState with a mock registry.
  * Uses node:test and node:assert only. Uses makeMockCtx. No boardgame.io
  * imports.
+ *
+ * @amended WP-113 PS-7: bare slug fixture `'test-mastermind'` migrated
+ *   to set-qualified form `'core/test-mastermind'` per the qualified-ID
+ *   contract (per D-10014).
  */
 
 import { describe, it } from 'node:test';
@@ -55,7 +59,7 @@ describe('buildMastermindState', () => {
     const cardStats: Record<CardExtId, CardStatEntry> = {};
 
     const state = buildMastermindState(
-      'test-mastermind' as CardExtId,
+      'core/test-mastermind' as CardExtId,
       registry,
       context,
       cardStats,
@@ -78,7 +82,7 @@ describe('buildMastermindState', () => {
     const cardStats: Record<CardExtId, CardStatEntry> = {};
 
     const state = buildMastermindState(
-      'test-mastermind' as CardExtId,
+      'core/test-mastermind' as CardExtId,
       registry,
       context,
       cardStats,
@@ -101,7 +105,7 @@ describe('buildMastermindState', () => {
     const cardStats: Record<CardExtId, CardStatEntry> = {};
 
     const state = buildMastermindState(
-      'test-mastermind' as CardExtId,
+      'core/test-mastermind' as CardExtId,
       registry,
       context,
       cardStats,
@@ -126,7 +130,7 @@ describe('buildMastermindState', () => {
     const cardStats: Record<CardExtId, CardStatEntry> = {};
 
     const state = buildMastermindState(
-      'test-mastermind' as CardExtId,
+      'core/test-mastermind' as CardExtId,
       registry,
       context,
       cardStats,
@@ -148,7 +152,7 @@ describe('buildMastermindState', () => {
     const cardStats: Record<CardExtId, CardStatEntry> = {};
 
     const state = buildMastermindState(
-      'test-mastermind' as CardExtId,
+      'core/test-mastermind' as CardExtId,
       registry,
       context,
       cardStats,

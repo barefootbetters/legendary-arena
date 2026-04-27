@@ -30,13 +30,25 @@ import {
   SIDEKICK_EXT_ID,
 } from './pilesInit.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
-import { buildVillainDeck } from '../villainDeck/villainDeck.setup.js';
+import {
+  buildVillainDeck,
+  isVillainDeckRegistryReader,
+} from '../villainDeck/villainDeck.setup.js';
 import { initializeCity, initializeHq } from '../board/city.logic.js';
 import { buildCardStats, resetTurnEconomy } from '../economy/economy.logic.js';
-import { buildMastermindState } from '../mastermind/mastermind.setup.js';
-import { buildHeroAbilityHooks } from './heroAbility.setup.js';
+import {
+  buildMastermindState,
+  isMastermindRegistryReader,
+} from '../mastermind/mastermind.setup.js';
+import {
+  buildHeroAbilityHooks,
+  isHeroAbilityRegistryReader,
+} from './heroAbility.setup.js';
 import { buildCardKeywords } from './buildCardKeywords.js';
-import { buildSchemeSetupInstructions } from './buildSchemeSetupInstructions.js';
+import {
+  buildSchemeSetupInstructions,
+  isSchemeRegistryReader,
+} from './buildSchemeSetupInstructions.js';
 import { executeSchemeSetup } from '../scheme/schemeSetup.execute.js';
 
 // why: Pile ext_id constants are re-exported from pilesInit.ts for backward
@@ -137,6 +149,38 @@ export function buildInitialGameState(
 
   const numPlayers = context.ctx.numPlayers;
 
+  // why: D-10014 — Uniformity Rule + builder signatures don't accept G +
+  // remediation pointer to setRegistryForSetup. Per Q3 LOCKED
+  // orchestration-only, all four setup-builder diagnostic emissions live
+  // here. Each guard returns false on incomplete registry-reader interface
+  // (test mocks, server-not-wired). On false, push a full-sentence
+  // diagnostic naming (a) which builder was skipped, (b) why, (c) how to
+  // fix. Builder-internal `isXRegistryReader → empty` paths remain
+  // unchanged for defense-in-depth; this orchestration site is the
+  // primary detection seam.
+  const setupMessages: string[] = [];
+
+  if (!isVillainDeckRegistryReader(registry)) {
+    setupMessages.push(
+      'buildVillainDeck skipped: the registry-reader interface is incomplete (listCards / listSets / getSet missing or not functions). Verify that setRegistryForSetup(registry) was called at server startup, or that the test mock implements the full reader interface.',
+    );
+  }
+  if (!isMastermindRegistryReader(registry)) {
+    setupMessages.push(
+      'buildMastermindState skipped: the registry-reader interface is incomplete (listSets / getSet missing or not functions). Verify that setRegistryForSetup(registry) was called at server startup, or that the test mock implements the full reader interface.',
+    );
+  }
+  if (!isSchemeRegistryReader(registry)) {
+    setupMessages.push(
+      'buildSchemeSetupInstructions skipped: the registry-reader interface is incomplete (listSets / getSet missing or not functions). Verify that setRegistryForSetup(registry) was called at server startup, or that the test mock implements the full reader interface.',
+    );
+  }
+  if (!isHeroAbilityRegistryReader(registry)) {
+    setupMessages.push(
+      'buildHeroAbilityHooks skipped: the registry-reader interface is incomplete (listCards missing or not a function). Verify that setRegistryForSetup(registry) was called at server startup, or that the test mock implements the full reader interface.',
+    );
+  }
+
   // Build per-player state with shuffled starting decks
   const playerZones: Record<string, PlayerZones> = {};
 
@@ -206,7 +250,7 @@ export function buildInitialGameState(
     currentStage: TURN_STAGES[0]!,
     playerZones,
     piles,
-    messages: [],
+    messages: setupMessages,
     counters: {},
     hookRegistry: buildDefaultHookDefinitions(config),
     // why: villain deck built from registry data at setup time; see D-1410

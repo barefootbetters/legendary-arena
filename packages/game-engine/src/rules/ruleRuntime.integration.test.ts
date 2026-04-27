@@ -23,14 +23,18 @@ import type { MatchSetupConfig } from '../matchSetup.types.js';
 
 /**
  * Creates a valid mock MatchSetupConfig for integration tests.
+ *
+ * @amended WP-113 PS-7: bare slug fixtures migrated to set-qualified
+ *   form `'<setAbbr>/<slug>'` per the qualified-ID contract
+ *   (per D-10014).
  */
 function createTestConfig(): MatchSetupConfig {
   return {
-    schemeId: 'test-scheme-001',
-    mastermindId: 'test-mastermind-001',
-    villainGroupIds: ['test-villain-group-001'],
-    henchmanGroupIds: ['test-henchman-group-001'],
-    heroDeckIds: ['test-hero-deck-001'],
+    schemeId: 'test/test-scheme-001',
+    mastermindId: 'test/test-mastermind-001',
+    villainGroupIds: ['test/test-villain-group-001'],
+    henchmanGroupIds: ['test/test-henchman-group-001'],
+    heroDeckIds: ['test/test-hero-deck-001'],
     bystandersCount: 1,
     woundsCount: 1,
     officersCount: 1,
@@ -39,10 +43,24 @@ function createTestConfig(): MatchSetupConfig {
 }
 
 /**
- * Creates a minimal mock registry for integration tests.
+ * Creates a minimal mock registry for integration tests that satisfies
+ * all four orchestration-side registry-reader guards. Returns no actual
+ * cards / sets / schemes — just exposes the full interface shape so
+ * `buildInitialGameState` does not push any "skipped" diagnostics into
+ * `G.messages`. The rule-execution tests below assume `G.messages`
+ * starts empty.
+ *
+ * @amended WP-113 PS-4: registry-reader guards now run at the
+ *   orchestration site (`buildInitialGameState`) and push diagnostics
+ *   on incomplete-interface mocks. This mock implements all four guard
+ *   surfaces so those diagnostics do not fire (per D-10014).
  */
 function createMockRegistry() {
-  return { listCards: () => [] };
+  return {
+    listCards: () => [],
+    listSets: () => [],
+    getSet: (_abbr: string) => undefined,
+  };
 }
 
 describe('rule execution pipeline — integration', () => {

@@ -53,8 +53,14 @@ export function clearRegistryForSetup(): void {
 // why: No-op registry satisfies the CardRegistryReader interface when the
 // real registry has not been configured. Used only in test contexts where
 // setup validation is intentionally skipped.
+// why: D-10014 — satisfies wider CardRegistryReader for test-context skip
+// path. PS-3 widened the interface to `{ listCards, listSets, getSet }`
+// so the validator can build per-field qualified-ID sets; the empty
+// registry must satisfy the wider shape too.
 const EMPTY_REGISTRY: CardRegistryReader = {
   listCards: () => [],
+  listSets: () => [],
+  getSet: () => undefined,
 };
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */

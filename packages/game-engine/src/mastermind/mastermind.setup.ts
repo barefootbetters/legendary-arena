@@ -6,6 +6,11 @@
  * base card to G.cardStats so fightMastermind can read the fight
  * requirement without registry access.
  *
+ * Per WP-113 / D-10014, mastermindId is the set-qualified form
+ * `<setAbbr>/<mastermindSlug>`. The builder parses the qualified form,
+ * then iterates ONLY the named set's masterminds[] — no cross-set
+ * fallback exists.
+ *
  * No @legendary-arena/registry imports. No .reduce(). Setup-time only.
  */
 
@@ -57,7 +62,7 @@ interface MastermindSetData {
  * Satisfied structurally by the real CardRegistry from the registry
  * package. Defined locally to respect the layer boundary.
  */
-interface MastermindRegistryReader {
+export interface MastermindRegistryReader {
   /** All loaded set index entries. */
   listSets(): Array<{ abbr: string }>;
   /** Full set data for one set. */
@@ -75,7 +80,10 @@ interface MastermindRegistryReader {
  * getSet). Narrow test mocks that only implement CardRegistryReader will
  * return false.
  */
-function isMastermindRegistryReader(
+// why: D-10014 — orchestration-side diagnostic detection seam. The
+// orchestration layer (buildInitialGameState) imports this guard to detect
+// registry-reader interface mismatches and emit G.messages diagnostics.
+export function isMastermindRegistryReader(
   registry: unknown,
 ): registry is MastermindRegistryReader {
   if (!registry || typeof registry !== 'object') return false;
@@ -85,6 +93,52 @@ function isMastermindRegistryReader(
     typeof candidate.listSets === 'function' &&
     typeof candidate.getSet === 'function'
   );
+}
+
+/**
+ * Enumerates mastermind slugs in a single set's data.
+ *
+ * Reads `setData.masterminds[].slug` defensively. Returns an empty array
+ * on any malformed shape — never throws. Used by the validator's
+ * `buildKnownMastermindQualifiedIds` (Class B: set-data slug enumerator)
+ * as the single source of truth for mastermind slug semantics.
+ */
+// why: D-10014 — single source of truth — set-data slug enumerator.
+export function listMastermindSlugsInSet(setData: unknown): string[] {
+  if (!setData || typeof setData !== 'object') return [];
+  const candidate = setData as { masterminds?: unknown };
+  if (!Array.isArray(candidate.masterminds)) return [];
+
+  const slugs: string[] = [];
+  for (const entry of candidate.masterminds) {
+    if (entry && typeof entry === 'object') {
+      const mastermind = entry as { slug?: unknown };
+      if (typeof mastermind.slug === 'string' && mastermind.slug.length > 0) {
+        slugs.push(mastermind.slug);
+      }
+    }
+  }
+  return slugs;
+}
+
+/**
+ * Parses a set-qualified ID `<setAbbr>/<slug>` into its components.
+ *
+ * Returns null on malformed input. Locally duplicated per WP-113 §6 step 1
+ * — `// why: import or duplicate locally — author choice`.
+ */
+// why: D-10014 — duplicated locally to avoid a circular import between
+// builders and matchSetup.validate.ts.
+function parseQualifiedId(input: string): { setAbbr: string; slug: string } | null {
+  if (typeof input !== 'string' || input.length === 0) return null;
+  if (input !== input.trim()) return null;
+  const slashIndex = input.indexOf('/');
+  if (slashIndex === -1) return null;
+  if (input.indexOf('/', slashIndex + 1) !== -1) return null;
+  const setAbbr = input.slice(0, slashIndex);
+  const slug = input.slice(slashIndex + 1);
+  if (setAbbr.length === 0 || slug.length === 0) return null;
+  return { setAbbr, slug };
 }
 
 // ---------------------------------------------------------------------------
@@ -127,7 +181,20 @@ export function buildMastermindState(
     };
   }
 
-  const resolved = findMastermindCards(registry, mastermindId);
+  // why: D-10014 — Builder Filtering Order — iterate named set only.
+  // mastermindId is `<setAbbr>/<mastermindSlug>`; parse the qualified form
+  // and constrain mastermind iteration to the named set's masterminds[].
+  const parsed = parseQualifiedId(mastermindId);
+  if (parsed === null) {
+    return {
+      id: mastermindId,
+      baseCardId: mastermindId,
+      tacticsDeck: [],
+      tacticsDefeated: [],
+    };
+  }
+
+  const resolved = findMastermindCards(registry, parsed.setAbbr, parsed.slug);
 
   if (!resolved) {
     return {
@@ -182,54 +249,54 @@ export function buildMastermindState(
 // ---------------------------------------------------------------------------
 
 /**
- * Finds and classifies mastermind cards from the registry.
+ * Finds and classifies mastermind cards within the named set's masterminds[].
  *
- * Searches all loaded sets for a mastermind matching the given slug.
- * Returns the base card and tactic cards separately.
+ * Returns null if the named set is not loaded, the slug is not present in
+ * it, or the mastermind has no base card. No cross-set fallback exists.
  */
+// why: D-10014 — Builder Filtering Order — iterate named set only.
 function findMastermindCards(
   registry: MastermindRegistryReader,
-  mastermindId: string,
+  setAbbr: string,
+  mastermindSlug: string,
 ): {
   setAbbr: string;
   mastermindSlug: string;
   baseCard: MastermindCardEntry;
   tacticCards: MastermindCardEntry[];
 } | null {
-  for (const setEntry of registry.listSets()) {
-    const setData = registry.getSet(setEntry.abbr) as MastermindSetData | undefined;
-    if (!setData || !Array.isArray(setData.masterminds)) continue;
+  const setData = registry.getSet(setAbbr) as MastermindSetData | undefined;
+  if (!setData || !Array.isArray(setData.masterminds)) return null;
 
-    for (const mastermind of setData.masterminds) {
-      if (typeof mastermind.slug !== 'string') continue;
-      if (mastermind.slug !== mastermindId) continue;
-      if (!Array.isArray(mastermind.cards)) continue;
+  for (const mastermind of setData.masterminds) {
+    if (typeof mastermind.slug !== 'string') continue;
+    if (mastermind.slug !== mastermindSlug) continue;
+    if (!Array.isArray(mastermind.cards)) continue;
 
-      let baseCard: MastermindCardEntry | null = null;
-      const tacticCards: MastermindCardEntry[] = [];
+    let baseCard: MastermindCardEntry | null = null;
+    const tacticCards: MastermindCardEntry[] = [];
 
-      for (const card of mastermind.cards) {
-        // why: tactic !== true identifies the base card; tactic === true
-        // identifies tactic cards. This is a registry schema contract
-        // (D-1413), not a heuristic.
-        if (card.tactic === true) {
-          tacticCards.push(card);
-        } else {
-          baseCard = card;
-        }
+    for (const card of mastermind.cards) {
+      // why: tactic !== true identifies the base card; tactic === true
+      // identifies tactic cards. This is a registry schema contract
+      // (D-1413), not a heuristic.
+      if (card.tactic === true) {
+        tacticCards.push(card);
+      } else {
+        baseCard = card;
       }
-
-      if (!baseCard) {
-        return null;
-      }
-
-      return {
-        setAbbr: setEntry.abbr,
-        mastermindSlug: mastermind.slug,
-        baseCard,
-        tacticCards,
-      };
     }
+
+    if (!baseCard) {
+      return null;
+    }
+
+    return {
+      setAbbr,
+      mastermindSlug: mastermind.slug,
+      baseCard,
+      tacticCards,
+    };
   }
 
   return null;

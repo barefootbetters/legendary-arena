@@ -6,6 +6,11 @@
  * the only point where registry data enters the villain deck subsystem —
  * moves operate solely on G.villainDeck and G.villainDeckCardTypes.
  *
+ * Per WP-113 / D-10014, all four entity-ID inputs (villainGroupIds,
+ * henchmanGroupIds, schemeId, mastermindId) are set-qualified
+ * `<setAbbr>/<slug>` strings. Builders parse the qualified form, then
+ * iterate ONLY the named set's data — no cross-set fallback exists.
+ *
  * No @legendary-arena/registry imports. No .reduce(). Setup-time only.
  */
 
@@ -163,16 +168,25 @@ export function buildVillainDeck(
   const allFlatCards = registry.listCards();
   const villainFlatCards = filterFlatCardsByType(allFlatCards, 'villain');
 
-  for (const groupSlug of config.villainGroupIds) {
-    const groupCards = filterVillainCardsByGroupSlug(villainFlatCards, groupSlug);
-
-    if (groupCards.length === 0) {
-      throw new Error(
-        `Villain group "${groupSlug}" not found in registry flat cards. ` +
-        'Verify that the group slug in config.villainGroupIds matches a ' +
-        'villain group in the loaded card sets.',
-      );
-    }
+  // why: D-10014 — Builder Filtering Order — iterate named set only.
+  // Each villainGroupIds entry is `<setAbbr>/<groupSlug>`. We parse the
+  // qualified form, filter villain cards to that setAbbr first, then match
+  // by groupSlug within that set's cards only. No cross-set fallback.
+  //
+  // Soft-skip on missing data per the validator-is-authoritative model:
+  // when validateMatchSetup passes, the data IS present; when tests
+  // bypass the validator with empty mocks, the builder produces an
+  // empty deck (defense-in-depth). The validator emits format and
+  // existence errors with full remediation guidance; the builder
+  // never duplicates that responsibility.
+  for (const villainGroupId of config.villainGroupIds) {
+    const parsed = parseQualifiedId(villainGroupId);
+    if (parsed === null) continue;
+    const groupCards = filterVillainCardsByGroupSlug(
+      villainFlatCards,
+      parsed.setAbbr,
+      parsed.slug,
+    );
 
     for (const card of groupCards) {
       const extId = card.key as CardExtId;
@@ -182,11 +196,15 @@ export function buildVillainDeck(
   }
 
   // --- 2. Henchman virtual cards (from getSet — not in FlatCard) ---
-  // why: config.henchmanGroupIds values match SetData.henchmen[].slug.
-  // Henchmen are group-level only in the registry (z.unknown[]). We generate
-  // HENCHMAN_COPIES_PER_GROUP virtual instances per group.
+  // why: D-10014 — Builder Filtering Order — iterate named set only.
+  // config.henchmanGroupIds values are `<setAbbr>/<groupSlug>`; the helper
+  // constrains the henchmen[] iteration to the named set. Soft-skip on
+  // missing data — validator is the authoritative format/existence reporter.
   for (const henchmanGroupId of config.henchmanGroupIds) {
-    const groupSlug = findHenchmanGroupSlug(registry, henchmanGroupId);
+    const parsed = parseQualifiedId(henchmanGroupId);
+    if (parsed === null) continue;
+    const groupSlug = findHenchmanGroupSlug(registry, parsed.setAbbr, parsed.slug);
+    if (groupSlug === null) continue;
 
     for (let copyIndex = 0; copyIndex < HENCHMAN_COPIES_PER_GROUP; copyIndex++) {
       const paddedIndex = String(copyIndex).padStart(2, '0');
@@ -197,15 +215,21 @@ export function buildVillainDeck(
   }
 
   // --- 3. Scheme twist virtual cards ---
-  // why: config.schemeId matches SetData.schemes[].slug. Scheme twists are
-  // generic in behaviour but scheme-scoped in identity for replay auditability.
-  const schemeSlug = findSchemeSlug(registry, config.schemeId);
+  // why: D-10014 — Builder Filtering Order — iterate named set only.
+  // Soft-skip on missing data per the validator-is-authoritative model.
+  const parsedScheme = parseQualifiedId(config.schemeId);
+  const schemeSlug =
+    parsedScheme === null
+      ? null
+      : findSchemeSlug(registry, parsedScheme.setAbbr, parsedScheme.slug);
 
-  for (let twistIndex = 0; twistIndex < SCHEME_TWIST_COUNT; twistIndex++) {
-    const paddedIndex = String(twistIndex).padStart(2, '0');
-    const extId = `scheme-twist-${schemeSlug}-${paddedIndex}` as CardExtId;
-    deck.push(extId);
-    cardTypes[extId] = 'scheme-twist';
+  if (schemeSlug !== null) {
+    for (let twistIndex = 0; twistIndex < SCHEME_TWIST_COUNT; twistIndex++) {
+      const paddedIndex = String(twistIndex).padStart(2, '0');
+      const extId = `scheme-twist-${schemeSlug}-${paddedIndex}` as CardExtId;
+      deck.push(extId);
+      cardTypes[extId] = 'scheme-twist';
+    }
   }
 
   // --- 4. Bystander virtual cards ---
@@ -223,17 +247,24 @@ export function buildVillainDeck(
   }
 
   // --- 5. Mastermind strike cards (from getSet — need tactic field) ---
-  // why: config.mastermindId matches SetData.masterminds[].slug. tactic !== true
-  // identifies strikes; this is a registry schema contract (D-1413), not a
-  // heuristic. FlatCard.cardType is "mastermind" for all mastermind cards — the
-  // strike vs tactic distinction comes from the tactic boolean field on
-  // MastermindCard in the per-set data.
-  const mastermindResult = findMastermindStrikes(registry, config.mastermindId);
+  // why: D-10014 — Builder Filtering Order — iterate named set only.
+  // config.mastermindId is `<setAbbr>/<mastermindSlug>`; tactic !== true
+  // identifies strikes (registry schema contract D-1413). FlatCard.cardType
+  // is "mastermind" for all mastermind cards — the strike vs tactic
+  // distinction comes from the tactic boolean field in the per-set data.
+  // Soft-skip on missing data per the validator-is-authoritative model.
+  const parsedMastermind = parseQualifiedId(config.mastermindId);
+  const mastermindResult =
+    parsedMastermind === null
+      ? null
+      : findMastermindStrikes(registry, parsedMastermind.setAbbr, parsedMastermind.slug);
 
-  for (const strike of mastermindResult.strikes) {
-    const extId = `${mastermindResult.setAbbr}-mastermind-${mastermindResult.mastermindSlug}-${strike.cardSlug}` as CardExtId;
-    deck.push(extId);
-    cardTypes[extId] = 'mastermind-strike';
+  if (mastermindResult !== null) {
+    for (const strike of mastermindResult.strikes) {
+      const extId = `${mastermindResult.setAbbr}-mastermind-${mastermindResult.mastermindSlug}-${strike.cardSlug}` as CardExtId;
+      deck.push(extId);
+      cardTypes[extId] = 'mastermind-strike';
+    }
   }
 
   // --- 6. Sort lexically for deterministic pre-shuffle ordering ---
@@ -264,7 +295,10 @@ export function buildVillainDeck(
  * with full FlatCard shape, listSets, getSet). Narrow test mocks that only
  * implement CardRegistryReader will return false.
  */
-function isVillainDeckRegistryReader(
+// why: D-10014 — orchestration-side diagnostic detection seam. The
+// orchestration layer (buildInitialGameState) imports this guard to detect
+// registry-reader interface mismatches and emit G.messages diagnostics.
+export function isVillainDeckRegistryReader(
   registry: unknown,
 ): registry is VillainDeckRegistryReader {
   if (!registry || typeof registry !== 'object') return false;
@@ -275,6 +309,34 @@ function isVillainDeckRegistryReader(
     typeof candidate.listSets === 'function' &&
     typeof candidate.getSet === 'function'
   );
+}
+
+/**
+ * Parses a set-qualified ID `<setAbbr>/<slug>` into its components.
+ *
+ * Returns null on any malformed input — empty string, missing slash,
+ * multiple slashes, empty parts, or leading/trailing whitespace. Builders
+ * throw on null parse results; the validator emits a structured error.
+ *
+ * Locally duplicated per WP-113 §6 step 1 — `// why: import or duplicate
+ * locally — author choice`. The same parser logic lives in
+ * `matchSetup.validate.ts` and the four builders that consume qualified
+ * IDs. Keeping these copies byte-identical is enforced by tests.
+ */
+// why: D-10014 — duplicated locally to avoid a circular import between
+// builders and matchSetup.validate.ts. The validator imports the four
+// Class A/B helpers + guards from the builders; the builders cannot
+// reciprocally import from the validator.
+function parseQualifiedId(input: string): { setAbbr: string; slug: string } | null {
+  if (typeof input !== 'string' || input.length === 0) return null;
+  if (input !== input.trim()) return null;
+  const slashIndex = input.indexOf('/');
+  if (slashIndex === -1) return null;
+  if (input.indexOf('/', slashIndex + 1) !== -1) return null;
+  const setAbbr = input.slice(0, slashIndex);
+  const slug = input.slice(slashIndex + 1);
+  if (setAbbr.length === 0 || slug.length === 0) return null;
+  return { setAbbr, slug };
 }
 
 /**
@@ -294,19 +356,23 @@ function filterFlatCardsByType(
 }
 
 /**
- * Filters villain flat cards by group slug extracted from the FlatCard key.
+ * Filters villain flat cards by setAbbr first, then by group slug.
  *
- * FlatCard.key format: {setAbbr}-villain-{groupSlug}-{cardSlug}
- * We extract the groupSlug by removing the setAbbr prefix, "villain-" prefix,
- * and the cardSlug suffix.
+ * Per WP-113 D-10014 Builder Filtering Order: parse `<setAbbr>/<slug>` →
+ * filter cards by `setAbbr` first → match by `<slug>` within that set's
+ * cards only. Builders that match across all sets are in violation of the
+ * determinism contract (hero slugs and others collide across sets).
  */
+// why: D-10014 — Builder Filtering Order — iterate named set only.
 function filterVillainCardsByGroupSlug(
   villainCards: VillainDeckFlatCard[],
+  targetSetAbbr: string,
   targetGroupSlug: string,
 ): VillainDeckFlatCard[] {
   const result: VillainDeckFlatCard[] = [];
 
   for (const card of villainCards) {
+    if (card.setAbbr !== targetSetAbbr) continue;
     const groupSlug = extractVillainGroupSlug(card);
     if (groupSlug === targetGroupSlug) {
       result.push(card);
@@ -321,8 +387,14 @@ function filterVillainCardsByGroupSlug(
  *
  * Key format: {setAbbr}-villain-{groupSlug}-{cardSlug}
  * We know setAbbr and cardSlug (card.slug), so groupSlug is the middle part.
+ *
+ * Promoted to a named export for WP-113 — the validator's
+ * `buildKnownVillainGroupQualifiedIds` consumes this as the single source
+ * of truth for villain-group-slug grammar (Class A: flat-card-key decoder).
+ * Inventing a parallel decoder is contract drift per D-10014 Authority Lock.
  */
-function extractVillainGroupSlug(card: VillainDeckFlatCard): string {
+// why: D-10014 — single source of truth — flat-card-key decoder.
+export function extractVillainGroupSlug(card: VillainDeckFlatCard): string {
   const prefix = `${card.setAbbr}-villain-`;
   const suffix = `-${card.slug}`;
 
@@ -334,112 +406,123 @@ function extractVillainGroupSlug(card: VillainDeckFlatCard): string {
 }
 
 /**
- * Finds a henchman group slug by searching all loaded sets.
+ * Enumerates henchman-group slugs in a single set's data.
+ *
+ * Reads `setData.henchmen[].slug` defensively. Returns an empty array on
+ * any malformed shape — never throws. Used by the validator's
+ * `buildKnownHenchmanGroupQualifiedIds` (Class B: set-data slug
+ * enumerator) as the single source of truth for henchman-group slug
+ * semantics.
  */
+// why: D-10014 — single source of truth — set-data slug enumerator.
+export function listHenchmanGroupSlugsInSet(setData: unknown): string[] {
+  if (!setData || typeof setData !== 'object') return [];
+  const candidate = setData as { henchmen?: unknown };
+  if (!Array.isArray(candidate.henchmen)) return [];
+
+  const slugs: string[] = [];
+  for (const entry of candidate.henchmen) {
+    if (entry && typeof entry === 'object') {
+      const henchman = entry as { slug?: unknown };
+      if (typeof henchman.slug === 'string' && henchman.slug.length > 0) {
+        slugs.push(henchman.slug);
+      }
+    }
+  }
+  return slugs;
+}
+
+/**
+ * Finds a henchman group slug within the named set's henchmen[].
+ *
+ * Returns null if the named set is not loaded or the slug is not present
+ * in it — no cross-set fallback exists. The validator emits actionable
+ * errors upfront; this helper soft-skips so test paths bypassing the
+ * validator can produce empty decks rather than throwing.
+ */
+// why: D-10014 — Builder Filtering Order — iterate named set only.
 function findHenchmanGroupSlug(
   registry: VillainDeckRegistryReader,
-  henchmanGroupId: string,
-): string {
-  for (const setEntry of registry.listSets()) {
-    const setData = registry.getSet(setEntry.abbr) as SetDataSubset | undefined;
-    if (!setData) continue;
+  setAbbr: string,
+  henchmanGroupSlug: string,
+): string | null {
+  const setData = registry.getSet(setAbbr) as SetDataSubset | undefined;
+  if (!setData || !Array.isArray(setData.henchmen)) return null;
 
-    if (!Array.isArray(setData.henchmen)) continue;
-
-    for (const entry of setData.henchmen) {
-      const henchman = entry as HenchmanGroupEntry;
-      if (typeof henchman.slug !== 'string') continue;
-
-      if (henchman.slug === henchmanGroupId) {
-        return henchman.slug;
-      }
+  for (const entry of setData.henchmen) {
+    const henchman = entry as HenchmanGroupEntry;
+    if (typeof henchman.slug !== 'string') continue;
+    if (henchman.slug === henchmanGroupSlug) {
+      return henchman.slug;
     }
   }
 
-  throw new Error(
-    `Henchman group "${henchmanGroupId}" not found in any loaded set. ` +
-    'Verify that the group slug in config.henchmanGroupIds matches a ' +
-    'henchman entry in the loaded card sets.',
-  );
+  return null;
 }
 
 /**
- * Finds a scheme slug by searching all loaded sets.
+ * Finds a scheme slug within the named set's schemes[].
+ *
+ * Returns null if the named set is not loaded or the slug is not present
+ * in it — no cross-set fallback exists.
  */
+// why: D-10014 — Builder Filtering Order — iterate named set only.
 function findSchemeSlug(
   registry: VillainDeckRegistryReader,
-  schemeId: string,
-): string {
-  for (const setEntry of registry.listSets()) {
-    const setData = registry.getSet(setEntry.abbr) as SetDataSubset | undefined;
-    if (!setData) continue;
+  setAbbr: string,
+  schemeSlug: string,
+): string | null {
+  const setData = registry.getSet(setAbbr) as SetDataSubset | undefined;
+  if (!setData || !Array.isArray(setData.schemes)) return null;
 
-    if (!Array.isArray(setData.schemes)) continue;
-
-    for (const scheme of setData.schemes) {
-      if (typeof scheme.slug !== 'string') continue;
-
-      if (scheme.slug === schemeId) {
-        return scheme.slug;
-      }
+  for (const scheme of setData.schemes) {
+    if (typeof scheme.slug !== 'string') continue;
+    if (scheme.slug === schemeSlug) {
+      return scheme.slug;
     }
   }
 
-  throw new Error(
-    `Scheme "${schemeId}" not found in any loaded set. ` +
-    'Verify that config.schemeId matches a scheme slug in the loaded card sets.',
-  );
+  return null;
 }
 
 /**
- * Finds mastermind strike cards (tactic !== true) by searching all loaded sets.
+ * Finds mastermind strike cards (tactic !== true) within the named set's
+ * masterminds[].
+ *
+ * Returns null if the named set is not loaded or the mastermind slug is
+ * not present in it — no cross-set fallback exists.
  */
+// why: D-10014 — Builder Filtering Order — iterate named set only.
 function findMastermindStrikes(
   registry: VillainDeckRegistryReader,
-  mastermindId: string,
-): { setAbbr: string; mastermindSlug: string; strikes: Array<{ cardSlug: string }> } {
-  for (const setEntry of registry.listSets()) {
-    const setData = registry.getSet(setEntry.abbr) as SetDataSubset | undefined;
-    if (!setData) continue;
+  setAbbr: string,
+  mastermindSlug: string,
+): { setAbbr: string; mastermindSlug: string; strikes: Array<{ cardSlug: string }> } | null {
+  const setData = registry.getSet(setAbbr) as SetDataSubset | undefined;
+  if (!setData || !Array.isArray(setData.masterminds)) return null;
 
-    if (!Array.isArray(setData.masterminds)) continue;
+  for (const mastermind of setData.masterminds) {
+    if (typeof mastermind.slug !== 'string') continue;
+    if (mastermind.slug !== mastermindSlug) continue;
+    if (!Array.isArray(mastermind.cards)) return null;
 
-    for (const mastermind of setData.masterminds) {
-      if (typeof mastermind.slug !== 'string') continue;
+    const strikes: Array<{ cardSlug: string }> = [];
 
-      if (mastermind.slug !== mastermindId) continue;
-
-      if (!Array.isArray(mastermind.cards)) {
-        throw new Error(
-          `Mastermind "${mastermindId}" has no cards array in set "${setEntry.abbr}".`,
-        );
+    for (const card of mastermind.cards) {
+      // why: tactic !== true identifies strikes; this is a registry schema
+      // contract (D-1413), not a heuristic.
+      if (card.tactic !== true) {
+        if (typeof card.slug !== 'string') continue;
+        strikes.push({ cardSlug: card.slug });
       }
-
-      const strikes: Array<{ cardSlug: string }> = [];
-
-      for (const card of mastermind.cards) {
-        // why: tactic !== true identifies strikes; this is a registry schema
-        // contract (D-1413), not a heuristic.
-        if (card.tactic !== true) {
-          if (typeof card.slug !== 'string') {
-            throw new Error(
-              `Mastermind card missing slug for mastermind "${mastermindId}" in set "${setEntry.abbr}".`,
-            );
-          }
-          strikes.push({ cardSlug: card.slug });
-        }
-      }
-
-      return {
-        setAbbr: setEntry.abbr,
-        mastermindSlug: mastermind.slug,
-        strikes,
-      };
     }
+
+    return {
+      setAbbr,
+      mastermindSlug: mastermind.slug,
+      strikes,
+    };
   }
 
-  throw new Error(
-    `Mastermind "${mastermindId}" not found in any loaded set. ` +
-    'Verify that config.mastermindId matches a mastermind slug in the loaded card sets.',
-  );
+  return null;
 }

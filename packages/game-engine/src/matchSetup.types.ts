@@ -27,19 +27,19 @@
  * setup and gameplay packets depend on it.
  */
 export interface MatchSetupConfig {
-  /** Scheme ext_id. */
+  /** Set-qualified scheme ext_id — `<setAbbr>/<schemeSlug>` per D-10014 (e.g., `"core/legacy-virus"`). */
   readonly schemeId: string;
 
-  /** Mastermind ext_id. */
+  /** Set-qualified mastermind ext_id — `<setAbbr>/<mastermindSlug>` per D-10014 (e.g., `"core/dr-doom"`). */
   readonly mastermindId: string;
 
-  /** Villain group ext_ids. Must be a non-empty array. */
+  /** Set-qualified villain group ext_ids — each `<setAbbr>/<groupSlug>` per D-10014 (e.g., `"core/brotherhood"`). Non-empty array. */
   readonly villainGroupIds: readonly string[];
 
-  /** Henchman group ext_ids. Must be a non-empty array. */
+  /** Set-qualified henchman group ext_ids — each `<setAbbr>/<groupSlug>` per D-10014 (e.g., `"core/savage-land-mutates"`). Non-empty array. */
   readonly henchmanGroupIds: readonly string[];
 
-  /** Hero deck ext_ids. Must be a non-empty array. */
+  /** Set-qualified hero ext_ids — each `<setAbbr>/<heroSlug>` per D-10014 (e.g., `"core/black-widow"`). Non-empty array. */
   readonly heroDeckIds: readonly string[];
 
   /** Number of bystander cards in the game. Must be a non-negative integer. */
