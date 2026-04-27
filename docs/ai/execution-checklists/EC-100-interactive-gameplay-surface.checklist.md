@@ -1,6 +1,6 @@
 # EC-100 — Interactive Gameplay Surface (Hook-Integration Stub)
 
-**Status:** Done 2026-04-26 (flipped Stub → Done at WP-100 Commit B governance close per D-10001 Amendment)
+**Status:** Stub (per D-10001 Amendment 2026-04-26)
 **Authoritative WP:** WP-100 — see [WP-100-interactive-gameplay-surface.md](../work-packets/WP-100-interactive-gameplay-surface.md)
 **Authoritative Pre-Flight + Copilot Check:** [preflight-wp100-interactive-gameplay-surface.md](../invocations/preflight-wp100-interactive-gameplay-surface.md)
 **Authoritative Session Prompt:** [session-wp100-interactive-gameplay-surface.md](../invocations/session-wp100-interactive-gameplay-surface.md)
