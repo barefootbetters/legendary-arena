@@ -10870,6 +10870,54 @@ The four 01.5 triggers were verified absent on the §D-10007 change:
 
 ---
 
+### D-10008 — Engine Moves Registered Long-Form with `client: false` (playerView Shape-Mismatch Fix)
+
+**Type:** Engine architecture / move dispatch boundary
+**Packet:** WP-100 (smoke-test fix-forward post-revision-close)
+**Date:** 2026-04-27
+
+**Decision:** Every state-mutating move on `LegendaryGame` is registered in boardgame.io's long-form syntax with `client: false`. This makes each move **server-only** at dispatch time — the client transmits the move action via the multiplayer transport but does not optimistically run the move against its local state. Applies to all 8 moves on `LegendaryGame.moves` (`drawCards`, `playCard`, `endTurn`, `advanceStage`, `revealVillainCard`, `fightVillain`, `recruitHero`, `fightMastermind`) plus both lobby-phase moves on `LegendaryGame.phases.lobby.moves` (`setPlayerReady`, `startMatchIfReady`). The registration form changes from short-form `move` to long-form `{ move, client: false }` per [boardgame.io's `LongFormMove` interface](node_modules/boardgame.io/dist/types/src/types.d.ts).
+
+**Rationale:** Surfaced during the WP-100 revised execution's post-close smoke test on 2026-04-27. After D-10007 unblocked multi-player lobby dispatch, clicking **Mark Ready** in either browser triggered:
+
+```
+TypeError: Cannot read properties of undefined (reading 'ready')
+    at setPlayerReady (lobby.moves.ts:35:11)
+    at chunk-EHV27V6A.js (boardgame.io client move execution)
+    at Immer2.produce
+```
+
+The crash happens on the **client side**. boardgame.io's default behavior runs each move optimistically against the client's local `G` for instant UI feedback — but the client's local `G` is the output of `LegendaryGame.playerView`, which reshapes the authoritative `LegendaryGameState` into `UIState` (a completely different structure). Per [game.ts:104-132](packages/game-engine/src/game.ts), `buildPlayerView` runs `buildUIState(G, ...)` → `filterUIStateForAudience(...)` and returns a `UIState` object with fields like `game`, `players`, `city`, `hq`, `mastermind`, `economy`, `progress` — and notably **no** `lobby`, `playerZones`, `villainDeck`, `cardKeywords`, `cardStats`, etc. When the client tries to run `G.lobby.ready[ctx.currentPlayer] = args.ready` against UIState, `G.lobby` is undefined and the move throws.
+
+This is **not** a lobby-specific bug. Every state-mutating move in the engine accesses fields of `LegendaryGameState` that are absent from `UIState`. WP-100 is the first WP that actually dispatches gameplay moves through `bgioClient.ts` in a live multiplayer session, so this collision is now surfacing for the first time. Without `client: false`, every move click would crash the client; the smoke test would never progress past the first button.
+
+The four 01.5 triggers were verified absent on the §D-10008 change:
+
+- ❌ No new `LegendaryGameState` field — engine state shape unchanged.
+- ❌ No `buildInitialGameState` shape change — same initial state construction.
+- ❌ No new `LegendaryGame.moves` entry — the move names AND their function bodies are unchanged. Only the *registration form* changes from `move` to `{ move, client: false }`.
+- ❌ No new phase hook — `client: false` is a per-move config option, not a phase callback.
+
+**01.5 NOT INVOKED.**
+
+**Why this gap was missed.** WP-090 introduced `bgioClient.ts` and the `submitMove` seam, but no WP up to and including WP-090 actually exercised gameplay-move dispatch in a live multiplayer session — they all stopped at "the live client subscribes and receives state frames." WP-100 is the first WP that adds buttons that emit `submitMove(...)` for state-mutating moves. WP-100's revised execution caught the lobby/setup transition gap (D-10006) and the multi-player active-players gap (D-10007), but the playerView-vs-G shape mismatch was a third layer of latent issue that surfaced only when the client tried to run a move locally for the first time. Engine unit tests can't catch this because they call move functions directly with manually-constructed `{ G, ctx }` contexts where G is always full `LegendaryGameState` shape — the playerView filtering only happens at the boardgame.io client transport boundary. An engine integration test harness (in-process `Server()` + `Client()` simulation, mentioned in D-10007) is the structural prevention; until it lands, smoke testing catches issues at this layer.
+
+**How to apply:**
+
+- Every new state-mutating move added to `LegendaryGame` MUST be registered in long-form `{ move: <fn>, client: false }`. Short-form registration (`drawCards: <fn>`) is forbidden for state-mutating moves while `playerView` continues to return `UIState` shape.
+- The move function body itself is unchanged — `client: false` only affects boardgame.io's dispatch behavior, not the move's logic.
+- If a future WP introduces a **read-only** move (no state mutation, just observability), the `client: false` flag is unnecessary because there's nothing to mutate that could throw. But there are no read-only moves in the engine today; every move mutates G.
+- The same applies to phase-scoped moves (`phases.lobby.moves`, future `phases.play.moves`, etc.) and stage-scoped moves (`turn.stages.X.moves`). The long-form is required wherever the move would otherwise run client-side against UIState.
+- A future architectural revision could resolve this by either (a) changing `playerView` to return a redacted `LegendaryGameState` (same shape, fields nulled) instead of a different-shaped `UIState` projection, or (b) building a separate UIState projection layer on the client side that consumes raw G. Either approach would let `client: false` be removed. Both are deferred to a separate engine WP — D-8901 / D-0302 lock the current playerView design as the "audience authority" so any change requires their re-evaluation.
+
+**Test surface.** The existing engine unit tests (522 tests pre-D-10007, 523 post-D-10007) all pass unchanged because they call move functions directly, bypassing boardgame.io's dispatch. The drift-detection test in `game.test.ts` that asserts `Object.keys(LegendaryGame.moves)` continues to pass because the keys are unchanged. A future test that asserts each move is registered in long-form with `client: false` would lock this discipline structurally; deferred to the same engine integration WP that builds the in-process Server() harness.
+
+**Status:** Active. Closes when (a) `playerView` is refactored to return a same-shape redacted G, OR (b) all moves are migrated to a server-side dispatch model, OR (c) an engine integration WP makes the `client: false` flag unnecessary.
+
+**Citation:** [game.ts](packages/game-engine/src/game.ts) `LegendaryGame.moves` block + `phases.lobby.moves` block (the long-form registrations with `client: false`); [boardgame.io `LongFormMove` interface](node_modules/boardgame.io/dist/types/src/types.d.ts) (the `client?: boolean` field that authorizes server-only dispatch); [game.ts `buildPlayerView`](packages/game-engine/src/game.ts) lines 104-132 (the playerView function that reshapes G into UIState — the architectural choice that makes `client: false` necessary); D-8901 + D-0302 (the audience-authority decisions that lock the current playerView design); D-10006 + D-10007 (the sibling smoke-test fix-forwards — together D-10006 + D-10007 + D-10008 close the lobby → play transition path end-to-end for multi-player matches).
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

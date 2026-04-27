@@ -252,15 +252,35 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
   // architecture.
   playerView: buildPlayerView as NonNullable<Game<LegendaryGameState>['playerView']>,
 
+  // why: every state-mutating move is registered in long-form with
+  // `client: false` per D-10008. Background: `playerView` (above) reshapes
+  // the engine's authoritative G (LegendaryGameState) into UIState — a
+  // completely different shape — for delivery to clients. Without
+  // `client: false`, boardgame.io's default behavior runs each move
+  // optimistically on the client's local G, which is actually UIState
+  // (no `playerZones`, no `lobby`, no `villainDeck`, etc.). Every
+  // state-mutating move would crash on the client with "Cannot read
+  // properties of undefined" the first time it tries to mutate a G field
+  // that doesn't exist on UIState. Setting `client: false` makes each
+  // move server-only — the client dispatches via the multiplayer
+  // transport but never tries to run the move locally. Server-side
+  // execution against real G works; the next server frame broadcasts
+  // the new state via playerView. This pattern applies uniformly to
+  // ALL state-mutating moves in the engine. The 01.5 triggers remain
+  // absent: no new LegendaryGameState field, no buildInitialGameState
+  // shape change, no new LegendaryGame.moves entry (the move *names* and
+  // their function bodies are unchanged — only the registration form
+  // changes from short-form `move` to long-form `{ move, client: false }`),
+  // and no new phase hook. Logged as D-10008.
   moves: {
-    drawCards,
-    playCard,
-    endTurn,
-    advanceStage,
-    revealVillainCard,
-    fightVillain,
-    recruitHero,
-    fightMastermind,
+    drawCards: { move: drawCards, client: false },
+    playCard: { move: playCard, client: false },
+    endTurn: { move: endTurn, client: false },
+    advanceStage: { move: advanceStage, client: false },
+    revealVillainCard: { move: revealVillainCard, client: false },
+    fightVillain: { move: fightVillain, client: false },
+    recruitHero: { move: recruitHero, client: false },
+    fightMastermind: { move: fightMastermind, client: false },
   },
 
   // why: phase `next` fields declare the intended linear progression
@@ -299,9 +319,15 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           lobbyReady: {},
         },
       },
+      // why: lobby-phase moves are also long-form with `client: false`
+      // per D-10008 — same playerView-vs-UIState shape mismatch as the
+      // top-level moves. setPlayerReady mutates G.lobby.ready and
+      // startMatchIfReady mutates G.lobby.started + calls
+      // events.setPhase('play'); both crash on the client because
+      // UIState has no `lobby` field. Server-only dispatch is the fix.
       moves: {
-        setPlayerReady,
-        startMatchIfReady,
+        setPlayerReady: { move: setPlayerReady, client: false },
+        startMatchIfReady: { move: startMatchIfReady, client: false },
       },
     },
     setup: {
