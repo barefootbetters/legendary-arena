@@ -105,17 +105,27 @@ describe('LegendaryGame', () => {
     );
   });
 
-  it('configures lobby phase with activePlayers: { all: null } per D-10007', () => {
+  it('configures lobby phase with activePlayers: { all: "lobbyReady" } + matching stages block per D-10007', () => {
     // why: drift-detection lock for the WP-100 fix-forward (D-10007). Without
     // this config, boardgame.io rejects setPlayerReady / startMatchIfReady
     // from any player other than ctx.currentPlayer with "player not active",
-    // making lobby ready-up impossible for player 1+. The literal
-    // `{ all: null }` is the value of boardgame.io's ActivePlayers.ALL
-    // (verified in turn-order-*.js where ALL: { all: Stage.NULL } and
-    // Stage.NULL: null). Inlined as a literal because boardgame.io v0.50
-    // proxy-directory subpaths don't resolve under Node's native ESM.
+    // making lobby ready-up impossible for player 1+. The stage-name approach
+    // (`{ all: 'lobbyReady' }` + empty `stages.lobbyReady: {}`) is the
+    // type-clean equivalent of boardgame.io's ActivePlayers.ALL constant
+    // (which uses `{ all: Stage.NULL }` where Stage.NULL: null at runtime,
+    // but is typed as `any` in turn-order.d.ts). The bare-null literal is
+    // rejected by `StageArg = StageName | object`; the named empty stage
+    // satisfies the type without changing runtime semantics.
     const phases = LegendaryGame.phases as
-      | Record<string, { turn?: { activePlayers?: unknown } }>
+      | Record<
+          string,
+          {
+            turn?: {
+              activePlayers?: unknown;
+              stages?: Record<string, unknown>;
+            };
+          }
+        >
       | undefined;
     const lobbyPhase = phases?.lobby;
     assert.notEqual(
@@ -125,8 +135,13 @@ describe('LegendaryGame', () => {
     );
     assert.deepStrictEqual(
       lobbyPhase?.turn?.activePlayers,
-      { all: null },
-      'lobby phase turn.activePlayers must be { all: null } per D-10007 — without it, only the turn-holder can submit setPlayerReady/startMatchIfReady',
+      { all: 'lobbyReady' },
+      'lobby phase turn.activePlayers must be { all: "lobbyReady" } per D-10007 — without it, only the turn-holder can submit setPlayerReady/startMatchIfReady',
+    );
+    assert.deepStrictEqual(
+      lobbyPhase?.turn?.stages,
+      { lobbyReady: {} },
+      'lobby phase turn.stages.lobbyReady must exist (empty config) per D-10007 — required by boardgame.io to validate the activePlayers stage reference',
     );
   });
 });

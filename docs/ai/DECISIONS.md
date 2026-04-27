@@ -10823,7 +10823,7 @@ The four 01.5 triggers were verified absent on the §Scope J change:
 **Packet:** WP-100 (smoke-test fix-forward post-revision-close)
 **Date:** 2026-04-27
 
-**Decision:** The `lobby` phase on `LegendaryGame` is configured with `turn: { activePlayers: { all: null } }`. The literal `{ all: null }` is the runtime value of boardgame.io's `ActivePlayers.ALL` constant (verified in `node_modules/boardgame.io/dist/cjs/turn-order-*.js` where `ALL: { all: Stage.NULL }` and `Stage.NULL: null`). The value is inlined as a literal rather than imported from `boardgame.io/core` because boardgame.io v0.50 proxy-directory subpaths lack an `exports` field in their `package.json` and do not resolve under Node's native ESM (the same issue `apps/arena-client/src/client/bgioClient.ts:18-37` documents and works around with `import * as ... from 'boardgame.io/dist/cjs/...'`).
+**Decision:** The `lobby` phase on `LegendaryGame` is configured with `turn: { activePlayers: { all: 'lobbyReady' }, stages: { lobbyReady: {} } }`. This is the type-clean equivalent of boardgame.io's `ActivePlayers.ALL` constant (which expands to `{ all: Stage.NULL }` where `Stage.NULL: null` at runtime, but is typed as `any` in `turn-order.d.ts` to bypass strict type-checking). The bare-null literal `{ all: null }` is rejected by TypeScript because `StageArg = StageName | object` does not include `null`; the named empty stage `'lobbyReady'` satisfies the type without changing runtime semantics. The empty `stages.lobbyReady: {}` block adds no new behavior — the lobby phase's top-level `moves: { setPlayerReady, startMatchIfReady }` are the only callable moves regardless of stage. Stage-name approach also avoids the boardgame.io v0.50 proxy-directory ESM-resolution issue (which `apps/arena-client/src/client/bgioClient.ts:18-37` documents); no `boardgame.io/core` import is needed.
 
 **Rationale:** Surfaced during the WP-100 revised execution's post-close smoke test on 2026-04-27. Two browsers connected to the same match (Browser 1 as player 0, Browser 2 as player 1). Browser 1 successfully clicked Mark Ready; Browser 2 then clicked Mark Ready and the boardgame.io server logged:
 
@@ -10853,13 +10853,16 @@ The four 01.5 triggers were verified absent on the §D-10007 change:
   lobby: {
     start: true,
     next: 'setup', // bypassed at runtime per D-10006
-    turn: { activePlayers: { all: null } }, // D-10007
+    turn: {
+      activePlayers: { all: 'lobbyReady' }, // D-10007
+      stages: { lobbyReady: {} },
+    },
     moves: { setPlayerReady, startMatchIfReady },
   },
   ```
-- A drift-detection test in `packages/game-engine/src/game.test.ts` asserts the literal `{ all: null }` value, locking the config so a future maintainer who refactors phase definitions can't silently regress the multi-player lobby semantics.
-- Future phases that need multi-player simultaneous moves (e.g., a hypothetical "select hero" pre-game phase, or a "spend wounds" reactive phase) should follow the same `turn: { activePlayers: { all: null } }` pattern. The play phase deliberately does NOT use this config — gameplay is turn-based and only `ctx.currentPlayer` may submit moves.
-- If a follow-up WP imports `ActivePlayers` from boardgame.io (e.g., to use `ALL_ONCE` or `OTHERS`), it must adopt the CJS-bundle workaround from `bgioClient.ts:33` — `import * as boardgameioCore from 'boardgame.io/dist/cjs/core.js'` — and unwrap the namespace. The literal-inline approach used here is the pragmatic minimum.
+- A drift-detection test in `packages/game-engine/src/game.test.ts` asserts both the `activePlayers` value and the matching `stages.lobbyReady: {}` empty stage, locking the config so a future maintainer who refactors phase definitions can't silently regress the multi-player lobby semantics.
+- Future phases that need multi-player simultaneous moves (e.g., a hypothetical "select hero" pre-game phase, or a "spend wounds" reactive phase) should follow the same stage-name pattern with a meaningful local stage name (e.g., `{ all: 'spendingWounds' }, stages: { spendingWounds: {} }`). The play phase deliberately does NOT use this config — gameplay is turn-based and only `ctx.currentPlayer` may submit moves.
+- If a follow-up WP imports `ActivePlayers` from boardgame.io (e.g., to use `ALL_ONCE` or `OTHERS`), it must adopt the CJS-bundle workaround from `bgioClient.ts:33` — `import * as boardgameioCore from 'boardgame.io/dist/cjs/core.js'` — and unwrap the namespace. The stage-name approach used here is the pragmatic minimum that preserves type safety.
 
 **Status:** Active. Closes when an engine integration test harness (in-process `Server()` simulation with multi-player credentials) lands and the structural drift test in `game.test.ts` is replaced by a behavioral test. No deadline; the inline config + drift test are sufficient until then.
 

@@ -271,29 +271,33 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     lobby: {
       start: true,
       next: 'setup',
-      // why: `{ all: null }` is the literal value of boardgame.io's
-      // ActivePlayers.ALL constant (verified in
-      // boardgame.io/dist/cjs/turn-order-4ab12333.js where
-      // `ALL: { all: Stage.NULL }` and `Stage.NULL: null`). It allows
-      // every seated player (not just ctx.currentPlayer) to submit
-      // lobby moves. Without this config, boardgame.io's server-side
-      // move dispatch rejects setPlayerReady / startMatchIfReady from
-      // any player other than the turn-holder with "player not active -
-      // playerID=[N] - action[setPlayerReady]". The lobby phase requires
-      // all players to ready up simultaneously, so only the ALL config
-      // matches the intended UX. Inlined as a literal (rather than
-      // imported as `ActivePlayers.ALL` from `boardgame.io/core`) because
-      // boardgame.io v0.50 ships proxy-directory subpaths whose
-      // package.json lacks an `exports` field — Node's native ESM
-      // resolver rejects the directory import (same issue
-      // bgioClient.ts:18-37 documents and works around with
-      // `import * as ... from 'boardgame.io/dist/cjs/...'`). Logged as
-      // D-10007. Per the four 01.5 triggers, this is a phase-
-      // configuration property (not a phase hook), no new
-      // LegendaryGameState field, no buildInitialGameState shape change,
-      // no new LegendaryGame.moves entry — 01.5 NOT INVOKED.
+      // why: `activePlayers: { all: 'lobbyReady' }` plus the matching
+      // empty `stages.lobbyReady: {}` block tells boardgame.io: every
+      // seated player (not just ctx.currentPlayer) is in the
+      // 'lobbyReady' stage and may submit phase-level moves. Equivalent
+      // at runtime to boardgame.io's ActivePlayers.ALL constant (which
+      // expands to `{ all: Stage.NULL }` where Stage.NULL: null) — but
+      // type-clean because `StageArg = StageName | object` rejects the
+      // bare `null` literal even though the runtime accepts it. The
+      // empty `stages` block adds no new behavior; the lobby phase's
+      // top-level `moves: { setPlayerReady, startMatchIfReady }` are
+      // the only callable moves regardless of stage. Without this
+      // activePlayers config, boardgame.io's server-side dispatch
+      // rejects setPlayerReady from any player other than the
+      // turn-holder with "player not active - playerID=[N] -
+      // action[setPlayerReady]" — making multi-player lobby ready-up
+      // impossible. Logged as D-10007. Per the four 01.5 triggers,
+      // this is a phase-configuration property (not a phase hook), no
+      // new LegendaryGameState field, no buildInitialGameState shape
+      // change, no new LegendaryGame.moves entry — 01.5 NOT INVOKED.
+      // The 'lobbyReady' stage name is local to this phase and has no
+      // semantic meaning beyond "anonymous stage that authorizes all
+      // players to submit phase moves".
       turn: {
-        activePlayers: { all: null },
+        activePlayers: { all: 'lobbyReady' },
+        stages: {
+          lobbyReady: {},
+        },
       },
       moves: {
         setPlayerReady,
