@@ -107,7 +107,7 @@ describe('startMatchIfReady', () => {
 
     assert.equal(gameState.lobby.started, true, 'G.lobby.started must be true');
     assert.equal(setPhaseCalled, true, 'ctx.events.setPhase must be called');
-    assert.equal(setPhaseTarget, 'setup', 'Phase target must be "setup"');
+    assert.equal(setPhaseTarget, 'play', 'Phase target must be "play"');
   });
 
   it('does not mutate G when not all players are ready', () => {

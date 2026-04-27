@@ -36,12 +36,15 @@ export function setPlayerReady(
 }
 
 /**
- * Transitions the match from lobby to setup if all required players are ready.
+ * Transitions the match from lobby to play if all required players are ready.
  *
  * Follows the non-negotiable observability ordering:
  * 1. Validate that all players are ready
  * 2. Set G.lobby.started = true (flag in G first)
- * 3. Call ctx.events.setPhase('setup') (then transition)
+ * 3. Call ctx.events.setPhase('play') (then transition)
+ *
+ * Per WP-100 §Scope J / D-10006, this move bypasses the empty `setup`
+ * phase entirely. Setup is reserved for a future deck-construction WP.
  *
  * @param context - boardgame.io move context with G, ctx, and events.
  */
@@ -58,8 +61,16 @@ export function startMatchIfReady(
   G.lobby.started = true;
 
   // why: ctx.events.setPhase is the boardgame.io mechanism for transitioning
-  // phases from within a move. The lobby transitions to setup, which then
-  // transitions to play once setup completes. G.lobby.started is set before
-  // this call so the UI can observe lobby completion regardless of read timing.
-  events.setPhase('setup');
+  // phases from within a move. WP-100 retargets the lobby exit directly to
+  // 'play' rather than routing through 'setup' per D-10006: the setup phase
+  // declared at game.ts:279-281 has no onBegin, no endIf, no exit move, and
+  // an empty moves block — and no production code anywhere in
+  // packages/game-engine/src/ calls setPhase('play'). Routing through setup
+  // therefore creates a dead-end phase that blocks every smoke-test path.
+  // Setup is reserved for a future deck-construction WP that will either
+  // (a) reroute lobby → setup once setup gains real phase machinery, or
+  // (b) take ownership of the lobby → play seam differently. WP-100 does
+  // not lock either evolution path out. G.lobby.started is set before this
+  // call so the UI can observe lobby completion regardless of read timing.
+  events.setPhase('play');
 }
