@@ -24,6 +24,14 @@
 All bugs must be handled through the bug handling protocol once any EC
 is active. See 01.2 for the clause-driven diagnosis sequence.
 
+> **Numbering rule for EC collisions** (locked precedent — EC-103 → EC-111 [2026-04-25],
+> EC-101 → EC-114 + EC-109 → EC-115 [2026-04-27]): when a WP-keyed EC number collides
+> with an existing entry in the `Registry Viewer (EC-101+ Series)` namespace, the
+> WP-keyed EC retargets to the next free slot that does not shadow a known or imminent
+> WP number. The viewer-series EC keeps the slot. The WP number is unchanged; only the
+> EC slot moves. Add a provenance breadcrumb in the renamed checklist and a parenthetical
+> retarget note in the EC_INDEX row.
+
 ---
 
 ## Foundation Prompts
