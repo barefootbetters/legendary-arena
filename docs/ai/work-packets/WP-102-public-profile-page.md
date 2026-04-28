@@ -1058,7 +1058,7 @@ This packet is complete when ALL of the following are true:
 - [ ] `docs/ai/execution-checklists/EC_INDEX.md` has EC-102 row
       flipped `Draft` → `Done {YYYY-MM-DD}` (assuming an EC-102
       execution checklist is drafted alongside this WP at execution
-      time per the EC-097 / EC-099 / EC-101 precedent)
+      time per the EC-097 / EC-099 / EC-114 precedent)
 - [ ] `docs/ai/DECISIONS.md` records a new D-entry classifying
       `apps/server/src/profile/` as a server-layer directory
       (mirrors D-5202 for `apps/server/src/identity/` and D-10301

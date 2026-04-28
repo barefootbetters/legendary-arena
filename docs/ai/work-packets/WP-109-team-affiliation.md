@@ -421,7 +421,7 @@ once teams exist.
 ## 16. Execution Checklist (Separate File)
 
 Tracked in:
-[`docs/ai/execution-checklists/EC-109-team-affiliation.checklist.md`](../execution-checklists/EC-109-team-affiliation.checklist.md)
+[`docs/ai/execution-checklists/EC-115-team-affiliation.checklist.md`](../execution-checklists/EC-115-team-affiliation.checklist.md)
 
 The EC extracts the most drift-prone elements (locked field names,
 the `cohortLabel`-not-`seasonLabel` rename, the `teamSize` enum,
@@ -600,7 +600,7 @@ discoverability.)
 - `apps/server/src/teams/team.routes.ts` — **new** — HTTP routes for
   captain-driven actions; admin-route stubs deferred to admin-auth WP.
 - `apps/server/src/teams/team.logic.test.ts` — **new** — invariant
-  tests covering the §Guardrails list in EC-109.
+  tests covering the §Guardrails list in EC-115.
 - `data/migrations/NNN-team-affiliation.sql` — **new** — team table,
   member events table, audit log table; idempotent.
 - `apps/server/src/profile/profile.types.ts` — **modified** — extend
@@ -728,8 +728,8 @@ all pre-flight items.
       YYYY-MM-DD`.
 - [ ] No files outside `## Files Expected to Change` were modified
       (verified by `git diff --name-only`).
-- [ ] EC-109 satisfied — every checkbox under
-      [`EC-109-team-affiliation.checklist.md`](../execution-checklists/EC-109-team-affiliation.checklist.md)
+- [ ] EC-115 satisfied — every checkbox under
+      [`EC-115-team-affiliation.checklist.md`](../execution-checklists/EC-115-team-affiliation.checklist.md)
       is checked or has a documented exception.
 
 ---

@@ -10710,6 +10710,8 @@ References to "WP-100" in `WP-100-interactive-gameplay-surface.md`, `WP-111-uist
 
 **Status:** Active. Closes the cross-reference inconsistency flagged in D-10001's "Numbering note" block.
 
+**Amendment 2026-04-27:** The `EC-101-handle-claim-flow.checklist.md` file referenced in this entry's `**Packet:**` line and `**Implementation:**` list was retargeted to `EC-114-handle-claim-flow.checklist.md` per filename collision with the older `EC-101-viewer-ci-hardening.checklist.md` (the "EC-101+ viewer series" namespace keystone). Original `EC-101` references in this entry preserve the as-of-2026-04-26 state and are intentionally not edited (immutable-history convention; mirrors the EC-103 → EC-111 retarget precedent at [EC_INDEX.md] which also did not back-amend prior D-entries). When grepping for the WP-100 → WP-112 renumber's downstream cross-references, read `EC-101` here as `EC-114` (the WP itself remains WP-101).
+
 **Citation:** D-10001 (the EC-100-not-required decision that surfaced the cross-reference inconsistency); [WP-099-auth-provider-selection.md](docs/ai/work-packets/WP-099-auth-provider-selection.md) §A (the Session Validation Middleware policy contract that WP-112 implements); [WP-100-interactive-gameplay-surface.md](docs/ai/work-packets/WP-100-interactive-gameplay-surface.md) (the WP that now owns the WP-100 slot); [WORK_INDEX.md](docs/ai/work-packets/WORK_INDEX.md) WP-112 deferred-placeholder row.
 
 ---

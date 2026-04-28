@@ -1,9 +1,16 @@
-# EC-109 — Team Affiliation (Execution Checklist)
+# EC-115 — Team Affiliation (Execution Checklist)
 
 **Source:** [docs/ai/work-packets/WP-109-team-affiliation.md](../work-packets/WP-109-team-affiliation.md)
 **Layer:** Server (persistence) + App (read surfaces on profile page)
 **Status:** DRAFT — not executable until WP-109 is lint-compliant
 (see WP-109 §"Lint-Compliance Status") and WP-104 has landed.
+
+> *Renumbered from EC-109 to EC-115 on 2026-04-27 per filename collision
+> with the older `EC-109-delete-unused-auxiliary-metadata.checklist.md`
+> (executed 2026-04-21, cited as introducing packet by 8 immutable
+> DECISIONS.md entries: D-8401, D-8402, A-084-01 amendments, D-8304
+> cross-reference). Follows the EC-103 → EC-111 retarget precedent.
+> WP number unchanged (still WP-109); only the EC slot moved.*
 
 > **Authority reminder:** This EC is the execution contract once WP-109
 > is promoted to executable. Until then, both files are design artifacts.

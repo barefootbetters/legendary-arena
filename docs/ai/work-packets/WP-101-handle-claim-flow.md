@@ -32,7 +32,7 @@ database)` performs a one-time idempotent UPDATE against `legendary.players`
 and returns a typed `Result<HandleClaim>`; `findAccountByHandle` and
 `getHandleForAccount` are read-only lookups. The `legendary.players` table
 gains three columns (`handle_canonical`, `display_handle`, `handle_locked_at`)
-via migration `006`, with a partial UNIQUE index that enforces global
+via migration `007`, with a partial UNIQUE index that enforces global
 uniqueness once a handle is claimed while permitting NULLs in the pre-claim
 state. The system never permits handle rename, transfer, or recycling.
 
@@ -252,6 +252,16 @@ Before writing a single line:
   handle.trim().toLowerCase()`. The DB unique index is on
   `handle_canonical`, never on the cased value. `display_handle`
   preserves the user's submitted casing for presentation.
+  Canonicalization (`trim()` → `toLowerCase()`) is applied **before**
+  regex validation, reserved-set checks, database writes, and all
+  comparisons — every check in this packet runs against the canonical
+  form, never against the user-submitted casing.
+- **`display_handle` is presentation-only.** It must never be used for
+  lookup, authorization, routing, uniqueness checks, or identity
+  inference. All authoritative operations key on `handle_canonical` or
+  `AccountId`. Any future surface that displays the handle reads
+  `display_handle` for rendering and `handle_canonical` (or
+  `AccountId`) for everything else.
 - **Reserved-handle check runs before uniqueness.** The static reject set
   (see locked values) is checked against the canonical form before any
   DB write. Reserved handles return `code: 'reserved_handle'` regardless
@@ -491,9 +501,12 @@ WP-052 precedent.
 
 - `findAccountByHandle(canonicalHandle: string, database: DatabaseClient):
   Promise<PlayerAccount | null>`
-  - Canonicalizes input first (defense in depth — callers should pass
-    already-canonical, but we re-apply `trim().toLowerCase()` before
-    the SQL parameter to avoid case-sensitive lookups).
+  - Canonicalizes input defensively (`trim().toLowerCase()`) before the
+    SQL parameter to avoid case-sensitive lookups, but performs **no
+    format validation**. Callers must not rely on this function to
+    reject invalid or reserved handles — it is a lookup, not a
+    validator. Format-checking responsibilities belong to
+    `validateHandleFormat`.
   - Returns the full `PlayerAccount` shape (re-used from WP-052) or
     `null` if no matching row.
   - Pure read; never mutates.
@@ -539,6 +552,8 @@ Building on WP-052's +2 and WP-103's +1 (already landed), the server
 suite total becomes **7** (6 → 7).
 
 **Test count: 12 tests.**
+
+**Net server test delta:** **+12 tests, +1 suite** (36 / 6 → 48 / 7).
 
 1. `HANDLE_ERROR_CODES` array matches `HandleErrorCode` union (drift —
    forward and backward inclusion).

@@ -1,7 +1,13 @@
-# EC-101 — Handle Claim Flow & Global Uniqueness (Execution Checklist)
+# EC-114 — Handle Claim Flow & Global Uniqueness (Execution Checklist)
 
 **Source:** docs/ai/work-packets/WP-101-handle-claim-flow.md
 **Layer:** Server / Identity (extends WP-052 `legendary.players`; engine untouched)
+
+> *Renumbered from EC-101 to EC-114 on 2026-04-27 per filename collision
+> with the older `EC-101-viewer-ci-hardening.checklist.md` (the
+> "EC-101+ viewer series" namespace keystone). Follows the
+> EC-103 → EC-111 retarget precedent. WP number unchanged
+> (still WP-101); only the EC slot moved.*
 
 **Execution Authority:**
 This EC is the authoritative execution checklist for WP-101.
@@ -10,7 +16,11 @@ Failure to satisfy any item below is a failed execution of WP-101.
 
 ---
 
-## Before Starting
+## Before Starting (STOP / GO Gate)
+
+Execution **MUST NOT START** unless every box below is checked. If any
+item is unchecked → **STOP**. Fix the missing precondition before
+proceeding; do not paper over it.
 
 - [ ] WP-101 status flipped Draft → Executing; pre-flight bundle registered
 - [ ] WP-052 complete; `legendary.players` exists with `bigserial` PK + `ext_id text UNIQUE` + `email text UNIQUE` + `display_name text NOT NULL`
@@ -23,6 +33,7 @@ Failure to satisfy any item below is a failed execution of WP-101.
 ## Locked Values (do not re-derive)
 
 - Migration number: `data/migrations/007_add_handle_to_players.sql`
+- Canonicalization order (locked): `trim()` → `toLowerCase()` is applied **before** regex validation, reserved-set checks, DB writes, and all comparisons. Every check in this packet runs against the canonical form, never the user-submitted casing.
 - Handle format regex: `^[a-z][a-z0-9_]{2,23}$` (matches the canonical, post-`trim().toLowerCase()` form)
 - Reserved-handle set (15 entries, alphabetical, canonical lowercase): `admin, administrator, anonymous, api, arena, guest, legendary, mod, moderator, null, root, staff, support, system, undefined`
 - Handle column shapes added to `legendary.players`: `handle_canonical text` (nullable until claim; partial UNIQUE on IS NOT NULL); `display_handle text`; `handle_locked_at timestamptz` — three columns NULL together or non-NULL together (mutual presence)
@@ -30,6 +41,7 @@ Failure to satisfy any item below is a failed execution of WP-101.
 - `HandleClaim` (4 fields, immutable after claim): `accountId`, `handleCanonical`, `displayHandle`, `handleLockedAt`
 - `Result<T>` shape **re-imported** from `identity.types.ts`, never redeclared
 - Idempotent claim SQL pattern (verbatim): `UPDATE legendary.players SET handle_canonical = $2, display_handle = $3, handle_locked_at = now() WHERE ext_id = $1 AND handle_canonical IS NULL RETURNING ext_id, handle_canonical, display_handle, handle_locked_at;` — `'23505'` on `handle_canonical` UNIQUE → `code: 'handle_taken'`; empty `RETURNING` + `findPlayerByAccountId` disambiguates `unknown_account` vs `handle_already_locked` vs idempotent re-claim
+- `display_handle` is presentation-only: never used for lookup, authorization, routing, uniqueness checks, or identity inference. All authoritative operations key on `handle_canonical` or `AccountId`.
 - Public-surface invariant (per WP-101 §Authorized Future Surfaces): handle is a presentation alias; `AccountId` is the stable identity key — future surfaces (WP-102 etc.) MUST dereference handle → `AccountId` at point of use
 
 ## Guardrails
@@ -38,7 +50,7 @@ Failure to satisfy any item below is a failed execution of WP-101.
 - WP-052 contract files (`identity.types.ts`, `identity.logic.ts`) NOT modified; WP-052 migrations `004` and `005` NOT modified; WP-103 migration `006` NOT modified; `packages/game-engine/src/types.ts` NOT modified — all verified by `git diff`.
 - `claimHandle` accepts a verified `AccountId` parameter only; never an arbitrary string from an HTTP body. The caller-injected `requireAuthenticatedSession` (future WP-112; renumbered from "WP-100" per D-10002) is the source of truth; tests inject a fixture `AccountId` directly.
 - Single locked UPDATE statement is the only code path that writes handle columns. No second UPDATE may set `handle_canonical`, `display_handle`, or `handle_locked_at` on rows where they are non-NULL.
-- `validateHandleFormat` is pure (no DB access, no async); reserved-set check runs **before** regex; consecutive-underscore (`__`) substring check is in code, not regex.
+- `validateHandleFormat` is pure (no DB access, no async). Step order (locked, mirrors WP-101 §Scope (In) §B): trim input → check non-empty → check no consecutive underscores (`__`) in canonical → match `HANDLE_REGEX` → check canonical against `RESERVED_HANDLES`. Regex runs **before** reserved-set; the consecutive-underscore check is in code, not regex.
 - Tombstone behavior: deleted handles drop out of the partial UNIQUE index along with the row and become re-claimable by a different account. Anti-impersonation reservation is **out of scope** for WP-101.
 - "Replay handle" terminology from `DESIGN-RANKING.md` lines 145, 205 refers to `replayHash`. WP-101's `handle` / `Handle*` symbols always refer to the user-facing account identifier — no symbol introduced here is named with "replay" as a prefix.
 
@@ -54,18 +66,18 @@ Failure to satisfy any item below is a failed execution of WP-101.
 
 ## Files to Produce
 
-### Commit A (EC-101 execution — handle-claim logic)
+### Commit A (EC-114 execution — handle-claim logic)
 
 - `apps/server/src/identity/handle.types.ts` — **new** — `HandleClaim`, `HandleErrorCode`, `HANDLE_ERROR_CODES`, `RESERVED_HANDLES`, `HANDLE_REGEX`; re-imports `Result<T>` and `AccountId` from `identity.types.ts`
 - `apps/server/src/identity/handle.logic.ts` — **new** — `validateHandleFormat`, `claimHandle`, `findAccountByHandle`, `getHandleForAccount`
 - `apps/server/src/identity/handle.logic.test.ts` — **new** — 12 tests in one `describe('handle logic (WP-101)', …)` block (+1 suite); tests 10–12 require test DB and use `hasTestDatabase ? {} : { skip: 'requires test database' }` per WP-052 precedent
 - `data/migrations/007_add_handle_to_players.sql` — **new** — `ADD COLUMN IF NOT EXISTS` for three columns + partial `CREATE UNIQUE INDEX IF NOT EXISTS … WHERE handle_canonical IS NOT NULL`
 
-### Commit B (SPEC governance close — not EC-101)
+### Commit B (SPEC governance close — not EC-114)
 
-- `docs/ai/STATUS.md` — **modified** — `### WP-101 / EC-101 Executed — Handle Claim Flow ({YYYY-MM-DD}, EC-101)` block at top of `## Current State`
+- `docs/ai/STATUS.md` — **modified** — `### WP-101 / EC-114 Executed — Handle Claim Flow ({YYYY-MM-DD}, EC-114)` block at top of `## Current State`
 - `docs/ai/work-packets/WORK_INDEX.md` — **modified** — WP-101 row flipped `[ ]` → `[x]` with date + SPEC commit hash
-- `docs/ai/execution-checklists/EC_INDEX.md` — **modified** — EC-101 row flipped `Draft` → `Done {YYYY-MM-DD}`
+- `docs/ai/execution-checklists/EC_INDEX.md` — **modified** — EC-114 row flipped `Draft` → `Done {YYYY-MM-DD}`
 - `docs/ai/DECISIONS.md` — **modified (optional per author)** — at minimum a one-line decision noting the no-tombstone policy is recorded if the executor judges it worth a `D-101NN` anchor; otherwise the policy lives in WP-101 alone
 
 ## After Completing
@@ -79,8 +91,8 @@ Failure to satisfy any item below is a failed execution of WP-101.
 - [ ] `Select-String -Path "apps\server\src\identity\handle.logic.ts" -Pattern "UPDATE legendary\.players"` returns exactly one match (the locked claim SQL)
 - [ ] `git diff` empty for `identity.types.ts`, `identity.logic.ts`, migrations `004`/`005`/`006`, and `packages/game-engine/src/types.ts`
 - [ ] `git diff --name-only` limited to the files listed in `## Files to Produce`
-- [ ] EC-101 commit body includes a `Vision: §3, §11, §14, §25` trailer per `01.3-commit-hygiene-under-ec-mode.md`
-- [ ] EC_INDEX EC-101 row updated `Draft` → `Done {YYYY-MM-DD}`
+- [ ] EC-114 commit body includes a `Vision: §3, §11, §14, §25` trailer per `01.3-commit-hygiene-under-ec-mode.md`
+- [ ] EC_INDEX EC-114 row updated `Draft` → `Done {YYYY-MM-DD}`
 
 ## Common Failure Smells
 
