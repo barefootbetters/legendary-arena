@@ -130,7 +130,12 @@ Before writing a single line:
 - Final Gate new rows: at least five — (1) WP touches a §20.1 surface but lacks `## Funding Surface Gate`; (2) the gate block lacks G-1..G-7 mapping; (3) §20 N/A declared without justification, or with a tautological placeholder; (4) Copy deferral violated without `D-NNNN` carve-out; (5) WP narratively proposes future funding surfaces while declaring §20 N/A
 - §20 header MUST contain the load-bearing sentence "§20 introduces no new policy and no new constraints" (preempts misreading §20 as a second policy)
 - §20.1 MUST contain a "Governance-doc exclusion" sub-bullet (pure governance / reference docs that mention funding conceptually do not trigger §20)
+- §20.1 MUST contain an "Analytical / retrospective mention is not a trigger" sub-bullet (purely analytical or retrospective funding mention without a proposed surface does not trigger §20)
 - §20.1 N/A justification MUST name a reason; bare "N/A" and tautological placeholders are FAILs
+- §20.1 user-visible-copy bullet MUST contain the "as part of a proposed or implemented user interaction" qualifier so the trigger does not fire on incidental mentions in code comments or developer-facing strings
+- §20.2 MUST contain an explicit "partial mapping is a FAIL" enforcement clause (G-1 through G-5 listed with G-6 / G-7 silently omitted is a FAIL equivalent to missing the gate)
+- §20.3 MUST contain an "automation not implied" boundary clarification (the absence of automated tooling is not itself a §20 failure)
+- **§20 ordering invariant:** §20 MUST appear immediately after §19 (Bridge-vs-HEAD Staleness Rule) and immediately before `## Final Gate`. Inserting §20 elsewhere in 00.3 (e.g., appending it after Final Gate, or interleaving it between earlier sections) is a structural FAIL **even if §20 content is otherwise correct**. The position is part of the contract.
 
 ---
 
@@ -179,6 +184,17 @@ appear anywhere. The forbidden-token grep at the foot of WP-097 §E
 applies and MUST return zero matches against `apps/` and `packages/`
 at WP-098 execution time.
 
+**Self-application note (optics).** This WP self-applies §20 as
+**N/A with justification** as a deliberate reference example for
+downstream WPs — it demonstrates the canonical N/A form (declared
+applicability + reason-naming justification) that §20 requires of
+non-trigger WPs. The self-application is intentional and does not
+imply retroactive enforcement; §20 itself is explicitly prospective
+(see §20.3 boundary clarification: "It does not apply
+retroactively"). A future reader noticing that WP-098 runs the gate
+it codifies should read this as governance modeling, not as a
+self-bootstrapping enforcement loop.
+
 ---
 
 ## Scope (In)
@@ -202,12 +218,13 @@ and `## Final Gate`**. Structure mirrors §17 exactly:
   - [ ] Registry viewer funding affordances per WP-097 §B
   - [ ] User profile or account funding attribution surfaces per WP-097 §C
   - [ ] Tournament-specific funding-channel integrations (Open Collective, PayPal, equivalent per `docs/TOURNAMENT-FUNDING.md`)
-  - [ ] User-visible copy referencing "donate", "support tournaments", "tournament funding", or equivalent terms (per WP-097 §F G-6)
+  - [ ] User-visible copy referencing "donate", "support tournaments", "tournament funding", or equivalent terms **as part of a proposed or implemented user interaction** (per WP-097 §F G-6). The "user interaction" qualifier scopes the trigger to copy that the user reads or acts on; it does not capture incidental mentions in code comments, error messages quoting policy text, or developer-facing documentation strings.
   - A WP that touches none of the above MAY mark §20 as **N/A**, but MUST include a one-line justification per WP-097 §F "Applicability is declared, never inferred." A bare "N/A" is a §20 lint FAIL. The justification MUST name *why* none of the §20.1 trigger surfaces are present (e.g., *"docs-only governance update; no UI surfaces, no user-visible copy, no funding channels referenced"*). Tautological placeholders such as *"N/A — not applicable"* or *"this WP does not trigger §20"* are also a §20 lint FAIL — they restate the conclusion without naming the reason.
   - **Governance-doc exclusion.** Pure governance / reference documents (other WPs, ECs, STATUS updates, DECISIONS entries, `docs/ai/REFERENCE/*` files) that *mention* funding conceptually — for example, by citing WP-097, D-9701, or §20 itself — without defining, proposing, or implementing user-facing surfaces do not trigger §20. The N/A path with justification still applies; this exclusion only confirms that conceptual mention alone is not a trigger. Without this carve-out, reviewers risk over-applying §20 to every meta-document that names the funding policy.
+  - **Analytical / retrospective mention is not a trigger.** Mentioning funding in a purely analytical or retrospective context — summarizing WP-097, citing D-9701, describing historical policy decisions, or post-mortem analysis of an already-shipped surface — without proposing, defining, or implementing any user-visible surface does **not** by itself trigger §20. This complements the Governance-doc exclusion: the exclusion lists the document classes that are exempt by their own nature; this clarification covers the kind of mention that is exempt regardless of which document it appears in. The N/A path with justification still applies.
 - **§20.2 — Required content of `## Funding Surface Gate`** — checklist of required content when triggered:
   - [ ] **Surface inventory** — explicit list of every implemented surface mapped to its WP-097 §A / §B / §C source
-  - [ ] **G-1 through G-7 disposition** — per implemented surface, an explicit pass / N/A statement with rationale, citing WP-097 §F by ID rather than paraphrasing
+  - [ ] **G-1 through G-7 disposition** — per implemented surface, an explicit pass / N/A statement with rationale, citing WP-097 §F by ID rather than paraphrasing. **Partial mapping is a FAIL equivalent to missing the gate entirely** — listing G-1 through G-5 and silently omitting G-6 / G-7 (or any other subset) does not satisfy this requirement. All seven gate items must be addressed; an item that genuinely does not apply must be explicitly marked N/A with rationale, not omitted.
   - [ ] **Copy deferral declaration** — explicit statement that user-visible copy matches `docs/TOURNAMENT-FUNDING.md §Public Blurb (Reusable)` verbatim, OR a `D-NNNN` carve-out citation per WP-097 §F "Copy deferral"
   - [ ] **Authority citation** — `WP-097`, `D-9701`, and `D-9801` cited as authority chain
   - The WP MAY host this content inside its `## Vision Alignment` block instead of a dedicated `## Funding Surface Gate` block, per WP-097 §F Audit discipline; that's an acceptable equivalent.
@@ -216,13 +233,14 @@ and `## Final Gate`**. Structure mirrors §17 exactly:
   - It does not replace §17 Vision Alignment. A WP that triggers both §17 and §20 must satisfy both.
   - It does not apply to WPs that touch no §20.1 trigger surface.
   - It does not apply retroactively. Pre-existing WPs (WP-097 included) are not required to add `## Funding Surface Gate` blocks.
+  - It does not imply or require automated static analysis tooling. §20 is a documentation-level lint gate enforced by the WP author and reviewer at draft time, the same as §17, §18, and §19. Future tooling may automate any of the §20 checks, but the absence of such tooling is not itself a §20 failure; the gate is satisfied by author / reviewer discipline alone.
 
 **Final Gate table modifications:**
 
 Append at minimum five new rows after the existing row 33 (the §18 prose-vs-grep entry):
 
 - WP touches a §20.1 trigger surface but has no `## Funding Surface Gate` section (or equivalent inside `## Vision Alignment`) — §20
-- `## Funding Surface Gate` exists but lacks G-1..G-7 disposition mapping per WP-097 §F — §20
+- `## Funding Surface Gate` exists but lacks G-1..G-7 disposition mapping per WP-097 §F, OR maps only a subset (e.g., G-1 through G-5 listed, G-6 / G-7 silently omitted). All seven gate items must be addressed; an item that genuinely does not apply must be explicitly marked N/A with rationale, not omitted — §20
 - §20 N/A declared without a one-line justification, or with a tautological placeholder ("N/A — not applicable", "this WP does not trigger §20") that restates the conclusion without naming the reason — §20
 - User-visible funding copy paraphrases `docs/TOURNAMENT-FUNDING.md §Public Blurb (Reusable)` without a `D-NNNN` carve-out — §20
 - WP describes or proposes future funding-related UI surfaces or copy in its narrative (e.g., "we'll add a donate button later", "Phase 2 will surface tournament funding", "a future packet will expose the Open Collective link") but declares §20 N/A — §20. Closes the "conceptual WP now, enforcement later" loophole: a WP that names a future funding surface is making a design commitment and runs the gate.
@@ -241,6 +259,7 @@ Add a new `## D-9801` entry immediately before `## Final Note`. Required content
   4. Final Gate adds at minimum five §20 fail conditions (the four direct-enforcement rows plus the narrative-only-N/A loophole-closer)
 - **Anchor list:** `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §20`; WP-097 §F; D-9701 (policy authority cited by §20); §17 Vision Alignment (structural template)
 - **Relationship to D-9701:** D-9701 = *"what the policy is"*; D-9801 = *"how the lint gate enforces it."* The two are mutually reinforcing; neither subsumes the other.
+- **Decision-ID-range breadcrumb (one line):** Decision ID range allocation follows the project convention documented in DECISIONS.md history; the D-98xx range anchors WP-098-class governance triggers (this trigger is the first such entry; future amendments to §20 use D-9802+). This breadcrumb exists so a future auditor encountering D-9801 in isolation can recover the numbering convention without re-deriving it.
 - **Status:** `Active`. Amendments require a new `D-NNNN` and a 00.3 §20 update.
 - **Citation:** `WP-098`; `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §20`; `WP-097 §F`; `D-9701`.
 
@@ -301,9 +320,14 @@ No other files may be modified. Verified by `git diff --name-only` after each co
 - [ ] §20.1 includes the N/A path with the "one-line justification required" rule, citing WP-097 §F "Applicability is declared, never inferred."
 - [ ] §20.1 N/A path explicitly fails tautological placeholders ("N/A — not applicable", "this WP does not trigger §20") and includes example phrasing of an acceptable justification (verified with `grep -nE "tautological|N/A — not applicable" docs/ai/REFERENCE/00.3-prompt-lint-checklist.md` returning at least one match in §20.1).
 - [ ] §20.1 contains a `**Governance-doc exclusion.**` sub-bullet stating that pure governance / reference documents mentioning funding conceptually do not trigger §20 (verified with `grep -nE "Governance-doc exclusion" docs/ai/REFERENCE/00.3-prompt-lint-checklist.md` returning exactly one match).
+- [ ] §20.1 contains an `**Analytical / retrospective mention is not a trigger.**` sub-bullet stating that purely analytical or retrospective funding mention without a proposed surface does not trigger §20 (verified with `grep -nE "Analytical . retrospective" docs/ai/REFERENCE/00.3-prompt-lint-checklist.md` returning exactly one match).
+- [ ] §20.1 user-visible-copy bullet contains the "as part of a proposed or implemented user interaction" qualifier (verified with `grep -nE "proposed or implemented user interaction" docs/ai/REFERENCE/00.3-prompt-lint-checklist.md` returning at least one match in §20.1).
 - [ ] §20 header contains the sentence "§20 introduces no new policy and no new constraints" (verified with `grep -nE "no new policy and no new constraints" docs/ai/REFERENCE/00.3-prompt-lint-checklist.md` returning at least one match in §20).
 - [ ] §20.2 lists the four required content items (surface inventory, G-N disposition, copy deferral declaration, authority citation) and states `## Vision Alignment` block hosting is an acceptable equivalent.
-- [ ] §20.3 lists at minimum four boundary clarifications (does not redefine §F; does not replace §17; does not apply to non-trigger WPs; does not apply retroactively).
+- [ ] §20.2 G-N disposition item contains the explicit "partial mapping is a FAIL" enforcement clause (verified with `grep -nE "[Pp]artial mapping is a FAIL" docs/ai/REFERENCE/00.3-prompt-lint-checklist.md` returning at least one match in §20.2).
+- [ ] §20.3 lists at minimum five boundary clarifications (does not redefine §F; does not replace §17; does not apply to non-trigger WPs; does not apply retroactively; does not imply or require automated tooling).
+- [ ] §20.3 automation-not-implied clarification is present (verified with `grep -nE "automated static analysis tooling|does not imply or require automated" docs/ai/REFERENCE/00.3-prompt-lint-checklist.md` returning at least one match in §20.3).
+- [ ] §20 appears immediately after §19 and immediately before `## Final Gate`. Position is verified by line-order check: the line matching `^## §20` precedes the line matching `^## Final Gate`, and the line matching `^## §19` precedes `^## §20`. Any other ordering is a structural FAIL even if §20 content is correct.
 
 ### AC-2 — Single source of truth
 
@@ -312,7 +336,7 @@ No other files may be modified. Verified by `git diff --name-only` after each co
 
 ### AC-3 — Final Gate extension
 
-- [ ] At least five new rows appended to the Final Gate numbered table after row 33, all attributed to §20, covering: (1) missing `## Funding Surface Gate` section on a §20.1-triggering WP; (2) missing G-1..G-7 mapping; (3) bare or tautological "N/A" without a reason-naming justification; (4) Public Blurb paraphrase without `D-NNNN` carve-out; (5) WP narratively proposes future funding surfaces while declaring §20 N/A.
+- [ ] At least five new rows appended to the Final Gate numbered table after row 33, all attributed to §20, covering: (1) missing `## Funding Surface Gate` section on a §20.1-triggering WP; (2) missing G-1..G-7 mapping **OR partial mapping** (subset listed, others silently omitted); (3) bare or tautological "N/A" without a reason-naming justification; (4) Public Blurb paraphrase without `D-NNNN` carve-out; (5) WP narratively proposes future funding surfaces while declaring §20 N/A.
 - [ ] The §19 commit-time-discipline note that follows the Final Gate table is preserved byte-for-byte.
 
 ### AC-4 — D-9801 anchor
@@ -320,6 +344,7 @@ No other files may be modified. Verified by `git diff --name-only` after each co
 - [ ] `docs/ai/DECISIONS.md` contains a `## D-9801` entry immediately before `## Final Note`.
 - [ ] D-9801 cites `00.3 §20`, WP-097 §F, and D-9701 explicitly.
 - [ ] D-9801 distinguishes its scope from D-9701 (D-9701 = policy; D-9801 = lint enforcement).
+- [ ] D-9801 includes the one-line decision-ID-range breadcrumb stating that the D-98xx range anchors WP-098-class governance triggers, so a future auditor encountering D-9801 in isolation can recover the numbering convention without re-deriving it.
 - [ ] D-9801 status is `Active` and the amendment rule is stated.
 
 ### AC-5 — STATUS and WORK_INDEX governance close
