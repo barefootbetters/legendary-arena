@@ -9,7 +9,7 @@
 >
 > **Authority:** This document is subordinate to `docs/ai/ARCHITECTURE.md`
 > and `docs/01-VISION.md`. If any rule below conflicts with either, the
-> higher authority wins. See §12 Decomposition.
+> higher authority wins. See §13 Decomposition.
 >
 > **Vision authorization:** This system is a **§23(b) asynchronous
 > competitive-comparison surface**, authorized by Vision §23 and
@@ -22,7 +22,7 @@
 > **Freeze rule:** No component of this system may be partially
 > implemented, mocked, or approximated outside this specification. Any
 > implementation must trace directly to an approved Work Packet derived
-> from §12.
+> from §13.
 
 ---
 
@@ -61,7 +61,7 @@ Loose or near-synonymous use is a spec violation.
   execution against a fixed scenario (Scheme + Mastermind + Villains)
   and hero composition. The **competitive primitive**. Players never
   share a run.
-- **Qualifying run** — a run that satisfies every criterion in §5.1.
+- **Qualifying run** — a run that satisfies every criterion in §6.1.
   Only qualifying runs contribute to ranking.
 - **FinalScore** — the PAR-normalized per-run score defined by WP-048.
   Lower is better. This ranking system consumes FinalScore; it does
@@ -77,6 +77,15 @@ Loose or near-synonymous use is a spec violation.
   advancement/finish semantics (Standard or Major). Events contribute
   to ranking as high-weight scenario entries (§6), not as an additive
   point pool.
+- **Challenge** — a declared, time-boxed scenario pool defined by
+  curator-imposed constraints (e.g., set restriction, fixed
+  Scheme/Mastermind, hero-pool restriction) that does **not** resolve
+  placements and has no advancement bracket. Challenges shape *which
+  scenarios* qualifying runs are played against; they do not alter
+  scoring, aggregation, or the Best-N invariant. Challenge outputs
+  are ordinary scenario entries (§6.3). A Challenge is distinct from
+  an Event (which has finish semantics) and from a Season (which is
+  the calendar window).
 
 **Words deliberately not used:** "match" (implies in-game player
 interaction), "opponent" (implies synchronous contest), "win/loss"
@@ -96,7 +105,7 @@ interaction), "opponent" (implies synchronous contest), "win/loss"
    bounded counted-entries window; playing one scenario 100 times
    cannot outrank playing N scenarios well.
 4. **Field-aware** — a scenario entry's contribution may be scaled by
-   the density and strength of the field on that scenario (§5.4).
+   the density and strength of the field on that scenario (§6.5).
 5. **Seasonal freshness** — each year is a clean competitive slate.
 6. **Immutable history** — seasonal aggregates archive at season end;
    archive records never change in place.
@@ -398,6 +407,57 @@ target: Major Champion contribution ≈ top-1% scenario entry).
 > snapshot anchor — both ranking-affecting properties of the run are
 > frozen at the same deterministic moment.
 
+### 7.3 Gauntlet Events (Multi-Scenario Composites)
+
+A **Gauntlet Event** is a Standard or Major Event whose competitive
+structure spans **multiple scenarios** rather than a single scenario
+(e.g., "play this fixed hero roster against five declared
+Mastermind/Scheme pairings"). Gauntlets are permitted under §7 only
+if they resolve to a single composite finish (Champion, Runner-up,
+Semi-finalist) under §7.1 or §7.2.
+
+**Normative rules:**
+
+- A gauntlet contributes **exactly one** floor-capped entry to the
+  Best-N aggregate (§6.4), keyed by the gauntlet event ID and
+  treated as a synthetic scenario for slot-consumption purposes
+  (§7 invariant).
+- A gauntlet's constituent per-scenario runs **must not** be
+  projected into the aggregate as N independent gauntlet-attributed
+  entries. The gauntlet finish is one competitive accomplishment and
+  occupies one slot.
+- Whether a gauntlet's constituent runs *additionally* qualify as
+  ordinary §6.3 scenario entries on their own merit is an Open
+  Question (§14). The default reading of §6.1 admits them; operators
+  may declare a gauntlet as "composite-only" at declaration time
+  (subject to §14 resolution).
+- Internal scoring of a gauntlet (e.g., how the constituent runs
+  determine the composite finish) is the gauntlet's own bookkeeping
+  and is invisible to the aggregation layer. The aggregation layer
+  consumes only the resolved finish.
+- Gauntlet declaration follows §7.2's declaration-before-seeding
+  rule: the gauntlet's full scenario sequence and any composite-only
+  flag are frozen before the first constituent run is seeded.
+
+> **Why one composite slot, not N?** Projecting a gauntlet's
+> constituent runs as N independent gauntlet-attributed entries
+> would silently re-introduce volume effects: a player who completed
+> the gauntlet would receive both N constituent entries *and* the
+> floor-capped composite, asymmetrically rewarding the gauntlet
+> format over identical play outside the gauntlet. Collapsing the
+> finish to a single composite entry preserves §3 Principle 8 (no
+> volume-based reward) and the §7 slot-consumption invariant.
+
+> **Why allow constituent runs to qualify by default?** Each
+> constituent run is a real, replay-verified, official competitive
+> run against a published-PAR scenario. Excluding them would require
+> a special "exclude runs played inside an event" exception to §6.1
+> that has no other principled basis. The composite entry rewards
+> the *finish*; any constituent entries reward the *runs themselves*.
+> Both are quality-normalized; neither is volume-based. The Open
+> Question (§14) exists because some gauntlet formats may want to
+> amplify finish prestige by suppressing constituent qualification.
+
 ---
 
 ## 8. Anti-Farming & Integrity Controls
@@ -655,6 +715,16 @@ corresponding WP is ready for execution.
   honors, 100 for archive listing.) Affects WP-6.
 - **Major event cap per season** — 2? 3? 4? (design target: 2–4.)
   Affects WP-3.
+- **Gauntlet constituent-run qualification** — when a Gauntlet Event
+  (§7.3) is played, do the per-scenario runs comprising the gauntlet
+  *also* qualify as ordinary §6.3 scenario entries on their own
+  merit, in addition to the gauntlet's composite floor-capped entry?
+  Default reading: yes (each is an independent replay-verified run
+  against a published-PAR scenario). Alternative: operators may
+  declare a gauntlet as "composite-only" at declaration time,
+  suppressing constituent qualification to amplify finish prestige.
+  Affects WP-3 (declaration surface) and WP-4 (event contribution
+  integration).
 - **Rule-change notice window** — 7 days? 14 days? 30 days?
   Affects WP-7.
 - **Scenario re-submission decay necessity** — is §8.1's decay
@@ -674,6 +744,227 @@ corresponding WP is ready for execution.
   subset could otherwise be gamed by a player who plays exactly N
   scenarios extremely well. May be overturned by a DECISIONS.md entry
   before the governing WP executes.
+
+---
+
+## Appendix A — Competitive Formats Catalogue (Non-Normative)
+
+This appendix enumerates example competitive formats that may be
+declared as Standard Events (§7.1), Major Events (§7.2), Gauntlet
+Events (§7.3), or Challenges (§2). Formats define scenario
+constraints and event structure only; they do **not** alter scoring,
+aggregation, or ranking semantics defined in §§6–9. If a format
+would require changing aggregate behavior, it does not belong here —
+it belongs in a new design delta against this spec.
+
+This appendix is **non-normative**: omitting, adding, or refining a
+format here is not a spec change and does not require a
+DECISIONS.md entry. Formats are operational choices within the rules
+already defined.
+
+Cadence labels below ("monthly," "weekly") are illustrative.
+Concrete cadences are operational policy (§11), not spec.
+
+### A.1 Best in Set (Challenge)
+
+- Curator declares a card set, a Scheme from that set, and a
+  Mastermind from that set.
+- Players choose exactly N heroes from the declared set's hero pool.
+- Each run produces an ordinary scenario entry (§6.3) on the
+  declared scenario.
+- Recognition: best FinalScore on the declared scenario within the
+  challenge window. Recognition is a curatorial honor; it does not
+  alter the player's seasonal aggregate beyond the underlying
+  scenario entry.
+
+### A.2 Hero Lock Rotation (Challenge)
+
+- Player declares a fixed hero roster at the start of the rotation.
+- A different scenario is featured each week within the rotation
+  window.
+- Each featured scenario produces an ordinary §6.3 scenario entry
+  for the player. No roster-based bonus, multiplier, or extra slot
+  is granted — the roster constraint is a self-imposed challenge,
+  not a scoring modifier.
+
+### A.3 Inverse Difficulty Window (Challenge)
+
+- Fixed Mastermind, rotating Schemes across the challenge window.
+- Each Scheme + Mastermind pairing is a distinct scenario; runs
+  contribute as ordinary §6.3 scenario entries.
+
+### A.4 Trait- or Era-Restricted Window (Challenge)
+
+- Hero or villain selection restricted to a declared trait (e.g.,
+  "Tech," "Mystic," "Street-Level," or villain groups with a
+  specific ability such as "Ambush"-bearing).
+- Otherwise plays as ordinary Open Ladder runs producing scenario
+  entries (§6.3).
+
+### A.5 Constraint Escalation (Multi-Week Challenge)
+
+- A multi-week challenge whose constraints tighten week-to-week,
+  optionally culminating in a finale.
+- Each week's runs contribute as ordinary scenario entries.
+- The finale, if any, may be declared as a Standard Event (§7.1),
+  Major Event (§7.2), or Gauntlet Event (§7.3) and then follows
+  the rules of the chosen event type.
+
+### A.6 5 vs 5 (Gauntlet Event — §7.3)
+
+The flagship hero-roster-against-villain-roster gauntlet: five
+declared heroes set against five declared Mastermind/Scheme
+pairings. The "vs" is in-fiction (heroes against villains), not
+player-against-player; §23(b)'s prohibition on head-to-head
+vocabulary applies to **player interaction terms**
+(match/opponent/win-loss/head-to-head), not to the genre's
+good-vs-evil framing.
+
+- Player declares a fixed five-hero roster.
+- Plays that roster against a declared sequence of five
+  Mastermind/Scheme pairings.
+- Resolves to one composite finish (Champion / Runner-up /
+  Semi-finalist) that contributes **one** floor-capped entry per
+  §7.1 / §7.2, keyed by the gauntlet event ID per §7.3 — never five
+  independent gauntlet-attributed entries.
+- Constituent run qualification follows the §14 Open Question on
+  Gauntlet constituent-run qualification (default: also qualify as
+  §6.3 entries).
+- Generalizes naturally to other roster-vs-roster sizes (e.g., 3 vs
+  3, 7 vs 7); "5 vs 5" is the canonical flagship cadence.
+
+### A.7 Single-Scenario Tournament (Standard or Major Event)
+
+- Bracketed or milestone-based competition on a single declared
+  scenario, with declared advancement rules.
+- Resolves to per-player finishes that contribute as Standard (§7.1)
+  or Major (§7.2) floor-capped entries on that scenario.
+
+### A.8 Theme-Anchored Windows (Challenge or Event)
+
+A **Theme-Anchored Window** is a Challenge (§2) or Event (§7) whose
+eligible content is drawn from a curated **Legendary Theme** as
+defined by the registry layer's Theme Data Model
+(`content/themes/*.json`; schema authority **WP-055**,
+`packages/registry/src/theme.schema.ts`). A theme captures an iconic
+story arc as a curated combination of Mastermind, Scheme, Villain
+groups, Henchman groups, and Hero decks (see `setupIntent` in the
+theme schema). Theme anchoring lets operators cluster scenarios by
+narrative coherence without introducing any scoring exception.
+
+**Properties:**
+
+- A Theme-Anchored Window declares one `themeId` as its content
+  source. The themeId must resolve in the registry at declaration
+  time; an unresolvable themeId rejects the declaration.
+- A theme defines **one canonical scenario** via `setupIntent`
+  (one `mastermindId` + one `schemeId` + listed villain/henchman
+  groups + listed hero decks). The window's eligibility predicate
+  is declared at declaration time and recorded in the declaration
+  artifact (§11):
+  - **Exact** — only the theme's canonical Scheme + Mastermind
+    pairing qualifies.
+  - **Mastermind-shared** — any qualifying scenario whose Mastermind
+    matches the theme's `setupIntent.mastermindId` qualifies.
+  - **Content-contained** — any qualifying scenario whose Scheme,
+    Mastermind, and Villain groups are all listed in the theme's
+    `setupIntent` qualifies.
+- Themes contribute **no multiplier, no bonus, and no extra slot.**
+  Qualifying runs contribute exactly as defined by §6.3 — the
+  themeId is a content filter, not a scoring modifier.
+- A Theme-Anchored Window may be declared as a Challenge
+  (recognition-only, no placements), a Standard Event (§7.1), a
+  Major Event (§7.2), or a Gauntlet Event (§7.3). The contribution
+  rules of the chosen container apply unchanged.
+
+**Examples** (themeIds verified against `content/themes/` at the
+time of writing; the canonical list lives in the registry):
+
+- **Dark Phoenix Saga Window (Challenge)** — `themeId:
+  dark-phoenix-saga`. Each qualifying run produces an ordinary §6.3
+  scenario entry on the resolved scenario.
+- **Civil War Event (Standard Event)** — `themeId: civil-war`.
+  Bracketed competition on the theme's declared scenario; finishes
+  contribute floor-capped entries per §7.1.
+- **World War Hulk Gauntlet (Gauntlet Event)** — `themeId:
+  world-war-hulk`. Composite gauntlet whose constituent scenarios
+  are sourced from the theme; resolution follows §7.3.
+
+> **Why theme anchoring belongs in Appendix A and not in §§6–9.**
+> Themes already exist as registry content (WP-055); the ranking
+> layer needs no theme-specific logic. Theme anchoring is a
+> scenario-selection filter applied at declaration time, structurally
+> identical to "Best in Set" (A.1) but keyed by `themeId` instead of
+> by set abbreviation. Promoting themes into normative scoring would
+> couple the ranking spine to registry content and invite
+> theme-specific multipliers, which would re-introduce volume
+> effects (§3 Principle 8).
+
+### A.9 Nemesis Cycle (Recurring Challenge)
+
+- An iconic Mastermind is declared as the cycle's "Nemesis" for
+  the window.
+- Different Schemes are rotated against that Mastermind across the
+  cycle (e.g., a Scheme per week).
+- Each Scheme + Nemesis pairing is a distinct scenario; runs
+  contribute as ordinary §6.3 scenario entries.
+- Pairs naturally with A.8 when the Nemesis matches a theme's
+  `setupIntent.mastermindId` (declare the cycle as a Theme-Anchored
+  Window with the Mastermind-shared eligibility predicate).
+
+> **Why this format earns its place.** Nemesis Cycle rewards depth
+> of mastery against a recurring threat pattern (counter-play,
+> hand management against a known Mastermind's Master Strike profile)
+> rather than rote repetition of one scenario.
+
+### A.10 Roster Draft Showcase (Standard Event)
+
+- A small fixed hero pool (e.g., 6–8 hero decks) is declared.
+- Each participant drafts a roster from that pool under declared
+  rules (e.g., snake draft, constrained picks).
+- All participants face the same declared scenario.
+- Resolves placements and contributes as a Standard Event (§7.1).
+
+The draft is an **operator-managed pre-event procedure**, not an
+engine-enforced mechanic. The aggregation layer sees only the
+resolved event finishes; the draft sequence is event-level
+bookkeeping with no representation in the aggregate. (No engine
+support for in-game drafting is implied or required by this
+format's inclusion in the catalogue.)
+
+### A.11 Legacy Scenario Revival (Challenge)
+
+- A previously underplayed or older scenario is highlighted for
+  revival during the challenge window.
+- No mechanical changes are made to the scenario; runs contribute
+  as ordinary §6.3 scenario entries.
+- Field strength on the revived scenario naturally increases as
+  more verified runs accumulate, improving its comparative weight
+  under §6.5 (if the field-strength multiplier is enabled) without
+  any operator-applied bonus.
+
+> **Why this format earns its place.** It addresses sparse-field
+> scenarios *organically* — by directing player attention rather
+> than applying a corrective multiplier. It complements §6.5
+> without depending on it: even with the field-strength multiplier
+> disabled, the format still serves as content-discovery curation.
+
+> **Why the catalogue is non-normative.** The set of viable formats
+> will evolve with the live game and with operator experimentation.
+> Hard-coding a format list into §§6–9 would couple competitive
+> variety to spec amendments, and would invite the temptation to
+> add format-specific scoring rules. Keeping formats here lets
+> operators experiment freely while the aggregation spine (§6.4
+> Best-N) and the §7 slot-consumption invariant stay immovable.
+
+> **What is *not* in this catalogue, by design.** Any format whose
+> contribution would (a) bypass Best-N, (b) add slots beyond N,
+> (c) project one competitive accomplishment into multiple
+> aggregate entries, or (d) reward attempt count is forbidden by
+> §3 Principle 8 and §6.4. Such proposals are not "future formats
+> to add to Appendix A" — they are non-starters under the present
+> spec and require a Vision-level change to D-0005 before they
+> could be considered.
 
 ---
 
