@@ -11345,6 +11345,143 @@ The original WP draft cited "11 / 584" for masterminds — that figure counted i
 
 ---
 
+## D-9901 — Hanko Selected as Legendary Arena's Authentication Broker
+
+**Decision.** Hanko (open-source backend AGPL; frontend MIT; self-hostable; OIDC-compliant; passkey-first) is selected as Legendary Arena's sole approved authentication broker. The decision rests on four pillars:
+
+1. **Open-source and self-hostable.** Hanko's backend is AGPL-licensed and the frontend is MIT-licensed; the project does not surrender architectural sovereignty to a closed vendor. Contributors can run the full authentication stack locally without a paid tier or external tenant. Per Vision §15 (Built for Contributors).
+
+2. **Passwordless by construction.** Hanko's flow is passkey-first and never stores passwords. The password-storage / phishing / credential-stuffing vulnerability class is removed entirely. Per Vision §3 (Player Trust & Fairness).
+
+3. **OIDC-compliant federation.** Hanko exposes OIDC claims for Google and Discord federation plus direct email + passkey. The federated-IdP claim is what gets recorded in `legendary.players.auth_provider`; Hanko itself never appears in the data model (per D-9902 + D-9904).
+
+4. **Replacement-safety is structural, not aspirational.** All Hanko-specific code MUST live under `apps/server/src/auth/hanko/` (per D-9904); the engine, registry, identity layer, and any UI package remain Hanko-free. Replacing Hanko with another OIDC-compliant broker (or rolling our own with `jsonwebtoken`) requires zero migrations of `legendary.players` data and zero changes to the engine, registry, or game-state surface.
+
+**Locked anchors.**
+- `docs/ai/work-packets/WP-099-auth-provider-selection.md` — the WP this decision anchors. The §Authorized Future Surfaces section (§A Session Validation Middleware + §B Hanko Wiring Module + §C Future-Auth Gate F-1..F-7) operationalizes the decision; the §C gate is a verification layer that future implementation WPs must satisfy before merging.
+- `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §7` — the lint contract that auto-applies the Hanko carve-out at WP authoring time (per D-9903).
+- `D-9902` — `AccountId` server-generation invariant.
+- `D-9903` — `00.3 §7` Hanko carve-out (not category-wide).
+- `D-9904` — locked module path `apps/server/src/auth/hanko/`.
+- `D-9905` — guest policy preserved.
+
+**Rationale.**
+- **Explicit over emergent.** Without this decision, the auth-broker choice would emerge from "whatever the implementation WP author picks" at execution time. Per Vision §14 (Explicit Decisions, No Silent Drift), the broker selection is recorded here so future WPs land against a fixed contract.
+- **Vendor-agnostic data model preserved.** The `authProvider: 'email' | 'google' | 'discord'` enum from WP-052 is unchanged. Hanko-mediated users appear in the database under the federated IdP claim Hanko exposes via OIDC — never under a `'hanko'` literal. The broker is invisible at rest and a future swap-out requires zero data migration.
+- **Replacement-safety is the load-bearing constraint.** D-9904's module-path lock is what makes the broker swap-out structural. If Hanko-specific code were allowed to leak into `apps/server/src/identity/` or any layer below it, replacement-safety would degrade from "swap one directory" to "audit the whole identity layer." The structural confinement is non-negotiable.
+- **Auth0 / Clerk / Passport remain forbidden.** The §7 amendment is Hanko-specific (per D-9903). Each new vendor would require its own WP-NNN governance packet — there is no general managed-credential-provider permission.
+
+**Status:** `Active`. Amendments to this decision (e.g., switching from Hanko to a different broker, or extending the carve-out to a second vendor) require a new `D-NNNN` entry plus an explicit WP-099 amendment that cites the change.
+
+**Citation:** `WP-099`; `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §7`; `D-9902`; `D-9903`; `D-9904`; `D-9905`.
+
+---
+
+## D-9902 — `AccountId` Remains Server-Generated; Hanko's `sub` Becomes `authProviderId` Only
+
+**Decision.** `AccountId` continues to be generated server-side via `node:crypto.randomUUID()` per WP-052 D-5201 — Hanko's adoption (per D-9901) does not change this. Hanko's OIDC `sub` claim (a stable, per-user identifier within the Hanko tenant) becomes the value of `authProviderId` on `PlayerAccount`, never the value of `AccountId`. The string `'hanko'` MUST NOT appear as an `auth_provider` enum value anywhere under `apps/`, `packages/`, or `data/migrations/`; the federated-IdP claim Hanko exposes (Google → `'google'`, Discord → `'discord'`, email + passkey direct → `'email'`) is the only value written to `legendary.players.auth_provider`.
+
+**Why this matters.** If Hanko's `sub` were to become the primary `AccountId`, swapping Hanko for another broker would require a `legendary.players` data migration to replace every `AccountId` with the new broker's identifier — and replay ownership records keyed on `AccountId` (per WP-052) would break. By keeping `AccountId` server-generated via `node:crypto.randomUUID()`, the broker can be swapped at the session-validation middleware layer (future WP-112) with zero data migration. This is the operational meaning of "replacement-safe" from D-9901.
+
+**Locked anchors.**
+- `WP-052 D-5201` — server-side `AccountId` generation contract; defines `node:crypto.randomUUID()` as the authoritative generator.
+- `apps/server/src/identity/identity.types.ts` — the `authProvider: AuthProvider` field on `PlayerAccount` (the underlying type alias `AuthProvider = 'email' | 'google' | 'discord'` is unchanged) and the `authProviderId: string` field that receives Hanko's `sub`.
+- `D-9901` — Hanko selection (the broker this decision constrains).
+- `D-9904` — module-path lock that physically separates Hanko's `sub` claim handling from the identity layer.
+
+**Rationale.**
+- **Structural separation of identity from authentication proof.** The server is the identity authority; Hanko is the broker. Conflating the two (by using `sub` as `AccountId`) would delegate identity to the broker and undo Vision §3's auditability guarantee.
+- **Replay ownership is keyed on `AccountId`.** WP-052 §Replay Ownership locks replay records to a server-generated `AccountId`. Allowing Hanko's `sub` to become primary identity would break ownership lookups any time the broker rotates `sub` values (which Hanko doesn't do today, but the project should not depend on broker-internal stability for its primary key).
+- **Vendor-agnostic envelope preserved.** WP-052's `'email' | 'google' | 'discord'` enum already covers every federated identity Hanko exposes via OIDC. No enum extension is needed; the broker is an implementation detail of how the proof is obtained, not what gets recorded.
+
+**Status:** `Active`. Extending the `authProvider` enum to include `'hanko'`, `'oidc'`, or any other broker-level value requires a new `D-NNNN` entry plus an explicit WP that justifies the extension. WP-099 locks the existing three-value enum.
+
+**Citation:** `WP-099`; `WP-052 D-5201`; `apps/server/src/identity/identity.types.ts`; `D-9901`; `D-9904`.
+
+---
+
+## D-9903 — `00.3 §7` Amended to Permit Hanko (Carve-Out, Not Category-Wide)
+
+**Decision.** `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §7` ("Forbidden packages are explicitly excluded where relevant" sub-list) is amended to add a single new bullet at line 169 immediately after the existing "No Passport / Auth0 / Clerk — use `jsonwebtoken` or credentials-only" bullet. The amendment is a Hanko-specific carve-out: Auth0, Clerk, and Passport remain forbidden; password-based credential storage in general remains forbidden. The new bullet does not reopen the door for managed-credential providers as a category.
+
+**Locked content.** The new §7 bullet (landed under Commit A `f6cd591`) reads:
+
+> `Hanko is permitted as an authentication broker only — governed by docs/ai/work-packets/WP-099-auth-provider-selection.md and D-9901..D-9905. Hanko-specific code MUST live under apps/server/src/auth/hanko/; the broker MUST NOT appear as an auth_provider value in legendary.players; AccountId MUST remain server-generated. Auth0 / Clerk / Passport remain forbidden.`
+
+The four pre-existing forbidden-package bullets at lines 165–168 (`axios` / `node-fetch`, ORMs, Jest / Vitest / Mocha, Passport / Auth0 / Clerk) are byte-identical to baseline INCLUDING their inline backticks around package names.
+
+**Locked anchors.**
+- `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §7` — the amended sub-section.
+- `WP-099 §Scope §A` — the Scope clause that authorizes this surgical append.
+- `D-9901` — the underlying broker selection.
+- `D-9902` / `D-9904` / `D-9905` — the substantive constraints the §7 bullet cites.
+
+**Rationale.**
+- **Surgical over rewrite.** A surgical single-bullet append preserves the existing four bans byte-for-byte and minimizes the diff surface for future audit. The lint gate continues to fail any WP that proposes Auth0 / Clerk / Passport / password-storage; Hanko is the only addition.
+- **Carve-out, not category permission.** "Managed-auth providers are permitted" would reopen the door to Auth0 / Clerk and any future managed-credential vendor, undoing the password-storage ban that motivated the original §7 bullet. The Hanko carve-out is bounded by the constraints in D-9902 / D-9904 / D-9905; without those constraints, Hanko itself would not be permitted.
+- **Future vendors require their own WP.** Adding a second authentication broker (e.g., a future "Stytch" or "Magic.link" carve-out) requires its own WP-NNN governance packet plus a new `D-NNNN` entry. The §7 bullet names Hanko explicitly precisely so a future "well, we're already permitting one broker" argument cannot lift the ban.
+
+**Status:** `Active`. Amendments to §7 (extending the carve-out to additional vendors, narrowing it, or removing it) require a new `D-NNNN` entry plus an explicit WP that reconciles the change against D-9901.
+
+**Citation:** `WP-099`; `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §7`; Commit A `f6cd591`; `D-9901`; `D-9902`; `D-9904`; `D-9905`.
+
+---
+
+## D-9904 — Hanko-Specific Code Confined to `apps/server/src/auth/hanko/`
+
+**Decision.** All Hanko-specific code (SDK initialization, JWT validation against Hanko's JWKS, claim extraction, Hanko-specific error mapping, configuration loaders, environment-variable readers) MUST live under `apps/server/src/auth/hanko/` — a sibling to `apps/server/src/identity/`, never nested inside it. The following directories MUST remain Hanko-free:
+
+- `apps/server/src/identity/` — no Hanko-specific import, type, or string literal
+- `packages/game-engine/` — no Hanko-specific import; the engine does not know authentication exists
+- `packages/registry/` — no Hanko-specific import; the registry layer is data-loading only
+- `apps/registry-viewer/` — no Hanko runtime import (Hanko has no role in the registry viewer)
+- `apps/arena-client/` — no Hanko runtime import; the client carries Hanko's session credential as opaque transport, never inspects claims
+
+**Verification.** `grep -rE "@teamhanko|hanko\.io" apps/server/src/identity packages apps/registry-viewer apps/arena-client` MUST return zero matches at every commit boundary in any future implementation WP. The §C Future-Auth Gate F-2 in WP-099 codifies this as a pre-merge check.
+
+**Locked anchors.**
+- `apps/server/src/auth/hanko/` — the locked module path (NOT created by WP-099; the future Hanko-implementation WP creates the directory).
+- `apps/server/src/identity/` — the layer that MUST remain Hanko-free.
+- `WP-099 §Authorized Future Surfaces §B` — the policy authorization for the future implementation WP that will populate `apps/server/src/auth/hanko/`.
+- `WP-099 §Authorized Future Surfaces §C F-2` — the verification gate that enforces this confinement.
+- `D-9901` — Hanko selection (the broker this decision constrains).
+- `D-9902` — server-generated `AccountId` (the contract this confinement protects).
+
+**Rationale.**
+- **Replacement-safety is structural, not aspirational.** Telling future authors "please don't import Hanko in the identity layer" is unenforceable; locking the module path with a grep-checkable boundary is enforceable. The F-2 gate item (per WP-099 §C) makes this a pre-merge check.
+- **Sibling, not child.** Placing Hanko code at `apps/server/src/auth/hanko/` (sibling to `identity/`) keeps the broker physically separable. If Hanko were nested at `apps/server/src/identity/hanko/`, deletion-on-replacement would risk leaving identity-layer files intermixed with broker-specific files. The sibling layout means "remove Hanko" equals "delete one directory."
+- **Engine and UI Hanko-free by construction.** The engine is the gameplay authority and the UI is a stateless projection; neither has any reason to know about authentication brokers. Forbidding Hanko imports in those packages prevents accidental coupling that would surface only when the broker is swapped.
+- **Engine layer-boundary alignment.** `.claude/rules/architecture.md` already forbids `apps/server/**` imports from the engine; this decision adds the symmetric constraint that the broker subdirectory must not be reached upward by any other layer.
+
+**Status:** `Active`. Relocating the Hanko module path (e.g., to `apps/auth-broker/` or any other location) requires a new `D-NNNN` entry plus an explicit WP that reconciles the change against the F-2 gate framing.
+
+**Citation:** `WP-099`; `WP-099 §Authorized Future Surfaces §B`; `WP-099 §Authorized Future Surfaces §C F-2`; `.claude/rules/architecture.md`; `D-9901`; `D-9902`.
+
+---
+
+## D-9905 — Guest Policy Preserved; Hanko Never Gates Gameplay
+
+**Decision.** Hanko-mediated authentication unlocks account-only conveniences (server-side replay storage, leaderboard submission, profile pages, replay-ownership lookups) and nothing more. It NEVER gates core gameplay, immediate local replay export, or any feature available to guests under WP-052 / `13-REPLAYS-REFERENCE.md §Account and Guest Policy`. A guest user — one who has not authenticated through Hanko or any other broker — MUST be able to start a match, complete a turn, finish the match, and export the resulting replay locally without ever invoking the Hanko middleware.
+
+**Locked anchors.**
+- `13-REPLAYS-REFERENCE.md §Account and Guest Policy` — the canonical guest-policy contract this decision reaffirms.
+- `WP-052` — the identity model that codifies the account / guest distinction (account-only conveniences are additive; the guest path remains the default).
+- `WP-099 §Non-Negotiable Constraints` "Guest policy is sacred" — the WP-body invariant this decision anchors.
+- `WP-099 §Authorized Future Surfaces §C F-4` — the verification gate ("Guests still play") that enforces this at the future implementation WP's pre-merge check.
+- `D-9901` — Hanko selection (the broker this decision constrains).
+
+**Rationale.**
+- **Guest play is the default, not a fallback.** The Vision treats guests as first-class users (per Vision §3 Player Trust & Fairness — trust includes "you can play without surrendering identity"). Authentication is opt-in for account features, not a prerequisite for gameplay.
+- **Local replay export is unconditional.** A guest who finishes a match can save the replay JSON locally without an account. Server-side replay storage is an account-only convenience; absence of an account means absence of server-side persistence, not absence of the replay itself.
+- **F-4 verification is a smoke test, not a code review.** The F-4 gate item in WP-099 §C requires an integration smoke test that completes a full game without ever invoking the Hanko middleware. This is structural proof that the guest path remains intact, not a promise that a careful code reviewer would have caught a regression.
+- **Bright-line scope.** "Hanko unlocks account-only conveniences only; it never gates gameplay" is the bright-line invariant. Any future feature that proposes "this requires authentication" must either (a) be an account-only convenience that guests can do without (e.g., leaderboard submission), or (b) require a new `D-NNNN` entry that explicitly names the gating change and reconciles it against this decision.
+
+**Status:** `Active`. Any change that gates a previously guest-accessible feature behind authentication requires a new `D-NNNN` entry, an explicit WP, and a reconciliation against Vision §3 / §11.
+
+**Citation:** `WP-099`; `13-REPLAYS-REFERENCE.md §Account and Guest Policy`; `WP-052`; `WP-099 §Non-Negotiable Constraints`; `WP-099 §Authorized Future Surfaces §C F-4`; `D-9901`.
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
