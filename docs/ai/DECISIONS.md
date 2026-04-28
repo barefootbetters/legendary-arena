@@ -11317,6 +11317,34 @@ The original WP draft cited "11 / 584" for masterminds — that figure counted i
 
 ---
 
+## D-9801 — 00.3 §20 Funding Surface Gate Trigger Codifies WP-097 §F at Lint-Gate Time
+
+**Decision.** `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md` carries a new §20 ("Funding Surface Gate Trigger") that codifies WP-097 §F (G-1..G-7 + Audit discipline + Applicability is declared + Copy deferral + No silent exceptions) as a documentation-level lint trigger applied prospectively to every Work Packet that touches a funding-related UI surface. The decision rests on four pillars:
+
+1. **Structural parity with §17.** §20 mirrors §17 Vision Alignment in subsection layout: §20.1 lists trigger conditions, §20.2 lists required content of `## Funding Surface Gate`, §20.3 lists what §20 does not do. The same Trigger / Content / Boundary pattern §17 established for Vision compliance is what §20 adopts for funding-surface compliance.
+
+2. **Single source of truth.** §20 cites WP-097 §F G-1..G-7 by ID rather than duplicating gate-item text. WP-097 §F is the canonical authority for what the seven gate items mean; §20 is the trigger that forces the per-WP mapping. Duplication would create a drift surface between §F and §20 — the exact failure mode §20 exists to prevent.
+
+3. **Mandatory applicability.** Per WP-097 §F "Applicability is declared, never inferred", a WP that touches a §20.1 trigger surface MUST include a `## Funding Surface Gate` block (or fold the gate into its `## Vision Alignment` block) with all four required-content items mapped, including all seven G-N dispositions. A WP that touches none of the §20.1 trigger surfaces MAY mark §20 N/A but MUST include a one-line justification that names *why* none of the surfaces are present; bare `N/A` and tautological placeholders ("N/A — not applicable", "this WP does not trigger §20") are §20 lint FAILs.
+
+4. **Final Gate enforcement.** The 00.3 Final Gate numbered table gains five new §20-attributed rows (rows 34..38) covering: missing `## Funding Surface Gate` section on a §20.1-triggering WP; missing or partial G-1..G-7 mapping (subset listed with others silently omitted is a FAIL equivalent to missing the gate entirely); bare or tautological "N/A" without a reason-naming justification; Public Blurb paraphrase without a `D-NNNN` carve-out per WP-097 §F "Copy deferral"; WP narratively proposing future funding surfaces while declaring §20 N/A (closes the "conceptual WP now, enforcement later" loophole).
+
+**Anchors.**
+- `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §20` — the trigger itself (this decision).
+- `docs/ai/work-packets/WP-097-tournament-funding-policy.md §F` — the canonical Funding Surface Gate (G-1..G-7) §20 enforces (cited by ID, never duplicated).
+- `D-9701` — Tournament Funding Policy (Community-Funded, Infrastructure-Only, No Organizer Margin) — the policy authority §20 enforces.
+- `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §17` — Vision Alignment (the structural template §20 mirrors).
+
+**Relationship to D-9701.** D-9701 = *"what the policy is"*; D-9801 = *"how the lint gate enforces it."* The two are mutually reinforcing; neither subsumes the other. D-9701 is the policy contract; D-9801 is the verification trigger over WP-097 §F's enforcement clause. Amending one does not amend the other; an amendment to the policy itself requires a new `D-NNNN` against D-9701, while an amendment to the lint gate requires a new `D-NNNN` against this decision plus a 00.3 §20 update.
+
+**Decision-ID-range breadcrumb.** Decision ID range allocation follows the project convention documented in DECISIONS.md history; the D-98xx range anchors WP-098-class governance triggers (this trigger is the first such entry; future amendments to §20 use D-9802+). This breadcrumb exists so a future auditor encountering D-9801 in isolation can recover the numbering convention without re-deriving it.
+
+**Status:** `Active`. Amendments to §20 require a new `D-NNNN` and a 00.3 §20 update.
+
+**Citation:** `WP-098`; `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §20`; `WP-097 §F`; `D-9701`.
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
