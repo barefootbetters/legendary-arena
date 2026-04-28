@@ -1,6 +1,6 @@
 # WP-099 — Auth Provider Selection (Governance)
 
-**Status:** Draft (drafted 2026-04-25; lint-gate self-review complete — see §Lint Self-Review below; pre-flight + copilot-check applied 2026-04-27 against `01.4-pre-flight-invocation.md` and `01.7-copilot-check.md` — see §Pre-Flight & Copilot Check Review Log at foot)
+**Status:** Draft (drafted 2026-04-25; lint-gate self-review complete — see §Lint Self-Review below; pre-flight + copilot-check applied 2026-04-27 against `01.4-pre-flight-invocation.md` and `01.7-copilot-check.md` — see §Pre-Flight & Copilot Check Review Log at foot; refreshed 2026-04-27 post-WP-098 close to absorb the new `00.3 §20` and D-9801 anchor)
 **Primary Layer:** Governance / Policy (no code; no engine, registry, server, or app touch)
 **Dependencies:** WP-052 (identity model exists; provider-agnostic envelope established)
 
@@ -164,15 +164,18 @@ construction.
   or credentials-only" (verified at draft time)
 - `docs/ai/DECISIONS.md` exists; `D-9901` through `D-9905` are not
   yet present (verified by `grep -nE "^## D-990[1-5] " docs/ai/DECISIONS.md`
-  returning zero matches). The file currently contains entries through
-  the WP-100 cluster (D-10001..D-10014, drafted chronologically before
-  D-9701 from WP-097) and D-9701 (WP-097, the most recent governance
-  decision, sitting immediately before `## Final Note`). The highest
-  numeric ID is **not** the same as the last entry in the file —
-  decisions are appended in **chronological** order at the foot,
-  immediately before `## Final Note`, regardless of numeric value
-  (precedent: D-9701 inserted after D-10014 at WP-097 close, commit
-  `c5344cc`)
+  returning zero matches). The two most-recent governance entries are
+  D-9701 (WP-097, commit `c5344cc`) and D-9801 (WP-098, commit
+  `1df0033`), both inserted immediately before `## Final Note`. The
+  WP-100 cluster (D-10001..D-10014) sits *higher* in the file because
+  it was drafted chronologically *before* D-9701 / D-9801 — the
+  highest numeric ID is **not** the same as the last entry in the
+  file. Decisions are appended in **chronological** order at the foot,
+  immediately before `## Final Note`, regardless of numeric value.
+  Two-precedent confirmation: D-9701 inserted after D-10014 at WP-097
+  close (`c5344cc`); D-9801 inserted after D-9701 at WP-098 close
+  (`1df0033`). D-9901..D-9905 will land in the same chronological-tail
+  slot, after D-9801, before `## Final Note`
 - `docs/ai/work-packets/WORK_INDEX.md` exists; the auth/identity
   area near WP-052 is the appropriate insertion point
 - `.claude/rules/work-packets.md` is the governing rules file for
@@ -509,13 +512,16 @@ Required modifications:
 
 Add five new decision entries as a contiguous block in numeric order
 (`D-9901` → `D-9902` → `D-9903` → `D-9904` → `D-9905`), inserted
-**immediately before `## Final Note`** at the foot of the file. This
-matches the WP-097 precedent (commit `c5344cc`) — D-9701 was inserted
-in the same slot at WP-097 close, even though numerically it sits
-below D-10001..D-10014 which were drafted earlier in chronological
-time. The placement convention is **chronological at the foot, before
-the Final Note**, not strict numeric ordering. Each entry follows the
-format used by recent decisions (D-9701, D-9601).
+**immediately before `## Final Note`** at the foot of the file —
+specifically, *after* D-9801 (the WP-098 anchor at the current foot)
+and *before* `## Final Note`. This matches the now-two-precedent
+convention: D-9701 inserted in the same slot at WP-097 close (commit
+`c5344cc`); D-9801 inserted in the same slot at WP-098 close
+(commit `1df0033`). Both sit numerically below D-10001..D-10014 which
+were drafted chronologically earlier — the placement rule is
+**chronological at the foot, before the Final Note**, not strict
+numeric ordering. Each entry follows the format used by recent
+decisions (D-9801, D-9701).
 
 - **D-9901 — Hanko selected as the project's authentication broker.**
   Body: rationale (passkey-first, open-source, self-hostable, OIDC
@@ -869,9 +875,11 @@ This packet is complete when ALL of the following are true:
 
 ---
 
-## Lint Self-Review (00.3 §1–§19)
+## Lint Self-Review (00.3 §1–§20)
 
-> Performed at draft time; re-confirm before execution.
+> Performed at draft time; re-confirm before execution. §20 added by
+> WP-098 (commit `545c37f`) between §19 and `## Final Gate`; row
+> appears at the foot of the table below.
 
 | § | Item | Status |
 |---|---|---|
@@ -900,9 +908,10 @@ This packet is complete when ALL of the following are true:
 | §17 | Vision Alignment block present with cited clauses + no-conflict assertion + determinism line | PASS |
 | §18 | Prose-vs-grep discipline: forbidden tokens not enumerated verbatim near literal-string greps | PASS (the `'hanko'` grep at Step 12 targets a forbidden literal; the prose nearby uses prose framing rather than the literal token) |
 | §19 | Bridge-vs-HEAD staleness: N/A — this WP is not a repo-state-summarizing artifact | N/A |
+| §20 | Funding Surface Gate Trigger: N/A — WP-099 introduces no funding surface. None of the five §20.1 trigger surfaces apply: (a) no donate / contribute / sponsor / fund affordances; (b) no registry-viewer funding affordances; (c) no user-profile or account funding-attribution surface; (d) no tournament-funding-channel integration; (e) no user-visible copy referencing donate / support / tournament funding as part of a proposed user interaction. WP-099's subject is identity / authentication, which is governed separately under WP-052 + this WP's D-9901..D-9905 — *not* a money-flow surface. The §20.1 Governance-doc-exclusion sub-bullet does not need to be invoked because §20 is not triggered in the first place. Per §20.1's strengthened N/A bar (D-9801): this justification names a concrete reason — auth identity vs. funding domain — and is not tautological. | N/A |
 
 **Final Gate verdict:** PASS at draft time. Re-confirm before
-execution by re-running the §1–§19 walkthrough against the
+execution by re-running the §1–§20 walkthrough against the
 post-amendment state of `00.3-prompt-lint-checklist.md`.
 
 ---
@@ -962,6 +971,24 @@ post-amendment state of `00.3-prompt-lint-checklist.md`.
   (RS-3) Placement convention in §Scope §B and AC-2
   clarified — "immediately before `## Final Note`" per
   WP-097 / D-9701 precedent.
+- **Post-WP-098 refresh (2026-04-27):** WP-098 landed
+  `00.3 §20` (Funding Surface Gate Trigger, commit
+  `545c37f`) and D-9801 (anchor, commit `1df0033`) after
+  this review's first pass. Three follow-on staleness
+  fixes applied: (RS-4) §Lint Self-Review widened from
+  §1–§19 to §1–§20 with a concrete §20 N/A justification
+  (auth identity vs. funding domain — non-tautological,
+  satisfies the strengthened N/A bar D-9801 locked).
+  (RS-5) §Assumes updated to drop the "most recent
+  governance decision" framing — D-9801 superseded D-9701,
+  and D-9905 will supersede D-9801 once WP-099 lands;
+  description now anchors on the placement *convention*
+  rather than any single most-recent ID. (RS-6) §Scope
+  §B placement instruction updated to a two-precedent
+  convention (D-9701 + D-9801 both inserted before
+  `## Final Note`) and explicit "after D-9801" landing
+  point. No §7 wording changes — WP-098's §20 amendment
+  did not touch §7.
 
 **Verdict: READY TO EXECUTE.** No PS-# items outstanding.
 
