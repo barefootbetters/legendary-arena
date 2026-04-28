@@ -32,7 +32,7 @@ database)` performs a one-time idempotent UPDATE against `legendary.players`
 and returns a typed `Result<HandleClaim>`; `findAccountByHandle` and
 `getHandleForAccount` are read-only lookups. The `legendary.players` table
 gains three columns (`handle_canonical`, `display_handle`, `handle_locked_at`)
-via migration `007`, with a partial UNIQUE index that enforces global
+via migration `008`, with a partial UNIQUE index that enforces global
 uniqueness once a handle is claimed while permitting NULLs in the pre-claim
 state. The system never permits handle rename, transfer, or recycling.
 
@@ -96,18 +96,24 @@ server-layer access metadata and never enter `G`, `ctx`, RNG, or scoring.
     `email text UNIQUE`, `display_name text NOT NULL`
   - D-5201 (`AccountId` rename), D-5202 (server identity directory
     classification), D-5203 (identity persistence taxonomy) recorded
-- Migrations `001`..`006` exist; the migration runner (Foundation Prompt
+- Migrations `001`..`007` exist; the migration runner (Foundation Prompt
   02) is operational. Migration `006_create_replay_blobs_table.sql`
-  was landed by WP-103 on 2026-04-25 (commit `fe7db3e`); WP-101's
-  new migration is therefore `007`, not `006`.
+  was landed by WP-103 on 2026-04-25 (commit `fe7db3e`); migration
+  `007_create_competitive_scores_table.sql` was landed by WP-053 on
+  2026-04-26 (commit `56e8134`); WP-101's new migration is therefore
+  `008`, not `006` or `007`.
 - `pnpm -r build` exits 0
-- `pnpm test` exits 0 with the post-WP-103 / post-WP-053a baseline:
-  - engine **522 / 116 / 0** (post-WP-053a at commit `e5b9d15`;
-    WP-053a added +9 tests / +1 suite vs the post-WP-052 baseline
-    of `513 / 115 / 0`)
-  - server **36 / 6 / 0** (post-WP-103 at commit `fe7db3e`; WP-103
-    added +5 tests / +1 suite vs the post-WP-052 baseline of
-    `31 / 5 / 0`; with skips when `TEST_DATABASE_URL` is unset)
+- `pnpm test` exits 0 with the post-WP-113 baseline:
+  - engine **570 / 126 / 0** (post-WP-113; chain of additions since
+    WP-052 baseline `513 / 115 / 0`: WP-053a `+9 / +1` → `522 / 116 / 0`
+    at `e5b9d15`; WP-053 `+0 / +0` engine-untouched at `56e8134`;
+    WP-100/WP-113 cumulative `+48 / +10` → `570 / 126 / 0` per
+    STATUS.md `## Current State`)
+  - server **51 / 8 / 0** (post-WP-113; chain of additions since
+    WP-052 baseline `31 / 5 / 0`: WP-103 `+5 / +1` → `36 / 6 / 0`
+    at `fe7db3e`; WP-053a `+2 / +0` → `38 / 6 / 0` at `e5b9d15`;
+    WP-053 `+9 / +1` → `47 / 7 / 0` at `56e8134`; WP-113 `+4 / +1`
+    → `51 / 8 / 0`; with skips when `TEST_DATABASE_URL` is unset)
 - `docs/ai/DECISIONS.md` exists
 - `docs/ai/ARCHITECTURE.md` exists
 - WP-112 (session token validation; renumbered from "WP-100" per
@@ -294,8 +300,9 @@ Before writing a single line:
   `apps/server/src/identity/identity.logic.ts` are locked. New types
   live in new files; new functions live in new files. The `Result<T>`
   type is **re-imported** from `identity.types.ts`, never re-declared.
-- **WP-052 migrations 004 and 005 must NOT be edited.** New columns are
-  added by a NEW migration `007_add_handle_to_players.sql`.
+- **WP-052 migrations 004 and 005 must NOT be edited. WP-103 migration
+  006 must NOT be edited. WP-053 migration 007 must NOT be edited.**
+  New columns are added by a NEW migration `008_add_handle_to_players.sql`.
 - `packages/game-engine/src/types.ts` must NOT be modified — engine
   `PlayerId` alias (D-8701) is locked.
 
@@ -310,7 +317,9 @@ Before writing a single line:
   `legendary.*` schema. PKs use `bigserial`. Cross-service IDs use
   `ext_id text` per `00.2-data-requirements.md` §1.
 
-- **Migration number locked:** `data/migrations/007_add_handle_to_players.sql`.
+- **Migration number locked:** `data/migrations/008_add_handle_to_players.sql`.
+  Slot `006` taken by WP-103 (`fe7db3e`); slot `007` taken by WP-053
+  (`56e8134`); `008` is the next free slot.
 
 - **Handle format regex (locked):** `^[a-z][a-z0-9_]{2,23}$`
   - 3–24 characters total
@@ -324,7 +333,15 @@ Before writing a single line:
   admin, administrator, anonymous, api, arena, guest, legendary,
   mod, moderator, null, root, staff, support, system, undefined
   ```
-  Membership is checked against the canonical form. Future additions
+  Membership is checked against the canonical form. The 15 entries
+  are limited to (a) lowercase canonical forms of system roles
+  (`admin`, `administrator`, `mod`, `moderator`, `root`, `staff`,
+  `support`, `system`), (b) the project namespace itself
+  (`arena`, `legendary`), (c) generic identity placeholders
+  (`anonymous`, `guest`), (d) the routing prefix used by the future
+  HTTP layer (`api`), and (e) JS literals that could be confused with
+  null-equivalent canonical strings (`null`, `undefined`). The set is
+  intentionally narrow to avoid namespace squatting; future additions
   require a new WP and a `DECISIONS.md` entry.
 
 - **Handle column shapes (locked, added to `legendary.players`):**
@@ -520,7 +537,7 @@ WP-052 precedent.
 
 ### C) Database migration — new
 
-`data/migrations/007_add_handle_to_players.sql`:
+`data/migrations/008_add_handle_to_players.sql`:
 ```sql
 -- WP-101: add handle columns and partial unique index to legendary.players.
 -- All DDL is idempotent per Foundation Prompt 02 / WP-052 precedent.
@@ -548,12 +565,12 @@ Uses `node:test` and `node:assert` only. No `boardgame.io` import.
 **Suite wrapping (matches WP-052 PS-5 precedent):** all tests in this
 file are wrapped in a single top-level `describe('handle logic
 (WP-101)', ...)` block. This adds **+1 suite** to the server baseline.
-Building on WP-052's +2 and WP-103's +1 (already landed), the server
-suite total becomes **7** (6 → 7).
+Building on WP-052's +2, WP-103's +1, WP-053's +1, and WP-113's +1
+(already landed), the server suite total becomes **9** (8 → 9).
 
 **Test count: 12 tests.**
 
-**Net server test delta:** **+12 tests, +1 suite** (36 / 6 → 48 / 7).
+**Net server test delta:** **+12 tests, +1 suite** (51 / 8 → 63 / 9).
 
 1. `HANDLE_ERROR_CODES` array matches `HandleErrorCode` union (drift —
    forward and backward inclusion).
@@ -620,8 +637,9 @@ run.
   reservation of deleted handles is **out of scope** for this packet
   and requires a future WP and `DECISIONS.md` entry if ever introduced.
 - **No engine modifications** — `packages/game-engine/` is not touched.
-- **No WP-052 contract modifications** — `identity.types.ts`,
-  `identity.logic.ts`, migrations 004 and 005 are locked.
+- **No prior-migration modifications** — `identity.types.ts`,
+  `identity.logic.ts`, migrations 004 (WP-052), 005 (WP-052), 006
+  (WP-103), and 007 (WP-053) are locked.
 - **No leaderboard, scoring, or replay-ownership changes** — WP-027,
   WP-048, WP-051, WP-052, WP-053, WP-054 contracts are untouched.
 - **No telemetry on handles** — handles never enter ranking inputs
@@ -641,7 +659,7 @@ run.
   `getHandleForAccount`
 - `apps/server/src/identity/handle.logic.test.ts` — **new** —
   `node:test` coverage (12 tests, 1 `describe()` block → +1 suite)
-- `data/migrations/007_add_handle_to_players.sql` — **new** —
+- `data/migrations/008_add_handle_to_players.sql` — **new** —
   `legendary.players` handle columns + partial unique index (idempotent
   DDL)
 
@@ -704,13 +722,13 @@ All items must be binary pass/fail. No partial credit.
       `handle.logic.ts` outside the locked claim pattern)
 
 ### Database
-- [ ] Migration `007_add_handle_to_players.sql` uses
+- [ ] Migration `008_add_handle_to_players.sql` uses
       `ADD COLUMN IF NOT EXISTS` for all three columns
 - [ ] A partial UNIQUE index on
       `handle_canonical WHERE handle_canonical IS NOT NULL` exists
 - [ ] No FK or other relation references handle columns in this packet
-- [ ] WP-052 migrations 004 and 005 are unchanged (verified via
-      `git diff`)
+- [ ] Prior migrations 004 (WP-052), 005 (WP-052), 006 (WP-103), 007
+      (WP-053) are unchanged (verified via `git diff`)
 
 ### Layer Boundary
 - [ ] No `boardgame.io` import in any new file (verified via
@@ -730,9 +748,9 @@ All items must be binary pass/fail. No partial credit.
 - [ ] Test file uses `node:test` and `node:assert` only
 - [ ] No `boardgame.io` import in test file
 - [ ] Test file wraps tests in exactly one `describe()` block —
-      server suite count increments by exactly **+1** (6 → 7)
-- [ ] Server test count increments by exactly **+12** (36 → 48)
-- [ ] Engine test baseline unchanged at **522 / 116 / 0**
+      server suite count increments by exactly **+1** (8 → 9)
+- [ ] Server test count increments by exactly **+12** (51 → 63)
+- [ ] Engine test baseline unchanged at **570 / 126 / 0**
 
 ### Scope Enforcement
 - [ ] No files outside `## Files Expected to Change` were modified
@@ -755,8 +773,8 @@ pnpm -r build
 pnpm test
 # Expected: TAP output — all tests passing (or DB tests 10–12 skipped
 #           with reason)
-# Expected: engine 522 / 116 / 0 unchanged
-# Expected: server 48 / 7 / 0 (or 48 with skips for DB tests 10–12)
+# Expected: engine 570 / 126 / 0 unchanged
+# Expected: server 63 / 9 / 0 (or 63 with skips for DB tests 10–12)
 
 # Step 3 — confirm no boardgame.io import in new files
 Select-String -Path "apps\server\src\identity\handle*" -Pattern "from ['""]boardgame\.io" -Recurse
@@ -775,17 +793,17 @@ Select-String -Path "packages\game-engine\src" -Pattern "HandleClaim|HANDLE_ERRO
 # Expected: no output
 
 # Step 7 — confirm idempotent DDL in migration (three ADD COLUMN lines)
-Select-String -Path "data\migrations\007_add_handle_to_players.sql" -Pattern "ADD COLUMN IF NOT EXISTS"
+Select-String -Path "data\migrations\008_add_handle_to_players.sql" -Pattern "ADD COLUMN IF NOT EXISTS"
 # Expected: matches for handle_canonical, display_handle, handle_locked_at
 
 # Step 8 — confirm partial unique index in migration
-Select-String -Path "data\migrations\007_add_handle_to_players.sql" -Pattern "CREATE UNIQUE INDEX IF NOT EXISTS"
+Select-String -Path "data\migrations\008_add_handle_to_players.sql" -Pattern "CREATE UNIQUE INDEX IF NOT EXISTS"
 # Expected: at least one match
-Select-String -Path "data\migrations\007_add_handle_to_players.sql" -Pattern "WHERE handle_canonical IS NOT NULL"
+Select-String -Path "data\migrations\008_add_handle_to_players.sql" -Pattern "WHERE handle_canonical IS NOT NULL"
 # Expected: at least one match
 
 # Step 9 — confirm legendary.* namespace is preserved in migration
-Select-String -Path "data\migrations\007_add_handle_to_players.sql" -Pattern "legendary\.players"
+Select-String -Path "data\migrations\008_add_handle_to_players.sql" -Pattern "legendary\.players"
 # Expected: at least one match
 
 # Step 10 — confirm Result<T> is re-imported, not redeclared
@@ -804,8 +822,8 @@ git diff apps/server/src/identity/identity.types.ts
 git diff apps/server/src/identity/identity.logic.ts
 # Expected: no output
 
-# Step 13 — confirm WP-052 migrations unchanged
-git diff data/migrations/004_create_players_table.sql data/migrations/005_create_replay_ownership_table.sql
+# Step 13 — confirm prior migrations unchanged (WP-052 / WP-103 / WP-053)
+git diff data/migrations/004_create_players_table.sql data/migrations/005_create_replay_ownership_table.sql data/migrations/006_create_replay_blobs_table.sql data/migrations/007_create_competitive_scores_table.sql
 # Expected: no output
 
 # Step 14 — confirm engine types.ts unchanged
@@ -833,15 +851,16 @@ This packet is complete when ALL of the following are true:
 - [ ] `pnpm -r build` exits 0
 - [ ] `pnpm test` exits 0 (all test files; DB tests may skip with
       reason)
-- [ ] Engine baseline unchanged: **522 / 116 / 0**
-- [ ] Server baseline post-execution: **48 / 7 / 0** (or **48 with
+- [ ] Engine baseline unchanged: **570 / 126 / 0**
+- [ ] Server baseline post-execution: **63 / 9 / 0** (or **63 with
       skips** for DB-dependent tests 10–12)
 - [ ] No `boardgame.io` import in any new file
 - [ ] No `@legendary-arena/game-engine` import in any new file
 - [ ] No `require()` in any generated file
 - [ ] No files outside `## Files Expected to Change` were modified
-- [ ] WP-052 contract files (`identity.types.ts`, `identity.logic.ts`,
-      migrations 004 and 005) are unchanged
+- [ ] WP-052 contract files (`identity.types.ts`, `identity.logic.ts`)
+      are unchanged; prior migrations 004 / 005 (WP-052), 006 (WP-103),
+      007 (WP-053) are unchanged
 - [ ] `packages/game-engine/src/types.ts` is unchanged
 - [ ] Migration uses `legendary.*` namespace, idempotent DDL
       (`ADD COLUMN IF NOT EXISTS`, `CREATE UNIQUE INDEX IF NOT EXISTS`),

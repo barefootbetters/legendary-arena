@@ -2086,10 +2086,10 @@ These packets ship the game and keep it running.
   [WP-099-auth-provider-selection.md](WP-099-auth-provider-selection.md)
   + [EC-099-auth-provider-selection.checklist.md](../execution-checklists/EC-099-auth-provider-selection.checklist.md).
 
-- [ ] WP-101 — Handle Claim Flow & Global Uniqueness — Drafted 2026-04-25; lint-gate self-review PASS; EC-114 drafted 2026-04-25 (originally EC-101; retargeted EC-101 → EC-114 on 2026-04-27 per filename collision with viewer-series `EC-101-viewer-ci-hardening.checklist.md`); pre-flight pending.
-  Dependencies: WP-052 (identity model exists); WP-103 (migration `006_create_replay_blobs_table.sql` already landed at `fe7db3e` — WP-101 uses migration slot **`007`**, not `006`). Soft-dep on WP-112 (session token validation; renumbered from "WP-100" per D-10002) for the runtime caller, but WP-101 does not require WP-112 to land first — uses caller-injected `requireAuthenticatedSession(req): Promise<AccountId>` contract with stubbed test fixtures (mirrors WP-052 `DatabaseClient` injection precedent).
+- [ ] WP-101 — Handle Claim Flow & Global Uniqueness — Drafted 2026-04-25; lint-gate self-review PASS; EC-114 drafted 2026-04-25 (originally EC-101; retargeted EC-101 → EC-114 on 2026-04-27 per filename collision with viewer-series `EC-101-viewer-ci-hardening.checklist.md`); staleness sweep 2026-04-27 (migration slot `007` → `008` after EC-053 consumed `007`; baselines updated to post-WP-113 floor); pre-flight READY-after-sweep, copilot CONFIRM-after-sweep.
+  Dependencies: WP-052 (identity model exists); WP-103 (migration `006_create_replay_blobs_table.sql` landed at `fe7db3e`); WP-053 (migration `007_create_competitive_scores_table.sql` landed at `56e8134`) — WP-101 uses migration slot **`008`**, not `006` or `007`. Soft-dep on WP-112 (session token validation; renumbered from "WP-100" per D-10002) for the runtime caller, but WP-101 does not require WP-112 to land first — uses caller-injected `requireAuthenticatedSession(req): Promise<AccountId>` contract with stubbed test fixtures (mirrors WP-052 `DatabaseClient` injection precedent).
   Notes: Server-only packet adding immutable, globally unique,
-  URL-safe `handle` to `legendary.players` via migration `007`. Three
+  URL-safe `handle` to `legendary.players` via migration `008`. Three
   new columns: `handle_canonical text` (nullable until claim; partial
   UNIQUE index on `WHERE handle_canonical IS NOT NULL` permits
   multiple pre-claim NULLs while enforcing global uniqueness once
@@ -2143,11 +2143,11 @@ These packets ship the game and keep it running.
   tests in one `describe('handle logic (WP-101)', …)` block (3 drift
   + 6 pure validation + 3 DB-dependent claim-flow); tests 10–12 use
   the locked WP-052 `hasTestDatabase ? {} : { skip: 'requires test
-  database' }` non-silent skip. Server baseline shifts post-WP-103
-  `36/6/0` → **`48/7/0`** (+12 tests / +1 suite); engine baseline
-  `522/116/0` (post-WP-053a) unchanged. Two-commit topology at
+  database' }` non-silent skip. Server baseline shifts post-WP-113
+  `51/8/0` → **`63/9/0`** (+12 tests / +1 suite); engine baseline
+  `570/126/0` (post-WP-113) unchanged. Two-commit topology at
   execution: A `EC-114:` (4 files: `handle.types.ts`, `handle.logic.ts`,
-  `handle.logic.test.ts`, `007_add_handle_to_players.sql`); B `SPEC:`
+  `handle.logic.test.ts`, `008_add_handle_to_players.sql`); B `SPEC:`
   (STATUS.md `### WP-101 / EC-114 Executed` block + WORK_INDEX.md
   WP-101 row `[ ]` → `[x]` + EC_INDEX.md EC-114 row `Draft` → `Done`;
   optional `D-101NN` decision recording the no-tombstone policy if
@@ -2155,7 +2155,8 @@ These packets ship the game and keep it running.
   contract files (`identity.types.ts`, `identity.logic.ts`) NOT
   modified; WP-052 migrations `004` and `005` NOT modified; WP-103
   migration `006_create_replay_blobs_table.sql` NOT modified;
-  `packages/game-engine/src/types.ts` NOT modified. Vision clauses
+  WP-053 migration `007_create_competitive_scores_table.sql` NOT
+  modified; `packages/game-engine/src/types.ts` NOT modified. Vision clauses
   touched: §3 (Player Trust & Fairness), §11 (Stateless Client
   Philosophy), §14 (Explicit Decisions, No Silent Drift), §25 (Skill
   Over Repetition — Non-Ranking Telemetry Carve-Out); NG-1..7 not
