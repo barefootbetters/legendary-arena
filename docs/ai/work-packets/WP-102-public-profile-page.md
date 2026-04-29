@@ -1,15 +1,28 @@
 # WP-102 — Public Player Profile Page (Read-Only)
 
-**Status:** Draft (drafted 2026-04-25; lint-gate self-review PASS — see §Lint Self-Review at foot; pre-flight pending)
+**Status:** Draft (drafted 2026-04-25; lint-gate self-review PASS — see §Lint Self-Review at foot; pre-flight pending; staleness sweep 2026-04-28 — post-WP-101 baselines + migration `007` → `008` for the WP-101 handle migration + WP-053 contract immutability added)
 **Primary Layer:** Server (read-only profile composition) + App (Vue SPA route + page)
-**Dependencies:** WP-052 (identity model + `legendary.replay_ownership`); WP-101 (handle claim + `findAccountByHandle`). Soft-dep on WP-112 (session token validation; renumbered from "WP-100" per D-10002) — **not required to land first**, because this packet's only public endpoint is unauthenticated; the WP-112 contract is not invoked.
+**Dependencies:** WP-052 (identity model + `legendary.replay_ownership`); WP-101 (handle claim + `findAccountByHandle`, **landed 2026-04-28 at Commit B `7b92734`**). Soft-dep on WP-112 (session token validation; renumbered from "WP-100" per D-10002) — **not required to land first**, because this packet's only public endpoint is unauthenticated; the WP-112 contract is not invoked.
+
+> **EC slot (2026-04-28 staleness sweep).** When the EC for this WP is
+> drafted, it cannot use the `EC-102-*.checklist.md` slot —
+> `EC-102-viewer-typecheck-cleanup.checklist.md` already occupies it
+> (viewer-series namespace per the keystone-collision rule that drove
+> the EC-101 → EC-114 retarget on 2026-04-27). Next free EC slot is
+> **`EC-117`** (EC-115 = WP-109 deferred; EC-116 = registry-viewer URL
+> setup-preview, both occupied). Provisional filename:
+> `EC-117-public-profile-page.checklist.md`. WP number unchanged
+> (still WP-102); only the EC slot moves. Follows the EC-103 → EC-111
+> and EC-101 → EC-114 retarget precedent.
 
 ---
 
 ## Session Context
 
-WP-101 (drafted 2026-04-25) introduced an immutable, globally unique,
-URL-safe `handle` to `legendary.players` via migration `007`, and
+WP-101 (drafted 2026-04-25; landed 2026-04-28) introduced an
+immutable, globally unique, URL-safe `handle` to `legendary.players`
+via migration `008` (slot retargeted `007` → `008` on 2026-04-27 per
+WP-053 consuming slot `007`), and
 exported `findAccountByHandle(canonicalHandle, database) →
 PlayerAccount | null` and `getHandleForAccount(accountId, database) →
 { handleCanonical, displayHandle, handleLockedAt } | null` from the new
@@ -188,7 +201,7 @@ invoked. Determinism guarantees are preserved by construction.
     Promise<PlayerAccount | null>` and `getHandleForAccount(accountId,
     database) → Promise<{ handleCanonical, displayHandle,
     handleLockedAt } | null>`.
-  - Migration `007_add_handle_to_players.sql` is applied;
+  - Migration `008_add_handle_to_players.sql` is applied;
     `legendary.players` has `handle_canonical text`, `display_handle
     text`, `handle_locked_at timestamptz` and the partial UNIQUE
     index on `WHERE handle_canonical IS NOT NULL`.
@@ -213,9 +226,15 @@ invoked. Determinism guarantees are preserved by construction.
   pattern `hasTestDatabase ? {} : { skip: 'requires test database' }`
   for DB-dependent cases; pure cases always run.
 - **`pnpm -r build` exits 0** post-WP-101 baseline.
-- **`pnpm test` baselines** at WP-101 close (predicted): engine
-  `522 / 116 / 0`; server `48 / 7 / 0`. WP-102 must verify these at
-  pre-flight; if WP-101 has not landed, WP-102 is **BLOCKED**.
+- **`pnpm test` baselines** at WP-101 close (verified 2026-04-28 at
+  Commit B `7b92734`): engine `570 / 126 / 0`; server `63 / 9 / 0`
+  (with skips for the WP-052 / WP-103 / WP-053 / WP-101 DB-dependent
+  tests when `TEST_DATABASE_URL` is unset). WP-102 must re-verify
+  these at pre-flight time. The pre-WP-101 staleness-sweep prediction
+  of `522 / 116 / 0` + `48 / 7 / 0` was retargeted to the post-
+  WP-113 floor `570 / 126 / 0` + `51 / 8 / 0` on 2026-04-27 (via the
+  WP-101 staleness sweep at `2bfc64b`); WP-101 then added `+12 / +1`,
+  yielding the current `63 / 9 / 0` server floor.
 
 If any of the above is false, this packet is **BLOCKED** and must
 not proceed.
@@ -380,11 +399,15 @@ Before writing a single line:
 - **WP-052 contract files NOT modified.** `identity.types.ts`,
   `identity.logic.ts`, migrations 004 and 005 are locked.
 - **WP-101 contract files NOT modified.** `handle.types.ts`,
-  `handle.logic.ts`, migration 007 are locked.
+  `handle.logic.ts`, migration 008 are locked.
 - **WP-103 contract files NOT modified.** `replay.types.ts`,
   `replay.logic.ts`, migration 006 are locked. WP-102 does not
   load replay payloads — only metadata from
   `legendary.replay_ownership`.
+- **WP-053 contract files NOT modified.** `competition.types.ts`,
+  `competition.logic.ts`, migration 007 are locked. WP-102 does not
+  read or expose competitive scores — the "Rank" empty-state tab is
+  inert.
 - **`packages/game-engine/src/types.ts` NOT modified.**
 - **No new npm dependencies.** All wiring uses Node's built-in
   `fetch`, the existing Vue / Vue Router, and the existing `pg`
@@ -601,8 +624,8 @@ No `@legendary-arena/game-engine` import.
 
 **Suite wrapping:** all tests in this file are wrapped in a single
 top-level `describe('public profile logic (WP-102)', ...)` block.
-This adds **+1 suite** to the server baseline (post-WP-101: `7 →
-8`).
+This adds **+1 suite** to the server baseline (post-WP-101: `9 →
+10`).
 
 **Test count: 8 tests.**
 
@@ -899,10 +922,10 @@ All items must be binary pass/fail. No partial credit.
       in test file.
 - [ ] Test file wraps tests in exactly one `describe()` block —
       server suite count increments by exactly **+1** (post-WP-101:
-      `7 → 8`).
+      `9 → 10`).
 - [ ] Server test count increments by exactly **+8** (post-WP-101:
-      `48 → 56`).
-- [ ] Engine test baseline unchanged at **`522 / 116 / 0`**.
+      `63 → 71`).
+- [ ] Engine test baseline unchanged at **`570 / 126 / 0`**.
 
 ### Visibility Filter
 - [ ] Test 6 asserts `'private'` never appears in the response
@@ -934,8 +957,8 @@ pnpm -r build
 pnpm test
 # Expected: TAP output — all tests passing (or DB tests 4–8 skipped
 #           with reason)
-# Expected: engine 522 / 116 / 0 unchanged
-# Expected: server 56 / 8 / 0 (or 56 with skips for DB tests 4–8)
+# Expected: engine 570 / 126 / 0 unchanged
+# Expected: server 71 / 10 / 0 (or 71 with skips for DB tests 4–8)
 
 # Step 3 — confirm no boardgame.io import in new server files
 Select-String -Path "apps\server\src\profile\*" -Pattern "from ['""]boardgame\.io" -Recurse
@@ -983,8 +1006,8 @@ git diff --name-only data/migrations/
 git diff apps/server/src/identity/identity.types.ts apps/server/src/identity/identity.logic.ts
 # Expected: no output
 
-# Step 13 — confirm WP-052 / WP-101 / WP-103 migrations unchanged
-git diff data/migrations/004_create_players_table.sql data/migrations/005_create_replay_ownership_table.sql data/migrations/006_create_replay_blobs_table.sql data/migrations/007_add_handle_to_players.sql
+# Step 13 — confirm WP-052 / WP-101 / WP-103 / WP-053 migrations unchanged
+git diff data/migrations/004_create_players_table.sql data/migrations/005_create_replay_ownership_table.sql data/migrations/006_create_replay_blobs_table.sql data/migrations/007_create_competitive_scores_table.sql data/migrations/008_add_handle_to_players.sql
 # Expected: no output
 
 # Step 14 — confirm WP-101 contract files unchanged
@@ -1030,8 +1053,8 @@ This packet is complete when ALL of the following are true:
 - [ ] `pnpm -r build` exits 0
 - [ ] `pnpm test` exits 0 (all test files; DB tests may skip with
       reason)
-- [ ] Engine baseline unchanged: **`522 / 116 / 0`**
-- [ ] Server baseline post-execution: **`56 / 8 / 0`** (or **`56`
+- [ ] Engine baseline unchanged: **`570 / 126 / 0`**
+- [ ] Server baseline post-execution: **`71 / 10 / 0`** (or **`71`
       with skips** for DB-dependent tests 4–8)
 - [ ] No `boardgame.io` import in any new file
 - [ ] No `@legendary-arena/game-engine` import in any new file
@@ -1041,7 +1064,9 @@ This packet is complete when ALL of the following are true:
 - [ ] WP-052 contract files (`identity.types.ts`,
       `identity.logic.ts`, migrations 004 and 005) are unchanged
 - [ ] WP-101 contract files (`handle.types.ts`, `handle.logic.ts`,
-      migration 007) are unchanged
+      migration 008) are unchanged
+- [ ] WP-053 contract files (`competition.types.ts`,
+      `competition.logic.ts`, migration 007) are unchanged
 - [ ] WP-103 contract files (`replay.types.ts`, `replay.logic.ts`,
       migration 006) are unchanged
 - [ ] `packages/game-engine/src/types.ts` is unchanged
