@@ -56,6 +56,7 @@ App Mount
 | `src/lib/registryClient.ts` | Singleton factory for HTTP-based CardRegistry; validates `public/registry-config.json` at the fetch boundary with `ViewerConfigSchema.safeParse(...)` and throws a `[RegistryConfig] Rejected …` full-sentence `Error` on failure |
 | `src/lib/themeClient.ts` | Singleton factory for `ThemeDefinition[]` from R2; validates `themes/index.json` with `ThemeIndexSchema.safeParse(...)` (throws on failure) and each theme with `ThemeDefinitionSchema.safeParse(...)` (warns + skips on failure) |
 | `src/lib/glossaryClient.ts` | Singleton factory for KeywordGlossary + RuleGlossary Maps from R2 (non-blocking, devLog-instrumented); validates at the fetch boundary with `KeywordGlossarySchema` / `RuleGlossarySchema` `.safeParse(...)` |
+| `src/lib/cardTypesClient.ts` | Singleton factory for the 13-entry card-type taxonomy from R2 (non-blocking, devLog-instrumented); validates at the fetch boundary with `CardTypesIndexSchema` `.strict()` `.safeParse(...)`; relational orphan invariant (every `parentType` either equals an existing `slug` or is `null`) enforced post-parse with one dedup'd warn per offending value. WP-086 |
 | `src/registry/schema.ts` | Zod schemas — permissive to handle inconsistent set data |
 | `src/registry/shared.ts` | `flattenSet()`, `applyQuery()`, `buildHealthReport()` |
 | `src/registry/impl/httpRegistry.ts` | Browser-safe CardRegistry factory (R2 fetches) |

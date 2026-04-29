@@ -45,12 +45,14 @@ export async function createRegistryFromHttp(
 
   // ── 1. Load set index ──────────────────────────────────────────────────────
   // why: sets.json is the set index ({ id, abbr, pkgId, slug, name, releaseDate, type }).
-  // card-types.json is the card type taxonomy ({ id, slug, name, displayName, prefix }) —
-  // they are incompatible shapes. Fetching card-types.json here silently produces
-  // zero sets because no entries match SetIndexEntrySchema (missing abbr and releaseDate).
-  // Note: card-types.json itself was deleted by WP-084 on 2026-04-21; this educational
-  // comment is retained because the silent-failure pattern it describes remains
-  // reachable for any future metadata file that shares the auxiliary-lookup shape.
+  // card-types.json is the card-type taxonomy ({ slug, label, emoji?, order, parentType })
+  // consumed by the registry-viewer ribbon under WP-086 — incompatible shape with
+  // SetIndexEntrySchema. Fetching card-types.json here would silently produce zero sets
+  // because no entries match (missing abbr and releaseDate). card-types.json was deleted
+  // by WP-084 (2026-04-21) and reintroduced by WP-086 (2026-04-29) with the new shape;
+  // this educational comment is retained because the silent-failure pattern is independent
+  // of which specific file is involved — any auxiliary metadata file with a non-overlapping
+  // shape will trigger the same zero-results silent failure if fetched at this seam.
   const indexUrl = `${base}/metadata/sets.json`;
   const indexResponse = await fetch(indexUrl);
   if (!indexResponse.ok) {
