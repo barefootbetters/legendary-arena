@@ -1,0 +1,284 @@
+<script lang="ts">
+import { defineComponent, onMounted, ref, watch } from 'vue';
+
+import {
+  fetchPublicProfile,
+  type PublicProfileView,
+} from '../lib/api/profileApi';
+
+// why: defineComponent({ setup() { return {...} } }) is required (NOT
+// <script setup>) because the template references non-prop bindings
+// — the `state`, `view`, `errorStatus`, and `formattedDate` values
+// — that under the @legendary-arena/vue-sfc-loader separate-compile
+// pipeline only reach `_ctx` when explicitly returned from setup()
+// (D-6512 / P6-30; precedent matches App.vue, ArenaHud, and
+// ReplayFileLoader).
+
+type LoadState = 'loading' | 'ready' | 'not_found' | 'error';
+
+// why: format `createdAt` once at render time rather than persisting
+// a formatted copy in the page state. Intl.DateTimeFormat is the
+// standard way to get a locale-respecting display without pulling
+// a date-formatting library (no new npm dependency per WP-102 §Goal
+// "No new npm dependencies"). The fallback returns the raw ISO
+// string when the input is somehow not parseable, so a malformed
+// server response never blanks the row.
+function formatCreatedAt(raw: string): string {
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) {
+    return raw;
+  }
+  return new Intl.DateTimeFormat(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(parsed);
+}
+
+export default defineComponent({
+  name: 'PlayerProfilePage',
+  props: {
+    handle: {
+      type: String,
+      required: true,
+    },
+  },
+  setup(props) {
+    const state = ref<LoadState>('loading');
+    const view = ref<PublicProfileView | null>(null);
+    const errorStatus = ref<number>(0);
+
+    async function load(handle: string): Promise<void> {
+      state.value = 'loading';
+      view.value = null;
+      errorStatus.value = 0;
+      const result = await fetchPublicProfile(handle);
+      if (result.ok === true) {
+        view.value = result.value;
+        state.value = 'ready';
+        return;
+      }
+      if (result.status === 404) {
+        state.value = 'not_found';
+        return;
+      }
+      errorStatus.value = result.status;
+      state.value = 'error';
+    }
+
+    onMounted(() => {
+      void load(props.handle);
+    });
+
+    watch(
+      () => props.handle,
+      (next) => {
+        void load(next);
+      },
+    );
+
+    return {
+      state,
+      view,
+      errorStatus,
+      formatCreatedAt,
+    };
+  },
+});
+</script>
+
+<template>
+  <article class="player-profile" data-testid="player-profile-root">
+    <template v-if="state === 'loading'">
+      <p class="profile-status" data-testid="player-profile-loading">Loading…</p>
+    </template>
+    <template v-else-if="state === 'not_found'">
+      <p class="profile-status" data-testid="player-profile-not-found">
+        No player has claimed this handle.
+      </p>
+    </template>
+    <template v-else-if="state === 'error'">
+      <p class="profile-status" data-testid="player-profile-error">
+        Could not load profile. Please try again later.
+      </p>
+    </template>
+    <template v-else-if="state === 'ready' && view !== null">
+      <header class="profile-header" data-testid="player-profile-header">
+        <h1 class="profile-display-name">{{ view.displayName }}</h1>
+        <p class="profile-display-handle">{{ view.displayHandle }}</p>
+        <p class="profile-canonical-handle">@{{ view.handleCanonical }}</p>
+      </header>
+
+      <section class="profile-replays" data-testid="player-profile-replays">
+        <h2>Public replays</h2>
+        <template v-if="view.publicReplays.length === 0">
+          <p>No public replays yet.</p>
+        </template>
+        <ul v-else>
+          <li
+            v-for="replay in view.publicReplays"
+            :key="replay.replayHash"
+            class="profile-replay"
+          >
+            <span class="profile-replay-hash">{{ replay.replayHash.slice(0, 8) }}</span>
+            <span class="profile-replay-scenario">{{ replay.scenarioKey }}</span>
+            <span class="profile-replay-date">{{ formatCreatedAt(replay.createdAt) }}</span>
+            <span class="profile-replay-visibility">{{ replay.visibility }}</span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- why: the six empty-state tabs below render static labels only.
+           Per WP-102 §Empty-state stubs make zero network requests +
+           RISK #15 from copilot-check 2026-04-28, each tab MUST carry a
+           rationale comment naming why it makes no fetch. The cumulative
+           effect preserves Vision §11 (Stateless Client Philosophy) and
+           the WP-102 lifecycle prohibition: no Pinia store touch, no
+           fetch/XHR/WebSocket, no Vue lifecycle hook beyond what setup()
+           already runs for the profile fetch above. -->
+      <section
+        class="profile-tab profile-tab-rank"
+        data-testid="player-profile-tab-rank"
+      >
+        <!-- why: rank surfacing depends on WP-054 (competitive scoring
+             ingestion) and WP-055 (leaderboard projection). Until those
+             land and a follow-up profile-feature WP wires their reads
+             into this surface, the tab is inert text. Per
+             DESIGN-RANKING.md lines 485-487, ranking inputs key on
+             AccountId, never the handle — so this tab MUST NOT fetch by
+             handle even after WP-054/055 land; the future enabling WP
+             will receive AccountId via a separate authenticated route. -->
+        <h3>Rank — coming soon (WP-054 / WP-055)</h3>
+      </section>
+
+      <section
+        class="profile-tab profile-tab-badges"
+        data-testid="player-profile-tab-badges"
+      >
+        <!-- why: badge data model and issuance pipeline are WP-105 scope.
+             Until that WP lands the tab is inert text; no fetch path
+             exists to call. Wiring this tab live in WP-102 would
+             violate the WP-102 lifecycle prohibition. -->
+        <h3>Badges — coming soon (WP-105)</h3>
+      </section>
+
+      <section
+        class="profile-tab profile-tab-tournaments"
+        data-testid="player-profile-tab-tournaments"
+      >
+        <!-- why: tournament participation surfacing depends on a
+             tournament-engine WP that does not exist yet. The tab is
+             inert text and makes no fetch — there is no upstream
+             system to query. -->
+        <h3>Tournaments — coming soon</h3>
+      </section>
+
+      <section
+        class="profile-tab profile-tab-comments"
+        data-testid="player-profile-tab-comments"
+      >
+        <!-- why: comment authoring, moderation, and history are
+             separate WPs that have not been drafted. The tab is inert
+             text and makes no fetch — there is no comment store to
+             read from. -->
+        <h3>Comments — coming soon</h3>
+      </section>
+
+      <section
+        class="profile-tab profile-tab-integrity"
+        data-testid="player-profile-tab-integrity"
+      >
+        <!-- why: integrity / anti-cheat review status surfacing requires
+             an admin-auth WP plus WP-107+ integrity surfacing. Until
+             those land the tab is inert text; surfacing review status
+             without the gating WP would leak admin-only content to a
+             public surface. -->
+        <h3>Integrity — coming soon (WP-107+)</h3>
+      </section>
+
+      <section
+        class="profile-tab profile-tab-support"
+        data-testid="player-profile-tab-support"
+      >
+        <!-- why: support / donation / subscription surfacing depends on
+             WP-097 (D-9701) + WP-098 §20 Funding Surface Gate Trigger
+             + a payment-integration WP (WP-108+). Per WP-102 §Vision
+             Alignment Funding Surface Gate declaration, this tab MUST
+             render no donation, subscription, or tournament-funding
+             affordance until those WPs land — current text is the only
+             permitted content. NG-1 (no pay-to-win) and NG-6 (no dark
+             patterns) are honored by construction. -->
+        <h3>Support — coming soon (WP-108+)</h3>
+      </section>
+    </template>
+  </article>
+</template>
+
+<style scoped>
+.player-profile {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  max-width: 48rem;
+  margin: 0 auto;
+}
+
+.profile-status {
+  font-size: 1rem;
+  text-align: center;
+  opacity: 0.75;
+}
+
+.profile-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.profile-display-name {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.profile-display-handle {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.profile-canonical-handle {
+  font-size: 0.875rem;
+  color: rgba(0, 0, 0, 0.55);
+  margin: 0;
+}
+
+.profile-replays h2 {
+  font-size: 1.125rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.profile-replays ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.profile-replay {
+  display: grid;
+  grid-template-columns: 5rem 1fr 7rem 5rem;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  align-items: baseline;
+}
+
+.profile-tab h3 {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0;
+  color: rgba(0, 0, 0, 0.6);
+}
+</style>

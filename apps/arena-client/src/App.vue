@@ -1,5 +1,11 @@
 <script lang="ts">
-import { defineComponent, onBeforeUnmount, onMounted, ref } from 'vue';
+import {
+  defineAsyncComponent,
+  defineComponent,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+} from 'vue';
 
 import ArenaHud from './components/hud/ArenaHud.vue';
 import LobbyView from './lobby/LobbyView.vue';
@@ -14,7 +20,17 @@ import type {
   UiMoveName,
 } from './components/play/uiMoveName.types';
 
-type AppRoute = 'fixture' | 'live' | 'lobby';
+// why: PlayerProfilePage is lazy-loaded via defineAsyncComponent so the
+// public-profile branch (?profile=<handle>) does not increase the
+// live-match path's bundle size. The component is only fetched when
+// route === 'profile' renders for the first time. Mirrors the
+// per-route lazy-load pattern documented for future routed pages
+// (PS-2 / WP-102 §F).
+const PlayerProfilePage = defineAsyncComponent(
+  () => import('./pages/PlayerProfilePage.vue'),
+);
+
+type AppRoute = 'fixture' | 'live' | 'lobby' | 'profile';
 
 interface LiveRouteParams {
   matchID: string;
@@ -25,6 +41,7 @@ interface LiveRouteParams {
 interface ParsedQuery {
   fixtureName: string | null;
   live: LiveRouteParams | null;
+  profileHandle: string | null;
 }
 
 // why: defineComponent({ setup() { return {...} } }) is required (NOT
@@ -59,14 +76,26 @@ function parseQuery(search: string): ParsedQuery {
     live = { matchID, playerID, credentials };
   }
 
-  return { fixtureName, live };
+  const profileHandle = readQueryParam(params, 'profile');
+
+  return { fixtureName, live, profileHandle };
 }
 
 function selectRoute(parsed: ParsedQuery): AppRoute {
-  // why: route discriminator precedence is `fixture > live > lobby`. The
-  // fixture branch short-circuits live wiring so WP-061's offline/testing
-  // UX and the team's reproducible bug-report mechanism stay intact even
-  // when live query params are also present.
+  // why: route discriminator precedence is `profile > fixture > live > lobby`.
+  // Presence of `?profile=<canonical>` takes priority over `?fixture=` /
+  // `?match=` / `?player=` / `?credentials=` because the profile surface is
+  // a leaf navigation target — once a user lands on `/?profile=alice` we
+  // don't want a stale `?match=` to silently fall through to the live
+  // route, and we don't want a `?fixture=` dev-fixture query param to
+  // shadow the public-profile request either. The fixture branch then
+  // short-circuits live wiring so WP-061's offline/testing UX and the
+  // team's reproducible bug-report mechanism stay intact when live query
+  // params are also present (PS-2 / WP-102 §Required `// why:` Comments
+  // site #8).
+  if (parsed.profileHandle !== null) {
+    return 'profile';
+  }
   if (parsed.fixtureName !== null) {
     return 'fixture';
   }
@@ -83,7 +112,7 @@ function selectRoute(parsed: ParsedQuery): AppRoute {
 
 export default defineComponent({
   name: 'App',
-  components: { ArenaHud, LobbyView, PlayView },
+  components: { ArenaHud, LobbyView, PlayView, PlayerProfilePage },
   props: {
     // why: `searchOverride` is a testing seam. Production callers never pass
     // it — `null` means "read from window.location.search at setup time".
@@ -104,6 +133,7 @@ export default defineComponent({
 
     const matchID = liveParams?.matchID ?? '';
     const playerID = liveParams?.playerID ?? '';
+    const profileHandle = parsed.profileHandle ?? '';
 
     const liveClient = ref<LiveClientHandle | null>(null);
     // why: `import.meta.env` is Vite-provided; in the node:test runner there
@@ -146,6 +176,7 @@ export default defineComponent({
       route,
       matchID,
       playerID,
+      profileHandle,
       isDev,
       submitMove,
     };
@@ -155,7 +186,10 @@ export default defineComponent({
 
 <template>
   <main data-testid="app-root" :data-route="route">
-    <template v-if="route === 'fixture'">
+    <template v-if="route === 'profile'">
+      <PlayerProfilePage :handle="profileHandle" />
+    </template>
+    <template v-else-if="route === 'fixture'">
       <ArenaHud />
     </template>
     <template v-else-if="route === 'live'">
