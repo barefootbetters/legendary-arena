@@ -11541,6 +11541,203 @@ This decision codifies the same discipline for `apps/server/src/profile/`. It in
 
 ---
 
+### D-11101 — `G.cardDisplayData` Is a Sibling Snapshot to `G.cardStats`, Not an Extension of `CardStatEntry`
+
+**Type:** Architectural Boundary
+**Packet:** WP-111 / EC-118 (governance close — Commit B)
+**Date:** 2026-04-29
+
+**Decision:** Card display data (`name`, `imageUrl`, `cost`) is projected through `G.cardDisplayData: Readonly<Record<CardExtId, UICardDisplay>>` — a fourth setup-time sibling snapshot alongside `G.cardStats` (WP-018), `G.villainDeckCardTypes` (WP-014B), and `G.cardKeywords` (WP-025). It is NOT added as additional fields on `CardStatEntry`. Status: Immutable.
+
+**Locked anchors.**
+
+- `CardStatEntry` retains its existing four-field shape (`attack`, `recruit`, `cost`, `fightCost`). No display fields added.
+- `UICardDisplay` is a new four-field type (`extId`, `name`, `imageUrl`, `cost: number | null`) declared in `packages/game-engine/src/ui/uiState.types.ts`.
+- `G.cardDisplayData` is read only from `uiState.build.ts`; gameplay reads `G.cardStats` only (presentation-vs-gameplay separation lock, grep-enforced).
+
+**Rationale.**
+
+- **Separation of concerns: stats vs. display.** `G.cardStats` is the gameplay source of truth — every move, rule hook, and validator reads it. `G.cardDisplayData` is the UIState source of truth for display — never read by gameplay. Co-locating display fields on `CardStatEntry` would make it ambiguous which fields are gameplay-authoritative; a future move file could accidentally read `cardStats[id].imageUrl` for some logic-flavored reason and the separation would silently erode.
+- **Symmetry with the existing sibling-snapshot pattern.** WP-014B, WP-018, and WP-025 each established a single-purpose record keyed by `CardExtId`. The pattern is well-tested: local structural reader + runtime guard + setup-orchestration diagnostic + empty-record fallback + JSON-serializable record. `G.cardDisplayData` inherits this template wholesale.
+- **Future field additions stay scoped.** A future WP that adds `team` / `class` / `setName` to display data extends `UICardDisplay` without touching `CardStatEntry`. A future WP that adds a new gameplay numeric extends `CardStatEntry` without touching `UICardDisplay`. The two surfaces evolve independently.
+
+**Status:** `Active`. Adding display fields to `CardStatEntry` (or gameplay fields to `UICardDisplay`) requires a new `D-NNNN` entry that explicitly justifies merging the two surfaces.
+
+**Citation:** `WP-111`; `EC-118 §Locked Values §Source-field map`; `WP-014B` (`G.villainDeckCardTypes`); `WP-018` (`G.cardStats`); `WP-025` (`G.cardKeywords`); `D-2801` (UI projection-purity contract); `packages/game-engine/src/economy/economy.types.ts:CardStatEntry`; `packages/game-engine/src/ui/uiState.types.ts:UICardDisplay`.
+
+---
+
+### D-11102 — `UIPlayerState.handDisplay?` Is a Parallel Array Beside `handCards?`
+
+**Type:** Type Contract / Backwards Compatibility
+**Packet:** WP-111 / EC-118 (governance close — Commit B)
+**Date:** 2026-04-29
+
+**Decision:** Hand-card display data is projected as a separate optional parallel array `UIPlayerState.handDisplay?: UICardDisplay[]` that aligns with the existing `UIPlayerState.handCards?: string[]` by index. The `handCards` shape is preserved verbatim. Length equality is enforced when both fields are present; redaction symmetry is enforced by `filterUIStateForAudience`. Status: Immutable for the WP-111 surface.
+
+**Locked anchors.**
+
+- `UIPlayerState.handCards?: string[]` is preserved verbatim (already optional per WP-029 D-2902 `exactOptionalPropertyTypes` precedent).
+- `UIPlayerState.handDisplay?: UICardDisplay[]` is the new optional parallel array.
+- Length-equality invariant: when both fields are present, `handCards.length === handDisplay.length`, with `handCards[i]` matching `handDisplay[i].extId`.
+- Redaction symmetry: `redactHandCards` omits both; `preserveHandCards` uses conditional assignment per WP-029 D-2902 (never assigns `undefined` literally).
+
+**Rationale.**
+
+- **Backwards compatibility.** Existing UI code that reads `handCards: string[]` continues to work unchanged. New UI code opts into `handDisplay` for the richer display payload. No consumer is forced to migrate.
+- **Symmetry with the WP-029 redaction precedent.** `handCards` is already redacted via the `redactHandCards` helper; adding `handDisplay` as a parallel array allows the same helper to omit both via the established pattern (do not assign — the omission is the redaction).
+- **No object-shape coupling.** Embedding `display` per-card-object (e.g., `handCards: Array<{ extId: string, display?: UICardDisplay }>`) would force every existing consumer to read `.extId` instead of the bare string, breaking backwards compatibility.
+
+**Status:** `Active`. Future WPs adding hand-card metadata (e.g., playable-flag, tap-state) should evaluate whether to extend `UICardDisplay`, add a third parallel array, or accept a one-time breaking change to `handCards`. The default is parallel arrays under this precedent.
+
+**Citation:** `WP-111`; `EC-118 §Locked Values §Projection paths`; `WP-029` D-2902 (`exactOptionalPropertyTypes` conditional-assignment); `WP-089` (`UIPlayerState` shape); `D-11103` (paired `slotDisplay` parallel-array decision).
+
+---
+
+### D-11103 — `UIHQState.slotDisplay?` Is a Parallel Array Beside `slots: (string | null)[]` (PS-6 Fallback)
+
+**Type:** Scope Discipline / Backwards Compatibility
+**Packet:** WP-111 / EC-118 (governance close — Commit B)
+**Date:** 2026-04-29
+
+**Decision:** HQ slot display data is projected as a separate optional parallel array `UIHQState.slotDisplay?: (UIHQCard | null)[]` that aligns with the existing `UIHQState.slots: (string | null)[]` by index. The `slots` shape is preserved verbatim — NOT widened to `(UIHQCard | null)[]`. Status: Immutable.
+
+**Locked anchors.**
+
+- `UIHQState.slots: (string | null)[]` is preserved verbatim.
+- `UIHQState.slotDisplay?: (UIHQCard | null)[]` is the new optional parallel array, where `UIHQCard = { extId: string; display: UICardDisplay }`.
+- `null` at index `i` in `slotDisplay` matches `slots[i] === null` exactly (positional invariant; tested via the HQ length-equality + null-position invariant test in `uiState.build.test.ts`).
+
+**Rationale (Q3 written consumer audit, performed during pre-flight 2026-04-29).**
+
+- `apps/arena-client/src/components/play/HQRow.vue` lines 60–80 is the sole runtime consumer of `hq.slots`. It iterates via `v-for="(cardId, hqIndex) in hq.slots"` and renders `{{ cardId }}` for occupied slots. The component carries an explicit comment at lines 73–80 noting "UIHQState.slots carries bare CardExtId strings (NOT the UICityCard shape used by City)." Widening `slots` to `(UIHQCard | null)[]` would force this component (and its associated `HQRow.test.ts` fixture file) to migrate.
+- Both `apps/arena-client/src/components/play/HQRow.vue` and `apps/arena-client/src/components/play/HQRow.test.ts` are **outside the WP-111 9-file allowlist**. Modifying them would require a 10th and 11th file in the diff, exceeding the locked scope cap.
+- The parallel-array fallback preserves the 9-file allowlist (the 10th file is the 01.5 hash-literal cascade only) while still delivering the display payload to any new consumer that wants it. The follow-up UI binding WP can choose whether to migrate `HQRow.vue` to `slotDisplay` or keep it on `slots` — both remain supported under the additive contract.
+
+**Audit-first discipline.** Future WPs facing a similar widening dilemma must perform the same written consumer audit before choosing between the breaking-change form and the parallel-array fallback. An empty audit favors the breaking-change form (cleaner type, fewer parallel paths); a non-empty audit favors the parallel-array fallback. The audit must be recorded inline in the WP's Open Questions or a cited DECISIONS.md entry, not as an asserted assumption.
+
+**Status:** `Active`. The follow-up UI binding WP may either adopt `slotDisplay` (additive consumer) or keep using `slots` (no migration). Both paths remain supported indefinitely.
+
+**Citation:** `WP-111`; `EC-118 §Locked Values §Projection paths`; `WP-111 §Open Questions Q3 RESOLVED` (written consumer audit); `apps/arena-client/src/components/play/HQRow.vue:60–80` (the sole runtime consumer); `apps/arena-client/src/components/play/HQRow.test.ts` (the fixture file); `D-11102` (paired `handDisplay` parallel-array decision); `D-11106` (deferred-card-types scope).
+
+---
+
+### D-11104 — `parseCostNullable` Is a Single-Line Guard Around `parseCardStatValue`, NOT a Parallel Parser
+
+**Type:** Type Contract / UX Distinction
+**Packet:** WP-111 / EC-118 (governance close — Commit B)
+**Date:** 2026-04-29
+
+**Decision:** `UICardDisplay.cost: number | null` is sourced via `parseCostNullable(value)`, a single-line guard around the canonical `parseCardStatValue(value)`. The wrapper distinguishes registry `null` / `undefined` ("no cost shown") from registry `0` ("free"), which the canonical parser collapses to `0` for both. The wrapper is NOT a parallel parser — `parseCardStatValue` remains the only widener-handler for non-null values (star modifiers `"2*"`, plus modifiers `"2+"`, integers, etc.). Status: Immutable.
+
+**Locked implementation:**
+
+```ts
+function parseCostNullable(
+  value: string | number | null | undefined,
+): number | null {
+  if (value === null || value === undefined) return null;
+  return parseCardStatValue(value);
+}
+```
+
+Defined at the top of `packages/game-engine/src/setup/buildCardDisplayData.ts`.
+
+**Rationale.**
+
+- **The canonical parser collapses null/undefined to 0.** Per `economy.logic.ts:115–141`, `parseCardStatValue(null)` returns `0` and `parseCardStatValue(undefined)` returns `0` (per the `.claude/rules/registry.md §Card Field Data Quality` contract: "On unexpected input, return `0` and emit deterministic warning — never throw"). For gameplay (`G.cardStats`), this is correct — a missing-or-zero stat behaves identically (no resource generated / no cost gated).
+- **Display has a different need.** A bystander has no printed cost; rendering `cost: 0` would suggest "free recruit" when the correct UX is "no cost shown" (e.g., bystanders are not recruited, schemes are not played, etc.). Distinguishing `null` from `0` at the projection boundary preserves the UX distinction without touching gameplay semantics.
+- **NOT a parallel parser.** A parallel parser would re-implement the widener-handling logic (string trimming, modifier stripping, integer parsing) for non-null values. `parseCostNullable` does none of that — it delegates entirely to `parseCardStatValue` for any non-null input. The single conditional is the only divergence from the canonical parser.
+- **Single-line + locked rationale = minimal review burden.** A reviewer can verify "guard, not parser" by reading three lines. A `// why:` comment cites this decision and PS-4 directly.
+
+**Status:** `Active`. Adding any logic beyond the null-check guard to `parseCostNullable` makes it a parallel parser and requires a new `D-NNNN` entry. The canonical `parseCardStatValue` remains the only widener-handler.
+
+**Citation:** `WP-111`; `EC-118 §Locked Values §Cost null-check semantics`; `EC-118 §Guardrails §11 Cost wrapper, not parallel parser`; `economy.logic.ts:115–141:parseCardStatValue` (canonical parser); `.claude/rules/registry.md §Card Field Data Quality` (the return-0-not-throw contract); `WP-018` (the WP that established the canonical parser).
+
+---
+
+### D-11105 — `UNKNOWN_DISPLAY_PLACEHOLDER` Is a Pure-Render Fallback; Diagnostic Surface Lives at Setup Time (PS-8 / WP-028 D-2801)
+
+**Type:** Architectural Boundary / Projection Purity
+**Packet:** WP-111 / EC-118 (governance close — Commit B)
+**Date:** 2026-04-29
+
+**Decision:** Missing-display-entry handling is split across two sites:
+
+1. **Projection time** (`uiState.build.ts`): when a `CardExtId` has no entry in `G.cardDisplayData`, `resolveDisplay` returns `{...UNKNOWN_DISPLAY_PLACEHOLDER, extId}`. This is a **pure render fallback** with no `G` interaction. `buildUIState` MUST NOT mutate `G.messages` or any other `G` field — the projection-purity contract from WP-028 D-2801 is preserved.
+2. **Setup time** (`buildInitialGameState.ts`): the `auditCardDisplayDataCompleteness` helper walks the populated `cardStats` keys, checks membership in `cardDisplayData`, and pushes a single consolidated diagnostic into `setupMessages` if any expected extId is missing. This is the **diagnostic surface** for missing entries — a single deterministic message per setup, never per-card.
+
+The `UNKNOWN_DISPLAY_PLACEHOLDER` constant is exported from `uiState.build.ts` as the single source for the placeholder name literal. The literal `<unknown>` appears EXACTLY ONCE across the engine source (grep-enforced).
+
+Status: Immutable.
+
+**Locked implementation.**
+
+```ts
+export const UNKNOWN_DISPLAY_PLACEHOLDER: UICardDisplay = {
+  extId: '',
+  name: '<unknown>',
+  imageUrl: '',
+  cost: null,
+};
+
+function resolveDisplay(
+  extId: string,
+  gameState: LegendaryGameState,
+): UICardDisplay {
+  const entry = gameState.cardDisplayData[extId];
+  if (entry !== undefined) {
+    return { ...entry };
+  }
+  return { ...UNKNOWN_DISPLAY_PLACEHOLDER, extId };
+}
+```
+
+The `extId: ''` default is overwritten at every projection-time substitution via `{...UNKNOWN_DISPLAY_PLACEHOLDER, extId}`, so the empty-string default never reaches a UIState consumer in any code path.
+
+**Rationale.**
+
+- **WP-028 D-2801 projection-purity is settled governance.** `buildUIState` is documented as forbidden from caching, closures over G or ctx, mutation via aliasing, or any side effect. Mutating `G.messages` to log a missing-entry diagnostic at projection time would erase that boundary — every projection call would write to `G`, breaking the read-only-projection contract D-2801 codifies.
+- **Setup-time is the right place for missing-entry diagnostics.** The diagnostic fires once per setup, not once per projection call. A spectator viewing a long match doesn't accumulate a flood of identical warnings; a debugger inspecting `G.messages` after a problematic setup sees exactly one consolidated message naming all missing extIds.
+- **The recoverable spectator-UX trade-off is preserved.** Throwing at projection time would crash the UI for a state the engine considers recoverable (it can keep playing; only the display payload is missing). The pure-render fallback keeps the UI alive while the setup-time diagnostic surfaces the underlying problem to a debugger.
+- **Mirrors WP-113 D-10014 single-detection-seam pattern.** The four existing builder-guard messages at `buildInitialGameState.ts:161–182` already establish the pattern: one orchestration-side detection seam emits one full-sentence diagnostic naming the failed builder, the cause, and the fix. `auditCardDisplayDataCompleteness` is the fifth instance of this pattern.
+
+**Status:** `Active`. Mutating `G` from any projection function (`buildUIState`, `filterUIStateForAudience`, future projection seams) requires a new `D-NNNN` entry that explicitly justifies the violation against D-2801 + this decision.
+
+**Citation:** `WP-111`; `EC-118 §Locked Values §Projection-purity contract`; `EC-118 §Guardrails §9 Projection-purity contract preserved`; `WP-028` D-2801 (UI projection-purity contract); `WP-113` D-10014 (single-detection-seam pattern); pre-flight 2026-04-29 PS-8 (the correction that landed this decision); `packages/game-engine/src/ui/uiState.build.ts:UNKNOWN_DISPLAY_PLACEHOLDER`; `packages/game-engine/src/setup/buildInitialGameState.ts:auditCardDisplayDataCompleteness`.
+
+---
+
+### D-11106 — Deferred Card Types: Bystander / Scheme-Twist / Mastermind-Strike / Scheme / Wound / Officer / Sidekick / Mastermind-Tactic
+
+**Type:** Scope Boundary
+**Packet:** WP-111 / EC-118 (governance close — Commit B)
+**Date:** 2026-04-29
+
+**Decision:** `G.cardDisplayData` projects display data for exactly four card types in WP-111: `hero`, `villain`, `henchman`, and `mastermind` (base card only). The following card types are explicitly out of scope and warrant separate WPs: `bystander`, `scheme-twist`, `mastermind-strike`, `scheme`, `wound`, `officer`, `sidekick`, and mastermind tactic cards. Status: Immutable.
+
+**Locked anchors.**
+
+- WP-111 §Card types projected enumerates `hero | villain | henchman | mastermind (base card only)`.
+- WP-111 §Card types NOT projected enumerates the eight deferred types.
+- `flattenSet()` in `packages/registry/src/shared.ts` emits only `hero | mastermind | villain | scheme` cardTypes; bystanders / wounds / officers / sidekicks / scheme-twists / mastermind-strikes do NOT appear as `FlatCard` records under any code path.
+- Mastermind tactic cards exist in `FlatCard` (the `'core-mastermind-dr-doom-secret-of-time-travel'` form) but are intentionally skipped by `findMastermindBaseCard` in `buildCardDisplayData.ts` (`tactic === true` filter).
+
+**Rationale per deferred type.**
+
+- **Bystander, wound, officer, sidekick.** Generic placeholder cards that surface in UIState as zone counts only (`UIPlayerState.{handCount, victoryCount, woundCount, …}`); no per-card surface exists in UIState today. A future WP that adds per-card visibility (e.g., showing which specific bystander was rescued) would expand both the UIState shape AND `cardDisplayData`'s scope; that warrants its own design.
+- **Scheme.** UIState exposes scheme as identity reference only (`UISchemeState.id` + `twistCount`). Adding scheme display (`name`, `imageUrl`, scheme-specific layout fields) requires decisions about whether the scheme tile is a card-shaped surface or a chrome surface. Defer.
+- **Scheme-twist, mastermind-strike.** These are **revealed** villain-deck cards with effect text — display is more than `name + imageUrl`; consumers will want `abilities` / `effectsText` / per-twist visual treatment. The four-field `UICardDisplay` lock doesn't cover this; a separate WP with its own design is appropriate.
+- **Mastermind tactic cards.** UIMastermindState exposes tactics as counts only (`tacticsRemaining`, `tacticsDefeated`); no per-tactic surface exists in UIState today. Surfacing individual tactic cards expands both the UIState shape AND `cardDisplayData`'s scope; that warrants its own design.
+
+**`UICardDisplay` four-field lock is also a deferral mechanism.** Any field addition (`team`, `class`, `setName`, `cardType`, `attack`, `recruit`, `keywords`, `abilities`) is scope creep and requires a separate WP. The lock prevents incremental drift toward a "kitchen sink" display payload.
+
+**Status:** `Active`. Each deferred card type gains projection support only when a new WP explicitly justifies its inclusion, defines the source-field map, and (where the four-field shape is insufficient) extends `UICardDisplay` with explicit governance.
+
+**Citation:** `WP-111`; `EC-118 §Locked Values §Card types projected this packet`; `EC-118 §Common Failure Smells §UICardDisplay carries any field beyond the locked four`; `packages/registry/src/shared.ts:flattenSet` (card-type emission contract); `D-11101` (sibling-snapshot rationale, which this decision scopes); `D-11104` (cost null-check semantics); `D-11105` (placeholder + setup-time diagnostic).
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
