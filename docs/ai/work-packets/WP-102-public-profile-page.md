@@ -936,7 +936,43 @@ references non-prop bindings (D-6512 / P6-30).
   — defined inline in this file rather than imported from server
   code (engine-/server-isolation rule).
 
-### H) `apps/server/src/server.mjs` — modified (per PS-3)
+### H) `apps/server/src/server.mjs` — DEFERRED (per execution-time amendment 2026-04-28; D-10202; D-3103 mid-execution precedent)
+
+> **Mid-execution amendment (2026-04-28 / Commit A `369c0a4`).** This
+> §H describes the route registration that the executor was to add
+> to `apps/server/src/server.mjs`. The §Goal #5 *Pool lifecycle gate*
+> in the session prompt fired when the executor verified that
+> `apps/server/src/server.mjs` does NOT create a long-lived
+> `pg.Pool` — the rules loader at `apps/server/src/rules/loader.mjs`
+> creates a short-lived pool, runs startup queries, and ends it in
+> `finally`. There is no surviving `database` reference at the
+> `registerHealthRoute(server.router)` call site to pass into
+> `registerProfileRoutes(server.router, database)`. Adding pool
+> creation under WP-102's read-only scope-discipline pressure would
+> force load-bearing infra decisions (`max`,
+> `idleTimeoutMillis`, error handlers, SIGTERM ordering, observability
+> hooks) inside a "read-only profile composition" packet.
+>
+> **Resolution (Option A; D-10202; cite D-3103 mid-execution
+> precedent + WP-053 `submitCompetitiveScore` shipped-but-unwired
+> precedent):** the one-line `registerProfileRoutes(server.router,
+> database)` addition to `apps/server/src/server.mjs` is **deferred**
+> to the future request-handler WP that owns long-lived `pg.Pool`
+> lifecycle (consumer-agnostic naming — that WP may be a successor
+> to WP-112, a dedicated "Claim Endpoint WP", or any future
+> request-handler WP that owns pool lifecycle). Commit A
+> (`369c0a4`) ships **7 of the 8** Commit-A files; the
+> `apps/server/src/server.mjs` row is removed from the Commit-A
+> allowlist. `registerProfileRoutes` is exported from
+> `apps/server/src/profile/profile.routes.ts` with no production
+> caller during the deferral window. The arena-client
+> `?profile=<handle>` page renders the locked "No player has claimed
+> this handle." empty-state during the deferral window because
+> `fetchPublicProfile` sees a 404 from the dev server's default
+> handler — the UX is indistinguishable from a real unclaimed-handle
+> 404, so no broken-experience cliff. The full text below remains as
+> the contract for the future request-handler WP that lands the
+> deferred wiring.
 
 The existing server entry point (resolved at pre-flight 2026-04-28
 PS-3 to `apps/server/src/server.mjs`) must call
@@ -946,12 +982,12 @@ startup, immediately after the existing
 
 - One-line call site addition; no other changes to `server.mjs`.
 - `database` argument is the `pg.Pool` instance the server creates
-  at startup. **WP-102 does NOT introduce pool creation** — if no
-  pool exists at the point of call (a future request-handler WP
-  may own pool lifecycle), WP-102's session prompt will surface this
-  as an additional pre-execution gate. The pre-flight 2026-04-28 did
-  not check pool availability and the executor must verify at
-  session start (§Pre-Session Gate).
+  at startup. **WP-102 does NOT introduce pool creation** — the
+  future request-handler WP that owns long-lived pool lifecycle
+  lands this addition. The pre-flight 2026-04-28 did not check
+  pool availability; the §Goal #5 pool-lifecycle gate caught the
+  gap at execution time and the deferral was authorized via
+  D-10202 (cite D-3103).
 - The Koa router is already in scope at this line via the
   `Server({...})` construction at line ~110. No new framework imports
   needed.

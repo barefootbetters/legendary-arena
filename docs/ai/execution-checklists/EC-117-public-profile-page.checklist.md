@@ -56,7 +56,7 @@
 - `apps/arena-client/src/App.vue` — **modified** (per PS-2: extends `AppRoute` with `'profile'`; parses `?profile=<canonical>`; renders `<PlayerProfilePage :handle="..." />` branch)
 - `apps/arena-client/src/pages/PlayerProfilePage.vue` — **new** (Vue 3 SFC; receives `handle` as prop, NOT from `vue-router`)
 - `apps/arena-client/src/lib/api/profileApi.ts` — **new** (`fetchPublicProfile(handle)`)
-- `apps/server/src/server.mjs` — **modified** (per PS-3: one-line `registerProfileRoutes(server.router, database)` after `registerHealthRoute(server.router)` at line ~120)
+- ~~`apps/server/src/server.mjs` — **modified** (per PS-3: one-line `registerProfileRoutes(server.router, database)` after `registerHealthRoute(server.router)` at line ~120)~~ — **DEFERRED 2026-04-28 per Commit A `369c0a4` execution-time amendment + WP-102 §H amendment + D-10202 (Pool-lifecycle deferral; cite D-3103 mid-execution precedent + WP-053 `submitCompetitiveScore` shipped-but-unwired precedent). Commit A ships 7 files, not 8. The future request-handler WP that owns long-lived `pg.Pool` lifecycle lands this addition.**
 
 ## After Completing
 - [ ] All WP-102 §Verification Steps + §Definition of Done items pass
