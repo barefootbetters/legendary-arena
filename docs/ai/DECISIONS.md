@@ -11819,7 +11819,7 @@ The `extId: ''` default is overwritten at every projection-time substitution via
 
 ### D-8608 — EC-086 8-file scope amendment: `devLog.ts` + `debugMode.ts` added as audit-trail
 
-**Decision:** Two additional production files were modified beyond the EC-086 §Files to Produce 8-file scope, bringing the actual production-file count to 10 in Commit A `a227094`:
+**Decision:** Two additional production files were modified beyond the EC-086 §Files to Produce 8-file scope, bringing the actual production-file count to 10 in Commit A `ccc6d0e`:
 
 1. `apps/registry-viewer/src/lib/devLog.ts` — `Category` union widened by adding `"cardTypes"` as a sixth value (`"registry" | "theme" | "filter" | "render" | "glossary" | "cardTypes"`). Single-character-pipe-plus-string-literal addition.
 
