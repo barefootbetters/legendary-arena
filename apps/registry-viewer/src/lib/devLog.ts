@@ -11,7 +11,7 @@
 
 import { DEBUG_VIEWER } from "./debugMode";
 
-type Category = "registry" | "theme" | "filter" | "render" | "glossary";
+type Category = "registry" | "theme" | "filter" | "render" | "glossary" | "cardTypes";
 
 /**
  * Logs a categorized dev event. No-op when `DEBUG_VIEWER` is false.

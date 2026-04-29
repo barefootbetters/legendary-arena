@@ -5,6 +5,9 @@ import { getRegistry } from "./lib/registryClient";
 import { getThemes } from "./lib/themeClient";
 import type { ThemeDefinition } from "./lib/themeClient";
 import { getKeywordGlossary, getKeywordPdfPages, getRuleGlossary } from "./lib/glossaryClient";
+import { getCardTypes } from "./lib/cardTypesClient";
+import { devLog } from "./lib/devLog";
+import type { CardTypeEntry } from "@legendary-arena/registry/schema";
 import { setGlossaries } from "./composables/useRules";
 import { useGlossary, rebuildGlossaryEntries } from "./composables/useGlossary";
 import { useLightbox } from "./composables/useLightbox";
@@ -72,14 +75,28 @@ const selectedTheme   = ref<ThemeDefinition | null>(null);
 const themeSearchText = ref("");
 
 // ── Card type groups ──────────────────────────────────────────────────────────
+
+// why: types/subtypes widened from FlatCardType (9-value union) to string so
+// the same TypeGroup interface accommodates both LEGACY_TYPE_GROUPS (legacy
+// FlatCardType values) and displayedTypeGroups built from card-types.json
+// (Phase-2 slugs like "sidekick" / "shield-agent" not yet in the FlatCardType
+// union). Phase 2 (separate WP) regenerates per-card cardType emission
+// upstream via modern-master-strike.
 interface TypeGroup {
   label:    string;
   emoji:    string;
-  types:    FlatCardType[];
-  subtypes: { label: string; type: FlatCardType }[];
+  types:    string[];
+  subtypes: { label: string; type: string }[];
 }
 
-const TYPE_GROUPS: TypeGroup[] = [
+// why: card-types.json (WP-086) is the new source-of-truth for ribbon shape;
+// LEGACY_TYPE_GROUPS lights up only on degraded-fetch fallback when
+// getCardTypes() resolves to []. Byte-identical to the legacy hardcoded
+// array minus the "Location" subchip — flattenSet() in shared.ts never
+// assigned cardType="location" (the 8 hardcoded literals are
+// hero/mastermind/villain/henchman/scheme/bystander/wound/other; "location"
+// was orphan UI). Dead code on the happy path.
+const LEGACY_TYPE_GROUPS: TypeGroup[] = [
   {
     label: "Hero", emoji: "🦸",
     types: ["hero"],
@@ -117,16 +134,22 @@ const TYPE_GROUPS: TypeGroup[] = [
   },
   {
     label: "Other", emoji: "🃏",
-    types: ["location","other"],
-    subtypes: [
-      { label: "Location", type: "location" },
-      { label: "Other",    type: "other" },
-    ],
+    types: ["other"],
+    subtypes: [{ label: "Other", type: "other" }],
   },
 ];
 
-// Selected card types — empty means "all"
-const selectedTypes = ref<Set<FlatCardType>>(new Set());
+// Live taxonomy fetched from card-types.json. Empty until onMounted resolves;
+// stays empty if fetch fails or schema rejects (non-blocking by design —
+// cardTypesClient.ts never throws).
+const cardTypes = ref<CardTypeEntry[]>([]);
+
+// why: Set<string> rather than Set<FlatCardType> because the displayed ribbon
+// can include Phase-2 slugs (sidekick, shield-agent, shield-officer,
+// shield-trooper) not in the FlatCardType 9-value union. The registry.query()
+// call site casts back to FlatCardType[] before passing through the existing
+// query() type signature.
+const selectedTypes = ref<Set<string>>(new Set());
 
 function toggleGroup(group: TypeGroup) {
   const allSelected = group.types.every((t) => selectedTypes.value.has(t));
@@ -191,6 +214,20 @@ onMounted(async () => {
       console.warn("[Themes] Load failed (non-blocking):", themeError);
     }
 
+    // why: card-types.json (WP-086) drives the ribbon as the authoritative
+    // taxonomy. cardTypesClient.ts is non-blocking — HTTP failure or schema
+    // rejection resolves to []; displayedTypeGroups computed selects
+    // LEGACY_TYPE_GROUPS in that case. No try/catch needed at this seam.
+    loadStatus.value = "Loading card types taxonomy…";
+    cardTypes.value = await getCardTypes(metadataBaseUrl);
+    if (cardTypes.value.length === 0) {
+      // why: diagnostic-parity emission — makes degraded-fetch mode visible
+      // in the console without changing control flow. displayedTypeGroups
+      // computed handles the actual fallback to LEGACY_TYPE_GROUPS. Fires
+      // at most once per page session because onMounted runs once.
+      devLog("cardTypes", "using legacy fallback");
+    }
+
     // why: Parallel to getThemes() above — glossary fetch is non-blocking.
     // If R2 is unreachable or the JSON files are missing, console.warn and
     // continue; tooltips will be absent but the card view remains functional.
@@ -246,7 +283,11 @@ function handleKeydown(event: KeyboardEvent) {
 function applyFilters() {
   if (!registry.value) return;
   const q: CardQueryExtended = {};
-  if (selectedTypes.value.size > 0) q.cardTypes = [...selectedTypes.value];
+  // why: cast to FlatCardType[] because selectedTypes can hold Phase-2 slugs
+  // (e.g., "sidekick", "shield-agent") not yet in the FlatCardType 9-value
+  // union. applyQuery() gracefully returns zero results for unknown slugs
+  // (Phase 1 invariant covered by registry/shared.test.ts).
+  if (selectedTypes.value.size > 0) q.cardTypes = [...selectedTypes.value] as FlatCardType[];
   if (filterSet.value)  q.setAbbr      = filterSet.value;
   if (filterHC.value)   q.heroClass    = filterHC.value as CardQueryExtended["heroClass"];
   if (searchText.value) q.nameContains = searchText.value;
@@ -255,6 +296,40 @@ function applyFilters() {
 }
 
 const activeTypeCount = computed(() => selectedTypes.value.size);
+
+// why: displayedTypeGroups selects between the fetched taxonomy
+// (data/metadata/card-types.json via cardTypesClient.ts) and the legacy
+// hardcoded fallback. cardTypes.value.length === 0 means the fetch returned
+// empty (HTTP failure or schema rejection); LEGACY_TYPE_GROUPS preserves the
+// original ribbon so the card view stays functional in degraded mode.
+const displayedTypeGroups = computed<TypeGroup[]>(() => {
+  if (cardTypes.value.length === 0) return LEGACY_TYPE_GROUPS;
+
+  const topLevel = cardTypes.value
+    .filter((entry) => entry.parentType === null)
+    .sort((a, b) => a.order - b.order);
+
+  return topLevel.map((parent) => {
+    const children = cardTypes.value
+      .filter((entry) => entry.parentType === parent.slug)
+      .sort((a, b) => a.order - b.order);
+
+    if (children.length > 0) {
+      return {
+        label:    parent.label,
+        emoji:    parent.emoji ?? "",
+        types:    children.map((child) => child.slug),
+        subtypes: children.map((child) => ({ label: child.label, type: child.slug })),
+      };
+    }
+    return {
+      label:    parent.label,
+      emoji:    parent.emoji ?? "",
+      types:    [parent.slug],
+      subtypes: [{ label: parent.label, type: parent.slug }],
+    };
+  });
+});
 
 // ── Theme filtering ──────────────────────────────────────────────────────────
 function applyThemeFilters() {
@@ -411,7 +486,7 @@ function navigateToCard(slug: string, cardType: string) {
         >All</button>
 
         <button
-          v-for="group in TYPE_GROUPS"
+          v-for="group in displayedTypeGroups"
           :key="group.label"
           class="type-group-btn"
           :class="{

@@ -100,6 +100,9 @@ importers:
       eslint-plugin-vuejs-accessibility:
         specifier: ^2.5.0
         version: 2.5.0(eslint@8.57.1)(globals@13.24.0)
+      tsx:
+        specifier: ^4.15.7
+        version: 4.21.0
       typescript:
         specifier: ^5.4.5
         version: 5.9.3
