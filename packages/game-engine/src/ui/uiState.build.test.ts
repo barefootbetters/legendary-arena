@@ -11,12 +11,14 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildUIState } from './uiState.build.js';
+import { buildUIState, UNKNOWN_DISPLAY_PLACEHOLDER } from './uiState.build.js';
+import { filterUIStateForAudience } from './uiState.filter.js';
 import { buildInitialGameState } from '../setup/buildInitialGameState.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
-import type { LegendaryGameState } from '../types.js';
+import type { LegendaryGameState, CardExtId } from '../types.js';
+import type { UICardDisplay } from './uiState.types.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 
 /**
@@ -174,5 +176,390 @@ describe('buildUIState', () => {
     assert.ok(result.gameOver !== undefined, 'gameOver must be present when endgame triggers');
     assert.equal(result.gameOver!.outcome, 'heroes-win');
     assert.ok(result.gameOver!.scores !== undefined, 'scores must be present in gameOver');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-111 / EC-118 — display projection coverage
+// ---------------------------------------------------------------------------
+
+/**
+ * Helper: builds a synthetic G with populated cardDisplayData, hand, City,
+ * HQ, and mastermind base card so projection tests can exercise the
+ * display-resolution paths. The narrow mock registry used by
+ * createTestGameState produces empty cardDisplayData; this helper
+ * injects realistic fixture data on top.
+ */
+function makeGameStateWithDisplayData(): LegendaryGameState {
+  const gameState = createTestGameState();
+
+  const heroExtId = 'core-hero-black-widow-1' as CardExtId;
+  const villainExtId = 'core-villain-brotherhood-magneto' as CardExtId;
+  const henchmanExtId = 'henchman-doombot-legion-00' as CardExtId;
+  const mastermindBaseExtId = 'core-mastermind-dr-doom-doctor-doom' as CardExtId;
+
+  // why: inject realistic display data; narrow mock registry produced
+  // an empty record at setup time. This is a test helper, not a
+  // production code path.
+  const injectedDisplay: Record<CardExtId, UICardDisplay> = {
+    [heroExtId]: {
+      extId: heroExtId,
+      name: 'Mission Accomplished',
+      imageUrl: 'https://images.barefootbetters.com/core/hero-black-widow-1.webp',
+      cost: 2,
+    },
+    [villainExtId]: {
+      extId: villainExtId,
+      name: 'Magneto',
+      imageUrl: 'https://images.barefootbetters.com/core/villain-magneto.webp',
+      cost: 5,
+    },
+    [henchmanExtId]: {
+      extId: henchmanExtId,
+      name: 'Doombot Legion',
+      imageUrl: 'https://images.barefootbetters.com/core/hm-doombot-legion.webp',
+      cost: 3,
+    },
+    [mastermindBaseExtId]: {
+      extId: mastermindBaseExtId,
+      name: 'Dr. Doom',
+      imageUrl: 'https://images.barefootbetters.com/core/mm-dr-doom.webp',
+      cost: 9,
+    },
+  };
+  (gameState as { cardDisplayData: Readonly<Record<CardExtId, UICardDisplay>> }).cardDisplayData = injectedDisplay;
+
+  // Populate hand with the hero card so handDisplay has non-empty content.
+  const playerZones = gameState.playerZones['0']!;
+  playerZones.hand = [heroExtId, heroExtId];
+
+  // Populate City space 0 with the villain.
+  gameState.city[0] = villainExtId;
+
+  // Populate HQ slot 0 with the hero.
+  gameState.hq[0] = heroExtId;
+  gameState.hq[2] = henchmanExtId;
+
+  // Wire the mastermind baseCardId so the projection lookup hits an
+  // injected entry rather than the narrow-mock empty one.
+  (gameState.mastermind as { baseCardId: CardExtId }).baseCardId =
+    mastermindBaseExtId;
+
+  return gameState;
+}
+
+describe('buildUIState — display projection (WP-111 / EC-118)', () => {
+  it('every CardExtId has display with non-empty name and imageUrl', () => {
+    const gameState = makeGameStateWithDisplayData();
+
+    const ui = buildUIState(gameState, mockCtx);
+
+    // City space 0 has the injected villain
+    const citySpace0 = ui.city.spaces[0];
+    assert.ok(citySpace0 !== null, 'City space 0 must be populated');
+    assert.ok(citySpace0!.display.name.length > 0, 'City display name non-empty');
+    assert.ok(citySpace0!.display.imageUrl.length > 0, 'City display imageUrl non-empty');
+    assert.equal(citySpace0!.display.cost, 5);
+
+    // HQ slot 0 has the injected hero
+    const hqSlot0 = ui.hq.slotDisplay![0];
+    assert.ok(hqSlot0 !== null, 'HQ slot 0 must be populated');
+    assert.equal(hqSlot0!.display.name, 'Mission Accomplished');
+    assert.equal(hqSlot0!.display.cost, 2);
+
+    // Hand display populated for player 0
+    const handDisplay = ui.players[0]!.handDisplay;
+    assert.ok(handDisplay !== undefined, 'handDisplay must be populated');
+    assert.equal(handDisplay!.length, 2);
+    assert.equal(handDisplay![0]!.name, 'Mission Accomplished');
+
+    // Mastermind display populated via baseCardId lookup
+    assert.equal(ui.mastermind.display.name, 'Dr. Doom');
+    assert.equal(ui.mastermind.display.cost, 9);
+  });
+
+  it('opponent handCards redaction also redacts handDisplay', () => {
+    // why: privacy symmetry — leaking display data is identical to
+    // leaking the CardExtId for opponent privacy purposes.
+    const gameState = makeGameStateWithDisplayData();
+    const fullUI = buildUIState(gameState, mockCtx);
+
+    const filtered = filterUIStateForAudience(fullUI, {
+      kind: 'player',
+      playerId: '1',
+    });
+
+    // Player 0 (the opponent) should have BOTH handCards and handDisplay omitted
+    const player0Filtered = filtered.players.find((p) => p.playerId === '0');
+    assert.ok(player0Filtered, 'player 0 must be present');
+    assert.equal(player0Filtered!.handCards, undefined, 'opponent handCards redacted');
+    assert.equal(
+      player0Filtered!.handDisplay,
+      undefined,
+      'opponent handDisplay redacted alongside handCards (privacy symmetry)',
+    );
+  });
+
+  it('viewing player keeps own handDisplay alongside handCards', () => {
+    const gameState = makeGameStateWithDisplayData();
+    const fullUI = buildUIState(gameState, mockCtx);
+
+    const filtered = filterUIStateForAudience(fullUI, {
+      kind: 'player',
+      playerId: '0',
+    });
+
+    const player0Filtered = filtered.players.find((p) => p.playerId === '0');
+    assert.ok(player0Filtered, 'player 0 must be present');
+    assert.ok(player0Filtered!.handCards !== undefined, 'own handCards preserved');
+    assert.ok(player0Filtered!.handDisplay !== undefined, 'own handDisplay preserved');
+    assert.equal(
+      player0Filtered!.handCards!.length,
+      player0Filtered!.handDisplay!.length,
+      'parallel-array length invariant',
+    );
+  });
+
+  it('public display fields (City / HQ / Mastermind) are NOT redacted', () => {
+    const gameState = makeGameStateWithDisplayData();
+    const fullUI = buildUIState(gameState, mockCtx);
+
+    // Filter for spectator (most restrictive) — public display data must still flow.
+    const filtered = filterUIStateForAudience(fullUI, { kind: 'spectator' });
+
+    const citySpace0 = filtered.city.spaces[0];
+    assert.ok(citySpace0 !== null);
+    assert.equal(citySpace0!.display.name, 'Magneto');
+
+    const hqSlot0 = filtered.hq.slotDisplay![0];
+    assert.ok(hqSlot0 !== null);
+    assert.equal(hqSlot0!.display.name, 'Mission Accomplished');
+
+    assert.equal(filtered.mastermind.display.name, 'Dr. Doom');
+  });
+
+  it('HQ length-equality invariant: slots.length === slotDisplay.length AND null positions align', () => {
+    const gameState = makeGameStateWithDisplayData();
+    const ui = buildUIState(gameState, mockCtx);
+
+    assert.equal(
+      ui.hq.slots.length,
+      ui.hq.slotDisplay!.length,
+      'parallel-array length invariant',
+    );
+
+    for (let i = 0; i < ui.hq.slots.length; i++) {
+      const slotIsNull = ui.hq.slots[i] === null;
+      const displayIsNull = ui.hq.slotDisplay![i] === null;
+      assert.equal(
+        slotIsNull,
+        displayIsNull,
+        `slots[${String(i)}] === null must match slotDisplay[${String(i)}] === null`,
+      );
+    }
+  });
+
+  it('handDisplay length matches handCards exactly', () => {
+    const gameState = makeGameStateWithDisplayData();
+    const ui = buildUIState(gameState, mockCtx);
+
+    const player0 = ui.players[0]!;
+    assert.equal(
+      player0.handCards!.length,
+      player0.handDisplay!.length,
+      'parallel-array length invariant',
+    );
+  });
+
+  it('setup-time determinism: identical G produces deeply-equal display projection', () => {
+    const gameState = makeGameStateWithDisplayData();
+
+    const ui1 = buildUIState(gameState, mockCtx);
+    const ui2 = buildUIState(gameState, mockCtx);
+
+    assert.deepStrictEqual(ui1.players[0]!.handDisplay, ui2.players[0]!.handDisplay);
+    assert.deepStrictEqual(ui1.city.spaces, ui2.city.spaces);
+    assert.deepStrictEqual(ui1.hq.slotDisplay, ui2.hq.slotDisplay);
+    assert.deepStrictEqual(ui1.mastermind.display, ui2.mastermind.display);
+  });
+});
+
+describe('buildUIState — projection-purity contract (PS-8 / WP-028 D-2801)', () => {
+  it('does NOT mutate G.messages even when display entries are missing', () => {
+    // why: critical PS-8 / D-2801 guard — the diagnostic surface for
+    // missing display entries lives at SETUP TIME (mirrors WP-113
+    // D-10014), not at projection time. buildUIState must remain pure.
+    const gameState = makeGameStateWithDisplayData();
+
+    // Inject a hand card that has NO entry in cardDisplayData — projection
+    // must fall back to UNKNOWN_DISPLAY_PLACEHOLDER without touching G.
+    const orphanExtId = 'orphan-no-display' as CardExtId;
+    gameState.playerZones['0']!.hand = [orphanExtId];
+
+    const messagesBefore = JSON.stringify(gameState.messages);
+
+    const ui = buildUIState(gameState, mockCtx);
+
+    const messagesAfter = JSON.stringify(gameState.messages);
+    assert.equal(
+      messagesBefore,
+      messagesAfter,
+      'G.messages MUST NOT be mutated by buildUIState',
+    );
+
+    // Projection still yields placeholder fallback for the orphan
+    const handDisplay = ui.players[0]!.handDisplay!;
+    assert.equal(handDisplay.length, 1);
+    assert.equal(
+      handDisplay[0]!.name,
+      UNKNOWN_DISPLAY_PLACEHOLDER.name,
+      'orphan ext_id falls back to placeholder name',
+    );
+    assert.equal(
+      handDisplay[0]!.extId,
+      orphanExtId,
+      'placeholder copies the actual extId in, NOT the placeholder constant extId field',
+    );
+  });
+
+  it('valid setups produce no UNKNOWN_DISPLAY_PLACEHOLDER entries', () => {
+    // why: CI-visible regression target — placeholder must NEVER fire
+    // for a setup whose cardDisplayData is complete.
+    const gameState = makeGameStateWithDisplayData();
+    const ui = buildUIState(gameState, mockCtx);
+
+    for (const space of ui.city.spaces) {
+      if (space === null) continue;
+      assert.notEqual(
+        space.display.name,
+        UNKNOWN_DISPLAY_PLACEHOLDER.name,
+        'valid setup must not emit placeholder for City',
+      );
+    }
+
+    for (const slot of ui.hq.slotDisplay!) {
+      if (slot === null) continue;
+      assert.notEqual(
+        slot.display.name,
+        UNKNOWN_DISPLAY_PLACEHOLDER.name,
+        'valid setup must not emit placeholder for HQ',
+      );
+    }
+
+    for (const display of ui.players[0]!.handDisplay!) {
+      assert.notEqual(
+        display.name,
+        UNKNOWN_DISPLAY_PLACEHOLDER.name,
+        'valid setup must not emit placeholder for hand',
+      );
+    }
+
+    assert.notEqual(
+      ui.mastermind.display.name,
+      UNKNOWN_DISPLAY_PLACEHOLDER.name,
+      'valid setup must not emit placeholder for Mastermind',
+    );
+  });
+});
+
+describe('buildUIState — aliasing prevention (WP-028 cardKeywords precedent)', () => {
+  it('mutating returned UICardDisplay does NOT mutate G.cardDisplayData', () => {
+    // why: standard tests cannot detect aliasing; this explicit
+    // contract asserts that every projection-time read of
+    // G.cardDisplayData[extId] produces a fresh shallow copy.
+    const gameState = makeGameStateWithDisplayData();
+    const heroExtId = 'core-hero-black-widow-1' as CardExtId;
+    const originalName = gameState.cardDisplayData[heroExtId]!.name;
+
+    const ui = buildUIState(gameState, mockCtx);
+
+    // Mutate the returned hand display
+    ui.players[0]!.handDisplay![0]!.name = 'mutated-hand';
+    // Mutate the returned HQ slotDisplay
+    ui.hq.slotDisplay![0]!.display.name = 'mutated-hq';
+    // Mutate the returned mastermind display
+    ui.mastermind.display.name = 'mutated-mm';
+
+    // G.cardDisplayData[heroExtId] must be untouched
+    assert.equal(
+      gameState.cardDisplayData[heroExtId]!.name,
+      originalName,
+      'G.cardDisplayData must NOT be aliased by the returned UIState',
+    );
+  });
+
+  it('filterUIStateForAudience returns shallow-copied display objects', () => {
+    // why: filter boundary must also break aliasing — mutating a
+    // filtered result must not mutate the source UIState's display
+    // objects.
+    const gameState = makeGameStateWithDisplayData();
+    const fullUI = buildUIState(gameState, mockCtx);
+
+    const filtered = filterUIStateForAudience(fullUI, { kind: 'spectator' });
+
+    const fullUiCity0 = fullUI.city.spaces[0]!;
+    const filteredCity0 = filtered.city.spaces[0]!;
+
+    filteredCity0.display.name = 'mutated';
+
+    assert.notEqual(
+      fullUiCity0.display.name,
+      'mutated',
+      'filter must not alias the input UIState display objects',
+    );
+  });
+});
+
+describe('buildInitialGameState — setup-time completeness diagnostic (PS-8)', () => {
+  it('emits a single diagnostic into G.messages when buildCardDisplayData under-emits', () => {
+    // why: the narrow CardRegistryReader mock (only `listCards()`) fails
+    // the isCardDisplayDataRegistryReader guard at setup, producing an
+    // empty cardDisplayData. The orchestration-side guard message AND
+    // the completeness sweep BOTH fire in this scenario:
+    //   1. The reader-guard message ("buildCardDisplayData skipped: ...")
+    //      because listCards-only mocks cannot satisfy the listCards/getSet
+    //      pair.
+    //   2. The completeness-sweep message ("buildCardDisplayData
+    //      under-emitted: ...") IF cardStats has entries — but with the
+    //      same narrow mock, cardStats is also empty (its guard fails too),
+    //      so the completeness sweep returns null and only the reader-guard
+    //      message lands. Either way, the messages count grows by exactly
+    //      one for buildCardDisplayData; no per-card noise.
+    const config = createTestConfig();
+    const registry = createMockRegistry();
+    const setupContext = makeMockCtx();
+
+    const gameState = buildInitialGameState(config, registry, setupContext);
+
+    const cardDisplayDataMessages = gameState.messages.filter((m) =>
+      m.includes('buildCardDisplayData'),
+    );
+    assert.equal(
+      cardDisplayDataMessages.length,
+      1,
+      'exactly one buildCardDisplayData diagnostic at setup time, never per-card',
+    );
+  });
+
+  it('no diagnostic when cardStats and cardDisplayData are both empty (no expected keys to miss)', () => {
+    // why: with the narrow mock, both builders produce {}; the
+    // completeness sweep walks `Object.keys(cardStats)` (empty) and
+    // returns null. Only the reader-guard message lands. This test
+    // documents the expected interaction: `under-emitted: 0` is never
+    // logged.
+    const config = createTestConfig();
+    const registry = createMockRegistry();
+    const setupContext = makeMockCtx();
+
+    const gameState = buildInitialGameState(config, registry, setupContext);
+
+    const underEmittedMessages = gameState.messages.filter((m) =>
+      m.includes('under-emitted'),
+    );
+    assert.equal(
+      underEmittedMessages.length,
+      0,
+      'completeness sweep must NOT emit a message when cardStats is empty',
+    );
   });
 });

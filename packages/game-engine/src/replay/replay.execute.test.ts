@@ -30,7 +30,15 @@ import { makeMockCtx } from '../test/mockCtx.js';
 //   includes `matchConfiguration` which now contains the qualified
 //   strings; the WP-080 byte-identity property still holds against the
 //   migrated fixture (per D-10014).
-const PRE_WP080_HASH = 'ba921e90';
+// why: WP-111 / EC-118 — value-only update under
+// docs/ai/REFERENCE/01.5-runtime-wiring-allowance.md. Adding
+// cardDisplayData to LegendaryGameState legitimately changes the
+// JSON-encoded structure hash. The change is dependency-driven (revert
+// it by removing the new G field with no remaining diff) and limited
+// to updating an existing literal — no behavioral or logic change to
+// this test. Pre-flight 2026-04-29 §Runtime Readiness Check + session
+// prompt §5 explicitly authorize this cascade.
+const PRE_WP080_HASH = '46f7863c';
 
 /**
  * Minimal mock registry for replay tests. Mirrors replay.verify.test.ts.

@@ -43,6 +43,39 @@ export interface UIState {
 }
 
 /**
+ * Display-safe card data projected once at setup time and surfaced through
+ * UIState. Read-only. JSON-serializable. Contains only primitive fields.
+ *
+ * Field set is locked at exactly four entries — adding `team`, `class`,
+ * `setName`, `cardType`, `attack`, `recruit`, or `keywords` here is scope
+ * creep and requires a separate WP. The drift-detection test in
+ * uiState.types.drift.test.ts pins the field set.
+ *
+ * // why: gives the UI enough to render a real card (name + image + cost)
+ * without granting the client a runtime registry import. Mirrors the
+ * G.cardStats / G.villainDeckCardTypes setup-snapshot pattern (sibling
+ * to WP-018, WP-014B). Sourced once at Game.setup() from the registry
+ * and never mutated thereafter.
+ */
+export interface UICardDisplay {
+  extId: string;
+  name: string;
+  imageUrl: string;
+  cost: number | null;
+}
+
+/**
+ * Display-bearing entry for an occupied HQ slot.
+ *
+ * Two-field shape locked: extId (the canonical join key, repeated for UI
+ * convenience and drift-detection sanity) plus the display payload.
+ */
+export interface UIHQCard {
+  extId: string;
+  display: UICardDisplay;
+}
+
+/**
  * Per-player state projection. Zones projected as counts — not card arrays.
  *
  * // why: zone counts prevent the UI from accessing card identities it
@@ -67,19 +100,33 @@ export interface UIPlayerState {
    * redacts it based on audience.
    */
   handCards?: string[];
+  /**
+   * Per-hand-card display data, parallel-aligned with handCards by index.
+   * Length matches handCards exactly when both are present. Redacted
+   * (omitted) alongside handCards by filterUIStateForAudience.
+   *
+   * // why: parallel-array form preserves backwards compatibility on the
+   * existing `handCards: string[]` shape — consumers that read handCards
+   * continue to work; new consumers opt into handDisplay for display
+   * fields. Mirrors the WP-029 D-2902 exactOptionalPropertyTypes
+   * conditional-assignment pattern: the projection and filter never
+   * write `handDisplay: undefined` literally.
+   */
+  handDisplay?: UICardDisplay[];
 }
 
 /**
  * Display-safe card info for a card in the City.
  *
  * // why: contains only display-safe data — ext_id for registry lookup,
- * type for visual classification, keywords for gameplay indicators.
- * No engine internals.
+ * type for visual classification, keywords for gameplay indicators, and
+ * the setup-snapshotted display payload. No engine internals.
  */
 export interface UICityCard {
   extId: string;
   type: string;
   keywords: string[];
+  display: UICardDisplay;
 }
 
 /**
@@ -91,18 +138,33 @@ export interface UICityState {
 
 /**
  * HQ zone projection with ext_ids for display lookup.
+ *
+ * // why: `slots` shape preserved verbatim per pre-flight 2026-04-29 PS-6
+ * (Q3 written audit blocked the breaking-change form — HQRow.vue and
+ * HQRow.test.ts iterate `slots` as bare strings and live outside the
+ * 9-file allowlist). The new `slotDisplay?` parallel array carries the
+ * display payload aligned by index; `null` at position i in slotDisplay
+ * matches `slots[i] === null` exactly. Mirrors the handCards / handDisplay
+ * parallel-array pattern.
  */
 export interface UIHQState {
   slots: (string | null)[];
+  slotDisplay?: (UIHQCard | null)[];
 }
 
 /**
  * Mastermind projection with identity and tactics counts.
+ *
+ * // why: `display` is keyed internally by gameState.mastermind.baseCardId
+ * (the canonical G.cardStats / G.cardDisplayData join key per pre-flight
+ * 2026-04-29 PS-5); `id` continues to expose the qualified group id
+ * (e.g., "core/dr-doom"). UI consumers never see the join key.
  */
 export interface UIMastermindState {
   id: string;
   tacticsRemaining: number;
   tacticsDefeated: number;
+  display: UICardDisplay;
 }
 
 /**

@@ -49,6 +49,12 @@ import {
   buildSchemeSetupInstructions,
   isSchemeRegistryReader,
 } from './buildSchemeSetupInstructions.js';
+import {
+  buildCardDisplayData,
+  isCardDisplayDataRegistryReader,
+} from './buildCardDisplayData.js';
+import type { UICardDisplay } from '../ui/uiState.types.js';
+import type { CardStatEntry } from '../economy/economy.types.js';
 import { executeSchemeSetup } from '../scheme/schemeSetup.execute.js';
 
 // why: Pile ext_id constants are re-exported from pilesInit.ts for backward
@@ -180,6 +186,18 @@ export function buildInitialGameState(
       'buildHeroAbilityHooks skipped: the registry-reader interface is incomplete (listCards missing or not a function). Verify that setRegistryForSetup(registry) was called at server startup, or that the test mock implements the full reader interface.',
     );
   }
+  // why: WP-111 / EC-118 / D-10014 — orchestration-side detection seam
+  // for the new buildCardDisplayData builder. Mirrors the four guards
+  // above. Builder-internal `isCardDisplayDataRegistryReader → empty`
+  // path remains unchanged for defense-in-depth; this site is the
+  // primary detection seam (per the WP-113 D-10014 single-detection-seam
+  // pattern). Single full-sentence diagnostic naming (a) which builder
+  // skipped, (b) why, (c) how to fix.
+  if (!isCardDisplayDataRegistryReader(registry)) {
+    setupMessages.push(
+      'buildCardDisplayData skipped: the registry-reader interface is incomplete (listCards / getSet missing or not functions). Verify that setRegistryForSetup(registry) was called at server startup, or that the test mock implements the full reader interface.',
+    );
+  }
 
   // Build per-player state with shuffled starting decks
   const playerZones: Record<string, PlayerZones> = {};
@@ -234,6 +252,30 @@ export function buildInitialGameState(
     cardStats,
   );
 
+  // why: WP-111 / EC-118 — sibling-snapshot to G.cardStats / G.cardKeywords /
+  // G.villainDeckCardTypes. Surfaces card display fields (name, imageUrl,
+  // cost) into UIState so arena-client renders real cards instead of
+  // CardExtId strings — without granting the client a runtime registry
+  // import. Placed after buildMastermindState because the completeness
+  // sweep below uses cardStats (which now contains the mastermind base
+  // card entry) as the expected-key set.
+  const cardDisplayData = buildCardDisplayData(registry as unknown, config);
+
+  // why: WP-111 / EC-118 / PS-8 — setup-time diagnostic surface for missing
+  // display entries. Preserves WP-028 D-2801 projection-purity contract:
+  // buildUIState MUST NOT mutate G.messages. The diagnostic surface lives
+  // here at setup time, mirroring the WP-113 D-10014 single-detection-seam
+  // pattern. One consolidated diagnostic per setup, never per-card.
+  // Projection-time placeholder fallback (UNKNOWN_DISPLAY_PLACEHOLDER) is
+  // a pure render path with no G interaction.
+  const completenessMessage = auditCardDisplayDataCompleteness(
+    cardStats,
+    cardDisplayData,
+  );
+  if (completenessMessage !== null) {
+    setupMessages.push(completenessMessage);
+  }
+
   // why: build the base state first, then apply scheme setup instructions.
   // executeSchemeSetup returns updated state — pure function, no mutation.
   // At MVP, schemeSetupInstructions is always [], so this is a no-op passthrough.
@@ -275,6 +317,11 @@ export function buildInitialGameState(
     // why: board keywords resolved at setup from registry — same pattern as
     // cardStats and villainDeckCardTypes. Immutable during gameplay.
     cardKeywords,
+    // why: WP-111 / EC-118 — sibling-snapshot for UI display data
+    // (name / imageUrl / cost). Built once at setup; read only by
+    // uiState.build.ts. Gameplay reads G.cardStats — never
+    // G.cardDisplayData (presentation-vs-gameplay separation lock).
+    cardDisplayData,
     // why: scheme setup instructions stored for replay observability (D-2601).
     // Empty at MVP — no structured scheme metadata in registry yet.
     schemeSetupInstructions,
@@ -299,4 +346,48 @@ export function buildInitialGameState(
   };
 
   return executeSchemeSetup(baseState, schemeSetupInstructions);
+}
+
+// ---------------------------------------------------------------------------
+// auditCardDisplayDataCompleteness — pure helper for PS-8 diagnostic
+// ---------------------------------------------------------------------------
+
+/**
+ * Audits whether every CardExtId expected by gameplay has a matching
+ * display entry. Returns a single consolidated diagnostic string when
+ * any expected key is missing; returns null when every key is covered.
+ *
+ * Expected-key set is taken from `cardStats` because both builders
+ * iterate the same four card-type surfaces (heroes / villains /
+ * henchmen / mastermind base card) and use the same CardExtId join key
+ * conventions. After buildMastermindState runs, cardStats contains
+ * every gameplay-relevant ext_id; cardDisplayData should contain a
+ * superset (display data for the same set, no extra entries).
+ *
+ * The completeness sweep is the PS-8 setup-time diagnostic surface that
+ * preserves WP-028 D-2801 projection-purity (buildUIState never mutates
+ * G.messages). One consolidated diagnostic per setup; never per-card.
+ *
+ * @param cardStats - Populated card stats record (gameplay source of
+ *   truth for which ext_ids should exist).
+ * @param cardDisplayData - Populated card display data record.
+ * @returns Single consolidated diagnostic string, or null when every
+ *   expected key is present.
+ */
+// why: WP-113 D-10014 single-detection-seam pattern; aggregate the
+// missing list into one message rather than emitting per-card noise.
+function auditCardDisplayDataCompleteness(
+  cardStats: Record<CardExtId, CardStatEntry>,
+  cardDisplayData: Readonly<Record<CardExtId, UICardDisplay>>,
+): string | null {
+  const missing: string[] = [];
+  for (const expectedKey of Object.keys(cardStats)) {
+    if (cardDisplayData[expectedKey as CardExtId] === undefined) {
+      missing.push(expectedKey);
+    }
+  }
+  if (missing.length === 0) return null;
+
+  const plural = missing.length === 1 ? 'entry' : 'entries';
+  return `buildCardDisplayData under-emitted: ${String(missing.length)} expected display ${plural} missing. Missing extIds: ${missing.join(', ')}. Fix: verify the registry-reader interface (listCards / getSet) is fully wired via setRegistryForSetup(registry), and that the test mock implements both methods.`;
 }

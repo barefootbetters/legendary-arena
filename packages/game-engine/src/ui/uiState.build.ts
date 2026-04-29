@@ -18,6 +18,8 @@ import type {
   UIGameOverState,
   UIProgressCounters,
   UIParBreakdown,
+  UICardDisplay,
+  UIHQCard,
 } from './uiState.types.js';
 import { getAvailableAttack, getAvailableRecruit } from '../economy/economy.logic.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
@@ -32,6 +34,59 @@ interface UIBuildContext {
   readonly phase: string | null;
   readonly turn: number;
   readonly currentPlayer: string;
+}
+
+// why: WP-111 / EC-118 / PS-8 — pure-render fallback for the rare case
+// where a CardExtId in any zone has no matching entry in
+// G.cardDisplayData. Centralized as a single named constant so the
+// placeholder name literal appears EXACTLY ONCE across the engine
+// source (grep-enforced — see EC-118 §After Completing). The
+// diagnostic surface for missing entries lives at SETUP TIME (the
+// auditCardDisplayDataCompleteness sweep in buildInitialGameState
+// emits one consolidated message into G.messages mirroring WP-113
+// D-10014). Projection-time use here is a pure render path — no G
+// mutation. Cite WP-028 D-2801 (projection-purity contract) +
+// pre-flight 2026-04-29 PS-8.
+//
+// Tests assert no placeholder appears for valid setups (CI-visible
+// regression target).
+/**
+ * Pure-render placeholder for CardExtIds with no matching display entry.
+ *
+ * Exported so callers can perform structural equality checks against
+ * the placeholder shape; the placeholder name literal appears nowhere
+ * else in engine source. The `extId` field is intentionally an empty
+ * string — at projection time, the actual ext_id is substituted in
+ * via `{...UNKNOWN_DISPLAY_PLACEHOLDER, extId}` (see resolveDisplay).
+ */
+export const UNKNOWN_DISPLAY_PLACEHOLDER: UICardDisplay = {
+  extId: '',
+  name: '<unknown>',
+  imageUrl: '',
+  cost: null,
+};
+
+// why: every projection-time read of G.cardDisplayData[extId] MUST
+// return a fresh shallow copy at the projection boundary, not a direct
+// reference. Standard tests cannot detect aliasing — line-by-line
+// shallow copies are the contract. Mirrors the WP-028 cardKeywords
+// post-mortem aliasing fix.
+/**
+ * Resolves the UICardDisplay for a CardExtId via shallow copy.
+ *
+ * Returns a fresh {...G.cardDisplayData[extId]} when the entry exists;
+ * returns {...UNKNOWN_DISPLAY_PLACEHOLDER, extId} when missing (pure
+ * render fallback — does not mutate G).
+ */
+function resolveDisplay(
+  extId: string,
+  gameState: LegendaryGameState,
+): UICardDisplay {
+  const entry = gameState.cardDisplayData[extId];
+  if (entry !== undefined) {
+    return { ...entry };
+  }
+  return { ...UNKNOWN_DISPLAY_PLACEHOLDER, extId };
 }
 
 /**
@@ -193,6 +248,14 @@ export function buildUIState(
   const players: UIPlayerState[] = [];
   for (const playerId of Object.keys(gameState.playerZones)) {
     const zones = gameState.playerZones[playerId]!;
+    // why: handDisplay length-equals-handCards invariant — populate one
+    // UICardDisplay per hand card via per-entry shallow copy
+    // (resolveDisplay). filterUIStateForAudience redacts handDisplay
+    // alongside handCards (privacy symmetry — see uiState.filter.ts).
+    const handDisplay: UICardDisplay[] = [];
+    for (const cardExtId of zones.hand) {
+      handDisplay.push(resolveDisplay(cardExtId, gameState));
+    }
     players.push({
       playerId,
       deckCount: zones.deck.length,
@@ -205,6 +268,7 @@ export function buildUIState(
       // expose them to the owning player. Spread copy prevents aliasing
       // with G.playerZones[playerId].hand.
       handCards: [...zones.hand],
+      handDisplay,
     });
   }
 
@@ -223,24 +287,47 @@ export function buildUIState(
         extId: space,
         type: gameState.villainDeckCardTypes[space] ?? 'unknown',
         keywords: cardKeywords !== undefined ? [...cardKeywords] : [],
+        // why: WP-111 — additive display projection; per-entry shallow
+        // copy via resolveDisplay prevents aliasing with
+        // G.cardDisplayData[space].
+        display: resolveDisplay(space, gameState),
       });
     }
   }
 
   // --- 4. Project HQ ---
   // why: HQ slots expose ext_ids for registry display lookup; no
-  // engine internals needed
+  // engine internals needed. UIHQState.slots shape is preserved
+  // verbatim per pre-flight 2026-04-29 PS-6 (Q3 audit).
   const hqSlots: (string | null)[] = [];
+  // why: WP-111 — slotDisplay parallel array; length-equals-slots
+  // invariant; null at index i must match slots[i] === null. Per-entry
+  // shallow copy via resolveDisplay prevents aliasing.
+  const hqSlotDisplay: (UIHQCard | null)[] = [];
   for (const slot of gameState.hq) {
     hqSlots.push(slot);
+    if (slot === null) {
+      hqSlotDisplay.push(null);
+    } else {
+      hqSlotDisplay.push({
+        extId: slot,
+        display: resolveDisplay(slot, gameState),
+      });
+    }
   }
 
   // --- 5. Project mastermind ---
-  // why: tactics projected as counts, not card arrays
+  // why: tactics projected as counts, not card arrays. display lookup
+  // uses gameState.mastermind.baseCardId (the canonical G.cardStats /
+  // G.cardDisplayData join key per mastermind.setup.ts:211), NOT
+  // gameState.mastermind.id (the qualified group id). Per-entry shallow
+  // copy via resolveDisplay prevents aliasing. Cite pre-flight
+  // 2026-04-29 PS-5.
   const mastermind = {
     id: gameState.mastermind.id,
     tacticsRemaining: gameState.mastermind.tacticsDeck.length,
     tacticsDefeated: gameState.mastermind.tacticsDefeated.length,
+    display: resolveDisplay(gameState.mastermind.baseCardId, gameState),
   };
 
   // --- 6. Project scheme — derive twist count ---
@@ -300,7 +387,10 @@ export function buildUIState(
     game,
     players,
     city: { spaces: citySpaces },
-    hq: { slots: hqSlots },
+    // why: WP-111 — slots preserved verbatim (PS-6 fallback); slotDisplay
+    // added as a parallel array. Length-equals-slots invariant is
+    // maintained by the unified for-of loop above.
+    hq: { slots: hqSlots, slotDisplay: hqSlotDisplay },
     mastermind,
     scheme,
     economy,

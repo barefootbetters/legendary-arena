@@ -192,7 +192,9 @@ export type {
 
 // why: UI state types defined canonically in src/ui/uiState.types.ts
 // (WP-028). Re-exported here so that consumers importing from './types.js'
-// have access.
+// have access. UICardDisplay and UIHQCard added by WP-111 (sibling
+// snapshot pattern shared with cardStats / villainDeckCardTypes /
+// cardKeywords; surfaced through UIState additive shape changes).
 export type {
   UIState,
   UIPlayerState,
@@ -203,6 +205,8 @@ export type {
   UISchemeState,
   UITurnEconomyState,
   UIGameOverState,
+  UICardDisplay,
+  UIHQCard,
 } from './ui/uiState.types.js';
 
 // why: Campaign types (ScenarioDefinition, CampaignDefinition,
@@ -322,6 +326,7 @@ import type { LobbyState } from './lobby/lobby.types.js';
 import type { VillainDeckState, RevealedCardType } from './villainDeck/villainDeck.types.js';
 import type { CityZone, HqZone } from './board/city.types.js';
 import type { ScenarioScoringConfig } from './scoring/parScoring.types.js';
+import type { UICardDisplay } from './ui/uiState.types.js';
 
 // why: MatchConfiguration (WP-002) and MatchSetupConfig (WP-005A) have
 // identical 9-field shapes. MatchSetupConfig in matchSetup.types.ts is now
@@ -505,6 +510,23 @@ export interface LegendaryGameState {
   // G.cardStats and G.villainDeckCardTypes. No runtime registry access.
   /** Board keywords for villain/henchman cards. Built at setup, read-only at runtime. */
   cardKeywords: Record<CardExtId, BoardKeyword[]>;
+
+  // why: WP-111 / EC-118 sibling snapshot to G.cardStats (WP-018),
+  // G.villainDeckCardTypes (WP-014B), and G.cardKeywords (WP-025). Built
+  // once at setup from the registry; surfaced through buildUIState as
+  // additive `display` / `slotDisplay?` / `handDisplay?` fields on
+  // UICityCard / UIHQState / UIPlayerState / UIMastermindState. The
+  // Readonly<...> wrapper is a documentational signal at the type
+  // boundary — TypeScript does not enforce runtime immutability for
+  // Record values, but the type signal makes accidental writes
+  // grep-able in review. Read only by uiState.build.ts; gameplay reads
+  // G.cardStats (presentation-vs-gameplay separation lock).
+  /**
+   * Card display data lookup keyed by CardExtId. Built at setup,
+   * read-only at runtime, projected through UIState. Sourced from the
+   * registry once at Game.setup(); never queried at runtime.
+   */
+  cardDisplayData: Readonly<Record<CardExtId, UICardDisplay>>;
 
   // why: scheme instructions follow the "Representation Before Execution"
   // decision (D-2601). Stored for replay observability. Empty at MVP until
