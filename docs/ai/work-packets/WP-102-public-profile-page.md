@@ -51,6 +51,26 @@ No new database tables. No new migrations. No new npm dependencies.
 No write paths. No authenticated endpoints. No engine, registry, or
 pre-planning code touched.
 
+**Terminology** (referenced throughout this WP without re-definition):
+
+- **`AccountId`** — the stable cross-service logical identity per
+  WP-052 / D-5201; branded UUID v4 (`string & { __brand: 'AccountId' }`)
+  generated server-side from `node:crypto.randomUUID()`. Maps 1:1 to
+  `legendary.players.ext_id text UNIQUE`. The authoritative key for
+  ranking, authorization, replay ownership, and any future cross-WP
+  reference.
+- **`player_id`** — the internal `bigserial PK` on
+  `legendary.players`. Used **only** for FK joins (e.g.,
+  `legendary.replay_ownership.player_id`,
+  `legendary.competitive_scores.player_id`). Never exposed at the
+  application surface; never serialized to clients; never used as an
+  identity key in any DTO produced by this packet.
+- **`handle`** (per WP-101) — the immutable, globally unique,
+  URL-safe presentation alias. WP-102 dereferences `handle` →
+  `AccountId` per request via `findAccountByHandle`; routing,
+  attribution, and authorization NEVER key on the handle directly
+  (no-tombstone policy + reclaim risk).
+
 ---
 
 ## Goal
@@ -61,7 +81,10 @@ canonicalized handle claimed under WP-101) and see a read-only profile
 page that composes data from `legendary.players` and
 `legendary.replay_ownership` via a single new HTTP endpoint
 `GET /api/players/:handle/profile`. Unknown or unclaimed handles
-return HTTP 404 and render an empty-state "no such player" page.
+return HTTP 404 with the locked body
+`{ "error": "player_not_found" }` (no information leak distinguishing
+unclaimed vs deleted vs reserved handles) and render an empty-state
+"no such player" page.
 Surfaces that have no upstream system yet (rank, badges, tournaments,
 comments, integrity, support) render as locked **empty-state stubs**
 labelled "Coming soon — see [WP-NNN]" and produce no requests.
@@ -616,6 +639,15 @@ mirrors WP-052's pattern).
   - `// why:` the route handler is a thin adapter; all logic lives
     in `profile.logic.ts` so it is independently testable without
     spinning up Express.
+  - `// why:` this route is intentionally unauthenticated. Public
+    profile visibility is governed solely by the WP-052 replay
+    visibility flags + the WP-102 server-side filter
+    (`visibility IN ('public', 'link') AND (expires_at IS NULL OR
+    expires_at > now())`); no `requireAuthenticatedSession` call,
+    no Hanko session check, no per-request authorization. A future
+    WP that introduces an authenticated `/me/profile` companion
+    surface (e.g., WP-104 owner-edit) MUST register a separate
+    handler — never bolt auth onto this route.
 
 ### D) `apps/server/src/profile/profile.logic.test.ts` — new
 
@@ -1073,17 +1105,18 @@ This packet is complete when ALL of the following are true:
 - [ ] No new migration file added
 - [ ] No `'hanko'` string and no Hanko SDK reference appears in any
       WP-102 file (verified via `Select-String`)
-- [ ] `docs/ai/STATUS.md` updated with a `### WP-102 / EC-102
+- [ ] `docs/ai/STATUS.md` updated with a `### WP-102 / EC-117
       Executed` block describing: public profile page lives at
       `/players/:handle`; read-only; no schema change; six
       empty-state tabs anchored to future WPs; handle →
       `AccountId` dereference invariant locked
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` has WP-102 row with
       today's date and the SPEC commit hash
-- [ ] `docs/ai/execution-checklists/EC_INDEX.md` has EC-102 row
-      flipped `Draft` → `Done {YYYY-MM-DD}` (assuming an EC-102
-      execution checklist is drafted alongside this WP at execution
-      time per the EC-097 / EC-099 / EC-114 precedent)
+- [ ] `docs/ai/execution-checklists/EC_INDEX.md` has EC-117 row
+      flipped `Draft` → `Done {YYYY-MM-DD}` (EC-117 is the slot
+      retargeted from `EC-102` per the staleness-sweep note at
+      the top of this WP, following the EC-101 → EC-114 retarget
+      precedent)
 - [ ] `docs/ai/DECISIONS.md` records a new D-entry classifying
       `apps/server/src/profile/` as a server-layer directory
       (mirrors D-5202 for `apps/server/src/identity/` and D-10301
