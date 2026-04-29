@@ -1026,8 +1026,9 @@ startup, immediately after the existing
   the public view via WP-101 `findAccountByHandle` + locked
   replay-filter SQL.
 - `apps/server/src/profile/profile.routes.ts` — **new** —
-  `registerProfileRoutes(app, database)` registers the single
-  `GET /api/players/:handle/profile` handler.
+  `registerProfileRoutes(router, database)` (Koa per PS-1) registers
+  the single `GET /api/players/:handle/profile` handler on
+  `server.router` from `apps/server/src/server.mjs`.
 - `apps/server/src/profile/profile.logic.test.ts` — **new** —
   `node:test` coverage (8 tests, 1 `describe()` block → +1 suite;
   3 pure + 5 DB-dependent).
