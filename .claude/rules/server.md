@@ -72,7 +72,6 @@ createRegistryFromLocalFiles({ metadataDir, cardsDir })
 
 Responsibilities:
 - Load `data/metadata/sets.json`
-- Load `data/metadata/card-types.json`
 - Load `data/cards/[set-abbr].json`
 - Validate all files against Zod schemas
 - Return an immutable `CardRegistry`
