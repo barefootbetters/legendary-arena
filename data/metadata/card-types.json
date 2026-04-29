@@ -1,0 +1,90 @@
+[
+  {
+    "slug": "hero",
+    "label": "Hero",
+    "emoji": "🦸",
+    "order": 10,
+    "parentType": null
+  },
+  {
+    "slug": "mastermind",
+    "label": "Mastermind",
+    "emoji": "👹",
+    "order": 20,
+    "parentType": null
+  },
+  {
+    "slug": "villain",
+    "label": "Villain",
+    "emoji": "🦹",
+    "order": 30,
+    "parentType": null
+  },
+  {
+    "slug": "henchman",
+    "label": "Henchman",
+    "emoji": "👤",
+    "order": 40,
+    "parentType": null
+  },
+  {
+    "slug": "scheme",
+    "label": "Scheme",
+    "emoji": "📜",
+    "order": 50,
+    "parentType": null
+  },
+  {
+    "slug": "bystander",
+    "label": "Bystander",
+    "emoji": "🧑",
+    "order": 60,
+    "parentType": null
+  },
+  {
+    "slug": "wound",
+    "label": "Wound",
+    "emoji": "🩸",
+    "order": 70,
+    "parentType": null
+  },
+  {
+    "slug": "sidekick",
+    "label": "Sidekick",
+    "emoji": "🧒",
+    "order": 80,
+    "parentType": null
+  },
+  {
+    "slug": "shield",
+    "label": "S.H.I.E.L.D.",
+    "emoji": "🛡️",
+    "order": 90,
+    "parentType": null
+  },
+  {
+    "slug": "other",
+    "label": "Other",
+    "emoji": "🃏",
+    "order": 100,
+    "parentType": null
+  },
+  {
+    "slug": "shield-agent",
+    "label": "Agent",
+    "order": 10,
+    "parentType": "shield"
+  },
+  {
+    "slug": "shield-officer",
+    "label": "Officer",
+    "order": 20,
+    "parentType": "shield"
+  },
+  {
+    "slug": "shield-trooper",
+    "label": "Trooper",
+    "order": 30,
+    "parentType": "shield"
+  }
+]

@@ -166,7 +166,12 @@ export const CardQuerySchema = z.object({
   heroClass:    HeroClassSchema.optional(),
   team:         z.string().optional(),
   nameContains: z.string().optional(),
-  cardType:     z.enum(["hero", "mastermind", "villain", "scheme"]).optional(),
+  // why: cardType widened from the 4-value z.enum to z.string() because
+  // data/metadata/card-types.json (consumed by the registry-viewer ribbon
+  // generator under WP-086) is now the authoritative taxonomy. The registry
+  // package stays permissive at load time; the viewer enforces the taxonomy
+  // at fetch time via CardTypesIndexSchema.safeParse.
+  cardType:     z.string().optional(),
   rarity:       z.union([z.literal(1), z.literal(2), z.literal(3)]).optional(),
 });
 
@@ -196,6 +201,36 @@ export const RuleGlossarySchema    = z.array(RuleGlossaryEntrySchema);
 
 export type KeywordGlossaryEntry = z.infer<typeof KeywordGlossaryEntrySchema>;
 export type RuleGlossaryEntry    = z.infer<typeof RuleGlossaryEntrySchema>;
+
+// ── Card-types taxonomy (card-types.json) ─────────────────────────────────────
+// why: card-types.json drives the registry-viewer ribbon as the authoritative
+// taxonomy under WP-086. .strict() rejects unknown fields so any future
+// pipeline drift surfaces as an explicit Zod error rather than silent data
+// loss. parentType is nullable because top-level entries have no parent;
+// non-null parentType references are validated at fetch time
+// (cardTypesClient.ts) against existing slugs to detect orphan entries — that
+// relational invariant is not expressible in Zod.
+export const CardTypeEntrySchema = z.object({
+  slug:       z.string().min(1),
+  label:      z.string().min(1),
+  emoji:      z.string().optional(),
+  order:      z.number().int().nonnegative(),
+  parentType: z.string().nullable(),
+}).strict();
+
+export const CardTypesIndexSchema = z.array(CardTypeEntrySchema);
+
+export type CardTypeEntry  = z.infer<typeof CardTypeEntrySchema>;
+export type CardTypesIndex = z.infer<typeof CardTypesIndexSchema>;
+
+// why: CardType = string is the named alias replacing the prior 4-value
+// z.enum(["hero","mastermind","villain","scheme"]) at CardQuerySchema. The
+// registry package stays permissive at load (any string accepted); the viewer
+// enforces the 13-entry taxonomy at fetch time via
+// CardTypesIndexSchema.safeParse. Phase 2 (separate WP) will populate per-card
+// cardType slugs upstream via modern-master-strike — having a permissive load
+// path now means Phase 2 won't require a registry-side schema change.
+export type CardType = string;
 
 // ── Registry-viewer public config (apps/registry-viewer/public/registry-config.json) ──
 // why: distinct from RegistryConfigSchema (R2 set-abbreviation artifact).

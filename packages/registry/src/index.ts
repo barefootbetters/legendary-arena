@@ -37,6 +37,8 @@ export {
   KeywordGlossarySchema,
   RuleGlossaryEntrySchema,
   RuleGlossarySchema,
+  CardTypeEntrySchema,
+  CardTypesIndexSchema,
   ViewerConfigSchema,
   ThemeIndexSchema,
 } from "./schema.js";
@@ -44,6 +46,9 @@ export {
 export type {
   KeywordGlossaryEntry,
   RuleGlossaryEntry,
+  CardTypeEntry,
+  CardTypesIndex,
+  CardType,
   ViewerConfig,
   ThemeIndex,
 } from "./schema.js";
