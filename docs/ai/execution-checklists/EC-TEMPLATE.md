@@ -97,3 +97,33 @@ For each WP, extract:
 - Short Title in the EC header should match the filename slug semantically
 - The "Common Failure Smells" section is optional — include it when the WP
   has known failure modes that are non-obvious from the guardrails alone
+- **Grep-gate prose discipline (WP-101 §3.2 + WP-102 §3.2 precedent):**
+  when a verification step uses a **count-bounded grep gate** (e.g.,
+  "exactly 1 match", "exactly 3 matches", "zero matches") that targets
+  a literal token (SQL keyword, function name, framework symbol, skip
+  reason string), do NOT echo that literal in `// why:` comments,
+  module-header docstrings, or any other prose in the same file. The
+  grep gate counts total matches, not code-context matches; a comment
+  that names the policed literal will inflate the count and trip the
+  gate. **Discipline:** paraphrase the policed literal in prose, OR
+  cross-reference it ("the SQL filter above", "the function's name",
+  "the locked skip pattern") rather than quoting it. Concrete examples
+  caught at execution time:
+  - `'UPDATE legendary.players'` in module-header prose tripped the
+    "exactly 1 match" single-writer gate (WP-101 → reworded to
+    "PostgreSQL update statement").
+  - `'ADD COLUMN IF NOT EXISTS x3'` in migration-file prose tripped
+    the "exactly 3 matches" column-count gate (WP-101 → reworded to
+    "three idempotent column additions").
+  - `'{ skip: "requires test database" }'` in test-file docstring
+    tripped the "exactly N matches" skip-pattern gate (WP-101 →
+    reworded to "options-based non-silent skip").
+  - `'requireAuthenticatedSession'` in route-handler `// why:` comment
+    tripped the auth-helper Hard Stop grep (WP-102 → reworded to
+    "no authenticated-session helper invocation").
+  - `'visibility IN ('public', 'link')'` in narrowing-guard `// why:`
+    comment tripped the "exactly 1 match" SQL-filter gate (WP-102 →
+    reworded to "the SQL visibility filter above").
+  - `'encodeURIComponent'` in client-API `// why:` comment tripped the
+    "exactly 1 line" defense gate (WP-102 → reworded to
+    "percent-encoding the handle defends against...").
