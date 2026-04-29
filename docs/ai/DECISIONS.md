@@ -11738,6 +11738,134 @@ The `extId: ''` default is overwritten at every projection-time substitution via
 
 ---
 
+### D-8601 — `data/metadata/card-types.json` reintroduced post-WP-084 deletion (deletion-then-readd narrative)
+
+**Decision:** Re-add `data/metadata/card-types.json` at the same repo path with a new `{ slug, label, emoji?, order, parentType }` schema and a runtime consumer present (the registry-viewer ribbon button generator at `apps/registry-viewer/src/lib/cardTypesClient.ts`). The pre-deletion 37-entry `{ id, slug, name, displayName, prefix }` shape is no longer in use anywhere — the new shape is incompatible with the old one.
+
+**Rationale:** WP-084 / EC-109 deleted the file at `b250bf1` (2026-04-21) because no runtime consumer existed; the only references at the time were the WP-003 Defect 1 / D-1203 educational counter-example. WP-084 §Governance set the precedent for reintroduction: derived from per-set data OR wired to a runtime consumer in the same WP — never standalone. WP-086 introduces the registry-viewer ribbon generator + per-card `cardType` validation (Phase 1 of the two-phase rollout) as the runtime consumer, satisfying WP-084's deletion constraint. Reusing the same path (`data/metadata/card-types.json`) was intentional — a different path would create two card-type-related artifacts at R2 and increase confusion; the schema change is the disambiguation mechanism.
+
+**Introduced:** WP-086 (2026-04-29)
+**Reinforces:** WP-084 §Governance (deletion-then-readd pattern)
+**Status:** Active
+
+---
+
+### D-8602 — Interpretation A locked: `SetDataSchema` containers preserved, NOT flattened
+
+**Decision:** WP-086 keeps `heroes[]` / `masterminds[]` / `villainGroups[]` / `henchmanGroups[]` / `schemes[]` containers in `SetDataSchema` exactly as-is. The taxonomy is NOT used to flatten cards into a single typed array; container shape and `flattenSet()` per-container assignment of `cardType` remain unchanged. Engine `Game.setup()` is NOT modified.
+
+**Rationale:** Two interpretations were considered at WP-086 design time. Interpretation A: reintroduce card-types.json as a viewer-side ribbon-shape source while preserving the existing engine-side container structure. Interpretation B: flatten containers and let card-types.json drive the `cardType` field per card across the engine layer. Interpretation B would change `Game.setup()`'s registry consumption shape, propagating type changes through engine, server, arena-client, replay-producer — a multi-package refactor. Interpretation A is contained to registry-side schema additions + viewer-side ribbon rendering; engine layer untouched. Interpretation A locked at `project_wp086_queued.md` 2026-04-21 (memory note) and reinforced by EC-086 §Guardrails item 2.
+
+**Introduced:** WP-086 (2026-04-29)
+**Reinforces:** D-0101 (Engine Is the Sole Authority — Interpretation A preserves the engine's existing setup contract)
+**Status:** Active
+
+---
+
+### D-8603 — Per-query `cardType` widened from 4-value enum to `z.string()`
+
+**Decision:** `CardQuerySchema.cardType` widened from `z.enum(["hero","mastermind","villain","scheme"]).optional()` to `z.string().optional()`. The named alias `type CardType = string` is exported alongside (replacing the prior 4-value union as the canonical type for `cardType` parameters).
+
+**Rationale:** Phase 2 of the card-types rollout (separate WP) will populate per-card `cardType` slugs (sidekick, shield-agent, shield-officer, shield-trooper, etc.) upstream via modern-master-strike. The query API needs to accept those slugs without requiring a registry-side schema change at Phase 2 land time. Registry stays permissive at load (any string accepted); viewer enforces the 13-entry taxonomy at fetch via `CardTypesIndexSchema.safeParse`. The widening preserves the registry's "permissive at boundary, strict at consumer" pattern established by `KeywordGlossarySchema` / `RuleGlossarySchema` (WP-082).
+
+**Introduced:** WP-086 (2026-04-29)
+**Status:** Active
+
+---
+
+### D-8604 — SHIELD modeled as parent type with three sub-chips
+
+**Decision:** `card-types.json` has a top-level `shield` entry (label "S.H.I.E.L.D.", emoji 🛡️, order 90, parentType null) with three sub-entries (`shield-agent` / `shield-officer` / `shield-trooper`, all with `parentType: "shield"`). The ribbon renders SHIELD as a single button at the top level; the `:title` tooltip exposes the sub-chip labels (Agent / Officer / Trooper); clicking SHIELD adds all three sub-chip slugs to the active filter set.
+
+**Rationale:** The S.H.I.E.L.D. card category in the source content has three distinct card types (Agent, Officer, Trooper) per the historical taxonomy and per the underlying `bbcode/modern-master-strike` data pipeline. Three modeling options were considered: (a) flat — 4 separate top-level entries (S.H.I.E.L.D. + Agent + Officer + Trooper) cluttering the ribbon to 13 buttons; (b) parent-only — single SHIELD entry that covers all three card types but loses the sub-classification at filter time; (c) parent + sub-chips (this decision) — single SHIELD button with hierarchical structure preserving both UI compactness and filter granularity. Option (c) selected because it accommodates Phase 2's eventual per-card emission of `shield-agent` / `shield-officer` / `shield-trooper` cardTypes without ribbon churn.
+
+**Introduced:** WP-086 (2026-04-29)
+**Status:** Active
+
+---
+
+### D-8605 — `LEGACY_TYPE_GROUPS` preserved as degraded-fetch fallback (NOT removed)
+
+**Decision:** The previously-hardcoded ribbon array (now renamed `LEGACY_TYPE_GROUPS` in `apps/registry-viewer/src/App.vue`, with the orphan `Location` subchip removed per D-8606) is preserved as a degraded-mode fallback. The `displayedTypeGroups` computed selects between fetched taxonomy and `LEGACY_TYPE_GROUPS` based on `cardTypes.value.length === 0` after `getCardTypes()` resolves. A single `devLog("cardTypes", "using legacy fallback")` event fires when the empty path is taken (dedup'd via `onMounted`-fires-once).
+
+**Rationale:** `cardTypesClient.ts` is non-blocking — HTTP failure or schema rejection resolves to `[]`. Without a fallback, the ribbon would be empty and the card view would lose all type filtering on a single R2 outage or malformed publish. `LEGACY_TYPE_GROUPS` is dead code on the happy path (cardTypes.length > 0); lights up only on degraded fetch. Eliminating the fallback would make a single R2 outage more disruptive than necessary and would break the "ribbon always renders something usable" UX invariant. The `devLog` emission provides diagnostic parity — degraded mode is distinguishable in console traces without changing control flow.
+
+**Introduced:** WP-086 (2026-04-29)
+**Status:** Active
+
+---
+
+### D-8606 — Orphan `Location` button removed from both code paths
+
+**Decision:** The `Location` subchip is removed from both `data/metadata/card-types.json` AND `LEGACY_TYPE_GROUPS` in `apps/registry-viewer/src/App.vue`. The `FlatCardType` 9-value union at `apps/registry-viewer/src/registry/types/types-index.ts` retains `"location"` as a member (no breaking type-level change); only the ribbon UI surfaces are cleaned up.
+
+**Rationale:** `flattenSet()` in `apps/registry-viewer/src/registry/shared.ts` assigns one of 8 hardcoded `cardType` literals (hero / mastermind / villain / henchman / scheme / bystander / wound / other) and never `"location"`. The `Location` ribbon button has been orphan UI since the type was added — clicking it always returned 0 cards because no card path emits the value. Removing it from both ribbon paths cleans up dead UX. Keeping `"location"` in the `FlatCardType` union itself (rather than removing it) preserves backward compatibility for any external consumer that imports the type — type-level removal would be a separate breaking change requiring its own DECISION.
+
+**Introduced:** WP-086 (2026-04-29)
+**Status:** Active
+
+---
+
+### D-8607 — Viewer `node:test` runner via `tsx ^4.15.7` devDep (PS-2 Option B precedent)
+
+**Decision:** `apps/registry-viewer/package.json` gains `"test": "node --import tsx --test src/**/*.test.ts"` script + `"tsx": "^4.15.7"` devDep, byte-identical to `packages/registry/package.json:31` and `:46` precedent. This establishes the first viewer-side `node:test` runner. `tsx` is added to `devDependencies` only — never `dependencies` — so it does not enter the production Vite bundle.
+
+**Rationale:** WP-086 introduces two `.test.ts` files (`apps/registry-viewer/src/lib/cardTypesClient.test.ts` + `apps/registry-viewer/src/registry/shared.test.ts`) that need a runner. Pre-flight RS-2 (`docs/ai/invocations/preflight-wp086.md` 2026-04-29) evaluated three options: (A) drop the tests entirely (matches WP-066 / WP-094 / WP-096 precedent — verification via build + typecheck + manual smoke only); (B) wire the runner here as part of WP-086; (C) defer to a separate test-harness WP. PS-2 selected Option B to preserve the test count delta locked in WP-086 §Tests (8 tests / 2 suites) and to avoid a separate harness WP for what is effectively a 2-line `package.json` change. Establishes the viewer-test-harness precedent for future viewer-touching WPs that want automated test coverage.
+
+**Introduced:** WP-086 (PS-2 Option B per `docs/ai/invocations/preflight-wp086.md` 2026-04-29)
+**Status:** Active
+
+---
+
+### D-8608 — EC-086 8-file scope amendment: `devLog.ts` + `debugMode.ts` added as audit-trail
+
+**Decision:** Two additional production files were modified beyond the EC-086 §Files to Produce 8-file scope, bringing the actual production-file count to 10 in Commit A `a227094`:
+
+1. `apps/registry-viewer/src/lib/devLog.ts` — `Category` union widened by adding `"cardTypes"` as a sixth value (`"registry" | "theme" | "filter" | "render" | "glossary" | "cardTypes"`). Single-character-pipe-plus-string-literal addition.
+
+2. `apps/registry-viewer/src/lib/debugMode.ts` — IIFE + try/catch wrap around the existing `import.meta.env.DEV` gate so the module loads cleanly under node:test (where `import.meta.env` is undefined because Vite is not in the loader chain). The IIFE preserves Vite DCE in prod because `import.meta.env.DEV` is still substituted to literal `false` during transform, making the inner expression statically false and letting DCE strip the `URLSearchParams` reference.
+
+**Rationale:** The `devLog.ts` modification was anticipated by WP-086 lines 135-137 ("`devLog` exposes a `devLog` categorical signature; `\"cardTypes\"` becomes a new category in this packet") and WP-086 lines 192-195 ("New category `\"cardTypes\"` joins the existing set without changing the signature"), and by `docs/ai/invocations/preflight-wp086.md` lines 59 + 76 ("WP-086 adds `\"cardTypes\"` as a sixth category"). It was nonetheless omitted from the EC §Files to Produce list — an EC-vs-WP-body omission caught at execution time. Without the addition, `cardTypesClient.ts` does not compile under `vue-tsc --noEmit` (`"cardTypes"` not assignable to the 5-value `Category` union); all conventional workarounds (`as Category` casts, `@ts-expect-error`) violate code-style rules.
+
+The `debugMode.ts` modification was a discovery-time finding from PS-2 Option B's node:test runner: the test runner imports `cardTypesClient.ts`, which imports `devLog.ts`, which imports `DEBUG_VIEWER` from `debugMode.ts`, which throws at module load under node:test because `import.meta.env` is undefined. Failure manifested as `TypeError: Cannot read properties of undefined (reading 'DEV')`. The IIFE + try/catch is the minimum-surface fix that preserves Vite DCE behavior in prod.
+
+Both edits are minimal, additive, and preserve existing prod behavior. Both were absorbed at execution time rather than blocking on a SPEC-amendment commit because they are unavoidable consequences of the EC's mandated code paths (devLog category) and PS-2 Option B's mandated test runner (debugMode runtime safety). EC §7's "If a 9th file appears necessary, STOP and escalate" gate was honored — the operator was notified and approved both inclusions before edits landed.
+
+**Introduced:** WP-086 (mid-execution discovery, 2026-04-29)
+**Reinforces:** EC-086 §7 (scope-lock with explicit escalation path); D-8607 (the test runner that surfaced the `debugMode.ts` issue)
+**Status:** Active
+
+---
+
+### D-8609 — Option-C governance-close scope: `card-types.json` reintroduction triggers doc-staleness sync
+
+**Decision:** WP-086 Commit B governance close additionally updates five files outside the EC-086 §Files to Produce list AND outside the standard 5-file governance-close set (STATUS.md / DECISIONS.md / WORK_INDEX.md / EC_INDEX.md / 03.1-DATA-SOURCES.md):
+
+1. `.claude/rules/registry.md` — Critical Metadata Distinction section rewritten. The schema description for `card-types.json` updated from the pre-WP-084 37-entry `{ id, slug, name, displayName, prefix }` shape to the post-WP-086 13-entry `{ slug, label, emoji?, order, parentType }` shape. The Silent Failure Mode warning preserved (it remains accurate — fetching the new shape where `sets.json` is expected still triggers the WP-003 Defect 1 zero-results pattern).
+
+2. `.claude/rules/server.md` — removes the line `Load \`data/metadata/card-types.json\`` from the registry-load responsibilities. `card-types.json` is consumed only by the registry-viewer's `cardTypesClient.ts` post-WP-086; neither `createRegistryFromLocalFiles` nor `createRegistryFromHttp` fetches it.
+
+3. `docs/ai/REFERENCE/00.2-data-requirements.md §2.1` — rewritten from the DEPRECATED placeholder ("`card-types.json` was deleted on 2026-04-21 by WP-084 / EC-109") to a current 13-entry-schema description with field table, validation reference, and consumer enumeration.
+
+4. `packages/registry/src/impl/httpRegistry.ts` — educational comment at the `// ── 1. Load set index ──` block updated. The "deleted by WP-084 on 2026-04-21" framing replaced with "deleted by WP-084 (2026-04-21) and reintroduced by WP-086 (2026-04-29) with the new shape." The silent-failure pattern explanation preserved — it remains generally applicable to any auxiliary metadata file.
+
+5. `apps/registry-viewer/CLAUDE.md` — Key Files table gains the `cardTypesClient.ts` row alongside the three other R2 fetchers (`registryClient.ts` / `themeClient.ts` / `glossaryClient.ts`).
+
+**Rationale:** WP-086 reintroduces a deleted file at the same path with a different schema. Without doc sync, `.claude/rules/registry.md` would actively contradict the shipped behavior (documents the OLD 37-entry schema as a current invariant); `.claude/rules/server.md` would assert a load responsibility that doesn't exist; `00.2-data-requirements.md §2.1` would incorrectly label the file as DEPRECATED post-reintroduction; `httpRegistry.ts` comment would assert the file is deleted when it's not; `apps/registry-viewer/CLAUDE.md` would omit the new fetcher from the Key Files table loaded into every future viewer-session context.
+
+Three options were considered at execution time:
+- **(A) Defer all rules/doc updates to a follow-up sweep.** Simplest commit topology; preserves EC-086's scope-lock; but leaves five files actively misdocumenting reality until a future sweep lands. Future Claude sessions reading the rules files would be misled.
+- **(B) Amend WP-086 + EC-086 bodies to add the files to §Files to Produce.** Most rigorous w.r.t. the EC's literal scope-lock; but requires SPEC commits before A0, expands the WP/EC body churn, and treats a docs-sync as a scope change that fundamentally is not.
+- **(C) Treat as broader governance close** (this decision). Adds the five files to Commit B alongside the standard governance set. Documentation-sync is conceptually within the "governance close" envelope — parallel to STATUS / DECISIONS / WORK_INDEX / EC_INDEX / 03.1-DATA-SOURCES updates that all sync to as-shipped state. Keeps the EC body untouched. Avoids SPEC-amendment churn.
+
+Option C selected by operator decision 2026-04-29 with the rationale that doc sync is the lowest-churn path that keeps governance honest. The five Option-C files are documented here as audit trail so future EC-086-style scope-lock audits can reconstruct the rationale for the deviation from the standard 5-file governance-close set.
+
+**Introduced:** WP-086 (Option-C scope decision, 2026-04-29)
+**Reinforces:** EC-086 §56 governance-close pattern (extended via D-8609 to include rules / data-req docs sync when a WP reintroduces a deleted artifact with a different schema)
+**Status:** Active
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.

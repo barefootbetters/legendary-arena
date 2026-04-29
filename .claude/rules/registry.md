@@ -101,14 +101,21 @@ Confusing them causes **silent failure with zero errors**.
 - The `abbr` field locates per-set card files (e.g., `mdns.json`)
 - **This is what loaders must fetch to enumerate sets**
 
-### `data/metadata/card-types.json` -- Card Type Taxonomy
+### `data/metadata/card-types.json` -- Card-Type Taxonomy (Ribbon)
 
 ```
-{ id, slug, name, displayName, prefix }
+{ slug, label, emoji?, order, parentType }
 ```
 
-- 37 entries classifying card archetypes (villain, henchman, hero, etc.)
+- 13 entries (10 top-level + 3 SHIELD sub-chips) classifying card archetypes
 - Has NO `abbr` or `releaseDate` fields
+- Validated by `CardTypeEntrySchema` `.strict()` (`packages/registry/src/schema.ts`)
+- Reintroduced under WP-086 (2026-04-29) after WP-084 deletion (2026-04-21);
+  the pre-deletion 37-entry `{ id, slug, name, displayName, prefix }` shape is
+  no longer in use anywhere — the new shape is incompatible with the old one
+- Consumed by `apps/registry-viewer/src/lib/cardTypesClient.ts` (WP-086 ribbon
+  generator); never consumed by `createRegistryFromLocalFiles` or
+  `createRegistryFromHttp`
 - **This is NOT a set index and must never be used where `sets.json` is expected**
 
 ### The Silent Failure Mode
@@ -119,10 +126,15 @@ If code fetches `card-types.json` where `sets.json` is expected:
 - Zod produces **zero sets with no error thrown**
 - The registry appears to load successfully but contains no data
 
-This was the confirmed bug in `httpRegistry.ts` fixed by WP-003. The fix
-added a `// why:` comment at the fetch site distinguishing the two files.
+This was the confirmed bug in `httpRegistry.ts` fixed by WP-003 (D-1203). The
+fix added a `// why:` comment at the fetch site distinguishing the two files;
+the comment is preserved across WP-084 deletion + WP-086 reintroduction
+because the silent-failure pattern is independent of which specific file is
+involved -- any auxiliary metadata file with a non-overlapping shape can
+trigger the same zero-results silent failure if fetched at the wrong seam.
 
-Source: ARCHITECTURE.md, Registry Metadata File Shapes; WP-003 Defect 1
+Source: ARCHITECTURE.md, Registry Metadata File Shapes; WP-003 Defect 1; D-1203;
+WP-086 / D-8601 (reintroduction with new shape)
 
 ---
 
