@@ -1,6 +1,6 @@
 # WP-102 — Public Player Profile Page (Read-Only)
 
-**Status:** Draft (drafted 2026-04-25; lint-gate self-review PASS — see §Lint Self-Review at foot; pre-flight pending; staleness sweep 2026-04-28 — post-WP-101 baselines + migration `007` → `008` for the WP-101 handle migration + WP-053 contract immutability added)
+**Status:** Draft (drafted 2026-04-25; lint-gate self-review PASS — see §Lint Self-Review at foot; staleness sweep 2026-04-28 [post-WP-101 baselines + migration `007` → `008` for the WP-101 handle migration + WP-053 contract immutability added]; pre-flight 2026-04-28 surfaced PS-1 / PS-2 / PS-3 / PS-5 + 4 copilot RISK fixes — applied this session; pre-flight re-run pending)
 **Primary Layer:** Server (read-only profile composition) + App (Vue SPA route + page)
 **Dependencies:** WP-052 (identity model + `legendary.replay_ownership`); WP-101 (handle claim + `findAccountByHandle`, **landed 2026-04-28 at Commit B `7b92734`**). Soft-dep on WP-112 (session token validation; renumbered from "WP-100" per D-10002) — **not required to land first**, because this packet's only public endpoint is unauthenticated; the WP-112 contract is not invoked.
 
@@ -76,7 +76,7 @@ pre-planning code touched.
 ## Goal
 
 After this session, an unauthenticated visitor can navigate to
-`https://<arena-host>/players/:handle` (where `:handle` is any
+`https://<arena-host>/?profile=<handle>` (where `<handle>` is any
 canonicalized handle claimed under WP-101) and see a read-only profile
 page that composes data from `legendary.players` and
 `legendary.replay_ownership` via a single new HTTP endpoint
@@ -89,15 +89,30 @@ Surfaces that have no upstream system yet (rank, badges, tournaments,
 comments, integrity, support) render as locked **empty-state stubs**
 labelled "Coming soon — see [WP-NNN]" and produce no requests.
 
+> **Routing note (per pre-flight 2026-04-28 PS-2 resolution).**
+> arena-client uses a hand-rolled query-string router in `App.vue`
+> (`type AppRoute = 'fixture' | 'live' | 'lobby'`); `vue-router` is
+> not installed and adding it is out of scope per WP-102 §Goal "No
+> new npm dependencies". The public-profile surface therefore
+> extends `AppRoute` with `'profile'` and consumes the canonical
+> handle from a `?profile=<canonical>` query parameter. A future
+> routing-WP that introduces `vue-router` may upgrade the URL shape
+> to the path-based `/players/:handle` form referenced in
+> `DESIGN-RANKING.md` and earlier WP drafts; WP-102 itself ships
+> the query-string variant.
+
 Concretely:
 
 - `apps/server/src/profile/` ships `profile.types.ts`,
   `profile.logic.ts`, `profile.routes.ts`, and `profile.logic.test.ts`.
 - A new HTTP handler `GET /api/players/:handle/profile` is registered
-  on the existing Express server and returns a `PublicProfileView` JSON
-  body or 404 (no body details on 404 — see §Locked contract values).
-- `apps/arena-client/src/router/routes.ts` adds a `/players/:handle`
-  route bound to a new `PlayerProfilePage.vue`.
+  on the existing Koa router (boardgame.io's `server.router` from
+  `apps/server/src/server.mjs`; mirrors `registerHealthRoute(server.router)`
+  precedent at `server.mjs:30–34, :120`) and returns a `PublicProfileView`
+  JSON body or 404 (no body details on 404 — see §Locked contract values).
+- `apps/arena-client/src/App.vue` extends `AppRoute` with `'profile'`,
+  parses `?profile=<canonical>` from the URL, and conditionally renders
+  `<PlayerProfilePage :handle="canonical" />` when `route === 'profile'`.
 - `apps/arena-client/src/lib/api/profileApi.ts` exposes a typed
   `fetchPublicProfile(handle)` wrapper.
 - The page renders display name, canonical handle (as the URL slug),
@@ -235,12 +250,15 @@ invoked. Determinism guarantees are preserved by construction.
   is the established library location for non-component utilities.
   If any of those paths differ at execution time, the executor
   reconciles via pre-flight rather than guessing.
-- **Express server.** WP-001 / WP-004 / WP-103 have shipped the
-  Express HTTP server alongside boardgame.io; new REST handlers
-  register on the same Express instance via the existing
-  routes-registration entry point. The exact registration call site
-  is identified at execution time (pre-flight), not guessed at draft
-  time.
+- **Koa router (boardgame.io v0.50).** Pre-flight 2026-04-28 PS-1
+  resolved the framework: there is **no Express** in this codebase.
+  boardgame.io's `Server({...})` (constructed at
+  `apps/server/src/server.mjs:110–118`) returns a Koa application
+  whose `server.router` is an `@koa/router` instance. New REST
+  handlers register on that router via the
+  `registerHealthRoute(server.router)` precedent at
+  `server.mjs:30–34`. The registration call site is the same line
+  that registers `/health` (line ~120).
 - **No `legendary.players.deleted_at` column exists.** WP-052
   `deletePlayerData` deletes the row; there is no soft-delete
   marker. Therefore `findAccountByHandle` returning a non-null row
@@ -433,8 +451,53 @@ Before writing a single line:
   inert.
 - **`packages/game-engine/src/types.ts` NOT modified.**
 - **No new npm dependencies.** All wiring uses Node's built-in
-  `fetch`, the existing Vue / Vue Router, and the existing `pg`
-  client. Verified via `git diff` of `package.json` files.
+  `fetch`, the existing Vue 3 / Pinia stack (no `vue-router`), and
+  the existing `pg` client. Verified via `git diff` of every
+  `package.json` and `pnpm-lock.yaml` after Commit A. Pre-flight
+  2026-04-28 PS-2 confirmed `apps/arena-client/package.json` lists
+  only `vue ^3.4.27` and `pinia ^2.1.7` — no `vue-router` —
+  motivating the `App.vue` query-string router pattern.
+- **Lifecycle prohibition (locked, copilot-check 2026-04-28 RISK
+  #16 fix).** The four exported profile-layer functions
+  (`getPublicProfileByHandle`, `loadPlayerIdByAccountId`,
+  `registerProfileRoutes`, plus the implicit consumer surface
+  `fetchPublicProfile` on the client) MUST NOT be called from:
+  `game.ts`, any `LegendaryGame.moves` entry, any phase hook
+  (`onBegin` / `onEnd` / `endIf`), any file under `packages/`
+  (`game-engine`, `registry`, `preplan`, `vue-sfc-loader`), any
+  file under `apps/replay-producer/` or `apps/registry-viewer/`,
+  any file under `apps/server/src/identity/`,
+  `apps/server/src/replay/`, `apps/server/src/competition/`,
+  `apps/server/src/par/`, `apps/server/src/rules/`,
+  `apps/server/src/game/`. They are consumed only by their own
+  test file (`profile.logic.test.ts`), by `profile.routes.ts`
+  (route adapter), by `apps/server/src/server.mjs` (one-line
+  registration call per PS-3), and by
+  `apps/arena-client/src/pages/PlayerProfilePage.vue` (via
+  `profileApi.ts`). Mirrors the WP-101 / EC-114 lifecycle-prohibition
+  precedent.
+- **Aliasing prevention (locked, copilot-check 2026-04-28 RISK
+  #17 fix).** `getPublicProfileByHandle` constructs a fresh
+  `PublicProfileView` literal on every call. The `publicReplays`
+  array is built via an explicit `for (const row of rows)` loop
+  with a fresh `PublicReplaySummary` literal per row — never via
+  `result.rows` passthrough, never via `result.rows.map(row => row)`
+  identity-map, never via spread of a `pg`-driver row object. The
+  returned array is owned by the caller; no internal cache holds
+  a reference to it. (This rule is defense-in-depth: `pg` returns
+  fresh JS objects per query so the row-level aliasing risk is
+  low at MVP scope, but a future caching layer must `Object.freeze()`
+  the cached value to preserve the invariant.)
+- **Visibility-row narrowing (locked, copilot-check 2026-04-28
+  RISK #10 fix).** For each row from the locked SQL filter, the
+  application layer MUST narrow `row.visibility` with an explicit
+  guard `if (row.visibility !== 'public' && row.visibility !==
+  'link') { continue; }` before constructing the `PublicReplaySummary`
+  literal. The SQL `visibility IN ('public', 'link')` clause is the
+  authoritative gate; the application-layer guard is defense-in-depth
+  so the type-level exclusion of `'private'` survives any future SQL
+  relaxation (e.g., a future `visibility != 'private'` rewrite that
+  would also include unknown future values).
 - **Directory classification gap acknowledged.** Introducing
   `apps/server/src/profile/` mirrors WP-103's introduction of
   `apps/server/src/replay/` (D-10301). A corresponding D-entry is
@@ -443,10 +506,12 @@ Before writing a single line:
   precedent.
 
 **Session protocol:**
-- If at execution time the arena-client router file path,
-  page-component location, or Express handler-registration entry
-  point differs from this packet's assumed paths, **STOP** and
-  reconcile via pre-flight rather than guessing.
+- The pre-flight 2026-04-28 already resolved the framework / router
+  / entry-point gaps (PS-1 Koa, PS-2 query-string router, PS-3
+  `server.mjs`). If the executor encounters drift from these
+  resolutions at execution time (e.g., `vue-router` has been added,
+  Express has been introduced, `server.mjs` has been replaced),
+  **STOP** and re-run pre-flight rather than guessing.
 - If WP-101 has not landed (`findAccountByHandle` not exported), the
   packet is BLOCKED — do not proceed by stubbing or copy-pasting
   the function signature.
@@ -457,13 +522,24 @@ Before writing a single line:
 **Locked contract values:**
 
 - **HTTP route (locked):** `GET /api/players/:handle/profile`
-  - Response 200: `application/json` body matching
-    `PublicProfileView` (see below).
-  - Response 404: `application/json` body `{ "error":
-    "player_not_found" }` — no further details.
-  - No other status codes introduced by this packet (5xx propagates
-    naturally on infra failure; never 401 / 403 — the endpoint is
-    public).
+  - Registered on the existing **Koa router** returned by
+    boardgame.io's `Server({...})` instance (see
+    `apps/server/src/server.mjs:110–120`); mirrors the
+    `registerHealthRoute(server.router)` precedent at
+    `server.mjs:30–34`. **Express is not present in this codebase** —
+    pre-flight 2026-04-28 PS-1.
+  - Response 200: `koaContext.body = value` (Koa serializes JSON
+    automatically when the body is a plain object; matches the
+    `/health` precedent).
+  - Response 404: `koaContext.status = 404; koaContext.body = { error:
+    'player_not_found' };` — no further details.
+  - Response 500: `koaContext.status = 500; koaContext.body = { error:
+    'internal_error' };` (no body detail beyond the literal code) on
+    any thrown PostgreSQL infra error from `getPublicProfileByHandle`.
+    The handler swallows the error after the response is set; never
+    re-throws to a global Koa handler.
+  - No other status codes introduced by this packet. Never 401 / 403
+    — the endpoint is intentionally public.
 
 - **`PublicProfileView` shape (locked, 4 fields):**
   ```ts
@@ -502,8 +578,36 @@ Before writing a single line:
   ORDER BY created_at DESC;
   ```
 
-- **Vue route (locked):** `/players/:handle` — public, no
-  authentication guard.
+- **`ProfileResult<T>` shape (locked, declared locally — pre-flight
+  PS-5):**
+  ```ts
+  type ProfileResult<T> =
+    | { ok: true; value: T }
+    | { ok: false; reason: string; code: ProfileErrorCode };
+  ```
+  - `// why:` declared locally in `profile.types.ts`, **NOT** re-imported
+    from `../identity/identity.types.js`. WP-052's `Result<T>` is
+    keyed on `IdentityErrorCode` (4 values: `'duplicate_email'`,
+    `'invalid_email'`, `'invalid_display_name'`, `'unknown_account'`)
+    and cannot carry `'player_not_found'`. The shape mirrors WP-052's
+    `Result<T>` exactly — same `ok` discriminant, same `value` /
+    `reason` / `code` fields — but with the profile-side error union.
+    `AccountId`, `PlayerAccount`, `DatabaseClient` are still
+    re-imported from `../identity/identity.types.js` (no parallel
+    declarations).
+  - Pre-flight 2026-04-28 surfaced this as PS-5 — earlier WP-102
+    drafts (and EC-117 §Locked Values) said "re-import `Result<T>`",
+    which is technically incompatible with `ProfileErrorCode`.
+
+- **Vue surface (locked, query-string router — pre-flight PS-2):**
+  `?profile=<handle>` query parameter on the arena-client root URL.
+  `App.vue` parses the URL with the existing `parseQuery()` helper,
+  extends `type AppRoute` with `'profile'`, and conditionally renders
+  `<PlayerProfilePage :handle="canonical" />` when `route ===
+  'profile'`. Public; no authentication guard. **No `vue-router`** —
+  `apps/arena-client/package.json` does not depend on `vue-router`,
+  and adding it is out of scope per WP-102 §Goal "No new npm
+  dependencies".
 
 - **Empty-state tab labels (locked, 6 entries):**
   - "Rank — coming soon (WP-054 / WP-055)"
@@ -584,8 +688,14 @@ The following requirements are mandatory:
     a new packet and a `DECISIONS.md` entry.
 - `PROFILE_ERROR_CODES: readonly ProfileErrorCode[]` — canonical
   array with drift-detection test.
-- Re-imports `Result<T>`, `AccountId`, and `DatabaseClient` from
-  `../identity/identity.types.js`. Does NOT redeclare these types.
+- Declares `type ProfileResult<T>` locally (see §Locked contract
+  values). The shape mirrors WP-052's `Result<T>` but is keyed on
+  `ProfileErrorCode`, not `IdentityErrorCode`.
+- Re-imports `AccountId`, `PlayerAccount`, and `DatabaseClient` from
+  `../identity/identity.types.js`. Does NOT redeclare these three
+  types. **Does NOT re-import `Result<T>`** — `Result<T>`'s error
+  branch is locked to `IdentityErrorCode`, which cannot carry
+  `'player_not_found'` (pre-flight 2026-04-28 PS-5).
 
 ### B) `apps/server/src/profile/profile.logic.ts` — new
 
@@ -593,7 +703,7 @@ All exports take `database: DatabaseClient` (caller-injected,
 mirrors WP-052's pattern).
 
 - `getPublicProfileByHandle(rawHandle: string, database:
-  DatabaseClient): Promise<Result<PublicProfileView, ProfileErrorCode>>`
+  DatabaseClient): Promise<ProfileResult<PublicProfileView>>`
   - Canonicalizes input first (`rawHandle.trim().toLowerCase()`).
   - Calls `findAccountByHandle(canonical, database)` from WP-101.
   - If `null` → returns `{ ok: false, code: 'player_not_found',
@@ -603,9 +713,23 @@ mirrors WP-052's pattern).
     returned `accountId` (the WP-052 internal mapping), then runs
     the locked replay-filter SQL keyed on `player_id`.
   - Iterates the SQL rows with an explicit `for (const row of rows)`
-    loop (no `.reduce()`) to build `publicReplays`.
-  - Composes and returns the `PublicProfileView`.
-  - `// why:` returns `Result<T, E>` rather than throwing on the
+    loop (no `.reduce()`) and **constructs a fresh
+    `PublicReplaySummary` literal per row** — never aliases or
+    spreads a `pg`-driver row object into the returned array
+    (copilot-check 2026-04-28 RISK #17 fix).
+  - **Per-row visibility narrowing (locked, copilot-check RISK #10
+    fix):** for each row from the locked SQL, the application layer
+    MUST narrow `row.visibility` with an explicit guard
+    `if (row.visibility !== 'public' && row.visibility !== 'link') {
+    continue; /* skip and emit a warning */ }`. The SQL
+    `visibility IN ('public', 'link')` filter is the authoritative
+    gate; the application-layer guard is defense-in-depth so the
+    type-level exclusion of `'private'` survives any future SQL
+    relaxation.
+  - Composes and returns the `PublicProfileView` as a fresh literal.
+    The returned `publicReplays` array is owned by the caller and is
+    never aliased to internal state.
+  - `// why:` returns `ProfileResult<T>` rather than throwing on the
     "not found" path because 404 is an expected, non-exceptional
     outcome — every handle starts unclaimed and many requests will
     target unclaimed values.
@@ -624,21 +748,39 @@ mirrors WP-052's pattern).
 
 ### C) `apps/server/src/profile/profile.routes.ts` — new
 
-- `registerProfileRoutes(app: Express, database: DatabaseClient):
+- `registerProfileRoutes(router: KoaRouter, database: DatabaseClient):
   void`
+  - `KoaRouter` is the type of `server.router` returned by
+    boardgame.io's `Server({...})` (`@koa/router` instance per
+    boardgame.io v0.50). Mirrors `registerHealthRoute(router)` at
+    `apps/server/src/server.mjs:30–34`. Pre-flight 2026-04-28 PS-1
+    locked the framework as Koa — **Express is not present in this
+    codebase**.
   - Registers a single `GET /api/players/:handle/profile` handler.
-  - Handler calls `getPublicProfileByHandle(req.params.handle,
+  - Handler calls `getPublicProfileByHandle(koaContext.params.handle,
     database)`.
-  - On `ok: true` → `res.status(200).json(value)`.
+  - On `ok: true` →
+    `koaContext.status = 200; koaContext.body = result.value;`
+    (Koa serializes plain-object bodies as JSON automatically; the
+    `/health` precedent at `server.mjs:31–32` confirms.)
   - On `ok: false` with `code: 'player_not_found'` →
-    `res.status(404).json({ error: 'player_not_found' })`.
-  - Wraps the call in a try/catch that returns a 500 with no body
-    detail on infra failure; never re-throws to the global handler
-    (matches existing server convention).
-  - Never throws.
-  - `// why:` the route handler is a thin adapter; all logic lives
-    in `profile.logic.ts` so it is independently testable without
-    spinning up Express.
+    `koaContext.status = 404; koaContext.body = { error:
+    'player_not_found' };`
+  - On any thrown PostgreSQL infra error →
+    `koaContext.status = 500; koaContext.body = { error:
+    'internal_error' };` and the catch block swallows the error
+    after the response is set; never re-throws to a global Koa
+    handler. (Matches the existing server convention — `server.mjs`
+    has no global error middleware beyond boardgame.io's defaults.)
+  - Never throws lexically. Internal try / catch around the
+    `getPublicProfileByHandle` call captures the rejection.
+  - `// why:` the route handler is a thin Koa adapter; all logic
+    lives in `profile.logic.ts` so it is independently testable
+    without spinning up boardgame.io's `Server()` or any HTTP
+    listener. The logic-layer test (8 tests in 1 describe block)
+    covers the three branches; an optional follow-up
+    `profile.routes.test.ts` may exercise the koa-router adapter
+    surface but is not required by EC-117.
   - `// why:` this route is intentionally unauthenticated. Public
     profile visibility is governed solely by the WP-052 replay
     visibility flags + the WP-102 server-side filter
@@ -697,28 +839,62 @@ Tests 4–8 require a test PostgreSQL database. If unavailable, mark
 each with `{ skip: 'requires test database' }` (non-silent skip per
 WP-052 precedent). Tests 1–3 are pure and always run.
 
-### E) `apps/arena-client/src/router/routes.ts` — modified
+### E) `apps/arena-client/src/App.vue` — modified (per PS-2)
 
-Add a single new route entry **only**:
+> **Pre-flight 2026-04-28 PS-2 resolution.** Earlier WP-102 drafts
+> specified `apps/arena-client/src/router/routes.ts` (modified). That
+> file does not exist; arena-client has no `vue-router` dependency
+> and adding one is out of scope per WP-102 §Goal "No new npm
+> dependencies". WP-102 instead extends the existing hand-rolled
+> query-string router in `App.vue` (precedent: `parseQuery()` +
+> `type AppRoute = 'fixture' | 'live' | 'lobby'` at `App.vue:17, 48`).
 
-```ts
-{ path: '/players/:handle', name: 'public-player-profile',
-  component: () => import('../pages/PlayerProfilePage.vue') }
-```
+Apply the **minimum** diff:
 
-- `// why:` lazy-loaded via dynamic import to keep the initial
-  arena-client bundle from regressing on a non-critical surface.
-- All existing routes byte-identical. No reordering.
-- No route guard added (this surface is public).
+1. Extend the route union:
+   ```ts
+   type AppRoute = 'fixture' | 'live' | 'lobby' | 'profile';
+   ```
+2. Extend `parseQuery()` to read `?profile=<canonical>`:
+   ```ts
+   const profileHandle = readQueryParam(params, 'profile');
+   // why: presence of ?profile= takes priority over ?match= /
+   //      ?fixture= because the profile surface is a leaf navigation
+   //      target; once a user lands on /?profile=alice we don't
+   //      want a stale ?match= to silently fall through to the
+   //      live route. Tested by AppRoute drift test.
+   ```
+3. Extend the `AppRoute` resolution to set `route = 'profile'` when
+   `profileHandle !== null` (priority above `'live'` / `'fixture'` /
+   `'lobby'` per the `// why:` above).
+4. Conditionally render `<PlayerProfilePage :handle="profileHandle" />`
+   in the template's `<v-if="route === 'profile'">` branch (mirrors
+   the existing `'fixture'` / `'live'` / `'lobby'` branches). Import
+   the component lazily via `defineAsyncComponent(() => import(
+   './pages/PlayerProfilePage.vue'))` to avoid bundle-size regression
+   on the live-match path.
+5. No `vue-router` import. No `<router-view>`. No `<router-link>`.
+   Existing routes byte-identical aside from the new union value
+   and the new `<v-if>` branch.
+6. No route guard added (this surface is public).
 
 ### F) `apps/arena-client/src/pages/PlayerProfilePage.vue` — new
 
-Vue 3 SFC using the existing arena-client conventions:
+Vue 3 SFC using the existing arena-client conventions. Per the
+WP-100 / `App.vue` precedent for separate-compile via
+`@legendary-arena/vue-sfc-loader`, use `defineComponent({ setup() {
+return {...} } })` (NOT `<script setup>`) when the template
+references non-prop bindings (D-6512 / P6-30).
 
-- `<script setup lang="ts">` block.
-- Reads `route.params.handle` from `vue-router`.
+- `<script lang="ts">` block (see precedent caveat above).
+- **Props:** `defineProps<{ handle: string }>()`. Receives the
+  canonical handle from `App.vue`'s `<v-if="route === 'profile'">`
+  branch; does NOT read from `vue-router` (which is not installed —
+  pre-flight PS-2). Treat `handle` as already-canonicalized for the
+  initial fetch; the server canonicalizes defensively anyway.
 - Calls `fetchPublicProfile(handle)` from
-  `../lib/api/profileApi.ts` on mount and on route change.
+  `../lib/api/profileApi.ts` on mount and whenever the `handle`
+  prop changes (`watch(() => props.handle, ...)`).
 - Renders three top-level regions:
   1. **Header.** Displays `displayName`, `displayHandle`,
      `handleCanonical` (as small grey `@<canonical>` slug under the
@@ -730,7 +906,12 @@ Vue 3 SFC using the existing arena-client conventions:
      public replays yet."
   3. **Empty-state tabs.** Six inert `<section>` blocks with the
      six locked tab labels (see Locked contract values). Each is
-     pure markup; **no script logic, no fetch, no event handlers**.
+     pure markup; **no script logic, no fetch, no event handlers,
+     no Vue lifecycle hooks**. Each tab carries an HTML
+     comment `<!-- why: ... -->` (or `// why:` in the `<script>`
+     block, per copilot-check 2026-04-28 RISK #15) naming why it
+     makes no fetch — preserves Vision §11 stateless-client and
+     the WP-102 lifecycle prohibition.
 - 404 path: if the API returns 404, renders a "No player has
   claimed this handle." page; no fetch retry.
 - Loading state: a simple spinner or "Loading…" text while the
@@ -755,14 +936,25 @@ Vue 3 SFC using the existing arena-client conventions:
   — defined inline in this file rather than imported from server
   code (engine-/server-isolation rule).
 
-### H) Server registration entry point — modified
+### H) `apps/server/src/server.mjs` — modified (per PS-3)
 
-The existing Express app entry point (path identified at
-pre-flight; precedent: WP-103 modified the same file to register
-`replay.routes`) must call `registerProfileRoutes(app, database)`
-**once** during startup, after the existing route registrations.
+The existing server entry point (resolved at pre-flight 2026-04-28
+PS-3 to `apps/server/src/server.mjs`) must call
+`registerProfileRoutes(server.router, database)` **once** during
+startup, immediately after the existing
+`registerHealthRoute(server.router)` call at line ~120.
 
-- One-line call site addition; no other changes to the entry file.
+- One-line call site addition; no other changes to `server.mjs`.
+- `database` argument is the `pg.Pool` instance the server creates
+  at startup. **WP-102 does NOT introduce pool creation** — if no
+  pool exists at the point of call (a future request-handler WP
+  may own pool lifecycle), WP-102's session prompt will surface this
+  as an additional pre-execution gate. The pre-flight 2026-04-28 did
+  not check pool availability and the executor must verify at
+  session start (§Pre-Session Gate).
+- The Koa router is already in scope at this line via the
+  `Server({...})` construction at line ~110. No new framework imports
+  needed.
 
 ---
 
@@ -839,19 +1031,24 @@ pre-flight; precedent: WP-103 modified the same file to register
 - `apps/server/src/profile/profile.logic.test.ts` — **new** —
   `node:test` coverage (8 tests, 1 `describe()` block → +1 suite;
   3 pure + 5 DB-dependent).
-- `apps/arena-client/src/router/routes.ts` — **modified** — single
-  new route entry for `/players/:handle` lazy-loading
-  `PlayerProfilePage.vue`. All existing routes byte-identical.
+- `apps/arena-client/src/App.vue` — **modified** (per pre-flight
+  2026-04-28 PS-2; replaces the earlier `apps/arena-client/src/router/
+  routes.ts` placeholder which does not exist). Extends
+  `type AppRoute` with `'profile'`; reads `?profile=<canonical>` via
+  `parseQuery()`; renders `<PlayerProfilePage :handle="..." />` in
+  the new `route === 'profile'` branch. Component lazy-loaded via
+  `defineAsyncComponent`. No `vue-router` import.
 - `apps/arena-client/src/pages/PlayerProfilePage.vue` — **new** —
   Vue 3 SFC: header, replays section, six inert empty-state tab
   blocks.
 - `apps/arena-client/src/lib/api/profileApi.ts` — **new** —
   `fetchPublicProfile(handle)` typed `fetch` wrapper.
-- `apps/server/src/<existing-server-entry>.ts` — **modified** —
-  one-line addition calling `registerProfileRoutes(app,
-  database)` after existing route registrations. Exact path
-  identified at pre-flight (precedent: WP-103 modified the same
-  entry to register `replay.routes`).
+- `apps/server/src/server.mjs` — **modified** (resolved at
+  pre-flight 2026-04-28 PS-3). One-line addition calling
+  `registerProfileRoutes(server.router, database)` immediately after
+  the existing `registerHealthRoute(server.router)` call at line ~120.
+  Mirrors the Koa router precedent — no Express, no new framework
+  import.
 
 No other files may be modified. Verified by `git diff --name-only`
 after each commit.
@@ -914,9 +1111,14 @@ All items must be binary pass/fail. No partial credit.
       in any new file.
 
 ### Vue SPA
-- [ ] `apps/arena-client/src/router/routes.ts` adds exactly one
-      route: `/players/:handle` → `PlayerProfilePage.vue`. All
-      other routes byte-identical (verified via `git diff` review).
+- [ ] `apps/arena-client/src/App.vue` extends `type AppRoute` with
+      `'profile'`, parses `?profile=<canonical>` via the existing
+      `parseQuery()` helper, and renders `<PlayerProfilePage
+      :handle="..." />` (lazy-loaded via `defineAsyncComponent`)
+      in the new `route === 'profile'` branch. All other branches
+      byte-identical (verified via `git diff` review). **No
+      `vue-router` import, no `<router-view>`, no `<router-link>`**
+      (per pre-flight PS-2).
 - [ ] `PlayerProfilePage.vue` calls `fetchPublicProfile` from
       `../lib/api/profileApi.ts` and never imports `boardgame.io`,
       `@legendary-arena/game-engine`, or `@legendary-arena/registry`.
@@ -1136,7 +1338,7 @@ This packet is complete when ALL of the following are true:
 | §2 | Non-Negotiable Constraints with engine-wide + packet-specific + session protocol + locked values | PASS |
 | §2 | Constraints reference `00.6-code-style.md` | PASS (Engine-wide bullet "Human-style code…") |
 | §2 | Full file contents required, no diffs/snippets | PASS |
-| §3 | `## Assumes` lists prior state and dependency files (WP-052, WP-101, arena-client framework, Express server) | PASS |
+| §3 | `## Assumes` lists prior state and dependency files (WP-052, WP-101, arena-client framework [Vue 3 + Pinia, no `vue-router`], Koa router via boardgame.io) | PASS (re-validated 2026-04-28 post-PS-1/PS-2) |
 | §4 | `## Context (Read First)` is specific (no "read the docs") | PASS |
 | §4 | Architectural sections cited where relevant | PASS (ARCHITECTURE.md Layer Boundary + Persistence Boundaries + .claude/rules/architecture.md) |
 | §4 | DECISIONS.md scan instruction included | PASS (Context bullet 11) |
