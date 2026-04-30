@@ -93,12 +93,20 @@ selection behavior — curation lives entirely outside the viewer.
     `draft: Ref<MatchSetupDocument>` and `loadFromJson(document): void`,
     plus the constants `DEFAULT_BYSTANDERS_COUNT`, `DEFAULT_WOUNDS_COUNT`,
     `DEFAULT_OFFICERS_COUNT`, `DEFAULT_SIDEKICKS_COUNT`,
-    `DEFAULT_PLAYER_COUNT`, `DEFAULT_EXPANSIONS`
+    `DEFAULT_PLAYER_COUNT`, `DEFAULT_EXPANSIONS`. **PS-1 amendment
+    (2026-04-29):** the six `DEFAULT_*` constants were originally declared
+    file-local in WP-091; pre-flight added the `export` keyword to each
+    so this packet's drift test can import them. Strictly additive — no
+    logic, signature, or existing-test invariant changes. Authorized as
+    a scope-neutral pre-session amendment per the WP-029
+    upstream-producer-modification precedent (D-2902) and the WP-031
+    D-3103 scope-neutral amendment pattern. New D-114XX entry records
+    the rationale.
 - WP-093 complete: `HeroSelectionMode` union is exactly `"GROUP_STANDARD"`
 - WP-113 complete: `<setAbbr>/<slug>` ID format is the only accepted shape;
   bare slugs are rejected by the validator
-- `pnpm --filter @legendary-arena/registry-viewer build` exits 0
-- `pnpm --filter @legendary-arena/registry-viewer test` exits 0
+- `pnpm --filter registry-viewer build` exits 0
+- `pnpm --filter registry-viewer test` exits 0
 - `pnpm --filter @legendary-arena/registry test` exits 0
 - `docs/ai/DECISIONS.md` exists
 - `docs/ai/ARCHITECTURE.md` exists
@@ -190,10 +198,14 @@ Before writing a single line:
   Defaults are imported from `useLoadoutDraft.ts` constants — do not
   re-declare them.
 - `LoadoutPreview.vue` is read-only. It must not import or invoke any
-  `useLoadoutDraft` mutator (`setScheme`, `setMastermind`,
-  `addVillainGroup`, `addHenchmanGroup`, `addHeroGroup`, `setCount`,
-  `setPlayerCount`, `setSeed`, `reRollSeed`, `prefillFromTheme`,
-  `resetDraft`). The "Edit this loadout" button calls `loadFromJson`
+  `useLoadoutDraft` mutator. The full 16-mutator API surface from
+  `UseLoadoutDraftApi` (per PS-2 — verified against the actual interface
+  declaration at `useLoadoutDraft.ts:85-113`): `setScheme`,
+  `setMastermind`, `addVillainGroup`, `removeVillainGroup`,
+  `addHenchmanGroup`, `removeHenchmanGroup`, `addHeroGroup`,
+  `removeHeroGroup`, `setCount`, `setPlayerCount`, `setSeed`,
+  `reRollSeed`, `setThemeId`, `setHeroSelectionMode`, `prefillFromTheme`,
+  `resetDraft`. The "Edit this loadout" button calls `loadFromJson`
   exactly once, on user click — this is the only permitted mutator
   invocation in the preview component.
 - The "Copy Setup Link" button uses `navigator.clipboard.writeText`. On
@@ -604,11 +616,19 @@ unchanged. **Authority:** WP-097, D-9701, D-9801.
   the Loadout tab pane with the composable's outputs as props, and
   apply one-shot auto-switch to Loadout tab when URL params are
   present.
+- `apps/registry-viewer/src/composables/useLoadoutDraft.ts` —
+  **modified (PS-1, additive only)** — add `export` keyword to the
+  six existing `DEFAULT_*` constants at lines 31–36. **No other change
+  permitted.** Logic, signatures, mutator API, `loadFromJson` behavior,
+  `exportToJsonBlob` / `exportFilename`, internal helpers — all locked
+  exactly as WP-091 shipped. The only diff is the `export` keyword on
+  six existing `const` declarations. Required so `useSetupFromUrl.ts`
+  can import the constants for the drift test.
 
 ### Component-level behavior — manual verification only (no new test files)
 
 The following two acceptance criteria items are verified manually
-against the dev server (`pnpm --filter @legendary-arena/registry-viewer
+against the dev server (`pnpm --filter registry-viewer
 dev`) per the WP-066 / WP-094 / WP-096 / EC-103 viewer-side precedent.
 They are NOT covered by automated tests in this packet because the
 viewer's test runner (`node --import tsx --test`, established under
@@ -717,11 +737,11 @@ closeout listed above.
 
 ```pwsh
 # Step 1 — build
-pnpm --filter @legendary-arena/registry-viewer build
+pnpm --filter registry-viewer build
 # Expected: exits 0, no TypeScript errors
 
 # Step 2 — viewer tests
-pnpm --filter @legendary-arena/registry-viewer test
+pnpm --filter registry-viewer test
 # Expected: TAP output — all tests passing, 0 failing
 
 # Step 3 — registry regression check (setupContract should be untouched)
@@ -764,8 +784,8 @@ git diff --name-only
 This packet is complete when ALL of the following are true:
 
 - [ ] All acceptance criteria above pass
-- [ ] `pnpm --filter @legendary-arena/registry-viewer build` exits 0
-- [ ] `pnpm --filter @legendary-arena/registry-viewer test` exits 0
+- [ ] `pnpm --filter registry-viewer build` exits 0
+- [ ] `pnpm --filter registry-viewer test` exits 0
 - [ ] `pnpm --filter @legendary-arena/registry test` exits 0
 - [ ] No `throw` in `apps/registry-viewer/src/lib/setupUrlParams.ts`
   (confirmed with `Select-String`)
@@ -778,9 +798,17 @@ This packet is complete when ALL of the following are true:
   `IndexedDB`, `document.cookie`) in any new or modified file
 - [ ] WP-091 contract files
   (`packages/registry/src/setupContract/setupContract.types.ts`,
-  `packages/registry/src/setupContract/setupContract.validate.ts`,
-  `apps/registry-viewer/src/composables/useLoadoutDraft.ts`) were
-  not modified (confirmed with `git diff`)
+  `packages/registry/src/setupContract/setupContract.validate.ts`)
+  were not modified (confirmed with `git diff`).
+- [ ] `apps/registry-viewer/src/composables/useLoadoutDraft.ts` is
+  modified ONLY by adding the `export` keyword to the six existing
+  `DEFAULT_*` constants at lines 31–36 per PS-1. All other lines
+  byte-identical to the WP-091 baseline. Confirmed by reading
+  `git diff apps/registry-viewer/src/composables/useLoadoutDraft.ts`
+  — every change in the diff is an additive `export` token; no logic,
+  signature, or comment is touched outside the constants block.
+- [ ] All six `DEFAULT_*` constants are exported (positive existence
+  grep): `Select-String -Path "apps\registry-viewer\src\composables\useLoadoutDraft.ts" -Pattern "^export const DEFAULT_(BYSTANDERS|WOUNDS|OFFICERS|SIDEKICKS|PLAYER)_COUNT|^export const DEFAULT_EXPANSIONS"` returns exactly 6 matches.
 - [ ] No files outside `## Files Expected to Change` were modified
   (confirmed with `git diff --name-only`)
 - [ ] `docs/ai/STATUS.md` updated — "registry viewer accepts
@@ -797,5 +825,13 @@ This packet is complete when ALL of the following are true:
   - D-114XX: auto-switch-to-Loadout-tab fires once per mount and is
     not re-applied on subsequent tab navigation — declarative arrival
     signal vs. sticky preference
+  - D-114XX: **PS-1 additive `export` of six `DEFAULT_*` constants in
+    `useLoadoutDraft.ts`** — scope-neutral amendment to the WP-091
+    immutable file (no logic, signature, or test invariant change).
+    Required so the drift test in `useSetupFromUrl.test.ts` can import
+    the constants and prove editor/preview default-value continuity.
+    Authorized at pre-flight per the WP-029 upstream-producer-modification
+    precedent (D-2902) and the WP-031 D-3103 scope-neutral amendment
+    pattern.
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` has WP-114 checked off
   with today's date

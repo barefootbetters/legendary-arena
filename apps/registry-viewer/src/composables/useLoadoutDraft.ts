@@ -27,13 +27,21 @@ import {
 
 import type { ThemeDefinition } from "../lib/themeClient";
 
-/** Default pile-count values from EC-091 §Locked Values / §3.7. */
-const DEFAULT_BYSTANDERS_COUNT = 30;
-const DEFAULT_WOUNDS_COUNT = 30;
-const DEFAULT_OFFICERS_COUNT = 30;
-const DEFAULT_SIDEKICKS_COUNT = 0;
-const DEFAULT_PLAYER_COUNT = 2;
-const DEFAULT_EXPANSIONS = ["base"] as const;
+// why: Six DEFAULT_* constants exported additively per WP-114 PS-1
+// (D-114XX). The URL-preview composable `useSetupFromUrl` (WP-114 §B)
+// imports these so the synthesized `MatchSetupDocument` envelope uses
+// byte-identical defaults to the editor draft — drift between editor and
+// preview would break the round-trip between "Edit this loadout" and the
+// shared URL. Exporting is strictly additive: no logic, signature, or
+// existing-test invariant changes; the only effect is making the
+// constants importable. Originally locked from EC-091 §Locked Values /
+// §3.7.
+export const DEFAULT_BYSTANDERS_COUNT = 30;
+export const DEFAULT_WOUNDS_COUNT = 30;
+export const DEFAULT_OFFICERS_COUNT = 30;
+export const DEFAULT_SIDEKICKS_COUNT = 0;
+export const DEFAULT_PLAYER_COUNT = 2;
+export const DEFAULT_EXPANSIONS = ["base"] as const;
 
 /**
  * Generates a fresh 16-hex-character opaque seed.

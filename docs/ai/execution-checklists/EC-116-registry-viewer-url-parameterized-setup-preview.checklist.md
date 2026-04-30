@@ -14,8 +14,8 @@
 
 - [ ] WP-086 landed on `main` (hard sequencing — same component tree).
 - [ ] WP-091 / WP-093 / WP-113 are merged on `main`; `setupContract.{types,validate}.ts` exports unchanged from WP-091 baseline; `useLoadoutDraft.ts` exports the six default constants verbatim.
-- [ ] `pnpm --filter @legendary-arena/registry-viewer build` exits 0.
-- [ ] `pnpm --filter @legendary-arena/registry-viewer test` exits 0.
+- [ ] `pnpm --filter registry-viewer build` exits 0.
+- [ ] `pnpm --filter registry-viewer test` exits 0.
 - [ ] `pnpm --filter @legendary-arena/registry test` exits 0 (regression baseline).
 - [ ] No parallel session is editing `apps/registry-viewer/src/App.vue`, `LoadoutBuilder.vue`, or `useLoadoutDraft.ts`.
 
@@ -40,7 +40,7 @@
 1. **Layer boundary:** no `from '@legendary-arena/game-engine'`, `from '@legendary-arena/preplan'`, `from 'boardgame.io'`, `from 'pg'`, or `from 'apps/server'` in any new or modified file. Verified by `Select-String`.
 2. **No new npm dependency.** No router library, no clipboard polyfill, no URL library. `URLSearchParams` only.
 3. **No persistence.** No `localStorage` / `sessionStorage` / `IndexedDB` / `document.cookie` writes anywhere in the new files.
-4. **`LoadoutPreview.vue` is read-only.** It must not import any `useLoadoutDraft` mutator other than `loadFromJson`. Forbidden imports (grep-confirmed): `setScheme`, `setMastermind`, `addVillainGroup`, `addHenchmanGroup`, `addHeroGroup`, `setCount`, `setPlayerCount`, `setSeed`, `reRollSeed`, `prefillFromTheme`, `resetDraft`.
+4. **`LoadoutPreview.vue` is read-only.** It must not import any `useLoadoutDraft` mutator other than `loadFromJson`. Forbidden imports (grep-confirmed — full 16-mutator API surface from `UseLoadoutDraftApi` per WP-114 PS-2): `setScheme`, `setMastermind`, `addVillainGroup`, `removeVillainGroup`, `addHenchmanGroup`, `removeHenchmanGroup`, `addHeroGroup`, `removeHeroGroup`, `setCount`, `setPlayerCount`, `setSeed`, `reRollSeed`, `setThemeId`, `setHeroSelectionMode`, `prefillFromTheme`, `resetDraft`.
 5. **`loadFromJson` is invoked exactly once.** From the "Edit this loadout" button click handler only. Disabled when `previewDocument === null`.
 6. **One-shot auto-switch.** `App.vue` switches to the Loadout tab on first mount only when `hasUrlParams === true`. A `hasAppliedUrlAutoSwitch` ref gates re-firing. Subsequent user tab navigation must not re-trigger the switch.
 7. **No paraphrase of canonical names.** The five URL keys must be the canonical `schemeId` / `mastermindId` / `villainGroupIds` / `henchmanGroupIds` / `heroDeckIds`. Paraphrasing is a Session Abort Condition.
@@ -73,10 +73,11 @@
 - `apps/registry-viewer/src/components/LoadoutPreview.vue` — **new** — read-only preview panel; consumes props from `App.vue`'s single composable instance per §Locked Values "Composable ownership" rule.
 - `apps/registry-viewer/src/components/LoadoutBuilder.vue` — **modified** — add "Copy Setup Link" button only.
 - `apps/registry-viewer/src/App.vue` — **modified** — instantiate `useSetupFromUrl(registry)` once, mount `<LoadoutPreview>` with composable outputs as props, apply one-shot auto-switch.
+- `apps/registry-viewer/src/composables/useLoadoutDraft.ts` — **modified (PS-1, additive only)** — add `export` keyword to the six existing `DEFAULT_*` constants at lines 31–36 (`DEFAULT_BYSTANDERS_COUNT`, `DEFAULT_WOUNDS_COUNT`, `DEFAULT_OFFICERS_COUNT`, `DEFAULT_SIDEKICKS_COUNT`, `DEFAULT_PLAYER_COUNT`, `DEFAULT_EXPANSIONS`). **No other change permitted** — logic, signatures, mutator API, internal helpers all locked exactly as WP-091 shipped. Required so `useSetupFromUrl.ts` can import the constants for the drift test (per Guardrail #9).
 
 ### Component-level behavior — manual verification only (no new component test files)
 
-The viewer's test runner is pure-Node `node --import tsx --test src/**/*.test.ts` (established under WP-086 / D-8607); it cannot mount Vue components. Two AC items are verified manually against `pnpm --filter @legendary-arena/registry-viewer dev` per the WP-066 / WP-094 / WP-096 / EC-103 viewer-side precedent:
+The viewer's test runner is pure-Node `node --import tsx --test src/**/*.test.ts` (established under WP-086 / D-8607); it cannot mount Vue components. Two AC items are verified manually against `pnpm --filter registry-viewer dev` per the WP-066 / WP-094 / WP-096 / EC-103 viewer-side precedent:
 - **Clipboard fallback verification** — operator denies clipboard permission and clicks "Copy Setup Link"; confirms readonly-input fallback appears with URL pre-populated + pre-selected.
 - **One-shot auto-switch verification** — operator opens viewer with URL params; confirms Loadout tab is active on first render; manually switches to Cards; triggers a reactive update; confirms tab does not re-switch back.
 
@@ -85,27 +86,29 @@ Operator records both results in the Commit A message and STATUS.md block. If a 
 ### Governance closeout (Commit B SPEC)
 
 - `docs/ai/STATUS.md` — record feature landing block including the manual-verification results.
-- `docs/ai/DECISIONS.md` — three D-114XX entries (canonical-name URL keys; count/envelope-not-URL-bound; one-shot auto-switch). Optional fourth at executor discretion: `useSetupFromUrl` ownership at `App.vue` (single-instance pattern) if the executor wants to anchor it explicitly.
+- `docs/ai/DECISIONS.md` — four D-114XX entries (canonical-name URL keys; count/envelope-not-URL-bound; one-shot auto-switch; **PS-1 additive `export` of six `DEFAULT_*` constants in `useLoadoutDraft.ts`** — additive scope-neutral amendment to the WP-091 immutable file, no logic/signature change, drift test now imports them; rationale: editor/preview default-value continuity is now drift-test-protected). Optional fifth at executor discretion: `useSetupFromUrl` ownership at `App.vue` (single-instance pattern) if the executor wants to anchor it explicitly.
 - `docs/ai/work-packets/WORK_INDEX.md` — flip WP-114 `[ ]` → `[x]` with date + Commit A SHA + body update from "planned" to "landed".
 - `docs/ai/execution-checklists/EC_INDEX.md` — flip EC-116 row Draft → Done with date and verification summary.
 
 ## After Completing
 
-- [ ] `pnpm --filter @legendary-arena/registry-viewer build` exits 0.
-- [ ] `pnpm --filter @legendary-arena/registry-viewer test` exits 0.
+- [ ] `pnpm --filter registry-viewer build` exits 0.
+- [ ] `pnpm --filter registry-viewer test` exits 0.
 - [ ] `pnpm --filter @legendary-arena/registry test` exits 0 (regression baseline holds).
 - [ ] `Select-String -Path "apps\registry-viewer\src\lib\setupUrlParams.ts","apps\registry-viewer\src\composables\useSetupFromUrl.ts","apps\registry-viewer\src\components\LoadoutPreview.vue","apps\registry-viewer\src\components\LoadoutBuilder.vue","apps\registry-viewer\src\App.vue" -Pattern "from '@legendary-arena/game-engine|from '@legendary-arena/preplan|from 'apps/server|from 'boardgame\.io|from 'pg'"` returns no match.
 - [ ] `Select-String -Path "apps\registry-viewer\src\lib\setupUrlParams.ts","apps\registry-viewer\src\composables\useSetupFromUrl.ts","apps\registry-viewer\src\components\LoadoutPreview.vue" -Pattern "localStorage|sessionStorage|indexedDB|document\.cookie"` returns no match.
 - [ ] `Select-String -Path "apps\registry-viewer\src\lib\setupUrlParams.ts" -Pattern "['""](scheme|mastermind|villains|heroes)['""]"` returns no match.
 - [ ] `Select-String -Path "apps\registry-viewer\src\lib\setupUrlParams.ts" -Pattern "throw "` returns no match.
 - [ ] `Select-String -Path "apps\registry-viewer\src" -Pattern "Math\.random" -Recurse` returns no match.
-- [ ] `Select-String -Path "apps\registry-viewer\src\components\LoadoutPreview.vue" -Pattern "setScheme|setMastermind|addVillainGroup|addHenchmanGroup|addHeroGroup|setCount|setPlayerCount|setSeed|reRollSeed|prefillFromTheme|resetDraft"` returns no match.
+- [ ] `Select-String -Path "apps\registry-viewer\src\components\LoadoutPreview.vue" -Pattern "setScheme|setMastermind|addVillainGroup|removeVillainGroup|addHenchmanGroup|removeHenchmanGroup|addHeroGroup|removeHeroGroup|setCount|setPlayerCount|setSeed|reRollSeed|setThemeId|setHeroSelectionMode|prefillFromTheme|resetDraft"` returns no match (full 16-mutator API surface from `UseLoadoutDraftApi` per WP-114 PS-2).
 - [ ] `Select-String -Path "apps\registry-viewer\src\components\LoadoutBuilder.vue" -Pattern "Copy Setup Link"` returns exactly 1 match.
 - [ ] `Select-String -Path "apps\registry-viewer\src\components\LoadoutPreview.vue" -Pattern "Loaded from URL"` returns exactly 1 match.
 - [ ] **Composable ownership grep gates:** `Select-String -Path "apps\registry-viewer\src\App.vue" -Pattern "useSetupFromUrl\("` returns exactly 1 match; `Select-String -Path "apps\registry-viewer\src\components\LoadoutPreview.vue" -Pattern "useSetupFromUrl\("` returns 0 matches.
 - [ ] **Manual verification — clipboard fallback (LoadoutBuilder.vue):** in the dev server, deny clipboard permission (DevTools → Application → Permissions, or use an HTTP context), click "Copy Setup Link" with a non-empty composition; confirm the readonly-input fallback element appears with the URL pre-populated and pre-selected. Record result in Commit A message + STATUS.md.
 - [ ] **Manual verification — one-shot auto-switch (App.vue):** in the dev server, open the viewer with `?schemeId=core/foo` (or any populated URL params); confirm the active tab is "Loadout" on first render. Manually switch to Cards; trigger any reactive update (search input, set filter); confirm the tab does NOT re-switch back to Loadout. Record result in Commit A message + STATUS.md.
 - [ ] `git diff packages/registry/ apps/server/ apps/arena-client/ packages/game-engine/ packages/preplan/` is empty.
+- [ ] **PS-1 export gate (positive existence):** `Select-String -Path "apps\registry-viewer\src\composables\useLoadoutDraft.ts" -Pattern "^export const DEFAULT_(BYSTANDERS|WOUNDS|OFFICERS|SIDEKICKS|PLAYER)_COUNT|^export const DEFAULT_EXPANSIONS"` returns exactly 6 matches (one per constant).
+- [ ] **PS-1 scope gate (additive-only):** `git diff apps/registry-viewer/src/composables/useLoadoutDraft.ts` shows only the addition of `export` keyword to six existing `const` declarations. No logic, signature, comment, or other line is touched outside the constants block. If the diff shows anything beyond the six `export` token additions, STOP — the WP-091 immutable-file constraint has been violated.
 - [ ] `git diff --name-only` lists only files under `## Files to Produce`.
 
 ## Common Failure Smells
