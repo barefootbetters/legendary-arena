@@ -4,49 +4,72 @@
 > The **authoritative source** is [`docs/ai/ARCHITECTURE.md`](ai/ARCHITECTURE.md).
 > If this file and the authoritative source conflict, the authoritative source wins.
 >
-> **Last updated:** 2026-04-14 (Phase 5 complete, 314 engine tests)
+> **Last updated:** 2026-04-29
+>
+> Recent updates since 2026-04-14:
+> - Gameplay-client framework lock: Vue 3 + Vite + Pinia (WP-061)
+> - First browser-to-engine live-match wiring shipped — Socket.IO transport (WP-090, 2026-04-24)
+> - Hanko selected as authentication broker — governance only, implementation deferred (WP-099 / D-9901..D-9905, 2026-04-25)
+> - `packages/preplan` promoted from "future" to shipped (WP-056..WP-058)
+> - `packages/vue-sfc-loader` added as Shared Tooling layer (WP-065)
 
 ---
 
 ## System Layers
 
 ```
-                    +-----------------------+
-                    |   Client UI (future)  |
-                    |   intents only        |
-                    +-----------+-----------+
-                                |
-                    +-----------v-----------+
-                    |   apps/server/        |
-                    |   Wiring layer only   |
-                    |   boardgame.io Server()|
-                    +-----------+-----------+
-                                |
-              +-----------------+------------------+
-              |                                    |
-  +-----------v-----------+          +-------------v-----------+
-  |  packages/game-engine |          |  packages/registry      |
-  |  ALL game logic       |          |  Card data loading      |
-  |  LegendaryGame        |          |  Zod validation         |
-  |  boardgame.io ^0.50.0 |          |  Immutable CardRegistry |
-  |  314 tests, 83 suites |          |  Themes (WP-055)        |
-  +----------+------------+          +-------------+-----------+
-             |                                     |
-             |  setup-time only                    |
-             +-------------------------------------+
-                                |
-                    +-----------v-----------+
-                    |   data/               |
-                    |   Card JSON + metadata|
-                    |   PostgreSQL schema   |
-                    +-----------------------+
+                    +-------------------------------+
+                    |  Vue 3 SPAs                   |
+                    |  arena-client (gameplay,      |
+                    |    Socket.IO + HTTP)          |
+                    |  registry-viewer (R2 only,    |
+                    |    cards.barefootbetters.com) |
+                    |  intents only                 |
+                    +---------------+---------------+
+                                    |
+                    +---------------v---------------+   +----------------------+
+                    |   apps/server/                |<--+  Hanko (broker)      |
+                    |   Wiring layer only           |   |  passkey-first OIDC, |
+                    |   boardgame.io Server()       |   |  self-hostable;      |
+                    |   + apps/server/src/auth/     |   |  validates session,  |
+                    |     hanko/ (chosen WP-099;    |   |  never owns identity |
+                    |     impl deferred WP-112)     |   |  (D-9902)            |
+                    +---------------+---------------+   +----------------------+
+                                    |
+              +---------------------+---------------------+
+              |                                           |
+  +-----------v-----------+              +----------------v--------+
+  |  packages/game-engine |              |  packages/registry      |
+  |  ALL game logic       |              |  Card data loading      |
+  |  LegendaryGame        |              |  Zod validation         |
+  |  boardgame.io ^0.50.0 |              |  Immutable CardRegistry |
+  |  (LOCKED)             |              |  Themes (WP-055)        |
+  +-----------+-----------+              +----------------+--------+
+              |                                           |
+              |  setup-time only                          |
+              +-------------------------+-----------------+
+                                        |
+              +-------------------------+-------------------------+
+              |                                                   |
+  +-----------v---------+                          +--------------v----------+
+  |   data/             |                          |  PostgreSQL             |
+  |   Card JSON,        |                          |  legendary.* schema:    |
+  |   metadata, seeds   |                          |  rules, players,        |
+  |   R2 mirror         |                          |  replays, scores,       |
+  +---------------------+                          |  badges                 |
+                                                   +-------------------------+
 
-  +---------------------------+
-  |  packages/preplan (future) |
-  |  Speculative planning     |
-  |  Types only from engine   |
-  +---------------------------+
+  +-------------------------------+    +-------------------------------+
+  |  packages/preplan (shipped)   |    |  packages/vue-sfc-loader      |
+  |  Speculative per-client       |    |  Shared Tooling (orthogonal)  |
+  |  planning; TYPE-only imports  |    |  test-time SFC transform;     |
+  |  from engine; non-authoritative|   |  never in production runtime  |
+  +-------------------------------+    +-------------------------------+
 ```
+
+Pre-planning is read-only against engine projections; the engine has no awareness of it (no
+runtime edges into preplan). Shared Tooling is orthogonal — apps consume it only via
+`devDependencies` and test scripts.
 
 ---
 
@@ -54,12 +77,37 @@
 
 | Package | Responsibility | May Import | Must NOT Import |
 |---------|---------------|------------|-----------------|
-| `game-engine` | All gameplay logic (phases, moves, rules, endgame) | Node built-ins only | registry, server, pg |
-| `registry` | Card data loading and Zod validation | Node built-ins, zod | game-engine, server, pg |
-| `apps/server` | Wiring: loads registry + rules, runs Server() | game-engine, registry, pg | UI packages, browser APIs |
-| `apps/registry-viewer` | Read-only card browser SPA | registry, Vue | game-engine, server, pg |
+| `packages/game-engine` | All gameplay logic (phases, moves, rules, endgame) | Node built-ins only | registry, preplan, server, vue-sfc-loader, pg, any apps |
+| `packages/registry` | Card data loading and Zod validation | Node built-ins, zod | game-engine, preplan, server, vue-sfc-loader, pg, any apps |
+| `packages/preplan` | Speculative per-client planning (non-authoritative) | game-engine **types only**, Node built-ins | game-engine runtime, registry, server, boardgame.io, pg, any apps |
+| `packages/vue-sfc-loader` | Shared Tooling — Vue SFC transform for `node:test` | `@vue/compiler-sfc`, `vue`, Node built-ins | every other package; never in any app's runtime `dependencies` |
+| `apps/server` | Wiring: registry + rules + (future) Hanko session validation, runs Server() | game-engine, registry, pg | preplan, vue-sfc-loader, UI packages, browser APIs |
+| `apps/registry-viewer` | Read-only card browser SPA (public) | registry, Vue, vue-sfc-loader (devDep) | game-engine, preplan, server, pg, vue-sfc-loader at runtime |
+| `apps/arena-client` | Live-match gameplay client (Vue 3 SPA) | UI framework, `@legendary-arena/preplan` (runtime, per D-5901), vue-sfc-loader (devDep) | game-engine runtime, registry runtime, server, pg, vue-sfc-loader at runtime |
 
-**Violations are bugs.** Dependencies flow strictly downward. No layer may reach upward or sideways.
+**Violations are bugs.** Dependencies flow strictly downward; the Shared Tooling layer is
+orthogonal and test-only. No layer may reach upward or sideways.
+
+---
+
+## Tech Stack at a Glance
+
+| Concern | Choice | Version | Source |
+|---|---|---|---|
+| Runtime | Node.js | ≥22 (built-in `fetch`) | [package.json](../package.json) `engines.node` |
+| Module system | ESM-only | -- | [.claude/rules/code-style.md](../.claude/rules/code-style.md) |
+| Package manager | pnpm | 10.32.1 | [package.json](../package.json) `packageManager` |
+| Language | TypeScript | 5.4.x | workspace devDeps |
+| Game engine | boardgame.io | ^0.50.0 (LOCKED) | [packages/game-engine/package.json](../packages/game-engine/package.json) -- D-1206 for CJS bridge |
+| Gameplay client | Vue 3 + Vite + Pinia | 3.4 / 5 / 2.1 | [apps/arena-client/package.json](../apps/arena-client/package.json) -- framework lock per WP-061 |
+| Registry viewer | Vue 3 + Vite + Zod | 3.4 / 5 / 3.23 | [apps/registry-viewer/package.json](../apps/registry-viewer/package.json) -- public at `cards.barefootbetters.com` |
+| Schema validation | Zod | 3.23 | registry + viewer |
+| Database driver | `pg` (PostgreSQL) | ^8.13 | [apps/server/package.json](../apps/server/package.json) |
+| Static asset host | Cloudflare R2 | -- | `https://images.barefootbetters.com/` |
+| Real-time transport | Socket.IO (via boardgame.io/client) | 4.8.x | shipped WP-090 (2026-04-24) |
+| Authentication | Hanko (broker only) | -- | WP-099 / D-9901 (impl deferred WP-112) |
+| Test runner | `node:test` (built-in) | -- | `*.test.ts` files; never `.test.mjs` |
+| Vue SFC test transform | `@legendary-arena/vue-sfc-loader` (in-house) | workspace | dev/test only -- Shared Tooling |
 
 ---
 
@@ -79,6 +127,43 @@ Two independent tasks must both succeed before the server accepts requests:
    - Log: `[server] rules loaded: N rules`
 
 If either fails, the server exits. The server uses `createRequire` to bridge boardgame.io's CJS-only server bundle (D-1206).
+
+A future Hanko session-validation middleware will run on identity-bearing endpoints (replay
+submission, profile reads). Game-creation and match-state endpoints accept guest sessions
+unconditionally (D-9905). The decision is locked by WP-099 / D-9901..D-9905; the
+implementation is deferred to WP-112 (`requireAuthenticatedSession`) and a future
+Hanko-wiring WP. No Hanko code lives in the repo as of 2026-04-29.
+
+---
+
+## Transport
+
+| Channel | Protocol | Used For |
+|---|---|---|
+| Match state sync | Socket.IO 4.8.x (via boardgame.io/client) | Live moves, state diffs, multi-player sync (shipped WP-090) |
+| Match lifecycle | HTTP `POST` | `POST /games/legendary-arena/create`, `POST /games/legendary-arena/{matchID}/join` |
+| Server CLI scripts | HTTP via Node 22 built-in `fetch` | `create-match.mjs`, `list-matches.mjs`, `join-match.mjs` (no axios, no node-fetch) |
+| Static card / theme / glossary data | HTTPS to R2 | `https://images.barefootbetters.com/` (registry-viewer + arena-client) |
+| Hanko OIDC verification (future) | HTTPS / JWKS | Server-side only; the arena-client carries an opaque session credential and never inspects claims (D-9904) |
+
+---
+
+## Authentication & Identity
+
+Authentication and identity are **deliberately separated** per Vision §7a and D-9901..D-9905.
+
+| Concern | Owner | Notes |
+|---|---|---|
+| Authentication broker | Hanko (passkey-first, OIDC-compliant, self-hostable) | Confined to `apps/server/src/auth/hanko/` (D-9904); never in the engine, registry, or any UI package |
+| Federated IdPs | Google, Discord, direct email + passkey | Recorded under the federated claim, not under `'hanko'` |
+| `legendary.players.auth_provider` enum | `'email' \| 'google' \| 'discord'` | Hanko itself never appears in the data model (D-9902) |
+| `AccountId` (primary identity) | **Server-generated** UUID v4 via `node:crypto.randomUUID()` | Per WP-052 D-5201 -- Hanko's `sub` becomes `authProviderId` only |
+| Replay ownership | Keyed on `AccountId`, not on broker `sub` | Survives broker rotation or replacement |
+| Guest play | Permitted without authentication (D-9905) | Hanko never gates gameplay; identity-bearing surfaces (replays, leaderboards) require a session |
+| Replacement-safety | Swapping Hanko for another OIDC broker (or rolling our own with `jsonwebtoken`) requires zero data migrations | Structural, not aspirational -- enforced by the module-path lock |
+
+**Forbidden:** Auth0, Clerk, Passport, password storage. The Hanko carve-out is specific
+(D-9903) -- additional brokers require their own WP and `DECISIONS.md` entry.
 
 ---
 
@@ -224,10 +309,13 @@ All builders use `registry: unknown` with local structural interfaces to respect
 ## For Full Details
 
 - **Authoritative architecture:** [`docs/ai/ARCHITECTURE.md`](ai/ARCHITECTURE.md)
+- **Vision (identity boundary §7a, scoring §20-§26, non-goals NG-1..NG-8):** [`docs/01-VISION.md`](01-VISION.md)
 - **Layer enforcement rules:** `.claude/rules/*.md` (7 files)
-- **Decisions log:** [`docs/ai/DECISIONS.md`](ai/DECISIONS.md) (133+ decisions)
+- **Decisions log:** [`docs/ai/DECISIONS.md`](ai/DECISIONS.md) -- auth selection D-9901..D-9905, AccountId D-5201, boardgame.io CJS bridge D-1206
 - **Data contracts:** [`docs/ai/REFERENCE/00.2-data-requirements.md`](ai/REFERENCE/00.2-data-requirements.md)
 - **Code categories:** [`docs/ai/REFERENCE/02-CODE-CATEGORIES.md`](ai/REFERENCE/02-CODE-CATEGORIES.md)
+- **Auth governance:** [`docs/ai/work-packets/WP-099-auth-provider-selection.md`](ai/work-packets/WP-099-auth-provider-selection.md)
+- **Registry-viewer details:** [`apps/registry-viewer/CLAUDE.md`](../apps/registry-viewer/CLAUDE.md) (public at `cards.barefootbetters.com`)
 - **Testing:** [`docs/06-TESTING.md`](06-TESTING.md) (314 engine tests, 10 drift-detection arrays)
 
-*Last updated: 2026-04-14 (Phase 5 complete)*
+*Last updated: 2026-04-29*
