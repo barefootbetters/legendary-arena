@@ -38,6 +38,14 @@ module.exports = {
     // gated by `DEBUG_VIEWER` and stripped from prod by DCE). `warn`/`error`
     // remain allowed for genuine user-facing failure messages.
     'no-console': ['error', { allow: ['warn', 'error'] }],
+    // why: EC-120 — accept implicit nesting-based label/control association
+    // (the modern WAI-recommended pattern; clicking a `<label>` focuses its
+    // wrapped control without a `for=`/`id=` round-trip). The plugin's default
+    // `every: ['nesting', 'id']` would force every label to carry both, which
+    // duplicates the association without an a11y benefit. `form-control-has-label`
+    // (kept at default) still catches controls that have neither a wrapping
+    // label nor an aria-label.
+    'vuejs-accessibility/label-has-for': ['error', { required: { some: ['nesting'] } }],
   },
   overrides: [
     // why: EC-104 — `devLog.ts` and `debugMode.ts` are the approved

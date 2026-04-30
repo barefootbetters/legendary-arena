@@ -364,7 +364,13 @@ function slotLabel(slot: PickerSlot): string {
 
       <!-- Composition: scalars -->
       <div class="field-group">
-        <label class="field field-row">
+        <!-- why: schemeId / mastermindId rows wrap a <button>, not a form
+             control, so <label> would be semantically wrong (and
+             `vuejs-accessibility/label-has-for` would still flag them with
+             `required: { some: ['nesting'] }` because the button isn't in
+             the rule's controlTypes). The .field / .field-row classes carry
+             the styling identically on a <div>. -->
+        <div class="field field-row">
           <span class="field-label">schemeId</span>
           <div class="field-value">
             <button
@@ -375,8 +381,8 @@ function slotLabel(slot: PickerSlot): string {
             >Pick…</button>
             <span class="ext-id">{{ draft.composition.schemeId || "—" }}</span>
           </div>
-        </label>
-        <label class="field field-row">
+        </div>
+        <div class="field field-row">
           <span class="field-label">mastermindId</span>
           <div class="field-value">
             <button
@@ -387,7 +393,7 @@ function slotLabel(slot: PickerSlot): string {
             >Pick…</button>
             <span class="ext-id">{{ draft.composition.mastermindId || "—" }}</span>
           </div>
-        </label>
+        </div>
       </div>
 
       <!-- Composition: arrays -->
@@ -479,12 +485,18 @@ function slotLabel(slot: PickerSlot): string {
         <details class="import-details">
           <summary>📥 Load JSON (paste or file)</summary>
           <div class="import-body">
-            <input type="file" accept="application/json,.json" @change="onFileImport" />
-            <textarea
-              v-model="importText"
-              rows="6"
-              placeholder="Paste a MATCH-SETUP document here…"
-            ></textarea>
+            <label class="field">
+              <span class="field-label">Choose JSON file</span>
+              <input type="file" accept="application/json,.json" @change="onFileImport" />
+            </label>
+            <label class="field">
+              <span class="field-label">Or paste JSON</span>
+              <textarea
+                v-model="importText"
+                rows="6"
+                placeholder="Paste a MATCH-SETUP document here…"
+              ></textarea>
+            </label>
             <button type="button" class="mini-btn" @click="onPasteImport">Load pasted JSON</button>
             <p v-if="importSuccessAt" class="import-success">Loaded at {{ importSuccessAt }}.</p>
             <ul v-if="importErrors.length > 0" class="error-list">
