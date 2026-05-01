@@ -11916,6 +11916,105 @@ The amendment was authorized at pre-flight time as a **scope-neutral pre-session
 
 ---
 
+### D-11601 — Rejoin Grace Window: Phase-Aware (Option B)
+
+**Decision:** A phase-aware grace window: longer in `play` (mid-turn drops are the most painful failure mode the WP is designed to address); shorter in `lobby` / `setup` / `end` (drop-during-lobby is functionally a leave-and-rejoin, not a recoverable interruption). Concrete window magnitudes per phase are NOT locked here — the future implementation WP gathers production telemetry and locks numbers under its own DECISIONS entry.
+
+**Rationale:** Vision §4 (Faithful Multiplayer Experience — *"Multiplayer synchronization, reconnection, and late-joining must be reliable"*) and Vision §3 (Player Trust & Fairness — opaque automation is forbidden; the policy must visibly distinguish recoverable interruptions from voluntary leaves). The WP body itself names this tradeoff: *"B matches game UX (mid-turn drops are more painful than lobby drops)"*. A phase-aware class is structurally compatible with §3 because every transition is observable via deterministic `G.messages` entries and the per-phase magnitudes are server-side configuration (not in `G`, not in moves).
+
+**Rejected:**
+- **Option A (fixed window regardless of phase):** under-serves the load-bearing `play.main` mid-turn case the WP names as primary motivation. A fixed window long enough for `play` is wastefully long for `lobby`; a window short enough for `lobby` is unfair for `play`. The simplicity gain does not outweigh the per-phase fairness loss.
+- **Option C (defer to boardgame.io defaults):** explicitly forbidden by WP-116 `## Goal` line 26 (*"This WP explicitly forbids implicit reliance on boardgame.io's built-in disconnect / reconnect behavior"*). Option C as written would produce a policy that drifts whenever the framework version is bumped — exactly the silent-drift failure mode Vision §14 forbids.
+
+**Introduced:** WP-116 (single `SPEC:` commit, 2026-04-30)
+**Reinforces:** WP-090 (Socket.IO transport — the layer this policy sits on); D-10001 + 2026-04-26 Amendment (no-EC governance precedent — the deferral is documented governance, not skipped governance); Vision §4 (multiplayer correctness covenant)
+**Status:** Active
+
+---
+
+### D-11602 — Turn-Handover During `play.main`: Pause Match (Option B)
+
+**Decision:** During `play.main`, a player disconnect **pauses the match** for the duration of the rejoin grace window plus any extension up to the D-11604 abandonment threshold. The "pause" definition (binding on the future implementation WP) is: all players are blocked from advancing turn or phase state — **no moves are accepted, no `ctx.events.endTurn()` or `ctx.events.setPhase()` calls fire** as a side effect of the disconnect itself. Read-only actions (viewing current `G` projection, chat if implemented) MAY remain available. The socket connection itself is NOT frozen — clients continue receiving heartbeats; only authoritative-state-mutating moves are gated. The pause is **bounded** by D-11604's hard-timeout abandonment threshold, so Option B does not create unbounded zombie matches.
+
+**Rationale:** Vision §3 (Trust & Fairness — Option A's auto-pass would penalize the dropped player without consent or a fair grace window; pause is fair). Vision §1 (Rules Authenticity — tabletop Legendary semantics treat a player stepping away as the table waiting, not as the table proceeding without them). The pause bound (D-11604 = A hard timeout) prevents the well-known "B is fair but lets one drop hang the room" failure mode the WP body names. The structural pause definition (no `ctx.events.*` calls, no moves accepted) directly matches WP-116 `## Non-Negotiable Constraints` line 95 (*"a disconnect handler MAY NOT call `ctx.events.endTurn()` or `ctx.events.setPhase()` as a side effect of the disconnect itself"*).
+
+**Rejected:**
+- **Option A (auto-pass turn):** keeps games moving but penalizes the dropped player — directly violates Vision §3's covenant that *"the system enforces rules with perfect neutrality — it never makes strategic decisions on behalf of players"*. Auto-passing a turn IS a strategic decision (it forfeits the dropped player's main-phase actions), made by the system, on the dropped player's behalf, without their authorization.
+- **Option C (host-decides):** adds UI complexity (host controls, host-promotion-on-host-drop, host-abuse mitigation) without a concrete consumer demand. Option C is reversible — a future WP can supersede D-11602 with Option C and add the host-controls surface under its own scope when host-decides is requested by a real consumer.
+
+**Introduced:** WP-116 (single `SPEC:` commit, 2026-04-30)
+**Reinforces:** WP-090 (transport); D-11601 (grace window — D-11602's pause duration is bounded by the play-class grace window before D-11604's hard timeout begins); D-11604 (abandonment threshold — caps the pause); Vision §3 (Trust & Fairness)
+**Status:** Active
+
+---
+
+### D-11603 — Lobby Ready-State on Rejoin: Cleared on Disconnect (Option B)
+
+**Decision:** When a player disconnects from the `lobby` phase, their ready flag (`G.lobby.ready[playerId]` per `packages/game-engine/src/types.ts` `LobbyState`) is cleared. On rejoin, the player must explicitly re-ready before the lobby may transition to `setup`. Server-side ready-state caches (Option A's mechanism) are explicitly forbidden by this decision.
+
+**Rationale:** Vision §3 (Trust & Fairness — *"No hidden modifiers, manipulated randomness, or opaque automation"*). A flapping connection that auto-restores readiness creates an opaque automation surface: the player did not actively confirm readiness for the post-flap state, but the system records them as ready. That is exactly the implicit-state-confirmation pattern §3 forbids. The friction cost is per-rejoin (one click per drop event) and the safety property is structural — Vision §3 wins.
+
+**Rejected:**
+- **Option A (ready state preserved across reconnect):** friendlier ergonomics but the WP body itself names the failure mode: *"a flapping connection can falsely confirm readiness"*. Under Option A, a player whose connection drops at the moment another player toggles a ready-affecting parameter (scheme change, hero-selection mode change per WP-093 D-9301) would be auto-confirmed as ready under the new parameters they never saw — a Vision §3 covenant violation. Reversible — a future WP can supersede D-11603 with a refined Option A that re-confirms-on-rejoin (effectively a hybrid) if the per-rejoin click friction proves load-bearing.
+
+**Introduced:** WP-116 (single `SPEC:` commit, 2026-04-30)
+**Reinforces:** WP-090 (transport); WP-093 D-9301 (hero-selection mode change — one example of a ready-affecting parameter that flapping-connection auto-restoration would silently apply to without user consent); Vision §3 (Trust & Fairness)
+**Status:** Active
+
+---
+
+### D-11604 — Mid-Match Abandonment Threshold: Hard Timeout (Option A)
+
+**Decision:** After the rejoin grace window from D-11601 elapses without the dropped player rejoining, an additional **hard timeout** elapses and the match is forcibly ended. The match-end transition emits a deterministic replay (per D-11605) with an explicit `endReason: 'abandoned'` field. The hard-timeout magnitude is NOT locked here — the future implementation WP gathers production telemetry and locks numbers under its own DECISIONS entry. What this WP commits is the *class*: deterministic threshold ⇒ deterministic match end ⇒ replay emitted with explicit `endReason`.
+
+**Rationale:** Vision §3 (Trust & Fairness — bounded outcomes; no zombie matches that the system has no recovery path for) and Vision §22 (Deterministic & Reproducible Evaluation — the abandonment trigger is a deterministic threshold, not a moderator decision, so the replay re-scores deterministically). Pairs cleanly with D-11602 = B (pause is capped by abandonment, not unbounded). The `endReason: 'abandoned'` field is the seam for downstream filtering (WP-115 leaderboard, future replay-viewer WP) to distinguish abandonment-triggered match ends from natural game ends without inspecting the replay body.
+
+**Forward-link to future implementation WP:** the full closed set of `endReason` values (e.g., `'natural-victory' | 'natural-defeat' | 'abandoned' | ...`) is locked at the future implementation WP that wires the policy. D-11604 commits only that the field is required and that `'abandoned'` is one valid value. This mirrors the WP-118 D-11804 status-enum closed-set pattern (locking the field-presence + one canonical value here, deferring the full enum to the implementation surface).
+
+**Rejected:**
+- **Option B (vote-to-abandon by remaining players):** respects player agency but requires a UI surface (vote prompt, vote-tally state, vote-timeout policy) no consumer demands today. Reversible — a future WP can supersede D-11604 with Option B and add the vote-controls surface when the policy concern emerges.
+- **Option C (no automatic abandonment):** risks zombie matches that the system has no recovery path for. Vision §3 covenant *"All game state transitions must be inspectable, logged, and defensible"* is harder to satisfy when matches sit indefinitely in a paused state with no operator-visible end condition. Operations Guardrails (Vision §"Operational Guardrails") implicitly require bounded match lifecycle for capacity planning.
+
+**Introduced:** WP-116 (single `SPEC:` commit, 2026-04-30)
+**Reinforces:** D-11602 (pause match — D-11604 caps the pause); D-11605 (replay-on-abort — D-11604 is the trigger event for the replay emission with `endReason: 'abandoned'`); WP-115 stub `bfdefe1` 2026-04-30 (leaderboard — `endReason` is the seam for downstream filtering); Vision §3 + §22
+**Status:** Active
+
+---
+
+### D-11605 — Replay-on-Abort Behavior: Replay Always Emitted with Explicit `endReason` (Option A)
+
+**Decision:** Every match end — natural victory, natural defeat, or abandonment per D-11604 — emits a deterministic replay. The replay record always carries the `endReason` field defined under D-11604. Partial replays under abandonment must be **byte-replayable from recorded inputs up to the abandonment point** per the Vision §22 constraint preserved verbatim below. Stub records (Option B) are forbidden — there is exactly one record shape, distinguished by the `endReason` discriminator.
+
+**Vision constraint (preserved verbatim from WP-116 §Decision Points D-11605):** whichever option is chosen, abandonment MUST NOT produce non-deterministic replay semantics — partial replays under Option A must be byte-replayable from the recorded inputs up to the abandonment point. "Partial replay" semantics that can't be deterministically reproduced are forbidden under either option.
+
+**Rationale:** Vision §22 (Deterministic & Reproducible Evaluation — *"If a game can be replayed, it must produce the same score. Anything else is invalid"*) and Vision §24 (Replay-Verified Competitive Integrity — *"All leaderboard entries must be backed by a complete, deterministic replay ... immune to tampering, editing, or manual adjustment"*). Option A keeps the replay format uniform: downstream consumers (WP-115 leaderboard, future replay-viewer WP, replay-validation tooling) work against one record shape; abandonment is a discriminator value, not a separate record type. Vision §14 (Explicit Decisions, No Silent Drift) is preserved because the discriminator is explicit on every record.
+
+**Rejected:**
+- **Option B (replay emitted only on natural game end; abandonment produces a stub record):** cleaner per-record but creates two record types that bifurcate downstream consumers. WP-115 leaderboard would have to special-case stubs (display? hide? aggregate?); the future replay-viewer WP would have to detect record-type and branch. The bifurcation cost is per-consumer and grows over time. The "stub records must NOT claim replay semantics they don't have" Vision constraint already forbids the most common Option B failure mode (stub records labelled as replays); under that constraint, Option B's record-type bifurcation buys nothing the `endReason` discriminator does not.
+
+**Introduced:** WP-116 (single `SPEC:` commit, 2026-04-30)
+**Reinforces:** D-11604 (abandonment trigger — emits replay with `endReason: 'abandoned'`); WP-103 (replay storage / loader — the underlying replay-identity contract); WP-115 stub (`bfdefe1` — leaderboard consumer of `endReason`); Vision §22 + §24
+**Status:** Active
+
+---
+
+### D-11606 — Spectator Behavior on Player Drop: Deferred (Option A default)
+
+**Decision:** Recorded as **deferred — Option A default**. This WP makes no guarantees about spectator behavior on disconnect. Spectators observe whatever outcome the player-policy (D-11601..D-11605) produces, with no separate handling. **Spectator-disconnect handling is undefined and forbidden from being inferred by implementation WPs** until a future spectator-focused WP supersedes D-11606 with Option B. This entry exists as a standalone decision (rather than a preamble marker) so grep-by-decision-ID queries (`D-11606`) return an explicit "deferred — see WP-116" hit rather than a missing entry, mirroring the WP-117 D-11703 N/A interpretation precedent.
+
+**Rationale:** No spectator surface ships today; locking spectator semantics absent a concrete consumer is the "decide before code exists" trap pattern the WP-117 D-11704 deferral established. The original Option A wording (*"undefined and forbidden from being inferred"*) is preserved as the binding posture: future spectator-focused WPs that wire the spectator surface must supersede D-11606 with their own Option B decision; they may not silently extend the player-policy to spectators.
+
+**Future supersession:** A future WP that introduces a spectator surface owns the D-11606 supersession with full §17 Vision Alignment treatment (Vision §3 trust covenant for spectator visibility; Vision §11 stateless-client posture for spectator state). Until then, the deferral is the policy.
+
+**Rejected:**
+- **Option B (opt in now):** premature without a concrete consumer; would add a sixth decision row to the phase × event matrix and a sixth full-policy DECISIONS entry for a surface no current WP touches. The deferral is reversible by a future WP that names the consumer.
+
+**Introduced:** WP-116 (single `SPEC:` commit, 2026-04-30)
+**Reinforces:** D-11601..D-11605 (player-policy that spectators passively observe under the deferral)
+**Status:** Deferred — automatically superseded when a future spectator-focused WP introduces a spectator surface.
+
+---
+
 ### D-11701 — `apps/arena-client` Router Posture: No Router; Preserve `selectRoute()` (Option B)
 
 **Decision:** No `vue-router` adopted for `apps/arena-client`. The current `selectRoute(parseQuery(window.location.search))` helper at `apps/arena-client/src/App.vue:84` is preserved verbatim, returning one of `'profile' | 'fixture' | 'live' | 'lobby'` based on the route discriminator precedence comment at `App.vue:84-95` (`profile > fixture > live > lobby`). The shipped deep-linking surface (`?profile=` / `?fixture=` / `?match=` + `?player=` + `?credentials=`) continues to function unchanged. `<router-view>` is **not** introduced; `useUiStateStore` continues to hold the `UIState` projection snapshot only (no Pinia view/tab state added).
