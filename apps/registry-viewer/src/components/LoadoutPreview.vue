@@ -23,7 +23,6 @@ import type {
 } from "@legendary-arena/registry/setupContract";
 
 import type { CardRegistry, FlatCard } from "../registry/browser";
-import { useLoadoutDraft } from "../composables/useLoadoutDraft";
 import type { SetupMatchedCount } from "../composables/useSetupFromUrl";
 
 interface Props {
@@ -33,18 +32,21 @@ interface Props {
   matchedCount: SetupMatchedCount;
   parsedParams: Partial<SetupCompositionInput>;
   registry: CardRegistry;
+  editAcknowledgement: "idle" | "loaded" | "rejected";
 }
 
 const props = defineProps<Props>();
 
-// why: LoadoutPreview imports useLoadoutDraft and destructures ONLY
-// loadFromJson per the EC-116 §Guardrails read-only constraint (16-mutator
-// forbidden list). Each call to useLoadoutDraft() creates an independent
-// draft instance; the composable is intentionally non-singleton (per the
-// WP-091 PS-1 immutable-file lock that forbids changing useLoadoutDraft's
-// signature). The user-initiated "Edit this loadout" click below is
-// therefore the only path that touches a draft from this component.
-const { loadFromJson } = useLoadoutDraft(props.registry);
+// why: WP-120 — <LoadoutPreview> no longer calls useLoadoutDraft locally.
+// The "Edit this loadout" button emits 'request-edit' with the synthesized
+// JSON; App.vue holds the single hoisted draft and runs loadFromJson on it,
+// which mutates the same draft <LoadoutBuilder> renders below. The component
+// stays read-only-by-default (zero mutator imports per EC-116 §Guardrails
+// #4 / #5); the parent supplies editAcknowledgement so the preview shows
+// the same success/error feedback the user saw under WP-114.
+const emit = defineEmits<{
+  "request-edit": [jsonText: string];
+}>();
 
 const cardsByKey = computed<Map<string, FlatCard>>(() => {
   const lookup = new Map<string, FlatCard>();
@@ -117,24 +119,19 @@ const heroProvidedTotal = computed<number>(
   () => props.parsedParams.heroDeckIds?.length ?? 0,
 );
 
-const editStatus = ref<"idle" | "loaded" | "rejected">("idle");
 const copyLinkStatus = ref<"idle" | "copied" | "failed">("idle");
 
 function onEditLoadout(): void {
   if (props.previewDocument === null) {
     return;
   }
-  // why: The "Edit this loadout" call site is the only permitted mutator
-  // invocation in this read-only component (EC-116 §Guardrails #4 / #5).
-  // It is user-initiated, fires exactly once per click, and serializes the
-  // synthesized preview document into JSON for loadFromJson() to re-parse.
-  // Failure surfaces as a status string rather than throwing.
-  const result = loadFromJson(JSON.stringify(props.previewDocument));
-  if (result.ok) {
-    editStatus.value = "loaded";
-  } else {
-    editStatus.value = "rejected";
-  }
+  // why: WP-120 — the component emits 'request-edit' instead of calling
+  // loadFromJson locally. The user-initiated click fires the event exactly
+  // once per click; App.vue's onPreviewRequestEdit handler runs loadFromJson
+  // on the hoisted draft and updates props.editAcknowledgement, which
+  // drives the success/error display below. The previewDocument-null guard
+  // is preserved verbatim from WP-114.
+  emit("request-edit", JSON.stringify(props.previewDocument));
 }
 
 async function onCopyLink(): Promise<void> {
@@ -247,8 +244,8 @@ async function onCopyLink(): Promise<void> {
       >
         ✎ Edit this loadout
       </button>
-      <span v-if="editStatus === 'loaded'" class="status-text success">Loaded into a fresh editor draft.</span>
-      <span v-if="editStatus === 'rejected'" class="status-text failed">Validation errors — see below.</span>
+      <span v-if="props.editAcknowledgement === 'loaded'" class="status-text success">Loaded into a fresh editor draft.</span>
+      <span v-if="props.editAcknowledgement === 'rejected'" class="status-text failed">Validation errors — see below.</span>
     </footer>
   </section>
 </template>

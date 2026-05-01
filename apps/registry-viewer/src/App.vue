@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, shallowRef, computed, onMounted, onBeforeUnmount } from "vue";
 import type { FlatCard, CardQueryExtended, HealthReport, CardRegistry, SetIndexEntry, FlatCardType } from "./registry/browser";
 import { getRegistry } from "./lib/registryClient";
 import { getThemes } from "./lib/themeClient";
@@ -23,6 +23,8 @@ import ViewModeToggle from "./components/ViewModeToggle.vue";
 import LoadoutBuilder from "./components/LoadoutBuilder.vue";
 import LoadoutPreview from "./components/LoadoutPreview.vue";
 import { useSetupFromUrl } from "./composables/useSetupFromUrl";
+import { useLoadoutDraft } from "./composables/useLoadoutDraft";
+import type { UseLoadoutDraftApi } from "./composables/useLoadoutDraft";
 import type {
   MatchSetupDocument,
   MatchSetupValidationError,
@@ -102,6 +104,42 @@ const setupParsedParams = ref<Partial<SetupCompositionInput>>({});
 // activeView to "loadout"; this ref then latches and the auto-switch never
 // re-fires, preserving the user's subsequent manual tab navigation.
 const hasAppliedUrlAutoSwitch = ref(false);
+
+// ── Hoisted loadout draft (WP-120) ───────────────────────────────────────────
+// why: WP-114 shipped <LoadoutPreview>'s "Edit this loadout" button calling
+// loadFromJson on the preview component's own non-singleton useLoadoutDraft
+// instance, leaving the visible <LoadoutBuilder>'s draft untouched. The fix
+// (per D-12001 = A) hoists the single useLoadoutDraft(registry) invocation up
+// to App.vue and passes the API down as a prop to <LoadoutBuilder> so the
+// editor renders the same shared draft. <LoadoutPreview> emits 'request-edit'
+// with the synthesized JSON; onPreviewRequestEdit calls loadFromJson on the
+// hoisted instance and surfaces the result via previewEditAcknowledgement.
+// Mirrors the existing useSetupFromUrl hoist below at lines 246+. WP-091 PS-1
+// (useLoadoutDraft.ts signature) is preserved verbatim — only call sites move.
+//
+// why shallowRef (not ref): useLoadoutDraft returns an object whose properties
+// are themselves Refs (draft, errors, isValid). A regular ref() deep-reactifies
+// its value via reactive(), which auto-unwraps nested refs — so
+// loadoutDraftApi.value.draft would silently become a plain MatchSetupDocument
+// instead of Ref<MatchSetupDocument>. <LoadoutBuilder>'s destructure
+// (`const { draft } = props.draftApi`) would then bind `draft` to a plain
+// object, and the template's `draft.value.composition...` would fail to render.
+// shallowRef makes the .value swap reactive without recursing into the API
+// object, preserving the inner refs and the existing destructure contract.
+const loadoutDraftApi = shallowRef<UseLoadoutDraftApi | null>(null);
+const previewEditAcknowledgement = ref<"idle" | "loaded" | "rejected">("idle");
+
+function onPreviewRequestEdit(jsonText: string): void {
+  if (loadoutDraftApi.value === null) {
+    return;
+  }
+  const result = loadoutDraftApi.value.loadFromJson(jsonText);
+  if (result.ok) {
+    previewEditAcknowledgement.value = "loaded";
+  } else {
+    previewEditAcknowledgement.value = "rejected";
+  }
+}
 
 // ── Theme state ──────────────────────────────────────────────────────────────
 const allThemes       = ref<ThemeDefinition[]>([]);
@@ -249,6 +287,12 @@ onMounted(async () => {
     setupValidationErrors.value = setupApi.validationErrors.value;
     setupMatchedCount.value = setupApi.matchedCount.value;
     setupParsedParams.value = setupApi.parsedParams.value;
+
+    // WP-120: instantiate the loadout-draft composable exactly once and
+    // store the API for both <LoadoutBuilder> (via prop) and the
+    // request-edit handler (closing over loadoutDraftApi). One instance,
+    // shared by both consumers, fixes the WP-114 caveat.
+    loadoutDraftApi.value = useLoadoutDraft(reg);
 
     if (
       setupHasUrlParams.value &&
@@ -599,7 +643,7 @@ function navigateToCard(slug: string, cardType: string) {
         </template>
 
         <!-- Loadout content -->
-        <template v-if="activeView === 'loadout' && registry">
+        <template v-if="activeView === 'loadout' && registry && loadoutDraftApi">
           <div class="loadout-tab-stack">
             <LoadoutPreview
               :hasUrlParams="setupHasUrlParams"
@@ -608,8 +652,14 @@ function navigateToCard(slug: string, cardType: string) {
               :matchedCount="setupMatchedCount"
               :parsedParams="setupParsedParams"
               :registry="registry!"
+              :editAcknowledgement="previewEditAcknowledgement"
+              @request-edit="onPreviewRequestEdit"
             />
-            <LoadoutBuilder :registry="registry!" :themes="allThemes" />
+            <LoadoutBuilder
+              :registry="registry!"
+              :themes="allThemes"
+              :draftApi="loadoutDraftApi!"
+            />
           </div>
         </template>
       </div>

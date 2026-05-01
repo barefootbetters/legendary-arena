@@ -27,7 +27,7 @@ import type {
   FlatCardType,
 } from "../registry/browser";
 import type { ThemeDefinition } from "../lib/themeClient";
-import { useLoadoutDraft } from "../composables/useLoadoutDraft";
+import type { UseLoadoutDraftApi } from "../composables/useLoadoutDraft";
 import { serializeSetupToUrl } from "../lib/setupUrlParams";
 
 // why: Verbatim WP-093 UI strings referenced via imported constants, but also
@@ -46,11 +46,18 @@ import { serializeSetupToUrl } from "../lib/setupUrlParams";
 interface Props {
   registry: CardRegistry;
   themes: ThemeDefinition[];
+  draftApi: UseLoadoutDraftApi;
 }
 
 const props = defineProps<Props>();
 
-const draftApi = useLoadoutDraft(props.registry);
+// why: WP-120 D-12001 = A. The single useLoadoutDraft(registry) instance is
+// owned by App.vue and shared with <LoadoutPreview> via the request-edit
+// event handler. Sourcing draftApi from the prop (instead of calling
+// useLoadoutDraft locally) is what makes the "Edit this loadout" button
+// populate the visible builder. WP-091 PS-1 (useLoadoutDraft.ts signature)
+// is preserved verbatim — only this call site moves up to App.vue.
+const draftApi = props.draftApi;
 const {
   draft,
   errors,
