@@ -55,6 +55,10 @@ production-grade, broker-agnostic session-validation orchestrator that:
 Hanko import, no JWT library, no JWKS endpoint, no SDK installation.
 All broker-specific code is owned by WP-126.
 
+**Non-Goals Reminder.** This WP intentionally does **not** define how
+authenticated routes are wired; it only defines the validation
+contract consumed by future request-handler WPs.
+
 ---
 
 ## Vision Alignment
@@ -233,7 +237,12 @@ name — it reuses the WP-052 `authProviderId` field name verbatim from
 `PlayerAccount`. (The verifier's claim shape uses `authProviderSub`
 locally because OIDC nomenclature uses `sub`; the lookup helper
 translates it to `authProviderId` at the SQL boundary. The canonical
-spelling on the wire and in the catalog is `authProviderId`.)
+spelling on the wire and in the catalog is `authProviderId`.) **Translation site (locked).** The translation from `authProviderSub` →
+`authProviderId` occurs **exclusively** inside `findAccountByAuthProviderSub`
+at the SQL boundary; no other site in WP-112 performs the rename.
+This makes future audits and greps deterministic — the only place
+the two spellings coexist is inside that single helper, and the
+orchestrator treats the lookup helper's output as canonical.
 
 ---
 
@@ -392,7 +401,11 @@ with `code: 'session_verifier_not_configured'` and a full-sentence
 `reason` field per code-style Rule 11 (e.g., `"No session verifier is
 configured. Production startup must call configureSessionValidation({
 verifier, accountResolver }) before authenticated routes accept
-traffic."`). Production wiring (a future request-handler WP) calls
+traffic."`). The unconfigured-default check fires when invoked with no
+`verifier` configured in the injected options (i.e., `options.verifier`
+is missing or `undefined`); `options` itself remains a required
+argument — the type system does not permit omitting it. Production
+wiring (a future request-handler WP) calls
 `configureSessionValidation(...)` exactly once at startup; if it
 doesn't, every authenticated route returns 401 with a recognizable
 error code that maps to a `console.error` log line at server startup.
@@ -492,7 +505,7 @@ Before writing a single line:
 - **Orchestrator function name (verbatim):** `requireAuthenticatedSession`. Matches the WP-099 §A / WP-101 / WP-102 / WP-104 verbatim spelling. Do not rename.
 - **Lookup helper function name (verbatim):** `findAccountByAuthProviderSub`. Mirrors the WP-101 `findAccountByHandle` naming convention (verb-by-key).
 - **`SessionVerifier` interface name (verbatim):** `SessionVerifier`. Single method `verify(token: string): Promise<Result<VerifiedSessionClaim, SessionVerificationErrorCode>>`.
-- **`VerifiedSessionClaim` shape (verbatim):** `{ authProvider: AuthProvider; authProviderSub: string; expiresAt: string; }` — `authProvider` reuses WP-052's `AuthProvider` union; `authProviderSub` is the verifier-produced subject identifier; `expiresAt` is ISO-8601 UTC for orchestrator-side expiry checks (defense-in-depth in case the verifier doesn't reject expired tokens).
+- **`VerifiedSessionClaim` shape (verbatim):** `{ authProvider: AuthProvider; authProviderSub: string; expiresAt: string; }` — `authProvider` reuses WP-052's `AuthProvider` union; `authProviderSub` is the verifier-produced subject identifier; `expiresAt` is ISO-8601 UTC for orchestrator-side expiry checks (defense-in-depth in case the verifier doesn't reject expired tokens). The orchestrator treats `expiresAt <= now()` as expired (boundary inclusive). No clock-skew tolerance is applied at this layer; any skew allowance is the verifier's responsibility (WP-126 owns Hanko's skew posture; future replacement brokers own theirs). This keeps WP-112 deterministic and prevents two implementations from "helpfully" adding different skews later.
 - **Token-extraction source:** locked by D-11202 at execution (recommended default: bearer header only).
 - **Lookup helper signature:** locked by D-11203 at execution (recommended default in the §Decision Points block).
 - **Unconfigured-default behavior:** locked by D-11204 at execution (recommended default: fail-closed with `code: 'session_verifier_not_configured'`).
@@ -512,7 +525,7 @@ Locked exports (signatures may be refined at execution time per the
 - `VerifiedSessionClaim` interface — `{ authProvider: AuthProvider; authProviderSub: string; expiresAt: string; }`.
 - `SessionVerificationErrorCode` union — closed set, executor-determined per call-site needs (e.g., `'invalid_token' | 'expired_token' | 'unknown_provider' | 'verification_failed'`).
 - `SessionValidationErrorCode` union — closed set spanning the orchestrator's failure modes (e.g., `'missing_token' | 'invalid_token' | 'expired_token' | 'unknown_account' | 'session_verifier_not_configured' | 'lookup_failed'`).
-- `RequireAuthenticatedSessionOptions` interface — caller-injected `{ verifier: SessionVerifier; accountResolver: (claim: VerifiedSessionClaim, database: DatabaseClient) => Promise<Result<AccountId, AccountLookupErrorCode>>; database: DatabaseClient }`.
+- `RequireAuthenticatedSessionOptions` interface — caller-injected `{ verifier: SessionVerifier; accountResolver: (claim: VerifiedSessionClaim, database: DatabaseClient) => Promise<Result<AccountId, AccountLookupErrorCode>>; database: DatabaseClient }`. `RequireAuthenticatedSessionOptions` is a **required argument** when calling `requireAuthenticatedSession`. The unconfigured-default failure applies when `options.verifier` is missing or `undefined`, not when `options` is omitted entirely (it cannot be — the type system requires it).
 - `AccountLookupErrorCode` union — closed set per D-11203.
 - `Result<T, E>` re-imported from `../identity/identity.types.js` (per WP-052 contract — never redeclared).
 - `AccountId`, `AuthProvider`, `DatabaseClient` re-imported from `../identity/identity.types.js`.
@@ -521,7 +534,7 @@ Locked exports (signatures may be refined at execution time per the
 
 Locked exports:
 
-- `requireAuthenticatedSession(req, options): Promise<Result<AccountId, SessionValidationErrorCode>>` — the orchestrator. Steps in order: (1) extract token from request per D-11202 lock; (2) call `options.verifier.verify(token)`; (3) if the verifier returns `ok: false`, return `Result.fail` with the matching `SessionValidationErrorCode`; (4) otherwise call `options.accountResolver(claim, options.database)`; (5) return its `Result<AccountId>`.
+- `requireAuthenticatedSession(req, options): Promise<Result<AccountId, SessionValidationErrorCode>>` — the orchestrator. Steps in order: (1) extract token from request per D-11202 lock; (2) call `options.verifier.verify(token)`; (3) if the verifier returns `ok: false`, return `Result.fail` with the matching `SessionValidationErrorCode`; (4) otherwise call `options.accountResolver(claim, options.database)`; (5) return its `Result<AccountId>`. **Error-code ownership.** The orchestrator defines the authoritative mapping from `SessionVerificationErrorCode` to `SessionValidationErrorCode`. Verifier implementations MUST NOT assume their error codes propagate verbatim to callers; verifier-side codes are an internal contract between the verifier and the orchestrator, not part of the orchestrator's public surface. This preserves separation of concerns and audit clarity — a future verifier swap (e.g., Hanko → self-hosted JWT signer) can introduce new `SessionVerificationErrorCode` variants without breaking existing route-handler dispatch on `SessionValidationErrorCode`.
 - `configureSessionValidation({ verifier, accountResolver, database })` — convenience factory returning a bound `(req) => Promise<Result<AccountId>>` closure. Production-wiring use only; tests inject directly.
 - `extractBearerToken(req)` — a private helper (named export only if tests need it directly; otherwise file-local). Implementation locked by D-11202.
 
@@ -535,7 +548,7 @@ Locked exports:
 - Verifier returns valid claim with `expiresAt` in the past: orchestrator returns `Result.fail({ code: 'expired_token' })` (defense-in-depth).
 - Resolver returns `Result.ok(null)` (no matching account): orchestrator returns `Result.fail({ code: 'unknown_account' })`.
 - Resolver returns `Result.fail({ code: 'lookup_failed' })`: orchestrator forwards.
-- Unconfigured default (per D-11204): orchestrator returns `Result.fail({ code: 'session_verifier_not_configured' })` when called without options.
+- Unconfigured default (per D-11204): orchestrator returns `Result.fail({ code: 'session_verifier_not_configured' })` when invoked with no `verifier` configured in the injected options (`options.verifier` missing or `undefined`).
 - `configureSessionValidation` produces a closure that delegates correctly to `requireAuthenticatedSession`.
 
 ### D) `apps/server/src/auth/accountLookup.logic.ts` — new
@@ -609,7 +622,7 @@ files):
 All items must be binary pass/fail. No partial credit.
 
 ### Module Layout
-- [ ] `apps/server/src/auth/` directory exists and contains exactly five new TypeScript files (the four `.ts` files plus the two `.test.ts` files = 4 logic + 2 test = 6 files; or 5 if accountLookup tests fold into sessionToken tests).
+- [ ] `apps/server/src/auth/` directory exists and contains exactly **five** new TypeScript files: three production `.ts` files (`sessionToken.types.ts`, `sessionToken.logic.ts`, `accountLookup.logic.ts`) plus two `.test.ts` files (`sessionToken.logic.test.ts`, `accountLookup.logic.test.ts`). Test files are NOT folded; each production logic file has its own paired test file.
 - [ ] `apps/server/src/auth/hanko/` directory does **not** exist (created by WP-126, not WP-112).
 - [ ] No file in scope imports `@teamhanko/*`, `hanko.io`, or any Hanko-specific symbol (verified by grep at §Verification Steps).
 
@@ -619,6 +632,16 @@ All items must be binary pass/fail. No partial credit.
 - [ ] `SessionVerificationErrorCode` and `SessionValidationErrorCode` are closed unions (no `| string`).
 
 ### Orchestrator Behavior
+
+> *Why `Result<T>` rather than `throw`:* preserves the WP-052 / D-5201
+> identity-layer precedent (every fallible identity operation returns
+> a discriminated-union `Result<T>` with a closed `code` union and a
+> full-sentence `reason`); ensures authentication failures are
+> observable, typed, and non-exceptional control flow rather than
+> framework-level exceptions; and keeps the orchestrator
+> caller-portable (handlers, CLI scripts, tests, future request-
+> handler WPs) without wrapping every call site in `try/catch`.
+
 - [ ] `requireAuthenticatedSession` is exported from `apps/server/src/auth/sessionToken.logic.ts` with signature `(req, options): Promise<Result<AccountId, SessionValidationErrorCode>>`.
 - [ ] Orchestrator never throws. Every failure path returns `Result.fail` with a closed-union `code` and a full-sentence `reason`.
 - [ ] Unconfigured-default behavior matches the lock from D-11204 (recommended default: returns `Result.fail({ code: 'session_verifier_not_configured', reason: <full sentence> })`).
