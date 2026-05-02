@@ -12280,6 +12280,302 @@ Per `.claude/rules/code-style.md §"Abstraction & Control Flow"`: *"Duplicate fi
 
 ---
 
+### D-11501 — pg.Pool Lifecycle Owner: `apps/server/src/db/database.ts` (WP-115)
+
+**Decision:** The long-lived `pg.Pool` introduced by WP-115 lives at
+`apps/server/src/db/database.ts`. The module exports exactly two
+functions: `createPool(): pg.Pool` and `closePool(pool: pg.Pool):
+Promise<void>`. The Pool is constructed exactly once per server
+process inside `startServer()` in `apps/server/src/server.mjs`
+(verified by static-grep `Select-String "new Pool\\(" -Path
+"apps/server/src/" -Recurse` returning exactly one match — the
+hard `must` invariant per WP-115 v1.1 §Debuggability &
+Diagnostics). It is closed exactly once on `SIGTERM` from
+`apps/server/src/index.mjs`, AFTER the HTTP server's
+graceful-shutdown callback resolves; no route handler ever calls
+`pool.end()` directly.
+
+**Why this location.** Per `02-CODE-CATEGORIES.md` line 230 (clarified
+under WP-115 PS-3, 2026-05-01), `apps/server/src/db/` falls under
+the existing `server` category by inclusion — no new category
+needed. The path is parallel to `apps/server/src/par/` (PAR gate),
+`apps/server/src/rules/` (rules loader), and
+`apps/server/src/leaderboards/` (WP-054 read library): each
+single-purpose subdirectory holds the wiring + helpers for one
+infrastructure concern. Putting the Pool in `db/` rather than
+`server.mjs` keeps `server.mjs` a pure orchestration file (load
+registry, load rules, build PAR gate, construct Pool, register
+routes, start listening) and makes the Pool independently
+testable should a future WP add unit tests for its initialization.
+
+**Why a single Pool, not per-request.** Per
+`docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §8 Backend`: "`pg`
+pool used for all database connections (not a single client)". A
+per-request `new Pool()` exhausts the upstream PostgreSQL
+connection limit under any meaningful traffic, defeats
+checkout-reuse semantics, and creates a connection leak the
+moment a handler throws before `pool.end()`. A single long-lived
+Pool is the only safe pattern for a Node web server using `pg`.
+
+**Why close on SIGTERM AFTER httpServer.close().** Closing the Pool
+before HTTP graceful shutdown completes severs in-flight handlers
+mid-query — any leaderboard request already past the
+`Cache-Control` set() but not yet returned would surface a `pg`
+"Cannot use a pool after calling end" error to the client,
+defeating the graceful-shutdown contract. The SIGTERM handler in
+`index.mjs` chains: `httpServer.close(async () => { await
+closePool(pool); process.exit(0); })`.
+
+**Rejected alternatives.**
+- **Pool inline in `server.mjs`:** Rejected because it makes
+  `server.mjs` import `pg` directly, bloats the file beyond
+  pure orchestration, and resists future testing.
+- **Pool per-request:** Rejected per `00.3 §8 Backend` and the
+  exhaustion / leak failure modes above.
+- **Pool in `apps/server/src/leaderboards/`:** Rejected because
+  the Pool is shared infrastructure — WP-102 profile route
+  wiring (D-10202 deferral) and any future request-handler WP
+  also needs it. Locating it per-domain would force every
+  follow-up WP to either duplicate the Pool or refactor.
+
+**Future supersession:** any future WP that wants to relocate the
+Pool, change its construction site, or change the lifecycle owner
+MUST cite D-11501 explicitly and either supersede it or scope-
+bound the change.
+
+**Introduced:** WP-115 (executed 2026-05-01 at Commit A `EC-119:`)
+**Reinforces:** `00.3 §8 Backend` (Pool, not Client); WP-115
+§Locked Contract Values (Pool sizing); D-11502 (sizing rationale);
+D-11505 (D-10202 reaffirmation); `.claude/rules/server.md` §Server
+Role (server is wiring layer only — Pool is wiring); WP-051
+`createParGate` precedent (single-purpose subdirectory under
+`apps/server/src/`).
+**Status:** Active
+
+---
+
+### D-11502 — pg.Pool Sizing: max=10 / idle=30s / connect=5s (WP-115)
+
+**Decision:** The Pool sizing values constructed by `createPool()`
+are locked at `max: 10, idleTimeoutMillis: 30000,
+connectionTimeoutMillis: 5000`. No env-var override is wired in
+WP-115; production tuning is a future hardening WP.
+
+**Why these values.**
+- **`max: 10`** — sized for a Render starter instance (1 vCPU /
+  512 MiB) running boardgame.io plus the public leaderboard
+  surface. Ten concurrent connections matches expected request
+  concurrency for the public leaderboard surface (read-only,
+  cached by WP-054 query patterns) without exhausting the
+  upstream PostgreSQL connection limit. Higher values would not
+  buy throughput — single-vCPU contention dominates first.
+- **`idleTimeoutMillis: 30000`** — releases idle clients after
+  30 s so a brief traffic spike does not hold connections
+  unnecessarily. Lower values churn connections under steady
+  state; higher values waste connection slots.
+- **`connectionTimeoutMillis: 5000`** — fails fast on upstream
+  outages so a hung handler does not silently consume a checkout
+  slot. Render's PostgreSQL service typically connects within
+  100 ms; a 5 s ceiling is generous slack.
+
+**Why no env-var override in this WP.** WP-115 is wiring, not
+tuning. Adding env-var overrides without operational data would
+be premature; the locked defaults are calibrated to the current
+infrastructure and traffic profile. A future WP that demonstrates
+load-bearing need (Render plan upgrade, traffic growth, observed
+saturation) may override via env vars and supersede D-11502 with
+the new values.
+
+**Future supersession:** any future WP that changes pool sizing
+MUST cite D-11502 explicitly, justify the new values with
+operational data, and update the Pool-construction log message
+text under D-11506 in the same commit (because the message
+embeds the `(max=N)` literal).
+
+**Introduced:** WP-115 (executed 2026-05-01 at Commit A `EC-119:`)
+**Reinforces:** D-11501 (Pool location); WP-115 §Locked Contract
+Values (sizing block); `00.3 §8 Backend` (Pool pattern).
+**Status:** Active
+
+---
+
+### D-11503 — Rate-Limit Deferred to Future Hardening WP (WP-115)
+
+**Decision:** WP-115 ships zero rate limiting. No `koa-ratelimit`,
+no token-bucket middleware, no per-IP throttle. Defense-in-depth
+rate limiting is deferred to a future hardening WP that will own
+the dependency justification and the rate-limit policy choices
+(per-IP, per-endpoint, sliding window vs fixed window, etc.).
+
+**Why deferred.**
+- The Cloudflare CDN edge in front of `cards.barefootbetters.com`
+  provides initial DDoS protection; basic abuse is filtered before
+  reaching the Render origin.
+- `koa-ratelimit` adds a Redis or in-memory backend dependency
+  that itself requires operational decisions (eviction policy,
+  per-instance vs cross-instance state, fail-open vs fail-closed
+  semantics under backend failure). Bundling those decisions
+  into WP-115 would muddle the wiring concern with a hardening
+  concern.
+- The leaderboard endpoints are read-only with bounded response
+  sizes (`limit ≤ 100`, `offset ≤ 10000`). A traffic spike is
+  not a database integrity threat — it is a cost / latency
+  concern that operational telemetry (which WP-115 also defers)
+  will surface before any abuse vector materializes.
+
+**Future supersession:** the future hardening WP that introduces
+rate limiting MUST cite D-11503 explicitly, justify the chosen
+backend, document the per-endpoint policy, and cover the
+fail-open vs fail-closed semantics under backend failure.
+
+**Introduced:** WP-115 (executed 2026-05-01 at Commit A `EC-119:`)
+**Reinforces:** WP-115 §Out of Scope (rate limiting deferred);
+WP-054 §Lifecycle Prohibition (cache-control / throttling listed
+as wiring-WP responsibilities).
+**Status:** Active
+
+---
+
+### D-11504 — Cache-Control: no-store on Every Response (Including Errors) (WP-115)
+
+**Decision:** Every response from every leaderboard handler
+(`/api/leaderboards/scenarios`, `/scenarios/:scenarioKey`,
+`/scores/:replayHash`) sets `Cache-Control: no-store` as the
+**first statement** in the handler body — before any status
+assignment, body assignment, or `await` of a WP-054 helper. The
+header is set on success paths (200) and on every error path
+(400 path-param / 400 invalid_query / 404 score_not_found / 500
+internal_error). Test #8 in `leaderboard.routes.test.ts` asserts
+the always-set discipline by checking call ordering on a mock
+context across success + 400 + 500 paths.
+
+**Why first-statement.** A thrown exception in the WP-054 call
+must still leave the header set on the eventual 500 response. If
+`koaContext.set('Cache-Control', ...)` came after the WP-054
+`await`, an exception path would emit a 500 with no
+`Cache-Control` header — a downstream cache (browser, CDN,
+intermediary proxy) might then cache the error response,
+turning a transient infrastructure blip into a sticky outage
+visible to every user behind the same cache.
+
+**Why no-store, not no-cache or max-age=0.** `no-store` forbids
+any cache (browser, CDN, intermediary) from storing the response
+at all. `no-cache` allows storage but requires revalidation;
+`max-age=0` allows storage and immediate staleness — both leave
+windows where a stale leaderboard projection could surface.
+`no-store` is the only directive that forbids the underlying
+storage entirely. The leaderboard surface is a near-real-time
+projection of `legendary.competitive_scores` writes; stale
+responses would mislead users about scenario rankings and
+single-record permalink lookups.
+
+**Future supersession:** if a future caching-policy WP introduces
+per-endpoint cache directives (e.g., `max-age=60` on the
+scenario index), it MUST cite D-11504 explicitly and document the
+freshness vs hit-rate tradeoff per endpoint. The error-path
+`no-store` discipline survives that supersession — error
+responses always remain `no-store` regardless of success-path
+policy.
+
+**Introduced:** WP-115 (executed 2026-05-01 at Commit A `EC-119:`)
+**Reinforces:** WP-115 §Locked Contract Values (Cache header);
+WP-115 v1.1 Patch 8 (always-set discipline expanded to error
+paths); WP-054 §Lifecycle Prohibition (cache control listed as
+wiring-WP responsibility).
+**Status:** Active
+
+---
+
+### D-11505 — D-10202 Reaffirmed: WP-102 Profile Route Wiring Stays Deferred (WP-115)
+
+**Decision:** WP-115 introduces the long-lived `pg.Pool` that
+WP-102's `registerProfileRoutes(router, database)` is waiting on.
+WP-115 nonetheless does NOT call `registerProfileRoutes` from
+`server.mjs`. D-10202's deferral remains in force — the WP-102
+follow-up WP that wires the profile route owns its own commit,
+its own governance close, and its own post-mortem.
+
+**Why not "while I'm here" wire it.** D-10202's deferral was
+chosen at WP-102 close to keep that packet's scope coherent —
+WP-102 ships the handler code and contract, the wiring follows
+in a separate one-line packet that the operator schedules
+independently. Wiring it inside WP-115 would:
+- Conflate two packet boundaries (WP-115 is leaderboards; WP-102
+  is profile) and make the WP-115 commit harder to audit.
+- Surface the WP-102 surface to public traffic without the
+  operator's explicit go-decision.
+- Force a downstream catalog row update on the WP-102 profile
+  row (`Shipped-but-unwired` → `Wired`) that WP-115 should not
+  authorize.
+
+**Verification gate.** `Select-String -Path
+"apps/server/src/server.mjs" -Pattern "registerProfileRoutes"`
+returns no matches at WP-115 close (verified at execution).
+
+**Future supersession:** the future WP that wires the profile
+route will cite D-11505 + D-10202 together, register
+`registerProfileRoutes(server.router, pool)` in `server.mjs`,
+and graduate the WP-102 row in `api-endpoints.md` from
+`Shipped-but-unwired` to `Wired` per D-11804. That WP will be a
+~10-line packet — exactly the scope D-10202 reserved for it.
+
+**Introduced:** WP-115 (executed 2026-05-01 at Commit A `EC-119:`)
+**Reinforces:** WP-102 D-10202 (profile-route wiring deferral);
+WP-115 §Out of Scope; WP-115 §Acceptance Criteria
+("registerProfileRoutes is **not** called from `server.mjs`").
+**Status:** Active
+
+---
+
+### D-11506 — Pool-Construction Log Message Text Locked Verbatim (WP-115)
+
+**Decision:** The Pool-construction log message emitted from
+`server.mjs` immediately after `createPool()` is the literal
+string `'[server] pg.Pool constructed (max=10)'` — text locked
+verbatim. The message lives in `server.mjs` (not inside
+`database.ts`) so `database.ts` stays pure of console output;
+this matches the existing `console.log('[server] ...')` pattern
+at `server.mjs:55` (registry-loaded) and the post-startup
+listening-on-port line.
+
+**Why verbatim lock.** A future observability WP may grep for
+this string to drive a Render log-based metric (Pool-construction
+counter, restart-frequency dashboard, etc.). Changing the message
+text without coordinating with that downstream WP would break the
+metric silently. Locking the text here means a future WP that
+wants to change it must cite D-11506 explicitly and update both
+sides in the same commit.
+
+**Why `(max=10)` suffix.** The suffix tracks the locked Pool
+sizing values from D-11502. If a future hardening WP changes
+`max` (e.g., to `25` on a Render plan upgrade), the log suffix
+updates in the same commit and the new text becomes the new
+locked verbatim under that WP's D-115xx successor entry.
+
+**Why this is a `should` not a `must` under EC-119.** Per WP-115
+v1.1 Patch 9, the runtime log emission was downgraded from `must`
+to `should` because the load-bearing invariant is the
+**static-grep "exactly one `new Pool(...)` call across
+`apps/server/src/`"** which is enforced as a hard gate. The
+runtime log is a debuggability aid, not an architectural
+invariant. D-11506 locks the text only if the log is emitted —
+removing the log entirely (a future WP's choice) does not
+violate D-11506.
+
+**Future supersession:** any future WP that changes the message
+text, location (out of `server.mjs`), or suffix MUST cite D-11506
+explicitly, justify the change (typically: pool-sizing change
+under D-11502 successor), and verify no downstream observability
+WP's grep is broken.
+
+**Introduced:** WP-115 (executed 2026-05-01 at Commit A `EC-119:`)
+**Reinforces:** D-11502 (Pool sizing — drives the `(max=10)`
+suffix); WP-115 v1.1 Patch 9 (log enforceability downgrade);
+WP-115 §Debuggability & Diagnostics (verbatim text lock).
+**Status:** Active
+
+---
+
 ## Final Note
 Legendary Arena’s strength is not just its code.
 It is the **discipline encoded in these decisions**.
