@@ -34,12 +34,11 @@
  */
 
 // why: URL host is used only for string assembly — this module performs
-// no network access against it. Any change to the host is a separate
-// orthogonal WP (host migration to images.legendary-arena.com); relocating
-// this constant from scripts/convert-cards/convert-cards-v15.mjs into the
-// registry package establishes a single source of truth so the future
-// migration is a single-point edit.
-export const R2_BASE_URL = "https://images.barefootbetters.com";
+// no network access against it. Host migration from the bageltop-era
+// images.barefootbetters.com to images.legendary-arena.com landed on
+// main via commit 0d962f3 before this branch was rebased; this constant
+// is the single source of truth for any future host change.
+export const R2_BASE_URL = "https://images.legendary-arena.com";
 
 /**
  * Builds the R2 image URL for a hero's physical card.
