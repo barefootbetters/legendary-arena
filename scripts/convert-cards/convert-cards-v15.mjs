@@ -554,8 +554,15 @@ function convertSet(jsFilePath, setAbbr) {
           // Tactic: {set}-mt-{mmSlug}-{cardSlug}.webp
           mmImageUrl = groupCardImageUrl(setAbbr, 'mt', mmSlug, cardSlug);
         }
-        // Only preserve imageUrl from source if it is a valid R2 URL (ignore legacy /CardImages/ paths)
-        if (card.imageUrl && card.imageUrl.startsWith('http')) mmImageUrl = card.imageUrl;
+        // why: the prior `startsWith('http')` gate accepted *any* http URL,
+        // so legacy bageltop URLs (nyc3.digitaloceanspaces.com/bageltop/...)
+        // in upstream npm source were preserved and overrode the freshly
+        // computed R2 URL. Heroes / Villains / Henchmen never had a
+        // source-imageUrl preservation step, which is why the prior
+        // R2 rebrand stuck for those zones but masterminds silently regressed.
+        // Gate strictly on the canonical R2 host so only deliberate R2 inputs
+        // win; patches still override later via applyPatch().
+        if (card.imageUrl && card.imageUrl.includes(R2_BASE_URL)) mmImageUrl = card.imageUrl;
 
         return {
           name: card.name ?? mm.name,

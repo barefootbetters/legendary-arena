@@ -1828,7 +1828,7 @@
           "slug": "arcade",
           "tactic": false,
           "vAttack": "3*",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/arcade-01.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mm-arcade.webp",
           "abilities": [
             "Start of Game: Arcade captures 5 [keyword:Human Shields].",
             "Always Leads: Murderworld",
@@ -1840,7 +1840,7 @@
           "slug": "epic-arcade",
           "tactic": false,
           "vAttack": "4",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/arcade-01a.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-me-arcade.webp",
           "abilities": [
             "Start of Game: Arcade captures 8 [keyword:Human Shields]. Play a random Horror.",
             "Always Leads: Murderworld",
@@ -1852,7 +1852,7 @@
           "slug": "i-love-a-parade",
           "tactic": true,
           "vAttack": 3,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/arcade-04.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-arcade-i-love-a-parade.webp",
           "abilities": [
             "Fight: Arcade captures two [keyword:Human Shields]. Play an extra card from the Villain Deck next turn."
           ]
@@ -1862,7 +1862,7 @@
           "slug": "i-need-an-audience",
           "tactic": true,
           "vAttack": 3,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/arcade-05.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-arcade-i-need-an-audience.webp",
           "abilities": [
             "Fight: Arcade captures [keyword:Human Shields] equal to the number of Villains in the city."
           ]
@@ -1872,7 +1872,7 @@
           "slug": "roulette-wheel-of-death",
           "tactic": true,
           "vAttack": 3,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/arcade-03.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-arcade-roulette-wheel-of-death.webp",
           "abilities": [
             "Fight: Arcade captures a random Bystander as a [keyword:Human Shield] from each of these places: The Bystander Stack, the Escape Pile, each city space, and each other player's Victory Pile."
           ]
@@ -1882,7 +1882,7 @@
           "slug": "welcome-to-my-theme-park",
           "tactic": true,
           "vAttack": 3,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/arcade-02.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-arcade-welcome-to-my-theme-park.webp",
           "abilities": [
             "Fight: Arcade and each Murderworld Villain in the city capture two [keyword:Human Shields]."
           ]
@@ -1901,7 +1901,7 @@
           "slug": "dark-phoenix",
           "tactic": false,
           "vAttack": 13,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/darak-phoenix-01.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mm-dark-phoenix.webp",
           "abilities": [
             "Always Leads: Hellfire Club",
             "Master Strike: KO the top card of the Hero Deck and each card in the Hero Deck that shares a color with it. Shuffle the Hero Deck.",
@@ -1913,7 +1913,7 @@
           "slug": "epic-dark-phoenix",
           "tactic": false,
           "vAttack": "15",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/darak-phoenix-01a.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-me-dark-phoenix.webp",
           "abilities": [
             "Always Leads: Hellfire Club",
             "Master Strike: KO the top card of the Hero Deck and each card in the Hero Deck that shares a color with it. Shuffle the Hero Deck. Then, each player plays a Hellfire Club card from their Victory Pile. Next, play a random Horror.",
@@ -1925,7 +1925,7 @@
           "slug": "burn-the-world-to-ashes",
           "tactic": true,
           "vAttack": 13,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/darak-phoenix-04.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-dark-phoenix-burn-the-world-to-ashes.webp",
           "abilities": [
             "Fight: Each other player discards each card from their hand that has the same name as any card in the KO pile."
           ]
@@ -1935,7 +1935,7 @@
           "slug": "consume-an-entire-galaxy",
           "tactic": true,
           "vAttack": 13,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/darak-phoenix-03.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-dark-phoenix-consume-an-entire-galaxy.webp",
           "abilities": [
             "Fight: Each other player chooses a card from their discard pile that costs 1 or more and KOs it."
           ]
@@ -1945,7 +1945,7 @@
           "slug": "fiery-reincarnation",
           "tactic": true,
           "vAttack": 13,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/darak-phoenix-02.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-dark-phoenix-fiery-reincarnation.webp",
           "abilities": [
             "Fight: Gain a Hero from the KO pile that costs 7 or more."
           ]
@@ -1955,7 +1955,7 @@
           "slug": "worship-me-as-a-god",
           "tactic": true,
           "vAttack": 13,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/darak-phoenix-05.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-dark-phoenix-worship-me-as-a-god.webp",
           "abilities": [
             "Fight: Each other player gains two 0-cost cards from the KO pile."
           ]
@@ -1974,7 +1974,7 @@
           "slug": "deathbird",
           "tactic": false,
           "vAttack": "8+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/deathbird_01.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mm-deathbird.webp",
           "abilities": [
             "Deathbird gets +1[icon:attack] for each Shi'ar Villain in the city and Escape Pile.",
             "Always Leads: Shi'ar Imperial Guard and a Shi'ar Henchmen Group.",
@@ -1986,7 +1986,7 @@
           "slug": "epic-deathbird",
           "tactic": false,
           "vAttack": "10+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/deathbird_01a.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-me-deathbird.webp",
           "abilities": [
             "Deathbird gets +2[icon:attack] for each Shi'ar Villain in the city and Escape Pile.",
             "Always Leads: Shi'ar Imperial Guard and a Shi'ar Henchmen Group.",
@@ -1998,7 +1998,7 @@
           "slug": "shiar-elite-bodyguards",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/deathbird_05.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-deathbird-shiar-elite-bodyguards.webp",
           "abilities": [
             "Fight: Rescue 4 Bystanders. This Tactic enters the city as a Villain whose only ability is “Escape: Shuffle this card back into Deathbird's Mastermind Tactics as another Tactic.“"
           ]
@@ -2008,7 +2008,7 @@
           "slug": "shiar-extermination-legion",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/deathbird_04.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-deathbird-shiar-extermination-legion.webp",
           "abilities": [
             "Fight: Rescue 4 Bystanders. This Tactic enters the city as a Villain whose only ability is “Escape: Each player discards two cards.“"
           ]
@@ -2018,7 +2018,7 @@
           "slug": "shiar-hovertake-battalion",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/deathbird_03.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-deathbird-shiar-hovertake-battalion.webp",
           "abilities": [
             "Fight: Rescue 4 Bystanders. This Tactic enters the city as a Villain whose only ability is “Escape: Each player gains a Wound.“"
           ]
@@ -2028,7 +2028,7 @@
           "slug": "shiar-master-spies",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/deathbird_02.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-deathbird-shiar-master-spies.webp",
           "abilities": [
             "Fight: Rescue 4 Bystanders. This Tactic enters the city as a Villain whose only ability is “Escape: This card becomes a Scheme Twist that takes effect immediately.“"
           ]
@@ -2047,7 +2047,7 @@
           "slug": "mojo",
           "tactic": false,
           "vAttack": "6*",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/mojo-01.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mm-mojo.webp",
           "abilities": [
             "Start of Game: Mojo captures 3 [keyword:Human Shields].",
             "All Bystanders in Victory Piles are worth 3 [icon:piercing].",
@@ -2060,7 +2060,7 @@
           "slug": "epic-mojo",
           "tactic": false,
           "vAttack": "7",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/mojo-01a.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-me-mojo.webp",
           "abilities": [
             "Start of Game: Mojo captures 6 [keyword:Human Shields]. Play a random Horror.",
             "All Bystanders in Victory Piles are worth 4 [icon:piercing].",
@@ -2073,7 +2073,7 @@
           "slug": "billions-of-tv-viewers",
           "tactic": true,
           "vAttack": 6,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/mojo-04.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-mojo-billions-of-tv-viewers.webp",
           "abilities": [
             "Fight: Each player reveals a [hc:tech] Hero or chooses a random Bystander from their Victory Pile. Mojo captures those Bystanders as [keyword:Human Shields]."
           ]
@@ -2083,7 +2083,7 @@
           "slug": "brain-melting-tv-marathon",
           "tactic": true,
           "vAttack": 6,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/mojo-05.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-mojo-brain-melting-tv-marathon.webp",
           "abilities": [
             "Fight: Each other player without a Mojo Tactic in their Victory Pile gains a Wound."
           ]
@@ -2093,7 +2093,7 @@
           "slug": "cross-dimensional-marketing",
           "tactic": true,
           "vAttack": 6,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/mojo-02.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-mojo-cross-dimensional-marketing.webp",
           "abilities": [
             "Fight: You get +1[icon:recruit] for each Bystander in your Victory Pile. Mojo captures a [keyword:Human Shield]."
           ]
@@ -2103,7 +2103,7 @@
           "slug": "mojo-branding-opportunity",
           "tactic": true,
           "vAttack": 6,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/mojo-03.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-mojo-mojo-branding-opportunity.webp",
           "abilities": [
             "Fight: Draw a card for each Mojoverse Villain in your Victory Pile. Mojo captures a [keyword:Human Shield]."
           ]
@@ -2122,7 +2122,7 @@
           "slug": "onslaught",
           "tactic": false,
           "vAttack": "10+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/onslaught-01.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mm-onslaught.webp",
           "abilities": [
             "Each player's hand size is 1 less.",
             "Always Leads: Dark Descendants",
@@ -2134,7 +2134,7 @@
           "slug": "epic-onslaught",
           "tactic": false,
           "vAttack": "12+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/onslaught-01a.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-me-onslaught.webp",
           "abilities": [
             "Each player's hand size is 1 less.",
             "Always Leads: Dark Descendants",
@@ -2146,7 +2146,7 @@
           "slug": "godlike-psionic-entity",
           "tactic": true,
           "vAttack": 10,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/onslaught-05.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-onslaught-godlike-psionic-entity.webp",
           "abilities": [
             "Fight: Onslaught [keyword:Dominates] all five Heroes from the HQ."
           ]
@@ -2156,7 +2156,7 @@
           "slug": "sins-of-x-men-past",
           "tactic": true,
           "vAttack": 10,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/onslaught-02.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-onslaught-sins-of-x-men-past.webp",
           "abilities": [
             "Fight: Each other player reveals the top six cards of their deck and chooses an [team:x-men] Hero revealed this way. Onslaught [keyword:Dominates] those Heroes. Put the rest back in random order."
           ]
@@ -2166,7 +2166,7 @@
           "slug": "xavier-and-magneto-combined",
           "tactic": true,
           "vAttack": 10,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/onslaught-04.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-onslaught-xavier-and-magneto-combined.webp",
           "abilities": [
             "Fight: Reveal the top three cards of the Hero Deck. Onslaught [keyword:Dominates] all the [team:x-men] and [team:brotherhood] Heroes you revealed. Put the rest back in random order."
           ]
@@ -2176,7 +2176,7 @@
           "slug": "worldwide-mental-control",
           "tactic": true,
           "vAttack": 10,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/onslaught-03.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-onslaught-worldwide-mental-control.webp",
           "abilities": [
             "Fight: Onslaught [keyword:Dominates] four 0-cost Heroes from the KO pile. The next time a player fights Onslaught, KO those 0-cost Heroes."
           ]
@@ -2195,7 +2195,7 @@
           "slug": "shadow-king",
           "tactic": false,
           "vAttack": "7+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/shadow-king-01.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mm-shadow-king.webp",
           "abilities": [
             "Always Leads: Shadow-X",
             "Master Strike: KO all Heroes [keyword:Dominated] by Shadow King. Then each player chooses a non-grey Hero from their discard pile. Shadow King [keyword:Dominates] those Heroes."
@@ -2206,7 +2206,7 @@
           "slug": "epic-shadow-king",
           "tactic": false,
           "vAttack": "9+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/shadow-king-01a.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-me-shadow-king.webp",
           "abilities": [
             "Start of Game: Play two random Horrors.",
             "Always Leads: Shadow-X",
@@ -2218,7 +2218,7 @@
           "slug": "fiend-of-the-astral-plane",
           "tactic": true,
           "vAttack": 7,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/shadow-king-05.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-shadow-king-fiend-of-the-astral-plane.webp",
           "abilities": [
             "Fight: Each other player reveals their hand and shuffles two cards with [icon:recruit] icons from their hand back into their deck."
           ]
@@ -2228,7 +2228,7 @@
           "slug": "poison-their-minds",
           "tactic": true,
           "vAttack": 7,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/shadow-king-02.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-shadow-king-poison-their-minds.webp",
           "abilities": [
             "Fight: Each other player reveals their hand and chooses one of their non-grey Heroes. Shadow King [keyword:Dominates] those Heroes."
           ]
@@ -2238,7 +2238,7 @@
           "slug": "psychic-seduction",
           "tactic": true,
           "vAttack": 7,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/shadow-king-03.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-shadow-king-psychic-seduction.webp",
           "abilities": [
             "Fight: Shadow King [keyword:Dominates] each Hero that costs 5 or less from the HQ."
           ]
@@ -2248,7 +2248,7 @@
           "slug": "telepathic-betrayal",
           "tactic": true,
           "vAttack": 7,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/shadow-king-04.png",
+          "imageUrl": "https://images.barefootbetters.com/xmen/xmen-mt-shadow-king-telepathic-betrayal.webp",
           "abilities": [
             "Fight: If the “Betrayal of the Shadow“ Trap is in any Victory Pile or the KO pile, put it on top of the Villain Deck."
           ]

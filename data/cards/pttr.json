@@ -591,7 +591,7 @@
           "slug": "carnage",
           "tactic": false,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/carnage-01.png",
+          "imageUrl": "https://images.barefootbetters.com/pttr/pttr-mm-carnage.webp",
           "abilities": [
             "Always Leads: Maximum Carnage",
             "Master Strike: [keyword:Feast] on each player. Whenever this Master Strike feasts on a player's 0-cost Hero, that player gains a Wound."
@@ -602,7 +602,7 @@
           "slug": "drooling-jaws",
           "tactic": true,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/carnage-02.png",
+          "imageUrl": "https://images.barefootbetters.com/pttr/pttr-mt-carnage-drooling-jaws.webp",
           "abilities": [
             "Fight: Each player reveals the top card of their deck. Then Carnage [keyword:feasts] on the player of your choice."
           ]
@@ -612,7 +612,7 @@
           "slug": "endless-hunger",
           "tactic": true,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/carnage-03.png",
+          "imageUrl": "https://images.barefootbetters.com/pttr/pttr-mt-carnage-endless-hunger.webp",
           "abilities": [
             "[keyword:Feast]",
             "If Carnage feasts on a 0-cost Hero this way, repeat this process."
@@ -623,7 +623,7 @@
           "slug": "feed-me",
           "tactic": true,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/carnage-04.png",
+          "imageUrl": "https://images.barefootbetters.com/pttr/pttr-mt-carnage-feed-me.webp",
           "abilities": [
             "[keyword:Feast]",
             "You get +[icon:recruit] equal to the [icon:vp]  of the card Carnage feasts on."
@@ -634,7 +634,7 @@
           "slug": "om-nom-nom",
           "tactic": true,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/carnage-05.png",
+          "imageUrl": "https://images.barefootbetters.com/pttr/pttr-mt-carnage-om-nom-nom.webp",
           "abilities": [
             "[keyword:Feast]",
             "If Carnage feasts on a 0-cost Hero this way, each other player KOs a Bystander from their Victory Pile."
@@ -654,7 +654,7 @@
           "slug": "mysterio",
           "tactic": false,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/mysterio-01-1.png",
+          "imageUrl": "https://images.barefootbetters.com/pttr/pttr-mm-mysterio.webp",
           "abilities": [
             "Always Leads: Sinister Six",
             "Master Strike: Shuffle this Master Strike into Mysterio's face down Mastermind Tactics. That card becomes a Mastermind Tactic worth 6[icon:piercing]."
@@ -665,7 +665,7 @@
           "slug": "blurring-images",
           "tactic": true,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/mysterio-02-1.png",
+          "imageUrl": "https://images.barefootbetters.com/pttr/pttr-mt-mysterio-blurring-images.webp",
           "abilities": [
             "Fight: You get +1[icon:recruit] for each Mastermind Tactic Mysterio has left after this one."
           ]
@@ -675,7 +675,7 @@
           "slug": "captive-audience",
           "tactic": true,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/mysterio-03-1.png",
+          "imageUrl": "https://images.barefootbetters.com/pttr/pttr-mt-mysterio-captive-audience.webp",
           "abilities": [
             "Fight: Rescue a Bystander for each Mastermind Tactic Mysterio has left after this one."
           ]
@@ -685,7 +685,7 @@
           "slug": "master-of-illusions",
           "tactic": true,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/mysterio-04-1.png",
+          "imageUrl": "https://images.barefootbetters.com/pttr/pttr-mt-mysterio-master-of-illusions.webp",
           "abilities": [
             "Fight: If this is not the final Tactic, shuffle a Master Strike Tactic from each other player's Victory Pile back into Mysterio's Mastermind Tactics."
           ]
@@ -695,7 +695,7 @@
           "slug": "mists-of-deception",
           "tactic": true,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/mysterio-05.png",
+          "imageUrl": "https://images.barefootbetters.com/pttr/pttr-mt-mysterio-mists-of-deception.webp",
           "abilities": [
             "Fight: If this is not the final Tactic, reveal the top five cards of the Villain Deck. Play all the Master Strikes you revealed. Put the rest on the bottom of that deck in random order."
           ]

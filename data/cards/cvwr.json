@@ -2189,7 +2189,7 @@
           "slug": "authoritarian-iron-man",
           "tactic": false,
           "vAttack": 12,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/authoritarian-iron-man-01.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mm-authoritarian-iron-man.webp",
           "abilities": [
             "Always Leads: Superhuman Registration Act",
             "Master Strike: Authoritarian Iron Man [keyword:fortifies] the next city space to his right, starting with the Bridge. You can't fight him while there's a Villain in that space. Villains in that space get +3[icon:attack]."
@@ -2200,7 +2200,7 @@
           "slug": "armada-of-armors",
           "tactic": true,
           "vAttack": 12,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/authoritarian-iron-man-02.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-authoritarian-iron-man-armada-of-armors.webp",
           "abilities": [
             "Fight: You get +6[icon:recruit] usable only to recruit [hc:ranged] and/or [hc:tech] Heroes."
           ]
@@ -2210,7 +2210,7 @@
           "slug": "freeze-domestic-assets",
           "tactic": true,
           "vAttack": 12,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/authoritarian-iron-man-03.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-authoritarian-iron-man-freeze-domestic-assets.webp",
           "abilities": [
             "Fight: Each other player reveals their hand and discards all their cards with [icon:recruit] icons."
           ]
@@ -2220,7 +2220,7 @@
           "slug": "man-the-fortifications",
           "tactic": true,
           "vAttack": 12,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/authoritarian-iron-man-04.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-authoritarian-iron-man-man-the-fortifications.webp",
           "abilities": [
             "Fight: Reveal the top card of the Villain Deck. If it's a Villain, it enters the city space that Authoritarian Iron Man is fortifying."
           ]
@@ -2230,7 +2230,7 @@
           "slug": "recall-to-service",
           "tactic": true,
           "vAttack": 12,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/authoritarian-iron-man-05.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-authoritarian-iron-man-recall-to-service.webp",
           "abilities": [
             "Fight: The Villain with the highest printed [icon:attack] in the Escape Pile enters the city space that Authoritarian Iron Man is fortifying."
           ]
@@ -2249,7 +2249,7 @@
           "slug": "baron-helmut-zemo",
           "tactic": false,
           "vAttack": "16*",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/baron-helmut-zemo-01.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mm-baron-helmut-zemo.webp",
           "abilities": [
             "Baron Zemo gets -1[icon:attack] for each Villain in your Victory Pile.",
             "Always Leads: Thunderbolts",
@@ -2261,7 +2261,7 @@
           "slug": "blasted-henchmen",
           "tactic": true,
           "vAttack": 16,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/baron-helmut-zemo-02.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-baron-helmut-zemo-blasted-henchmen.webp",
           "abilities": [
             "Fight: Each other player reveals a [hc:tech] Hero or KOs a Villain from their Victory Pile."
           ]
@@ -2271,7 +2271,7 @@
           "slug": "cursed-dynasty",
           "tactic": true,
           "vAttack": 16,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/baron-helmut-zemo-03.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-baron-helmut-zemo-cursed-dynasty.webp",
           "abilities": [
             "Fight: When you draw a new hand of cards at the end of this turn, draw two extra cards."
           ]
@@ -2281,7 +2281,7 @@
           "slug": "endless-minions",
           "tactic": true,
           "vAttack": 16,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/baron-helmut-zemo-04.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-baron-helmut-zemo-endless-minions.webp",
           "abilities": [
             "Fight: Each other player reveals a [hc:tech] Hero or chooses a Villain from their Victory Pile and it enters the city."
           ]
@@ -2291,7 +2291,7 @@
           "slug": "revenge-for-my-father",
           "tactic": true,
           "vAttack": 16,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/baron-helmut-zemo-05.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-baron-helmut-zemo-revenge-for-my-father.webp",
           "abilities": [
             "Fight: Each other player reveals their hand. Each player who revealed an [team:avengers] Hero gains a Wound."
           ]
@@ -2310,7 +2310,7 @@
           "slug": "maria-hill-director-of-shield",
           "tactic": false,
           "vAttack": "7*",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/maria-hill-01.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mm-maria-hill-director-of-shield.webp",
           "abilities": [
             "[keyword:Double S.H.I.E.L.D. Clearance]. You can't fight Maria Hill while there are any S.H.I.E.L.D. Elite or Officers in the city.",
             "Always Leads: S.H.I.E.L.D. Elite",
@@ -2322,7 +2322,7 @@
           "slug": "crash-the-helicarrier",
           "tactic": true,
           "vAttack": 7,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/maria-hill-02.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-maria-hill-director-of-shield-crash-the-helicarrier.webp",
           "abilities": [
             "Fight: KO any number of your [team:shield] Heroes."
           ]
@@ -2332,7 +2332,7 @@
           "slug": "declare-martial-law",
           "tactic": true,
           "vAttack": 7,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/maria-hill-03.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-maria-hill-director-of-shield-declare-martial-law.webp",
           "abilities": [
             "Fight: Put a S.H.I.E.L.D. Officer into each empty city space as 3[icon:attack] Villains. When you fight them, gain them as Heroes."
           ]
@@ -2342,7 +2342,7 @@
           "slug": "evacuation-code-epsilon",
           "tactic": true,
           "vAttack": 7,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/maria-hill-04.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-maria-hill-director-of-shield-evacuation-code-epsilon.webp",
           "abilities": [
             "Fight: Each other player reveals their hand and discards a [team:shield] card."
           ]
@@ -2352,7 +2352,7 @@
           "slug": "rapid-response-team",
           "tactic": true,
           "vAttack": 7,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/maria-hill-05.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-maria-hill-director-of-shield-rapid-response-team.webp",
           "abilities": [
             "Fight: Two S.H.I.E.L.D. Officers enter the city as 3[icon:attack] Villains. When you fight them, gain them as Heroes."
           ]
@@ -2371,7 +2371,7 @@
           "slug": "misty-knight",
           "tactic": false,
           "vAttack": "14*",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/misty-knight-01.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mm-misty-knight.webp",
           "abilities": [
             "[keyword:Bribe]",
             "Always Leads: Heroes for Hire",
@@ -2383,7 +2383,7 @@
           "slug": "bionic-repulsor-field",
           "tactic": true,
           "vAttack": 14,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/misty-knight-02.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-misty-knight-bionic-repulsor-field.webp",
           "abilities": [
             "Fight: Each other player reveals a [team:marvel-knights] Hero or puts two cards from their hand on top of the deck."
           ]
@@ -2393,7 +2393,7 @@
           "slug": "cyborg-detective",
           "tactic": true,
           "vAttack": 14,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/misty-knight-03.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-misty-knight-cyborg-detective.webp",
           "abilities": [
             "Fight: Reveal the top three cards of the Villain Deck. Put them back in any order."
           ]
@@ -2403,7 +2403,7 @@
           "slug": "trusted-bodyguard",
           "tactic": true,
           "vAttack": 14,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/misty-knight-04.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-misty-knight-trusted-bodyguard.webp",
           "abilities": [
             "Fight: Going clockwise, the first other player with Colleen Wing in their Victory Pile rescues 5 Bystanders and returns Colleen Wing to play [keyword:fortifying] Misty Knight."
           ]
@@ -2413,7 +2413,7 @@
           "slug": "vibranium-cyber-arm",
           "tactic": true,
           "vAttack": 14,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/misty-knight-05.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-misty-knight-vibranium-cyber-arm.webp",
           "abilities": [
             "Fight: Each other player reveals a [team:marvel-knights] Hero or gains a Wound."
           ]
@@ -2432,7 +2432,7 @@
           "slug": "ragnarok",
           "tactic": false,
           "vAttack": "6+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/ragnarok-01.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mm-ragnarok.webp",
           "abilities": [
             "Ragnarok gets +2[icon:attack] for each Hero Class among Heroes in the HQ.",
             "Always Leads: Registration Enforcers",
@@ -2444,7 +2444,7 @@
           "slug": "electrical-charge",
           "tactic": true,
           "vAttack": 6,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/ragnarok-02.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-ragnarok-electrical-charge.webp",
           "abilities": [
             "Fight: Count how many [hc:ranged] Heroes you have. Draw that many cards."
           ]
@@ -2454,7 +2454,7 @@
           "slug": "god-of-cyborg-thunder",
           "tactic": true,
           "vAttack": 6,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/ragnarok-03.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-ragnarok-god-of-cyborg-thunder.webp",
           "abilities": [
             "Fight: You can spend [icon:recruit] as [icon:attack] this turn."
           ]
@@ -2464,7 +2464,7 @@
           "slug": "hammer-goliath",
           "tactic": true,
           "vAttack": 6,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/ragnarok-04.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-ragnarok-hammer-goliath.webp",
           "abilities": [
             "Fight: KO each Hero from the HQ that costs 7 or more."
           ]
@@ -2474,7 +2474,7 @@
           "slug": "unnatural-storm-clouds",
           "tactic": true,
           "vAttack": 6,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/ragnarok-05.png",
+          "imageUrl": "https://images.barefootbetters.com/cvwr/cvwr-mt-ragnarok-unnatural-storm-clouds.webp",
           "abilities": [
             "Fight: Put all Heroes from the HQ on the bottom of the Hero Deck in random order."
           ]

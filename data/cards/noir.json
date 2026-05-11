@@ -578,7 +578,7 @@
           "slug": "charles-xavier-professor-of-crime",
           "tactic": false,
           "vAttack": "8+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/charles-xavier-01.png",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-mm-charles-xavier-professor-of-crime.webp",
           "abilities": [
             "Charles Xavier gets +1[icon:attack] for each Bystander in the HQ and city.",
             "Always Leads: X-Men Noir",
@@ -590,7 +590,7 @@
           "slug": "commit-to-the-asylum",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/charles-xavier-02.png",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-mt-charles-xavier-professor-of-crime-commit-to-the-asylum.webp",
           "abilities": [
             "Fight: Each other player [keyword:Investigates] their deck for a card with an [icon:attack] icon and KOs it. Players reveal all the cards they [keyword:Investigated]."
           ]
@@ -600,7 +600,7 @@
           "slug": "master-manipulator",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/charles-xavier-04.png",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-mt-charles-xavier-professor-of-crime-master-manipulator.webp",
           "abilities": [
             "Fight: [keyword:Investigate] the Hero Deck for an [team:x-men] card and put it into your discard pile."
           ]
@@ -610,7 +610,7 @@
           "slug": "corrupt-weak-minds",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/charles-xavier-03.png",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-mt-charles-xavier-professor-of-crime-corrupt-weak-minds.webp",
           "abilities": [
             "Fight: Each other player puts a random Bystander from their Victory Pile onto a Hero in the HQ as a [keyword:Hidden Witness]."
           ]
@@ -620,7 +620,7 @@
           "slug": "x-con-men",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/charles-xavier-05.png",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-mt-charles-xavier-professor-of-crime-x-con-men.webp",
           "abilities": [
             "Fight: Each other player reveals an [team:x-men] Hero or gains a Wound."
           ]
@@ -640,7 +640,7 @@
           "slug": "the-goblin-underworld-boss",
           "tactic": false,
           "vAttack": "10*",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/goblin-underworld-boss-01.png",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-mm-the-goblin-underworld-boss.webp",
           "abilities": [
             "Start of Game: The Goblin captures 2 [keyword:Hidden Witness].",
             "Always Leads: Goblin's Freak Show",
@@ -652,7 +652,7 @@
           "slug": "sinister-dreams",
           "tactic": true,
           "vAttack": 10,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/goblin-underworld-boss-05.png",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-mt-the-goblin-underworld-boss-sinister-dreams.webp",
           "abilities": [
             "Fight: Each other player reveals a [team:sinister-six] or [team:spider-friends] Hero or gains a Wound."
           ]
@@ -662,7 +662,7 @@
           "slug": "blackmail-the-judges",
           "tactic": true,
           "vAttack": 10,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/goblin-underworld-boss-02.png",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-mt-the-goblin-underworld-boss-blackmail-the-judges.webp",
           "abilities": [
             "Fight: For each Goblin's Freak Show Villain in the city, The Goblin captures 2 [keyword:Hidden Witness]."
           ]
@@ -672,7 +672,7 @@
           "slug": "carnival-of-carnage",
           "tactic": true,
           "vAttack": 10,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/goblin-underworld-boss-04.png",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-mt-the-goblin-underworld-boss-carnival-of-carnage.webp",
           "abilities": [
             "Fight: For each Goblin's Freak Show Villain in the city, each other player discards a card."
           ]
@@ -682,7 +682,7 @@
           "slug": "blind-loyalty",
           "tactic": true,
           "vAttack": 10,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/goblin-underworld-boss-03.png",
+          "imageUrl": "https://images.barefootbetters.com/noir/noir-mt-the-goblin-underworld-boss-blind-loyalty.webp",
           "abilities": [
             "Fight: [keyword:Investigate] the Villain Deck for a Goblin's Freak Show Villain and put it into your Victory Pile."
           ]

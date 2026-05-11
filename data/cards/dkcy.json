@@ -1939,7 +1939,7 @@
           "slug": "apocalypse",
           "tactic": false,
           "vAttack": 12,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/apocalypse-01.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mm-apocalypse.webp",
           "abilities": [
             "Always Leads: Four Horsemen",
             "Four Horsemen Villains get +2[icon:attack].",
@@ -1952,7 +1952,7 @@
           "slug": "apocalyptic-destruction",
           "tactic": true,
           "vAttack": 12,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/apocalypse-02.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-apocalypse-apocalyptic-destruction.webp",
           "abilities": [
             "Fight: Each other player KOs two Heroes from their discard pile that each cost 1[icon:vp] or more."
           ]
@@ -1962,7 +1962,7 @@
           "slug": "the-end-of-all-things",
           "tactic": true,
           "vAttack": 12,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/apocalypse-05.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-apocalypse-the-end-of-all-things.webp",
           "abilities": [
             "Fight: Each other player reveals the top three cards of their deck, KOs each one of those cards that cost 1 [icon:vp] or more, and puts the rest back in any order."
           ]
@@ -1972,7 +1972,7 @@
           "slug": "horsemen-are-drawing-nearer",
           "tactic": true,
           "vAttack": 12,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/apocalypse-03.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-apocalypse-horsemen-are-drawing-nearer.webp",
           "abilities": [
             "Fight: Each other player plays a Four Horsemen Villain from their Victory Pile as if playing it from the Villain Deck."
           ]
@@ -1982,7 +1982,7 @@
           "slug": "immortal-and-undefeated",
           "tactic": true,
           "vAttack": 12,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/apocalypse-04.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-apocalypse-immortal-and-undefeated.webp",
           "abilities": [
             "Fight: If this is not the final Tactic, rescue six Bystanders and shuffle this Tactic back into the other Tactics."
           ]
@@ -2001,7 +2001,7 @@
           "slug": "kingpin",
           "tactic": false,
           "vAttack": "13*",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/kingpin-01.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mm-kingpin.webp",
           "abilities": [
             "[keyword:Bribe]",
             "Always Leads: Streets of New York",
@@ -2013,7 +2013,7 @@
           "slug": "call-a-hit",
           "tactic": true,
           "vAttack": 13,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/kingpin-02.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-kingpin-call-a-hit.webp",
           "abilities": [
             "Fight: Choose a Hero from each player's discard pile and KO it."
           ]
@@ -2023,7 +2023,7 @@
           "slug": "criminal-empire",
           "tactic": true,
           "vAttack": 13,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/kingpin-03.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-kingpin-criminal-empire.webp",
           "abilities": [
             "Fight: If this is not the final Tactic, reveal the top three cards of the Villain Deck. Play all the Villains you revealed. Put the rest back in random order."
           ]
@@ -2033,7 +2033,7 @@
           "slug": "dirty-cops",
           "tactic": true,
           "vAttack": 13,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/kingpin-04.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-kingpin-dirty-cops.webp",
           "abilities": [
             "Fight: Put a 0 [icon:vp] Hero from the KO pile on top of each other player's deck."
           ]
@@ -2043,7 +2043,7 @@
           "slug": "mob-war",
           "tactic": true,
           "vAttack": 13,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/kingpin-05.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-kingpin-mob-war.webp",
           "abilities": [
             "Fight: Each other player plays a Henchman Villain from their Victory Pile as if playing it from the Villain Deck."
           ]
@@ -2062,7 +2062,7 @@
           "slug": "mephisto",
           "tactic": false,
           "vAttack": 10,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/mephisto-01.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mm-mephisto.webp",
           "abilities": [
             "Whenever a player gains a Wound, put it on top of that player's deck.",
             "Always Leads: Underworld",
@@ -2074,7 +2074,7 @@
           "slug": "damned-if-you-do",
           "tactic": true,
           "vAttack": 10,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/mephisto-02.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-mephisto-damned-if-you-do.webp",
           "abilities": [
             "Fight: Each other player KOs a Bystander from their Victory Pile or gains a Wound."
           ]
@@ -2084,7 +2084,7 @@
           "slug": "devilish-torment",
           "tactic": true,
           "vAttack": 10,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/mephisto-03.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-mephisto-devilish-torment.webp",
           "abilities": [
             "Fight: Each other player puts all 0 [icon:vp] cards from their discard pile on top of their deck in any order."
           ]
@@ -2094,7 +2094,7 @@
           "slug": "pain-begets-pain",
           "tactic": true,
           "vAttack": 10,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/mephisto-04.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-mephisto-pain-begets-pain.webp",
           "abilities": [
             "Fight: Choose any number of Wounds from your hand and discard pile. The player to your right gains them."
           ]
@@ -2104,7 +2104,7 @@
           "slug": "the-price-of-failure",
           "tactic": true,
           "vAttack": 10,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/mephisto-05.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-mephisto-the-price-of-failure.webp",
           "abilities": [
             "Fight: Each other player without a Mastermind Tactic in their Victory Pile gains a Wound."
           ]
@@ -2123,7 +2123,7 @@
           "slug": "mr-sinister",
           "tactic": false,
           "vAttack": "8+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/mr-sinister-01.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mm-mr-sinister.webp",
           "abilities": [
             "Mr. Sinister gets +1[icon:attack] for each Bystander he has.",
             "Always Leads: Marauders",
@@ -2135,7 +2135,7 @@
           "slug": "human-experimentation",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/mr-sinister-02.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-mr-sinister-human-experimentation.webp",
           "abilities": [
             "Fight: Mr. Sinister captures Bystanders equal to the number of Villains in the city."
           ]
@@ -2145,7 +2145,7 @@
           "slug": "master-geneticist",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/mr-sinister-03.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-mr-sinister-master-geneticist.webp",
           "abilities": [
             "Fight: Reveal the top seven cards of the Villain Deck. Mr. Sinister captures all of the Bystanders you revealed. Put the rest back in random order."
           ]
@@ -2155,7 +2155,7 @@
           "slug": "plans-within-plans",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/mr-sinister-04.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-mr-sinister-plans-within-plans.webp",
           "abilities": [
             "Fight: Mr. Sinister captures a Bystander for each Mr. Sinister Tactic in players' Victory Piles, including this Tactic."
           ]
@@ -2165,7 +2165,7 @@
           "slug": "telepathic-manipulation",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/mr-sinister-05.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-mr-sinister-telepathic-manipulation.webp",
           "abilities": [
             "Fight: Mr. Sinister captures a Bystander from each other player's Victory Pile."
           ]
@@ -2184,7 +2184,7 @@
           "slug": "stryfe",
           "tactic": false,
           "vAttack": "7+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/stryfe-01.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mm-stryfe.webp",
           "abilities": [
             "Always Leads: MLF",
             "Master Strike: Stack this Master Strike next to Stryfe. Stryfe gets +1[icon:attack] for each Master Strike stacked next to him. Each player reveals a [team:x-force] Hero or discards a card at random."
@@ -2195,7 +2195,7 @@
           "slug": "furious-wrath",
           "tactic": true,
           "vAttack": 7,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/stryfe-03.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-stryfe-furious-wrath.webp",
           "abilities": [
             "Fight: Reveal the top six cards of the Villain Deck. Play all the Master Strikes you revealed. Put the rest back in random order."
           ]
@@ -2205,7 +2205,7 @@
           "slug": "psychic-torment",
           "tactic": true,
           "vAttack": 7,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/stryfe-02.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-stryfe-psychic-torment.webp",
           "abilities": [
             "Fight: Look at the top five cards of your deck. Put one into your hand and discard the rest."
           ]
@@ -2215,7 +2215,7 @@
           "slug": "swift-vengeance",
           "tactic": true,
           "vAttack": 7,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/stryfe-05.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-stryfe-swift-vengeance.webp",
           "abilities": [
             "Fight: A Wound from the Wound Stack becomes a Master Strike that takes effect immediately."
           ]
@@ -2225,7 +2225,7 @@
           "slug": "tide-of-retribution",
           "tactic": true,
           "vAttack": 7,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/stryfe-04.png",
+          "imageUrl": "https://images.barefootbetters.com/dkcy/dkcy-mt-stryfe-tide-of-retribution.webp",
           "abilities": [
             "Fight: Each other player reveals an [team:x-force] Hero or gains a Wound."
           ]

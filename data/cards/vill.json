@@ -1719,7 +1719,7 @@
           "slug": "dr-strange",
           "tactic": false,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/dr-strange-01.png",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mm-dr-strange.webp",
           "abilities": [
             "Always Leads: Defenders",
             "Command Strike: Reveal the top three cards of the Adversary Deck. Put the Adversary you revealed with the highest printed [icon:attack] on top of that deck. Then play a Plot Twist from among the cards you revealed. Then put the rest of those cards on the bottom of that deck in random order."
@@ -1730,7 +1730,7 @@
           "slug": "book-of-the-vishanti",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/dr-strange-05.png",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-dr-strange-book-of-the-vishanti.webp",
           "abilities": [
             "Fight: Each other player reveals a [hc:covert] Ally or discards all the cards in their hand, then draws as many cards as they discarded."
           ]
@@ -1740,7 +1740,7 @@
           "slug": "crimson-bands-of-cyttorak",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/dr-strange-03.png",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-dr-strange-crimson-bands-of-cyttorak.webp",
           "abilities": [
             "Fight: Each other player reveals their hand, then gains a Bindings for each non-grey Ally that player has."
           ]
@@ -1750,7 +1750,7 @@
           "slug": "eye-of-agamotto",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/dr-strange-04.png",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-dr-strange-eye-of-agamotto.webp",
           "abilities": [
             "Fight: Reveal cards from the Ally Deck equal to the number of players. Put one of those cards into each player's discard pile."
           ]
@@ -1760,7 +1760,7 @@
           "slug": "winds-of-watoomb",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/dr-strange-02.png",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-dr-strange-winds-of-watoomb.webp",
           "abilities": [
             "Fight: After you draw a new hand of cards at the end of this turn, each player simultaneously passes a non-grey Ally from their hand to the hand of the player on their left."
           ]
@@ -1779,7 +1779,7 @@
           "slug": "nick-fury",
           "tactic": false,
           "vAttack": 9,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/nick-fury-01-1.png",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mm-nick-fury.webp",
           "abilities": [
             "Always Leads: Avengers",
             "Command Strike: Stack this Strike next to Nick Fury. Then [keyword:demolish] each player once for each Strike stacked here."
@@ -1790,7 +1790,7 @@
           "slug": "bounty-on-furys-head",
           "tactic": true,
           "vAttack": 9,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/nick-fury-03-1.png",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-nick-fury-bounty-on-furys-head.webp",
           "abilities": [
             "Fight: KO any number of your [team:hydra] Allies. For each Ally you KO'd this way, you may gain a Madame HYDRA."
           ]
@@ -1800,7 +1800,7 @@
           "slug": "purge-hydra",
           "tactic": true,
           "vAttack": 9,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/nick-fury-05.png",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-nick-fury-purge-hydra.webp",
           "abilities": [
             "Fight: Each other player reveals their hand and discards two [team:hydra] Allies."
           ]
@@ -1810,7 +1810,7 @@
           "slug": "the-avengers-initiative",
           "tactic": true,
           "vAttack": 9,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/nick-fury-02-1.png",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-nick-fury-the-avengers-initiative.webp",
           "abilities": [
             "Fight: Each other player reveals a [hc:tech] Ally or chooses an Avengers Adversary from their Victory Pile and it enters the Bridge."
           ]
@@ -1820,7 +1820,7 @@
           "slug": "total-fury",
           "tactic": true,
           "vAttack": 9,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/nick-fury-04-1.png",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-nick-fury-total-fury.webp",
           "abilities": [
             "Fight: Defeat an Adversary whose [icon:attack] is less than the number of [team:hydra] Allies in the KO pile."
           ]
@@ -1839,7 +1839,7 @@
           "slug": "odin",
           "tactic": false,
           "vAttack": "10+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/odin-01.png",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mm-odin.webp",
           "abilities": [
             "Always Leads: Asgardian Warriors",
             "Odin gets +1[icon:attack] for each Asgardian Warrior in the city and in the Overrun Pile.",
@@ -1851,7 +1851,7 @@
           "slug": "divine-justice",
           "tactic": true,
           "vAttack": 10,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/odin-02.png",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-odin-divine-justice.webp",
           "abilities": [
             "Fight: Each other player with a Bindings in their discard pile gains another Bindings."
           ]
@@ -1861,7 +1861,7 @@
           "slug": "might-of-valhalla",
           "tactic": true,
           "vAttack": 10,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/odin-03.png",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-odin-might-of-valhalla.webp",
           "abilities": [
             "Fight: Draw a card for each Asgardian Warrior in your Victory Pile."
           ]
@@ -1871,7 +1871,7 @@
           "slug": "riches-of-asgard",
           "tactic": true,
           "vAttack": 10,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/odin-04.png",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-odin-riches-of-asgard.webp",
           "abilities": [
             "Fight: You get +1[icon:recruit] for each Asgardian Warrior in your Victory Pile."
           ]
@@ -1881,7 +1881,7 @@
           "slug": "ride-of-the-valkyries",
           "tactic": true,
           "vAttack": 10,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/odin-05.png",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-odin-ride-of-the-valkyries.webp",
           "abilities": [
             "Fight: Each other player reveals a [team:foes-of-asgard] Ally or discards a card for each Asgardian Warrior in the Overrun Pile."
           ]
@@ -1900,7 +1900,7 @@
           "slug": "professor-x",
           "tactic": false,
           "vAttack": "8+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/professor-x-01-1.png",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mm-professor-x.webp",
           "abilities": [
             "Always Leads: X-men First Class",
             "Command Strike: Choose the two highest-cost Allies in the Lair. Stack them next to Professor X as “Telepathic Pawns.“ Professor X gets +1[icon:attack] for each Ally stacked next to him. Players can recrut the top Ally in the stack next to Professor X."
@@ -1911,7 +1911,7 @@
           "slug": "cerebro-device",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/professor-x-05.png",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-professor-x-cerebro-device.webp",
           "abilities": [
             "Fight: Reveal the top three cards of the Adversary Deck. Play any Adversaries you revealed that have “[keyword:X-Treme Attack]“. Put the rest back in random order."
           ]
@@ -1921,7 +1921,7 @@
           "slug": "mental-dominance",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/professor-x-03-1.png",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-professor-x-mental-dominance.webp",
           "abilities": [
             "Fight: Stack the top three cards of the Ally Deck next to Professor X in random order as “Telepathic Pawns.“"
           ]
@@ -1931,7 +1931,7 @@
           "slug": "mightiest-mutant-mind",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/professor-x-04-1.png",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-professor-x-mightiest-mutant-mind.webp",
           "abilities": [
             "Fight: Each other player reveals a [team:brotherhood] Ally or stacks a non-grey Ally from their hand next to Professor X as a “Telepathic Pawn.“"
           ]
@@ -1941,7 +1941,7 @@
           "slug": "telepathic-imprisonment",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/professor-x-02-1.png",
+          "imageUrl": "https://images.barefootbetters.com/vill/vill-mt-professor-x-telepathic-imprisonment.webp",
           "abilities": [
             "Fight: Each other player reveals a [team:brotherhood] Ally or gains a Bindings."
           ]

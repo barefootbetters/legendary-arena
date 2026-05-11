@@ -587,7 +587,7 @@
           "slug": "arnim-zola",
           "tactic": false,
           "vAttack": "6+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/arnim-zola-01.png",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-mm-arnim-zola.webp",
           "abilities": [
             "[keyword:Ultimate Abomination]",
             "Always Leads: Zola's Creations",
@@ -599,7 +599,7 @@
           "slug": "dominate-the-weak",
           "tactic": true,
           "vAttack": 6,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/arnim-zola-02.png",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-mt-arnim-zola-dominate-the-weak.webp",
           "abilities": [
             "Fight: The player of your choice gains a Hero from the HQ that has less than 2 printed [icon:attack]."
           ]
@@ -609,7 +609,7 @@
           "slug": "computer-uploaded-genius",
           "tactic": true,
           "vAttack": 6,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/arnim-zola-05.png",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-mt-arnim-zola-computer-uploaded-genius.webp",
           "abilities": [
             "Fight: Each other player reveals a [hc:tech] Hero or discards a card."
           ]
@@ -619,7 +619,7 @@
           "slug": "pet-projects",
           "tactic": true,
           "vAttack": 6,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/arnim-zola-04.png",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-mt-arnim-zola-pet-projects.webp",
           "abilities": [
             "Fight: Each other player reveals a Zola's Creations Villain from their Victory Pile or gains a Wound."
           ]
@@ -629,7 +629,7 @@
           "slug": "crush-pacifist-resistance",
           "tactic": true,
           "vAttack": 6,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/arnim-zola-03.png",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-mt-arnim-zola-crush-pacifist-resistance.webp",
           "abilities": [
             "Fight: KO up to two of your Heroes that have less than 2 printed [icon:attack]."
           ]
@@ -648,7 +648,7 @@
           "slug": "baron-heinrich-zemo",
           "tactic": false,
           "vAttack": "9+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/baron-zemo-01.png",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-mm-baron-heinrich-zemo.webp",
           "abilities": [
             "Whenever you fight a Villain, you may use 2[icon:recruit] to rescue a Bystander. Baron Zemo gets +9[icon:attack] unless you are a [keyword:Savior].",
             "Always Leads: Masters of Evil (WWII)",
@@ -660,7 +660,7 @@
           "slug": "fallen-idols",
           "tactic": true,
           "vAttack": 9,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/baron-zemo-02.png",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-mt-baron-heinrich-zemo-fallen-idols.webp",
           "abilities": [
             "Fight: Each other player that is not a [keyword:Savior] discards a card."
           ]
@@ -670,7 +670,7 @@
           "slug": "finding-zemo",
           "tactic": true,
           "vAttack": 9,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/baron-zemo-03.png",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-mt-baron-heinrich-zemo-finding-zemo.webp",
           "abilities": [
             "Fight: Reveal the top five cards of the Villain Deck. If you revealed any Bystanders, KO them and each other player gains a Wound. Put the rest back in random order."
           ]
@@ -680,7 +680,7 @@
           "slug": "hatred-for-the-avengers",
           "tactic": true,
           "vAttack": 9,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/baron-zemo-05.png",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-mt-baron-heinrich-zemo-hatred-for-the-avengers.webp",
           "abilities": [
             "Fight: For each of your [team:avengers] Heroes, rescue a Bystander."
           ]
@@ -690,7 +690,7 @@
           "slug": "prisoners-of-war",
           "tactic": true,
           "vAttack": 9,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/baron-zemo-04.png",
+          "imageUrl": "https://images.barefootbetters.com/ca75/ca75-mt-baron-heinrich-zemo-prisoners-of-war.webp",
           "abilities": [
             "Fight: Each other player reveals an [team:avengers] Hero or chooses a Bystander from their Victory Pile, and you rescue that Bystander."
           ]

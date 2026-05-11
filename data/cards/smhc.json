@@ -593,7 +593,7 @@
           "slug": "adrian-toomes",
           "tactic": false,
           "vAttack": "5+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/adrian-toomes-01.png",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-mm-adrian-toomes.webp",
           "abilities": [
             "[keyword:Double Striker]",
             "Always Leads: Salvagers",
@@ -605,7 +605,7 @@
           "slug": "epic-adrian-toomes",
           "tactic": false,
           "vAttack": "5+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/adrian-toomes-02.png",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-me-adrian-toomes.webp",
           "abilities": [
             "[keyword:Triple Striker]",
             "Always Leads: Salvagers",
@@ -617,7 +617,7 @@
           "slug": "dont-interfere",
           "tactic": true,
           "vAttack": 5,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/adrian-toomes-05.png",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-mt-adrian-toomes-dont-interfere.webp",
           "abilities": [
             "Fight: [keyword:Danger Sense 4]. If this revealed any Bystanders, rescue them."
           ]
@@ -627,7 +627,7 @@
           "slug": "more-harm-than-good",
           "tactic": true,
           "vAttack": 5,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/adrian-toomes-03.png",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-mt-adrian-toomes-more-harm-than-good.webp",
           "abilities": [
             "Fight: Each other player discards a [team:spider-friends] Hero or gains a Wound."
           ]
@@ -637,7 +637,7 @@
           "slug": "take-everything",
           "tactic": true,
           "vAttack": 5,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/adrian-toomes-06.png",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-mt-adrian-toomes-take-everything.webp",
           "abilities": [
             "Fight: You may put a card from your discard pile on top of your deck."
           ]
@@ -647,7 +647,7 @@
           "slug": "the-worlds-changed",
           "tactic": true,
           "vAttack": 5,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/adrian-toomes-04.png",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-mt-adrian-toomes-the-worlds-changed.webp",
           "abilities": [
             "Fight: [keyword:Danger Sense 3]. Put all Henchmen Villains revealed this way into your Victory Pile, then do their “Fight“ abilities."
           ]
@@ -666,7 +666,7 @@
           "slug": "vulture",
           "tactic": false,
           "vAttack": "8+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/vulture-01.png",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-mm-vulture.webp",
           "abilities": [
             "[keyword:Striker]",
             "Always Leads: Vulture Tech",
@@ -678,7 +678,7 @@
           "slug": "epic-vulture",
           "tactic": false,
           "vAttack": "10+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/vulture-02.png",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-me-vulture.webp",
           "abilities": [
             "[keyword:Striker]",
             "Always Leads: Vulture Tech",
@@ -690,7 +690,7 @@
           "slug": "bird-of-prey",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/vulture-05.png",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-mt-vulture-bird-of-prey.webp",
           "abilities": [
             "Fight: Each other player discards a [team:spider-friends] Hero or discards two cards."
           ]
@@ -700,7 +700,7 @@
           "slug": "lurking-shadow",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/vulture-06.png",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-mt-vulture-lurking-shadow.webp",
           "abilities": [
             "Fight: [keyword:Danger Sense 2]. If the Rooftops are empty, a Villain you revealed enters the Rooftops."
           ]
@@ -710,7 +710,7 @@
           "slug": "mid-air-heist",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/vulture-03.png",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-mt-vulture-mid-air-heist.webp",
           "abilities": [
             "Fight: You get +5[icon:recruit] usable only to recruit [hc:tech] Heroes."
           ]
@@ -720,7 +720,7 @@
           "slug": "winged-assault",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/vulture-04.png",
+          "imageUrl": "https://images.barefootbetters.com/smhc/smhc-mt-vulture-winged-assault.webp",
           "abilities": [
             "Fight: Put two “Winged Assault“ Wounds from under the HQ into each other player's discard pile."
           ]

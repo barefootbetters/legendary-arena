@@ -590,7 +590,7 @@
           "slug": "hybrid",
           "tactic": false,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/hybrid-01.png",
+          "imageUrl": "https://images.barefootbetters.com/vnom/vnom-mm-hybrid.webp",
           "abilities": [
             "If you fight Hybrid while he's bonded to a Villain, defeat that Villain and rescue three Bystanders instead of taking a Tactic.",
             "Always Leads: Life Foundation",
@@ -602,7 +602,7 @@
           "slug": "epic-hybrid",
           "tactic": false,
           "vAttack": "8",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/hybrid-02.png",
+          "imageUrl": "https://images.barefootbetters.com/vnom/vnom-me-hybrid.webp",
           "abilities": [
             "If you fight Hybrid while he's bonded to a Villain, defeat that Villain and rescue three Bystanders instead of taking a Tactic.",
             "Always Leads: Life Foundation",
@@ -614,7 +614,7 @@
           "slug": "alien-awakening",
           "tactic": true,
           "vAttack": 6,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/hybrid-03.png",
+          "imageUrl": "https://images.barefootbetters.com/vnom/vnom-mt-hybrid-alien-awakening.webp",
           "abilities": [
             "Fight: If this is not the final tactic, a Henchman Villain from any Victory Pile [keyword:Symbiote Bonds] with Hybrid."
           ]
@@ -624,7 +624,7 @@
           "slug": "escaped-monstrosity",
           "tactic": true,
           "vAttack": 6,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/hybrid-04.png",
+          "imageUrl": "https://images.barefootbetters.com/vnom/vnom-mt-hybrid-escaped-monstrosity.webp",
           "abilities": [
             "Fight: If this is not the final Tactic, a Villain from the city or Escape Pile [keyword:Symbiote Bonds] with Hybrid."
           ]
@@ -634,7 +634,7 @@
           "slug": "life-foundation-research",
           "tactic": true,
           "vAttack": 6,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/hybrid-05.png",
+          "imageUrl": "https://images.barefootbetters.com/vnom/vnom-mt-hybrid-life-foundation-research.webp",
           "abilities": [
             "Fight: You get +1[icon:recruit] for each Life Foundation Villain in your Victory Pile."
           ]
@@ -644,7 +644,7 @@
           "slug": "symbiotic-call",
           "tactic": true,
           "vAttack": 6,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/hybrid-06.png",
+          "imageUrl": "https://images.barefootbetters.com/vnom/vnom-mt-hybrid-symbiotic-call.webp",
           "abilities": [
             "Fight: If this is not the final Tactic, reveal the top four cards of the Villain Deck. A Henchman Villain you revealed [keyword:Symbiote Bonds] with Hybrid. Put the rest back in any order."
           ]
@@ -663,7 +663,7 @@
           "slug": "poison-thanos",
           "tactic": false,
           "vAttack": "12+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/poison-thanos-01.png",
+          "imageUrl": "https://images.barefootbetters.com/vnom/vnom-mm-poison-thanos.webp",
           "abilities": [
             "Poison Thanos gets +1[icon:attack] for each different cost among cards in his “Poisoned Souls“ pile.",
             "Always Leads: Poisons",
@@ -675,7 +675,7 @@
           "slug": "epic-poison-thanos",
           "tactic": false,
           "vAttack": "13+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/poison-thanos-02.png",
+          "imageUrl": "https://images.barefootbetters.com/vnom/vnom-me-poison-thanos.webp",
           "abilities": [
             "Poison Thanos gets +2[icon:attack] for each different cost among cards in his “Poisoned Souls“ pile.",
             "Always Leads: Poisons",
@@ -687,7 +687,7 @@
           "slug": "desperate-rescue",
           "tactic": true,
           "vAttack": 12,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/poison-thanos-06.png",
+          "imageUrl": "https://images.barefootbetters.com/vnom/vnom-mt-poison-thanos-desperate-rescue.webp",
           "abilities": [
             "Fight: You may gain a Hero from Poison Thanos' “Poisoned Souls“ pile."
           ]
@@ -697,7 +697,7 @@
           "slug": "poisoned-loyalties",
           "tactic": true,
           "vAttack": 12,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/poison-thanos-03.png",
+          "imageUrl": "https://images.barefootbetters.com/vnom/vnom-mt-poison-thanos-poisoned-loyalties.webp",
           "abilities": [
             "Fight: Each other player puts a Poisons card from their discard pile into Poison Thanos' “Poisoned Souls“ pile."
           ]
@@ -707,7 +707,7 @@
           "slug": "searing-poisons",
           "tactic": true,
           "vAttack": 12,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/poison-thanos-05.png",
+          "imageUrl": "https://images.barefootbetters.com/vnom/vnom-mt-poison-thanos-searing-poisons.webp",
           "abilities": [
             "Fight: Each other player discards a Poisons card from their hand or gains a Wound."
           ]
@@ -717,7 +717,7 @@
           "slug": "soul-seize",
           "tactic": true,
           "vAttack": 12,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/poison-thanos-04.png",
+          "imageUrl": "https://images.barefootbetters.com/vnom/vnom-mt-poison-thanos-soul-seize.webp",
           "abilities": [
             "Fight: Put all Heroes that cost 5 or more from the HQ into Poison Thanos' “Poisoned Souls“ pile."
           ]

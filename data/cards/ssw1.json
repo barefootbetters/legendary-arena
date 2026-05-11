@@ -1592,7 +1592,7 @@
           "slug": "madelyne-pryor-goblin-queen",
           "tactic": false,
           "vAttack": "10*",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/madelyne-pryor-01.png",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mm-madelyne-pryor-goblin-queen.webp",
           "abilities": [
             "Bystanders captured by Madelyne are “Demon Goblin“ Villains with 2[icon:attack]. You can fight them to rescue them as Bystanders. You can't fight her while she has any Demon Goblins.",
             "Always Leads: Limbo",
@@ -1604,7 +1604,7 @@
           "slug": "city-of-demon-goblins",
           "tactic": true,
           "vAttack": 10,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/madelyne-pryor-02.png",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-madelyne-pryor-goblin-queen-city-of-demon-goblins.webp",
           "abilities": [
             "Fight: Madelyne captures five Bystanders."
           ]
@@ -1614,7 +1614,7 @@
           "slug": "corrupted-clone-of-jean-grey",
           "tactic": true,
           "vAttack": 10,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/madelyne-pryor-03.png",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-madelyne-pryor-goblin-queen-corrupted-clone-of-jean-grey.webp",
           "abilities": [
             "Fight: Each other player reveals an [team:x-men] Hero or gains a Wound."
           ]
@@ -1624,7 +1624,7 @@
           "slug": "everyones-a-demon-on-the-inside",
           "tactic": true,
           "vAttack": 10,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/madelyne-pryor-04.png",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-madelyne-pryor-goblin-queen-everyones-a-demon-on-the-inside.webp",
           "abilities": [
             "Fight: Madelyne captures a Bystander from each other player's Victory Pile."
           ]
@@ -1634,7 +1634,7 @@
           "slug": "gather-the-harvest",
           "tactic": true,
           "vAttack": 10,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/madelyne-pryor-05.png",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-madelyne-pryor-goblin-queen-gather-the-harvest.webp",
           "abilities": [
             "Fight: For each Limbo Villain in the city and/or Escape Pile, Madelyne captures a Bystander."
           ]
@@ -1653,7 +1653,7 @@
           "slug": "nimrod-super-sentinel",
           "tactic": false,
           "vAttack": "6*",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/nimrod-01.png",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mm-nimrod-super-sentinel.webp",
           "abilities": [
             "You can't fight Nimrod unless you made at least 6[icon:recruit] this turn.",
             "Always Leads: Sentinel Territories",
@@ -1665,7 +1665,7 @@
           "slug": "adapt-and-destroy",
           "tactic": true,
           "vAttack": 6,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/nimrod-02.png",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-nimrod-super-sentinel-adapt-and-destroy.webp",
           "abilities": [
             "Fight:  Choose [icon:recruit] or [icon:attack]. Each other player reveals their hand and discards a card with that icon."
           ]
@@ -1675,7 +1675,7 @@
           "slug": "detect-mutation",
           "tactic": true,
           "vAttack": 6,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/nimrod-03.png",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-nimrod-super-sentinel-detect-mutation.webp",
           "abilities": [
             "Fight:  Choose [icon:recruit] or [icon:attack]. Then, reveal the top card of your deck. If that card has that icon, draw it and repeat this process."
           ]
@@ -1685,7 +1685,7 @@
           "slug": "scatter-the-mutants",
           "tactic": true,
           "vAttack": 6,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/nimrod-04.png",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-nimrod-super-sentinel-scatter-the-mutants.webp",
           "abilities": [
             "Fight:  Choose [icon:recruit] or [icon:attack]. Put all Heroes from the HQ with that icon on the bottom of the Hero Deck."
           ]
@@ -1695,7 +1695,7 @@
           "slug": "teleport-and-incarcerate",
           "tactic": true,
           "vAttack": 6,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/nimrod-05.png",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-nimrod-super-sentinel-teleport-and-incarcerate.webp",
           "abilities": [
             "Fight:  Choose [icon:recruit] or [icon:attack]. Then, reveal the top card of that Hero Deck. If that card has that icon, gain that card, and [keyword:Teleport] it."
           ]
@@ -1714,7 +1714,7 @@
           "slug": "wasteland-hulk",
           "tactic": false,
           "vAttack": "7+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/wasteland-hulk-01.png",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mm-wasteland-hulk.webp",
           "abilities": [
             "Wasteland Hulk gets +3[icon:attack] for each of his Mastermind Tactics among all players' Victory Piles.",
             "Always Leads: Wasteland",
@@ -1726,7 +1726,7 @@
           "slug": "brutal-beating",
           "tactic": true,
           "vAttack": 7,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/wasteland-hulk-02.png",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-wasteland-hulk-brutal-beating.webp",
           "abilities": [
             "Fight: Each other player counts the number of Wounds in their discard pile, then discards that many cards."
           ]
@@ -1736,7 +1736,7 @@
           "slug": "memories-of-pain",
           "tactic": true,
           "vAttack": 7,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/wasteland-hulk-03.png",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-wasteland-hulk-memories-of-pain.webp",
           "abilities": [
             "Fight: Each other player puts two Wounds from their discard pile on top of their deck."
           ]
@@ -1746,7 +1746,7 @@
           "slug": "radioactive-regeneration",
           "tactic": true,
           "vAttack": 7,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/wasteland-hulk-04.png",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-wasteland-hulk-radioactive-regeneration.webp",
           "abilities": [
             "Fight: KO up to two Wounds from your hand and/or discard pile."
           ]
@@ -1756,7 +1756,7 @@
           "slug": "revert-to-bruce-banner",
           "tactic": true,
           "vAttack": 7,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/wasteland-hulk-05.png",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-wasteland-hulk-revert-to-bruce-banner.webp",
           "abilities": [
             "Fight: You gain a [hc:tech]Hero from the HQ for free."
           ]
@@ -1775,7 +1775,7 @@
           "slug": "zombie-green-goblin",
           "tactic": false,
           "vAttack": "11+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/zombie-green-goblin-01.png",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mm-zombie-green-goblin.webp",
           "abilities": [
             "Zombie Green Goblin gets +1[icon:attack] for each Hero in the KO pile that costs 7 or more.",
             "Always Leads: The Deadlands",
@@ -1787,7 +1787,7 @@
           "slug": "army-of-cadavers",
           "tactic": true,
           "vAttack": 11,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/zombie-green-goblin-03.png",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-zombie-green-goblin-army-of-cadavers.webp",
           "abilities": [
             "Fight: [keyword:Rise of The Living Dead] (this effect never makes Mastermind Tactics return.) Then, each other player discards a card for each Villain in the city that has “[keyword:Rise of The Living Dead].“"
           ]
@@ -1797,7 +1797,7 @@
           "slug": "the-hungry-dead",
           "tactic": true,
           "vAttack": 11,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/zombie-green-goblin-05.png",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-zombie-green-goblin-the-hungry-dead.webp",
           "abilities": [
             "Fight: [keyword:Rise of The Living Dead] (this effect never makes Mastermind Tactics return.) Then, each other player gains a Wound if there are any Villains in the city with “[keyword:Rise of The Living Dead].“"
           ]
@@ -1807,7 +1807,7 @@
           "slug": "love-to-have-you-for-dinner",
           "tactic": true,
           "vAttack": 11,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/zombie-green-goblin-02.png",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-zombie-green-goblin-love-to-have-you-for-dinner.webp",
           "abilities": [
             "Fight: [keyword:Rise of The Living Dead] (this effect never makes Mastermind Tactics return.) Then, reveal the top 5 cards of the Hero Deck. KO all those Heroes that cost 7 or more. Put the rest on the bottom of the Hero Deck in random order."
           ]
@@ -1817,7 +1817,7 @@
           "slug": "reign-of-terror",
           "tactic": true,
           "vAttack": 11,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/zombie-green-goblin-04.png",
+          "imageUrl": "https://images.barefootbetters.com/ssw1/ssw1-mt-zombie-green-goblin-reign-of-terror.webp",
           "abilities": [
             "Fight: [keyword:Rise of The Living Dead] (this effect never makes Mastermind Tactics return.) Then, put all Heroes from the HQ that cost 6 or less on the bottom of the Hero Deck."
           ]

@@ -592,7 +592,7 @@
           "slug": "lilith-mother-of-demons",
           "tactic": false,
           "vAttack": "8+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/LilithMotherofDemons.png",
+          "imageUrl": "https://images.barefootbetters.com/mdns/mdns-mm-lilith-mother-of-demons.webp",
           "abilities": [
             "Lilith gets +1[icon:attack] for each Bystander in the KO pile.",
             "Always Leads: Lilin",
@@ -604,7 +604,7 @@
           "slug": "epic-lilith",
           "tactic": false,
           "vAttack": "10+",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/LilithMotherofDemons_Epic.png",
+          "imageUrl": "https://images.barefootbetters.com/mdns/mdns-me-lilith-mother-of-demons.webp",
           "abilities": [
             "Lilith gets +2[icon:attack] for each Bystander in the KO pile.",
             "Always Leads: Lilin",
@@ -616,7 +616,7 @@
           "slug": "connoisseur-of-souls",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/LilithMotherofDemonsTactic1.png",
+          "imageUrl": "https://images.barefootbetters.com/mdns/mdns-mt-lilith-mother-of-demons-connoisseur-of-souls.webp",
           "abilities": [
             "Fight: You get +1[icon:recruit] for each Bystander in the KO pile.",
             "Then Lilith [keyword:Hunts for Victims]."
@@ -627,7 +627,7 @@
           "slug": "offer-of-corruption",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/LilithMotherofDemonsTactic3.png",
+          "imageUrl": "https://images.barefootbetters.com/mdns/mdns-mt-lilith-mother-of-demons-offer-of-corruption.webp",
           "abilities": [
             "Fight: Choose one:",
             "{\"points\":[[\"Gain a Wound and each other player KOs one of their Heroes, or\"],[\"KO one of your Heroes and each other player gains a Wound.\"]]}",
@@ -639,7 +639,7 @@
           "slug": "mesopotamian-demon-goddess",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/LilithMotherofDemonsTactic2.png",
+          "imageUrl": "https://images.barefootbetters.com/mdns/mdns-mt-lilith-mother-of-demons-mesopotamian-demon-goddess.webp",
           "abilities": [
             "Fight: Each other player may discard a card for each Bystander in the KO pile. Each of those players who didn't must gain a Wound instead.",
             "Then Lilith [keyword:Hunts for Victims]."
@@ -650,7 +650,7 @@
           "slug": "respawn-demonic-offspring",
           "tactic": true,
           "vAttack": 8,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/LilithMotherofDemonsTactic4.png",
+          "imageUrl": "https://images.barefootbetters.com/mdns/mdns-mt-lilith-mother-of-demons-respawn-demonic-offspring.webp",
           "abilities": [
             "Fight: The highest VP Lilin Villain from among all Victory Piles reenters the city. The player who had that Villain rescues three Bystanders.",
             "Then Lilith [keyword:Hunts for Victims].",
@@ -671,7 +671,7 @@
           "slug": "zarathos",
           "tactic": false,
           "vAttack": "7",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/Zarathos.png",
+          "imageUrl": "https://images.barefootbetters.com/mdns/mdns-mm-zarathos.webp",
           "abilities": [
             "Always Leads: The Fallen",
             "Master Strike: If any Heroes in the HQ are haunted, each player gains a Wound. Then if Zarathos is not already haunting, he [keyword:Haunts] the highest-cost unhaunted Hero in the HQ."
@@ -682,7 +682,7 @@
           "slug": "epic-zarathos",
           "tactic": false,
           "vAttack": "9",
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/Zarathos_Epic.png",
+          "imageUrl": "https://images.barefootbetters.com/mdns/mdns-me-zarathos.webp",
           "abilities": [
             "Always Leads: The Fallen",
             "Master Strike: If any Heroes in the HQ are haunted, each player gains a Wound. Then if Zarathos is not already haunting, he [keyword:Haunts] the highest-cost unhaunted Hero in the HQ. Then reveal the top card of the Villain Deck. If it's a Villain, it Haunts the highest cost unhaunted Hero in the HQ."
@@ -693,7 +693,7 @@
           "slug": "eruption-of-hellfire",
           "tactic": true,
           "vAttack": 7,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/ZarathosTactic3.png",
+          "imageUrl": "https://images.barefootbetters.com/mdns/mdns-mt-zarathos-eruption-of-hellfire.webp",
           "abilities": [
             "Fight: Zarathos [keyword:Haunts] the highest-cost unhaunted [hc:covert] and/or [hc:ranged] Hero in the HQ.",
             "Each other player discards a [hc:covert] or [hc:ranged] Hero or gains a Wound."
@@ -704,7 +704,7 @@
           "slug": "corrupted-spirit-of-vengeance",
           "tactic": true,
           "vAttack": 7,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/ZarathosTactic2.png",
+          "imageUrl": "https://images.barefootbetters.com/mdns/mdns-mt-zarathos-corrupted-spirit-of-vengeance.webp",
           "abilities": [
             "Fight: Zarathos [keyword:Haunts] the highest-cost unhaunted [hc:instinct] and/or [hc:covert] Hero in the HQ.",
             "Each other player discards a [hc:instinct] or [hc:covert] Hero or discards down to 3 cards."
@@ -715,7 +715,7 @@
           "slug": "imprison-in-the-soul-crystal",
           "tactic": true,
           "vAttack": 7,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/ZarathosTactic4.png",
+          "imageUrl": "https://images.barefootbetters.com/mdns/mdns-mt-zarathos-imprison-in-the-soul-crystal.webp",
           "abilities": [
             "Fight: Zarathos [keyword:Haunts] the highest-cost unhaunted [hc:strength] and/or [hc:instinct] Hero in the HQ.",
             "If you have a [hc:strength] or [hc:instinct] Hero, you may KO a Villain from your Victory Pile. If you do, draw cards equal to that Villain's VP."
@@ -726,7 +726,7 @@
           "slug": "demonic-essence-of-ghost-rider",
           "tactic": true,
           "vAttack": 7,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/ZarathosTactic1.png",
+          "imageUrl": "https://images.barefootbetters.com/mdns/mdns-mt-zarathos-demonic-essence-of-ghost-rider.webp",
           "abilities": [
             "Fight: Zarathos [keyword:Haunts] the highest-cost unhaunted [hc:ranged] and/or [hc:strength] Hero in the HQ.",
             "If you have a [hc:ranged] Hero, you may KO one of your Heroes.",

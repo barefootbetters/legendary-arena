@@ -588,7 +588,7 @@
           "slug": "supreme-intelligence-of-the-kree",
           "tactic": false,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/supreme-intelligence-of-the-kree-01.png",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-mm-supreme-intelligence-of-the-kree.webp",
           "abilities": [
             "Always Leads: Kree Starforce",
             "Master Strike: The Supreme Intelligence gains a [rule:Shard]. Then each player reveals their hand and discards each with cost equal to, and cost one higher than, the number of Shards on the Supreme Intelligence."
@@ -599,7 +599,7 @@
           "slug": "combined-knowledge-of-all-kree",
           "tactic": true,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/supreme-intelligence-of-the-kree-05.png",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-mt-supreme-intelligence-of-the-kree-combined-knowledge-of-all-kree.webp",
           "abilities": [
             "Fight: The Supreme Intelligence gains a [rule:Shard] for each Kree Villain in the city and/or the Escape Pile."
           ]
@@ -609,7 +609,7 @@
           "slug": "cosmic-omniscience",
           "tactic": true,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/supreme-intelligence-of-the-kree-04.png",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-mt-supreme-intelligence-of-the-kree-cosmic-omniscience.webp",
           "abilities": [
             "Fight: The Supreme Intelligence gains a [rule:Shard] for each Master Strike in the KO pile."
           ]
@@ -619,7 +619,7 @@
           "slug": "countermeasure-protocols",
           "tactic": true,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/supreme-intelligence-of-the-kree-03.png",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-mt-supreme-intelligence-of-the-kree-countermeasure-protocols.webp",
           "abilities": [
             "Fight: The Supreme Intelligence gains a [rule:Shard] for each Mastermind Tactic (including this one) in any player's Victory Pile."
           ]
@@ -629,7 +629,7 @@
           "slug": "guide-kree-evolution",
           "tactic": true,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/supreme-intelligence-of-the-kree-02.png",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-mt-supreme-intelligence-of-the-kree-guide-kree-evolution.webp",
           "abilities": [
             "Fight: The Supreme Intelligence and Kree Villains in the city each gain a [rule:Shard]."
           ]
@@ -648,7 +648,7 @@
           "slug": "thanos",
           "tactic": false,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/thanos-01.png",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-mm-thanos.webp",
           "abilities": [
             "Always Leads: Infinity Gems",
             "Thanos gets -2[icon:attack] for each Infinity Gem Artifact card controlled by any player.",
@@ -660,7 +660,7 @@
           "slug": "centuries-of-envy",
           "tactic": true,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/thanos-05.png",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-mt-thanos-centuries-of-envy.webp",
           "abilities": [
             "Fight: Each other player discards an Infinity Gem Artifact card they control."
           ]
@@ -670,7 +670,7 @@
           "slug": "god-of-death",
           "tactic": true,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/thanos-02.png",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-mt-thanos-god-of-death.webp",
           "abilities": [
             "Fight: Each other player reveals their hand and gains a Wound for each card that player has with the same card name as any card in Thanos' Bound Souls pile."
           ]
@@ -680,7 +680,7 @@
           "slug": "keeper-of-souls",
           "tactic": true,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/thanos-04.png",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-mt-thanos-keeper-of-souls.webp",
           "abilities": [
             "Fight: Gain a Hero from Thanos' Bound Souls pile. Then each other player puts a non-grey Hero from their discard pile into Thanos' Bound Souls pile."
           ]
@@ -690,7 +690,7 @@
           "slug": "the-mad-titan",
           "tactic": true,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/thanos-03.png",
+          "imageUrl": "https://images.barefootbetters.com/gotg/gotg-mt-thanos-the-mad-titan.webp",
           "abilities": [
             "Fight: Each other player reveals their hand and discards all cards with the same card name as any card in Thanos' Bound Souls pile."
           ]

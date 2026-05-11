@@ -699,7 +699,7 @@
           "slug": "uru-enchanted-iron-man",
           "tactic": false,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/uru-enchanted-iron-man-01-1.png",
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-mm-uru-enchanted-iron-man.webp",
           "abilities": [
             "Always Leads: The Mighty",
             "Command Strike: [keyword:Demolish] each player. Then stack this Strike next to Iron Man. Uru-Enchanted Iron Man has an [keyword:Uru-Enchanted Weapon] for each Strike stacked here."
@@ -710,7 +710,7 @@
           "slug": "armor-of-the-destroyer",
           "tactic": true,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/uru-enchanted-iron-man-02.png",
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-mt-uru-enchanted-iron-man-armor-of-the-destroyer.webp",
           "abilities": [
             "Fight: For each [hc:tech] Ally you have, [keyword:demolish] each other player."
           ]
@@ -720,7 +720,7 @@
           "slug": "pepper-potts-in-rescue-armor",
           "tactic": true,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/uru-enchanted-iron-man-03.png",
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-mt-uru-enchanted-iron-man-pepper-potts-in-rescue-armor.webp",
           "abilities": [
             "Fight: A Bystander from the Bystander Stack becomes a Command Strike that takes effect immediately."
           ]
@@ -730,7 +730,7 @@
           "slug": "quantum-inventions",
           "tactic": true,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/uru-enchanted-iron-man-04.png",
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-mt-uru-enchanted-iron-man-quantum-inventions.webp",
           "abilities": [
             "Fight: Draw two cards. Then, if you reveal a [hc:tech] card, draw two more cards."
           ]
@@ -740,7 +740,7 @@
           "slug": "repulsor-coils",
           "tactic": true,
           "vAttack": null,
-          "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/uru-enchanted-iron-man-05.png",
+          "imageUrl": "https://images.barefootbetters.com/fear/fear-mt-uru-enchanted-iron-man-repulsor-coils.webp",
           "abilities": [
             "Fight: Each other player reveals a [hc:tech] Ally or gains a Bindings."
           ]
