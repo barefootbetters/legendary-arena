@@ -1,8 +1,9 @@
-# EC-160 — Admin Billing Visibility (Execution Checklist)
+# EC-163 — Admin Billing Visibility (Execution Checklist)
 
 > **EC slot retarget:** Natural slot EC-110 collides with an existing
-> ad-hoc INFRA checklist (Validate Registry CI path fix, Done).
-> Retargeted to EC-160 (next free slot) per the locked numbering rule
+> ad-hoc INFRA checklist (Validate Registry CI path fix, Done);
+> EC-160 collides with WP-105 (Player Badges, Done 2026-05-15).
+> Retargeted to EC-163 (next free slot) per the locked numbering rule
 > in EC_INDEX.md.
 
 **Source:** docs/ai/work-packets/WP-110-admin-billing-visibility.md
