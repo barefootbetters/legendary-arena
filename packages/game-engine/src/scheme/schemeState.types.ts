@@ -18,4 +18,6 @@ export interface SchemeState {
   // Order is chronological (insertion order); no reshuffle in MVP.
   /** Resolved scheme-twist cards — append-only, chronological. */
   twistPile: CardExtId[];
+  /** FlatCard key for display data lookup (populated at setup, never mutated). */
+  baseCardId: CardExtId;
 }

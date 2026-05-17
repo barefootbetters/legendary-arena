@@ -350,7 +350,7 @@ export function buildInitialGameState(
     mastermind: mastermindState,
     // why: scheme runtime state holds the twist pile for resolved
     // scheme-twist cards. Separate from schemeSetupInstructions (D-2601).
-    scheme: { twistPile: [] },
+    scheme: { twistPile: [], baseCardId: findSchemeBaseCardId(config.schemeId, cardDisplayData) },
     // why: escaped pile is top-level because CityZone is a fixed 5-tuple
     // that cannot host named fields. Append-only, chronological order.
     escapedPile: [],
@@ -420,6 +420,29 @@ export function buildInitialGameState(
  */
 // why: WP-113 D-10014 single-detection-seam pattern; aggregate the
 // missing list into one message rather than emitting per-card noise.
+/**
+ * Finds the scheme card's ext_id in the card display data by prefix match.
+ *
+ * The scheme's qualified ID is "{setAbbr}/{schemeSlug}"; the corresponding
+ * FlatCard key is "{setAbbr}-scheme-{schemeSlug}-{cardSlug}". This helper
+ * scans cardDisplayData keys for the prefix match and returns the first hit.
+ * Returns an empty string when no scheme card was resolved (narrow test mocks).
+ */
+function findSchemeBaseCardId(
+  schemeId: string,
+  cardDisplayData: Readonly<Record<CardExtId, UICardDisplay>>,
+): CardExtId {
+  const slashIndex = schemeId.indexOf('/');
+  if (slashIndex === -1) return '' as CardExtId;
+  const setAbbr = schemeId.slice(0, slashIndex);
+  const schemeSlug = schemeId.slice(slashIndex + 1);
+  const prefix = `${setAbbr}-scheme-${schemeSlug}-`;
+  for (const key of Object.keys(cardDisplayData)) {
+    if (key.startsWith(prefix)) return key as CardExtId;
+  }
+  return '' as CardExtId;
+}
+
 function auditCardDisplayDataCompleteness(
   cardStats: Record<CardExtId, CardStatEntry>,
   cardDisplayData: Readonly<Record<CardExtId, UICardDisplay>>,

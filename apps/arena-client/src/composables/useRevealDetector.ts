@@ -9,7 +9,7 @@
  */
 
 import { ref, watch, type Ref } from 'vue';
-import type { UIState } from '@legendary-arena/game-engine';
+import type { UIState, UICardDisplay } from '@legendary-arena/game-engine';
 
 export type RevealDestination = 'city' | 'scheme-twist' | 'mastermind-strike' | 'bystander';
 
@@ -20,6 +20,8 @@ export interface RevealEvent {
   destination: RevealDestination;
   /** Timestamp for keying/deduplication. */
   timestamp: number;
+  /** Display data for the card to show in the overlay (image + abilities). */
+  display: UICardDisplay | null;
 }
 
 /**
@@ -65,21 +67,32 @@ function identifyReveal(previous: UIState, next: UIState): RevealEvent | null {
   // Check if a new villain appeared in the city
   const newCityCard = findNewCityCard(previous, next);
   if (newCityCard !== null) {
-    return { cardName: newCityCard, destination: 'city', timestamp };
+    return {
+      cardName: newCityCard.name,
+      destination: 'city',
+      timestamp,
+      display: newCityCard.display,
+    };
   }
 
-  // Check if a new scheme twist appeared
+  // Check if a new scheme twist appeared — show the scheme card's text
   if (next.scheme.twistPile.length > previous.scheme.twistPile.length) {
-    const newest = next.scheme.twistPile[next.scheme.twistPile.length - 1];
-    const name = newest?.display.name ?? 'Scheme Twist';
-    return { cardName: name, destination: 'scheme-twist', timestamp };
+    return {
+      cardName: next.scheme.display.name || 'Scheme Twist',
+      destination: 'scheme-twist',
+      timestamp,
+      display: next.scheme.display,
+    };
   }
 
-  // Check if a new mastermind strike appeared
+  // Check if a new mastermind strike appeared — show the mastermind card's text
   if (next.mastermind.strikePile.length > previous.mastermind.strikePile.length) {
-    const newest = next.mastermind.strikePile[next.mastermind.strikePile.length - 1];
-    const name = newest?.display.name ?? 'Master Strike';
-    return { cardName: name, destination: 'mastermind-strike', timestamp };
+    return {
+      cardName: next.mastermind.display.name || 'Master Strike',
+      destination: 'mastermind-strike',
+      timestamp,
+      display: next.mastermind.display,
+    };
   }
 
   // Check log for bystander reveal message
@@ -87,7 +100,7 @@ function identifyReveal(previous: UIState, next: UIState): RevealEvent | null {
     for (let logIndex = previous.log.length; logIndex < next.log.length; logIndex++) {
       const message = next.log[logIndex] ?? '';
       if (message.toLowerCase().includes('bystander')) {
-        return { cardName: 'Bystander', destination: 'bystander', timestamp };
+        return { cardName: 'Bystander', destination: 'bystander', timestamp, display: null };
       }
     }
   }
@@ -95,19 +108,24 @@ function identifyReveal(previous: UIState, next: UIState): RevealEvent | null {
   return null;
 }
 
+interface CityCardResult {
+  name: string;
+  display: UICardDisplay;
+}
+
 /**
- * Finds the name of a newly-appeared card in the city by comparing spaces.
+ * Finds a newly-appeared card in the city by comparing spaces.
  */
-function findNewCityCard(previous: UIState, next: UIState): string | null {
+function findNewCityCard(previous: UIState, next: UIState): CityCardResult | null {
   for (let slotIndex = 0; slotIndex < next.city.spaces.length; slotIndex++) {
     const prevSlot = previous.city.spaces[slotIndex] ?? null;
     const nextSlot = next.city.spaces[slotIndex] ?? null;
 
     if (nextSlot !== null && prevSlot === null) {
-      return nextSlot.display.name;
+      return { name: nextSlot.display.name, display: nextSlot.display };
     }
     if (nextSlot !== null && prevSlot !== null && nextSlot.extId !== prevSlot.extId) {
-      return nextSlot.display.name;
+      return { name: nextSlot.display.name, display: nextSlot.display };
     }
   }
   return null;

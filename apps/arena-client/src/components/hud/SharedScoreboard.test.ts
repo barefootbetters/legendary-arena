@@ -8,7 +8,7 @@ import SharedScoreboard from './SharedScoreboard.vue';
 test('SharedScoreboard renders five counters with the literal leaf-name aria-labels', () => {
   const wrapper = mount(SharedScoreboard, {
     props: {
-      scheme: { id: 'scheme-midtown-bank-robbery', twistCount: 2 },
+      scheme: { id: 'scheme-midtown-bank-robbery', twistCount: 2, twistPile: [], display: { extId: '', name: '', imageUrl: '', cost: null } },
       mastermind: {
         id: 'mastermind-doctor-octopus',
         tacticsRemaining: 3,
@@ -40,7 +40,7 @@ test('SharedScoreboard renders five counters with the literal leaf-name aria-lab
 test('SharedScoreboard carries data-emphasis="primary" exactly once (on bystandersRescued)', () => {
   const wrapper = mount(SharedScoreboard, {
     props: {
-      scheme: { id: 'scheme-midtown-bank-robbery', twistCount: 2 },
+      scheme: { id: 'scheme-midtown-bank-robbery', twistCount: 2, twistPile: [], display: { extId: '', name: '', imageUrl: '', cost: null } },
       mastermind: {
         id: 'mastermind-doctor-octopus',
         tacticsRemaining: 3,
@@ -68,7 +68,7 @@ test('SharedScoreboard carries data-emphasis="primary" exactly once (on bystande
 test('SharedScoreboard renders all five counters at lobby with zero values (no phase gating)', () => {
   const wrapper = mount(SharedScoreboard, {
     props: {
-      scheme: { id: 'scheme-placeholder', twistCount: 0 },
+      scheme: { id: 'scheme-placeholder', twistCount: 0, twistPile: [], display: { extId: '', name: '', imageUrl: '', cost: null } },
       mastermind: {
         id: 'mastermind-placeholder',
         tacticsRemaining: 0,

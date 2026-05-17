@@ -130,7 +130,7 @@ export default defineComponent({
       <template v-if="isPlayPhase && viewer !== null">
         <RevealOverlay
           :reveal="currentReveal"
-          :duration-ms="2000"
+          :duration-ms="4000"
           @dismiss="dismissReveal"
         />
         <section class="play-desktop__opponents" data-testid="play-desktop-opponents">

@@ -383,6 +383,7 @@ export function filterUIStateForAudience(
       id: uiState.scheme.id,
       twistCount: uiState.scheme.twistCount,
       twistPile: deepCopyDisplayEntries(uiState.scheme.twistPile),
+      display: { ...uiState.scheme.display },
     },
     economy,
     log: [...uiState.log],

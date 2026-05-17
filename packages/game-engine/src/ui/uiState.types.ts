@@ -80,6 +80,8 @@ export interface UICardDisplay {
   name: string;
   imageUrl: string;
   cost: number | null;
+  /** Card ability text lines from the registry. Always populated by the builder; optional so existing fixtures compile. */
+  abilities?: string[];
 }
 
 /**
@@ -280,6 +282,7 @@ export interface UISchemeState {
   id: string;
   twistCount: number;
   twistPile: UIDisplayEntry[];
+  display: UICardDisplay;
 }
 
 /**

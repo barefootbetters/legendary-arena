@@ -57,7 +57,9 @@
   },
   "scheme": {
     "id": "scheme-midtown-bank-robbery",
-    "twistCount": 2
+    "twistCount": 2,
+    "twistPile": [],
+    "display": { "extId": "", "name": "", "imageUrl": "", "cost": null }
   },
   "economy": {
     "attack": 4,

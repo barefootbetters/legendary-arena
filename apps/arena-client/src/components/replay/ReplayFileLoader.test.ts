@@ -31,8 +31,8 @@ function buildValidReplayBlob(): string {
         players: [],
         city: { spaces: [null, null, null, null, null] },
         hq: { slots: [null, null, null, null, null] },
-        mastermind: { id: 'm', tacticsRemaining: 0, tacticsDefeated: 0 },
-        scheme: { id: 's', twistCount: 0 },
+        mastermind: { id: 'm', tacticsRemaining: 0, tacticsDefeated: 0, display: { extId: '', name: '', imageUrl: '', cost: null }, attachedBystanders: [], strikePile: [] },
+        scheme: { id: 's', twistCount: 0, twistPile: [], display: { extId: '', name: '', imageUrl: '', cost: null } },
         economy: {
           attack: 0,
           recruit: 0,

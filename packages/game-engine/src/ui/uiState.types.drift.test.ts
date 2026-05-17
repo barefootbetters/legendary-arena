@@ -83,21 +83,17 @@ describe('UIState type drift (WP-067)', () => {
 });
 
 describe('UIState type drift (WP-111 / EC-118)', () => {
-  it('UICardDisplay has exactly the four locked fields', () => {
-    // why: WP-111 §Locked Values — UICardDisplay shape is `extId`,
-    // `name`, `imageUrl`, `cost: number | null`. Adding any field
-    // (e.g., `team`, `cardType`, `keywords`) is scope creep — separate
-    // WP required. The `satisfies` check fails at compile time on
-    // unexpected fields; the runtime keyset assertion catches widening
-    // that escapes type narrowing.
+  it('UICardDisplay has exactly the five locked fields', () => {
     const fixture = {
       extId: 'core-hero-black-widow-1',
       name: 'Mission Accomplished',
       imageUrl: 'https://images.barefootbetters.com/core/core-hero-black-widow-1.webp',
       cost: 2,
+      abilities: ['Draw a Card.'],
     } satisfies UICardDisplay;
 
     assert.deepStrictEqual(Object.keys(fixture).sort(), [
+      'abilities',
       'cost',
       'extId',
       'imageUrl',
@@ -106,7 +102,6 @@ describe('UIState type drift (WP-111 / EC-118)', () => {
   });
 
   it('UICardDisplay.cost accepts null (registry "no cost shown")', () => {
-    // why: PS-4 lock — null preserves the UX distinction from `0` ("free").
     const fixture: UICardDisplay = {
       extId: 'core-bystander-noop',
       name: 'No-Cost Card',
@@ -369,17 +364,16 @@ describe('UIState type drift (WP-128 / EC-131) — type pinning', () => {
     assert.equal(empty.count, 0);
   });
 
-  it('UISchemeState retains id + twistCount AND adds required twistPile', () => {
-    // why: WP-128 — additive extension; existing id + twistCount preserved
-    // verbatim. `twistPile: UIDisplayEntry[]` is required (safe-skip `[]`
-    // until a future WP adds `G.scheme.twistPile`).
+  it('UISchemeState retains id + twistCount + twistPile AND adds display', () => {
     const fixture: UISchemeState = {
       id: 'core/scheme-001',
       twistCount: 0,
       twistPile: [],
+      display: { extId: 'core-scheme-001', name: 'Test Scheme', imageUrl: '', cost: null, abilities: [] },
     };
 
     assert.deepStrictEqual(Object.keys(fixture).sort(), [
+      'display',
       'id',
       'twistCount',
       'twistPile',

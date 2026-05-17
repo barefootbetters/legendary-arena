@@ -36,6 +36,7 @@ function fixture(overrides: Partial<UIState['game']> = {}): UIState {
       id: 'core/capture-five-bystanders',
       twistCount: 2,
       twistPile: [],
+      display: { extId: '', name: '', imageUrl: '', cost: null },
     },
     economy: {
       attack: 0,

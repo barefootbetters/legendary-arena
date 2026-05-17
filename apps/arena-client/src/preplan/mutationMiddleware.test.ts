@@ -108,6 +108,7 @@ function makeUIState(overrides?: Partial<UIState>): UIState {
       id: 'core/midtown-bank-robbery',
       twistCount: 0,
       twistPile: [],
+      display: { extId: '', name: '', imageUrl: '', cost: null },
     },
     economy: {
       attack: 0,

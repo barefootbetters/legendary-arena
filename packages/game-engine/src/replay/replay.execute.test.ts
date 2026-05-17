@@ -60,7 +60,8 @@ import { makeMockCtx } from '../test/mockCtx.js';
 // initialized as [] changes the JSON-encoded structure hash.
 // why: adding cardStats entries for starting-shield-agent and
 // starting-shield-trooper changed the initial state hash (01.5 cascade).
-const PRE_WP080_HASH = '6228d103';
+// why: scheme.baseCardId added to G.scheme (01.5 cascade)
+const PRE_WP080_HASH = 'f472b913';
 
 /**
  * Minimal mock registry for replay tests. Mirrors replay.verify.test.ts.

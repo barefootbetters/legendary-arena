@@ -51,6 +51,7 @@ function snapshot(): UIState {
       id: 'core/capture-five-bystanders',
       twistCount: 0,
       twistPile: [],
+      display: { extId: '', name: '', imageUrl: '', cost: null },
     },
     economy: {
       attack: 0,

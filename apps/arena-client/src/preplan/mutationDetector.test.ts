@@ -61,6 +61,7 @@ function makeUIState(overrides?: Partial<UIState>): UIState {
       id: 'core/midtown-bank-robbery',
       twistCount: 0,
       twistPile: [],
+      display: { extId: '', name: '', imageUrl: '', cost: null },
     },
     economy: {
       attack: 0,
@@ -299,6 +300,7 @@ describe('detectPlayerAffectingMutations', () => {
         twistPile: [
           { extId: 'core/scheme-twist', display: { extId: 'core/scheme-twist', name: 'Scheme Twist', imageUrl: '', cost: null } },
         ],
+        display: { extId: '', name: '', imageUrl: '', cost: null },
       },
     });
 

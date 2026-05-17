@@ -103,6 +103,8 @@ interface DisplayDataFlatCard {
   imageUrl: string;
   /** Hero recruit cost. Undefined for non-hero card types. */
   cost?: string | number | undefined;
+  /** Card ability text lines from the registry. */
+  abilities?: string[];
 }
 
 /**
@@ -126,6 +128,8 @@ interface DisplayDataHeroCardEntry {
   imageUrl?: string;
   /** Per-card recruit cost; raw from registry. Null/undefined → "no cost shown". */
   cost?: string | number | null | undefined;
+  /** Card ability text lines from the registry. */
+  abilities?: string[];
 }
 
 /**
@@ -346,6 +350,7 @@ export function buildCardDisplayData(
         name: heroFlatCard.name,
         imageUrl: heroFlatCard.imageUrl,
         cost: parseCostNullable(heroFlatCard.cost),
+        abilities: heroFlatCard.abilities ?? [],
       };
     }
   }
@@ -374,6 +379,7 @@ export function buildCardDisplayData(
         const name = cardEntry !== null && typeof cardEntry.name === 'string' ? cardEntry.name : '';
         const cost = cardEntry !== null ? parseCostNullable(cardEntry.cost ?? null) : null;
         const imageUrl = physicalCard.imageUrl;
+        const abilities = Array.isArray(cardEntry?.abilities) ? cardEntry.abilities : [];
         const baseExtId = `${parsed.setAbbr}/${parsed.slug}/${canonicalSlug}`;
         for (let copyIndex = 0; copyIndex < physicalCard.count; copyIndex++) {
           const extId = `${baseExtId}#${copyIndex}` as CardExtId;
@@ -385,6 +391,7 @@ export function buildCardDisplayData(
             name,
             imageUrl,
             cost,
+            abilities: [...abilities],
           };
         }
       }
@@ -406,6 +413,7 @@ export function buildCardDisplayData(
         const name = typeof heroCardEntry.name === 'string' ? heroCardEntry.name : '';
         const imageUrl = typeof heroCardEntry.imageUrl === 'string' ? heroCardEntry.imageUrl : '';
         const cost = parseCostNullable(heroCardEntry.cost ?? null);
+        const abilities = Array.isArray(heroCardEntry.abilities) ? heroCardEntry.abilities : [];
         for (let copyIndex = 0; copyIndex < copyCount; copyIndex++) {
           const extId = `${baseExtId}#${copyIndex}` as CardExtId;
           // why: per-copy fresh object literal — no aliasing across keys
@@ -414,6 +422,7 @@ export function buildCardDisplayData(
             name,
             imageUrl,
             cost,
+            abilities: [...abilities],
           };
         }
       }
@@ -446,6 +455,7 @@ export function buildCardDisplayData(
         name: matchingFlatCard.name,
         imageUrl: matchingFlatCard.imageUrl,
         cost: parseCostNullable(villainCard.vAttack),
+        abilities: matchingFlatCard.abilities ?? [],
       };
     }
   }
@@ -479,6 +489,7 @@ export function buildCardDisplayData(
         name: groupName,
         imageUrl: groupImageUrl,
         cost: groupCost,
+        abilities: [],
       };
     }
   }
@@ -507,8 +518,30 @@ export function buildCardDisplayData(
           name: matchingFlatCard.name,
           imageUrl: matchingFlatCard.imageUrl,
           cost: parseCostNullable(baseCardEntry.vAttack ?? null),
+          abilities: matchingFlatCard.abilities ?? [],
         };
       }
+    }
+  }
+
+  // --- 5. Scheme card (FlatCard supplies name/imageUrl/abilities) ---
+  const schemeParsed = parseQualifiedIdForSetup(matchConfig.schemeId);
+  if (schemeParsed !== null) {
+    const schemeFlatCards = filterFlatCardsByType(allFlatCards, 'scheme');
+    const schemeCard = findSchemeCard(
+      schemeFlatCards,
+      schemeParsed.setAbbr,
+      schemeParsed.slug,
+    );
+    if (schemeCard !== undefined) {
+      const extId = schemeCard.key as CardExtId;
+      result[extId] = {
+        extId,
+        name: schemeCard.name,
+        imageUrl: schemeCard.imageUrl,
+        cost: null,
+        abilities: schemeCard.abilities ?? [],
+      };
     }
   }
 
@@ -779,4 +812,22 @@ function findCardEntryBySlug(
     if (cardEntry.slug === slug) return cardEntry;
   }
   return null;
+}
+
+/**
+ * Finds the first scheme FlatCard matching the given set + slug.
+ *
+ * Scheme FlatCard key format: {setAbbr}-scheme-{schemeSlug}-{cardSlug}.
+ * Prefix-matches on "{setAbbr}-scheme-{schemeSlug}-" to find the card.
+ */
+function findSchemeCard(
+  schemeFlatCards: DisplayDataFlatCard[],
+  setAbbr: string,
+  schemeSlug: string,
+): DisplayDataFlatCard | undefined {
+  const prefix = `${setAbbr}-scheme-${schemeSlug}-`;
+  for (const card of schemeFlatCards) {
+    if (card.key.startsWith(prefix)) return card;
+  }
+  return undefined;
 }

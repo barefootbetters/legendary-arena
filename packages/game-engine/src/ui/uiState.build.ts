@@ -75,6 +75,7 @@ export const UNKNOWN_DISPLAY_PLACEHOLDER: UICardDisplay = {
   name: '<unknown>',
   imageUrl: '',
   cost: null,
+  abilities: [],
 };
 
 // why: every projection-time read of G.cardDisplayData[extId] MUST
@@ -457,10 +458,12 @@ export function buildUIState(
     gameState.scheme.twistPile,
     gameState,
   );
+  const schemeCardId = gameState.scheme.baseCardId ?? '';
   const scheme = {
     id: gameState.selection.schemeId,
     twistCount,
     twistPile: schemeTwistPile,
+    display: resolveDisplay(schemeCardId, gameState),
   };
 
   // --- 7. Project economy ---

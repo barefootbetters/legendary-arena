@@ -253,6 +253,7 @@ export type {
   UIGameOverState,
   UIProgressCounters,
   UIParBreakdown,
+  UICardDisplay,
 } from './ui/uiState.types.js';
 export { buildUIState } from './ui/uiState.build.js';
 
