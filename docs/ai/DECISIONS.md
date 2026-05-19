@@ -17524,4 +17524,235 @@ Authentication).
 
 ---
 
+### D-16301 — Server is the sole source of match progression; rewinds are client-side visual only (WP-163)
+
+**Decision:** During an autoplay match, the boardgame.io server remains the only authority on match progression. Step-back and restart are client-side visual rewinds delivered via REST response only — they do NOT roll back the authoritative `G` / `ctx` in the boardgame.io state machine. The bot loop stays paused at its current real position during a rewind; when the user resumes or steps forward past the latest snapshot, execution continues from where the bot actually is, not from the rewound view. Any real broadcast on the existing Socket.IO transport that arrives after a rewind overwrites the injected client state unconditionally — there is no client-side reconciliation logic.
+
+**Rationale.**
+- **Persistence rules forbid the alternative.** Rolling back `G` / `ctx` on the server would require either re-running the engine from a stored snapshot (not supported by boardgame.io's `InMemory` adapter) or persisting a runtime-state buffer — both violate `ARCHITECTURE.md §Persistence Boundaries` and Class 1 Runtime State rules in `.claude/skills/legendary-persistence/SKILL.md`.
+- **Single-authority avoids dual-write races.** A spectator stepping back while the bot loop is paused, then resuming, must not produce a state that diverges from what the server actually computed. By keeping the rewind purely on the client, the server's view stays canonical and the next live broadcast is correct by construction.
+- **MOVE_LOG_FORMAT.md Gap #4 closes the only path forward.** `replayGame()` exists but hardwires a reverse-shuffle and ignores the stored seed, so it cannot reproduce a live match's seeded `ctx.random.*` outcomes. Until that gap is closed, no server-side rewind is feasible.
+
+**Rejected alternatives:**
+- **Snapshot the engine state on the server and `setState` back to it.** Rejected — boardgame.io does not expose a public `setState` API; even with internals access, this would mutate `G` / `ctx` outside the move pipeline, violating the engine-as-truth invariant.
+- **Replay from a stored seed.** Rejected — see Gap #4 above; the deterministic replay harness ignores the stored seed.
+- **Maintain a parallel "rewind state" on the server and broadcast it via `transport.pubSub`.** Rejected — dual-state on the server is worse than dual-state on the client, because every other consumer of the boardgame.io broadcast (game logic, future spectators, debugging tools) would have to learn to ignore the fake rewind broadcasts.
+
+**Packet:** WP-163.
+
+**Introduced:** WP-163 (drafted 2026-05-19)
+**Status:** Active
+
+---
+
+### D-16302 — Cursor-based history (not pop-based); `maxHistory = 100` (WP-163)
+
+**Decision:** The `PlaybackController` maintains state history as `stateHistory: PlaybackStateSnapshot[]` with a numeric `cursor`, NOT a destructive stack. `pushState(snapshot)` appends and sets `cursor = stateHistory.length - 1`. `stepBack()` decrements the cursor without removing entries. `stepForward()` at `cursor < stateHistory.length - 1` advances the cursor only (cursor move); at `cursor === stateHistory.length - 1` while paused executes one real bot move via the normal bot-loop path. `restart()` sets `cursor = 0`. Buffer cap: `maxHistory = 100` entries; pushes past the cap shift the oldest entry.
+
+**Rationale.**
+- **Step-back must not destroy state.** A spectator who steps back twice and then steps forward twice should land at the same view. A pop-based history loses entries on step-back and can't satisfy this.
+- **Cursor model maps naturally to media-player UX.** Users expect ⏪ and ⏩ to be reversible without thinking about whether they've crossed a destructive threshold.
+- **`100` is empirically right for autoplay watching.** At ~800 ms / move (the default delay) and ~30 moves per turn at peak, 100 snapshots ≈ 3 turns of real-time history — enough for a spectator to scrub back through a critical reveal without unbounded memory growth.
+
+**Rejected alternatives:**
+- **Pop-based stack.** Rejected — see "step-back must not destroy state" above.
+- **Unbounded history.** Rejected — long autoplay matches (hundreds of moves) would balloon memory; `structuredClone`'d `G` snapshots are not free.
+- **Larger cap (e.g., `500`).** Rejected as MVP — 100 is sufficient for the spectator UX and four times smaller in memory; raise the cap in a follow-up WP if usage data justifies it.
+
+**Packet:** WP-163.
+
+**Introduced:** WP-163 (drafted 2026-05-19)
+**Status:** Active
+
+---
+
+### D-16303 — Rewind delivery via REST response body, never `transport.pubSub` (WP-163)
+
+**Decision:** Endpoints that produce a visual rewind (`step-back`, `restart`, and conditional `step-forward`) return the rewound `uiState` in the REST response body. They MUST NOT call `transport.pubSub` to broadcast the rewound state. The client applies the returned `uiState` directly via `useUiStateStore.setSnapshot(uiState)`. Socket.IO continues to carry only real engine broadcasts.
+
+**Rationale.**
+- **Single ingestion path eliminates dual-path desync.** If both REST and Socket.IO could inject `uiState`, the client would need reconciliation logic to decide which to trust under racing conditions. Locking rewind to REST and live state to Socket.IO makes the rule trivial: live always wins, because it's the next thing the existing transport will deliver.
+- **No new broadcast format.** Reusing `pubSub` would require either inventing a "fake broadcast" payload (which other transport consumers must learn to ignore) or sending a real-looking broadcast that lies about engine state. Both are worse than returning the snapshot inline.
+- **REST is the natural shape for a request-driven action.** The user clicked ⏪; the response is what they're stepping back to. No need for a second channel.
+
+**Rejected alternatives:**
+- **Broadcast rewind via `transport.pubSub`.** Rejected — see "single ingestion path" above; introduces dual-path desync risk that this design specifically eliminates.
+- **Open a second WebSocket channel for playback events.** Rejected — adds a new transport surface for a feature that fits cleanly into a REST round-trip.
+
+**Packet:** WP-163.
+
+**Introduced:** WP-163 (drafted 2026-05-19)
+**Status:** Active
+
+---
+
+### D-16304 — Standardized `AutoplayControlResponse` envelope; closed Endpoint Behavior Matrix (WP-163)
+
+**Decision:** All six playback endpoints return the same TypeScript envelope:
+
+```ts
+type AutoplayControlResponse = {
+  ok: boolean;
+  paused: boolean;
+  historyLength: number;
+  cursor: number;
+  mode: 'live' | 'rewind';
+  uiState?: UIState;
+  error?: string;
+};
+```
+
+`mode` is present on every response (200 and error). It is computed by the controller's `getMode()` method as `cursor === stateHistory.length - 1 ? 'live' : 'rewind'`. Endpoint handlers MUST NOT recompute the predicate inline — they read it from the controller via the centralized `buildResponse()` helper.
+
+The presence of `uiState` and the post-success `mode` are locked by the following matrix (verbatim — do not paraphrase):
+
+| Endpoint       | Returns `uiState` | `mode` after success |
+|----------------|-------------------|----------------------|
+| `pause`        | No                | unchanged from prior |
+| `resume`       | No                | `'live'` (cursor forced to latest by `pushState` invariant) |
+| `step-forward` | Conditional — YES when only the cursor advanced; NO when a real bot move executed | derived from cursor position after the call |
+| `step-back`    | Yes               | `'rewind'` (cursor < latest) |
+| `restart`      | Yes               | `'rewind'` when latest > 0; `'live'` when only the initial snapshot exists |
+| `go-to-end`    | No                | `'live'` |
+
+**Rationale.**
+- **One envelope is easier to consume than six.** The client's playback service has one parse path and one response handler. Every endpoint contributes the same control-state telemetry (`paused`, `cursor`, `historyLength`, `mode`) so the control bar's disabled-state machine has consistent input.
+- **`mode` eliminates client-side predicate duplication.** Without a server-provided `mode`, every client would compute `cursor === historyLength - 1 ? 'live' : 'rewind'` itself. Centralizing the predicate on the server makes the contract unambiguous and prevents subtle bugs from off-by-one drift on the client.
+- **Conditional `uiState` on `step-forward` is the only complexity.** Step-forward is the only endpoint that can produce either a cursor move (visual) or a real bot move (server-authoritative). Making `uiState` conditional avoids returning a fake / duplicated snapshot when the real move is what advances state.
+- **Closed matrix prevents drift.** Without an explicit matrix, future endpoints (or refactors) could inconsistently return `uiState`; the client would then need defensive logic. The matrix is the contract.
+
+**Rejected alternatives:**
+- **Per-endpoint response shapes.** Rejected — would force the client to parse six different envelopes and merge control-state telemetry.
+- **Always return `uiState`.** Rejected — would require building and broadcasting a `uiState` for `pause` / `resume` / `go-to-end` where the engine hasn't moved; redundant work, possibly stale, and confusing semantics.
+- **Never return `uiState` (use a separate `GET` to fetch the rewound view).** Rejected — two round-trips for one user action; UI shows a stale view between the rewind POST and the snapshot GET.
+- **Client computes `mode` from `cursor` and `historyLength`.** Rejected — duplicates the predicate across clients; opens an off-by-one drift surface (e.g., when `historyLength` is 0 on a freshly-created controller, what is `mode`?); centralizing on the server keeps the answer authoritative and consistent.
+
+**Packet:** WP-163.
+
+**Introduced:** WP-163 (drafted 2026-05-19)
+**Status:** Active
+
+---
+
+### D-16305 — `PlaybackStateSnapshot` shape locked to `{ G, ctx: { phase, turn, currentPlayer } }` (WP-163)
+
+**Decision:** Snapshots stored in the cursor-based history are exactly:
+
+```ts
+type PlaybackStateSnapshot = {
+  G: any;
+  ctx: { phase: string; turn: number; currentPlayer: string };
+};
+```
+
+No other `ctx` fields are stored. `G` and the three `ctx` fields are both produced via `structuredClone` at push time. The three fields are precisely what `buildUIState(G, ctx)` requires to produce a `UIState` for client injection.
+
+**Rationale.**
+- **Minimal surface = minimal drift risk.** Storing the full `ctx` object would invite future code to depend on fields that are framework-internal and may change shape with boardgame.io updates.
+- **`buildUIState` is the only consumer.** The snapshot's only purpose is to feed `buildUIState`, which accepts a synthesized context object with these three fields. Anything else is dead weight.
+- **`structuredClone` is sufficient for `G`.** `G` is JSON-serializable per project invariants (no functions, Maps, Sets, or classes); `structuredClone` is the deterministic, dependency-free way to detach the snapshot from live mutation.
+
+**Rejected alternatives:**
+- **Store the full boardgame.io `ctx`.** Rejected — exposes the snapshot to framework-internal churn; adds bytes; tempts future code to read `ctx._random.state` or similar internals.
+- **Store only `G`, reconstruct `ctx` from G at rewind time.** Rejected — `ctx.phase`, `ctx.turn`, `ctx.currentPlayer` are derived independently in boardgame.io; reconstructing them from `G` would couple the playback layer to engine internals.
+- **JSON-stringify / parse instead of `structuredClone`.** Rejected — slower, lossy on `undefined`, and unnecessary now that Node v22 has `structuredClone` built in.
+
+**Packet:** WP-163.
+
+**Introduced:** WP-163 (drafted 2026-05-19)
+**Status:** Active
+
+---
+
+### D-16306 — Playback buffer is Class 1 Runtime State (WP-163)
+
+**Decision:** The `stateHistory` buffer maintained by each `PlaybackController` is Class 1 Runtime State per `.claude/skills/legendary-persistence/SKILL.md`. It MUST NOT be written to PostgreSQL, Redis, the filesystem, log files, or any caching layer. It exists in process memory only. On server restart it is lost — acceptable, because boardgame.io's `InMemory` storage adapter (per `MOVE_LOG_FORMAT.md §Known Gaps #1`) already loses the entire match state on restart.
+
+**Rationale.**
+- **Snapshots contain `G`, which is runtime-only.** `G` is never persisted; the playback buffer is just a sequence of cloned `G` states. Persisting it would violate the core persistence boundary at the layer-cake level — every layer of the architecture forbids storing `G`.
+- **Not a `MatchSnapshot`.** `MatchSnapshot` (per WP-013) is a derived audit record holding counts and metadata, not live state. Calling the playback buffer a snapshot would mislead future readers about its lifetime and purpose.
+- **Not a `ReplayInput`.** `ReplayInput` (per WP-027) is a test-only determinism contract. The playback buffer is not deterministic input; it's a sample of past outputs.
+- **Not a `LogEntry`.** `LogEntry` is a boardgame.io-framework-internal diagnostic, never read by this repo.
+
+**Rejected alternatives:**
+- **Persist the buffer to Redis for cross-restart playback.** Rejected — see "snapshots contain `G`" above; persisting `G` is a Class 1 violation regardless of which store is used.
+- **Write the buffer to a file for offline replay analysis.** Rejected — same violation, plus introduces a filesystem write path that the autoplay layer doesn't otherwise have.
+- **Log snapshots as structured events for telemetry.** Rejected — same violation, plus would balloon log volume by the size of `G` × the move count.
+
+**Packet:** WP-163.
+
+**Introduced:** WP-163 (drafted 2026-05-19)
+**Status:** Active
+
+---
+
+### D-16307 — Race-safe pause via single `resumeResolver` promise; `stepMode` flag (WP-163)
+
+**Decision:** Pause is implemented by having `waitIfPaused()` `await` a fresh `Promise` whose resolver is stored at module-scope as `resumeResolver`. `resume()` and `stepForward()` resolve this promise (`resume()` clears `stepMode`; `stepForward()` sets it). When the promise resolves, `waitIfPaused()` checks `stepMode`: if true, it flips `isPaused = true` and clears `stepMode`, so the bot loop pauses again after exactly one move. `goToEnd()` resolves the promise without setting `stepMode` and additionally sets `delayOverride = 10` ms so subsequent loop iterations run at near-zero delay.
+
+**Rationale.**
+- **Single-resolver pattern handles back-to-back pauses safely.** If two pauses happen between resume signals, the second `waitIfPaused()` call sees `isPaused = true` and awaits a fresh promise; the prior resolver is overwritten cleanly because it has already fired.
+- **`stepMode` is a flag, not a counter.** Step-forward releases exactly one move; the next `waitIfPaused()` re-pauses. Using a counter would invite off-by-one bugs around what happens when a real broadcast lands mid-step.
+- **`delayOverride = 10` ms (not `0`) yields to the event loop.** Setting the delay to literal zero risks starving I/O (Socket.IO broadcasts, REST handlers) on a single-threaded Node process. 10 ms is fast enough to feel instant while preserving event-loop fairness.
+
+**Rejected alternatives:**
+- **Mutex / async-lock library.** Rejected — adds a dependency for a problem solvable with a single Promise.
+- **Counter-based `stepMode` (e.g., `pendingSteps`).** Rejected — see "flag, not counter" above; counter semantics are tempting but allow accidental "step forward 5" calls to leak through if the UI button is held.
+- **`setTimeout(..., 0)` instead of `await delay(10)` for go-to-end.** Rejected — `setTimeout(0)` is colloquial but actually clamped to ~4 ms after a few nested calls in Node; explicit 10 ms is honest.
+
+**Packet:** WP-163.
+
+**Introduced:** WP-163 (drafted 2026-05-19)
+**Status:** Active
+
+---
+
+### D-16308 — Controller lifecycle bound to `runBotMatch` (WP-163)
+
+**Decision:** Each `PlaybackController` is created at autoplay match start (immediately after the match is created by the lobby API and `runBotMatch` is dispatched). The controller is stored in a module-level `autoplayControllers: Map<string, PlaybackController>` keyed by `matchId`. The controller MUST be deleted from the Map on every exit path of `runBotMatch`: normal completion (game over), max-turn cap hit, and the `catch` branch of any error. Failure to clean up the Map entry is a memory leak — process memory grows monotonically across the lifetime of the server.
+
+**Rationale.**
+- **No client to confirm shutdown.** Unlike a WebSocket connection (which boardgame.io's transport already cleans up on disconnect), the playback controller is server-owned. Nothing else will reap it.
+- **`runBotMatch` is the only place that knows when a match is done.** The endpoints can't tell — they don't know about completion. The bot loop's exit conditions are the only authoritative signal.
+- **The `catch` path is the easy one to miss.** A throw inside the bot loop is the failure mode where forgetting cleanup hurts most, because the controller's `stateHistory` may now hold the largest accumulated buffer.
+
+**Rejected alternatives:**
+- **WeakMap keyed by some match object.** Rejected — there's no long-lived match object owned by autoplay code; `matchId` is the natural key.
+- **TTL-based eviction (e.g., delete after 1 hour of no activity).** Rejected — works as a backstop but doesn't address the leak in the failure path, which can ship many controllers in seconds.
+- **No cleanup; rely on process restart.** Rejected — long-running production servers don't restart often; a single bot-loop crash bug could leak indefinitely.
+
+**Packet:** WP-163.
+
+**Introduced:** WP-163 (drafted 2026-05-19)
+**Status:** Active
+
+---
+
+### D-16309 — Single-consumer controller concurrency model (WP-163)
+
+**Decision:** The `PlaybackController` is single-consumer. Only one `waitIfPaused()` Promise may be in-flight at any time. Concurrent HTTP requests touching the same controller (e.g., a rapid `pause` → `stepForward` → `resume` burst from a flaky network, or a debounce-bug double-click on the spectator's UI) follow last-write-wins semantics: the most recent state-mutating call overwrites the prior intent. No mutex, no queue, no per-request locking.
+
+Specific behaviors locked by this decision:
+- A `pause()` arriving while `waitIfPaused()` is already awaiting overwrites the prior `resumeResolver` reference; the abandoned Promise resolves on the next `resume()` / `stepForward()` and the bot loop sees one release. Behaviorally indistinguishable from a single pause / resume pair.
+- A `goToEnd()` followed immediately by a `pause()` clears `playbackDelayOverride` back to `null` (this is the `pause()` cleanup path, not a separate concurrency rule).
+- A `stepForward()` arriving while `resumeResolver` is set but `stepMode` is false (e.g., during a `resume()` that hasn't taken effect yet) resolves the Promise with `stepMode = true`; the bot loop's `waitIfPaused()` sees the step-mode flag after release and re-pauses. Behaviorally indistinguishable from a clean pause → step.
+- Two concurrent `pause()` calls: the second overwrites the first. The first's Promise is orphaned but harmless (it resolves on the next release; the bot loop's `await waitIfPaused()` only awaits the most recent one because each call constructs a fresh `await`).
+
+**Rationale.**
+- **Each controller has exactly one logical consumer.** The spectator's playback UI is the only thing legitimately driving the controller. Concurrent abuse implies either (a) a bug on the client (which should be fixed there) or (b) intentional misuse (which is acceptable to produce undefined ordering).
+- **A mutex / queue is over-engineering for the failure mode.** The "concurrent" requests in question are sub-100ms apart; the worst-case outcome with last-write-wins is "the bot didn't advance a single move when the user mashed three buttons in 50ms" — annoying, but not catastrophic.
+- **The single-Promise pattern in `waitIfPaused()` is already structurally last-write-wins.** Formalizing this as a decision documents what the code does instead of treating it as a hidden invariant.
+
+**Rejected alternatives:**
+- **Per-controller `async-mutex` (or equivalent).** Rejected — adds a dependency for a problem solvable by the single-Promise pattern. Mutex acquisition costs > the user-perceived value of strict ordering.
+- **Queue of pending intents.** Rejected — introduces ordering ambiguity worse than last-write-wins, because "queue order" diverges from "request arrival order" under network retries; the queue becomes a separate state-machine that itself can race.
+- **Reject concurrent requests with `409 Locked`.** Rejected — turns a UI race into a visible error; the spectator's UI would have to retry, and the retry could itself race.
+
+**Packet:** WP-163.
+
+**Introduced:** WP-163 (drafted 2026-05-19)
+**Status:** Active
+
+---
+
 Protect this file.
