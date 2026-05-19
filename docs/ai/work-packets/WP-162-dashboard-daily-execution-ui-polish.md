@@ -1,9 +1,9 @@
-# WP-161 — Dashboard Daily Execution Panel + UI Polish
+# WP-162 — Dashboard Daily Execution Panel + UI Polish
 
 **Status:** Draft
 **Primary Layer:** Client (`apps/dashboard`)
 **Dependencies:** WP-157 (Dashboard Scaffold) — Done 2026-05-16
-**EC:** EC-175
+**EC:** EC-176
 **Baseline:** `origin/main` at time of execution
 
 ---
@@ -57,7 +57,7 @@ server, registry, or cross-layer contract changes are involved.
 - `.claude/rules/code-style.md`
 - `docs/ops/DASHBOARD-REQUIREMENTS.md` (§5 Widget Contract, §11
   Daily Checklist, §12 UI Design)
-- This WP (WP-161)
+- This WP (WP-162)
 - EC (assigned at execution time)
 - `docs/ai/REFERENCE/00.6-code-style.md`
 
@@ -96,8 +96,8 @@ server, registry, or cross-layer contract changes are involved.
 
 ### Governance
 
-- `docs/ai/DECISIONS.md` — D-16101 through D-16103
-- `docs/ai/work-packets/WORK_INDEX.md` — add WP-161 row
+- `docs/ai/DECISIONS.md` — D-16201 through D-16203
+- `docs/ai/work-packets/WORK_INDEX.md` — add WP-162 row
 - `docs/ai/execution-checklists/EC_INDEX.md` — add EC row
 
 ## Scope (Out)
@@ -285,9 +285,9 @@ provider.
 
 | Item | Value | Decision |
 |---|---|---|
-| Checklist storage | localStorage per user per day | D-16101 |
-| Default theme | Dark (Aura dark preset) | D-16102 |
-| Responsive sidebar collapse | 768px breakpoint | D-16103 |
+| Checklist storage | localStorage per user per day | D-16201 |
+| Default theme | Dark (Aura dark preset) | D-16202 |
+| Responsive sidebar collapse | 768px breakpoint | D-16203 |
 | Checklist item set | 9 items (4 content + 3 community + 2 growth) | DASHBOARD-REQUIREMENTS.md §11 |
 | Card structure | Header/body/footer pattern | DASHBOARD-REQUIREMENTS.md §12 |
 
@@ -418,8 +418,8 @@ pnpm -r build
     freshness)
 15. `useDailyChecklist.test.ts` passes all 7 required tests
 16. Zero imports from `@legendary-arena/*` workspace packages
-17. `docs/ai/DECISIONS.md` updated (D-16101 through D-16103)
-18. `docs/ai/work-packets/WORK_INDEX.md` updated with WP-161 row
+17. `docs/ai/DECISIONS.md` updated (D-16201 through D-16203)
+18. `docs/ai/work-packets/WORK_INDEX.md` updated with WP-162 row
 
 ---
 
@@ -427,9 +427,9 @@ pnpm -r build
 
 | ID | Decision | Rationale |
 |----|----------|-----------|
-| D-16101 | Daily checklist persists in localStorage per user per day; no server-side storage | Team is 1-3 people; server persistence adds API endpoints and migration for negligible benefit. Revisit if team grows beyond 3. |
-| D-16102 | Default dashboard theme is dark (Aura dark preset) | Ops tools used for extended periods benefit from reduced eye strain. Light mode available via toggle. |
-| D-16103 | Sidebar collapses at 768px; hides at <768px | Matches common dashboard responsive patterns. Dashboard is not mobile-optimized (§11 of requirements doc). |
+| D-16201 | Daily checklist persists in localStorage per user per day; no server-side storage | Team is 1-3 people; server persistence adds API endpoints and migration for negligible benefit. Revisit if team grows beyond 3. |
+| D-16202 | Default dashboard theme is dark (Aura dark preset) | Ops tools used for extended periods benefit from reduced eye strain. Light mode available via toggle. |
+| D-16203 | Sidebar collapses at 768px; hides at <768px | Matches common dashboard responsive patterns. Dashboard is not mobile-optimized (§11 of requirements doc). |
 
 ---
 

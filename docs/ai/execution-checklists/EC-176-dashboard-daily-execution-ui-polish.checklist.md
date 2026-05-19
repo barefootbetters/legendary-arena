@@ -1,6 +1,6 @@
-# EC-175 — Dashboard Daily Execution Panel + UI Polish (Execution Checklist)
+# EC-176 — Dashboard Daily Execution Panel + UI Polish (Execution Checklist)
 
-**Source:** docs/ai/work-packets/WP-161-dashboard-daily-execution-ui-polish.md
+**Source:** docs/ai/work-packets/WP-162-dashboard-daily-execution-ui-polish.md
 **Layer:** Client (`apps/dashboard`)
 
 ## Before Starting
@@ -20,7 +20,7 @@
 - Design tokens: `--p-surface-card`, `--p-surface-border`, `--p-text-color`, `--p-text-muted-color`, `--p-primary-color`
 - Sidebar breakpoints: full at >= 1200px; collapsed (60px, icons) at 768-1199px; hidden at < 768px
 - Completion badge: `"Daily: N/M complete"` in panel header, right-aligned
-- Decisions: D-16101 through D-16103
+- Decisions: D-16201 through D-16203
 
 ## Guardrails
 - Zero imports from `@legendary-arena/(game-engine|registry|preplan|server)` or `boardgame.io`
@@ -55,7 +55,7 @@
 - `src/widgets/RevenueChartWidget.vue` — chart styling with theme tokens
 - `src/pages/players/PlayerAnalyticsPage.vue` — striped rows, sticky header
 
-**Governance (3):** `DECISIONS.md` (D-16101–D-16103), `WORK_INDEX.md`, `EC_INDEX.md`
+**Governance (3):** `DECISIONS.md` (D-16201–D-16203), `WORK_INDEX.md`, `EC_INDEX.md`
 
 ## After Completing
 - [ ] `pnpm -r build` exits 0
@@ -70,7 +70,7 @@
 - [ ] Alerts: severity text label on every alert (not color-only)
 - [ ] DataTable (Players): striped rows, sticky header, visible filter row
 - [ ] Zero grep: `@legendary-arena/(game-engine|registry|preplan|server)`, `boardgame.io`, `packages/`
-- [ ] Governance: DECISIONS (D-16101–D-16103), WORK_INDEX (WP-161 row), EC_INDEX updated
+- [ ] Governance: DECISIONS (D-16201–D-16203), WORK_INDEX (WP-162 row), EC_INDEX updated
 
 ## Common Failure Smells
 - Checklist does not reset on new day → date boundary logic not comparing local date strings
