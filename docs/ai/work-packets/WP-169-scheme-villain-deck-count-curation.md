@@ -174,6 +174,15 @@ seed still produce identical decks.
   **player-count-dependent**, **additive-per-player**, or otherwise **not a
   single constant** is **NOT encoded** (see Out of Scope). A single integer field
   cannot represent it, and WP-168 reads a single integer.
+- **Disambiguation (what counts as a single fixed villain-deck count):** encode
+  only when the Setup names a number of twists **shuffled into the villain deck**
+  that is constant regardless of player count and conditions. Twists placed
+  **outside** the villain deck (e.g. "N additional Twists next to this Scheme")
+  are **excluded from the count, not a carve-out trigger** — encode only the
+  in-deck constant (e.g. Killbots prints "5 Twists … 3 additional Twists next to
+  this Scheme" ⇒ encode `5`). Force a **carve-out** when the in-deck count itself
+  is player-count-dependent, additive/subtractive per player, or conditionally
+  extended ("add a 9th Twist if …"). When in doubt, carve out.
 - **Curation rule (bystanders):** encode `villainDeckBystanderCount` only for a
   scheme whose printed Setup specifies an **explicit** villain-deck bystander
   count, including an explicit **zero** ("No Bystanders in the Villain Deck" ⇒
@@ -190,6 +199,20 @@ seed still produce identical decks.
   exits non-zero, **before** that set's output is written. This already holds in
   `convert-cards-v15.mjs`; `apply-card-counts.mjs` must gain the identical guard
   for the 4 outlier sets.
+- **Empty-entry loud-fail:** an entry present for a `schemeSlug` but carrying
+  neither count is malformed input. Both converters throw a full-sentence error
+  naming the set and slug and exit non-zero — never silently skip. `// why:`
+  enforces the at-least-one-count contract (D-16803).
+- **Field placement invariant:** the converter appends the count field(s) **after
+  the scheme's existing keys** (matching WP-167's Midtown output — i.e. after
+  `cards`), with `villainDeckTwistCount` before `villainDeckBystanderCount` when
+  both are present. It must not reorder or move any existing scheme key. `// why:`
+  stable key order keeps regeneration diff-free.
+- **Mutation boundary:** `applySchemeDeckCounts` and the `apply-card-counts.mjs`
+  overlay mutate **only** the two count fields on the matched scheme, in place;
+  they must not clone, reconstruct, or re-serialize the `scheme` object or touch
+  any other key. `// why:` prevents accidental key reordering or loss of unrelated
+  fields.
 - **Clean-diff / determinism:** new fields are appended in the existing fixed
   position; no key reordering or re-sorting. Regenerating twice yields zero diff
   (idempotent).
@@ -239,6 +262,10 @@ seed still produce identical decks.
   scheme entry is silently ignored (D-16803).
 - This corrects the `_note`'s currently-false claim that this script already
   applies scheme counts.
+- The overlay must be **idempotent** — a second run over already-curated data
+  produces no diff and preserves key order. (Covered by the global idempotency AC
+  + Verification Step 5, which runs both converters; called out here because this
+  script is the sole producer for the outlier sets.)
 
 ### C) Pipeline input — `scripts/convert-cards/inputs/scheme-deck-counts.json` (modified)
 - Curate, by reading each scheme's committed Setup line in `data/cards/*.json`:
@@ -254,11 +281,18 @@ seed still produce identical decks.
     "5 Twists … 18 total Bystanders in the Villain Deck" → `{ 5, 18 }`; the "3
     additional Twists next to this Scheme" are set aside, not villain-deck cards).
   - Keep the existing Midtown entry.
-- Update the top-level `_note`: state that **at least one** count is required per
-  entry (omitted ⇒ engine default), correct the outlier-set claim to match Scope
-  B, and briefly state the curation methodology (counts extracted from the
-  printed Setup text; player-count-dependent twist counts are carved out per
-  D-16804).
+- **Census completeness:** every scheme across all 40 sets is triaged during
+  curation into exactly one of {default-8 (unencoded), flat-twist-encoded,
+  bystander-encoded, carve-out}. Absence from the file means "intentionally
+  default or carve-out", never oversight; the carve-out subset is finalized in
+  D-16804.
+- Update the top-level `_note` to state, at minimum: (i) the at-least-one-count
+  contract (D-16803); (ii) omitted counts resolve to engine defaults (8 twists /
+  `numPlayers` bystanders); (iii) which producer applies which sets —
+  `convert-cards-v15.mjs` for the 36 npm sets, `apply-card-counts.mjs` for the 4
+  outlier sets (correcting the prior over-claim); (iv) counts are extracted from
+  the committed Setup text; (v) player-count-dependent twist counts are carved
+  out (D-16804).
 
 ### D) Regenerate data — `data/cards/*.json` (regenerated)
 - Run both converters to regenerate all 40 set files. The only gameplay-relevant
@@ -274,6 +308,9 @@ seed still produce identical decks.
 - Every scheme that prints exactly 8 twists and no explicit bystander count
   carries **neither** field (proves the curation rule did not over-encode
   defaults).
+- A known **carve-out** scheme (player-count-dependent twists, e.g. Super Hero
+  Civil War) carries **no** `villainDeckTwistCount` after regeneration (proves
+  carve-outs are not encoded).
 - All 40 regenerated `data/cards/*.json` validate against `SetDataSchema`.
 - Uses `node:test` / `node:assert`; no `boardgame.io` / `@legendary-arena/game-engine` import.
 
@@ -333,7 +370,7 @@ seed still produce identical decks.
 - `data/cards/*.json` — **regenerated** — curated scheme counts only (all 40 files).
 - `packages/registry/src/schema.schemeDeckCounts.test.ts` — **new** — `node:test`
   coverage (twist-only omission, zero bystander, outlier-set application,
-  no-over-encoding, 40-file validation).
+  no-over-encoding, carve-out-not-encoded, 40-file validation).
 - `docs/ai/DECISIONS.md` — **modified** — D-16803, D-16804.
 - `docs/ai/STATUS.md` — **modified** — record the curated capability.
 - `docs/ai/work-packets/WORK_INDEX.md` — **modified** — check off WP-169.
@@ -355,6 +392,8 @@ No other files may be modified.
       write) on a slug matching no scheme.
 - [ ] Both converters loud-fail on a bogus `schemeSlug` (manual probe in
       Verification Steps).
+- [ ] Both converters loud-fail (full-sentence error, non-zero exit) on an entry
+      that exists for a real `schemeSlug` but carries neither count (empty entry).
 
 ### Data
 - [ ] Every scheme whose committed Setup prints a single fixed twist count ≠ 8

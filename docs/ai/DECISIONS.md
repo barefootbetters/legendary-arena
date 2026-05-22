@@ -17960,7 +17960,10 @@ one. An omitted count keeps that scheme's engine default (8 twists per D-1411;
 `convert-cards-v15.mjs`) assigns each count independently and never writes an
 `undefined`-valued key. `apply-card-counts.mjs` applies the same overlay — with
 the identical exact-slug loud-fail and validate-before-write — to the 4 outlier
-sets (`2099`, `amwp`, `wpnx`, `wtif`), for which it is the only producer.
+sets (`2099`, `amwp`, `wpnx`, `wtif`), for which it is the only producer. An entry
+present for a real `schemeSlug` but carrying neither count is malformed input:
+both converters throw a full-sentence error and exit non-zero rather than silently
+skipping (the at-least-one-count rule is enforced, not merely documented).
 
 **Rationale:** The printed Setup text deviates from the 8-twist default for
 roughly two-thirds of schemes while almost all of them keep the `numPlayers`
