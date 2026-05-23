@@ -106,10 +106,15 @@ related but are deliberately excluded):
 - **No engine / registry / server runtime import** anywhere in the modified files. Type-only `import type { UIDisplayEntry } from '@legendary-arena/game-engine'` is permitted (D-16502). Verification grep: `Select-String "from '@legendary-arena/game-engine'" apps/arena-client/src/components/play/PileBrowseModal.vue` must match only `import type` lines.
 - **No new Pinia store, no new composable.** Modal state is a local `ref` on each of `PlayDesktop.vue` and `PlayMobile.vue`. Mirrors `OpponentPanel.vue:30-43`. Verification grep: `Select-String -Pattern "defineStore|useUiStateStore" apps/arena-client/src/components/play/PileBrowseModal.vue` returns 0 matches.
 - **SFC form: `defineComponent({ setup() { return {...} } })`** for every modified or new SFC in this WP. Matches `OpponentVictoryModal.vue` precedent. Justification: KOPile / MasterStrikePile / SchemeTwistPile become non-leaf composers (they emit events handled by the page) per the EC-132 §2 SFC authoring whitelist; PileBrowseModal stays a leaf but uses `defineComponent` for consistency with the existing modal precedent (no `<script setup>` introduced in this WP).
-- **ESC handler lifecycle.** The `keydown` listener on `document` MUST attach on `onMounted` only when `isOpen === true` via a watcher, and detach on `onBeforeUnmount` AND when `isOpen` transitions to `false`. No leaked listeners across mount/unmount cycles.
+- **ESC handler lifecycle.** Wired via `watch(isOpen, ..., { immediate: true })` — attach when `isOpen` becomes (or already is) `true`, detach when it transitions to `false`, detach on `onBeforeUnmount`. The exact event target, type, listener signature, and watcher options are locked in §Locked Values (`ESC handler form`). No leaked listeners across mount / unmount cycles.
+- **Teleport gating — node, not children.** The `<Teleport to="body">` element itself is the `v-if="isOpen"` boundary. Gating only the children leaves a Teleport anchor mounted in `document.body` at all times, which trips the AC #2 "renders nothing when closed" check. See §Locked Values (`Teleport gating`).
 - **Backdrop vs panel click.** The backdrop element calls `emit('close')` on `@click`; the panel element calls `@click.stop` to prevent propagation. The dialog itself does not close on internal clicks.
+- **Emit payload immutability.** Pile leaves emit the source `cards` array **by reference** (no `.slice()`, no spread, no `Array.from(...)`) — referential identity with the engine projection must survive the emit. Page handlers store the reference and MUST NOT mutate it. The `readonly` modifier on the payload type makes this a compile-time guarantee. See §Locked Values (`open` emit payload type).
+- **Card render order — no transformation.** The modal renders the `cards` array in the exact order it receives. No `sort`, `reverse`, `slice`, `map`, `filter`, or any other transformation anywhere in the wiring path. The engine produces deterministic insertion order; the UI MUST preserve it byte-for-byte. See §Locked Values (`Card render order`).
+- **Browse button HTML form.** Every browse button (`KOPile.vue`, `MasterStrikePile.vue`, `SchemeTwistPile.vue`) and the modal's close button is `<button type="button">`. Defends against future form-wrapping accidents. See §Locked Values (`Browse button HTML form`).
 - **Card list rendering — text only.** Each entry renders `entry.display.name`. No `<img>` tag. No image URL reference. No card-image rendering of any kind. Image rendering is explicitly Out of Scope.
 - **Empty state copy is uniform.** Modal renders `"Pile is empty."` for `cards.length === 0` regardless of pile type. Pile-specific copy lives on the leaf component, not the modal.
+- **Header copy — no pluralization.** Modal header renders `"${pileLabel} (${cards.length} cards)"` verbatim — always `"cards"`, never `"card"` even when `cards.length === 1`. Choosing strict no-pluralization (vs. branching `"1 card"` / `"N cards"`) keeps the spec single-form and eliminates a class of grammar bugs. See §Locked Values (`Header copy format`).
 - **Keying.** `v-for` over `cards` uses `:key="entry.extId"`. The shape guarantees `extId` is unique within a pile (`UIDisplayEntry.extId` per WP-128 / D-12805).
 - **No `.reduce()`.** Card list iteration is `v-for`; counting is `cards.length`. The packet introduces no `Array.reduce()` call.
 - **No animations / transitions / `<Transition>` wrappers.** Out of scope.
@@ -128,6 +133,7 @@ related but are deliberately excluded):
 | Modal `aria-label` | `${pileLabel}` (bound; no static fallback) |
 | Close button `aria-label` | `"Close pile browser"` |
 | Empty-state copy | `"Pile is empty."` (verbatim) |
+| Header copy format | `"${pileLabel} (${cards.length} cards)"` — **never pluralized**; always `"cards"` (verbatim) even when `cards.length === 1` |
 | KO Pile label | `"KO Pile"` (verbatim) |
 | Master Strike Pile label | `"Master Strike Pile"` (verbatim) |
 | Scheme Twist Pile label | `"Scheme Twist Pile"` (verbatim) |
@@ -140,6 +146,11 @@ related but are deliberately excluded):
 | Modal max-height | `80vh` (matches OpponentVictoryModal precedent) |
 | Modal max-width | `80vw` (matches OpponentVictoryModal precedent) |
 | Backdrop z-index | `1000` (matches OpponentVictoryModal precedent) |
+| ESC handler form | Event target `document`; event type `'keydown'`; listener `(event: KeyboardEvent) => { if (event.key === 'Escape') emit('close') }`; attached via `watch(isOpen, attachOrDetach, { immediate: true })` so the initial open-on-mount state is handled at setup time; detach on `false` transition AND on `onBeforeUnmount`. Forbidden: `keyup`, `window` target, inline `@keydown` on the dialog (the dialog may not have focus at open time) |
+| Teleport gating | The `<Teleport to="body">` node itself is wrapped in `v-if="isOpen"`. Do NOT gate only the child content — an always-mounted Teleport leaves a ghost anchor in `document.body` when closed |
+| `open` emit payload type | `{ pileLabel: string; cards: readonly UIDisplayEntry[] }`. The `readonly` modifier is load-bearing — pile leaves MUST emit the source array by reference (no `.slice()`, no spread, no `Array.from(...)`); page handlers MUST NOT mutate the array; referential identity with `koPile.cards` / `mastermind.strikePile` / `scheme.twistPile` is preserved |
+| Card render order | Exact order of the input `cards` array. No `sort` / `reverse` / `slice` / `map` / `filter` / any transformation in the modal or in the wiring path. The engine produces deterministic insertion order; the UI MUST preserve it byte-for-byte |
+| Browse button HTML form | `<button type="button">` on every browse button. `type="button"` is mandatory; the leaves render outside `<form>` today but the explicit type defends against future form-wrapping accidents that would convert the click into a submit |
 
 ---
 
@@ -148,14 +159,14 @@ related but are deliberately excluded):
 Twelve binary, observable checks (`00.3 §14`: 6–12 items, each pass/fail).
 
 - [ ] `apps/arena-client/src/components/play/PileBrowseModal.vue` exists; default export is a `defineComponent` named `'PileBrowseModal'`; props are `isOpen: boolean`, `pileLabel: string`, `cards: readonly UIDisplayEntry[]`; declared emit is `'close'`
-- [ ] PileBrowseModal renders nothing in the document when `isOpen === false` (the `<Teleport>` block is `v-if="isOpen"` so the portal target stays empty)
-- [ ] PileBrowseModal renders `<header>` matching `"${pileLabel} (${cards.length} cards)"` and a `<ul>` of `entry.display.name` when `cards.length > 0`; renders the verbatim empty-state copy `"Pile is empty."` when `cards.length === 0`
+- [ ] PileBrowseModal Teleport target is `document.body`; when `isOpen === false` the Teleport block does NOT render (`document.body.querySelector('[data-testid="play-pile-browse-modal"]')` returns `null`); when `isOpen === true` the panel mounts under `document.body`, not within the `@vue/test-utils` mount container (asserted in `PileBrowseModal.test.ts`)
+- [ ] PileBrowseModal renders `<header>` matching `"${pileLabel} (${cards.length} cards)"` (never pluralized — always `"cards"` even when length is 1), a `<ul>` of `entry.display.name` in the **exact order** of the input `cards` array (asserted: given `[A, B, C]` the DOM reads `A, B, C` in order — no sort / reverse / mapping), and the verbatim empty-state copy `"Pile is empty."` when `cards.length === 0`
 - [ ] Pressing `Escape` on the document while `isOpen === true` emits `close`; the listener is removed when `isOpen` becomes `false` or the component unmounts (verifiable by spying on `document.removeEventListener` in the test)
 - [ ] Clicking the backdrop emits `close`; clicking the panel itself does NOT emit `close` (verified by `@vue/test-utils` `trigger('click')` + emit assertions)
 - [ ] Root dialog element carries `role="dialog"`, `aria-modal="true"`, and `aria-label="${pileLabel}"`; close button carries `aria-label="Close pile browser"`
-- [ ] `KOPile.vue` renders a `<button data-testid="play-ko-browse">View all ▼</button>` if and only if `koPile.count > 0`; clicking it emits `open` with `{ pileLabel: 'KO Pile', cards: koPile.cards }`
-- [ ] `MasterStrikePile.vue` renders a `<button data-testid="play-master-strike-browse">View all ▼</button>` if and only if `pile.length > 0`; clicking emits `open` with `{ pileLabel: 'Master Strike Pile', cards: pile }`
-- [ ] `SchemeTwistPile.vue` renders a `<button data-testid="play-scheme-twist-browse">View all ▼</button>` if and only if `pile.length > 0`; clicking emits `open` with `{ pileLabel: 'Scheme Twist Pile', cards: pile }`
+- [ ] `KOPile.vue` renders a `<button type="button" data-testid="play-ko-browse">View all ▼</button>` if and only if `koPile.count > 0`; clicking emits `open` with `{ pileLabel: 'KO Pile', cards: koPile.cards }` — payload's `cards` is the same reference (`===`) as `koPile.cards`, not a clone
+- [ ] `MasterStrikePile.vue` renders a `<button type="button" data-testid="play-master-strike-browse">View all ▼</button>` if and only if `pile.length > 0`; clicking emits `open` with `{ pileLabel: 'Master Strike Pile', cards: pile }` — payload's `cards === pile` (same reference)
+- [ ] `SchemeTwistPile.vue` renders a `<button type="button" data-testid="play-scheme-twist-browse">View all ▼</button>` if and only if `pile.length > 0`; clicking emits `open` with `{ pileLabel: 'Scheme Twist Pile', cards: pile }` — payload's `cards === pile` (same reference)
 - [ ] `PlayDesktop.vue` and `PlayMobile.vue` each mount exactly one `<PileBrowseModal>` instance; `@open` on each of the three pile leaves assigns the page-level `activePile` ref; the modal's `@close` event nulls the ref
 - [ ] `pnpm --filter @legendary-arena/arena-client test` exits 0; the test baseline increases by the count of new `PileBrowseModal.test.ts` cases (no existing test regresses)
 - [ ] `pnpm --filter @legendary-arena/arena-client typecheck` exits 0; `pnpm --filter @legendary-arena/arena-client build` exits 0
