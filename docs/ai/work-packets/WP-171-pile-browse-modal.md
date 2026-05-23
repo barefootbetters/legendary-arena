@@ -1,5 +1,50 @@
 # WP-171 — Pile Browse Modal (Click-to-View Card Piles)
 
+## Drafting Gates (01.0a §Step 5)
+
+> Recorded under the 01.0a Phase 1 DoD retrofit on 2026-05-22. The original
+> drafting session (commits `bb17dc2`, `e28f893`, `a42e9f4`) shipped the WP
+> and EC bundle but did not invoke Pre-flight (`01.4`) or Copilot check
+> (`01.7`) — only the lint gate self-review ran. This section closes the
+> 01.0a Step 5 hard invariant retroactively.
+
+- **Drafting baseline:** `origin/main @ 0a507c7` (verified via
+  `git fetch origin main && git rev-parse origin/main` on 2026-05-22; this
+  is the SHA `main` carried when the `claude/wp171-pile-browse-modal` branch
+  forked, and the SHA `main` still carries at gate retrofit time)
+- **Pre-flight (`01.4`) verdict:** `READY TO EXECUTE` (2026-05-22, retrofitted).
+  Class: Runtime Wiring. All prerequisite WPs (WP-128, WP-153, WP-166)
+  complete on `origin/main`. UIDisplayEntry contract verified against
+  `packages/game-engine/src/ui/uiState.types.ts` HEAD. Scope is a closed
+  7-file allowlist. No engine/registry/server surface touched. No `G`
+  mutation. All risk-review items resolved by the operator-driven tightening
+  pass (commit `a42e9f4`). Full report at scratchpad
+  `docs/ai/invocations/preflight-wp171-pile-browse-modal.md` (gitignored per
+  `.claude/rules/work-packets.md` Invocation Artifacts policy; not committed
+  unless normatively cited).
+- **Copilot check (`01.7`) verdict:** `PASS` (2026-05-22, retrofitted).
+  All 30 issues scanned; no `BLOCK`; no open `RISK`. Three initial RISKs —
+  #17 Hidden Mutation via Aliasing, #5 Optional Field Ambiguity, #15 Missing
+  "Why" — had already been converted to PASS by the tightening pass
+  (Locked Values: `open emit payload type` with `readonly` modifier; modal
+  state ref discriminated by `null` not by optional-presence; required
+  `// why:` comments locked at 5 sites in EC-189). Disposition: CONFIRM
+  (pre-flight verdict stands; session prompt generation authorized). No
+  mandatory governance follow-up. Full report at scratchpad
+  `docs/ai/invocations/copilot-wp171-pile-browse-modal.md` (gitignored).
+- **Lint gate (`00.3`) self-review:** PASS (38 items: 24 ✅ direct, 14 N/A
+  with non-tautological justification, 0 ❌). See §Lint Gate Self-Review at
+  the foot of this document.
+- **Session prompt:** Written at
+  `docs/ai/invocations/session-wp171-pile-browse-modal.md` (gitignored
+  scratchpad). Closes 01.0a §Step 6 REQUIRED for this WP.
+
+**Retrofit honesty note.** The three gate artifacts (pre-flight, copilot,
+session) were authored post-drafting under the 01.0a §Step 5 retrofit. The
+verdicts are honest evaluations against the WP/EC bundle as it stands AFTER
+the 7-suggestion tightening pass; they are not reconstructions of verdicts
+from an earlier in-session run that did not happen.
+
 ## Goal
 
 Add a single generalized `<PileBrowseModal>` leaf component to
