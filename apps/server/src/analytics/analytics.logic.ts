@@ -31,9 +31,10 @@
  * no `apps/dashboard/**`. INSERT statements enumerate columns
  * explicitly (positional-bind form forbidden per D-20501). No
  * `Array.sort(...)` — SQL `ORDER BY ASC` is the authoritative sort
- * (D-20501 SQL pre-sorted invariant). No `localeCompare` — Unicode
- * code-unit ordering for `YYYY-MM-DD` strings is byte-identical to
- * SQL `ORDER BY ASC` (D-19605 / D-19908 carry-forward).
+ * (D-20501 SQL pre-sorted invariant). No locale-aware string
+ * comparison — Unicode code-unit ordering for `YYYY-MM-DD` strings
+ * is byte-identical to SQL `ORDER BY ASC` (D-19605 / D-19908
+ * carry-forward).
  *
  * Authority: WP-205 §Scope (In) → Server module; EC-233 §Execution
  * Order Sub-task B; D-20501 (schema + aggregation rules + INSERT
