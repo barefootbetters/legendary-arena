@@ -12,6 +12,12 @@ import type {
 export { mockBillingHealth, mockBillingHealthSparklines } from './billingHealthMocks.js';
 export type { BillingHealthSparklines, BillingHealthSparklinePoint } from './billingHealthMocks.js';
 
+export {
+  mockTrafficSources,
+  mockActivationFunnel,
+  mockRetentionCohorts,
+} from './analyticsMocks.js';
+
 function randomBetween(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
