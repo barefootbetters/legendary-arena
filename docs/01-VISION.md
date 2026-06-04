@@ -16,6 +16,40 @@ If this document is violated, Legendary Arena is no longer being built as intend
 
 ---
 
+## Business Survival (Sales & Product)
+
+**Legendary Arena is a business.** It exists to make money so that the people
+working on it can keep working on it. Every other goal in this document —
+rules authenticity, content fidelity, multiplayer reliability, fairness,
+longevity, and the entire engineering discipline behind them — exists in
+service of two survival truths.
+
+### Sales
+
+Every dollar in funds payroll, royalties to Upper Deck and Marvel, cloud
+bills, R2 storage, and the next round of content. **No sales = no business,
+no game, no royalties.** Selling is the act that funds everything else this
+document says we care about. It is not optional, distasteful, or a problem
+to solve later. It is the act that keeps Legendary Arena alive.
+
+### A Great Product
+
+Players pay for a faithful, reliable, fast Marvel Legendary that gets better
+every release. **No product worth buying = no sales = no business.** The
+Primary Vision Goals below are not abstract values; they are the engineering
+truths that make the product worth buying. Rules Authenticity, Content
+Authenticity, Player Trust & Fairness, Faithful Multiplayer, and Longevity &
+Expandability all serve the single question: *will real customers pay for
+this?*
+
+---
+
+If sales and product are healthy, the rest of this document is the blueprint
+for how to keep them healthy. If either fails, nothing else in this document
+matters — because the project ceases to exist.
+
+---
+
 ## Primary Vision Goals (Non‑Negotiable)
 
 Primary goals define **what Legendary Arena *is***.
