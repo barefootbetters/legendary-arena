@@ -9,8 +9,8 @@
  * Mission"), at the following PS-3 baseline:
  *
  *   Source file:   docs/01-VISION.md
- *   Source SHA:    9fbf819cb4cc198d7007e61230a9c0b0a10d18a9
- *   Capture date:  2026-06-02
+ *   Source SHA:    4453fdaedfefb3a208eaa05e758cbabe8c60cfe4
+ *   Capture date:  2026-06-03
  *
  * why: D-19803 — the card renders a curated condensed STATIC string in the
  * component. No runtime file read (browser-impossible), no build-time
@@ -70,8 +70,7 @@
         <p class="financial-tagline"><em>&ldquo;No margin, no mission.&rdquo;</em></p>
         <ul class="vision-list">
           <li>The game must be <strong>financially self-sustaining</strong> from launch onward.</li>
-          <li>The core experience (all rules, all content, full multiplayer, scoring, replays, exports) stays <strong>permanently free</strong>.</li>
-          <li>Monetization is limited to distribution, access, presentation, and participation — never gameplay advantage.</li>
+          <li>Revenue models protect gameplay fairness — no pay-to-win — and pricing, packaging, and distribution are open commercial decisions.</li>
           <li>A non-negotiable royalty portion flows directly to Upper Deck and Marvel on every revenue stream.</li>
           <li>If revenue falls short, non-essential features scale back <strong>before</strong> any compromise to rules, fairness, accessibility, or royalties.</li>
         </ul>
