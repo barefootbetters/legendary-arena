@@ -609,13 +609,13 @@ Beyond the human/AI agents, automated checks run on every commit and every push.
 | Unit tests (native `node:test`) | Logic bugs, broken invariants | **Wired** (blocking) — `pnpm test` |
 | Coverage floor (lines 90 / branch 80 / funcs 88) | New code shipped without tests | **Wired** (blocking) — `pnpm test:coverage` |
 | Build (`vite build`) | Broken imports, Vue template compile errors | **Wired** (blocking) — `pnpm build` |
-| Format (Prettier `--check`) | Inconsistent formatting | **Wired** (advisory) — `pnpm format:check` |
+| Format (Prettier `--check`) | Inconsistent formatting | **Wired** (blocking) — `pnpm format:check` |
 | Dependency audit (`pnpm audit`) | Known CVEs in dependencies | Available (workspace-level); not yet a CI step |
 | Secret scan | Committed keys, tokens, passwords | To wire |
 | Husky + lint-staged | Runs the above automatically before each commit | To wire |
 | GitHub Actions (CI) | Runs every check on every push — catches what local checks miss | **Wired** — `Dashboard Gates` job |
 
-> **Honest current state (2026-06-08):** lint, typecheck, unit tests, a coverage floor, and the production build run as **blocking** gates — in CI via the `Dashboard Gates` job (`.github/workflows/ci.yml`) and locally via `pnpm --filter @legendary-arena/dashboard <script>`. Prettier is wired but **advisory**: 89 files predate its adoption, so running `pnpm --filter @legendary-arena/dashboard format` once (as its own commit) makes the baseline conform — after which the CI step drops `continue-on-error` and formatting becomes blocking too. `pnpm audit` (workspace-level), secret-scanning, and Husky pre-commit hooks are **not** yet wired; each is a tracked line in `TECH_DEBT.md` (§7‑C), not a silent omission. Stack note: the test runner is native **`node:test` via `tsx`**, not Vitest or Jest — write new tests against the existing `*.test.ts` harness, not a new framework.
+> **Honest current state (2026-06-08):** lint, typecheck, unit tests, a coverage floor, Prettier formatting, and the production build all run as **blocking** gates — in CI via the `Dashboard Gates` job (`.github/workflows/ci.yml`) and locally via `pnpm --filter @legendary-arena/dashboard <script>`. (The dashboard source was reformatted to the Prettier baseline in the same change that flipped the gate to blocking.) `pnpm audit` (workspace-level), secret-scanning, and Husky pre-commit hooks are **not** yet wired; each is a tracked line in `TECH_DEBT.md` (§7‑C), not a silent omission. Stack note: the test runner is native **`node:test` via `tsx`**, not Vitest or Jest — write new tests against the existing `*.test.ts` harness, not a new framework.
 
 ### The Rule (Non-Negotiable)
 
