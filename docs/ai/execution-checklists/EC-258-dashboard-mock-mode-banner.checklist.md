@@ -73,9 +73,13 @@
   tokens as operator-guidance prose only (not env access); the SSoT
   grep targets `import.meta.env`, so the copy string does not trip it
   (EC-TEMPLATE grep-gate prose discipline).
-- `AppLayout.vue` — `// why:` the banner mounts once here, above
-  `<main class="main-content">`, so the honesty strip shows on every
-  route.
+
+> `AppLayout.vue` carries **no** `// why:` comment by design — its
+> contract is one import line + one mount line, with no other line
+> changing (WP §Locked Contract Values + AC #5). Adding a comment there
+> would break the strict minimal-diff gate. The app-wide-mount rationale
+> lives in D-22601 + the WP, not inline in the shared layout. Do not
+> "helpfully" add a comment to `AppLayout.vue`.
 
 ## Files to Produce
 - `apps/dashboard/src/composables/useMockModeIndicator.ts` — **new** —
@@ -108,19 +112,24 @@ draft review — `EC_INDEX.md` is in scope so the EC-258 Pending → Done
 flip is covered and AC #10's `git diff` gate stays consistent.
 
 ## After Completing
-- [ ] `pnpm --filter @legendary-arena/dashboard test` exits 0; total =
-  baseline + net-new `useMockModeIndicator` cases (no prior test
-  regresses).
+- [ ] `pnpm --filter @legendary-arena/dashboard test` exits 0; the suite
+  includes the net-new `useMockModeIndicator` cases and no pre-existing
+  test regresses.
 - [ ] `pnpm --filter @legendary-arena/dashboard typecheck` exits 0.
 - [ ] `pnpm --filter @legendary-arena/dashboard build` exits 0.
-- [ ] SSoT grep:
-  `grep -rn "import.meta.env" apps/dashboard/src/composables/useMockModeIndicator.ts apps/dashboard/src/components/MockModeBanner.vue`
+- [ ] SSoT grep (all three new files):
+  `grep -rn "import.meta.env" apps/dashboard/src/composables/useMockModeIndicator.ts apps/dashboard/src/composables/useMockModeIndicator.test.ts apps/dashboard/src/components/MockModeBanner.vue`
   returns 0. (Targets `import.meta.env` only — the copy string's
-  env-var names do NOT match.)
-- [ ] Mount grep:
-  `grep -n "MockModeBanner" apps/dashboard/src/layouts/AppLayout.vue`
-  returns one import line + one usage line directly above
-  `<main class="main-content">`.
+  env-var names do NOT match; the test drives env via the imported
+  `__testHooks.setEnv()`.)
+- [ ] Conservative-gate grep (no `endpoints.ts` / `isMockMode()` reuse):
+  `grep -rnE "isMockMode|endpoints" apps/dashboard/src/composables/useMockModeIndicator.ts apps/dashboard/src/composables/useMockModeIndicator.test.ts apps/dashboard/src/components/MockModeBanner.vue`
+  returns 0.
+- [ ] Mount grep (presence + adjacency):
+  `grep -nE 'MockModeBanner|main class="main-content"' apps/dashboard/src/layouts/AppLayout.vue`
+  returns one import line + one `<MockModeBanner />` usage line, with the
+  `<main class="main-content">` line immediately following the usage line
+  (adjacent line numbers).
 - [ ] Locked-copy check: the `message` in `useMockModeIndicator.ts`
   matches the Locked Copy String byte-for-byte.
 - [ ] Additive scope: `git diff --name-only` lists exactly the WP's 8
@@ -130,7 +139,7 @@ flip is covered and AC #10's `git diff` gate stays consistent.
   `EC_INDEX.md` EC-258 → Done.
 
 ## Common Failure Smells
-- `import.meta.env` in either new file → single-source-of-truth
+- `import.meta.env` in any of the three new files → single-source-of-truth
   (D-20601 / D-22601) HARD FAIL.
 - Banner renders when `isMockData` is `false` → missing `v-if`.
 - Copy-string drift (re-typed em-dash, punctuation, or token) → not

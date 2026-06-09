@@ -3,7 +3,7 @@
 > **Status:** DRAFT — pending review (do not execute until reviewed per
 > `.claude/rules/work-packets.md` Review Gate).
 > **Reserves:** D-22601.
-> **Paired EC:** EC-258 (to be drafted alongside before execution).
+> **Paired EC:** EC-258 (drafted; pending review alongside this WP before execution).
 
 ---
 
@@ -238,9 +238,9 @@ Gate FAIL condition (1–38) triggers.
 - **§11 Authentication** — N/A — justified. WP touches no auth surface.
 - **§12 Test Quality** — PASS. `node:test` via `tsx`; ≥ 4 cases; driven by
   the imported `__testHooks.setEnv()`; no boardgame.io import, no network/DB.
-- **§13 Verification Steps** — PASS. Six exact steps with expected output
+- **§13 Verification Steps** — PASS. Seven exact steps with expected output
   (`pnpm --filter` test/typecheck/build + three greps + `git diff`).
-- **§14 Acceptance Criteria** — PASS. Ten binary, observable, file/symbol-
+- **§14 Acceptance Criteria** — PASS. Eleven binary, observable, file/symbol-
   specific checks aligned to the deliverables.
 - **§15 Definition of Done** — PASS. Includes AC-pass, STATUS, DECISIONS,
   WORK_INDEX, EC_INDEX, and the scope-boundary check.
@@ -294,6 +294,9 @@ Gate FAIL condition (1–38) triggers.
     `## Files Expected to Change` (the four source files +
     `STATUS.md`, `DECISIONS.md`, `WORK_INDEX.md`, `EC_INDEX.md`) — no
     other widget, page, or composable is modified.
+11. The Locked Copy String is defined once, in `useMockModeIndicator.ts`, as the
+    single source of the banner message text; `MockModeBanner.vue` renders the
+    composable's `message` and does not duplicate or re-type the copy.
 
 ---
 
@@ -301,8 +304,8 @@ Gate FAIL condition (1–38) triggers.
 
 1. Run the dashboard tests:
    `pnpm --filter @legendary-arena/dashboard test`
-   Expected: all tests pass, `fail 0`; total count = prior baseline + net-new
-   `useMockModeIndicator` cases.
+   Expected: all tests pass, `fail 0`; the suite includes the net-new
+   `useMockModeIndicator` cases and no pre-existing test regresses.
 2. Typecheck:
    `pnpm --filter @legendary-arena/dashboard typecheck`
    Expected: exits 0, no output errors.
@@ -311,24 +314,31 @@ Gate FAIL condition (1–38) triggers.
    Expected: `✓ built` and exit 0.
 4. Single-source-of-truth gate — confirm the new files never re-read env
    directly:
-   `grep -rn "import.meta.env" apps/dashboard/src/composables/useMockModeIndicator.ts apps/dashboard/src/components/MockModeBanner.vue`
+   `grep -rn "import.meta.env" apps/dashboard/src/composables/useMockModeIndicator.ts apps/dashboard/src/composables/useMockModeIndicator.test.ts apps/dashboard/src/components/MockModeBanner.vue`
    Expected: **zero** matches. (The Locked Copy String names `VITE_USE_MOCKS` /
    `VITE_API_BASE_URL` as operator guidance, not as env access; this grep
    targets `import.meta.env` access only, so the copy string does not match —
-   §18 prose-vs-grep discipline holds; the env tokens are governed by D-20601.)
-5. Mount-point check:
-   `grep -n "MockModeBanner" apps/dashboard/src/layouts/AppLayout.vue`
-   Expected: one import line and one `<MockModeBanner />` usage line directly
-   above `<main class="main-content">`.
-6. Additive scope:
+   §18 prose-vs-grep discipline holds; the env tokens are governed by D-20601.
+   The test drives env through the imported `__testHooks.setEnv()`, not
+   `import.meta.env`, so it is in scope of this gate.)
+5. Conservative-gate check — the new files use only the imported
+   `isLiveModeEnabled()` gate, never `endpoints.ts` `isMockMode()`:
+   `grep -rnE "isMockMode|endpoints" apps/dashboard/src/composables/useMockModeIndicator.ts apps/dashboard/src/composables/useMockModeIndicator.test.ts apps/dashboard/src/components/MockModeBanner.vue`
+   Expected: **zero** matches.
+6. Mount-point check (presence + adjacency):
+   `grep -nE 'MockModeBanner|main class="main-content"' apps/dashboard/src/layouts/AppLayout.vue`
+   Expected: one import line, one `<MockModeBanner />` usage line, and the
+   `<main class="main-content">` line immediately following that usage line
+   (adjacent line numbers — the banner sits directly above `<main>`).
+7. Additive scope:
    `git diff --name-only`
-   Expected: exactly the seven `## Files Expected to Change` paths.
+   Expected: exactly the eight `## Files Expected to Change` paths.
 
 ---
 
 ## Definition of Done
 
-- [ ] All Acceptance Criteria (1–10) pass.
+- [ ] All Acceptance Criteria (1–11) pass.
 - [ ] `docs/ai/STATUS.md` updated with what changed this session.
 - [ ] `docs/ai/DECISIONS.md` updated with **D-22601** (banner posture: predicate
       reuse, app-wide placement, non-dismissible v1, locked copy).
