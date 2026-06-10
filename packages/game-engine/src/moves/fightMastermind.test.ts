@@ -94,6 +94,7 @@ function createMockGameState(options?: {
       ready: {},
       started: false,
     },
+    notableEvents: [],
   };
 }
 
@@ -282,6 +283,21 @@ describe('fightMastermind', () => {
       moveContext.G.mastermind.attachedBystanders,
       [],
       'Mastermind attachedBystanders must be cleared after the award',
+    );
+    // why: D-20008 — defeating the mastermind emits exactly one
+    // mastermindDefeated notable event carrying the rescued-bystander count
+    // so the arena-client overlay can report the win + rescue.
+    assert.equal(
+      moveContext.G.notableEvents.length,
+      1,
+      'Exactly one notable event must be emitted on mastermind defeat',
+    );
+    const defeatEvent = moveContext.G.notableEvents[0]!;
+    assert.equal(defeatEvent.type, 'mastermindDefeated', 'event type must be mastermindDefeated');
+    assert.equal(
+      defeatEvent.type === 'mastermindDefeated' && defeatEvent.bystandersRescued,
+      2,
+      'event must report 2 bystanders rescued',
     );
   });
 
