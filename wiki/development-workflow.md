@@ -612,7 +612,7 @@ truth.
 | Required CI checks | Build, test, commit hygiene, registry validation |
 | Commit topology (WP work) | Two commits: `EC-NNN:` implementation + `SPEC:` governance close |
 | Commit topology (non-WP) | Single commit with `INFRA:` or `SPEC:` prefix — no two-commit requirement |
-| Emergency hotfix | Single-commit `fix/` branch, `INFRA:` prefix, squash-merge directly. Skip EC/SPEC topology. Document in next session's WP if the fix touches engine logic. |
+| Emergency hotfix | Single-commit `fix/` branch, `INFRA:` prefix, squash-merge directly. Skip EC/SPEC topology. If the fix touches engine logic, open a reconciliation `SPEC:` PR within 24 hours documenting what changed and why. |
 | `pnpm check` | Local operator gate — not a CI merge gate. Run after machine setup and before investigating production issues. |
 
 **Commit prefix rules** (enforced by pre-commit hook):
@@ -666,6 +666,36 @@ run to confirm.
 work packets on a clean `main`, run the full test suite, and commit the
 version bump as its own `INFRA:` change.
 
+### Cadence ownership
+
+| System | Runner | Check | Frequency | Failure response |
+|---|---|---|---|---|
+| Nightly Inspector triage | GitHub Actions | Workflow completes green | Daily | Investigate in next operator session |
+| Architecture inventory | GitHub Actions | PR generated on diff | Weekly (Mon 06:00 UTC) | Non-blocking; check Actions tab |
+| Auto-deploy (Render) | Render | Deploy status: Live | On merge to `main` | Check Render Events log; revert PR if needed |
+| Auto-deploy (Pages) | Cloudflare | Build status: Success | On merge to `main` | Check Pages Deployments log; revert PR if needed |
+| Uptime probes | Operator | `pnpm check` all green | Manual (run after deploys, incidents, machine setup) | Fix before proceeding |
+| Subdomain health | Operator | `pnpm check:domains` no FAILs | Manual (run after DNS/TLS changes) | Follow `dns:`/`tls:` diagnostics |
+
+No SLA beyond "investigate in next operator session" — this is a
+one-person operation. If cadence jobs gain external consumers or uptime
+commitments, formalize response times then.
+
+### Deploy rollback
+
+Each deploy surface has a deterministic rollback path.
+
+| Surface | Fail signal | Rollback action | Verification |
+|---|---|---|---|
+| **Render** (server) | Health check fails, migration error, 5xx spike | Revert the PR on GitHub → merge revert to `main` → Render auto-redeploys | `curl $GAME_SERVER_URL/health` returns 200 |
+| **Cloudflare Pages** (front-ends) | Build failure, missing assets, blank page | Revert the PR → merge to `main` → Pages auto-rebuilds | Site loads at `play.legendary-arena.com` |
+| **Cloudflare R2** (images/metadata) | Missing or corrupted assets | Re-run last known good `rclone sync` from operator machine | `pnpm check` R2 probe passes |
+| **GitHub Actions** (CI/triage) | Workflow fails or produces bad output | Fix the workflow file or inputs → push to `main` | Workflow re-runs green |
+
+**Rollback rule:** Always revert via a new PR to `main` (which triggers
+a clean redeploy), never via Render/Cloudflare dashboard rollback buttons
+— those create drift between the repo and deployed state.
+
 ## Interactions
 
 - **Committed stack:** GitHub, Render, Cloudflare, CI, governance — all
@@ -683,22 +713,22 @@ version bump as its own `INFRA:` change.
 
 ## Troubleshooting
 
-| Symptom | Likely cause | Command to run |
-|---|---|---|
-| `pnpm check` fails on PostgreSQL | Wrong `DATABASE_URL` or DB unreachable | Check `.env` value; `psql $DATABASE_URL -c "SELECT 1"` |
-| `pnpm check` fails on Hanko JWKS | `HANKO_TENANT_BASE_URL` wrong or Hanko down | `curl $HANKO_TENANT_BASE_URL/.well-known/jwks.json` |
-| `pnpm check` fails on R2 | Cloudflare bot rules blocking, or `R2_PUBLIC_URL` wrong | Check Cloudflare Security → Bots dashboard |
-| `pnpm check` fails on boardgame.io server | Server not running or `GAME_SERVER_URL` wrong | `curl $GAME_SERVER_URL/health` — check Render dashboard |
-| `pnpm test` fails | Code issue or missing `node_modules` | `pnpm install && pnpm test` |
-| `pnpm -r build` fails | TypeScript errors or missing deps | Check the failing package's error; `pnpm install` first |
-| Claude Code won't authenticate | API key expired or missing | `claude auth login` to re-authenticate |
-| Git push rejected | Branch behind `main` or hook failure | Read the hook error; `git pull --rebase origin main` |
-| Render deploy fails | Build error or migration failure | Check Render dashboard → Events → latest deploy log |
-| Cloudflare Pages deploy fails | Build error or env var missing | Check Pages dashboard → Deployments → latest build log |
-| RDP won't connect | Tailscale offline, wrong IP, or Home edition | Check Tailscale dashboard; verify Windows Pro |
-| `[conflicted N]` files appear | pCloud sync collision with git | Don't use pCloud for repo; delete conflicted copies, verify with `git status` |
-| `pnpm check:domains` shows FAIL | DNS/TLS misconfigured for that subdomain | Read the `dns:` / `tls:` diagnostic lines; check Cloudflare DNS records |
-| Nightly triage didn't run | GitHub Actions cron skipped (common on low-activity repos) | Check Actions tab; trigger manually via `gh workflow run` |
+| Symptom | Likely cause | Command | Pass condition |
+|---|---|---|---|
+| `pnpm check` fails on PostgreSQL | Wrong `DATABASE_URL` or DB unreachable | Check `.env`; `psql $DATABASE_URL -c "SELECT 1"` | Returns `1` |
+| `pnpm check` fails on Hanko JWKS | `HANKO_TENANT_BASE_URL` wrong or Hanko down | `curl $HANKO_TENANT_BASE_URL/.well-known/jwks.json` | Returns JSON with keys |
+| `pnpm check` fails on R2 | Cloudflare bot rules blocking or `R2_PUBLIC_URL` wrong | Check Cloudflare Security → Bots dashboard | `pnpm check` R2 row green |
+| `pnpm check` fails on game server | Server not running or `GAME_SERVER_URL` wrong | `curl $GAME_SERVER_URL/health` | HTTP 200, JSON body |
+| `pnpm test` fails | Code issue or missing `node_modules` | `pnpm install && pnpm test` | Exit 0, all tests pass |
+| `pnpm -r build` fails | TypeScript errors or missing deps | `pnpm install && pnpm -r build` | Exit 0, no errors |
+| Claude Code won't authenticate | API key expired or missing | `claude auth login` | Auth success message |
+| Git push rejected | Branch behind `main` or hook failure | Read hook error; `git pull --rebase origin main` | Push succeeds |
+| Render deploy fails | Build error or migration failure | Render dashboard → Events → latest deploy log | Deploy status: Live |
+| Cloudflare Pages deploy fails | Build error or env var missing | Pages dashboard → Deployments → latest build log | Build status: Success |
+| RDP won't connect | Tailscale offline, wrong IP, or Home edition | Check Tailscale dashboard; verify Windows Pro | Desktop visible from client |
+| `[conflicted N]` files appear | pCloud sync collision with git | Delete conflicted copies; `git status` | Clean working tree |
+| `pnpm check:domains` shows FAIL | DNS/TLS misconfigured for subdomain | Read `dns:` / `tls:` diagnostic lines | All live rows show `[OK]` |
+| Nightly triage didn't run | GitHub Actions cron skipped | Actions tab; `gh workflow run inspection-nightly.yml` | Workflow completes green |
 
 For detailed probe diagnostics, see
 [Operational Health Checks](operational-health-checks.md).
