@@ -22961,8 +22961,15 @@ no new move, no new effect keyword). Free-standing EC-236.
 
 **Packet:** WP-210 / EC-242.
 
+**Amended 2026-06-10 (D-23503):** the strict opacity is narrowed by ONE
+documented exception — the dashboard may name the single healthy-class key
+literal `'endgame-reached'` for health-rate computation (no `SweepAnomalyClass`
+import; all other keys remain opaque; `totalAnomalySparkline` unchanged). The
+narrowing exists because a meaningful health rate is structurally impossible
+under pure opacity (`sum(anomalyCounts) === cellCount`). See D-23503.
+
 **Drafted:** 2026-06-04. **Landed:** 2026-06-04.
-**Status:** Active
+**Status:** Active (amended by D-23503, 2026-06-10)
 
 ---
 
@@ -24119,9 +24126,11 @@ reuses the existing `BaseChart.vue` ECharts wrapper (WP-204). The derivation
 helpers (`classifyRunCadence`, `deriveSweepTrendPoints`, `useSweepTrend`) are pure
 functions of `recentRuns` with no internal `Date.now()` read (the page samples the
 clock once at the render boundary — WP-204 purity discipline). v1 scope is the
-cadence-aware rate trend only; new-vs-resolved-per-run, Builder-velocity, and
-per-anomaly-class-breakdown analytics are deferred (WP-235 §Future Work). The
-30-run LIMIT (EC-241) is consumed as-is; raising it is a separate server WP.
+cadence-aware **health-rate** trend (the plotted metric + the healthy-class
+constant + the repair of the two degenerate health-rate sites are locked by
+D-23503); per-anomaly-class composition breakdown, new-vs-resolved-per-run, and
+Builder-velocity analytics are deferred (WP-235 §Future Work). The 30-run LIMIT
+(EC-241) is consumed as-is; raising it is a separate server WP.
 
 **Packet:** WP-235 (EC-268).
 **Drafted:** 2026-06-10 (reserved). **Landed:** TBD (execution close).
@@ -24129,13 +24138,12 @@ per-anomaly-class-breakdown analytics are deferred (WP-235 §Future Work). The
 
 ---
 
-### D-23502 — Sweep Trend Cadence Segmentation + Rate Normalization
+### D-23502 — Sweep Trend Cadence Segmentation + Health-Rate Metric
 
 **Decision:**
 The trend view distinguishes the two sweep cadences that share the
 `legendary.sweep_runs` table — the **daily 2×2 smoke** (4 cells, D-20704) and the
-**weekly full-corpus** sweep (≤ 2,120 cells, WP-234) — and normalizes their
-magnitudes so one chart is meaningful across both. **Cadence is derived from the
+**weekly full-corpus** sweep (≤ 2,120 cells, WP-234). **Cadence is derived from the
 runId suffix grammar:** a runId matching `/-weekly-w(\d+)$/` is `weekly` (with the
 parsed `windowIndex`); any other runId is `daily` (`windowIndex = null`). This
 consumes the documented WP-209 (`<shortSha>-<compactTimestampUtc>`) + WP-234
@@ -24143,13 +24151,60 @@ consumes the documented WP-209 (`<shortSha>-<compactTimestampUtc>`) + WP-234
 disjoint precisely so "an operator can audit the rotation from `sweep_runs`
 alone." Cadence is **NOT** inferred from `cellCount` magnitude (a fragile
 threshold that misclassifies a small clamped weekly tail shard or a future
-cardinality change) nor from the anomaly taxonomy keys (which stay **opaque** per
-D-20703 — no `SweepAnomalyClass` member is hardcoded in the dashboard). The
-plotted metric is the **per-cell `anomalyRate`** (`totalAnomalies / cellCount`,
-with a `cellCount > 0` guard yielding rate 0 — never `NaN` — for a 0-cell run), so
-the daily-4-cell vs weekly-~2,120-cell magnitude gap does not dominate; daily and
-weekly runs render as distinct series. Raw-count trends were considered and
-rejected (they produce a meaningless sawtooth across the mixed cadences).
+cardinality change). **The plotted metric is the per-run health rate**
+(`endgame-reached / cellCount`, the D-23503 `computeSweepHealthRate` helper) — a
+fraction ∈ [0,1] that is magnitude-normalized, so the daily-4-cell vs
+weekly-~2,120-cell gap does not dominate and daily + weekly render as distinct
+series on a shared `[0,1]` y-axis. The composable owns the cadence split
+(`deriveSweepTrendSeries` → `{ daily, weekly }`); the chart never re-derives it.
+Locked chart behavior: y-axis bounded `[0,1]`; `connectNulls = false` (no
+interpolation bridging gaps); the time axis is a monotonic `submittedAtMs =
+Date.parse(submittedAt)` (a deterministic parse, not a wall-clock read); tooltip
+order `[timestamp, cadence, windowIndex?, healthRate%, cellCount]`. An
+**aggregate anomaly-rate** metric (`Σ all anomaly keys / cellCount`) was
+considered and **rejected** — it is identically 1.0 because every cell is
+classified into exactly one of the 4 classes (`sum(anomalyCounts) === cellCount`);
+the meaningful rate requires naming the healthy class (D-23503). Raw-count trends
+were likewise rejected (a meaningless sawtooth across the mixed cadences).
+
+**Packet:** WP-235 (EC-268).
+**Drafted:** 2026-06-10 (reserved). **Landed:** TBD (execution close).
+**Status:** Reserved (proposed)
+
+---
+
+### D-23503 — Healthy-Class Constant: A Narrow, Documented Exception to D-20703 Opacity
+
+**Decision:**
+A meaningful sweep **health rate** is structurally impossible under the strict
+D-20703 opaque-anomaly-key posture: the WP-195 classifier assigns **every** cell
+to exactly one of the 4-class taxonomy, so `sum(anomalyCounts) === cellCount` for
+every run, and a generic all-keys sum carries no health signal. The two existing
+dashboard health-rate computations — the Pipeline health KPI
+(`PipelinePage.vue` `sweepHealthPercent`) and the Architect-lane `< 80%` trigger
+(`useAgentPipeline.ts` `sweepHealthRate`) — both compute
+`(cellCount − Σ all anomaly keys) / cellCount`, which is therefore **identically 0
+on live data** (it only appears non-zero in MOCK mode, where the fixtures violate
+the invariant). This decision **carves the narrowest possible exception** to
+D-20703: the dashboard may reference the single string literal
+`SWEEP_HEALTHY_ANOMALY_KEY = 'endgame-reached'` (the clean-endgame / healthy class)
+for health-rate computation. It still does **NOT** import `SweepAnomalyClass`; it
+names no other taxonomy key (`not-endgame`, `escaped-villain-cap`, `fatal` stay
+opaque and render verbatim); the opaque all-keys `totalAnomalySparkline` (D-20703)
+is unchanged. A single sole-source-of-truth helper —
+`computeSweepHealthRate(run) = cellCount > 0 ? healthyCount / cellCount : null`
+(`healthyCount` reads the healthy key with a finite/non-negative guard, defaulting
+to 0; a 0-cell run yields `null`, never `NaN`) — **supersedes** the degenerate
+formula at **both** sites, so there is exactly one health-rate definition. Healthy
+= `endgame-reached` only; `escaped-villain-cap` is treated as non-healthy (it is a
+deliberately-flagged anomaly class per WP-195 D-19502) — counting it as healthy is
+a one-line constant change if the operator later revisits it. **Engine-coupling
+drift note:** naming one literal couples the dashboard to the engine's healthy-class
+key string; if the engine renames it, this one constant must update (a documented
+single-string coupling, analogous to the WP-234 runId-grammar coupling). This is
+the App-layer display-semantics narrowing the operator chose (option 2) over a
+pure-opacity per-class composition; it changes no engine code and adds no engine
+import, so the ARCHITECTURE.md layer boundary is preserved.
 
 **Packet:** WP-235 (EC-268).
 **Drafted:** 2026-06-10 (reserved). **Landed:** TBD (execution close).
