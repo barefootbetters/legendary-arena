@@ -122,74 +122,33 @@ dependency and enables long-running autonomous workflows.
 
 ### AI system flow
 
-```mermaid
-flowchart TD
-    subgraph surfaces["Operator Surfaces"]
-        laptop["Laptop"]
-        workstation["Home Workstation"]
-        phone["Phone"]
-    end
+```
+   Operator surfaces (Laptop · Workstation · Phone)
+            │  via Tailscale mesh
+            ▼
+   ┌──────────────────────┐      run / results
+   │     CLAUDE CODE       │◀───────────────────────▶  Ollama
+   │    (orchestrator)     │      local inference       (local 7B–70B,
+   └──┬────────────────┬──┘                              future)
+      │ commit          │ rclone sync
+      ▼                 ▼
+   ┌────────┐       Cloudflare R2 ──▶ Cloudflare Pages
+   │ GitHub │                              (front-ends)
+   └───┬────┘
+       ├── merge to main ──▶ Render (server + PostgreSQL)
+       │
+       └── PR + CI ──▶ GitHub Actions ──nightly──▶ Claude Inspector
+                                                        │ findings
+              ┌──── new WPs (closed loop) ◀─────────────┘
+              ▼
+        back to CLAUDE CODE
 
-    subgraph control["Control Plane"]
-        tailscale["Tailscale Network"]
-    end
-
-    subgraph orchestrator["AI Orchestration"]
-        claude["Claude Code<br/>(primary orchestrator)"]
-        ollama["Ollama Local Models<br/>(7B–70B, future)"]
-    end
-
-    subgraph external["External AI (operator-directed)"]
-        copilot["GitHub Copilot<br/>(inline code assist)"]
-        grok["Grok / Other LLMs<br/>(alt reasoning)"]
-    end
-
-    subgraph pipeline["CI + Deploy Pipeline"]
-        github["GitHub Repo"]
-        ci["GitHub Actions CI"]
-        inspector["Claude CI Inspector<br/>(nightly triage)"]
-        wp["New Work Packets"]
-    end
-
-    subgraph deploy["Deploy Targets"]
-        render["Render<br/>(server + PostgreSQL)"]
-        pages["Cloudflare Pages<br/>(front-ends)"]
-        r2["Cloudflare R2<br/>(images + metadata)"]
-    end
-
-    laptop --> tailscale
-    workstation --> tailscale
-    phone --> tailscale
-    tailscale --> workstation
-
-    laptop -->|"Claude Code session"| claude
-    workstation -->|"Claude Code session"| claude
-    workstation -->|"local inference"| ollama
-    ollama -->|"results"| claude
-    phone -->|"PR review + merge"| github
-
-    claude -->|"commit (2-step topology)"| github
-    claude -->|"rclone sync"| r2
-    github -->|"PR + CI checks"| ci
-    ci -->|"nightly cron"| inspector
-    inspector -->|"findings → new WPs"| wp
-    wp -->|"next session"| claude
-
-    github -->|"merge to main"| render
-    github -->|"merge to main"| pages
-
-    ci -.->|"failures / logs"| claude
-    render -.->|"runtime signals"| claude
-    pages -.->|"deploy status"| claude
-
-    classDef future stroke-dasharray:6;
-    class ollama future;
-    class copilot future;
-    class grok future;
+   Feedback ──▶ Claude Code:  CI failures · runtime signals · deploy status
+   External AI (Copilot · Grok):  operator-directed, NOT in this loop
 ```
 
-> **Dashed** nodes are future or operator-discretionary — not part of the
-> committed orchestration loop.
+> Ollama and the external AI tools are future / operator-discretionary —
+> not part of the committed orchestration loop.
 
 **Key architectural points:**
 
@@ -216,12 +175,10 @@ flowchart TD
 
 **Future: AI routing (when local models are operational):**
 
-```mermaid
-flowchart LR
-    claude["Claude Code"] --> decision{Task type}
-    decision -->|"heavy reasoning"| api["Claude API<br/>(Opus / Sonnet)"]
-    decision -->|"experimentation"| ollama["Ollama<br/>(local 7B–70B)"]
-    decision -->|"code completion"| copilot["Copilot<br/>(inline)"]
+```
+                          ┌─ heavy reasoning ───▶ Claude API (Opus / Sonnet)
+   Claude Code ─▶ Task type ┼─ experimentation ──▶ Ollama (local 7B–70B)
+                          └─ code completion ──▶ Copilot (inline)
 ```
 
 This routing is aspirational. Today all AI tasks go through Claude Code's
