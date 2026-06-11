@@ -245,6 +245,148 @@ reduce external API dependency.
 | System set to never sleep | Yes |
 | Ollama installed | Optional |
 
+## Multi-Machine Setup
+
+### Source of truth
+
+GitHub is the single source of truth. Every other location is a working
+copy or a deployment target.
+
+```
+                GitHub (source of truth)
+                        ↑ ↓
+            ┌───────────┴───────────┐
+            │                       │
+         Laptop                Workstation
+      (authoring)            (execution)
+            │                       │
+            └────── Tailscale ──────┘
+                  (control plane)
+                        │
+                      Phone
+                  (approval surface)
+```
+
+### What lives where
+
+| Location | What it holds | Sync mechanism |
+|---|---|---|
+| **GitHub** | Authoritative repo — code, governance ledger, CI config, wiki source | `git push` / `git pull` |
+| **Laptop** | Git clone + `.env` + `node_modules` | `git pull` / `git push` to GitHub |
+| **Home Workstation** | Git clone + `.env` + `node_modules` + Ollama models | `git pull` / `git push` to GitHub |
+| **Phone** | No repo clone — GitHub mobile app + Remote Desktop | Reads GitHub directly |
+| **Render** | Production server + managed PostgreSQL | Auto-deploy on merge to `main` |
+| **Cloudflare Pages** | Front-end builds (play, cards, ewiki) | Auto-deploy on merge to `main` |
+| **Cloudflare R2** | Card images + metadata | `rclone sync` from operator machine |
+| **GitHub Actions** | CI runners + nightly triage agent | Triggered by push / PR / cron |
+
+### Filesystem layout
+
+Both the laptop and workstation use the same layout. The repo structure
+IS the directory structure — there's nothing to design beyond where you
+clone it.
+
+**Workstation** (recommended):
+
+```
+C:\dev\
+├── legendary-arena\           ← git clone
+│   ├── .claude/               ← Claude Code config, skills, rules
+│   ├── apps/                  ← server, dashboard, arena-client, wiki-viewer, registry-viewer
+│   ├── packages/              ← game-engine, registry, preplan, vue-sfc-loader
+│   ├── docs/                  ← governance, architecture, vision, ops
+│   ├── wiki/                  ← ewiki source (projected into wiki-viewer at build time)
+│   ├── data/                  ← card JSON, metadata, migrations
+│   ├── scripts/               ← operational scripts (check-connections, convert-cards, etc.)
+│   ├── .env                   ← machine-specific secrets (NEVER committed)
+│   ├── .env.example           ← committed template
+│   └── pnpm-lock.yaml
+│
+└── legendary-arena-com\       ← marketing repo clone (if needed)
+```
+
+**Laptop** (current — on pCloud):
+
+```
+C:\pcloud\BB\DEV\
+└── legendary-arena\           ← git clone (same repo, different path)
+```
+
+The laptop repo currently lives on pCloud. A migration to a local path
+(off pCloud) is planned but deferred. pCloud sync creates `[conflicted N]`
+duplicate files and has caused `.git` refs corruption — the workstation
+should NOT use pCloud for the repo clone.
+
+### Sync rules
+
+Machines sync exclusively through git. No manual file copying, no pCloud
+sync, no shared drives.
+
+| Action | Correct | Wrong |
+|---|---|---|
+| Get latest code | `git pull` | Copy files between machines |
+| Share a change | `git push` → `git pull` on other machine | USB / email / pCloud sync |
+| Move `.env` to new machine | `scp` or password manager (one time) | Commit to repo / pCloud |
+| Resolve divergence | `git merge` or `git rebase` | Manually pick files |
+
+Both machines can have different branches checked out, different
+`node_modules` state, and different `.env` values. They are independent
+working copies of the same repo, not mirrors of each other.
+
+### Platform services
+
+Each platform manages its own configuration and secrets independently.
+
+**GitHub** — repo hosting + CI:
+
+- Repo: `barefootbetters/legendary-arena`
+- CI workflows in `.github/workflows/`
+- Secrets configured in repo Settings → Secrets and variables → Actions
+- Nightly triage agent runs as a scheduled workflow
+
+**Render** — server + database:
+
+- Service: `legendary-arena-server` (declared in `render.yaml`)
+- Database: `legendary-arena-db` (managed PostgreSQL)
+- Env vars configured in the Render dashboard (Environment tab)
+- Auto-deploys on merge to `main`; migrations run in `buildCommand`
+
+**Cloudflare Pages** — front-ends:
+
+- Projects: `legendary-arena-play`, `legendary-arena-cards`,
+  `legendary-arena-wiki`
+- Env vars configured per-project in Pages → Settings → Environment variables
+- Auto-deploys on merge to `main` (via GitHub integration)
+- Custom domains: `play.legendary-arena.com`, `cards.legendary-arena.com`,
+  `ewiki.legendary-arena.com`
+
+**Cloudflare R2** — static assets:
+
+- Bucket: `legendary-images`
+- Public URL: `images.legendary-arena.com` (card images),
+  `data.barefootbetters.com` (metadata)
+- Synced via `rclone` from operator machine, not from CI
+- Custom domain configured in R2 bucket settings
+
+**Tailscale** — private network:
+
+- Connects laptop, workstation, and phone
+- No configuration in the repo — purely operator-managed
+- Admin console at `login.tailscale.com`
+
+### What pCloud is and isn't
+
+pCloud is a **backup layer**, not a sync mechanism and not a source of
+truth.
+
+| Use | OK? |
+|---|---|
+| Backing up local files, archives, large assets | Yes |
+| Storing Ollama model files | Yes |
+| Active development workspace for git repos | No — causes conflicts and `.git` corruption |
+| Syncing code between machines | No — use `git push` / `git pull` |
+| Editing files directly in pCloud | No — use a local clone |
+
 ## Interactions
 
 - **Committed stack:** GitHub, Render, Cloudflare, CI, governance — all
