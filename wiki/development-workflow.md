@@ -528,14 +528,115 @@ them immediately at each service's dashboard.
 
 ### Phase 7 — Local AI models (optional)
 
+Local open-source models run on the workstation via Ollama. This layer
+is optional and future-facing — Claude Code remains the primary
+orchestrator. Local models add private inference, batch/long-running
+capacity, and reduced API dependency.
+
+**Install and smoke-test:**
+
 1. Install Ollama from `https://ollama.com`
-2. Run a test model: `ollama run mistral`
+2. Pull and run a starter model: `ollama run qwen2.5-coder:7b`
+3. Confirm the API is up: `curl http://localhost:11434/api/tags`
 
-**Pass condition:** model responds locally.
+**Pass condition:** model responds in the terminal and `/api/tags`
+lists it.
 
-This layer is future infrastructure — Claude Code remains the primary
-orchestrator. Local models (7B–70B) add experimentation capacity and
-reduce external API dependency.
+#### Model selection (open source)
+
+Pick models by task. Model releases move fast — check
+`https://ollama.com/library` for current versions and tags. Sizes
+below are the `:Nb` parameter counts; all run quantized (Q4) by default.
+
+| Task | Recommended models | Notes |
+|---|---|---|
+| **Coding / refactor** | `qwen2.5-coder` (7B / 14B / 32B), `deepseek-coder-v2` | Strongest open coding models; 14B is the sweet spot for most GPUs |
+| **General reasoning** | `llama3.1:8b`, `qwen2.5` (7B / 14B), `gemma2:9b` | Balanced quality vs. speed |
+| **Heavy reasoning** | `llama3.3:70b`, `qwen2.5:72b`, `deepseek-r1` | Needs a high-VRAM GPU; chain-of-thought models are slower |
+| **Fast / drafting** | `llama3.2:3b`, `phi3`, `gemma2:2b` | Run on CPU or modest GPU; good for quick passes |
+| **Embeddings** | `nomic-embed-text`, `mxbai-embed-large` | For local semantic search / RAG experiments |
+| **Vision** | `llama3.2-vision`, `llava` | Image description / OCR-style tasks |
+
+Start with `qwen2.5-coder:7b` (coding) and `llama3.1:8b` (general).
+Add a 70B model only if the GPU supports it.
+
+#### Hardware sizing
+
+Rough VRAM needed per model tier (Q4 quantization). System RAM should
+be at least the model's on-disk size; without enough VRAM, Ollama
+spills to CPU and runs far slower.
+
+| Model size | VRAM (GPU) | Realistic on |
+|---|---|---|
+| 1–3B | ~2–4 GB | Any modern GPU, or CPU-only |
+| 7–8B | ~6–8 GB | RTX 3060 / 4060 (8 GB) and up |
+| 13–14B | ~10–16 GB | RTX 4070 Ti / 4080 (12–16 GB) |
+| 32B | ~20–24 GB | RTX 4090 / 3090 (24 GB) |
+| 70B+ | ~40–48 GB | Dual-GPU, A6000, or CPU-offload (slow) |
+
+CPU-only inference works for the 1–8B tier but is much slower; use it
+for batch/overnight jobs, not interactive sessions.
+
+#### Sharing local-model results back to Claude Code
+
+Local models are not in Claude Code's automated loop — they produce raw
+output the operator (or Claude Code) consumes. Three handoff patterns,
+simplest first. All treat local-model output as **unverified draft
+input**: a 7B model's claim is not a citation, and the repo's
+determinism / citation rules still apply before anything lands.
+
+**Pattern A — File handoff (recommended default).** The local model
+writes to a gitignored scratch file; Claude Code reads it next turn.
+Deterministic, no live coupling, fits the "files are the interface"
+model.
+
+```powershell
+# Operator runs the local model, drops output to a scratch file
+ollama run qwen2.5-coder:14b "List failure modes in zoneOps.ts" > scratch/ollama-out.md
+```
+
+Then in a Claude Code session: *"Read `scratch/ollama-out.md` and fold
+the valid points into the WP draft."* Claude Code reads the file, keeps
+what survives review, and discards the rest.
+
+**Pattern B — Script-driven via the API.** For repeatable or batch work,
+a script in `scripts/` queries Ollama's OpenAI-compatible endpoint
+(`http://localhost:11434/v1/chat/completions`) and writes structured
+output. Claude Code can both run the script (PowerShell / Bash tool) and
+read its output.
+
+```powershell
+# Example: query Ollama, write JSON for Claude Code to consume
+$body = @{ model = "qwen2.5-coder:14b"; messages = @(@{ role = "user"; content = "..." }) } | ConvertTo-Json
+Invoke-RestMethod -Uri http://localhost:11434/v1/chat/completions -Method Post -Body $body -ContentType application/json |
+  ConvertTo-Json -Depth 10 > scratch/ollama-result.json
+```
+
+**Pattern C — Direct invocation by Claude Code.** Because Claude Code
+runs shell commands, it can call Ollama itself and capture stdout — no
+manual handoff. Most integrated; the model must be pulled and the
+session must reach `localhost:11434` (or the workstation's Ollama over
+Tailscale).
+
+```powershell
+# Claude Code runs this via its PowerShell tool and reads the output directly
+ollama run llama3.1:8b "Summarize the diff in apps/server/src/server.mjs"
+```
+
+To make local models a first-class tool, expose Ollama as an MCP server
+in Claude Code's config — then Claude can route specific subtasks to a
+local model the same way it uses any other tool. This is operator
+discretion, not automated routing (see the
+[AI system flow](#ai-system-flow) future-routing note).
+
+> **Governance:** scratch outputs are gitignored and never committed —
+> same posture as `docs/ai/invocations/` scratchpads. Add a `scratch/`
+> entry to `.gitignore` before using these patterns. Local-model output
+> informs work; it does not author it.
+
+**Pass condition:** a local model produces output, and Claude Code can
+read it from a scratch file (Pattern A) or invoke the model directly
+(Pattern C).
 
 ### Security hardening
 
@@ -557,6 +658,11 @@ reduce external API dependency.
 - Tailscale replaces all of this safely — all traffic is encrypted
   end-to-end through the mesh
 
+**If exposing Ollama across machines** (Pattern C over Tailscale): bind
+Ollama to the Tailscale interface, not `0.0.0.0`. Set
+`OLLAMA_HOST=<workstation-tailscale-ip>:11434` so the API is reachable
+only inside the mesh — never bind it to a public interface.
+
 ### Final checklist
 
 | Check | Required |
@@ -568,7 +674,8 @@ reduce external API dependency.
 | `.env` copied and `pnpm check` passes | Yes |
 | Repo builds successfully | Yes |
 | System set to never sleep | Yes |
-| Ollama installed | Optional |
+| Ollama installed + model pulled | Optional |
+| Local-model → Claude Code handoff tested (`scratch/` gitignored) | Optional |
 
 ## Multi-Machine Setup
 
