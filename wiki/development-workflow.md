@@ -38,6 +38,11 @@ remotely accessible via Tailscale, and ready for local AI models. It
 replaces the need for a cloud VM (DigitalOcean, etc.) with a stronger,
 cheaper, fully operator-controlled machine.
 
+This document is structured around the **Four C's framework** (Nate Herk,
+"AI Operating System" — see References): Context, Connections,
+Capabilities, and Cadence. Each section of the workflow maps to one or
+more of these layers.
+
 ## Mechanics
 
 ### Actors
@@ -77,6 +82,180 @@ Not part of the committed stack. The workstation may host Claude Code as
 primary orchestrator and local AI models (future: 7B–14B for
 experimentation, 70B+ for heavy reasoning). This reduces external API
 dependency and enables long-running autonomous workflows.
+
+## Four C's Assessment
+
+Framework source: Nate Herk, "I Turned Claude Opus 4.8 Into My Entire
+AI Operating System" (see References). The Four C's define what an AI
+operating system needs: Context (what the AI knows), Connections (what
+data it can reach), Capabilities (what it can do), and Cadence (what
+runs without being asked). The companion Three M's framework (Mindset,
+Method, Machine) governs how the operator thinks and builds — see the
+video and AIS-OS repo for the full treatment.
+
+### Context — what Claude knows
+
+Context is the foundation layer. A fresh Claude Code session should be
+able to answer business and architectural questions without research.
+
+**What legendary-arena has today:**
+
+| Artifact | What it provides |
+|---|---|
+| `.claude/CLAUDE.md` | Project identity, tech stack, key commands, authority hierarchy, operating posture |
+| `.claude/rules/*.md` | Architecture enforcement, code style, work packet discipline |
+| `.claude/skills/legendary-*/SKILL.md` | Layer-specific rules loaded on demand (game-engine, registry, persistence, server) |
+| `docs/ai/ARCHITECTURE.md` | Authoritative system architecture, layer boundaries, data flow |
+| `docs/01-VISION.md` | Product vision, non-negotiable truths, financial sustainability model |
+| `docs/ai/DECISIONS.md` | Design decision log with rationale (D-NNNN entries) |
+| `docs/ai/work-packets/WORK_INDEX.md` | Execution spine — which WPs exist, status, dependencies |
+| `~/.claude/CLAUDE.md` | User-level instructions (tone, preferences, operating norms) |
+| Auto-memory (`~/.claude/projects/*/memory/`) | Persistent cross-session memory (feedback, project state, references) |
+
+**Assessment:** Context is the strongest layer. Claude Code sessions
+start with full business context, architectural constraints, and
+accumulated feedback. The governance stack (CLAUDE.md → ARCHITECTURE.md
+→ rules → WPs) acts as the "foundation file" the Four C's framework
+calls for.
+
+### Connections — what Claude can reach
+
+Connections determine what live data the AI can access without manual
+pasting.
+
+**What legendary-arena has today:**
+
+| Connection | Mechanism | Status |
+|---|---|---|
+| Git repo (code, docs, governance) | Local filesystem | Active |
+| GitHub (PRs, issues, CI status) | `gh` CLI | Active |
+| PostgreSQL (game data) | `DATABASE_URL` in `.env` | Active |
+| Cloudflare R2 (card images, metadata) | `rclone` CLI | Active |
+| Cloudflare Pages (front-end deploys) | GitHub integration (auto) | Active |
+| Render (server deploys) | GitHub integration (auto) | Active |
+| Card data JSON (40 sets) | Local filesystem (`data/cards/`) | Active |
+| Hanko (auth service) | JWKS endpoint via `.env` | Active |
+| Claude Code MCP servers | Browser (Claude in Chrome), visualize | Active |
+
+**What's not connected yet:**
+
+| Connection | Gap |
+|---|---|
+| Slack / Discord | No team chat integration |
+| Email (Brevo) | No programmatic access from Claude sessions |
+| Analytics / dashboards | No live metrics feed into Claude context |
+| Calendar | No scheduling integration |
+| Local AI models (Ollama) | Future — workstation setup prerequisite |
+
+**Assessment:** Connections are solid for the core dev loop (code, CI,
+deploy, database, assets). The gaps are in business operations —
+marketing, comms, analytics — which matter more as the business grows.
+
+### Capabilities — what Claude can do
+
+Capabilities are what the AI executes — scripts, APIs, multi-step
+workflows triggered by short phrases.
+
+**What legendary-arena has today:**
+
+| Capability | Trigger | What it does |
+|---|---|---|
+| WP/EC execution | Claude Code session + EC checklist | Full work packet implementation with governance close |
+| Local gates | `pnpm test` / `typecheck` / `build` | Pre-push quality enforcement |
+| Health checks | `pnpm check` / `pnpm check:domains` | Probe all external dependencies + subdomains |
+| Card data pipeline | `scripts/convert-cards/` | Convert raw card data to engine-ready JSON |
+| Architecture inventory | `pnpm wiki-viewer:inventory` | Generate architecture snapshot for ewiki |
+| Wiki build | `pnpm wiki-viewer:build` | Project wiki source → Hugo static site |
+| R2 asset sync | `rclone sync` | Push card images + metadata to CDN |
+| Claude Code skills | `/legendary-game-engine`, `/legendary-registry`, etc. | Layer-specific rules and context on demand |
+| Code review | `/code-review` | Automated diff review at configurable depth |
+| Agent workflows | Agent tool + Workflow tool | Multi-agent orchestration for complex tasks |
+
+**Assessment:** Capabilities are strong for engineering work. The system
+can take a work packet from draft to deployed code in a single session.
+Gaps are in business automation — no email workflows, no financial
+reporting triggers, no customer-facing automation.
+
+### Cadence — what runs without being asked
+
+Cadence is the autonomous layer — scheduled work that produces outputs
+with no operator at the keyboard.
+
+**What legendary-arena has today:**
+
+| Automation | Schedule | What it does |
+|---|---|---|
+| Nightly Inspector triage | Cron (`.github/workflows/inspection-nightly.yml`) | Runs sweep over codebase, generates findings, creates WPs |
+| Architecture inventory | Weekly Monday 06:00 UTC (`.github/workflows/architecture-inventory.yml`) | Regenerates `wiki/architecture-inventory.md`, opens PR on diff |
+| Auto-deploy (Render) | On merge to `main` | Rebuilds server, runs migrations |
+| Auto-deploy (Cloudflare Pages) | On merge to `main` | Rebuilds front-ends |
+| WP auto-verification (WP-231/233) | Part of nightly sweep | Closes verified findings, surfaces new ones |
+
+**What's not automated yet:**
+
+| Automation | Gap |
+|---|---|
+| Scheduled Claude Code agents | No recurring local-machine agents (beyond CI) |
+| Email / newsletter automation | Brevo pipeline exists but not Claude-triggered |
+| Financial reporting | No automated revenue / royalty tracking |
+| Dependency updates | No automated `pnpm update` + test cycle |
+| Uptime monitoring | `pnpm check` is manual; no scheduled probe |
+
+**Assessment:** Cadence exists in CI (nightly triage, weekly inventory,
+auto-deploy) but not on operator machines. The workstation enables a
+new cadence layer — scheduled Claude Code agents that run locally, not
+just in GitHub Actions. This is the highest-leverage gap to close.
+
+### Four C's — maturity summary
+
+| Layer | Maturity | Next step |
+|---|---|---|
+| **Context** | Strong | Maintain — governance stack is comprehensive |
+| **Connections** | Solid for dev, gaps in business ops | Connect Brevo, analytics, calendar as business grows |
+| **Capabilities** | Strong for engineering | Add business automation capabilities (email, reporting) |
+| **Cadence** | CI-only | Extend to workstation-based scheduled agents |
+
+### Three M's — operating principles (from Nate Herk)
+
+The Three M's govern how the operator thinks and builds on top of the
+Four C's infrastructure.
+
+**Mindset:**
+
+- Before any task, ask "how could AI assist here?" — not binary, just
+  degree of leverage.
+- Decompose roles into tiny automatable tasks, not monolithic
+  responsibilities. Build one piece, validate, advance.
+- Never passively accept AI outputs. Request alternatives and reasoning.
+  Prevents "dark code" (automations you can't explain).
+- Expect a ~20% productivity dip for 1–2 weeks during adjustment, then
+  it typically doubles.
+
+**Method:**
+
+- **Find the constraint:** "If 500 new players arrived tomorrow, what
+  breaks first?" (bottleneck) and "What would bring 500 players
+  tomorrow?" (growth gap).
+- **EAD — Eliminate, Automate, Delegate.** In that order. The
+  **60/30/10 rule**: 60% fully automated, 30% AI-assisted with human
+  review, 10% stays manual.
+- **Autonomy spectrum:** L0 Manual → L1 Suggested → L2 Drafted →
+  L3 Supervised → L4 Autonomous. Default to the lowest level sufficient.
+- **Tie to KPIs:** Every automation must move a measurable metric in
+  one of three buckets: customer acquisition, customer value, or cost
+  reduction.
+
+**Machine (build + operate):**
+
+- **Lego Principle:** Smallest possible modular units. Single input →
+  single output. Deterministic steps before AI layers.
+- **BIKE Method (phased rollout):** Training wheels → guided → watched →
+  hands-off. Start at 10% volume, monitor weekly, add 20% more.
+- **Intern Rule:** Treat AI like a new employee — own accounts (never
+  impersonates humans), read-only access first, write permissions
+  earned after proving reliability.
+- **Kill Switch:** Shut down automations that consistently need patches,
+  produce poor quality, or cost more than they save.
 
 ## Workstation Setup Guide
 
@@ -442,3 +621,5 @@ truth.
 - [.github/workflows/inspection-nightly.yml](../.github/workflows/inspection-nightly.yml) — nightly Inspector triage agent
 - Tailscale — `https://tailscale.com`
 - Ollama — `https://ollama.com`
+- Nate Herk, "I Turned Claude Opus 4.8 Into My Entire AI Operating System" — `https://www.youtube.com/watch?v=0WDkwMxj13s` (Four C's + Three M's frameworks)
+- AIS-OS starter kit — `https://github.com/nateherkai/AIS-OS` (`/onboard`, `/audit`, `/level-up` skills)
