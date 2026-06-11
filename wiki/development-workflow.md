@@ -162,7 +162,46 @@ Options for keeping sessions alive after disconnecting from Remote Desktop:
   environment. Claude Code runs inside the tmux session and survives
   disconnects cleanly.
 
-### Phase 6 — Local AI models (optional)
+### Phase 6 — Environment + API keys
+
+The `.env` file contains machine-specific secret state: API keys, database
+URLs, service credentials. It is **never committed** — only `.env.example`
+is tracked in the repo.
+
+**Three-layer secret model:**
+
+| Layer | Secret source | Used by |
+|---|---|---|
+| Local execution | `.env` in the repo checkout | Claude Code, `pnpm test`, dev servers |
+| CI / GitHub | GitHub Actions secrets | CI workflows, nightly triage agent |
+| Deploy (Render / Cloudflare) | Platform-managed env vars | Production server, Pages builds |
+
+Each layer has its own secret surface. `.env` is local execution only —
+CI and deploy never read it.
+
+**Copy `.env` to the workstation:**
+
+- **Secure copy** (recommended): `scp .env user@workstation-tailscale-ip:/path/to/legendary-arena/`
+- **Manual transfer**: USB drive or password manager
+
+**Validate the setup:**
+
+```powershell
+pnpm check
+```
+
+This runs the full connection health check (see
+[Operational Health Checks](operational-health-checks.md)) — validates all
+11 required env vars, probes every external service (PostgreSQL, Hanko,
+R2, GitHub, Render), and checks toolchain versions. If `pnpm check`
+passes, the workstation is correctly configured.
+
+**Pass condition:** `pnpm check` reports all checks passed.
+
+**If keys were copied insecurely** (email, chat, plain text), regenerate
+them immediately at each service's dashboard.
+
+### Phase 7 — Local AI models (optional)
 
 1. Install Ollama from `https://ollama.com`
 2. Run a test model: `ollama run mistral`
@@ -201,6 +240,7 @@ reduce external API dependency.
 | Tailscale connected (all devices) | Yes |
 | Remote Desktop works from phone | Yes |
 | Claude Code runs | Yes |
+| `.env` copied and `pnpm check` passes | Yes |
 | Repo builds successfully | Yes |
 | System set to never sleep | Yes |
 | Ollama installed | Optional |
@@ -232,6 +272,18 @@ reduce external API dependency.
 - **WSL recommended for long Claude sessions.** Native PowerShell sessions
   can be interrupted by Windows updates or RDP reconnects. WSL + tmux
   provides a more resilient execution environment.
+- **Missing `.env` is silent until runtime.** Without `.env`, Claude Code
+  sessions fail, API calls fail, and builds break. Always run `pnpm check`
+  after setting up a new machine. See
+  [Operational Health Checks](operational-health-checks.md) for the full
+  probe suite.
+- **Wrong `.env` (production vs local).** Copying the wrong environment's
+  `.env` can point at the wrong database or break deploy assumptions.
+  `pnpm check` validates `EXPECTED_DB_NAME` when set, catching this class
+  of error.
+- **Never commit `.env`.** The repo's `.gitignore` excludes it. If keys
+  were copied insecurely (email, chat, plain text), regenerate at each
+  service's dashboard immediately.
 - **If the workstation becomes committed infrastructure** (e.g., scheduled
   agents, model-backed APIs), it must be defined in repo config and
   documented in both the REFERENCE doc and `01-render-infrastructure.md`.
