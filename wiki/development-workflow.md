@@ -28,10 +28,12 @@ last-reviewed: 2026-06-11
 
 The develop-from-anywhere loop describes how a change travels from idea
 to production for `legendary-arena.com`. Three operator surfaces (laptop,
-home workstation, phone) drive Claude Code sessions that build to WP/EC
-contracts, commit to GitHub, and deploy automatically via Render and
-Cloudflare on merge to `main`. A nightly CI triage agent closes the loop
-by generating new work packets from sweep results.
+home workstation, phone) drive Claude Code sessions that build to
+**WP/EC** contracts (Work Packet — scoped unit of work; Execution
+Checklist — the quick-reference compliance contract for that WP), commit
+to GitHub, and deploy automatically via Render and Cloudflare on merge to
+`main`. A nightly CI triage agent closes the loop by generating new work
+packets from sweep results.
 
 The home workstation is a personal cloud-grade dev + AI server: always-on,
 remotely accessible via Tailscale, and ready for local AI models. It
@@ -42,6 +44,41 @@ This document is structured around the **Four C's framework** (Nate Herk,
 "AI Operating System" — see References): Context, Connections,
 Capabilities, and Cadence. Each section of the workflow maps to one or
 more of these layers.
+
+## Quick Start (new machine → first deploy)
+
+Copy-paste sequence to go from a fresh Windows machine to a working
+dev environment. Assumes Windows 10/11 Pro with internet access.
+
+```powershell
+# 1. Install prerequisites
+winget install Tailscale.Tailscale
+winget install OpenJS.NodeJS --version 22.16.0
+npm install -g pnpm@latest
+npm install -g @anthropic-ai/claude-code
+
+# 2. Authenticate
+claude auth login
+
+# 3. Clone and build
+cd C:\dev
+git clone https://github.com/barefootbetters/legendary-arena.git
+cd legendary-arena
+pnpm install
+
+# 4. Copy .env from existing machine (one time)
+# scp user@laptop-tailscale-ip:C:/path/to/legendary-arena/.env .
+
+# 5. Validate everything
+pnpm check           # probes all 11 env vars + external services
+pnpm test            # run all tests
+pnpm -r build        # build all packages
+
+# 6. Open Tailscale, sign in, verify devices visible
+# 7. Enable Remote Desktop: Settings → System → Remote Desktop → ON
+```
+
+If `pnpm check` passes and tests are green, the machine is ready.
 
 ## Mechanics
 
@@ -566,6 +603,69 @@ truth.
 | Syncing code between machines | No — use `git push` / `git pull` |
 | Editing files directly in pCloud | No — use a local clone |
 
+### Branch and PR policy
+
+| Rule | Value |
+|---|---|
+| Branch naming | `claude/<wp-slug>` for WP work, `docs/<slug>` for docs, `fix/<slug>` for hotfixes |
+| Merge strategy | Squash-merge to `main` (single commit per PR) |
+| Required CI checks | Build, test, commit hygiene, registry validation |
+| Commit topology (WP work) | Two commits: `EC-NNN:` implementation + `SPEC:` governance close |
+| Commit topology (non-WP) | Single commit with `INFRA:` or `SPEC:` prefix — no two-commit requirement |
+| Emergency hotfix | Single-commit `fix/` branch, `INFRA:` prefix, squash-merge directly. Skip EC/SPEC topology. Document in next session's WP if the fix touches engine logic. |
+| `pnpm check` | Local operator gate — not a CI merge gate. Run after machine setup and before investigating production issues. |
+
+**Commit prefix rules** (enforced by pre-commit hook):
+
+| Prefix | When to use |
+|---|---|
+| `EC-NNN:` | Work packet implementation (must have a matching EC) |
+| `SPEC:` | Governance close, WP/EC drafting, doc-only changes |
+| `INFRA:` | Infrastructure, tooling, CI, non-WP operational changes |
+
+### Secrets rotation
+
+**Rotation cadence:** No fixed schedule. Rotate immediately on:
+
+- Suspected compromise (key in logs, chat, email, public repo)
+- Employee offboarding (if applicable)
+- Service breach notification from a provider
+
+**Rotation order** (highest impact first):
+
+1. `DATABASE_URL` — rotate the PostgreSQL password in Render, update
+   `.env` on all machines, verify with `pnpm check`
+2. `ANTHROPIC_API_KEY` — regenerate at `console.anthropic.com`, update
+   `.env`, re-auth Claude Code (`claude auth login`)
+3. `JWT_SECRET` — rotate in Render env vars; active sessions invalidate
+   on next server restart
+4. GitHub tokens — regenerate in GitHub Settings → Developer settings →
+   Personal access tokens
+5. Cloudflare API tokens — regenerate in Cloudflare dashboard →
+   My Profile → API Tokens
+6. `rclone` R2 credentials — regenerate in Cloudflare R2 → Manage R2
+   API Tokens, update `rclone.conf`
+
+**Verification after rotation:** Run `pnpm check` on every machine with
+the updated `.env`. All probes must pass. If a deploy surface uses the
+rotated secret (Render, GitHub Actions), trigger a manual deploy or CI
+run to confirm.
+
+### Version pinning
+
+| Tool | Minimum | Pinned where | Upgrade path |
+|---|---|---|---|
+| Node.js | v22+ | `pnpm check` validates major version | `winget upgrade OpenJS.NodeJS`; run `pnpm test` after |
+| pnpm | v8+ | `pnpm check` validates major version | `npm install -g pnpm@latest`; run `pnpm install --frozen-lockfile` to verify lockfile compatibility |
+| boardgame.io | `0.50.x` (locked) | `package.json` + `pnpm check` verifies exact range | Do NOT upgrade without a DECISIONS.md entry — API surface changes are breaking |
+| Hugo | `0.135.0 Extended` | `apps/wiki-viewer/.hugo-version` | Update `.hugo-version` + test with `pnpm wiki-viewer:build`; needs DECISIONS entry |
+| rclone | v1.60+ | Not pinned; `pnpm check` verifies binary exists | `winget upgrade Rclone.Rclone`; verify with `rclone lsd r2:legendary-images` |
+| Tailscale | Latest | Auto-updates by default | No action needed |
+
+**Upgrade rule:** Never upgrade a pinned tool mid-WP. Upgrade between
+work packets on a clean `main`, run the full test suite, and commit the
+version bump as its own `INFRA:` change.
+
 ## Interactions
 
 - **Committed stack:** GitHub, Render, Cloudflare, CI, governance — all
@@ -580,6 +680,28 @@ truth.
 - **WP/EC execution:** for the drafting and execution mechanics, see
   [01.0a-wp-drafting-phase.md](../docs/ai/REFERENCE/01.0a-wp-drafting-phase.md)
   and [01.0b-wp-execution-phase.md](../docs/ai/REFERENCE/01.0b-wp-execution-phase.md).
+
+## Troubleshooting
+
+| Symptom | Likely cause | Command to run |
+|---|---|---|
+| `pnpm check` fails on PostgreSQL | Wrong `DATABASE_URL` or DB unreachable | Check `.env` value; `psql $DATABASE_URL -c "SELECT 1"` |
+| `pnpm check` fails on Hanko JWKS | `HANKO_TENANT_BASE_URL` wrong or Hanko down | `curl $HANKO_TENANT_BASE_URL/.well-known/jwks.json` |
+| `pnpm check` fails on R2 | Cloudflare bot rules blocking, or `R2_PUBLIC_URL` wrong | Check Cloudflare Security → Bots dashboard |
+| `pnpm check` fails on boardgame.io server | Server not running or `GAME_SERVER_URL` wrong | `curl $GAME_SERVER_URL/health` — check Render dashboard |
+| `pnpm test` fails | Code issue or missing `node_modules` | `pnpm install && pnpm test` |
+| `pnpm -r build` fails | TypeScript errors or missing deps | Check the failing package's error; `pnpm install` first |
+| Claude Code won't authenticate | API key expired or missing | `claude auth login` to re-authenticate |
+| Git push rejected | Branch behind `main` or hook failure | Read the hook error; `git pull --rebase origin main` |
+| Render deploy fails | Build error or migration failure | Check Render dashboard → Events → latest deploy log |
+| Cloudflare Pages deploy fails | Build error or env var missing | Check Pages dashboard → Deployments → latest build log |
+| RDP won't connect | Tailscale offline, wrong IP, or Home edition | Check Tailscale dashboard; verify Windows Pro |
+| `[conflicted N]` files appear | pCloud sync collision with git | Don't use pCloud for repo; delete conflicted copies, verify with `git status` |
+| `pnpm check:domains` shows FAIL | DNS/TLS misconfigured for that subdomain | Read the `dns:` / `tls:` diagnostic lines; check Cloudflare DNS records |
+| Nightly triage didn't run | GitHub Actions cron skipped (common on low-activity repos) | Check Actions tab; trigger manually via `gh workflow run` |
+
+For detailed probe diagnostics, see
+[Operational Health Checks](operational-health-checks.md).
 
 ## Edge Cases
 
