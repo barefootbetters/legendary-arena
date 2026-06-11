@@ -120,6 +120,115 @@ primary orchestrator and local AI models (future: 7B–14B for
 experimentation, 70B+ for heavy reasoning). This reduces external API
 dependency and enables long-running autonomous workflows.
 
+### AI system flow
+
+```mermaid
+flowchart TD
+    subgraph surfaces["Operator Surfaces"]
+        laptop["Laptop"]
+        workstation["Home Workstation"]
+        phone["Phone"]
+    end
+
+    subgraph control["Control Plane"]
+        tailscale["Tailscale Network"]
+    end
+
+    subgraph orchestrator["AI Orchestration"]
+        claude["Claude Code<br/>(primary orchestrator)"]
+        ollama["Ollama Local Models<br/>(7B–70B, future)"]
+    end
+
+    subgraph external["External AI (operator-directed)"]
+        copilot["GitHub Copilot<br/>(inline code assist)"]
+        grok["Grok / Other LLMs<br/>(alt reasoning)"]
+    end
+
+    subgraph pipeline["CI + Deploy Pipeline"]
+        github["GitHub Repo"]
+        ci["GitHub Actions CI"]
+        inspector["Claude CI Inspector<br/>(nightly triage)"]
+        wp["New Work Packets"]
+    end
+
+    subgraph deploy["Deploy Targets"]
+        render["Render<br/>(server + PostgreSQL)"]
+        pages["Cloudflare Pages<br/>(front-ends)"]
+        r2["Cloudflare R2<br/>(images + metadata)"]
+    end
+
+    laptop --> tailscale
+    workstation --> tailscale
+    phone --> tailscale
+    tailscale --> workstation
+
+    laptop -->|"Claude Code session"| claude
+    workstation -->|"Claude Code session"| claude
+    workstation -->|"local inference"| ollama
+    ollama -->|"results"| claude
+    phone -->|"PR review + merge"| github
+
+    claude -->|"commit (2-step topology)"| github
+    claude -->|"rclone sync"| r2
+    github -->|"PR + CI checks"| ci
+    ci -->|"nightly cron"| inspector
+    inspector -->|"findings → new WPs"| wp
+    wp -->|"next session"| claude
+
+    github -->|"merge to main"| render
+    github -->|"merge to main"| pages
+
+    ci -.->|"failures / logs"| claude
+    render -.->|"runtime signals"| claude
+    pages -.->|"deploy status"| claude
+
+    classDef future stroke-dasharray:6;
+    class ollama future;
+    class copilot future;
+    class grok future;
+```
+
+> **Dashed** nodes are future or operator-discretionary — not part of the
+> committed orchestration loop.
+
+**Key architectural points:**
+
+- **Claude Code is the single orchestrator.** All implementation work
+  flows through it — WP/EC execution, local gates, commits, deploys.
+  It does not delegate to Copilot or Grok; those are separate tools the
+  operator may use independently for inline assists or alternative
+  reasoning.
+
+- **Dual AI layer (current + future).** Today: Claude Code (API-based)
+  is the only AI in the loop. Future: Ollama on the workstation adds
+  local inference for experimentation, long-running tasks, and reduced
+  API dependency. The orchestrator-to-local-model relationship is
+  Claude Code calling Ollama, not the reverse.
+
+- **Closed feedback loop.** The system is self-sustaining:
+  `Claude Code → GitHub → CI → Inspector → new WPs → Claude Code`.
+  Yesterday's deploy becomes today's backlog via nightly triage.
+
+- **External AI is operator-directed, not orchestrated.** GitHub Copilot
+  (inline code suggestions) and other LLMs (Grok, ChatGPT, etc.) are
+  tools the operator reaches for directly. They are not part of the
+  automated pipeline and Claude Code does not route tasks to them.
+
+**Future: AI routing (when local models are operational):**
+
+```mermaid
+flowchart LR
+    claude["Claude Code"] --> decision{Task type}
+    decision -->|"heavy reasoning"| api["Claude API<br/>(Opus / Sonnet)"]
+    decision -->|"experimentation"| ollama["Ollama<br/>(local 7B–70B)"]
+    decision -->|"code completion"| copilot["Copilot<br/>(inline)"]
+```
+
+This routing is aspirational. Today all AI tasks go through Claude Code's
+API. When Ollama is operational on the workstation, the operator can
+choose which model handles which class of task — but the routing is
+manual (operator choice), not automated.
+
 ## Four C's Assessment
 
 Framework source: Nate Herk, "I Turned Claude Opus 4.8 Into My Entire
