@@ -24830,29 +24830,35 @@ on-click `[DIAG_EXPORT]` correlation marker.
 
 ---
 
-**D-24016: Hero Keyword `attack-per-victory-bystander` (Count-Scaled Attack; Icon Subsumption)**
+**D-24016: Count-Scaled Hero Attack Framework — `attack-per-count` Keyword + `HeroCountSource` Resolver**
 
-A new closed-union hero keyword `attack-per-victory-bystander` grants attack equal to
-`magnitude × (count of bystanders in the active player's victory pile)` when the hero
-card is played (`onPlay`). `magnitude` is the per-bystander rate (Black Widow's Covert
-Operation = `1`, printed "+1 Attack for each Bystander in your Victory Pile"); it is a
-non-negative integer under the standard `isValidMagnitude` gate. The bystander count
-spans BOTH supply-rescued bystanders (`BYSTANDER_EXT_ID = 'pile-bystander'`) and
-villain-deck bystanders (`bystander-villain-deck-NN`); villain/henchman/tactic victory
-cards are excluded. Classification is by ext_id string in the executor — no registry
-lookup. Because the printed text carries "+N[icon:attack]", the setup parser would
-otherwise also emit a flat `attack` effect (Step 2b/3 icon mapping); to prevent a
-double-count, the parser SUPPRESSES the `attack` keyword + its magnitude on any line
-that also carries `attack-per-victory-bystander` — the explicit count-scaled keyword
-subsumes the attack icon (mirrors the D-21901 reveal-cost-attack icon-subsumption
-intent). The marker token form `[keyword:attack-per-victory-bystander:N]` (N ≥ 1) is
-added to `apply-hero-ability-markers.mjs`'s `VALID_TOKEN_PATTERN`; only
-`core/black-widow/covert-operation` is marked in this packet. The broader "+N per
-count" family (heroes played this turn, empty city spaces, hero classes/colors you
-have, KO-pile counts, negative/fractional rates, recruit/draw scaling) is deferred to
-follow-up WPs, each its own keyword. Determinism preserved (pure function of `G` at
-play time; no RNG/clock); re-pin the replay sentinel only if it diverges (no fixture
-plays Covert Operation).
+Count-scaled "+N Attack for each X" hero abilities are handled by a SINGLE parameterized
+mechanism, not a keyword per card. A new closed-union hero keyword `attack-per-count` grants
+attack equal to `magnitude × resolveCountSource(G, playerID, countSource)` when the hero card
+is played (`onPlay`), where `magnitude` is the per-unit rate (Black Widow's Covert Operation =
+`1`, a non-negative integer under the standard gate) and `countSource` is a value of a new
+closed, drift-controlled `HeroCountSource` enum carried on the `HeroEffectDescriptor`
+(`countSource?: HeroCountSource`). `resolveCountSource` is a pure, total resolver (unknown
+source → `0`; no registry import — classification by ext_id string / `G` reads only). The
+enum is SEEDED with `victory-bystanders`, which counts the player's victory-pile bystanders
+across BOTH ext_id forms (`BYSTANDER_EXT_ID = 'pile-bystander'` and `bystander-villain-deck-NN`)
+and excludes villain/henchman/tactic VP cards. The marker token grammar is
+`[keyword:attack-per-count:<countSource>:<perUnit>]` (added to
+`apply-hero-ability-markers.mjs`'s `VALID_TOKEN_PATTERN`); only
+`core/black-widow/covert-operation` is marked in this packet. Because the printed text
+carries "+N[icon:attack]", the setup parser would otherwise also emit a flat `attack` effect;
+to prevent a double-count, the parser SUPPRESSES the `attack` keyword + its magnitude on any
+line that also carries an `attack-per-count` effect — the explicit count-scaled keyword
+subsumes the attack icon (mirrors the D-21901 reveal-cost-attack precedent).
+
+**Extension recipe (the point of this decision):** a NEW "+N attack for each X" card needs
+(1) IF X is a new source: one `HeroCountSource` enum + array entry + one `resolveCountSource`
+branch + a drift test (engine, governed by a fresh DECISIONS sub-entry); (2) a data marker.
+Marking the whole corpus is a single follow-up **sweep** WP (the WP-225 pattern), never
+per-card WPs. Deferred: per-turn count-sources (need a played/drawn-this-turn ledger),
+filtered/fractional/negative counts, `recruit-per-count`/draw/rescue scaling. Determinism
+preserved (pure function of `G` at play time; no RNG/clock); re-pin the replay sentinel only
+if it diverges (no fixture plays Covert Operation).
 
 **Packet:** WP-247 (EC-278).
 **Drafted:** 2026-06-13 (reserved). **Landed:** TBD (execution close — flips to Active).
