@@ -40,6 +40,12 @@ pure report builder.
 
 ## Assumes
 
+> **Drafting baseline (01.0a Step 2):** drafted against `origin/main` at
+> `b10ba4e7` (2026-06-13). Supersession check (slug grep `--all`, file scan, and
+> `gh pr list --search`) returned no collision — the diagnostic-UIState-snapshot
+> work is new; the existing `*uistate*` WPs (WP-067 / WP-111 / WP-128 / WP-207)
+> are unrelated projections.
+
 - **WP-228 complete.** Specifically:
   - `apps/arena-client/src/diagnostics/diagnostics.ts` exports
     `buildDiagnosticReport(entries, context)`, `serializeDiagnosticReport`,
@@ -404,6 +410,23 @@ triggers.
 - **§21 API Catalog** — PASS. `## API Catalog (§21)` present with a reasoned N/A
   (client-only; no HTTP endpoint or `apps/server/src/**` library function; no
   network egress).
+
+---
+
+## Pre-Flight & Copilot Verdicts (01.0a Step 5)
+
+Gate order per 01.0a Step 5 (pre-flight → copilot → lint), all run in the drafting
+session against this WP + EC-277, baseline `origin/main` @ `b10ba4e7`:
+
+- **Pre-flight (01.4): READY TO EXECUTE** (2026-06-13). Class: Contract-Only (client). Repo
+  green (arena-client `test` 539/0, `vue-tsc` 0, `build` 0). Dependencies WP-228 ✅ + WP-061 ✅;
+  contracts verified against actual source; scope locked to 7 files; risks RS-1..4 resolved; no
+  blocking PS items. Scratchpad: `docs/ai/invocations/preflight-wp246.md`.
+- **Copilot check (01.7): PASS → CONFIRM** (2026-06-13). All 30 issues scan to PASS; #21 (`unknown`
+  widening), #17 (intentional reference-aliasing), #19 (serializability) are PASS-by-construction
+  with explicit rationale, not gaps. No RISK/BLOCK. Scratchpad: `docs/ai/invocations/copilot-wp246.md`.
+- **Lint gate (00.3):** PASS (see `## Lint Gate Self-Review` above) — re-confirmed after the
+  §Assumes baseline + this verdict record were added; neither changed scope or contract.
 
 ---
 
