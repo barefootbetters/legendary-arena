@@ -226,6 +226,14 @@ const importErrors = ref<Array<{ field: string; message: string }>>([]);
 const importSuccessAt = ref<string | null>(null);
 
 function onDownload(): void {
+  // why: Belt-and-suspenders guard mirroring onDownloadLagn. The button is
+  // already `:disabled="!isValid"`, but guarding the handler too prevents a
+  // known-invalid document (e.g. a theme prefill with an unresolved bare
+  // slug, D-24018) from being downloaded and then failing with an HTTP 500
+  // at match creation, should the template binding ever be bypassed.
+  if (!isValid.value) {
+    return;
+  }
   const blob = exportToJsonBlob();
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
