@@ -24933,10 +24933,36 @@ ext_id fallback for MATCH-SETUP).
 **Determinism:** unaffected — no engine gameplay or RNG path changed; `matchSetup.validate.ts`
 is byte-unchanged. Registry / registry-viewer / arena-client only.
 
-**Deferred (latent, flagged):** theme `setupIntent` still uses bare slugs (`magneto`), so
-`prefillFromTheme` produces an invalid draft — a separate slug→`extId` resolver follow-up; and
+**Follow-up — theme bare-slug resolution (LANDED, commit `d6a621d`):** `prefillFromTheme`
+(`apps/registry-viewer/src/composables/useLoadoutDraft.ts`) now resolves each bare theme
+`setupIntent` slug to its qualified `extId` via `resolveThemeSlugToExtId(slug, cardType, cards)`.
+Two non-obvious rules: (1) match on the **slug portion of `FlatCard.extId`**, NOT `FlatCard.slug`
+— for hero/mastermind/villain/henchman `FlatCard.slug` is the per-*card* slug (hero `wolverine`
+→ `keen-senses`) while the engine derives the ext_id from the *entity* slug (`core/wolverine`);
+(2) **cardType filtering is mandatory** — `magneto` is a hero (`vill/magneto`) AND a mastermind
+(`core/magneto`), so resolving without the type guard could pick the wrong field's id and 500.
+
+**Ambiguity policy (governance-relevant):** when a bare slug has no `core/` printing but exists
+in 2+ non-core sets, the resolver picks the lexicographically-first `extId` deterministically
+(returning null — keeping the slug bare so the validator flags it — only when zero candidates
+exist). This keeps the theme **playable** rather than 500-ing. The trade-off, measured against
+real data: **all 16** such ambiguous heroes have **mechanically DIFFERENT decks** per printing
+(NOT cosmetic reprints — e.g. `dstr/doctor-strange` is a 4-card Artifact deck,
+`msis/doctor-strange` a 6-card Phasing deck), so the deterministic pick may not be the theme
+author's intended version. Per the survival lens (a thematically-adjacent playable match beats a
+broken theme) this is accepted over a hard-error, but the substitution is **surfaced** — not
+silent — via a `?debug`-gated `devLog("theme", …)` naming the chosen printing + alternatives
+(commit pending). The **proper fix** (deferred) is qualifying the ambiguous slugs at the
+theme-data source (store `{set}/{slug}` in the theme JSONs so the author controls the printing);
+once qualified, the fallback stops firing. `onDownload` (MATCH-SETUP export) also gained the
+`isValid` early-return that `onDownloadLagn` already had (defense-in-depth; the button was
+already `:disabled`).
+
+**Still deferred:** (a) qualify the 16 ambiguous theme slugs at source (above); (b)
 `apps/registry-viewer/src/registry/types/index.ts` is a stale pCloud-sync duplicate of the
-active `types-index.ts` (hygiene delete).
+active `types-index.ts` (hygiene delete); (c) theme `schemaVersion` drift — in-repo
+`content/themes/*` split `{themeSchemaVersion 2, absent}` vs the viewer's `z.literal(2)` schema,
+so entries missing the field warn+skip; verify the deployed R2 copies are migrated.
 
 **Direct fix** (operator-sanctioned, not a WP — cross-layer bugfix on a live revenue path;
 mirrors the D-24017 direct-fix precedent). Commit `f7e2efb` on branch
