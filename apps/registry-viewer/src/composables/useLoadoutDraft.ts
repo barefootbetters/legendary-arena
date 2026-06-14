@@ -26,6 +26,10 @@ import {
 } from "@legendary-arena/registry/setupContract";
 
 import type { ThemeDefinition } from "../lib/themeClient";
+// why: D-24018 — surface ambiguous theme-slug substitutions (a deterministic
+// pick among mechanically-different printings) so the guess is discoverable
+// under `?debug` rather than fully silent. Gated, prod-stripped (EC-104).
+import { devLog } from "../lib/devLog";
 
 // why: Six DEFAULT_* constants exported additively per WP-114 PS-1
 // (D-114XX). The URL-preview composable `useSetupFromUrl` (WP-114 §B)
@@ -136,16 +140,34 @@ function resolveThemeSlugToExtId(
   if (candidateExtIds.includes(corePreferredExtId)) {
     return corePreferredExtId;
   }
-  // why: the slug lives in one or more non-core sets (commonly a hero
-  // reprinted across expansions — slugs derive from names, so the same slug
-  // is the same entity). Every printing is a valid ext_id for this field, so
-  // resolve to a stable pick instead of declining; declining would keep the
-  // bare slug and 500 the match for a printing difference that match creation
-  // does not care about. Sort first so a given theme always yields the same
-  // ext_id regardless of registry iteration order (a fresh prefill must be
-  // reproducible).
+  // why: the slug lives only in non-core set(s). Every printing is a valid
+  // ext_id for this field, so resolve to a stable pick instead of declining;
+  // declining would keep the bare slug and 500 the match. Sort first so a
+  // given theme always yields the same ext_id regardless of registry
+  // iteration order (a fresh prefill must be reproducible).
   const sortedCandidateExtIds = [...candidateExtIds].sort();
-  return sortedCandidateExtIds[0] ?? null;
+  const chosenExtId = sortedCandidateExtIds[0] ?? null;
+  // why: D-24018 — when 2+ non-core printings exist the pick is genuinely
+  // ambiguous AND (verified across all 16 such heroes) the printings are
+  // MECHANICALLY DIFFERENT decks, not cosmetic reprints — e.g.
+  // dstr/doctor-strange is a 4-card Artifact deck, msis/doctor-strange a
+  // 6-card Phasing deck. We keep the theme playable by picking
+  // deterministically, but the chosen deck may not be the author's intent, so
+  // surface the substitution (not silent) for discoverability. The real fix is
+  // qualifying the slug in the theme JSON at source. devLog is `?debug`-gated
+  // and prod-stripped, and per EC-104 logs only counts + 3-sample ids.
+  if (chosenExtId !== null && sortedCandidateExtIds.length > 1) {
+    devLog(
+      "theme",
+      `Ambiguous ${cardType} slug "${trimmedSlug}" has no core printing; resolved to a deterministic pick. Qualify the slug in the theme JSON to choose a specific printing.`,
+      {
+        chosen: chosenExtId,
+        alternatives: sortedCandidateExtIds.slice(1, 4).join(", "),
+        candidateCount: sortedCandidateExtIds.length,
+      },
+    );
+  }
+  return chosenExtId;
 }
 
 /**
