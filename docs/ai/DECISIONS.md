@@ -24958,11 +24958,39 @@ once qualified, the fallback stops firing. `onDownload` (MATCH-SETUP export) als
 `isValid` early-return that `onDownloadLagn` already had (defense-in-depth; the button was
 already `:disabled`).
 
-**Still deferred:** (a) qualify the 16 ambiguous theme slugs at source (above); (b)
-`apps/registry-viewer/src/registry/types/index.ts` is a stale pCloud-sync duplicate of the
-active `types-index.ts` (hygiene delete); (c) theme `schemaVersion` drift — in-repo
-`content/themes/*` split `{themeSchemaVersion 2, absent}` vs the viewer's `z.literal(2)` schema,
-so entries missing the field warn+skip; verify the deployed R2 copies are migrated.
+**Follow-up — ambiguous theme slugs qualified at source (LANDED 2026-06-13, branch
+`claude/lagn-upload-extid-roundtrip`):** deferred item (a) is done. The 24 ambiguous
+`setupIntent` references across 17 theme JSONs (`content/themes/*.json`) now store the
+set-qualified `{setAbbr}/{slug}` form, chosen per-theme from name/tags/references so the author
+controls the printing (e.g. `doctor-strange-sorcerer` → `dstr/doctor-strange`, the comic
+Artifact deck; `black-order-assault` [tag `mcu`] → `msis/doctor-strange`, the MCU deck — the
+same bare slug intentionally resolving to different printings per theme, which a single global
+canonical-printing map could NOT express). 7 picks corrected a wrong lexicographic auto-pick
+(`onslaught-unleashed` beast `ssw2`→`xmen`; `venom-lethal-protector` venom `vill`→`vnom`;
+`secret-wars-battleworld` captain-marvel `msis`→`ssw1`; `dark-city-streets` +
+`five-families-of-crime` daredevil `cvwr`→`dkcy`; `contest-of-champions` nova `chmp`→`cosm`;
+`black-order-assault` doctor-strange `dstr`→`msis`); the other 17 pin the already-correct pick
+against future set-addition sort drift. The qualified form is the same `<setAbbr>/<slug>`
+convention the theme schema already uses for `sidekickCardIds`/`officerCardIds` (D-22104), and
+`resolveThemeSlugToExtId` passes any slug containing `/` through untouched — so no viewer/engine
+code changed; this is data-only. A re-runnable guard, `scripts/check-theme-slug-resolution.mjs
+--check`, replicates the resolver against real card data and exits non-zero on any
+ambiguous/unresolved theme slug (now 0/0). The `?debug` devLog substitution warning (commit
+`d5e3965`) no longer fires for these themes.
+
+**Item (c) RESOLVED:** all 68 index-served themes carry `themeSchemaVersion: 2`, in-repo AND on
+live R2 (verified `images.barefootbetters.com/themes`); `index.json` excludes the only
+field-absent files (local combined-export / minimal-example scratch JSON). No further migration
+needed.
+
+**Still deferred:** (b) `apps/registry-viewer/src/registry/types/index.ts` is a stale
+pCloud-sync duplicate of the active `types-index.ts` (hygiene delete).
+
+**R2 re-upload (pending operator):** the 17 changed theme files must be copied to
+`r2:legendary-arena/themes/` *without* regenerating `index.json` (no themes added/removed). The
+stock `scripts/upload-themes-to-r2.mjs` rebuilds `index.json` from the directory and would sweep
+in the 3 non-theme scratch JSONs, so use a targeted `rclone copy --include` of the changed files
+for this change.
 
 **Direct fix** (operator-sanctioned, not a WP — cross-layer bugfix on a live revenue path;
 mirrors the D-24017 direct-fix precedent). Commit `f7e2efb` on branch
