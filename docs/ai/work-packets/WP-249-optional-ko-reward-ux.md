@@ -94,6 +94,9 @@ If any of the above is false, this packet is **BLOCKED**.
 **Client half:**
 - ESM, Vue SFC; `vue-tsc` clean; tests via the project's arena-client harness;
   no `boardgame.io` import in components (the client transport handles moves).
+  Human-style code per `docs/ai/REFERENCE/00.6-code-style.md` (named imports, no
+  `.reduce()` in projection/redaction logic, small functions) — applies to BOTH
+  the engine projection half and the Vue client half.
 - The prompt is **non-dismissible** while the choice is pending (mirrors
   `PendingKoHeroChoicePrompt`); the only exits are selecting a card to KO or
   pressing **Decline**.
@@ -284,6 +287,52 @@ engine UIState projection + arena-client only.
 
 ---
 
+## Verification Steps
+
+```bash
+# Baseline (record counts; AC deltas are relative)
+pnpm --filter @legendary-arena/game-engine test
+# Expected: exits 0; record engine pass count as ENGINE_BASELINE
+pnpm --filter @legendary-arena/arena-client test
+# Expected: exits 0; record arena-client pass count as CLIENT_BASELINE
+
+# After projection + client changes:
+pnpm --filter @legendary-arena/game-engine build
+pnpm --filter @legendary-arena/game-engine test
+# Expected: exits 0; pass count ≥ ENGINE_BASELINE + net-new projection (chooser
+# populated; rewardLabel per seeded rewardType; eligible lists zone+index order)
+# + redaction (non-chooser empty) cases; no pre-existing test regresses
+
+pnpm --filter @legendary-arena/arena-client test
+# Expected: exits 0; pass count ≥ CLIENT_BASELINE + net-new component
+# (KO-select / Decline / non-dismissible / no double-submit) + gating cases
+
+# vue-tsc gate (the WP-166/207/227 fixture-backfill recurrence)
+pnpm --filter @legendary-arena/arena-client typecheck
+# Expected: exits 0 (arena-client UIState fixtures backfilled for the new field)
+
+# No-engine-gameplay gate: engine diff limited to the 3 ui/ files + their 2 tests
+git diff --name-only -- packages/game-engine
+# Expected: ONLY ui/uiState.types.ts, ui/uiState.build.ts, ui/uiState.filter.ts,
+# ui/uiState.build.test.ts, ui/uiState.filter.test.ts — nothing else
+
+# Move-union addition
+grep -c "resolveOptionalKoReward" apps/arena-client/src/components/play/uiMoveName.types.ts
+# Expected: ≥1 (+ the UiMoveName drift assertion updated if one exists)
+
+# Chooser-only redaction is proven by a filter test, NOT a grep:
+# uiState.filter.test.ts asserts a non-chooser / spectator UIState has no
+# pendingOptionalKoReward and no leaked hand/discard contents.
+
+# Scope lock + serializable
+git diff --name-only
+# Expected: exactly the ~16 files in §Files Expected to Change (count pinned in EC-280)
+pnpm -r build
+# Expected: exits 0
+```
+
+---
+
 ## Definition of Done
 
 - [ ] All Acceptance Criteria (1–9) pass.
@@ -323,3 +372,38 @@ Gate order (pre-flight → copilot → lint), run in this drafting session again
   at-most-one-prompt note (defers to WP-248's block-all guard), decline-as-
   first-class, and the double-submit guard. No new files (mapping lives in
   `uiState.build.ts`, the guard in the component) — count unchanged.
+
+---
+
+## Lint Gate Self-Review
+
+**Verdict: PASS** (added 2026-06-14). The original draft and the 2026-06-14
+hardening pass left three structural gaps — a missing `## Verification Steps`
+section (§1), a `## Non-Negotiable Constraints` block that cited
+`00.6-code-style.md` only in §Context rather than in-block (§2), and a missing
+`## Lint Gate Self-Review` (this section) — the same class the WP-248 preflight
+caught and fixed for its twin. All three are fixed in this commit.
+
+| § | Title | Result | Notes |
+|---|---|---|---|
+| §1 | Structure | PASS | Goal, Assumes, Context, Scope (In), Out of Scope, Files, Non-Negotiable Constraints, Acceptance Criteria, Verification Steps, Definition of Done all present and non-empty; Out of Scope lists explicit exclusions |
+| §2 | Constraints | PASS | Engine-projection-half + client-half + packet-specific + locked contract values; "Full file contents" forbids diffs/snippets; cites `00.6-code-style.md` in the Client-half block |
+| §3 | Prerequisites | PASS | WP-248 (engine, co-release) + WP-243/128/061 with the exact WP-243 surface files enumerated |
+| §4 | Context | PASS | ARCHITECTURE §Layer Boundary, the WP-243 files to mirror, `uiState.filter.ts` D-24011, code-style |
+| §5 | Output Completeness | PASS | ~16 files (12 source/test + 4 governance), each listed; count pinned in EC-280 at pre-flight |
+| §6 | Naming | PASS | `UIPendingOptionalKoReward`, `resolveOptionalKoReward`, `hasPendingOptionalKoReward`, `rewardLabel`, `OptionalKoRewardPrompt` consistent |
+| §7 | Dependencies | PASS | No new npm deps; reuses the WP-243 UX shapes + the existing card-display sub-type |
+| §8 | Architectural Boundaries | PASS | Engine UIState projection (runtime-safe surface) + arena-client only; NO engine gameplay change; client submits intent; redaction in the engine filter; no registry runtime import; no `boardgame.io` in components |
+| §9 | Windows | N/A | No shell-specific paths |
+| §10 | Env Vars | N/A | None touched |
+| §11 | Auth | N/A | Privacy redaction is a projection concern, not an auth surface |
+| §12 | Test Quality | PASS | `node:test` for the engine projection; arena-client harness (vue-sfc-loader) for the component; projection / redaction / component / gating cases; vue-tsc gate |
+| §13 | Verification | PASS | Exact `pnpm` / `grep` commands; the no-engine-gameplay diff gate + the vue-tsc gate; redaction proven by a filter test |
+| §14 | Acceptance Criteria | PASS | 9 binary, observable items |
+| §15 | Definition of Done | PASS | engine + arena-client `test` + `typecheck`; STATUS / DECISIONS / WORK_INDEX / EC_INDEX; co-release lock; scope-boundary check |
+| §16 | Code Style | PASS | `// why:` on type / projection / filter / component / gating; named imports; cites `00.6-code-style.md` |
+| §17 | Vision Alignment | PASS (block present) | §1/§2 cited; gameplay-fidelity UX; NG-1..7 none crossed |
+| §18 | Prose-vs-Grep | PASS | The move-union grep targets a source file (`uiMoveName.types.ts`); redaction is proven by a filter test, not a markdown grep |
+| §19 | Bridge-vs-HEAD | N/A | Not a repo-state-summarizing artifact |
+| §20 | Funding Surface | N/A | Gameplay-fidelity UX; no funding copy or paid surface (§Funding Surface Gate) |
+| §21 | API Catalog | N/A | UIState projection + arena-client only; no `apps/server` HTTP endpoint or `Library-only` function (§API Catalog) |
