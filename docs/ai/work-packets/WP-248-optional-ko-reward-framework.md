@@ -122,6 +122,9 @@ Before writing a single line:
   functions/Maps/Sets).
 - ESM only, Node v22+; `node:` prefix; test files `.test.ts`; no `.reduce()` in
   move/effect logic — use `for...of`.
+- Human-style code per `docs/ai/REFERENCE/00.6-code-style.md` — named-export
+  imports, descriptive names, full-sentence errors, functions ≤ ~30 lines, no
+  premature abstraction.
 - Every `ctx.events.*` call (none expected here) needs a `// why:`; `// why:` on
   non-obvious decisions; full-sentence error/log messages.
 
@@ -495,6 +498,50 @@ HTTP endpoint, and `getLegalMoves`/move registration are engine-internal.
 
 ---
 
+## Verification Steps
+
+```bash
+# Baseline (record the number; AC deltas are relative)
+pnpm --filter @legendary-arena/game-engine test
+# Expected: exits 0; record pass count as BASELINE
+
+# After engine + card-data changes:
+pnpm --filter @legendary-arena/game-engine build
+# Expected: exits 0
+
+pnpm --filter @legendary-arena/game-engine test
+# Expected: exits 0; pass count ≥ BASELINE + the net-new cases (drift, parse,
+# executor-park / 0-eligible, resolve decline / KO-hand / KO-discard / invalid /
+# atomic, bot-default, block-all completeness); no pre-existing test regresses
+
+# Keyword drift: the union + the array each carry the keyword once (same index)
+grep -c "optional-ko-reward" packages/game-engine/src/rules/heroKeywords.ts
+# Expected: 2
+
+# Reward reuse: the resolve move dispatches to the existing executor (no re-impl)
+grep -c "executeSingleEffect" packages/game-engine/src/moves/optionalKoReward.resolve.ts
+# Expected: ≥1 dispatch call; no inline rescue/draw/attack/recruit reward body
+
+# Layer boundary: no registry import in the resolve move or the executor
+grep -c "import .*@legendary-arena/registry" packages/game-engine/src/moves/optionalKoReward.resolve.ts packages/game-engine/src/hero/heroEffects.execute.ts
+# Expected: 0 for each file
+
+# Apply-script single-hunk gate (card data regenerated, never hand-edited)
+node scripts/convert-cards/apply-hero-ability-markers.mjs
+git diff --stat data/cards/core.json
+# Expected: exactly 1 file, 1 hunk, affecting ONLY the
+# core/black-widow/dangerous-rescue line
+
+# Scope lock
+git diff --name-only
+# Expected: exactly the 24 files in §Files Expected to Change (count LOCKED)
+
+pnpm -r build
+# Expected: exits 0
+```
+
+---
+
 ## Definition of Done
 
 - [ ] All Acceptance Criteria (1–9) pass.
@@ -512,30 +559,61 @@ HTTP endpoint, and `getLegalMoves`/move registration are engine-internal.
 
 ## Pre-Flight & Copilot Verdicts (01.0a Step 5)
 
-Gate order (pre-flight → copilot → lint), run in this drafting session against
-`origin/main` (post WP-247 / D-24017 / #313 / #314):
+Gate order (pre-flight → copilot → lint), against `origin/main` (post WP-247 /
+D-24017 / #313). Per 01.0a Step 5's re-run rule, the 2026-06-13 runs were
+**invalidated** by the 2026-06-14 hardening edits; the verdicts below are the
+re-run against `HEAD`.
 
-- **Pre-flight (01.4): READY TO EXECUTE** (2026-06-13). Class: Behavior / State
-  Mutation + new interactive move. The WP-242 infra reuse points were verified
-  live: `G.pendingKoHeroChoices?` (`types.ts`), `resolveKoHeroChoice` +
-  `hasPendingKoHeroChoice` (`moves/koHeroChoice.resolve.ts`), registration
-  (`game.ts:304`), the `getLegalMoves` short-circuit (`simulation/ai.legalMoves.ts`),
-  `selectDefaultKoTarget` (`villain/villainEffects.execute.ts`), lazy-init at
-  point of use (`villainEffects.execute.ts:190`). Deps WP-021/022/023/215/242 ✅.
-  Open pin (RESOLVED 2026-06-14 hardening pass): the board-freeze guard is NOT a
-  single module — it is an inline `hasPendingKoHeroChoice(G)` check distributed
-  across six move files (`coreMoves.impl.ts`, `game.ts`, `fightVillain.ts`,
-  `fightMastermind.ts`, `recruitHero.ts`, `villainDeck/villainDeck.reveal.ts`). All
-  six take the new `hasPendingOptionalKoReward` check; the file count is LOCKED at
-  24 (no ±1 flex). See §Files Expected to Change.
-- **Copilot check (01.7): PASS** (2026-06-13). The three load-bearing risks are
-  locked with HARD gates in EC-279: reward-reuse (dispatch, no re-impl),
-  atomicity (reward only on KO), and three-choice coexistence (guards exempt all
-  three resolve moves). No RISK/BLOCK.
-- **Lint gate (00.3): PASS** (2026-06-13). §1 structure complete; §2 constraints
-  (parameterized-not-per-card, reuse-not-fork, atomic, deterministic bot) present;
-  §5 24-file count over-8 justified inline (raised 19 → 24 in the 2026-06-14
-  hardening pass when the distributed block-all guard footprint was confirmed);
-  §8 boundaries (no registry import in
-  resolver/move; engine-only); §17 Vision; §20 Funding N/A; §21 API N/A — all
-  satisfied or reasoned-N/A. No Final-Gate FAIL.
+- **Pre-flight (01.4): READY TO EXECUTE** (2026-06-13; re-affirmed 2026-06-14).
+  Class: Behavior / State Mutation + new interactive move. The WP-242 infra
+  reuse points were verified **live against source**, every line number exact:
+  the six distributed `hasPendingKoHeroChoice` guard sites (`coreMoves.impl.ts`
+  :58/:115/:171, `game.ts:86`, `fightVillain.ts:94`, `fightMastermind.ts:67`,
+  `recruitHero.ts:75`, `villainDeck/villainDeck.reveal.ts:71`), the
+  `getLegalMoves` short-circuit (`simulation/ai.legalMoves.ts:115`), lazy-init
+  (`villain/villainEffects.execute.ts:190`), `selectDefaultKoTarget`
+  (`villainEffects.execute.ts:516`), registration (`game.ts:304`), the
+  `hasPendingKoHeroChoice` export (`moves/koHeroChoice.resolve.ts:48`), and the
+  `COUNT_SCALED_PATTERN` `(\d+)` precedent (`setup/heroAbility.setup.ts:117`).
+  Deps WP-021/022/023/215/242 ✅. The board-freeze guard is confirmed distributed
+  across six move files (not a single module); the file count is LOCKED at 24.
+- **Copilot check (01.7): PASS** (2026-06-13; re-affirmed 2026-06-14). The three
+  load-bearing risks are locked with HARD gates in EC-279: reward-reuse
+  (dispatch, no re-impl), atomicity (reward only on KO), and three-choice
+  coexistence (guards exempt all three resolve moves). No RISK/BLOCK.
+
+---
+
+## Lint Gate Self-Review
+
+**Verdict: PASS** (re-run 2026-06-14; all applicable sections resolved). The
+2026-06-13 self-review reported PASS but missed two structural gaps that the
+2026-06-14 hardening edits should have caught — a missing `## Verification
+Steps` section (§1) and a `## Non-Negotiable Constraints` block that cited
+`00.6-code-style.md` only in §Context rather than in-block (§2) — plus a stale
+"19 files" count carried in the WORK_INDEX / EC_INDEX rows after the WP body and
+EC-279 were raised to "24 files". All three are fixed in this commit.
+
+| § | Title | Result | Notes |
+|---|---|---|---|
+| §1 | Structure | PASS | Goal, Assumes, Context, Scope (In), Out of Scope, Files, Non-Negotiable Constraints, Acceptance Criteria, Verification Steps, Definition of Done all present and non-empty; Out of Scope lists 5 explicit exclusions |
+| §2 | Constraints | PASS | Engine-wide + packet-specific + session protocol + locked contract values; forbids diffs/snippets; cites `00.6-code-style.md` in the Engine-wide block |
+| §3 | Prerequisites | PASS | WP-021/022/023/215/242 with the exact infra shapes (queue field, predicate, six guard sites, selector) enumerated |
+| §4 | Context | PASS | Specific items incl. ARCHITECTURE.md sections, DECISIONS ids (D-22001/D-24006..11), code-style + SKILL |
+| §5 | Output Completeness | PASS | 24 files, each new/modified with a one-line change; single authoritative count; over-8 justified inline (distributed block-all guard) |
+| §6 | Naming | PASS | `pendingOptionalKoRewards`, `PendingOptionalKoReward`, `resolveOptionalKoReward`, `hasPendingOptionalKoReward`, `selectDefaultOptionalKoTarget`, `rewardType`, `CardExtId` consistent |
+| §7 | Dependencies | PASS | No new npm deps; reuses existing reward executors + zone helpers |
+| §8 | Architectural Boundaries | PASS | Engine + simulation + card-data tooling only; `G` runtime-only; moves never throw; no registry import in resolver/executor; no `.reduce()` |
+| §9 | Windows | N/A | Node built-ins; the apply script is a `node` invocation, no shell-specific paths |
+| §10 | Env Vars | N/A | None touched |
+| §11 | Auth | N/A | No auth surface |
+| §12 | Test Quality | PASS | `node:test`, `.test.ts`, `makeMockCtx`; no boardgame.io/network/DB; determinism preserved (pure park/resolve + pure bot default) |
+| §13 | Verification | PASS | Exact `pnpm` / `grep` / apply-script commands with expected output; baseline-relative deltas; single-hunk + scope-lock gates |
+| §14 | Acceptance Criteria | PASS | 9 binary, observable, code-path-specific items |
+| §15 | Definition of Done | PASS | STATUS / DECISIONS / WORK_INDEX / EC_INDEX + scope-boundary check |
+| §16 | Code Style | PASS | `// why:` on keyword/descriptor/parser/park/resolve/guards/bot-default; named imports; no `.reduce()`; small functions |
+| §17 | Vision Alignment | PASS (block present) | §1/§2/§22 cited; determinism-preservation line included; NG-1..7 none crossed |
+| §18 | Prose-vs-Grep | PASS | The registry-boundary grep is import-scoped and targets two source files (`optionalKoReward.resolve.ts`, `heroEffects.execute.ts`), not markdown prose; no adjacent forbidden-token enumeration |
+| §19 | Bridge-vs-HEAD | N/A | Not a repo-state-summarizing artifact |
+| §20 | Funding Surface | N/A | Gameplay engine only; no funding copy or paid surface (§Funding Surface Gate) |
+| §21 | API Catalog | N/A | `resolveOptionalKoReward` is a boardgame.io move, not an `apps/server` HTTP endpoint or `Library-only` function (§API Catalog) |
