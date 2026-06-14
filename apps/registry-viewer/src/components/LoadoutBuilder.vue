@@ -111,7 +111,13 @@ const pickerOptions = computed<Array<{ id: string; label: string; cardType: Flat
   const needle = pickerSearch.value.trim().toLowerCase();
   const entriesById = new Map<string, { id: string; label: string; cardType: FlatCardType }>();
   for (const card of matching) {
-    const id = card.key;
+    // why: D-24018 — store the set-qualified ext_id (not the flat-card key)
+    // into the loadout so the exported document is accepted by the engine's
+    // Game.setup() instead of being rejected with an HTTP 500 (D-10014).
+    // Collapsing by extId also yields one picker chip per villain/henchman
+    // GROUP (every member shares the group's extId) rather than one per
+    // member card.
+    const id = card.extId;
     if (!entriesById.has(id)) {
       entriesById.set(id, { id, label: card.name, cardType });
     }
