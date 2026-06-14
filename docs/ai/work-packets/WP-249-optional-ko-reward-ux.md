@@ -34,6 +34,11 @@ disabled until the choice resolves. The engine projects the pending choice
 (chooser-only) and the eligible hand/discard cards; the client submits
 `resolveOptionalKoReward`.
 
+**Decline is a first-class outcome** — an explicit button submitting
+`{decline:true}`, not the absence of action. The reward label shown in the prompt
+is DERIVED deterministically from WP-248's `rewardType` + magnitude via a single
+mapping (§Locked Contract Values), never an ad-hoc per-card string.
+
 ---
 
 ## Assumes
@@ -107,6 +112,18 @@ If any of the above is false, this packet is **BLOCKED**.
 - **Turn-action gating.** While a `pendingOptionalKoReward` exists for the active
   player, End Turn + Pass Priority are disabled (extend `hasPendingKoChoice`
   pattern — a parallel `hasPendingOptionalKoReward`, or a combined predicate).
+- **At most one pending prompt (relies on WP-248's block-all guard).** WP-248's
+  distributed block-all guard guarantees at most ONE of `pendingOptionalKoReward`
+  / `pendingKoHeroChoice` / `pendingHeroChoice` is non-empty at a time, so the
+  client never arbitrates between simultaneous prompts — render exactly the one
+  projected pending choice. Do NOT add client-side precedence logic (that
+  invariant is the engine's job, not the UX's).
+- **Eligible-list round-trip (HARD).** The projected `eligibleHand` /
+  `eligibleDiscard` are derived directly from `G.playerZones[pid].hand` / `.discard`
+  in current zone + index order, with NO pre-filtering and NO reordering, so the
+  client's `{zone,cardId}` submission maps unambiguously to a card the engine
+  resolve will accept. The engine re-validates against current `G`; the projection
+  must not diverge from it.
 - **Both layouts.** Mount the prompt in `PlayDesktop.vue` AND `PlayMobile.vue`,
   gated on the projected pending choice (mirrors WP-243).
 
@@ -114,7 +131,18 @@ If any of the above is false, this packet is **BLOCKED**.
 - Projection type: `UIPendingOptionalKoReward` (in `ui/uiState.types.ts`) — front
   entry: `{ rewardLabel: string; eligibleHand: UICardDisplay[]; eligibleDiscard:
   UICardDisplay[] }` (exact shape mirrors `UIPendingKoHeroChoice`; reuse the
-  existing card-display sub-type).
+  existing card-display sub-type). `eligibleHand` / `eligibleDiscard` are fresh,
+  index-ordered, defensively-copied projections of the current hand/discard (no
+  snapshot, no aliasing of `G` arrays, no pre-filter/reorder — the round-trip rule).
+- Reward-label derivation (LOCKED): `rewardLabel` is computed in `uiState.build.ts`
+  by a SINGLE deterministic mapping keyed by WP-248's `rewardType` (the seeded set
+  `rescue`/`draw`/`attack`/`recruit`, D-24019 — deferred to, not re-declared) +
+  the reward magnitude. Defined ONCE; never an ad-hoc or per-card string. Default
+  copy (adjustable, but it must stay a single mapping): `rescue` → "Rescue a
+  Bystander"; `draw` → "Draw a card" (`"Draw N cards"` when magnitude > 1);
+  `attack` → "+N Attack"; `recruit` → "+N Recruit". An unseeded `rewardType`
+  (cannot occur — WP-248 filters at parse) → a safe generic fallback label, never
+  a crash.
 - Move name: `'resolveOptionalKoReward'` added to `UiMoveName`.
 - Component: `apps/arena-client/src/components/play/OptionalKoRewardPrompt.vue`.
 
@@ -127,8 +155,12 @@ If any of the above is false, this packet is **BLOCKED**.
   (mirrors `UIPendingKoHeroChoice`). `// why: D-24020`.
 
 ### B) `packages/game-engine/src/ui/uiState.build.ts` — modified
-- Project the front `pendingOptionalKoReward` (reward label + eligible hand +
-  discard with display data, recomputed fresh, defensive copies). `// why: D-24020`.
+- Project the front `pendingOptionalKoReward`: the derived `rewardLabel` (the single
+  deterministic `rewardType` + magnitude mapping — §Locked Contract Values), plus
+  `eligibleHand` + `eligibleDiscard` built directly from `G.playerZones[pid].hand` /
+  `.discard` in current zone + index order (recomputed fresh, defensive copies, NO
+  pre-filter / NO reorder so the client `{zone,cardId}` round-trips to the engine
+  resolve). `// why: D-24020`.
 
 ### C) `packages/game-engine/src/ui/uiState.filter.ts` — modified
 - Redact `pendingOptionalKoReward` (and the eligible hand/discard) for everyone
@@ -136,8 +168,11 @@ If any of the above is false, this packet is **BLOCKED**.
 
 ### D) `apps/arena-client/src/components/play/OptionalKoRewardPrompt.vue` — **new**
 - Non-dismissible prompt: selectable list of eligible hand + discard cards (zone
-  labeled) + a **Decline** button; submits `resolveOptionalKoReward({zone,cardId})`
-  or `({decline:true})`.
+  labeled, in projection order) + a **Decline** button; submits
+  `resolveOptionalKoReward({zone,cardId})` or `({decline:true})`. After a submit,
+  the prompt disables its controls until the projection clears (guards a
+  double-submit); a stale resubmit is harmless anyway (the engine resolve no-ops
+  it per WP-248 front-only validation), but the client must not fire it twice.
 
 ### E) `apps/arena-client/src/components/play/uiMoveName.types.ts` — modified
 - Add `'resolveOptionalKoReward'` to `UiMoveName` (+ drift assertion if present).
@@ -154,10 +189,13 @@ If any of the above is false, this packet is **BLOCKED**.
 
 ### I) Tests
 - `ui/uiState.build.test.ts` + `ui/uiState.filter.test.ts` — **modified**:
-  projection populates for the chooser; redacted for non-choosers/spectators.
+  projection populates for the chooser (incl. the derived `rewardLabel` for each
+  seeded `rewardType`, and `eligibleHand`/`eligibleDiscard` preserving zone + index
+  order); redacted for non-choosers/spectators.
 - `components/play/OptionalKoRewardPrompt.test.ts` — **new**: renders eligible
-  cards; KO-select submits `{zone,cardId}`; Decline submits `{decline:true}`;
-  non-dismissible.
+  cards (in projection order); KO-select submits `{zone,cardId}`; Decline submits
+  `{decline:true}`; non-dismissible; a second submit attempt does not fire a second
+  move (controls disabled after submit).
 - Turn-action gating test — **modified**: End Turn disabled while pending.
 
 ---
@@ -219,17 +257,20 @@ engine UIState projection + arena-client only.
 
 > **Binary — PASS requires ALL TRUE. Any single FALSE = STOP.**
 
-1. `UIPendingOptionalKoReward` projected for the **chooser** with the reward label
-   + eligible hand/discard cards (display data, fresh, defensive copies); the
-   field is absent/empty when no choice is pending.
+1. `UIPendingOptionalKoReward` projected for the **chooser**: a `rewardLabel`
+   derived by the single deterministic `rewardType` + magnitude mapping (§Locked
+   Contract Values — no ad-hoc/per-card strings) + `eligibleHand`/`eligibleDiscard`
+   in current zone + index order (display data, fresh, defensive copies, no
+   pre-filter/reorder); the field is absent/empty when no choice is pending.
 2. The projection is **redacted** for non-choosers and spectators (no
    hand/discard leak) — proven by a filter test.
 3. `resolveOptionalKoReward` is in the `UiMoveName` union (+ drift assertion if
    one exists).
 4. `OptionalKoRewardPrompt.vue` renders the eligible hand+discard cards
-   (zone-labeled) + a Decline button; selecting a card submits
-   `resolveOptionalKoReward({zone,cardId})`, Decline submits `{decline:true}`; the
-   prompt is non-dismissible while pending.
+   (zone-labeled, in projection order) + a Decline button; selecting a card submits
+   `resolveOptionalKoReward({zone,cardId})` for a card the engine resolve accepts
+   (round-trip), Decline submits `{decline:true}`; the prompt is non-dismissible
+   while pending and disables its controls after a submit (no double-submit).
 5. End Turn + Pass Priority are disabled while a pending optional-ko-reward exists.
 6. The prompt is mounted in BOTH `PlayDesktop.vue` and `PlayMobile.vue`.
 7. **No engine gameplay change** — `git diff` shows engine changes ONLY in the
@@ -277,3 +318,8 @@ Gate order (pre-flight → copilot → lint), run in this drafting session again
   §5 ~16-file count justified; §8 boundaries (engine UIState + client only); §17
   Vision; §20 Funding N/A; §21 API N/A — satisfied or reasoned-N/A. No Final-Gate
   FAIL.
+- **Hardening pass (2026-06-14):** added the `rewardLabel` single-mapping
+  derivation lock, the eligible-list round-trip rule (no pre-filter/reorder), the
+  at-most-one-prompt note (defers to WP-248's block-all guard), decline-as-
+  first-class, and the double-submit guard. No new files (mapping lives in
+  `uiState.build.ts`, the guard in the component) — count unchanged.

@@ -9,7 +9,10 @@
 **Paired:** WP-248 / EC-279 (engine) — **co-release locked**.
 
 > Use locked values from WP-249 verbatim. EC-280 is the operational order + gates
-> + failure smells; on a design-intent conflict, WP-249 wins.
+> + failure smells; on a design-intent conflict, WP-249 wins. EC-280 intentionally
+> duplicates WP-249's locked values for execution binding — WP-249 is the single
+> source of truth for design intent; a change to a locked value MUST be applied to
+> BOTH documents to keep parity.
 
 ## Execution Mode — STRICT EC BINDING (no-interpretation)
 - **EC-280 binds execution correctness; WP-249 binds design intent.** On an
@@ -38,7 +41,14 @@
   UICardDisplay[] }`, mirroring `UIPendingKoHeroChoice`; reuse the existing
   card-display sub-type.
 - **Projection:** front `pendingOptionalKoReward`, eligible hand+discard
-  recomputed fresh with defensive copies (no aliasing of `G` arrays).
+  recomputed fresh with defensive copies (no aliasing of `G` arrays), in current
+  zone + index order — NO pre-filter / NO reorder (the round-trip rule).
+- **Reward-label derivation:** `rewardLabel` is computed in `uiState.build.ts` by a
+  SINGLE deterministic mapping keyed by WP-248's `rewardType` (`rescue`/`draw`/
+  `attack`/`recruit`, D-24019 — deferred to, NOT re-declared) + magnitude. Defined
+  ONCE; no ad-hoc/per-card strings. Default: `rescue`→"Rescue a Bystander";
+  `draw`→"Draw a card" (`"Draw N cards"` if magnitude > 1); `attack`→"+N Attack";
+  `recruit`→"+N Recruit"; unseeded → safe generic fallback (cannot occur).
 - **Redaction:** chooser-only (D-24011 analog) — the pending choice + eligible
   hand/discard are stripped for non-choosers + spectators.
 - **Move name:** `'resolveOptionalKoReward'` added to `UiMoveName`.
@@ -63,11 +73,25 @@
   for the +1 entry.
 - **Non-dismissible prompt.** The component cannot be closed while pending; the
   only exits are a KO selection or Decline.
+- **Eligible-list round-trip (HARD).** `eligibleHand`/`eligibleDiscard` mirror
+  `G.playerZones[pid].hand`/`.discard` in current zone + index order, no
+  pre-filter/reorder, so a client `{zone,cardId}` selection is always one the
+  engine resolve accepts. A reordered/filtered list = the client can submit a
+  card the engine rejects → a no-op the player reads as a broken prompt.
+- **Reward-label single mapping (HARD).** Exactly one `rewardType`+magnitude →
+  label mapping in `uiState.build.ts`; no per-card or inline label strings (drift
+  vector across the future sweep WP).
+- **At most one pending prompt.** The client renders only the one projected
+  pending choice; do NOT add client-side precedence between pending types — WP-248's
+  block-all guard already guarantees at most one is non-empty.
+- **No double-submit.** The prompt disables its controls after a submit until the
+  projection clears. (A stale resubmit is engine-no-op'd, but don't fire twice.)
 - **Projection purity + serializable.** Spread-copy mutable `G` arrays;
   `JSON.stringify(UIState)` succeeds.
 
 ## Required `// why:` Comments
-- `uiState.types.ts` / `build.ts` — `// why: D-24020` on the type + projection.
+- `uiState.types.ts` / `build.ts` — `// why: D-24020` on the type + projection;
+  `// why:` single deterministic mapping on the `rewardType`→`rewardLabel` block.
 - `uiState.filter.ts` — `// why: D-24020 — hand/discard are private to the chooser`.
 - `OptionalKoRewardPrompt.vue` — `// why:` non-dismissible until resolved.
 - `useTurnActions.ts` — `// why:` block turn-end while a choice is pending.
@@ -97,9 +121,10 @@ update AC #9 before executing. No other flex.
 
 ## After Completing
 - [ ] engine `test` + arena-client `test` + arena-client `typecheck` (vue-tsc)
-  exit 0; net-new projection (chooser populated) + redaction (non-chooser empty) +
-  component (KO-select / Decline / non-dismissible) + gating (End Turn disabled)
-  cases; no regress.
+  exit 0; net-new projection (chooser populated; `rewardLabel` per seeded
+  `rewardType`; eligible lists in zone + index order) + redaction (non-chooser
+  empty) + component (KO-select / Decline / non-dismissible / no double-submit) +
+  gating (End Turn disabled) cases; no regress.
 - [ ] **No-engine-gameplay grep (HARD).** `git diff --name-only -- packages/game-engine`
   lists ONLY the 3 `ui/` files + their 2 tests — nothing else.
 - [ ] **Redaction assertion (HARD).** Filter test: a non-chooser/spectator UIState
@@ -132,6 +157,14 @@ update AC #9 before executing. No other flex.
 - Touching an engine move/rule file → scope creep into WP-248's contract.
 - The prompt dismissible while pending → the player can skip the choice +
   soft-lock turn-end.
+- `eligibleHand`/`eligibleDiscard` filtered or reordered vs the live zones → the
+  client submits a `{zone,cardId}` the engine rejects; the prompt looks broken.
+- Per-card or inline reward-label strings instead of the single mapping → label
+  drift the moment the sweep WP marks more cards.
+- The prompt fires `resolveOptionalKoReward` twice (no post-submit disable) →
+  harmless (engine no-ops the stale one) but reads as a flicker / wasted move.
+- Client-side precedence logic between pending-choice types → reinvents the
+  engine's block-all invariant in the wrong layer.
 - The move-union drift assertion not updated → drift test fails.
 
 ## DECISIONS.md Verbatim Block (PS-1 Transcription)
