@@ -59,13 +59,32 @@
   magnitude: rewardMagnitude })`) — NO re-implementation. Seeded reward set:
   `rescue`, `draw`, `attack`, `recruit`. A `rewardType` outside that set is a
   skipped no-op.
+- **Eligible set:** flat concat of `playerZones[pid].discard` then `.hand` — ANY
+  card INCLUDING wounds (printed text is "a card", not "a Hero"); no type/cost/
+  keyword filtering. 0 eligible (both empty) → skipped no-op + `G.messages` line.
 - **Bot default:** `selectDefaultOptionalKoTarget(zones)` (new pure selector in
-  `hero/heroEffects.execute.ts`) — lowest-cost eligible card, discard-preferred,
-  deterministic tie-break; the bot KOs + takes the reward (never declines).
+  `hero/heroEffects.execute.ts`) — tie-break ORDER is EXACT: (1) lowest
+  `G.cardStats[id]?.cost ?? 0`; then (2) discard-zone before hand-zone; then (3)
+  lowest array index in the chosen zone. No other tie-breakers. The bot ALWAYS
+  returns `{ zone, cardId }` and NEVER `{ decline: true }`. Structurally analogous
+  to `selectDefaultKoTarget` but its OWN policy (NOT a reuse — does not exclude
+  wounds or prefer S.H.I.E.L.D. cards).
 - **Marker token:** `[keyword:optional-ko-reward:<reward>:<n>]`, `<reward>` ∈ the
   seeded set, `<n>` ≥ 1. Dangerous Rescue:
   `core`/`black-widow`/`dangerous-rescue`/abilityIndex 0/`[keyword:optional-ko-reward:rescue:1]`.
-- **Token regex addition:** `^\[keyword:optional-ko-reward:[a-z][a-z-]*:[1-9]\d*\]$`.
+- **Token regex addition (apply-script `VALID_TOKEN_PATTERN`, strict build gate):**
+  `^\[keyword:optional-ko-reward:[a-z][a-z-]*:[1-9]\d*\]$`.
+- **Engine-parser regex (`heroAbility.setup.ts`):**
+  `\[keyword:optional-ko-reward:([a-z][a-z-]*):(\d+)\]` — `(\d+)`, matching the
+  existing `COUNT_SCALED_PATTERN` (`attack-per-count`, `heroAbility.setup.ts:117`),
+  NOT `[1-9]\d*`. The divergence is INTENTIONAL: the apply-script is the strict
+  build gate; the parser captures the integer and the `n ≥ 1` check is enforced
+  downstream (`isValidMagnitude`). Do NOT align the engine regex to `[1-9]\d*`.
+- **Precedence (deterministic, defensive):** the block-all guards prevent two
+  pending-choice queues from ever being non-empty at once; nonetheless the
+  `getLegalMoves` short-circuit for `hasPendingOptionalKoReward` is inserted
+  immediately BEFORE the existing `hasPendingKoHeroChoice` short-circuit
+  (`simulation/ai.legalMoves.ts:115`) so order is fixed.
 - **Timing:** `onPlay`.
 
 ## Guardrails
@@ -83,12 +102,34 @@
   EXTENDED to exempt all three resolve moves (`resolveOptionalKoReward`,
   `resolveKoHeroChoice`, `resolveHeroChoice`); `getLegalMoves` gains the
   short-circuit.
+- **Block-all completeness (HARD).** The WP-242 guard is DISTRIBUTED inline across
+  SIX files — add `if (hasPendingOptionalKoReward(G)) return;` beside the existing
+  `hasPendingKoHeroChoice(G)` check at EVERY one (verified live 2026-06-14):
+  `coreMoves.impl.ts` (`drawCards` ~:58 / `playCard` ~:115 / `endTurn` ~:171),
+  `game.ts` (`advanceStage` ~:86 + cleanup turn-end ~:91), `fightVillain.ts` (~:94),
+  `fightMastermind.ts` (~:67), `recruitHero.ts` (~:75),
+  `villainDeck/villainDeck.reveal.ts` (~:71). Additive checks only — do NOT
+  refactor into a combined predicate. Missing ANY site = partial freeze →
+  soft-lock / skipped reward.
 - **Reward reuse (HARD).** The KO-then-reward path dispatches to the existing
   `rescue`/`draw`/`attack`/`recruit` executor — a grep MUST show no duplicated
   reward body in the resolve move.
-- **Atomic (HARD).** Reward fires ONLY when a card is actually KO'd. Decline → no
-  KO, no reward. KO → remove from zone → add to `G.ko` → THEN reward. No reward
-  without KO; no KO without reward dispatch.
+- **Atomic (HARD — exact order).** Mirrors `koHeroChoice.resolve.ts`: (1) validate
+  args (`{decline}` XOR `{zone,cardId}`); (2) validate FRONT entry (non-empty queue,
+  `front.playerID === playerID`); (3) `{decline}` → front-pop only, NO KO/reward;
+  (4) `{zone,cardId}` → card present in `playerZones[pid][zone]` NOW (recompute
+  fresh) else no-op queue-intact; (5) remove from zone → `G.ko = koCard(...)`; (6)
+  THEN dispatch reward via `executeSingleEffect(G, context, playerID,
+  front.sourceCardId, { type: front.rewardType, magnitude: front.rewardMagnitude })`;
+  (7) front-pop (`shift()`) LAST. Any failure before step 5 ABORTS the reward. No
+  reward without KO; no KO (the `{zone,cardId}` path) without reward dispatch. The
+  move destructures `context` (the `draw` reward needs `ctx.random`) — it is NOT a
+  byte-copy of `koHeroChoice.resolve.ts` (which omits `ctx`).
+- **Logging (HARD — match precedent, do not over-log).** 0-eligible skip logs a
+  `G.messages` line (mirrors D-24017). The reward grant is logged by the dispatched
+  executor (e.g. D-24017 `rescue`) — the resolve move adds NO duplicate. Park,
+  decline, and invalid-resolve are SILENT (mirror WP-242 `koHeroChoice`, which
+  parks/resolves with no `G.messages` line).
 - **Optional + parked (HARD).** On play the effect PARKS a choice; it NEVER
   auto-KOs for a human. 0 eligible (hand ∪ discard empty) → skipped no-op + a
   `G.messages` line (mirrors D-24017).
@@ -123,7 +164,12 @@
 - `packages/game-engine/src/setup/heroAbility.setup.ts` — **modified** — reward-token parse.
 - `packages/game-engine/src/hero/heroEffects.execute.ts` — **modified** — MVP set + park case + `selectDefaultOptionalKoTarget`.
 - `packages/game-engine/src/moves/optionalKoReward.resolve.ts` — **new** — move + `hasPendingOptionalKoReward`.
-- `packages/game-engine/src/game.ts` — **modified** — registration + block-all/turn-end guards.
+- `packages/game-engine/src/game.ts` — **modified** — registration + `advanceStage`/cleanup turn-end guard site.
+- `packages/game-engine/src/moves/coreMoves.impl.ts` — **modified** — guard sites: `drawCards`, `playCard`, `endTurn`.
+- `packages/game-engine/src/moves/fightVillain.ts` — **modified** — guard site.
+- `packages/game-engine/src/moves/fightMastermind.ts` — **modified** — guard site.
+- `packages/game-engine/src/moves/recruitHero.ts` — **modified** — guard site.
+- `packages/game-engine/src/villainDeck/villainDeck.reveal.ts` — **modified** — guard site (`revealVillainCard`).
 - `packages/game-engine/src/simulation/ai.legalMoves.ts` — **modified** — bot short-circuit.
 - `packages/game-engine/src/moves/optionalKoReward.resolve.test.ts` — **new**.
 - `packages/game-engine/src/hero/heroEffects.execute.test.ts` — **modified**.
@@ -137,10 +183,12 @@
 - `docs/ai/work-packets/WORK_INDEX.md` — **modified** — WP-248 `[x]`.
 - `docs/ai/execution-checklists/EC_INDEX.md` — **modified** — EC-279 Pending → Done.
 
-**Total: 19 files** (15 engine/data + 4 governance), per WP-248 §Files Expected
-to Change. **Pre-flight pin:** if the board-freeze guard lives in its own module
-(not `game.ts`), the count is 20 — confirm at pre-flight and update AC #9 + this
-line before executing. No other flex permitted.
+**Total: 24 files** (20 engine/data + 4 governance), per WP-248 §Files Expected
+to Change. **Pre-flight pin RESOLVED (2026-06-14 hardening pass):** the board-freeze
+guard is NOT a single module — it is distributed inline across six move files
+(`coreMoves.impl.ts`, `game.ts`, `fightVillain.ts`, `fightMastermind.ts`,
+`recruitHero.ts`, `villainDeck/villainDeck.reveal.ts`), each taking the new
+`hasPendingOptionalKoReward` check. Count is LOCKED at 24 — no flex.
 
 ## After Completing
 - [ ] `pnpm --filter @legendary-arena/game-engine build` + `test` exit 0; net-new
@@ -158,10 +206,14 @@ line before executing. No other flex permitted.
 - [ ] **Atomicity assertion (HARD).** A unit test proves: decline → no KO + no
   reward; KO → exactly one card leaves the named zone into `G.ko` AND the reward
   applied exactly once; invalid card/zone → no-op, move does not throw.
-- [ ] **Coexistence assertion.** A test proves a pending `optional-ko-reward`
-  blocks action moves + turn-end while exempting the three resolve moves, and
-  `getLegalMoves` returns the deterministic default.
-- [ ] `git diff --name-only` = exactly the 19 files (or 20 per the pre-flight pin).
+- [ ] **Block-all completeness assertion (HARD).** A test proves a pending
+  `optional-ko-reward` is a no-op for EACH guarded move individually — `playCard`,
+  `recruitHero`, `fightVillain`, `fightMastermind`, `revealVillainCard`,
+  `advanceStage`, `drawCards`, `endTurn` — while the three resolve moves stay
+  available, and `getLegalMoves` returns EXACTLY ONE deterministic
+  `resolveOptionalKoReward` (never `{decline}`). One missed guard site = one
+  failing assertion.
+- [ ] `git diff --name-only` = exactly the 24 files (count locked; no pre-flight flex).
 - [ ] STATUS updated; DECISIONS D-24019 Active byte-identical; WORK_INDEX WP-248
   `[x]`; EC_INDEX EC-279 → Done.
 
@@ -171,7 +223,7 @@ line before executing. No other flex permitted.
    invalid/atomic, bot-default).
 2. **DRIFT** — `optional-ko-reward` grep = 2; reward-reuse grep (no dup body);
    registry grep = 0.
-3. **DIFF** — `git diff --name-only` (must equal the 19/20-file allowlist).
+3. **DIFF** — `git diff --name-only` (must equal the 24-file allowlist).
 4. **APPLY-SCRIPT** — confirmation: 1 file, 1 hunk, dangerous-rescue line only.
 5. **GOVERNANCE** — STATUS updated; D-24019 → Active; WORK_INDEX WP-248 → `[x]`;
    EC_INDEX EC-279 → Done; **WP-249 co-release status** (engine must not ship to a
@@ -193,6 +245,14 @@ line before executing. No other flex permitted.
   atomicity.
 - The board-freeze guard not extended → the player can end the turn with an
   unresolved choice (soft-lock or skipped reward).
+- The block-all guard added to only SOME of the six sites (e.g. `game.ts` only,
+  per the original file list) → partial freeze: the player plays cards / fights
+  while a choice is pending. The per-move completeness assertion is what catches it.
+- The engine parser regex "aligned" to `[1-9]\d*` → gratuitous divergence from the
+  `COUNT_SCALED_PATTERN` (`attack-per-count`) precedent. Keep `(\d+)`; the strict
+  gate is the apply-script's.
+- The reward re-logged in the resolve move (duplicating the executor's D-24017
+  log), or the park logged (WP-242 parks silently) → log drift.
 - Keyword in union but not array (or vice versa) → drift test fails.
 - `data/cards/core.json` hand-edited / apply run touches more than the
   dangerous-rescue line.
