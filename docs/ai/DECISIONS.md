@@ -24892,4 +24892,59 @@ hero-effect logging and condition-unmet feedback are out of scope.
 **Landed:** 2026-06-13.
 **Status:** Active
 
+---
+
+**D-24018: Canonical Qualified `extId` for Loadout Composition (Registry Viewer ↔ Engine Id-Space Alignment)**
+
+`FlatCard` carries a canonical set-qualified `extId` of the locked form `{setAbbr}/{slug}`
+(e.g. `core/magneto`) alongside the display-only flat-card `key`
+(`core-mastermind-magneto-magneto`). The registry-side setup-contract validator
+(`packages/registry/src/setupContract/setupContract.validate.ts`) and the Registry Viewer
+loadout picker (`apps/registry-viewer/src/components/LoadoutBuilder.vue`) now read `extId`,
+NOT `key`, so the id space the viewer authors and validates against is the SAME id space the
+engine's authoritative match-setup validator (`packages/game-engine/src/matchSetup.validate.ts`)
+accepts (D-10014). `extId` is derived at flatten time per card type, mirroring the engine's
+per-field slug derivation exactly: hero slug (engine `extractHeroSlug`), mastermind group
+slug, villain group slug (engine `extractVillainGroupSlug`), henchman group slug, scheme slug.
+The composition ext_id pattern in `setupContract.schema.ts` widens from `^[a-z0-9-]+$` to
+`^[a-z0-9-]+/[a-z0-9-]+$` (envelope `setupId`/`themeId` stay bare); `MATCH-SETUP-JSON-SCHEMA.json`
+mirrors it.
+
+**Why:** a field report — `Failed to create match … HTTP 500 Internal Server Error` on
+`POST /games/legendary-arena/create` — root-caused to the Registry Viewer emitting flat-card
+keys into loadout composition fields. The engine rejects flat-card keys and bare slugs
+(D-10014) and accepts only the qualified form, so `Game.setup()` threw and boardgame.io
+returned a generic 500. The viewer's own validator green-lit those keys because it built its
+known-id set from `card.key` — a DIFFERENT id space than the engine. The two validators had
+silently diverged.
+
+**Invariant (the point of this decision):** the registry `setupContract` validator and the
+engine `matchSetup.validate.ts` MUST validate against the same id space (qualified `extId`).
+If they diverge again, viewer-valid loadouts will 500 at match creation. The engine validator
+is byte-unchanged — it already produced the correct qualified ids; this entry aligns the
+registry and viewer to it.
+
+**Also:** the arena lobby (`apps/arena-client/src/lobby/lagnLoadout.ts`) now ingests native
+LAGN files (WP-244) by mapping a `setup` block onto the composition shape the existing
+`parseLoadoutJson` validates (that locked WP-092/093 guard is untouched), and a content
+preview reflects mastermind/scheme/villains/henchmen/heroes back before create (LAGN names,
+ext_id fallback for MATCH-SETUP).
+
+**Determinism:** unaffected — no engine gameplay or RNG path changed; `matchSetup.validate.ts`
+is byte-unchanged. Registry / registry-viewer / arena-client only.
+
+**Deferred (latent, flagged):** theme `setupIntent` still uses bare slugs (`magneto`), so
+`prefillFromTheme` produces an invalid draft — a separate slug→`extId` resolver follow-up; and
+`apps/registry-viewer/src/registry/types/index.ts` is a stale pCloud-sync duplicate of the
+active `types-index.ts` (hygiene delete).
+
+**Direct fix** (operator-sanctioned, not a WP — cross-layer bugfix on a live revenue path;
+mirrors the D-24017 direct-fix precedent). Commit `f7e2efb` on branch
+`claude/lagn-upload-extid-roundtrip`. Tests: 1990 pass / 0 fail (engine 1269, registry 116,
+viewer 52, arena 553), incl. a D-24018 regression guard (flat-card key rejected, qualified
+accepted) + 11 LAGN converter tests; `pnpm -r build` clean.
+
+**Landed:** 2026-06-13.
+**Status:** Active
+
 Protect this file.
