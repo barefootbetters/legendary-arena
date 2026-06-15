@@ -81,10 +81,12 @@ Before writing a single line:
   - Define `const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler>>` — one named function per currently-executed keyword (`draw`, `attack`, `recruit`, `ko`, `rescue`, `reveal`, `reveal-ko`, `reveal-min`, `reveal-ko-or-draw`, `reveal-cost-attack`, `reveal-odd-draw`, `reveal-attack-choose`, `reveal-ko-attack`, `attack-per-count`, `optional-ko-reward`). Each function body is the verbatim current `case` body. `Partial<>` because `wound`/`conditional` are intentionally unmapped (the current deferred set).
   - Add `// why:` on the registry: it mirrors WP-009B's ImplementationMap; handlers live outside `G`; dispatch is data-driven so a new effect is a map entry, not a switch edit (cite the design doc + reserved D-24022).
 - **`executeSingleEffect`** — replaced body: keep all current pre-dispatch gates, then `const handler = HERO_EFFECT_HANDLERS[effect.type]; if (handler === undefined) { /* existing default: warn-or-silent-skip exactly as today */ return; } handler(G, ctx, playerID, cardId, effect);` No `switch` over `effect.type` remains.
+- **Promote `MVP_KEYWORDS` to an export** (the drift-test authority). The registry-drift test compares `Object.keys(HERO_EFFECT_HANDLERS)` against the exported `MVP_KEYWORDS` — NOT the coverage script's separate `EXECUTED_KEYWORDS` copy (that stays out of scope). // why: one in-engine source of truth for the executed set; no third copy. (RS-1 from pre-flight.)
+- **Handler extraction (only if split to `heroEffects.handlers.ts`):** export `isValidMagnitude`, `drawFromPlayerDeck`, and `OPTIONAL_KO_REWARD_SEEDED_REWARDS` from `heroEffects.execute.ts` and import them — **never re-declare** them (the codebase already keeps a deliberate two-copy seed-reward split between setup + executor; do not add a third). If a single file is cleaner, keep inline and skip the exports. (Copilot Issue 12/25.)
 
 ### B) Tests
 Add/extend `node:test` tests in `packages/game-engine/src/hero/heroEffects.execute.test.ts`:
-- **Registry drift test:** the set of `HERO_EFFECT_HANDLERS` keys equals the executed-keyword set exactly (the WP-250 informational executed set), with a `// why:` that a keyword added to one but not the other fails here.
+- **Registry drift test (bidirectional):** `Object.keys(HERO_EFFECT_HANDLERS)` equals the exported `MVP_KEYWORDS` set exactly — every handler key ∈ `MVP_KEYWORDS` AND every `MVP_KEYWORDS` member has a handler. `// why:` a keyword added to one but not the other fails here.
 - Every pre-existing `heroEffects.execute.test.ts` assertion passes **unmodified** (behavior identity).
 - `JSON.stringify(G)` succeeds after dispatch (the map is not in `G`).
 - No import from `boardgame.io`; uses `makeMockCtx`.
@@ -104,7 +106,7 @@ Add/extend `node:test` tests in `packages/game-engine/src/hero/heroEffects.execu
 
 ## Files Expected to Change
 
-- `packages/game-engine/src/hero/heroEffects.execute.ts` — **modified** — `HeroEffectHandler` type + `HERO_EFFECT_HANDLERS` registry; `executeSingleEffect` dispatches via the map.
+- `packages/game-engine/src/hero/heroEffects.execute.ts` — **modified** — `HeroEffectHandler` type + `HERO_EFFECT_HANDLERS` registry; `executeSingleEffect` dispatches via the map; exports `MVP_KEYWORDS` (drift-test authority).
 - `packages/game-engine/src/hero/heroEffects.handlers.ts` — **new (optional)** — extracted handler functions, if splitting keeps functions one-screen each. (If kept inline, omit.)
 - `packages/game-engine/src/hero/heroEffects.execute.test.ts` — **modified** — registry drift test + behavior-identity coverage.
 
@@ -125,11 +127,33 @@ All items binary pass/fail.
 
 ### B) Behavior identity
 - [ ] Every pre-existing assertion in `heroEffects.execute.test.ts` passes unmodified.
-- [ ] Registry drift test: `Object.keys(HERO_EFFECT_HANDLERS)` equals the executed-keyword set exactly.
+- [ ] Registry drift test asserts **bidirectionally** that `Object.keys(HERO_EFFECT_HANDLERS)` equals the exported `MVP_KEYWORDS` set (handler-keys ⊆ MVP_KEYWORDS and every MVP_KEYWORDS member has a handler).
 - [ ] `pnpm sim:coverage --check` exits 0 (per-set `noEffect` unchanged — proof of behavior identity at the corpus level).
 
 ### Scope Enforcement
 - [ ] `git diff --name-only` touches only `packages/game-engine/src/hero/**` + governance files; `heroKeywords.ts`, `heroAbility.types.ts`, `heroAbility.setup.ts`, `data/cards/**`, and the villain executor are unchanged.
+
+---
+
+## Lint Gate Self-Review (`00.3`)
+
+All 21 sections resolved (PASS or justified N/A):
+
+- **§1–§6 (structure, constraints, prerequisites, context, output completeness, naming):** PASS — all required sections present; ≤3 code files; canonical names match `00.2`.
+- **§7 dependency discipline:** PASS — no new npm deps.
+- **§8 architectural boundaries:** PASS — Game Engine layer only; `G` JSON-serializable (handler map outside `G`); `ctx.random.*` only; no DB/network/IO; moves untouched.
+- **§9 Windows / §10 env / §11 auth:** N/A — no shell scripts, env vars, or auth surface.
+- **§12 test quality:** PASS — `node:test`, `makeMockCtx`, no `boardgame.io` import.
+- **§13 commands / §14 acceptance / §15 DoD:** PASS — `pnpm` commands exact; acceptance binary; DoD includes STATUS/DECISIONS/WORK_INDEX.
+- **§16 code style:** PASS — named handlers (not factories/HOFs), no abbreviations, `// why:` on the registry + dispatch.
+- **§17 Vision:** N/A — behavior-preserving dispatch refactor; touches no scoring/replay/identity/multiplayer/RNG/card-data/monetization/live-ops/accessibility/registry-viewer surface.
+- **§18 prose-vs-grep:** PASS — the `switch (effect.type)` grep targets the source file, not this WP; no self-trip.
+- **§19 bridge-vs-HEAD / §20 funding / §21 API catalog:** N/A — no repo-state-summary artifact, no funding surface, no HTTP endpoint or `apps/server` library function.
+
+## Pre-Flight & Copilot Verdicts
+
+- **Pre-flight (`01.4`): READY TO EXECUTE** (re-run 2026-06-15). RS-1 (drift-test authority) + RS-2 (D-24022 reserved) resolved in-place above.
+- **Copilot (`01.7`): PASS / CONFIRM** (re-run 2026-06-15). Issue 12/25 (handler-extraction symbol export) + Issue 4 (bidirectional drift) resolved in-place above; session-prompt generation authorized.
 
 ---
 

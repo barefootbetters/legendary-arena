@@ -23,6 +23,8 @@ This EC is the authoritative execution contract for WP-251. Compliance is binary
 - **Handler type (locked):** `type HeroEffectHandler = (G: LegendaryGameState, ctx: unknown, playerID: string, cardId: CardExtId, effect: HeroEffectDescriptor) => void;` — identical to the current per-case contract.
 - **Registry (locked):** `const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler>>`, module-level runtime const, never assigned into `G`.
 - **Mapped keywords (15, locked — exactly the current executed set):** `draw`, `attack`, `recruit`, `ko`, `rescue`, `reveal`, `reveal-ko`, `reveal-min`, `reveal-ko-or-draw`, `reveal-cost-attack`, `reveal-odd-draw`, `reveal-attack-choose`, `reveal-ko-attack`, `attack-per-count`, `optional-ko-reward`. **Unmapped (locked):** `wound`, `conditional`.
+- **Drift authority (locked):** export `MVP_KEYWORDS` from `heroEffects.execute.ts`; the registry-drift test asserts `Object.keys(HERO_EFFECT_HANDLERS)` equals it **bidirectionally**. Do NOT key the test off the coverage script's `EXECUTED_KEYWORDS` copy (out of scope) or add a third list.
+- **Handler-extraction symbol rule (locked):** if handlers move to `heroEffects.handlers.ts`, export `isValidMagnitude`, `drawFromPlayerDeck`, `OPTIONAL_KO_REWARD_SEEDED_REWARDS` from `heroEffects.execute.ts` and import them — never re-declare (no third seed-reward copy). Single-file inline is equally acceptable.
 - **Behavior identity (locked):** each handler body = its current `switch` case body, moved verbatim — same helpers, same `G.messages` strings, same `G.pendingOptionalKoRewards` push, same order. No logic change.
 - **Dispatch (locked):** `executeSingleEffect` keeps all pre-dispatch gates, then `HERO_EFFECT_HANDLERS[effect.type]` lookup → call, else the prior `default` behavior. No `switch (effect.type)` remains.
 - **Commit message:** `EC-282: hero effect ImplementationMap — behavior-preserving switch → registry (D-24022)`. (Code-staged → `EC-###:` prefix, never `WP-NNN:`.)
@@ -62,7 +64,7 @@ This EC is the authoritative execution contract for WP-251. Compliance is binary
 - [ ] `pnpm --filter @legendary-arena/game-engine build` exits 0.
 - [ ] `pnpm --filter @legendary-arena/game-engine test` — all pass / 0 fail; pre-existing `heroEffects.execute.test.ts` assertions unmodified.
 - [ ] `Select-String -Path packages\game-engine\src\hero\heroEffects.execute.ts -Pattern "switch \(effect.type\)|switch \(keyword\)"` → no output.
-- [ ] Registry drift test: `Object.keys(HERO_EFFECT_HANDLERS)` equals the 15 executed keywords; `wound`/`conditional` absent.
+- [ ] Registry drift test asserts **bidirectionally** that `Object.keys(HERO_EFFECT_HANDLERS)` equals the exported `MVP_KEYWORDS` (15 keys; `wound`/`conditional` absent from both).
 - [ ] `pnpm -r build` then `pnpm sim:coverage --check` → exit 0, same `OK` line as the baseline (behavior identity at corpus level).
 - [ ] `git diff --name-only -- packages/game-engine/src/rules/heroKeywords.ts packages/game-engine/src/rules/heroAbility.types.ts packages/game-engine/src/setup/heroAbility.setup.ts data/cards/` → empty.
 - [ ] `git diff --name-only` → only `packages/game-engine/src/hero/**` + governance files.

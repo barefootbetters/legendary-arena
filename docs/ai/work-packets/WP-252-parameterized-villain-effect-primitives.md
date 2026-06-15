@@ -1,6 +1,6 @@
 # WP-252 — Parameterized Villain Effect Primitives (Reopens D-20201 / D-18901)
 
-**Status:** Draft — pending review
+**Status:** Draft — pending review. **Execution-BLOCKED until WP-251 merges to `main`** (the executor mirrors the merged `HERO_EFFECT_HANDLERS` shape; pre-flight RS-1).
 **Primary Layer:** Game Engine / Contracts + Implementation
 **Dependencies:** WP-251 ✅-on-merge (the `HERO_EFFECT_HANDLERS` ImplementationMap pattern this mirrors), WP-185 ✅, WP-189 ✅, WP-202 ✅, WP-214 ✅ (the villain keywords being collapsed), WP-009B ✅ (ImplementationMap precedent), WP-250 ✅ (coverage gate — hero-only; see §Debuggability)
 
@@ -14,7 +14,7 @@ WP-251 routed the hero effect switch through an `ImplementationMap` (Lever 2). T
 
 ## Goal
 
-After this session, villain effects execute through a `VILLAIN_EFFECT_HANDLERS` ImplementationMap keyed by a small closed `VillainEffectPrimitive` set, consuming a parameterized `VillainEffectDescriptor { primitive, target?, magnitude?, selector? }`. The ten fragmented keywords collapse into five primitives (`ko-hero`, `gain-wound`, `capture-hq-hero`, `hero-deck-top-to-escape`, `capture-bystander`); `koHeroEachPlayerMag2`'s literal `for i<2` loop becomes a `magnitude`-driven loop. The setup parser **translates the legacy `[effect:<keyword>]` tokens** through a frozen table into parameterized descriptors AND accepts new `[effect:<primitive>:<target>:<magnitude>]` tokens. **Card data is unchanged this packet** (legacy markers still parse, now translated). A new magnitude/target variant (`magnitude:3`, a future axis) then needs **zero engine code** — a data marker only. This retires the closed-union-per-magnitude policy (D-20201) and the incremental-expansion-per-keyword policy (D-18901).
+After this session, villain effects execute through a `VILLAIN_EFFECT_HANDLERS` ImplementationMap keyed by a small closed `VillainEffectPrimitive` set, consuming a parameterized `VillainEffectDescriptor { primitive, target?, magnitude?, selector? }`. The ten fragmented keywords collapse into five primitives (`ko-hero`, `gain-wound`, `capture-hq-hero`, `hero-deck-top-to-escape`, `capture-bystander`); `koHeroEachPlayerMag2`'s literal `for i<2` loop becomes a `magnitude`-driven loop. The setup parser **translates the legacy `[effect:<keyword>]` tokens** through a frozen table into parameterized descriptors AND accepts new `[effect:<primitive>:<target>:<magnitude>]` tokens. **Card data is unchanged this packet** (legacy markers still parse, now translated). A new magnitude/target variant (`magnitude:3`, a future axis) then needs **zero engine code** — a data marker only. This retires the closed-union-per-magnitude policy (D-20201) and the incremental-expansion-per-keyword policy (D-18901). Crucially, the hook's **applied-effects / narrative surface stays keyword-typed** via a `descriptor → legacy keyword` reverse-map, so `G.notableEvents`, the `EFFECT_KEYWORD_LABELS` table, the replay state-hash, and the arena-client `UIState.notableEvents` projection are **byte-identical** — the parameterization is internal to dispatch.
 
 ---
 
@@ -27,7 +27,7 @@ After this session, villain effects execute through a `VILLAIN_EFFECT_HANDLERS` 
 - `scripts/convert-cards/apply-effect-markers.mjs` holds a hand-synced keyword array.
 - `pnpm --filter @legendary-arena/game-engine build` + `test` exit 0 on the base.
 
-If any is false, this packet is **BLOCKED**.
+If any is false, this packet is **BLOCKED**. WP-251 must be **merged to `main`** before execution (not merely drafted) — pre-flight is NOT READY until then.
 
 ---
 
@@ -55,7 +55,8 @@ If any is false, this packet is **BLOCKED**.
 - **Behavior-identical via translation.** Every legacy keyword maps (frozen table) to a descriptor whose handler reproduces the current case body exactly: `koHeroCurrentPlayer` → `ko-hero{target:'current'}` (the interactive park-choice path, unchanged); `koHeroEachPlayer` → `ko-hero{target:'each',magnitude:1}`; `koHeroEachPlayerMag2` → `ko-hero{target:'each',magnitude:2}` (literal-2 loop → `magnitude` loop); `gainWound{Each,Current}Player` → `gain-wound{target}`; `captureHqHero{Rightmost,HighestCost,LowestCost}` → `capture-hq-hero{selector}`; `heroDeckTopToEscape`/`captureBystander` → standalone primitives (the latter keeps its `onFight`-only post-award branch).
 - **Card data unchanged** (`data/cards/**` zero diff) — the parser translates legacy tokens; no re-marking this packet.
 - **Legacy union frozen, not extended.** `VillainEffectKeyword` + `VILLAIN_EFFECT_KEYWORDS` (10) stay as the parser's translation input only; **no keyword is ever appended again** (D-20201/D-18901 retired). New variants are descriptor params via parameterized tokens.
-- `VillainAbilityHook.effects` becomes `VillainEffectDescriptor[]`; **all consumers of `hook.effects` must be updated** (the executor's applied-effects return, the WP-200 label table, any UIState/log projection of villain effects) — found via `tsc` build errors, fixed in scope.
+- **Behavior-identity guarantee (reverse-map — the load-bearing constraint).** `VillainAbilityHook.effects` becomes `VillainEffectDescriptor[]` (the dispatch input), but the **applied-effects surface stays `VillainEffectKeyword[]`**: `executeVillainAbilities`'s return, `notableEvents.appliedEffects`, the `EFFECT_KEYWORD_LABELS` narrative table, the replay state-hash, and the arena-client `UIState.notableEvents` projection are **UNCHANGED**. The executor derives each applied keyword by reverse-mapping the dispatched descriptor via `DESCRIPTOR_TO_LEGACY_VILLAIN_KEYWORD`. Because this WP changes no card data (every token is legacy → one of the 10 known descriptors), every descriptor reverse-maps to exactly its legacy keyword → byte-identical narratives + hash + arena-client. Therefore `notableEvents.types.ts`, `notableEvents.compose.ts`, the arena-client notable-event consumers + UIState fixtures, and the sentinel `finalStateHash` are **NOT in scope and MUST NOT change** — this is what keeps the packet genuinely behavior-identical and off the WP-166/207/227 arena-client `vue-tsc` recurrence.
+- **`keywords` and `effects` are now DISTINCT arrays.** `buildVillainAbilityHooks` currently assigns the *same reference* to both. After this WP, `keywords: VillainEffectKeyword[]` (legacy list, unchanged type) and `effects: VillainEffectDescriptor[]` (translated descriptors) are built separately; rewrite the `// why: same reference` comment to document the split (pre-flight PS-2).
 - Mirror WP-251: `VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandler>`, handlers branch on `target`/`selector`/`magnitude`.
 
 **Session protocol:**
@@ -76,25 +77,25 @@ If any is false, this packet is **BLOCKED**.
 ### A) Contracts — `villainAbility.types.ts`
 - Add `VillainEffectPrimitive` closed union (`'ko-hero' | 'gain-wound' | 'capture-hq-hero' | 'hero-deck-top-to-escape' | 'capture-bystander'`) + canonical `VILLAIN_EFFECT_PRIMITIVES` array.
 - Add `VillainEffectDescriptor { primitive: VillainEffectPrimitive; target?: 'current' | 'each'; magnitude?: number; selector?: 'rightmost' | 'highest-cost' | 'lowest-cost' }`.
-- Change `VillainAbilityHook.effects` to `VillainEffectDescriptor[]`.
+- Change `VillainAbilityHook.effects` to `VillainEffectDescriptor[]`; keep `keywords: VillainEffectKeyword[]` (now a **distinct array**, no longer the same reference as `effects`).
 - Keep `VillainEffectKeyword` + `VILLAIN_EFFECT_KEYWORDS` (10) **frozen** as the translation input; add `// why:` they are retired-but-frozen (no further appends; D-20201/D-18901 reopened — cite D-24023).
-- Export a frozen `LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR: Record<VillainEffectKeyword, VillainEffectDescriptor>` translation table.
+- Export a frozen `LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR: Record<VillainEffectKeyword, VillainEffectDescriptor>` translation table **and its inverse `DESCRIPTOR_TO_LEGACY_VILLAIN_KEYWORD`** (descriptor → its legacy keyword), used by the executor to keep the applied-effects/narrative surface keyword-typed. The inverse is total over the 10 legacy descriptors.
 
 ### B) Executor — `villainEffects.execute.ts`
 - Replace the `applyVillainEffect` switch with `VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandler>` (mirror `HERO_EFFECT_HANDLERS`). Handler signature `(G, currentPlayer, cardId, timing, descriptor): boolean`.
 - `ko-hero` handler: `target==='current'` → the unchanged interactive park-choice; `target==='each'` → loop `descriptor.magnitude ?? 1` times over sorted players (the generalized Mag2 loop).
 - `gain-wound`, `capture-hq-hero` handlers branch on `target`/`selector` (verbatim case bodies). `hero-deck-top-to-escape`, `capture-bystander` standalone (preserve `captureBystander`'s `onFight` gate).
-- `executeVillainAbilities` iterates `hook.effects` (now descriptors), dispatches via the map; unknown primitive → warn+continue. Update its applied-effects return type.
+- `executeVillainAbilities` iterates `hook.effects` (descriptors), dispatches via the map; unknown primitive → warn+continue. Its applied-effects accumulator **stays `VillainEffectKeyword[]`** — push `DESCRIPTOR_TO_LEGACY_VILLAIN_KEYWORD[descriptor]` (the reverse-map), NOT the descriptor — so the return type, `notableEvents`, narrative labels, and the replay hash are unchanged.
 
 ### C) Parser — `villainAbility.setup.ts`
 - Accept BOTH: legacy `[effect:<keyword>]` (validate ∈ `VILLAIN_EFFECT_KEYWORDS`, then translate via `LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR`) AND parameterized `[effect:<primitive>(:<target|selector>)?(:<magnitude>)?]` (validate primitive ∈ `VILLAIN_EFFECT_PRIMITIVES`, parse params). Emit `VillainEffectDescriptor[]`.
 - `// why:` the dual grammar is the D-24023 migration seam — legacy markers keep working, new markers are parameterized.
 
 ### D) Overlay validator — `scripts/convert-cards/apply-effect-markers.mjs`
-- Accept the parameterized token grammar in addition to legacy; update the hand-synced list to the primitives (keep legacy recognized).
+- Widen only the **validator** portion to recognize parameterized tokens, and add the 5 primitives to the hand-synced list (keeping the 10 legacy keywords recognized). The **emitter/heuristics are unchanged** — they keep emitting legacy `[effect:<keyword>]` tokens, so `data/cards/**` stays byte-unchanged. Emitter migration to parameterized tokens is deferred to WP-253.
 
 ### E) Tests
-- `villainAbility.types.test.ts`: `VILLAIN_EFFECT_PRIMITIVES` drift (exactly 5); the frozen 10-keyword drift test stays; **translation-table parity** — every `VillainEffectKeyword` has a `LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR` entry whose `primitive` ∈ the union.
+- `villainAbility.types.test.ts`: `VILLAIN_EFFECT_PRIMITIVES` drift (exactly 5); the frozen 10-keyword drift test stays; **translation-table parity** — every `VillainEffectKeyword` has a `LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR` entry whose `primitive` ∈ the union; **reverse-map round-trip** — every legacy keyword round-trips keyword→descriptor→keyword identically (totality of `DESCRIPTOR_TO_LEGACY_VILLAIN_KEYWORD` over the 10). Migrate the existing `getVillainHooksForCard` fixtures' `effects: [<keyword>]` literals to `VillainEffectDescriptor[]` (the `keywords` field stays keyword-typed). The frozen-keyword count/order assertion is what "stays unchanged"; the fixture `effects` literals DO change.
 - `villainEffects.execute.test.ts`: handler behavior per primitive; **legacy-translation equivalence** (each legacy keyword's translated descriptor yields the pre-refactor output, incl. `koHeroEachPlayerMag2` == `ko-hero{each,2}` two-KO behavior); `JSON.stringify(G)` ok; no `boardgame.io` import.
 
 ---
@@ -105,19 +106,21 @@ If any is false, this packet is **BLOCKED**.
 - **No card-data re-marking** — `data/cards/**` zero diff (parser translates legacy).
 - No appending to `VillainEffectKeyword` (it is frozen/retired).
 - No villain coverage-gate extension (future Lever-3 follow-up).
-- No new villain mechanic/timing; no move/UIState behavior change beyond the `hook.effects` type propagation.
+- No new villain mechanic/timing; no move behavior change.
+- **No change to `notableEvents.types.ts` / `notableEvents.compose.ts` / `EFFECT_KEYWORD_LABELS`, the arena-client notable-event consumers + UIState fixtures, or the sentinel replay `finalStateHash`** — the reverse-map keeps the applied-effects surface keyword-typed and byte-identical (these MUST show zero diff).
+- No parameterized card-data tokens (the parser accepts them, but no card uses them this WP); descriptor-keyed narrative labels (for future parameterized-only tokens) are WP-253.
 
 ---
 
 ## Files Expected to Change
 
-- `packages/game-engine/src/rules/villainAbility.types.ts` — **modified** — primitive union + descriptor + frozen translation table; `hook.effects` retyped.
+- `packages/game-engine/src/rules/villainAbility.types.ts` — **modified** — primitive union + descriptor + frozen `LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR` + inverse `DESCRIPTOR_TO_LEGACY_VILLAIN_KEYWORD`; `effects` retyped, `keywords` kept keyword-typed (distinct array).
 - `packages/game-engine/src/villain/villainEffects.execute.ts` — **modified** — switch → `VILLAIN_EFFECT_HANDLERS`; `magnitude`-driven each-player KO.
 - `packages/game-engine/src/setup/villainAbility.setup.ts` — **modified** — dual (legacy + parameterized) token grammar → descriptors.
 - `scripts/convert-cards/apply-effect-markers.mjs` — **modified** — accept parameterized tokens; primitives in the hand-synced list.
 - `packages/game-engine/src/rules/villainAbility.types.test.ts` — **modified** — primitive drift + translation parity.
 - `packages/game-engine/src/villain/villainEffects.execute.test.ts` — **modified** — handler + legacy-equivalence tests.
-- Any `hook.effects` consumer surfaced by `tsc` (e.g. WP-200 label table, villain-effect projection) — **modified** as needed (in-scope, type-driven).
+- (No notable-events / arena-client / replay-hash files — the reverse-map keeps the applied-effects surface keyword-typed, so those compile + hash unchanged. If `tsc` surfaces a `hook.effects` consumer the reverse-map does NOT cover, **STOP** — the descriptor leaked past the executor; re-confine it, do not widen the allowlist.)
 
 Governance at close: `STATUS.md`, `DECISIONS.md` (D-24023 + reopen D-20201/D-18901), `WORK_INDEX.md`, `EC_INDEX.md` (EC-283), `docs/05-ROADMAP-MINDMAP.md`.
 
@@ -139,6 +142,11 @@ No other files may be modified. (`data/cards/**` MUST be unchanged.)
 ### C) Parser
 - [ ] Legacy `[effect:koHeroEachPlayerMag2]` and parameterized `[effect:ko-hero:each:2]` both parse to the same descriptor (test).
 - [ ] `data/cards/**` is byte-unchanged (`git diff` empty).
+
+### Behavior-identity surface (reverse-map)
+- [ ] `executeVillainAbilities` still returns `VillainEffectKeyword[]` (reverse-mapped), not descriptors; reverse-map round-trip test passes for all 10 legacy keywords.
+- [ ] `keywords` and `effects` are distinct arrays (not the same reference).
+- [ ] `git diff --name-only` shows **no** change to `packages/game-engine/src/events/notableEvents.{types,compose}.ts`, any `apps/arena-client/**`, or the sentinel `*.replay.json` fixture.
 
 ### Scope
 - [ ] `git diff --name-only -- data/cards/` empty.
@@ -169,10 +177,37 @@ git diff --name-only -- data/cards/
 Select-String -Path "packages\game-engine\src\villain\villainEffects.execute.ts" -Pattern "iteration < 2|i < 2"
 # Expected: no output (loop is magnitude-driven)
 
+# Step 5b — applied-effects surface kept keyword-typed via reverse-map: these MUST be unchanged
+git diff --name-only -- packages/game-engine/src/events/ apps/arena-client/ packages/game-engine/src/test/fixtures/
+# Expected: no output (notableEvents + arena-client + sentinel replay hash untouched)
+
 # Step 6 — scope
 git diff --name-only
 # Expected: only the Files Expected to Change + governance
 ```
+
+---
+
+## Lint Gate Self-Review (`00.3`)
+
+All 21 sections resolved (PASS or justified N/A):
+
+- **§1–§6 (structure, constraints, prerequisites, context, output, naming):** PASS — all sections present; canonical names match `00.2`; ≤8 code files.
+- **§7 dependency discipline:** PASS — no new npm deps.
+- **§8 architectural boundaries:** PASS — Game Engine layer; `VillainEffectDescriptor` is plain data and `VILLAIN_EFFECT_HANDLERS` lives outside `G` (JSON-serializable); `ctx.random.*` only; no DB/network.
+- **§9 Windows / §10 env / §11 auth:** N/A.
+- **§12 test quality:** PASS — `node:test`, `makeMockCtx`, no `boardgame.io`; reverse-map round-trip + legacy-equivalence tests added.
+- **§13 commands / §14 acceptance / §15 DoD:** PASS — exact `pnpm` commands; binary criteria; DoD includes STATUS/DECISIONS/WORK_INDEX.
+- **§16 code style:** PASS — named handlers, no abbreviations, `// why:` on the dual-grammar + reverse-map + frozen-union sites; no `.reduce()`.
+- **§17 Vision:** Triggered (touches the replay state-hash surface). **Determinism preserved:** the reverse-map keeps the applied-effects/`notableEvents` surface keyword-identical, so the sentinel `finalStateHash` is byte-unchanged and replay determinism (Vision §3/§8) is not affected. No scoring/identity/leaderboard surface touched. No Vision conflict.
+- **§18 prose-vs-grep:** PASS — the `switch`/`iteration < 2` greps target source files, not this WP.
+- **§19 bridge-vs-HEAD / §20 funding / §21 API catalog:** N/A — no repo-state-summary artifact, no funding surface, no HTTP endpoint / `apps/server` library function.
+
+## Pre-Flight & Copilot Verdicts
+
+- **Pre-flight (`01.4`): NOT READY (as first drafted)** → reworked. PS-1 (the `appliedEffects`→`notableEvents`→replay-hash→arena-client ripple) resolved by the **reverse-map** design (those surfaces stay keyword-typed + untouched); PS-2 (the `keywords`/`effects` shared-array split) now explicit; RS-1 (sequencing) recorded as Execution-BLOCKED until WP-251 merges.
+- **Copilot (`01.7`): BLOCK (as first drafted)** → same findings resolved by the rework.
+- **Re-run complete (2026-06-15):** pre-flight **READY TO EXECUTE** (modulo the WP-251-merge gate); copilot **PASS / CONFIRM**. PS-1 (reverse-map verified byte-identical at the accumulator — total + injective inverse table, preserved conditional-push + dispatch order), PS-2 (distinct arrays), and RS-1 (sequencing) all resolved/gated; no new failure modes. **Execution stays BLOCKED until WP-251 merges to `main`.**
 
 ---
 
