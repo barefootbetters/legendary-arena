@@ -57,7 +57,7 @@ Before writing a single line:
 
 **Packet-specific:**
 - Zero diff to `packages/game-engine/src/**`, `packages/registry/src/**`, and any `.types.ts` — this packet adds **no** engine/registry code and changes **no** contract. (Confirmed by `git diff --name-only`.)
-- The probe imports `HERO_KEYWORDS` from `packages/game-engine/dist/rules/heroKeywords.js` (canonical source) — it must **not** re-declare the known-markup vocabulary as a local literal. (Kills the prototype's `KNOWN_MARKUP_KEYWORDS` duplicate.)
+- The probe imports `HERO_KEYWORDS` from `packages/game-engine/dist/rules/heroKeywords.js` (canonical source) — it must **not** re-declare the known-markup vocabulary as a hand-typed literal; derive it from the import (the prototype's hand-typed `KNOWN_MARKUP_KEYWORDS` array becomes `new Set(HERO_KEYWORDS)`; the const name may remain, but it must be the derived Set).
 - The gated metric is **per-set `noEffect` non-regression** plus **unsupported-mechanic non-growth** plus **corpus integrity**. `noEffect` is pure parser output (a hook with no `effects`), so the gate needs no engine executor constant. The EXECUTABLE vs PARSED_NOT_EXECUTED split stays **informational** (printed, not gated) to avoid coupling the gate to the executor's internal keyword set.
 - **Invariant (enforced):** the probe's informational executed-keyword list MUST NOT appear in any `--check` comparison or exit-code condition — it is informational-only. (Verified by inspection: its identifier does not occur inside the comparison / `--check` function.)
 - **Baseline-superset rule (locked):** the baseline MAY contain `unsupportedMechanics` keys absent from the current report, and `noEffect` values higher than current; this MUST NOT fail `--check`. Only a *current* key absent from the baseline (new mechanic) or a higher current `noEffect` (regression) fails.
@@ -86,8 +86,8 @@ Before writing a single line:
   - Keep the existing three-bucket classification (EXECUTABLE / PARSED_NOT_EXECUTED / NO_EFFECT) and the unsupported-`[keyword:X]` scan. Add `// why:` comment that the EXECUTABLE/PARSED split is informational and intentionally not imported from the executor's internal set (decoupling rationale, cite D-24021).
   - Add a `buildCoverageReport(registry)` function returning a plain object: `{ schemaVersion: 1, corpus: { heroes, hooks, executable, parsedNotExecuted, noEffect }, perSet: { <abbr>: { hooks, executable, noEffect } }, unsupportedMechanics: { <name>: count } }`.
   - Add `serializeDeterministic(report)` — sorts all object keys and array entries so output is byte-stable.
-  - Add CLI flags: default = human report to stdout; `--json` = deterministic JSON to stdout; `--check` = compare against the committed baseline and exit 0/1; `--update-baseline` = write the current report to the baseline path.
-  - `--check` regression rule: FAIL if (a) any `perSet[set].noEffect` exceeds the baseline value for that set, OR (b) any key in the *current* `unsupportedMechanics` is absent from the baseline's `unsupportedMechanics` (a new unmodeled mechanic entered the corpus), OR (c) any set present in the baseline `perSet` is missing from the current report (corpus shrank). Coverage improvements (lower `noEffect`, fewer mechanics) and a baseline that is a strict superset PASS.
+  - Add CLI flags: default = human report to stdout; `--json` = deterministic JSON to stdout; `--check` = compare against the committed baseline and exit 0/1/2 (hybrid posture below); `--update-baseline` = write the current report to the baseline path (no comparison).
+  - `--check` posture (**hybrid**, D-24021): **HARD-FAIL (exit 1)** if (a) any `perSet[set].noEffect` exceeds the baseline value for that set (an executable line went dark — the refactor-regression case), OR (c) any set present in the baseline `perSet` is missing from the current report (corpus shrank). **WARN-only (printed, exit 0)** if (b) any key in the *current* `unsupportedMechanics` is absent from the baseline's `unsupportedMechanics` (a brand-new unmodeled mechanic — expected as new sets get authored; surfaced, never blocking). Coverage improvements (lower `noEffect`, fewer mechanics) and a baseline that is a strict superset PASS.
   - **Classification rules (fixed — must not drift):**
     - **NO_EFFECT** — `hook.effects` is `undefined` or empty.
     - **PARSED_NOT_EXECUTED** — `hook.effects` is non-empty but no effect `type` is in the probe's informational executed-keyword list.
@@ -96,8 +96,8 @@ Before writing a single line:
   - **Unsupported-mechanic detection (fixed):** a `[keyword:X]` token whose normalized form is not in `HERO_KEYWORDS` counts as one unsupported-mechanic occurrence. Normalization is locked: lowercase, strip a trailing `:<digits>` or ` <digits>` magnitude, then collapse remaining whitespace to single hyphens. (This normalization is required, not forbidden — without it `[keyword:draw:1]` would be miscounted as unsupported when `draw` is supported.) Equivalence: `[keyword:X:1]` and `[keyword:X 1]` MUST normalize to the same key. A token that normalizes to the empty string (malformed, e.g. `[keyword:]`) is ignored — never counted as an unsupported mechanic.
   - **Schema version:** the report carries top-level `schemaVersion: 1` (integer). `--check` fails as a probe failure (see exit codes) — never silently — if the baseline's `schemaVersion` is absent or ≠ the probe's supported version. A future schema change increments this value and invalidates old baselines explicitly.
   - **Numeric formatting:** values are emitted with default JSON number formatting — no rounding, truncation, padding, or localization (all counts are integers).
-  - **Exit codes (locked):** `0` = no regression; `1` = regression detected (printed per the failure-output contract); `2` = probe failure; **no other exit codes are permitted.** Probe-failure (`2`) conditions: missing or unreadable baseline; missing required `dist/` imports; absent or invalid `schemaVersion`; JSON parse failure in the baseline or current report; a degenerate corpus (`corpus.heroes` or `corpus.hooks` is zero — signals the registry/`dist` did not load).
-  - **Failure-output contract:** on a `1` exit the probe prints one line per regressing set as `<set>: noEffect <baseline> → <current>`, one line per new mechanic as `NEW unsupported mechanic: <name>`, one line per missing set as `MISSING set: <abbr>`, then a final single-line summary naming the failure reason. On a `2` exit it prints a single full-sentence probe-failure reason.
+  - **Exit codes (locked):** `0` = no hard-fail regression (new-mechanic warnings may have printed); `1` = hard-fail regression (a `noEffect` rise or a missing set); `2` = probe failure; **no other exit codes are permitted.** Probe-failure (`2`) conditions: missing or unreadable baseline; missing required `dist/` imports; absent or invalid `schemaVersion`; JSON parse failure in the baseline or current report; a degenerate corpus (`corpus.heroes` or `corpus.hooks` is zero — signals the registry/`dist` did not load).
+  - **Failure-output contract:** the probe always prints one line per new mechanic as `WARN: NEW unsupported mechanic: <name>` (warn-only — does not affect the exit code). On a `1` exit it additionally prints one line per regressing set as `<set>: noEffect <baseline> → <current>`, one line per missing set as `MISSING set: <abbr>`, then a final `FAIL:` summary. On a `0` exit it prints an `OK:` summary (noting any warning count). On a `2` exit it prints a single full-sentence `Probe failure:` reason.
   - **CLI mode isolation:** `--check` never writes files; `--update-baseline` never performs a comparison; default and `--json` modes never write the baseline.
 
 ### B) `pnpm sim:coverage` script
@@ -147,7 +147,7 @@ No other files may be modified.
 All items must be binary pass/fail. No partial credit.
 
 ### A) Probe
-- [ ] `scripts/hero-effect-coverage.mjs` imports `HERO_KEYWORDS` from `../packages/game-engine/dist/rules/heroKeywords.js` and contains no local known-markup keyword literal (confirmed with `Select-String -Pattern "KNOWN_MARKUP_KEYWORDS"` → no output).
+- [ ] `scripts/hero-effect-coverage.mjs` imports `HERO_KEYWORDS` from `../packages/game-engine/dist/rules/heroKeywords.js` and derives the known-markup vocabulary from it — `Select-String -Pattern "new Set\(HERO_KEYWORDS\)"` → 1 match — with no hand-typed keyword-string array for the known set.
 - [ ] `node scripts/hero-effect-coverage.mjs --json` prints valid JSON with top-level keys `schemaVersion`, `corpus`, `perSet`, `unsupportedMechanics`; `schemaVersion` is `1`.
 - [ ] Running `--json` twice produces byte-identical output (deterministic serialization, sorted keys/arrays, default integer formatting).
 - [ ] No `Math.random`, `Date.now`, `new Date`, or network call in the file (confirmed with `Select-String`).
@@ -156,11 +156,12 @@ All items must be binary pass/fail. No partial credit.
 - [ ] `pnpm sim:coverage` runs the human report; `pnpm sim:coverage --check` and `pnpm sim:coverage --update-baseline` run their modes.
 
 ### C) Baseline + gate
-- [ ] `scripts/coverage/hero-effect-coverage.baseline.json` exists, carries `schemaVersion: 1`, and matches the current `--json` output byte-for-byte.
+- [ ] `scripts/coverage/hero-effect-coverage.baseline.json` exists and carries `schemaVersion: 1`. (Determinism is asserted via the idempotent-write + double-`--json` checks below, not a byte-for-byte file==stdout compare, which is fragile to OS line-ending handling.)
+- [ ] Two consecutive `--update-baseline` writes produce a byte-identical baseline file; two consecutive `--json` runs produce byte-identical output.
 - [ ] `pnpm sim:coverage --check` exits `0` against the committed baseline.
 - [ ] Lowering a set's baseline `noEffect` by 1 → `--check` exits `1` and prints `<set>: noEffect <baseline> → <current>`; revert restores exit 0 (Verification Step 4).
-- [ ] Removing a real `unsupportedMechanics` key from the baseline → `--check` exits `1` and prints `NEW unsupported mechanic: <name>`; adding a fabricated baseline key does **not** fail (baseline-superset allowed).
 - [ ] Adding a fabricated set key to the baseline `perSet` (absent from the current report) → `--check` exits `1` naming the missing set (corpus-integrity rule).
+- [ ] Removing a real `unsupportedMechanics` key from the baseline → `--check` prints `WARN: NEW unsupported mechanic: <name>` and exits **`0`** (hybrid: new mechanic warns, never fails); adding a fabricated baseline key also passes (baseline-superset).
 - [ ] A baseline with `schemaVersion` absent/≠ 1, or a corpus with `heroes`/`hooks` = 0 → `--check` exits `2` (probe failure), distinct from `1`.
 - [ ] `--check` leaves `hero-effect-coverage.baseline.json` byte-unchanged (verified by hash); `--update-baseline` performs no comparison (CLI mode isolation).
 
@@ -193,13 +194,13 @@ Compare-Object (Get-Content $env:TEMP\cov1.json) (Get-Content $env:TEMP\cov2.jso
 pnpm sim:coverage --check
 # Expected: exits 0, prints "no hero-effect coverage regression"
 
-# Step 4 — gate conditions + schema/corpus guards fail correctly; --check never writes; then revert
+# Step 4 — gate conditions + schema/corpus guards behave correctly; --check never writes; then revert
 #   (a) lower one set's baseline "noEffect" by 1            → exit 1, "<set>: noEffect ..→.."
-#   (b) delete one "unsupportedMechanics" key from baseline → exit 1, "NEW unsupported mechanic: <name>"
-#       (adding a fabricated key instead → still exit 0; baseline-superset allowed)
+#   (b) delete one "unsupportedMechanics" key from baseline → exit 0 + "WARN: NEW unsupported mechanic: <name>"
+#       (hybrid: a new mechanic warns, never fails; a fabricated extra key also passes)
 #   (c) add a fabricated set key to baseline "perSet"       → exit 1 (corpus-integrity; set missing from current)
 #   (d) set "schemaVersion" to 2, or zero out corpus.hooks  → exit 2 (probe failure)
-#   then `git checkout -- scripts/coverage/hero-effect-coverage.baseline.json`
+#   then re-run --update-baseline (or `git checkout`) to restore the canonical baseline
 $before = (Get-FileHash scripts\coverage\hero-effect-coverage.baseline.json).Hash
 pnpm sim:coverage --check
 $after  = (Get-FileHash scripts\coverage\hero-effect-coverage.baseline.json).Hash
