@@ -29,11 +29,11 @@ This EC is the authoritative execution contract for WP-250. Compliance is binary
   - `corpus`: `heroes`, `hooks`, `executable`, `parsedNotExecuted`, `noEffect`.
   - `perSet[<abbr>]`: `hooks`, `executable`, `noEffect`.
   - `unsupportedMechanics[<name>]`: integer count.
-- **Classification rules (fixed; match WP-250):** NO_EFFECT = `hook.effects` undefined/empty; PARSED_NOT_EXECUTED = effects non-empty but none in the probe's informational executed-keyword list; EXECUTABLE = ≥1 effect in that list. The list is the probe's own mirror of the executor's handled set — never imported from the executor; the gate never depends on it (D-24021).
-- **Unsupported-mechanic detection (fixed):** a `[keyword:X]` token whose normalized form ∉ `HERO_KEYWORDS` is one occurrence. Normalization (locked): lowercase → strip trailing `:<digits>` or ` <digits>` → collapse whitespace to single hyphens. (Required: prevents `[keyword:draw:1]` miscounting.)
-- **Gated metric (locked):** per-set `noEffect` non-regression (current ≤ baseline for every set) AND unsupported-mechanic non-growth (no current `unsupportedMechanics` key absent from baseline). EXECUTABLE/PARSED split is informational only — never gated.
+- **Classification rules (fixed; match WP-250):** NO_EFFECT = `hook.effects` undefined/empty; PARSED_NOT_EXECUTED = effects non-empty but none in the probe's informational executed-keyword list; EXECUTABLE = ≥1 effect in that list. The list is the probe's own mirror of the executor's handled set — never imported from the executor; the gate never depends on it (D-24021), and its identifier MUST NOT appear in any `--check`/exit-code condition (informational-only).
+- **Unsupported-mechanic detection (fixed):** a `[keyword:X]` token whose normalized form ∉ `HERO_KEYWORDS` is one occurrence. Normalization (locked): lowercase → strip trailing `:<digits>` or ` <digits>` → collapse whitespace to single hyphens. (Required: prevents `[keyword:draw:1]` miscounting.) `[keyword:X:1]` and `[keyword:X 1]` normalize equal; a token normalizing to empty (malformed) is ignored, never counted.
+- **Gated metric (locked):** per-set `noEffect` non-regression (current ≤ baseline for every set) AND unsupported-mechanic non-growth (no current `unsupportedMechanics` key absent from baseline) AND corpus integrity (every baseline `perSet` set exists in current). Baseline-superset is allowed (extra baseline mechanic keys / higher baseline `noEffect` never fail). EXECUTABLE/PARSED split is informational only — never gated.
 - **CLI modes (locked):** default = human report; `--json` = deterministic JSON; `--check` = compare-and-exit; `--update-baseline` = write baseline.
-- **Exit codes (locked):** `0` = no regression; `1` = regression; any other non-zero = probe failure (missing `dist/`, missing/unreadable baseline, `schemaVersion` absent/≠ 1).
+- **Exit codes (locked):** `0` = no regression; `1` = regression; `2` = probe failure; no others. Probe-failure (`2`): missing/unreadable baseline, missing `dist/` imports, absent/invalid `schemaVersion`, JSON parse failure, or zero `corpus.heroes`/`corpus.hooks`.
 - **CI job name:** `hero-effect-coverage` in `.github/workflows/ci.yml`, mirroring `typecheck-arena-client` (build workspace → run gate).
 - **Commit message:** `WP-250: hero-effect coverage gate — pnpm sim:coverage + CI non-regression (D-24021)`.
 
@@ -44,7 +44,8 @@ This EC is the authoritative execution contract for WP-250. Compliance is binary
 - `packages/game-engine/src/**` and `packages/registry/src/**` — **zero diff**. No contract (`.types.ts`) change. This packet is tooling + CI only.
 - No local known-markup keyword literal in the probe — the vocabulary comes from the imported `HERO_KEYWORDS` (single source of truth; prevents drift).
 - No `Math.random`, `Date.now`, `new Date`, or network/process-env read in the probe — output must be byte-deterministic given the in-repo data.
-- Deterministic serialization — sort all object keys and array entries, default integer formatting (no rounding/padding/localization). `--json` output must be byte-identical across repeated runs, different machines, and different Node patch versions.
+- Deterministic serialization — ONE `serializeDeterministic` used for `--json`, `--check`, and `--update-baseline`; object keys + any arrays sorted lexicographically by UTF-16 code unit (never `localeCompare`); default integer formatting. Byte-identical across repeated runs, machines, Node patch versions, and CI-vs-local.
+- The executed-keyword list identifier MUST NOT appear inside the `--check`/comparison/exit-code logic (informational-only; verified by inspection).
 - The baseline changes **only** via `--update-baseline` — `--check` and the default/`--json` modes never write it. `--update-baseline` never performs a comparison (CLI mode isolation).
 - The gate is one-directional: coverage improvements pass; only regressions (more `noEffect`, a new unmodeled mechanic) fail.
 
@@ -79,8 +80,10 @@ This EC is the authoritative execution contract for WP-250. Compliance is binary
 - [ ] `scripts/coverage/hero-effect-coverage.baseline.json` carries `schemaVersion: 1` and equals current `--json` output byte-for-byte.
 - [ ] `pnpm sim:coverage --check` exits 0.
 - [ ] Lower one set's baseline `noEffect` by 1 → `--check` exits `1`, prints `<set>: noEffect ..→..` → revert → exits 0.
-- [ ] Delete one `unsupportedMechanics` key from baseline → `--check` exits `1`, prints `NEW unsupported mechanic: <name>` → revert → exits 0. (Adding a fabricated key must NOT fail — baseline-superset is allowed.)
-- [ ] Set baseline `schemaVersion` to 2 → `--check` exits a probe-failure code (not 0, not 1) naming the mismatch → revert.
+- [ ] Delete one `unsupportedMechanics` key from baseline → `--check` exits `1`, prints `NEW unsupported mechanic: <name>` → revert. (Adding a fabricated key must NOT fail — baseline-superset.)
+- [ ] Add a fabricated set key to baseline `perSet` (absent from current) → `--check` exits `1` naming the missing set (corpus integrity) → revert.
+- [ ] Set baseline `schemaVersion` to 2, or zero out `corpus.hooks` → `--check` exits `2` (probe failure, not 0/1) → revert.
+- [ ] `--check` leaves `hero-effect-coverage.baseline.json` byte-unchanged (`Get-FileHash` before == after).
 - [ ] `.github/workflows/ci.yml` contains a `hero-effect-coverage` job running `pnpm -r build` then `pnpm sim:coverage --check`.
 - [ ] `git diff --name-only packages/` → empty.
 - [ ] `git diff --name-only` → only files in WP-250 `## Files Expected to Change` + governance files.
@@ -96,4 +99,5 @@ This EC is the authoritative execution contract for WP-250. Compliance is binary
 - The gate fails when coverage *improved* → the comparison is bidirectional; it must fail only on `noEffect` increase or a new unsupported mechanic.
 - A new `[keyword:X]` mechanic silently passes → the unsupported-mechanic-growth check is not comparing against the baseline's `unsupportedMechanics` key set.
 - `--json` output differs across machines or Node patch versions → incomplete deterministic serialization (unsorted keys/arrays, or non-default numeric formatting).
-- An old baseline silently passes after a schema change → the `schemaVersion` guard is missing; a mismatch must be a loud probe failure, never a `0`/`1`.
+- An old baseline silently passes after a schema change → the `schemaVersion` guard is missing; a mismatch must be a loud probe failure (`2`), never a `0`/`1`.
+- A set disappears from the corpus and `--check` still passes → the corpus-integrity check isn't asserting every baseline `perSet` set exists in current.
