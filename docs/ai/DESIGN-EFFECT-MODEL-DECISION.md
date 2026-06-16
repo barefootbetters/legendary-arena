@@ -15,7 +15,7 @@ Should card effects keep using a **closed, one-keyword-per-mechanic** vocabulary
 (an engine change for every new mechanic), or should cards become **self-
 describing**, so a new set can usually ship as data with no new engine logic?
 
-It became urgent while scoping Berserk, the first effect-authoring "grind" case.
+It became urgent while scoping Berserk, the first major long-tail effect case.
 Implementing it narrowly means: add `'berserk'` to the closed `HeroKeyword`
 union + the canonical array + a `DECISIONS` entry + a handler + a drift test +
 regenerate coverage. Every future mechanic repeats that ceremony — which fights
@@ -98,7 +98,7 @@ back into model A at a larger granularity.
 | **Selector** | `current-player`, `top-of-deck`, `revealed-cards`, `chosen-card` |
 | **Value expression** | `constant(N)`, `card-printed-stat(card, stat)`, `count(cards)` |
 | **Control** | `sequence`, `conditional`, `choice`, `for-each` |
-| **Binding** | `bind: <name>` — store one primitive's result for a later one in the same effect |
+| **Context** | `bind: <name>` (store action output), `ref: <name>` (read stored output) |
 
 A primitive named `discard-top-gain-from-stat` would **fail** this test — it is a
 mechanic-shaped macro wearing a primitive's name, and it recreates the closed-
@@ -163,32 +163,38 @@ sequence:
 As a descriptor:
 
 ```ts
-[
-  { type: 'move-card',
-    from: { owner: 'current-player', zone: 'deck', position: 'top' },
-    to:   { owner: 'current-player', zone: 'discard' },
-    bind: 'discardedCard' },
-  { type: 'gain-resource',
-    resource: 'attack',
-    amount: { type: 'card-printed-stat', card: { ref: 'discardedCard' }, stat: 'attack' } },
-]
+{
+  type: 'sequence',
+  steps: [
+    { type: 'move-card',
+      from: { owner: 'current-player', zone: 'deck', position: 'top' },
+      to:   { owner: 'current-player', zone: 'discard' },
+      bind: 'discardedCard' },
+    { type: 'gain-resource',
+      resource: 'attack',
+      amount: { type: 'card-printed-stat', card: { ref: 'discardedCard' }, stat: 'attack' } }
+  ]
+}
 ```
 
 Berserk itself is now **data**. The engine gains reusable primitives (`move-card`,
-`gain-resource`, the `card-printed-stat` value expression, `bind`, `sequence`).
+`gain-resource`, the `card-printed-stat` value expression, `bind`/`ref`, `sequence`).
 The mechanically-identical cousin — discard the top card, gain **Recruit** equal
 to its printed Recruit — is then authored as data with **no engine change**:
 
 ```ts
-[
-  { type: 'move-card',
-    from: { owner: 'current-player', zone: 'deck', position: 'top' },
-    to:   { owner: 'current-player', zone: 'discard' },
-    bind: 'discardedCard' },
-  { type: 'gain-resource',
-    resource: 'recruit',
-    amount: { type: 'card-printed-stat', card: { ref: 'discardedCard' }, stat: 'recruit' } },
-]
+{
+  type: 'sequence',
+  steps: [
+    { type: 'move-card',
+      from: { owner: 'current-player', zone: 'deck', position: 'top' },
+      to:   { owner: 'current-player', zone: 'discard' },
+      bind: 'discardedCard' },
+    { type: 'gain-resource',
+      resource: 'recruit',
+      amount: { type: 'card-printed-stat', card: { ref: 'discardedCard' }, stat: 'recruit' } }
+  ]
+}
 ```
 
 The underlying values already exist in `G` deterministically — `G.cardStats[id]`
@@ -197,10 +203,18 @@ already reads it — so `card-printed-stat` is replay-safe.
 
 **Eyes-open cost (the real trade):** doing Berserk this way means the *first* WP
 **bootstraps the primitive infrastructure** — the descriptor schema, the
-interpreter that evaluates `sequence` / `bind` / value expressions, and the first
-action primitives — not just one handler. So the first step is **larger** than a
-narrow keyword would have been; the payoff (every cousin becomes data, forever)
-lands *after* it. Ratifying model C is ratifying that front-loaded cost.
+interpreter (including transient execution context for `bind`/`ref`), and the
+first action primitives — not just one handler. So the first step is **larger**
+than a narrow keyword would have been; the payoff (every cousin becomes data,
+forever) lands *after* it. Ratifying model C is ratifying that front-loaded cost.
+
+**Context-lifetime default (pin in the WP):** the execution context is created
+per top-level effect evaluation; a binding is lexically scoped to its enclosing
+`sequence` and visible to later steps within it; and the context is **never
+written to `G`** — bound values are transient interpreter state, re-derived
+identically on replay, not game state. This keeps `bind`/`ref` inside the
+determinism and `G`-is-runtime-only invariants (a binding persisted into `G`
+would violate the persistence boundary and risk double-application on replay).
 
 ---
 
@@ -219,11 +233,12 @@ unsupported hero mechanics today) — we are not speculating about future conten
 the corpus already contains it.
 
 **Interaction is the real hard part.** Composable primitives make *firing* an
-effect trivial; *how effects interact* (timing, triggers, ordering, replacement)
-is where engine complexity legitimately lives. Legendary being co-op and non-
-stack keeps this far more tractable than MTG, but a future mechanic that
-introduces a new timing or replacement model may still justify a new primitive or
-even a small interaction subsystem. This decision does not pretend otherwise.
+effect trivial; *how effects interact* (timing, execution context lifetime,
+triggers, ordering, replacement) is where engine complexity legitimately lives.
+Legendary being co-op and non-stack keeps this far more tractable than MTG, but
+a future mechanic that introduces a new timing or replacement model may still
+justify a new primitive or even a small interaction subsystem. This decision does
+not pretend otherwise.
 
 ---
 
