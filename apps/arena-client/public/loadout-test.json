@@ -10,7 +10,7 @@
     "heroDeckIds": ["core/spider-man", "core/hulk", "core/wolverine", "core/black-widow"],
     "bystandersCount": 30,
     "woundsCount": 30,
-    "officersCount": 5,
+    "officersCount": 30,
     "sidekicksCount": 12
   }
 }
