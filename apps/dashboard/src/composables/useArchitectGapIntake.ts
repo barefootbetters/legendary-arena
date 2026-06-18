@@ -53,9 +53,7 @@ function targetLayerForCardType(cardType: string): ArchitectTargetLayer | null {
  * overlay's example order. Returns `null` when no example is mappable, which
  * makes the whole mechanic ineligible.
  */
-function firstMappableExample(
-  examples: readonly RuntimeObservedExample[],
-): MappableExample | null {
+function firstMappableExample(examples: readonly RuntimeObservedExample[]): MappableExample | null {
   for (const example of examples) {
     const proposedTargetLayer = targetLayerForCardType(example.cardType);
     if (proposedTargetLayer !== null) {

@@ -2,10 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { computed } from 'vue';
 import { useArchitectGapIntake } from './useArchitectGapIntake.js';
-import type {
-  RuntimeObservedEntry,
-  RuntimeObservedExample,
-} from '../types/coverage.js';
+import type { RuntimeObservedEntry, RuntimeObservedExample } from '../types/coverage.js';
 
 /**
  * Build a `RuntimeObservedExample` with sensible defaults. Callers override the
@@ -160,10 +157,7 @@ describe('useArchitectGapIntake', () => {
       });
 
       assert.equal(projection.candidates.length, 1);
-      assert.equal(
-        projection.candidates[0]!.reason,
-        'some-future-reason-not-yet-in-the-taxonomy',
-      );
+      assert.equal(projection.candidates[0]!.reason, 'some-future-reason-not-yet-in-the-taxonomy');
     });
   });
 

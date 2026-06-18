@@ -937,8 +937,16 @@ describe('useAgentPipeline', () => {
           },
         ],
         backlog: [
-          { id: 'architect-gap-stun', label: 'stun — unsupported-keyword (4× in play)', meta: 'Hollow gap' },
-          { id: 'architect-gap-ambush', label: 'ambush — no-handler (2× in play)', meta: 'Hollow gap' },
+          {
+            id: 'architect-gap-stun',
+            label: 'stun — unsupported-keyword (4× in play)',
+            meta: 'Hollow gap',
+          },
+          {
+            id: 'architect-gap-ambush',
+            label: 'ambush — no-handler (2× in play)',
+            meta: 'Hollow gap',
+          },
         ],
       };
     }
@@ -995,7 +1003,12 @@ describe('useAgentPipeline', () => {
             { number: 50, title: 'Zone ops refactor', status: 'Draft' as const, dependencies: [] },
           ],
           blocked: [
-            { number: 60, title: 'Auth middleware', status: 'Blocked' as const, dependencies: [59] },
+            {
+              number: 60,
+              title: 'Auth middleware',
+              status: 'Blocked' as const,
+              dependencies: [59],
+            },
           ],
           now: [{ number: 70, title: 'Pipeline page', status: 'Ready' as const, dependencies: [] }],
         },
