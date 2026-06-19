@@ -544,7 +544,7 @@ only place the site currently uses Hugo image processing is the header
 logo path in `header.html` (`resources.Get` + `.Resize "x30"`), which
 reads from the resources/assets pipeline.
 
-**If an automated optimization workflow is wanted** (a `{{< image >}}`
+**If an automated optimization workflow is wanted** (a `{{</* image */>}}`
 shortcode that emits resized/WebP variants and `srcset`): it would
 require relocating source images out of `static/images/` into either
 `assets/images/` or page bundles, then a shortcode wrapping `.Resize` /
