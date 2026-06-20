@@ -1,6 +1,6 @@
 # WP-269 — Hero Mechanic Metadata Feed (Contract + Transform + CI Gate)
 
-**Status:** Reviewed — ready to execute (tightened 2026-06-20: slug normalization, engine-dist submodule import paths, `generatedAt` sentinel, deterministic JSON ordering, bidirectional join + schema refinements, visible-curation floor, transform self-validation, added schema test file)
+**Status:** Reviewed — ready to execute (tightened 2026-06-20: slug normalization, engine-dist submodule import paths, `generatedAt` sentinel, deterministic JSON ordering, bidirectional join + schema refinements, visible-curation floor, transform self-validation, added schema test file). **Gates re-run 2026-06-20 post-tightening: pre-flight READY · copilot PASS · lint PASS** (the re-gate caught the dist-barrel contract defect — see Pre-Flight + Copilot Re-Gate below).
 **Primary Layer:** Shared tooling (`scripts/`) + Registry (`packages/registry` — contract schema) + Metadata staging (`data/metadata/`)
 **Dependencies:** WP-251-era hero mechanic ledger (`docs/ai/coverage/hero-mechanic-ledger.json` — the committed, CI-gated source of truth); WP-086 / WP-183 / WP-184 metadata-publish precedent (`data/metadata/*.json` staged in-repo, fetched from R2 by the viewer)
 
@@ -362,9 +362,48 @@ pnpm -r build && pnpm test
 
 ---
 
+## Pre-Flight + Copilot Re-Gate (2026-06-20, post-tightening)
+
+The original draft's pre-flight/copilot verdicts predate the 2026-06-20
+tightening (slug normalization, engine-dist submodule paths, `generatedAt`
+sentinel, deterministic ordering, bidirectional join + schema refinements,
+visible-curation floor, transform self-validation, added schema test). Both
+gates were re-run against the tightened WP-269 + EC-300 per `01.0a` Step 5's
+re-run rule.
+
+**Pre-flight (`01.4`): READY TO EXECUTE.** Dependencies verified empirically
+this session, not asserted: the hero ledger exists and is hero-scoped with no
+timestamp field (drives the `generatedAt` sentinel); `data/metadata/card-types.json`
++ the `@legendary-arena/registry/schema` subpath export site are present; and
+the three classification sets resolve from their real dist submodules
+(`rules/heroKeywords.js` → `HERO_KEYWORDS`, `hero/heroEffects.execute.js` →
+`MVP_KEYWORDS`, `rules/heroCompositions.js` → `HERO_COMPOSITION_MARKER_NAMES`).
+The re-gate **caught a contract-fidelity defect** the original carried: the
+dist *barrel* (`index.js`) re-exports only `HERO_KEYWORDS`, so the prior
+`dist/index.js` precondition would have failed at execution — precondition F
+now imports each set from its submodule. Scope is locked (11-file allowlist);
+the tightening resolved the open ambiguities (slug, timestamp, ordering, join,
+visible-curation). Architectural boundary holds (schema data-only; engine read
+isolated to the build script). **Empirical Scaffold N/A** — WP-269 adds a
+brand-new input path (new feed + new schema + its own new test), it does not
+tighten validation on an existing path with pre-existing fixtures.
+**Mutation Boundary N/A** — no `G`/move mutation (build script + data schema).
+
+**Copilot (`01.7`): PASS.** No RISK/BLOCK across the 30-mode lens. Separation
+of concerns (engine read isolated to the transform; schema `zod`-only),
+determinism (sentinel + locked ordering + no `Date.now()` + self-validation),
+type-safety/contract (closed `source` union + `superRefine` join/dedup rejects),
+persistence (no `G`/runtime state — N/A), testing (new `schema.cardMechanicsIndex.test.ts`
+accept/reject), scope/governance (11-file allowlist, two-commit topology),
+extensibility (`scope:"hero"` with the WP-271 all-types extension path),
+documentation (`// why:` on the fail-closed default, the engine-dist read, the
+sentinel, and the slug normalization), and error handling (full-sentence
+errors; fail-on-stale-label) are all explicitly prevented. The tightening
+strengthened the artifact rather than introducing new risk.
+
 ## Lint Gate Self-Review (00.3 — 21 sections)
 
-Run 2026-06-20 against this WP + EC-300. Result: **PASS** (all sections PASS or justified N/A).
+Run 2026-06-20; **re-run 2026-06-20 post-tightening** against this WP + EC-300. Result: **PASS** (all sections PASS or justified N/A).
 
 - **§1 Structure** — PASS (all required sections present; Out of Scope lists 6 exclusions).
 - **§2 Non-Negotiable Constraints** — PASS (Engine-wide + Packet-specific + Session protocol + Locked values; full-file-contents required; references 00.6).
