@@ -25497,7 +25497,7 @@ The hero mechanic ledger classifies a **composition-marker** mechanic (`empowere
 
 ### D-24048 — Villain & Henchman Mechanic Ledger: By-Hook Classification Reusing the Villain Parser; Mastermind/Scheme Deferred (No Parser); Data-Production Only
 
-**Status:** **Drafted 2026-06-20; not yet landed.** Reserved by WP-271 / EC-303 from baseline `03a7f22a`. Flips to **Active (post-execution)** when WP-271 executes.
+**Status:** **Active (landed 2026-06-20).** Landed by WP-271 / EC-303 execution (impl commit `e286488e`; baseline re-confirmed `e5d52861` = origin/main at exec). Reserved at draft from baseline `03a7f22a`. Measured: 677 rows (634 villain + 43 henchman), byStatus executable 97 / deferred 0 / unsupported 1 / unmarked 579, 8 distinct mechanics; byte-stable across two runs.
 
 **Context.** The hero mechanic ledger (the INFRA generator at `scripts/hero-mechanic-ledger.mjs`) emits a per-(hero × mechanic) coverage table, hero-only by a `cardType !== 'hero'` filter. D-24046 froze the WP-269 `card-mechanics.json` feed to `scope:"hero"` *because the ledger is hero-only* and explicitly queued WP-271 as the data-production extension "beyond heroes." A pre-draft investigation (2026-06-20) of the non-hero ability landscape established the realistic shape of that extension:
 - **Villain + henchman have a full ability-hook pipeline** — `buildVillainAbilityHooks` (`setup/villainAbility.setup.ts`) parses `[effect:X]` markers into a `VillainAbilityHook` carrying `keywords` / `effects` / `unresolvedMarkers`, exactly parallel to `buildHeroAbilityHooks`. A mechanic ledger can read that resolution **today**.
