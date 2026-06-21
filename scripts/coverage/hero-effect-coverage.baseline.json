@@ -3,8 +3,8 @@
     "executable": 2639,
     "heroes": 309,
     "hooks": 5949,
-    "noEffect": 3305,
-    "parsedNotExecuted": 5
+    "noEffect": 3200,
+    "parsedNotExecuted": 110
   },
   "perSet": {
     "2099": {
@@ -145,7 +145,7 @@
     "pttr": {
       "executable": 45,
       "hooks": 122,
-      "noEffect": 77
+      "noEffect": 28
     },
     "rlmk": {
       "executable": 45,
@@ -165,7 +165,7 @@
     "smhc": {
       "executable": 33,
       "hooks": 119,
-      "noEffect": 86
+      "noEffect": 68
     },
     "ssw1": {
       "executable": 138,
@@ -175,7 +175,7 @@
     "ssw2": {
       "executable": 124,
       "hooks": 271,
-      "noEffect": 147
+      "noEffect": 109
     },
     "vill": {
       "executable": 139,
@@ -321,7 +321,6 @@
     "versatile": 13,
     "villain-or-mastermind-has-any-wounds": 2,
     "waking-nightmare": 2,
-    "wall-crawl": 29,
     "weapon-x-sequence": 8,
     "what-if...?": 12,
     "when-recruited": 16,

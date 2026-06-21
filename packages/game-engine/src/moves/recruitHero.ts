@@ -18,6 +18,7 @@ import { getAvailableRecruit, spendRecruit } from '../economy/economy.logic.js';
 import { refillHqSlot } from '../board/city.logic.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
+import { getHooksForCard, filterHooksByTiming } from '../rules/heroAbility.types.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -26,6 +27,12 @@ type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
 interface RecruitHeroArgs {
   /** 0-based index of the HQ slot to recruit from (0-4). */
   hqIndex: number;
+  // why: D-24049 — additive optional Wall-Crawl placement. When true AND the
+  // recruited Hero has an onRecruit wall-crawl hook, the card is placed on top of
+  // the recruiting player's OWN deck (the next-draw position) instead of the
+  // discard pile. Omitted or false ⇒ today's discard placement (byte-identical).
+  /** Optional: place a recruited Wall-Crawl Hero on top of your own deck. */
+  toTopOfDeck?: boolean;
 }
 
 /**
@@ -39,7 +46,7 @@ interface RecruitHeroArgs {
  */
 export function recruitHero(
   { G, ctx }: MoveContext,
-  { hqIndex }: RecruitHeroArgs,
+  { hqIndex, toTopOfDeck }: RecruitHeroArgs,
 ): void {
   // Step 1: Validate args
   if (
@@ -79,11 +86,33 @@ export function recruitHero(
   if (hasPendingOptionalKoReward(G)) return;
 
   // Step 3: Mutate G
-  // why: WP-018 — economy deduction lands first; WP-135 — HQ slot refill
-  // lands after the discard append. The slot is vacated by refillHqSlot
-  // (which assigns null when heroDeck is empty per D-13503), so we must
-  // not pre-null G.hq[hqIndex] here.
-  G.playerZones[ctx.currentPlayer]!.discard.push(cardId);
+  // why: D-24049 — the printed "Wall-Crawl" ability ("when you recruit this Hero,
+  // you may put it on top of your deck") is optional and acts on the recruiting
+  // player's OWN deck via their own recruit action — no hidden information, no
+  // opponent interaction — so it needs no pending-choice/board-freeze guard. The
+  // hook query is read-only: getHooksForCard is 2-arg (no timing param), so the
+  // onRecruit wall-crawl hook is reached by filtering its result to onRecruit and
+  // checking the keyword specifically (never "the first onRecruit hook"). The
+  // Array.isArray guard covers narrow test mocks that omit G.heroAbilityHooks.
+  const placeOnDeckTop =
+    toTopOfDeck === true &&
+    Array.isArray(G.heroAbilityHooks) &&
+    filterHooksByTiming(getHooksForCard(G.heroAbilityHooks, cardId), 'onRecruit').some(
+      (hook) => hook.keywords.includes('wall-crawl'),
+    );
+
+  // why: D-24049 — deck[0] is the next-draw position (drawFromPlayerDeck draws
+  // deck[0]), so the deck-top placement uses unshift. WP-018 — economy deduction
+  // lands after the placement; WP-135 — HQ slot refill lands after that. The slot
+  // is vacated by refillHqSlot (which assigns null when heroDeck is empty per
+  // D-13503), so we must not pre-null G.hq[hqIndex] here. When placeOnDeckTop is
+  // false (toTopOfDeck falsy or no wall-crawl onRecruit hook) the discard placement
+  // is byte-identical to the pre-WP-273 behavior.
+  if (placeOnDeckTop) {
+    G.playerZones[ctx.currentPlayer]!.deck.unshift(cardId);
+  } else {
+    G.playerZones[ctx.currentPlayer]!.discard.push(cardId);
+  }
   G.turnEconomy = spendRecruit(G.turnEconomy, requiredCost);
 
   // why: WP-135 — refill the vacated slot from G.heroDeck (FIFO via shift).
@@ -102,7 +131,10 @@ export function recruitHero(
     refillResult.hq[hqIndex] === null
       ? '(heroDeck empty; slot left null)'
       : `(heroDeck.length: ${String(refillResult.heroDeck.length)})`;
+  // why: D-24049 — append a Wall-Crawl placement note ONLY on the deck-top branch;
+  // the discard branch's line is byte-identical to the pre-WP-273 WP-135 format.
+  const placementNote = placeOnDeckTop ? ' (Wall-Crawl: placed on top of deck)' : '';
   G.messages.push(
-    `Player ${ctx.currentPlayer} recruited ${cardId}; HQ slot ${String(hqIndex)} refilled from heroDeck ${refillSuffix}`,
+    `Player ${ctx.currentPlayer} recruited ${cardId}; HQ slot ${String(hqIndex)} refilled from heroDeck ${refillSuffix}${placementNote}`,
   );
 }

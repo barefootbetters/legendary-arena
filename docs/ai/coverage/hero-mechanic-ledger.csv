@@ -353,12 +353,12 @@ noir/daredevil-noir,Daredevil Noir,noir,investigate,unsupported,,,
 noir/iron-man-noir,Iron Man Noir,noir,investigate,unsupported,,,
 noir/luke-cage-noir,Luke Cage Noir,noir,investigate,unsupported,,,
 noir/spider-man-noir,Spider-Man Noir,noir,investigate,unsupported,,,
-pttr/black-cat,Black Cat,pttr,wall-crawl,unsupported,,,
-pttr/moon-knight,Moon Knight,pttr,wall-crawl,unsupported,,,
+pttr/black-cat,Black Cat,pttr,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
+pttr/moon-knight,Moon Knight,pttr,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
 pttr/scarlet-spider,Scarlet Spider,pttr,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
-pttr/scarlet-spider,Scarlet Spider,pttr,wall-crawl,unsupported,,,
-pttr/spider-woman,Spider-Woman,pttr,wall-crawl,unsupported,,,
-pttr/symbiote-spider-man,Symbiote Spider-Man,pttr,wall-crawl,unsupported,,,
+pttr/scarlet-spider,Scarlet Spider,pttr,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
+pttr/spider-woman,Spider-Woman,pttr,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
+pttr/symbiote-spider-man,Symbiote Spider-Man,pttr,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
 rlmk/black-bolt,Black Bolt,rlmk,"""when-recruited""-abilities",unsupported,,,
 rlmk/black-bolt,Black Bolt,rlmk,don't-speak,unsupported,,,
 rlmk/black-bolt,Black Bolt,rlmk,speak,unsupported,,,
@@ -416,11 +416,11 @@ smhc/high-tech-spider-man,High Tech Spider-Man,smhc,coordinate,unsupported,,,
 smhc/high-tech-spider-man,High Tech Spider-Man,smhc,danger-sense,unsupported,,,
 smhc/high-tech-spider-man,High Tech Spider-Man,smhc,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 smhc/high-tech-spider-man,High Tech Spider-Man,smhc,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal
-smhc/high-tech-spider-man,High Tech Spider-Man,smhc,wall-crawl,unsupported,,,
+smhc/high-tech-spider-man,High Tech Spider-Man,smhc,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
 smhc/peter-parker-homecoming,"Peter Parker, Homecoming",smhc,coordinate,unsupported,,,
 smhc/peter-parker-homecoming,"Peter Parker, Homecoming",smhc,danger-sense,unsupported,,,
 smhc/peter-parker-homecoming,"Peter Parker, Homecoming",smhc,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal
-smhc/peter-parker-homecoming,"Peter Parker, Homecoming",smhc,wall-crawl,unsupported,,,
+smhc/peter-parker-homecoming,"Peter Parker, Homecoming",smhc,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
 smhc/peters-allies,Peter's Allies,smhc,coordinate,unsupported,,,
 smhc/tony-stark,Tony Stark,smhc,coordinate,unsupported,,,
 smhc/tony-stark,Tony Stark,smhc,danger-sense,unsupported,,,
@@ -441,14 +441,14 @@ ssw1/ultimate-spider-man,Ultimate Spider-Man,ssw1,reveal,executable,WP-253,D-240
 ssw2/agent-venom,Agent Venom,ssw2,patrol-the-bank,unsupported,,,
 ssw2/agent-venom,Agent Venom,ssw2,patrol-the-sewers,unsupported,,,
 ssw2/agent-venom,Agent Venom,ssw2,spectrum,unsupported,,,
-ssw2/agent-venom,Agent Venom,ssw2,wall-crawl,unsupported,,,
+ssw2/agent-venom,Agent Venom,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
 ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,patrol-the-rooftops,unsupported,,,
 ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,patrol-the-sewers,unsupported,,,
 ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,patrol-two-adjacent-city-spaces,unsupported,,,
 ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,spectrum,unsupported,,,
-ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,wall-crawl,unsupported,,,
+ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
 ssw2/beast,Beast,ssw2,patrol-any-city-space,unsupported,,,
-ssw2/beast,Beast,ssw2,wall-crawl,unsupported,,,
+ssw2/beast,Beast,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
 ssw2/black-swan,Black Swan,ssw2,(unmarked),unmarked,,,
 ssw2/captain-britain,Captain Britain,ssw2,patrol-the-rooftops,unsupported,,,
 ssw2/captain-and-the-devil-the,"Captain and the Devil, The",ssw2,patrol-the-streets,unsupported,,,
@@ -459,21 +459,21 @@ ssw2/dr-punisher-soldier-supreme,"Dr. Punisher, Soldier Supreme",ssw2,patrol-the
 ssw2/dr-punisher-soldier-supreme,"Dr. Punisher, Soldier Supreme",ssw2,reveal-ko-attack,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-ko-attack
 ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,patrol-the-sewers,unsupported,,,
 ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,spectrum,unsupported,,,
-ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,wall-crawl,unsupported,,,
+ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
 ssw2/phoenix-force-cyclops,Phoenix Force Cyclops,ssw2,(unmarked),unmarked,,,
 ssw2/ruby-summers,Ruby Summers,ssw2,teleport,unsupported,,,
 ssw2/shang-chi,Shang-Chi,ssw2,patrol-the-rooftops,unsupported,,,
 ssw2/shang-chi,Shang-Chi,ssw2,patrol-your-discard-pile,unsupported,,,
-ssw2/shang-chi,Shang-Chi,ssw2,wall-crawl,unsupported,,,
+ssw2/shang-chi,Shang-Chi,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
 ssw2/silk,Silk,ssw2,reveal-ko-or-draw,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-ko-or-draw
 ssw2/silk,Silk,ssw2,spectrum,unsupported,,,
-ssw2/silk,Silk,ssw2,wall-crawl,unsupported,,,
+ssw2/silk,Silk,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
 ssw2/soulsword-colossus,Soulsword Colossus,ssw2,cross-dimensional-colossus-rampage,unsupported,,,
 ssw2/spider-gwen,Spider-Gwen,ssw2,patrol-the-bank,unsupported,,,
 ssw2/spider-gwen,Spider-Gwen,ssw2,patrol-the-bridge,unsupported,,,
 ssw2/spider-gwen,Spider-Gwen,ssw2,patrol-the-rooftops,unsupported,,,
 ssw2/spider-gwen,Spider-Gwen,ssw2,patrol-your-victory-pile,unsupported,,,
-ssw2/spider-gwen,Spider-Gwen,ssw2,wall-crawl,unsupported,,,
+ssw2/spider-gwen,Spider-Gwen,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
 ssw2/time-traveling-jean-grey,Time-Traveling Jean Grey,ssw2,patrol-any-city-space,unsupported,,,
 ssw2/time-traveling-jean-grey,Time-Traveling Jean Grey,ssw2,patrol-the-bridge,unsupported,,,
 vill/bullseye,Bullseye,vill,dodge,unsupported,,,
