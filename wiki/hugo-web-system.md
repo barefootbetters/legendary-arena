@@ -619,6 +619,64 @@ It's site-wide config, so commit it `WP-NNN:`:
   development](#local-development)) — the `youtube` shortcode renders
   under `hugo server` too. What you see in preview is what ships.
 
+### Code blocks & syntax highlighting
+
+Hugo renders code blocks natively — there is **no WordPress-style "code
+block" plugin to install**. A Markdown fenced block is the equivalent;
+anything inside a fence is shown literally and never executed. The
+marketing site (PaperMod + Chroma, `unsafe = true`) supports the full
+range below.
+
+**1. Fenced code block — the default.** Triple backticks with an optional
+language hint:
+
+````
+```html
+<div class="card"><h1>Hello</h1></div>
+```
+````
+
+On the marketing site PaperMod renders this with **Chroma syntax
+highlighting** and a **copy-to-clipboard button** (the
+`ShowCodeCopyButtons` machinery wired in `extend_footer.html`); the
+highlight style lives in the marketing repo's `hugo.toml`, which is
+authoritative. You do **not** need a custom "codeblock" shortcode —
+PaperMod already ships highlighting, line numbers, and copy buttons out of
+the box.
+
+**2. Inline code.** Single backticks for a snippet inside a sentence —
+`<div>` — shown as literal text.
+
+**3. The built-in `highlight` shortcode — only when you need per-block
+options** (line numbers, line emphasis, a one-off style). Shown escaped
+here so it prints instead of running:
+
+```
+{{</* highlight html "linenos=table,hl_lines=2" */>}}
+<div class="card">
+  <h1>Hello</h1>
+</div>
+{{</* /highlight */>}}
+```
+
+**4. Showing shortcode or template syntax literally.** Hugo expands
+`{{</* … */>}}` and template `{{ … }}` **before** Markdown — *even inside a
+code fence* — so an unescaped shortcode in your example will execute (or
+fail the build). Wrap the inner delimiters in `/* */` to print it as text;
+this is the same escape the [Embedding video](#embedding-video-youtube)
+section uses for its `youtube` examples.
+
+> ⚠️ **The engineering wiki ([Wiki Viewer](wiki-viewer.md)) is stricter.**
+> It sets `codeFences = false`, so fenced blocks render as plain
+> `<pre><code>` with **no syntax highlighting** (a byte-identical
+> determinism requirement), and it enforces a **JS-free** production
+> output. On an ewiki page, therefore: a copy-to-clipboard button is
+> **not** available (it needs JavaScript), and the `highlight` shortcode is
+> off-limits (Chroma's inline-style output is non-deterministic and would
+> fail the determinism gate). Built-in shortcodes with static output — e.g.
+> `youtube` — do render there; you still escape `{{</* … */>}}` to *show*
+> shortcode syntax. See [Ewiki Authoring](ewiki-authoring.md).
+
 **Hugo docs:** the [`youtube` shortcode reference](https://gohugo.io/shortcodes/youtube/)
 (full parameter list) and [Configure privacy](https://gohugo.io/configuration/privacy/)
 (`[privacy.youtube] privacyEnhanced`).
