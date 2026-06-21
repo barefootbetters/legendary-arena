@@ -573,6 +573,11 @@ The id is the `v=` value from the watch URL — for
 {{</* youtube 5G7DfRmWsG0 */>}}
 ```
 
+**Live example** — the same shortcode, **unescaped**, actually rendering on
+this page (*Getting Started with Hugo*, `hjD9jTi_DQ4`):
+
+{{< youtube id=hjD9jTi_DQ4 title="Getting Started with Hugo — FREE COURSE" >}}
+
 **With options** (`title` sets the iframe's accessible title; `start`
 jumps to a timestamp in seconds):
 
