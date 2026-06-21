@@ -18,7 +18,7 @@ source:
   - C:\www\legendary-arena-com\.dev.vars.example
   - C:\www\legendary-arena-com\.nvmrc
   - C:\www\legendary-arena-com\docs\ai\REFERENCE\01.3-commit-hygiene.md
-last-reviewed: 2026-06-18
+last-reviewed: 2026-06-20
 ---
 
 ## Repository base URLs
@@ -46,6 +46,78 @@ the way it is and the full constraint set, hand off to
 [Hugo Web System](hugo-web-system.md).
 
 ## Mechanics
+
+### Editing this wiki page itself (ewiki) — the GitHub fast path
+
+> 👋 **Scope note.** The rest of this page is the *marketing* site
+> (`www.legendary-arena.com`). This one section is different: it is how to
+> edit **this engineering wiki** (`ewiki.legendary-arena.com`), which
+> lives in the **Engine** repo (`barefootbetters/legendary-arena`). The
+> most common question — "how do I fix a word on the page I'm reading?" —
+> has a far lighter answer than the Day-1 local setup below. **You do not
+> need a clone, Node, or Hugo.**
+
+**Where the page lives.** Every ewiki page is one Markdown file under
+`wiki/` in the Engine repo. The URL maps straight to the filename:
+`ewiki.legendary-arena.com/<slug>/` is built from `wiki/<slug>.md`. The
+page you are reading is `wiki/hugo-onboarding.md`.
+
+**Edit it in your browser (the fast path for typos and small changes):**
+
+1. Open the file on GitHub —
+   `https://github.com/barefootbetters/legendary-arena/blob/main/wiki/<slug>.md`
+   (this page: `.../wiki/hugo-onboarding.md`).
+2. Click the **✏️ pencil** ("Edit this file"). Shortcut: swap `/blob/`
+   for `/edit/` in the URL.
+3. Make the change. Use the **Preview** tab to sanity-check the Markdown.
+4. **Commit changes.** Start the message with `EC-142:` (the ewiki content
+   lane) — for example,
+   `EC-142: hugo-onboarding — fix the Brevo dashboard link`.
+5. Choose **Commit directly to the `main` branch**. `main` is unprotected
+   and direct-to-`main` is the normal path for wiki content — the opposite
+   of the marketing repo's branch → PR rule under *Git workflow &
+   deployment* below (different repo, different rule). For a large or risky
+   change, pick **Create a new branch and start a pull request** instead;
+   the same CI runs on the PR.
+6. Done — the push to `main` deploys it (see below).
+
+> ℹ️ **Bigger edit, still no clone?** Press `.` (the period key) on any
+> page of the repo on GitHub to open **github.dev** — full VS Code in the
+> browser over the same repo, handy for touching several files at once.
+> Commit the same way.
+
+**What happens after you commit to `main`:**
+
+```
+commit wiki/<slug>.md on main
+  -> GitHub Actions (.github/workflows/wiki-viewer.yml), ~30 seconds:
+       project wiki/ -> content/, case-sensitive internal-link check,
+       Hugo build, JS-free + determinism gates
+  -> the deploy job fires the Render deploy hook
+  -> Render rebuilds and publishes the static site
+  -> live at ewiki.legendary-arena.com/<slug>/  (usually a few minutes)
+```
+
+The ~30-second part is CI; the remaining minutes are Render rebuilding. A
+much longer lag is a Render deploy stall, not your edit — details in
+[Wiki Viewer](wiki-viewer.md).
+
+> ⚠️ **The ewiki is stricter than the marketing site — a bad edit fails
+> the build and never deploys.** No raw HTML and no shortcodes: an
+> unescaped `{{</* … */>}}`, `<script>`, or `<iframe>` breaks the Hugo
+> build (the marketing site permits these; the ewiki does not). Internal
+> links are **case-sensitive** because CI runs on Linux — link
+> `scoring.md`, never `Scoring.md`. Front-matter fields and the required
+> section order are the [Ewiki Authoring](ewiki-authoring.md) /
+> [Wiki Viewer](wiki-viewer.md) contract.
+
+**When to clone locally instead.** Only when you want to *preview* the
+rendered page before publishing — a brand-new page, a big restructure, or
+a table-heavy edit. Then use the [Wiki Viewer](wiki-viewer.md) flow:
+`git pull` → edit `wiki/<slug>.md` → `pnpm wiki-viewer:dev` (serves
+`http://localhost:1313` with live-reload) → commit `EC-142:` →
+`git push origin main`. For a one-word fix, the browser path above is the
+whole job.
 
 ### If you're coming from WordPress / WooCommerce
 
