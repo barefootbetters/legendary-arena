@@ -9,11 +9,12 @@ tags:
 related:
   - wiki-viewer.md
   - hugo-web-system.md
+  - hugo-onboarding.md
 status: draft
 source:
   - ../apps/wiki-viewer/assets/css/style.css
   - ../apps/wiki-viewer/hugo.toml
-last-reviewed: 2026-05-16
+last-reviewed: 2026-06-20
 ---
 
 # Ewiki Authoring
@@ -27,6 +28,13 @@ tables, code blocks, inline code, and the metadata panel. The
 [Wiki Viewer](wiki-viewer.md) page covers page creation, commit
 prefixes, build pipeline, and publishing; this page covers what
 formatting tools are available once you're writing content.
+
+> ℹ️ **Just fixing a typo?** You don't need a local checkout. Edit the
+> page's `wiki/<slug>.md` file directly on GitHub — the ✏️ pencil on
+> `github.com/barefootbetters/legendary-arena/blob/main/wiki/<slug>.md` —
+> commit with an `EC-142:` message straight to `main`, and CI rebuilds and
+> deploys it. Full steps: the *Fast path* section of
+> [Wiki Viewer](wiki-viewer.md), or [Hugo Onboarding](hugo-onboarding.md).
 
 ## Mechanics
 

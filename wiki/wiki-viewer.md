@@ -8,12 +8,13 @@ tags:
 related:
   - architecture-inventory.md
   - hugo-web-system.md
+  - hugo-onboarding.md
 status: draft
 source:
   - ../apps/wiki-viewer/hugo.toml
   - ../apps/wiki-viewer/scripts/project-wiki.mjs
   - ../apps/wiki-viewer/README.md
-last-reviewed: 2026-05-13
+last-reviewed: 2026-06-20
 ---
 
 ## Repository base URLs
@@ -36,6 +37,37 @@ content tree at build time, and deployed automatically on every push to
 `main`.
 
 ## Mechanics
+
+### Fast path: edit on GitHub (no clone)
+
+For a typo, a one-word change, or any small edit, you do **not** need a
+local clone, Node, or Hugo. Every ewiki page is one Markdown file under
+`wiki/` in the `barefootbetters/legendary-arena` repo, and the URL maps
+straight to the filename: `ewiki.legendary-arena.com/<slug>/` is built
+from `wiki/<slug>.md`.
+
+1. Open the file on GitHub —
+   `https://github.com/barefootbetters/legendary-arena/blob/main/wiki/<slug>.md`.
+2. Click the **✏️ pencil** ("Edit this file"). Shortcut: change `/blob/`
+   to `/edit/` in the URL.
+3. Make the change; use the **Preview** tab to sanity-check the Markdown.
+4. **Commit changes** with an `EC-142:` message (for example
+   `EC-142: scoring — fix the par-baseline typo`), and **Commit directly
+   to the `main` branch** — `main` is unprotected and direct-to-`main` is
+   the normal path for wiki content. For a larger change, choose **Create
+   a new branch and start a pull request** instead; the same CI runs on it.
+5. The push to `main` triggers the deploy described under *How to publish*
+   below.
+
+> ℹ️ Press `.` (the period key) on any page of the repo on GitHub to open
+> **github.dev** — full VS Code in the browser over the same repo — when a
+> quick edit spans several files. Commit the same way.
+
+Reach for a local clone only when you want to **preview the rendered
+page** before publishing — a new page, a big restructure, or a
+table-heavy edit (the *How to preview locally* workflow below). For a
+one-word fix, the browser path above is the whole job; the
+newcomer-oriented walkthrough is in [Hugo Onboarding](hugo-onboarding.md).
 
 ### How to create a new wiki page
 
@@ -285,8 +317,13 @@ git commit -m "EC-142: wiki <slug> — <one-line summary>"
 git push origin main
 ```
 
-Render auto-deploys the static site within 1-2 minutes. The page
-appears at `https://ewiki.legendary-arena.com/<slug>/`.
+On push to `main`, CI (`.github/workflows/wiki-viewer.yml`) runs the
+link-check + Hugo build gates (~30 seconds), then fires the Render deploy
+hook; Render rebuilds and publishes the static site, and the page appears
+at `https://ewiki.legendary-arena.com/<slug>/` a few minutes later.
+Render's on-commit auto-deploy is **disabled** — the gated CI hook is the
+single deploy trigger — so a much longer lag is a Render deploy stall, not
+your edit.
 
 ### How to get the repo onto your computer
 
