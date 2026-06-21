@@ -164,6 +164,15 @@ jobs:
       - name: Hero mechanic ledger freshness
         run: pnpm ledger:heroes:check
 
+      # why (WP-271 / D-24048): the committed villain/henchman mechanic ledger
+      # (docs/ai/coverage/villain-mechanic-ledger.{json,csv}) is generated from the
+      # same registry + engine dist via the villain ability parser's by-hook
+      # resolution; this freshness gate fails if a card-data or villain-vocabulary
+      # change landed without regenerating it, so the villain/henchman worklist +
+      # debugging index never silently goes stale (the sibling of the hero gate above).
+      - name: Villain mechanic ledger freshness
+        run: pnpm ledger:villains:check
+
       # why (WP-269 / D-24046): the published hero-mechanic feed
       # (data/metadata/card-mechanics.json) is regenerated from the same committed
       # ledger + engine dist by a deterministic transform; this freshness gate fails

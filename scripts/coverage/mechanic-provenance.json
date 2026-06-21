@@ -13,6 +13,21 @@
     "attack-per-count": { "wp": "WP-247", "decision": "" },
     "optional-ko-reward": { "wp": "WP-248", "decision": "" },
     "berserk": { "wp": "WP-256", "decision": "D-24031" },
-    "empowered": { "wp": "WP-267", "decision": "D-24044" }
+    "empowered": { "wp": "WP-267", "decision": "D-24044" },
+    "gainWoundEachPlayer": { "wp": "WP-185", "decision": "" },
+    "gainWoundCurrentPlayer": { "wp": "WP-185", "decision": "" },
+    "koHeroCurrentPlayer": { "wp": "WP-185", "decision": "" },
+    "heroDeckTopToEscape": { "wp": "WP-185", "decision": "" },
+    "captureBystander": { "wp": "WP-185", "decision": "D-18506" },
+    "koHeroEachPlayer": { "wp": "WP-189", "decision": "D-18901" },
+    "koHeroEachPlayerMag2": { "wp": "WP-202", "decision": "D-20201" },
+    "captureHqHeroRightmost": { "wp": "WP-214", "decision": "D-21401" },
+    "captureHqHeroHighestCost": { "wp": "WP-214", "decision": "D-21401" },
+    "captureHqHeroLowestCost": { "wp": "WP-214", "decision": "D-21401" },
+    "ko-hero": { "wp": "WP-252", "decision": "D-24023" },
+    "gain-wound": { "wp": "WP-252", "decision": "D-24023" },
+    "capture-hq-hero": { "wp": "WP-252", "decision": "D-24023" },
+    "hero-deck-top-to-escape": { "wp": "WP-252", "decision": "D-24023" },
+    "capture-bystander": { "wp": "WP-252", "decision": "D-24023" }
   }
 }
