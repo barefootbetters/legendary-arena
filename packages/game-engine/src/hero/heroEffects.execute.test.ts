@@ -10,7 +10,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { executeHeroEffects, selectDefaultOptionalKoTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS } from './heroEffects.execute.js';
+import { executeHeroEffects, selectDefaultOptionalKoTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import type { LegendaryGameState, PendingHeroChoice } from '../types.js';
 import type { HeroAbilityHook, HeroEffectDescriptor } from '../rules/heroAbility.types.js';
@@ -61,15 +61,21 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
   // why: every executable keyword must be reachable — EITHER it has a handler, OR
   // it is a frozen legacy reveal keyword that translates to a non-empty reveal
   // branch-list for a valid magnitude (M=1 is valid for every magnitude-requiring
-  // reveal keyword and ignored by the no-magnitude ones). A keyword with neither
-  // fails here, so the reveal collapse cannot silently drop an executable keyword.
-  it('every MVP_KEYWORD is handled directly or via reveal translation (D-24024)', () => {
+  // reveal keyword and ignored by the no-magnitude ones), OR it executes at recruit
+  // time (wall-crawl — D-24049 — whose executor is the recruitHero deck-top
+  // placement, not an onPlay handler nor a reveal translation). A keyword with none
+  // of the three fails here, so the reveal collapse cannot silently drop an
+  // executable keyword AND the recruit-time category cannot silently masquerade as
+  // a missing handler.
+  it('every MVP_KEYWORD is handled directly, via reveal translation, or at recruit time (D-24024 / D-24049)', () => {
+    const recruitTimeExecuted = new Set<string>(RECRUIT_TIME_EXECUTED_KEYWORDS);
     for (const keyword of MVP_KEYWORDS) {
       const hasHandler = HERO_EFFECT_HANDLERS[keyword as HeroKeyword] !== undefined;
       const translates = revealRulesForLegacyKeyword(keyword as HeroKeyword, 1).length > 0;
+      const executesAtRecruit = recruitTimeExecuted.has(keyword);
       assert.ok(
-        hasHandler || translates,
-        `MVP keyword "${keyword}" must be handled directly or via reveal translation`,
+        hasHandler || translates || executesAtRecruit,
+        `MVP keyword "${keyword}" must be handled directly, via reveal translation, or at recruit time`,
       );
     }
   });
@@ -2925,5 +2931,69 @@ describe('executeHeroEffects — hollow-effect detection (WP-257)', () => {
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
     assert.equal(records(gameState).length, 0, 'a recognized composition reaches the interpreter');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-273 / D-24049 — Wall-Crawl onRecruit keyword at play time
+//
+// executeHeroEffects does NOT filter by timing, so the onRecruit wall-crawl hook is
+// visited when the Hero is PLAYED. That visit must be a benign, not-hollow no-op: the
+// auto-emitted { type: 'wall-crawl' } effect no-ops on its missing magnitude, and
+// MVP_KEYWORDS membership classifies the hook `applied` (preventing a no-handler hollow
+// regression). The real executor is the recruitHero deck-top placement (recruitHero.test.ts).
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects — Wall-Crawl onRecruit keyword at play time (WP-273 / D-24049)', () => {
+  const mockCtx = makeMockCtx();
+
+  /** Reads the lazy-init diagnostics records (empty array when never written). */
+  function records(gameState: LegendaryGameState) {
+    return gameState.diagnostics?.hollowEffects ?? [];
+  }
+
+  /** A wall-crawl hook exactly as the parser emits it: onRecruit + no-magnitude effect. */
+  function wallCrawlState() {
+    return makeTestState({
+      deck: ['deck-card'],
+      hand: [],
+      inPlay: ['wc-hero'],
+      heroAbilityHooks: [
+        {
+          cardId: 'wc-hero' as string,
+          timing: 'onRecruit',
+          keywords: ['wall-crawl'],
+          effects: [{ type: 'wall-crawl' }],
+        },
+      ],
+    });
+  }
+
+  it('playing a wall-crawl Hero mutates no onPlay state', () => {
+    const gameState = wallCrawlState();
+    executeHeroEffects(gameState, mockCtx, '0', 'wc-hero' as string);
+    assert.equal(gameState.turnEconomy.attack, 0, 'no attack granted at play time');
+    assert.equal(gameState.turnEconomy.recruit, 0, 'no recruit granted at play time');
+    assert.deepStrictEqual(gameState.playerZones['0'].deck, ['deck-card'], 'deck is unchanged');
+    assert.deepStrictEqual(gameState.playerZones['0'].hand, [], 'hand is unchanged');
+  });
+
+  it('playing a wall-crawl Hero records NO hollow event (neither parse-unrecognized nor no-handler)', () => {
+    const gameState = wallCrawlState();
+    executeHeroEffects(gameState, mockCtx, '0', 'wc-hero' as string);
+    // why: D-24049 — the recognized keyword leaves no unresolvedMarkers (so no
+    // parse-unrecognized) and MVP_KEYWORDS membership classifies the play-time-visited
+    // hook `applied` (so no no-handler). Without the membership this would fire a fresh
+    // no-handler hollow — trading one hollow for another (a regression).
+    assert.equal(records(gameState).length, 0, 'no hollow recorded for the recruit-timed keyword');
+  });
+
+  it('wall-crawl is a member of MVP_KEYWORDS but has no play-time handler / reveal translation', () => {
+    // why: D-24049 — membership marks it ledger-executable + keeps the play-time hook
+    // not-hollow; it must NOT gain a HERO_EFFECT_HANDLERS entry (recruit-time executor),
+    // which would break the handler-key ↔ HANDLED_KEYWORDS bidirectional drift test.
+    assert.ok(MVP_KEYWORDS.has('wall-crawl'), 'wall-crawl ∈ MVP_KEYWORDS');
+    assert.equal(HERO_EFFECT_HANDLERS['wall-crawl' as HeroKeyword], undefined, 'no play-time handler');
+    assert.equal(revealRulesForLegacyKeyword('wall-crawl' as HeroKeyword, 1).length, 0, 'not reveal-translated');
   });
 });

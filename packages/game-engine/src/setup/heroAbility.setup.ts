@@ -253,6 +253,16 @@ const TIMING_MARKUP_MAP: Record<string, HeroAbilityTiming> = {
   onReveal: 'onReveal',
 };
 
+// why: D-24049 — a few keywords fire at a non-onPlay timing by default. Wall-Crawl
+// ("when you recruit this Hero, you may put it on top of your deck") fires at recruit,
+// so [keyword:Wall-Crawl] must land on an onRecruit hook. This keyword→default-timing
+// map is consulted in Step 5: a keyword listed here sets the hook's default timing; an
+// explicit [timing:X] marker still overrides; a keyword absent from the map keeps the
+// onPlay default.
+const KEYWORD_TIMING_DEFAULTS: Partial<Record<HeroKeyword, HeroAbilityTiming>> = {
+  'wall-crawl': 'onRecruit',
+};
+
 /**
  * Extracts structured hero ability metadata from a single ability text.
  *
@@ -630,10 +640,19 @@ function parseAbilityText(abilityText: string): {
     }
   }
 
-  // Step 5: Assign timing — explicit markup or default 'onPlay'
-  // why: timing defaults to 'onPlay' — no NL inference. Only explicit
-  // [timing:X] markup overrides the default.
+  // Step 5: Assign timing — a keyword default (e.g. wall-crawl → onRecruit), then an
+  // explicit [timing:X] markup override; otherwise 'onPlay'. No NL inference.
+  // why: D-24049 — a keyword's default timing (KEYWORD_TIMING_DEFAULTS) is applied
+  // first so [keyword:Wall-Crawl] resolves to an onRecruit hook; an explicit [timing:X]
+  // marker still wins (applied after); a line with no mapped keyword keeps onPlay.
   let timing: HeroAbilityTiming = 'onPlay';
+  for (const keyword of uniqueKeywords) {
+    const keywordDefaultTiming = KEYWORD_TIMING_DEFAULTS[keyword];
+    if (keywordDefaultTiming !== undefined) {
+      timing = keywordDefaultTiming;
+      break;
+    }
+  }
   const timingMatch = TIMING_PATTERN.exec(abilityText);
   if (timingMatch !== null) {
     const mappedTiming = TIMING_MARKUP_MAP[timingMatch[1]!];

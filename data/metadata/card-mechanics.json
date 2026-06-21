@@ -1796,7 +1796,7 @@
       "slug": "wall-crawl",
       "label": "Wall Crawl",
       "scope": "hero",
-      "source": "free-text",
+      "source": "keyword",
       "cardCount": 14,
       "cardIds": [
         "pttr/black-cat",

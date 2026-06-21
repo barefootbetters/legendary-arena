@@ -13,10 +13,12 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { recruitHero } from './recruitHero.js';
 import type { LegendaryGameState } from '../types.js';
+import type { HeroAbilityHook } from '../rules/heroAbility.types.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import { TURN_STAGES } from '../turn/turnPhases.types.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
 import { initializeCity, initializeHq } from '../board/city.logic.js';
+import { drawCardsIntoHand } from './drawCards.logic.js';
 
 // ---------------------------------------------------------------------------
 // Mock G factory
@@ -30,6 +32,11 @@ function createMockGameState(options?: {
   hq?: LegendaryGameState['hq'];
   currentStage?: LegendaryGameState['currentStage'];
   heroDeck?: LegendaryGameState['heroDeck'];
+  // why: WP-273 — the wall-crawl placement reads the recruited card's onRecruit
+  // hooks from G.heroAbilityHooks; existing tests omit it (the Array.isArray guard
+  // in recruitHero then routes to discard exactly as before).
+  heroAbilityHooks?: HeroAbilityHook[];
+  deck?: string[];
 }): LegendaryGameState {
   const config = {
     schemeId: 'test-scheme',
@@ -55,7 +62,7 @@ function createMockGameState(options?: {
     currentStage: options?.currentStage ?? 'main',
     playerZones: {
       '0': {
-        deck: [],
+        deck: options?.deck ?? [],
         hand: [],
         discard: [],
         inPlay: [],
@@ -89,6 +96,7 @@ function createMockGameState(options?: {
     // via refillHqSlot. The mock supplies an empty reservoir by default;
     // tests that exercise the refill branch override `heroDeck` per case.
     heroDeck: options?.heroDeck ?? [],
+    heroAbilityHooks: options?.heroAbilityHooks ?? [],
     lobby: {
       requiredPlayers: 1,
       ready: {},
@@ -379,5 +387,124 @@ describe('recruitHero — WP-135 G.messages locked log format', () => {
     assert.equal(/\d{4}-\d{2}-\d{2}/.test(lastMessage), false, 'No date pattern (YYYY-MM-DD) in log line');
     assert.equal(/T\d{2}:\d{2}:\d{2}/.test(lastMessage), false, 'No ISO timestamp pattern in log line');
     assert.equal(/\d{13}/.test(lastMessage), false, 'No millisecond unix timestamp in log line');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-273 / D-24049 — Wall-Crawl onRecruit keyword + optional deck-top placement
+// ---------------------------------------------------------------------------
+
+describe('recruitHero — WP-273 Wall-Crawl deck-top placement', () => {
+  const WALL_CRAWL_CARD = 'pttr/symbiote-spider-man/dark-strength#0';
+
+  /** An onRecruit wall-crawl hook for the given card id. */
+  function wallCrawlHook(cardId: string): HeroAbilityHook {
+    return { cardId, timing: 'onRecruit', keywords: ['wall-crawl'], effects: [{ type: 'wall-crawl' }] };
+  }
+
+  it('toTopOfDeck:true places the wall-crawl Hero at the next-draw position (proven by drawing 1)', () => {
+    const gameState = createMockGameState({
+      hq: [WALL_CRAWL_CARD, null, null, null, null],
+      deck: ['already-on-deck'],
+      heroAbilityHooks: [wallCrawlHook(WALL_CRAWL_CARD)],
+    });
+
+    const moveContext = createMockMoveContext(gameState);
+    recruitHero(moveContext, { hqIndex: 0, toTopOfDeck: true });
+
+    const playerZones = moveContext.G.playerZones['0']!;
+    assert.equal(playerZones.deck[0], WALL_CRAWL_CARD, 'recruited card occupies deck[0]');
+    assert.equal(
+      playerZones.discard.includes(WALL_CRAWL_CARD),
+      false,
+      'recruited card is NOT in discard on the deck-top branch',
+    );
+
+    // why: D-24049 — contract-level proof of "top": draw 1 via the real draw helper and
+    // assert the recruited card lands in hand (not a raw index check).
+    drawCardsIntoHand(playerZones, 1, { random: moveContext.random });
+    assert.ok(
+      playerZones.hand.includes(WALL_CRAWL_CARD),
+      'drawing 1 card yields the recruited wall-crawl Hero — it was on top of the deck',
+    );
+  });
+
+  it('toTopOfDeck:true appends the locked Wall-Crawl placement note to the recruit log line', () => {
+    const gameState = createMockGameState({
+      hq: [WALL_CRAWL_CARD, null, null, null, null],
+      heroDeck: ['next-card'],
+      heroAbilityHooks: [wallCrawlHook(WALL_CRAWL_CARD)],
+    });
+
+    const moveContext = createMockMoveContext(gameState);
+    recruitHero(moveContext, { hqIndex: 0, toTopOfDeck: true });
+
+    const lastMessage = moveContext.G.messages[moveContext.G.messages.length - 1];
+    assert.equal(
+      lastMessage,
+      `Player 0 recruited ${WALL_CRAWL_CARD}; HQ slot 0 refilled from heroDeck (heroDeck.length: 0) (Wall-Crawl: placed on top of deck)`,
+      'deck-top branch appends the byte-locked Wall-Crawl placement note',
+    );
+  });
+
+  it('toTopOfDeck omitted for a wall-crawl Hero goes to discard with the byte-identical WP-135 log', () => {
+    const gameState = createMockGameState({
+      hq: [WALL_CRAWL_CARD, null, null, null, null],
+      heroDeck: ['next-card'],
+      heroAbilityHooks: [wallCrawlHook(WALL_CRAWL_CARD)],
+    });
+
+    const moveContext = createMockMoveContext(gameState);
+    recruitHero(moveContext, { hqIndex: 0 });
+
+    const playerZones = moveContext.G.playerZones['0']!;
+    assert.ok(playerZones.discard.includes(WALL_CRAWL_CARD), 'omitted toTopOfDeck routes to discard');
+    assert.equal(playerZones.deck.includes(WALL_CRAWL_CARD), false, 'card is not placed on the deck');
+    const lastMessage = moveContext.G.messages[moveContext.G.messages.length - 1];
+    assert.equal(
+      lastMessage,
+      `Player 0 recruited ${WALL_CRAWL_CARD}; HQ slot 0 refilled from heroDeck (heroDeck.length: 0)`,
+      'discard branch log line is byte-identical to the locked WP-135 format (no placement note)',
+    );
+  });
+
+  it('toTopOfDeck:false for a wall-crawl Hero goes to discard', () => {
+    const gameState = createMockGameState({
+      hq: [WALL_CRAWL_CARD, null, null, null, null],
+      deck: ['already-on-deck'],
+      heroAbilityHooks: [wallCrawlHook(WALL_CRAWL_CARD)],
+    });
+
+    const moveContext = createMockMoveContext(gameState);
+    recruitHero(moveContext, { hqIndex: 0, toTopOfDeck: false });
+
+    const playerZones = moveContext.G.playerZones['0']!;
+    assert.ok(playerZones.discard.includes(WALL_CRAWL_CARD), 'explicit false routes to discard');
+    assert.deepStrictEqual(playerZones.deck, ['already-on-deck'], 'deck order is unchanged');
+  });
+
+  it('toTopOfDeck:true for a Hero whose only onRecruit hook is NOT wall-crawl goes to discard', () => {
+    // why: D-24049 — the placement tests SPECIFICALLY for a wall-crawl keyword on an
+    // onRecruit hook, never "the first onRecruit hook" — a non-wall-crawl onRecruit hook
+    // must not trigger the deck-top placement.
+    const nonWallCrawlCard = 'core/spider-man/astonishing-strength#0';
+    const nonWallCrawlHook: HeroAbilityHook = {
+      cardId: nonWallCrawlCard,
+      timing: 'onRecruit',
+      keywords: ['draw'],
+      effects: [{ type: 'draw', magnitude: 1 }],
+    };
+    const gameState = createMockGameState({
+      hq: [nonWallCrawlCard, null, null, null, null],
+      deck: ['already-on-deck'],
+      heroAbilityHooks: [nonWallCrawlHook],
+    });
+
+    const moveContext = createMockMoveContext(gameState);
+    recruitHero(moveContext, { hqIndex: 0, toTopOfDeck: true });
+
+    const playerZones = moveContext.G.playerZones['0']!;
+    assert.ok(playerZones.discard.includes(nonWallCrawlCard), 'non-wall-crawl Hero routes to discard');
+    assert.deepStrictEqual(playerZones.deck, ['already-on-deck'], 'deck order is unchanged');
   });
 });

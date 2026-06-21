@@ -233,7 +233,7 @@ describe('buildHeroAbilityHooks', () => {
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 17 canonical keyword values', () => {
+  it('contains exactly the 18 canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -251,13 +251,14 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'reveal-ko-attack',
       'attack-per-count',
       'optional-ko-reward',
+      'wall-crawl', // why: D-24049 — recruit-time-executed keyword
       'conditional',
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      17,
-      'HERO_KEYWORDS must have exactly 17 entries',
+      18,
+      'HERO_KEYWORDS must have exactly 18 entries',
     );
 
     assert.deepStrictEqual(
@@ -1195,5 +1196,50 @@ describe('buildHeroAbilityHooks — unresolved markers (WP-257)', () => {
     const hooks = buildSingleAbility('[keyword:berserk]');
     assert.equal(hooks.length, 1);
     assert.equal(hooks[0]!.unresolvedMarkers, undefined, 'a composition marker is not unresolved');
+  });
+});
+
+describe('buildHeroAbilityHooks Wall-Crawl onRecruit keyword (WP-273 / D-24049)', () => {
+  /** Builds a single-hero, single-ability registry + matching config. */
+  function buildSingleAbility(abilityText: string) {
+    const registry = makeHeroRegistry('core', 'spider-man', [
+      { slug: 'astonishing-strength', rarityLabel: 'Common 1', abilities: [abilityText] },
+    ]);
+    return buildHeroAbilityHooks(registry, createTestConfig());
+  }
+
+  it('[keyword:Wall-Crawl] resolves to a recognized wall-crawl keyword on an onRecruit hook', () => {
+    const hooks = buildSingleAbility('[keyword:Wall-Crawl]');
+    assert.equal(hooks.length, 1);
+    // why: D-24049 — the case-insensitive parse lands the printed "Wall-Crawl" marker
+    // on a recognized `wall-crawl` keyword (not unresolvedMarkers) at onRecruit timing.
+    assert.equal(hooks[0]!.timing, 'onRecruit', 'wall-crawl defaults to onRecruit timing');
+    assert.deepStrictEqual(hooks[0]!.keywords, ['wall-crawl'], 'keyword is recognized');
+  });
+
+  it('the wall-crawl hook has NO unresolvedMarkers (the parse-unrecognized hollow is gone)', () => {
+    const hooks = buildSingleAbility('[keyword:Wall-Crawl]');
+    assert.equal(hooks.length, 1);
+    assert.equal(
+      hooks[0]!.unresolvedMarkers,
+      undefined,
+      'a recognized keyword does not surface as an unresolved marker',
+    );
+  });
+
+  it('the wall-crawl hook auto-emits a no-magnitude { type: "wall-crawl" } effect descriptor', () => {
+    const hooks = buildSingleAbility('[keyword:Wall-Crawl]');
+    assert.equal(hooks.length, 1);
+    // why: D-24049 — [keyword:Wall-Crawl] carries no :N magnitude, so the parser emits a
+    // bare descriptor; executeSingleEffect no-ops on the missing magnitude at play time.
+    assert.deepStrictEqual(hooks[0]!.effects, [{ type: 'wall-crawl' }]);
+  });
+
+  it('an explicit [timing:onPlay] marker still overrides the wall-crawl onRecruit default', () => {
+    const hooks = buildSingleAbility('[keyword:Wall-Crawl][timing:onPlay]');
+    assert.equal(hooks.length, 1);
+    // why: D-24049 — KEYWORD_TIMING_DEFAULTS sets the default; an explicit [timing:X]
+    // marker is applied afterward and wins.
+    assert.equal(hooks[0]!.timing, 'onPlay', 'explicit timing markup overrides the keyword default');
   });
 });

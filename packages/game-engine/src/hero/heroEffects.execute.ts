@@ -67,13 +67,30 @@ const FROZEN_REVEAL_TRANSLATED: readonly HeroKeyword[] = [
   'reveal-ko', 'reveal-min', 'reveal-ko-or-draw', 'reveal-cost-attack', 'reveal-odd-draw', 'reveal-attack-choose', 'reveal-ko-attack',
 ];
 
-// why (WP-251 / D-24024): MVP_KEYWORDS = HANDLED_KEYWORDS ∪ the frozen-translated
-// reveal keywords — the set of keywords that execute (directly via a handler, or via
-// reveal translation). The executeSingleEffect pre-gate keys on it; the coverage
-// drift test asserts every member is handled directly OR resolves through
-// revealRulesForLegacyKeyword. Do not duplicate this set elsewhere (the coverage
-// probe's EXECUTED_KEYWORDS is a separate, informational copy).
-export const MVP_KEYWORDS = new Set<string>([...HANDLED_KEYWORDS, ...FROZEN_REVEAL_TRANSLATED]);
+// why: D-24049 — wall-crawl executes at RECRUIT time (the recruitHero deck-top
+// placement), so it has NO HERO_EFFECT_HANDLERS entry and is NOT in HANDLED_KEYWORDS.
+// It still joins MVP_KEYWORDS via this recruit-time category for two load-bearing
+// reasons: (a) the hero mechanic ledger classifies an MVP_KEYWORDS member `executable`;
+// (b) classifyHeroEffectReason returns `applied` for it, so the onRecruit hook that
+// executeHeroEffects visits at PLAY time (it does not filter by timing) classifies
+// not-hollow instead of firing a `no-handler` hollow — without this membership the
+// now-recognized keyword would trade the old parse-unrecognized hollow for a fresh
+// no-handler one (a regression). NOT added to HANDLED_KEYWORDS (that demands a handler
+// and would break the HERO_EFFECT_HANDLERS-keys ↔ HANDLED_KEYWORDS bidirectional test).
+export const RECRUIT_TIME_EXECUTED_KEYWORDS: readonly HeroKeyword[] = ['wall-crawl'];
+
+// why (WP-251 / D-24024; D-24049): MVP_KEYWORDS = HANDLED_KEYWORDS ∪ the frozen-translated
+// reveal keywords ∪ the recruit-time-executed keywords — the set of keywords that execute
+// (directly via a handler, via reveal translation, or at recruit time via the recruitHero
+// placement). The executeSingleEffect pre-gate keys on it; the coverage drift test asserts
+// every member is handled directly, reveal-translated, OR recruit-time-executed. Do not
+// duplicate this set elsewhere (the coverage probe's EXECUTED_KEYWORDS is a separate,
+// informational copy).
+export const MVP_KEYWORDS = new Set<string>([
+  ...HANDLED_KEYWORDS,
+  ...FROZEN_REVEAL_TRANSLATED,
+  ...RECRUIT_TIME_EXECUTED_KEYWORDS,
+]);
 
 // why: D-24019 — the reward of an optional-ko-reward effect is dispatched to an
 // ALREADY-BUILT reward executor; only these four are seeded. Defensive guard at

@@ -4,9 +4,9 @@
   "summary": {
     "totalRows": 623,
     "byStatus": {
-      "executable": 123,
+      "executable": 137,
       "deferred": 0,
-      "unsupported": 453,
+      "unsupported": 439,
       "unmarked": 47
     },
     "distinctMechanics": 134
@@ -3557,20 +3557,20 @@
       "heroName": "Black Cat",
       "set": "pttr",
       "mechanic": "wall-crawl",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-273",
+      "decision": "D-24049",
+      "handler": "packages/game-engine/src/moves/recruitHero.ts"
     },
     {
       "extId": "pttr/moon-knight",
       "heroName": "Moon Knight",
       "set": "pttr",
       "mechanic": "wall-crawl",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-273",
+      "decision": "D-24049",
+      "handler": "packages/game-engine/src/moves/recruitHero.ts"
     },
     {
       "extId": "pttr/scarlet-spider",
@@ -3587,30 +3587,30 @@
       "heroName": "Scarlet Spider",
       "set": "pttr",
       "mechanic": "wall-crawl",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-273",
+      "decision": "D-24049",
+      "handler": "packages/game-engine/src/moves/recruitHero.ts"
     },
     {
       "extId": "pttr/spider-woman",
       "heroName": "Spider-Woman",
       "set": "pttr",
       "mechanic": "wall-crawl",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-273",
+      "decision": "D-24049",
+      "handler": "packages/game-engine/src/moves/recruitHero.ts"
     },
     {
       "extId": "pttr/symbiote-spider-man",
       "heroName": "Symbiote Spider-Man",
       "set": "pttr",
       "mechanic": "wall-crawl",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-273",
+      "decision": "D-24049",
+      "handler": "packages/game-engine/src/moves/recruitHero.ts"
     },
     {
       "extId": "rlmk/black-bolt",
@@ -4187,10 +4187,10 @@
       "heroName": "High Tech Spider-Man",
       "set": "smhc",
       "mechanic": "wall-crawl",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-273",
+      "decision": "D-24049",
+      "handler": "packages/game-engine/src/moves/recruitHero.ts"
     },
     {
       "extId": "smhc/peter-parker-homecoming",
@@ -4227,10 +4227,10 @@
       "heroName": "Peter Parker, Homecoming",
       "set": "smhc",
       "mechanic": "wall-crawl",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-273",
+      "decision": "D-24049",
+      "handler": "packages/game-engine/src/moves/recruitHero.ts"
     },
     {
       "extId": "smhc/peters-allies",
@@ -4437,10 +4437,10 @@
       "heroName": "Agent Venom",
       "set": "ssw2",
       "mechanic": "wall-crawl",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-273",
+      "decision": "D-24049",
+      "handler": "packages/game-engine/src/moves/recruitHero.ts"
     },
     {
       "extId": "ssw2/arkon-the-magnificent",
@@ -4487,10 +4487,10 @@
       "heroName": "Arkon the Magnificent",
       "set": "ssw2",
       "mechanic": "wall-crawl",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-273",
+      "decision": "D-24049",
+      "handler": "packages/game-engine/src/moves/recruitHero.ts"
     },
     {
       "extId": "ssw2/beast",
@@ -4507,10 +4507,10 @@
       "heroName": "Beast",
       "set": "ssw2",
       "mechanic": "wall-crawl",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-273",
+      "decision": "D-24049",
+      "handler": "packages/game-engine/src/moves/recruitHero.ts"
     },
     {
       "extId": "ssw2/black-swan",
@@ -4617,10 +4617,10 @@
       "heroName": "Elsa Bloodstone",
       "set": "ssw2",
       "mechanic": "wall-crawl",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-273",
+      "decision": "D-24049",
+      "handler": "packages/game-engine/src/moves/recruitHero.ts"
     },
     {
       "extId": "ssw2/phoenix-force-cyclops",
@@ -4667,10 +4667,10 @@
       "heroName": "Shang-Chi",
       "set": "ssw2",
       "mechanic": "wall-crawl",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-273",
+      "decision": "D-24049",
+      "handler": "packages/game-engine/src/moves/recruitHero.ts"
     },
     {
       "extId": "ssw2/silk",
@@ -4697,10 +4697,10 @@
       "heroName": "Silk",
       "set": "ssw2",
       "mechanic": "wall-crawl",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-273",
+      "decision": "D-24049",
+      "handler": "packages/game-engine/src/moves/recruitHero.ts"
     },
     {
       "extId": "ssw2/soulsword-colossus",
@@ -4757,10 +4757,10 @@
       "heroName": "Spider-Gwen",
       "set": "ssw2",
       "mechanic": "wall-crawl",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-273",
+      "decision": "D-24049",
+      "handler": "packages/game-engine/src/moves/recruitHero.ts"
     },
     {
       "extId": "ssw2/time-traveling-jean-grey",
