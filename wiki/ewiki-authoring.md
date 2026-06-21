@@ -186,11 +186,33 @@ The wiki viewer intentionally restricts certain features:
   You cannot embed `<div>`, `<span>`, `<style>`, or any HTML tags.
 - **No syntax highlighting.** Fenced code blocks render as plain
   monospace. Language hints (` ```js `) are accepted but ignored.
-- **No shortcodes.** The wiki viewer has no Hugo shortcodes defined.
+- **No custom shortcodes; no `highlight` shortcode.** The viewer defines
+  none of its own. Hugo's built-in shortcodes still run, so long as their
+  output is static and JS-free — `youtube` renders an `<iframe>` and is
+  fine ([Hugo Web System](hugo-web-system.md)). The `highlight` shortcode
+  is **out**: its Chroma output is non-deterministic and fails the
+  determinism gate.
 - **No JavaScript.** Production builds emit zero `<script>` tags.
 - **No custom CSS classes in markdown.** Standard markdown has no
   mechanism to apply CSS classes to elements. All styling comes from
   element-level CSS rules in the theme.
+
+### Showing shortcode or template syntax
+
+To document a Hugo shortcode in a wiki page you have to stop Hugo from
+executing it: Hugo expands `{{</* … */>}}` **before** Markdown runs, *even
+inside a code fence*. Wrap the inner delimiters in `/* */` so the tag
+prints as literal text instead of running:
+
+```
+{{</* youtube dQw4w9WgXcQ */>}}
+```
+
+That renders the line as literal text rather than embedding a video. Plain
+template actions like `{{ .Title }}` only execute inside `layouts/`, never
+in wiki content, so they are already literal and need no escaping. See the
+*Code blocks & syntax highlighting* section of
+[Hugo Web System](hugo-web-system.md) for the full treatment.
 
 ### Two-Repo Editing Procedures
 
