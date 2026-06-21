@@ -29,6 +29,17 @@ discard pile (the default). The keyword flips from `unsupported` → `executable
 the hero mechanic ledger, and the 23 `onPlay` hollows disappear from the
 runtime-observed sweep.
 
+**Execution invariant (zone state).** A recruited wall-crawl hero's *zone
+placement* differs from today only when `toTopOfDeck === true` — the card then
+occupies the next-draw position (`deck[0]`, confirmed against `drawFromPlayerDeck`)
+of the recruiting player's own deck immediately after the move resolves; in every
+other case it lands in `discard` byte-identically to today. The *diagnostic*
+difference is separate and always-on: because the keyword is now recruit-timed and
+recognized, **playing** a wall-crawl hero stops firing the `onPlay`
+`parse-unrecognized` hollow regardless of `toTopOfDeck` (that arg exists only at
+recruit time). Keeping these two differences distinct is what preserves determinism —
+see Non-Negotiable Constraints.
+
 **Why this keyword first.** It is the cleanest high-impact target the runtime
 sweep names: orthogonal (no coupling to the dodge / undercover / unleash ecosystem
 on the Black Widow deck), self-contained (no new zone-state model, no pending-choice
@@ -50,10 +61,19 @@ move-registration drift.
 
 - **WP-021 / WP-022 complete.** `setup/heroAbility.setup.ts` parses `[keyword:X]`
   markers into `HeroAbilityHook`s with a `timing` (default `onPlay`, `[timing:X]`
-  overrides); `hero/heroEffects.execute.ts::executeHeroEffects` fires `onPlay`
-  hooks from `playCard` and dispatches recognized effects via
-  `HERO_EFFECT_HANDLERS` gated on `MVP_KEYWORDS`; an unrecognized `[keyword:X]`
-  lands in `unresolvedMarkers` and fires a `parse-unrecognized` hollow.
+  overrides); `hero/heroEffects.execute.ts::executeHeroEffects` runs from `playCard`
+  and dispatches recognized effects via `HERO_EFFECT_HANDLERS` gated on `MVP_KEYWORDS`;
+  an unrecognized `[keyword:X]` lands in `unresolvedMarkers` and fires a
+  `parse-unrecognized` hollow.
+- **`executeHeroEffects` visits ALL of a played card's hooks — it does NOT filter by
+  timing.** `coreMoves.impl.ts:155` calls `executeHeroEffects(G, ctx, playerID, cardId)`
+  with no timing filter; internally it runs `getHooksForCard(G.heroAbilityHooks, cardId)`
+  (a **2-arg** query — there is NO timing parameter) and processes every hook for that
+  card, then runs `detectHollowHeroHook` on each. So a recruit-timed wall-crawl hook IS
+  visited at play time, and the parser auto-emits an `effects: [{ type: 'wall-crawl' }]`
+  descriptor (no magnitude) for the recognized keyword. The design relies on that
+  play-time visit being a benign, not-hollow no-op — see the onRecruit Execution Model
+  §2/§5. (This corrects the loose "executeHeroEffects fires only onPlay hooks" shorthand.)
 - **`onRecruit` timing exists but fires nowhere.** `rules/heroKeywords.ts`
   declares `'onRecruit'` in `HeroAbilityTiming` + `HERO_ABILITY_TIMINGS`, but **no
   code executes a hook at recruit time** — `moves/recruitHero.ts` unconditionally
@@ -117,9 +137,12 @@ Before writing a line:
 2. **`wall-crawl` defaults to `onRecruit` timing**, via a new keyword→default-timing
    mechanism in the parser (a small `KEYWORD_TIMING_DEFAULTS` map; absent from the
    map ⇒ the existing `onPlay` default; an explicit `[timing:X]` marker still
-   overrides). Because its hook is `onRecruit`, `executeHeroEffects` (which fires
-   only `onPlay` hooks) never sees it — so playing a wall-crawl hero produces **no
-   onPlay effect and no onPlay hollow**.
+   overrides). Playing a wall-crawl hero produces **no onPlay effect** — but NOT
+   because `executeHeroEffects` skips the hook. `executeHeroEffects` does NOT filter by
+   timing; it visits the recruit-timed hook at play time and its auto-emitted
+   `{ type: 'wall-crawl' }` effect reaches `executeSingleEffect`, which **no-ops on the
+   missing magnitude** (`[keyword:Wall-Crawl]` carries no `:N`), so no onPlay state
+   changes. The hollow side is handled by §5.
 3. **The effect is an optional placement at recruit time.** `recruitHero` gains an
    additive optional arg `toTopOfDeck?: boolean`. After the stage/pending gates,
    the move checks whether the recruited card has an `onRecruit` `wall-crawl` hook
@@ -133,12 +156,23 @@ Before writing a line:
    hidden information, no opponent interaction) — so this WP needs **none** of the
    WP-242 / WP-248 distributed block-all-guard machinery, and the move-registration
    drift test (`game.test.ts`) is **unchanged** (no new move).
-5. **`wall-crawl` is `executable`.** It is added to `MVP_KEYWORDS` so the hero
-   ledger classifies it `executable`; the `onPlay` dispatch never encounters it
-   (its hooks are `onRecruit`-timed), so no `onPlay` "no-handler" path is reached.
-   The recruit-placement IS the executor. The hollow classifier must treat a
-   resolved `onRecruit` `wall-crawl` hook as **not hollow** (handler reachable at
-   recruit time).
+5. **`wall-crawl` is `executable`, and `MVP_KEYWORDS` membership is load-bearing — not
+   just a ledger signal.** It is added to `MVP_KEYWORDS` for two reasons. (a) The hero
+   ledger classifies a member `executable`. (b) `classifyHeroEffectReason` (the hollow
+   detector's reachability check) returns `applied` for any `MVP_KEYWORDS` member, so
+   when `detectHollowHeroHook` runs over the play-time-visited wall-crawl hook it
+   classifies it **not hollow**. WITHOUT the `MVP_KEYWORDS` add, the now-recognized
+   `wall-crawl` keyword would classify `no-handler` (a valid `HeroKeyword` with no
+   `HERO_EFFECT_HANDLERS` entry) and `detectHollowHeroHook` would fire a NEW
+   `no-handler` hollow at `onPlay` timing — trading the old `parse-unrecognized` hollow
+   for a fresh one (a regression, NOT a fix). The recruit-placement branch is the real
+   executor; the play-time path must stay a benign, not-hollow no-op.
+   **Caveat (drift test):** `MVP_KEYWORDS = HANDLED_KEYWORDS ∪ FROZEN_REVEAL_TRANSLATED`,
+   and a drift test (`heroEffects.execute.test.ts`) asserts every member is handled
+   directly OR reveal-translated. `wall-crawl` is neither, so it must enter `MVP_KEYWORDS`
+   via a NEW reachability category (a `RECRUIT_TIME_EXECUTED_KEYWORDS` set spread in —
+   NOT via `HANDLED_KEYWORDS`, which would demand a handler), and that drift test must be
+   amended to admit it. See Scope §C/§F.
 
 > **Honest-fix invariant.** The placement MUST be genuinely implemented — not a
 > bare re-timing that silences the `onPlay` hollow while the card still does nothing.
@@ -147,29 +181,54 @@ Before writing a line:
 
 ---
 
-## RS-1 (scaffold-confirmed at execution — the one genuine open item)
+## RS-1 (resolved from source at draft; scaffold re-verifies + proves the honest fix)
 
-The locked design above is settled; the **exact wiring** is confirmed by the
-mandatory execution scaffold (no reasoning substitutes for the observed run):
+Most of the wiring is **resolved from source** (read during drafting); the scaffold
+*re-verifies* these observably rather than discovering them, and proves the honest fix.
 
-- That `getHooksForCard(G.heroAbilityHooks, hqCardId, 'onRecruit')` returns the
-  wall-crawl hook for an **HQ card's ext_id** (the hooks are built from hero-deck
-  registry data; confirm the HQ card's id keys into the same table).
-- The exact `KEYWORD_TIMING_DEFAULTS` insertion point in the parser's timing
-  assignment, and that `[keyword:Wall-Crawl]` normalizes to `wall-crawl` there
-  (case-insensitive), matching the ledger token.
-- Which player-deck end is "top" (the next-draw position) — confirmed against
-  `drawCards` / the deck-draw helper.
-- The hollow-classifier change (if any) needed so a resolved `onRecruit` wall-crawl
-  hook classifies as applied/not-hollow, and that no `onPlay` path tries to dispatch
-  `wall-crawl` once it is in `MVP_KEYWORDS`.
-- The measured ledger + sweep deltas: `wall-crawl` flips `unsupported → executable`
-  for all 29 lines / 14 heroes; the runtime-observed `wall-crawl` entry (23 obs)
-  drops to 0; record the before/after `sim:coverage` baseline and whether the
-  replay sentinel `finalStateHash` diverges (re-pin per WP-236 only if it does).
+**Resolved from source (drafting reads — scaffold confirms, does not discover):**
+- **Hook query is 2-arg.** `getHooksForCard(hooks, cardId)` has NO timing parameter
+  (`rules/heroAbility.types.ts`). The recruit branch composes the read-only helpers —
+  `filterHooksByTiming(getHooksForCard(G.heroAbilityHooks, cardId), 'onRecruit')` then a
+  `keywords.includes('wall-crawl')` check (or an inline `hook.timing === 'onRecruit' &&
+  hook.keywords.includes('wall-crawl')` scan). There is no 3-arg `getHooksForCard`; do
+  not invent one. The query is read-only (returns a fresh array; never mutates a hook).
+- **Hook keying.** Hooks key by the canonical-face zone-instance ext_id
+  (`heroCardInstanceExtIds`, D-18705) — the same id space the recruited `cardId`
+  (`G.hq[hqIndex]`) carries, so `getHooksForCard` resolves the wall-crawl hook for the
+  recruited card. (Per the engine ext_id grammar, lookup tables key by zone-instance
+  ext_id.)
+- **Deck "top" = `deck[0]` (unshift).** `drawFromPlayerDeck` and `applyRevealDraw` both
+  draw `deck[0]`, so the next-draw position is index 0 → `playerZones[pid].deck
+  .unshift(cardId)`. (Assert via a draw, not a raw index — see §F.)
+- **`RecruitHeroArgs` is local** to `moves/recruitHero.ts` (`interface RecruitHeroArgs
+  { hqIndex: number }`), NOT a shared types module — so Scope §E does NOT apply (no
+  separate file; one fewer file than the upper-bound count).
+- **The play-time no-op + `MVP_KEYWORDS` interaction** per the onRecruit Execution Model
+  §2/§5 (the magnitude-gate skip + the `applied` classification; the drift-test amendment).
 
-If the scaffold shows the registry/hook surface differs from this assumption, fold
-the correction in-scope (`01.1` mid-execution amendment) before locking.
+**Mandatory scaffold proof (observed run — no reasoning substitutes):**
+1. `filterHooksByTiming(getHooksForCard(G.heroAbilityHooks, recruitedCardId), 'onRecruit')`
+   returns ≥1 hook whose `keywords` includes `'wall-crawl'` for a real recruited
+   wall-crawl HQ card.
+2. The parser normalizes `[keyword:Wall-Crawl]` → `wall-crawl` (case-insensitive) and
+   `KEYWORD_TIMING_DEFAULTS` lands it on an `onRecruit` hook with NO `unresolvedMarkers`.
+3. **Honest fix:** with `toTopOfDeck: true`, the recruited card is at `deck[0]`
+   immediately after the move — proven by **drawing 1 card and getting the recruited
+   card back** — NOT a bare re-timing that only silences the hollow.
+4. **Discard branch byte-identical:** with `toTopOfDeck` falsy / omitted, or a
+   non-wall-crawl hero, the post-move `discard` array AND the recruit `G.messages` line
+   are byte-equal to today.
+5. **Play-time path:** playing the wall-crawl hero mutates no onPlay state AND emits no
+   hollow — neither `parse-unrecognized` nor `no-handler` — and `MVP_KEYWORDS` membership
+   is what holds the second half.
+6. **Ledger/sweep deltas:** `wall-crawl` flips `unsupported → executable` for all 29
+   lines / 14 heroes; runtime-observed `wall-crawl` 23 → 0; record the `sim:coverage`
+   baseline delta and confirm the sweep sentinel `finalStateHash` is UNCHANGED (the bot
+   declines — see Determinism).
+
+If the scaffold contradicts any resolved-from-source fact above, fold the correction
+in-scope (`01.1` mid-execution amendment) before locking.
 
 ---
 
@@ -203,11 +262,22 @@ the correction in-scope (`01.1` mid-execution amendment) before locking.
   wall-crawl needs (a per-card hook check + the placement branch in `recruitHero`).
   Do NOT build a generic onRecruit effect-dispatch loop, add other onRecruit
   keywords, or touch `onFight` / `onKO` / `onReveal`.
-- **Determinism.** Recruiting to deck-top changes deck order ⇒ replay/`finalStateHash`
-  sensitive. Re-pin the sentinel ONLY if a fixture diverges (per WP-236). The
-  bot/sim policy defaults to `toTopOfDeck` **false** (decline → discard), so the
-  deterministic sweep's zone state is unchanged; only the **diagnostics** change
-  (the wall-crawl hollows vanish). Regenerate every committed coverage artifact.
+- **Wall-crawl-specific check; composes with future onRecruit hooks.** The recruit
+  branch must test specifically for a `wall-crawl` keyword on an `onRecruit` hook (e.g.
+  `filterHooksByTiming(...).some(hook => hook.keywords.includes('wall-crawl'))`) —
+  NEVER "take the first onRecruit hook and assume it is wall-crawl." If a card ever
+  carries multiple onRecruit hooks/keywords, wall-crawl handling stays independent and
+  must not block or short-circuit the others. (We add no other onRecruit keyword here;
+  this is forward-protection so the next one composes.)
+- **Determinism (strict).** Recruiting to deck-top changes deck order ⇒
+  replay/`finalStateHash` sensitive. The bot/sim policy defaults `toTopOfDeck` **false**
+  (decline → discard), so the deterministic sweep's zone state is unchanged and the
+  sweep sentinel `finalStateHash` **MUST be unchanged**. A sentinel divergence is a FAIL
+  to investigate — NOT a routine re-pin — UNLESS it traces to a deliberately added
+  replay fixture that exercises `toTopOfDeck: true`, in which case re-pin per WP-236 and
+  say so with the evidence. No other divergence is permitted. Only the **diagnostics**
+  change on the default path (the wall-crawl hollows vanish). Regenerate every committed
+  coverage artifact in the SAME commit.
 - **Engine + its tests + regenerated coverage artifacts + governance only.** No
   `apps/**`, no `packages/registry/**`, no `apps/server/**`, no `data/cards/**`.
 
@@ -219,13 +289,22 @@ the correction in-scope (`01.1` mid-execution amendment) before locking.
   absent from the map keep the `onPlay` default).
 - Move arg: `recruitHero` args become `{ hqIndex: number; toTopOfDeck?: boolean }`
   (additive optional; omitted/`false` ⇒ today's discard placement). No new move.
+- Hook query: `getHooksForCard(hooks, cardId)` is **2-arg** (no timing param); the
+  recruit branch composes it with `filterHooksByTiming(..., 'onRecruit')` + a
+  `keywords.includes('wall-crawl')` check (read-only). No 3-arg `getHooksForCard` exists.
 - Placement: when `toTopOfDeck === true` AND the recruited card has an `onRecruit`
-  `wall-crawl` hook, the card is placed at the **next-draw end** of
-  `playerZones[pid].deck` (the "top"); else `playerZones[pid].discard.push(cardId)`
-  (unchanged).
+  `wall-crawl` hook, the card is placed at the **next-draw position `deck[0]`** via
+  `playerZones[pid].deck.unshift(cardId)` (`deck[0]` confirmed as next-draw against
+  `drawFromPlayerDeck`); else `playerZones[pid].discard.push(cardId)` (unchanged).
 - Classification: `wall-crawl ∈ MVP_KEYWORDS` ⇒ ledger `executable`; handler column
   resolves to `moves/recruitHero.ts` (the recruit-placement executor), confirmed by
   the hero-ledger's `handlerForMechanic` path at execution.
+- `MVP_KEYWORDS` mechanism: add `wall-crawl` via a NEW `RECRUIT_TIME_EXECUTED_KEYWORDS`
+  set spread into the `MVP_KEYWORDS` literal — NOT via `HANDLED_KEYWORDS` (which would
+  demand a non-existent `HERO_EFFECT_HANDLERS` entry and break the handler-key
+  bidirectional drift test). The `every MVP_KEYWORD is handled-or-reveal-translated`
+  drift test (`heroEffects.execute.test.ts`) MUST be amended to admit the
+  recruit-time-executed category, else it fails for `wall-crawl`.
 
 ---
 
@@ -244,39 +323,54 @@ the line's keyword has a default-timing entry, use it; otherwise keep `onPlay`.
 `onRecruit` hook (no `unresolvedMarkers` entry). `// why: D-24049`.
 
 ### C) `hero/heroEffects.execute.ts` — modified
-Add `'wall-crawl'` to `MVP_KEYWORDS` (ledger `executable` signal). Confirm the
-`onPlay` dispatch never reaches a `wall-crawl` effect (its hooks are `onRecruit`),
-and that `detectHollowHeroHook` / `classifyHeroEffectReason` classify a resolved
-`onRecruit` `wall-crawl` hook as **not hollow** (handler reachable at recruit time).
-`// why: D-24049`.
+Add `'wall-crawl'` to `MVP_KEYWORDS` via a new `RECRUIT_TIME_EXECUTED_KEYWORDS` set
+(spread into the `MVP_KEYWORDS` literal — NOT into `HANDLED_KEYWORDS`, which requires a
+handler). Two effects: (1) the hero ledger classifies `wall-crawl` `executable`;
+(2) `classifyHeroEffectReason` returns `applied` for it, so `detectHollowHeroHook`
+classifies the **play-time-visited** wall-crawl hook **not hollow** instead of firing a
+`no-handler` hollow (the regression that membership prevents — see Execution Model §5).
+The `onPlay` dispatch DOES reach the auto-emitted `{ type: 'wall-crawl' }` effect but
+no-ops on the missing magnitude — confirm it mutates nothing. `// why: D-24049`.
 
 ### D) `moves/recruitHero.ts` — modified
-Add the optional `toTopOfDeck?: boolean` arg. After the existing stage + pending
-gates, before the placement: query `getHooksForCard(G.heroAbilityHooks, cardId,
-'onRecruit')`; if a `wall-crawl` hook is present AND `toTopOfDeck === true`, place
-the card at the next-draw end of `playerZones[pid].deck` (a `// why: D-24049`
-comment); otherwise keep `playerZones[pid].discard.push(cardId)` unchanged. The
-economy deduction, HQ refill, and the locked recruit-log line are unchanged. Append
-a placement note to the existing recruit `G.messages` line ONLY when the deck-top
-branch is taken (byte-locked format; the discard branch's line is byte-identical to
-today).
+Add the optional `toTopOfDeck?: boolean` arg (extend the LOCAL `RecruitHeroArgs`
+interface in this file — it is not a shared type). After the existing stage + pending
+gates, before the placement: read the card's onRecruit wall-crawl hook via the
+read-only helpers — `filterHooksByTiming(getHooksForCard(G.heroAbilityHooks, cardId),
+'onRecruit')` then `.some(hook => hook.keywords.includes('wall-crawl'))` (there is NO
+3-arg `getHooksForCard`). If such a hook is present AND `toTopOfDeck === true`, place
+the card at the next-draw position via `playerZones[pid].deck.unshift(cardId)` (a
+`// why: D-24049` comment); otherwise keep `playerZones[pid].discard.push(cardId)`
+unchanged. The economy deduction, HQ refill, and the locked recruit-log line are
+unchanged. Append a placement note to the existing recruit `G.messages` line ONLY when
+the deck-top branch is taken (byte-locked format; the discard branch's line is
+byte-identical to today).
 
-### E) (Conditional) `moves/coreMoves.types.ts` / `types.ts` — modified
-If the `recruitHero` args type is declared in a shared types module, extend it with
-`toTopOfDeck?: boolean` (additive optional). Scaffold-confirmed at execution (RS-1).
+### E) (Resolved — N/A) shared recruit-args type
+**Confirmed not applicable.** `RecruitHeroArgs` is declared LOCALLY in
+`moves/recruitHero.ts` (`interface RecruitHeroArgs { hqIndex: number }`), not in a
+shared types module, so the `toTopOfDeck?: boolean` add lands in §D and there is NO
+separate types file to modify. (Was a draft-time conditional; resolved from source.)
 
 ### F) Tests
 - `rules/heroAbility.setup.test.ts` — **modified**: the HERO_KEYWORDS union↔array
-  drift test (new count); a parse test that `[keyword:Wall-Crawl]` yields a
-  recognized `wall-crawl` keyword on an `onRecruit` hook with no `unresolvedMarkers`.
-- `moves/recruitHero.test.ts` — **modified (or new)**: recruiting a wall-crawl hero
-  with `toTopOfDeck: true` places it on the deck top; with `toTopOfDeck` falsy /
-  omitted it goes to discard (byte-identical to today); a non-wall-crawl hero ignores
-  the arg (always discard); 0-cost / insufficient-recruit and empty-slot guards
-  unchanged.
-- `hero/heroEffects.execute.test.ts` — **modified**: playing a wall-crawl hero
-  produces no `onPlay` effect and no `parse-unrecognized` hollow; `wall-crawl ∈
-  MVP_KEYWORDS`.
+  drift test (new count); a parse test that `[keyword:Wall-Crawl]` yields a recognized
+  `wall-crawl` keyword on an `onRecruit` hook with NO `unresolvedMarkers` and an
+  `effects: [{ type: 'wall-crawl' }]` descriptor (the auto-emitted no-magnitude effect).
+- `moves/recruitHero.test.ts` — **modified (or new)**: recruiting a wall-crawl hero with
+  `toTopOfDeck: true` puts it at the next-draw position — assert by **drawing 1 card and
+  checking it IS the recruited card** (contract-level, not a raw index); with
+  `toTopOfDeck` falsy / omitted it goes to discard byte-identical to today; a
+  non-wall-crawl hero with `toTopOfDeck: true` is unaffected (goes to discard, deck order
+  unchanged); 0-cost / insufficient-recruit and empty-slot guards unchanged.
+- `hero/heroEffects.execute.test.ts` — **modified**: (1) **amend** the existing
+  `every MVP_KEYWORD is handled directly or via reveal translation` drift test
+  (≈ lines 66–75) to admit the recruit-time-executed category — otherwise it FAILS for
+  `wall-crawl` (neither handled nor reveal-translated); (2) playing a wall-crawl hero
+  produces no onPlay state mutation AND no hollow (neither `parse-unrecognized` nor
+  `no-handler` — the regression guard); (3) `wall-crawl ∈ MVP_KEYWORDS`. The
+  `HANDLED_KEYWORDS` count + handler-key bidirectional test stay UNCHANGED (no handler
+  added).
 
 ### G) Regenerated coverage artifacts (committed; CI-gated)
 - `docs/ai/coverage/hero-mechanic-ledger.{json,csv}` — `wall-crawl` rows flip
@@ -323,7 +417,7 @@ EC_INDEX.md` (EC-304 → Done), `docs/05-ROADMAP-MINDMAP.md` (WP-273 ✅ + count
 - `packages/game-engine/src/setup/heroAbility.setup.ts` — **modified** (keyword→timing default + recognition).
 - `packages/game-engine/src/hero/heroEffects.execute.ts` — **modified** (`MVP_KEYWORDS` + hollow classification).
 - `packages/game-engine/src/moves/recruitHero.ts` — **modified** (arg + onRecruit placement).
-- `packages/game-engine/src/moves/coreMoves.types.ts` *or* `packages/game-engine/src/types.ts` — **modified (conditional, RS-1)** (recruit args type, if shared).
+- ~~`packages/game-engine/src/moves/coreMoves.types.ts` / `types.ts`~~ — **N/A (resolved)**: `RecruitHeroArgs` is local to `recruitHero.ts`; no shared types file changes.
 - `packages/game-engine/src/rules/heroAbility.setup.test.ts` — **modified** (drift + parse).
 - `packages/game-engine/src/moves/recruitHero.test.ts` — **modified / new** (placement branches).
 - `packages/game-engine/src/hero/heroEffects.execute.test.ts` — **modified** (no onPlay hollow; MVP membership).
@@ -342,14 +436,13 @@ EC_INDEX.md` (EC-304 → Done), `docs/05-ROADMAP-MINDMAP.md` (WP-273 ✅ + count
 - `docs/ai/execution-checklists/EC_INDEX.md` — EC-304 → Done.
 - `docs/05-ROADMAP-MINDMAP.md` — WP-273 ✅ + count table.
 
-**Total: ~13 implementation/artifact + 5 governance.** Over the lint §5 ~8
-guideline — justified inline: a recognized keyword is irreducibly *keyword +
-parser-timing + executor-classification + the recruit-move placement + their
-drift/behavior tests*, and the change flips a CI-gated coverage surface so **every
-committed coverage artifact must regenerate in the same commit** (the WP-253 /
-WP-272 precedent). The conditional shared-types file (#E) is RS-1; if the args type
-is local to `recruitHero.ts`, the count drops by one. No new move, no new contract
-file, no board-freeze guard.
+**Total: ~12 implementation/artifact + 5 governance** (the conditional shared-types
+file #E is resolved N/A — `RecruitHeroArgs` is local). Over the lint §5 ~8 guideline —
+justified inline: a recognized keyword is irreducibly *keyword + parser-timing +
+executor-classification + the recruit-move placement + their drift/behavior tests*, and
+the change flips a CI-gated coverage surface so **every committed coverage artifact must
+regenerate in the same commit** (the WP-253 / WP-272 precedent). No new move, no new
+contract file, no board-freeze guard.
 
 ---
 
@@ -381,12 +474,15 @@ modified/removed.
 1. `HeroKeyword` union + `HERO_KEYWORDS` array each contain `'wall-crawl'` once (same
    index); `'wall-crawl' ∈ MVP_KEYWORDS`; the union↔array drift test passes.
 2. Parsing a `[keyword:Wall-Crawl]` line yields a recognized `wall-crawl` keyword on
-   an **`onRecruit`** hook with **no `unresolvedMarkers`** entry; playing such a card
-   fires **no `onPlay` effect and no `parse-unrecognized` hollow**.
+   an **`onRecruit`** hook with **no `unresolvedMarkers`** entry. Playing such a card
+   mutates **no onPlay state** and fires **no hollow** — neither `parse-unrecognized`
+   nor `no-handler` (the play-time-visited hook classifies `applied` via `MVP_KEYWORDS`).
 3. `recruitHero({ hqIndex, toTopOfDeck: true })` for a wall-crawl hero places the card
-   on the **next-draw end of `playerZones[pid].deck`**; `toTopOfDeck` falsy/omitted, or
-   a non-wall-crawl hero, places it in `discard` **byte-identical to today** (economy
-   deduction, HQ refill, and the discard-branch recruit-log line all unchanged).
+   at the **next-draw position (`deck[0]`)** of `playerZones[pid].deck` — verified by
+   drawing 1 card and getting the recruited card back; `toTopOfDeck` falsy/omitted, or a
+   non-wall-crawl hero, places it in `discard` **byte-identical to today** (economy
+   deduction, HQ refill, and the discard-branch recruit-log line all unchanged, deck
+   order untouched).
 4. No new move is registered: `game.test.ts`'s move-set + move-count assertion is
    **unchanged and green**; no `hasPending*` board-freeze guard is added.
 5. The hero mechanic ledger shows `wall-crawl` `executable` for all 29 lines / 14
@@ -400,8 +496,13 @@ modified/removed.
    `pnpm sim:runtime-observed:check`, `pnpm mechanics:metadata:check` all exit 0;
    the `mechanic-provenance.json` diff is additive (`wall-crawl` only).
 8. `git diff --name-only` lists exactly the files in `## Files Expected to Change`
-   (the conditional #E counted per RS-1); no `data/cards/**`, `apps/**`,
+   (§E resolved N/A — not present); no `data/cards/**`, `apps/**`,
    `packages/registry/**`, or `apps/server/**` change.
+9. The existing `every MVP_KEYWORD is handled directly or via reveal translation`
+   drift test is amended to admit the recruit-time-executed category and is green; the
+   `HANDLED_KEYWORDS` count + handler-key bidirectional test are **unchanged** (no
+   handler added). `wall-crawl`'s not-hollow status holds at play time independent of
+   the `toTopOfDeck` choice (there is no recruit-time hollow path).
 
 ---
 
@@ -412,6 +513,8 @@ pnpm --filter @legendary-arena/game-engine test          # BASELINE — record p
 pnpm -r build                                            # exits 0
 pnpm --filter @legendary-arena/game-engine test          # ≥ BASELINE + net-new; no regression
 grep -c "wall-crawl" packages/game-engine/src/rules/heroKeywords.ts   # 2 (union + array)
+grep -n "unshift" packages/game-engine/src/moves/recruitHero.ts       # deck[0] placement present
+grep -n "RECRUIT_TIME_EXECUTED\|wall-crawl" packages/game-engine/src/hero/heroEffects.execute.ts   # MVP_KEYWORDS add via the recruit-time category
 pnpm ledger:heroes && pnpm sim:runtime-observed && pnpm mechanics:metadata   # regenerate
 pnpm ledger:heroes:check && pnpm sim:coverage --check && pnpm sim:runtime-observed:check && pnpm mechanics:metadata:check   # all OK
 grep -E ",wall-crawl,executable," docs/ai/coverage/hero-mechanic-ledger.csv | head   # executable rows present
@@ -423,16 +526,17 @@ node scripts/roadmap-counts.mjs --check                  # passes (WP-273 ✅)
 
 ## Definition of Done
 
-- [ ] All Acceptance Criteria (1–8) pass.
+- [ ] All Acceptance Criteria (1–9) pass.
 - [ ] `build` + engine `test` exit 0; the four coverage freshness gates pass; drift grep passes.
 - [ ] `docs/ai/DECISIONS.md` D-24049 Reserved → Active (byte-identical to the EC-304 verbatim block).
 - [ ] `docs/ai/STATUS.md` updated; `WORK_INDEX.md` WP-273 `[x]`; `EC_INDEX.md` EC-304 → Done; `05-ROADMAP-MINDMAP.md` WP-273 ✅; `roadmap-counts --check` green.
 - [ ] No files outside `## Files Expected to Change` modified.
 - [ ] `User-Visible Surface = dashboard.legendary-arena.com/coverage` — the `wall-crawl`
-      rows flip `unsupported → executable` on the deployed `/coverage` page (D-24026
-      live-verify, post-deploy). *(The in-game player-facing "put on top of your deck?"
-      toggle is the deferred arena-client follow-up; the engine + the coverage surface
-      are this WP's observable deliverable.)*
+      rows flip `unsupported → executable` on the deployed `/coverage` page AND the
+      `/coverage` runtime-observed (Observed-in-play) section shows **zero** `wall-crawl`
+      entries (23 → 0), both D-24026 live-verified post-deploy. *(The in-game
+      player-facing "put on top of your deck?" toggle is the deferred arena-client
+      follow-up; the engine + the coverage surface are this WP's observable deliverable.)*
 
 ---
 
@@ -468,6 +572,19 @@ Gate order pre-flight → copilot → lint, against `origin/main` @ `04c36ba2`.
   client UI are explicitly deferred). Source-of-truth (#27 — `wall-crawl` recognized
   from the closed union, not re-derived). The review-surfaced risk (the onRecruit
   wiring) is captured as RS-1 and routed to the scaffold. No RISK/BLOCK.
+- **Review hardening (2026-06-21) — source-grounded corrections folded in.** A read of
+  the actual engine surfaces narrowed RS-1 from "open wiring" to "scaffold re-verifies
+  resolved facts" and corrected three mechanism statements the on-paper draft had wrong:
+  (a) `getHooksForCard` is **2-arg** (no timing param) — the recruit branch composes
+  `filterHooksByTiming` + a `keywords` check (no 3-arg call exists); (b)
+  `executeHeroEffects` does NOT filter by timing, so the onRecruit hook IS visited at
+  play time — the no-onPlay-effect result comes from the magnitude-gate skip, not from
+  the hook being unseen; (c) `MVP_KEYWORDS` membership is load-bearing — it prevents a
+  NEW `no-handler` onPlay hollow (a regression), and adding it forces an amendment to the
+  `every MVP_KEYWORD is handled-or-translated` drift test. Scope §E resolved N/A
+  (`RecruitHeroArgs` is local). These are accuracy / enforceability fixes to the spec,
+  not design changes; the locked design (keyword + onRecruit timing + optional
+  recruit-placement, no new move) is unchanged.
 
 ---
 
@@ -502,7 +619,7 @@ Gate order pre-flight → copilot → lint, against `origin/main` @ `04c36ba2`.
 - **§12 Tests:** PASS — `node:test`, `.test.ts`, `makeMockCtx`; no boardgame.io/network/
   DB; determinism preserved (pure placement branch + deterministic bot default).
 - **§13 Verification:** PASS — exact `pnpm` / `grep` / `node` commands with expected output.
-- **§14 Acceptance:** PASS — 8 binary, observable, code-path-specific items.
+- **§14 Acceptance:** PASS — 9 binary, observable, code-path-specific items.
 - **§15 Definition of Done:** PASS — STATUS/DECISIONS/WORK_INDEX/EC_INDEX/mindmap +
   scope-boundary check. **§15.1:** `User-Visible Surface = dashboard.legendary-arena.com/
   coverage` declared with the D-24026 live-verify item (the deferred in-game toggle noted).
