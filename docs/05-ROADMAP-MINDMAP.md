@@ -191,7 +191,7 @@ mindmap
         ["WP-245 ✅ LAGN export in registry viewer loadout tab"]
         ["WP-269 ✅ Hero mechanic metadata feed (producer half of the mechanic-query slice; deterministic transform turns the committed hero ledger into a normalized viewer-safe data/metadata/card-mechanics.json + data-only CardMechanicsIndexSchema + CI freshness gate; hidden fail-closed; D-24046)"]
         ["WP-270 📝 Registry-viewer hero mechanic filter surface (consumer half; cardMechanicsClient + MechanicFilter ribbon over WP-269's feed, hidden!==true, OR-within / AND-across the text query; consumes D-24046)"]
-        ["WP-271 📦 Extend mechanic ledger generation beyond heroes (villain / mastermind / scheme / henchman → a future all-card-type mechanic feed; queued data-production follow-up to WP-269/270)"]
+        ["WP-271 📝 Villain & henchman mechanic ledger (data-production half of beyond-heroes; new scripts/villain-mechanic-ledger.mjs mirrors the hero ledger, classifies [effect:X] by-hook via the dist's buildVillainAbilityHooks — resolved→executable / unresolvedMarkers→unsupported / no-marker→unmarked; ledger:villains:check CI gate; mastermind/scheme deferred — no ability-hook parser exists, named follow-ups; data-production only, feed-widening + dashboard view are consumption follow-ups per the D-24046 split; Shared Tooling, no engine/registry/app/data change, hero instruments byte-unchanged; User-Visible Surface none-infrastructure; D-24048)"]
 
       Phase 8 — Interactive Board Layout
         ["WP-128 ✅ UIState board projections"]

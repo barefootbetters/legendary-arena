@@ -25495,4 +25495,22 @@ The hero mechanic ledger classifies a **composition-marker** mechanic (`empowere
 
 **Relates to.** Extends D-24044 (parameterized Empowered composition) and consumes D-24045 (by-hook `resolvedMarkers` ledger). Second Empowered form authored over the D-24029 composable-primitive substrate.
 
+### D-24048 — Villain & Henchman Mechanic Ledger: By-Hook Classification Reusing the Villain Parser; Mastermind/Scheme Deferred (No Parser); Data-Production Only
+
+**Status:** **Drafted 2026-06-20; not yet landed.** Reserved by WP-271 / EC-303 from baseline `03a7f22a`. Flips to **Active (post-execution)** when WP-271 executes.
+
+**Context.** The hero mechanic ledger (the INFRA generator at `scripts/hero-mechanic-ledger.mjs`) emits a per-(hero × mechanic) coverage table, hero-only by a `cardType !== 'hero'` filter. D-24046 froze the WP-269 `card-mechanics.json` feed to `scope:"hero"` *because the ledger is hero-only* and explicitly queued WP-271 as the data-production extension "beyond heroes." A pre-draft investigation (2026-06-20) of the non-hero ability landscape established the realistic shape of that extension:
+- **Villain + henchman have a full ability-hook pipeline** — `buildVillainAbilityHooks` (`setup/villainAbility.setup.ts`) parses `[effect:X]` markers into a `VillainAbilityHook` carrying `keywords` / `effects` / `unresolvedMarkers`, exactly parallel to `buildHeroAbilityHooks`. A mechanic ledger can read that resolution **today**.
+- **Mastermind + scheme have no ability-hook parser** — they store only a `gameText?: readonly string[]` snapshot; effects are config-driven (hardcoded per-mastermind branches in `mastermindHandlers.ts`; `SCHEME_TWIST_CONFIGS` → resolver lookup in `schemeHandlers.ts`), never parsed from `[effect:X]` markers.
+
+**Decision.** WP-271 ships **only** the villain + henchman mechanic ledger, as a **Shared Tooling** generator (`scripts/villain-mechanic-ledger.mjs`) mirroring the hero ledger and reading the engine + registry **dist** one-way (no engine/registry source edit):
+
+- **By-hook classification, faithful to the parser.** Each `[effect:X]` mechanic's status is read from `buildVillainAbilityHooks`' actual resolution, never a re-implemented parse (the D-24045 by-hook discipline): a token resolved into `hook.keywords`/`hook.effects` → **executable**; a token in `hook.unresolvedMarkers` → **unsupported** (`parse-unrecognized`); a villain/henchman card with ability text but no `[effect:X]` → **unmarked**. `deferred` is carried in the status vocabulary for hero-ledger symmetry but is **expected empty** — every recognized villain effect (the 10 frozen `VILLAIN_EFFECT_KEYWORDS` + 5 `VILLAIN_EFFECT_PRIMITIVES`) is executor-handled, so for villains **recognition implies executability** (there is no `MVP_KEYWORDS`-style subset gate as on heroes).
+- **Mastermind/scheme deferred (parser-blocked).** Ledgering them first requires authoring an ability parser + effect vocabulary + executor analogous to the villain pipeline — foundational engine work in a different layer, far larger than a tooling WP. Deferred to named follow-up WPs, each blocked on that parser. WP-271 does NOT stub mastermind/scheme rows.
+- **Data-production only.** WP-271 produces the ledger artifact (`docs/ai/coverage/villain-mechanic-ledger.{json,csv}`) + a CI freshness gate (`ledger:villains:check`). Surfacing it — widening the WP-269 feed beyond `scope:"hero"`, adding a card-type dimension to the dashboard `/coverage` page — is **consumption** work, split into follow-up WPs per the D-24046 data-production-vs-consumption split. `User-Visible Surface = none — infrastructure`.
+
+**Determinism.** The generator is deterministic (no `Date.now()` / `Math.random()` / network / DB; stable composite sort key; fixed JSON key order; CRLF-normalized `--check` — byte-identical run to run, the freshness gate's contract). It reads setup-time parse output and does **not** run the engine's gameplay loop, so no `finalStateHash` / replay surface is touched. The shared `scripts/coverage/mechanic-provenance.json` is extended additively (new villain keys only; hero keys byte-unchanged; hero and villain mechanic names are disjoint).
+
+**Relates to.** Extends the hero mechanic ledger (the INFRA generator); consumes D-24045 (by-hook ledger discipline), D-24023 (the villain `VillainEffectDescriptor` vocabulary the parser resolves into), D-24034 (`unresolvedMarkers` — the unsupported signal); subordinate to D-24046 (the data-production-vs-consumption split that queued this WP and keeps the feed hero-only).
+
 Protect this file.
