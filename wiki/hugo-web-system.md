@@ -29,7 +29,7 @@ source:
   - C:\www\legendary-arena-com\static\_headers
   - C:\www\legendary-arena-com\static\apple-touch-icon.png
   - C:\www\legendary-arena-com\themes\PaperMod\layouts\_partials\head.html
-last-reviewed: 2026-06-18
+last-reviewed: 2026-06-20
 ---
 
 > 👋 **New to this codebase?** Start with
@@ -558,6 +558,66 @@ require relocating source images out of `static/images/` into either
 implemented today**, and noted here so the next author doesn't assume a
 `static/`-based shortcut exists.
 
+### Embedding video (YouTube) {#embedding-video-youtube}
+
+Embed YouTube with Hugo's built-in **`youtube` shortcode** in content
+Markdown — not a hand-written `<iframe>`. It is a core Hugo shortcode (no
+PaperMod dependency) and emits a responsive embed.
+
+The id is the `v=` value from the watch URL — for
+`https://www.youtube.com/watch?v=5G7DfRmWsG0` the id is `5G7DfRmWsG0`.
+
+**Basic embed:**
+
+```
+{{</* youtube 5G7DfRmWsG0 */>}}
+```
+
+**With options** (`title` sets the iframe's accessible title; `start`
+jumps to a timestamp in seconds):
+
+```
+{{</* youtube id=5G7DfRmWsG0 title="Collagen activation & mechanical load" start=335 */>}}
+```
+
+Common params: `id`, `title`, `start`, `end`, `autoplay` (off by
+default), `mute`, `loading` (`"lazy"`), `controls`, and `class` (setting
+`class` drops the default inline responsive styles so you can style it
+yourself).
+
+**Where it goes:** any content file under
+`C:\www\legendary-arena-com\content\` (a blog post, a landing page).
+That is a content-lane edit — commit `POST:` for a new post or `FIX:`
+for adding a video to existing content (see
+[Commit prefix conventions](#commit-prefix-conventions)).
+
+**Privacy (no-cookie domain).** To make every embed use
+`youtube-nocookie.com` instead of `youtube.com`, add this once to
+`C:\www\legendary-arena-com\hugo.toml` — it is **not currently set**.
+It's site-wide config, so commit it `WP-NNN:`:
+
+```toml
+[privacy.youtube]
+  privacyEnhanced = true
+```
+
+**Two LA-specific notes:**
+
+- **A raw `<iframe>` would also render here.** Unlike a stock Hugo site,
+  this one sets `markup.goldmark.renderer.unsafe = true` site-wide (added
+  for the `/brand/` page, WP-014), so a pasted iframe is **not** stripped.
+  Prefer the shortcode anyway — it is shorter, responsive, and honors the
+  privacy setting above; reach for a raw iframe only when you need an
+  attribute the shortcode does not expose.
+- **It previews on the dev server.** Unlike Pagefind, OG/Twitter, Schema,
+  and `/api/subscribe` — all production-gated or build-time (see [Local
+  development](#local-development)) — the `youtube` shortcode renders
+  under `hugo server` too. What you see in preview is what ships.
+
+**Hugo docs:** the [`youtube` shortcode reference](https://gohugo.io/shortcodes/youtube/)
+(full parameter list) and [Configure privacy](https://gohugo.io/configuration/privacy/)
+(`[privacy.youtube] privacyEnhanced`).
+
 ### Content structure
 
 ```
@@ -712,6 +772,8 @@ Full details: `C:\www\legendary-arena-com\docs\ai\REFERENCE\01.3-commit-hygiene.
 - `C:\www\legendary-arena-com\static\brand-tokens.css` — cross-site brand token contract
 - `C:\www\legendary-arena-com\docs\ai\REFERENCE\01.3-commit-hygiene.md` — commit prefix conventions
 - `C:\www\legendary-arena-com\docs\03-ROADMAP.md` — analytics platform deferral, WP-021
+- [Hugo — `youtube` shortcode](https://gohugo.io/shortcodes/youtube/) — built-in shortcode reference (params: `id`, `title`, `start`, `autoplay`, `loading`, `class`)
+- [Hugo — Configure privacy](https://gohugo.io/configuration/privacy/) — `[privacy.youtube] privacyEnhanced` (no-cookie embeds)
 - WP-004 — home page override
 - WP-005 — Pagefind search integration, `#la-search` id lock
 - WP-008 — Schema.org / SEO baseline
