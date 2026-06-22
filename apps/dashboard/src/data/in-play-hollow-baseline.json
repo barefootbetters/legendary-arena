@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "seed",
+  "byMechanic": {
+    "ambush": {
+      "peakObs": 1
+    },
+    "artifact": {
+      "peakObs": 1
+    },
+    "bridge": {
+      "peakObs": 9
+    },
+    "conqueror": {
+      "peakObs": 12
+    },
+    "coordinate": {
+      "peakObs": 7
+    },
+    "cyber-mod": {
+      "peakObs": 4
+    },
+    "dodge": {
+      "peakObs": 37
+    },
+    "investigate": {
+      "peakObs": 5
+    },
+    "moonlight": {
+      "peakObs": 18
+    },
+    "shatter": {
+      "peakObs": 10
+    },
+    "size-changing": {
+      "peakObs": 2
+    },
+    "sunlight": {
+      "peakObs": 10
+    },
+    "undercover": {
+      "peakObs": 20
+    },
+    "unleash": {
+      "peakObs": 4
+    }
+  }
+}
