@@ -99,6 +99,13 @@ terminology per §23(b)). Determinism line: N/A (no scoring/replay/RNG).
   computed calls `validateMatchSetupDocument(draft, registry)`, so the instance must not
   be created while `registry.value` is `null`; post-load instantiation is the locked
   approach (same reason `useSetupFromUrl` defers).
+  - **Instantiation precondition (HARD, binary):** `registry.value` MUST be non-null at the
+    `useLoadoutDraft(reg)` call site. This is enforced **structurally by placement** — the
+    call lives **only** inside the post-resolve `onMounted` block (the `useSetupFromUrl`
+    precedent), never at `setup()` top level. No runtime `throw` guard is added: a pre-load
+    instantiation is a construction-time error prevented by where the call lives, not a
+    defensive runtime check — consistent with how `useSetupFromUrl` defers rather than
+    guards, and avoiding a terse non-sentence error string the code-style rule forbids.
 - `LoadoutBuilder.vue` **receives the draft API as a prop** instead of calling
   `useLoadoutDraft` itself. Its `useLoadoutLagnExport(draftApi.draft)` and every existing
   control bind to the passed instance unchanged. The Loadout tab renders only when
@@ -136,6 +143,22 @@ without a Vue component harness:
   A villain group the selected mastermind Always Leads is locked (`missingRequiredVillainGroupIds`
   / the chip-lock already enforce this in the builder); `toggleCardInLoadout` MUST NOT remove
   a required villain group — removal is a no-op when `requiredVillainGroupIds` includes it.
+  The guard lives **inside the helper** (`toggleCardInLoadout`), never only in the component,
+  so a future caller cannot bypass it; it is unit-tested (AC-6).
+
+**Helper truth table (authoritative — the executor implements exactly this):**
+
+| `card.cardType` | slot (`composition` field) | add / set | remove / clear | collision semantics |
+|---|---|---|---|---|
+| `scheme`        | `schemeId`        | `setScheme(extId)`        | `setScheme("")`              | overwrite (single)  |
+| `mastermind`    | `mastermindId`    | `setMastermind(extId)`    | `setMastermind("")`          | overwrite (single)  |
+| `hero`          | `heroDeckIds`     | `addHeroGroup(extId)`     | `removeHeroGroup(extId)`     | deduped set         |
+| `villain`       | `villainGroupIds` | `addVillainGroup(extId)`  | `removeVillainGroup(extId)` — **no-op if `requiredVillainGroupIds` includes `extId`** | deduped set |
+| `henchman`      | `henchmanGroupIds`| `addHenchmanGroup(extId)` | `removeHenchmanGroup(extId)` | deduped set         |
+| anything else   | — (`resolveLoadoutSlot` → `null`) | no-op | no-op | no button rendered |
+
+Every add/remove row routes through the **existing** `UseLoadoutDraftApi` only;
+`toggleCardInLoadout` never writes `draft.composition.*` or any reactive array directly.
 
 ### D. `LoadoutTray.vue` (new) — floating pill
 
@@ -146,6 +169,12 @@ without a Vue component harness:
   Shows `🧰 Loadout` + a compact summary (e.g. `4 heroes · 1 scheme · ⚠ 2 issues`, or
   `ready` when `isValid`). Hidden when the draft has zero composition picks, and hidden while
   `activeView === 'loadout'` (redundant there). Never throws.
+
+**Tray visibility (deterministic — both conditions binary):**
+
+- SHOW ⟺ (total composition picks `> 0`) AND (`activeView !== 'loadout'`).
+- HIDE ⟺ (total composition picks `=== 0`) OR (`activeView === 'loadout'`).
+- POSITION: fixed bottom-**left** — MUST NOT overlap the bottom-right glossary FAB.
 
 ---
 
@@ -202,7 +231,8 @@ without a Vue component harness:
 
 - **Layer / package:** `apps/registry-viewer` only. No engine / registry-package / server / `apps/*` cross-imports. `CardDetail.vue`, `LoadoutTray.vue`, and `loadoutCardActions.ts` MUST NOT import `@legendary-arena/game-engine`, `apps/server`, `apps/dashboard`, `boardgame.io`, or repo-root `scripts/` (grep gate).
 - **No contract change:** no edit to `useLoadoutDraft`'s draft mutation/validation logic, `setupContract`, or any `.types.ts`/`.validate.ts`/`.gating.ts`; no `MatchSetupConfig` field change. The new code calls only the **existing** `UseLoadoutDraftApi` methods.
-- **Single shared instance:** exactly one `useLoadoutDraft` instance per page, owned by `App.vue`; `LoadoutBuilder` consumes it. No second instantiation, no module-level/global store.
+- **Single shared instance:** exactly one `useLoadoutDraft` instance per page, owned by `App.vue`; `LoadoutBuilder` consumes it. No second instantiation, no module-level/global store. Binary check: `grep -c "useLoadoutDraft(" App.vue` ≥ 1 and the same grep on `LoadoutBuilder.vue` === 0.
+- **Mutation discipline:** `toggleCardInLoadout` and the components mutate the shared draft **only** through `UseLoadoutDraftApi` methods — never by writing `draft.composition.*`, `draft.*`, or any reactive array/prop directly.
 - **Canonical field names** (`schemeId`, `mastermindId`, `villainGroupIds`, `henchmanGroupIds`, `heroDeckIds`, `extId`) spelled exactly per `00.2 §8.1` — never abbreviated or renamed.
 - **Always-Leads safety:** `toggleCardInLoadout` MUST NOT remove a villain group in `requiredVillainGroupIds` (mirrors the chip-lock the builder already enforces).
 - **Non-fatal / pure:** the tray and the helper never throw; the tray hides on an empty draft and on the Loadout tab. No game logic in components; no direct R2 fetch (data flows from the already-loaded registry).
@@ -310,6 +340,15 @@ the reverse Cards cross-link are named fast-follows, out of scope.
 - §21 API Catalog Update — N/A: no HTTP endpoints touched, no `apps/server/src/**` library functions added or modified.
 
 ## Lint / Pre-Flight / Copilot
+
+**Re-run (2026-06-22, post-hardening SPEC):** the WP + EC were hardened after the initial
+draft — an authoritative helper truth table (§C), deterministic tray-visibility conditions
+(§D), a binary instantiation precondition (§A, placement-enforced — explicitly **no** runtime
+`throw`), an in-helper Always-Leads-guard clause, and a mutation-discipline constraint; the EC
+gained a required test matrix, a file→responsibility map, and a baseline-count lock. All edits
+are **strictly additive clarity** — no new scope, files, contract surface, locked values, or
+forbidden patterns — so per the `01.0a §Step 5` re-run rule all three gates re-run **identical**:
+Lint PASS / Pre-flight READY / Copilot PASS. Detail below unchanged.
 
 **Lint (00.3): PASS** — all 21 sections resolved above; the two hard triggers (§15.1
 D-24026 + §17 Vision) are satisfied with real blocks, not N/A dodges; §20/§21 N/A carry

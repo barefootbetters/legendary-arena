@@ -6,7 +6,7 @@
 ## Before Starting (Hard Gate)
 - [ ] WP-091 landed: `test -f apps/registry-viewer/src/composables/useLoadoutDraft.ts` → OK (the draft API this consumes)
 - [ ] Worktree built once (`pnpm -r build`) so the viewer typechecks against the registry dist
-- [ ] Baseline green: `pnpm --filter registry-viewer typecheck` 0; `test` 0 (note the count to preserve)
+- [ ] Baseline snapshot (record now, compare at close): `pnpm --filter registry-viewer typecheck` → **0 errors**; `pnpm --filter registry-viewer test` → record passing count **X**. At close: typecheck still 0; test count **=== X + the new `loadoutCardActions` tests**, with no other suite delta
 
 ## Locked Values (do not re-derive)
 - Composition slots ↔ card types: `scheme`→schemeId, `mastermind`→mastermindId, `villain`→villainGroupIds, `henchman`→henchmanGroupIds, `hero`→heroDeckIds; any other cardType → no button / `null`
@@ -15,7 +15,7 @@
 - Add/remove uses ONLY existing `UseLoadoutDraftApi` methods: `setScheme`/`setMastermind` (`""` clears), `addHeroGroup`/`removeHeroGroup`, `addVillainGroup`/`removeVillainGroup`, `addHenchmanGroup`/`removeHenchmanGroup`
 - Single shared draft: exactly ONE `useLoadoutDraft` instance, owned by `App.vue`, instantiated in `onMounted` AFTER the registry resolves (validation computed dereferences `registry`) — mirrors `useSetupFromUrl(reg)`
 - Always-Leads safety: `toggleCardInLoadout` is a no-op when removing a group in `requiredVillainGroupIds`
-- Tray hidden when the draft has 0 picks AND when `activeView === 'loadout'`; pill is bottom-LEFT (glossary FAB is bottom-right)
+- Tray HIDE ⟺ (composition picks `=== 0`) OR (`activeView === 'loadout'`); SHOW ⟺ (picks `> 0`) AND (`activeView !== 'loadout'`); pill is bottom-LEFT (glossary FAB is bottom-right)
 
 ## Guardrails
 - `LoadoutBuilder.vue` MUST stop calling `useLoadoutDraft` — it receives the API as a prop (`grep -c "useLoadoutDraft(" LoadoutBuilder.vue` → 0)
@@ -39,6 +39,16 @@
 - `lib/loadoutCardActions.ts` (new — `resolveLoadoutSlot`/`isCardInLoadout`/`toggleCardInLoadout`)
 - `lib/loadoutCardActions.test.ts` (new — node:test coverage)
 - `DECISIONS.md` (D-24054) + `WORK_INDEX.md` + `EC_INDEX.md` + `STATUS.md` (governance close)
+
+## File Responsibilities (no logic duplication across components)
+- `lib/loadoutCardActions.ts` — the SINGLE source of cardType→slot routing + add/remove/clear + the Always-Leads no-op. Components and `App.vue` must not re-encode this logic
+- `App.vue` — owns the one draft instance; computes `inLoadout`; routes `toggle-loadout` → the helper; derives the tray summary. No slot logic of its own
+- `components/CardDetail.vue` / `components/LoadoutTray.vue` — presentation only: emit intent, render state. NO mutation / slot logic
+
+## Required Test Matrix (`lib/loadoutCardActions.test.ts` — every row required)
+- `resolveLoadoutSlot`: each of the 5 composition types → its slot; any other type (`bystander`/`wound`/`other`) → `null`
+- `isCardInLoadout`: single-slot equality (scheme/mastermind present vs absent); group membership (hero/villain/henchman in vs not-in the array)
+- `toggleCardInLoadout`: add (absent→present); remove (present→absent); scheme + mastermind overwrite-then-clear; Always-Leads villain → **no-op** (stays present); non-composition type → **no-op** (no throw, no mutation)
 
 ## After Completing
 - [ ] One `useLoadoutDraft` instance in App.vue; 0 in LoadoutBuilder; button for the 5 types only; tray ships
