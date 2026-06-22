@@ -25603,4 +25603,23 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 **Relates to.** Supersedes WP-125/183/184 UI + folds in WP-270/276/277. Preserves D-24046, D-24052. A re-introduced diagnostic-only mechanic marker and multi-select Set/Class are named follow-ups, out of scope.
 
+### D-24054 — Registry Viewer Loadout Draft Is an App-Level Shared Instance; Cards Tab Can Add the Viewed Card to the Loadout
+
+**Status:** **Drafted 2026-06-22; not yet landed** (reserved by WP-279 / EC-310, standard two-session lane). Flips to **Active** when WP-279 executes. Pure registry-viewer UX; no engine, registry, server, contract, or card-data change.
+
+**Context.** The registry viewer exists to let players inspect cards and build a MATCH-SETUP / LAGN file to play and share (WP-091 Loadout tab; `apps/registry-viewer/CLAUDE.md`). The Cards tab is the rich discovery surface (Set · Class · Type · Mechanics · Effects · Patterns, WP-278), but it is disjoint from the Loadout tab: clicking a card opens `CardDetail.vue` (which only emits `close`), and the Loadout tab's picker offers only a name search. The structural blocker is that `useLoadoutDraft` is instantiated **inside** `LoadoutBuilder.vue`, so the draft is private to that component and the Cards surface (App.vue level) cannot reach it. A player who finds "all Tech heroes" in the Cards tab must re-find each one by name in the impoverished picker.
+
+**Decision.** WP-279 lifts the loadout draft to `App.vue` and adds an add-to-loadout affordance to the Cards surface:
+
+- `App.vue` owns **exactly one** `useLoadoutDraft` instance and shares it with `LoadoutBuilder.vue` (passed as a prop; `LoadoutBuilder` no longer instantiates its own). The composable stays a **per-invocation composable — lifted, not made a singleton** (it keeps its "no module-level state, no singletons" contract). The instance is created in `onMounted` **after** the registry resolves, because the validation computed dereferences `registry` — the same deferral the existing `useSetupFromUrl(reg)` instantiation uses.
+- `CardDetail.vue` gains a contextual add/remove **toggle button** for the five composition card types only (`hero` → `addHeroGroup(card.extId)`; `scheme`/`mastermind` → set / clear; `villain`/`henchman` → add / remove group). `bystander` / `wound` / `other` show no button. A villain group the selected mastermind **Always Leads** is not removable via the button (mirrors the builder's chip-lock). The add id is `card.extId` (the set-qualified group ext_id, D-24018), never `card.key`.
+- A floating **`LoadoutTray.vue`** pill shows the draft's pick counts + an issues/ready indicator and jumps to the Loadout tab; hidden on a blank draft and while on the Loadout tab.
+- A boardgame.io-free helper `loadoutCardActions.ts` (`resolveLoadoutSlot` / `isCardInLoadout` / `toggleCardInLoadout`) carries the cardType→slot mapping as the unit-tested invariant, using only the **existing** `UseLoadoutDraftApi` methods.
+
+**Invariant preserved.** No change to `useLoadoutDraft`'s draft mutation/validation logic, `setupContract`, any contract file, or `MatchSetupConfig`; no new validation that newly-rejects previously-accepted input; no engine / registry-package / server / feed change. The Loadout tab's existing picker, validation, theme prefill, JSON / LAGN export, and the URL-preview ("Edit this loadout") round-trip are unchanged.
+
+**Determinism.** Viewer-only client UX; no gameplay, card data, engine, registry, or producer change; no RNG / network beyond the existing non-blocking R2 fetches; no persistence.
+
+**Relates to.** Builds on WP-091 (`useLoadoutDraft`) and the WP-114 `useSetupFromUrl` post-load-instantiation precedent; consumes the `FlatCard.extId` id-space (D-24018). Bulk "add all filtered heroes" from the Cards filter bar and a reverse "view in Cards" cross-link from loadout chips are named follow-ups, out of scope.
+
 Protect this file.
