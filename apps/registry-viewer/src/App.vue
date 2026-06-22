@@ -28,10 +28,8 @@ import ImageLightbox  from "./components/ImageLightbox.vue";
 import ViewModeToggle from "./components/ViewModeToggle.vue";
 import LoadoutBuilder from "./components/LoadoutBuilder.vue";
 import LoadoutPreview from "./components/LoadoutPreview.vue";
-import AbilityEffectFilter from "./components/AbilityEffectFilter.vue";
-import SchemeTwistFilter from "./components/SchemeTwistFilter.vue";
-import PatternFilter from "./components/PatternFilter.vue";
-import MechanicFilter from "./components/MechanicFilter.vue";
+import FilterDropdown from "./components/FilterDropdown.vue";
+import type { FilterDropdownItem } from "./components/FilterDropdown.vue";
 import AppShell from "./components/branding/AppShell.vue";
 import { useSetupFromUrl } from "./composables/useSetupFromUrl";
 import type {
@@ -128,10 +126,9 @@ const activeFilterCount = computed(() => {
   let n = 0;
   if (filterSet.value) n++;
   if (filterHC.value) n++;
-  if (selectedTypes.value.size > 0) n += selectedTypes.value.size;
+  if (selectedTypeGroupKeys.value.size > 0) n += selectedTypeGroupKeys.value.size;
   if (selectedEffectSlugs.value.size > 0) n += selectedEffectSlugs.value.size;
-  if (selectedTwistSlugs.value.size > 0) n += selectedTwistSlugs.value.size;
-  if (selectedMechanicalPatternSlugs.value.size > 0) n += selectedMechanicalPatternSlugs.value.size;
+  if (selectedPatternSlugs.value.size > 0) n += selectedPatternSlugs.value.size;
   if (selectedMechanicSlugs.value.size > 0) n += selectedMechanicSlugs.value.size;
   return n;
 });
@@ -212,12 +209,14 @@ const LEGACY_TYPE_GROUPS: TypeGroup[] = [
 // cardTypesClient.ts never throws).
 const cardTypes = ref<CardTypeEntry[]>([]);
 
-// why: Set<string> rather than Set<FlatCardType> because the displayed ribbon
-// can include Phase-2 slugs (sidekick, shield-agent, shield-officer,
-// shield-trooper) not in the FlatCardType 9-value union. The registry.query()
-// call site casts back to FlatCardType[] before passing through the existing
-// query() type signature.
-const selectedTypes = ref<Set<string>>(new Set());
+// why: WP-278 — the Type dropdown's model is the set of selected type-GROUP
+// keys (group labels from displayedTypeGroups), not leaf type slugs. `selectedTypes`
+// (the leaf slugs the query uses) is a computed below that expands each selected
+// group into its `types[]`, preserving the old group→leaf behavior (e.g. the
+// SHIELD group → agent/officer/trooper). The query call site still casts the
+// leaf set to FlatCardType[]; applyQuery returns zero results for unknown
+// Phase-2 slugs (covered by registry/shared.test.ts).
+const selectedTypeGroupKeys = ref<Set<string>>(new Set());
 
 // ── Card-abilities effect-tag taxonomy (WP-125 / EC-127) ──────────────────────
 // Live taxonomy fetched from card-abilities.json. Empty until onMounted
@@ -231,7 +230,6 @@ const selectedEffectSlugs = ref<Set<string>>(new Set());
 // ── Scheme twist pattern taxonomy (WP-183) ───────────────────────────────────
 const twistPatterns = ref<SchemeTwistPattern[]>([]);
 const twistAssignments = ref<Map<string, string>>(new Map());
-const selectedTwistSlugs = ref<Set<string>>(new Set());
 
 // ── Card mechanical pattern taxonomies (WP-184) ──────────────────────────────
 // Four parallel taxonomies, one per entity-level cardType. Empty arrays/Maps
@@ -245,7 +243,12 @@ const heroPatternAssignments = ref<Map<string, string>>(new Map());
 const villainPatternAssignments = ref<Map<string, string>>(new Map());
 const henchmanPatternAssignments = ref<Map<string, string>>(new Map());
 const mastermindPatternAssignments = ref<Map<string, string>>(new Map());
-const selectedMechanicalPatternSlugs = ref<Set<string>>(new Set());
+// why: WP-278 — the scheme-twist (WP-183) and the four mechanical-pattern
+// (WP-184) selections unify into ONE set behind the single contextual Patterns
+// dropdown; applyFilters routes it by the active card type (twistPattern for
+// scheme, mechanicalPattern otherwise). The taxonomy data refs above stay split
+// (each type has its own pattern list), but the user's selection is one set.
+const selectedPatternSlugs = ref<Set<string>>(new Set());
 
 // ── Hero mechanic taxonomy (WP-270 / EC-301) ─────────────────────────────────
 // Hero-mechanic feed (card-mechanics.json, WP-269): the mechanics[] list drives
@@ -257,40 +260,12 @@ const selectedMechanicalPatternSlugs = ref<Set<string>>(new Set());
 const cardMechanicsIndex = ref<CardMechanicsIndex | null>(null);
 const selectedMechanicSlugs = ref<Set<string>>(new Set());
 
-function toggleGroup(group: TypeGroup) {
-  const allSelected = group.types.every((t) => selectedTypes.value.has(t));
-  const next = new Set(selectedTypes.value);
-  if (allSelected) {
-    group.types.forEach((t) => next.delete(t));
-  } else {
-    group.types.forEach((t) => next.add(t));
-  }
-  selectedTypes.value = next;
-  // why: WP-184 — mechanical pattern slugs are taxonomy-specific (a hero
-  // pattern slug is meaningless on a villain card). When the user changes
-  // cardType selection, drop any active pattern slugs to avoid carrying
-  // stale state across taxonomy boundaries. The filter ribbon will reappear
-  // empty when the user activates a single matching cardType again. The
-  // scheme twist slugs (WP-183) are cleared for the same reason — once the
-  // ribbon is gated to the Scheme cardType, a leftover twist selection would
-  // otherwise stay applied (scheme-only) while its ribbon is hidden.
-  selectedMechanicalPatternSlugs.value = new Set();
-  selectedTwistSlugs.value = new Set();
-  applyFilters();
-}
-
-function isGroupActive(group: TypeGroup): boolean {
-  return group.types.some((t) => selectedTypes.value.has(t));
-}
-
-function isGroupFullyActive(group: TypeGroup): boolean {
-  return group.types.every((t) => selectedTypes.value.has(t));
-}
-
-function clearTypes() {
-  selectedTypes.value = new Set();
-  selectedMechanicalPatternSlugs.value = new Set();
-  selectedTwistSlugs.value = new Set();
+// why: WP-278 — when the Type selection changes, drop any active pattern
+// selection. A pattern slug is type-specific (a hero pattern is meaningless on a
+// villain card), and the single contextual Patterns dropdown re-populates for
+// the newly active type. Fires on every Type dropdown change, including its clear.
+function onTypeChange() {
+  selectedPatternSlugs.value = new Set();
   applyFilters();
 }
 
@@ -299,10 +274,9 @@ function clearAllFilters() {
   searchText.value = "";
   filterSet.value = "";
   filterHC.value = "";
-  selectedTypes.value = new Set();
+  selectedTypeGroupKeys.value = new Set();
   selectedEffectSlugs.value = new Set();
-  selectedTwistSlugs.value = new Set();
-  selectedMechanicalPatternSlugs.value = new Set();
+  selectedPatternSlugs.value = new Set();
   selectedMechanicSlugs.value = new Set();
   selectedCard.value = null;
   applyFilters();
@@ -374,9 +348,8 @@ onMounted(async () => {
 
     // why: Parallel to the cardTypes / glossary fetches — the abilities
     // client is non-blocking (resolves to [] on HTTP failure or schema
-    // rejection). When the taxonomy is empty the chip ribbon stays
-    // silently hidden via v-if on AbilityEffectFilter.vue's outer
-    // wrapper; the cards view remains fully functional.
+    // rejection). When the taxonomy is empty the Effects FilterDropdown
+    // (WP-278) renders nothing (empty items); the cards view stays functional.
     loadStatus.value = "Loading abilities taxonomy…";
     abilitiesTaxonomy.value = await getCardAbilities(metadataBaseUrl);
     if (abilitiesTaxonomy.value.length > 0) {
@@ -435,8 +408,8 @@ onMounted(async () => {
     // why: WP-270 — hero-mechanic feed (card-mechanics.json, WP-269).
     // cardMechanicsClient.ts is non-blocking (returns the empty index on HTTP
     // failure or schema rejection, never throws), so no try/catch is needed at
-    // this seam. When the index has no visible mechanics the MechanicFilter
-    // ribbon stays hidden via its internal v-if; the card view stays functional.
+    // this seam. When the index has no mechanics the Mechanics FilterDropdown
+    // (WP-278) renders nothing (empty items); the card view stays functional.
     loadStatus.value = "Loading hero mechanics taxonomy…";
     cardMechanicsIndex.value = await getCardMechanics(metadataBaseUrl);
 
@@ -585,26 +558,6 @@ function enrichMechanicalPatterns(targetCards: FlatCard[]) {
   }
 }
 
-// ── Filter visibility helpers (WP-184) ───────────────────────────────────────
-// why: each per-taxonomy pattern chip ribbon is shown only when (a) the
-// taxonomy's patterns loaded successfully AND (b) the user has exactly one
-// cardType chip active that matches the taxonomy. The single-cardType
-// requirement is also enforced in applyQuery (logic, not just UI).
-function isSingleCardTypeActive(cardType: string): boolean {
-  return selectedTypes.value.size === 1 && selectedTypes.value.has(cardType);
-}
-
-const showHeroPatternFilter       = computed(() => heroPatterns.value.length > 0       && isSingleCardTypeActive("hero"));
-const showVillainPatternFilter    = computed(() => villainPatterns.value.length > 0    && isSingleCardTypeActive("villain"));
-const showHenchmanPatternFilter   = computed(() => henchmanPatterns.value.length > 0   && isSingleCardTypeActive("henchman"));
-const showMastermindPatternFilter = computed(() => mastermindPatterns.value.length > 0 && isSingleCardTypeActive("mastermind"));
-// why: the scheme twist taxonomy (WP-183) only applies to scheme cards, so its
-// ribbon follows the same single-cardType gating as the WP-184 mechanical
-// pattern ribbons — visible only when "Scheme" is the lone active cardType.
-// Before this gate the twist ribbon used a bare twistPatterns.length guard and
-// stayed on under every cardType selection.
-const showSchemeTwistFilter       = computed(() => twistPatterns.value.length > 0      && isSingleCardTypeActive("scheme"));
-
 // ── Filtering ─────────────────────────────────────────────────────────────────
 function applyFilters() {
   if (!registry.value) return;
@@ -634,38 +587,22 @@ function applyFilters() {
   // FlatCards each call). enrichMechanicalPatterns() handles per-cardType
   // routing internally.
   enrichMechanicalPatterns(queryResults);
-  // why: twist-pattern filter is AND-combined with all other filters and
-  // implicitly enforces scheme-only. Applied post-query because the
-  // registry's internal query() call doesn't know about twist patterns.
-  let twistFiltered = queryResults;
-  if (selectedTwistSlugs.value.size > 0) {
-    const activeTwists = selectedTwistSlugs.value;
-    twistFiltered = queryResults.filter((card) => {
-      if (card.cardType !== "scheme") return false;
-      return card.twistPattern != null && activeTwists.has(card.twistPattern);
+  // why: WP-278 — the unified Patterns filter (collapsing WP-183's scheme-twist
+  // ribbon + WP-184's four mechanical-pattern ribbons). The contextual Patterns
+  // dropdown is gated to a single active card type (activeSingleType); its
+  // selection is ONE set routed by that type — scheme → the card's twistPattern,
+  // any other type → its mechanicalPattern (both enriched onto the cards above).
+  // AND-combined with every other filter; applied post-query because query()
+  // doesn't know about patterns.
+  let patternFiltered = queryResults;
+  if (selectedPatternSlugs.value.size > 0 && activeSingleType.value) {
+    const activeType = activeSingleType.value;
+    const activePatterns = selectedPatternSlugs.value;
+    patternFiltered = queryResults.filter((card) => {
+      if (card.cardType !== activeType) return false;
+      const pattern = activeType === "scheme" ? card.twistPattern : card.mechanicalPattern;
+      return pattern != null && activePatterns.has(pattern);
     });
-  }
-  // why: WP-184 — mechanical pattern filter. Single-cardType enforcement is
-  // here in logic (not just UI gating per EC-211 §Guardrails). When the user
-  // has zero or multiple cardType chips active, the pattern filter is
-  // silently ignored and a [card-patterns] warning is logged. The chip
-  // ribbons themselves are also hidden via showXPatternFilter computed flags,
-  // so this branch should only fire if a future caller bypasses the UI.
-  // why: cross-taxonomy pattern filter has undefined semantics
-  if (selectedMechanicalPatternSlugs.value.size > 0) {
-    if (selectedTypes.value.size !== 1) {
-      console.warn(
-        "[card-patterns] mechanicalPatterns filter ignored — requires exactly one active cardType " +
-        `(got ${selectedTypes.value.size}). Activate a single cardType chip to apply pattern filtering.`,
-      );
-    } else {
-      const activePatterns = selectedMechanicalPatternSlugs.value;
-      const onlyActiveCardType = [...selectedTypes.value][0];
-      twistFiltered = twistFiltered.filter((card) => {
-        if (card.cardType !== onlyActiveCardType) return false;
-        return card.mechanicalPattern != null && activePatterns.has(card.mechanicalPattern);
-      });
-    }
   }
   // why: the abilities filter is applied *after* applyQuery() rather than
   // inside it. applyQuery() lives in apps/registry-viewer/src/registry/shared.ts
@@ -675,11 +612,11 @@ function applyFilters() {
   // filter (a card matches if ANY selected effect's tag is present); AND
   // with every other filter (set / hero class / card type / search —
   // existing applyQuery() semantics preserved upstream).
-  let effectFiltered = twistFiltered;
+  let effectFiltered = patternFiltered;
   if (selectedEffectSlugs.value.size > 0 && abilityTagIndex.value) {
     const tagIndex = abilityTagIndex.value;
     const selected = selectedEffectSlugs.value;
-    effectFiltered = twistFiltered.filter((card) => {
+    effectFiltered = patternFiltered.filter((card) => {
       const tags = tagIndex.get(card.key);
       if (!tags) return false;
       for (const slug of selected) {
@@ -705,8 +642,6 @@ function applyFilters() {
   }
   selectedCard.value = null;
 }
-
-const activeTypeCount = computed(() => selectedTypes.value.size);
 
 // why: displayedTypeGroups selects between the fetched taxonomy
 // (data/metadata/card-types.json via cardTypesClient.ts) and the legacy
@@ -742,6 +677,142 @@ const displayedTypeGroups = computed<TypeGroup[]>(() => {
   });
 });
 
+// ── Unified filter dropdowns (WP-278 / EC-309) ───────────────────────────────
+
+// why: the leaf card-type slugs the query filters on, expanded from the Type
+// dropdown's selected group keys. Preserves the group→leaf behavior (a group
+// toggles all its types[], e.g. the SHIELD group → agent/officer/trooper).
+// Read-only — the Type dropdown mutates selectedTypeGroupKeys, never this.
+const selectedTypes = computed<Set<string>>(() => {
+  const leafTypes = new Set<string>();
+  for (const group of displayedTypeGroups.value) {
+    if (selectedTypeGroupKeys.value.has(group.label)) {
+      for (const type of group.types) leafTypes.add(type);
+    }
+  }
+  return leafTypes;
+});
+
+// why: the single active card type that owns a pattern taxonomy, else null —
+// gates the contextual Patterns dropdown + its filter (the WP-183/184
+// single-cardType rule). A multi-leaf group (SHIELD) makes selectedTypes.size > 1,
+// so it correctly yields null (no pattern dropdown).
+const PATTERN_BEARING_TYPES = ["hero", "villain", "henchman", "mastermind", "scheme"];
+const activeSingleType = computed<string | null>(() => {
+  if (selectedTypes.value.size !== 1) return null;
+  const onlyType = [...selectedTypes.value][0]!;
+  return PATTERN_BEARING_TYPES.includes(onlyType) ? onlyType : null;
+});
+
+// why: the Set/Class dropdowns are single-select, but FilterDropdown's model is a
+// Set; these bridge the single-string refs (filterSet/filterHC — applyQuery reads
+// them unchanged) to a ≤1-element Set.
+const selectedSetValues = computed<Set<string>>({
+  get: () => (filterSet.value ? new Set([filterSet.value]) : new Set<string>()),
+  set: (next) => { filterSet.value = [...next][0] ?? ""; },
+});
+const selectedClassValues = computed<Set<string>>({
+  get: () => (filterHC.value ? new Set([filterHC.value]) : new Set<string>()),
+  set: (next) => { filterHC.value = [...next][0] ?? ""; },
+});
+
+const setItems = computed<FilterDropdownItem[]>(() =>
+  allSets.value.map((setEntry) => ({ value: setEntry.abbr, label: setEntry.name })),
+);
+
+const classItems = computed<FilterDropdownItem[]>(() =>
+  HC_OPTIONS.map((heroClass) => ({ value: heroClass, label: heroClass })),
+);
+
+const typeItems = computed<FilterDropdownItem[]>(() => {
+  // why: per-group count = cards whose cardType is one of the group's leaf types.
+  const countByType = new Map<string, number>();
+  for (const card of allCards.value) {
+    countByType.set(card.cardType, (countByType.get(card.cardType) ?? 0) + 1);
+  }
+  return displayedTypeGroups.value.map((group) => {
+    let count = 0;
+    for (const type of group.types) count += countByType.get(type) ?? 0;
+    return {
+      value: group.label,
+      label: group.label,
+      emoji: group.emoji || undefined,
+      count,
+      title: group.subtypes.map((sub) => sub.label).join(", "),
+    };
+  });
+});
+
+const mechanicItems = computed<FilterDropdownItem[]>(() => {
+  // why: WP-276 / D-24052 — list ALL mechanics, sorted by label (the feed
+  // carries no display-order field).
+  const mechanics = cardMechanicsIndex.value?.mechanics ?? [];
+  return [...mechanics]
+    .sort((a, b) => a.label.localeCompare(b.label))
+    .map((mechanic) => ({ value: mechanic.slug, label: mechanic.label, count: mechanic.cardCount }));
+});
+
+const effectItems = computed<FilterDropdownItem[]>(() => {
+  const taxonomy = [...abilitiesTaxonomy.value].sort((a, b) => a.order - b.order);
+  const tagIndex = abilityTagIndex.value;
+  // why: per-effect count = cards whose ability-tag set includes that slug
+  // (session-wide, independent of other active filters — stable as the user narrows).
+  const counts = new Map<string, number>();
+  if (tagIndex) {
+    for (const tags of tagIndex.values()) {
+      for (const slug of tags) counts.set(slug, (counts.get(slug) ?? 0) + 1);
+    }
+  }
+  return taxonomy.map((entry) => ({
+    value: entry.slug,
+    label: entry.label,
+    emoji: entry.emoji ?? undefined,
+    count: tagIndex ? (counts.get(entry.slug) ?? 0) : undefined,
+  }));
+});
+
+// why: the contextual Patterns dropdown's label depends on the single active
+// card type (scheme → "Twist"; the four entity types → "… Pattern").
+const patternDropdownLabel = computed<string>(() => {
+  const activeType = activeSingleType.value;
+  if (activeType === "scheme") return "Twist";
+  if (activeType === "hero") return "Hero Pattern";
+  if (activeType === "villain") return "Villain Pattern";
+  if (activeType === "henchman") return "Henchman Pattern";
+  if (activeType === "mastermind") return "Mastermind Pattern";
+  return "Pattern";
+});
+
+const patternItems = computed<FilterDropdownItem[]>(() => {
+  const activeType = activeSingleType.value;
+  if (!activeType) return [];
+  const isScheme = activeType === "scheme";
+  // why: explicit per-type routing (no dynamic key access, per 00.6 Rule 7).
+  let taxonomy: readonly (SchemeTwistPattern | CardPattern)[] = [];
+  if (activeType === "scheme") taxonomy = twistPatterns.value;
+  else if (activeType === "hero") taxonomy = heroPatterns.value;
+  else if (activeType === "villain") taxonomy = villainPatterns.value;
+  else if (activeType === "henchman") taxonomy = henchmanPatterns.value;
+  else if (activeType === "mastermind") taxonomy = mastermindPatterns.value;
+  // why: per-pattern count = cards of the active type carrying that pattern
+  // (scheme → twistPattern, else → mechanicalPattern), session-wide.
+  const counts = new Map<string, number>();
+  for (const card of allCards.value) {
+    if (card.cardType !== activeType) continue;
+    const pattern = isScheme ? card.twistPattern : card.mechanicalPattern;
+    if (pattern) counts.set(pattern, (counts.get(pattern) ?? 0) + 1);
+  }
+  return [...taxonomy]
+    .sort((a, b) => a.order - b.order)
+    .map((pattern) => ({
+      value: pattern.slug,
+      label: pattern.label,
+      emoji: pattern.emoji ?? undefined,
+      count: counts.get(pattern.slug) ?? 0,
+      title: pattern.description,
+    }));
+});
+
 // ── Theme filtering ──────────────────────────────────────────────────────────
 function applyThemeFilters() {
   const needle = themeSearchText.value.toLowerCase().trim();
@@ -772,7 +843,8 @@ function applyThemeFilters() {
 function navigateToCard(slug: string) {
   activeView.value = "cards";
   searchText.value = slug;
-  selectedTypes.value = new Set();
+  selectedTypeGroupKeys.value = new Set();
+  selectedPatternSlugs.value = new Set();
   filterSet.value = "";
   filterHC.value = "";
   applyFilters();
@@ -902,134 +974,51 @@ function navigateToCard(slug: string) {
       <div class="filter-drawer" :class="{ open: filterDrawerOpen }">
         <div class="filter-drawer-inner">
 
-          <!-- Set + Class dropdowns -->
-          <div class="filter-drawer-row">
-            <select v-model="filterSet" @change="applyFilters" aria-label="Filter by set">
-              <option value="">All Sets</option>
-              <option v-for="s in allSets" :key="s.abbr" :value="s.abbr">{{ s.name }}</option>
-            </select>
-
-            <select v-model="filterHC" @change="applyFilters" aria-label="Filter by hero class">
-              <option value="">All Classes</option>
-              <option v-for="hc in HC_OPTIONS" :key="hc" :value="hc">{{ hc }}</option>
-            </select>
-          </div>
-
-          <!-- Card type group toggles -->
-          <div class="type-bar">
-            <button
-              class="type-group-btn"
-              :class="{ active: activeTypeCount === 0 }"
-              @click="clearTypes"
-            >All</button>
-
-            <button
-              v-for="group in displayedTypeGroups"
-              :key="group.label"
-              class="type-group-btn"
-              :class="{
-                active: isGroupFullyActive(group),
-                partial: isGroupActive(group) && !isGroupFullyActive(group)
-              }"
-              @click="toggleGroup(group)"
-              :title="group.subtypes.map(s => s.label).join(', ')"
-            >
-              {{ group.emoji }} {{ group.label }}
-            </button>
-
-            <button
-              v-if="activeTypeCount > 0"
-              type="button"
-              class="clear-link"
-              @click="clearTypes"
-            >✕ clear</button>
-          </div>
-
-          <!-- Effect-tag chip ribbon (WP-125) -->
-          <AbilityEffectFilter
-            v-if="abilitiesTaxonomy.length > 0"
-            :taxonomy="abilitiesTaxonomy"
-            :tag-index="abilityTagIndex"
-            v-model:selected-effect-slugs="selectedEffectSlugs"
-            @update:selected-effect-slugs="applyFilters"
-          />
-
-          <!-- Hero mechanic filter (WP-270; reworked to a searchable
-               multi-select dropdown in WP-276). Fed by card-mechanics.json
-               (WP-269); MechanicFilter lists ALL mechanics (WP-276 supersedes
-               WP-270 AC-7's hidden-by-default ribbon) and hides itself when the
-               feed carries none (empty/invalid feed), so the outer wrapper
-               needs no extra guard. -->
-          <MechanicFilter
-            :mechanics="cardMechanicsIndex?.mechanics ?? []"
-            v-model:selected-mechanic-slugs="selectedMechanicSlugs"
-            @update:selected-mechanic-slugs="applyFilters"
-          />
-
-          <!-- Scheme twist pattern chip ribbon (WP-183). Gated on a single
-               active "Scheme" cardType — mirrors the mechanical pattern
-               ribbons below so the twist ribbon toggles with the Scheme pill
-               instead of being permanently visible. -->
-          <SchemeTwistFilter
-            v-if="showSchemeTwistFilter"
-            :patterns="twistPatterns"
-            :all-cards="allCards"
-            v-model:selected-twist-slugs="selectedTwistSlugs"
-            @update:selected-twist-slugs="applyFilters"
-          />
-
-          <!-- Card mechanical pattern chip ribbons (WP-184) — one per taxonomy.
-               Each ribbon is visible only when (a) the taxonomy loaded and
-               (b) exactly the matching cardType chip is active. Single-cardType
-               enforcement is duplicated in logic (applyFilters / applyQuery)
-               so a future caller bypassing the UI still gets safe behavior. -->
-          <PatternFilter
-            v-if="showHeroPatternFilter"
-            taxonomy-label="Hero Pattern"
-            target-card-type="hero"
-            :patterns="heroPatterns"
-            :all-cards="allCards"
-            v-model:selected-pattern-slugs="selectedMechanicalPatternSlugs"
-            @update:selected-pattern-slugs="applyFilters"
-          />
-          <PatternFilter
-            v-if="showVillainPatternFilter"
-            taxonomy-label="Villain Pattern"
-            target-card-type="villain"
-            :patterns="villainPatterns"
-            :all-cards="allCards"
-            v-model:selected-pattern-slugs="selectedMechanicalPatternSlugs"
-            @update:selected-pattern-slugs="applyFilters"
-          />
-          <PatternFilter
-            v-if="showHenchmanPatternFilter"
-            taxonomy-label="Henchman Pattern"
-            target-card-type="henchman"
-            :patterns="henchmanPatterns"
-            :all-cards="allCards"
-            v-model:selected-pattern-slugs="selectedMechanicalPatternSlugs"
-            @update:selected-pattern-slugs="applyFilters"
-          />
-          <PatternFilter
-            v-if="showMastermindPatternFilter"
-            taxonomy-label="Mastermind Pattern"
-            target-card-type="mastermind"
-            :patterns="mastermindPatterns"
-            :all-cards="allCards"
-            v-model:selected-pattern-slugs="selectedMechanicalPatternSlugs"
-            @update:selected-pattern-slugs="applyFilters"
-          />
-
-          <!-- Set quick-filter pills -->
-          <div class="set-pills">
-            <span class="pills-label">Set:</span>
-            <button
-              v-for="s in allSets"
-              :key="s.abbr"
-              class="pill"
-              :class="{ active: filterSet === s.abbr }"
-              @click="filterSet = filterSet === s.abbr ? '' : s.abbr; applyFilters()"
-            >{{ s.abbr }}</button>
+          <!-- Unified filter dropdown row (WP-278 / EC-309). One shared
+               FilterDropdown per filter; each hides itself when its taxonomy is
+               empty (missing feed / not-yet-loaded). The contextual Patterns
+               dropdown renders only when exactly one pattern-bearing card type is
+               active (its items() is [] otherwise, so FilterDropdown self-hides). -->
+          <div class="filter-dropdown-row">
+            <FilterDropdown
+              label="Set"
+              mode="single"
+              :items="setItems"
+              v-model:selected="selectedSetValues"
+              @update:selected="applyFilters"
+            />
+            <FilterDropdown
+              label="Class"
+              mode="single"
+              :searchable="false"
+              :items="classItems"
+              v-model:selected="selectedClassValues"
+              @update:selected="applyFilters"
+            />
+            <FilterDropdown
+              label="Type"
+              :items="typeItems"
+              v-model:selected="selectedTypeGroupKeys"
+              @update:selected="onTypeChange"
+            />
+            <FilterDropdown
+              label="Mechanics"
+              :items="mechanicItems"
+              v-model:selected="selectedMechanicSlugs"
+              @update:selected="applyFilters"
+            />
+            <FilterDropdown
+              label="Effects"
+              :items="effectItems"
+              v-model:selected="selectedEffectSlugs"
+              @update:selected="applyFilters"
+            />
+            <FilterDropdown
+              :label="patternDropdownLabel"
+              :items="patternItems"
+              v-model:selected="selectedPatternSlugs"
+              @update:selected="applyFilters"
+            />
           </div>
 
         </div>
@@ -1154,7 +1143,6 @@ function navigateToCard(slug: string) {
 .filter-bar { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 1.25rem; background: #15151e; border-bottom: 1px solid #22222e; flex-shrink: 0; flex-wrap: wrap; }
 .search { flex: 1; min-width: 160px; padding: 0.4rem 0.75rem; background: #22222e; border: 1px solid #33334a; border-radius: 6px; color: #e8e8ee; font-size: 0.9rem; }
 .search:focus { outline: none; border-color: #6060c0; }
-select { padding: 0.4rem 0.6rem; background: #22222e; border: 1px solid #33334a; border-radius: 6px; color: #e8e8ee; font-size: 0.85rem; cursor: pointer; }
 .count { color: #6666aa; font-size: 0.8rem; margin-left: auto; white-space: nowrap; }
 
 /* ── Filter drawer toggle button ─────────────────────────────────────────── */
@@ -1204,62 +1192,15 @@ select { padding: 0.4rem 0.6rem; background: #22222e; border: 1px solid #33334a;
   display: flex;
   flex-direction: column;
 }
-.filter-drawer-row {
+/* ── Unified filter dropdown row (WP-278) ────────────────────────────────── */
+.filter-dropdown-row {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.5rem 1.25rem;
+  gap: 0.75rem;
+  row-gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
   flex-wrap: wrap;
 }
-
-/* ── Type group toggles ──────────────────────────────────────────────────── */
-.type-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 1.25rem;
-  background: #12121a;
-  flex-shrink: 0;
-  flex-wrap: wrap;
-}
-.type-group-btn {
-  background: #1e1e2e;
-  border: 1.5px solid #33334a;
-  color: #8888cc;
-  padding: 0.3rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.78rem;
-  cursor: pointer;
-  transition: all 0.15s;
-  white-space: nowrap;
-  font-weight: 500;
-}
-.type-group-btn:hover  { background: #2a2a3e; color: #c8c8ee; border-color: #5555aa; }
-.type-group-btn.active { background: #2a2a5a; border-color: #7070e0; color: #c0c0ff; font-weight: 700; }
-.type-group-btn.partial { background: #1e1e3a; border-color: #5555aa; color: #9999dd; border-style: dashed; }
-/* why: .clear-link became a <button> (EC-103). Reset native button styles to
-   preserve the original visual (text-like link); keep native focus outline. */
-.clear-link {
-  appearance: none;
-  -webkit-appearance: none;
-  border: none;
-  background: none;
-  padding: 0;
-  margin-left: 0.25rem;
-  font: inherit;
-  font-size: 0.72rem;
-  color: #6666aa;
-  cursor: pointer;
-}
-.clear-link:hover { color: #f87171; }
-
-/* ── Set pills ───────────────────────────────────────────────────────────── */
-.set-pills { display: none; gap: 0.35rem; padding: 0.35rem 1.25rem; background: #0f0f13; flex-wrap: wrap; align-items: center; flex-shrink: 0; }
-@media (min-width: 768px) { .set-pills { display: flex; } }
-.pills-label { font-size: 0.65rem; color: #44445a; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
-.pill { background: #161620; border: 1px solid #2a2a38; color: #66669a; padding: 0.15rem 0.45rem; border-radius: 3px; font-size: 0.67rem; cursor: pointer; }
-.pill:hover  { background: #22223a; color: #aaaadd; }
-.pill.active { background: #22225a; border-color: #5555aa; color: #9999ff; }
 
 /* ── View tabs ──────────────────────────────────────────────────────────── */
 .view-tabs {
@@ -1298,8 +1239,6 @@ select { padding: 0.4rem 0.6rem; background: #22222e; border: 1px solid #33334a;
   .logo { font-size: 0.95rem; }
   .view-tab { padding: 0.35rem 0.75rem; }
   .filter-bar { padding-block: 0.4rem; }
-  .filter-drawer-row { padding-block: 0.35rem; }
-  .type-bar { padding-block: 0.35rem; }
-  .set-pills { padding-block: 0.25rem; }
+  .filter-dropdown-row { padding-block: 0.4rem; }
 }
 </style>

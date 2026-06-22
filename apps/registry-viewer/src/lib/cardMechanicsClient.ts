@@ -60,8 +60,8 @@ let _promise: Promise<CardMechanicsIndex> | null = null;
  * Fetches the hero-mechanic feed from R2. Results are cached for the session.
  *
  * Non-blocking at the boundary: HTTP failure or schema rejection resolves to
- * `EMPTY_MECHANICS_INDEX`, never throws. App.vue's MechanicFilter stays hidden
- * when the returned index has no visible mechanics.
+ * `EMPTY_MECHANICS_INDEX`, never throws. App.vue's Mechanics FilterDropdown
+ * (WP-278) renders nothing when the returned index has no mechanics.
  *
  * @param metadataBaseUrl - The base URL for R2 metadata (same as card data).
  */

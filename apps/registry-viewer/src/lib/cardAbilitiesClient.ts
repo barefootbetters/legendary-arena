@@ -21,9 +21,9 @@
  *
  * Schema authority lives at `packages/registry/src/schema.ts`; this module
  * imports `CardAbilitiesIndexSchema` and calls `.safeParse` so a malformed
- * R2 publish degrades to an empty-array fallback (chip ribbon hidden via
- * the v-if="taxonomy.length > 0" guard on AbilityEffectFilter.vue's outer
- * wrapper). This fetcher never throws — fully non-blocking at the boundary.
+ * R2 publish degrades to an empty-array fallback (the Effects FilterDropdown
+ * renders nothing when its items are empty — WP-278). This fetcher never
+ * throws — fully non-blocking at the boundary.
  *
  * The companion buildAbilityTagIndex helper is pure: no I/O, no module-scope
  * reads, no throws, no input mutation. Each matcher's regex is compiled once
