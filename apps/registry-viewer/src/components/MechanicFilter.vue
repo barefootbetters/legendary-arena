@@ -1,26 +1,34 @@
 <script setup lang="ts">
 /**
- * MechanicFilter — Chip-toggle ribbon for the registry viewer's hero-mechanic
- * taxonomy (WP-270 / EC-301), fed by `card-mechanics.json` (WP-269).
+ * MechanicFilter — Searchable multi-select dropdown for the registry viewer's
+ * hero-mechanic taxonomy (WP-276 / EC-307; supersedes the WP-270 chip ribbon),
+ * fed by `card-mechanics.json` (WP-269).
  *
- * Purely presentational: the mechanics flow in via the `mechanics` prop, the
+ * Purely presentational: mechanics flow in via the `mechanics` prop, the
  * selection flows out via `update:selectedMechanicSlugs` (v-model). The
- * component performs no fetching of its own and imports no client.
+ * component performs no fetching of its own and imports no client. The v-model
+ * contract is unchanged from the WP-270 ribbon, so App.vue's wiring is untouched.
  *
- * Hidden-by-default policy: only mechanics where `hidden !== true` render as
- * chips. An omitted/undefined `hidden` is visible; only an explicit
- * `hidden: true` suppresses a chip (the producer marks diagnostic-only
- * mechanics hidden). This realizes AC-7 at the UI layer.
+ * Surfaces ALL mechanics (WP-276 / D-24052): the WP-270 ribbon rendered only
+ * `hidden !== true` entries, but ~134 mechanics overflow a pill ribbon, so this
+ * dropdown lists every mechanic in a scrolling panel with an in-panel search
+ * box. This deliberately supersedes WP-270 AC-7's hidden-by-default UI gate —
+ * the feed still carries `hidden` for the producer's diagnostics, but the viewer
+ * no longer uses it to suppress entries.
  *
- * Degraded-mode invisibility: when no mechanic is visible (empty feed, the
- * missing/invalid-feed fallback, or every mechanic hidden) the outer wrapper
- * is omitted via `v-if`; the ribbon never renders an empty shell.
+ * Multi-select: each row is a checkbox. Selecting several mechanics is OR-within
+ * (App.vue's predicate matches a card with ANY selected mechanic), AND-with the
+ * text query + other filters (App.vue composes after applyQuery()).
  *
- * Chip badge counts display each mechanic's session-wide `cardCount` from the
- * feed — intentionally independent of other active filters so the badge is
- * stable as the user narrows other filters.
+ * The popover is `position: fixed`, anchored to the toggle button each time it
+ * opens, so it escapes the filter drawer's `overflow: hidden` clip; it closes on
+ * outside-click, Escape, or any viewport scroll/resize.
+ *
+ * Degraded-mode invisibility: when the feed carries no mechanics (empty or
+ * invalid feed) the whole control is omitted via `v-if`; the card view stays
+ * fully functional.
  */
-import { computed } from "vue";
+import { ref, computed, watch, nextTick, onBeforeUnmount } from "vue";
 import type { CardMechanicEntry } from "@legendary-arena/registry/schema";
 
 const props = defineProps<{
@@ -31,22 +39,36 @@ const selectedMechanicSlugs = defineModel<Set<string>>("selectedMechanicSlugs", 
   required: true,
 });
 
-// why: render only mechanics where `hidden !== true` — an omitted/undefined
-// `hidden` is visible; only an explicit `hidden: true` is suppressed (the
-// producer's hidden-by-default diagnostics policy, D-24046). Sorted by label
-// for a stable, scannable ribbon (the feed carries no display-order field).
-const visibleMechanics = computed(() =>
-  props.mechanics
-    .filter((mechanic) => mechanic.hidden !== true)
-    .slice()
-    .sort((a, b) => a.label.localeCompare(b.label)),
+const isOpen = ref(false);
+const searchText = ref("");
+const rootEl = ref<HTMLElement | null>(null);
+const searchInput = ref<HTMLInputElement | null>(null);
+const popoverStyle = ref<Record<string, string>>({});
+
+// why: list every mechanic (WP-276) sorted by label — the feed carries no
+// display-order field. The WP-270 `hidden !== true` suppression is intentionally
+// dropped here; ~134 mechanics live in a searchable scrolling panel, not pills.
+const sortedMechanics = computed(() =>
+  props.mechanics.slice().sort((a, b) => a.label.localeCompare(b.label)),
 );
+
+const filteredMechanics = computed(() => {
+  const needle = searchText.value.trim().toLowerCase();
+  if (!needle) return sortedMechanics.value;
+  return sortedMechanics.value.filter(
+    (mechanic) =>
+      mechanic.label.toLowerCase().includes(needle) ||
+      mechanic.slug.toLowerCase().includes(needle),
+  );
+});
+
+const selectedCount = computed(() => selectedMechanicSlugs.value.size);
 
 function isSelected(slug: string): boolean {
   return selectedMechanicSlugs.value.has(slug);
 }
 
-function toggleChip(slug: string): void {
+function toggleMechanic(slug: string): void {
   const next = new Set(selectedMechanicSlugs.value);
   if (next.has(slug)) {
     next.delete(slug);
@@ -55,29 +77,152 @@ function toggleChip(slug: string): void {
   }
   selectedMechanicSlugs.value = next;
 }
+
+function clearAll(): void {
+  if (selectedMechanicSlugs.value.size === 0) return;
+  selectedMechanicSlugs.value = new Set();
+}
+
+// why: the popover is position:fixed so it escapes the filter drawer's
+// overflow:hidden clip; re-anchor it to the toggle button each time it opens.
+function positionPopover(): void {
+  const toggleButton = rootEl.value?.querySelector(".mechanic-dropdown-toggle");
+  if (!toggleButton) return;
+  const rect = toggleButton.getBoundingClientRect();
+  popoverStyle.value = {
+    top:      `${Math.round(rect.bottom + 4)}px`,
+    left:     `${Math.round(rect.left)}px`,
+    minWidth: `${Math.round(rect.width)}px`,
+  };
+}
+
+function openDropdown(): void {
+  positionPopover();
+  isOpen.value = true;
+}
+
+function closeDropdown(): void {
+  isOpen.value = false;
+  searchText.value = "";
+}
+
+function toggleDropdown(): void {
+  if (isOpen.value) {
+    closeDropdown();
+  } else {
+    openDropdown();
+  }
+}
+
+function onDocumentMouseDown(event: MouseEvent): void {
+  if (!isOpen.value) return;
+  const target = event.target as Node | null;
+  // why: the popover is a DOM descendant of rootEl (only its painting is
+  // detached via position:fixed), so a single contains() check covers both the
+  // toggle button and the popover; anything else is an outside click.
+  if (rootEl.value && target && !rootEl.value.contains(target)) {
+    closeDropdown();
+  }
+}
+
+function onKeydown(event: KeyboardEvent): void {
+  if (event.key === "Escape" && isOpen.value) {
+    closeDropdown();
+  }
+}
+
+// why: a fixed-positioned popover drifts from its anchor when the page scrolls
+// or resizes; close it rather than chase the button.
+function onViewportChange(): void {
+  if (isOpen.value) closeDropdown();
+}
+
+watch(isOpen, (open) => {
+  if (open) {
+    document.addEventListener("mousedown", onDocumentMouseDown);
+    document.addEventListener("keydown", onKeydown);
+    window.addEventListener("scroll", onViewportChange, true);
+    window.addEventListener("resize", onViewportChange);
+    nextTick(() => searchInput.value?.focus());
+  } else {
+    document.removeEventListener("mousedown", onDocumentMouseDown);
+    document.removeEventListener("keydown", onKeydown);
+    window.removeEventListener("scroll", onViewportChange, true);
+    window.removeEventListener("resize", onViewportChange);
+  }
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener("mousedown", onDocumentMouseDown);
+  document.removeEventListener("keydown", onKeydown);
+  window.removeEventListener("scroll", onViewportChange, true);
+  window.removeEventListener("resize", onViewportChange);
+});
 </script>
 
 <template>
-  <div v-if="visibleMechanics.length > 0" class="mechanic-bar">
-    <span class="mechanic-bar-label">Mechanics:</span>
+  <div v-if="mechanics.length > 0" ref="rootEl" class="mechanic-filter">
+    <span class="mechanic-filter-label">Mechanics:</span>
     <button
-      v-for="mechanic in visibleMechanics"
-      :key="mechanic.slug"
       type="button"
-      class="mechanic-chip"
-      :class="{ active: isSelected(mechanic.slug) }"
-      :aria-pressed="isSelected(mechanic.slug)"
-      :aria-label="`Toggle ${mechanic.label} mechanic filter`"
-      @click="toggleChip(mechanic.slug)"
+      class="mechanic-dropdown-toggle"
+      :class="{ active: selectedCount > 0 }"
+      :aria-expanded="isOpen"
+      aria-haspopup="true"
+      @click="toggleDropdown"
     >
-      <span class="mechanic-label">{{ mechanic.label }}</span>
-      <span class="mechanic-count">{{ mechanic.cardCount }}</span>
+      <span class="mechanic-toggle-text">{{
+        selectedCount > 0 ? `${selectedCount} selected` : "Any mechanic"
+      }}</span>
+      <span class="mechanic-toggle-caret">{{ isOpen ? "▴" : "▾" }}</span>
     </button>
+    <button
+      v-if="selectedCount > 0"
+      type="button"
+      class="mechanic-clear"
+      @click="clearAll"
+    >✕ clear</button>
+
+    <div
+      v-if="isOpen"
+      class="mechanic-popover"
+      :style="popoverStyle"
+      role="group"
+      aria-label="Filter by hero mechanic"
+    >
+      <input
+        ref="searchInput"
+        v-model="searchText"
+        type="text"
+        class="mechanic-search"
+        placeholder="Search mechanics…"
+        aria-label="Search mechanics"
+      />
+      <ul class="mechanic-list">
+        <li v-if="filteredMechanics.length === 0" class="mechanic-empty">
+          No mechanics match “{{ searchText }}”.
+        </li>
+        <li v-for="mechanic in filteredMechanics" :key="mechanic.slug">
+          <label
+            class="mechanic-option"
+            :class="{ active: isSelected(mechanic.slug) }"
+          >
+            <input
+              type="checkbox"
+              :checked="isSelected(mechanic.slug)"
+              @change="toggleMechanic(mechanic.slug)"
+            />
+            <span class="mechanic-option-label">{{ mechanic.label }}</span>
+            <span class="mechanic-option-count">{{ mechanic.cardCount }}</span>
+          </label>
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.mechanic-bar {
+.mechanic-filter {
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -87,43 +232,128 @@ function toggleChip(slug: string): void {
   flex-shrink: 0;
   flex-wrap: wrap;
 }
-.mechanic-bar-label {
+.mechanic-filter-label {
   font-size: 0.65rem;
   color: #44445a;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   white-space: nowrap;
 }
-.mechanic-chip {
+.mechanic-dropdown-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   background: #1e1e2e;
   border: 1.5px solid #33334a;
   color: #8888cc;
   padding: 0.3rem 0.75rem;
-  border-radius: 20px;
+  border-radius: 6px;
   font-size: 0.78rem;
+  font-family: inherit;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
 }
-.mechanic-chip:hover {
+.mechanic-dropdown-toggle:hover {
   background: #2a2a3e;
   color: #c8c8ee;
   border-color: #5555aa;
 }
-.mechanic-chip.active {
+.mechanic-dropdown-toggle.active {
   background: #2a2a5a;
   border-color: #7070e0;
   color: #c0c0ff;
   font-weight: 700;
 }
-.mechanic-label {
-  line-height: 1;
+.mechanic-toggle-caret {
+  font-size: 0.7rem;
 }
-.mechanic-count {
+.mechanic-clear {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 0.72rem;
+  color: #6666aa;
+  cursor: pointer;
+}
+.mechanic-clear:hover {
+  color: #f87171;
+}
+
+/* why: position:fixed so the panel escapes the filter drawer's overflow:hidden
+   clip; top/left/min-width come from the toggle button's rect (inline style). */
+.mechanic-popover {
+  position: fixed;
+  z-index: 200;
+  width: 260px;
+  max-width: 360px;
+  background: #15151e;
+  border: 1px solid #3e3e56;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.mechanic-search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.4rem 0.6rem;
+  background: #22222e;
+  border: 1px solid #33334a;
+  border-radius: 6px;
+  color: #e8e8ee;
+  font-size: 0.82rem;
+  font-family: inherit;
+}
+.mechanic-search:focus {
+  outline: none;
+  border-color: #6060c0;
+}
+.mechanic-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.mechanic-empty {
+  color: #66669a;
+  font-size: 0.78rem;
+  padding: 0.4rem 0.3rem;
+}
+.mechanic-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.35rem;
+  border-radius: 5px;
+  cursor: pointer;
+  color: #b8b8d8;
+  font-size: 0.82rem;
+}
+.mechanic-option:hover {
+  background: #22223a;
+}
+.mechanic-option.active {
+  color: #c0c0ff;
+  font-weight: 600;
+}
+.mechanic-option input {
+  cursor: pointer;
+  accent-color: #7070e0;
+  flex-shrink: 0;
+}
+.mechanic-option-label {
+  flex: 1;
+  line-height: 1.2;
+}
+.mechanic-option-count {
   background: #0f0f13;
   border: 1px solid #2a2a38;
   color: #66669a;
@@ -132,10 +362,6 @@ function toggleChip(slug: string): void {
   font-size: 0.66rem;
   font-weight: 600;
   line-height: 1.2;
-}
-.mechanic-chip.active .mechanic-count {
-  background: #1a1a3a;
-  border-color: #5555aa;
-  color: #9999ff;
+  flex-shrink: 0;
 }
 </style>
