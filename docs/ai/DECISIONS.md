@@ -25567,4 +25567,20 @@ The hero mechanic ledger classifies a **composition-marker** mechanic (`empowere
 
 **Relates to.** Consumes D-24024 (the hero ledger `MVP_KEYWORDS` `executable` classification), D-24034 (`unresolvedMarkers` — the `parse-unrecognized` signal this removes for dodge), D-24035 (the runtime-observed sweep that ranks the in-play hollows), D-24049 (WP-273 wall-crawl — the move-executed-keyword `MVP_KEYWORDS` category + the ledger handler-module mapping this WP extends). The first hand-resident optional move is reusable by any future hand-action keyword. Teaching the bot to dodge (`ai.legalMoves.ts`), the arena-client "discard to draw" affordance, and the `undercover`/`unleash` ecosystem + zone model are named follow-ups, out of scope.
 
+### D-24052 — Registry Viewer Mechanic Filter Surfaces ALL Mechanics via a Searchable Dropdown (Supersedes WP-270 AC-7's Hidden-by-Default Ribbon)
+
+**Status:** **Active** (landed 2026-06-21 via WP-276 / EC-307, lightweight lane). Consumer-side UI decision; the WP-269 feed contract (D-24046) is unchanged.
+
+**Context.** WP-270 shipped the hero-mechanic filter as a chip ribbon that rendered only the 12 curated-visible (`hidden !== true`) mechanics, per AC-7 and the producer's hidden-by-default diagnostics policy (D-24046). In live use the ribbon does not scale: the feed carries **134 mechanics**, and even the 12 visible ones (several with long labels like "Reveal: Attack or Choose") overflow the filter drawer as wrapping pills. The operator asked to replace the pills with a searchable multi-select dropdown that surfaces **all** mechanics — a scrollable, searchable panel handles 134 entries that pills cannot.
+
+**Decision.** WP-276 reworks `apps/registry-viewer/src/components/MechanicFilter.vue` from a chip ribbon into a **searchable multi-select dropdown** and **drops the `hidden !== true` suppression**, listing every mechanic in the feed:
+
+- The dropdown is a toggle button + a `position: fixed` popover (anchored to the button at open time, so it escapes the filter drawer's `overflow: hidden` clip), containing an in-panel search box and a scrollable checkbox list of all mechanics sorted by label (each with its `cardCount`). It closes on outside-click, Escape, or viewport scroll/resize, and is omitted when the feed carries no mechanics (the missing/invalid-feed degraded path is preserved).
+- This **deliberately supersedes WP-270 AC-7** (the curated-visible-only ribbon). It is a **consumer presentation choice**, not a feed-contract change: `card-mechanics.json` still carries the `hidden` field for the producer's diagnostics and D-24046's fail-closed producer policy is unchanged — the viewer simply no longer uses `hidden` to suppress entries from the filter UI.
+- The v-model contract is preserved (`mechanics` prop in, `selectedMechanicSlugs` Set out), so `App.vue`'s `applyFilters()` wiring, the `cardMechanicsClient.ts` singleton, and the `cardMatchesMechanics` predicate are all unchanged; filter composition stays OR-within-selected-mechanics, AND-with the text query + other filters.
+
+**Determinism.** Viewer-only presentational change; no gameplay, card data, engine, registry, or producer change; no RNG / network beyond the existing non-blocking R2 feed fetch.
+
+**Relates to.** Supersedes WP-270 AC-7. Consumes the WP-269 feed (D-24046, unchanged). A future WP could re-introduce a visual marker for diagnostic-only (`hidden: true`) mechanics or group them; out of scope here.
+
 Protect this file.
