@@ -131,10 +131,20 @@ function onKeydown(event: KeyboardEvent): void {
   }
 }
 
-// why: a fixed-positioned popover drifts from its anchor when the page scrolls
-// or resizes; close it rather than chase the button.
-function onViewportChange(): void {
-  if (isOpen.value) closeDropdown();
+// why: a fixed-positioned popover drifts from its anchor when the page/drawer
+// scrolls or the viewport resizes; close it rather than chase the button.
+function onViewportChange(event: Event): void {
+  if (!isOpen.value) return;
+  // why: a capture-phase window 'scroll' listener ALSO receives scroll events
+  // from descendant scroll containers, so the popover's own list scroll
+  // (mouse wheel / scrollbar drag / keyboard auto-scroll) would otherwise fire
+  // this and instantly close the dropdown — making the list look unscrollable.
+  // Ignore scrolls that originate inside the popover; only a genuine outside
+  // page/drawer scroll (or a resize, whose target is the non-Node window)
+  // closes it. The list then scrolls normally.
+  const target = event.target;
+  if (target instanceof Node && rootEl.value?.contains(target)) return;
+  closeDropdown();
 }
 
 watch(isOpen, (open) => {
