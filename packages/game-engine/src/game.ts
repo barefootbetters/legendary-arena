@@ -17,6 +17,7 @@ import { setPlayerReady, startMatchIfReady } from './lobby/lobby.moves.js';
 import { revealVillainCard } from './villainDeck/villainDeck.reveal.js';
 import { fightVillain } from './moves/fightVillain.js';
 import { recruitHero } from './moves/recruitHero.js';
+import { dodgeCard } from './moves/dodgeCard.js';
 import { fightMastermind } from './moves/fightMastermind.js';
 import { resetTurnEconomy } from './economy/economy.logic.js';
 import { runAllInvariantChecks } from './invariants/runAllChecks.js';
@@ -304,6 +305,11 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     revealVillainCard: { move: revealVillainCard, client: false },
     fightVillain: { move: fightVillain, client: false },
     recruitHero: { move: recruitHero, client: false },
+    // why: D-24051 — dodgeCard is a non-core, internally-stage-gated move (the
+    // recruitHero pattern), NOT a core move; registered here so the player can
+    // discard a Dodge card from hand to draw a replacement. Server-only
+    // (client: false) per D-10008 — it mutates real G (playerZones), absent on UIState.
+    dodgeCard: { move: dodgeCard, client: false },
     fightMastermind: { move: fightMastermind, client: false },
     resolveHeroChoice: { move: resolveHeroChoice, client: false },
     resolveKoHeroChoice: { move: resolveKoHeroChoice, client: false },

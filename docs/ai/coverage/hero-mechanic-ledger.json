@@ -4,9 +4,9 @@
   "summary": {
     "totalRows": 623,
     "byStatus": {
-      "executable": 137,
+      "executable": 149,
       "deferred": 0,
-      "unsupported": 439,
+      "unsupported": 427,
       "unmarked": 47
     },
     "distinctMechanics": 134
@@ -957,10 +957,10 @@
       "heroName": "Black Widow",
       "set": "bkwd",
       "mechanic": "dodge",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-275",
+      "decision": "D-24051",
+      "handler": "packages/game-engine/src/moves/dodgeCard.ts"
     },
     {
       "extId": "bkwd/black-widow",
@@ -987,10 +987,10 @@
       "heroName": "Falcon & Winter Soldier",
       "set": "bkwd",
       "mechanic": "dodge",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-275",
+      "decision": "D-24051",
+      "handler": "packages/game-engine/src/moves/dodgeCard.ts"
     },
     {
       "extId": "bkwd/falcon-winter-soldier",
@@ -1057,20 +1057,20 @@
       "heroName": "White Tiger",
       "set": "bkwd",
       "mechanic": "dodge",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-275",
+      "decision": "D-24051",
+      "handler": "packages/game-engine/src/moves/dodgeCard.ts"
     },
     {
       "extId": "bkwd/yelena-belova",
       "heroName": "Yelena Belova",
       "set": "bkwd",
       "mechanic": "dodge",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-275",
+      "decision": "D-24051",
+      "handler": "packages/game-engine/src/moves/dodgeCard.ts"
     },
     {
       "extId": "bkwd/yelena-belova",
@@ -4787,10 +4787,10 @@
       "heroName": "Bullseye",
       "set": "vill",
       "mechanic": "dodge",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-275",
+      "decision": "D-24051",
+      "handler": "packages/game-engine/src/moves/dodgeCard.ts"
     },
     {
       "extId": "vill/bullseye",
@@ -4817,10 +4817,10 @@
       "heroName": "Electro",
       "set": "vill",
       "mechanic": "dodge",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-275",
+      "decision": "D-24051",
+      "handler": "packages/game-engine/src/moves/dodgeCard.ts"
     },
     {
       "extId": "vill/enchantress",
@@ -4837,10 +4837,10 @@
       "heroName": "Green Goblin",
       "set": "vill",
       "mechanic": "dodge",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-275",
+      "decision": "D-24051",
+      "handler": "packages/game-engine/src/moves/dodgeCard.ts"
     },
     {
       "extId": "vill/juggernaut",
@@ -4867,10 +4867,10 @@
       "heroName": "Kraven",
       "set": "vill",
       "mechanic": "dodge",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-275",
+      "decision": "D-24051",
+      "handler": "packages/game-engine/src/moves/dodgeCard.ts"
     },
     {
       "extId": "vill/loki",
@@ -4887,30 +4887,30 @@
       "heroName": "Magneto",
       "set": "vill",
       "mechanic": "dodge",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-275",
+      "decision": "D-24051",
+      "handler": "packages/game-engine/src/moves/dodgeCard.ts"
     },
     {
       "extId": "vill/mysterio",
       "heroName": "Mysterio",
       "set": "vill",
       "mechanic": "dodge",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-275",
+      "decision": "D-24051",
+      "handler": "packages/game-engine/src/moves/dodgeCard.ts"
     },
     {
       "extId": "vill/mystique",
       "heroName": "Mystique",
       "set": "vill",
       "mechanic": "dodge",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-275",
+      "decision": "D-24051",
+      "handler": "packages/game-engine/src/moves/dodgeCard.ts"
     },
     {
       "extId": "vill/sabretooth",
@@ -4927,10 +4927,10 @@
       "heroName": "Ultron",
       "set": "vill",
       "mechanic": "dodge",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "status": "executable",
+      "wp": "WP-275",
+      "decision": "D-24051",
+      "handler": "packages/game-engine/src/moves/dodgeCard.ts"
     },
     {
       "extId": "vill/venom",
