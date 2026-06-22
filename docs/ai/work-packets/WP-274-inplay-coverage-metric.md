@@ -4,10 +4,10 @@
 > `.claude/rules/work-packets.md` Review Gate).
 > **Reserves:** D-24050.
 > **Paired EC:** EC-305.
-> **Stacks on:** WP-273 / EC-304 (#427, the wall-crawl keyword) — for the **governance
+> **Stacks on:** WP-273 / EC-304 (#430, the wall-crawl keyword) — for the **governance
 > ledger only** (the WP-274 rows sit after WP-273's). No code dependency: this metric
-> works against any state of the engine. WP-273 should merge first; rebase WP-274 onto
-> `main` after.
+> works against any state of the engine. WP-273 **has merged** (#430 → `7a6f48b2`); rebase
+> WP-274 onto `main` before execution.
 > **Depends on:** WP-259 / EC-280 (the `/coverage` page + `useCoverageLedger`), WP-265
 > (the `runtime-observed-hollows.json` sweep), WP-253 (the hero ledger `executable`
 > status) — all landed.
@@ -24,12 +24,15 @@ rollup that shows `0%` movement until a whole mechanic is perfect. The new metri
 weights by **runtime-observed in-play impact**: each unsupported mechanic contributes
 its observed-in-play hollow count (`runtime-observed-hollows.json` `byMechanic[m].hitCount`),
 and a mechanic counts as **resolved** when it becomes `executable` in the hero ledger.
-So fixing a high-frequency hollow (dodge 37×, wall-crawl 23×, undercover 20×) moves the
+So fixing a high-frequency hollow (dodge 37×, undercover 20×, moonlight 18×) moves the
 needle proportionally, and the number answers the operator's real question — *"how much
 of what actually breaks games in play have we fixed?"* — instead of *"what fraction of
-the long-tail mechanic list is perfect?"*. Today the metric reads **0%** (0 of 163
-observed obs resolved — nothing observed in play is executable yet); when wall-crawl
-(WP-273) lands it reads **14.1%** (23 of 163).
+the long-tail mechanic list is perfect?"*. Today the metric reads **0%** (0 of 140
+observed obs resolved — nothing observed in play is executable yet); fixing the largest
+in-play hollow, **dodge (37 obs)**, would read **26.4%** (37 of 140). A mechanic that was
+*never observed* hollow in play — e.g. wall-crawl, which WP-273 just made `executable` but
+which never appears in the sweep — leaves the number **flat**, because it never bit a
+player in the sampled games. That is the metric working as designed.
 
 **Why this matters.** The grind's targeting is driven off `/coverage`'s runtime-observed
 ranking (fix the mechanics that bite players, by obs count). This metric makes that
@@ -55,14 +58,40 @@ For each mechanic `m` ever observed hollow in play:
   NOT on a drop in live obs** — the sweep is a *sample, not a census* (a mechanic's obs can
   fall to 0 because it wasn't sampled this run, not because it was fixed), so crediting a
   live-obs drop would over-state. The ledger is the source of truth for "does this execute".
+- **Resolution mapping (locked).** `resolved[m]` is TRUE **iff** the ledger mechanic status
+  is exactly `executable`. Every other state — `deferred`, `unsupported`, `unmarked`, or
+  **absent from the ledger entirely** — is **NOT resolved**. (`LedgerStatus` is the closed
+  union `executable | deferred | unsupported | unmarked` — pinned by `types/coverage.drift.test.ts`;
+  there is no `partial`/`unknown` state to interpret.)
+- **Mechanic-key contract (the join — highest real-world failure mode).** All three sources
+  — the committed baseline, the live `runtimeObservedByMechanic`, and the ledger's by-mechanic
+  dictionary — are keyed by the **same raw mechanic string** (`LedgerRow.mechanic`, which is
+  identical to the harness's `byMechanic` key). This is the exact key space the WP-259 overlay
+  already joins on, so the new composable **reuses it verbatim — no lowercasing, slugifying, or
+  re-normalizing** (any re-casing would silently break the join). A mechanic present in
+  baseline/live but **absent from the ledger** has no status, so it is **unresolved yet still
+  counted in `totalObs`** — it is **never silently dropped** (dropping it would shrink the
+  denominator and inflate the %, the exact fraud this metric is built to prevent).
 
-Then:
+Then, over `union(baseline, live)` — concretely:
+
+```ts
+const mechanics = new Set([
+  ...Object.keys(baseline.byMechanic ?? {}),
+  ...Object.keys(liveByMechanic ?? {}),
+]);
+// Missing values are zero: baseline[m] absent ⇒ 0, live[m] absent ⇒ 0 (the `?? 0` above).
+```
 
 ```
 totalObs    = Σ peakObs[m]                      over union(baseline, live)
 resolvedObs = Σ peakObs[m]   for m where resolved[m]
 percentResolved = round(resolvedObs / totalObs * 1000) / 10     (1 decimal; 0 when totalObs == 0)
 ```
+
+If `union(baseline, live)` is empty (no mechanic exists at all — only reachable via an injected
+test fixture, never the shipped seed): `totalObs = 0`, `resolvedObs = 0`, `percentResolved = 0`,
+`remaining = []`.
 
 This is the same shape as the existing `executablePercent` (executable / total), but
 **obs-weighted** instead of mechanic-counted. Conservative by design: a partially-
@@ -93,10 +122,14 @@ keyword flips all its cards together), so they resolve cleanly.
   composables statically import. The dashboard is **self-contained** (no `@legendary-arena/*`
   runtime imports).
 - **WP-265 complete.** `runtime-observed-hollows.json` carries `byMechanic[m] = { hitCount,
-  lastSeenTurn, byReason, examples }`; the current artifact = **15 mechanics / 163 obs**
-  (dodge 37, wall-crawl 23, undercover 20, moonlight 18, conqueror 12, shatter 10, sunlight
-  10, bridge 9, coordinate 7, investigate 5, cyber-mod 4, unleash 4, size-changing 2, ambush
-  1, artifact 1) — the seed denominator.
+  lastSeenTurn, byReason, examples }` and a run-level `generatedFrom = { runSeed, gamesPlayed,
+  matrixDescription }` (NB: **no `generatedAt` timestamp** — see the baseline-script note below).
+  The current committed artifact (`runSeed: wp265-real-v1`) = **14 mechanics / 140 obs**
+  (dodge 37, undercover 20, moonlight 18, conqueror 12, shatter 10, sunlight 10, bridge 9,
+  coordinate 7, investigate 5, cyber-mod 4, unleash 4, size-changing 2, ambush 1, artifact 1)
+  — the seed denominator. (**wall-crawl is NOT in the artifact** — it produces no in-play hollow
+  in the sweep, so it is not part of the seed and does not move this metric.) All 14 are
+  `unsupported` in the hero ledger today ⇒ the seed metric reads 0%.
 - `pnpm --filter @legendary-arena/dashboard lint` + `typecheck` + `test:coverage` +
   `format:check` + `build` all exit 0 on the base.
 
@@ -140,12 +173,15 @@ If any of the above is false, this packet is **BLOCKED**.
 
 **Packet-specific:**
 - **Obs-weighted, ledger-gated (the locked metric).** `peakObs = max(baseline, live)` per
-  mechanic; `resolved` ⇔ ledger mechanic-status `executable`; never credit a live-obs drop
-  (sampling variance). Compute exactly per §The metric.
+  mechanic; `resolved` ⇔ ledger mechanic-status **exactly** `executable` (`deferred` /
+  `unsupported` / `unmarked` / ledger-absent all count as NOT resolved); never credit a
+  live-obs drop (sampling variance). All three sources join on the **same raw mechanic key**
+  (no re-casing/slugifying); a baseline/live mechanic absent from the ledger stays in the
+  denominator as unresolved (never dropped). Compute exactly per §The metric.
 - **The baseline is a committed seed, not a build-copy.** `apps/dashboard/src/data/
   in-play-hollow-baseline.json` is **committed** (NOT gitignored, unlike the build-copies in
   the same dir) and statically imported. It is the frozen obs denominator for fixed mechanics.
-  Seeded with the current 15-mechanic / 163-obs snapshot (all `unsupported` today ⇒ 0% resolved).
+  Seeded with the current 14-mechanic / 140-obs snapshot (all `unsupported` today ⇒ 0% resolved).
 - **Additive only.** Do NOT change the existing `%-executable` headline, `executablePercent`,
   `buildMechanicDictionary`, or the by-mechanic table. The new metric is a sibling card +
   a new composable.
@@ -155,31 +191,42 @@ If any of the above is false, this packet is **BLOCKED**.
 **Locked Values:**
 - Composable: `useInPlayCoverage(options?)` in `apps/dashboard/src/composables/useInPlayCoverage.ts`,
   returning `{ percentResolved, resolvedObs, totalObs, remaining }` (the same injected-or-bundled
-  pattern as `useCoverageLedger`). `remaining` = the unresolved mechanics sorted by `peakObs`
-  descending (the prioritized worklist; reuses the existing by-mechanic statuses).
+  pattern as `useCoverageLedger`). `remaining` = the unresolved mechanics sorted **`peakObs`
+  descending, then mechanic key ascending** (deterministic tie-break — the data has real ties:
+  shatter/sunlight = 10, cyber-mod/unleash = 4, ambush/artifact = 1; mirrors the name-asc tie-break
+  in `buildMechanicDictionary`). The prioritized worklist; reuses the existing by-mechanic statuses.
 - Committed seed: `apps/dashboard/src/data/in-play-hollow-baseline.json` =
-  `{ schemaVersion: 1, generatedAt: <ISO>, byMechanic: { <mechanic>: { peakObs: <int> }, … } }`,
-  seeded from the current `runtime-observed-hollows.json` `byMechanic[m].hitCount`.
+  `{ schemaVersion: 1, generatedAt: <fixed sentinel>, byMechanic: { <mechanic>: { peakObs: <int> }, … } }`,
+  seeded from the current `runtime-observed-hollows.json` `byMechanic[m].hitCount` (14 mechanics /
+  140 obs). `generatedAt` is **not** a wall-clock — the source artifact has no `generatedAt` to
+  inherit, and re-running the maintenance script on unchanged input must be a byte no-op (AC-4), so
+  `generatedAt` is a **fixed deterministic value**: either a literal sentinel (e.g. `"seed"`) or the
+  source's `generatedFrom.runSeed`. Never `Date.now()`.
 - Update script: `apps/dashboard/scripts/build-in-play-baseline.mjs` — monotonically merges the
   committed `docs/ai/coverage/runtime-observed-hollows.json` into the committed baseline
   (`peakObs = max(prior, current)`; adds new mechanics; **never lowers**); run **deliberately**
   (`pnpm --filter @legendary-arena/dashboard build:in-play-baseline`), NOT in the auto-`prebuild`
-  (it writes a committed file). Deterministic (stable key sort; `generatedAt` from a fixed
-  sentinel or the artifact's own provenance, never `Date.now()`).
+  (it writes a committed file). Deterministic (stable key sort; `generatedAt` per the fixed-value
+  rule above, never `Date.now()`). After the merge, **assert** `newPeak >= priorPeak` for every
+  pre-existing mechanic and **throw** on violation — the `max` makes this structurally true, so the
+  assert is a regression guard that fails loudly if a future refactor breaks monotonicity (the script
+  is tooling, so it may throw).
 - Metric label (locked copy): headline `{{ percentResolved }}%`, label `in-play hollows
-  resolved`, sub `{{ resolvedObs }} / {{ totalObs }} observed in play`.
+  resolved`, sub `{{ resolvedObs }} / {{ totalObs }} observed in play`. The label/sub **text** is
+  hardcoded (only the numbers are bound) — never derive the copy, to prevent drift.
 
 ---
 
 ## Scope (In)
 
 ### A) `apps/dashboard/src/data/in-play-hollow-baseline.json` — **new (committed seed)**
-The frozen `{ mechanic: { peakObs } }` denominator, seeded with the current 15-mechanic /
-163-obs snapshot. Committed (not gitignored).
+The frozen `{ mechanic: { peakObs } }` denominator, seeded with the current 14-mechanic /
+140-obs snapshot. Committed (not gitignored).
 
 ### B) `apps/dashboard/scripts/build-in-play-baseline.mjs` — **new**
 The deliberate monotonic-merge maintenance script (above). Mirrors `build-coverage-ledger.mjs`'s
-read/validate/write discipline; never lowers a peak; deterministic.
+read/validate/write discipline; never lowers a peak; deterministic (fixed `generatedAt`, no
+`Date.now()`); asserts `newPeak >= priorPeak` and throws on violation.
 
 ### C) `apps/dashboard/src/types/coverage.ts` — **modified**
 Append `InPlayHollowBaseline` (`{ schemaVersion, generatedAt, byMechanic: Record<string,
@@ -188,14 +235,25 @@ if a closed array is introduced.
 
 ### D) `apps/dashboard/src/composables/useInPlayCoverage.ts` — **new**
 The join + computation per §The metric: `peakObs = max(baseline, live)` over union; `resolved`
-⇔ ledger mechanic-status `executable`; `percentResolved`, `resolvedObs`, `totalObs`, `remaining`.
-Injected-or-bundled (the `useCoverageLedger` pattern), so the test injects fixtures.
+⇔ ledger mechanic-status **exactly** `executable` (every other status, and ledger-absent, is
+unresolved); all sources joined on the raw mechanic key (no re-normalizing); a ledger-absent
+observed mechanic stays counted as unresolved; `percentResolved`, `resolvedObs`, `totalObs`,
+`remaining`. Injected-or-bundled (the `useCoverageLedger` pattern), so the test injects fixtures.
 
 ### E) `apps/dashboard/src/composables/useInPlayCoverage.test.ts` — **new**
-`node:test` injected fixtures: 0% at seed (nothing executable); a fixed mechanic (vanished from
-live, present in baseline, ledger executable) credits its peak; a new live mechanic (not in
-baseline) enters the denominator as unresolved; `totalObs == 0` → 0% (no divide-by-zero);
-`remaining` sorted by peak desc. **Enough cases to hold the dashboard `test:coverage` thresholds.**
+`node:test` injected fixtures, each a named case:
+- `"0% at seed"` — nothing executable ⇒ 0 / 140 = 0%.
+- `"fixed mechanic credits its peak from baseline"` — a mechanic vanished from live but present in
+  baseline with ledger status `executable` credits its `peakObs` (e.g. inject dodge 37 executable ⇒
+  37 / 140 = 26.4%).
+- `"new live mechanic enters denominator as unresolved"` — a mechanic in live but not in baseline.
+- `"observed mechanic absent from ledger counts as unresolved, not dropped"` — stays in `totalObs`.
+- `"non-executable statuses are unresolved"` — `deferred` / `unsupported` / `unmarked` do not credit.
+- `"totalObs == 0 ⇒ 0% and remaining == []"` — empty universe, no divide-by-zero.
+- `"remaining is sorted peak desc then key asc"` — assert a tie (e.g. shatter/sunlight at 10) orders
+  by key ascending.
+
+**Enough cases to hold the dashboard `test:coverage` thresholds.**
 
 ### F) `apps/dashboard/src/pages/coverage/CoveragePage.vue` — **modified**
 Add the second headline metric card in `.summary` beside `percentExecutable` (the locked copy);
@@ -258,14 +316,17 @@ composable + page only.
    totalObs observed in play**" beside the existing `%-executable`; the existing headline / chips /
    by-mechanic table are byte-unchanged.
 2. `useInPlayCoverage` computes `percentResolved` per §The metric: `peakObs = max(baseline, live)`
-   over union(baseline, live); `resolvedObs` sums peaks for ledger-`executable` mechanics;
-   `percentResolved = round(resolvedObs/totalObs*1000)/10`; `totalObs == 0` ⇒ 0% (no NaN/divide-by-zero).
-3. On the committed seed (all 15 observed mechanics `unsupported`), the metric reads **0%** (0 / 163).
+   over union(baseline, live); `resolvedObs` sums peaks for **exactly** ledger-`executable` mechanics
+   (`deferred`/`unsupported`/`unmarked`/ledger-absent are unresolved); a baseline/live mechanic absent
+   from the ledger stays counted in `totalObs` (never dropped); `percentResolved =
+   round(resolvedObs/totalObs*1000)/10`; `totalObs == 0` ⇒ 0% (no NaN/divide-by-zero). `remaining` is
+   sorted `peakObs` desc, then mechanic key asc (deterministic).
+3. On the committed seed (all 14 observed mechanics `unsupported`), the metric reads **0%** (0 / 140).
    A unit test that injects a fixture with one observed mechanic flipped `executable` reads its peak
-   as resolved (e.g. wall-crawl 23 → 23/163 = 14.1%).
+   as resolved (e.g. dodge 37 → 37/140 = 26.4%).
 4. `build-in-play-baseline.mjs` monotonically merges the live artifact into the committed baseline
-   (`max`, never lowers, adds new mechanics), is deterministic (stable order, no `Date.now()`), and
-   re-running it on unchanged input is a no-op.
+   (`max`, never lowers, adds new mechanics, asserts `newPeak >= priorPeak`), is deterministic (stable
+   order, fixed `generatedAt`, no `Date.now()`), and re-running it on unchanged input is a byte no-op.
 5. The full dashboard CI gate set passes: `pnpm --filter @legendary-arena/dashboard lint` +
    `typecheck` + `test:coverage` + `format:check` + `build` all exit 0; the new composable's tests
    hold the coverage thresholds.
@@ -299,7 +360,8 @@ git diff --name-only -- packages/ docs/ai/coverage/ data/cards/   # empty
 - [ ] No files outside `## Files Expected to Change` modified.
 - [ ] `User-Visible Surface = dashboard.legendary-arena.com/coverage` — the new "in-play hollows
       resolved" metric renders on the deployed page (D-24026 live-verify, post-deploy; reads 0% until
-      a high-impact mechanic lands, then moves — e.g. 14.1% once WP-273 wall-crawl ships).
+      an *observed* mechanic becomes `executable`, then moves — e.g. 26.4% once dodge (37 obs) ships;
+      a never-observed mechanic like wall-crawl leaves it flat).
 
 ---
 
@@ -308,12 +370,23 @@ git diff --name-only -- packages/ docs/ai/coverage/ data/cards/   # empty
 Gate order pre-flight → copilot → lint, against the WP-273 draft branch `c6531cf7`
 (= `origin/main` @ `04c36ba2` + WP-273 governance).
 
+> **Re-validated 2026-06-21 (post-tightening, per 01.0a §Step 5 re-run rule).** After the
+> surgical SPEC correction — seed denominator fixed to the committed artifact (14 mechanics /
+> 140 obs; the prior 15/163 hand-added a wall-crawl 23 that is not in the artifact), worked
+> example moved to dodge 37 → 26.4%, plus contract hardening (raw-key join with no-drop of
+> ledger-absent mechanics, explicit resolution mapping, deterministic `remaining` tie-break,
+> fixed-sentinel `generatedAt`, monotonic-merge assertion) — all three gates were re-run. The
+> correction changes data values + tightens the contract; it does not change layer, scope, the
+> file allowlist (7+5), or the contract surface. **Verdicts unchanged: pre-flight READY · copilot
+> PASS · lint PASS.** WP-273 (#430) and WP-275 (#431) have since merged to `main`.
+
 - **Pre-flight (01.4): READY TO EXECUTE (2026-06-21).** Class: **Dashboard / Read-Only Analytics**
   (a pure derived metric + a deterministic maintenance script; no engine, no gameplay, no mutation).
   Contract fidelity verified against source (per the dashboard scoping pass): `useCoverageLedger`
   exposes the by-mechanic statuses + the live `runtimeObservedByMechanic` join the new composable
   reuses (`useCoverageLedger.ts`); `runtime-observed-hollows.json` `byMechanic[m].hitCount` is the
-  obs source (15 mechanics / 163 obs); the build-copy + static-import + injected-fixture-test pattern
+  obs source (14 mechanics / 140 obs, verified against the committed artifact); the build-copy +
+  static-import + injected-fixture-test pattern
   is the `build-coverage-ledger.mjs` / `useCoverageLedger.test.ts` precedent. Deps WP-259/265/253 ✅.
   Scope is a closed allowlist (dashboard only). **One RS — RS-1 (clarifying, non-blocking):** the
   exact `test:coverage` thresholds the new composable must hit, the `format:check` prettier pass, and
