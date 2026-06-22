@@ -7,6 +7,23 @@
 
 ## Current State
 
+### WP-278 / EC-309 Executed — Registry Viewer Search Header Redesign (Unified FilterDropdown) (2026-06-22)
+
+**WP-278 done (Registry Viewer — full search-header redesign).** The filter surface had accreted across WP-086/125/183/184/270/276 into three inconsistent idioms (native `<select>`s for Set/Class, pill ribbons for card types + effects + scheme-twist + 4 mechanical patterns, a redundant set-pills strip, and one mechanics dropdown). The operator asked to redesign the whole header into one consistent row of dropdowns. This extracts a shared **`FilterDropdown.vue`** (toggle button + `position: fixed` popover escaping the drawer's `overflow: hidden`, optional search box, scrollable checkbox list, the WP-277 scroll-origin guard, single/multi modes) and rebuilds every filter on it.
+
+**The new header:** one row of **Set · Class · Type · Mechanics · Effects** dropdowns + a contextual **Patterns** dropdown.
+- **Set/Class** are single-select (`applyQuery`'s `setAbbr`/`heroClass` single-value semantics unchanged — the dropdowns drive the same `filterSet`/`filterHC` string refs via ≤1-element Set bridges).
+- **Type** is multi-select; `selectedTypes` (the leaf slugs the query uses) became a **computed** over a new `selectedTypeGroupKeys` model, preserving the group→leaf expansion (a group toggles all its `types[]`, incl. SHIELD → agent/officer/trooper).
+- **Mechanics** lists all mechanics (WP-276 / D-24052 preserved); **Effects** lists the ability taxonomy with tag-index counts (WP-125 OR-within preserved).
+- The **scheme-twist + four mechanical-pattern ribbons collapse into ONE contextual Patterns dropdown** shown only when exactly one pattern-bearing card type is active (same single-type gating); `selectedTwistSlugs` + `selectedMechanicalPatternSlugs` unified into one `selectedPatternSlugs` routed by the active type in `applyFilters` (scheme → `twistPattern`, else → `mechanicalPattern`).
+- The **redundant set-pills strip is removed**; `AbilityEffectFilter.vue`, `SchemeTwistFilter.vue`, `PatternFilter.vue`, and `MechanicFilter.vue` are **deleted** (folded into `FilterDropdown` + `App.vue`).
+
+**Logic unchanged.** Filtering composition stays OR-within each control, AND across; `applyQuery`, `cardMatchesMechanics`, the ability-tag index, and the per-card `mechanicalPattern`/`twistPattern` mappings are all untouched; D-24046 (feed) and D-24052 (all-mechanics) preserved; no `parseAbilityText`.
+
+**Files (~12):** `FilterDropdown.vue` (new) + `App.vue` (rewire) + 4 component deletions + 2 client comment-only fixes (`cardAbilitiesClient.ts` / `cardMechanicsClient.ts` — folded; their comments referenced the now-deleted components) + 4 governance (WP-278, EC-309, DECISIONS D-24053, WORK_INDEX/EC_INDEX/STATUS). Lands **D-24053** (FilterDropdown as the standard control + the contextual Patterns dropdown).
+
+**Verification:** `typecheck` 0, `test` 0 (registry-viewer **86/86**, predicate tests untouched), `build` 0; no forbidden import, no `parseAbilityText`. Live-verified pre-merge in the preview (every filter narrows the grid + composes; Patterns appears contextually; popovers scroll without closing + close on outside/Escape). Two-commit topology: EC-309 impl + SPEC govern-close. D-24026 live-verify on cards.legendary-arena.com pre-merge (preview) + post-deploy.
+
 ### WP-277 / EC-308 Executed — Mechanic Dropdown: Fix List Scroll (Regression in WP-276) (2026-06-22)
 
 **WP-277 done (Registry Viewer — bugfix).** The operator reported the WP-276 mechanic dropdown list (134 mechanics, `overflow-y: auto`) **could not be scrolled** by mouse wheel, scrollbar drag, or keyboard. Reproduced in the preview: the list is correctly overflowing (`scrollHeight 3957 > clientHeight 300`), but **any scroll instantly closed the popover**.

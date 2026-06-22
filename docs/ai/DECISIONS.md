@@ -25583,4 +25583,24 @@ The hero mechanic ledger classifies a **composition-marker** mechanic (`empowere
 
 **Relates to.** Supersedes WP-270 AC-7. Consumes the WP-269 feed (D-24046, unchanged). A future WP could re-introduce a visual marker for diagnostic-only (`hidden: true`) mechanics or group them; out of scope here.
 
+### D-24053 — Registry Viewer Standardizes on a Shared FilterDropdown; Contextual Patterns Dropdown Replaces the Five Conditional Ribbons
+
+**Status:** **Active** (landed 2026-06-22 via WP-278 / EC-309). Pure registry-viewer UI consolidation; no filtering-logic, feed, or card-data change.
+
+**Context.** The registry-viewer's filter surface accreted across WP-086 (card-type pills), WP-125 (ability-effect ribbon), WP-183 (scheme-twist ribbon), WP-184 (four mechanical-pattern ribbons), and WP-270/276/277 (the mechanics dropdown) into three inconsistent UI idioms — native `<select>`s, several pill ribbons, a redundant set-pills strip, and one dropdown. The operator asked to redesign the whole search header into one consistent, compact row of dropdowns.
+
+**Decision.** WP-278 establishes a single shared `FilterDropdown.vue` (toggle button + `position: fixed` popover that escapes the filter drawer's `overflow: hidden`, search box, scrollable checkbox list, the WP-277 scroll-origin guard, single/multi modes) as the registry-viewer's **standard filter control**, and rebuilds every filter on it:
+
+- **Set · Class · Type · Mechanics · Effects** become `FilterDropdown` instances on one row (Set/Class single-select — `applyQuery`'s `setAbbr`/`heroClass` single-value semantics unchanged; Type/Mechanics/Effects multi-select). Type preserves the group→leaf-type expansion (a group toggles all its `types[]`) by making `selectedTypes` a computed over a new `selectedTypeGroupKeys` model.
+- The **scheme-twist + four mechanical-pattern ribbons collapse into one contextual `Patterns` dropdown** shown only when exactly one matching card type is active (same single-type gating); `selectedTwistSlugs` + `selectedMechanicalPatternSlugs` unify into one `selectedPatternSlugs` routed by the active type in `applyFilters`.
+- The **redundant set-pills strip is removed**; `AbilityEffectFilter.vue`, `SchemeTwistFilter.vue`, `PatternFilter.vue`, and `MechanicFilter.vue` are **deleted** (folded into `FilterDropdown` + `App.vue`).
+
+This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-270/276's mechanic dropdown. Future registry-viewer filters use `FilterDropdown`, not new bespoke pill components. Five usages justified the extraction (well past the "duplicate first, abstract on the third copy" threshold).
+
+**Invariant preserved.** Filtering LOGIC is unchanged: OR-within each control, AND across controls; `applyQuery` semantics, `cardMatchesMechanics`, the ability-tag index, and the per-card `mechanicalPattern`/`twistPattern` mappings are all untouched. The "all mechanics" policy (D-24052) and the WP-269 feed contract (D-24046) are unchanged. No `parseAbilityText` at runtime.
+
+**Determinism.** Viewer-only presentational consolidation; no gameplay, card data, engine, registry, or producer change; no RNG / network beyond the existing non-blocking R2 fetches.
+
+**Relates to.** Supersedes WP-125/183/184 UI + folds in WP-270/276/277. Preserves D-24046, D-24052. A re-introduced diagnostic-only mechanic marker and multi-select Set/Class are named follow-ups, out of scope.
+
 Protect this file.
