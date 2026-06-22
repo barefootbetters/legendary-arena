@@ -10,7 +10,9 @@ CI-gated coverage artifacts.
 keyword + a new non-core hand move; no new zone model, no board-freeze, the sim never
 dodges (determinism).
 
-Authoritative execution contract for WP-275. Compliance is binary.
+Authoritative execution contract for WP-275. Compliance is binary. **All behavioral
+contracts are owned by WP-275 (the design source of truth); this EC enforces execution
+only. On any EC⇄WP conflict, WP-275 wins (per `.claude/CLAUDE.md`).**
 
 ---
 
@@ -65,13 +67,23 @@ Authoritative execution contract for WP-275. Compliance is binary.
   + the two existing block-all guards (`hasPendingKoHeroChoice` /
   `hasPendingOptionalKoReward`, return while pending) → eligibility → mutate. Moves never
   throw.
-- **Eligibility (locked):** the card is in `playerZones[pid].hand` AND
+- **Eligibility (locked, single source-of-truth):** the card is in
+  `playerZones[pid].hand` AND
   `getHooksForCard(G.heroAbilityHooks, cardId).some(h => h.keywords.includes('dodge'))`
-  (read-only, timing-agnostic). Else return silently.
+  (read-only, timing-agnostic). Else return silently. This is the ONLY eligibility path —
+  NO inline re-derivation, NO alternate hook lookup, in the move OR the tests. `pid =
+  ctx.currentPlayer` (dodge is a your-turn `main`-stage action; matches the recruitHero
+  precedent, which keys zones + the log line off `ctx.currentPlayer`).
 - **Effect (locked):** `moveCardFromZone(hand, discard, cardId)` (guard `found`), then
-  `drawCardsIntoHand(playerZones, 1, ctx as ShuffleProvider)`; append a byte-locked
-  `G.messages` dodge line. "Ignore all other text" is automatic — the card is discarded,
-  never played, so its other effects never fire.
+  `drawCardsIntoHand(playerZones, 1, ctx as ShuffleProvider)`. Discard-before-draw is
+  ordered, not incidental: pushing the dodged card to discard FIRST guarantees a card is
+  always drawable (discard is non-empty), so exactly one replacement is always drawn.
+  "Ignore all other text" is automatic — the card is discarded, never played, so its other
+  effects never fire.
+- **`G.messages` line (byte-locked):** exactly
+  `` `Player ${ctx.currentPlayer} dodged ${cardId} (discarded from hand, drew 1 replacement)` ``
+  — single push, replay-visible + snapshotted, NO timestamps / non-deterministic context
+  (the `recruitHero.ts` log-line precedent). The test asserts this string by byte-equality.
 - **Move count (locked):** `game.test.ts` asserts **exactly 12** moves (was 11);
   `dodgeCard` is added to the expected move-name array (alphabetical: after
   `advanceStage`, before `drawCards`), the count, AND the `it('defines moves: …')`
@@ -85,6 +97,56 @@ Authoritative execution contract for WP-275. Compliance is binary.
   `moves/dodgeCard.ts`). The `every MVP_KEYWORD …` drift test MUST be extended to admit
   the hand-action category.
 - **Commit message (execution):** `EC-306: dodge hand-discard-to-draw move + recognized keyword (D-24051)`.
+
+---
+
+## Hardened Invariants (binary — each MUST be test-asserted)
+
+> These make the design contracts in WP-275 enforceable. A violation is a FAIL, not a
+> judgment call. "Non-core move" used throughout means: NOT in `CoreMoveName` /
+> `CORE_MOVE_NAMES` / `MOVE_ALLOWED_STAGES`; internally stage-gated to `main`; registered
+> in `game.ts` `moves: {}`; callable but outside the core action loop (the recruitHero
+> precedent).
+
+- **Move-ordering invariant (locked; MUST NOT be reordered).**
+  `1` validate `cardId` is a non-empty string → `2` stage gate (`G.currentStage === 'main'`)
+  → `3` block-all guards (`hasPendingKoHeroChoice` / `hasPendingOptionalKoReward`) → `4`
+  eligibility → `5` mutate. No mutation may be observable when step 2, 3, or 4 rejects —
+  a mutation-before-gate bug surfaces as a non-empty diff in the silent-no-op snapshot below.
+- **Silent no-op contract (strict).** On ANY ineligible call — non-dodge card, card not in
+  hand, `currentStage !== 'main'`, or a pending KO-hero / optional-KO-reward choice — there
+  is NO zone mutation, NO `G.messages` append, NO side effect of any kind, and no throw.
+  Asserted by a deep-equality snapshot: `const before = JSON.parse(JSON.stringify(G))` →
+  call the move → assert `JSON.parse(JSON.stringify(G))` deep-equals `before`. (`G` is
+  JSON-serializable by invariant, so this is the full-state proof — not a per-zone spot check.)
+- **Zone invariants on the eligible path (post-mutation).** The dodge card leaves hand
+  **exactly once** and is appended to discard **exactly once**; **exactly one** replacement
+  card enters hand. Common case (deck non-empty): hand net `0`, discard `+1`, deck `−1`.
+  Empty-deck edge: the standard reshuffle folds discard into deck before the draw; if the
+  dodged card was the only card anywhere it is reshuffled and drawn straight back into hand
+  (rule-correct). Assert the remove-once / append-once / draw-one identities hold modulo the
+  reshuffle — do NOT hardcode a raw `deck −1` that the empty-deck path would break.
+- **Play-path exclusion (locked).** `dodgeCard` MUST NOT call, reuse, or route through
+  `playCard` or `executeHeroEffects` / any effect-execution pathway. The dodged card is
+  discarded, never played — "ignore all other text" is structural, not suppressed. Asserted
+  behaviorally: dodging a card that ALSO declares an `onPlay` effect fires none of it.
+- **Negative classification contract (locked).** `dodge` MUST NOT appear in
+  `HANDLED_KEYWORDS` or `HERO_EFFECT_HANDLERS`. It enters `MVP_KEYWORDS` ONLY via
+  `HAND_ACTION_EXECUTED_KEYWORDS`. Assert `dodge ∉ HANDLED_KEYWORDS` and
+  `dodge ∉ HERO_EFFECT_HANDLERS`; adding a handler is a contract violation (the
+  handler-key bidirectional drift test must keep enforcing this — its count is UNCHANGED).
+- **Honest-fix FAIL condition (binary).** If `dodge` is recognized AND the `dodgeCard`
+  move cannot demonstrably discard an eligible hand card + draw one replacement → FAIL,
+  even if the `onPlay` hollow disappears. Silencing the hollow without a working move is
+  the dishonest-fix failure mode — recognition alone is NOT the deliverable.
+- **Determinism move-stream assertion.** Beyond the unchanged sentinel `finalStateHash`:
+  confirm the deterministic sweep's generated move stream contains ZERO `dodgeCard` intents
+  (the bot never dodges; `ai.legalMoves.ts` untouched). Either signal moving is a FAIL to
+  investigate, not a routine re-pin.
+- **Ledger handler-column FAIL condition (binary).** `dodge`'s ledger handler column MUST
+  resolve to `moves/dodgeCard.ts`. If it resolves to anything else (e.g.
+  `heroEffects.execute.ts#dodge`) → FAIL: the move-executor handler-module mapping in
+  `scripts/hero-mechanic-ledger.mjs` was not extended.
 
 ---
 
@@ -138,7 +200,9 @@ Authoritative execution contract for WP-275. Compliance is binary.
   regression) (D-24051).
 - In `dodgeCard.ts`: at the stage + block-all gates (board-freeze consistency, D-24008 /
   D-24019); at the discard+draw (the printed "discard this card to draw another"; "ignore
-  all other text" is automatic — the card is never played) (D-24051).
+  all other text" is automatic — the card is never played); at the discard-before-draw
+  ordering (guarantees a drawable replacement); and at the `G.messages` push (replay-visible
+  + snapshotted, byte-locked format, no timestamps — the recruitHero precedent) (D-24051).
 - At the `game.ts` registration: a non-core internally-gated move (the recruitHero
   pattern), NOT a core move (D-24051).
 - (No `classifyHeroEffectReason` edit is needed — the `MVP_KEYWORDS` add alone yields the
@@ -154,8 +218,15 @@ Authoritative execution contract for WP-275. Compliance is binary.
 - `packages/game-engine/src/game.ts` — **modified** (register the move).
 - `packages/game-engine/src/game.test.ts` — **modified** (move-set + count 11 → 12 + description).
 - `packages/game-engine/src/rules/heroAbility.setup.test.ts` — **modified** (drift + parse).
-- `packages/game-engine/src/moves/dodgeCard.test.ts` — **new** (discard+draw, eligibility gates, ignore-other-text, log line, JSON-serializable).
-- `packages/game-engine/src/hero/heroEffects.execute.test.ts` — **modified** (extend the MVP-coverage drift test for the hand-action category; play-time = no onPlay mutation + no hollow; `dodge ∈ MVP_KEYWORDS`; `HANDLED_KEYWORDS` count test unchanged).
+- `packages/game-engine/src/moves/dodgeCard.test.ts` — **new** (discard+draw with the
+  exact zone-count identities; each ineligible gate proven a silent no-op via a
+  `JSON.parse(JSON.stringify(G))` deep-equality snapshot; ignore-other-text /
+  play-path-exclusion; the byte-locked `G.messages` line asserted exactly;
+  JSON-serializable).
+- `packages/game-engine/src/hero/heroEffects.execute.test.ts` — **modified** (extend the
+  MVP-coverage drift test for the hand-action category; play-time = no onPlay mutation + no
+  hollow; `dodge ∈ MVP_KEYWORDS`; negative contract `dodge ∉ HANDLED_KEYWORDS` and
+  `dodge ∉ HERO_EFFECT_HANDLERS`; `HANDLED_KEYWORDS` count test unchanged).
 - `docs/ai/coverage/hero-mechanic-ledger.{json,csv}` — **regenerated**.
 - `docs/ai/coverage/runtime-observed-hollows.json` — **regenerated**.
 - `scripts/coverage/hero-effect-coverage.baseline.json` — **regenerated**.
@@ -176,6 +247,10 @@ Authoritative execution contract for WP-275. Compliance is binary.
 - [ ] MVP-coverage drift test extended (admits the hand-action category) + green; `HANDLED_KEYWORDS` handler-count test UNCHANGED (no handler added).
 - [ ] Play-time guard test green: playing a dodge hero mutates no onPlay state and fires no hollow (neither `parse-unrecognized` nor `no-handler`).
 - [ ] Honest fix proven: `dodgeCard({ cardId })` removes the card from hand, appends to discard, and draws one replacement; ineligible calls are silent no-ops.
+- [ ] Silent no-op proven by deep-equality snapshot: each ineligible call leaves `JSON.parse(JSON.stringify(G))` deep-equal to the pre-call snapshot (no zone mutation, no `G.messages` append, no throw).
+- [ ] Negative classification asserted: `dodge ∉ HANDLED_KEYWORDS` and `dodge ∉ HERO_EFFECT_HANDLERS`; the `G.messages` line matches the byte-locked string exactly.
+- [ ] Play-path exclusion proven: dodging a card that also declares an `onPlay` effect fires none of it (the dodged card never routes through `playCard` / `executeHeroEffects`).
+- [ ] Determinism double-check: the sweep's generated move stream contains zero `dodgeCard` intents AND the sentinel `finalStateHash` is unchanged.
 - [ ] Ledger flip verified: `dodge` `executable` (all dodge lines/heroes) with handler `moves/dodgeCard.ts`; runtime-observed `dodge` 37 → 0.
 - [ ] Four freshness gates pass: `ledger:heroes:check`, `sim:coverage --check`, `sim:runtime-observed:check`, `mechanics:metadata:check`.
 - [ ] `git diff --name-only` → only the allowlist files; `git diff` empty for `data/cards/**`, `apps/**`, `packages/registry/**`, `apps/server/**`, `ai.legalMoves.ts`. Provenance diff additive.
@@ -198,7 +273,10 @@ Authoritative execution contract for WP-275. Compliance is binary.
 - A `data/cards/**` line in the diff → re-marking is out of scope; the markers exist; revert.
 - An `ai.legalMoves.ts` edit / a sentinel `finalStateHash` change → the bot started dodging; dodge is a registered-but-bot-unused move this WP; revert the legal-move edit and investigate the hash.
 - A `game.test.ts` move-count still 11 (or unchanged) → the new move was registered without updating the drift assertion; it FAILS — update the set + count + description.
-- The `onPlay` hollow vanished but `dodgeCard` never moves the card → a dishonest recognition; implement the move and prove it in the scaffold.
+- The `onPlay` hollow vanished but `dodgeCard` never moves the card → a dishonest recognition; implement the move and prove it in the scaffold (honest-fix FAIL).
+- An ineligible call leaves any diff in the `JSON.parse(JSON.stringify(G))` snapshot → a mutation ran before a gate; the move-ordering / silent-no-op invariant is broken.
+- `dodgeCard` imports or calls `playCard` / `executeHeroEffects` → play-path exclusion broken; discard+draw directly, never route the dodged card through the play pipeline.
+- The `G.messages` line drifts from the byte-locked string (extra punctuation, a timestamp, a different verb) → the snapshot/log test fails; restore the locked format.
 - `dodge` shows `deferred` not `executable` in the ledger → it was added to `HERO_KEYWORDS` but not `MVP_KEYWORDS`.
 - `dodge` added to `HANDLED_KEYWORDS` or given a `HERO_EFFECT_HANDLERS` entry → it executes from a move, not play; enter `MVP_KEYWORDS` via the hand-action category with NO handler, and keep the handler-key bidirectional drift test unchanged.
 - The MVP-coverage drift test left unextended → it FAILS for `dodge` (neither handled, reveal-translated, nor recruit-time); admit the hand-action category.
