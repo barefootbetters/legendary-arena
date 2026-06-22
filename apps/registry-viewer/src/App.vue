@@ -954,10 +954,12 @@ function navigateToCard(slug: string) {
             @update:selected-effect-slugs="applyFilters"
           />
 
-          <!-- Hero mechanic chip ribbon (WP-270). Fed by card-mechanics.json
-               (WP-269); MechanicFilter renders only hidden !== true mechanics
-               and hides itself when none are visible (empty/invalid feed or all
-               hidden), so the outer wrapper needs no extra guard. -->
+          <!-- Hero mechanic filter (WP-270; reworked to a searchable
+               multi-select dropdown in WP-276). Fed by card-mechanics.json
+               (WP-269); MechanicFilter lists ALL mechanics (WP-276 supersedes
+               WP-270 AC-7's hidden-by-default ribbon) and hides itself when the
+               feed carries none (empty/invalid feed), so the outer wrapper
+               needs no extra guard. -->
           <MechanicFilter
             :mechanics="cardMechanicsIndex?.mechanics ?? []"
             v-model:selected-mechanic-slugs="selectedMechanicSlugs"
