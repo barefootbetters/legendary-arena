@@ -239,6 +239,19 @@ only. On any EC⇄WP conflict, WP-275 wins (per `.claude/CLAUDE.md`).**
 **Explicit non-change:** `data/cards/**`, `apps/**`, `packages/registry/**`,
 `apps/server/**`, `packages/game-engine/src/simulation/ai.legalMoves.ts` MUST be byte-unchanged.
 
+> **Amendment (2026-06-22, operator-approved — `01.1` mid-execution carve-out to the `apps/**`
+> non-change).** The allowlist did not anticipate a build-copied-ledger coupling: the dashboard
+> build copies `docs/ai/coverage/hero-mechanic-ledger.json` into its bundle
+> (`apps/dashboard/scripts/build-coverage-ledger.mjs` → `src/data/coverage-ledger.json`), and
+> WP-274's `useInPlayCoverage` reads it. Flipping `dodge` `unsupported → executable` (the
+> deliverable) therefore moves the WP-274 in-play coverage metric **0% → 37/140 = 26.4%** —
+> exactly the movement WP-274 was built for (*"dodge is the WP-275 target"*) — which broke the
+> one non-injected dashboard test that hard-coded 0%. The single-value test fix
+> `apps/dashboard/src/composables/useInPlayCoverage.test.ts` (`0 → 26.4`) is the **only** `apps/**`
+> change; it is forced by the deliverable, not new functionality. All other `apps/**` files
+> (and `data/cards/**` / `packages/registry/**` / `apps/server/**` / `ai.legalMoves.ts`) remain
+> byte-unchanged. Dashboard Gates green (test:coverage 401/0, format:check, typecheck, lint).
+
 ---
 
 ## After Completing
