@@ -2,9 +2,9 @@
   "corpus": {
     "executable": 2639,
     "heroes": 309,
-    "hooks": 5949,
-    "noEffect": 3200,
-    "parsedNotExecuted": 110
+    "hooks": 5944,
+    "noEffect": 3098,
+    "parsedNotExecuted": 207
   },
   "perSet": {
     "2099": {
@@ -44,8 +44,8 @@
     },
     "bkwd": {
       "executable": 22,
-      "hooks": 130,
-      "noEffect": 108
+      "hooks": 125,
+      "noEffect": 74
     },
     "ca75": {
       "executable": 54,
@@ -180,7 +180,7 @@
     "vill": {
       "executable": 139,
       "hooks": 288,
-      "noEffect": 149
+      "noEffect": 81
     },
     "vnom": {
       "executable": 47,
@@ -245,7 +245,6 @@
     "demolish": 3,
     "demonic-bargain": 4,
     "digest": 7,
-    "dodge": 24,
     "don't-speak": 1,
     "double-striker": 1,
     "endgame": 5,

@@ -81,13 +81,16 @@ const HERO_HANDLER_MODULE = 'packages/game-engine/src/hero/heroEffects.execute.t
 // primitive interpreter (the mechanic lives in the HERO_COMPOSITION_MARKERS data row), so
 // its handler column points at the interpreter module, not the keyword handler module.
 const PRIMITIVE_INTERPRETER_MODULE = 'packages/game-engine/src/hero/effectPrimitive.interpret.ts';
-// why: D-24049 — a recruit-time-executed keyword (wall-crawl) is executable (∈ MVP_KEYWORDS)
-// but has NO HERO_EFFECT_HANDLERS entry: its executor is the recruitHero move's deck-top
-// placement, not an onPlay keyword handler. Its handler column must point at the real
-// executor module so a broken card is still a direct jump to the code, instead of the
-// keyword-handler module that holds no wall-crawl branch. Keyed by mechanic name.
-const RECRUIT_TIME_HANDLER_MODULES = {
+// why: D-24049 / D-24051 — a move-executed keyword is executable (∈ MVP_KEYWORDS) but has NO
+// HERO_EFFECT_HANDLERS entry: its executor is a move (wall-crawl → the recruitHero deck-top
+// placement; dodge → the dodgeCard hand-discard-to-draw move), not an onPlay keyword handler.
+// Its handler column must point at the real executor module so a broken card is still a direct
+// jump to the code, instead of the keyword-handler module that holds no branch for it. Keyed by
+// mechanic name; one row per move-executed keyword regardless of WHEN it fires (recruit vs
+// hand-action) — the ledger handler column cares only WHERE the executor lives.
+const MOVE_EXECUTED_HANDLER_MODULES = {
   'wall-crawl': 'packages/game-engine/src/moves/recruitHero.ts',
+  'dodge': 'packages/game-engine/src/moves/dodgeCard.ts',
 };
 const UNMARKED_MECHANIC = '(unmarked)';
 
@@ -200,10 +203,11 @@ function handlerForMechanic(mechanic, status) {
   if (COMPOSITION_MARKERS.has(mechanic)) {
     return PRIMITIVE_INTERPRETER_MODULE;
   }
-  // why: D-24049 — a recruit-time-executed keyword (wall-crawl) executes in the recruitHero
-  // move, not via a HERO_EFFECT_HANDLERS entry; point its handler column at the real executor.
-  if (RECRUIT_TIME_HANDLER_MODULES[mechanic] !== undefined) {
-    return RECRUIT_TIME_HANDLER_MODULES[mechanic];
+  // why: D-24049 / D-24051 — a move-executed keyword (wall-crawl → recruitHero; dodge →
+  // dodgeCard) executes in a move, not via a HERO_EFFECT_HANDLERS entry; point its handler
+  // column at the real executor module.
+  if (MOVE_EXECUTED_HANDLER_MODULES[mechanic] !== undefined) {
+    return MOVE_EXECUTED_HANDLER_MODULES[mechanic];
   }
   return `${HERO_HANDLER_MODULE}#${mechanic}`;
 }

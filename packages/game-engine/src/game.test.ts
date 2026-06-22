@@ -103,12 +103,12 @@ describe('LegendaryGame', () => {
     );
   });
 
-  it('defines moves: advanceStage, drawCards, endTurn, fightMastermind, fightVillain, playCard, recruitHero, resolveHeroChoice, resolveKoHeroChoice, resolveOptionalKoReward, and revealVillainCard', () => {
+  it('defines moves: advanceStage, dodgeCard, drawCards, endTurn, fightMastermind, fightVillain, playCard, recruitHero, resolveHeroChoice, resolveKoHeroChoice, resolveOptionalKoReward, and revealVillainCard', () => {
     const moveNames = Object.keys(LegendaryGame.moves ?? {});
     assert.deepStrictEqual(
       moveNames.sort(),
-      ['advanceStage', 'drawCards', 'endTurn', 'fightMastermind', 'fightVillain', 'playCard', 'recruitHero', 'resolveHeroChoice', 'resolveKoHeroChoice', 'resolveOptionalKoReward', 'revealVillainCard'],
-      'LegendaryGame must define exactly 11 moves',
+      ['advanceStage', 'dodgeCard', 'drawCards', 'endTurn', 'fightMastermind', 'fightVillain', 'playCard', 'recruitHero', 'resolveHeroChoice', 'resolveKoHeroChoice', 'resolveOptionalKoReward', 'revealVillainCard'],
+      'LegendaryGame must define exactly 12 moves',
     );
   });
 

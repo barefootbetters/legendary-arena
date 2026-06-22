@@ -10,7 +10,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { executeHeroEffects, selectDefaultOptionalKoTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
+import { executeHeroEffects, selectDefaultOptionalKoTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import type { LegendaryGameState, PendingHeroChoice } from '../types.js';
 import type { HeroAbilityHook, HeroEffectDescriptor } from '../rules/heroAbility.types.js';
@@ -63,19 +63,22 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
   // branch-list for a valid magnitude (M=1 is valid for every magnitude-requiring
   // reveal keyword and ignored by the no-magnitude ones), OR it executes at recruit
   // time (wall-crawl — D-24049 — whose executor is the recruitHero deck-top
-  // placement, not an onPlay handler nor a reveal translation). A keyword with none
-  // of the three fails here, so the reveal collapse cannot silently drop an
-  // executable keyword AND the recruit-time category cannot silently masquerade as
-  // a missing handler.
-  it('every MVP_KEYWORD is handled directly, via reveal translation, or at recruit time (D-24024 / D-24049)', () => {
+  // placement), OR it executes via a hand-action move (dodge — D-24051 — whose
+  // executor is the dodgeCard hand-discard-to-draw move) — neither of the last two
+  // an onPlay handler nor a reveal translation. A keyword with none of the four
+  // fails here, so the reveal collapse cannot silently drop an executable keyword
+  // AND the move-executed categories cannot silently masquerade as a missing handler.
+  it('every MVP_KEYWORD is handled directly, via reveal translation, at recruit time, or via a hand-action move (D-24024 / D-24049 / D-24051)', () => {
     const recruitTimeExecuted = new Set<string>(RECRUIT_TIME_EXECUTED_KEYWORDS);
+    const handActionExecuted = new Set<string>(HAND_ACTION_EXECUTED_KEYWORDS);
     for (const keyword of MVP_KEYWORDS) {
       const hasHandler = HERO_EFFECT_HANDLERS[keyword as HeroKeyword] !== undefined;
       const translates = revealRulesForLegacyKeyword(keyword as HeroKeyword, 1).length > 0;
       const executesAtRecruit = recruitTimeExecuted.has(keyword);
+      const executesAtHandAction = handActionExecuted.has(keyword);
       assert.ok(
-        hasHandler || translates || executesAtRecruit,
-        `MVP keyword "${keyword}" must be handled directly, via reveal translation, or at recruit time`,
+        hasHandler || translates || executesAtRecruit || executesAtHandAction,
+        `MVP keyword "${keyword}" must be handled directly, via reveal translation, at recruit time, or via a hand-action move`,
       );
     }
   });
@@ -2995,5 +2998,92 @@ describe('executeHeroEffects — Wall-Crawl onRecruit keyword at play time (WP-2
     assert.ok(MVP_KEYWORDS.has('wall-crawl'), 'wall-crawl ∈ MVP_KEYWORDS');
     assert.equal(HERO_EFFECT_HANDLERS['wall-crawl' as HeroKeyword], undefined, 'no play-time handler');
     assert.equal(revealRulesForLegacyKeyword('wall-crawl' as HeroKeyword, 1).length, 0, 'not reveal-translated');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-275 / D-24051 — Dodge keyword at play time
+//
+// executeHeroEffects does NOT filter by timing, so the onPlay dodge hook is visited
+// when the Hero is PLAYED. That visit must be a benign, not-hollow no-op: the
+// auto-emitted { type: 'dodge' } effect no-ops on its missing magnitude, and
+// MVP_KEYWORDS membership classifies the hook `applied` (preventing a no-handler hollow
+// regression). The real executor is the dodgeCard hand-discard-to-draw move (dodgeCard.test.ts).
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects — Dodge keyword at play time (WP-275 / D-24051)', () => {
+  const mockCtx = makeMockCtx();
+
+  /** Reads the lazy-init diagnostics records (empty array when never written). */
+  function records(gameState: LegendaryGameState) {
+    return gameState.diagnostics?.hollowEffects ?? [];
+  }
+
+  /** A dodge hook exactly as the parser emits it: onPlay + no-magnitude effect. */
+  function dodgeState() {
+    return makeTestState({
+      deck: ['deck-card'],
+      hand: ['other-card'],
+      inPlay: ['dodge-hero'],
+      heroAbilityHooks: [
+        {
+          cardId: 'dodge-hero' as string,
+          timing: 'onPlay',
+          keywords: ['dodge'],
+          effects: [{ type: 'dodge' }],
+        },
+      ],
+    });
+  }
+
+  it('playing a dodge Hero mutates no onPlay state (the no-magnitude effect no-ops)', () => {
+    const gameState = dodgeState();
+    executeHeroEffects(gameState, mockCtx, '0', 'dodge-hero' as string);
+    assert.equal(gameState.turnEconomy.attack, 0, 'no attack granted at play time');
+    assert.equal(gameState.turnEconomy.recruit, 0, 'no recruit granted at play time');
+    assert.deepStrictEqual(gameState.playerZones['0'].deck, ['deck-card'], 'deck is unchanged (no draw fired)');
+    assert.deepStrictEqual(gameState.playerZones['0'].hand, ['other-card'], 'hand is unchanged (the card is not dodged at play time)');
+    assert.deepStrictEqual(gameState.playerZones['0'].discard, [], 'discard is unchanged');
+  });
+
+  it('playing a dodge Hero records NO hollow event (neither parse-unrecognized nor no-handler)', () => {
+    const gameState = dodgeState();
+    executeHeroEffects(gameState, mockCtx, '0', 'dodge-hero' as string);
+    // why: D-24051 — the recognized keyword leaves no unresolvedMarkers (so no
+    // parse-unrecognized) and MVP_KEYWORDS membership classifies the play-time-visited
+    // hook `applied` (so no no-handler). Without the membership this would fire a fresh
+    // no-handler hollow — trading the old parse-unrecognized hollow for a fresh one.
+    assert.equal(records(gameState).length, 0, 'no hollow recorded for the hand-action keyword');
+  });
+
+  it('dodge is a member of MVP_KEYWORDS but has no play-time handler / reveal translation', () => {
+    // why: D-24051 — membership marks it ledger-executable + keeps the play-time hook
+    // not-hollow; it must NOT gain a HERO_EFFECT_HANDLERS entry (the dodgeCard move is the
+    // executor), which would break the handler-key ↔ HANDLED_KEYWORDS bidirectional drift test.
+    assert.ok(MVP_KEYWORDS.has('dodge'), 'dodge ∈ MVP_KEYWORDS');
+    assert.equal(HANDLED_KEYWORDS.has('dodge' as HeroKeyword), false, 'dodge ∉ HANDLED_KEYWORDS');
+    assert.equal(HERO_EFFECT_HANDLERS['dodge' as HeroKeyword], undefined, 'dodge ∉ HERO_EFFECT_HANDLERS');
+    assert.equal(revealRulesForLegacyKeyword('dodge' as HeroKeyword, 1).length, 0, 'not reveal-translated');
+  });
+
+  it('a dodge hook entangled with still-unsupported markers (unleash/undercover) is NOT hollow (mixed-hook rule)', () => {
+    // why: D-24051 honest-partial — recognizing dodge makes a mixed hook that declares
+    // dodge + still-unsupported unleash/undercover (Twilight Ops' rider line) classify NOT
+    // hollow (the WP-257 ≥1-reachable-mechanic rule). The unleash/undercover gap is still
+    // reported by their STANDALONE lines; nothing is special-cased or suppressed here.
+    const gameState = makeTestState({
+      inPlay: ['twilight-ops'],
+      heroAbilityHooks: [
+        {
+          cardId: 'twilight-ops' as string,
+          timing: 'onPlay',
+          keywords: ['dodge'],
+          effects: [{ type: 'dodge' }],
+          unresolvedMarkers: ['unleash', 'undercover'],
+        },
+      ],
+    });
+    executeHeroEffects(gameState, mockCtx, '0', 'twilight-ops' as string);
+    assert.equal(records(gameState).length, 0, 'a mixed hook with the reachable dodge effect is not hollow');
   });
 });

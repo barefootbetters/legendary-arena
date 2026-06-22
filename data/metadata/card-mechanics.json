@@ -445,7 +445,7 @@
       "slug": "dodge",
       "label": "Dodge",
       "scope": "hero",
-      "source": "free-text",
+      "source": "keyword",
       "cardCount": 12,
       "cardIds": [
         "bkwd/black-widow",

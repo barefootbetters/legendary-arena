@@ -93,18 +93,18 @@ bkpt/white-wolf,White Wolf,bkpt,wound-a-villain,unsupported,,,
 bkpt/white-wolf,White Wolf,bkpt,wound-each-villain-and-the-mastermind,unsupported,,,
 bkpt/white-wolf,White Wolf,bkpt,wound-the-mastermind,unsupported,,,
 bkwd/black-widow,Black Widow,bkwd,dark-memories,unsupported,,,
-bkwd/black-widow,Black Widow,bkwd,dodge,unsupported,,,
+bkwd/black-widow,Black Widow,bkwd,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts
 bkwd/black-widow,Black Widow,bkwd,undercover,unsupported,,,
 bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,dark-memories,unsupported,,,
-bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,dodge,unsupported,,,
+bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts
 bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 bkwd/red-guardian,Red Guardian,bkwd,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 bkwd/red-guardian,Red Guardian,bkwd,undercover,unsupported,,,
 bkwd/red-guardian,Red Guardian,bkwd,unleash,unsupported,,,
 bkwd/red-guardian,Red Guardian,bkwd,when-recruited,unsupported,,,
 bkwd/white-tiger,White Tiger,bkwd,dark-memories,unsupported,,,
-bkwd/white-tiger,White Tiger,bkwd,dodge,unsupported,,,
-bkwd/yelena-belova,Yelena Belova,bkwd,dodge,unsupported,,,
+bkwd/white-tiger,White Tiger,bkwd,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts
+bkwd/yelena-belova,Yelena Belova,bkwd,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts
 bkwd/yelena-belova,Yelena Belova,bkwd,undercover,unsupported,,,
 bkwd/yelena-belova,Yelena Belova,bkwd,unleash,unsupported,,,
 ca75/agent-x-13,Agent X-13,ca75,savior,unsupported,,,
@@ -476,21 +476,21 @@ ssw2/spider-gwen,Spider-Gwen,ssw2,patrol-your-victory-pile,unsupported,,,
 ssw2/spider-gwen,Spider-Gwen,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
 ssw2/time-traveling-jean-grey,Time-Traveling Jean Grey,ssw2,patrol-any-city-space,unsupported,,,
 ssw2/time-traveling-jean-grey,Time-Traveling Jean Grey,ssw2,patrol-the-bridge,unsupported,,,
-vill/bullseye,Bullseye,vill,dodge,unsupported,,,
+vill/bullseye,Bullseye,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts
 vill/bullseye,Bullseye,vill,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 vill/dr-octopus,Dr. Octopus,vill,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
-vill/electro,Electro,vill,dodge,unsupported,,,
+vill/electro,Electro,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts
 vill/enchantress,Enchantress,vill,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
-vill/green-goblin,Green Goblin,vill,dodge,unsupported,,,
+vill/green-goblin,Green Goblin,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts
 vill/juggernaut,Juggernaut,vill,(unmarked),unmarked,,,
 vill/kingpin,Kingpin,vill,(unmarked),unmarked,,,
-vill/kraven,Kraven,vill,dodge,unsupported,,,
+vill/kraven,Kraven,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts
 vill/loki,Loki,vill,(unmarked),unmarked,,,
-vill/magneto,Magneto,vill,dodge,unsupported,,,
-vill/mysterio,Mysterio,vill,dodge,unsupported,,,
-vill/mystique,Mystique,vill,dodge,unsupported,,,
+vill/magneto,Magneto,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts
+vill/mysterio,Mysterio,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts
+vill/mystique,Mystique,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts
 vill/sabretooth,Sabretooth,vill,(unmarked),unmarked,,,
-vill/ultron,Ultron,vill,dodge,unsupported,,,
+vill/ultron,Ultron,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts
 vill/venom,Venom,vill,(unmarked),unmarked,,,
 vnom/carnage,Carnage,vnom,digest,unsupported,,,
 vnom/carnage,Carnage,vnom,excessive-violence,unsupported,,,

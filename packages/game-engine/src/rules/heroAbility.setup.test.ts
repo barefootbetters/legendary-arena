@@ -233,7 +233,7 @@ describe('buildHeroAbilityHooks', () => {
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 18 canonical keyword values', () => {
+  it('contains exactly the 19 canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -252,13 +252,14 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'attack-per-count',
       'optional-ko-reward',
       'wall-crawl', // why: D-24049 — recruit-time-executed keyword
+      'dodge', // why: D-24051 — hand-action-executed keyword (the dodgeCard move)
       'conditional',
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      18,
-      'HERO_KEYWORDS must have exactly 18 entries',
+      19,
+      'HERO_KEYWORDS must have exactly 19 entries',
     );
 
     assert.deepStrictEqual(
@@ -266,6 +267,10 @@ describe('HERO_KEYWORDS drift-detection', () => {
       expectedKeywords,
       'HERO_KEYWORDS must match the canonical keyword values in order',
     );
+
+    // why: D-24051 — explicit membership assertion so the keyword cannot silently
+    // drop out of the union/array while the count stays correct via a swap.
+    assert.ok(HERO_KEYWORDS.includes('dodge'), 'HERO_KEYWORDS must contain dodge');
 
     // Verify no duplicates
     const uniqueKeywords = new Set(HERO_KEYWORDS);
@@ -1241,5 +1246,61 @@ describe('buildHeroAbilityHooks Wall-Crawl onRecruit keyword (WP-273 / D-24049)'
     // why: D-24049 — KEYWORD_TIMING_DEFAULTS sets the default; an explicit [timing:X]
     // marker is applied afterward and wins.
     assert.equal(hooks[0]!.timing, 'onPlay', 'explicit timing markup overrides the keyword default');
+  });
+});
+
+describe('buildHeroAbilityHooks Dodge keyword (WP-275 / D-24051)', () => {
+  /** Builds a single-hero, single-ability registry + matching config. */
+  function buildSingleAbility(abilityText: string) {
+    const registry = makeHeroRegistry('core', 'spider-man', [
+      { slug: 'astonishing-strength', rarityLabel: 'Common 1', abilities: [abilityText] },
+    ]);
+    return buildHeroAbilityHooks(registry, createTestConfig());
+  }
+
+  it('[keyword:Dodge] resolves to a recognized dodge keyword on an onPlay hook', () => {
+    const hooks = buildSingleAbility('[keyword:Dodge]');
+    assert.equal(hooks.length, 1);
+    // why: D-24051 — the case-insensitive parse lands the printed "Dodge" marker on a
+    // recognized `dodge` keyword (not unresolvedMarkers) at the default onPlay timing
+    // (dodge is NOT in KEYWORD_TIMING_DEFAULTS; it fires from the dodgeCard move).
+    assert.equal(hooks[0]!.timing, 'onPlay', 'dodge keeps the default onPlay timing');
+    assert.deepStrictEqual(hooks[0]!.keywords, ['dodge'], 'keyword is recognized');
+  });
+
+  it('the dodge hook has NO unresolvedMarkers (the parse-unrecognized hollow is gone)', () => {
+    const hooks = buildSingleAbility('[keyword:Dodge]');
+    assert.equal(hooks.length, 1);
+    assert.equal(
+      hooks[0]!.unresolvedMarkers,
+      undefined,
+      'a recognized keyword does not surface as an unresolved marker',
+    );
+  });
+
+  it('the dodge hook auto-emits a no-magnitude { type: "dodge" } effect descriptor', () => {
+    const hooks = buildSingleAbility('[keyword:Dodge]');
+    assert.equal(hooks.length, 1);
+    // why: D-24051 — [keyword:Dodge] carries no :N magnitude, so the parser emits a bare
+    // descriptor; executeSingleEffect no-ops on the missing magnitude at play time.
+    assert.deepStrictEqual(hooks[0]!.effects, [{ type: 'dodge' }]);
+  });
+
+  it('an entangled dodge + unleash + undercover rider line records dodge as a keyword and the rest as unresolved markers', () => {
+    // why: D-24051 honest-partial — the Twilight Ops rider line declares dodge (now
+    // recognized) plus still-unsupported unleash/undercover. dodge becomes a keyword +
+    // effect; unleash/undercover surface as unresolvedMarkers. The mixed hook is NOT hollow
+    // at runtime (≥1 reachable mechanic), but the unleash/undercover gap is preserved here.
+    const hooks = buildSingleAbility(
+      'When you [keyword:Dodge] with this card, you may [keyword:Unleash] one of your Heroes from [keyword:Undercover].',
+    );
+    assert.equal(hooks.length, 1);
+    assert.deepStrictEqual(hooks[0]!.keywords, ['dodge'], 'only dodge is a recognized keyword');
+    assert.deepStrictEqual(hooks[0]!.effects, [{ type: 'dodge' }], 'a single dodge effect is emitted');
+    assert.deepStrictEqual(
+      hooks[0]!.unresolvedMarkers,
+      ['unleash', 'undercover'],
+      'unleash and undercover stay unresolved (not implemented by this WP)',
+    );
   });
 });

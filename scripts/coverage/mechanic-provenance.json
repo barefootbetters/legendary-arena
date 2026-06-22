@@ -13,6 +13,7 @@
     "attack-per-count": { "wp": "WP-247", "decision": "" },
     "optional-ko-reward": { "wp": "WP-248", "decision": "" },
     "wall-crawl": { "wp": "WP-273", "decision": "D-24049" },
+    "dodge": { "wp": "WP-275", "decision": "D-24051" },
     "berserk": { "wp": "WP-256", "decision": "D-24031" },
     "empowered": { "wp": "WP-267", "decision": "D-24044" },
     "gainWoundEachPlayer": { "wp": "WP-185", "decision": "" },
