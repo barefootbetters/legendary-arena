@@ -118,3 +118,51 @@ export interface RuntimeObservedHollows {
   /** Present only when the build-time copy failed (empty-stub path). */
   error?: string;
 }
+
+/**
+ * One entry in the committed in-play hollow baseline — the frozen high-water-mark
+ * obs count for a mechanic ever observed hollow in play (WP-274 / D-24050).
+ */
+export interface InPlayHollowBaselineEntry {
+  peakObs: number;
+}
+
+/**
+ * The committed in-play hollow baseline (`src/data/in-play-hollow-baseline.json`,
+ * COMMITTED — not a gitignored build-copy). It is the frozen obs denominator for
+ * the "% in-play hollows resolved" metric: it preserves a fixed mechanic's obs
+ * after the mechanic stops producing hollows and vanishes from the live sweep
+ * artifact. Maintained deliberately by `scripts/build-in-play-baseline.mjs`
+ * (monotonic `max` merge of the live artifact); `generatedAt` is a fixed
+ * deterministic sentinel, never a wall-clock.
+ */
+export interface InPlayHollowBaseline {
+  schemaVersion: number;
+  generatedAt: string;
+  byMechanic: Record<string, InPlayHollowBaselineEntry>;
+}
+
+/**
+ * One unresolved mechanic in the in-play coverage worklist — the obs-weighted
+ * priority is `peakObs` (the high-water-mark in-play hollow count).
+ */
+export interface RemainingMechanic {
+  mechanic: string;
+  peakObs: number;
+}
+
+/**
+ * The computed in-play coverage metric (WP-274 / D-24050). Obs-weighted,
+ * ledger-gated: each mechanic contributes `peakObs = max(baseline, live)` to
+ * `totalObs`, and only mechanics whose hero-ledger status is exactly
+ * `executable` contribute to `resolvedObs`. `percentResolved` is the rounded
+ * share (0 when `totalObs` is 0). `remaining` is the unresolved worklist sorted
+ * `peakObs` descending, then mechanic key ascending. The composable wraps each
+ * field in a `ComputedRef`; this is the unwrapped value shape.
+ */
+export interface InPlayCoverageMetric {
+  percentResolved: number;
+  resolvedObs: number;
+  totalObs: number;
+  remaining: readonly RemainingMechanic[];
+}

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useCoverageLedger, statusLabel } from '../../composables/useCoverageLedger.js';
+import { useInPlayCoverage } from '../../composables/useInPlayCoverage.js';
 import type { LedgerStatus, RuntimeObservedEntry } from '../../types/coverage.js';
 
 const {
@@ -12,6 +13,11 @@ const {
   runtimeObservedByMechanic,
   runtimeObservedSummary,
 } = useCoverageLedger();
+
+// The second headline (WP-274 / D-24050): obs-weighted, ledger-gated in-play
+// hollow resolution — answers "how much of what actually breaks games in play
+// have we fixed?", unlike the mechanic-counted `%-executable` headline.
+const { percentResolved, resolvedObs, totalObs } = useInPlayCoverage();
 
 const DISPLAY_CAP = 100;
 
@@ -96,6 +102,11 @@ const STATUS_FILTERS: readonly (LedgerStatus | 'all')[] = [
         <span class="headline-sub"
           >{{ summary.distinctMechanics }} distinct mechanics · {{ summary.totalRows }} rows</span
         >
+      </div>
+      <div class="headline">
+        <span class="headline-num">{{ percentResolved }}%</span>
+        <span class="headline-label">in-play hollows resolved</span>
+        <span class="headline-sub">{{ resolvedObs }} / {{ totalObs }} observed in play</span>
       </div>
       <div class="summary-chips">
         <div class="count-chip cov-executable">
