@@ -79,6 +79,10 @@ export function playFromUndercover(
   }
 
   const faceDownCard = playerZones.faceDownCards[faceDownCardIndex];
+  if (!faceDownCard) {
+    // why: defensive check (should not happen if findIndex worked, but TS requires it)
+    return;
+  }
 
   // Step 6: Validate ownership (IC-282-04: only owner can play their face-down card)
   if (faceDownCard.ownerPlayerId !== playerID) {
