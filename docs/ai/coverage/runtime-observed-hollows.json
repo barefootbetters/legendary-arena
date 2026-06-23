@@ -18,7 +18,7 @@
   "byMechanic": {
     "ambush": {
       "hitCount": 1,
-      "lastSeenTurn": 0,
+      "lastSeenTurn": 5,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
@@ -35,7 +35,7 @@
     },
     "artifact": {
       "hitCount": 1,
-      "lastSeenTurn": 0,
+      "lastSeenTurn": 6,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
@@ -52,7 +52,7 @@
     },
     "bridge": {
       "hitCount": 9,
-      "lastSeenTurn": 0,
+      "lastSeenTurn": 6,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
@@ -93,7 +93,7 @@
     },
     "conqueror": {
       "hitCount": 12,
-      "lastSeenTurn": 0,
+      "lastSeenTurn": 6,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
@@ -134,7 +134,7 @@
     },
     "coordinate": {
       "hitCount": 7,
-      "lastSeenTurn": 0,
+      "lastSeenTurn": 6,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
@@ -175,7 +175,7 @@
     },
     "cyber-mod": {
       "hitCount": 4,
-      "lastSeenTurn": 0,
+      "lastSeenTurn": 6,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
@@ -210,7 +210,7 @@
     },
     "investigate": {
       "hitCount": 5,
-      "lastSeenTurn": 0,
+      "lastSeenTurn": 6,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
@@ -251,7 +251,7 @@
     },
     "moonlight": {
       "hitCount": 18,
-      "lastSeenTurn": 0,
+      "lastSeenTurn": 6,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
@@ -292,7 +292,7 @@
     },
     "shatter": {
       "hitCount": 10,
-      "lastSeenTurn": 0,
+      "lastSeenTurn": 6,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
@@ -333,7 +333,7 @@
     },
     "size-changing": {
       "hitCount": 2,
-      "lastSeenTurn": 0,
+      "lastSeenTurn": 6,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
@@ -356,7 +356,7 @@
     },
     "sunlight": {
       "hitCount": 10,
-      "lastSeenTurn": 0,
+      "lastSeenTurn": 6,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
@@ -397,7 +397,7 @@
     },
     "undercover": {
       "hitCount": 20,
-      "lastSeenTurn": 0,
+      "lastSeenTurn": 6,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
@@ -438,7 +438,7 @@
     },
     "unleash": {
       "hitCount": 4,
-      "lastSeenTurn": 0,
+      "lastSeenTurn": 6,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,

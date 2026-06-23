@@ -156,7 +156,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "[keyword:Spectrum]: Draw a card."
+            "[keyword:Spectrum]: Draw a card. [keyword:draw:1]"
           ]
         },
         {
@@ -1336,7 +1336,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "[keyword:Spectrum]: Reveal the top card of your deck. If it costs 2 or less, draw it."
+            "[keyword:Spectrum]: Reveal the top card of your deck. If it costs 2 or less, draw it. [keyword:reveal:2]"
           ]
         },
         {
@@ -1352,7 +1352,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Wall-Crawl]",
-            "[keyword:Spectrum]: Draw a card."
+            "[keyword:Spectrum]: Draw a card. [keyword:draw:1]"
           ]
         },
         {
@@ -1383,7 +1383,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Wall-Crawl]",
-            "[keyword:Spectrum]: Reveal the top four cards of your deck. Put any combination of those cards with a total cost of 2 or less into your hand. But the rest back in any order."
+            "[keyword:Spectrum]: Reveal the top four cards of your deck. Put any combination of those cards with a total cost of 2 or less into your hand. But the rest back in any order. [keyword:reveal-multi-take:2]"
           ]
         }
       ],

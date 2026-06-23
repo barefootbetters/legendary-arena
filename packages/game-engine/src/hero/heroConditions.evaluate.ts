@@ -123,6 +123,31 @@ export function evaluateCondition(
       return playerZones.inPlay.length >= threshold;
     }
 
+    case 'distinctHeroClassesAtLeast': {
+      // why: D-24055 — self-INCLUSIVE count (you *have* the classes; inverts
+      // heroClassMatch's self-exclusion). S.H.I.E.L.D./Sidekick carry
+      // `heroClass: null`, skipped by the `typeof === 'string'` guard, so never
+      // count. Card is already in inPlay before executeHeroEffects runs.
+      if (!G.cardTraits) {
+        return false;
+      }
+
+      const threshold = parseInt(condition.value, 10);
+      if (Number.isNaN(threshold)) {
+        return false;
+      }
+
+      const distinctClasses = new Set<string>();
+      for (const playedCardId of playerZones.inPlay) {
+        const traitEntry = G.cardTraits[playedCardId as CardExtId];
+        if (traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0) {
+          distinctClasses.add(traitEntry.heroClass);
+        }
+      }
+
+      return distinctClasses.size >= threshold;
+    }
+
     default: {
       // why: unsupported condition types are safely skipped — same pattern
       // as WP-022 for unsupported keywords. Future WPs will add new

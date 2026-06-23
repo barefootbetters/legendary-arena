@@ -263,6 +263,9 @@ const KEYWORD_TIMING_DEFAULTS: Partial<Record<HeroKeyword, HeroAbilityTiming>> =
   'wall-crawl': 'onRecruit',
 };
 
+// why: D-24055 — the rulebook value for Spectrum: ≥3 Hero classes.
+const SPECTRUM_CLASS_THRESHOLD = 3;
+
 /**
  * Extracts structured hero ability metadata from a single ability text.
  *
@@ -415,6 +418,14 @@ function parseAbilityText(abilityText: string): {
         // stays executable in the ledger; only deferred parameterized variants go unsupported.
         resolvedMarkers.push(normalizedKeyword);
       }
+    } else if (normalizedKeyword === 'spectrum') {
+      // why: D-24055 — [keyword:Spectrum] is the rulebook gate, modeled as a
+      // condition (not a keyword), so the line's printed effects gate on ≥3 classes.
+      // Placed before the unresolved-marker fallback so it never flags.
+      conditions.push({
+        type: 'distinctHeroClassesAtLeast',
+        value: String(SPECTRUM_CLASS_THRESHOLD),
+      });
     } else if (!RECOGNIZED_NON_KEYWORD_MARKERS.has(normalizedKeyword)) {
       // why: WP-257 / D-24034 — a `[keyword:X]` token that is NOT a valid keyword,
       // NOT a composition marker, and NOT a recognized modifier (reveal-count) is a

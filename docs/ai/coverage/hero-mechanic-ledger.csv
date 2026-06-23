@@ -442,6 +442,7 @@ ssw2/agent-venom,Agent Venom,ssw2,patrol-the-bank,unsupported,,,
 ssw2/agent-venom,Agent Venom,ssw2,patrol-the-sewers,unsupported,,,
 ssw2/agent-venom,Agent Venom,ssw2,spectrum,unsupported,,,
 ssw2/agent-venom,Agent Venom,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
+ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,patrol-the-rooftops,unsupported,,,
 ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,patrol-the-sewers,unsupported,,,
 ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,patrol-two-adjacent-city-spaces,unsupported,,,
@@ -465,7 +466,10 @@ ssw2/ruby-summers,Ruby Summers,ssw2,teleport,unsupported,,,
 ssw2/shang-chi,Shang-Chi,ssw2,patrol-the-rooftops,unsupported,,,
 ssw2/shang-chi,Shang-Chi,ssw2,patrol-your-discard-pile,unsupported,,,
 ssw2/shang-chi,Shang-Chi,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
+ssw2/silk,Silk,ssw2,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
+ssw2/silk,Silk,ssw2,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal
 ssw2/silk,Silk,ssw2,reveal-ko-or-draw,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-ko-or-draw
+ssw2/silk,Silk,ssw2,reveal-multi-take,unsupported,,,
 ssw2/silk,Silk,ssw2,spectrum,unsupported,,,
 ssw2/silk,Silk,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
 ssw2/soulsword-colossus,Soulsword Colossus,ssw2,cross-dimensional-colossus-rampage,unsupported,,,

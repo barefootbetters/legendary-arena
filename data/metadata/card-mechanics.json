@@ -490,7 +490,7 @@
       "label": "Draw",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 80,
+      "cardCount": 82,
       "cardIds": [
         "3dtc/black-widow",
         "amwp/freedom-fighters",
@@ -553,6 +553,8 @@
         "ssw1/black-panther",
         "ssw1/captain-marvel",
         "ssw1/superior-iron-man",
+        "ssw2/arkon-the-magnificent",
+        "ssw2/silk",
         "vill/bullseye",
         "vill/dr-octopus",
         "vill/enchantress",
@@ -1108,13 +1110,14 @@
       "label": "Reveal",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 5,
+      "cardCount": 6,
       "cardIds": [
         "core/spider-man",
         "cvwr/peter-parker",
         "smhc/high-tech-spider-man",
         "smhc/peter-parker-homecoming",
-        "ssw1/ultimate-spider-man"
+        "ssw1/ultimate-spider-man",
+        "ssw2/silk"
       ],
       "hidden": false
     },
@@ -1209,6 +1212,17 @@
         "wwhk/rick-jones"
       ],
       "hidden": false
+    },
+    {
+      "slug": "reveal-multi-take",
+      "label": "Reveal Multi Take",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "ssw2/silk"
+      ],
+      "hidden": true
     },
     {
       "slug": "reveal-odd-draw",
@@ -3341,6 +3355,7 @@
     },
     "ssw2/arkon-the-magnificent": {
       "mechanics": [
+        "draw",
         "patrol-the-rooftops",
         "patrol-the-sewers",
         "patrol-two-adjacent-city-spaces",
@@ -3408,7 +3423,10 @@
     },
     "ssw2/silk": {
       "mechanics": [
+        "draw",
+        "reveal",
         "reveal-ko-or-draw",
+        "reveal-multi-take",
         "spectrum",
         "wall-crawl"
       ]

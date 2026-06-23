@@ -1304,3 +1304,120 @@ describe('buildHeroAbilityHooks Dodge keyword (WP-275 / D-24051)', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-280 — Spectrum: ≥3-class conditional keyword (D-24055)
+//
+// [keyword:Spectrum] (and case-insensitive variants) parses to a
+// distinctHeroClassesAtLeast condition (not a keyword, not an
+// unresolvedMarker). The Spectrum gate is a condition that gates
+// the printed effects so they act only with ≥3 distinct hero classes.
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks Spectrum conditional keyword (WP-280 / D-24055)', () => {
+  /** Builds a single-hero, single-ability registry + matching config. */
+  function buildSingleAbility(abilityText: string) {
+    const registry = makeHeroRegistry('core', 'spider-man', [
+      { slug: 'spectrum-test', rarityLabel: 'Common', abilities: [abilityText] },
+    ]);
+    const config = createTestConfig();
+    return buildHeroAbilityHooks(registry, config);
+  }
+
+  it('[keyword:Spectrum] parses to distinctHeroClassesAtLeast condition (case-insensitive)', () => {
+    const hooks = buildSingleAbility('[keyword:Spectrum]: Draw a card. [keyword:draw:1]');
+    assert.equal(hooks.length, 1);
+    const hook = hooks[0];
+    assert.ok(hook !== undefined);
+
+    // Spectrum is a condition, not a keyword
+    assert.ok(hook.keywords !== undefined, 'keywords should be defined');
+    assert(!hook.keywords.includes('spectrum'), 'spectrum should NOT be in keywords');
+    // The 'conditional' keyword is added because conditions are present
+    assert(hook.keywords.includes('conditional'), 'conditional keyword added when conditions present');
+    assert(hook.keywords.includes('draw'), 'draw keyword added from effect markup');
+
+    // The condition is distinctHeroClassesAtLeast with value 3
+    assert.ok(hook.conditions !== undefined, 'conditions should be defined');
+    assert.equal(hook.conditions.length, 1, 'one condition should be present');
+    const condition = hook.conditions[0];
+    assert.ok(condition !== undefined);
+    assert.equal(condition.type, 'distinctHeroClassesAtLeast',
+      'condition type is distinctHeroClassesAtLeast');
+    assert.equal(condition.value, '3',
+      'condition value is "3" (the rulebook threshold)');
+
+    // No unresolvedMarkers — Spectrum is recognized
+    // If unresolvedMarkers is defined, it should not contain 'spectrum'
+    if (hook.unresolvedMarkers !== undefined && hook.unresolvedMarkers.length > 0) {
+      assert(!hook.unresolvedMarkers.includes('spectrum'),
+        'spectrum should NOT be in unresolvedMarkers');
+    }
+    // If unresolvedMarkers is undefined or empty, that's also correct (no unresolved markers)
+  });
+
+  it('[keyword:spectrum] lowercase parses identically to uppercase', () => {
+    const hooksUpper = buildSingleAbility('[keyword:Spectrum]: Draw a card. [keyword:draw:1]');
+    const hooksLower = buildSingleAbility('[keyword:spectrum]: Draw a card. [keyword:draw:1]');
+
+    assert.equal(hooksUpper.length, 1);
+    assert.equal(hooksLower.length, 1);
+    const hookUpper = hooksUpper[0];
+    const hookLower = hooksLower[0];
+    assert.ok(hookUpper !== undefined);
+    assert.ok(hookLower !== undefined);
+
+    assert.deepStrictEqual(hookUpper.conditions, hookLower.conditions,
+      'uppercase and lowercase Spectrum parse to identical conditions');
+    // lowercase spectrum is recognized (not an unresolvedMarker)
+    if (hookLower.unresolvedMarkers !== undefined && hookLower.unresolvedMarkers.length > 0) {
+      assert(!hookLower.unresolvedMarkers.includes('spectrum'),
+        'lowercase spectrum is also recognized (not marked unresolved)');
+    }
+  });
+
+  it('Spectrum condition coexists with other conditions (e.g. heroClassMatch)', () => {
+    const hooks = buildSingleAbility(
+      '[hc:tech] [keyword:Spectrum]: If you have a Scientist, draw a card. [keyword:draw:1]',
+    );
+    assert.equal(hooks.length, 1);
+    const hook = hooks[0];
+    assert.ok(hook !== undefined);
+    assert.ok(hook.conditions !== undefined);
+
+    // Two conditions: heroClassMatch (tech) + distinctHeroClassesAtLeast
+    assert.equal(hook.conditions.length, 2, 'two conditions present (heroClassMatch + Spectrum)');
+    const heroClassCond = hook.conditions[0];
+    const spectrumCond = hook.conditions[1];
+    assert.ok(heroClassCond !== undefined);
+    assert.ok(spectrumCond !== undefined);
+
+    assert.equal(heroClassCond.type, 'heroClassMatch');
+    assert.equal(heroClassCond.value, 'tech');
+    assert.equal(spectrumCond.type, 'distinctHeroClassesAtLeast');
+    assert.equal(spectrumCond.value, '3');
+
+    // Both conditions are AND-gated by the 'conditional' keyword
+    assert.ok(hook.keywords !== undefined);
+    assert(hook.keywords.includes('conditional'), 'conditional keyword for AND logic');
+  });
+
+  it('No unresolvedMarker for Spectrum even without effect markup', () => {
+    // Spectrum alone, no effect markup — a bare condition gate
+    const hooks = buildSingleAbility('[keyword:Spectrum]: Something incredible.');
+    assert.equal(hooks.length, 1);
+    const hook = hooks[0];
+    assert.ok(hook !== undefined);
+    assert.ok(hook.conditions !== undefined);
+
+    assert.equal(hook.conditions.length, 1);
+    const condition = hook.conditions[0];
+    assert.ok(condition !== undefined);
+    assert.equal(condition.type, 'distinctHeroClassesAtLeast');
+    // Spectrum is recognized as a condition, never marked unresolved
+    if (hook.unresolvedMarkers !== undefined && hook.unresolvedMarkers.length > 0) {
+      assert(!hook.unresolvedMarkers.includes('spectrum'),
+        'Spectrum should not be in unresolvedMarkers');
+    }
+  });
+});

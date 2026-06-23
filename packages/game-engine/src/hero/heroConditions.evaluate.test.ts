@@ -502,3 +502,110 @@ describe('evaluateCondition integration (WP-179)', () => {
     assert.equal(allResult, true, 'evaluateAllConditions also passes for team');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-280 — distinctHeroClassesAtLeast evaluator (self-inclusive)
+// ---------------------------------------------------------------------------
+
+describe('evaluateCondition distinctHeroClassesAtLeast (WP-280)', () => {
+  it('≥3 classes: self-inclusive boundary (2 other distinct + 3rd via self) returns true', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-tech#0', 'hero-covert#0', 'hero-instinct#0'],
+      cardTraits: {
+        'hero-tech#0': { heroClass: 'tech', team: null },
+        'hero-covert#0': { heroClass: 'covert', team: null },
+        'hero-instinct#0': { heroClass: 'instinct', team: null },
+      },
+    });
+
+    const result = evaluateCondition(gameState, '0', {
+      type: 'distinctHeroClassesAtLeast',
+      value: '3',
+    }, 'hero-instinct#0' as unknown as import('../state/zones.types.js').CardExtId);
+
+    assert.equal(result, true, 'should return true when ≥3 distinct hero classes present, self-inclusive');
+  });
+
+  it('<3 classes: self-inclusive boundary (2 other distinct + self shares one) returns false', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-tech#0', 'hero-covert#0', 'hero-tech-2#0'],
+      cardTraits: {
+        'hero-tech#0': { heroClass: 'tech', team: null },
+        'hero-covert#0': { heroClass: 'covert', team: null },
+        'hero-tech-2#0': { heroClass: 'tech', team: null },
+      },
+    });
+
+    const result = evaluateCondition(gameState, '0', {
+      type: 'distinctHeroClassesAtLeast',
+      value: '3',
+    }, 'hero-tech-2#0' as unknown as import('../state/zones.types.js').CardExtId);
+
+    assert.equal(result, false, 'should return false when only 2 distinct classes (self shares one of them)');
+  });
+
+  it('S.H.I.E.L.D./Sidekick (null heroClass) never count', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-tech#0', 'hero-covert#0', 'shield-card#0', 'hero-instinct#0'],
+      cardTraits: {
+        'hero-tech#0': { heroClass: 'tech', team: null },
+        'hero-covert#0': { heroClass: 'covert', team: null },
+        'shield-card#0': { heroClass: null, team: 'shield' },
+        'hero-instinct#0': { heroClass: 'instinct', team: null },
+      },
+    });
+
+    const result = evaluateCondition(gameState, '0', {
+      type: 'distinctHeroClassesAtLeast',
+      value: '3',
+    }, 'hero-instinct#0' as unknown as import('../state/zones.types.js').CardExtId);
+
+    assert.equal(result, true, 'should count 3 heroes (tech, covert, instinct) and ignore shield card with null heroClass');
+  });
+
+  it('NaN threshold safely returns false', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-tech#0', 'hero-covert#0', 'hero-instinct#0'],
+      cardTraits: {
+        'hero-tech#0': { heroClass: 'tech', team: null },
+        'hero-covert#0': { heroClass: 'covert', team: null },
+        'hero-instinct#0': { heroClass: 'instinct', team: null },
+      },
+    });
+
+    const result = evaluateCondition(gameState, '0', {
+      type: 'distinctHeroClassesAtLeast',
+      value: 'not-a-number',
+    });
+
+    assert.equal(result, false, 'should return false when threshold is NaN');
+  });
+
+  it('no cardTraits returns false', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-tech#0', 'hero-covert#0', 'hero-instinct#0'],
+    });
+    delete gameState.cardTraits;
+
+    const result = evaluateCondition(gameState, '0', {
+      type: 'distinctHeroClassesAtLeast',
+      value: '3',
+    });
+
+    assert.equal(result, false, 'should return false when G.cardTraits is undefined');
+  });
+
+  it('empty inPlay returns false', () => {
+    const gameState = makeTestState({
+      inPlay: [],
+      cardTraits: {},
+    });
+
+    const result = evaluateCondition(gameState, '0', {
+      type: 'distinctHeroClassesAtLeast',
+      value: '3',
+    });
+
+    assert.equal(result, false, 'should return false when no heroes in inPlay');
+  });
+});

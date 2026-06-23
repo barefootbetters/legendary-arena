@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "cardType": "hero",
   "summary": {
-    "totalRows": 623,
+    "totalRows": 627,
     "byStatus": {
-      "executable": 149,
+      "executable": 152,
       "deferred": 0,
-      "unsupported": 427,
+      "unsupported": 428,
       "unmarked": 47
     },
-    "distinctMechanics": 134
+    "distinctMechanics": 135
   },
   "rows": [
     {
@@ -4446,6 +4446,16 @@
       "extId": "ssw2/arkon-the-magnificent",
       "heroName": "Arkon the Magnificent",
       "set": "ssw2",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw"
+    },
+    {
+      "extId": "ssw2/arkon-the-magnificent",
+      "heroName": "Arkon the Magnificent",
+      "set": "ssw2",
       "mechanic": "patrol-the-rooftops",
       "status": "unsupported",
       "wp": "",
@@ -4676,11 +4686,41 @@
       "extId": "ssw2/silk",
       "heroName": "Silk",
       "set": "ssw2",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw"
+    },
+    {
+      "extId": "ssw2/silk",
+      "heroName": "Silk",
+      "set": "ssw2",
+      "mechanic": "reveal",
+      "status": "executable",
+      "wp": "WP-253",
+      "decision": "D-24024",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal"
+    },
+    {
+      "extId": "ssw2/silk",
+      "heroName": "Silk",
+      "set": "ssw2",
       "mechanic": "reveal-ko-or-draw",
       "status": "executable",
       "wp": "WP-253",
       "decision": "D-24024",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-ko-or-draw"
+    },
+    {
+      "extId": "ssw2/silk",
+      "heroName": "Silk",
+      "set": "ssw2",
+      "mechanic": "reveal-multi-take",
+      "status": "unsupported",
+      "wp": "",
+      "decision": "",
+      "handler": ""
     },
     {
       "extId": "ssw2/silk",
