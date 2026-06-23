@@ -159,10 +159,14 @@ export function executeVillainAbilities(
  * Reads the boardgame.io turn number off the (unknown-typed) ctx, defaulting to
  * 0 when absent.
  *
- * Local copy of the same helper in heroEffects.execute.ts (duplicate-first per
- * §16.1; the two executors are independent dispatch surfaces — a third
- * appearance would justify extracting it). The villain CTX test object carries
- * no `turn`, so a missing / non-numeric value falls back to 0, never a throw.
+ * Sibling of the helper in heroEffects.execute.ts, but NOT identical: this one
+ * reads `ctx.turn` directly because executeVillainAbilities receives the BARE
+ * boardgame.io Ctx (its top-level `turn` / `currentPlayer`), whereas the hero
+ * executor receives the FnContext wrapper and must read the nested `ctx.ctx.turn`.
+ * Duplicate-first per §16.1 — the two executors are independent dispatch surfaces;
+ * a third appearance would justify extracting a shape-aware reader. The villain CTX
+ * test object carries no `turn`, so a missing / non-numeric value falls back to 0,
+ * never a throw.
  *
  * @param ctx - The boardgame.io context, typed unknown to avoid a framework import.
  * @returns The turn number, or 0 when unavailable.

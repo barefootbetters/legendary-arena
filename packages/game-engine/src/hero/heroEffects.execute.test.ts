@@ -2773,6 +2773,32 @@ describe('executeHeroEffects — hollow-effect detection (WP-257)', () => {
     assert.equal(records(gameState)[0]!.turn, 0, 'turn defaults to 0 under the mock ctx');
   });
 
+  it('stamps the live turn read from the nested boardgame.io ctx (regression: was always 0)', () => {
+    // why: executeHeroEffects receives the move's FnContext WRAPPER, whose bgio Ctx —
+    // carrying `turn` — is nested at `.ctx` (this is exactly the shape playCard passes
+    // via `...context`). A prior top-level `.turn` read always missed it, so every hero
+    // hollow record stamped turn 0 regardless of the real turn. Pin the nested read
+    // against a wrapper shaped like the live move context.
+    const liveMoveContext = { ctx: { numPlayers: 2, turn: 7 } };
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: [],
+          effects: [{ type: 'totally-made-up' as HeroKeyword }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, liveMoveContext, '0', 'hero-x' as string);
+
+    assert.equal(records(gameState).length, 1, 'exactly one hollow record');
+    assert.equal(records(gameState)[0]!.turn, 7,
+      'turn is read from the nested bgio ctx (moveContext.ctx.turn), not defaulted to 0');
+  });
+
   it('unsupported keyword (recognized HeroKeyword with no handler) is NOT hollow when deferred (wound)', () => {
     // why: `wound` is on DEFERRED_BY_DESIGN_MECHANICS — a recognized keyword with
     // no handler today, classified `deferred` (reachable), NOT hollow.

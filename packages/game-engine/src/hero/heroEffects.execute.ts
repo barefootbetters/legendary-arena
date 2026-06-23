@@ -295,23 +295,31 @@ export function executeHeroEffects(
 // ---------------------------------------------------------------------------
 
 /**
- * Reads the boardgame.io turn number off the (unknown-typed) ctx, defaulting
- * to 0 when absent.
+ * Reads the boardgame.io turn number for a HollowEffectRecord, defaulting to 0
+ * when unavailable.
  *
- * The executor narrows ctx only where it needs a specific field (the draw
- * handler narrows to ShuffleProvider). The turn is read here for the
- * HollowEffectRecord. Test mocks (makeMockCtx, the villain CTX object) carry no
- * top-level `turn`, so a missing or non-numeric value falls back to 0 — never a
- * throw.
+ * executeHeroEffects is called with the move's FnContext WRAPPER — playCard's
+ * `...context` rest (`{ ctx, random, events, ... }` minus G/playerID), NOT the
+ * bare boardgame.io Ctx. The turn lives on the NESTED bgio ctx
+ * (`moveContext.ctx.turn`); a former top-level `.turn` read was always undefined,
+ * so every hero hollow record stamped turn 0 regardless of the real turn. (The
+ * draw handler reads the wrapper's top-level `.random`, which is why the wrapper —
+ * not the bare ctx — is what gets passed; the sibling villain executor receives
+ * the bare Ctx and reads `ctx.turn` directly.) Test wrappers (makeMockCtx) and any
+ * non-numeric value fall back to 0 — never a throw.
  *
- * @param ctx - The boardgame.io context, typed unknown to avoid a framework import.
+ * @param moveContext - The boardgame.io FnContext wrapper, typed unknown to avoid
+ *   a framework import.
  * @returns The turn number, or 0 when unavailable.
  */
-function readTurnNumber(ctx: unknown): number {
-  if (ctx !== null && typeof ctx === 'object') {
-    const turn = (ctx as { turn?: unknown }).turn;
-    if (typeof turn === 'number' && Number.isFinite(turn)) {
-      return turn;
+function readTurnNumber(moveContext: unknown): number {
+  if (moveContext !== null && typeof moveContext === 'object') {
+    const innerCtx = (moveContext as { ctx?: unknown }).ctx;
+    if (innerCtx !== null && typeof innerCtx === 'object') {
+      const turn = (innerCtx as { turn?: unknown }).turn;
+      if (typeof turn === 'number' && Number.isFinite(turn)) {
+        return turn;
+      }
     }
   }
   return 0;
