@@ -28,11 +28,24 @@ honors the ≥3-classes rule.
 - **WP-179** (`heroClassMatch` / `requiresTeam` conditions evaluated against
   `G.cardTraits[id].heroClass` over `playerZones.inPlay`) — ✅. The new condition
   reuses this exact read path and `evaluateAllConditions` AND-gating.
+- **Engine ordering (assumed invariant of the existing `playCard` path; NOT changed
+  here).** `playCard` moves the card into `playerZones.inPlay`
+  (`moves/coreMoves.impl.ts:144`) **before** calling `executeHeroEffects` (`:155`), and
+  `executeHeroEffects`' own JSDoc states "Called from playCard after the card is placed
+  in inPlay" (`hero/heroEffects.execute.ts:223-224`). The new self-inclusive count works
+  only because the triggering card is already in `inPlay` at evaluation time. A future
+  reorder that evaluated conditions before the `inPlay` move would silently break Spectrum
+  self-inclusion — the scaffold must observe self-inclusion against the current order.
 - **WP-215 / WP-253** (collapsed `reveal` keyword; `[keyword:reveal:N]` →
   `cost-lte N` "reveal top, draw if cost ≤ N") — ✅. The long-range markup reuses it.
 - **WP-257** (hollow-effect detector; `unresolvedMarkers` → `parse-unrecognized`)
   — ✅. This WP's honest-partial relies on the WP-257 per-hook + mixed-hook rules.
-- **Baseline:** `origin/main` `1ce1ff2e` (recorded per `01.0a §Step 2`).
+- **Baseline:** `origin/main` `3409b779` (#447), recorded per `01.0a §Step 2`. The draft
+  branches from this tip, NOT the earlier `1ce1ff2e` (#446). **#447 reshaped the hero
+  hollow-detection path** — `heroEffects.execute.ts` `readTurnNumber` now reads the nested
+  `moveContext.ctx.turn`, and it added a regression test to `heroEffects.execute.test.ts`,
+  a file in this WP's allowlist. The executor regenerates that test file's full contents
+  **onto** #447's addition; reverting #447's test is a FAIL.
 - **Card data:** `data/cards/ssw2.json` carries the 13 `[keyword:Spectrum]` lines
   (present since the 2026-05-06 pipeline migration). **ssw2 is a non-reproducible
   pipeline set** (`reference_card_pipeline_multistage`) — its markup is edited
@@ -124,9 +137,11 @@ hash**; do not label its regeneration a "sentinel re-pin."
   `heroKeywords.ts`.
 
 **Locked Contract Values:**
-- Condition `{ type: 'distinctHeroClassesAtLeast', value: '3' }` — distinct non-empty
-  `G.cardTraits[id].heroClass` over `playerZones[pid].inPlay`, self-inclusive,
-  `>= parseInt(value)`; `NaN` → false. `// why: D-24055`.
+- Condition `{ type: 'distinctHeroClassesAtLeast', value: '3' }` — count of distinct
+  `G.cardTraits[id].heroClass` over `playerZones[pid].inPlay`, each added to a
+  `Set<string>` ONLY when `typeof heroClass === 'string' && heroClass.length > 0`
+  (skips the `null` S.H.I.E.L.D./Sidekick carry), self-inclusive (no `triggeringCardId`
+  skip), `set.size >= parseInt(value, 10)`; `NaN` → false. `// why: D-24055`.
 - `SPECTRUM_CLASS_THRESHOLD = 3` (rulebook; D-24055).
 - Parser: `[keyword:Spectrum]` (any case) → push the condition (NOT a keyword, NOT an
   unresolved marker), before the unresolved-marker fallback.
@@ -137,13 +152,18 @@ hash**; do not label its regeneration a "sentinel re-pin."
 ## Scope (In)
 
 1. **New hero condition `distinctHeroClassesAtLeast`**
-   (`hero/heroConditions.evaluate.ts`): a `case` that counts **distinct
-   non-empty** `G.cardTraits[id].heroClass` values across
-   `playerZones[pid].inPlay` and returns `count >= parseInt(condition.value, 10)`.
-   **Self-INCLUSIVE** — unlike `heroClassMatch`/`requiresTeam`, the triggering
-   card is **counted** (you "have" the classes; the played Spectrum card is in
-   `inPlay` when `executeHeroEffects` runs). S.H.I.E.L.D. / Sidekick cards carry
-   no `heroClass` in `G.cardTraits`, so they contribute nothing automatically.
+   (`hero/heroConditions.evaluate.ts`): a `case` that counts **distinct hero
+   classes** across `playerZones[pid].inPlay` — each card's
+   `G.cardTraits[id].heroClass` added to a `Set<string>` **only when
+   `typeof heroClass === 'string' && heroClass.length > 0`** — and returns
+   `set.size >= parseInt(condition.value, 10)`. The `typeof`-string guard is
+   load-bearing: `CardTraitEntry.heroClass` is `string | null`
+   (`state/cardTraits.types.ts:20`), and S.H.I.E.L.D./Sidekick cards carry
+   `heroClass: null` — the guard is what keeps them out of the set (a bare
+   `!== ''` check would let `null` count as a phantom class). **Self-INCLUSIVE** —
+   unlike `heroClassMatch`/`requiresTeam`, the triggering card is **counted** (you
+   "have" the classes; it is already in `inPlay` when `executeHeroEffects` runs, per
+   the §Assumes engine-ordering invariant).
 2. **`SPECTRUM_CLASS_THRESHOLD = 3`** constant (with a `// why:` citing the
    rulebook + D-24055), used to build the condition's `value`.
 3. **Parser recognition** (`setup/heroAbility.setup.ts`): in the `[keyword:X]`
@@ -205,10 +225,12 @@ hash**; do not label its regeneration a "sentinel re-pin."
 ## Contract
 
 - **`HeroCondition` `distinctHeroClassesAtLeast`** — `{ type:
-  'distinctHeroClassesAtLeast', value: '3' }`. Evaluation: distinct non-empty
-  `G.cardTraits[id].heroClass` across `playerZones[pid].inPlay`, **self-inclusive**,
-  `>= parseInt(value)`. `HeroCondition` stays the open `{ type: string; value:
-  string }` shape (no closed-union/drift-array — conditions are not enumerated).
+  'distinctHeroClassesAtLeast', value: '3' }`. Evaluation: count of distinct
+  `G.cardTraits[id].heroClass` across `playerZones[pid].inPlay`, counted via a
+  `Set<string>` guarded by `typeof heroClass === 'string' && heroClass.length > 0`
+  (`null`/Sidekick excluded), **self-inclusive** (no `triggeringCardId` skip),
+  `set.size >= parseInt(value, 10)`. `HeroCondition` stays the open `{ type: string;
+  value: string }` shape (no closed-union/drift-array — conditions are not enumerated).
 - **Parser:** `[keyword:Spectrum]` (any case) → one
   `distinctHeroClassesAtLeast` condition on the hook; never a keyword, never an
   unresolved marker. The line's printed effect markup supplies the effects the
@@ -245,9 +267,14 @@ is unaffected.
 1. `[keyword:Spectrum]` (any case) parses to a single
    `distinctHeroClassesAtLeast` condition on the hook, with no `spectrum`
    `unresolvedMarker` and no `spectrum` in `hook.keywords`.
-2. `distinctHeroClassesAtLeast` returns true iff ≥ `value` distinct non-empty
-   hero classes are in `inPlay` (self-inclusive); S.H.I.E.L.D./Sidekick (no
-   class) never contribute; <3 → false.
+2. `distinctHeroClassesAtLeast` returns true iff ≥ `value` distinct hero classes
+   (`typeof === 'string'`, length > 0) are in `inPlay` (self-inclusive);
+   S.H.I.E.L.D./Sidekick (`heroClass: null`) never contribute; <3 → false.
+   **Self-inclusion boundary (asserted):** with exactly 2 distinct classes among the
+   OTHER in-play cards, a played Spectrum card whose own class is a distinct 3rd → gate
+   **true**; the sibling fixture where that card instead **shares** one of those 2
+   classes → gate **false** (only 2 distinct). This pair is the test that proves the
+   count includes self AND that `null`/Sidekick cards do not inflate it.
 3. A marked-up Spectrum hero line (`cascading-maneuver` draw) **executes its
    effect when ≥3 classes are in play** and is a **clean condition-failed no-op
    (NOT hollow)** when <3.
@@ -259,12 +286,15 @@ is unaffected.
    when played with ≥3 classes (the gate passes → detection runs; honest-partial).
 6. `HERO_KEYWORDS` / `HANDLED_KEYWORDS` / `HERO_EFFECT_HANDLERS` are
    byte-unchanged; the handler-key bidirectional drift test is unchanged.
-7. The hero mechanic ledger no longer reports `spectrum` as `unsupported` — as a
-   `hook.conditions` entry it is invisible to the ledger's mechanic extraction
-   (keywords/effects/unresolvedMarkers), so `spectrum` **drops out** of the ledger
-   (RS-2: confirm at scaffold whether it vanishes cleanly or needs a mapping
-   extension); the committed coverage artifacts are regenerated in the same commit
-   and the freshness gates pass.
+7. **Binary end-state:** after the change, `spectrum` is NOT classified `unsupported`
+   in the hero mechanic ledger — a `spectrum` row still marked `unsupported` post-change
+   is a FAIL. Expected mechanism (RS-2): as a `hook.conditions` entry it is invisible to
+   the ledger's mechanic extraction (keywords/effects/unresolvedMarkers), so `spectrum`
+   **drops out** entirely. If the scaffold instead shows it lingers, the executor either
+   extends the ledger's classification logic (folded in-scope) OR documents in the
+   commit body why it is correctly extracted — but not-`unsupported` is non-negotiable.
+   The committed coverage artifacts are regenerated in the same commit and the freshness
+   gates pass.
 8. The deterministic sweep sentinel `finalStateHash` is **UNCHANGED** (the
    sentinel board is core-only; gating ssw2 Spectrum cannot move it). The
    coverage-baseline ssw2 row + the runtime-observed delta are recorded at
@@ -320,6 +350,23 @@ Gate order pre-flight → copilot → lint, against `origin/main` @ `1ce1ff2e`.
   RS-1 (the honest-partial flag requires the gate to pass) + RS-2 (the condition mechanic
   drops from the ledger rather than "reclassifies") folded in; re-verified residue-free.
   Verdict READY.
+- **Audit-tightening pass (2026-06-22) — clarifications, no design change; gates not
+  re-run.** Applied as a `SPEC:` surgical correction (`01.0a §Step 3`, audit-edit-to-an-
+  existing-WP path). Five sharpenings, each already covered by the mandatory execution
+  scaffold so no re-gate is triggered: (1) **baseline corrected** `1ce1ff2e` → `3409b779`
+  (#447 had landed on the hollow-detection path + the `heroEffects.execute.test.ts`
+  allowlist file — executor merges onto it); (2) **distinct-count normalization locked**
+  to `typeof heroClass === 'string' && length > 0` because `CardTraitEntry.heroClass` is
+  `string | null` and the `null` Sidekick carry must not count (the prior "non-empty"
+  phrasing was ambiguous about `null`); (3) **self-inclusion boundary test** added
+  (2-other-distinct + 3rd-via-self → true; shares-a-class → false), verified achievable
+  against `coreMoves.impl.ts:144→:155`; (4) **AC-7 ledger** restated as a binary
+  not-`unsupported` end-state (keeps RS-2's scaffold-discovery of the mechanism); (5)
+  **condition-failed / sentinel** assertions sharpened to cite
+  `heroEffects.execute.ts:255-261/289` and a hard no-commit-on-hash-change. The audit's
+  rename (`hasAtLeastDistinctHeroClasses`) was declined — `distinctHeroClassesAtLeast` is
+  a value locked by D-24055 / the EC, and a cosmetic rename would desync the reserved
+  decision for no payoff.
 - **Copilot check (01.7): PASS (2026-06-23) — disposition CONFIRM.** All 30 failure modes
   clear: layer/boundary lock (engine + card-data only; `apps`/`registry`/`server`/`ai.legalMoves`/`heroKeywords`
   byte-unchanged with a `git diff` step); determinism (#2/#23 — condition reads only `G`,
