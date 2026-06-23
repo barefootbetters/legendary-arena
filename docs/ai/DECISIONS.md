@@ -25622,4 +25622,39 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 **Relates to.** Builds on WP-091 (`useLoadoutDraft`) and the WP-114 `useSetupFromUrl` post-load-instantiation precedent; consumes the `FlatCard.extId` id-space (D-24018). Bulk "add all filtered heroes" from the Cards filter bar and a reverse "view in Cards" cross-link from loadout chips are named follow-ups, out of scope.
 
+### D-24055 — Spectrum Modeled as a ≥3-Hero-Class Conditional Gate (Not a Keyword); Self-Inclusive Distinct-Class Count
+
+**Status:** **Reserved** (drafted 2026-06-23 for WP-280 / EC-311; not yet landed). Flips to **Active (post-execution)** when WP-280 executes.
+
+**Context.** Spectrum is an ssw2 keyword (`data/metadata/keywords-full.json`): *"You can use a card's Spectrum abilities only if you have at least 3 classes of Hero (e.g. Covert, Strength and Ranged). Grey S.H.I.E.L.D. Heroes and normal Sidekicks don't have classes."* Today `[keyword:Spectrum]` is **unrecognized** → it resolves to an `unresolvedMarker`, so the 6 icon-bearing Spectrum hero lines fire their `+attack`/`+recruit` **ungated** (a rules violation) and the 4 plain-English Spectrum hero lines do nothing (the live `parse-unrecognized` onPlay hollows — operator field report 2026-06-22). Structurally, Spectrum **gates the whole ability line** — exactly like the existing `[hc:X]:` / `[team:X]:` conditions — it is not itself an effect.
+
+**Decision.** Model Spectrum as a hero **CONDITION**, never a `HeroKeyword`:
+
+- New `HeroCondition` `{ type: 'distinctHeroClassesAtLeast', value: '3' }`. `evaluateCondition` adds a case that counts **distinct non-empty** `G.cardTraits[id].heroClass` values across `playerZones[pid].inPlay` and returns `count >= parseInt(value, 10)` (`NaN` → false, the `playedThisTurn` safe-skip precedent; `for…of` + a `Set`, no `.reduce()`).
+- **Self-INCLUSIVE.** The triggering card **is** counted — you "have" ≥3 classes, and the played Spectrum card is already in `inPlay` when `executeHeroEffects` runs. This deliberately **inverts** the self-exclusion `heroClassMatch`/`requiresTeam` use (those require *another* card of the class). S.H.I.E.L.D. / Sidekick cards carry no `heroClass` in `G.cardTraits`, so they never contribute — the rulebook carve-out is satisfied for free.
+- `SPECTRUM_CLASS_THRESHOLD = 3` (the rulebook value).
+- The parser (`setup/heroAbility.setup.ts`) recognizes `[keyword:Spectrum]` (case-insensitive) and attaches this condition to the hook (merged with `heroClassMatch`/`requiresTeam`), so the line's printed effect markup gates on it via the existing `evaluateAllConditions` AND-gate. Spectrum is **not** added to `HERO_KEYWORDS` / `MVP_KEYWORDS` / `HERO_EFFECT_HANDLERS`; `HeroCondition` stays the open `{ type: string; value: string }` shape (conditions are not a closed, drift-checked union, so no canonical-array update).
+- **Behavior change accepted (operator decision 2026-06-22):** recognizing Spectrum gates **all 10** hero Spectrum lines, including the 6 that previously fired ungated. This is a correctness fix that nerfs those cards; it is the intended deliverable, not a regression.
+
+**Determinism.** The deterministic sweep plays Spectrum hero cards; gating their effects changes outcomes → the sweep sentinel `finalStateHash` changes and is **re-pinned** per WP-236 (divergence EXPECTED here — unlike WP-273/275, where the sentinel was unchanged). Game determinism is preserved: the condition reads only `G`, no RNG / I/O.
+
+**Relates to.** WP-179 (the `heroClassMatch` / `requiresTeam` condition path + `G.cardTraits` read this reuses); WP-257 (a <3-class Spectrum play is a `condition-failed` reachable-not-hollow outcome). Paired with **D-24056** (the effect markup + honest-partial scope).
+
+### D-24056 — Spectrum Simple-Effect Markup + Honest-Partial on the Multi-Card Reveal
+
+**Status:** **Reserved** (drafted 2026-06-23 for WP-280 / EC-311; not yet landed). Flips to **Active (post-execution)** when WP-280 executes.
+
+**Context.** Recognizing Spectrum as a gate (D-24055) supplies no effect — the plain-English Spectrum lines must have their printed effect marked up, or they become *silenced-but-broken* once the marker resolves (the dishonest-partial WP-257 forbids). Three map to existing keywords; one (`borrowed-cloaking-device`, *"Reveal the top four cards … put any combination with a total cost of 2 or less into your hand …"*) needs a multi-card sum-cost-select reveal primitive that does not exist.
+
+**Decision.** Mark up directly in `data/cards/ssw2.json` (**ssw2 is a non-reproducible pipeline set** — edit the JSON directly, never regenerate):
+
+- `quiver-of-thunderbolts`, `cascading-maneuver` (*"Draw a card"*) → append `[keyword:draw:1]`.
+- `long-range-spider-sense` (*"Reveal the top card … if it costs 2 or less, draw it"*) → append `[keyword:reveal:2]` — the base `reveal` keyword builds a `cost-lte` predicate (draw if cost ≤ N); **NOT** `reveal-min`, which builds `cost-gte`. The token is scaffold-pinned at execution.
+- `borrowed-cloaking-device` keeps an explicit **unrecognized placeholder marker** (`[keyword:reveal-multi-take:2]`) so the line stays a reported `parse-unrecognized` hollow. The multi-card sum-cost-select reveal primitive is a **named follow-up**, not built here — the honest-partial: do not silence a card that still does nothing.
+- **Villain Spectrum lines** (`doctor-spectrum`, `pink-sphinx` `Fight:` / `Escape:`) are out of scope — villain parser, "player *has* Spectrum" semantics.
+
+**Determinism.** Card-data markup is deterministic input; the gameplay effect of the marked lines is part of the D-24055 sentinel re-pin.
+
+**Relates to.** D-24055 (the gate this markup feeds); WP-215 / WP-253 (the `reveal` `cost-lte` token); the WP-257 honest-partial / mixed-hook rules.
+
 Protect this file.
