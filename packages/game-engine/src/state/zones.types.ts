@@ -33,6 +33,23 @@ export type CardExtId = string;
 export type Zone = CardExtId[];
 
 /**
+ * A face-down card stored in a player's face-down zone (WP-282 / D-24059).
+ *
+ * Face-down cards hide their identity until explicitly revealed or played.
+ * The instanceId is the zone reference (used for moves), and cardId stores
+ * the card template identity for effect resolution. Both are CardExtId strings;
+ * cardId is stored redundantly as a validation field (IC-282-01).
+ */
+export interface FaceDownCard {
+  /** Unique per-card instance identifier (zone reference for moves). */
+  instanceId: CardExtId;
+  /** Template identity for effect resolution (same as instanceId, stored redundantly). */
+  cardId: CardExtId;
+  /** The player who owns this face-down card (for ownership validation). */
+  ownerPlayerId: string;
+}
+
+/**
  * Per-player card zones. All arrays contain CardExtId strings only.
  *
  * After setup, only `deck` is non-empty. Cards enter other zones
@@ -49,6 +66,8 @@ export interface PlayerZones {
   inPlay: Zone;
   /** Defeated villains and rescued bystanders. Empty at setup. */
   victory: Zone;
+  /** Cards sent face-down (hidden identity until played). Empty at setup (WP-282). */
+  faceDownCards: readonly FaceDownCard[];
 }
 
 /**
