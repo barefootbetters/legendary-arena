@@ -6,7 +6,8 @@
     "byStatus": {
       "executable": 152,
       "deferred": 0,
-      "unsupported": 428,
+      "condition": 5,
+      "unsupported": 423,
       "unmarked": 47
     },
     "distinctMechanics": 135
@@ -4427,7 +4428,7 @@
       "heroName": "Agent Venom",
       "set": "ssw2",
       "mechanic": "spectrum",
-      "status": "unsupported",
+      "status": "condition",
       "wp": "",
       "decision": "",
       "handler": ""
@@ -4487,7 +4488,7 @@
       "heroName": "Arkon the Magnificent",
       "set": "ssw2",
       "mechanic": "spectrum",
-      "status": "unsupported",
+      "status": "condition",
       "wp": "",
       "decision": "",
       "handler": ""
@@ -4557,7 +4558,7 @@
       "heroName": "Captain and the Devil, The",
       "set": "ssw2",
       "mechanic": "spectrum",
-      "status": "unsupported",
+      "status": "condition",
       "wp": "",
       "decision": "",
       "handler": ""
@@ -4617,7 +4618,7 @@
       "heroName": "Elsa Bloodstone",
       "set": "ssw2",
       "mechanic": "spectrum",
-      "status": "unsupported",
+      "status": "condition",
       "wp": "",
       "decision": "",
       "handler": ""
@@ -4727,7 +4728,7 @@
       "heroName": "Silk",
       "set": "ssw2",
       "mechanic": "spectrum",
-      "status": "unsupported",
+      "status": "condition",
       "wp": "",
       "decision": "",
       "handler": ""

@@ -12,16 +12,18 @@
  *   heroName   — display name
  *   set        — set abbreviation
  *   mechanic   — normalized [keyword:X] token (or "(unmarked)" — see below)
- *   status     — executable | deferred | unsupported | unmarked
+ *   status     — executable | deferred | condition | unsupported | unmarked
  *   wp         — Work Packet that implemented the mechanic (from provenance map)
  *   decision   — DECISIONS.md id for it (from provenance map)
  *   handler    — where the code is (module#key) for executable mechanics
  *
- * Status meanings (the four kinds of state, not just done/not-done):
+ * Status meanings (the five kinds of state, not just done/not-done):
  *   executable   — mechanic ∈ MVP_KEYWORDS (its executor mutates G today); a STATIC
  *                  composition marker (berserk — by-name, every parsed one resolves, D-24031);
  *                  OR a PARAMETERIZED composition marker THIS card's hook resolved (by-hook, D-24045)
  *   deferred     — mechanic ∈ HERO_KEYWORDS but not MVP: parsed, executor defers
+ *   condition    — a recognized condition-gate mechanic (D-24055 spectrum: requires ≥3 hero classes);
+ *                  not a keyword/effect executor, gates when effects fire
  *   unsupported  — mechanic ∉ HERO_KEYWORDS with no handler (a CODE todo), OR a PARAMETERIZED
  *                  composition marker this card's hook did NOT resolve — a deferred variant
  *                  with no executable primitive yet (by-hook, D-24045)
@@ -103,6 +105,13 @@ const COMPOSITION_MARKERS = new Set(HERO_COMPOSITION_MARKER_NAMES);
 // printed on a transform-hero back face is a separate (out-of-scope) transform-modeling
 // concern, not a by-name over-claim, so by-name avoids under-claiming it.
 const PARAMETERIZED_COMPOSITION_MARKERS = new Set(PARAMETERIZED_COMPOSITION_MARKER_NAMES);
+// why: D-24055 — condition-gate mechanics (spectrum) are recognized by the parser
+// as conditions, not keywords. They gate effects but are themselves distinct
+// mechanics that should be tracked in the ledger. Mapping from normalized keyword
+// token (what appears in card markup) to condition type.
+const KNOWN_CONDITIONS = {
+  'spectrum': 'distinctHeroClassesAtLeast',  // requires ≥3 hero classes (D-24055)
+};
 
 /** Error type signalling a probe failure (exit code 2). */
 class ProbeFailure extends Error {}
@@ -148,18 +157,24 @@ function extractMechanics(abilities) {
 }
 
 /**
- * Classifies a mechanic token into one of the keyword-derived states.
+ * Classifies a mechanic token into one of the mechanic states.
  * (`unmarked` is decided by the caller, since it is the absence of any token.)
  *
  * Keyword mechanics (MVP / known) are classified by name — their status is the same
  * for every card that bears them. A composition marker is classified by-hook (per-card):
- * executable only when THIS card's hook actually resolved it.
+ * executable only when THIS card's hook actually resolved it. Conditions are recognized
+ * gatekeeping mechanics.
  *
  * @param {string} mechanic - a normalized mechanic name.
  * @param {Set<string>} cardResolvedMarkers - the composition markers THIS card's hooks resolved.
- * @returns {'executable'|'deferred'|'unsupported'} the status.
+ * @returns {'executable'|'deferred'|'condition'|'unsupported'} the status.
  */
 function statusForMechanic(mechanic, cardResolvedMarkers) {
+  // why: D-24055 — conditions are recognized gate mechanics (spectrum requires ≥3 classes).
+  // They are distinct mechanics worth tracking, but not keywords/effects themselves.
+  if (KNOWN_CONDITIONS[mechanic] !== undefined) {
+    return 'condition';
+  }
   if (MVP_KEYWORDS.has(mechanic)) {
     return 'executable';
   }
@@ -304,7 +319,7 @@ function buildLedger(registry, provenance) {
 
   const summary = {
     totalRows: rows.length,
-    byStatus: { executable: 0, deferred: 0, unsupported: 0, unmarked: 0 },
+    byStatus: { executable: 0, deferred: 0, condition: 0, unsupported: 0, unmarked: 0 },
     distinctMechanics: 0,
   };
   const distinct = new Set();
@@ -459,7 +474,7 @@ async function main() {
   console.log(`Hero mechanic ledger written (${summary.totalRows} rows):`);
   console.log(
     `  executable ${summary.byStatus.executable} · deferred ${summary.byStatus.deferred} · ` +
-      `unsupported ${summary.byStatus.unsupported} · unmarked ${summary.byStatus.unmarked}`,
+      `condition ${summary.byStatus.condition} · unsupported ${summary.byStatus.unsupported} · unmarked ${summary.byStatus.unmarked}`,
   );
   console.log(`  ${summary.distinctMechanics} distinct mechanics`);
   console.log(`  ${LEDGER_JSON_PATH}`);

@@ -440,26 +440,26 @@ ssw1/thanos,Thanos,ssw1,teleport,unsupported,,,
 ssw1/ultimate-spider-man,Ultimate Spider-Man,ssw1,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal
 ssw2/agent-venom,Agent Venom,ssw2,patrol-the-bank,unsupported,,,
 ssw2/agent-venom,Agent Venom,ssw2,patrol-the-sewers,unsupported,,,
-ssw2/agent-venom,Agent Venom,ssw2,spectrum,unsupported,,,
+ssw2/agent-venom,Agent Venom,ssw2,spectrum,condition,,,
 ssw2/agent-venom,Agent Venom,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
 ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,patrol-the-rooftops,unsupported,,,
 ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,patrol-the-sewers,unsupported,,,
 ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,patrol-two-adjacent-city-spaces,unsupported,,,
-ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,spectrum,unsupported,,,
+ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,spectrum,condition,,,
 ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
 ssw2/beast,Beast,ssw2,patrol-any-city-space,unsupported,,,
 ssw2/beast,Beast,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
 ssw2/black-swan,Black Swan,ssw2,(unmarked),unmarked,,,
 ssw2/captain-britain,Captain Britain,ssw2,patrol-the-rooftops,unsupported,,,
 ssw2/captain-and-the-devil-the,"Captain and the Devil, The",ssw2,patrol-the-streets,unsupported,,,
-ssw2/captain-and-the-devil-the,"Captain and the Devil, The",ssw2,spectrum,unsupported,,,
+ssw2/captain-and-the-devil-the,"Captain and the Devil, The",ssw2,spectrum,condition,,,
 ssw2/corvus-glaive,Corvus Glaive,ssw2,patrol-the-escape-pile,unsupported,,,
 ssw2/dr-punisher-soldier-supreme,"Dr. Punisher, Soldier Supreme",ssw2,patrol-every-city-space,unsupported,,,
 ssw2/dr-punisher-soldier-supreme,"Dr. Punisher, Soldier Supreme",ssw2,patrol-the-streets,unsupported,,,
 ssw2/dr-punisher-soldier-supreme,"Dr. Punisher, Soldier Supreme",ssw2,reveal-ko-attack,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-ko-attack
 ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,patrol-the-sewers,unsupported,,,
-ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,spectrum,unsupported,,,
+ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,spectrum,condition,,,
 ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
 ssw2/phoenix-force-cyclops,Phoenix Force Cyclops,ssw2,(unmarked),unmarked,,,
 ssw2/ruby-summers,Ruby Summers,ssw2,teleport,unsupported,,,
@@ -470,7 +470,7 @@ ssw2/silk,Silk,ssw2,draw,executable,,,packages/game-engine/src/hero/heroEffects.
 ssw2/silk,Silk,ssw2,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal
 ssw2/silk,Silk,ssw2,reveal-ko-or-draw,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-ko-or-draw
 ssw2/silk,Silk,ssw2,reveal-multi-take,unsupported,,,
-ssw2/silk,Silk,ssw2,spectrum,unsupported,,,
+ssw2/silk,Silk,ssw2,spectrum,condition,,,
 ssw2/silk,Silk,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
 ssw2/soulsword-colossus,Soulsword Colossus,ssw2,cross-dimensional-colossus-rampage,unsupported,,,
 ssw2/spider-gwen,Spider-Gwen,ssw2,patrol-the-bank,unsupported,,,
