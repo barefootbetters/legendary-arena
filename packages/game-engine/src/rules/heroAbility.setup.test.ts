@@ -233,7 +233,7 @@ describe('buildHeroAbilityHooks', () => {
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 19 canonical keyword values', () => {
+  it('contains exactly the 20 canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -253,13 +253,14 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'optional-ko-reward',
       'wall-crawl', // why: D-24049 — recruit-time-executed keyword
       'dodge', // why: D-24051 — hand-action-executed keyword (the dodgeCard move)
+      'undercover', // why: D-24060 / WP-282 — face-down-send-and-play keyword
       'conditional',
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      19,
-      'HERO_KEYWORDS must have exactly 19 entries',
+      20,
+      'HERO_KEYWORDS must have exactly 20 entries',
     );
 
     assert.deepStrictEqual(
@@ -271,6 +272,9 @@ describe('HERO_KEYWORDS drift-detection', () => {
     // why: D-24051 — explicit membership assertion so the keyword cannot silently
     // drop out of the union/array while the count stays correct via a swap.
     assert.ok(HERO_KEYWORDS.includes('dodge'), 'HERO_KEYWORDS must contain dodge');
+
+    // why: D-24060 / WP-282 — explicit assertion for undercover keyword
+    assert.ok(HERO_KEYWORDS.includes('undercover'), 'HERO_KEYWORDS must contain undercover');
 
     // Verify no duplicates
     const uniqueKeywords = new Set(HERO_KEYWORDS);

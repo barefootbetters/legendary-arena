@@ -42,7 +42,8 @@ export type HeroKeyword =
   | 'optional-ko-reward' // why: D-24019 — "you may KO a card from hand/discard; if you do, <reward>"; rewardType carries the reward
   | 'wall-crawl' // why: D-24049 — printed "Wall-Crawl" ("when you recruit this Hero, you may put it on top of your deck"); executable via the recruitHero deck-top placement, not an onPlay HERO_EFFECT_HANDLERS entry
   | 'dodge' // why: D-24051 — printed "Dodge" ("during your turn, you may discard this card from your hand to draw another card"); executable via the dodgeCard hand-discard-to-draw move, not an onPlay HERO_EFFECT_HANDLERS entry
-  | 'conditional';
+  | 'conditional'
+  | 'undercover'; // why: D-24060 / WP-282 — "send a card face-down, play it later from face-down state"; executable via sendUndercover + playFromUndercover moves on onPlay trigger
 
 // why: canonical array for drift-detection. Must match HeroKeyword
 // union exactly. Drift-detection test in heroAbility.setup.test.ts
@@ -70,6 +71,7 @@ export const HERO_KEYWORDS: readonly HeroKeyword[] = [
   'optional-ko-reward', // why: D-24019 — "you may KO a card from hand/discard; if you do, <reward>"; rewardType carries the reward
   'wall-crawl', // why: D-24049 — printed "Wall-Crawl"; executable via the recruitHero deck-top placement, not an onPlay HERO_EFFECT_HANDLERS entry
   'dodge', // why: D-24051 — printed "Dodge"; executable via the dodgeCard hand-discard-to-draw move, not an onPlay HERO_EFFECT_HANDLERS entry
+  'undercover', // why: D-24060 / WP-282 — "send a card face-down, play it later"; executable via sendUndercover + playFromUndercover moves on onPlay trigger
   'conditional',
 ] as const;
 
