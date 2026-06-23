@@ -7,6 +7,7 @@ import { useGlossary } from "../composables/useGlossary";
 import { useResizable } from "../composables/useResizable";
 import { useLightbox } from "../composables/useLightbox";
 import { TYPE_COLOR, HC_COLOR, RARITY_LABEL } from "../lib/theme";
+import { resolveLoadoutSlot } from "../lib/loadoutCardActions";
 import CardDataDisplay from "./CardDataDisplay.vue";
 
 import type { SchemeTwistPattern, CardPattern } from "@legendary-arena/registry/schema";
@@ -14,13 +15,41 @@ import type { SchemeTwistPattern, CardPattern } from "@legendary-arena/registry/
 const props = defineProps<{
   card: FlatCard;
   viewMode: "image" | "data";
+  inLoadout: boolean;
   twistPatterns?: readonly SchemeTwistPattern[];
   heroPatterns?: readonly CardPattern[];
   villainPatterns?: readonly CardPattern[];
   henchmanPatterns?: readonly CardPattern[];
   mastermindPatterns?: readonly CardPattern[];
 }>();
-const emit = defineEmits<{ close: [] }>();
+const emit = defineEmits<{ close: []; "toggle-loadout": [] }>();
+
+// ── Add-to-loadout button (WP-279) ───────────────────────────────────────────
+// why: the button shows ONLY for the five composition entity types — gated by
+// the shared resolveLoadoutSlot helper (the single source of cardType→slot
+// routing) so bystander / wound / other never render it. Label + state are
+// presentation only; App.vue owns the toggle via the shared draft.
+const loadoutSlot = computed(() => resolveLoadoutSlot(props.card.cardType));
+const showLoadoutButton = computed(() => loadoutSlot.value !== null);
+
+const loadoutButtonLabel = computed<string>(() => {
+  const slot = loadoutSlot.value;
+  const groupName = props.card.groupName ?? props.card.name;
+  if (slot === "hero") {
+    return props.inLoadout
+      ? `✓ ${groupName} in loadout — remove`
+      : `➕ Add ${groupName} to loadout`;
+  }
+  if (slot === "scheme") {
+    return props.inLoadout ? "✓ Scheme — clear" : "➕ Set as Scheme";
+  }
+  if (slot === "mastermind") {
+    return props.inLoadout ? "✓ Mastermind — clear" : "➕ Set as Mastermind";
+  }
+  // villain / henchman: a group slot, but the entity name is already the panel
+  // heading, so the button copy stays generic.
+  return props.inLoadout ? "✓ In loadout — remove" : "➕ Add group to loadout";
+});
 
 // ── Resizable panel width (persisted) ───────────────────────────────────────
 // why: users with wide screens want a bigger detail panel; users on small
@@ -164,6 +193,16 @@ const matchedMechanicalPattern = computed(() => {
     </div>
 
     <div class="detail-body">
+      <!-- Add-to-loadout button (WP-279) — only for the five composition types;
+           visible in both image and data view modes. -->
+      <button
+        v-if="showLoadoutButton"
+        type="button"
+        class="loadout-btn"
+        :class="{ 'in-loadout': inLoadout }"
+        @click="emit('toggle-loadout')"
+      >{{ loadoutButtonLabel }}</button>
+
       <!-- Data view: structured FlatCard attributes (printable). -->
       <CardDataDisplay v-if="viewMode === 'data'" :card="card" />
 
@@ -373,6 +412,29 @@ const matchedMechanicalPattern = computed(() => {
 .close-btn { background: none; border: none; color: #6666aa; font-size: 1.1rem; cursor: pointer; padding: 0.2rem 0.4rem; border-radius: 4px; }
 .close-btn:hover { background: #2a2a3a; color: #e8e8ee; }
 .detail-body { overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
+
+/* ── Add-to-loadout button (WP-279) ──────────────────────────────────────── */
+.loadout-btn {
+  width: 100%;
+  background: #2a2a5a;
+  border: 1px solid #7070e0;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  font-family: inherit;
+  border-radius: 6px;
+  padding: 0.55rem 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.loadout-btn:hover { background: #3a3a7a; }
+/* In-loadout (remove/clear) state: green outline so it reads as "already added". */
+.loadout-btn.in-loadout {
+  background: #173a2a;
+  border-color: #2e7d52;
+  color: #6ee7b7;
+}
+.loadout-btn.in-loadout:hover { background: #1d4a35; }
 
 /* ── Card image ──────────────────────────────────────────────────────────── */
 /* why: .img-wrap became a <button> (EC-103). Reset native button styles to

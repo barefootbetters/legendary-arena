@@ -195,6 +195,7 @@ mindmap
         ["WP-276 ✅ Registry-viewer mechanic filter searchable dropdown (reworks WP-270's chip ribbon into a searchable multi-select toggle + position:fixed popover listing all 134 mechanics, escaping the drawer's overflow:hidden clip; supersedes WP-270 AC-7 curated-visible ribbon as a consumer presentation choice — feed + v-model contract unchanged, filter stays OR-within / AND-across; D-24052)"]
         ["WP-277 ✅ Mechanic dropdown scroll fix (regression in WP-276 — the capture-phase window scroll listener that closes the position:fixed popover also caught the popover list's own scroll → instantly closed the dropdown, making the list look unscrollable; onViewportChange now ignores scrolls whose target is inside the popover root, still closes on outside page/drawer scroll + resize; bugfix, no DECISIONS change)"]
         ["WP-278 ✅ Registry-viewer search header redesign — unified FilterDropdown (new shared FilterDropdown.vue standard control rebuilds Set·Class·Type·Mechanics·Effects on one row + a contextual Patterns dropdown, collapsing the scheme-twist + mechanical-pattern ribbons and deleting AbilityEffectFilter/SchemeTwistFilter/PatternFilter/MechanicFilter; filtering logic unchanged — OR-within / AND-across, D-24046 + D-24052 preserved; D-24053)"]
+        ["WP-279 ✅ Cards tab add-to-loadout (lifts useLoadoutDraft from LoadoutBuilder.vue to App.vue as ONE shared instance — lifted not singletonized, instantiated post-registry-load mirroring useSetupFromUrl; CardDetail.vue gains a contextual add/remove button for the 5 composition types only, hero→addHeroGroup(card.extId)/scheme/mastermind set-clear/villain/henchman add-remove, Always-Leads groups not removable; new floating LoadoutTray.vue pill; pure loadoutCardActions.ts helper carries the tested cardType→slot invariant; no engine/contract/MatchSetupConfig change, consumes existing UseLoadoutDraftApi + FlatCard.extId D-24018; D-24054)"]
 
       Phase 8 — Interactive Board Layout
         ["WP-128 ✅ UIState board projections"]
@@ -420,7 +421,7 @@ mindmap
 | Client Integration Cluster | 21/21 | — |
 | Auth Stack & Profile Surface | 14/14 | — |
 | Engine + Server Wiring & Leaderboard HTTP | 3/3 | — |
-| Registry Viewer Enhancements | 20/20 | — |
+| Registry Viewer Enhancements | 21/21 | — |
 | Phase 8 — Interactive Board Layout | 3/3 | — |
 | G-State Extensions | 4/4 | — |
 | Monetization Stack | 3/3 | — |
@@ -444,7 +445,7 @@ mindmap
 | Next Horizons | 0/5 | 5 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **274/275 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
+| **Total** | **275/276 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
 
 **Open / blocked WPs (derived from WORK_INDEX, 1):** WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, shallowRef, computed, onMounted, onBeforeUnmount } from "vue";
 import type { FlatCard, CardQueryExtended, HealthReport, CardRegistry, SetIndexEntry, FlatCardType } from "./registry/browser";
 import { getRegistry } from "./lib/registryClient";
 import { getThemes } from "./lib/themeClient";
@@ -28,10 +28,14 @@ import ImageLightbox  from "./components/ImageLightbox.vue";
 import ViewModeToggle from "./components/ViewModeToggle.vue";
 import LoadoutBuilder from "./components/LoadoutBuilder.vue";
 import LoadoutPreview from "./components/LoadoutPreview.vue";
+import LoadoutTray from "./components/LoadoutTray.vue";
 import FilterDropdown from "./components/FilterDropdown.vue";
 import type { FilterDropdownItem } from "./components/FilterDropdown.vue";
 import AppShell from "./components/branding/AppShell.vue";
 import { useSetupFromUrl } from "./composables/useSetupFromUrl";
+import { useLoadoutDraft } from "./composables/useLoadoutDraft";
+import type { UseLoadoutDraftApi } from "./composables/useLoadoutDraft";
+import { isCardInLoadout, toggleCardInLoadout } from "./lib/loadoutCardActions";
 import type {
   MatchSetupDocument,
   MatchSetupValidationError,
@@ -111,6 +115,23 @@ const setupParsedParams = ref<Partial<SetupCompositionInput>>({});
 // activeView to "loadout"; this ref then latches and the auto-switch never
 // re-fires, preserving the user's subsequent manual tab navigation.
 const hasAppliedUrlAutoSwitch = ref(false);
+
+// ── Shared loadout draft (WP-279 / D-24054) ──────────────────────────────────
+// why: ONE useLoadoutDraft instance per page, owned here and shared by both the
+// Loadout tab (LoadoutBuilder consumes it as a prop) and the Cards tab
+// (CardDetail's add-to-loadout button). It is instantiated lazily in onMounted
+// AFTER the registry resolves — the draft's validation computed dereferences
+// `registry`, so building it at setup() top level would throw on the null
+// registry (the same reason useSetupFromUrl defers). Null until then; the
+// Loadout tab, the CardDetail button, and the tray all gate on a present
+// registry / instance.
+//
+// why: shallowRef (not ref) so Vue does NOT deep-unwrap the API's inner refs —
+// `loadoutDraftApi.value.draft` must stay a Ref<MatchSetupDocument> and
+// `.errors` a ComputedRef so the shared instance behaves identically whether
+// read here or inside LoadoutBuilder. The API object itself is a stable
+// container assigned once; only its inner refs need to be reactive.
+const loadoutDraftApi = shallowRef<UseLoadoutDraftApi | null>(null);
 
 // ── Filter drawer (collapsible on short viewports) ───────────────────────────
 const compactMq = window.matchMedia("(max-height: 800px)");
@@ -321,6 +342,14 @@ onMounted(async () => {
     } else if (setupHasUrlParams.value) {
       hasAppliedUrlAutoSwitch.value = true;
     }
+
+    // why: WP-279 / D-24054 — instantiate the single shared loadout draft here,
+    // AFTER registry.value is set, because useLoadoutDraft's validation computed
+    // calls validateMatchSetupDocument(draft, registry) and would dereference a
+    // null registry if built at setup() top level. Mirrors the useSetupFromUrl
+    // deferral above. App.vue holds the one instance; LoadoutBuilder consumes it
+    // as a prop rather than calling useLoadoutDraft itself.
+    loadoutDraftApi.value = useLoadoutDraft(reg);
 
     // Load themes in parallel (non-blocking — card view works even if themes fail)
     loadStatus.value = "Loading themes…";
@@ -849,6 +878,84 @@ function navigateToCard(slug: string) {
   filterHC.value = "";
   applyFilters();
 }
+
+// ── Cards-tab add-to-loadout wiring (WP-279 / D-24054) ───────────────────────
+
+// why: the selected card's current slot occupancy in the shared draft. False
+// while the draft hasn't been instantiated yet (pre-registry) or no card is
+// selected. CardDetail renders its button label/state from this.
+const selectedCardInLoadout = computed<boolean>(() => {
+  const api = loadoutDraftApi.value;
+  const selected = selectedCard.value;
+  if (!api || !selected) {
+    return false;
+  }
+  return isCardInLoadout(api.draft.value.composition, selected);
+});
+
+/** Toggles the selected card in/out of the shared loadout draft (WP-279). */
+function onToggleLoadout(): void {
+  const api = loadoutDraftApi.value;
+  const selected = selectedCard.value;
+  if (!api || !selected) {
+    return;
+  }
+  // why: all routing (which slot, add vs remove, the Always-Leads no-op) lives
+  // in the shared helper — App.vue does not re-encode it.
+  toggleCardInLoadout(api, selected);
+}
+
+// ── Floating loadout tray (WP-279 / D-24054) ─────────────────────────────────
+
+// why: total composition picks across the two single slots + three group
+// slots. Drives both the tray's show/hide gate and (indirectly) its summary.
+const loadoutPickCount = computed<number>(() => {
+  const api = loadoutDraftApi.value;
+  if (!api) {
+    return 0;
+  }
+  const composition = api.draft.value.composition;
+  let count = 0;
+  if (composition.schemeId) count += 1;
+  if (composition.mastermindId) count += 1;
+  count += composition.villainGroupIds.length;
+  count += composition.henchmanGroupIds.length;
+  count += composition.heroDeckIds.length;
+  return count;
+});
+
+// why: SHOW ⟺ (picks > 0) AND (Loadout tab not active). On the Loadout tab the
+// pill is redundant; on a blank draft there is nothing to summarize.
+const showLoadoutTray = computed<boolean>(
+  () => loadoutPickCount.value > 0 && activeView.value !== "loadout",
+);
+
+// why: the read-only summary the LoadoutTray renders — the two single slots as
+// booleans, the three group slots as counts, and the live validation issue
+// count (the same `errors` the builder shows). Falls back to an all-empty
+// summary before the draft is instantiated.
+const loadoutTraySummary = computed(() => {
+  const api = loadoutDraftApi.value;
+  if (!api) {
+    return {
+      schemeSet: false,
+      mastermindSet: false,
+      heroes: 0,
+      villains: 0,
+      henchmen: 0,
+      issues: 0,
+    };
+  }
+  const composition = api.draft.value.composition;
+  return {
+    schemeSet: composition.schemeId !== "",
+    mastermindSet: composition.mastermindId !== "",
+    heroes: composition.heroDeckIds.length,
+    villains: composition.villainGroupIds.length,
+    henchmen: composition.henchmanGroupIds.length,
+    issues: api.errors.value.length,
+  };
+});
 </script>
 
 <template>
@@ -877,6 +984,20 @@ function navigateToCard(slug: string) {
     >
       📖
     </button>
+
+    <!-- Floating Loadout tray (WP-279) — bottom-left pill, shown once the
+         shared draft has ≥1 pick and the Loadout tab is not active. Bottom-left
+         keeps it clear of the bottom-right glossary FAB. -->
+    <LoadoutTray
+      v-if="!loading && !loadError && showLoadoutTray"
+      :scheme-set="loadoutTraySummary.schemeSet"
+      :mastermind-set="loadoutTraySummary.mastermindSet"
+      :heroes="loadoutTraySummary.heroes"
+      :villains="loadoutTraySummary.villains"
+      :henchmen="loadoutTraySummary.henchmen"
+      :issues="loadoutTraySummary.issues"
+      @open="activeView = 'loadout'"
+    />
 
     <!-- Full-screen image lightbox (mounted once, opened from anywhere) -->
     <ImageLightbox />
@@ -1056,12 +1177,14 @@ function navigateToCard(slug: string) {
             v-if="selectedCard"
             :card="selectedCard"
             :view-mode="cardViewMode"
+            :in-loadout="selectedCardInLoadout"
             :twist-patterns="twistPatterns"
             :hero-patterns="heroPatterns"
             :villain-patterns="villainPatterns"
             :henchman-patterns="henchmanPatterns"
             :mastermind-patterns="mastermindPatterns"
             @close="selectedCard = null"
+            @toggle-loadout="onToggleLoadout"
           />
         </template>
 
@@ -1076,7 +1199,7 @@ function navigateToCard(slug: string) {
               :parsedParams="setupParsedParams"
               :registry="registry!"
             />
-            <LoadoutBuilder :registry="registry!" :themes="allThemes" />
+            <LoadoutBuilder :registry="registry!" :themes="allThemes" :draft-api="loadoutDraftApi!" />
           </div>
         </template>
       </div>

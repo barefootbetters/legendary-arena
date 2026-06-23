@@ -25605,7 +25605,7 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 ### D-24054 — Registry Viewer Loadout Draft Is an App-Level Shared Instance; Cards Tab Can Add the Viewed Card to the Loadout
 
-**Status:** **Drafted 2026-06-22; not yet landed** (reserved by WP-279 / EC-310, standard two-session lane). Flips to **Active** when WP-279 executes. Pure registry-viewer UX; no engine, registry, server, contract, or card-data change.
+**Status:** **Active 2026-06-22** (landed by WP-279 / EC-310, commit `999803e7`, standard two-session lane). Pure registry-viewer UX; no engine, registry, server, contract, or card-data change.
 
 **Context.** The registry viewer exists to let players inspect cards and build a MATCH-SETUP / LAGN file to play and share (WP-091 Loadout tab; `apps/registry-viewer/CLAUDE.md`). The Cards tab is the rich discovery surface (Set · Class · Type · Mechanics · Effects · Patterns, WP-278), but it is disjoint from the Loadout tab: clicking a card opens `CardDetail.vue` (which only emits `close`), and the Loadout tab's picker offers only a name search. The structural blocker is that `useLoadoutDraft` is instantiated **inside** `LoadoutBuilder.vue`, so the draft is private to that component and the Cards surface (App.vue level) cannot reach it. A player who finds "all Tech heroes" in the Cards tab must re-find each one by name in the impoverished picker.
 

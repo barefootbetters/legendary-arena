@@ -27,7 +27,7 @@ import type {
   FlatCardType,
 } from "../registry/browser";
 import type { ThemeDefinition } from "../lib/themeClient";
-import { useLoadoutDraft } from "../composables/useLoadoutDraft";
+import type { UseLoadoutDraftApi } from "../composables/useLoadoutDraft";
 import { useLoadoutLagnExport } from "../composables/useLoadoutLagnExport";
 import { serializeSetupToUrl } from "../lib/setupUrlParams";
 
@@ -47,11 +47,16 @@ import { serializeSetupToUrl } from "../lib/setupUrlParams";
 interface Props {
   registry: CardRegistry;
   themes: ThemeDefinition[];
+  // why: WP-279 — the loadout draft is now a single shared instance owned by
+  // App.vue (instantiated post-registry-load) and passed in, so the Cards tab
+  // and this builder mutate the SAME draft. LoadoutBuilder no longer calls
+  // useLoadoutDraft itself — it consumes the API as a prop.
+  draftApi: UseLoadoutDraftApi;
 }
 
 const props = defineProps<Props>();
 
-const draftApi = useLoadoutDraft(props.registry);
+const draftApi = props.draftApi;
 const {
   draft,
   errors,
