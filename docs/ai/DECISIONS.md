@@ -25692,4 +25692,48 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 **Relates to.** D-24055 (spectrum is the first condition-gate); D-24057 (ledger status assignment); WP-281 (implementation).
 
+---
+
+### D-24059 — Face-Down Zone Is Per-Player with Owned-Card Semantics
+
+**Status:** Active (EC-313, 2026-06-23)
+
+**Decision:** The face-down card zone (`faceDownCards`) is per-player (stored in `G.playerZones[pid]`), and each card in the zone tracks its owner via the `ownerPlayerId` field. Only the owner of a face-down card may retrieve and play it.
+
+**Rationale:** Per-player zones align with the existing `hand`, `discard`, `inPlay`, `victory` structure. Owner tracking enforces the security invariant IC-282-04: cards in `faceDownCards` belong only to that player, preventing cross-player card theft or identity spoofing in future multi-player face-down mechanics (e.g., opponent-can-peek spy effects).
+
+**Implementation constraint:** All zone operations use `instanceId` (the zone reference), never `cardId`. The `cardId` field is stored redundantly for validation and effect resolution (IC-282-01). Ownership is validated before retrieval (`playFromUndercover` rejects non-owner calls silently per Move Validation Contract).
+
+**Relates to.** WP-282 (undercover mechanic); IC-282-04 (ownership-tracking invariant); D-24060 (identity storage).
+
+---
+
+### D-24060 — Face-Down Card Identity Is Stored Deterministically; Display Is Randomized Per Render
+
+**Status:** Active (EC-313, 2026-06-23)
+
+**Decision:** Face-down cards store their `cardId` (template identity) deterministically in the game state `G.playerZones[pid].faceDownCards[i].cardId`. The UI layer displays face-down cards using a randomized per-render naming scheme (e.g., "Undercover Card A", "Undercover Card B", ...) seeded from the same deterministic path as the rest of the game.
+
+**Rationale:** Stored identity enables deterministic replays and effect resolution (e.g., when a face-down card is played, its `cardId` is immediately available for hook lookups). Randomized display prevents client-side identity leakage and preserves the hidden-information contract even when a player holds their own game state snapshot. Opponent projections never expose `instanceId` or `cardId` (IC-282-09).
+
+**Determinism guarantee:** Replay with identical seed produces identical `cardId` sequence in `faceDownCards` (IC-282-07, IC-282-08). Display strings vary per-render (seeded from render path), so replays show the same display naming given the same seed, but the underlying identity is fixed.
+
+**Relates to.** WP-282 (undercover mechanic); D-24059 (ownership tracking); IC-282-07..09 (determinism + projection safety).
+
+---
+
+### D-24061 — No UI Changes in Session 1 (Engine Contract Only)
+
+**Status:** Active (EC-313, 2026-06-23)
+
+**Decision:** EC-313 (Session 1) implements the game-engine face-down zone architecture and core moves (`sendUndercover`, `playFromUndercover`) with no changes to the UI layer, dashboard, or client-visible projections. Visual rendering of face-down cards (cards, animations, display strings, opponent-view hiding) is deferred to EC-314 (Session 2) and future WPs.
+
+**Rationale:** Separating engine contract (moves + state) from UI rendering prevents tight coupling and allows the engine to stabilize independently. Session 1 focuses on the pure state model; Session 2 adds the presentation layer once the underlying moves are proven correct.
+
+**Scope boundary:** Session 1 is **game-engine layer only** (`packages/game-engine/src/`). No edits to `apps/server`, `apps/arena-client`, dashboards, or projection logic. The `lookAtUndercover` helper is test-only (no UI consumption).
+
+**Future:** EC-314 (Session 2) will wire `faceDownCards` into the UI projection and add visual rendering. The engine contract from EC-313 is immutable and sufficient for all future UI extensions.
+
+**Relates to.** WP-282 (two-session split); Layer Boundary (game-engine / UI separation); D-24059 (ownership); D-24060 (identity storage).
+
 Protect this file.
