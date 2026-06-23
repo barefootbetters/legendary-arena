@@ -15,7 +15,11 @@ behavioral contracts are owned by WP-280; on any EC⇄WP conflict, WP-280 wins
 ---
 
 ## Before Starting
-- [ ] On `main`, clean, ff-synced to `1ce1ff2e` (or later). Baseline-green:
+- [ ] On `main`, clean, ff-synced to `3409b779` (#447) or later — NOT the earlier
+  `1ce1ff2e`. **#447 reshaped `heroEffects.execute.ts` `readTurnNumber` (now reads the
+  nested `moveContext.ctx.turn`) and added a regression test to
+  `heroEffects.execute.test.ts`, a file in this allowlist** — regenerate that test file's
+  full contents ONTO #447's addition; reverting it is a FAIL. Baseline-green:
   `pnpm -r build`; `pnpm --filter @legendary-arena/game-engine test` (record the
   pass count); `pnpm ledger:heroes:check`; `pnpm sim:coverage --check`;
   `pnpm sim:runtime-observed:check`; `pnpm mechanics:metadata:check` all exit 0.
@@ -35,8 +39,8 @@ behavioral contracts are owned by WP-280; on any EC⇄WP conflict, WP-280 wins
   ≤ 2) — the long-range-spider-sense intent — and that `reveal-min` would be WRONG
   (`cost-gte`). If the token differs, fold the correction in-scope (`01.1`);
   (3) **gate semantics:** the condition is true at ≥3 distinct in-play hero classes
-  **including** the played card, false at <3, and S.H.I.E.L.D./Sidekick (no
-  `heroClass`) never count;
+  **including** the played card, false at <3, and S.H.I.E.L.D./Sidekick (which carry
+  `heroClass: null`, skipped by the `typeof === 'string'` guard) never count;
   (4) **honest fix:** a marked-up Spectrum draw line, played with ≥3 classes,
   draws 1; played with <3, mutates nothing AND fires NO hollow (condition-failed,
   not hollow) — NOT a bare recognition that only silences;
@@ -60,11 +64,14 @@ behavioral contracts are owned by WP-280; on any EC⇄WP conflict, WP-280 wins
 ## Locked Values
 - **WP:** WP-280. **EC:** EC-311. **Decisions:** D-24055, D-24056 (reserved).
 - **Condition (locked):** `{ type: 'distinctHeroClassesAtLeast', value: '3' }`. A
-  new `case 'distinctHeroClassesAtLeast'` in `evaluateCondition` — count **distinct
-  non-empty** `G.cardTraits[id].heroClass` across `playerZones[pid].inPlay`,
-  **self-INCLUSIVE** (do NOT exclude `triggeringCardId`), return `count >=
-  parseInt(condition.value, 10)`; `Number.isNaN` → false (safe skip, the
-  `playedThisTurn` precedent). No `.reduce()`; `for…of` + a `Set<string>`.
+  new `case 'distinctHeroClassesAtLeast'` in `evaluateCondition` — count distinct
+  `G.cardTraits[id].heroClass` across `playerZones[pid].inPlay`, adding each to a
+  `Set<string>` **only when `typeof heroClass === 'string' && heroClass.length > 0`**
+  (`CardTraitEntry.heroClass` is `string | null` per `state/cardTraits.types.ts:20`; the
+  `null` S.H.I.E.L.D./Sidekick carry MUST NOT count — a bare `!== ''` would let `null`
+  in as a phantom class), **self-INCLUSIVE** (do NOT exclude `triggeringCardId`), return
+  `set.size >= parseInt(condition.value, 10)`; `Number.isNaN(threshold)` → false (safe
+  skip, the `playedThisTurn` precedent). No `.reduce()`; `for…of` + the `Set<string>`.
 - **Threshold (locked):** `SPECTRUM_CLASS_THRESHOLD = 3` (rulebook; D-24055). The
   parser builds `value: String(SPECTRUM_CLASS_THRESHOLD)`.
 - **Parser branch (locked):** in the `[keyword:X]` loop, recognize
@@ -85,14 +92,20 @@ behavioral contracts are owned by WP-280; on any EC⇄WP conflict, WP-280 wins
 ---
 
 ## Hardened Invariants (binary — each MUST be test-asserted)
-- **Self-inclusion (locked, INVERTS heroClassMatch).** The class count INCLUDES
-  the triggering card. A test with a Spectrum card whose own class is the 3rd
-  distinct class in play passes the gate. (heroClassMatch/requiresTeam exclude
-  self; Spectrum does NOT — "you have ≥3 classes" counts everything you control.)
+- **Self-inclusion (locked, INVERTS heroClassMatch) — boundary-tested.** The class
+  count INCLUDES the triggering card. **Required boundary test pair:** with exactly 2
+  distinct classes among the OTHER in-play cards, a Spectrum card whose own class is a
+  distinct 3rd → gate TRUE; the sibling fixture where that card instead SHARES one of the
+  2 → gate FALSE (only 2 distinct). This pins both self-inclusion and that
+  `null`/Sidekick cards don't inflate the count. Self-inclusion is structurally possible
+  only because `playCard` puts the card in `inPlay` (`moves/coreMoves.impl.ts:144`) before
+  `executeHeroEffects` (`:155`). (heroClassMatch/requiresTeam exclude self; Spectrum does
+  NOT — "you have ≥3 classes" counts everything you control.)
 - **Condition-failed ≠ hollow (locked).** A Spectrum line played with <3 classes
-  records NO hollow (it reached the real condition gate and intentionally
-  skipped — the WP-257 `condition-failed` reachable outcome). Assert
-  `G.diagnostics?.hollowEffects` is empty for that play.
+  records NO hollow: the failed `evaluateAllConditions` `continue`s
+  (`hero/heroEffects.execute.ts:255-261`) BEFORE `detectHollowHeroHook` (`:289`), so
+  detection is never reached. Assert `G.diagnostics?.hollowEffects` is **unchanged** (no
+  record added) for that play — not merely that the effect was a no-op.
 - **Honest fix (binary FAIL condition).** If `spectrum` is recognized AND a
   marked-up Spectrum line cannot demonstrably execute its effect at ≥3 classes →
   FAIL, even if the onPlay hollow disappears. Silencing the hollow without the
@@ -106,6 +119,13 @@ behavioral contracts are owned by WP-280; on any EC⇄WP conflict, WP-280 wins
   `spectrum ∉ HANDLED_KEYWORDS`, `spectrum ∉ HERO_EFFECT_HANDLERS`. The
   handler-key bidirectional drift test count is UNCHANGED. `heroKeywords.ts` is
   byte-unchanged.
+- **Parser precedence (locked).** The `spectrum` branch is a new `else if` placed
+  BEFORE the final unresolved-marker arm `else if (!RECOGNIZED_NON_KEYWORD_MARKERS.has(…))`
+  in `parseAbilityText`'s `[keyword:X]` loop (`setup/heroAbility.setup.ts`, ~line 418).
+  Any reorder that lets `spectrum` reach the unresolved-marker arm reintroduces the
+  `parse-unrecognized` hollow — a FAIL. (It need NOT precede the `isValidHeroKeyword`
+  arm: `isValidHeroKeyword('spectrum')` is already false, so the keyword arm never catches
+  it — the only ordering that load-bears is before the unresolved fallback.)
 - **Determinism: sentinel UNCHANGED (locked).** The sweep sentinel
   `finalStateHash` does NOT change — the sentinel board
   (`sentinel-core-doom-2p.replay.json`) is **core-only** (`core/dr-doom`) and
@@ -114,8 +134,8 @@ behavioral contracts are owned by WP-280; on any EC⇄WP conflict, WP-280 wins
   `hero-effect-coverage.baseline.json`'s ssw2 row (a deterministic static-parse
   delta — the 3 markup lines `noEffect → executable`) + possibly
   `runtime-observed-hollows.json` (sweep-measured). A `finalStateHash` that
-  *changed* here is the smell to investigate (it would mean an unintended
-  core-path effect).
+  *changed* here is a hard FAIL: STOP, identify the unintended core-path effect, and do
+  NOT commit until the hash is restored to its baseline value.
 
 ---
 
@@ -148,7 +168,7 @@ behavioral contracts are owned by WP-280; on any EC⇄WP conflict, WP-280 wins
 - At `SPECTRUM_CLASS_THRESHOLD = 3`: the rulebook value (≥3 Hero classes), D-24055.
 - At the `distinctHeroClassesAtLeast` case: self-INCLUSIVE count (you *have* the
   classes; inverts heroClassMatch's self-exclusion); S.H.I.E.L.D./Sidekick carry
-  no `heroClass` so never count (D-24055).
+  `heroClass: null`, skipped by the `typeof === 'string'` guard, so never count (D-24055).
 - At the parser Spectrum branch: `[keyword:Spectrum]` is the rulebook gate, modeled
   as a condition (not a keyword), so the line's printed effects gate on ≥3 classes
   (D-24055); placed before the unresolved-marker fallback so it never flags.
@@ -158,7 +178,7 @@ behavioral contracts are owned by WP-280; on any EC⇄WP conflict, WP-280 wins
 
 ## Files to Produce
 - `packages/game-engine/src/hero/heroConditions.evaluate.ts` — **modified** (new case).
-- `packages/game-engine/src/hero/heroConditions.evaluate.test.ts` — **modified** (gate true/false, self-inclusion, S.H.I.E.L.D. excluded, NaN safe-skip).
+- `packages/game-engine/src/hero/heroConditions.evaluate.test.ts` — **modified** (gate true/false; the self-inclusion **boundary pair** [2-other-distinct + 3rd-via-self → true; shares-a-class → false]; `null`/S.H.I.E.L.D./Sidekick excluded; NaN safe-skip).
 - `packages/game-engine/src/setup/heroAbility.setup.ts` — **modified** (Spectrum branch + threshold const).
 - `packages/game-engine/src/rules/heroAbility.setup.test.ts` — **modified** (Spectrum → condition, no unresolvedMarker, case-insensitive).
 - `data/cards/ssw2.json` — **modified** (4 markup appends; direct edit).
@@ -179,8 +199,9 @@ behavioral contracts are owned by WP-280; on any EC⇄WP conflict, WP-280 wins
 - [ ] `pnpm -r build` + game-engine `test` exit 0; record the count delta.
 - [ ] Parse test green: `[keyword:Spectrum]`/`[keyword:spectrum]` → one
   `distinctHeroClassesAtLeast` condition, no `spectrum` unresolvedMarker/keyword.
-- [ ] Gate test green: ≥3 distinct classes (self-inclusive) → true; <3 → false;
-  S.H.I.E.L.D./Sidekick never count; NaN value → false.
+- [ ] Gate test green: ≥3 distinct classes (self-inclusive) → true; <3 → false; the
+  self-inclusion boundary pair (3rd-via-self → true; shares-a-class → false);
+  S.H.I.E.L.D./Sidekick (`heroClass: null`) never count; NaN value → false.
 - [ ] Honest fix proven: a marked-up Spectrum draw fires at ≥3, is a
   condition-failed no-op (NOT hollow) at <3.
 - [ ] Honest-partial proven: `borrowed-cloaking-device` STILL records a
