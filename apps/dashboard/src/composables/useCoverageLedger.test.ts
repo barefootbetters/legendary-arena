@@ -29,7 +29,7 @@ function makeRow(overrides: Partial<LedgerRow>): LedgerRow {
 }
 
 function makeLedger(rows: LedgerRow[]): CoverageLedger {
-  const byStatus = { executable: 0, deferred: 0, unsupported: 0, unmarked: 0 };
+  const byStatus = { executable: 0, deferred: 0, condition: 0, unsupported: 0, unmarked: 0 };
   const distinct = new Set<string>();
   for (const row of rows) {
     byStatus[row.status] += 1;
@@ -48,6 +48,7 @@ function makeLedger(rows: LedgerRow[]): CoverageLedger {
 test('statusLabel covers every status and throws on an unknown one', () => {
   assert.equal(statusLabel('executable'), 'Executable');
   assert.equal(statusLabel('deferred'), 'Deferred');
+  assert.equal(statusLabel('condition'), 'Condition');
   assert.equal(statusLabel('unsupported'), 'Unsupported');
   assert.equal(statusLabel('unmarked'), 'Unmarked');
   assert.throws(() => statusLabel('mystery' as unknown as LedgerStatus));
@@ -64,12 +65,13 @@ test('buildMechanicDictionary groups by mechanic, counts cards, and excludes unm
 
   // unmarked excluded → two distinct mechanics
   assert.equal(dict.length, 2);
-  // worklist sort: unsupported before executable
-  assert.equal(dict[0]?.mechanic, 'undercover');
-  assert.equal(dict[0]?.status, 'unsupported');
-  const berserk = dict.find((entry) => entry.mechanic === 'berserk');
-  assert.equal(berserk?.cardCount, 2);
-  assert.equal(berserk?.wp, 'WP-256');
+  // worklist sort: executable before unsupported
+  assert.equal(dict[0]?.mechanic, 'berserk');
+  assert.equal(dict[0]?.status, 'executable');
+  const undercover = dict.find((entry) => entry.mechanic === 'undercover');
+  assert.equal(undercover?.status, 'unsupported');
+  assert.equal(dict.find((entry) => entry.mechanic === 'berserk')?.cardCount, 2);
+  assert.equal(dict.find((entry) => entry.mechanic === 'berserk')?.wp, 'WP-256');
 });
 
 test('buildMechanicDictionary sorts same-status entries by card count then name', () => {

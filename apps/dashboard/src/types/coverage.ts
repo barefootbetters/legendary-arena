@@ -6,12 +6,13 @@
  * the generator in `scripts/hero-mechanic-ledger.mjs`.
  */
 
-/** The four kinds of coverage state (drift-pinned by `types/coverage.drift.test.ts`). */
-export type LedgerStatus = 'executable' | 'deferred' | 'unsupported' | 'unmarked';
+/** The five kinds of coverage state (drift-pinned by `types/coverage.drift.test.ts`). */
+export type LedgerStatus = 'executable' | 'deferred' | 'condition' | 'unsupported' | 'unmarked';
 
 export const LEDGER_STATUSES: readonly LedgerStatus[] = [
   'executable',
   'deferred',
+  'condition',
   'unsupported',
   'unmarked',
 ];
@@ -34,6 +35,7 @@ export interface LedgerRow {
 export interface LedgerByStatus {
   executable: number;
   deferred: number;
+  condition: number;
   unsupported: number;
   unmarked: number;
 }

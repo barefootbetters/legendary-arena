@@ -75,6 +75,7 @@ const displayedRows = computed(() => filteredRows.value.slice(0, DISPLAY_CAP));
 
 const STATUS_FILTERS: readonly (LedgerStatus | 'all')[] = [
   'unsupported',
+  'condition',
   'unmarked',
   'deferred',
   'executable',
@@ -113,6 +114,14 @@ const STATUS_FILTERS: readonly (LedgerStatus | 'all')[] = [
           <span class="count-num">{{ summary.byStatus.executable }}</span
           ><span>Executable</span>
         </div>
+        <div class="count-chip cov-deferred">
+          <span class="count-num">{{ summary.byStatus.deferred }}</span
+          ><span>Deferred</span>
+        </div>
+        <div class="count-chip cov-condition">
+          <span class="count-num">{{ summary.byStatus.condition }}</span
+          ><span>Condition</span>
+        </div>
         <div class="count-chip cov-unsupported">
           <span class="count-num">{{ summary.byStatus.unsupported }}</span
           ><span>Unsupported</span>
@@ -120,10 +129,6 @@ const STATUS_FILTERS: readonly (LedgerStatus | 'all')[] = [
         <div class="count-chip cov-unmarked">
           <span class="count-num">{{ summary.byStatus.unmarked }}</span
           ><span>Unmarked</span>
-        </div>
-        <div class="count-chip cov-deferred">
-          <span class="count-num">{{ summary.byStatus.deferred }}</span
-          ><span>Deferred</span>
         </div>
       </div>
     </section>
@@ -450,6 +455,12 @@ const STATUS_FILTERS: readonly (LedgerStatus | 'all')[] = [
 }
 .cov-deferred {
   color: var(--p-blue-500, #3b82f6);
+}
+.cov-condition {
+  color: var(--p-cyan-500, #06b6d4);
+}
+.status-condition {
+  color: var(--p-cyan-500, #06b6d4);
 }
 
 /* why (WP-259): the runtime-observed overlay is a DISTINCT visual channel from

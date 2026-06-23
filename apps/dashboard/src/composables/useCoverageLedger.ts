@@ -27,6 +27,8 @@ export function statusLabel(status: LedgerStatus): string {
       return 'Executable';
     case 'deferred':
       return 'Deferred';
+    case 'condition':
+      return 'Condition';
     case 'unsupported':
       return 'Unsupported';
     case 'unmarked':
@@ -42,19 +44,21 @@ function assertNever(value: never): never {
 }
 
 /**
- * Sort rank for the worklist: `unsupported` (the real code TODO) first,
- * `executable` (done) last. Lower sorts earlier.
+ * Sort rank for the worklist: Executable (done) first, Unmarked (data TODO) last.
+ * Lower sorts earlier. Order: Executable > Deferred > Condition > Unsupported > Unmarked.
  */
 function statusRank(status: LedgerStatus): number {
   switch (status) {
-    case 'unsupported':
-      return 0;
-    case 'unmarked':
-      return 1;
-    case 'deferred':
-      return 2;
     case 'executable':
+      return 0;
+    case 'deferred':
+      return 1;
+    case 'condition':
+      return 2;
+    case 'unsupported':
       return 3;
+    case 'unmarked':
+      return 4;
     default:
       return assertNever(status);
   }
