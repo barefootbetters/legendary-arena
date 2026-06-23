@@ -25657,4 +25657,39 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 **Relates to.** D-24055 (the gate this markup feeds); WP-215 / WP-253 (the `reveal` `cost-lte` token); the WP-257 honest-partial / mixed-hook rules.
 
+### D-24057 — Condition-Gate Mechanics Are Recognized in the Ledger, Not Unsupported
+
+**Status:** **Reserved** (drafted 2026-06-23 for WP-281; not yet landed). Flips to **Active (post-execution)** when WP-281 executes.
+
+**Context.** WP-280 introduces Spectrum as a condition-gate mechanic with a new `"condition"` status type in the mechanic ledger JSON (`docs/ai/coverage/hero-mechanic-ledger.json`). The ledger was previously a 4-status system: `executable | deferred | unsupported | unmarked`. Spectrum (and any future condition-gate mechanics) were misclassified as "unsupported" because they are not in `HERO_KEYWORDS`. The ledger script now emits `"status": "condition"` for 5 spectrum rows (one per ssw2 card).
+
+**Decision.** Condition-gate mechanics are a recognized status type, distinct from both "unsupported" keywords and executable/deferred effects:
+
+- Ledger JSON schema is updated to: `status: 'executable' | 'deferred' | 'condition' | 'unsupported' | 'unmarked'` (5 values).
+- `KNOWN_CONDITIONS` map in `scripts/hero-mechanic-ledger.mjs` keys condition keywords (spectrum → `distinctHeroClassesAtLeast`); `statusForMechanic()` returns `'condition'` for known conditions instead of `'unsupported'`.
+- Summary output includes condition count alongside executable/deferred/unsupported/unmarked.
+- **Display order priority:** Executable > Deferred > Condition > Unsupported > Unmarked. Conditions are recognized gates (higher priority than unsupported keywords).
+
+**Invariant.** The ledger continues to track only the mechanic **name** (the `[keyword:X]` token after normalization), not the condition **type**. A future condition-gate keyword maps to `KNOWN_CONDITIONS['keyword-name'] = 'conditionType'`; the ledger row shows only the name and status `'condition'`. Full condition-type semantics live in the engine (`HeroCondition.type`), not the ledger.
+
+**Relates to.** D-24055 (spectrum as a condition); WP-280 (engine parsing + condition recognition); WP-281 (dashboard UI to display condition status).
+
+### D-24058 — Dashboard Condition-Gate Status Display: Separate Worklist Section + Visual Distinction
+
+**Status:** **Reserved** (drafted 2026-06-23 for WP-281; not yet landed). Flips to **Active (post-execution)** when WP-281 executes.
+
+**Context.** The dashboard `/coverage` page displays the mechanic coverage table (by-mechanic worklist) with filters for status types. WP-281 updates the dashboard UI to consume the new `"condition"` status from the ledger.
+
+**Decision.** Dashboard mechanic coverage display:
+
+- Add "Condition" as a status filter chip (current: Unsupported, Unmarked, Deferred, Executable, All). Chips toggle row visibility; selecting "Condition" shows only condition-gate mechanics.
+- Condition rows appear in a separate **"Condition"** section in the by-mechanic table, ordered before "Unsupported" (reflecting the priority in D-24057). Section header: "Condition" with a count badge.
+- Status badge / color: `status-condition` CSS class (distinct from `status-unsupported`, `status-executable`, etc.). Visual: "Condition" label or gate/lock icon + tooltip *"Recognized condition-gate mechanic; effects execute only when this condition is met."*
+- Summary KPI strip: Include condition count (e.g., `152 Executable · 5 Condition · 423 Unsupported · 47 Unmarked`).
+- **Observed in play** column still applies — conditions may be tracked for runtime hollows if they execute without expected effects (future enhancement; v1 does not distinguish condition-recognized vs condition-failed outcomes in the hollow detector).
+
+**Spectrum-specific outcome:** 5 ssw2 cards (Multi-Gun, Government Payroll, Big Slimeportunity, Shapeshifting Symbiote, and one more) now display under "Condition" instead of "Unsupported" in the ledger view. A search for "spectrum" lands in the Condition section.
+
+**Relates to.** D-24055 (spectrum is the first condition-gate); D-24057 (ledger status assignment); WP-281 (implementation).
+
 Protect this file.
