@@ -33,19 +33,28 @@
 - [ ] Verify initialization in `game.test.ts` (setup assertion)
 
 ### Moves: `sendUndercover`
-- [ ] Add move `sendUndercover({ cardId, sourceZone })` to `packages/game-engine/src/moves/`
-- [ ] Validate: source zone exists and contains the card
+- [ ] Add move `sendUndercover({ instanceId, sourceZone })` to `packages/game-engine/src/moves/`
+- [ ] Validate: source zone exists and contains the card (by `instanceId`)
   - [ ] Return silently if `sourceZone` is not one of `hand | hq | revealed`
   - [ ] Return silently if card not found in source zone
-- [ ] Mutation: remove card from source zone, add `{ cardId, ownerPlayerId: ctx.currentPlayer }` to `G.playerZones[ctx.currentPlayer].faceDownCards`
+  - [ ] Return silently if card already exists in `faceDownCards` (double-send guard)
+- [ ] Mutation (ATOMIC):
+  - [ ] Remove card from source zone
+  - [ ] Add `{ instanceId, cardId: cardRegistry[card].extId, ownerPlayerId: ctx.currentPlayer }` to `G.playerZones[ctx.currentPlayer].faceDownCards`
+  - [ ] Single state update tick (both operations atomic)
 - [ ] Return `void` (no throw)
 - [ ] Register in `Game.moves` object
 
 ### Moves: `playFromUndercover`
-- [ ] Add move `playFromUndercover({ cardId })` to `packages/game-engine/src/moves/`
-- [ ] Validate: `cardId` exists in current player's face-down store
+- [ ] Add move `playFromUndercover({ instanceId })` to `packages/game-engine/src/moves/`
+- [ ] Validate: `instanceId` exists in current player's face-down store
   - [ ] Return silently if card not found
-- [ ] Mutation: remove card from face-down store, play card as if drawn (via existing `playCard` logic or new minimal wrapper)
+  - [ ] Return silently if card owner ≠ `ctx.currentPlayer` (non-owner rejection)
+- [ ] Mutation: remove card from face-down store, then call **shared `playCard(instanceId)` pathway**
+  - [ ] CRITICAL: Route through identical function as hand play
+  - [ ] Do NOT fork logic; reuse existing playCard handler
+  - [ ] Respects all onPlay/onReveal/onRecruit hooks
+  - [ ] Emits identical events as play-from-hand
 - [ ] Return `void` (no throw)
 - [ ] Register in `Game.moves` object
 
@@ -63,24 +72,28 @@
   - Opponent projection: never exposes real identity
 - [ ] No code change required for determinism (stored identity is inherently deterministic)
 
-### Tests (30+ new)
+### Tests (35+ new)
 - [ ] Create `packages/game-engine/src/moves/__tests__/sendUndercover.test.ts`:
   - [ ] Setup: faceDownCards initialized empty
-  - [ ] Send from hand: card removed from hand, added to face-down with ownerPlayerId
+  - [ ] Send from hand: card removed from hand, added to face-down with ownerPlayerId and instanceId
   - [ ] Send from hq: card removed from HQ, added to face-down
   - [ ] Send from revealed: card removed from revealed, added to face-down
   - [ ] Silent return: invalid source zone
   - [ ] Silent return: card not in source zone
+  - [ ] **Double-send guard: cannot send same instanceId twice** ← NEW
+  - [ ] **Exact removal: sending removes exactly one instanceId** ← NEW
   - [ ] Multi-player: each player has separate face-down store
   - [ ] Opponent cannot see the real card (projection test)
-  - (8+ tests)
+  - (11+ tests)
 
 - [ ] Create `packages/game-engine/src/moves/__tests__/playFromUndercover.test.ts`:
-  - [ ] Play from face-down: card removed from face-down, hand receives it (or plays immediately)
+  - [ ] Play from face-down: card removed from face-down, plays through shared playCard pathway
   - [ ] Silent return: card not in face-down store
+  - [ ] **Non-owner rejection: player cannot play opponent's face-down card** ← NEW
   - [ ] Identity correct: played card is the stored identity, not a random card
   - [ ] Multi-copy scenario: multiple copies in face-down, playing one removes exactly one
-  - (4+ tests)
+  - [ ] Hooks fire: onPlay/onReveal/onRecruit hooks execute identically to hand play
+  - (6+ tests)
 
 - [ ] Create `packages/game-engine/src/helpers/__tests__/lookAtUndercover.test.ts`:
   - [ ] Returns correct CardExtId for stored card
@@ -89,10 +102,13 @@
 
 - [ ] Create integration test `packages/game-engine/src/__tests__/faceDownZone.integration.test.ts`:
   - [ ] Full flow: send 3 cards from different zones, play one, verify final state
-  - [ ] Determinism: same seed produces same face-down sequence (identity unchanged, display varies)
-  - [ ] Opponent projection: opponent UIState never sees real card identities
+  - [ ] **Ordering determinism: faceDownCards preserves insertion order deterministically** ← NEW
+  - [ ] Determinism: same seed produces identical instanceId sequence
+  - [ ] Opponent projection: opponent UIState never contains instanceId or cardId
+  - [ ] Projection snapshot: verify zero identity leakage in opponent view
   - [ ] Rewind: facing down then undoing moves restores state correctly
-  - (8+ tests)
+  - [ ] Zone integrity: exactly-one-zone invariant holds across transitions
+  - (10+ tests)
 
 - [ ] Add drift-detection test to `game.test.ts`:
   - [ ] Move registry assertion: verify `sendUndercover` and `playFromUndercover` are registered
@@ -103,9 +119,15 @@
 - [ ] Capture baseline: 376 → ~406 tests (30+ new)
 - [ ] Verify: all tests pass, no regressions
 
-### Sentinel Hash / Determinism
-- [ ] Run determinism check: replay with same seed, verify final state hash unchanged
-- [ ] Verify: face-down zone is transparent to sentinel (state hash computed before face-down was added, should not change)
+### Sentinel Hash / Determinism (Load-Bearing)
+- [ ] **DECISION REQUIRED:** Does sentinel include or exclude the new `faceDownCards` zone?
+  - [ ] Option A: Sentinel explicitly excludes `faceDownCards` from hash (transparent, no re-pin)
+  - [ ] Option B: Sentinel includes `faceDownCards` (re-pin required, determinism verified)
+- [ ] Run determinism check: replay with same seed, verify final state hash **either**:
+  - [ ] Unchanged (if excluding the zone), OR
+  - [ ] Re-pinned and verified against replay (if including the zone)
+- [ ] **Do NOT assume** the hash is unchanged — verify it empirically
+- [ ] Document the choice in DECISIONS.md (D-24062 or equivalent)
 
 ### Code Style Compliance
 - [ ] No `Math.random()` anywhere (only `ctx.random.*`)

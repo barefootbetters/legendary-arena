@@ -35,30 +35,45 @@
 - [ ] Add `undercover` to `HERO_KEYWORDS` array in `packages/game-engine/src/keywords.ts`
 - [ ] Verify drift test: `keywords.drift.test.ts` updated to include `undercover` in expected array (7 keywords → 8)
 - [ ] Update drift test file to assert new count
+- [ ] **Lock hook timing:** keyword triggers on `onPlay` ONLY (Session 1 scope) ← D-24062
 
 ### Parser: Recognize `[keyword:Undercover]` in Ability Text
 - [ ] Hero ability parser recognizes `[keyword:Undercover]` marker (uses existing `parseKeyword` pattern)
+  - [ ] **Case-sensitive:** only `[keyword:Undercover]` (capital U) matches
+  - [ ] Fails gracefully on malformed markers (`[keyword:undercover]`, `[undercover]`)
 - [ ] Creates a parsed `HeroAbility` with `keyword: 'undercover'` in its metadata
 - [ ] Test: parse a 2099 hero ability containing `[keyword:Undercover]` and verify keyword is recognized
+- [ ] Test: parser is case-sensitive (rejects lowercase or malformed)
 
 ### Effect Integration: Wire into `heroEffects.execute.ts`
-- [ ] Add handler for `keyword: 'undercover'` conditional to the effect hooks
-- [ ] Handler logic: (minimal for now)
-  - Detect that a hero has the undercover keyword
-  - On trigger event (e.g., `onPlay`), **log to G.messages** that undercover was triggered
-  - Do NOT execute moves automatically (player chooses when to call `sendUndercover`)
+- [ ] Add handler for `keyword: 'undercover'` to fire on `onPlay` ONLY (locked scope)
+- [ ] Handler logic: (minimal, no state mutation)
+  - [ ] Detect that a hero has the undercover keyword
+  - [ ] Log to `G.messages`: "Hero played with undercover ability active"
+  - [ ] Do NOT execute moves automatically (player chooses when to call `sendUndercover`)
+  - [ ] Do NOT mutate state directly (IC-282-10)
 - [ ] Test: hero with undercover keyword is played, hook fires, message is logged
+- [ ] Test: hook fires once per hero (no duplication on multiple undercover heroes)
 
 ### Full Integration Test: 2099 Heroes
 - [ ] Test scenario: play a 2099 Black Widow with undercover ability
   - [ ] Draw the card
   - [ ] Play the card
   - [ ] Verify undercover keyword is recognized
-  - [ ] Verify effect hook fires
+  - [ ] Verify effect hook fires (message logged)
   - [ ] Verify `sendUndercover` move is legal (can be called)
   - [ ] Call `sendUndercover` with a card from hand
-  - [ ] Verify card moves to face-down store
-  - [ ] Later, call `playFromUndercover` and verify card plays
+  - [ ] Verify card moves to face-down store (snapshot: `faceDownCards.length` increments)
+  - [ ] Later, call `playFromUndercover` and verify card plays (snapshot: card is now in played zone)
+
+- [ ] Test scenario: Edge case — no valid card to send
+  - [ ] Play undercover hero with empty hand
+  - [ ] Verify no error; move simply returns silently
+
+- [ ] Test scenario: Multiple undercover heroes
+  - [ ] Play two undercover heroes in sequence
+  - [ ] Verify hook fires twice (no duplication bugs)
+  - [ ] Each can independently send cards
 
 - [ ] Test scenario: Spider-Friends team interaction
   - [ ] Play multiple Black Widow cards (team:[spider-friends])
@@ -66,38 +81,47 @@
   - [ ] Trigger Spider-Friends effect
   - [ ] Verify the undercover card can be played via the team effect
 
-### Match-Level Determinism Test
+### Match-Level Determinism Test (Load-Bearing)
 - [ ] Full match: 5 Black Widow + 5 Ghost Rider + 5 Doctor Doom 2099 in player 1's hero deck
 - [ ] Opponent has a standard deck (no undercover mechanics)
 - [ ] Run match to completion (gameover or 200 turns)
-- [ ] Replay with same seed
-- [ ] Verify:
-  - [ ] All undercover cards are sent and played deterministically
-  - [ ] Final state hash is unchanged
-  - [ ] Face-down card identities match between original and replay
+- [ ] Replay with **identical seed**
+- [ ] **Explicit assertions** (not narrative):
+  - [ ] `G.playerZones[player1].faceDownCards.length` is identical in both runs
+  - [ ] Every `instanceId` in `faceDownCards` is identical in order
+  - [ ] Final state hash matches (or re-pinned if sentinel includes the zone)
+  - [ ] Identical sequence of moves executed in both replays
+  - [ ] No non-deterministic shuffles or random choices
 
-### Tests (15+ new)
+### Tests (20+ new)
 - [ ] Create `packages/game-engine/src/keywords/__tests__/undercover.test.ts`:
   - [ ] Parser recognizes `[keyword:Undercover]` marker
   - [ ] Keyword is in the parsed ability metadata
-  - (2+ tests)
+  - [ ] **Case-sensitive: rejects `[keyword:undercover]` (lowercase)**
+  - [ ] **Case-sensitive: rejects `[undercover]` (malformed)**
+  - (4+ tests)
 
 - [ ] Create `packages/game-engine/src/heroes/__tests__/2099-undercover-integration.test.ts`:
   - [ ] Black Widow card can be played
   - [ ] Undercover keyword hook fires on play
+  - [ ] Hook message is logged to `G.messages`
   - [ ] `sendUndercover` move is legal after hook fires
   - [ ] Card moves from hand to face-down
   - [ ] `playFromUndercover` retrieves the card
+  - [ ] **Edge case: undercover hero played with empty hand (silent success)**
+  - [ ] **Multiple undercover heroes: hooks fire without duplication**
   - [ ] Spider-Friends team interaction works with undercover
-  - (6+ tests)
+  - (9+ tests)
 
 - [ ] Create full-match integration test `packages/game-engine/src/__tests__/undercover-full-match.integration.test.ts`:
   - [ ] Match setup: 5BW + 5GR + 5DD2099 vs standard deck
   - [ ] Match runs to completion without error
   - [ ] Undercover cards are sent and played during match
+  - [ ] **Explicit assertion: `faceDownCards` count matches between runs**
+  - [ ] **Explicit assertion: `instanceId` ordering is identical**
   - [ ] Determinism: replay with same seed produces same final state
   - [ ] No regressions: existing cards/mechanics work unchanged
-  - (5+ tests)
+  - (7+ tests)
 
 - [ ] Update `packages/game-engine/src/__tests__/game.test.ts`:
   - [ ] Keyword array includes `undercover` (7 → 8)
