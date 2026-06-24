@@ -25784,7 +25784,7 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 ### D-24065 — Dynamic Empowered via Deck-Peek (What If...? Form)
 
-**Status:** Reserved (WP-284, 2026-06-24)
+**Status:** Active (WP-284, 2026-06-24)
 
 **Context.** `cross-the-multiverse` (wtif/star-lord-tchalla) fires an `empowered` / `parse-unrecognized` hollow because its class is dynamic: "by the Hero Classes of the card you revealed this way." The `[keyword:What If...?]` token is already invisible to the parser (contains spaces and punctuation outside `KEYWORD_PATTERN`'s character class). Only the `[keyword:Empowered]` token reaches the dispatch chain and falls through all existing resolver paths.
 
@@ -25798,7 +25798,7 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 ### D-24066 — `top-deck-card-class-count-in-zone` ValueExpression Type
 
-**Status:** Reserved (WP-284, 2026-06-24)
+**Status:** Active (WP-284, 2026-06-24)
 
 **Decision.** Add a new `ValueExpression` type `'top-deck-card-class-count-in-zone'` to `effectPrimitive.types.ts`. Shape: `{ type: 'top-deck-card-class-count-in-zone'; zone: EffectCountZoneKind }`. The evaluator peeks `G.playerZones[playerID].deck[0]` (read-only — no zone mutation), reads `G.cardTraits[topCardId]?.heroClass` (string | null), then counts HQ cards matching that class. Guards: empty deck → 0; heroClass null/empty/not-string → 0. `for...of` only (no `.reduce()`). Added to `VALUE_EXPRESSION_TYPES` drift array (D-24030 four-surface rule; post-WP-283 count is the baseline for this add).
 

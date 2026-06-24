@@ -7,6 +7,23 @@
 
 ## Current State
 
+### WP-284 / EC-316 Executed — Empowered Dynamic: Deck-Peek Class Resolution (Game Engine; D-24065 + D-24066) (2026-06-24)
+
+**WP-284 done (Game Engine — the dynamic Empowered deck-peek form now executes).** `cross-the-multiverse` (wtif/star-lord-tchalla) fired an `empowered` / `parse-unrecognized` hollow because its ability references a runtime-dynamic hero class: *"[keyword:What If...?]: You get [keyword:Empowered] by the Hero Classes of the card you revealed this way."* No `[hc:CLASS]` literal exists, so the parser's existing core, conditional-prefix, free-choice, and choose-one paths all fell through to `unresolvedMarkers`. This WP adds the **final fallback** in the empowered dispatch chain (D-24065) and a new `ValueExpression` type to evaluate it (D-24066). `User-Visible Surface = play.legendary-arena.com` (D-24026 live-verify pending: cross-the-multiverse no longer in empowered hollows).
+
+**The change (engine only; 7 files; no card data change, `wtif.json` byte-unchanged).**
+- **`effectPrimitive.types.ts`:** `ValueExpressionType` union extended with `'top-deck-card-class-count-in-zone'`; `VALUE_EXPRESSION_TYPES` array 3 → 4 (D-24030 four-surface rule); new `TopDeckCardClassCountInZoneExpression` interface `{ type, zone: EffectCountZoneKind }`.
+- **`heroCompositions.ts`:** `buildDynamicEmpoweredComposition()` builder returning `{ type: 'gain-resource', resource: 'attack', amount: { type: 'top-deck-card-class-count-in-zone', zone: 'hq' } }`.
+- **`heroAbility.setup.ts`:** `EMPOWERED_REVEALED_CLASSES_PATTERN` anchored regex; `tryResolveEmpoweredDynamic` function (last fallback before `unresolvedMarkers.push`); guard in `tryResolveEmpoweredFreeChoice` preventing premature capture of the dynamic form (both have no `[hc:X]` literal — without the guard, free-choice would capture cross-the-multiverse before the dynamic resolver ran); wired into dispatch chain in `parseAbilityText`.
+- **`effectPrimitive.interpret.ts`:** `ValueExpressionEvaluator` signature gains `playerID: string`; `evaluateTopDeckCardClassCountInZone` reads `G.playerZones[playerID].deck[0]` → `G.cardTraits[id]?.heroClass` → counts `G.hq` matches (peek-only, no zone mutation, `for...of`, no `.reduce()`); registered in `VALUE_EXPRESSION_EVALUATORS`.
+- **Tests:** 7 new setup-parser tests (dynamic form resolves correctly; negative fixtures confirm other forms unaffected); 7 new interpreter tests (basic count, absent class, empty deck, null class, missing traits entry, immutability, null-slot skip).
+
+**Measured result.** Engine `build` 0 + `test` **1572 → 1586 / 0** (+14 net-new tests). `data/cards` byte-unchanged; `wtif.json` byte-unchanged; finalStateHash unchanged EMPTY_REGISTRY (no sentinel divergence — the competent sweep does not play `cross-the-multiverse`). Lands **D-24065** + **D-24066** (Active). Two-commit topology: EC-316 impl + SPEC govern-close. **D-24026 live-verify pending** deploy.
+
+### WP-283 / EC-315 Executed — Empowered Oracle: Free-Choice + Binary-Choose-One Forms (Game Engine; D-24063 + D-24064) (2026-06-24)
+
+**WP-283 done (Game Engine — the free-choice and choose-one Empowered forms now execute).** `amulet-of-avalon` (antm/black-knight) and `fight-or-flight` (wtif/star-lord-tchalla) both fired `parse-unrecognized` empowered hollows because the parser had no path for choice forms. This WP adds an **oracle-max approximation** (D-24063): scan all candidate classes in HQ, grant +Attack = the maximum count among candidates — the best the engine can compute without a player choice at resolution time. Adds `tryResolveEmpoweredFreeChoice` for the "by the color of your choice" form (oracle-max over all classes) and a `tryResolveEmpoweredChooseOneLine` pre-pass for the "Choose one: by [hc:X] or by [hc:Y]" form (oracle-max over the enumerated pair). New `max-class-count-in-zone` ValueExpression (D-24064). Engine test 1572/0 (+17). Lands **D-24063** + **D-24064** (Active).
+
 ### WP-279 / EC-310 Executed — Cards Tab "Add to Loadout" (Shared Draft + Detail Button + Loadout Tray) (Registry Viewer; D-24054) (2026-06-22)
 
 **WP-279 done (Registry Viewer — the Cards tab can now build the loadout).** The Cards tab (rich discovery: Set · Class · Type · Mechanics · Effects · Patterns, WP-278) and the Loadout tab were two disjoint surfaces — clicking a card opened `CardDetail.vue` (which only emitted `close`), and the Loadout tab's picker offered only a name search. A player who found "all Tech heroes" in the Cards tab had to re-find each one by name in the impoverished picker. This closes that gap so a player can add the card they're viewing to their loadout with one click and see a persistent tray from any tab. `User-Visible Surface = cards.legendary-arena.com`.
