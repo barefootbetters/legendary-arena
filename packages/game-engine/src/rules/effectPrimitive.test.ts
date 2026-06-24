@@ -135,12 +135,17 @@ describe('effect primitive closed-array drift (D-24030)', () => {
     assert.equal(new Set(EFFECT_NODE_TYPES).size, EFFECT_NODE_TYPES.length, 'no duplicate node types');
   });
 
-  it('VALUE_EXPRESSION_TYPES has exactly the 3 canonical value-expression types', () => {
+  it('VALUE_EXPRESSION_TYPES has exactly the 4 canonical value-expression types', () => {
     assert.deepStrictEqual(
       [...VALUE_EXPRESSION_TYPES],
-      ['card-printed-stat', 'count-cards-by-class-in-zone', 'max-class-count-in-zone'],
+      [
+        'card-printed-stat',
+        'count-cards-by-class-in-zone',
+        'max-class-count-in-zone',
+        'top-deck-card-class-count-in-zone',
+      ],
     );
-    assert.equal(VALUE_EXPRESSION_TYPES.length, 3, 'VALUE_EXPRESSION_TYPES must have exactly 3 entries');
+    assert.equal(VALUE_EXPRESSION_TYPES.length, 4, 'VALUE_EXPRESSION_TYPES must have exactly 4 entries');
   });
 
   it('parameter unions match their canonical arrays exactly', () => {

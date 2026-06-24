@@ -29,6 +29,7 @@ import {
   buildEmpoweredComposition,
   buildEmpoweredFreeChoiceComposition,
   buildEmpoweredChooseOneComposition,
+  buildDynamicEmpoweredComposition,
 } from '../rules/heroCompositions.js';
 import { normalizeTraitSlug } from '../state/traits.normalize.js';
 // why: D-18705 / D-18706 — hero hooks must key by the canonical-face slash
@@ -160,6 +161,12 @@ const EMPOWERED_CHOOSE_ONE_PREFIX_PATTERN = /^\s*Choose one\s*:/i;
 // helper to avoid lastIndex state on the module-level const (same pattern as HERO_CLASS_PATTERN).
 /** Regex source for `[keyword:Empowered] by [hc:X]` — instantiated global inside the choose-one helper. */
 const EMPOWERED_CHOOSE_ONE_CLASS_TAIL_PATTERN = /\[keyword:Empowered\]\s*by\s*\[hc:([a-z0-9-]+)\]/i;
+
+// why: D-24065 — anchored pattern for the dynamic Empowered form whose class is the runtime
+// class of a revealed card, not a static `[hc:X]` literal. Locked to this exact phrasing
+// (cross-the-multiverse); wildcard extension beyond this phrasing family is forbidden.
+/** Regex for the "by the Hero Classes of the card you revealed this way" dynamic tail. */
+const EMPOWERED_REVEALED_CLASSES_PATTERN = /by the Hero Classes of the card you revealed this way/i;
 
 // why: D-24016 — the count-scaled attack token has three segments
 // ([keyword:attack-per-count:<source>:<perUnit>]); KEYWORD_PATTERN only captures
@@ -446,7 +453,17 @@ function parseAbilityText(abilityText: string): {
               // why: D-24045 — same by-hook provenance gate as all other resolution paths.
               resolvedMarkers.push(normalizedKeyword);
             } else {
-              unresolvedMarkers.push(normalizedKeyword);
+              // why: D-24065 — dynamic fallback: recognizes "by the Hero Classes of the card
+              // you revealed this way" (cross-the-multiverse); last fallback before the
+              // unresolved-marker path.
+              const dynamicComposition = tryResolveEmpoweredDynamic(textAfterMarker);
+              if (dynamicComposition !== undefined) {
+                primitiveEffects.push(dynamicComposition);
+                // why: D-24045 — same by-hook provenance gate as all other resolution paths.
+                resolvedMarkers.push(normalizedKeyword);
+              } else {
+                unresolvedMarkers.push(normalizedKeyword);
+              }
             }
           }
         }
@@ -960,6 +977,14 @@ function tryResolveEmpoweredFreeChoice(
   if (EMPOWERED_PARAM_TAIL_PATTERN.test(textAfterMarker)) {
     return undefined;
   }
+  // why: D-24065 — guard: return undefined when the revealed-classes dynamic pattern matches
+  // the text after the marker. The dynamic form ("by the Hero Classes of the card you revealed
+  // this way") has no [hc:X] literal and no conditions, so without this guard the free-choice
+  // path would capture it before tryResolveEmpoweredDynamic can. The dynamic resolver is the
+  // last fallback; this guard lets it reach that position.
+  if (EMPOWERED_REVEALED_CLASSES_PATTERN.test(textAfterMarker)) {
+    return undefined;
+  }
   // why: D-24063 — free-choice applies ONLY when no [hc:X] token appears ANYWHERE on the line.
   // A non-empty conditions array means at least one heroClassMatch was extracted (prefix gate,
   // detached literal, or non-anchored class reference) — that form is not the simple free-choice,
@@ -968,6 +993,26 @@ function tryResolveEmpoweredFreeChoice(
     return undefined;
   }
   return buildEmpoweredFreeChoiceComposition();
+}
+
+/**
+ * Resolver for the dynamic Empowered form ("by the Hero Classes of the card you revealed
+ * this way" — no `[hc:CLASS]` literal; class is determined at runtime from the top deck card).
+ * Returns a built dynamic composition when `EMPOWERED_REVEALED_CLASSES_PATTERN` matches
+ * `textAfterMarker`, and undefined otherwise. Called as the LAST fallback before
+ * `unresolvedMarkers.push`, after core, conditional-prefix, free-choice, and choose-one
+ * all returned undefined.
+ *
+ * @param textAfterMarker - The ability text immediately following the `[keyword:Empowered]` token.
+ * @returns The built dynamic composition, or undefined when the pattern does not match.
+ */
+// why: D-24065 — recognizes "classes of the card you revealed" phrasing; last fallback
+// before unresolved; cards whose empowered form refers to a runtime-dynamic class (cross-the-multiverse).
+function tryResolveEmpoweredDynamic(textAfterMarker: string): EffectNode | undefined {
+  if (!EMPOWERED_REVEALED_CLASSES_PATTERN.test(textAfterMarker)) {
+    return undefined;
+  }
+  return buildDynamicEmpoweredComposition();
 }
 
 // ---------------------------------------------------------------------------

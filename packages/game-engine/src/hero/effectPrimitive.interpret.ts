@@ -30,6 +30,7 @@ import type {
   CardPrintedStatExpression,
   CountCardsByClassInZoneExpression,
   MaxClassCountInZoneExpression,
+  TopDeckCardClassCountInZoneExpression,
   EffectZoneKind,
   EffectExecutionContext,
 } from '../rules/effectPrimitive.types.js';
@@ -99,12 +100,14 @@ function setZoneArray(playerZones: PlayerZones, zone: EffectZoneKind, cards: Car
 
 /**
  * Evaluates one value expression to a number. Mirrors HeroEffectHandler's shape: takes
- * `G` (for cardStats + best-effort warnings) and the context (for `ref` resolution).
+ * `G` (for cardStats + best-effort warnings), the context (for `ref` resolution), and
+ * `playerID` (for per-player zone access, e.g. deck-peek evaluators).
  */
 type ValueExpressionEvaluator = (
   G: LegendaryGameState,
   expression: ValueExpression,
   context: EffectExecutionContext,
+  playerID: string,
 ) => number;
 
 /**
@@ -121,6 +124,7 @@ function evaluateCardPrintedStat(
   G: LegendaryGameState,
   expression: ValueExpression,
   context: EffectExecutionContext,
+  _playerID: string,
 ): number {
   const statExpression = expression as CardPrintedStatExpression;
   const cardId = context.get(statExpression.card.ref);
@@ -167,6 +171,7 @@ function evaluateCountCardsByClassInZone(
   G: LegendaryGameState,
   expression: ValueExpression,
   _context: EffectExecutionContext,
+  _playerID: string,
 ): number {
   const countExpression = expression as CountCardsByClassInZoneExpression;
   // why: D-24044 — reads the SHARED `G.hq` board zone (not a per-player zone) + the same
@@ -214,6 +219,7 @@ function evaluateMaxClassCountInZone(
   G: LegendaryGameState,
   expression: ValueExpression,
   _context: EffectExecutionContext,
+  _playerID: string,
 ): number {
   // why: D-24063 — implementation of the oracle-max strategy; 'all' = scan all HQ classes,
   // string[] = enumerate only the listed candidate classes, return the highest count.
@@ -264,6 +270,81 @@ function evaluateMaxClassCountInZone(
   return maxCount;
 }
 
+/**
+ * `top-deck-card-class-count-in-zone` — peeks the top card of the active player's deck
+ * (no zone mutation), reads its hero class from `G.cardTraits`, and counts HQ cards of
+ * that class. Empty deck, null heroClass, or classless top card → 0, warns, never throws.
+ * The deck-peek evaluator for the dynamic Empowered form (D-24065 + D-24066).
+ *
+ * @param G - Game state (reads `G.playerZones[playerID].deck[0]`, `G.hq`, `G.cardTraits`; warns).
+ * @param _expression - The top-deck-card-class-count-in-zone value expression (zone: 'hq').
+ * @param _context - The transient bind/ref store (unused — this count needs no bindings).
+ * @param playerID - The active player ID used to access the player's deck.
+ * @returns The number of HQ cards sharing the top deck card's class, or 0 when unresolved.
+ */
+// why: D-24065 — peek-only; deck[0] class → HQ count; empty deck or classless card → 0;
+// no zone move (determinism guarantee). Reads G.hq (shared board zone) for the count,
+// consistent with count-cards-by-class-in-zone and max-class-count-in-zone evaluators.
+function evaluateTopDeckCardClassCountInZone(
+  G: LegendaryGameState,
+  _expression: ValueExpression,
+  _context: EffectExecutionContext,
+  playerID: string,
+): number {
+  const topDeckExpression = _expression as TopDeckCardClassCountInZoneExpression;
+  // why: 'hq' is the only EffectCountZoneKind (closed union) → read G.hq directly; no
+  // dynamic property access. The expression carries zone for type completeness only.
+  void topDeckExpression;
+  const playerZones = G.playerZones[playerID];
+  if (playerZones === undefined) {
+    pushPrimitiveWarning(
+      G,
+      `A top-deck-card-class-count-in-zone value expression found no player zones for "${playerID}" and resolved to 0. Check the active player ID.`,
+    );
+    return 0;
+  }
+  // why: peek only — read deck[0] without splicing, moving, or modifying the array.
+  const topCardId = playerZones.deck[0];
+  if (topCardId === undefined) {
+    // Empty deck → grant +0 deterministically; no reshuffle (D-24065 scope boundary).
+    return 0;
+  }
+  if (!G.cardTraits) {
+    pushPrimitiveWarning(
+      G,
+      'A top-deck-card-class-count-in-zone value expression found no card traits and resolved to 0. This is a setup invariant the evaluator tolerates.',
+    );
+    return 0;
+  }
+  const traitEntry = G.cardTraits[topCardId];
+  const heroClass = traitEntry?.heroClass;
+  // why: single-class MVP (D-24065) — null, empty string, or non-string heroClass → 0.
+  if (typeof heroClass !== 'string' || heroClass === '') {
+    return 0;
+  }
+  const hqZone = G.hq;
+  if (!Array.isArray(hqZone)) {
+    pushPrimitiveWarning(
+      G,
+      'A top-deck-card-class-count-in-zone value expression found no HQ zone and resolved to 0. This is a setup invariant the evaluator tolerates.',
+    );
+    return 0;
+  }
+  // why: 'hq' is the only EffectCountZoneKind (closed union) → iterate G.hq directly.
+  // for...of only — no .reduce() (code-style §Patterns to Avoid).
+  let matchCount = 0;
+  for (const slotCardId of hqZone) {
+    if (slotCardId === null) {
+      continue;
+    }
+    const slotTraitEntry = G.cardTraits[slotCardId];
+    if (slotTraitEntry !== undefined && slotTraitEntry.heroClass === heroClass) {
+      matchCount += 1;
+    }
+  }
+  return matchCount;
+}
+
 // why: D-24030 — value-expression ImplementationMap (mirrors HERO_EFFECT_HANDLERS), held
 // OUTSIDE G. Partial so the runtime dispatch guard typechecks and the drift test pins its
 // keys == VALUE_EXPRESSION_TYPES bidirectionally (the WP-251 HANDLED_KEYWORDS pattern).
@@ -271,6 +352,7 @@ export const VALUE_EXPRESSION_EVALUATORS: Partial<Record<ValueExpressionType, Va
   'card-printed-stat': evaluateCardPrintedStat,
   'count-cards-by-class-in-zone': evaluateCountCardsByClassInZone,
   'max-class-count-in-zone': evaluateMaxClassCountInZone,
+  'top-deck-card-class-count-in-zone': evaluateTopDeckCardClassCountInZone,
 };
 
 /**
@@ -287,6 +369,7 @@ function evaluateValueExpression(
   G: LegendaryGameState,
   expression: ValueExpression,
   context: EffectExecutionContext,
+  playerID: string,
 ): number {
   const evaluator = VALUE_EXPRESSION_EVALUATORS[expression.type];
   // why: runtime dispatch guard — confirm the key resolves BEFORE indexing (mirror
@@ -298,7 +381,7 @@ function evaluateValueExpression(
     );
     return 0;
   }
-  return evaluator(G, expression, context);
+  return evaluator(G, expression, context, playerID);
 }
 
 // ---------------------------------------------------------------------------
@@ -384,7 +467,7 @@ function interpretMoveCardNode(
 function interpretGainResourceNode(
   G: LegendaryGameState,
   _ctx: unknown,
-  _playerID: string,
+  playerID: string,
   node: EffectNode,
   context: EffectExecutionContext,
 ): void {
@@ -398,7 +481,7 @@ function interpretGainResourceNode(
     );
     return;
   }
-  const amount = evaluateValueExpression(G, gainNode.amount, context);
+  const amount = evaluateValueExpression(G, gainNode.amount, context, playerID);
   if (gainNode.resource === 'attack') {
     G.turnEconomy = addResources(G.turnEconomy, amount, 0);
     return;

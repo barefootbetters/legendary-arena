@@ -106,6 +106,25 @@ export function buildEmpoweredChooseOneComposition(classes: string[]): EffectNod
   };
 }
 
+// why: D-24065 — dynamic-empowered deck-peek form (cross-the-multiverse); the class is NOT a
+// static literal but the class of the top card of the player's deck at runtime. The evaluator
+// peeks deck[0] and counts matching HQ cards — no zone move (D-24065 determinism guarantee).
+/**
+ * Builds the dynamic Empowered composition: gain +Attack equal to the number of HQ cards
+ * sharing the hero class of the top card of the active player's deck. Used when the card
+ * text references a runtime-dynamic class ("by the Hero Classes of the card you revealed
+ * this way"). Returns a FRESHLY-constructed node each call (never a shared singleton).
+ *
+ * @returns A `gain-resource` effect node granting +Attack by the deck-top card's class count in HQ.
+ */
+export function buildDynamicEmpoweredComposition(): EffectNode {
+  return {
+    type: 'gain-resource',
+    resource: 'attack',
+    amount: { type: 'top-deck-card-class-count-in-zone', zone: 'hq' },
+  };
+}
+
 // why: D-24044 — parameterized composition marker names: recognized mechanics whose AST is
 // built (not a static HERO_COMPOSITION_MARKERS row). Seeded with exactly `empowered`. The
 // coverage probe + mechanic ledger read these via HERO_COMPOSITION_MARKER_NAMES below, so the

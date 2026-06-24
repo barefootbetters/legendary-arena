@@ -48,7 +48,8 @@ export const EFFECT_NODE_TYPES: readonly EffectNodeType[] = [
 export type ValueExpressionType =
   | 'card-printed-stat'
   | 'count-cards-by-class-in-zone'
-  | 'max-class-count-in-zone';
+  | 'max-class-count-in-zone'
+  | 'top-deck-card-class-count-in-zone';
 
 // why: canonical drift array (D-24030) — adding a value-expression type requires
 // updating THIS array, the ValueExpressionType union, the VALUE_EXPRESSION_EVALUATORS
@@ -59,6 +60,9 @@ export const VALUE_EXPRESSION_TYPES: readonly ValueExpressionType[] = [
   // why: D-24030 — new oracle-max evaluator type added per D-24063 + D-24064 (choice-form
   // empowered); all four surfaces updated in this commit (closed-union drift rule).
   'max-class-count-in-zone',
+  // why: D-24030 — new deck-peek evaluator type added per D-24065 + D-24066 (dynamic-class
+  // empowered, cross-the-multiverse); all four surfaces updated in this commit.
+  'top-deck-card-class-count-in-zone',
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -203,13 +207,28 @@ export interface MaxClassCountInZoneExpression {
   zone: EffectCountZoneKind;
 }
 
+// why: D-24065 + D-24066 — deck-peek mechanic; no zone move; reads top card class from
+// `G.cardTraits`; counts HQ cards matching that class; empty deck or no heroClass → 0.
+/**
+ * Resolves to the number of HQ cards sharing the hero class of the top card of the active
+ * player's deck. The evaluator peeks `G.playerZones[playerID].deck[0]` (read-only — no zone
+ * mutation), reads `G.cardTraits[topCardId]?.heroClass`, and counts HQ cards of that class.
+ * Empty deck, null heroClass, or classless top card → 0. The deck-peek evaluator for the
+ * dynamic Empowered form (D-24065), where the class is not a static literal but runtime data.
+ */
+export interface TopDeckCardClassCountInZoneExpression {
+  type: 'top-deck-card-class-count-in-zone';
+  zone: EffectCountZoneKind;
+}
+
 /**
  * A value expression resolving to a number at interpretation time.
  */
 export type ValueExpression =
   | CardPrintedStatExpression
   | CountCardsByClassInZoneExpression
-  | MaxClassCountInZoneExpression;
+  | MaxClassCountInZoneExpression
+  | TopDeckCardClassCountInZoneExpression;
 
 // ---------------------------------------------------------------------------
 // Effect nodes (the homogeneous AST)

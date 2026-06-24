@@ -180,6 +180,146 @@ describe('buildHeroAbilityHooks — choose-one Empowered (fight-or-flight)', () 
 });
 
 // ---------------------------------------------------------------------------
+// Dynamic form: "by the Hero Classes of the card you revealed this way" — cross-the-multiverse
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — dynamic Empowered (cross-the-multiverse, WP-284 / D-24065)', () => {
+  const CROSS_ABILITY =
+    '[keyword:What If...?]: You get [keyword:Empowered] by the Hero Classes of the card you revealed this way.';
+
+  it('resolves to a primitiveEffect with top-deck-card-class-count-in-zone (AC-4)', () => {
+    const registry = makeRegistry('wtif', 'star-lord-tchalla', [
+      { slug: 'cross-the-multiverse', abilities: [CROSS_ABILITY] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('wtif/star-lord-tchalla'));
+
+    assert.ok(hooks.length > 0, 'at least one hook is built');
+    const crossHook = hooks.find((hook) =>
+      Array.isArray(hook.primitiveEffects) && hook.primitiveEffects.length > 0,
+    );
+    assert.ok(crossHook !== undefined, 'a hook with primitiveEffects exists');
+
+    const effect = crossHook!.primitiveEffects![0]!;
+    assert.equal(effect.type, 'gain-resource', 'primitiveEffect is a gain-resource node');
+    assert.equal(
+      (effect as { type: string; amount: { type: string } }).amount.type,
+      'top-deck-card-class-count-in-zone',
+      'amount.type is top-deck-card-class-count-in-zone (AC-4)',
+    );
+    assert.equal(
+      (effect as { type: string; amount: { zone: string } }).amount.zone,
+      'hq',
+      'amount.zone is hq',
+    );
+  });
+
+  it('does not add empowered to unresolvedMarkers (AC-4)', () => {
+    const registry = makeRegistry('wtif', 'star-lord-tchalla', [
+      { slug: 'cross-the-multiverse', abilities: [CROSS_ABILITY] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('wtif/star-lord-tchalla'));
+
+    for (const hook of hooks) {
+      const unresolvedMarkers = hook.unresolvedMarkers ?? [];
+      assert.ok(
+        !unresolvedMarkers.includes('empowered'),
+        `no hook should have empowered in unresolvedMarkers; found in hook for card ${hook.cardId}`,
+      );
+    }
+  });
+
+  it('records empowered in resolvedMarkers', () => {
+    const registry = makeRegistry('wtif', 'star-lord-tchalla', [
+      { slug: 'cross-the-multiverse', abilities: [CROSS_ABILITY] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('wtif/star-lord-tchalla'));
+
+    const resolvedHook = hooks.find((hook) =>
+      Array.isArray(hook.resolvedMarkers) && hook.resolvedMarkers.includes('empowered'),
+    );
+    assert.ok(resolvedHook !== undefined, 'empowered is in resolvedMarkers for the cross hook');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Negative fixtures: dynamic resolver does NOT fire on existing empowered forms (AC-8 / AC-11)
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — tryResolveEmpoweredDynamic negative fixtures (AC-11)', () => {
+  it('core form still uses count-cards-by-class-in-zone, not top-deck-card-class-count-in-zone', () => {
+    const registry = makeRegistry('test', 'hero-a', [
+      { slug: 'core-card', abilities: ['You get [keyword:Empowered] by [hc:strength].'] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('test/hero-a'));
+    const coreHook = hooks.find((hook) =>
+      Array.isArray(hook.primitiveEffects) && hook.primitiveEffects.length > 0,
+    );
+    assert.ok(coreHook !== undefined, 'core form builds a hook');
+    assert.equal(
+      (coreHook!.primitiveEffects![0]! as { type: string; amount: { type: string } }).amount.type,
+      'count-cards-by-class-in-zone',
+      'core form uses count-cards-by-class-in-zone (not dynamic)',
+    );
+  });
+
+  it('free-choice form still uses max-class-count-in-zone, not top-deck-card-class-count-in-zone', () => {
+    const registry = makeRegistry('antm', 'hero-b', [
+      { slug: 'free-card', abilities: ['You get [keyword:Empowered] by the color of your choice.'] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('antm/hero-b'));
+    const freeHook = hooks.find((hook) =>
+      Array.isArray(hook.primitiveEffects) && hook.primitiveEffects.length > 0,
+    );
+    assert.ok(freeHook !== undefined, 'free-choice form builds a hook');
+    assert.equal(
+      (freeHook!.primitiveEffects![0]! as { type: string; amount: { type: string } }).amount.type,
+      'max-class-count-in-zone',
+      'free-choice form uses max-class-count-in-zone (not dynamic)',
+    );
+  });
+
+  it('choose-one form still uses max-class-count-in-zone, not top-deck-card-class-count-in-zone', () => {
+    const registry = makeRegistry('wtif', 'hero-c', [
+      {
+        slug: 'choose-card',
+        abilities: [
+          'Choose one: You get [keyword:Empowered] by [hc:strength], or you get [keyword:Empowered] by [hc:covert].',
+        ],
+      },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('wtif/hero-c'));
+    const chooseHook = hooks.find((hook) =>
+      Array.isArray(hook.primitiveEffects) && hook.primitiveEffects.length > 0,
+    );
+    assert.ok(chooseHook !== undefined, 'choose-one form builds a hook');
+    assert.equal(
+      (chooseHook!.primitiveEffects![0]! as { type: string; amount: { type: string } }).amount.type,
+      'max-class-count-in-zone',
+      'choose-one form uses max-class-count-in-zone (not dynamic)',
+    );
+  });
+
+  it('conditional-prefix form still uses count-cards-by-class-in-zone, not dynamic', () => {
+    const registry = makeRegistry('test', 'hero-d', [
+      {
+        slug: 'conditional-card',
+        abilities: ['[hc:strength]: You get [keyword:Empowered] by [hc:tech].'],
+      },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('test/hero-d'));
+    const condHook = hooks.find((hook) =>
+      Array.isArray(hook.primitiveEffects) && hook.primitiveEffects.length > 0,
+    );
+    assert.ok(condHook !== undefined, 'conditional-prefix form builds a hook');
+    assert.equal(
+      (condHook!.primitiveEffects![0]! as { type: string; amount: { type: string } }).amount.type,
+      'count-cards-by-class-in-zone',
+      'conditional-prefix form uses count-cards-by-class-in-zone (not dynamic)',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Regression: core Empowered form still resolves (Honest-Partial Invariant, AC-7)
 // ---------------------------------------------------------------------------
 

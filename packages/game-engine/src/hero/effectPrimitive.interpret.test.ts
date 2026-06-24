@@ -16,6 +16,7 @@ import { interpretHeroPrimitiveEffect } from './effectPrimitive.interpret.js';
 import {
   buildEmpoweredFreeChoiceComposition,
   buildEmpoweredChooseOneComposition,
+  buildDynamicEmpoweredComposition,
 } from '../rules/heroCompositions.js';
 import type { LegendaryGameState } from '../types.js';
 
@@ -218,5 +219,125 @@ describe('interpretHeroPrimitiveEffect — max-class-count-in-zone (classes: str
       'a missing G.messages must not turn a safe default into a throw',
     );
     assert.equal(G.turnEconomy!.attack, 0, '+0 without a messages array');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// top-deck-card-class-count-in-zone — deck-peek evaluator (WP-284 / D-24065 / D-24066)
+// ---------------------------------------------------------------------------
+
+describe('interpretHeroPrimitiveEffect — top-deck-card-class-count-in-zone (deck-peek)', () => {
+  it('grants +Attack equal to the number of HQ cards sharing the top deck card class (AC-3)', () => {
+    // Top deck card is 'strength'; HQ has 2 strength cards → +2.
+    const G = makeState({
+      cardTraits: {
+        'deck-top': { heroClass: 'strength', team: null },
+        'hq-a': { heroClass: 'strength', team: null },
+        'hq-b': { heroClass: 'tech', team: null },
+        'hq-c': { heroClass: 'strength', team: null },
+      },
+    });
+    G.playerZones['0']!.deck = ['deck-top', 'deck-second'] as unknown as typeof G.playerZones['0']['deck'];
+    G.hq = ['hq-a', 'hq-b', 'hq-c', null, null] as unknown as typeof G.hq;
+
+    interpretHeroPrimitiveEffect(G, CTX, '0', buildDynamicEmpoweredComposition());
+
+    assert.equal(G.turnEconomy!.attack, 2, '+Attack equals strength count in HQ (hq-a + hq-c)');
+  });
+
+  it('returns +0 when top deck card class is absent from the HQ', () => {
+    const G = makeState({
+      cardTraits: {
+        'deck-top': { heroClass: 'covert', team: null },
+        'hq-a': { heroClass: 'strength', team: null },
+        'hq-b': { heroClass: 'tech', team: null },
+      },
+    });
+    G.playerZones['0']!.deck = ['deck-top'] as unknown as typeof G.playerZones['0']['deck'];
+    G.hq = ['hq-a', 'hq-b', null, null, null] as unknown as typeof G.hq;
+
+    interpretHeroPrimitiveEffect(G, CTX, '0', buildDynamicEmpoweredComposition());
+
+    assert.equal(G.turnEconomy!.attack, 0, 'no covert cards in HQ → +0');
+  });
+
+  it('returns +0 when the deck is empty (AC-5)', () => {
+    const G = makeState({
+      cardTraits: { 'hq-a': { heroClass: 'strength', team: null } },
+    });
+    G.playerZones['0']!.deck = [] as unknown as typeof G.playerZones['0']['deck'];
+    G.hq = ['hq-a', null, null, null, null] as unknown as typeof G.hq;
+
+    assert.doesNotThrow(() => interpretHeroPrimitiveEffect(G, CTX, '0', buildDynamicEmpoweredComposition()));
+    assert.equal(G.turnEconomy!.attack, 0, 'empty deck → +0, no throw');
+  });
+
+  it('returns +0 when the top deck card has a null heroClass (AC-6)', () => {
+    const G = makeState({
+      cardTraits: {
+        'deck-top': { heroClass: null, team: null },
+        'hq-a': { heroClass: 'strength', team: null },
+      },
+    });
+    G.playerZones['0']!.deck = ['deck-top'] as unknown as typeof G.playerZones['0']['deck'];
+    G.hq = ['hq-a', null, null, null, null] as unknown as typeof G.hq;
+
+    assert.doesNotThrow(() => interpretHeroPrimitiveEffect(G, CTX, '0', buildDynamicEmpoweredComposition()));
+    assert.equal(G.turnEconomy!.attack, 0, 'null heroClass on top card → +0');
+  });
+
+  it('returns +0 when the top deck card has no cardTraits entry (AC-6 absent)', () => {
+    const G = makeState({
+      cardTraits: { 'hq-a': { heroClass: 'strength', team: null } },
+    });
+    // 'deck-top' has no entry in cardTraits
+    G.playerZones['0']!.deck = ['deck-top'] as unknown as typeof G.playerZones['0']['deck'];
+    G.hq = ['hq-a', null, null, null, null] as unknown as typeof G.hq;
+
+    assert.doesNotThrow(() => interpretHeroPrimitiveEffect(G, CTX, '0', buildDynamicEmpoweredComposition()));
+    assert.equal(G.turnEconomy!.attack, 0, 'missing cardTraits entry → +0');
+  });
+
+  it('deck and HQ arrays are deep-equal before and after the evaluation call (AC-12)', () => {
+    const G = makeState({
+      cardTraits: {
+        'deck-top': { heroClass: 'ranged', team: null },
+        'hq-a': { heroClass: 'ranged', team: null },
+      },
+    });
+    G.playerZones['0']!.deck = ['deck-top', 'deck-second'] as unknown as typeof G.playerZones['0']['deck'];
+    G.hq = ['hq-a', null, null, null, null] as unknown as typeof G.hq;
+
+    const deckBefore = JSON.stringify(G.playerZones['0']!.deck);
+    const hqBefore = JSON.stringify(G.hq);
+
+    interpretHeroPrimitiveEffect(G, CTX, '0', buildDynamicEmpoweredComposition());
+
+    assert.equal(
+      JSON.stringify(G.playerZones['0']!.deck),
+      deckBefore,
+      'deck array is unchanged after peek — no zone mutation',
+    );
+    assert.equal(
+      JSON.stringify(G.hq),
+      hqBefore,
+      'HQ array is unchanged after count — no zone mutation',
+    );
+    assert.equal(G.turnEconomy!.attack, 1, '+1 for the one ranged card in HQ');
+  });
+
+  it('skips null HQ slots when counting', () => {
+    const G = makeState({
+      cardTraits: {
+        'deck-top': { heroClass: 'speed', team: null },
+        'hq-a': { heroClass: 'speed', team: null },
+      },
+    });
+    G.playerZones['0']!.deck = ['deck-top'] as unknown as typeof G.playerZones['0']['deck'];
+    G.hq = [null, 'hq-a', null, null, null] as unknown as typeof G.hq;
+
+    interpretHeroPrimitiveEffect(G, CTX, '0', buildDynamicEmpoweredComposition());
+
+    assert.equal(G.turnEconomy!.attack, 1, 'null HQ slots skipped; only the one speed card counts');
   });
 });
