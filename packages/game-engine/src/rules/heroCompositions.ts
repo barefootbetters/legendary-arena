@@ -69,6 +69,43 @@ export function buildEmpoweredComposition(heroClass: string): EffectNode {
   };
 }
 
+// why: D-24063 — free-choice resolved as oracle-max over all classes in HQ; `classes: 'all'`
+// defers to the evaluator to scan the full HQ without naming a specific class.
+/**
+ * Builds the free-choice Empowered composition: gain +Attack equal to the highest class
+ * count across ALL hero classes in the HQ. Used when the card text has no `[hc:CLASS]`
+ * literal ("by the color of your choice"). Returns a FRESHLY-constructed node each call.
+ *
+ * @returns A `gain-resource` effect node granting +Attack by the oracle-max of all HQ classes.
+ */
+export function buildEmpoweredFreeChoiceComposition(): EffectNode {
+  return {
+    type: 'gain-resource',
+    resource: 'attack',
+    amount: { type: 'max-class-count-in-zone', classes: 'all', zone: 'hq' },
+  };
+}
+
+// why: D-24063 — choose-one resolved as oracle-max of the two enumerated classes; one
+// composition for the whole line (not one per [keyword:Empowered] token).
+/**
+ * Builds the choose-one Empowered composition: gain +Attack equal to the highest count
+ * among the enumerated hero classes in the HQ. Used when the card text lists two explicit
+ * class choices. Returns a FRESHLY-constructed node each call (never a shared singleton),
+ * so a parsed hook never aliases module state.
+ *
+ * @param classes - The normalized hero-class slugs extracted from the choose-one line.
+ * @returns A `gain-resource` effect node granting +Attack by the oracle-max of the listed classes.
+ */
+export function buildEmpoweredChooseOneComposition(classes: string[]): EffectNode {
+  return {
+    type: 'gain-resource',
+    resource: 'attack',
+    // why: spread into a fresh array so the caller's local list never aliases the AST field.
+    amount: { type: 'max-class-count-in-zone', classes: [...classes], zone: 'hq' },
+  };
+}
+
 // why: D-24044 — parameterized composition marker names: recognized mechanics whose AST is
 // built (not a static HERO_COMPOSITION_MARKERS row). Seeded with exactly `empowered`. The
 // coverage probe + mechanic ledger read these via HERO_COMPOSITION_MARKER_NAMES below, so the

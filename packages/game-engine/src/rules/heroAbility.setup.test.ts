@@ -889,14 +889,27 @@ describe('buildHeroAbilityHooks Empowered conditional-prefix class-gated form (W
     assert.deepStrictEqual(hook.resolvedMarkers, ['empowered'], 'empowered recorded resolved by-hook');
   });
 
-  it('two-marker choose-one (fight-or-flight shape) → unresolved (single-marker guard; preserved from main)', () => {
+  it('two-marker choose-one (fight-or-flight shape) → resolves via WP-283 choose-one pre-pass', () => {
+    // why: WP-283 / D-24063 — the choose-one pre-pass runs before the per-token loop and emits
+    // ONE max-class-count-in-zone composition for the whole line; both [keyword:Empowered] tokens
+    // are then suppressed by processedAsChooseOne=true. This test updated from the pre-WP-283
+    // hollow expectation.
     const hook = empoweredHookFor(
       'Choose one: You get [keyword:Empowered] by [hc:strength], or you get [keyword:Empowered] by [hc:covert].',
     );
-    assert.equal(hook.primitiveEffects, undefined, 'two [keyword:Empowered] markers → no conditional-prefix composition');
+    assert.ok(hook.primitiveEffects !== undefined, 'the choose-one pre-pass emits a primitiveEffect');
+    assert.equal(hook.primitiveEffects!.length, 1, 'exactly ONE primitiveEffect for the whole choose-one line');
+    const amount = (hook.primitiveEffects![0] as { type: string; amount: { type: string; classes: unknown } }).amount;
+    assert.equal(amount.type, 'max-class-count-in-zone', 'amount.type is max-class-count-in-zone');
+    assert.ok(Array.isArray(amount.classes), 'amount.classes is an array');
+    assert.deepStrictEqual(
+      [...(amount.classes as string[])].sort(),
+      ['covert', 'strength'],
+      'amount.classes contains strength and covert',
+    );
     assert.ok(
-      (hook.unresolvedMarkers ?? []).includes('empowered'),
-      'the two-marker choose-one stays a parse-unrecognized hollow (Honest-Partial)',
+      !(hook.unresolvedMarkers ?? []).includes('empowered'),
+      'empowered is NOT in unresolvedMarkers after the choose-one pre-pass resolves it',
     );
   });
 

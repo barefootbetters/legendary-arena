@@ -29,6 +29,7 @@ import type {
   GainResourceNode,
   CardPrintedStatExpression,
   CountCardsByClassInZoneExpression,
+  MaxClassCountInZoneExpression,
   EffectZoneKind,
   EffectExecutionContext,
 } from '../rules/effectPrimitive.types.js';
@@ -196,12 +197,80 @@ function evaluateCountCardsByClassInZone(
   return matchCount;
 }
 
+/**
+ * `max-class-count-in-zone` — scans a shared board zone (HQ) and returns the maximum
+ * per-class card count across candidate classes. When `classes === 'all'`, every class
+ * present in the HQ is a candidate; when `classes` is a `string[]`, only the listed
+ * classes are considered. Empty HQ, missing cardTraits, or no candidate class in the HQ
+ * resolves to 0, warns, and never throws. The oracle-max evaluator for player-choice
+ * Empowered forms (D-24063 + D-24064).
+ *
+ * @param G - Game state (reads `G.hq` + `G.cardTraits`; warns to messages).
+ * @param expression - The max-class-count-in-zone value expression.
+ * @param _context - The transient bind/ref store (unused — this count needs no bindings).
+ * @returns The maximum class count, or 0 when unresolved.
+ */
+function evaluateMaxClassCountInZone(
+  G: LegendaryGameState,
+  expression: ValueExpression,
+  _context: EffectExecutionContext,
+): number {
+  // why: D-24063 — implementation of the oracle-max strategy; 'all' = scan all HQ classes,
+  // string[] = enumerate only the listed candidate classes, return the highest count.
+  const maxExpression = expression as MaxClassCountInZoneExpression;
+  const hqZone = G.hq;
+  // why: 'hq' is the only EffectCountZoneKind (closed union) → read G.hq directly; no
+  // dynamic property access. A missing/non-array G.hq or missing G.cardTraits (minimal
+  // fixture) → 0 deterministically — the same tolerant posture as count-cards-by-class.
+  if (!Array.isArray(hqZone) || !G.cardTraits) {
+    pushPrimitiveWarning(
+      G,
+      'A max-class-count-in-zone value expression found no HQ zone or no card traits and resolved to 0. This is a setup invariant the count tolerates.',
+    );
+    return 0;
+  }
+  // Build a per-class count map over the HQ (for...of only, no .reduce()).
+  const classCountMap = new Map<string, number>();
+  for (const slotCardId of hqZone) {
+    if (slotCardId === null) {
+      continue;
+    }
+    const traitEntry = G.cardTraits[slotCardId];
+    if (traitEntry === undefined || typeof traitEntry.heroClass !== 'string') {
+      continue;
+    }
+    const heroClass = traitEntry.heroClass;
+    const existingCount = classCountMap.get(heroClass) ?? 0;
+    classCountMap.set(heroClass, existingCount + 1);
+  }
+  // Find the maximum count among candidate classes (for...of only, no .reduce()).
+  let maxCount = 0;
+  if (maxExpression.classes === 'all') {
+    // All classes present in the HQ are candidates.
+    for (const count of classCountMap.values()) {
+      if (count > maxCount) {
+        maxCount = count;
+      }
+    }
+  } else {
+    // Only the enumerated classes are candidates.
+    for (const candidateClass of maxExpression.classes) {
+      const classCount = classCountMap.get(candidateClass) ?? 0;
+      if (classCount > maxCount) {
+        maxCount = classCount;
+      }
+    }
+  }
+  return maxCount;
+}
+
 // why: D-24030 — value-expression ImplementationMap (mirrors HERO_EFFECT_HANDLERS), held
 // OUTSIDE G. Partial so the runtime dispatch guard typechecks and the drift test pins its
 // keys == VALUE_EXPRESSION_TYPES bidirectionally (the WP-251 HANDLED_KEYWORDS pattern).
 export const VALUE_EXPRESSION_EVALUATORS: Partial<Record<ValueExpressionType, ValueExpressionEvaluator>> = {
   'card-printed-stat': evaluateCardPrintedStat,
   'count-cards-by-class-in-zone': evaluateCountCardsByClassInZone,
+  'max-class-count-in-zone': evaluateMaxClassCountInZone,
 };
 
 /**

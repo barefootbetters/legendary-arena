@@ -47,7 +47,8 @@ export const EFFECT_NODE_TYPES: readonly EffectNodeType[] = [
  */
 export type ValueExpressionType =
   | 'card-printed-stat'
-  | 'count-cards-by-class-in-zone';
+  | 'count-cards-by-class-in-zone'
+  | 'max-class-count-in-zone';
 
 // why: canonical drift array (D-24030) — adding a value-expression type requires
 // updating THIS array, the ValueExpressionType union, the VALUE_EXPRESSION_EVALUATORS
@@ -55,6 +56,9 @@ export type ValueExpressionType =
 export const VALUE_EXPRESSION_TYPES: readonly ValueExpressionType[] = [
   'card-printed-stat',
   'count-cards-by-class-in-zone',
+  // why: D-24030 — new oracle-max evaluator type added per D-24063 + D-24064 (choice-form
+  // empowered); all four surfaces updated in this commit (closed-union drift rule).
+  'max-class-count-in-zone',
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -182,12 +186,30 @@ export interface CountCardsByClassInZoneExpression {
   zone: EffectCountZoneKind;
 }
 
+// why: D-24063 + D-24064 — oracle-max strategy for player-choice empowered forms;
+// `classes: 'all'` = scan all HQ classes and return the highest count (free-choice),
+// `classes: string[]` = enumerate only the listed classes and return the highest count
+// (binary-choose-one). Empty HQ or no matching class resolves to 0. No .reduce().
+/**
+ * Resolves to the maximum per-class count of cards in a shared board zone. When
+ * `classes === 'all'`, scans all HQ cards and returns the highest count for any single
+ * hero class. When `classes` is a `string[]`, only the listed classes are considered
+ * and the highest count among them is returned. Empty HQ or no matching class → 0.
+ * The oracle-max approximation for Empowered player-choice forms (D-24063 + D-24064).
+ */
+export interface MaxClassCountInZoneExpression {
+  type: 'max-class-count-in-zone';
+  classes: 'all' | readonly string[];
+  zone: EffectCountZoneKind;
+}
+
 /**
  * A value expression resolving to a number at interpretation time.
  */
 export type ValueExpression =
   | CardPrintedStatExpression
-  | CountCardsByClassInZoneExpression;
+  | CountCardsByClassInZoneExpression
+  | MaxClassCountInZoneExpression;
 
 // ---------------------------------------------------------------------------
 // Effect nodes (the homogeneous AST)

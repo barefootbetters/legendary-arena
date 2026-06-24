@@ -27,6 +27,8 @@ import {
   HERO_COMPOSITION_MARKER_NAMES,
   PARAMETERIZED_COMPOSITION_MARKER_NAMES,
   buildEmpoweredComposition,
+  buildEmpoweredFreeChoiceComposition,
+  buildEmpoweredChooseOneComposition,
 } from '../rules/heroCompositions.js';
 import { normalizeTraitSlug } from '../state/traits.normalize.js';
 // why: D-18705 / D-18706 — hero hooks must key by the canonical-face slash
@@ -146,6 +148,18 @@ const EMPOWERED_MARKER_COUNT_PATTERN = /\[keyword:empowered\]/gi;
 // (never a broad scan of the whole text); anchored, non-global, stateless `.exec`/`.test`.
 /** Regex for an `and [hc:...]` multi-class continuation immediately after the count tail. */
 const EMPOWERED_MULTICLASS_TAIL_PATTERN = /^\s*and\s*\[hc:/i;
+
+// why: D-24063 — anchored "Choose one:" prefix gate for the choose-one Empowered pre-pass.
+// Non-global + anchored so it only fires when the line STARTS with this prefix; reuses the
+// stateless `.test` discipline of EMPOWERED_PREFIX_GATE_PATTERN (no lastIndex concern).
+/** Regex for the anchored "Choose one:" choose-one form prefix. */
+const EMPOWERED_CHOOSE_ONE_PREFIX_PATTERN = /^\s*Choose one\s*:/i;
+
+// why: D-24063 — extracts each `[keyword:Empowered] by [hc:X]` class tail from a choose-one
+// line. Stored as non-global source; a fresh new RegExp(source, 'gi') is created inside the
+// helper to avoid lastIndex state on the module-level const (same pattern as HERO_CLASS_PATTERN).
+/** Regex source for `[keyword:Empowered] by [hc:X]` — instantiated global inside the choose-one helper. */
+const EMPOWERED_CHOOSE_ONE_CLASS_TAIL_PATTERN = /\[keyword:Empowered\]\s*by\s*\[hc:([a-z0-9-]+)\]/i;
 
 // why: D-24016 — the count-scaled attack token has three segments
 // ([keyword:attack-per-count:<source>:<perUnit>]); KEYWORD_PATTERN only captures
@@ -335,6 +349,26 @@ function parseAbilityText(abilityText: string): {
   // (deterministic, independent of markup position in text).
   const conditions: HeroCondition[] = [...heroClassConditions, ...teamConditions];
 
+  // Pre-pass: resolve the choose-one Empowered form before the KEYWORD_PATTERN loop.
+  // why: D-24063 — the choose-one line must produce ONE composition for the whole line;
+  // running a pre-pass before the per-token loop prevents double-composition (once per
+  // [keyword:Empowered] token). processedAsChooseOne suppresses the per-token empowered
+  // dispatch for this line when the pre-pass already resolved it.
+  let processedAsChooseOne = false;
+  const chooseOneResult = tryResolveEmpoweredChooseOneLine(abilityText);
+  if (chooseOneResult !== undefined) {
+    primitiveEffects.push(chooseOneResult.composition);
+    // why: D-24045 — record the resolved composition marker by-hook (same gate as all
+    // other primitiveEffects pushes); 'empowered' is the normalized marker name.
+    resolvedMarkers.push('empowered');
+    // why: D-24063 — suppresses per-token empowered handling in the KEYWORD_PATTERN loop
+    // below so the choose-one composition is built exactly once for the whole line.
+    processedAsChooseOne = true;
+    // The [hc:X] tokens in the choose-one form are count parameters, not gate conditions
+    // (same suppression as the sole-condition core path). Clear so 'conditional' is not added.
+    conditions.splice(0, conditions.length);
+  }
+
   // Step 2: Extract [keyword:X] or [keyword:X:N] markup
   // Collect magnitudes keyed by keyword — explicit markup wins over icon-derived.
   const magnitudes: Map<string, number> = new Map();
@@ -358,50 +392,63 @@ function parseAbilityText(abilityText: string): {
       // a team gate) instead records an unresolved marker so the WP-257 hollow detector still
       // flags it — the Honest-Partial Invariant. Checked BEFORE isHeroCompositionMarker since
       // `empowered` is in HERO_COMPOSITION_MARKER_NAMES (the deduped union) too.
-      const textAfterMarker = abilityText.slice(keywordMatch.index + keywordMatch[0]!.length);
-      // why: D-24047 — resolve-order: try the unchanged sole-condition core FIRST, then the
-      // conditional-prefix class-gated form, then the unresolved fallback. This keeps the
-      // WP-267 core path and its two baseline-verified cases untouched: `one-hit-wonder`
-      // (single marker + single condition, no leading prefix) still resolves via the core
-      // path, and `fight-or-flight` (two markers) stays unresolved (the single-marker guard).
-      const empoweredComposition = tryResolveEmpoweredCore(textAfterMarker, conditions);
-      if (empoweredComposition !== undefined) {
-        primitiveEffects.push(empoweredComposition);
-        // why: D-24045 — record the resolved composition marker (same gate as the
-        // primitiveEffects push). A deferred variant takes the else branch and records an
-        // unresolved marker instead — the Honest-Partial symmetry the ledger reads by-hook.
-        resolvedMarkers.push(normalizedKeyword);
-        // why: D-24044 — suppress the consumed [hc:COLOR] param so it does not ALSO gate the
-        // hook (it is the count parameter, not a condition). The resolve gate guarantees it is
-        // the line's sole condition, so clearing `conditions` removes exactly it — which also
-        // prevents the 'conditional' keyword being added downstream.
-        conditions.splice(0, conditions.length);
-      } else {
-        const conditionalPrefixMatch = tryResolveEmpoweredConditionalPrefix(
-          abilityText,
-          textAfterMarker,
-          conditions,
-        );
-        if (conditionalPrefixMatch !== undefined) {
-          primitiveEffects.push(conditionalPrefixMatch.composition);
-          // why: D-24045 — same by-hook provenance gate as the core path.
+      //
+      // why: D-24063 — processedAsChooseOne suppresses per-token empowered handling when the
+      // whole-line pre-pass (tryResolveEmpoweredChooseOneLine above) already resolved the line
+      // to one choose-one composition. Skipping here prevents double-composition.
+      if (!processedAsChooseOne) {
+        const textAfterMarker = abilityText.slice(keywordMatch.index + keywordMatch[0]!.length);
+        // why: D-24047 — resolve-order: try the unchanged sole-condition core FIRST, then the
+        // conditional-prefix class-gated form, then the free-choice fallback, then the
+        // unresolved fallback. This keeps the core path and its two baseline-verified cases
+        // untouched: `one-hit-wonder` (single marker + single condition, no prefix) still
+        // resolves via the core path.
+        const empoweredComposition = tryResolveEmpoweredCore(textAfterMarker, conditions);
+        if (empoweredComposition !== undefined) {
+          primitiveEffects.push(empoweredComposition);
+          // why: D-24045 — record the resolved composition marker (same gate as the
+          // primitiveEffects push). A deferred variant takes the else branch and records an
+          // unresolved marker instead — the Honest-Partial symmetry the ledger reads by-hook.
           resolvedMarkers.push(normalizedKeyword);
-          // why: D-24047 — suppress ONLY the consumed count param heroClassMatch(Y) and
-          // RETAIN the leading prefix gate heroClassMatch(X). The retained gate IS the
-          // conditional behavior the WP-256 executor honors (it runs primitiveEffects only
-          // when the hook's conditions pass), so this lifts D-24044's conditional-prefix
-          // deferral for the class-gated case WITHOUT an executor edit. NEVER clear all
-          // conditions on this path (that is the sole-condition core-path shortcut). The
-          // helper confirmed a matching count param exists, so the index is always found.
-          const consumedParamIndex = findFirstHeroClassMatchIndex(
-            conditions,
-            conditionalPrefixMatch.countColor,
-          );
-          if (consumedParamIndex !== -1) {
-            conditions.splice(consumedParamIndex, 1);
-          }
+          // why: D-24044 — suppress the consumed [hc:COLOR] param so it does not ALSO gate the
+          // hook (it is the count parameter, not a condition). The resolve gate guarantees it is
+          // the line's sole condition, so clearing `conditions` removes exactly it — which also
+          // prevents the 'conditional' keyword being added downstream.
+          conditions.splice(0, conditions.length);
         } else {
-          unresolvedMarkers.push(normalizedKeyword);
+          const conditionalPrefixMatch = tryResolveEmpoweredConditionalPrefix(
+            abilityText,
+            textAfterMarker,
+            conditions,
+          );
+          if (conditionalPrefixMatch !== undefined) {
+            primitiveEffects.push(conditionalPrefixMatch.composition);
+            // why: D-24045 — same by-hook provenance gate as the core path.
+            resolvedMarkers.push(normalizedKeyword);
+            // why: D-24047 — suppress ONLY the consumed count param heroClassMatch(Y) and
+            // RETAIN the leading prefix gate heroClassMatch(X). The retained gate IS the
+            // conditional behavior the WP-256 executor honors (it runs primitiveEffects only
+            // when the hook's conditions pass), so this lifts D-24044's conditional-prefix
+            // deferral for the class-gated case WITHOUT an executor edit. NEVER clear all
+            // conditions on this path (that is the sole-condition core-path shortcut). The
+            // helper confirmed a matching count param exists, so the index is always found.
+            const consumedParamIndex = findFirstHeroClassMatchIndex(
+              conditions,
+              conditionalPrefixMatch.countColor,
+            );
+            if (consumedParamIndex !== -1) {
+              conditions.splice(consumedParamIndex, 1);
+            }
+          } else {
+            const freeChoiceComposition = tryResolveEmpoweredFreeChoice(textAfterMarker, conditions);
+            if (freeChoiceComposition !== undefined) {
+              primitiveEffects.push(freeChoiceComposition);
+              // why: D-24045 — same by-hook provenance gate as all other resolution paths.
+              resolvedMarkers.push(normalizedKeyword);
+            } else {
+              unresolvedMarkers.push(normalizedKeyword);
+            }
+          }
         }
       }
     } else if (isHeroCompositionMarker(normalizedKeyword)) {
@@ -847,6 +894,80 @@ function findFirstHeroClassMatchIndex(
     }
   }
   return -1;
+}
+
+/**
+ * Detection resolver for the choose-one Empowered form ("Choose one: ... [keyword:Empowered]
+ * by [hc:X], or ... [keyword:Empowered] by [hc:Y]"). Returns the built composition plus the
+ * extracted class list when all gates pass, or undefined for any non-canonical form. Reads
+ * `abilityText` only; mutates nothing — the caller performs push and condition suppression
+ * after a canonical match.
+ *
+ * @param abilityText - The full ability text line.
+ * @returns The built composition + extracted class list, or undefined for any non-canonical shape.
+ */
+function tryResolveEmpoweredChooseOneLine(
+  abilityText: string,
+): { composition: EffectNode; classes: string[] } | undefined {
+  // why: D-24063 — choose-one resolved as oracle-max of the two enumerated classes; one
+  // composition for the whole line. Prefix gate limits this path to "Choose one:" lines only,
+  // leaving the general empowered dispatch entirely unaffected for all other card texts.
+  if (!EMPOWERED_CHOOSE_ONE_PREFIX_PATTERN.test(abilityText)) {
+    return undefined;
+  }
+  // The canonical choose-one form has exactly 2 [keyword:Empowered] markers.
+  const markerMatches = abilityText.match(EMPOWERED_MARKER_COUNT_PATTERN);
+  if (markerMatches === null || markerMatches.length !== 2) {
+    return undefined;
+  }
+  // Extract each `[keyword:Empowered] by [hc:X]` class tail in source order.
+  // why: fresh RegExp per call (same lastIndex-safe pattern as heroClassRegex / teamRegex).
+  const extractedClasses: string[] = [];
+  const classTailRegex = new RegExp(EMPOWERED_CHOOSE_ONE_CLASS_TAIL_PATTERN.source, 'gi');
+  let classTailMatch: RegExpExecArray | null = classTailRegex.exec(abilityText);
+  while (classTailMatch !== null) {
+    extractedClasses.push(normalizeTraitSlug(classTailMatch[1]!));
+    classTailMatch = classTailRegex.exec(abilityText);
+  }
+  // Must have found exactly one class tail per marker; any other count is non-canonical.
+  if (extractedClasses.length !== 2) {
+    return undefined;
+  }
+  return {
+    composition: buildEmpoweredChooseOneComposition(extractedClasses),
+    classes: extractedClasses,
+  };
+}
+
+/**
+ * Resolver for the free-choice Empowered form ("by the color of your choice" — no
+ * `[hc:CLASS]` literal in the tail after the marker). Returns a built free-choice
+ * composition when `EMPOWERED_PARAM_TAIL_PATTERN` does NOT match `textAfterMarker`, and
+ * undefined when it DOES match (that case is the core path's domain — a literal class IS
+ * present). Called after both `tryResolveEmpoweredCore` and
+ * `tryResolveEmpoweredConditionalPrefix` already returned undefined.
+ *
+ * @param textAfterMarker - The ability text immediately following the `[keyword:Empowered]` token.
+ * @returns The built free-choice composition, or undefined when a class literal tail is present.
+ */
+function tryResolveEmpoweredFreeChoice(
+  textAfterMarker: string,
+  conditions: HeroCondition[],
+): EffectNode | undefined {
+  // why: D-24063 — guard: return undefined when EMPOWERED_PARAM_TAIL_PATTERN matches —
+  // a literal `by [hc:CLASS]` tail means the core path's domain; free-choice applies ONLY
+  // when no class literal follows the marker ("by the color of your choice").
+  if (EMPOWERED_PARAM_TAIL_PATTERN.test(textAfterMarker)) {
+    return undefined;
+  }
+  // why: D-24063 — free-choice applies ONLY when no [hc:X] token appears ANYWHERE on the line.
+  // A non-empty conditions array means at least one heroClassMatch was extracted (prefix gate,
+  // detached literal, or non-anchored class reference) — that form is not the simple free-choice,
+  // so defer to keep Honest-Partial invariant intact.
+  if (conditions.length > 0) {
+    return undefined;
+  }
+  return buildEmpoweredFreeChoiceComposition();
 }
 
 // ---------------------------------------------------------------------------
