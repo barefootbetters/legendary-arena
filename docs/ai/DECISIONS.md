@@ -25838,4 +25838,42 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 **Relates to.** D-24030 (closed-union drift — HERO_KEYWORDS union + array must stay in sync); D-24067 (pending-choice infrastructure); WP-285 (implementation).
 
+---
+
+### D-24069 — `PendingDrawOrEmpowered` Interactive Pending-Choice Infrastructure (Interactive, Not Oracle)
+
+**Status:** Drafted 2026-06-24; not yet landed (reserved by WP-286 / EC-318). Flips to Active on execution.
+
+**Context.** `antm/wonder-man/one-hit-wonder` reads "Choose one: Draw a card, or you get Empowered by [strength]," but the engine silently applies Empowered and never offers the choice (player report; diagnostics `gitSha f1f8f67`, 2026-06-24). The WP-283 choose-one pre-pass (`tryResolveEmpoweredChooseOneLine`, D-24063) matches only the *two-empowered-markers* shape (fight-or-flight) and resolves it via oracle-max auto-pick; it has no path for the heterogeneous "draw a card OR a single empowered" form, which falls through to the core empowered path and applies Empowered unconditionally.
+
+**Decision.** Model this as a genuine **interactive** player choice (not an oracle auto-pick), because the two options are heterogeneous (a card draw vs an attack bonus) — an oracle cannot cleanly compare them, and the printed card offers the player a choice. Add a new FIFO pending-choice type `PendingDrawOrEmpowered` (mirrors `PendingOptionalKoReward` from D-24019/WP-248):
+- Interface: `{ playerID: string; empoweredClass: string; }` — `empoweredClass` carries the parsed hero class (e.g. `'strength'`) so the empowered branch reproduces the core empowered amount.
+- G field: `pendingDrawOrEmpowered?: PendingDrawOrEmpowered[]` — lazy-init only; never initialized in `Game.setup()`; `undefined` and `[]` both mean no pending choice.
+- Helper: `hasPendingDrawOrEmpowered(G): boolean` — exported from `drawOrEmpowered.resolve.ts`.
+- Move: `resolveDrawOrEmpowered({ choice: 'draw' | 'empowered' })` — `'draw'` dispatches `executeSingleEffect(..., { type: 'draw', magnitude: 1 })` (no re-implementation); `'empowered'` runs `buildEmpoweredComposition(front.empoweredClass)` via `interpretHeroPrimitiveEffect` (no re-implementation of the count); pops FIFO front with `.shift()`.
+- Park site: `heroEffects.execute.ts` `'draw-or-empowered'` onPlay case — pushes `{ playerID, empoweredClass }`.
+- Block-all guards at all 8 standard sites (post-WP-285: game.ts/advanceStage, coreMoves.impl.ts/drawCards, fightVillain, fightMastermind, recruitHero, villainDeck.reveal, dodgeCard, playFromUndercover).
+- Bot default: deterministic — always `'empowered'`, no `ctx.random.*`. An expected-value default (draw when the empowered amount is low) is deferred to competent-AI tuning.
+
+**Rationale.** Reuses the mature WP-242/248/285 pending-choice topology, so the interactive path costs no new architecture. Reuse-not-reimplement for both branches keeps the draw and empowered semantics identical to their existing executors. The interactive choice requires a client picker to be playable by a human; the engine is therefore **co-release-locked with WP-287 (UX)** — `antm/wonder-man` is in live decks and Render auto-deploys on every `main` push, so an engine-only deploy would wedge a human's turn (the block-all guard) when One-Hit Wonder is played (mirrors WP-248↔WP-249, whose `optional-ko-reward` is also in a live deck).
+
+**Relates to.** D-24019 (optional-ko-reward pattern, mirrored); D-24063 (WP-283 oracle choose-one — the sibling path this does NOT use); D-24067 (victory-pile pending-choice precedent); D-24070 (keyword + card-data typo fix); WP-286 (implementation); WP-287 (co-release-locked UX).
+
+---
+
+### D-24070 — `'draw-or-empowered'` Hero Keyword + One-Hit Wonder Card-Data Typo Fix
+
+**Status:** Drafted 2026-06-24; not yet landed (reserved by WP-286 / EC-318). Flips to Active on execution.
+
+**Context.** Two faults keep `one-hit-wonder` from offering its choice: (1) the card text has a typo, "**Chose** one:", that misses the WP-283 prefix gate `EMPOWERED_CHOOSE_ONE_PREFIX_PATTERN = /^\s*Choose one\s*:/i`; and (2) there is no keyword/parser path for the "draw a card OR single empowered" shape.
+
+**Decision.**
+- Correct the typo `"Chose one"` → `"Choose one"` on `one-hit-wonder` in both `data/cards/antm.json` (the runtime-loaded artifact) and the source `scripts/convert-cards/inputs/cards/antman.js` (so a future regen stays stable). Only the `one-hit-wonder` line changes. The identical typo on the xmen "draw or +2 attack" card (`xmen.json:2965`) is a different effect family and is deferred.
+- Add `'draw-or-empowered'` as the 22nd entry in the `HERO_KEYWORDS` union + array (WP-285 added `'victory-villain-attack'` as the 21st). The name is descriptive of the mechanic.
+- Add a parser pre-pass `tryResolveDrawOrEmpoweredLine` in `setup/heroAbility.setup.ts`, gated strictly to: the `Choose one:` prefix + a "Draw a card" draw option + **exactly one** `[keyword:Empowered] by [hc:X]` marker. On match it emits a `draw-or-empowered` `HeroEffectDescriptor` carrying `empoweredClass = X` (new additive optional field `empoweredClass?: string` on `HeroEffectDescriptor`, mirroring the WP-248 `rewardType?` / WP-253 `revealCount?` extension pattern) and suppresses the per-token empowered dispatch for that line (mirrors `processedAsChooseOne`). It must NOT alter the WP-283 two-empowered choose-one path or the core empowered path for any other card.
+
+**Rationale.** The typo fix is load-bearing: without it the prefix gate never matches. The strict triple gate (prefix + draw option + exactly one empowered marker) keeps the new path from intercepting either the fight-or-flight two-empowered form or the synthetic core form.
+
+**Relates to.** D-24030 (closed-union drift — HERO_KEYWORDS union + array must stay in sync); D-24063 (WP-283 prefix gate this fix lets the line clear); D-24069 (pending-choice infrastructure); WP-286 (implementation).
+
 Protect this file.
