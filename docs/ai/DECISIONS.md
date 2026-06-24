@@ -25760,7 +25760,7 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 ### D-24063 — Empowered Oracle-Max Approximation for Player-Choice Forms
 
-**Status:** Reserved (WP-283, 2026-06-24)
+**Status:** Active (WP-283, 2026-06-24)
 
 **Context.** Two empowered forms cannot be resolved by the existing core or conditional-prefix parsers: (1) "Empowered by the color of your choice" (no `[hc:CLASS]` literal), and (2) "Choose one: Empowered by [hc:strength] or Empowered by [hc:covert]" (two-marker form, rejected by gate #2). Both fire `parse-unrecognized` hollow at runtime.
 
@@ -25774,7 +25774,7 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 ### D-24064 — `max-class-count-in-zone` ValueExpression Type
 
-**Status:** Reserved (WP-283, 2026-06-24)
+**Status:** Active (WP-283, 2026-06-24)
 
 **Decision.** Add a new `ValueExpression` type `'max-class-count-in-zone'` to `effectPrimitive.types.ts`. Shape: `{ type: 'max-class-count-in-zone'; classes: 'all' | readonly string[]; zone: EffectCountZoneKind }`. When `classes === 'all'`, the evaluator scans the full HQ, builds a class→count map, and returns the highest count. When `classes` is a `string[]`, only the listed classes are considered. Empty HQ or no matching class returns 0. Evaluator uses `for...of` (no `.reduce()`). Added to `VALUE_EXPRESSION_TYPES` drift array (D-24030 four-surface rule).
 
