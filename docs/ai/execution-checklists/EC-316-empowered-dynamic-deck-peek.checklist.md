@@ -28,6 +28,9 @@
 - Dispatch chain order: `tryResolveEmpoweredDynamic` runs LAST — after `tryResolveEmpoweredCore`, `tryResolveEmpoweredConditionalPrefix`, `tryResolveEmpoweredFreeChoice`, and (pre-pass) `tryResolveEmpoweredChooseOneLine`
 - `DECISIONS.md` D-entries reserved: **D-24065** (dynamic-empowered decision) + **D-24066** (`top-deck-card-class-count-in-zone` type)
 - Post-WP-283 baseline test count: **≥ 1563** (target post-WP-284: ≥ **1569**)
+- `EMPOWERED_REVEALED_CLASSES_PATTERN` exact value: **`/by the Hero Classes of the card you revealed this way/i`**
+  — wildcard extension beyond this phrasing is forbidden
+- Evaluator HQ source: **`G.playerZones[playerID].hq`** — only this path; undefined/null entries skipped
 
 ## Guardrails
 
@@ -38,6 +41,10 @@
 5. **No card data change:** `wtif.json` is byte-unchanged. The `[keyword:What If...?]` token is already invisible to the parser (cannot match `KEYWORD_PATTERN`); no suppression needed.
 6. **No `.reduce()`:** HQ counting uses `for...of`.
 7. **`heroKeywords.ts` byte-unchanged.** `game.test.ts` NOT in the allowlist.
+8. **Evaluator dispatch wired (D-24030):** `'top-deck-card-class-count-in-zone'` MUST appear in the evaluator dispatch
+   map; `evaluateValueExpression` with this type returns `number`, never reaches an unhandled branch.
+9. **Integer return contract:** `evaluateTopDeckCardClassCountInZone` returns integer ≥ 0; never `undefined`,
+   `NaN`, or float.
 
 ## Required `// why:` Comments
 
@@ -68,6 +75,14 @@
 - [ ] User-Visible Surface: `play.legendary-arena.com` in-game — D-24026 live-verify
   after deploy (cross-the-multiverse no longer appears in `/debug` as empowered hollow)
 
+## Hard Assertions (Verify Explicitly Before Marking Done)
+
+- `evaluateTopDeckCardClassCountInZone` returns `number` for all inputs (never `undefined`)
+- `'top-deck-card-class-count-in-zone'` is present in evaluator dispatch registry (not an unhandled branch)
+- `EMPOWERED_REVEALED_CLASSES_PATTERN` matches ONLY the `cross-the-multiverse` phrasing family
+- Deck and HQ arrays are deep-equal before and after evaluation call (AC-12 test confirms)
+- `tryResolveEmpoweredDynamic` returns `undefined` for all four non-dynamic forms (existing tests unchanged)
+
 ## Common Failure Smells
 
 - **Zone mutation during eval:** Evaluator modifies `deck` or `hq` array. The evaluator
@@ -79,3 +94,6 @@
   expects 3 or 2, the array or test update was skipped.
 - **Null heroClass crash:** `G.cardTraits[deck[0]]` may be `undefined`, or `heroClass`
   may be `null`. Missing null-guard causes a runtime throw.
+- **Over-match bug:** `tryResolveEmpoweredDynamic` resolves text intended for another resolver
+  (e.g., `one-hit-wonder` via core path). Indicates `EMPOWERED_REVEALED_CLASSES_PATTERN` is
+  too broad — narrow the pattern and re-run the full dispatch-chain test suite.

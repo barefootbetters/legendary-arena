@@ -61,7 +61,9 @@ D-24066), one new builder, one new parser path, one new evaluator.
   drift array + evaluator)
 - Add `buildDynamicEmpoweredComposition()` in `heroCompositions.ts`
 - Add `tryResolveEmpoweredDynamic` helper — final fallback in the empowered dispatch
-  chain; recognizes "by the * Classes of the card you revealed" or equivalent phrasing
+  chain; `EMPOWERED_REVEALED_CLASSES_PATTERN` MUST match
+  `/by the Hero Classes of the card you revealed this way/i` exactly — wildcard extension beyond
+  this phrasing family is forbidden
 - Wire into `parseAbilityText` after `tryResolveEmpoweredFreeChoice`; before
   `unresolvedMarkers.push`
 - Unit tests: evaluator (deck empty, top card has class, top card class-less,
@@ -127,6 +129,19 @@ D-24066), one new builder, one new parser path, one new evaluator.
   before `unresolvedMarkers.push`. It runs ONLY after core, conditional-prefix,
   free-choice, and choose-one (from WP-283) all return `undefined`.
 - **No new HeroKeyword:** `heroKeywords.ts` is byte-unchanged.
+- **Parser pattern lock (D-24065):** `EMPOWERED_REVEALED_CLASSES_PATTERN` MUST match
+  `/by the Hero Classes of the card you revealed this way/i` exactly. Wildcard extension
+  beyond this exact phrasing is forbidden.
+- **HQ source lock:** Evaluator reads HQ cards from `G.playerZones[playerID].hq` only.
+  Undefined/null entries are skipped.
+- **Evaluator dispatch registration (D-24030):** `'top-deck-card-class-count-in-zone'`
+  MUST appear in the evaluator dispatch map in `effectPrimitive.interpret.ts`. An absent
+  dispatch case causes `evaluateValueExpression` to return `undefined` at runtime — FAIL
+  regardless of whether the type compiles correctly.
+- **Integer return contract:** `evaluateTopDeckCardClassCountInZone` MUST return an
+  integer ≥ 0. Returning `undefined`, `NaN`, or a float is a FAIL.
+- **Type guard strengthening:** `typeof heroClass !== 'string'` is treated identically
+  to `null` — return 0. An array-type `heroClass` MUST NOT throw; it resolves to 0.
 - **`game.test.ts` is NOT in the allowlist.**
 
 **Session protocol:** Stop and ask if anything in scope is unclear before writing any file.
@@ -147,6 +162,14 @@ D-24066), one new builder, one new parser path, one new evaluator.
 - [ ] **AC-7:** `effectPrimitive.test.ts` drift assertion passes at **4** entries in `VALUE_EXPRESSION_TYPES`
 - [ ] **AC-8:** `tryResolveEmpoweredDynamic` does NOT resolve cards handled by core/conditional-prefix/free-choice/choose-one (existing tests pass unchanged)
 - [ ] **AC-9:** `wtif.json` is byte-unchanged; `heroKeywords.ts` byte-unchanged; `game.test.ts` not in changed files
+- [ ] **AC-10:** `'top-deck-card-class-count-in-zone'` is present in the evaluator dispatch map in
+  `effectPrimitive.interpret.ts`; `evaluateValueExpression` called with this type returns a `number`
+  (never `undefined`)
+- [ ] **AC-11:** Parser test includes at least one negative fixture for each of the four forms that
+  MUST NOT resolve via `tryResolveEmpoweredDynamic`: core empowered, conditional-prefix empowered,
+  free-choice empowered, choose-one empowered — all return `undefined` from `tryResolveEmpoweredDynamic`
+- [ ] **AC-12:** Evaluator test snapshots deck and HQ arrays before and after the evaluation call;
+  asserts deep equality (no mutation)
 
 ## Verification Steps
 
@@ -210,7 +233,7 @@ Completed 2026-06-24 against `00.3-prompt-lint-checklist.md` (all 21 applicable 
 | §11 Auth clarity | N/A | No auth surfaces |
 | §12 Test quality | PASS | node:test, no bgio imports, no network/DB |
 | §13 Commands | PASS | Exact pnpm commands with expected output in Verification Steps |
-| §14 AC quality | PASS | 9 binary, observable, specific items |
+| §14 AC quality | PASS | 12 binary, observable, specific items; negative-parser + immutability + dispatch-registry added |
 | §15 DoD | PASS | STATUS.md, DECISIONS.md, WORK_INDEX.md, no-files-outside, live-verify all present |
 | §15.1 User-visible | PASS | Surface declared in header; live-verify in DoD |
 | §16 Code style | PASS | 00.6 cited; for...of; full English names; no .reduce() |
@@ -219,8 +242,9 @@ Completed 2026-06-24 against `00.3-prompt-lint-checklist.md` (all 21 applicable 
 | §20 Funding gate | N/A | No UI, copy, or funding channels — engine-only |
 | §21 API catalog | N/A | No HTTP endpoints or server library functions changed |
 
-**Pre-flight verdict:** READY (pending WP-283 completion; all other gates clear; 2026-06-24)
-**Copilot verdict:** PASS (2026-06-24) — all 30 issues PASS; engine-only, peek-only evaluator, closed-union enforced, no zone mutation
+**Pre-flight verdict:** READY (2026-06-24; WP-283 complete as of 1b79e707; all gates clear)
+**Copilot verdict:** PASS (2026-06-24, hardened 2026-06-24) — engine-only, peek-only evaluator, closed-union enforced,
+no zone mutation; parser pattern locked to exact regex, evaluator-dispatch-registry AC added, immutability AC added
 
 ## Hard Dependencies
 
