@@ -25808,21 +25808,21 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 ### D-24067 — `PendingVictoryPileCardPick` Pending-Choice Infrastructure
 
-**Status:** Reserved (Drafted 2026-06-24; Active post-WP-285 execution)
+**Status:** Active (WP-285 / EC-317 executed 2026-06-24)
 
 **Context.** `antm/black-knight/the-ebony-blade` ability: "You get +Attack equal to the printed Attack of a Villain in your Victory Pile." This requires a player-choice interaction — the player must select which villain — before the engine can grant the Attack bonus. No existing pending-choice infrastructure covers "pick a card from your own victory pile."
 
 **Decision.** Add a new FIFO pending-choice type `PendingVictoryPileCardPick` (mirrors `PendingOptionalKoReward` from D-24019/WP-248):
-- Interface: `{ playerID: string; rewardType: 'attack'; sourceCardId: CardExtId }`.
+- Interface: `{ playerID: string; rewardType: 'attack'; }` (no `sourceCardId` — not needed for resolution).
 - G field: `pendingVictoryPileCardPick?: PendingVictoryPileCardPick[]` — lazy-init only; never initialized in `Game.setup()`; `undefined` and `[]` both mean no pending pick.
 - Helper: `hasPendingVictoryPileCardPick(G): boolean` — exported from `resolveVictoryPileCardPick.ts`.
 - Helper: `getEligibleVictoryVillains(G, playerID): CardExtId[]` — filters `G.playerZones[playerID].victory` by `G.villainDeckCardTypes[id] === 'villain'`. Mastermind tactics are never in `G.villainDeckCardTypes` (they live in `G.mastermind`), so this is a clean villain-only filter.
-- Move: `resolveVictoryPileCardPick({ cardId })` — validates `cardId` is in the eligible set; reads `G.cardStats[cardId].attack`; grants `G.turnEconomy.attack += attack`; pops FIFO front with `.shift()`.
+- Move: `resolveVictoryPileCardPick({ cardId })` — validates `cardId` is in the eligible set; reads `G.cardStats[cardId].fightCost` (NOT `.attack` — villain cards always have `attack: 0` in cardStats; the printed [icon:attack] fight requirement is stored as `fightCost`); grants `G.turnEconomy.attack += fightCost`; pops FIFO front with `.shift()`.
 - Park site: `heroEffects.execute.ts` `'victory-villain-attack'` case — parks if eligible villains exist; logged no-op if none.
 - Block-all guards at all 8 standard sites (post-WP-282: game.ts/advanceStage, coreMoves.impl.ts/drawCards, fightVillain, fightMastermind, recruitHero, villainDeck.reveal, dodgeCard, playFromUndercover).
-- Bot default: highest-attack villain (by `G.cardStats[id].attack`); ties broken by lowest victory-pile index.
+- Bot default: highest-fightCost villain (ties broken by lowest victory-pile index).
 
-**Rationale.** v1 implements only `rewardType: 'attack'`. The `rewardType` discriminant is reserved for future cards that might read recruit or other stats from victory-pile cards.
+**Rationale.** v1 implements only `rewardType: 'attack'`. The `rewardType` discriminant is reserved for future cards that might read recruit or other stats from victory-pile cards. Villain `fightCost` (not `attack`) is used because economy.logic.ts sets all villain cardStats `attack` to 0 — the [icon:attack] value on a villain card is their fight cost, not a resource they generate.
 
 **Relates to.** D-24019 (optional-ko-reward pattern); D-24068 (keyword + card marking); WP-285 (implementation).
 
@@ -25830,7 +25830,7 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 ### D-24068 — `'victory-villain-attack'` Hero Keyword + Ebony Blade Card Marking
 
-**Status:** Reserved (Drafted 2026-06-24; Active post-WP-285 execution)
+**Status:** Active (WP-285 / EC-317 executed 2026-06-24)
 
 **Context.** The Ebony Blade needs a `[keyword:X]` marker so `parseAbilityText` builds an effect hook; without it the card is a `noMarker` gap (contributes 0 Attack, confirmed diagnostics 2026-06-24).
 

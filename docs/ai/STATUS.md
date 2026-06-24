@@ -7,6 +7,23 @@
 
 ## Current State
 
+### WP-285 / EC-317 Executed — Ebony Blade Victory-Pile Villain-Pick Infrastructure (Game Engine + Data; D-24067 + D-24068) (2026-06-24)
+
+**WP-285 done (Game Engine + card data — Ebony Blade now generates +Attack from a victory-pile villain pick).** `antm/black-knight/the-ebony-blade` was a `noMarker` gap (ability contributed 0 Attack; confirmed diagnostics). This WP builds the complete `PendingVictoryPileCardPick` FIFO pending-choice infrastructure (mirrors WP-248 optional-KO-reward topology) and seeds the Ebony Blade as its first consumer.
+
+**What shipped:**
+- New `PendingVictoryPileCardPick` interface + lazy-init `pendingVictoryPileCardPick?: PendingVictoryPileCardPick[]` G field (D-24067).
+- New `resolveVictoryPileCardPick` move (15th registered): validates `cardId` eligibility → reads `G.cardStats[cardId].fightCost` (villain "printed attack" is stored as `fightCost`, not `attack`) → grants `turnEconomy.attack` → FIFO `.shift()`.
+- `getEligibleVictoryVillains` helper: filters `G.playerZones[pid].victory` by `G.villainDeckCardTypes[id] === 'villain'` (tactics never in this map — clean filter).
+- Block-all guard at all 8 standard sites (advanceStage, drawCards, playCard, endTurn, fightVillain, fightMastermind, recruitHero, revealVillainCard, dodgeCard, playFromUndercover).
+- `'victory-villain-attack'` as 21st HERO_KEYWORDS entry (D-24068); `heroEffectVictoryVillainAttack` handler + `NO_MAGNITUDE_KEYWORDS` registration.
+- `[keyword:victory-villain-attack]` prefix added to `data/cards/antm.json` the-ebony-blade ability text.
+- Bot default in `ai.legalMoves.ts`: highest-fightCost eligible villain, ties by lowest victory-pile index.
+
+**Measured result.** Engine `build` 0 + `test` **1586 → 1626 / 0** (+40 net-new tests, incl. direct assertions for all 16 ACs — AC-8 park-site, AC-11 all-8 guard sites, AC-12 highest-fightCost + tie-break, AC-16 empty-eligible bot guard). Full monorepo build clean. Lands **D-24067** + **D-24068** (Active). Two-commit topology: EC-317 impl + SPEC govern-close. **D-24026 live-verify pending** deploy (Ebony Blade fix visible after deploy).
+
+---
+
 ### WP-284 / EC-316 Executed — Empowered Dynamic: Deck-Peek Class Resolution (Game Engine; D-24065 + D-24066) (2026-06-24)
 
 **WP-284 done (Game Engine — the dynamic Empowered deck-peek form now executes).** `cross-the-multiverse` (wtif/star-lord-tchalla) fired an `empowered` / `parse-unrecognized` hollow because its ability references a runtime-dynamic hero class: *"[keyword:What If...?]: You get [keyword:Empowered] by the Hero Classes of the card you revealed this way."* No `[hc:CLASS]` literal exists, so the parser's existing core, conditional-prefix, free-choice, and choose-one paths all fell through to `unresolvedMarkers`. This WP adds the **final fallback** in the empowered dispatch chain (D-24065) and a new `ValueExpression` type to evaluate it (D-24066). `User-Visible Surface = play.legendary-arena.com` (D-24026 live-verify pending: cross-the-multiverse no longer in empowered hollows).
