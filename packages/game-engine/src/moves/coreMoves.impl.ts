@@ -98,6 +98,48 @@ export function drawCards({ G, playerID, ...context }: MoveContext, args: DrawCa
 }
 
 /**
+ * Shared card-play core: appends an already-resolved card to the player's
+ * inPlay zone, adds its base attack/recruit economy, and fires its onPlay hero
+ * effects. The caller is responsible for removing the card from its source zone
+ * first (hand for playCard, faceDownCards for playFromUndercover).
+ *
+ * // why: WP-282 IC-282-02 — playFromUndercover must produce identical state
+ * // transitions as playing the same instance from hand. Extracting the
+ * // post-removal play steps into one shared function guarantees the two paths
+ * // cannot drift (no behavioral fork). Both callers append to inPlay in the
+ * // same order, add the same economy, and fire the same executeHeroEffects.
+ *
+ * @param G - The game state to mutate.
+ * @param context - boardgame.io move context rest (carries random for effects).
+ * @param playerID - The player playing the card.
+ * @param cardId - The ext_id of the card being played (already removed from source).
+ */
+export function applyCardPlay(
+  G: LegendaryGameState,
+  context: Omit<MoveContext, 'G' | 'playerID'>,
+  playerID: string,
+  cardId: string,
+): void {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) {
+    return;
+  }
+
+  playerZones.inPlay = [...playerZones.inPlay, cardId];
+
+  // why: MVP adds base values only; conditional bonuses are WP-023
+  const cardStats = G.cardStats[cardId];
+  const heroAttack = cardStats ? cardStats.attack : 0;
+  const heroRecruit = cardStats ? cardStats.recruit : 0;
+  G.turnEconomy = addResources(G.turnEconomy, heroAttack, heroRecruit);
+
+  // why: hero ability effects fire immediately after play, before any
+  // fight/recruit actions. This preserves "play -> generate resources -> act."
+  // Hero hook economy is additive to base card stats above (WP-022).
+  executeHeroEffects(G, context, playerID, cardId);
+}
+
+/**
  * Plays a card from the active player's hand into their inPlay zone.
  *
  * @param context - boardgame.io move context with G, events, random, playerID.
@@ -135,24 +177,18 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
     return;
   }
 
-  const result = moveCardFromZone(playerZones.hand, playerZones.inPlay, args.cardId);
-  if (!result.found) {
+  // why: remove the card from hand (first occurrence) with an empty target so
+  // the inPlay append happens via the shared applyCardPlay core below. This
+  // preserves moveCardFromZone's "remove exactly one copy" semantics for the
+  // duplicate-cards case while keeping play behavior identical to
+  // playFromUndercover (WP-282 IC-282-02).
+  const removal = moveCardFromZone(playerZones.hand, [], args.cardId);
+  if (!removal.found) {
     return;
   }
+  playerZones.hand = removal.from;
 
-  playerZones.hand = result.from;
-  playerZones.inPlay = result.to;
-
-  // why: MVP adds base values only; conditional bonuses are WP-023
-  const cardStats = G.cardStats[args.cardId];
-  const heroAttack = cardStats ? cardStats.attack : 0;
-  const heroRecruit = cardStats ? cardStats.recruit : 0;
-  G.turnEconomy = addResources(G.turnEconomy, heroAttack, heroRecruit);
-
-  // why: hero ability effects fire immediately after play, before any
-  // fight/recruit actions. This preserves "play -> generate resources -> act."
-  // Hero hook economy is additive to base card stats above (WP-022).
-  executeHeroEffects(G, context, playerID, args.cardId);
+  applyCardPlay(G, context, playerID, args.cardId);
 }
 
 /**

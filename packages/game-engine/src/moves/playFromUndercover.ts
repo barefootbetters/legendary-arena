@@ -1,23 +1,22 @@
 /**
  * Play a card from the face-down store (WP-282 / EC-313).
  *
- * Retrieves a card from the player's face-down store and plays it through
- * the identical pathway as hand play: move to inPlay, add stats, execute hooks.
- * Follows the Move Validation Contract: validate args, check stage gate, mutate G.
+ * Retrieves a card from the player's face-down store and plays it through the
+ * shared applyCardPlay core — the identical pathway as hand play (inPlay append,
+ * base economy, onPlay hero effects). Follows the Move Validation Contract:
+ * validate args, check the stage + block-all gates, mutate G.
  *
  * Moves never throw. Invalid state causes an early return (void).
  * All randomness uses ctx.random exclusively — never Math.random().
  *
  * // IC-282-02: playFromUndercover(instanceId) must produce identical state
- * // transitions as playing that same instance from hand. Respects all
- * // onPlay/onReveal/onRecruit hooks and emits identical events.
+ * // transitions as playing that same instance from hand. Routing through the
+ * // shared applyCardPlay core (not a duplicated copy) is what guarantees it.
  */
 
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
-import { moveCardFromZone } from './zoneOps.js';
-import { addResources } from '../economy/economy.logic.js';
-import { executeHeroEffects } from '../hero/heroEffects.execute.js';
+import { applyCardPlay } from './coreMoves.impl.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 
@@ -33,9 +32,13 @@ interface PlayFromUndercoverArgs {
 /**
  * Plays a card from the player's face-down store.
  *
- * Retrieves the card from faceDownCards and plays it through the identical
- * pathway as hand play: move to inPlay, add card stats to turn economy, execute
- * hero effects. Returns silently on invalid state (Move Validation Contract IC-282-02).
+ * Removes the card from faceDownCards (owner-validated) and plays it via the
+ * shared applyCardPlay core so the resulting state transition is byte-identical
+ * to playing the same instance from hand (IC-282-02). Returns silently on
+ * invalid state (Move Validation Contract).
+ *
+ * This is a non-core move that gates internally (the dodgeCard / recruitHero
+ * pattern): it is NOT in CoreMoveName / MOVE_ALLOWED_STAGES.
  *
  * @param context - boardgame.io move context with G, ctx, random.
  * @param args - The instanceId of the face-down card to play.
@@ -49,9 +52,23 @@ export function playFromUndercover(
     return;
   }
 
-  // Step 2: Check stage gate (same as playCard — must be in 'main' stage)
-  // For now, skip stage gating as face-down play is a future enhancement.
-  // This will be added when the move is integrated into the turn cycle.
+  // Step 2: Stage gate (non-core move, internal gating — the dodgeCard pattern).
+  // why: playing a card is a main-action-window action; mirror playCard's
+  // main-stage requirement so face-down play is legal at the same time hand play is.
+  if (G.currentStage !== 'main') {
+    return;
+  }
+
+  // why: block-all guard (D-24008) — while a KO-a-Hero choice is pending the
+  // board is frozen; this move returns with no side effects.
+  if (hasPendingKoHeroChoice(G)) {
+    return;
+  }
+  // why: block-all guard (D-24019) — optional-KO-reward choice pending; the
+  // board is frozen until resolved (beside the D-24008 KO-hero check above).
+  if (hasPendingOptionalKoReward(G)) {
+    return;
+  }
 
   // Step 3: Get player zones
   const playerZones = G.playerZones[playerID];
@@ -59,55 +76,37 @@ export function playFromUndercover(
     return;
   }
 
-  // Step 4: Check for pending choices (block-all guards — same as playCard)
-  // why: D-24008 — while a KO-a-Hero choice is pending the board is frozen.
-  if (hasPendingKoHeroChoice(G)) {
-    return;
-  }
-  // why: D-24019 — optional-KO-reward choice pending; the board is frozen.
-  if (hasPendingOptionalKoReward(G)) {
-    return;
-  }
-
-  // Step 5: Find and validate face-down card
+  // Step 4: Find the face-down card by instanceId (IC-282-01: zone ref is instanceId)
   const faceDownCardIndex = playerZones.faceDownCards.findIndex(
     (card) => card.instanceId === args.instanceId,
   );
   if (faceDownCardIndex === -1) {
-    // why: card not found in face-down store
+    // why: card not found in face-down store — silent no-op
     return;
   }
 
   const faceDownCard = playerZones.faceDownCards[faceDownCardIndex];
   if (!faceDownCard) {
-    // why: defensive check (should not happen if findIndex worked, but TS requires it)
+    // why: defensive — findIndex returned a valid index, but TS narrows the
+    // readonly-array element access to `T | undefined`. Never expected to fire.
     return;
   }
 
-  // Step 6: Validate ownership (IC-282-04: only owner can play their face-down card)
+  // Step 5: Validate ownership (IC-282-04: only the owner may play their card)
   if (faceDownCard.ownerPlayerId !== playerID) {
     return;
   }
 
-  // Step 7: Remove from face-down store
+  // Step 6: Remove from face-down store (exactly one instance, by index)
   playerZones.faceDownCards = playerZones.faceDownCards.filter(
     (_, index) => index !== faceDownCardIndex,
   );
 
-  // Step 8: Move to inPlay (IC-282-02: identical to hand play)
-  // The card is moved from a virtual "face-down" origin to inPlay.
-  const moveResult = moveCardFromZone([], playerZones.inPlay, args.instanceId);
-  playerZones.inPlay = moveResult.to;
+  // Step 7: Play via the shared core (IC-282-02 — identical to hand play).
+  // why: the stored cardId is the real template identity; play it (not the
+  // instanceId reference) so cardStats / hero-effect lookups resolve correctly.
+  applyCardPlay(G, context, playerID, faceDownCard.cardId);
 
-  // Step 9: Add card stats to turn economy (IC-282-02: identical to hand play)
-  const cardStats = G.cardStats[args.instanceId];
-  const heroAttack = cardStats ? cardStats.attack : 0;
-  const heroRecruit = cardStats ? cardStats.recruit : 0;
-  G.turnEconomy = addResources(G.turnEconomy, heroAttack, heroRecruit);
-
-  // Step 10: Execute hero effects (IC-282-02: identical to hand play)
-  executeHeroEffects(G, context, playerID, args.instanceId);
-
-  // Step 11: Log the move (deterministic, replay-visible)
-  G.messages.push(`Player ${playerID} played ${args.instanceId} from face-down`);
+  // Step 8: Log the move (deterministic, replay-visible)
+  G.messages.push(`Player ${playerID} played ${faceDownCard.cardId} from face-down`);
 }
