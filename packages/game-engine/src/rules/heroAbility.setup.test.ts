@@ -233,7 +233,7 @@ describe('buildHeroAbilityHooks', () => {
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 20 canonical keyword values', () => {
+  it('contains exactly the 21 canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -255,12 +255,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'dodge', // why: D-24051 — hand-action-executed keyword (the dodgeCard move)
       'undercover', // why: D-24060 / WP-282 — face-down-send-and-play keyword
       'conditional',
+      'victory-villain-attack', // why: D-24068 / WP-285 — victory-pile villain-pick mechanic
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      20,
-      'HERO_KEYWORDS must have exactly 20 entries',
+      21,
+      'HERO_KEYWORDS must have exactly 21 entries',
     );
 
     assert.deepStrictEqual(

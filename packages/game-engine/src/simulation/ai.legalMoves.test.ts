@@ -178,6 +178,109 @@ describe('getLegalMoves — pending optional-KO-reward short-circuit (WP-248 / D
   });
 });
 
+describe('getLegalMoves — pending victory-pile villain-pick short-circuit (WP-285 / D-24067)', () => {
+  /**
+   * Sets up a pending victory-pile pick with the given victory pile, type map,
+   * and card stats. Mutates state directly because makeG hardcodes victory: [].
+   */
+  function makeVictoryPickG(
+    victory: CardExtId[],
+    villainDeckCardTypes: Record<string, string>,
+    cardStats: Record<string, { attack: number; recruit: number; cost: number; fightCost: number }>,
+  ): LegendaryGameState {
+    const gameState = makeG({ hand: ['hero-a' as CardExtId], currentStage: 'main' });
+    gameState.playerZones['0']!.victory = victory;
+    gameState.villainDeckCardTypes = villainDeckCardTypes as unknown as LegendaryGameState['villainDeckCardTypes'];
+    gameState.cardStats = cardStats as unknown as LegendaryGameState['cardStats'];
+    gameState.pendingVictoryPileCardPick = [{ rewardType: 'attack', playerID: '0' }];
+    return gameState;
+  }
+
+  test('returns EXACTLY one resolveVictoryPileCardPick with the highest-fightCost villain (AC-12)', () => {
+    const gameState = makeVictoryPickG(
+      ['villain-low' as CardExtId, 'villain-high' as CardExtId, 'henchman-x' as CardExtId],
+      { 'villain-low': 'villain', 'villain-high': 'villain', 'henchman-x': 'henchman' },
+      {
+        'villain-low': { attack: 0, recruit: 0, cost: 0, fightCost: 3 },
+        'villain-high': { attack: 0, recruit: 0, cost: 0, fightCost: 8 },
+        'henchman-x': { attack: 0, recruit: 0, cost: 0, fightCost: 99 },
+      },
+    );
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(legalMoves.length, 1, 'exactly one legal move while a pick is pending');
+    const only = legalMoves[0]!;
+    assert.equal(only.name, 'resolveVictoryPileCardPick', 'the single move is resolveVictoryPileCardPick');
+    // villain-high (fightCost 8) beats villain-low (3); the henchman (99) is filtered out (not a villain).
+    assert.deepStrictEqual(only.args, { cardId: 'villain-high' }, 'bot picks highest-fightCost eligible villain');
+  });
+
+  test('tie on fightCost is broken by lowest victory-pile index (AC-12)', () => {
+    const gameState = makeVictoryPickG(
+      ['villain-first' as CardExtId, 'villain-second' as CardExtId],
+      { 'villain-first': 'villain', 'villain-second': 'villain' },
+      {
+        'villain-first': { attack: 0, recruit: 0, cost: 0, fightCost: 5 },
+        'villain-second': { attack: 0, recruit: 0, cost: 0, fightCost: 5 },
+      },
+    );
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(legalMoves.length, 1);
+    assert.deepStrictEqual(
+      legalMoves[0]!.args,
+      { cardId: 'villain-first' },
+      'tie resolved by lowest victory-pile index (first occurrence)',
+    );
+  });
+
+  test('victory-pile pick short-circuit fires BEFORE the optional-KO-reward one (precedence lock)', () => {
+    const gameState = makeVictoryPickG(
+      ['villain-v' as CardExtId],
+      { 'villain-v': 'villain' },
+      { 'villain-v': { attack: 0, recruit: 0, cost: 0, fightCost: 4 } },
+    );
+    gameState.pendingOptionalKoRewards = [
+      { playerID: '0', rewardType: 'rescue', rewardMagnitude: 1, sourceCardId: 'hero-x' as CardExtId },
+    ];
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(legalMoves.length, 1, 'still exactly one move when both queues are non-empty');
+    assert.equal(
+      legalMoves[0]!.name,
+      'resolveVictoryPileCardPick',
+      'victory-pile pick takes precedence over resolveOptionalKoReward',
+    );
+  });
+
+  test('bot never emits resolveVictoryPileCardPick when no eligible villain exists (AC-16)', () => {
+    const gameState = makeVictoryPickG(
+      ['henchman-only' as CardExtId],
+      { 'henchman-only': 'henchman' },
+      { 'henchman-only': { attack: 0, recruit: 0, cost: 0, fightCost: 6 } },
+    );
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(
+      legalMoves.some((m) => m.name === 'resolveVictoryPileCardPick'),
+      false,
+      'no resolveVictoryPileCardPick when getEligibleVictoryVillains is empty',
+    );
+  });
+
+  test('no resolveVictoryPileCardPick and normal enumeration when no pick is pending', () => {
+    const gameState = makeG({ hand: ['hero-a' as CardExtId], currentStage: 'main' });
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+    const names = legalMoves.map((m) => m.name);
+    assert.equal(names.includes('resolveVictoryPileCardPick'), false, 'absent when not pending');
+    assert.equal(names.includes('playCard'), true, 'normal main-stage moves enumerated');
+  });
+});
+
 describe('getLegalMoves — once-per-turn reveal gate (WP-266)', () => {
   test('offers revealVillainCard at the start stage when the reveal allowance is unspent', () => {
     const gameState = makeG({ currentStage: 'start', villainRevealedThisTurn: false });

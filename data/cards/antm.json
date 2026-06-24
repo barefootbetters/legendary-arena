@@ -184,7 +184,7 @@
           "attack": "0+",
           "recruit": null,
           "abilities": [
-            "You get +[icon:attack] equal to the printed [icon:attack] of a Villain in your Victory Pile. (Mastermind tactics aren't Villains.)"
+            "[keyword:victory-villain-attack] You get +[icon:attack] equal to the printed [icon:attack] of a Villain in your Victory Pile. (Mastermind tactics aren't Villains.)"
           ]
         }
       ],
