@@ -4,10 +4,10 @@
   "summary": {
     "totalRows": 627,
     "byStatus": {
-      "executable": 152,
+      "executable": 170,
       "deferred": 0,
       "condition": 5,
-      "unsupported": 423,
+      "unsupported": 405,
       "unmarked": 47
     },
     "distinctMechanics": 135
@@ -38,10 +38,10 @@
       "heroName": "Doctor Doom 2099",
       "set": "2099",
       "mechanic": "undercover",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover"
     },
     {
       "extId": "2099/ghost-rider-2099",
@@ -68,10 +68,10 @@
       "heroName": "Ghost Rider 2099",
       "set": "2099",
       "mechanic": "undercover",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover"
     },
     {
       "extId": "2099/hulk-2099",
@@ -108,10 +108,10 @@
       "heroName": "Hulk 2099",
       "set": "2099",
       "mechanic": "undercover",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover"
     },
     {
       "extId": "2099/ravage-2099",
@@ -158,10 +158,10 @@
       "heroName": "Spider-Man 2099",
       "set": "2099",
       "mechanic": "undercover",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover"
     },
     {
       "extId": "3dtc/black-widow",
@@ -558,10 +558,10 @@
       "heroName": "Black Knight",
       "set": "antm",
       "mechanic": "empowered",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "WP-267",
       "decision": "D-24044",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/effectPrimitive.interpret.ts"
     },
     {
       "extId": "antm/jocasta",
@@ -968,10 +968,10 @@
       "heroName": "Black Widow",
       "set": "bkwd",
       "mechanic": "undercover",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover"
     },
     {
       "extId": "bkwd/falcon-winter-soldier",
@@ -1018,10 +1018,10 @@
       "heroName": "Red Guardian",
       "set": "bkwd",
       "mechanic": "undercover",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover"
     },
     {
       "extId": "bkwd/red-guardian",
@@ -1078,10 +1078,10 @@
       "heroName": "Yelena Belova",
       "set": "bkwd",
       "mechanic": "undercover",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover"
     },
     {
       "extId": "bkwd/yelena-belova",
@@ -3928,10 +3928,10 @@
       "heroName": "Agent Phil Coulson",
       "set": "shld",
       "mechanic": "undercover",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover"
     },
     {
       "extId": "shld/deathlok",
@@ -3958,20 +3958,20 @@
       "heroName": "Deathlok",
       "set": "shld",
       "mechanic": "undercover",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover"
     },
     {
       "extId": "shld/dum-dum-dugan",
       "heroName": "Dum Dum Dugan",
       "set": "shld",
       "mechanic": "undercover",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover"
     },
     {
       "extId": "shld/gw-bridge",
@@ -3988,10 +3988,10 @@
       "heroName": "Grant Ward",
       "set": "shld",
       "mechanic": "undercover",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover"
     },
     {
       "extId": "shld/leo-fitz-and-jemma-simmons",
@@ -4048,10 +4048,10 @@
       "heroName": "Mockingbird",
       "set": "shld",
       "mechanic": "undercover",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover"
     },
     {
       "extId": "shld/quake",
@@ -4068,40 +4068,40 @@
       "heroName": "Quake",
       "set": "shld",
       "mechanic": "undercover",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover"
     },
     {
       "extId": "shld/sharon-carter",
       "heroName": "Sharon Carter",
       "set": "shld",
       "mechanic": "undercover",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover"
     },
     {
       "extId": "shld/victoria-hand",
       "heroName": "Victoria Hand",
       "set": "shld",
       "mechanic": "undercover",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover"
     },
     {
       "extId": "shld/yo-yo-rodriguez",
       "heroName": "Yo-Yo Rodriguez",
       "set": "shld",
       "mechanic": "undercover",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover"
     },
     {
       "extId": "smhc/happy-hogan",
@@ -5348,10 +5348,10 @@
       "heroName": "Star-Lord T'Challa",
       "set": "wtif",
       "mechanic": "empowered",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "WP-267",
       "decision": "D-24044",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/effectPrimitive.interpret.ts"
     },
     {
       "extId": "wtif/star-lord-tchalla",
