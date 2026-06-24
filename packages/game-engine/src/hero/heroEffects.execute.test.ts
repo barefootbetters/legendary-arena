@@ -52,8 +52,8 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     );
   });
 
-  it('has exactly 8 handlers and none for the deferred keywords', () => {
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 8);
+  it('has exactly 9 handlers and none for the deferred keywords', () => {
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 9);
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
     assert.equal(HERO_EFFECT_HANDLERS['conditional'], undefined);
   });
@@ -3115,5 +3115,72 @@ describe('executeHeroEffects — Dodge keyword at play time (WP-275 / D-24051)',
     });
     executeHeroEffects(gameState, mockCtx, '0', 'twilight-ops' as string);
     assert.equal(records(gameState).length, 0, 'a mixed hook with the reachable dodge effect is not hollow');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-285 / D-24067 — victory-villain-attack park site (AC-8)
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects victory-villain-attack park (WP-285 / D-24067)', () => {
+  const mockCtx = makeMockCtx();
+
+  it('parks a PendingVictoryPileCardPick when ≥1 eligible villain is in the victory pile', () => {
+    const gameState = makeTestState({
+      victory: ['villain-1', 'henchman-2'],
+      inPlay: ['the-ebony-blade'],
+      heroAbilityHooks: [
+        {
+          cardId: 'the-ebony-blade' as string,
+          timing: 'onPlay',
+          keywords: ['victory-villain-attack'],
+          effects: [{ type: 'victory-villain-attack' }],
+        },
+      ],
+    });
+    // why: makeTestState hardcodes villainDeckCardTypes: {} — set the setup-time
+    // type map directly so the park site's getEligibleVictoryVillains filter sees
+    // a real villain (henchman-2 is deliberately non-villain to prove the filter).
+    gameState.villainDeckCardTypes = {
+      'villain-1': 'villain',
+      'henchman-2': 'henchman',
+    } as unknown as LegendaryGameState['villainDeckCardTypes'];
+
+    executeHeroEffects(gameState, mockCtx, '0', 'the-ebony-blade' as string);
+
+    assert.equal(gameState.pendingVictoryPileCardPick?.length, 1, 'exactly one pick parked');
+    assert.deepStrictEqual(
+      gameState.pendingVictoryPileCardPick![0],
+      { rewardType: 'attack', playerID: '0' },
+      'parked entry records the reward type and the player',
+    );
+    // No attack granted at play time — the grant happens at resolve time.
+    assert.equal(gameState.turnEconomy.attack, 0, 'no attack granted at park time');
+  });
+
+  it('with 0 eligible villains it is a no-op plus a game-log line (no pick parked)', () => {
+    const gameState = makeTestState({
+      victory: ['bystander-1'],
+      inPlay: ['the-ebony-blade'],
+      heroAbilityHooks: [
+        {
+          cardId: 'the-ebony-blade' as string,
+          timing: 'onPlay',
+          keywords: ['victory-villain-attack'],
+          effects: [{ type: 'victory-villain-attack' }],
+        },
+      ],
+    });
+    gameState.villainDeckCardTypes = {
+      'bystander-1': 'bystander',
+    } as unknown as LegendaryGameState['villainDeckCardTypes'];
+
+    executeHeroEffects(gameState, mockCtx, '0', 'the-ebony-blade' as string);
+
+    assert.equal(gameState.pendingVictoryPileCardPick?.length ?? 0, 0, 'no pick parked when no eligible villain');
+    assert.ok(
+      gameState.messages.some((line) => line.includes('no eligible villains in their victory pile')),
+      'a 0-eligible victory-villain-attack must append a game-log line explaining the no-op',
+    );
   });
 });

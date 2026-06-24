@@ -19,6 +19,10 @@ import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { selectDefaultKoTarget } from '../villain/villainEffects.execute.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { selectDefaultOptionalKoTarget } from '../hero/heroEffects.execute.js';
+import {
+  hasPendingVictoryPileCardPick,
+  getEligibleVictoryVillains,
+} from '../moves/resolveVictoryPileCardPick.js';
 
 // why: simulation covers the play-phase only; lobby moves (setPlayerReady,
 // startMatchIfReady) are excluded because runSimulation starts the per-game
@@ -37,6 +41,7 @@ const SIMULATION_MOVE_NAMES = [
   'fightMastermind',
   'resolveKoHeroChoice',
   'resolveOptionalKoReward',
+  'resolveVictoryPileCardPick',
 ] as const;
 
 // why: type is exported implicitly via the const array above; external
@@ -102,6 +107,29 @@ export function getLegalMoves(
     // why: fail-closed — active player has no zones (malformed state).
     // Return empty list; the runner's zero-legal-moves fallback handles
     // the degenerate case.
+    return legalMoves;
+  }
+
+  // why: pending victory-pile villain-pick short-circuit (D-24067) — the bot must
+  // resolve a pending pick before any other move. Picks the highest-fightCost
+  // eligible villain (ties broken by lowest victory-pile index = first in
+  // getEligibleVictoryVillains result after stable sort). Returns EXACTLY 1 move.
+  if (hasPendingVictoryPileCardPick(gameState)) {
+    const eligibleVillains = getEligibleVictoryVillains(gameState, activePlayer);
+    if (eligibleVillains.length > 0) {
+      // why: deterministic highest-attack pick; ties resolved by lowest victory-pile index (D-24067)
+      let bestVillain: CardExtId = eligibleVillains[0]!;
+      let bestAttack = gameState.cardStats[bestVillain]?.fightCost ?? 0;
+      for (const villainId of eligibleVillains) {
+        const villainAttack = gameState.cardStats[villainId]?.fightCost ?? 0;
+        if (villainAttack > bestAttack) {
+          bestAttack = villainAttack;
+          bestVillain = villainId;
+        }
+      }
+      return [{ name: 'resolveVictoryPileCardPick', args: { cardId: bestVillain } }];
+    }
+    // why: defensive — if no eligible villain (engine-invariant violation after park), fail closed.
     return legalMoves;
   }
 

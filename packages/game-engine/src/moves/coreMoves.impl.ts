@@ -20,6 +20,7 @@ import { addResources } from '../economy/economy.logic.js';
 import { executeHeroEffects } from '../hero/heroEffects.execute.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
+import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -63,6 +64,11 @@ export function drawCards({ G, playerID, ...context }: MoveContext, args: DrawCa
   // why: block-all guard (D-24019) — optional-KO-reward choice pending; the
   // board is frozen until resolved (beside the D-24008 KO-hero check above).
   if (hasPendingOptionalKoReward(G)) {
+    return;
+  }
+
+  // why: block-all — pendingVictoryPileCardPick must be resolved before any other action (D-24067)
+  if (hasPendingVictoryPileCardPick(G)) {
     return;
   }
 
@@ -171,6 +177,11 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
     return;
   }
 
+  // why: block-all — pendingVictoryPileCardPick must be resolved before any other action (D-24067)
+  if (hasPendingVictoryPileCardPick(G)) {
+    return;
+  }
+
   // Step 3: Mutate G
   const playerZones = G.playerZones[playerID];
   if (!playerZones) {
@@ -225,6 +236,11 @@ export function endTurn({ G, playerID, events }: MoveContext): void {
   // — queue-non-empty blocks turn-end). Guard precedes the zone sweep so a
   // blocked turn does not discard the hand (beside the D-24008 KO-hero check).
   if (hasPendingOptionalKoReward(G)) {
+    return;
+  }
+
+  // why: block-all — pendingVictoryPileCardPick must be resolved before any other action (D-24067)
+  if (hasPendingVictoryPileCardPick(G)) {
     return;
   }
 

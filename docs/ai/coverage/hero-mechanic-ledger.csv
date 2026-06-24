@@ -1,19 +1,19 @@
 ext_id,hero_name,set,mechanic,status,wp,decision,handler
 2099/doctor-doom-2099,Doctor Doom 2099,2099,cyber-mod,unsupported,,,
 2099/doctor-doom-2099,Doctor Doom 2099,2099,fated-future,unsupported,,,
-2099/doctor-doom-2099,Doctor Doom 2099,2099,undercover,unsupported,,,
+2099/doctor-doom-2099,Doctor Doom 2099,2099,undercover,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#undercover
 2099/ghost-rider-2099,Ghost Rider 2099,2099,cyber-mod,unsupported,,,
 2099/ghost-rider-2099,Ghost Rider 2099,2099,fated-future,unsupported,,,
-2099/ghost-rider-2099,Ghost Rider 2099,2099,undercover,unsupported,,,
+2099/ghost-rider-2099,Ghost Rider 2099,2099,undercover,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#undercover
 2099/hulk-2099,Hulk 2099,2099,cyber-mod-4-wounds,unsupported,,,
 2099/hulk-2099,Hulk 2099,2099,cyber-mod-wound,unsupported,,,
 2099/hulk-2099,Hulk 2099,2099,fated-future,unsupported,,,
-2099/hulk-2099,Hulk 2099,2099,undercover,unsupported,,,
+2099/hulk-2099,Hulk 2099,2099,undercover,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#undercover
 2099/ravage-2099,Ravage 2099,2099,fated-future,unsupported,,,
 2099/ravage-2099,Ravage 2099,2099,reveal-attack-choose,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-attack-choose
 2099/spider-man-2099,Spider-Man 2099,2099,cyber-mod,unsupported,,,
 2099/spider-man-2099,Spider-Man 2099,2099,fated-future,unsupported,,,
-2099/spider-man-2099,Spider-Man 2099,2099,undercover,unsupported,,,
+2099/spider-man-2099,Spider-Man 2099,2099,undercover,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#undercover
 3dtc/black-widow,Black Widow,3dtc,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 3dtc/black-widow,Black Widow,3dtc,rescue,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#rescue
 3dtc/deadpool,Deadpool,3dtc,(unmarked),unmarked,,,
@@ -53,7 +53,7 @@ anni/super-skrull,Super-Skrull,anni,streets,unsupported,,,
 antm/ant-man,Ant-Man,antm,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 antm/ant-man,Ant-Man,antm,microscopic-size-changing,unsupported,,,
 antm/ant-man,Ant-Man,antm,size-changing,unsupported,,,
-antm/black-knight,Black Knight,antm,empowered,unsupported,WP-267,D-24044,
+antm/black-knight,Black Knight,antm,empowered,executable,WP-267,D-24044,packages/game-engine/src/hero/effectPrimitive.interpret.ts
 antm/jocasta,Jocasta,antm,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 antm/jocasta,Jocasta,antm,empowered,executable,WP-267,D-24044,packages/game-engine/src/hero/effectPrimitive.interpret.ts
 antm/jocasta,Jocasta,antm,size-changing,unsupported,,,
@@ -94,18 +94,18 @@ bkpt/white-wolf,White Wolf,bkpt,wound-each-villain-and-the-mastermind,unsupporte
 bkpt/white-wolf,White Wolf,bkpt,wound-the-mastermind,unsupported,,,
 bkwd/black-widow,Black Widow,bkwd,dark-memories,unsupported,,,
 bkwd/black-widow,Black Widow,bkwd,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts
-bkwd/black-widow,Black Widow,bkwd,undercover,unsupported,,,
+bkwd/black-widow,Black Widow,bkwd,undercover,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#undercover
 bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,dark-memories,unsupported,,,
 bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts
 bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 bkwd/red-guardian,Red Guardian,bkwd,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
-bkwd/red-guardian,Red Guardian,bkwd,undercover,unsupported,,,
+bkwd/red-guardian,Red Guardian,bkwd,undercover,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#undercover
 bkwd/red-guardian,Red Guardian,bkwd,unleash,unsupported,,,
 bkwd/red-guardian,Red Guardian,bkwd,when-recruited,unsupported,,,
 bkwd/white-tiger,White Tiger,bkwd,dark-memories,unsupported,,,
 bkwd/white-tiger,White Tiger,bkwd,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts
 bkwd/yelena-belova,Yelena Belova,bkwd,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts
-bkwd/yelena-belova,Yelena Belova,bkwd,undercover,unsupported,,,
+bkwd/yelena-belova,Yelena Belova,bkwd,undercover,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#undercover
 bkwd/yelena-belova,Yelena Belova,bkwd,unleash,unsupported,,,
 ca75/agent-x-13,Agent X-13,ca75,savior,unsupported,,,
 ca75/agent-x-13,Agent X-13,ca75,woman-out-of-time,unsupported,,,
@@ -390,24 +390,24 @@ rvlt/speed,Speed,rvlt,hyperspeed,unsupported,,,
 rvlt/war-machine,War Machine,rvlt,hyperspeed,unsupported,,,
 shld/agent-phil-coulson,Agent Phil Coulson,shld,s.h.i.e.l.d.-level,unsupported,,,
 shld/agent-phil-coulson,Agent Phil Coulson,shld,s.h.i.e.l.d.-levels,unsupported,,,
-shld/agent-phil-coulson,Agent Phil Coulson,shld,undercover,unsupported,,,
+shld/agent-phil-coulson,Agent Phil Coulson,shld,undercover,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#undercover
 shld/deathlok,Deathlok,shld,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 shld/deathlok,Deathlok,shld,s.h.i.e.l.d.-level,unsupported,,,
-shld/deathlok,Deathlok,shld,undercover,unsupported,,,
-shld/dum-dum-dugan,Dum Dum Dugan,shld,undercover,unsupported,,,
+shld/deathlok,Deathlok,shld,undercover,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#undercover
+shld/dum-dum-dugan,Dum Dum Dugan,shld,undercover,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#undercover
 shld/gw-bridge,G.W. Bridge,shld,(unmarked),unmarked,,,
-shld/grant-ward,Grant Ward,shld,undercover,unsupported,,,
+shld/grant-ward,Grant Ward,shld,undercover,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#undercover
 shld/leo-fitz-and-jemma-simmons,Leo Fitz and Jemma Simmons,shld,(unmarked),unmarked,,,
 shld/melinda-may,Melinda May,shld,(unmarked),unmarked,,,
 shld/mockingbird,Mockingbird,shld,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 shld/mockingbird,Mockingbird,shld,s.h.i.e.l.d.-level,unsupported,,,
 shld/mockingbird,Mockingbird,shld,s.h.i.e.l.d.-levels,unsupported,,,
-shld/mockingbird,Mockingbird,shld,undercover,unsupported,,,
+shld/mockingbird,Mockingbird,shld,undercover,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#undercover
 shld/quake,Quake,shld,s.h.i.e.l.d.-level,unsupported,,,
-shld/quake,Quake,shld,undercover,unsupported,,,
-shld/sharon-carter,Sharon Carter,shld,undercover,unsupported,,,
-shld/victoria-hand,Victoria Hand,shld,undercover,unsupported,,,
-shld/yo-yo-rodriguez,Yo-Yo Rodriguez,shld,undercover,unsupported,,,
+shld/quake,Quake,shld,undercover,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#undercover
+shld/sharon-carter,Sharon Carter,shld,undercover,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#undercover
+shld/victoria-hand,Victoria Hand,shld,undercover,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#undercover
+shld/yo-yo-rodriguez,Yo-Yo Rodriguez,shld,undercover,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#undercover
 smhc/happy-hogan,Happy Hogan,smhc,coordinate,unsupported,,,
 smhc/happy-hogan,Happy Hogan,smhc,danger-sense,unsupported,,,
 smhc/happy-hogan,Happy Hogan,smhc,double-striker,unsupported,,,
@@ -532,7 +532,7 @@ wtif/killmonger-spec-ops,"Killmonger, Spec Ops",wtif,liberate,unsupported,,,
 wtif/killmonger-spec-ops,"Killmonger, Spec Ops",wtif,what-if...?,unsupported,,,
 wtif/party-thor,Party Thor,wtif,cross-dimensional-party-rampage,unsupported,,,
 wtif/party-thor,Party Thor,wtif,what-if...?,unsupported,,,
-wtif/star-lord-tchalla,Star-Lord T'Challa,wtif,empowered,unsupported,WP-267,D-24044,
+wtif/star-lord-tchalla,Star-Lord T'Challa,wtif,empowered,executable,WP-267,D-24044,packages/game-engine/src/hero/effectPrimitive.interpret.ts
 wtif/star-lord-tchalla,Star-Lord T'Challa,wtif,what-if...?,unsupported,,,
 wtif/uatu-the-watcher,"Uatu, The Watcher",wtif,empowered,unsupported,WP-267,D-24044,
 wtif/uatu-the-watcher,"Uatu, The Watcher",wtif,soulbind,unsupported,,,

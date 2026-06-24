@@ -488,6 +488,27 @@ export interface PendingOptionalKoReward {
 }
 
 /**
+ * Pending victory-pile villain-pick player choice state (WP-285 / D-24067).
+ *
+ * Created when a victory-villain-attack hero effect fires (`onPlay`) and the
+ * player has at least one villain in their victory pile. Appended to
+ * G.pendingVictoryPileCardPick[] (FIFO queue). Removed (front-popped) by
+ * resolveVictoryPileCardPick after the player picks a villain. Must be
+ * undefined or empty at every turn-end (enforced by the block-all guards).
+ *
+ * // why: D-24067 — the player picks one villain from their victory pile and
+ * gains attack equal to its printed attack value. The pending entry records the
+ * player owed a pick. Eligible villains are recomputed fresh from G at resolve
+ * time (no snapshot — the victory pile may change between park and resolve).
+ */
+export interface PendingVictoryPileCardPick {
+  /** The player who must pick a villain from their victory pile. */
+  playerID: string;
+  /** Discriminant for future extensibility; always 'attack'. */
+  rewardType: 'attack';
+}
+
+/**
  * Minimal setup-time context interface for deterministic operations.
  *
  * Captures what buildInitialGameState needs from the boardgame.io setup
@@ -597,6 +618,18 @@ export interface LegendaryGameState {
   // or empty [] both mean "no pending choice" (guards test `.length`).
   /** FIFO queue of pending optional-KO-then-reward choices awaiting resolution (WP-248). */
   pendingOptionalKoRewards?: PendingOptionalKoReward[] | undefined;
+
+  // why: WP-285 / D-24067 — FIFO queue of pending victory-pile villain-pick
+  // choices (one per played victory-villain-attack hero ability with ≥1 villain
+  // in the victory pile). Entries are appended by the executor park case;
+  // front-popped by resolveVictoryPileCardPick after the player picks a villain.
+  // Must be undefined or empty at every turn-end. Optional so existing test
+  // state literals do not need updating; **lazily initialized at the park site,
+  // never in Game.setup** (D-24067). Absent (undefined) or empty [] both mean
+  // "no pending pick" (guards test `.length`).
+  // why: pendingVictoryPileCardPick is lazy-init (D-24067); undefined and [] both mean no pending pick
+  /** FIFO queue of pending victory-pile villain-pick choices awaiting resolution (WP-285). */
+  pendingVictoryPileCardPick?: PendingVictoryPileCardPick[] | undefined;
 
   // why: playerZones is keyed by player ID string (boardgame.io uses "0", "1",
   // etc.). Each player has exactly 5 zone arrays. Only deck is non-empty after

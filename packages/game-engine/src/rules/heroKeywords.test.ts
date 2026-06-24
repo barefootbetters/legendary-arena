@@ -35,3 +35,20 @@ describe('undercover keyword (WP-282 / EC-314)', () => {
     );
   });
 });
+
+describe('victory-villain-attack keyword (WP-285 / EC-317 / D-24068)', () => {
+  it('is registered in HERO_KEYWORDS as the 21st entry', () => {
+    assert.ok(
+      HERO_KEYWORDS.includes('victory-villain-attack'),
+      'victory-villain-attack must be in HERO_KEYWORDS array',
+    );
+  });
+
+  it('HERO_KEYWORDS array has exactly 21 entries after WP-285', () => {
+    assert.equal(
+      HERO_KEYWORDS.length,
+      21,
+      'HERO_KEYWORDS must have exactly 21 entries (20 post-WP-282 + victory-villain-attack)',
+    );
+  });
+});

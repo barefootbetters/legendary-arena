@@ -34,6 +34,7 @@ import { addResources } from '../economy/economy.logic.js';
 import { koCard } from '../board/ko.logic.js';
 import { resolveCountSource } from './heroCountSource.resolve.js';
 import { interpretHeroPrimitiveEffect } from './effectPrimitive.interpret.js';
+import { getEligibleVictoryVillains } from '../moves/resolveVictoryPileCardPick.js';
 
 // ---------------------------------------------------------------------------
 // MVP keyword set
@@ -57,7 +58,7 @@ import { interpretHeroPrimitiveEffect } from './effectPrimitive.interpret.js';
 // the 7 legacy reveal-* keywords lost their dedicated handlers (folded into the one
 // 'reveal' handler) but stay executable via revealRulesForLegacyKeyword translation.
 export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
-  'draw', 'attack', 'recruit', 'ko', 'rescue', 'reveal', 'attack-per-count', 'optional-ko-reward',
+  'draw', 'attack', 'recruit', 'ko', 'rescue', 'reveal', 'attack-per-count', 'optional-ko-reward', 'victory-villain-attack',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -150,6 +151,9 @@ const OPTIONAL_KO_REWARD_SEEDED_REWARDS: ReadonlySet<HeroKeyword> = new Set<Hero
 // (D-24024 / pre-flight PS-1)
 const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   'rescue', 'reveal',
+  // why: victory-villain-attack parks a pending pick; the attack amount is read
+  // from the chosen villain's fightCost at resolve time, not from a static magnitude
+  'victory-villain-attack',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -1040,6 +1044,39 @@ function heroEffectOptionalKoReward(
   });
 }
 
+/**
+ * Park handler for the `victory-villain-attack` hero keyword (WP-285 / D-24067).
+ *
+ * Checks whether the player has at least one eligible villain in their victory pile
+ * at play time. If yes, parks a `PendingVictoryPileCardPick` on
+ * `G.pendingVictoryPileCardPick[]` (lazy-init). If no eligible villain exists, logs
+ * a hollow-style no-op message (D-24067) and returns without touching the queue.
+ *
+ * The attack grant itself happens at resolve time (resolveVictoryPileCardPick), NOT
+ * here — the player must first pick which villain to use.
+ */
+function heroEffectVictoryVillainAttack(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  _cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) { return; }
+  const eligibleVillains = getEligibleVictoryVillains(G, playerID);
+  if (eligibleVillains.length === 0) {
+    // why: no eligible villains in victory pile at play time — no pending pick parked, logged as no-op (D-24067)
+    G.messages.push(
+      `Player ${playerID} played a victory-villain-attack hero ability but had no eligible villains in their victory pile — no pick was queued.`,
+    );
+    return;
+  }
+  // why: lazy-init at the park site (never in Game.setup); absent field = no pending pick. Mirrors pendingOptionalKoRewards (D-24019).
+  if (!G.pendingVictoryPileCardPick) { G.pendingVictoryPileCardPick = []; }
+  G.pendingVictoryPileCardPick.push({ rewardType: 'attack', playerID });
+}
+
 // why: D-24022 — the hero-effect ImplementationMap (mirrors WP-009B's pattern).
 // Handlers are plain functions held OUTSIDE G; a new effect is a registry entry
 // + a drift-test entry, not a `switch` edit. Keyed by HeroKeyword and `Partial`
@@ -1058,6 +1095,7 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   reveal: heroEffectReveal,
   'attack-per-count': heroEffectAttackPerCount,
   'optional-ko-reward': heroEffectOptionalKoReward,
+  'victory-villain-attack': heroEffectVictoryVillainAttack,
 };
 
 // ---------------------------------------------------------------------------
