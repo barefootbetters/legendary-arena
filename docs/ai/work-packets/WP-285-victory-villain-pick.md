@@ -198,10 +198,18 @@ separated from the infrastructure they guard. The pattern is identical to WP-248
 - `hasPendingVictoryPileCardPick(G)` returns `false` for both `undefined` and `[]`.
 - Block-all guards must use `hasPendingVictoryPileCardPick` from the new resolve file — do not
   inline the check.
-- The eligible set is computed at move-resolution time (not at park time) by reading
-  `G.playerZones[playerID].victory` filtered by `G.villainDeckCardTypes[id] === 'villain'`.
+- **Queue integrity:** `pendingVictoryPileCardPick` is always treated as a strict FIFO queue:
+  reads access index `[0]` (the front), pushes append to the end, removal always uses
+  `.shift()`. The queue must never contain `null` entries or entries missing `playerID`/`rewardType`.
+  Multiple concurrent entries are allowed and resolve strictly in insertion order.
+- **Eligibility is evaluated at resolution time, not at park time.** Between park and resolve,
+  the victory pile state is authoritative. Do not cache or re-use park-time eligibility.
+  The move must call `getEligibleVictoryVillains` (or equivalent filter) at resolution time.
+- Block-all guards must use `hasPendingVictoryPileCardPick` from the new resolve file — do not
+  inline the check.
 - The bot must not call `resolveVictoryPileCardPick` if `getEligibleVictoryVillains` returns
-  an empty array (handle in the bot default section of `ai.legalMoves.ts`).
+  an empty array (handle in the bot default section of `ai.legalMoves.ts`). The bot must call
+  `getEligibleVictoryVillains` — never re-implement the filter inline.
 - `G.cardStats[selectedCardId].attack` is a `number` (per WP-247 `CardStatEntry`). No
   string-to-number coercion.
 - Do not use `G.villainDeckCardTypes[id]?.cardType` — the field IS the `RevealedCardType`
@@ -249,7 +257,44 @@ separated from the infrastructure they guard. The pattern is identical to WP-248
   silently when it is true.
 - **AC-12:** Bot default in `ai.legalMoves.ts` — when `hasPendingVictoryPileCardPick` is true
   and eligible villains exist, the bot calls `resolveVictoryPileCardPick` with the
-  highest-attack villain's `cardId` (deterministic: if tie, lowest victory-pile index wins).
+  highest-attack villain's `cardId` (deterministic: if tie, lowest victory-pile index wins;
+  bot must not use any randomness; bot must call `getEligibleVictoryVillains`, never
+  re-implement the filter inline).
+- **AC-13:** Queue integrity — after a successful pick, exactly one entry is removed from
+  `G.pendingVictoryPileCardPick` via `.shift()`; the queue length decreases by exactly 1.
+- **AC-14:** Resolution-time eligibility — if the victory pile contains only non-villains
+  (bystanders, henchmen, etc.) when `resolveVictoryPileCardPick` fires, the move returns
+  silently without mutating `G`.
+- **AC-15:** FIFO order — with ≥2 pending entries, successive resolve calls consume entries in
+  insertion order (first parked = first resolved); the second entry is untouched after the
+  first successful resolve.
+- **AC-16:** Bot guard — bot never calls `resolveVictoryPileCardPick` when
+  `getEligibleVictoryVillains` returns an empty array.
+
+---
+
+## Failure Boundaries
+
+The following conditions must never mutate `G`. The move must return `void` immediately on
+any failure — same contract as every other move (see `ARCHITECTURE.md §Move Validation
+Contract`):
+
+| Condition | Required behavior |
+|---|---|
+| `G.pendingVictoryPileCardPick` is `undefined` or `[]` | Silent return, no state change |
+| `cardId` arg not present in player's `G.playerZones[playerID].victory` | Silent return, no state change |
+| `G.villainDeckCardTypes[cardId] !== 'villain'` | Silent return, no state change |
+| Eligible villain list empty at resolution time | Silent return, no state change |
+| FIFO front entry's `playerID` ≠ `ctx.currentPlayer` | Silent return, no state change |
+
+No partial mutation is permitted on any failure path. If the move begins a validation chain
+and any step fails, it must return before touching `G.turnEconomy.attack` or the queue.
+
+**Park-site vs. resolution-time distinction:**
+- The no-op at the **park site** (no eligible villains at play time) IS logged via `G.messages`
+  — this is intentional; it is a gameplay event (the player played a card, nothing happened).
+- Resolution-time silent returns are **not** logged — they are invalid-input paths in the move,
+  not gameplay events.
 
 ---
 
@@ -306,6 +351,12 @@ mutation pattern as `resolveOptionalKoReward`. The bot default is deterministic 
 first; ties broken by lowest victory-pile index). The `finalStateHash` is expected unchanged
 because the sentinel board uses only `core/*` heroes (executor must confirm).
 
+**State mutation scope:** The move is permitted to mutate exactly two fields:
+- `G.turnEconomy.attack` (incremented by the selected villain's printed attack)
+- `G.pendingVictoryPileCardPick` (front entry removed via `.shift()`)
+
+No other `G` fields may be mutated during move execution.
+
 ---
 
 ## Funding Surface Gate
@@ -341,7 +392,7 @@ function. No `apps/server/src/**` surfaces are added or modified. No entry in
 | §11 Auth | N/A | No authentication surfaces |
 | §12 Tests | ✅ PASS | `node:test`, `makeMockCtx`, no boardgame.io imports |
 | §13 Verification | ✅ PASS | Exact `pnpm` commands with expected output |
-| §14 AC Quality | ✅ PASS | 12 binary, observable, specific items |
+| §14 AC Quality | ✅ PASS | 16 binary, observable, specific items (AC-1..12 original + AC-13..16 queue/boundary hardening) |
 | §15 DoD | ✅ PASS | STATUS.md, DECISIONS.md, WORK_INDEX.md included; D-24026 declared N/A infrastructure |
 | §16.1 Abstraction | ✅ PASS | Helpers appear in multiple sites (8 guard sites) |
 | §16.2 Control flow | ✅ PASS | `for...of` mandated; no nested ternaries or complex reduce() |
@@ -391,9 +442,10 @@ No failure modes detected from the standard 30-mode audit. Key points:
 
 ## Definition of Done
 
-- [ ] All 12 Acceptance Criteria pass
+- [ ] All 16 Acceptance Criteria pass (AC-1..16)
 - [ ] `pnpm --filter @legendary-arena/game-engine test` — all pass; test count ≥ 1598 (baseline
-      1586 + minimum 12 new tests)
+      1586 + minimum 12 new tests; the required-coverage mandate in EC-317 specifies 7 minimum
+      tests for `resolveVictoryPileCardPick.test.ts`)
 - [ ] `pnpm -r build && pnpm test` — all packages build and test green
 - [ ] `pnpm --filter @legendary-arena/game-engine exec tsc --noEmit` — 0 errors
 - [ ] `docs/ai/STATUS.md` updated with WP-285 execution summary

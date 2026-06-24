@@ -12,11 +12,13 @@
 - [ ] `git status` — working tree clean; on a `claude/*` branch
 - [ ] `pnpm --filter @legendary-arena/game-engine test` — baseline test count recorded
       (expected: 1586 from WP-284)
-- [ ] Confirm `G.pendingOptionalKoRewards` exists in `types.ts` (WP-248 ✅)
-- [ ] Confirm `G.cardStats[id].attack: number` exists in `economy.types.ts` (WP-247 ✅)
-- [ ] Confirm `G.villainDeckCardTypes: Record<CardExtId, RevealedCardType>` at `types.ts:639`
+- [ ] Confirm `G.pendingOptionalKoRewards` exists in `types.ts` (WP-248 ✅) — if missing, STOP
+- [ ] Confirm `G.cardStats[id].attack: number` exists in `economy.types.ts` (WP-247 ✅) — if missing, STOP
+- [ ] Confirm `G.villainDeckCardTypes: Record<CardExtId, RevealedCardType>` at `types.ts:639` — if missing, STOP
+- [ ] Confirm D-24067 and D-24068 are present in `docs/ai/DECISIONS.md` — if missing, STOP
+- [ ] Read `resolveOptionalKoReward.ts` in full; confirm it follows the FIFO + guard pattern
+      this WP mirrors — if it differs significantly from the expected pattern, STOP and reconcile
 - [ ] Read WP-285 in full before touching a single file
-- [ ] Read `resolveOptionalKoReward.ts` in full — this WP mirrors it exactly
 
 ---
 
@@ -48,10 +50,41 @@
 5. **The FIFO queue front is `[0]`** — pop with `G.pendingVictoryPileCardPick.shift()`,
    not `.pop()`. Same as WP-248.
 6. **Bot default: highest-attack villain wins; tie-break = lowest victory-pile index.**
-   Deterministic; no `ctx.random.*` allowed in the bot default.
+   Deterministic; no `ctx.random.*` allowed in the bot default. Bot MUST call
+   `getEligibleVictoryVillains` — never re-implement the filter inline.
 7. **Move returns silently on any validation failure** — never throws (core invariant).
 8. **Update the drift test in `heroKeywords.test.ts`** — array length 20 → 21; add new entry.
    Omitting this is the most common test-suite red per WP history (WP-248/EC-279 precedent).
+9. **Validate eligibility at resolution time, not only at park time.** The move must re-run
+   the `getEligibleVictoryVillains` filter at the moment of resolution — park-time eligibility
+   is a hint, not a guarantee. Victory pile state at resolve-time is authoritative.
+10. **Never partially mutate on a failure path.** If any validation step in the move fails,
+    return immediately before touching `G.turnEconomy.attack` or the queue. Partial mutation
+    on a failed pick is a data-corruption bug.
+
+---
+
+## Required Implementation Order
+
+Execute files in this sequence. Out-of-order implementation creates type errors that obscure
+real failures and makes the test suite unreliable as an early signal:
+
+1. `types.ts` — `PendingVictoryPileCardPick` interface + `G` field (foundation; must compile first)
+2. `rules/heroKeywords.ts` — add `'victory-villain-attack'` (union + array; 20 → 21)
+3. `moves/resolveVictoryPileCardPick.ts` — move + helpers (depends on types.ts)
+4. `moves/resolveVictoryPileCardPick.test.ts` — write and run; confirm suite green before continuing
+5. `rules/heroKeywords.test.ts` — update drift test (20 → 21; run after step 4)
+6. `setup/heroAbility.setup.ts` — `'victory-villain-attack'` keyword dispatch
+7. `hero/heroEffects.execute.ts` — park site (`'victory-villain-attack'` onPlay case)
+8. Block-all guard files (all 7 of: `coreMoves.impl.ts`, `fightVillain.ts`, `fightMastermind.ts`,
+   `recruitHero.ts`, `villainDeck.reveal.ts`, `dodgeCard.ts`, `playFromUndercover.ts`)
+9. `ai/ai.legalMoves.ts` — `hasPendingVictoryPileCardPick` short-circuit + bot default
+10. `game.ts` — move registration + `advanceStage` guard (register last to avoid spurious move-set failures)
+11. `game.test.ts` — move count N+1 + move-name set
+12. `data/cards/antm.json` — `[keyword:victory-villain-attack]` prefix on `the-ebony-blade`
+
+**Checkpoint:** run `pnpm --filter @legendary-arena/game-engine test` after step 4 and again
+after step 11. If either run is red, diagnose before continuing.
 
 ---
 
@@ -120,6 +153,33 @@ Every one of the following `// why:` comments must appear verbatim in the produc
 - [ ] Spot-check: `HERO_KEYWORDS.length === 21` in `heroKeywords.ts`
 - [ ] Spot-check: `resolveVictoryPileCardPick` in `game.ts` moves registration
 - [ ] Governance close — `SPEC:` commit with DECISIONS, WORK_INDEX, EC_INDEX, STATUS, mindmap
+
+---
+
+## Required Test Coverage
+
+`resolveVictoryPileCardPick.test.ts` MUST include at minimum these 7 tests. If any is absent,
+execution is incomplete — a green suite without these tests does not satisfy the DoD:
+
+- [ ] Valid pick: correct attack value granted to `G.turnEconomy.attack`
+- [ ] `cardId` not in victory pile: `G` entirely unmutated
+- [ ] `cardId` present but non-villain (`G.villainDeckCardTypes[id] !== 'villain'`): `G` entirely unmutated
+- [ ] Eligible list empty at resolution time: `G` entirely unmutated
+- [ ] FIFO order: ≥2 queued entries, first resolve consumes entry `[0]`; entry `[1]` is untouched
+- [ ] `undefined` queue: `hasPendingVictoryPileCardPick` returns false; move is a no-op
+- [ ] Queue shift: after a successful resolution, queue length is exactly `startLength - 1`
+
+---
+
+## Silent Failure Risk
+
+Because every invalid-input path in `resolveVictoryPileCardPick` returns silently (standard
+move validation contract), missing test coverage will mask defects invisibly. A move that
+silently no-ops a case it should handle is indistinguishable from a move that correctly
+no-ops an invalid input.
+
+If any of AC-1 through AC-16 is not covered by a direct test assertion, execution is
+incomplete. "Tests green" is not a DoD proxy — each AC must be individually verifiable.
 
 ---
 
