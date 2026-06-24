@@ -29,15 +29,16 @@ export function buildPlayerState(
 ): PlayerState {
   const shuffledDeck = shuffleDeck(startingDeck, context);
 
-  // why: Cards enter non-deck zones (hand, discard, inPlay, victory) exclusively
-  // through game moves — never through setup initialization. Pre-populating them
-  // would bypass the move validation contract and break replay determinism.
+  // why: Cards enter non-deck zones (hand, discard, inPlay, victory, faceDownCards)
+  // exclusively through game moves — never through setup initialization. Pre-populating
+  // them would bypass the move validation contract and break replay determinism.
   const zones: PlayerZones = {
     deck: shuffledDeck,
     hand: [],
     discard: [],
     inPlay: [],
     victory: [],
+    faceDownCards: [],
   };
 
   return {

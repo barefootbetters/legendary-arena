@@ -103,7 +103,14 @@ import { makeMockCtx } from '../test/mockCtx.js';
 // hashes the initial state; the new onBegin auto-draw never fires here). Same
 // dependency-driven class as the WP-212 villainRevealedThisTurn re-pin above.
 // Pre-WP-236: 'f2c9f9ec'. Post-WP-236: '85deb41a'.
-const PRE_WP080_HASH = '85deb41a';
+// why: WP-282 / D-24062 cascade re-baseline — `PlayerZones.faceDownCards`
+// initialised `[]` per player in buildInitialGameState (via playerInit) serializes
+// into every player's zones (`"faceDownCards":[]`), shifting this empty replay's
+// final-state hash with NO behaviour change (this moves:[] replay never sends a
+// card face-down). Same dependency-driven class as the WP-236 hasDrawnThisTurn
+// re-pin above — the sentinel INCLUDES the new zone (Option B; D-24062), so a
+// face-down divergence would be caught. Pre-WP-282: '85deb41a'. Post-WP-282: '379f7e46'.
+const PRE_WP080_HASH = '379f7e46';
 
 /**
  * Minimal mock registry for replay tests. Mirrors replay.verify.test.ts.

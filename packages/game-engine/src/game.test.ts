@@ -103,12 +103,13 @@ describe('LegendaryGame', () => {
     );
   });
 
-  it('defines moves: advanceStage, dodgeCard, drawCards, endTurn, fightMastermind, fightVillain, playCard, recruitHero, resolveHeroChoice, resolveKoHeroChoice, resolveOptionalKoReward, and revealVillainCard', () => {
+  it('defines moves: advanceStage, dodgeCard, drawCards, endTurn, fightMastermind, fightVillain, playCard, playFromUndercover, recruitHero, resolveHeroChoice, resolveKoHeroChoice, resolveOptionalKoReward, revealVillainCard, and sendUndercover', () => {
     const moveNames = Object.keys(LegendaryGame.moves ?? {});
     assert.deepStrictEqual(
       moveNames.sort(),
-      ['advanceStage', 'dodgeCard', 'drawCards', 'endTurn', 'fightMastermind', 'fightVillain', 'playCard', 'recruitHero', 'resolveHeroChoice', 'resolveKoHeroChoice', 'resolveOptionalKoReward', 'revealVillainCard'],
-      'LegendaryGame must define exactly 12 moves',
+      // why: WP-282 / EC-313 added sendUndercover + playFromUndercover (12 → 14).
+      ['advanceStage', 'dodgeCard', 'drawCards', 'endTurn', 'fightMastermind', 'fightVillain', 'playCard', 'playFromUndercover', 'recruitHero', 'resolveHeroChoice', 'resolveKoHeroChoice', 'resolveOptionalKoReward', 'revealVillainCard', 'sendUndercover'],
+      'LegendaryGame must define exactly 14 moves',
     );
   });
 

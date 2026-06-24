@@ -25692,4 +25692,68 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 **Relates to.** D-24055 (spectrum is the first condition-gate); D-24057 (ledger status assignment); WP-281 (implementation).
 
+---
+
+### D-24059 — Face-Down Zone Is Per-Player with Owned-Card Semantics
+
+**Status:** Active (EC-313, 2026-06-23)
+
+**Decision:** The face-down card zone (`faceDownCards`) is per-player (stored in `G.playerZones[pid]`), and each card in the zone tracks its owner via the `ownerPlayerId` field. Only the owner of a face-down card may retrieve and play it.
+
+**Rationale:** Per-player zones align with the existing `hand`, `discard`, `inPlay`, `victory` structure. Owner tracking enforces the security invariant IC-282-04: cards in `faceDownCards` belong only to that player, preventing cross-player card theft or identity spoofing in future multi-player face-down mechanics (e.g., opponent-can-peek spy effects).
+
+**Implementation constraint:** All zone operations use `instanceId` (the zone reference), never `cardId`. The `cardId` field is stored redundantly for validation and effect resolution (IC-282-01). Ownership is validated before retrieval (`playFromUndercover` rejects non-owner calls silently per Move Validation Contract).
+
+**Relates to.** WP-282 (undercover mechanic); IC-282-04 (ownership-tracking invariant); D-24060 (identity storage).
+
+---
+
+### D-24060 — Face-Down Card Identity Is Stored Deterministically; Display Is Randomized Per Render
+
+**Status:** Active (EC-313, 2026-06-23)
+
+**Decision:** Face-down cards store their `cardId` (template identity) deterministically in the game state `G.playerZones[pid].faceDownCards[i].cardId`. The UI layer displays face-down cards using a randomized per-render naming scheme (e.g., "Undercover Card A", "Undercover Card B", ...) seeded from the same deterministic path as the rest of the game.
+
+**Rationale:** Stored identity enables deterministic replays and effect resolution (e.g., when a face-down card is played, its `cardId` is immediately available for hook lookups). Randomized display prevents client-side identity leakage and preserves the hidden-information contract even when a player holds their own game state snapshot. Opponent projections never expose `instanceId` or `cardId` (IC-282-09).
+
+**Determinism guarantee:** Replay with identical seed produces identical `cardId` sequence in `faceDownCards` (IC-282-07, IC-282-08). Display strings vary per-render (seeded from render path), so replays show the same display naming given the same seed, but the underlying identity is fixed.
+
+**Relates to.** WP-282 (undercover mechanic); D-24059 (ownership tracking); IC-282-07..09 (determinism + projection safety).
+
+---
+
+### D-24061 — No UI Changes in Session 1 (Engine Contract Only)
+
+**Status:** Active (EC-313, 2026-06-23)
+
+**Decision:** EC-313 (Session 1) implements the game-engine face-down zone architecture and core moves (`sendUndercover`, `playFromUndercover`) with no changes to the UI layer, dashboard, or client-visible projections. Visual rendering of face-down cards (cards, animations, display strings, opponent-view hiding) is deferred to EC-314 (Session 2) and future WPs.
+
+**Rationale:** Separating engine contract (moves + state) from UI rendering prevents tight coupling and allows the engine to stabilize independently. Session 1 focuses on the pure state model; Session 2 adds the presentation layer once the underlying moves are proven correct.
+
+**Scope boundary:** Session 1 is **game-engine layer only** (`packages/game-engine/src/`). No edits to `apps/server`, `apps/arena-client`, dashboards, or projection logic. The `lookAtUndercover` helper is test-only (no UI consumption).
+
+**Future:** EC-314 (Session 2) will wire `faceDownCards` into the UI projection and add visual rendering. The engine contract from EC-313 is immutable and sufficient for all future UI extensions.
+
+**Relates to.** WP-282 (two-session split); Layer Boundary (game-engine / UI separation); D-24059 (ownership); D-24060 (identity storage).
+
+---
+
+### D-24062 — Undercover: Sentinel Includes the Face-Down Zone; Keyword Is Move-Executed and Case-Insensitive
+
+**Status:** Active (EC-313 / EC-314, 2026-06-23)
+
+**Context.** WP-282 / EC-313 left three items as "decide during execution": (a) the sentinel-hash treatment of the new `faceDownCards` zone (EC-313 §Sentinel Hash offered "exclude, no re-pin" vs "include, re-pin"), (b) how the `undercover` keyword executes, and (c) parser case-sensitivity. Running the test suite (which the build-only EC-313 verification had skipped) forced all three.
+
+**Decision (a) — Sentinel INCLUDES `faceDownCards` (Option B; re-pin).** `faceDownCards` is authoritative game state and is hashed with the rest of `G`. Adding `faceDownCards: []` per player in `buildInitialGameState` (via `playerInit`) shifts the empty-replay regression hash (`replay.execute.test.ts` PRE_WP080_HASH `85deb41a` → `379f7e46`) and the `sentinel-core-doom-2p` fixture `finalStateHash` (regenerated via `scripts/record-game-fixture.mjs`; only the hash line changed — snapshots / messages / outcome byte-identical, confirming zero behavior change). Excluding the zone (Option A) was rejected: it would blind the determinism guard to face-down divergence. Replay determinism holds — same seed → same ordered `instanceId` list → same (new) hash (IC-282-07 / IC-282-08).
+
+**Decision (b) — `undercover` is move-executed, not handler-executed.** The keyword is recognized (parser emits keyword `undercover` + a bare `{ type: 'undercover' }` effect) and joins `MVP_KEYWORDS` via a new `FACE_DOWN_EXECUTED_KEYWORDS = ['undercover']` category, mirroring `wall-crawl` (D-24049) and `dodge` (D-24051). The actual mechanic runs through the explicit `sendUndercover` / `playFromUndercover` moves — there is **no** `HERO_EFFECT_HANDLERS` entry and **no** automatic state mutation on play (IC-282-10). This makes `classifyHeroEffectReason` return `applied` (not a `no-handler` hollow). This supersedes EC-314's "log a message on the onPlay hook" suggestion, which would have been inconsistent with every other move-executed keyword and would mutate `G.messages` on every play.
+
+**Decision (c) — `undercover` is case-INSENSITIVE, like every keyword.** The hero-ability parser lowercases every `[keyword:X]` token before matching (`heroAbility.setup.ts`), so `[keyword:Undercover]`, `[keyword:undercover]`, and `[keyword:UNDERCOVER]` all resolve to `undercover`. EC-314's "case-sensitive; rejects lowercase" requirement is **superseded** — it contradicts the uniform parser, and special-casing one keyword would fork it. The canonical authoring form in card data remains `[keyword:Undercover]` (matching the 2099 / bkwd / shld sets); case-sensitivity is an authoring convention, not a parser gate.
+
+**IC-282-02 realization.** `playFromUndercover` and `playCard` now share one `applyCardPlay()` core (inPlay append + base economy + `executeHeroEffects`); the two play paths are identical by construction, not by a duplicated copy.
+
+**Integration-test scope.** EC-314's "full 2099 match" is realized via a mock-registry end-to-end test (`undercover.integration.test.ts`) reproducing the 2099 Spider-Friends ability lines inline — the established hero-test convention. No real 2099 card JSON lives in the engine repo's test fixtures, so a recorded full-match fixture would require first importing that data (out of WP-282 scope; a candidate follow-up).
+
+**Relates to.** D-24059 / D-24060 / D-24061 (the face-down zone); D-24049 (wall-crawl move-executed precedent); D-24051 (dodge move-executed precedent); WP-282 §Acceptance Criteria (sentinel option); the WP-236 / WP-212 dependency-driven re-pin lineage.
+
 Protect this file.

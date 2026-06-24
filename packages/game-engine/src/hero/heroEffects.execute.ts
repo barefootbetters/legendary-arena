@@ -94,19 +94,37 @@ export const RECRUIT_TIME_EXECUTED_KEYWORDS: readonly HeroKeyword[] = ['wall-cra
 // bidirectional test).
 export const HAND_ACTION_EXECUTED_KEYWORDS: readonly HeroKeyword[] = ['dodge'];
 
-// why (WP-251 / D-24024; D-24049; D-24051): MVP_KEYWORDS = HANDLED_KEYWORDS ∪ the
+// why: D-24060 / WP-282 — undercover executes from the sendUndercover + playFromUndercover
+// MOVES (the player sends a card face-down, then later plays it from face-down state), so —
+// like wall-crawl and dodge — it has NO HERO_EFFECT_HANDLERS entry and is NOT in
+// HANDLED_KEYWORDS. It still joins MVP_KEYWORDS via this face-down-action category for two
+// load-bearing reasons: (a) the hero mechanic ledger classifies an MVP_KEYWORDS member
+// `executable`; (b) classifyHeroEffectReason returns `applied` for it, so the onPlay hook
+// that executeHeroEffects visits at PLAY time (it does not filter by timing) classifies
+// not-hollow instead of firing a `no-handler` hollow — without this membership the
+// now-recognized keyword would trade the old parse-unrecognized hollow for a fresh
+// no-handler one (a regression). Kept a SEPARATE set from RECRUIT_TIME_EXECUTED_KEYWORDS /
+// HAND_ACTION_EXECUTED_KEYWORDS (duplicate-first per §16.1 — the three categories execute
+// at different times and a premature merge would blur that); NOT added to HANDLED_KEYWORDS
+// (that demands a handler and would break the HERO_EFFECT_HANDLERS-keys ↔ HANDLED_KEYWORDS
+// bidirectional test).
+export const FACE_DOWN_EXECUTED_KEYWORDS: readonly HeroKeyword[] = ['undercover'];
+
+// why (WP-251 / D-24024; D-24049; D-24051; D-24060): MVP_KEYWORDS = HANDLED_KEYWORDS ∪ the
 // frozen-translated reveal keywords ∪ the recruit-time-executed keywords ∪ the
-// hand-action-executed keywords — the set of keywords that execute (directly via a handler,
-// via reveal translation, at recruit time via the recruitHero placement, or via a hand-action
-// move like dodgeCard). The executeSingleEffect pre-gate keys on it; the coverage drift test
-// asserts every member is handled directly, reveal-translated, recruit-time-executed, OR
-// hand-action-executed. Do not duplicate this set elsewhere (the coverage probe's
-// EXECUTED_KEYWORDS is a separate, informational copy).
+// hand-action-executed keywords ∪ the face-down-action-executed keywords — the set of
+// keywords that execute (directly via a handler, via reveal translation, at recruit time via
+// the recruitHero placement, via a hand-action move like dodgeCard, or via the face-down
+// send/play moves). The executeSingleEffect pre-gate keys on it; the coverage drift test
+// asserts every member is handled directly, reveal-translated, recruit-time-executed,
+// hand-action-executed, OR face-down-executed. Do not duplicate this set elsewhere (the
+// coverage probe's EXECUTED_KEYWORDS is a separate, informational copy).
 export const MVP_KEYWORDS = new Set<string>([
   ...HANDLED_KEYWORDS,
   ...FROZEN_REVEAL_TRANSLATED,
   ...RECRUIT_TIME_EXECUTED_KEYWORDS,
   ...HAND_ACTION_EXECUTED_KEYWORDS,
+  ...FACE_DOWN_EXECUTED_KEYWORDS,
 ]);
 
 // why: D-24019 — the reward of an optional-ko-reward effect is dispatched to an

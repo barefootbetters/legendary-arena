@@ -18,6 +18,8 @@ import { revealVillainCard } from './villainDeck/villainDeck.reveal.js';
 import { fightVillain } from './moves/fightVillain.js';
 import { recruitHero } from './moves/recruitHero.js';
 import { dodgeCard } from './moves/dodgeCard.js';
+import { sendUndercover } from './moves/sendUndercover.js';
+import { playFromUndercover } from './moves/playFromUndercover.js';
 import { fightMastermind } from './moves/fightMastermind.js';
 import { resetTurnEconomy } from './economy/economy.logic.js';
 import { runAllInvariantChecks } from './invariants/runAllChecks.js';
@@ -310,6 +312,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // discard a Dodge card from hand to draw a replacement. Server-only
     // (client: false) per D-10008 — it mutates real G (playerZones), absent on UIState.
     dodgeCard: { move: dodgeCard, client: false },
+    // why: WP-282 / EC-313 — sendUndercover sends a card face-down from hand to the
+    // player's face-down store. playFromUndercover retrieves a face-down card and
+    // plays it through the identical pathway as hand play. Both are server-only
+    // (client: false) per D-10008 — they mutate playerZones fields.
+    sendUndercover: { move: sendUndercover, client: false },
+    playFromUndercover: { move: playFromUndercover, client: false },
     fightMastermind: { move: fightMastermind, client: false },
     resolveHeroChoice: { move: resolveHeroChoice, client: false },
     resolveKoHeroChoice: { move: resolveKoHeroChoice, client: false },
