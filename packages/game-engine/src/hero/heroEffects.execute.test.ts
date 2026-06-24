@@ -10,7 +10,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { executeHeroEffects, selectDefaultOptionalKoTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
+import { executeHeroEffects, selectDefaultOptionalKoTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, FACE_DOWN_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import type { LegendaryGameState, PendingHeroChoice } from '../types.js';
 import type { HeroAbilityHook, HeroEffectDescriptor } from '../rules/heroAbility.types.js';
@@ -64,21 +64,25 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
   // reveal keyword and ignored by the no-magnitude ones), OR it executes at recruit
   // time (wall-crawl — D-24049 — whose executor is the recruitHero deck-top
   // placement), OR it executes via a hand-action move (dodge — D-24051 — whose
-  // executor is the dodgeCard hand-discard-to-draw move) — neither of the last two
-  // an onPlay handler nor a reveal translation. A keyword with none of the four
-  // fails here, so the reveal collapse cannot silently drop an executable keyword
-  // AND the move-executed categories cannot silently masquerade as a missing handler.
-  it('every MVP_KEYWORD is handled directly, via reveal translation, at recruit time, or via a hand-action move (D-24024 / D-24049 / D-24051)', () => {
+  // executor is the dodgeCard hand-discard-to-draw move), OR it executes via the
+  // face-down send/play moves (undercover — D-24060 — sendUndercover +
+  // playFromUndercover) — none of the last three an onPlay handler nor a reveal
+  // translation. A keyword with none of the five fails here, so the reveal collapse
+  // cannot silently drop an executable keyword AND the move-executed categories
+  // cannot silently masquerade as a missing handler.
+  it('every MVP_KEYWORD is handled directly, via reveal translation, at recruit time, via a hand-action move, or via the face-down moves (D-24024 / D-24049 / D-24051 / D-24060)', () => {
     const recruitTimeExecuted = new Set<string>(RECRUIT_TIME_EXECUTED_KEYWORDS);
     const handActionExecuted = new Set<string>(HAND_ACTION_EXECUTED_KEYWORDS);
+    const faceDownExecuted = new Set<string>(FACE_DOWN_EXECUTED_KEYWORDS);
     for (const keyword of MVP_KEYWORDS) {
       const hasHandler = HERO_EFFECT_HANDLERS[keyword as HeroKeyword] !== undefined;
       const translates = revealRulesForLegacyKeyword(keyword as HeroKeyword, 1).length > 0;
       const executesAtRecruit = recruitTimeExecuted.has(keyword);
       const executesAtHandAction = handActionExecuted.has(keyword);
+      const executesAtFaceDown = faceDownExecuted.has(keyword);
       assert.ok(
-        hasHandler || translates || executesAtRecruit || executesAtHandAction,
-        `MVP keyword "${keyword}" must be handled directly, via reveal translation, at recruit time, or via a hand-action move`,
+        hasHandler || translates || executesAtRecruit || executesAtHandAction || executesAtFaceDown,
+        `MVP keyword "${keyword}" must be handled directly, via reveal translation, at recruit time, via a hand-action move, or via the face-down moves`,
       );
     }
   });

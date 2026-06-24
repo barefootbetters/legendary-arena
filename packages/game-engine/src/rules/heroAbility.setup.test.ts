@@ -1290,21 +1290,30 @@ describe('buildHeroAbilityHooks Dodge keyword (WP-275 / D-24051)', () => {
     assert.deepStrictEqual(hooks[0]!.effects, [{ type: 'dodge' }]);
   });
 
-  it('an entangled dodge + unleash + undercover rider line records dodge as a keyword and the rest as unresolved markers', () => {
-    // why: D-24051 honest-partial — the Twilight Ops rider line declares dodge (now
-    // recognized) plus still-unsupported unleash/undercover. dodge becomes a keyword +
-    // effect; unleash/undercover surface as unresolvedMarkers. The mixed hook is NOT hollow
-    // at runtime (≥1 reachable mechanic), but the unleash/undercover gap is preserved here.
+  it('an entangled dodge + unleash + undercover rider line records dodge and undercover as keywords and unleash as an unresolved marker', () => {
+    // why: D-24051 honest-partial + D-24060 (WP-282) — the Twilight Ops rider line declares
+    // dodge (D-24051) and undercover (D-24060, now recognized) plus still-unsupported
+    // unleash. dodge and undercover each become a keyword + a bare effect descriptor; only
+    // unleash surfaces as an unresolvedMarker. The mixed hook is NOT hollow at runtime (≥1
+    // reachable mechanic), and the remaining unleash gap is preserved here.
     const hooks = buildSingleAbility(
       'When you [keyword:Dodge] with this card, you may [keyword:Unleash] one of your Heroes from [keyword:Undercover].',
     );
     assert.equal(hooks.length, 1);
-    assert.deepStrictEqual(hooks[0]!.keywords, ['dodge'], 'only dodge is a recognized keyword');
-    assert.deepStrictEqual(hooks[0]!.effects, [{ type: 'dodge' }], 'a single dodge effect is emitted');
+    assert.deepStrictEqual(
+      hooks[0]!.keywords,
+      ['dodge', 'undercover'],
+      'dodge and undercover are recognized keywords',
+    );
+    assert.deepStrictEqual(
+      hooks[0]!.effects,
+      [{ type: 'dodge' }, { type: 'undercover' }],
+      'a bare dodge effect and a bare undercover effect are emitted',
+    );
     assert.deepStrictEqual(
       hooks[0]!.unresolvedMarkers,
-      ['unleash', 'undercover'],
-      'unleash and undercover stay unresolved (not implemented by this WP)',
+      ['unleash'],
+      'only unleash stays unresolved (not implemented by this WP)',
     );
   });
 });
