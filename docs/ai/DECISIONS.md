@@ -25756,4 +25756,52 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 **Relates to.** D-24059 / D-24060 / D-24061 (the face-down zone); D-24049 (wall-crawl move-executed precedent); D-24051 (dodge move-executed precedent); WP-282 §Acceptance Criteria (sentinel option); the WP-236 / WP-212 dependency-driven re-pin lineage.
 
+---
+
+### D-24063 — Empowered Oracle-Max Approximation for Player-Choice Forms
+
+**Status:** Reserved (WP-283, 2026-06-24)
+
+**Context.** Two empowered forms cannot be resolved by the existing core or conditional-prefix parsers: (1) "Empowered by the color of your choice" (no `[hc:CLASS]` literal), and (2) "Choose one: Empowered by [hc:strength] or Empowered by [hc:covert]" (two-marker form, rejected by gate #2). Both fire `parse-unrecognized` hollow at runtime.
+
+**Decision.** Resolve choice-form Empowered using an **oracle-max approximation**: at play time, scan the HQ for candidate hero classes (all classes for free-choice; the two enumerated classes for choose-one) and grant +Attack equal to the highest count found. This is equivalent to the player always making the optimal choice without requiring interactive pending-state mechanics, UI prompts, or move infrastructure. Deferred to a future WP: true interactive choice (a pending-queue move the player resolves).
+
+**Rationale.** For a digital solo-plus-bot implementation, oracle-max is the correct result for the common case and avoids the multi-layer scope (engine pending state + client choice UI) of interactive choice. The oracle is always ≥ what any player would gain by random selection, and equals what an optimal player would gain.
+
+**Relates to.** D-24044 (empowered core path); D-24047 (conditional-prefix path); D-24064 (new ValueExpression type); WP-283 (implementation).
+
+---
+
+### D-24064 — `max-class-count-in-zone` ValueExpression Type
+
+**Status:** Reserved (WP-283, 2026-06-24)
+
+**Decision.** Add a new `ValueExpression` type `'max-class-count-in-zone'` to `effectPrimitive.types.ts`. Shape: `{ type: 'max-class-count-in-zone'; classes: 'all' | readonly string[]; zone: EffectCountZoneKind }`. When `classes === 'all'`, the evaluator scans the full HQ, builds a class→count map, and returns the highest count. When `classes` is a `string[]`, only the listed classes are considered. Empty HQ or no matching class returns 0. Evaluator uses `for...of` (no `.reduce()`). Added to `VALUE_EXPRESSION_TYPES` drift array (D-24030 four-surface rule).
+
+**Relates to.** D-24030 (closed-union drift); D-24063 (oracle-max strategy); WP-283 (implementation).
+
+---
+
+### D-24065 — Dynamic Empowered via Deck-Peek (What If...? Form)
+
+**Status:** Reserved (WP-284, 2026-06-24)
+
+**Context.** `cross-the-multiverse` (wtif/star-lord-tchalla) fires an `empowered` / `parse-unrecognized` hollow because its class is dynamic: "by the Hero Classes of the card you revealed this way." The `[keyword:What If...?]` token is already invisible to the parser (contains spaces and punctuation outside `KEYWORD_PATTERN`'s character class). Only the `[keyword:Empowered]` token reaches the dispatch chain and falls through all existing resolver paths.
+
+**Decision.** Add `tryResolveEmpoweredDynamic` as the **final fallback** in the empowered dispatch chain. It recognizes the "by the * Classes of the card you revealed" phrasing and builds a `peek-top-deck-empower` composition using the new `top-deck-card-class-count-in-zone` ValueExpression (D-24066). At runtime: peek `G.playerZones[playerID].deck[0]` (no zone move), read its hero class from `G.cardTraits`, count HQ cards of that class, grant +Attack. If deck is empty or top card has no hero class, grant +0. `wtif.json` is byte-unchanged.
+
+**Scope boundary.** v1 is single-class only. Multi-class revealed cards are deferred. The `[keyword:What If...?]` token encoding is deferred to a future card-data normalization WP.
+
+**Relates to.** D-24063 (oracle empowered); D-24064 (max-class evaluator); D-24066 (deck-peek evaluator); WP-284 (implementation).
+
+---
+
+### D-24066 — `top-deck-card-class-count-in-zone` ValueExpression Type
+
+**Status:** Reserved (WP-284, 2026-06-24)
+
+**Decision.** Add a new `ValueExpression` type `'top-deck-card-class-count-in-zone'` to `effectPrimitive.types.ts`. Shape: `{ type: 'top-deck-card-class-count-in-zone'; zone: EffectCountZoneKind }`. The evaluator peeks `G.playerZones[playerID].deck[0]` (read-only — no zone mutation), reads `G.cardTraits[topCardId]?.heroClass` (string | null), then counts HQ cards matching that class. Guards: empty deck → 0; heroClass null/empty/not-string → 0. `for...of` only (no `.reduce()`). Added to `VALUE_EXPRESSION_TYPES` drift array (D-24030 four-surface rule; post-WP-283 count is the baseline for this add).
+
+**Relates to.** D-24030 (closed-union drift); D-24065 (deck-peek mechanic decision); WP-284 (implementation).
+
 Protect this file.
