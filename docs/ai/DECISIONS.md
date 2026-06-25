@@ -25913,4 +25913,18 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 **Relates to.** Builds on D-24054 (WP-279 shared draft + tray), WP-091 (`useLoadoutDraft` + LAGN import), WP-278 (filter chain), WP-245 (LAGN export); consumes the `FlatCard.extId` id-space (D-24018). Account-backed saved-LAGN library + dropdown and the per-chip "view in Cards" cross-link are named follow-ups, out of scope.
 
+---
+
+### D-24073 — Simulation Dispatch Maps Must Cover Every `getLegalMoves`-Emittable Move (Drift-Guarded)
+
+**Status:** Drafted 2026-06-25; not yet landed (reserved by WP-289 / EC-321). Flips to Active on execution.
+
+**Context.** The balance-simulation `getLegalMoves` (`simulation/ai.legalMoves.ts`) can short-circuit to an interactive resolve move when a pending choice is parked (the block-all guard returns EXACTLY that one move). The per-turn loops dispatch the chosen move through a static `MOVE_MAP` (one in `simulation.runner.ts`, a duplicate in `par.aggregator.ts` per RS-10). If `MOVE_MAP` lacks an entry for an emittable move, the runner skips it as "unknown" and the pending choice never clears — an **infinite within-turn loop**, because `maxTurns` bounds turns, not within-turn move-steps. WP-286 hit this when One-Hit Wonder's `draw-or-empowered` choice parked unconditionally (the competent sweep `sim:runtime-observed:check` hung ~20 min); it patched in `resolveDrawOrEmpowered` but the sibling resolve moves (`resolveKoHeroChoice`, `resolveOptionalKoReward`, `resolveVictoryPileCardPick`) stayed absent — latent because their pending choices need preconditions a sweep rarely meets, and nothing at unit level guarded the gap (WP-286 Amendment B flagged the follow-up).
+
+**Decision.** The simulation move-emission set (`SIMULATION_MOVE_NAMES`, exported from `ai.legalMoves.ts`) and the simulation dispatch maps must stay in sync: **every** name in `SIMULATION_MOVE_NAMES` MUST have a dispatch entry in BOTH `MOVE_MAP`s. Enforced by `simulation.moveDispatch.drift.test.ts`, which asserts each map's key set (exported as `SIMULATION_RUNNER_MOVE_NAMES` / `PAR_AGGREGATOR_MOVE_NAMES` via `Object.keys(MOVE_MAP)`) is a superset of `SIMULATION_MOVE_NAMES`, with a negative phantom-move assertion proving the check is non-vacuous. Adding a new sim-emittable move now requires adding it to both maps or the drift test reds.
+
+**Scope note.** The replay maps (`replay/replay.execute.ts`, `test/fixtures/runFixture.ts`) dispatch RECORDED move lists, not `getLegalMoves` output, and no fixture contains a resolve move; their completeness is out of scope for this invariant. Sim moves that `getLegalMoves` never emits (`dodgeCard` / `sendUndercover` / `playFromUndercover`) are intentionally absent from `SIMULATION_MOVE_NAMES`.
+
+**Relates to.** D-24069 (WP-286 — added `resolveDrawOrEmpowered`, first hit this gap; Amendment B flagged the systemic follow-up); D-3601 / D-3202 (the WP-036 sim runner + the local `SIMULATION_MOVE_NAMES` const); WP-289 (implementation).
+
 Protect this file.
