@@ -23,6 +23,7 @@ import { executeVillainAbilities } from '../villain/villainEffects.execute.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
+import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { composeFightNarrative } from '../events/notableEvents.compose.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
@@ -99,6 +100,8 @@ export function fightVillain(
   if (hasPendingOptionalKoReward(G)) return;
   // why: block-all — pendingVictoryPileCardPick must be resolved before any other action (D-24067)
   if (hasPendingVictoryPileCardPick(G)) return;
+  // why: block-all — pendingDrawOrEmpowered must be resolved before any other action (D-24069)
+  if (hasPendingDrawOrEmpowered(G)) return;
 
   // Step 3: Mutate G
   // why: MVP has no attack point check; WP-018 adds the economy. Any player

@@ -22,6 +22,7 @@ import type { ShuffleProvider } from '../setup/shuffle.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
+import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { getHooksForCard } from '../rules/heroAbility.types.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
@@ -70,6 +71,8 @@ export function dodgeCard({ G, ctx, ...context }: MoveContext, { cardId }: Dodge
   if (hasPendingOptionalKoReward(G)) return;
   // why: block-all — pendingVictoryPileCardPick must be resolved before any other action (D-24067)
   if (hasPendingVictoryPileCardPick(G)) return;
+  // why: block-all — pendingDrawOrEmpowered must be resolved before any other action (D-24069)
+  if (hasPendingDrawOrEmpowered(G)) return;
 
   // Step 3: Eligibility — the card must be in the current player's hand AND carry
   // a dodge hook (read-only, timing-agnostic). pid = ctx.currentPlayer matches the

@@ -34,6 +34,7 @@ import { executeVillainAbilities } from '../villain/villainEffects.execute.js';
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
+import { hasPendingDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 import { composeAmbushNarrative } from '../events/notableEvents.compose.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
@@ -76,6 +77,8 @@ export function revealVillainCard({ G, ctx, ...context }: MoveContext): void {
   if (hasPendingOptionalKoReward(G)) return;
   // why: block-all — pendingVictoryPileCardPick must be resolved before any other action (D-24067)
   if (hasPendingVictoryPileCardPick(G)) return;
+  // why: block-all — pendingDrawOrEmpowered must be resolved before any other action (D-24069)
+  if (hasPendingDrawOrEmpowered(G)) return;
 
   // why: the start-of-turn reveal is once per turn; scheme/card effects that
   // chain extra reveals call performVillainReveal directly and intentionally

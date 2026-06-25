@@ -356,7 +356,7 @@ exports.AntMan = {
                     attack: "0+",
                     abilities: [
                         [
-                            "Chose one: Draw a card, or you get ",
+                            "Choose one: Draw a card, or you get ",
                             { keyword: 51 },
                             " by ",
                             { hc: 4 },

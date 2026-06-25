@@ -37,18 +37,27 @@ describe('undercover keyword (WP-282 / EC-314)', () => {
 });
 
 describe('victory-villain-attack keyword (WP-285 / EC-317 / D-24068)', () => {
-  it('is registered in HERO_KEYWORDS as the 21st entry', () => {
+  it('is registered in HERO_KEYWORDS', () => {
     assert.ok(
       HERO_KEYWORDS.includes('victory-villain-attack'),
       'victory-villain-attack must be in HERO_KEYWORDS array',
     );
   });
+});
 
-  it('HERO_KEYWORDS array has exactly 21 entries after WP-285', () => {
+describe('draw-or-empowered keyword (WP-286 / EC-318 / D-24069)', () => {
+  it('is registered in HERO_KEYWORDS', () => {
+    assert.ok(
+      HERO_KEYWORDS.includes('draw-or-empowered'),
+      'draw-or-empowered must be in HERO_KEYWORDS array',
+    );
+  });
+
+  it('HERO_KEYWORDS array has exactly 22 entries after WP-286', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      21,
-      'HERO_KEYWORDS must have exactly 21 entries (20 post-WP-282 + victory-villain-attack)',
+      22,
+      'HERO_KEYWORDS must have exactly 22 entries (21 post-WP-285 + draw-or-empowered)',
     );
   });
 });

@@ -23,6 +23,7 @@ import { composeMastermindDefeatedNarrative } from '../events/notableEvents.comp
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
+import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -72,6 +73,8 @@ export function fightMastermind(
   if (hasPendingOptionalKoReward(G)) return;
   // why: block-all — pendingVictoryPileCardPick must be resolved before any other action (D-24067)
   if (hasPendingVictoryPileCardPick(G)) return;
+  // why: block-all — pendingDrawOrEmpowered must be resolved before any other action (D-24069)
+  if (hasPendingDrawOrEmpowered(G)) return;
 
   // Step 3: Mutate G
   // why: capture the tactic card ID before defeatTopTactic moves it from

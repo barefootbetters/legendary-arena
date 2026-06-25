@@ -52,8 +52,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     );
   });
 
-  it('has exactly 9 handlers and none for the deferred keywords', () => {
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 9);
+  it('has exactly 10 handlers and none for the deferred keywords', () => {
+    // why: WP-286 / D-24069 added the draw-or-empowered park handler (9 → 10).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 10);
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
     assert.equal(HERO_EFFECT_HANDLERS['conditional'], undefined);
   });
@@ -3181,6 +3182,63 @@ describe('executeHeroEffects victory-villain-attack park (WP-285 / D-24067)', ()
     assert.ok(
       gameState.messages.some((line) => line.includes('no eligible villains in their victory pile')),
       'a 0-eligible victory-villain-attack must append a game-log line explaining the no-op',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-286 / D-24069 — draw-or-empowered park site (AC-5)
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects draw-or-empowered park (WP-286 / D-24069)', () => {
+  const mockCtx = makeMockCtx();
+
+  it('parks one PendingDrawOrEmpowered { playerID, empoweredClass } when a draw-or-empowered card is played (AC-5)', () => {
+    const gameState = makeTestState({
+      inPlay: ['one-hit-wonder'],
+      heroAbilityHooks: [
+        {
+          cardId: 'one-hit-wonder' as string,
+          timing: 'onPlay',
+          keywords: ['draw-or-empowered'],
+          effects: [{ type: 'draw-or-empowered', empoweredClass: 'strength' }],
+        },
+      ],
+    });
+    // why: lazy-init — the queue is absent before the first park (never seeded in Game.setup).
+    assert.equal(gameState.pendingDrawOrEmpowered, undefined, 'no pending queue before the park (lazy-init)');
+
+    executeHeroEffects(gameState, mockCtx, '0', 'one-hit-wonder' as string);
+
+    assert.equal(gameState.pendingDrawOrEmpowered?.length, 1, 'exactly one choice parked');
+    assert.deepStrictEqual(
+      gameState.pendingDrawOrEmpowered![0],
+      { playerID: '0', empoweredClass: 'strength' },
+      'the parked entry carries the player and the parsed empowered class',
+    );
+    // No draw and no attack grant at play time — both happen at resolve time.
+    assert.equal(gameState.turnEconomy.attack, 0, 'no attack granted at park time');
+  });
+
+  it('a draw-or-empowered effect with no empoweredClass parks nothing and logs the skip (defensive)', () => {
+    const gameState = makeTestState({
+      inPlay: ['broken-hero'],
+      heroAbilityHooks: [
+        {
+          cardId: 'broken-hero' as string,
+          timing: 'onPlay',
+          keywords: ['draw-or-empowered'],
+          effects: [{ type: 'draw-or-empowered' }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'broken-hero' as string);
+
+    assert.equal(gameState.pendingDrawOrEmpowered?.length ?? 0, 0, 'no entry parked when empoweredClass is absent');
+    assert.ok(
+      gameState.messages.some((line) => line.includes('no empowered class')),
+      'a missing empoweredClass appends a skip log line (should never happen post-parse)',
     );
   });
 });

@@ -233,7 +233,7 @@ describe('buildHeroAbilityHooks', () => {
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 21 canonical keyword values', () => {
+  it('contains exactly the 22 canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -256,12 +256,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'undercover', // why: D-24060 / WP-282 — face-down-send-and-play keyword
       'conditional',
       'victory-villain-attack', // why: D-24068 / WP-285 — victory-pile villain-pick mechanic
+      'draw-or-empowered', // why: D-24069 / WP-286 — draw-or-empowered choose-one mechanic
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      21,
-      'HERO_KEYWORDS must have exactly 21 entries',
+      22,
+      'HERO_KEYWORDS must have exactly 22 entries',
     );
 
     assert.deepStrictEqual(
@@ -951,14 +952,96 @@ describe('buildHeroAbilityHooks Empowered conditional-prefix class-gated form (W
     assert.equal(hook.conditions, undefined, 'the sole-condition core path clears all conditions (unchanged)');
   });
 
-  it('regression: one-hit-wonder "Chose one: Draw a card, or ...Empowered by [hc:strength]" still resolves via core', () => {
-    // why: one-hit-wonder is a single marker + single [hc:strength] condition with no leading
-    // [hc:X]: prefix, so the WP-267 core path resolves it (a pre-existing over-resolution — the
-    // parser cannot see the "choose one" prose). WP-272 must not change it: no leading prefix ⇒
-    // ineligible for the conditional-prefix path, so it stays on the unchanged core path.
-    const hook = empoweredHookFor('Chose one: Draw a card, or you get [keyword:Empowered] by [hc:strength].');
-    assert.ok(hook.primitiveEffects !== undefined, 'one-hit-wonder still resolves via the core path');
-    assert.equal(hook.conditions, undefined, 'the core path clears the single condition (unchanged from main)');
+  it('regression: one-hit-wonder corrected "Choose one: Draw a card, or ...Empowered by [hc:strength]" → draw-or-empowered (WP-286)', () => {
+    // why: WP-286 / D-24069 fixed the "Chose"→"Choose" typo in the card data, which lets the line
+    // clear the EMPOWERED_CHOOSE_ONE_PREFIX_PATTERN gate; the draw-or-empowered pre-pass then claims
+    // it ("Choose one:" + "Draw a card" + exactly one [keyword:Empowered] by [hc:X]) and suppresses
+    // the core empowered path. The line now emits ONE draw-or-empowered effect carrying the parsed
+    // class — NOT the WP-267 core count composition the typo'd text used to over-resolve to.
+    const hook = empoweredHookFor('Choose one: Draw a card, or you get [keyword:Empowered] by [hc:strength].');
+    assert.equal(hook.primitiveEffects, undefined, 'no core empowered composition — the pre-pass claimed the line');
+    assert.deepStrictEqual(
+      hook.effects,
+      [{ type: 'draw-or-empowered', empoweredClass: 'strength' }],
+      'one draw-or-empowered effect carrying the parsed empowered class',
+    );
+    assert.ok(!(hook.unresolvedMarkers ?? []).includes('empowered'), 'no empowered unresolved marker for the claimed line');
+    assert.equal(hook.conditions, undefined, 'the [hc:strength] count param is suppressed → no conditions');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-286 — draw-or-empowered choose-one form (D-24069)
+//
+// One-Hit Wonder's printed "Choose one: Draw a card, or you get Empowered by [class]"
+// is claimed by a dedicated pre-pass (prefix + "Draw a card" + exactly one Empowered
+// marker) that emits a single draw-or-empowered effect carrying the empowered class and
+// suppresses the core empowered path. The pre-pass is gated strictly so it never claims
+// the WP-283 two-empowered choose-one (two markers) or the core empowered path (no prefix).
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks draw-or-empowered (WP-286 / D-24069)', () => {
+  /** Builds a single-ability hook from one draw-or-empowered ability line. */
+  function drawOrEmpoweredHookFor(abilityText: string) {
+    const registry = makeHeroRegistry('core', 'draw-or-empowered-hero', [
+      { slug: 'draw-or-empowered-card', rarityLabel: 'Common 1', abilities: [abilityText] },
+    ]);
+    const config: MatchSetupConfig = { ...createTestConfig(), heroDeckIds: ['core/draw-or-empowered-hero'] };
+    const hooks = buildHeroAbilityHooks(registry, config);
+    return hooks[0]!;
+  }
+
+  it('AC-3: corrected One-Hit Wonder text → one draw-or-empowered effect (empoweredClass strength), no core composition, no unresolved marker', () => {
+    const hook = drawOrEmpoweredHookFor('Choose one: Draw a card, or you get [keyword:Empowered] by [hc:strength].');
+    assert.deepStrictEqual(
+      hook.effects,
+      [{ type: 'draw-or-empowered', empoweredClass: 'strength' }],
+      'exactly one draw-or-empowered effect carrying empoweredClass strength',
+    );
+    assert.equal(hook.primitiveEffects, undefined, 'no core empowered primitiveEffects entry for the claimed line');
+    assert.ok(!(hook.unresolvedMarkers ?? []).includes('empowered'), 'no empowered unresolved marker');
+    assert.ok((hook.keywords as string[]).includes('draw-or-empowered'), 'the draw-or-empowered keyword is on the hook');
+    assert.ok(!(hook.keywords as string[]).includes('conditional'), 'the count param is suppressed → no conditional keyword');
+  });
+
+  it('AC-4 baseline pin: the synthetic core form "You get Empowered by [hc:strength]" still resolves to the core count composition, unchanged', () => {
+    const hook = drawOrEmpoweredHookFor('You get [keyword:Empowered] by [hc:strength].');
+    assert.ok(hook.primitiveEffects !== undefined, 'the core empowered form still resolves to a composition');
+    assert.deepStrictEqual(
+      hook.primitiveEffects![0],
+      {
+        type: 'gain-resource',
+        resource: 'attack',
+        amount: { type: 'count-cards-by-class-in-zone', heroClass: 'strength', zone: 'hq' },
+      },
+      'the core path is unchanged (count-cards-by-class-in-zone)',
+    );
+    assert.ok(!(hook.keywords as string[]).includes('draw-or-empowered'), 'the core form is not a draw-or-empowered effect');
+  });
+
+  it('AC-4 baseline pin: the WP-283 two-empowered choose-one (fight-or-flight) still resolves via the choose-one pre-pass, not draw-or-empowered', () => {
+    const hook = drawOrEmpoweredHookFor(
+      'Choose one: You get [keyword:Empowered] by [hc:strength], or you get [keyword:Empowered] by [hc:covert].',
+    );
+    assert.ok(hook.primitiveEffects !== undefined, 'the two-empowered choose-one still emits a primitiveEffect');
+    const amount = (hook.primitiveEffects![0] as { amount: { type: string } }).amount;
+    assert.equal(amount.type, 'max-class-count-in-zone', 'still the WP-283 oracle-max composition');
+    assert.ok(
+      !((hook.effects ?? []) as { type: string }[]).some((effect) => effect.type === 'draw-or-empowered'),
+      'a two-empowered line is NOT claimed by the draw-or-empowered pre-pass (no draw option + two markers)',
+    );
+  });
+
+  it('the typo\'d "Chose one" form is NOT claimed (the prefix gate misses) — falls through to the core path', () => {
+    // why: documents WHY the typo was the bug — the pre-pass prefix gate requires "Choose one",
+    // so the misspelled "Chose one" never reaches the draw-or-empowered path and the line silently
+    // applies the core empowered default. The card-data fix (Chose→Choose) is load-bearing.
+    const hook = drawOrEmpoweredHookFor('Chose one: Draw a card, or you get [keyword:Empowered] by [hc:strength].');
+    assert.ok(
+      !((hook.effects ?? []) as { type: string }[]).some((effect) => effect.type === 'draw-or-empowered'),
+      'the typo\'d prefix is not claimed by the draw-or-empowered pre-pass',
+    );
+    assert.ok(hook.primitiveEffects !== undefined, 'the typo\'d line falls through to the core empowered composition');
   });
 });
 

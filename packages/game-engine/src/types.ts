@@ -509,6 +509,29 @@ export interface PendingVictoryPileCardPick {
 }
 
 /**
+ * Pending draw-or-empowered player choice state (WP-286 / D-24069).
+ *
+ * Created when a draw-or-empowered hero effect is played (`onPlay`) — the printed
+ * "Choose one: Draw a card, or you get Empowered by [class]" form (One-Hit Wonder).
+ * Appended to G.pendingDrawOrEmpowered[] (FIFO queue). Removed (front-popped) by
+ * resolveDrawOrEmpowered after the player (or bot) picks 'draw' or 'empowered'. Must
+ * be undefined or empty at every turn-end (enforced by the block-all guards).
+ *
+ * // why: D-24069 — the choice is heterogeneous (draw a card vs. an attack bonus), so
+ * it is modeled as an interactive pending choice, NOT an oracle-max like the WP-283
+ * two-empowered choose-one form. The pending entry records the choosing player and the
+ * empowered hero class parsed at setup time; the 'empowered' branch reuses
+ * buildEmpoweredComposition(empoweredClass) at resolve time (no re-implementation of
+ * the count).
+ */
+export interface PendingDrawOrEmpowered {
+  /** The player who must pick 'draw' or 'empowered'. */
+  playerID: string;
+  /** The normalized empowered hero class parsed from the card text (the count parameter). */
+  empoweredClass: string;
+}
+
+/**
  * Minimal setup-time context interface for deterministic operations.
  *
  * Captures what buildInitialGameState needs from the boardgame.io setup
@@ -630,6 +653,16 @@ export interface LegendaryGameState {
   // why: pendingVictoryPileCardPick is lazy-init (D-24067); undefined and [] both mean no pending pick
   /** FIFO queue of pending victory-pile villain-pick choices awaiting resolution (WP-285). */
   pendingVictoryPileCardPick?: PendingVictoryPileCardPick[] | undefined;
+
+  // why: WP-286 / D-24069 — FIFO queue of pending draw-or-empowered choices (one per
+  // played draw-or-empowered hero ability — the "Choose one: Draw a card, or Empowered
+  // by [class]" form). Entries are appended by the executor park case; front-popped by
+  // resolveDrawOrEmpowered after the player picks 'draw' or 'empowered'. Must be undefined
+  // or empty at every turn-end. Optional so existing test state literals do not need
+  // updating; **lazily initialized at the park site, never in Game.setup** (D-24069).
+  // Absent (undefined) or empty [] both mean "no pending choice" (guards test `.length`).
+  /** FIFO queue of pending draw-or-empowered choices awaiting resolution (WP-286). */
+  pendingDrawOrEmpowered?: PendingDrawOrEmpowered[] | undefined;
 
   // why: playerZones is keyed by player ID string (boardgame.io uses "0", "1",
   // etc.). Each player has exactly 5 zone arrays. Only deck is non-empty after
