@@ -25880,7 +25880,7 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 ### D-24071 — Draw-or-Empowered Choose-One UX (Projection + Client Prompt)
 
-**Status:** Drafted 2026-06-24; not yet landed (reserved by WP-287 / EC-319). Flips to Active on execution.
+**Status:** Active (landed 2026-06-24 by WP-287 / EC-319, commit `2cc72afa`).
 
 **Context.** WP-286 (D-24069/D-24070) parks an interactive `PendingDrawOrEmpowered` choice and resolves it by bot only. A human playing One-Hit Wonder needs a client surface to make the choice; without one the block-all guard wedges the turn. `antm/wonder-man` is in live decks and Render auto-deploys on every `main` push, so the engine cannot deploy without this UX.
 

@@ -7,6 +7,20 @@
 
 ## Current State
 
+### WP-287 / EC-319 Executed — Draw-or-Empowered Choose-One UX (Projection + Client Prompt; D-24071) (2026-06-24)
+
+**WP-287 done (Game Engine UIState projection + arena-client — the human-facing surface for WP-286's draw-or-empowered choice).** When a player plays One-Hit Wonder, the arena-client now renders a non-dismissible two-button prompt — **Draw a card** / **Empowered by {class}** — and End Turn / Pass Priority are disabled until the choice resolves. The engine projects the pending choice (chooser-only); the client submits `resolveDrawOrEmpowered({ choice })`. Projection + client only — **no engine gameplay change**. Mirrors the WP-249 optional-ko-reward UX, simpler (binary choice, no eligible-card list). Executed stacked on the WP-286 branch (WP-287's projection reads `G.pendingDrawOrEmpowered`, which only exists with WP-286).
+
+**What shipped:**
+- Engine UIState (runtime-safe surface only): `UIPendingDrawOrEmpowered { playerID, empoweredLabel }` + optional `pendingDrawOrEmpowered?` field (`uiState.types.ts`); front-of-queue projection with `empoweredLabel` derived once by a single class→display mapping (`uiState.build.ts`); chooser-only redaction keyed on `.playerID` (`uiState.filter.ts`, D-24011 analog); barrel re-export from `index.ts` (the WP-166 gap, in the allowlist up front).
+- arena-client: `'resolveDrawOrEmpowered'` appended to `UiMoveName`; new non-dismissible `DrawOrEmpoweredPrompt.vue` (two buttons; disables controls after a submit — no double-submit); `hasPendingDrawOrEmpowered` gating param on `useTurnActions` (blocks End Turn / Pass Priority at any stage); threaded through `TurnActionBar.vue` and mounted in **both** `PlayDesktop.vue` + `PlayMobile.vue`.
+
+**Measured result.** Engine `test` **1651 → 1661 / 0** (+10 projection/redaction); arena-client `test` **604 → 618 / 0** (+14 component/gating); arena-client `typecheck` (vue-tsc) **0** — optional field, **no fixture backfill**; `pnpm -r build` **0**. The no-engine-gameplay diff gate holds: the engine diff is **only** the 6 `ui/` + `index.ts` files (AC-8). Lands **D-24071** (Active). Two-commit topology: EC-319 impl (`2cc72afa`) + SPEC govern-close.
+
+**Co-released with WP-286.** Not merged as a dangling UX without the engine. Both execute and deploy in the **same window** (Render auto-deploys on every `main` push). **D-24026 live-verify** is inherently post-co-deploy: in a real match on play.legendary-arena.com, playing One-Hit Wonder shows the two-button prompt; choosing "Draw a card" draws one and "Empowered by Strength" grants the attack; End Turn is blocked until resolved.
+
+---
+
 ### WP-286 / EC-318 Executed — One-Hit Wonder: Interactive "Draw a card OR Empowered" Choose-One (Game Engine + Data; D-24069 + D-24070) (2026-06-24)
 
 **WP-286 done (Game Engine + card data — One-Hit Wonder now offers its printed "Choose one" choice instead of silently applying Empowered).** `antm/wonder-man/one-hit-wonder` reads *"Choose one: Draw a card, or you get Empowered by [strength]"* but the engine silently applied Empowered every time (live-match report; diagnostics `gitSha f1f8f67`). Two faults compounded: a card-data typo ("**Chose** one") missed the WP-283 choose-one prefix gate, and even spelled correctly the WP-283 path matches only the *two-empowered-markers* shape (fight-or-flight), so the line fell through to the core empowered path. This WP builds the interactive `PendingDrawOrEmpowered` FIFO pending-choice infrastructure (mirrors the WP-248 optional-KO-reward topology) and wires One-Hit Wonder as its first consumer.
