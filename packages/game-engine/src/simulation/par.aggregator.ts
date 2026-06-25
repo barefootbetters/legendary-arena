@@ -69,6 +69,10 @@ import { revealVillainCard } from '../villainDeck/villainDeck.reveal.js';
 import { fightVillain } from '../moves/fightVillain.js';
 import { recruitHero } from '../moves/recruitHero.js';
 import { fightMastermind } from '../moves/fightMastermind.js';
+// why: WP-286 — same reason as simulation.runner.ts: One-Hit Wonder parks a draw-or-empowered
+// choice unconditionally, so any getLegalMoves-driven loop (this PAR aggregator included) that
+// plays it sees resolveDrawOrEmpowered as the only legal move and must dispatch it or spin.
+import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 
 // ---------------------------------------------------------------------------
 // Exported constants.
@@ -404,6 +408,9 @@ const MOVE_MAP: Record<string, MoveFn> = {
   fightVillain: (context, args) => fightVillain(context as never, args as never),
   recruitHero: (context, args) => recruitHero(context as never, args as never),
   fightMastermind: (context) => fightMastermind(context as never),
+  // why: WP-286 — must be dispatchable (One-Hit Wonder parks a draw-or-empowered choice
+  // unconditionally; the block-all guard freezes every other move until it resolves).
+  resolveDrawOrEmpowered: (context, args) => resolveDrawOrEmpowered(context as never, args as never),
 };
 
 /** Builds an AggregatorMoveContext for a single move dispatch. */
