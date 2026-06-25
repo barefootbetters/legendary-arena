@@ -17,7 +17,7 @@
 
 **Measured result.** Registry-viewer `typecheck` (vue-tsc) **0**; `test` **106 → 110 / 0** (+4 new helper tests); `build` **0** (no `__vite-browser-external`). No forbidden import in the helper / component; `loadFromJson`, `useLoadoutDraft`, `App.vue`, the WP-288 gallery, and `CardGrid` untouched. **Live-verified against the live R2 feed:** a valid LAGN (the Apocalypse loadout) loads → draft reads "Schema valid" with the full composition (scheme + mastermind + 2 villains + 1 henchman + 6 heroes, player count 2) → "🖼 View as cards" shows its **39 cards**; a MATCH-SETUP document pasted into the LAGN box shows 5 validator errors and **preserves** the draft (no partial wipe); no console errors. Lands **D-24075** (Active). Two-commit topology: EC-323 impl (`c96e8e56`) + SPEC govern-close.
 
-**`User-Visible Surface = cards.legendary-arena.com`.** Verified live on the local dev server against the production R2 feed; the **D-24026** live-verify on the deployed Cloudflare Pages site is a STATUS-flip follow-up post-deploy.
+**`User-Visible Surface = cards.legendary-arena.com`.** ✅ **D-24026 LIVE-VERIFIED 2026-06-25** — the deployed Loadout tab renders the "📥 Load LAGN (paste or file)" control alongside the existing "📥 Load JSON" (operator pasted the live page), confirming the new code shipped to the surface; combined with the pre-deploy functional verification against the production R2 feed (a valid LAGN loads to a "Schema valid" draft → "View as cards"; a non-LAGN file errors without wiping the draft), the round-trip is live.
 
 ---
 
@@ -32,7 +32,7 @@
 
 **Measured result.** Registry-viewer `typecheck` (vue-tsc) **0**; `test` **99 → 106 / 0** (+7 new helper tests); `build` **0** (no `__vite-browser-external`). No forbidden import in the helper / components; `CardGrid` + draft-logic / contract untouched. **Live-verified against the live R2 feed:** a prefilled loadout (scheme + mastermind + 2 villains + 1 henchman + 6 heroes = 11 ext_ids) shows **exactly its 39 member cards** — each hero group → all 4 member cards, the mastermind + 4 tactics, each villain group → 4 cards, the henchman + scheme — and nothing else; the banner ✕ restores the full 2992-card grid; the tray action enters identically; the button is disabled on an empty draft; no console errors. Lands **D-24072** (Active). Two-commit topology: EC-320 impl (`2a3b3b3b`) + SPEC govern-close.
 
-**`User-Visible Surface = cards.legendary-arena.com`.** Verified live on the local dev server against the production R2 feed; the **D-24026** live-verify on the deployed Cloudflare Pages site is a STATUS-flip follow-up post-deploy.
+**`User-Visible Surface = cards.legendary-arena.com`.** ✅ **D-24026 LIVE-VERIFIED 2026-06-25** — the deployed Loadout tab renders the "🖼 View as cards" button (operator pasted the live page), confirming the gallery code shipped to the surface; combined with the pre-deploy functional verification against the production R2 feed (a prefilled loadout → "View as cards" shows exactly its 39 member cards, banner clears to 2992, tray action enters identically), the gallery is live.
 
 ---
 

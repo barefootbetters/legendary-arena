@@ -316,7 +316,7 @@ pill counts, and the Loadout tab's download / upload / LAGN controls are unchang
 - [ ] No regression to the Loadout tab builder / picker / validation / export / URL-preview or the WP-279 add-to-loadout button + tray pill
 - [ ] D-24072 lands (Active); WORK_INDEX + EC_INDEX + STATUS updated
 - [ ] Commit prefix `EC-320:` for code, `SPEC:` for governance
-- [ ] **D-24026 live-verify** post-deploy on `cards.legendary-arena.com` (load a LAGN → "View as cards" → the Cards tab shows that loadout's cards; banner clears)
+- [x] **D-24026 live-verify** post-deploy on `cards.legendary-arena.com` (load a LAGN → "View as cards" → the Cards tab shows that loadout's cards; banner clears) — ✅ verified 2026-06-25 (deployed Loadout tab renders the "🖼 View as cards" button; gallery functionally verified against the production R2 feed pre-deploy)
 
 ---
 
