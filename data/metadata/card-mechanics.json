@@ -1676,7 +1676,7 @@
       "slug": "undercover",
       "label": "Undercover",
       "scope": "hero",
-      "source": "free-text",
+      "source": "keyword",
       "cardCount": 16,
       "cardIds": [
         "2099/doctor-doom-2099",
@@ -1781,6 +1781,17 @@
         "dkcy/domino",
         "dkcy/forge",
         "dkcy/iron-fist"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "victory-villain-attack",
+      "label": "Victory Villain Attack",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "antm/black-knight"
       ],
       "hidden": true
     },
@@ -2134,7 +2145,8 @@
     },
     "antm/black-knight": {
       "mechanics": [
-        "empowered"
+        "empowered",
+        "victory-villain-attack"
       ]
     },
     "antm/jocasta": {
