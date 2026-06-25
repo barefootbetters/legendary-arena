@@ -25,6 +25,7 @@ import PileBrowseModal from '../components/play/PileBrowseModal.vue';
 import PendingHeroChoicePrompt from '../components/play/PendingHeroChoicePrompt.vue';
 import PendingKoHeroChoicePrompt from '../components/play/PendingKoHeroChoicePrompt.vue';
 import OptionalKoRewardPrompt from '../components/play/OptionalKoRewardPrompt.vue';
+import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue';
 import type { SubmitMove } from '../components/play/uiMoveName.types';
 
 interface ActivePile {
@@ -72,6 +73,7 @@ export default defineComponent({
     PendingHeroChoicePrompt,
     PendingKoHeroChoicePrompt,
     OptionalKoRewardPrompt,
+    DrawOrEmpoweredPrompt,
   },
   props: {
     submitMove: {
@@ -174,6 +176,13 @@ export default defineComponent({
       () => snapshot.value?.pendingOptionalKoReward !== undefined,
     );
 
+    // why: D-24071 — derived from UIState.pendingDrawOrEmpowered !== undefined.
+    // Passed to TurnActionBar to block end-turn and pass-priority at EVERY stage while
+    // a draw-or-empowered choice is pending (board frozen, mirrors hasPendingOptionalKoReward).
+    const hasPendingDrawOrEmpowered = computed<boolean>(
+      () => snapshot.value?.pendingDrawOrEmpowered !== undefined,
+    );
+
     return {
       snapshot,
       viewer,
@@ -188,6 +197,7 @@ export default defineComponent({
       hasPendingChoice,
       hasPendingKoChoice,
       hasPendingOptionalKoReward,
+      hasPendingDrawOrEmpowered,
     };
   },
 });
@@ -325,6 +335,15 @@ export default defineComponent({
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
+          <!-- why: D-24071 + WP-287 — the draw-or-empowered prompt renders above
+               TurnActionBar; appears only for the choosing player when
+               pendingDrawOrEmpowered is set. WP-286's block-all guard guarantees at
+               most one pending-choice type is set. -->
+          <DrawOrEmpoweredPrompt
+            :pending-draw-or-empowered="snapshot.pendingDrawOrEmpowered"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
           <!-- why: D-22201 + WP-222 — prompt renders above TurnActionBar; appears
                only for the choosing player when pendingHeroChoice is set. -->
           <PendingHeroChoicePrompt
@@ -338,6 +357,7 @@ export default defineComponent({
             :has-pending-choice="hasPendingChoice"
             :has-pending-ko-choice="hasPendingKoChoice"
             :has-pending-optional-ko-reward="hasPendingOptionalKoReward"
+            :has-pending-draw-or-empowered="hasPendingDrawOrEmpowered"
             :submit-move="submitMove"
           />
         </template>

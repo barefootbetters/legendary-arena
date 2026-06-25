@@ -91,6 +91,13 @@ export interface UIState {
   // hand-privacy analog). Absent (undefined) means no pending optional-KO-reward
   // choice.
   pendingOptionalKoReward?: UIPendingOptionalKoReward;
+  // why: D-24071 + WP-287 — projects the FRONT of G.pendingDrawOrEmpowered with the
+  // derived empoweredLabel so the choosing player can render the "Choose one: Draw a
+  // card / Empowered by {class}" prompt. Redacted (omitted) for every audience except
+  // the chooser (the D-24011 hand-privacy analog — keyed on .playerID). Absent
+  // (undefined) means no pending draw-or-empowered choice; the client must not render
+  // the prompt in that case.
+  pendingDrawOrEmpowered?: UIPendingDrawOrEmpowered;
   // why: WP-258 — projects the WP-257 runtime hollow-effect channel
   // (G.diagnostics.hollowEffects) so the client can render a structured debug
   // panel + carry the records on the Download-diagnostics export. OPTIONAL on
@@ -540,6 +547,28 @@ export interface UIPendingOptionalKoReward {
   rewardLabel: string;
   eligibleHand: UIEligibleKoHeroCard[];
   eligibleDiscard: UIEligibleKoHeroCard[];
+}
+
+/**
+ * UI contract for resolving a pending draw-or-empowered choice (WP-287 / D-24071).
+ *
+ * Mirrors UIPendingOptionalKoReward but simpler — a binary choice with NO eligible
+ * card list (the printed "Choose one: Draw a card, or Empowered by {class}"). Only
+ * visible to the choosing player; redacted for opponents and spectators.
+ *
+ * `playerID` is REQUIRED — uiState.filter.ts keys the chooser-only redaction on it.
+ *
+ * @see WP-287 §Scope (In) — projection + prompt
+ * @see EC-319 Locked Values
+ * @see DECISIONS.md D-24071
+ */
+export interface UIPendingDrawOrEmpowered {
+  // why: D-24071 — the redaction key; the chooser-only filter compares
+  // audience.playerId against this, mirroring UIPendingOptionalKoReward.playerID.
+  playerID: string;
+  // why: D-24071 — derived once in uiState.build.ts by a single deterministic
+  // empoweredClass→display mapping; never an ad-hoc or per-card string.
+  empoweredLabel: string;
 }
 
 export type { UIAudience } from "./uiAudience.types.js";
