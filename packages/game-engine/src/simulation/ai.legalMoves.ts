@@ -31,7 +31,9 @@ import { hasPendingDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 // phase = 'play'. Local constant per WP-032 D-3202 precedent — NOT a
 // drift-pinned canonical array. Adding a new play-phase move in a future
 // WP requires updating this constant explicitly.
-const SIMULATION_MOVE_NAMES = [
+// why: WP-289 / D-24073 — exported as the single source of truth the dispatch drift guard reads
+// (simulation.moveDispatch.drift.test.ts asserts both simulation MOVE_MAPs cover every name here).
+export const SIMULATION_MOVE_NAMES = [
   'drawCards',
   'playCard',
   'endTurn',

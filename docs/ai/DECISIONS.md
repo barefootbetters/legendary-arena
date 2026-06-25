@@ -25917,7 +25917,7 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 ### D-24073 — Simulation Dispatch Maps Must Cover Every `getLegalMoves`-Emittable Move (Drift-Guarded)
 
-**Status:** Drafted 2026-06-25; not yet landed (reserved by WP-289 / EC-321). Flips to Active on execution.
+**Status:** Active (landed 2026-06-25 by WP-289 / EC-321, commit `a318e18b`).
 
 **Context.** The balance-simulation `getLegalMoves` (`simulation/ai.legalMoves.ts`) can short-circuit to an interactive resolve move when a pending choice is parked (the block-all guard returns EXACTLY that one move). The per-turn loops dispatch the chosen move through a static `MOVE_MAP` (one in `simulation.runner.ts`, a duplicate in `par.aggregator.ts` per RS-10). If `MOVE_MAP` lacks an entry for an emittable move, the runner skips it as "unknown" and the pending choice never clears — an **infinite within-turn loop**, because `maxTurns` bounds turns, not within-turn move-steps. WP-286 hit this when One-Hit Wonder's `draw-or-empowered` choice parked unconditionally (the competent sweep `sim:runtime-observed:check` hung ~20 min); it patched in `resolveDrawOrEmpowered` but the sibling resolve moves (`resolveKoHeroChoice`, `resolveOptionalKoReward`, `resolveVictoryPileCardPick`) stayed absent — latent because their pending choices need preconditions a sweep rarely meets, and nothing at unit level guarded the gap (WP-286 Amendment B flagged the follow-up).
 
