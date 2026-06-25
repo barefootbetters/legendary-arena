@@ -25895,7 +25895,7 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 ### D-24072 — Registry Viewer Can Render the Loaded Loadout / LAGN as a Cards-Tab Gallery (Filter Mode, Not a Dropdown or New Tab)
 
-**Status:** **Reserved — Drafted 2026-06-24; not yet landed** (lands Active at WP-288 / EC-320 execution). Pure registry-viewer UX; no engine, registry, server, contract, loader, or card-data change.
+**Status:** **Active** (landed 2026-06-25 by WP-288 / EC-320, commit `2a3b3b3b`). Pure registry-viewer UX; no engine, registry, server, contract, loader, or card-data change.
 
 **Context.** WP-279 (D-24054) closed the Cards → Loadout direction (add a viewed card to the loadout) and lifted `useLoadoutDraft` to `App.vue` as one shared instance, but named the reverse — viewing the loadout as cards — as an out-of-scope fast-follow. The operator wants the broader form: render the currently-loaded loadout / LAGN file as a **gallery** of its cards. The Loadout tab already imports LAGN / JSON (`onFileImport` / `onPasteImport` → `loadFromJson`, mutating the shared draft), so the loaded loadout is already in App-level state the Cards tab can read. A loaded loadout is structurally an unsaved theme, and the Themes tab already cross-navigates into a filtered Cards view (`navigateToCard`).
 

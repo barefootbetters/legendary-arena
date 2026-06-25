@@ -7,6 +7,21 @@
 
 ## Current State
 
+### WP-288 / EC-320 Executed — Cards Tab "View Loadout as Cards" Gallery Filter Mode (Registry Viewer; D-24072) (2026-06-25)
+
+**WP-288 done (Registry Viewer — `cards.legendary-arena.com`).** The reverse of WP-279: a player can now render the currently-loaded loadout / LAGN file as a gallery of its cards. From the Loadout tab — or the floating tray reachable from any tab — one click on **"🖼 View as cards"** switches to the Cards tab and narrows the grid to exactly the shared draft's composition, with a dismissible `🖼 Viewing loadout — N cards · ✕` banner that exits the mode. It is a **filter mode** over the existing Cards tab (operator decision — not a dropdown, not a new tab, not a second grid), reusing WP-279's shared `useLoadoutDraft` and the Themes→Cards `navigateToCard` cross-nav.
+
+**What shipped:**
+- `lib/loadoutGalleryCards.ts` (new): the SINGLE source of the composition→ext_id-set expansion + membership. `compositionExtIdSet` collects the 5 composition id-fields into one deduped `Set`, **skipping** empty scheme/mastermind single slots, built with `for...of` (no `.reduce()`); `isCardInLoadoutComposition` keys membership on `card.extId` (D-24018), never `card.key`. boardgame.io-free; unit-tested (collection / dedup / empty-slot skip / member-card expansion / membership).
+- `App.vue`: `loadoutGalleryActive` state; a **final, inert-when-off** gallery stage in `applyFilters()` (after the WP-270 mechanic stage — existing filter paths byte-identical, AC-2); `navigateToLoadoutGallery()` (mirrors `navigateToCard` — clears the same filter refs, no-op on an empty composition) + `clearLoadoutGallery()`; an inline banner above the grid; routes `view-as-cards` from both entry points.
+- `LoadoutBuilder.vue`: a "🖼 View as cards" button by the Download/import controls, disabled on an empty composition; emits `view-as-cards`. `LoadoutTray.vue`: a secondary "View as cards" action alongside the pill; emits `view-as-cards`.
+
+**Measured result.** Registry-viewer `typecheck` (vue-tsc) **0**; `test` **99 → 106 / 0** (+7 new helper tests); `build` **0** (no `__vite-browser-external`). No forbidden import in the helper / components; `CardGrid` + draft-logic / contract untouched. **Live-verified against the live R2 feed:** a prefilled loadout (scheme + mastermind + 2 villains + 1 henchman + 6 heroes = 11 ext_ids) shows **exactly its 39 member cards** — each hero group → all 4 member cards, the mastermind + 4 tactics, each villain group → 4 cards, the henchman + scheme — and nothing else; the banner ✕ restores the full 2992-card grid; the tray action enters identically; the button is disabled on an empty draft; no console errors. Lands **D-24072** (Active). Two-commit topology: EC-320 impl (`2a3b3b3b`) + SPEC govern-close.
+
+**`User-Visible Surface = cards.legendary-arena.com`.** Verified live on the local dev server against the production R2 feed; the **D-24026** live-verify on the deployed Cloudflare Pages site is a STATUS-flip follow-up post-deploy.
+
+---
+
 ### WP-289 / EC-321 Executed — Simulation Move-Dispatch Completeness for Interactive Resolve Moves (Game Engine; D-24073) (2026-06-25)
 
 **WP-289 done (Game Engine — balance-simulation tooling).** Closes the WP-286 Amendment-B systemic gap: the sim's `getLegalMoves` can short-circuit to four interactive resolve moves when a pending choice is parked, but the two `getLegalMoves`-driven dispatch maps (`MOVE_MAP` in `simulation.runner.ts` + the RS-10 duplicate in `par.aggregator.ts`) held only `resolveDrawOrEmpowered` (WP-286) of those four. A missing entry is skipped as "unknown" and the pending choice never clears — an **infinite within-turn loop** (`maxTurns` bounds turns, not move-steps; the WP-286 One-Hit-Wonder hang). The sibling moves stayed latent because their pending choices' preconditions a sweep rarely meets, and nothing at unit level guarded it.
