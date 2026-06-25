@@ -25929,6 +25929,24 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 ---
 
+### D-24074 — Size-Changing Hero Recruit-Cost Discount (Per-Card Classes + Effective-Cost Rule)
+
+**Status:** Drafted 2026-06-25; not yet landed (reserved by WP-290 / EC-322). Flips to Active on execution.
+
+**Context.** The printed Size-Changing mechanic lets you recruit a Hero for 2 Recruit less per listed Hero Class you played this turn (`Size-Changing: [hc:tech]`; multi-class cumulative). It was unimplemented: the parser had no path for `[keyword:Size-Changing]`, so it parked an unresolved marker on an `onPlay` hook → a `parse-unrecognized` hollow at `onPlay` (confirmed live on `antm/jocasta/holographic-image-inducer`, `gitSha 988ad2e`; tracked as `unsupported` across the Ant-Man family in the /coverage ledger + the runtime-observed sweep). The `onPlay` timing was an artifact — Size-Changing is a recruit-time cost discount, not an `onPlay` action.
+
+**Decision.** Model Size-Changing as a recognized recruit-cost keyword (the wall-crawl pattern: a `HeroKeyword` with no `onPlay` HERO_EFFECT_HANDLERS entry, executed elsewhere):
+- The parser recognizes `[keyword:Size-Changing]` and extracts the trailing `[hc:...]` class list (punctuation-tolerant) onto `HeroAbilityHook.sizeChangingClasses`; it emits no unresolved marker. `'size-changing'` joins `HERO_KEYWORDS` (22→23) and a new `RECRUIT_COST_KEYWORDS` set → MVP_KEYWORDS, so the play-time hook visit classifies not-hollow.
+- Setup builds `G.cardSizeChangingClasses: Record<CardExtId, string[]>` (a sibling snapshot to `cardKeywords`/`cardTraits`).
+- `getSizeChangingRecruitDiscount(G, playerID, cardId)` (mirrors `getPatrolModifier`) = `2 × (count of the card's listed classes for which inPlay holds ≥1 Hero of that class)`, reading `inPlay` + `cardTraits` (the `heroClassMatch` read — no new per-turn tracker).
+- The effective recruit cost is `Math.max(0, G.cardStats[id].cost − discount)` (regular Size-Changing floors at 0 — only Microscopic goes negative), applied identically at every authoritative recruit site (`recruitHero`, `ai.legalMoves`) and projected as the effective HQ cost in UIState so the client gate allows it.
+
+**Scope note.** Villain fight-cost Size-Changing, Microscopic Size-Changing (2 less per CARD up to N icons, negative-cost), and the divided-card two-sided form are out of scope (named follow-ups). The printed `G.cardStats[id].cost` is never mutated; the discount is applied at resolution.
+
+**Relates to.** D-24049 (WP-273 wall-crawl — the recognized-keyword-no-onPlay-handler precedent); the patrol fight-cost modifier (`getPatrolModifier`); D-24030 (closed-union keyword drift); D-24018 (`FlatCard.extId` id-space); WP-257 (the hollow detector that surfaced it); WP-290 (implementation).
+
+---
+
 ### D-24075 — Registry Viewer Loadout Tab Can Import a LAGN File (Separate "Load LAGN" Control)
 
 **Status:** **Active** (landed 2026-06-25 by WP-291 / EC-323, commit `c96e8e56`). Pure registry-viewer UX; no engine, registry, server, contract, LAGN-spec, or card-data change.
