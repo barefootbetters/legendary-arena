@@ -36,6 +36,7 @@ import { useSetupFromUrl } from "./composables/useSetupFromUrl";
 import { useLoadoutDraft } from "./composables/useLoadoutDraft";
 import type { UseLoadoutDraftApi } from "./composables/useLoadoutDraft";
 import { isCardInLoadout, toggleCardInLoadout } from "./lib/loadoutCardActions";
+import { compositionExtIdSet, isCardInLoadoutComposition } from "./lib/loadoutGalleryCards";
 import type {
   MatchSetupDocument,
   MatchSetupValidationError,
@@ -132,6 +133,14 @@ const hasAppliedUrlAutoSwitch = ref(false);
 // read here or inside LoadoutBuilder. The API object itself is a stable
 // container assigned once; only its inner refs need to be reactive.
 const loadoutDraftApi = shallowRef<UseLoadoutDraftApi | null>(null);
+
+// ── Loadout gallery filter mode (WP-288 / D-24072) ───────────────────────────
+// why: when true, the Cards tab is narrowed to exactly the shared loadout
+// draft's composition (the "View loadout as cards" gallery). It is a filter
+// MODE over the existing Cards tab — a final, inert-when-off stage in
+// applyFilters() — entered from the Loadout tab / tray and cleared by the inline
+// banner's ✕. Default false: the Cards tab browses all cards as before.
+const loadoutGalleryActive = ref(false);
 
 // ── Filter drawer (collapsible on short viewports) ───────────────────────────
 const compactMq = window.matchMedia("(max-height: 800px)");
@@ -669,6 +678,20 @@ function applyFilters() {
   } else {
     filteredCards.value = effectFiltered;
   }
+  // why: WP-288 — the loadout-gallery stage is the FINAL narrowing stage and is
+  // INERT when loadoutGalleryActive is false, so every existing filter path
+  // above assigns filteredCards byte-identically (AC-2). When active (and the
+  // shared draft is loaded), restrict to the cards whose extId is in the
+  // loadout composition, expanding each group pick to its member cards via the
+  // loadoutGalleryCards helper (App.vue does not re-encode the expansion). The
+  // draft-presence guard mirrors selectedCardInLoadout: the draft is null before
+  // the registry resolves.
+  if (loadoutGalleryActive.value && loadoutDraftApi.value) {
+    const galleryExtIds = compositionExtIdSet(loadoutDraftApi.value.draft.value.composition);
+    filteredCards.value = filteredCards.value.filter((card) =>
+      isCardInLoadoutComposition(card, galleryExtIds),
+    );
+  }
   selectedCard.value = null;
 }
 
@@ -879,6 +902,39 @@ function navigateToCard(slug: string) {
   applyFilters();
 }
 
+/**
+ * Enters the "View loadout as cards" gallery: switches to the Cards tab and
+ * narrows it to the shared loadout draft's composition. Routed from both the
+ * Loadout-tab "🖼 View as cards" button and the floating tray's action.
+ */
+function navigateToLoadoutGallery() {
+  const api = loadoutDraftApi.value;
+  // why: defensive no-op — both entry points are disabled / hidden on an empty
+  // composition, but if a handler still fires with no draft or zero picks there
+  // is nothing to view, so return without throwing rather than entering an empty
+  // gallery.
+  if (!api || loadoutPickCount.value === 0) {
+    return;
+  }
+  activeView.value = "cards";
+  loadoutGalleryActive.value = true;
+  // why: mirror navigateToCard — "view THIS loadout" REPLACES the prior Cards
+  // filters rather than ANDing with them, so clear the same refs navigateToCard
+  // clears (search / type / patterns / set / hero class) before re-filtering.
+  searchText.value = "";
+  selectedTypeGroupKeys.value = new Set();
+  selectedPatternSlugs.value = new Set();
+  filterSet.value = "";
+  filterHC.value = "";
+  applyFilters();
+}
+
+/** Exits the loadout gallery and restores normal Cards browsing (all cards). */
+function clearLoadoutGallery() {
+  loadoutGalleryActive.value = false;
+  applyFilters();
+}
+
 // ── Cards-tab add-to-loadout wiring (WP-279 / D-24054) ───────────────────────
 
 // why: the selected card's current slot occupancy in the shared draft. False
@@ -997,6 +1053,7 @@ const loadoutTraySummary = computed(() => {
       :henchmen="loadoutTraySummary.henchmen"
       :issues="loadoutTraySummary.issues"
       @open="activeView = 'loadout'"
+      @view-as-cards="navigateToLoadoutGallery"
     />
 
     <!-- Full-screen image lightbox (mounted once, opened from anywhere) -->
@@ -1145,6 +1202,21 @@ const loadoutTraySummary = computed(() => {
         </div>
       </div>
 
+      <!-- ── Loadout gallery banner (WP-288) ──────────────────────────────── -->
+      <!-- why: presentation-only; rendered ONLY while the gallery mode is active.
+           Its ✕ exits the mode and restores full browsing. Kept inline (not a
+           new component) to hold the WP file budget. -->
+      <div v-if="loadoutGalleryActive" class="loadout-gallery-banner" role="status">
+        <span class="loadout-gallery-text">🖼 Viewing loadout — {{ filteredCards.length }} cards</span>
+        <button
+          type="button"
+          class="loadout-gallery-clear"
+          @click="clearLoadoutGallery"
+          title="Exit the loadout gallery and show all cards"
+          aria-label="Exit the loadout gallery and show all cards"
+        >✕</button>
+      </div>
+
       </template><!-- end cards filter bar -->
 
       <!-- ── Main body (single flex row, shared across both views) ──────────── -->
@@ -1199,7 +1271,12 @@ const loadoutTraySummary = computed(() => {
               :parsedParams="setupParsedParams"
               :registry="registry!"
             />
-            <LoadoutBuilder :registry="registry!" :themes="allThemes" :draft-api="loadoutDraftApi!" />
+            <LoadoutBuilder
+              :registry="registry!"
+              :themes="allThemes"
+              :draft-api="loadoutDraftApi!"
+              @view-as-cards="navigateToLoadoutGallery"
+            />
           </div>
         </template>
       </div>
@@ -1267,6 +1344,32 @@ const loadoutTraySummary = computed(() => {
 .search { flex: 1; min-width: 160px; padding: 0.4rem 0.75rem; background: #22222e; border: 1px solid #33334a; border-radius: 6px; color: #e8e8ee; font-size: 0.9rem; }
 .search:focus { outline: none; border-color: #6060c0; }
 .count { color: #6666aa; font-size: 0.8rem; margin-left: auto; white-space: nowrap; }
+
+/* ── Loadout gallery banner (WP-288) ─────────────────────────────────────── */
+.loadout-gallery-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 1.25rem;
+  background: #1f1f3a;
+  border-bottom: 1px solid #3a3a7a;
+  color: #c0c0ff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.loadout-gallery-text { flex: 1; }
+.loadout-gallery-clear {
+  background: none;
+  border: 1px solid #44445a;
+  color: #c0c0ff;
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+.loadout-gallery-clear:hover { background: #2a2a5a; border-color: #7070e0; color: #fff; }
 
 /* ── Filter drawer toggle button ─────────────────────────────────────────── */
 .filter-drawer-toggle {
