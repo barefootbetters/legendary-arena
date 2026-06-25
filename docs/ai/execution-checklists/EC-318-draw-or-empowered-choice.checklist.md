@@ -116,6 +116,8 @@
 - `packages/game-engine/src/moves/playFromUndercover.ts`
 - `packages/game-engine/src/game.test.ts`
 - `packages/game-engine/src/simulation/ai.legalMoves.ts`
+- `packages/game-engine/src/simulation/simulation.runner.ts` <!-- Amendment B: added — dispatch resolveDrawOrEmpowered in the sim MOVE_MAP (the sweep hangs otherwise). -->
+- `packages/game-engine/src/simulation/par.aggregator.ts` <!-- Amendment B: added — same MOVE_MAP dispatch (RS-10 duplicate). -->
 
 **Modified (card data):**
 - `data/cards/antm.json`
@@ -187,3 +189,28 @@ corrections, both forced drift-test maintenance directly caused by in-scope chan
    in that file). This is the same drift-maintenance class as the already-listed
    `game.test.ts` (move count) and `heroKeywords.test.ts` (keyword count) updates — the
    allowlist should have included it up front (move-registration drift-test memo).
+
+**Amendment B (2026-06-24, execution — EC-318 commit `016c50fe`). Sim move-dispatch
+wiring (01.5 runtime allowance).** The competent simulation sweep
+(`sim:runtime-observed:check`, a blocking CI gate) hung in an infinite loop. Root
+cause: `antm/wonder-man` is in the sweep's hero-deck sets, so One-Hit Wonder is
+played, and the new `draw-or-empowered` choice parks **unconditionally** → the
+block-all guard freezes the board and `getLegalMoves` returns ONLY
+`resolveDrawOrEmpowered`. But the simulation/PAR move-dispatch maps (`MOVE_MAP`) held
+only the 8 core gameplay moves — **no resolve moves** — so the move was skipped as
+"unknown" and the choice never cleared (`maxTurns` bounds turns, not within-turn
+move-steps). Fix: dispatch `resolveDrawOrEmpowered` in both `getLegalMoves`-driven
+loops — `simulation.runner.ts` MOVE_MAP and `par.aggregator.ts` MOVE_MAP (neither in
+the original allowlist; the WP/EC did not anticipate the sim dispatch surface). The
+sibling resolve moves (`resolveOptionalKoReward` / `resolveVictoryPileCardPick` /
+`resolveKoHeroChoice`) were never hit because their pending choices need preconditions
+a sweep rarely triggers — draw-or-empowered is the first to park unconditionally.
+
+**Flagged (out of scope — pre-existing systemic gap):** the four engine move-dispatch
+maps (`simulation.runner.ts`, `par.aggregator.ts`, `replay/replay.execute.ts`,
+`test/fixtures/runFixture.ts`) all omit **every** resolve move. The replay maps were
+left unchanged here (no recorded fixture contains `resolveDrawOrEmpowered`), and there
+is no unit-level guard that the sim MOVE_MAP covers every `getLegalMoves`-emittable
+move — only the sweep CI gate catches it, and only for cards in its hero-deck sets. A
+follow-up should add resolve-move dispatch coverage + a drift guard; tracked outside
+WP-286.
