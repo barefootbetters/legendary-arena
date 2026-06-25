@@ -25893,4 +25893,24 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 **Relates to.** D-24069 + D-24070 (WP-286 engine, co-release); D-24020 (WP-249 UX, mirrored); D-24011 (chooser-only redaction); D-16502 (barrel-publish requirement); WP-287 (implementation).
 
+### D-24072 — Registry Viewer Can Render the Loaded Loadout / LAGN as a Cards-Tab Gallery (Filter Mode, Not a Dropdown or New Tab)
+
+**Status:** **Reserved — Drafted 2026-06-24; not yet landed** (lands Active at WP-288 / EC-320 execution). Pure registry-viewer UX; no engine, registry, server, contract, loader, or card-data change.
+
+**Context.** WP-279 (D-24054) closed the Cards → Loadout direction (add a viewed card to the loadout) and lifted `useLoadoutDraft` to `App.vue` as one shared instance, but named the reverse — viewing the loadout as cards — as an out-of-scope fast-follow. The operator wants the broader form: render the currently-loaded loadout / LAGN file as a **gallery** of its cards. The Loadout tab already imports LAGN / JSON (`onFileImport` / `onPasteImport` → `loadFromJson`, mutating the shared draft), so the loaded loadout is already in App-level state the Cards tab can read. A loaded loadout is structurally an unsaved theme, and the Themes tab already cross-navigates into a filtered Cards view (`navigateToCard`).
+
+**Decision.** WP-288 renders the gallery as a **filter mode** over the existing Cards tab, not a dropdown and not a new tab:
+
+- A boardgame.io-free helper `loadoutGalleryCards.ts` (`compositionExtIdSet` — the deduped set of the 5 composition id-fields, skipping empty single slots, built with `for...of`; `isCardInLoadoutComposition` — membership by `card.extId`, D-24018) carries the composition→member-card expansion as the unit-tested invariant. Because a hero's member cards share the group `extId`, `card.extId ∈ composition` expands each group pick to all its member cards.
+- `App.vue` gains a `loadoutGalleryActive` state and a **final, inert-when-off** narrowing stage in `applyFilters()` (after the WP-270 mechanic stage); `navigateToLoadoutGallery()` mirrors `navigateToCard` (switch to Cards, clear the other filter refs, narrow to the loadout subset); a dismissible inline banner (`Viewing loadout — N cards · ✕`) exits the mode via `clearLoadoutGallery()`.
+- Entry is one click from where the loadout already is: a "🖼 View as cards" button on the Loadout tab (disabled on an empty composition) and a secondary "View as cards" action on the floating tray; both emit `view-as-cards`, which `App.vue` routes to `navigateToLoadoutGallery()`.
+
+**Why not a dropdown / account library.** A "Custom LAGN files" dropdown sourced from an account or prior uploads solves a different problem — picking from a **saved library** — which needs identity + storage the public, no-auth, R2-static viewer does not have, and re-introduces the multi-step flow (upload → switch → open dropdown → pick) the operator rejected as too many steps. Viewing the one loadout already in memory needs no list. The account-backed LAGN library + dropdown (and the narrow per-chip reverse cross-link WP-279 named) are deferred follow-ups.
+
+**Invariant preserved.** No change to `useLoadoutDraft`'s draft mutation / validation logic, `setupContract`, any contract file, `MatchSetupConfig`, `CardGrid.vue`, the WP-279 add-to-loadout button + tray pill, or the Cards-tab filters (WP-278). No new LAGN loader. The gallery stage is byte-inert when `loadoutGalleryActive` is false.
+
+**Determinism.** Viewer-only client UX; no gameplay, card data, engine, registry, or producer change; no RNG / network beyond the existing non-blocking R2 fetches; no persistence.
+
+**Relates to.** Builds on D-24054 (WP-279 shared draft + tray), WP-091 (`useLoadoutDraft` + LAGN import), WP-278 (filter chain), WP-245 (LAGN export); consumes the `FlatCard.extId` id-space (D-24018). Account-backed saved-LAGN library + dropdown and the per-chip "view in Cards" cross-link are named follow-ups, out of scope.
+
 Protect this file.
