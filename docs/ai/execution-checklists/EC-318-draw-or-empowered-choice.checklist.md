@@ -103,8 +103,9 @@
 - `packages/game-engine/src/rules/heroKeywords.test.ts`
 - `packages/game-engine/src/rules/heroAbility.types.ts`
 - `packages/game-engine/src/setup/heroAbility.setup.ts`
-- `packages/game-engine/src/setup/heroAbility.setup.test.ts`
+- `packages/game-engine/src/rules/heroAbility.setup.test.ts` <!-- Amendment A: corrected path — the draft listed `setup/`; the parser test file actually lives in `rules/` (same file intent). -->
 - `packages/game-engine/src/hero/heroEffects.execute.ts`
+- `packages/game-engine/src/hero/heroEffects.execute.test.ts` <!-- Amendment A: added — forced drift-test maintenance (handler count 9→10) + an AC-5 park test; same class as the listed game.test.ts / heroKeywords.test.ts drift updates. -->
 - `packages/game-engine/src/game.ts`
 - `packages/game-engine/src/moves/coreMoves.impl.ts`
 - `packages/game-engine/src/moves/fightVillain.ts`
@@ -166,3 +167,23 @@
 - **`Game.setup()` initializes `pendingDrawOrEmpowered`** — must be lazy-init only.
 - **Guard site uses inline `G.pendingDrawOrEmpowered?.length`** — must call `hasPendingDrawOrEmpowered`.
 - **`finalStateHash` changes** — sentinel unexpectedly includes an `antm` card. STOP; do not re-baseline.
+
+---
+
+## Amendments (execution)
+
+**Amendment A (2026-06-24, execution — EC-318 commit `4203f050`).** Two allowlist
+corrections, both forced drift-test maintenance directly caused by in-scope changes
+(no scope expansion):
+
+1. The Files-to-Produce entry `setup/heroAbility.setup.test.ts` was a path typo — the
+   parser test file lives at `rules/heroAbility.setup.test.ts` (where the empowered
+   parser tests already are; EC-317 listed it correctly). The corrected file was edited
+   (drift count 21→22 + the draw-or-empowered parse tests + the AC-3/AC-4 pins).
+2. `hero/heroEffects.execute.test.ts` was **not** listed but had to be edited: adding the
+   `draw-or-empowered` handler moves the pinned handler count 9→10 (the bidirectional
+   `HERO_EFFECT_HANDLERS` ↔ `HANDLED_KEYWORDS` drift test), which goes red otherwise. The
+   same edit adds an AC-5 park test (mirroring the WP-285 victory-villain-attack park test
+   in that file). This is the same drift-maintenance class as the already-listed
+   `game.test.ts` (move count) and `heroKeywords.test.ts` (keyword count) updates — the
+   allowlist should have included it up front (move-registration drift-test memo).

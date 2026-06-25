@@ -7,6 +7,26 @@
 
 ## Current State
 
+### WP-286 / EC-318 Executed — One-Hit Wonder: Interactive "Draw a card OR Empowered" Choose-One (Game Engine + Data; D-24069 + D-24070) (2026-06-24)
+
+**WP-286 done (Game Engine + card data — One-Hit Wonder now offers its printed "Choose one" choice instead of silently applying Empowered).** `antm/wonder-man/one-hit-wonder` reads *"Choose one: Draw a card, or you get Empowered by [strength]"* but the engine silently applied Empowered every time (live-match report; diagnostics `gitSha f1f8f67`). Two faults compounded: a card-data typo ("**Chose** one") missed the WP-283 choose-one prefix gate, and even spelled correctly the WP-283 path matches only the *two-empowered-markers* shape (fight-or-flight), so the line fell through to the core empowered path. This WP builds the interactive `PendingDrawOrEmpowered` FIFO pending-choice infrastructure (mirrors the WP-248 optional-KO-reward topology) and wires One-Hit Wonder as its first consumer.
+
+**What shipped:**
+- Typo fix `"Chose one"` → `"Choose one"` on `one-hit-wonder` in both `data/cards/antm.json` and the source `scripts/convert-cards/inputs/cards/antman.js` (D-24070).
+- New `PendingDrawOrEmpowered { playerID, empoweredClass }` interface + lazy-init `pendingDrawOrEmpowered?` G field (D-24069).
+- New `'draw-or-empowered'` keyword (22nd `HERO_KEYWORDS` entry; union + array + both drift tests, 21→22).
+- `empoweredClass?: string` on `HeroEffectDescriptor`.
+- New parser pre-pass `tryResolveDrawOrEmpoweredLine` in `setup/heroAbility.setup.ts` (gated to `Choose one:` + "Draw a card" + exactly one `[keyword:Empowered] by [hc:X]`), emits a `draw-or-empowered` descriptor carrying `empoweredClass`, suppresses the per-token empowered dispatch for the matched line; the WP-283 two-empowered path and the core empowered path are pinned untouched (AC-4).
+- Park handler `heroEffectDrawOrEmpowered` (16th-move park; `HANDLED_KEYWORDS` + `NO_MAGNITUDE_KEYWORDS` + `HERO_EFFECT_HANDLERS`).
+- New `resolveDrawOrEmpowered({ choice })` move (16th registered): `'draw'` reuses `executeSingleEffect({ type: 'draw', magnitude: 1 })`; `'empowered'` reuses `buildEmpoweredComposition(front.empoweredClass)` via `interpretHeroPrimitiveEffect` (no re-implementation, same amount the core path grants); FIFO `.shift()`; never throws.
+- Block-all guard at all 8 standard sites; deterministic bot default in `ai.legalMoves.ts` (always `'empowered'`, no `ctx.random.*`).
+
+**Measured result.** Engine `build` 0 + `test` **1626 → 1651 / 0** (+25 net-new, incl. the 7 required move tests + all-8 block-all guards + bot default + AC-3/AC-4 parser pins + AC-5 park). `tsc --noEmit` 0; `pnpm -r build && pnpm test` green. Sentinel `finalStateHash` **unchanged** (core-only board; no `antm` card in the fixture — confirmed by the green `sentinel-core-doom-2p` replay). Lands **D-24069** + **D-24070** (Active). Two-commit topology: EC-318 impl (`4203f050`) + SPEC govern-close. Amendment A: the handler-count drift test (9→10) + an AC-5 park test landed in `hero/heroEffects.execute.test.ts` (not in the EC allowlist; same drift-maintenance class as the listed `game.test.ts` / `heroKeywords.test.ts`).
+
+**No user-observable change — infrastructure only; One-Hit Wonder's choice is bot-resolved until the co-release-locked WP-287 client picker ships. WP-286 MUST NOT deploy to play.legendary-arena.com without WP-287** (a human playing One-Hit Wonder would park a `PendingDrawOrEmpowered` the client cannot render, and the block-all guard wedges their turn; Render auto-deploys on every `main` push — mirrors WP-248↔WP-249). D-24026 live-verify is therefore deferred to the WP-286+WP-287 co-deploy.
+
+---
+
 ### WP-285 / EC-317 Executed — Ebony Blade Victory-Pile Villain-Pick Infrastructure (Game Engine + Data; D-24067 + D-24068) (2026-06-24)
 
 **WP-285 done (Game Engine + card data — Ebony Blade now generates +Attack from a victory-pile villain pick).** `antm/black-knight/the-ebony-blade` was a `noMarker` gap (ability contributed 0 Attack; confirmed diagnostics). This WP builds the complete `PendingVictoryPileCardPick` FIFO pending-choice infrastructure (mirrors WP-248 optional-KO-reward topology) and seeds the Ebony Blade as its first consumer.

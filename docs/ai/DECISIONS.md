@@ -25842,7 +25842,7 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 ### D-24069 — `PendingDrawOrEmpowered` Interactive Pending-Choice Infrastructure (Interactive, Not Oracle)
 
-**Status:** Drafted 2026-06-24; not yet landed (reserved by WP-286 / EC-318). Flips to Active on execution.
+**Status:** Active (landed 2026-06-24 by WP-286 / EC-318, commit `4203f050`).
 
 **Context.** `antm/wonder-man/one-hit-wonder` reads "Choose one: Draw a card, or you get Empowered by [strength]," but the engine silently applies Empowered and never offers the choice (player report; diagnostics `gitSha f1f8f67`, 2026-06-24). The WP-283 choose-one pre-pass (`tryResolveEmpoweredChooseOneLine`, D-24063) matches only the *two-empowered-markers* shape (fight-or-flight) and resolves it via oracle-max auto-pick; it has no path for the heterogeneous "draw a card OR a single empowered" form, which falls through to the core empowered path and applies Empowered unconditionally.
 
@@ -25863,7 +25863,7 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 ### D-24070 — `'draw-or-empowered'` Hero Keyword + One-Hit Wonder Card-Data Typo Fix
 
-**Status:** Drafted 2026-06-24; not yet landed (reserved by WP-286 / EC-318). Flips to Active on execution.
+**Status:** Active (landed 2026-06-24 by WP-286 / EC-318, commit `4203f050`).
 
 **Context.** Two faults keep `one-hit-wonder` from offering its choice: (1) the card text has a typo, "**Chose** one:", that misses the WP-283 prefix gate `EMPOWERED_CHOOSE_ONE_PREFIX_PATTERN = /^\s*Choose one\s*:/i`; and (2) there is no keyword/parser path for the "draw a card OR single empowered" shape.
 
