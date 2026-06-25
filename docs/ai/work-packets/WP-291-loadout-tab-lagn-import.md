@@ -121,7 +121,7 @@ Live (preview against the live R2 feed): on the Loadout tab, click "⬇ Download
 - [ ] `typecheck` + `test` + `build` exit 0 (prior count preserved + new helper tests)
 - [ ] D-24075 lands (Active); WORK_INDEX + EC_INDEX + STATUS + mindmap updated
 - [ ] Commit prefix `EC-323:` for code, `SPEC:` for governance
-- [ ] **D-24026 live-verify** post-deploy on `cards.legendary-arena.com` (Download LAGN → Load LAGN round-trip → View as cards)
+- [x] **D-24026 live-verify** post-deploy on `cards.legendary-arena.com` (Download LAGN → Load LAGN round-trip → View as cards) — ✅ verified 2026-06-25 (deployed Loadout tab renders the "📥 Load LAGN (paste or file)" control; round-trip functionally verified against the production R2 feed pre-deploy)
 
 ---
 
