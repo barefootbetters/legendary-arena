@@ -25876,4 +25876,21 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 **Relates to.** D-24030 (closed-union drift — HERO_KEYWORDS union + array must stay in sync); D-24063 (WP-283 prefix gate this fix lets the line clear); D-24069 (pending-choice infrastructure); WP-286 (implementation).
 
+---
+
+### D-24071 — Draw-or-Empowered Choose-One UX (Projection + Client Prompt)
+
+**Status:** Drafted 2026-06-24; not yet landed (reserved by WP-287 / EC-319). Flips to Active on execution.
+
+**Context.** WP-286 (D-24069/D-24070) parks an interactive `PendingDrawOrEmpowered` choice and resolves it by bot only. A human playing One-Hit Wonder needs a client surface to make the choice; without one the block-all guard wedges the turn. `antm/wonder-man` is in live decks and Render auto-deploys on every `main` push, so the engine cannot deploy without this UX.
+
+**Decision.** Build the player-facing surface as a structural mirror of the WP-249 optional-ko-reward UX (which mirrors the WP-243 KO-hero UX), simplified for a binary choice:
+- Engine UIState projection: `UIPendingDrawOrEmpowered { playerID: string; empoweredLabel: string }` + an optional `pendingDrawOrEmpowered?` field on the projected UIState (`uiState.types.ts`); projected front-of-queue in `uiState.build.ts`, with `empoweredLabel` derived by a SINGLE deterministic class→display mapping (e.g. `strength` → "Empowered by Strength"; unrecognized → "Empowered"); chooser-only redaction in `uiState.filter.ts` keyed on `.playerID` (D-24011 analog). `UIPendingDrawOrEmpowered` re-exported from `packages/game-engine/src/index.ts` (the D-16502/WP-166 barrel-publish requirement).
+- arena-client: append `'resolveDrawOrEmpowered'` to `UiMoveName`; render a non-dismissible `DrawOrEmpoweredPrompt.vue` with exactly two buttons ("Draw a card" / the projected `empoweredLabel`) submitting `resolveDrawOrEmpowered({ choice: 'draw' })` / `({ choice: 'empowered' })`, disabling controls after a submit; mount it in `PlayDesktop.vue` + `PlayMobile.vue`; add a `hasPendingDrawOrEmpowered` boolean param to `useTurnActions` gating End Turn / Pass Priority.
+- The projected field is OPTIONAL, so existing arena-client UIState fixtures typecheck unchanged (the WP-249 Amendment-A path; not the WP-166/207/227 required-field backfill case).
+
+**Rationale.** Reuses the mature WP-249 UX shapes (projection / chooser-only redaction / non-dismissible prompt / move-union add / turn-action gating / both layouts), so the surface costs no new pattern. No numeric empowered preview ("+N Attack") is projected in v1 — that would couple the projection to the effect evaluator; deferred. **Co-release-locked with WP-286** (the prompt is inert without the engine state + move; the engine wedges a human without the prompt) — they execute and deploy together.
+
+**Relates to.** D-24069 + D-24070 (WP-286 engine, co-release); D-24020 (WP-249 UX, mirrored); D-24011 (chooser-only redaction); D-16502 (barrel-publish requirement); WP-287 (implementation).
+
 Protect this file.
