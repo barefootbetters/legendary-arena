@@ -22,7 +22,11 @@ interface Props {
 }
 
 const props = defineProps<Props>();
-const emit = defineEmits<{ open: [] }>();
+// why: WP-288 — `view-as-cards` (no payload) is the secondary action that jumps
+// to the Cards tab showing this loadout's cards; `open` stays the primary
+// "go to the Loadout tab" action. App.vue owns the draft + view state, so the
+// tray only signals intent — still presentation-only, no new props, no mutation.
+const emit = defineEmits<{ open: []; "view-as-cards": [] }>();
 
 /** The compact "1 scheme · 4 heroes · 2 villains" parts, omitting empty slots. */
 const pickParts = computed<string[]>(() => {
@@ -57,32 +61,57 @@ const statusText = computed<string>(() => {
 </script>
 
 <template>
-  <!-- why: a <button> (not a styled <div>) so the pill is keyboard-focusable
-       and announced to screen readers — same affordance pattern as the
-       glossary FAB and the EC-103 control conversions in this app. -->
-  <button
-    type="button"
-    class="loadout-tray"
-    @click="emit('open')"
-    title="Go to the Loadout tab"
-    aria-label="Open the Loadout tab"
-  >
-    <span class="tray-icon" aria-hidden="true">🧰</span>
-    <span class="tray-label">Loadout</span>
-    <span v-if="summaryText" class="tray-summary">{{ summaryText }}</span>
-    <span class="tray-status" :class="{ ready: issues === 0, issues: issues > 0 }">{{ statusText }}</span>
-  </button>
+  <!-- why: a fixed wrapper holds the two sibling actions. A <button> cannot
+       nest inside another <button>, so the "View as cards" action is a sibling
+       of the pill rather than a child of it. -->
+  <div class="loadout-tray-wrap">
+    <!-- why: a <button> (not a styled <div>) so the pill is keyboard-focusable
+         and announced to screen readers — same affordance pattern as the
+         glossary FAB and the EC-103 control conversions in this app. -->
+    <button
+      type="button"
+      class="loadout-tray"
+      @click="emit('open')"
+      title="Go to the Loadout tab"
+      aria-label="Open the Loadout tab"
+    >
+      <span class="tray-icon" aria-hidden="true">🧰</span>
+      <span class="tray-label">Loadout</span>
+      <span v-if="summaryText" class="tray-summary">{{ summaryText }}</span>
+      <span class="tray-status" :class="{ ready: issues === 0, issues: issues > 0 }">{{ statusText }}</span>
+    </button>
+    <!-- why: WP-288 — secondary action that shows this loadout's cards on the
+         Cards tab. The tray is App-gated to a non-empty draft (D-24054), so this
+         is never shown on a blank draft. -->
+    <button
+      type="button"
+      class="tray-view-cards"
+      @click="emit('view-as-cards')"
+      title="View this loadout's cards on the Cards tab"
+      aria-label="View this loadout as cards"
+    >
+      🖼 View as cards
+    </button>
+  </div>
 </template>
 
 <style scoped>
-/* why: fixed bottom-LEFT so the pill never overlaps the bottom-right glossary
+/* why: fixed bottom-LEFT so the tray never overlaps the bottom-right glossary
    FAB (.floating-glossary-btn in App.vue). z-index matches the FAB so both sit
-   above the card grid. */
-.loadout-tray {
+   above the card grid. The wrapper carries the fixed position; the pill and the
+   "View as cards" action stack inside it (align-start keeps the smaller action
+   left-aligned under the pill). */
+.loadout-tray-wrap {
   position: fixed;
   bottom: 1.25rem;
   left: 1.25rem;
   z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+.loadout-tray {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -101,6 +130,22 @@ const statusText = computed<string>(() => {
 .loadout-tray:hover {
   background: #3a3a7a;
   transform: scale(1.03);
+}
+.tray-view-cards {
+  background: #1f1f3a;
+  border: 1px solid #7070e0;
+  color: #c0c0ff;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.tray-view-cards:hover {
+  background: #2a2a5a;
+  color: #fff;
 }
 .tray-icon { font-size: 1rem; }
 .tray-label { font-weight: 700; }

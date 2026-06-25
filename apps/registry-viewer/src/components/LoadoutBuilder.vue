@@ -55,6 +55,10 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+// why: WP-288 — emit (no payload) when the player asks to view this loadout as
+// cards. App.vue owns the shared draft and the Cards-tab view state, so this
+// component just signals intent; it adds no gallery logic and no draft mutation.
+const emit = defineEmits<{ "view-as-cards": [] }>();
 
 const draftApi = props.draftApi;
 const {
@@ -83,6 +87,20 @@ const {
 } = draftApi;
 
 const lagnExportApi = useLoadoutLagnExport(draft);
+
+// why: WP-288 — the loadout gallery has nothing to show on a blank draft, so
+// the "🖼 View as cards" button stays disabled until the composition has at
+// least one pick. Reads the shared draft's composition only (no mutation).
+const hasAnyPick = computed<boolean>(() => {
+  const composition = draft.value.composition;
+  return (
+    composition.schemeId !== "" ||
+    composition.mastermindId !== "" ||
+    composition.villainGroupIds.length > 0 ||
+    composition.henchmanGroupIds.length > 0 ||
+    composition.heroDeckIds.length > 0
+  );
+});
 
 // ── Active slot (drives the picker filter) ─────────────────────────────────
 
@@ -587,6 +605,17 @@ function slotLabel(slot: PickerSlot): string {
           </button>
           <button type="button" class="mini-btn" @click="resetDraft">🔄 Reset draft</button>
           <button type="button" class="mini-btn" @click="onCopySetupLink">🔗 Copy Setup Link</button>
+          <!-- why: WP-288 — view this loadout's cards on the Cards tab. Disabled
+               on an empty composition so the gallery is never entered empty. -->
+          <button
+            type="button"
+            class="mini-btn"
+            @click="emit('view-as-cards')"
+            :disabled="!hasAnyPick"
+            title="Show this loadout's cards on the Cards tab"
+          >
+            🖼 View as cards
+          </button>
         </div>
 
         <!-- LAGN export options -->
@@ -886,7 +915,8 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #6060c0
   font-size: 0.78rem;
   font-family: inherit;
 }
-.mini-btn:hover { background: #2a2a3a; }
+.mini-btn:hover:not(:disabled) { background: #2a2a3a; }
+.mini-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .copy-link-success { color: #6ee7b7; font-size: 0.78rem; margin: 0.25rem 0 0 0; }
 .copy-link-fallback { margin-top: 0.4rem; }
