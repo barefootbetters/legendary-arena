@@ -25927,4 +25927,25 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 **Relates to.** D-24069 (WP-286 — added `resolveDrawOrEmpowered`, first hit this gap; Amendment B flagged the systemic follow-up); D-3601 / D-3202 (the WP-036 sim runner + the local `SIMULATION_MOVE_NAMES` const); WP-289 (implementation).
 
+---
+
+### D-24075 — Registry Viewer Loadout Tab Can Import a LAGN File (Separate "Load LAGN" Control)
+
+**Status:** **Active** (landed 2026-06-25 by WP-291 / EC-323, commit `c96e8e56`). Pure registry-viewer UX; no engine, registry, server, contract, LAGN-spec, or card-data change.
+
+**Context.** The Loadout tab could **export** a LAGN file (WP-245 / D-245xx "Download LAGN") but had no way to **import** one back: the only importer (`loadFromJson`, the "Load JSON" control) validates against the MATCH-SETUP schema, so a LAGN file — a different shape (`lagn_version` / `setup` / `result`) — was rejected with "field required" / "unknown field" errors. An operator field report after WP-288 surfaced this: "load a LAGN → View as cards" failed because no LAGN importer existed. (WP-288's `## Assumes` had imprecisely claimed the tab "already imports LAGN / JSON files"; in fact `onFileImport` only handles MATCH-SETUP documents.)
+
+**Decision.** WP-291 closes the export/import asymmetry with a **separate "📥 Load LAGN (paste or file)" control** alongside the existing "📥 Load JSON":
+
+- A boardgame.io-free helper `loadoutLagnImport.ts` (`parseLagnLoadout`) parses the text, validates it with the **published `@legendary-arena/lagn` `validate`** (the same validator the export uses, so a non-LAGN file is rejected with real field-level errors), and reverses WP-245's `compositionToLagnSetup` mapping into the five MATCH-SETUP composition ext_id fields + the four supply counts + `playerCount`. `shield_officers_count → officersCount` is the only non-1:1 field name; ids are already set-qualified ext_ids (D-24018), so no registry lookup is needed.
+- `LoadoutBuilder.vue` gains the control; on a valid LAGN it **replaces** the draft (mirroring `loadFromJson`'s full-document replace) — `resetDraft()` then the existing public setters `setScheme` / `setMastermind` / `addVillainGroup` / `addHenchmanGroup` / `addHeroGroup` / `setCount` / `setPlayerCount`. On failure it shows the validator's errors and leaves the draft untouched (no partial load).
+
+**Why a separate control, not auto-detect (operator decision, 2026-06-25).** The "Load JSON" importer could sniff the shape and accept both. The operator chose two distinct controls so the formats stay explicit and discoverable, mirroring the two explicit "Download MATCH-SETUP" / "Download LAGN" export buttons already on the tab.
+
+**Invariant preserved.** No change to `useLoadoutDraft`'s mutation / validation logic, `loadFromJson`, the "Load JSON" importer, any contract file, `MatchSetupConfig`, `packages/lagn-spec` (only *consumed*), `App.vue`, the WP-288 gallery, or `CardGrid.vue`. The import drives the existing public draft API only — never `draft.composition.*` directly.
+
+**Determinism.** Viewer-only client UX; no gameplay, card data, engine, registry, or producer change; no RNG / network beyond the existing non-blocking R2 fetches; no persistence.
+
+**Relates to.** Reverses WP-245 (LAGN export, `compositionToLagnSetup`); builds on WP-091 (`useLoadoutDraft` + the existing MATCH-SETUP importer) and WP-244 (the published LAGN validator + `LAGN` type); consumes the `FlatCard`/composition ext_id-space (D-24018); completes the round-trip WP-288 (D-24072) assumed.
+
 Protect this file.

@@ -7,6 +7,20 @@
 
 ## Current State
 
+### WP-291 / EC-323 Executed — Loadout Tab "Load LAGN" Import (Registry Viewer; D-24075) (2026-06-25)
+
+**WP-291 done (Registry Viewer — `cards.legendary-arena.com`; Lightweight Lane).** Closes the LAGN export/import asymmetry surfaced by an operator field report after WP-288: the Loadout tab could **export** a LAGN ("⬇ Download LAGN", WP-245) but the only importer ("📥 Load JSON") validates against the MATCH-SETUP schema, so a LAGN file (`lagn_version` / `setup` / `result`) was rejected with "field required" / "unknown field" errors. (WP-288's `## Assumes` had imprecisely claimed the tab "already imports LAGN / JSON files" — `onFileImport` only handles MATCH-SETUP documents.)
+
+**What shipped:**
+- `lib/loadoutLagnImport.ts` (new): boardgame.io-free `parseLagnLoadout` — `JSON.parse` → the published `@legendary-arena/lagn` `validate()` → reverse WP-245's `compositionToLagnSetup` mapping into the five composition ext_id fields + four counts + `playerCount`. `shield_officers_count → officersCount` is the only renamed field; ids are already set-qualified (D-24018), so no registry lookup. Returns full-sentence errors on a non-JSON / non-LAGN file.
+- `LoadoutBuilder.vue`: a **separate** "📥 Load LAGN (paste or file)" `<details>` beside "Load JSON" (operator chose two explicit controls over auto-detect). `applyLagnImport` **replaces** the draft (`resetDraft()` → the existing `setScheme`/`setMastermind`/`add*`/`setCount`/`setPlayerCount` setters) on success; on failure shows the validator errors and leaves the draft untouched. No composable / contract / `loadFromJson` change.
+
+**Measured result.** Registry-viewer `typecheck` (vue-tsc) **0**; `test` **106 → 110 / 0** (+4 new helper tests); `build` **0** (no `__vite-browser-external`). No forbidden import in the helper / component; `loadFromJson`, `useLoadoutDraft`, `App.vue`, the WP-288 gallery, and `CardGrid` untouched. **Live-verified against the live R2 feed:** a valid LAGN (the Apocalypse loadout) loads → draft reads "Schema valid" with the full composition (scheme + mastermind + 2 villains + 1 henchman + 6 heroes, player count 2) → "🖼 View as cards" shows its **39 cards**; a MATCH-SETUP document pasted into the LAGN box shows 5 validator errors and **preserves** the draft (no partial wipe); no console errors. Lands **D-24075** (Active). Two-commit topology: EC-323 impl (`c96e8e56`) + SPEC govern-close.
+
+**`User-Visible Surface = cards.legendary-arena.com`.** Verified live on the local dev server against the production R2 feed; the **D-24026** live-verify on the deployed Cloudflare Pages site is a STATUS-flip follow-up post-deploy.
+
+---
+
 ### WP-288 / EC-320 Executed — Cards Tab "View Loadout as Cards" Gallery Filter Mode (Registry Viewer; D-24072) (2026-06-25)
 
 **WP-288 done (Registry Viewer — `cards.legendary-arena.com`).** The reverse of WP-279: a player can now render the currently-loaded loadout / LAGN file as a gallery of its cards. From the Loadout tab — or the floating tray reachable from any tab — one click on **"🖼 View as cards"** switches to the Cards tab and narrows the grid to exactly the shared draft's composition, with a dismissible `🖼 Viewing loadout — N cards · ✕` banner that exits the mode. It is a **filter mode** over the existing Cards tab (operator decision — not a dropdown, not a new tab, not a second grid), reusing WP-279's shared `useLoadoutDraft` and the Themes→Cards `navigateToCard` cross-nav.

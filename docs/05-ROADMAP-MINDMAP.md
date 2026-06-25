@@ -197,6 +197,7 @@ mindmap
         ["WP-278 ✅ Registry-viewer search header redesign — unified FilterDropdown (new shared FilterDropdown.vue standard control rebuilds Set·Class·Type·Mechanics·Effects on one row + a contextual Patterns dropdown, collapsing the scheme-twist + mechanical-pattern ribbons and deleting AbilityEffectFilter/SchemeTwistFilter/PatternFilter/MechanicFilter; filtering logic unchanged — OR-within / AND-across, D-24046 + D-24052 preserved; D-24053)"]
         ["WP-279 ✅ Cards tab add-to-loadout (lifts useLoadoutDraft from LoadoutBuilder.vue to App.vue as ONE shared instance — lifted not singletonized, instantiated post-registry-load mirroring useSetupFromUrl; CardDetail.vue gains a contextual add/remove button for the 5 composition types only, hero→addHeroGroup(card.extId)/scheme/mastermind set-clear/villain/henchman add-remove, Always-Leads groups not removable; new floating LoadoutTray.vue pill; pure loadoutCardActions.ts helper carries the tested cardType→slot invariant; no engine/contract/MatchSetupConfig change, consumes existing UseLoadoutDraftApi + FlatCard.extId D-24018; D-24054)"]
         ["WP-288 ✅ Cards tab 'View loadout as cards' gallery (reverse of WP-279 — render the loaded loadout/LAGN as a gallery via a filter MODE over the Cards tab, not a dropdown/new tab/second grid; loadoutGalleryActive state + a final inert-when-off narrowing stage in applyFilters mirroring the WP-270 mechanic stage, navigateToLoadoutGallery mirroring navigateToCard, dismissible inline banner; '🖼 View as cards' on LoadoutBuilder (disabled when empty) + a secondary tray action, both emitting view-as-cards; pure loadoutGalleryCards.ts helper — compositionExtIdSet skips empty single slots + for...of, isCardInLoadoutComposition by card.extId D-24018 — carries the composition→member-card expansion as the unit-tested invariant; no engine/registry/server/contract/loader/card-data change, CardGrid untouched; D-24072)"]
+        ["WP-291 ✅ Loadout tab 'Load LAGN' import (closes the LAGN export/import round-trip surfaced after WP-288 — the tab could Download LAGN but the only importer 'Load JSON' validates the MATCH-SETUP schema so a LAGN file lagn_version/setup was rejected; adds a SEPARATE 'Load LAGN (paste or file)' control beside Load JSON, operator chose two explicit controls over auto-detect; pure loadoutLagnImport.ts parseLagnLoadout → the published @legendary-arena/lagn validate → reverse WP-245 compositionToLagnSetup into the 5 composition ext_id fields + 4 counts + playerCount, shield_officers_count→officersCount the only rename, ids already set-qualified D-24018 no registry lookup; applyLagnImport REPLACES the draft via the existing setters resetDraft→set*/add*/setCount/setPlayerCount, a non-LAGN file shows validator errors and preserves the draft; no composable/contract/loadFromJson/App.vue/gallery/CardGrid change; Lightweight Lane D-24028; D-24075)"]
 
       Phase 8 — Interactive Board Layout
         ["WP-128 ✅ UIState board projections"]
@@ -431,7 +432,7 @@ mindmap
 | Client Integration Cluster | 21/21 | — |
 | Auth Stack & Profile Surface | 14/14 | — |
 | Engine + Server Wiring & Leaderboard HTTP | 3/3 | — |
-| Registry Viewer Enhancements | 21/21 | — |
+| Registry Viewer Enhancements | 23/23 | — |
 | Phase 8 — Interactive Board Layout | 3/3 | — |
 | G-State Extensions | 4/4 | — |
 | Monetization Stack | 3/3 | — |
@@ -442,7 +443,7 @@ mindmap
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
 | Villain & Henchman Effects | 11/11 | — |
-| Hero Ability Coverage & Markup Pipeline | 33/33 | — |
+| Hero Ability Coverage & Markup Pipeline | 42/42 | — |
 | Notable Events & Overlays | 4/4 | — |
 | Simulation Sweep & Analytics Pipeline | 7/7 | — |
 | Dashboard & Operator Analytics | 14/14 | — |
@@ -455,7 +456,7 @@ mindmap
 | Next Horizons | 0/5 | 5 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **275/276 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
+| **Total** | **286/287 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
 
 **Open / blocked WPs (derived from WORK_INDEX, 1):** WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
