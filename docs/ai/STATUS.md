@@ -7,6 +7,18 @@
 
 ## Current State
 
+### WP-289 / EC-321 Executed — Simulation Move-Dispatch Completeness for Interactive Resolve Moves (Game Engine; D-24073) (2026-06-25)
+
+**WP-289 done (Game Engine — balance-simulation tooling).** Closes the WP-286 Amendment-B systemic gap: the sim's `getLegalMoves` can short-circuit to four interactive resolve moves when a pending choice is parked, but the two `getLegalMoves`-driven dispatch maps (`MOVE_MAP` in `simulation.runner.ts` + the RS-10 duplicate in `par.aggregator.ts`) held only `resolveDrawOrEmpowered` (WP-286) of those four. A missing entry is skipped as "unknown" and the pending choice never clears — an **infinite within-turn loop** (`maxTurns` bounds turns, not move-steps; the WP-286 One-Hit-Wonder hang). The sibling moves stayed latent because their pending choices' preconditions a sweep rarely meets, and nothing at unit level guarded it.
+
+**What shipped:** `resolveKoHeroChoice` / `resolveOptionalKoReward` / `resolveVictoryPileCardPick` added to both `MOVE_MAP`s (reuse the existing move fns); `SIMULATION_MOVE_NAMES` exported from `ai.legalMoves.ts` as the drift guard's source of truth; each map's key set exported (`SIMULATION_RUNNER_MOVE_NAMES` / `PAR_AGGREGATOR_MOVE_NAMES` = `Object.keys(MOVE_MAP)`); a new `simulation.moveDispatch.drift.test.ts` asserting both key sets superset-cover `SIMULATION_MOVE_NAMES`, the three added moves are in both maps, a phantom move is NOT (non-vacuous), and the two maps agree.
+
+**Measured result.** Engine `build` 0 + `test` **1661 → 1666 / 0** (+5 drift cases); `tsc --noEmit` 0; `pnpm sim:runtime-observed:check` 0 with the artifact **byte-current** (empirically confirming the three added moves are unreached in the current sweep — zero trajectory change, `finalStateHash` unchanged); `pnpm -r build` 0; engine diff = the 4 `simulation/` files only. Lands **D-24073** (Active). Two-commit topology: EC-321 impl (`a318e18b`) + SPEC govern-close.
+
+**No user-observable change — balance-simulation tooling only; closes the WP-286 Amendment-B systemic dispatch gap + adds a drift guard.** No live surface (D-24026 N/A). The replay maps (`replay.execute.ts` / `runFixture.ts`) and sim-unemitted moves (dodge / undercover) remain out of scope by design.
+
+---
+
 ### WP-287 / EC-319 Executed — Draw-or-Empowered Choose-One UX (Projection + Client Prompt; D-24071) (2026-06-24)
 
 **WP-287 done (Game Engine UIState projection + arena-client — the human-facing surface for WP-286's draw-or-empowered choice).** When a player plays One-Hit Wonder, the arena-client now renders a non-dismissible two-button prompt — **Draw a card** / **Empowered by {class}** — and End Turn / Pass Priority are disabled until the choice resolves. The engine projects the pending choice (chooser-only); the client submits `resolveDrawOrEmpowered({ choice })`. Projection + client only — **no engine gameplay change**. Mirrors the WP-249 optional-ko-reward UX, simpler (binary choice, no eligible-card list). Executed stacked on the WP-286 branch (WP-287's projection reads `G.pendingDrawOrEmpowered`, which only exists with WP-286).
