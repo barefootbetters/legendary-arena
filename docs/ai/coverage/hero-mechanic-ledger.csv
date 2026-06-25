@@ -54,6 +54,7 @@ antm/ant-man,Ant-Man,antm,draw,executable,,,packages/game-engine/src/hero/heroEf
 antm/ant-man,Ant-Man,antm,microscopic-size-changing,unsupported,,,
 antm/ant-man,Ant-Man,antm,size-changing,unsupported,,,
 antm/black-knight,Black Knight,antm,empowered,executable,WP-267,D-24044,packages/game-engine/src/hero/effectPrimitive.interpret.ts
+antm/black-knight,Black Knight,antm,victory-villain-attack,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#victory-villain-attack
 antm/jocasta,Jocasta,antm,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 antm/jocasta,Jocasta,antm,empowered,executable,WP-267,D-24044,packages/game-engine/src/hero/effectPrimitive.interpret.ts
 antm/jocasta,Jocasta,antm,size-changing,unsupported,,,

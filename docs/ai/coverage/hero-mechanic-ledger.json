@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "cardType": "hero",
   "summary": {
-    "totalRows": 627,
+    "totalRows": 628,
     "byStatus": {
-      "executable": 170,
+      "executable": 171,
       "deferred": 0,
       "condition": 5,
       "unsupported": 405,
       "unmarked": 47
     },
-    "distinctMechanics": 135
+    "distinctMechanics": 136
   },
   "rows": [
     {
@@ -562,6 +562,16 @@
       "wp": "WP-267",
       "decision": "D-24044",
       "handler": "packages/game-engine/src/hero/effectPrimitive.interpret.ts"
+    },
+    {
+      "extId": "antm/black-knight",
+      "heroName": "Black Knight",
+      "set": "antm",
+      "mechanic": "victory-villain-attack",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#victory-villain-attack"
     },
     {
       "extId": "antm/jocasta",
