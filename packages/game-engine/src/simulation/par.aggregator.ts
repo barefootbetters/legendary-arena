@@ -73,6 +73,12 @@ import { fightMastermind } from '../moves/fightMastermind.js';
 // choice unconditionally, so any getLegalMoves-driven loop (this PAR aggregator included) that
 // plays it sees resolveDrawOrEmpowered as the only legal move and must dispatch it or spin.
 import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
+// why: WP-289 / D-24073 — the sibling resolve moves getLegalMoves can also short-circuit to;
+// each must be dispatchable in this duplicated MOVE_MAP or a parked pending choice hangs the PAR
+// per-turn loop (same class as the WP-286 resolveDrawOrEmpowered fix). Pinned by the drift guard.
+import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
+import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
+import { resolveVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
 
 // ---------------------------------------------------------------------------
 // Exported constants.
@@ -411,7 +417,17 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // why: WP-286 — must be dispatchable (One-Hit Wonder parks a draw-or-empowered choice
   // unconditionally; the block-all guard freezes every other move until it resolves).
   resolveDrawOrEmpowered: (context, args) => resolveDrawOrEmpowered(context as never, args as never),
+  // why: WP-289 / D-24073 — getLegalMoves can short-circuit to each of these resolve moves when
+  // its pending choice is parked; a missing dispatch entry hangs the per-turn loop (maxTurns
+  // bounds turns, not within-turn move-steps). Reuse the existing move fns, no re-implementation.
+  resolveKoHeroChoice: (context, args) => resolveKoHeroChoice(context as never, args as never),
+  resolveOptionalKoReward: (context, args) => resolveOptionalKoReward(context as never, args as never),
+  resolveVictoryPileCardPick: (context, args) => resolveVictoryPileCardPick(context as never, args as never),
 };
+
+// why: WP-289 / D-24073 — exposed for the move-dispatch drift guard (every SIMULATION_MOVE_NAMES
+// move must be a key here). Derived from Object.keys(MOVE_MAP), never a hand-maintained list.
+export const PAR_AGGREGATOR_MOVE_NAMES: readonly string[] = Object.keys(MOVE_MAP);
 
 /** Builds an AggregatorMoveContext for a single move dispatch. */
 function buildMoveContext(

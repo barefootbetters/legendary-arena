@@ -55,6 +55,13 @@ import { fightMastermind } from '../moves/fightMastermind.js';
 // resolveDrawOrEmpowered (block-all guard), so this MUST be dispatchable here or the per-turn
 // loop spins forever — maxTurns bounds TURNS, not within-turn move-steps.
 import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
+// why: WP-289 / D-24073 — the sibling resolve moves getLegalMoves can also short-circuit to.
+// Like resolveDrawOrEmpowered above, each MUST be dispatchable here or a parked pending choice
+// hangs the per-turn loop. Their pending choices need preconditions a sweep rarely meets (so the
+// gap stayed latent past WP-286), but the drift guard now pins it.
+import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
+import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
+import { resolveVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
 import { advanceTurnStage } from '../turn/turnLoop.js';
 
 // why: 200-turn safety cap prevents infinite loops in degenerate states
@@ -190,7 +197,18 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // why: WP-286 — must be dispatchable; One-Hit Wonder parks a draw-or-empowered choice
   // unconditionally, so the sweep reaches it and the block-all guard freezes every other move.
   resolveDrawOrEmpowered: (context, args) => resolveDrawOrEmpowered(context as never, args as never),
+  // why: WP-289 / D-24073 — getLegalMoves can short-circuit to each of these resolve moves when
+  // its pending choice is parked; a missing dispatch entry hangs the per-turn loop (maxTurns
+  // bounds turns, not within-turn move-steps). Mirrors the WP-286 resolveDrawOrEmpowered entry —
+  // reuse the existing move fns, no re-implementation.
+  resolveKoHeroChoice: (context, args) => resolveKoHeroChoice(context as never, args as never),
+  resolveOptionalKoReward: (context, args) => resolveOptionalKoReward(context as never, args as never),
+  resolveVictoryPileCardPick: (context, args) => resolveVictoryPileCardPick(context as never, args as never),
 };
+
+// why: WP-289 / D-24073 — exposed for the move-dispatch drift guard (every SIMULATION_MOVE_NAMES
+// move must be a key here). Derived from Object.keys(MOVE_MAP), never a hand-maintained list.
+export const SIMULATION_RUNNER_MOVE_NAMES: readonly string[] = Object.keys(MOVE_MAP);
 
 /**
  * Zeroed SimulationResult for degenerate configurations.
