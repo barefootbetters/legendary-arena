@@ -486,6 +486,53 @@ describe('filterUIStateForAudience — pendingOptionalKoReward redaction (D-2402
 });
 
 // ---------------------------------------------------------------------------
+// WP-287 / EC-319 — pendingDrawOrEmpowered redaction (D-24071, D-24011 analog)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where player '0' owes a draw-or-empowered choice. The choice is
+ * private to the chooser (the D-24011 analog) — it must not appear in a non-chooser's
+ * UIState (a binary choice with no eligible-card list, so the only leak vector is the
+ * existence + derived label of the choice itself).
+ */
+function createDrawOrEmpoweredUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+  gameState.pendingDrawOrEmpowered = [{ playerID: '0', empoweredClass: 'strength' }];
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingDrawOrEmpowered redaction (D-24071)', () => {
+  it('the chooser sees pendingDrawOrEmpowered with the derived empoweredLabel (AC-1)', () => {
+    const uiState = createDrawOrEmpoweredUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.ok(result.pendingDrawOrEmpowered !== undefined, 'chooser sees the draw-or-empowered choice');
+    assert.equal(result.pendingDrawOrEmpowered!.playerID, '0');
+    assert.equal(result.pendingDrawOrEmpowered!.empoweredLabel, 'Empowered by Strength');
+  });
+
+  it('an opponent does NOT see pendingDrawOrEmpowered (AC-2)', () => {
+    const uiState = createDrawOrEmpoweredUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_1);
+    assert.equal(result.pendingDrawOrEmpowered, undefined, 'opponent must not see the draw-or-empowered choice');
+  });
+
+  it('a spectator does NOT see pendingDrawOrEmpowered (AC-2)', () => {
+    const uiState = createDrawOrEmpoweredUIState();
+    const result = filterUIStateForAudience(uiState, SPECTATOR);
+    assert.equal(result.pendingDrawOrEmpowered, undefined, 'spectator must not see the draw-or-empowered choice');
+  });
+
+  it('does not mutate the input UIState (pendingDrawOrEmpowered still present on the source)', () => {
+    const uiState = createDrawOrEmpoweredUIState();
+    filterUIStateForAudience(uiState, PLAYER_1);
+    assert.ok(uiState.pendingDrawOrEmpowered !== undefined, 'source UIState unchanged');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-258 / EC-289 — hollowEffects public value-preserving pass-through (D-12803)
 // ---------------------------------------------------------------------------
 

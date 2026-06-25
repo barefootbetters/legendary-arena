@@ -163,3 +163,29 @@ describe('useTurnActions — hasPendingOptionalKoReward gating (WP-249 / EC-280 
     assert.equal(actions.canPassPriority().allowed, true);
   });
 });
+
+describe('useTurnActions — hasPendingDrawOrEmpowered gating (WP-287 / EC-319 / D-24071)', () => {
+  const DRAW_OR_EMPOWERED_REASON = 'Choose Draw a card or Empowered before taking another action.';
+
+  test('canEndTurn blocked at EVERY stage when hasPendingDrawOrEmpowered is true (AC-6)', () => {
+    for (const stage of ['start', 'main', 'cleanup'] as const) {
+      const result = useTurnActions(stage, true, false, false, false, true).canEndTurn();
+      assert.equal(result.allowed, false, `endTurn blocked at ${stage}`);
+      assert.equal(result.reason, DRAW_OR_EMPOWERED_REASON, 'draw-or-empowered gate reason matches the locked value');
+    }
+  });
+
+  test('canPassPriority blocked at EVERY stage when hasPendingDrawOrEmpowered is true (board frozen) (AC-6)', () => {
+    for (const stage of ['start', 'main', 'cleanup'] as const) {
+      const result = useTurnActions(stage, true, false, false, false, true).canPassPriority();
+      assert.equal(result.allowed, false, `passPriority blocked at ${stage}`);
+      assert.equal(result.reason, DRAW_OR_EMPOWERED_REASON);
+    }
+  });
+
+  test('defaults false — both allowed at cleanup when no draw-or-empowered choice pending', () => {
+    const actions = useTurnActions('cleanup', true, false, false, false, false);
+    assert.equal(actions.canEndTurn().allowed, true);
+    assert.equal(actions.canPassPriority().allowed, true);
+  });
+});

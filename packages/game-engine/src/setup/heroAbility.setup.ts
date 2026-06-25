@@ -162,6 +162,13 @@ const EMPOWERED_CHOOSE_ONE_PREFIX_PATTERN = /^\s*Choose one\s*:/i;
 /** Regex source for `[keyword:Empowered] by [hc:X]` — instantiated global inside the choose-one helper. */
 const EMPOWERED_CHOOSE_ONE_CLASS_TAIL_PATTERN = /\[keyword:Empowered\]\s*by\s*\[hc:([a-z0-9-]+)\]/i;
 
+// why: D-24069 — the draw-or-empowered choose-one form pairs a printed "Draw a card" option with a
+// single Empowered marker. This presence check distinguishes it from the WP-283 two-empowered
+// choose-one (which offers two Empowered halves and no draw). Non-global so the stateless `.test`
+// carries no lastIndex; the structural work is done by the prefix + single-marker + class-tail gates.
+/** Regex for the "Draw a card" draw option in a draw-or-empowered choose-one line. */
+const DRAW_A_CARD_PATTERN = /Draw a card/i;
+
 // why: D-24065 — anchored pattern for the dynamic Empowered form whose class is the runtime
 // class of a revealed card, not a static `[hc:X]` literal. Locked to this exact phrasing
 // (cross-the-multiverse); wildcard extension beyond this phrasing family is forbidden.
@@ -376,6 +383,28 @@ function parseAbilityText(abilityText: string): {
     conditions.splice(0, conditions.length);
   }
 
+  // Pre-pass: resolve the draw-or-empowered choose-one form before the KEYWORD_PATTERN loop.
+  // why: D-24069 — One-Hit Wonder's "Choose one: Draw a card, or you get [keyword:Empowered] by
+  // [hc:X]" must emit ONE draw-or-empowered effect carrying the empowered class and suppress the
+  // per-token empowered dispatch, so the line no longer falls through to tryResolveEmpoweredCore
+  // (the silent-empowered bug). Runs AFTER the two-empowered choose-one pre-pass (which already
+  // returned undefined for this single-marker shape) and BEFORE the per-token loop.
+  let processedAsDrawOrEmpowered = false;
+  let drawOrEmpoweredClass: string | undefined;
+  if (!processedAsChooseOne) {
+    const drawOrEmpoweredResult = tryResolveDrawOrEmpoweredLine(abilityText);
+    if (drawOrEmpoweredResult !== undefined) {
+      keywords.push('draw-or-empowered');
+      drawOrEmpoweredClass = drawOrEmpoweredResult.empoweredClass;
+      // why: D-24069 — suppresses the per-token empowered dispatch in the KEYWORD_PATTERN loop
+      // below so the line emits exactly one draw-or-empowered effect (mirrors processedAsChooseOne).
+      processedAsDrawOrEmpowered = true;
+      // why: the [hc:X] is the Empowered count PARAMETER, not a gate condition; clear it so the
+      // hook adds no 'conditional' keyword (same suppression as the choose-one path above).
+      conditions.splice(0, conditions.length);
+    }
+  }
+
   // Step 2: Extract [keyword:X] or [keyword:X:N] markup
   // Collect magnitudes keyed by keyword — explicit markup wins over icon-derived.
   const magnitudes: Map<string, number> = new Map();
@@ -400,10 +429,11 @@ function parseAbilityText(abilityText: string): {
       // flags it — the Honest-Partial Invariant. Checked BEFORE isHeroCompositionMarker since
       // `empowered` is in HERO_COMPOSITION_MARKER_NAMES (the deduped union) too.
       //
-      // why: D-24063 — processedAsChooseOne suppresses per-token empowered handling when the
-      // whole-line pre-pass (tryResolveEmpoweredChooseOneLine above) already resolved the line
-      // to one choose-one composition. Skipping here prevents double-composition.
-      if (!processedAsChooseOne) {
+      // why: D-24063 / D-24069 — processedAsChooseOne (the two-empowered choose-one) and
+      // processedAsDrawOrEmpowered (draw + single empowered) each suppress per-token empowered
+      // handling when their whole-line pre-pass already claimed the line. Skipping here prevents
+      // double-composition / a stray standalone empowered composition on a line a pre-pass owns.
+      if (!processedAsChooseOne && !processedAsDrawOrEmpowered) {
         const textAfterMarker = abilityText.slice(keywordMatch.index + keywordMatch[0]!.length);
         // why: D-24047 — resolve-order: try the unchanged sole-condition core FIRST, then the
         // conditional-prefix class-gated form, then the free-choice fallback, then the
@@ -689,6 +719,14 @@ function parseAbilityText(abilityText: string): {
         if (magnitude !== undefined && rewardType !== undefined) {
           effects.push({ type: keyword, magnitude, rewardType });
         }
+      } else if (keyword === 'draw-or-empowered') {
+        // why: D-24069 — the draw-or-empowered effect carries the empowered hero class parsed by
+        // the pre-pass so the park site records it on the PendingDrawOrEmpowered entry; the resolve
+        // move's 'empowered' branch reuses buildEmpoweredComposition(empoweredClass). The pre-pass
+        // guarantees drawOrEmpoweredClass is set whenever this keyword reaches the effect builder.
+        if (drawOrEmpoweredClass !== undefined) {
+          effects.push({ type: keyword, empoweredClass: drawOrEmpoweredClass });
+        }
       } else if (REVEAL_KEYWORD_SET.has(keyword)) {
         // why: D-24024 — the dual-grammar seam. A legacy reveal-* keyword translates
         // through revealRulesForLegacyKeyword into the collapsed `reveal` descriptor;
@@ -954,6 +992,54 @@ function tryResolveEmpoweredChooseOneLine(
     composition: buildEmpoweredChooseOneComposition(extractedClasses),
     classes: extractedClasses,
   };
+}
+
+/**
+ * Detection resolver for the draw-or-empowered choose-one form ("Choose one: Draw a card, or you
+ * get [keyword:Empowered] by [hc:X]" — One-Hit Wonder). Returns the parsed empowered hero class
+ * when all gates pass, or undefined for any non-canonical form. Reads `abilityText` only; mutates
+ * nothing — the caller records the keyword + class and suppresses the per-token empowered dispatch
+ * after a canonical match.
+ *
+ * Gated strictly so it never claims the WP-283 two-empowered choose-one (fight-or-flight, two
+ * markers) nor the core empowered path (no "Choose one:" prefix): (1) a "Choose one:" prefix,
+ * (2) a "Draw a card" draw option, (3) exactly ONE [keyword:Empowered] marker, (4) exactly one
+ * `[keyword:Empowered] by [hc:X]` class tail. Any miss → undefined. (D-24069)
+ *
+ * @param abilityText - The full ability text line.
+ * @returns The normalized empowered hero class, or undefined for any non-canonical shape.
+ */
+function tryResolveDrawOrEmpoweredLine(abilityText: string): { empoweredClass: string } | undefined {
+  // why: D-24069 gate #1 — the "Choose one:" prefix (reuses the WP-283 prefix const); limits this
+  // path to choose-one lines, leaving every other card text's empowered dispatch unaffected.
+  if (!EMPOWERED_CHOOSE_ONE_PREFIX_PATTERN.test(abilityText)) {
+    return undefined;
+  }
+  // why: D-24069 gate #2 — a printed "Draw a card" option separates this form from the WP-283
+  // two-empowered choose-one (two Empowered halves, no draw).
+  if (!DRAW_A_CARD_PATTERN.test(abilityText)) {
+    return undefined;
+  }
+  // why: D-24069 gate #3 — EXACTLY ONE [keyword:Empowered] marker. Two markers is the WP-283
+  // fight-or-flight shape (claimed by tryResolveEmpoweredChooseOneLine); zero is not this form.
+  // String.match with the global const ignores lastIndex (stateless), mirroring the choose-one helper.
+  const markerMatches = abilityText.match(EMPOWERED_MARKER_COUNT_PATTERN);
+  if (markerMatches === null || markerMatches.length !== 1) {
+    return undefined;
+  }
+  // why: D-24069 gate #4 — extract the single `[keyword:Empowered] by [hc:X]` class tail (fresh
+  // RegExp per call, the lastIndex-safe pattern used by heroClassRegex / the choose-one helper).
+  const classTailRegex = new RegExp(EMPOWERED_CHOOSE_ONE_CLASS_TAIL_PATTERN.source, 'gi');
+  const extractedClasses: string[] = [];
+  let classTailMatch: RegExpExecArray | null = classTailRegex.exec(abilityText);
+  while (classTailMatch !== null) {
+    extractedClasses.push(normalizeTraitSlug(classTailMatch[1]!));
+    classTailMatch = classTailRegex.exec(abilityText);
+  }
+  if (extractedClasses.length !== 1) {
+    return undefined;
+  }
+  return { empoweredClass: extractedClasses[0]! };
 }
 
 /**

@@ -49,6 +49,12 @@ import { revealVillainCard } from '../villainDeck/villainDeck.reveal.js';
 import { fightVillain } from '../moves/fightVillain.js';
 import { recruitHero } from '../moves/recruitHero.js';
 import { fightMastermind } from '../moves/fightMastermind.js';
+// why: WP-286 — draw-or-empowered parks an interactive choice UNCONDITIONALLY when One-Hit
+// Wonder is played (no precondition, unlike the sibling resolve moves whose pending choices a
+// sweep rarely triggers). The competent policy then sees getLegalMoves return ONLY
+// resolveDrawOrEmpowered (block-all guard), so this MUST be dispatchable here or the per-turn
+// loop spins forever — maxTurns bounds TURNS, not within-turn move-steps.
+import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 import { advanceTurnStage } from '../turn/turnLoop.js';
 
 // why: 200-turn safety cap prevents infinite loops in degenerate states
@@ -181,6 +187,9 @@ const MOVE_MAP: Record<string, MoveFn> = {
   fightVillain: (context, args) => fightVillain(context as never, args as never),
   recruitHero: (context, args) => recruitHero(context as never, args as never),
   fightMastermind: (context) => fightMastermind(context as never),
+  // why: WP-286 — must be dispatchable; One-Hit Wonder parks a draw-or-empowered choice
+  // unconditionally, so the sweep reaches it and the block-all guard freezes every other move.
+  resolveDrawOrEmpowered: (context, args) => resolveDrawOrEmpowered(context as never, args as never),
 };
 
 /**

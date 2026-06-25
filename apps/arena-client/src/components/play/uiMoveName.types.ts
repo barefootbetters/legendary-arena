@@ -37,7 +37,8 @@
  * `LegendaryGame.phases.lobby.moves` block. Any extension requires a new
  * Work Packet. Per WP-243, `'resolveKoHeroChoice'` was added to unblock the
  * KO-a-Hero pending choice prompt (D-24010). Per WP-249, `'resolveOptionalKoReward'`
- * was added to unblock the optional-KO-then-reward prompt (D-24020).
+ * was added to unblock the optional-KO-then-reward prompt (D-24020). Per WP-287,
+ * `'resolveDrawOrEmpowered'` was added to unblock the draw-or-empowered prompt (D-24071).
  */
 export type UiMoveName =
   | 'setPlayerReady'
@@ -52,7 +53,8 @@ export type UiMoveName =
   | 'fightMastermind'
   | 'resolveHeroChoice'
   | 'resolveKoHeroChoice'
-  | 'resolveOptionalKoReward';
+  | 'resolveOptionalKoReward'
+  | 'resolveDrawOrEmpowered';
 
 /**
  * Function signature shared by every prop-drilled `submitMove` in the

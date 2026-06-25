@@ -19,6 +19,7 @@ import { refillHqSlot } from '../board/city.logic.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
+import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { getHooksForCard, filterHooksByTiming } from '../rules/heroAbility.types.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
@@ -87,6 +88,8 @@ export function recruitHero(
   if (hasPendingOptionalKoReward(G)) return;
   // why: block-all — pendingVictoryPileCardPick must be resolved before any other action (D-24067)
   if (hasPendingVictoryPileCardPick(G)) return;
+  // why: block-all — pendingDrawOrEmpowered must be resolved before any other action (D-24069)
+  if (hasPendingDrawOrEmpowered(G)) return;
 
   // Step 3: Mutate G
   // why: D-24049 — the printed "Wall-Crawl" ability ("when you recruit this Hero,

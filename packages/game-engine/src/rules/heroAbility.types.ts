@@ -109,6 +109,12 @@ export interface HeroEffectDescriptor {
   // executor: rescue / draw / attack / recruit). The existing magnitude field
   // carries the reward magnitude. Other keywords ignore it.
   rewardType?: HeroKeyword;
+  // why: D-24069 — for a 'draw-or-empowered' effect, empoweredClass is the normalized
+  // hero class parsed from the "Empowered by [hc:X]" tail. It is carried from parse time
+  // to the park site, which records it on the PendingDrawOrEmpowered entry so the resolve
+  // move's 'empowered' branch can reuse buildEmpoweredComposition(empoweredClass). Other
+  // keywords ignore it.
+  empoweredClass?: string;
   // why: D-24024 — for a collapsed 'reveal' effect, revealCount is the number of
   // deck-top cards peeked (default 1; every legacy reveal peeks one) and revealRules
   // is the ordered branch-list the single reveal handler evaluates. Other keywords

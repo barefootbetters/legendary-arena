@@ -44,7 +44,8 @@ export type HeroKeyword =
   | 'dodge' // why: D-24051 — printed "Dodge" ("during your turn, you may discard this card from your hand to draw another card"); executable via the dodgeCard hand-discard-to-draw move, not an onPlay HERO_EFFECT_HANDLERS entry
   | 'conditional'
   | 'undercover' // why: D-24060 / WP-282 — "send a card face-down, play it later from face-down state"; executable via sendUndercover + playFromUndercover moves on onPlay trigger
-  | 'victory-villain-attack'; // why: D-24068 / WP-285 — "gain +attack equal to the printed attack of a villain in your victory pile"; parks a pending pick resolved by resolveVictoryPileCardPick
+  | 'victory-villain-attack' // why: D-24068 / WP-285 — "gain +attack equal to the printed attack of a villain in your victory pile"; parks a pending pick resolved by resolveVictoryPileCardPick
+  | 'draw-or-empowered'; // why: D-24069 / WP-286 — "Choose one: Draw a card, or you get Empowered by [class]"; parks a PendingDrawOrEmpowered resolved by resolveDrawOrEmpowered
 
 // why: canonical array for drift-detection. Must match HeroKeyword
 // union exactly. Drift-detection test in heroAbility.setup.test.ts
@@ -75,6 +76,7 @@ export const HERO_KEYWORDS: readonly HeroKeyword[] = [
   'undercover', // why: D-24060 / WP-282 — "send a card face-down, play it later"; executable via sendUndercover + playFromUndercover moves on onPlay trigger
   'conditional',
   'victory-villain-attack', // why: D-24068 / WP-285 — "gain +attack equal to the printed attack of a villain in your victory pile"; parks a pending pick resolved by resolveVictoryPileCardPick
+  'draw-or-empowered', // why: D-24069 / WP-286 — "Choose one: Draw a card, or you get Empowered by [class]"; parks a PendingDrawOrEmpowered resolved by resolveDrawOrEmpowered
 ] as const;
 
 // ---------------------------------------------------------------------------

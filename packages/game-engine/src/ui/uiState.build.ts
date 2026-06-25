@@ -34,6 +34,7 @@ import type {
   UIPendingHeroChoice,
   UIPendingKoHeroChoice,
   UIPendingOptionalKoReward,
+  UIPendingDrawOrEmpowered,
   UIEligibleKoHeroCard,
 } from './uiState.types.js';
 // why: WP-258 — the projected hollow-effect record type is the engine's
@@ -180,6 +181,37 @@ function deriveOptionalKoRewardLabel(
   // parse); the generic fallback keeps the projection total rather than
   // returning undefined / crashing.
   return 'Take the reward';
+}
+
+/**
+ * Derives the empowered-button label shown in the draw-or-empowered prompt.
+ *
+ * Single deterministic class→display mapping (WP-287 / D-24071) over WP-286's
+ * PendingDrawOrEmpowered.empoweredClass — never an ad-hoc or per-card string.
+ *
+ * @param empoweredClass - WP-286's parsed hero-class slug (e.g. `strength`).
+ * @returns the single-mapping player-facing label string.
+ */
+function deriveEmpoweredLabel(empoweredClass: string): string {
+  if (empoweredClass === 'strength') {
+    return 'Empowered by Strength';
+  }
+  if (empoweredClass === 'instinct') {
+    return 'Empowered by Instinct';
+  }
+  if (empoweredClass === 'covert') {
+    return 'Empowered by Covert';
+  }
+  if (empoweredClass === 'tech') {
+    return 'Empowered by Tech';
+  }
+  if (empoweredClass === 'ranged') {
+    return 'Empowered by Ranged';
+  }
+  // why: D-24071 — an unrecognized class keeps the projection total (a safe
+  // generic label) rather than returning undefined / crashing; the parser
+  // should never emit one, but the projection must not depend on that.
+  return 'Empowered';
 }
 
 /**
@@ -809,6 +841,25 @@ export function buildUIState(
     }
   }
 
+  // --- 13c.2 Project pending draw-or-empowered choice (front of queue) ---
+  // why: D-24071 + WP-287 — project the FRONT entry of G.pendingDrawOrEmpowered with
+  // the empoweredLabel derived once by deriveEmpoweredLabel (the single class→display
+  // mapping). Recomputed fresh from current G (WP-286 stores no snapshot). Simpler than
+  // the optional-KO-reward projection — a binary choice with no eligible-card list.
+  // Redaction to the chooser-only audience is enforced by filterUIStateForAudience
+  // (D-24011 analog — the choice is private to the chooser, keyed on .playerID).
+  let pendingDrawOrEmpowered: UIPendingDrawOrEmpowered | undefined;
+  if (
+    gameState.pendingDrawOrEmpowered !== undefined &&
+    gameState.pendingDrawOrEmpowered.length > 0
+  ) {
+    const frontChoice = gameState.pendingDrawOrEmpowered[0]!;
+    pendingDrawOrEmpowered = {
+      playerID: frontChoice.playerID,
+      empoweredLabel: deriveEmpoweredLabel(frontChoice.empoweredClass),
+    };
+  }
+
   // --- 13d. Project hollow-effect diagnostics (read-only) ---
   // why: WP-258 — surface the WP-257 runtime channel G.diagnostics.hollowEffects
   // onto UIState. Read-only over G (buildUIState NEVER mutates G); per-record
@@ -884,6 +935,9 @@ export function buildUIState(
     ...(pendingHeroChoice !== undefined ? { pendingHeroChoice } : {}),
     ...(pendingKoHeroChoice !== undefined ? { pendingKoHeroChoice } : {}),
     ...(pendingOptionalKoReward !== undefined ? { pendingOptionalKoReward } : {}),
+    // why: WP-287 — conditional spread so an absent choice omits the field (no
+    // `pendingDrawOrEmpowered: undefined` literal under exactOptionalPropertyTypes).
+    ...(pendingDrawOrEmpowered !== undefined ? { pendingDrawOrEmpowered } : {}),
     // why: WP-258 — conditional spread so an absent channel omits the field
     // (no `hollowEffects: undefined` literal under exactOptionalPropertyTypes,
     // and no empty-array injection that would dirty optional-field fixtures).

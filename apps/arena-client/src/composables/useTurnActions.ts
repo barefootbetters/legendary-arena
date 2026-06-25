@@ -94,6 +94,12 @@ const NOT_YOUR_TURN: GatingResult = {
  *   blocks `canEndTurn` and `canPassPriority` at ANY stage (the choice freezes the
  *   board, mirroring `hasPendingKoChoice`). Defaults to false. WP-248's block-all
  *   guard guarantees at most one pending-choice type is active at a time.
+ * @param hasPendingDrawOrEmpowered Whether the viewer has an unresolved
+ *   draw-or-empowered choice (derived from `UIState.pendingDrawOrEmpowered !== undefined`
+ *   at the call site). When true, blocks `canEndTurn` and `canPassPriority` at ANY stage
+ *   (WP-286's block-all guard freezes the board, mirroring `hasPendingOptionalKoReward`).
+ *   Defaults to false. WP-286's block-all guard guarantees at most one pending-choice
+ *   type is active at a time.
  */
 export function useTurnActions(
   currentStage: string,
@@ -101,6 +107,7 @@ export function useTurnActions(
   hasPendingChoice: boolean = false,
   hasPendingKoChoice: boolean = false,
   hasPendingOptionalKoReward: boolean = false,
+  hasPendingDrawOrEmpowered: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -173,6 +180,15 @@ export function useTurnActions(
           reason: 'Choose a card to KO or Decline before taking another action.',
         };
       }
+      // why: D-24071 — End Turn / Pass Priority blocked at any stage while a
+      // draw-or-empowered choice is pending (WP-286's block-all guard freezes the
+      // board, mirroring hasPendingOptionalKoReward).
+      if (hasPendingDrawOrEmpowered) {
+        return {
+          allowed: false,
+          reason: 'Choose Draw a card or Empowered before taking another action.',
+        };
+      }
       if (currentStage === 'cleanup' && hasPendingChoice) {
         return {
           allowed: false,
@@ -200,6 +216,15 @@ export function useTurnActions(
         return {
           allowed: false,
           reason: 'Choose a card to KO or Decline before taking another action.',
+        };
+      }
+      if (hasPendingDrawOrEmpowered) {
+        // why: D-24071 — WP-286's block-all turn-end guard blocks endTurn while
+        // pendingDrawOrEmpowered is non-empty; this client-side gate surfaces the
+        // reason so the player sees a tooltip instead of a silent rejection.
+        return {
+          allowed: false,
+          reason: 'Choose Draw a card or Empowered before taking another action.',
         };
       }
       if (currentStage === 'cleanup' && hasPendingChoice) {

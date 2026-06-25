@@ -21,6 +21,7 @@ import { executeHeroEffects } from '../hero/heroEffects.execute.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
+import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -69,6 +70,11 @@ export function drawCards({ G, playerID, ...context }: MoveContext, args: DrawCa
 
   // why: block-all — pendingVictoryPileCardPick must be resolved before any other action (D-24067)
   if (hasPendingVictoryPileCardPick(G)) {
+    return;
+  }
+
+  // why: block-all — pendingDrawOrEmpowered must be resolved before any other action (D-24069)
+  if (hasPendingDrawOrEmpowered(G)) {
     return;
   }
 
@@ -182,6 +188,11 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
     return;
   }
 
+  // why: block-all — pendingDrawOrEmpowered must be resolved before any other action (D-24069)
+  if (hasPendingDrawOrEmpowered(G)) {
+    return;
+  }
+
   // Step 3: Mutate G
   const playerZones = G.playerZones[playerID];
   if (!playerZones) {
@@ -241,6 +252,11 @@ export function endTurn({ G, playerID, events }: MoveContext): void {
 
   // why: block-all — pendingVictoryPileCardPick must be resolved before any other action (D-24067)
   if (hasPendingVictoryPileCardPick(G)) {
+    return;
+  }
+
+  // why: block-all — pendingDrawOrEmpowered must be resolved before any other action (D-24069)
+  if (hasPendingDrawOrEmpowered(G)) {
     return;
   }
 

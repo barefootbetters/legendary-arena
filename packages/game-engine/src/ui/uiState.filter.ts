@@ -529,6 +529,23 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: D-24071 / D-24011 analog — the pending draw-or-empowered choice is private to
+  // the chooser. Redacted for EVERY audience except the choosing player; present only
+  // when the audience is a player whose playerId equals the chooser's playerID; omitted
+  // (conditional assignment, never an `undefined` literal) for opponents AND spectators.
+  // No eligible-card list to copy (binary choice), so the assignment is a flat object —
+  // empoweredLabel is a derived display string carrying no private identity.
+  if (
+    uiState.pendingDrawOrEmpowered !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingDrawOrEmpowered.playerID
+  ) {
+    result.pendingDrawOrEmpowered = {
+      playerID: uiState.pendingDrawOrEmpowered.playerID,
+      empoweredLabel: uiState.pendingDrawOrEmpowered.empoweredLabel,
+    };
+  }
+
   // why: WP-258 / D-12803 — hollowEffects is PUBLIC card/mechanic data, not
   // hidden info. The filter passes it through value-unchanged for EVERY
   // audience (own-player AND other-player AND spectator) — it redacts /

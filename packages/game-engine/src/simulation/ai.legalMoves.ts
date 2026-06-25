@@ -23,6 +23,7 @@ import {
   hasPendingVictoryPileCardPick,
   getEligibleVictoryVillains,
 } from '../moves/resolveVictoryPileCardPick.js';
+import { hasPendingDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 
 // why: simulation covers the play-phase only; lobby moves (setPlayerReady,
 // startMatchIfReady) are excluded because runSimulation starts the per-game
@@ -42,6 +43,7 @@ const SIMULATION_MOVE_NAMES = [
   'resolveKoHeroChoice',
   'resolveOptionalKoReward',
   'resolveVictoryPileCardPick',
+  'resolveDrawOrEmpowered',
 ] as const;
 
 // why: type is exported implicitly via the const array above; external
@@ -108,6 +110,14 @@ export function getLegalMoves(
     // Return empty list; the runner's zero-legal-moves fallback handles
     // the degenerate case.
     return legalMoves;
+  }
+
+  // why: pending draw-or-empowered short-circuit (D-24069) — while a draw-or-empowered
+  // choice is pending the engine block-all guard freezes every other move, so the bot must
+  // resolve it first. Returns a list of length EXACTLY 1.
+  if (hasPendingDrawOrEmpowered(gameState)) {
+    // why: deterministic bot default — always empowered; an expected-value default is deferred (D-24069)
+    return [{ name: 'resolveDrawOrEmpowered', args: { choice: 'empowered' } }];
   }
 
   // why: pending victory-pile villain-pick short-circuit (D-24067) — the bot must

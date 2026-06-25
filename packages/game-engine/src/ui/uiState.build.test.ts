@@ -1108,6 +1108,63 @@ describe('buildUIState — pendingOptionalKoReward projection (WP-249 / D-24020)
 });
 
 // ---------------------------------------------------------------------------
+// WP-287 / EC-319 — pendingDrawOrEmpowered projection (D-24071)
+// ---------------------------------------------------------------------------
+
+describe('buildUIState — pendingDrawOrEmpowered projection (WP-287 / D-24071)', () => {
+  /** Builds a game state with one front draw-or-empowered choice for player 0. */
+  function withDrawOrEmpowered(empoweredClass: string): LegendaryGameState {
+    const gameState = makeGameStateWithDisplayData();
+    gameState.pendingDrawOrEmpowered = [{ playerID: '0', empoweredClass }];
+    return gameState;
+  }
+
+  it('is undefined when the engine queue is empty (AC-1)', () => {
+    const gameState = createTestGameState();
+    assert.equal(gameState.pendingDrawOrEmpowered, undefined);
+    const ui = buildUIState(gameState, mockCtx);
+    assert.equal(ui.pendingDrawOrEmpowered, undefined, 'absent when no pending draw-or-empowered');
+  });
+
+  it('projects the FRONT entry with playerID + the derived empoweredLabel (AC-1)', () => {
+    const ui = buildUIState(withDrawOrEmpowered('strength'), mockCtx);
+    assert.ok(ui.pendingDrawOrEmpowered !== undefined, 'present when queue non-empty');
+    assert.equal(ui.pendingDrawOrEmpowered!.playerID, '0');
+    assert.equal(ui.pendingDrawOrEmpowered!.empoweredLabel, 'Empowered by Strength');
+  });
+
+  it('derives empoweredLabel from the single class→display mapping (AC-1)', () => {
+    assert.equal(buildUIState(withDrawOrEmpowered('strength'), mockCtx).pendingDrawOrEmpowered!.empoweredLabel, 'Empowered by Strength');
+    assert.equal(buildUIState(withDrawOrEmpowered('instinct'), mockCtx).pendingDrawOrEmpowered!.empoweredLabel, 'Empowered by Instinct');
+    assert.equal(buildUIState(withDrawOrEmpowered('covert'), mockCtx).pendingDrawOrEmpowered!.empoweredLabel, 'Empowered by Covert');
+    assert.equal(buildUIState(withDrawOrEmpowered('tech'), mockCtx).pendingDrawOrEmpowered!.empoweredLabel, 'Empowered by Tech');
+    assert.equal(buildUIState(withDrawOrEmpowered('ranged'), mockCtx).pendingDrawOrEmpowered!.empoweredLabel, 'Empowered by Ranged');
+  });
+
+  it('an unrecognized class falls back to a safe generic "Empowered" (no crash)', () => {
+    const ui = buildUIState(withDrawOrEmpowered('made-up-class'), mockCtx);
+    assert.equal(ui.pendingDrawOrEmpowered!.empoweredLabel, 'Empowered');
+  });
+
+  it('projects only the FRONT entry when the queue holds more than one', () => {
+    const gameState = withDrawOrEmpowered('strength');
+    gameState.pendingDrawOrEmpowered = [
+      { playerID: '0', empoweredClass: 'strength' },
+      { playerID: '0', empoweredClass: 'tech' },
+    ];
+    const ui = buildUIState(gameState, mockCtx);
+    assert.equal(ui.pendingDrawOrEmpowered!.empoweredLabel, 'Empowered by Strength', 'front entry projected, not the second');
+  });
+
+  it('buildUIState does not mutate G (purity)', () => {
+    const gameState = withDrawOrEmpowered('covert');
+    const before = JSON.stringify(gameState);
+    buildUIState(gameState, mockCtx);
+    assert.equal(JSON.stringify(gameState), before, 'G byte-identical after projection');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-258 / EC-289 — hollowEffects projection (WP-257 G.diagnostics channel)
 // ---------------------------------------------------------------------------
 

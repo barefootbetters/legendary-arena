@@ -58,7 +58,7 @@ import { getEligibleVictoryVillains } from '../moves/resolveVictoryPileCardPick.
 // the 7 legacy reveal-* keywords lost their dedicated handlers (folded into the one
 // 'reveal' handler) but stay executable via revealRulesForLegacyKeyword translation.
 export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
-  'draw', 'attack', 'recruit', 'ko', 'rescue', 'reveal', 'attack-per-count', 'optional-ko-reward', 'victory-villain-attack',
+  'draw', 'attack', 'recruit', 'ko', 'rescue', 'reveal', 'attack-per-count', 'optional-ko-reward', 'victory-villain-attack', 'draw-or-empowered',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -154,6 +154,9 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // why: victory-villain-attack parks a pending pick; the attack amount is read
   // from the chosen villain's fightCost at resolve time, not from a static magnitude
   'victory-villain-attack',
+  // why: draw-or-empowered parks a pending choice carrying empoweredClass (not a magnitude);
+  // the draw or the empowered grant is applied at resolve time, not at play time (D-24069)
+  'draw-or-empowered',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -1077,6 +1080,40 @@ function heroEffectVictoryVillainAttack(
   G.pendingVictoryPileCardPick.push({ rewardType: 'attack', playerID });
 }
 
+/**
+ * Park handler for the `draw-or-empowered` hero keyword (WP-286 / D-24069).
+ *
+ * Parks a `PendingDrawOrEmpowered` on `G.pendingDrawOrEmpowered[]` (lazy-init) carrying the
+ * player and the empowered hero class the parser extracted from the "Empowered by [hc:X]" tail.
+ * The draw or the empowered grant happens at resolve time (resolveDrawOrEmpowered), NOT here —
+ * the player (or bot) must first pick which half of the printed "Choose one" to take.
+ *
+ * A descriptor with no empoweredClass (should never happen post-parse — the parser only emits a
+ * draw-or-empowered effect with a parsed class) is a logged no-op that parks nothing.
+ */
+function heroEffectDrawOrEmpowered(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  _cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  const empoweredClass = effect.empoweredClass;
+  if (empoweredClass === undefined || empoweredClass.length === 0) {
+    // why: defensive — the parser always emits draw-or-empowered with a parsed empoweredClass; a
+    // missing class here is a logged no-op that parks nothing (mirrors the optional-ko-reward
+    // unseeded-reward guard). Unreachable post-parse, but never throw and never park a broken entry.
+    G.messages.push(
+      `Player ${playerID} played a draw-or-empowered hero ability with no empowered class, so the choice was skipped.`,
+    );
+    return;
+  }
+  // why: parks an interactive draw-or-empowered choice resolved by resolveDrawOrEmpowered (D-24069)
+  // why: lazy-init at the park site (never in Game.setup); absent field = no pending choice. Mirrors pendingVictoryPileCardPick (D-24067).
+  if (!G.pendingDrawOrEmpowered) { G.pendingDrawOrEmpowered = []; }
+  G.pendingDrawOrEmpowered.push({ playerID, empoweredClass });
+}
+
 // why: D-24022 — the hero-effect ImplementationMap (mirrors WP-009B's pattern).
 // Handlers are plain functions held OUTSIDE G; a new effect is a registry entry
 // + a drift-test entry, not a `switch` edit. Keyed by HeroKeyword and `Partial`
@@ -1096,6 +1133,7 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   'attack-per-count': heroEffectAttackPerCount,
   'optional-ko-reward': heroEffectOptionalKoReward,
   'victory-villain-attack': heroEffectVictoryVillainAttack,
+  'draw-or-empowered': heroEffectDrawOrEmpowered,
 };
 
 // ---------------------------------------------------------------------------
