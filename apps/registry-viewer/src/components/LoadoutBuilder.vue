@@ -30,6 +30,7 @@ import type { ThemeDefinition } from "../lib/themeClient";
 import type { UseLoadoutDraftApi } from "../composables/useLoadoutDraft";
 import { useLoadoutLagnExport } from "../composables/useLoadoutLagnExport";
 import { serializeSetupToUrl } from "../lib/setupUrlParams";
+import { parseLagnLoadout } from "../lib/loadoutLagnImport";
 
 // why: Verbatim WP-093 UI strings referenced via imported constants, but also
 // recorded in these comments so the §11 Step 9 Select-String gate confirms
@@ -319,6 +320,77 @@ function onFileImport(event: Event): void {
     const text = typeof reader.result === "string" ? reader.result : "";
     importText.value = text;
     onPasteImport();
+  };
+  reader.readAsText(file);
+}
+
+// ── LAGN import (WP-291) — separate from the MATCH-SETUP "Load JSON" above ───
+// The Loadout tab can export a LAGN ("Download LAGN") but the JSON importer only
+// accepts MATCH-SETUP documents, so a LAGN file is rejected. This control closes
+// the round-trip: it parses a LAGN via the published validator and applies its
+// composition to the SAME shared draft using the existing setters.
+
+const lagnImportText = ref("");
+const lagnImportErrors = ref<string[]>([]);
+const lagnImportSuccessAt = ref<string | null>(null);
+
+/**
+ * Parses LAGN text and, on success, REPLACES the draft with its composition.
+ * On failure, surfaces the validator's errors and leaves the draft untouched.
+ */
+function applyLagnImport(text: string): void {
+  lagnImportErrors.value = [];
+  lagnImportSuccessAt.value = null;
+  const result = parseLagnLoadout(text);
+  if (!result.ok) {
+    lagnImportErrors.value = result.errors;
+    return;
+  }
+  const composition = result.composition;
+  // why: a LAGN import REPLACES the draft (mirrors loadFromJson's full-document
+  // replace) — reset to a fresh blank, then overlay the imported composition
+  // through the public draft API only (never by writing draft.composition.*).
+  resetDraft();
+  if (composition.schemeId !== "") {
+    setScheme(composition.schemeId);
+  }
+  if (composition.mastermindId !== "") {
+    // why: setMastermind re-applies any Always-Leads villain groups (deduped),
+    // so the imported draft carries the villains the printed rule requires.
+    setMastermind(composition.mastermindId);
+  }
+  for (const villainGroupId of composition.villainGroupIds) {
+    addVillainGroup(villainGroupId);
+  }
+  for (const henchmanGroupId of composition.henchmanGroupIds) {
+    addHenchmanGroup(henchmanGroupId);
+  }
+  for (const heroDeckId of composition.heroDeckIds) {
+    addHeroGroup(heroDeckId);
+  }
+  setCount("bystandersCount", composition.bystandersCount);
+  setCount("woundsCount", composition.woundsCount);
+  setCount("officersCount", composition.officersCount);
+  setCount("sidekicksCount", composition.sidekicksCount);
+  setPlayerCount(composition.playerCount);
+  lagnImportSuccessAt.value = new Date().toISOString();
+  lagnImportText.value = "";
+}
+
+function onLagnPasteImport(): void {
+  applyLagnImport(lagnImportText.value);
+}
+
+function onLagnFileImport(event: Event): void {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (!file) {
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    const text = typeof reader.result === "string" ? reader.result : "";
+    applyLagnImport(text);
   };
   reader.readAsText(file);
 }
@@ -689,6 +761,32 @@ function slotLabel(slot: PickerSlot): string {
               <li v-for="(entry, index) in importErrors" :key="index">
                 <span class="error-field">{{ entry.field }}</span>: {{ entry.message }}
               </li>
+            </ul>
+          </div>
+        </details>
+
+        <!-- why: WP-291 — a SEPARATE LAGN importer next to "Load JSON" (operator
+             chose two explicit controls over auto-detect), closing the
+             Download-LAGN → re-upload round-trip the JSON importer can't accept. -->
+        <details class="import-details">
+          <summary>📥 Load LAGN (paste or file)</summary>
+          <div class="import-body">
+            <label class="field">
+              <span class="field-label">Choose LAGN file</span>
+              <input type="file" accept="application/json,.json" @change="onLagnFileImport" />
+            </label>
+            <label class="field">
+              <span class="field-label">Or paste LAGN</span>
+              <textarea
+                v-model="lagnImportText"
+                rows="6"
+                placeholder="Paste a LAGN file (the ⬇ Download LAGN output) here…"
+              ></textarea>
+            </label>
+            <button type="button" class="mini-btn" @click="onLagnPasteImport">Load pasted LAGN</button>
+            <p v-if="lagnImportSuccessAt" class="import-success">Loaded at {{ lagnImportSuccessAt }}.</p>
+            <ul v-if="lagnImportErrors.length > 0" class="error-list">
+              <li v-for="(message, index) in lagnImportErrors" :key="index">{{ message }}</li>
             </ul>
           </div>
         </details>
