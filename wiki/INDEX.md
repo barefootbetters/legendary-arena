@@ -1,6 +1,6 @@
 # Wiki Index
 
-> **26 / 50** entity pages.
+> **27 / 50** entity pages.
 > Last regenerated: 2026-06-18.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority.
@@ -92,6 +92,9 @@ Cross-cutting governance, methodology, and readiness assessments.
 - [Ewiki Authoring](ewiki-authoring.md) — Style and formatting
   reference for writing ewiki content: blockquotes, tables, code
   blocks, emoji, CSS variables, and two-repo editing procedures.
+- [Legendary Forge — Diorama Platform](legendary-forge.md) — Pointer
+  to the diorama venture's own private repo (plug-and-play diorama
+  platform); build IP kept separate for sellability.
 
 ## Tutorial
 
