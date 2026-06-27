@@ -1,0 +1,18 @@
+{{- /*
+why: image render hook. The default branch reproduces Hugo's built-in image
+output exactly, so every existing page is byte-identical and unaffected. Opt-in
+display sizing: an image whose markdown title is `width=<css-size>` — e.g.
+`![alt](/slug/x.png "width=50%")` — renders with that width and auto height
+instead of a title attribute. Deterministic (no build-time nondeterminism;
+cf. render-link.html / WP-139 §Determinism).
+*/ -}}
+{{- $dest := .Destination -}}
+{{- $alt := .Text -}}
+{{- $title := "" -}}
+{{- with .Title -}}{{- $title = . -}}{{- end -}}
+{{- if hasPrefix $title "width=" -}}
+  {{- $w := strings.TrimPrefix "width=" $title -}}
+  <img src="{{ $dest | safeURL }}" alt="{{ $alt }}" style="width:{{ $w }};height:auto">
+{{- else -}}
+  <img src="{{ $dest | safeURL }}" alt="{{ $alt }}"{{ with $title }} title="{{ . }}"{{ end }}>
+{{- end -}}

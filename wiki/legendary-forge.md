@@ -38,7 +38,7 @@ plan.
 
 ## Architecture — five plug-and-play systems
 
-![System architecture — the five plug-and-play systems and how they connect](/legendary-forge/system-architecture.png)
+![System architecture — the five plug-and-play systems and how they connect](/legendary-forge/system-architecture.png "width=50%")
 
 1. **Magnetic grid (Lite-Brite).** Conductive floor/wall plates; snap a magnetic
    "Smart Boot" figure on anywhere and it lights up. No wiring.
@@ -52,7 +52,7 @@ plan.
 
 ## The Smart Hub
 
-![Smart Hub front panel — five color-coded labeled ports, theme/speed knob, master switch, status LEDs](/legendary-forge/smart-hub-front-panel.png)
+![Smart Hub front panel — five color-coded labeled ports, theme/speed knob, master switch, status LEDs](/legendary-forge/smart-hub-front-panel.png "width=50%")
 
 Fixed-firmware, Arduino-class controller. The whole interface is five labeled
 ports, a theme/speed knob, and an on/off switch. **Match the cord's label to the
@@ -67,13 +67,13 @@ contact problems, designed separately:
 magnetic-*anywhere* — a keyed dock would kill the "snap anywhere" mechanic, so
 reliability comes from contact geometry and materials (wiping pogo pin, plating).
 
-![Smart Boot contact cross-section — ring magnet (GND + hold), recessed pogo pin (+5V), sealed LED+resistor, against the steel-plate/copper-strip grid](/legendary-forge/smart-boot-cross-section.png)
+![Smart Boot contact cross-section — ring magnet (GND + hold), recessed pogo pin (+5V), sealed LED+resistor, against the steel-plate/copper-strip grid](/legendary-forge/smart-boot-cross-section.png "width=50%")
 
 **Interface B — module ↔ frame/Hub (motion).** Vibration + motor stall current →
 a **hybrid**: magnets to align, a mechanical anti-shear constraint (dock pocket +
 micro-lip), and redundant power pins through a keyed cord.
 
-![Module connector stack — module in a dock pocket with alignment magnets and micro-lip anti-shear, captive keyed cord to the Hub port, and the pin allocation](/legendary-forge/module-connector-stack.png)
+![Module connector stack — module in a dock pocket with alignment magnets and micro-lip anti-shear, captive keyed cord to the Hub port, and the pin allocation](/legendary-forge/module-connector-stack.png "width=50%")
 
 ## Business model — razor & blades
 
