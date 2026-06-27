@@ -92,9 +92,10 @@ Cross-cutting governance, methodology, and readiness assessments.
 - [Ewiki Authoring](ewiki-authoring.md) — Style and formatting
   reference for writing ewiki content: blockquotes, tables, code
   blocks, emoji, CSS variables, and two-repo editing procedures.
-- [Legendary Forge — Diorama Platform](legendary-forge.md) — Pointer
-  to the diorama venture's own private repo (plug-and-play diorama
-  platform); build IP kept separate for sellability.
+- [Legendary Forge — Diorama Platform](legendary-forge.md) — Overview of
+  the plug-and-play diorama venture: architecture, Smart Hub, connector
+  strategy, business model, and status; canonical deep docs stay in its
+  own private repo for sellability.
 
 ## Tutorial
 
