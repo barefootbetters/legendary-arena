@@ -6,6 +6,8 @@ tags:
   - legendary-forge
   - hardware
   - venture
+  - family-stem
+  - bookshelf-nook
 related:
   - hugo-web-system.md
 status: draft
@@ -21,6 +23,19 @@ last-reviewed: 2026-06-26
 > detail (exact BOM part numbers, full connector spec, P1 procedure) — live in the
 > private repo: <https://github.com/barefootbetters/legendary-forge>.
 
+## Vision
+
+> **"Build a world together. Keep the memory for life."**
+
+Parents and kids still crave the magic of building miniature worlds — glowing
+streetlights, swinging signs, tiny alleyways — but modern life took the **space**
+(no spare 4×8 table) and the **time** (projects that drag for months). Legendary
+Forge gives both back: a complete, reconfigurable **bookshelf-scale** diorama a
+parent and child fully assemble, light, and animate **in one afternoon** on the
+kitchen table. The finished build lives on the shelf as a daily reminder of
+something they made *together* — not another screen, not another toy boxed after a
+week.
+
 ## Summary
 
 **Legendary Forge** is a plug-and-play bookshelf diorama platform: a magnetic
@@ -35,6 +50,26 @@ market to hobbyists; V2 removes the coding barrier by relocating that complexity
 into manufacturable, warrantied hardware — a bigger market and a bigger capital
 bet, with the costs (NRE, COGS, RMA, certification) named honestly in the master
 plan.
+
+## Target users & the one-afternoon build
+
+**Primary buyer:** a parent (≈30–45) who wants meaningful hands-on time with a kid
+(≈6–12) — drawn to the nostalgia of model building but put off by the mess,
+duration, and skill floor of traditional kits.
+
+**The build session (target 2–4 hours):**
+
+1. Flat-pack frame assembly (~10–15 min, a screwdriver).
+2. Drop in the grid; power-up test.
+3. Snap Smart Boots and props anywhere → instant lighting.
+4. Plug in one or two motion modules.
+5. Pair Bluetooth audio, pick a soundtrack.
+6. Optional: add a backdrop card or a second theme layer.
+
+**Outcome:** a finished, living diorama on the shelf before dinner — zero loose
+wires, zero "it doesn't work and I don't know why." The educational layer is
+subtle: real magnets, circuits, motors, and cause-and-effect, with an optional
+"See How It Works" STEM pack for kids who want to go deeper.
 
 ## Architecture — five plug-and-play systems
 
@@ -83,6 +118,9 @@ micro-lip), and redundant power pins through a keyed cord.
   multipacks, Smart Boot refills, and an optional STEM "See How It Works" pack.
   The blades carry the margin; the Starter Kit gets a customer into the ecosystem.
 
+The current model is **à-la-carte blades**, not fixed bundle tiers; specific tier
+bundles and final price points are worked in the GTM notes, not fixed here.
+
 Launch is **platform-agnostic** — Street/Alley as the hero example, generic /
 affiliate-sourced figures at launch; licensed-character integration deferred.
 
@@ -102,6 +140,33 @@ plus the grid bench — gated on a binary **A1–A7** acceptance set (self-align
 ±3 mm, no-disconnect side-bump, no-flicker vibration, 200+ cycles, full-load
 no-brownout, reverse-proof, partial-engagement clean-fail). No tooling, PCB fab,
 or inventory until P1 passes and a demand signal appears.
+
+## Competitive differentiation
+
+Most "book nook" / bookshelf-diorama kits on the market today are **static wooden
+puzzles** — glue, hours of assembly, fixed once built, with basic battery-LED or
+copper-tape lighting. Beautiful, but non-reconfigurable and time-intensive.
+Legendary Forge wins on:
+
+- **True reconfigurability** — "snap anywhere" lighting + a modular grid.
+- **Zero wiring / zero code** — sealed, child-safe modules.
+- **One-afternoon completion** with the kid participating.
+- **An expandable motion + audio layer** a static kit can't touch.
+- **Razor-and-blades economics** that keep the platform alive and improving for
+  years.
+
+It competes more with book-nook kits and Snap Circuits / LEGO than with anything
+on a typical toy shelf — see the master plan's positioning section.
+
+## Open questions & future opportunities
+
+- Addressable per-boot LEDs (more magic, higher cost — possible V3).
+- Deeper audio↔motion sync vs. plain Bluetooth passthrough.
+- An optional companion app for custom patterns (post-launch; never required for
+  the core joy).
+- Larger / connectable diorama systems for advanced builders.
+- A physical-digital bridge to the Legendary Arena card game or other IP.
+- Repairability and a second-hand theme/marketplace.
 
 ## Canonical docs (private repo)
 
