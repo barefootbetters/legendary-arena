@@ -96,6 +96,10 @@ Cross-cutting governance, methodology, and readiness assessments.
   the plug-and-play diorama venture: architecture, Smart Hub, connector
   strategy, business model, and status; canonical deep docs stay in its
   own private repo for sellability.
+- [STEM Diorama Kit (SDK-1)](stem-diorama-kit.md) — Decoupled, shareable
+  educational build of the diorama using commodity parts (Arduino Nano,
+  magnets, micro servos); kept separate from the Forge connector IP, with
+  the firewall enforced in its spec.
 
 ## Tutorial
 
