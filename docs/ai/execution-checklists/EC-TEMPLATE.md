@@ -159,3 +159,34 @@ For each WP, extract:
   - `'encodeURIComponent'` in client-API `// why:` comment tripped the
     "exactly 1 line" defense gate (WP-102 → reworded to
     "percent-encoding the handle defends against...").
+- **STOP means HARD STOP (EC-321 review precedent).** When a `Before Starting`
+  precondition or a `Guardrails` item says "else STOP" / "STOP and investigate,"
+  it means: do NOT modify additional files, do NOT attempt a partial or
+  speculative fix. Either (1) fix the violated precondition explicitly and
+  re-verify, OR (2) abort and report the blocker. An EC author writing a STOP
+  clause should not leave the recovery posture (fix-forward vs. revert) ambiguous
+  — the executor's default on ambiguity is abort-and-report, never improvise.
+- **Scope lock is declared up front, not discovered after (EC-321 review
+  precedent).** `Before Starting` must enumerate the EXACT target file set (the
+  same list as `Files to Produce`). Any modification outside that list is a FAIL,
+  not a judgment call — surface it as a blocker before touching the file. This
+  catches accidental refactor-creep at edit time rather than at the post-run
+  `git diff --name-only` spot-check.
+- **Drift/guard tests must be non-vacuous AND cheat-proof (EC-321 review
+  precedent).** When an EC requires a guard test (a drift gate, a coverage
+  superset, a symmetry assertion), the EC MUST require: (a) a NEGATIVE assertion
+  proving the guard FAILS for a synthetic bad input (e.g., a phantom name absent
+  from the maps) so the check is not vacuous; and (b) explicit prohibitions on
+  cheat paths — no mocking of the asserted-over inputs, no mutation of those
+  inputs, no derived/filtered comparison that removes the very elements under
+  test. A guard test that can pass without guarding reality is a failed guard.
+- **Determinism gates are binary, but pin to script behavior — not a literal
+  output string (EC-321 review precedent + verified hazard).** When an EC gates a
+  determinism/artifact-freshness check (`sim:runtime-observed:check` and kin),
+  the pass condition is: the command **exits 0 and performs no regeneration or
+  diff** (the committed artifact stays byte-current). State it that way. Do NOT
+  assert an exact stdout literal: the EC-321 review proposed asserting the check
+  prints `"artifact is current"`, but the script actually prints
+  `OK: runtime-observed hollows artifact is current.` — a pinned substring would
+  have failed a passing run. Re-baselining to make a drift check pass is itself a
+  FAIL; investigate WHY the artifact changed before regenerating.
