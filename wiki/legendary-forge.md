@@ -111,6 +111,24 @@ plus the grid bench — gated on a binary **A1–A7** acceptance set (self-align
 no-brownout, reverse-proof, partial-engagement clean-fail). No tooling, PCB fab,
 or inventory until P1 passes and a demand signal appears.
 
+## Sibling project — STEM Diorama Kit (SDK-1)
+
+Running alongside the Forge venture is the **STEM Diorama Kit (SDK-1)** — a
+deliberately *decoupled, shareable* educational build that captures the spirit of
+the diorama (lighted, modular, snap-together shelf tiles) using **commodity parts
+only** (Arduino Nano, off-the-shelf magnets, JST/Dupont, micro servos), fabricable
+in a school makerspace in a session or two with everything visible and serviceable.
+
+It lives in its **own repo** on purpose, so it can be shared, handed to a builder,
+or open-sourced **without ever exposing the Forge connector spec or P1 build
+plan**. An IP firewall (`docs/sdk-1-spec.md` §1 and §9) forbids proprietary
+connector geometry, hidden or sub-±1 mm alignment, keyed/blind-mating interfaces,
+and any tile-to-tile auto-addressing — everything in SDK-1 stays off-the-shelf,
+traceable by eye, and hand-serviceable. Treat it as the educational counterpart,
+**not** a source of canonical Forge detail.
+
+Repo (private): <https://github.com/barefootbetters/stem-diorama-kit>
+
 ## Canonical docs (private repo)
 
 <https://github.com/barefootbetters/legendary-forge>
@@ -127,3 +145,4 @@ or inventory until P1 passes and a demand signal appears.
 
 - Marketing / waitlist: <https://www.legendary-arena.com/diorama>
 - Canonical docs (private): <https://github.com/barefootbetters/legendary-forge>
+- STEM Diorama Kit (SDK-1), shareable educational sibling (private): <https://github.com/barefootbetters/stem-diorama-kit>
