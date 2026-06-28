@@ -25931,7 +25931,7 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 ### D-24074 — Size-Changing Hero Class-Grant on Play (Per-Card Granted Classes + Effective-Class Rule)
 
-**Status:** Drafted 2026-06-25; **re-drafted 2026-06-28** against the canonical rule (the prior draft modelled a non-existent recruit discount — see Correction); not yet landed (reserved by WP-290 / EC-322). Flips to Active on execution.
+**Status:** **Active** (landed 2026-06-28 by WP-290 / EC-322, commit `396526f3`). Drafted 2026-06-25; **re-drafted 2026-06-28** against the canonical rule (the prior draft modelled a non-existent recruit discount — see Correction).
 
 **Correction.** The original D-24074 (drafted 2026-06-25) modelled Size-Changing as a *recruit-cost discount* (2 Recruit less per listed class played). That mechanic does not exist on the card. The canonical rulebook keyword (`data/metadata/keywords-full.json` key `sizechanging`, pdfPage 33) reads: *"This card's printed Attack is also its Victory Points. When you play this card, it has the [Class] class."* — a **class-grant on play** plus **Attack-as-VP**, never a discount. The discount reading was an invented mechanic (pattern-matched onto the patrol fight-cost modifier without reading the keyword text). This entry is rewritten to the printed rule; the recruit-cost design, `getSizeChangingRecruitDiscount`, `RECRUIT_COST_KEYWORDS`, and the effective-cost rule are withdrawn.
 

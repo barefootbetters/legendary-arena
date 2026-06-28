@@ -10,7 +10,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { executeHeroEffects, selectDefaultOptionalKoTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, FACE_DOWN_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
+import { executeHeroEffects, selectDefaultOptionalKoTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, FACE_DOWN_EXECUTED_KEYWORDS, CLASS_GRANT_KEYWORDS } from './heroEffects.execute.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import type { LegendaryGameState, PendingHeroChoice } from '../types.js';
 import type { HeroAbilityHook, HeroEffectDescriptor } from '../rules/heroAbility.types.js';
@@ -71,19 +71,24 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
   // translation. A keyword with none of the five fails here, so the reveal collapse
   // cannot silently drop an executable keyword AND the move-executed categories
   // cannot silently masquerade as a missing handler.
-  it('every MVP_KEYWORD is handled directly, via reveal translation, at recruit time, via a hand-action move, or via the face-down moves (D-24024 / D-24049 / D-24051 / D-24060)', () => {
+  it('every MVP_KEYWORD is handled directly, via reveal translation, at recruit time, via a hand-action move, via the face-down moves, or as a class-grant (D-24024 / D-24049 / D-24051 / D-24060 / D-24074)', () => {
     const recruitTimeExecuted = new Set<string>(RECRUIT_TIME_EXECUTED_KEYWORDS);
     const handActionExecuted = new Set<string>(HAND_ACTION_EXECUTED_KEYWORDS);
     const faceDownExecuted = new Set<string>(FACE_DOWN_EXECUTED_KEYWORDS);
+    // why: D-24074 — size-changing executes as a class-grant realized at class-read time
+    // (the heroClassMatch / distinctHeroClassesAtLeast reads consult cardSizeChangingClasses),
+    // so it has no handler / reveal translation / move executor — its own reachability category.
+    const classGrantExecuted = new Set<string>(CLASS_GRANT_KEYWORDS);
     for (const keyword of MVP_KEYWORDS) {
       const hasHandler = HERO_EFFECT_HANDLERS[keyword as HeroKeyword] !== undefined;
       const translates = revealRulesForLegacyKeyword(keyword as HeroKeyword, 1).length > 0;
       const executesAtRecruit = recruitTimeExecuted.has(keyword);
       const executesAtHandAction = handActionExecuted.has(keyword);
       const executesAtFaceDown = faceDownExecuted.has(keyword);
+      const executesAsClassGrant = classGrantExecuted.has(keyword);
       assert.ok(
-        hasHandler || translates || executesAtRecruit || executesAtHandAction || executesAtFaceDown,
-        `MVP keyword "${keyword}" must be handled directly, via reveal translation, at recruit time, via a hand-action move, or via the face-down moves`,
+        hasHandler || translates || executesAtRecruit || executesAtHandAction || executesAtFaceDown || executesAsClassGrant,
+        `MVP keyword "${keyword}" must be handled directly, via reveal translation, at recruit time, via a hand-action move, via the face-down moves, or as a class-grant`,
       );
     }
   });
@@ -3029,6 +3034,74 @@ describe('executeHeroEffects — Wall-Crawl onRecruit keyword at play time (WP-2
     assert.ok(MVP_KEYWORDS.has('wall-crawl'), 'wall-crawl ∈ MVP_KEYWORDS');
     assert.equal(HERO_EFFECT_HANDLERS['wall-crawl' as HeroKeyword], undefined, 'no play-time handler');
     assert.equal(revealRulesForLegacyKeyword('wall-crawl' as HeroKeyword, 1).length, 0, 'not reveal-translated');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-290 / D-24074 — Size-Changing class-grant keyword at play time
+//
+// Size-Changing fires at onPlay, but its effect is a class-grant realized at class-read
+// time (the heroClassMatch / distinctHeroClassesAtLeast reads consult cardSizeChangingClasses),
+// not an onPlay action. The play-time hook visit must be a benign, not-hollow no-op: the
+// auto-emitted { type: 'size-changing' } effect no-ops on its missing magnitude, and
+// MVP_KEYWORDS membership (via CLASS_GRANT_KEYWORDS) classifies the hook `applied`
+// (preventing a no-handler hollow regression). The real effect is exercised in
+// heroConditions.evaluate.test.ts (the class reads honoring the grant).
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects — Size-Changing class-grant keyword at play time (WP-290 / D-24074)', () => {
+  const mockCtx = makeMockCtx();
+
+  /** Reads the lazy-init diagnostics records (empty array when never written). */
+  function records(gameState: LegendaryGameState) {
+    return gameState.diagnostics?.hollowEffects ?? [];
+  }
+
+  /** A size-changing hook exactly as the parser emits it: onPlay + no-magnitude effect + the grant. */
+  function sizeChangingState() {
+    return makeTestState({
+      deck: ['deck-card'],
+      hand: ['other-card'],
+      inPlay: ['sc-hero'],
+      heroAbilityHooks: [
+        {
+          cardId: 'sc-hero' as string,
+          timing: 'onPlay',
+          keywords: ['size-changing'],
+          effects: [{ type: 'size-changing' }],
+          sizeChangingClasses: ['tech'],
+        },
+      ],
+    });
+  }
+
+  it('playing a Size-Changing Hero mutates no onPlay state (the no-magnitude effect no-ops)', () => {
+    const gameState = sizeChangingState();
+    executeHeroEffects(gameState, mockCtx, '0', 'sc-hero' as string);
+    assert.equal(gameState.turnEconomy.attack, 0, 'no attack granted at play time');
+    assert.equal(gameState.turnEconomy.recruit, 0, 'no recruit granted at play time');
+    assert.deepStrictEqual(gameState.playerZones['0'].deck, ['deck-card'], 'deck is unchanged');
+    assert.deepStrictEqual(gameState.playerZones['0'].hand, ['other-card'], 'hand is unchanged');
+  });
+
+  it('playing a Size-Changing Hero records NO hollow event (neither parse-unrecognized nor no-handler)', () => {
+    const gameState = sizeChangingState();
+    executeHeroEffects(gameState, mockCtx, '0', 'sc-hero' as string);
+    // why: D-24074 — the recognized keyword leaves no unresolvedMarkers (so no
+    // parse-unrecognized) and MVP_KEYWORDS membership (CLASS_GRANT_KEYWORDS) classifies the
+    // play-time-visited hook `applied` (so no no-handler) — clearing the live hollow that
+    // motivated WP-290 without trading it for a fresh no-handler one.
+    assert.equal(records(gameState).length, 0, 'no hollow recorded for the class-grant keyword');
+  });
+
+  it('size-changing is a member of MVP_KEYWORDS but has no handler / reveal translation', () => {
+    // why: D-24074 — membership marks it ledger-executable + keeps the play-time hook
+    // not-hollow; it must NOT gain a HERO_EFFECT_HANDLERS entry (the class reads are the
+    // executor), which would break the handler-key ↔ HANDLED_KEYWORDS bidirectional drift test.
+    assert.ok(MVP_KEYWORDS.has('size-changing'), 'size-changing ∈ MVP_KEYWORDS');
+    assert.equal(HANDLED_KEYWORDS.has('size-changing' as HeroKeyword), false, 'size-changing ∉ HANDLED_KEYWORDS');
+    assert.equal(HERO_EFFECT_HANDLERS['size-changing' as HeroKeyword], undefined, 'size-changing ∉ HERO_EFFECT_HANDLERS');
+    assert.equal(revealRulesForLegacyKeyword('size-changing' as HeroKeyword, 1).length, 0, 'not reveal-translated');
   });
 });
 

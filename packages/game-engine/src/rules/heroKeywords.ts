@@ -45,7 +45,8 @@ export type HeroKeyword =
   | 'conditional'
   | 'undercover' // why: D-24060 / WP-282 — "send a card face-down, play it later from face-down state"; executable via sendUndercover + playFromUndercover moves on onPlay trigger
   | 'victory-villain-attack' // why: D-24068 / WP-285 — "gain +attack equal to the printed attack of a villain in your victory pile"; parks a pending pick resolved by resolveVictoryPileCardPick
-  | 'draw-or-empowered'; // why: D-24069 / WP-286 — "Choose one: Draw a card, or you get Empowered by [class]"; parks a PendingDrawOrEmpowered resolved by resolveDrawOrEmpowered
+  | 'draw-or-empowered' // why: D-24069 / WP-286 — "Choose one: Draw a card, or you get Empowered by [class]"; parks a PendingDrawOrEmpowered resolved by resolveDrawOrEmpowered
+  | 'size-changing'; // why: D-24074 / WP-290 — printed "Size-Changing: [Class]" ("when you play this card, it has the [Class] class"); a class-grant realized at class-read time, no onPlay handler (the wall-crawl class)
 
 // why: canonical array for drift-detection. Must match HeroKeyword
 // union exactly. Drift-detection test in heroAbility.setup.test.ts
@@ -77,6 +78,7 @@ export const HERO_KEYWORDS: readonly HeroKeyword[] = [
   'conditional',
   'victory-villain-attack', // why: D-24068 / WP-285 — "gain +attack equal to the printed attack of a villain in your victory pile"; parks a pending pick resolved by resolveVictoryPileCardPick
   'draw-or-empowered', // why: D-24069 / WP-286 — "Choose one: Draw a card, or you get Empowered by [class]"; parks a PendingDrawOrEmpowered resolved by resolveDrawOrEmpowered
+  'size-changing', // why: D-24074 / WP-290 — printed "Size-Changing: [Class]"; a class-grant realized at class-read time, no onPlay handler (the wall-crawl class)
 ] as const;
 
 // ---------------------------------------------------------------------------

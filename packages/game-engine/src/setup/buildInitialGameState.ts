@@ -58,6 +58,7 @@ import {
 } from './buildCardDisplayData.js';
 import type { UICardDisplay } from '../ui/uiState.types.js';
 import type { CardStatEntry } from '../economy/economy.types.js';
+import type { HeroAbilityHook } from '../rules/heroAbility.types.js';
 import { executeSchemeSetup } from '../scheme/schemeSetup.execute.js';
 
 // why: Pile ext_id constants are re-exported from pilesInit.ts for backward
@@ -113,6 +114,38 @@ function buildStartingDeckCards(): CardExtId[] {
   }
 
   return cards;
+}
+
+/**
+ * Collapses per-hook Size-Changing grants into a card-keyed lookup for
+ * G.cardSizeChangingClasses.
+ *
+ * Only hooks carrying a non-empty sizeChangingClasses list contribute; a card with no
+ * Size-Changing grant gets no entry (the helper treats an absent key as []). Classes are
+ * deduplicated per card via a Set — a card that printed and granted the same class, or two
+ * Size-Changing lines naming the same class, collapses to one entry.
+ *
+ * @param hooks - The hero ability hooks built at setup.
+ * @returns Per-card granted-class lookup keyed by CardExtId.
+ */
+// why: D-24074 / WP-290 — the sibling-snapshot build for G.cardSizeChangingClasses,
+// mirroring how cardTraits/cardKeywords are resolved once at setup. for...of, no .reduce().
+function buildCardSizeChangingClasses(
+  hooks: HeroAbilityHook[],
+): Record<CardExtId, string[]> {
+  const grantedByCard: Record<CardExtId, string[]> = {};
+  for (const hook of hooks) {
+    if (hook.sizeChangingClasses === undefined || hook.sizeChangingClasses.length === 0) {
+      continue;
+    }
+    const existing = grantedByCard[hook.cardId];
+    const classSet = new Set<string>(existing ?? []);
+    for (const classSlug of hook.sizeChangingClasses) {
+      classSet.add(classSlug);
+    }
+    grantedByCard[hook.cardId] = [...classSet];
+  }
+  return grantedByCard;
 }
 
 /**
@@ -296,6 +329,16 @@ export function buildInitialGameState(
   // registry. Same sibling-snapshot pattern as cardStats/cardKeywords/cardDisplayData.
   const cardTraits = buildCardTraits(registry as unknown, config);
 
+  // why: D-24074 / WP-290 — hero ability hooks are hoisted to a local so the
+  // Size-Changing granted-class snapshot can be derived from them (the parser parked the
+  // grant on hook.sizeChangingClasses). Built once at setup, immutable during gameplay.
+  const heroAbilityHooks = buildHeroAbilityHooks(registry, config);
+
+  // why: D-24074 / WP-290 — collapse the per-hook Size-Changing grants into a card-keyed
+  // snapshot (sibling to cardTraits). The grant is an additive second class source read by
+  // the sizeChanging.logic.ts helper at class-read time; cardTraits is never mutated.
+  const cardSizeChangingClasses = buildCardSizeChangingClasses(heroAbilityHooks);
+
   // why: scheme setup runs after base construction, before first turn.
   // Instructions configure the board (counters, keywords, city state).
   // Separate from scheme twist execution (WP-024).
@@ -446,8 +489,9 @@ export function buildInitialGameState(
     turnEconomy: resetTurnEconomy(),
     // why: hero ability hooks built from registry at setup time — same
     // pattern as hookRegistry and cardStats. Immutable during gameplay.
-    // Execution deferred to WP-022+.
-    heroAbilityHooks: buildHeroAbilityHooks(registry, config),
+    // Execution deferred to WP-022+. Hoisted above so the Size-Changing
+    // granted-class snapshot can be derived from the same hooks (D-24074).
+    heroAbilityHooks,
     // why: villain/henchman ability hooks built from registry at setup — same
     // pattern as heroAbilityHooks. Immutable during gameplay; executed at the
     // Fight/Ambush fire sites (WP-185). Narrow test mocks → empty table.
@@ -483,6 +527,14 @@ export function buildInitialGameState(
     // the field is included only when scoringConfig was supplied; never written
     // as `activeScoringConfig: undefined` literally (D-6703).
     ...(scoringConfig !== undefined ? { activeScoringConfig: scoringConfig } : {}),
+    // why: D-24074 / WP-290 — conditional spread, same hash-stability discipline as
+    // G.diagnostics / activeScoringConfig above: include cardSizeChangingClasses ONLY when
+    // some selected card grants a class. hashGameState serializes the whole G, so an
+    // always-present empty `{}` would shift the finalStateHash of every game — including
+    // fixtures with no Size-Changing hero, which AC-10 forbids (a shape-only shift is not a
+    // grant-attributable class-condition change). Absent ≡ empty (getGrantedClasses returns
+    // [] either way), so games without a Size-Changing card stay byte-identical.
+    ...(Object.keys(cardSizeChangingClasses).length > 0 ? { cardSizeChangingClasses } : {}),
   };
 
   return executeSchemeSetup(baseState, schemeSetupInstructions);

@@ -15,6 +15,7 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { HeroCondition } from '../rules/heroAbility.types.js';
 import { getHooksForCard } from '../rules/heroAbility.types.js';
+import { cardHasClassWhenPlayed, getGrantedClasses } from './sizeChanging.logic.js';
 
 // ---------------------------------------------------------------------------
 // evaluateCondition — single condition evaluator
@@ -58,8 +59,8 @@ export function evaluateCondition(
         if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
           continue;
         }
-        const traitEntry = G.cardTraits[playedCardId as CardExtId];
-        if (traitEntry !== undefined && traitEntry.heroClass === condition.value) {
+        // why: D-24074 — an in-play Size-Changing card counts as each of its effective classes (printed plus granted), via the shared cardHasClassWhenPlayed helper
+        if (cardHasClassWhenPlayed(G, playedCardId as CardExtId, condition.value)) {
           return true;
         }
       }
@@ -142,6 +143,10 @@ export function evaluateCondition(
         const traitEntry = G.cardTraits[playedCardId as CardExtId];
         if (traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0) {
           distinctClasses.add(traitEntry.heroClass);
+        }
+        // why: D-24074 — an in-play Size-Changing card counts as each of its effective classes (printed plus granted), via the shared cardHasClassWhenPlayed helper
+        for (const grantedClass of getGrantedClasses(G, playedCardId as CardExtId)) {
+          distinctClasses.add(grantedClass);
         }
       }
 

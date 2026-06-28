@@ -789,6 +789,16 @@ export interface LegendaryGameState {
   /** Card trait lookup keyed by CardExtId. Built at setup, read-only at runtime. */
   cardTraits: Record<CardExtId, CardTraitEntry>;
 
+  // why: D-24074 / WP-290 — per-card Size-Changing granted Hero Classes ("when you
+  // play this card, it has the [Class] class"). A SECOND, static class source sibling
+  // to cardTraits.heroClass — NOT a mutation of it. A card in inPlay is treated as
+  // having class C iff C is its printed cardTraits[id].heroClass OR C ∈
+  // cardSizeChangingClasses[id]; the grant expires naturally when inPlay clears (no
+  // cleanup). Built once at setup from the parsed hooks; read-only at runtime via the
+  // sizeChanging.logic.ts helper. Additive optional: absent means no card grants a class.
+  /** Per-card Size-Changing granted Hero Classes. Built at setup, read-only at runtime. */
+  cardSizeChangingClasses?: Record<CardExtId, string[]>;
+
   // why: board keyword data resolved at setup time from registry so moves
   // never query registry at runtime — same setup-time resolution pattern as
   // G.cardStats and G.villainDeckCardTypes. No runtime registry access.

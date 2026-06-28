@@ -7,6 +7,22 @@
 
 ## Current State
 
+### WP-290 / EC-322 Executed — Size-Changing: Hero Class-Grant on Play (Game Engine; D-24074) (2026-06-28)
+
+**WP-290 done (Game Engine).** Implements the printed **Size-Changing** keyword's class-grant half — *"When you play this card, it has the [Class] class."* (`keywords-full.json` key `sizechanging`, pdfPage 33) — clearing the live `size-changing`/`parse-unrecognized` hollow on `antm/jocasta/holographic-image-inducer` (`gitSha 988ad2e`). This re-draft replaced the prior WP-290's fabricated *recruit-discount* design (no such mechanic exists on the card). Mirrors the WP-273 wall-crawl recognized-keyword-no-onPlay-handler pattern: the grant is a pure static second class source realized at class-read time, never a `cardTraits` mutation. **Attack-as-VP is out of scope** (no hero-deck VP scoring exists to attach it to — blocked follow-up).
+
+**What shipped:**
+- New `'size-changing'` keyword (`HERO_KEYWORDS` 22→23; both drift tests + the keyword-count parity test updated to 23) + `HeroAbilityHook.sizeChangingClasses?` + optional `G.cardSizeChangingClasses` (sibling snapshot to `cardTraits`).
+- Parser (`setup/heroAbility.setup.ts`): on a `[keyword:Size-Changing]` line the same-line `[hc:...]` tokens are extracted as the **granted-class list** (onto the hook), NOT `heroClassMatch` conditions, and emit no unresolved marker; `[hc:X]` on other lines stays a condition; a Size-Changing line with no `[hc]` grants nothing (recognized, no hollow). `buildInitialGameState` derives `G.cardSizeChangingClasses` via a **conditional-spread (omit-when-empty)** — same hash-stability discipline as `G.diagnostics`/`activeScoringConfig`, so games with no Size-Changing hero stay byte-identical (no sentinel re-pin needed).
+- New pure `hero/sizeChanging.logic.ts` (`getGrantedClasses` + `cardHasClassWhenPlayed`; effective class = printed ∪ granted) — the **single** effective-class source consulted by both inPlay class reads (`heroClassMatch` self-exclusive, `distinctHeroClassesAtLeast` self-inclusive); neither re-implements printed-vs-granted matching.
+- `'size-changing'` joins a new `CLASS_GRANT_KEYWORDS` set → `MVP_KEYWORDS` (no `HERO_EFFECT_HANDLERS` entry; handler count unchanged at 10).
+
+**Measured result.** Engine `build`/`tsc` **0**; `test` **1666 → 1687 / 0** (+21 new cases); `pnpm -r build` **0**. Coverage regenerated: hero-mechanic-ledger `size-changing` → **executable** (16 rows; `microscopic-size-changing` correctly stays unsupported/out-of-scope); runtime-observed sweep **size-changing hollow removed** (11 → 10 distinct mechanics, 79 → 77 obs; no new hollows); `sim:coverage --check` no regression; `ledger:heroes:check` + `sim:runtime-observed:check` green. Grant proven load-bearing (null-printed-class `yellowjacket`/`goliath`; printed≠granted `giant-ego`/`swarm-tactics`). Lands **D-24074** (Active). Two-commit topology: EC-322 impl (`396526f3`) + SPEC govern-close. Path-correction noted: the EC labelled the parser/drift test `setup/heroAbility.setup.test.ts`; it actually lives in `rules/heroAbility.setup.test.ts` (same filename, corrected directory; 13-file count unchanged).
+
+**`User-Visible Surface = play.legendary-arena.com`.** D-24026 live-verify **deferred to post-deploy**: play a Size-Changing Hero whose class (printed or granted) another in-hand Hero's ability checks for, and confirm that ability now sees the class (e.g. a `[hc:tech]`-gated effect fires after playing the Size-Changing `[hc:tech]` Holographic Image Inducer).
+
+---
+
 ### WP-291 / EC-323 Executed — Loadout Tab "Load LAGN" Import (Registry Viewer; D-24075) (2026-06-25)
 
 **WP-291 done (Registry Viewer — `cards.legendary-arena.com`; Lightweight Lane).** Closes the LAGN export/import asymmetry surfaced by an operator field report after WP-288: the Loadout tab could **export** a LAGN ("⬇ Download LAGN", WP-245) but the only importer ("📥 Load JSON") validates against the MATCH-SETUP schema, so a LAGN file (`lagn_version` / `setup` / `result`) was rejected with "field required" / "unknown field" errors. (WP-288's `## Assumes` had imprecisely claimed the tab "already imports LAGN / JSON files" — `onFileImport` only handles MATCH-SETUP documents.)

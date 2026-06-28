@@ -28,6 +28,7 @@ function makeTestState(overrides?: {
   inPlay?: string[];
   heroAbilityHooks?: HeroAbilityHook[];
   cardTraits?: Record<string, { heroClass: string | null; team: string | null }>;
+  cardSizeChangingClasses?: Record<string, string[]>;
 }): LegendaryGameState {
   return {
     matchConfiguration: {
@@ -79,6 +80,7 @@ function makeTestState(overrides?: {
     },
     cardStats: {},
     cardTraits: overrides?.cardTraits ?? {},
+    cardSizeChangingClasses: overrides?.cardSizeChangingClasses ?? {},
     mastermind: {
       id: 'test-mastermind',
       baseCardId: 'test-mastermind-base',
@@ -607,5 +609,132 @@ describe('evaluateCondition distinctHeroClassesAtLeast (WP-280)', () => {
     });
 
     assert.equal(result, false, 'should return false when no heroes in inPlay');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-290 / D-24074 — Size-Changing class-grant honored by the two class reads
+//
+// A card in inPlay counts as each of its EFFECTIVE classes (printed plus granted).
+// heroClassMatch (self-exclusive) and distinctHeroClassesAtLeast (self-inclusive) both
+// derive class membership from the sizeChanging.logic.ts helper; these tests pin the
+// grant behavior at both reads, including a null-printed (granted-only) card, a dual-class
+// card (printed ≠ granted), and the preserved self-exclusion / self-inclusion semantics.
+// ---------------------------------------------------------------------------
+
+describe('heroClassMatch honors the Size-Changing grant (WP-290 / D-24074)', () => {
+  it('a granted-only card (null printed class) satisfies another card\'s match for the granted class', () => {
+    // why: yellowjacket-style — null printed class, instinct granted only by Size-Changing.
+    const gameState = makeTestState({
+      inPlay: ['sc-granter', 'trigger'],
+      cardTraits: {
+        'sc-granter': { heroClass: null, team: null },
+        'trigger': { heroClass: null, team: null },
+      },
+      cardSizeChangingClasses: {
+        'sc-granter': ['instinct'],
+      },
+    });
+
+    const result = evaluateCondition(
+      gameState,
+      '0',
+      { type: 'heroClassMatch', value: 'instinct' },
+      'trigger',
+    );
+
+    assert.equal(result, true,
+      'a granted-only instinct card should satisfy another card\'s instinct match');
+  });
+
+  it('a dual-class card (printed strength + granted tech) satisfies a match for EITHER class', () => {
+    const gameState = makeTestState({
+      inPlay: ['giant-ego', 'trigger'],
+      cardTraits: {
+        'giant-ego': { heroClass: 'strength', team: null },
+        'trigger': { heroClass: null, team: null },
+      },
+      cardSizeChangingClasses: {
+        'giant-ego': ['tech'],
+      },
+    });
+
+    const matchesPrinted = evaluateCondition(
+      gameState, '0', { type: 'heroClassMatch', value: 'strength' }, 'trigger',
+    );
+    const matchesGranted = evaluateCondition(
+      gameState, '0', { type: 'heroClassMatch', value: 'tech' }, 'trigger',
+    );
+
+    assert.equal(matchesPrinted, true, 'dual-class card matches its printed class (strength)');
+    assert.equal(matchesGranted, true, 'dual-class card matches its granted class (tech)');
+  });
+
+  it('the triggering card\'s own granted class does not satisfy its own match (self-exclusion preserved)', () => {
+    const gameState = makeTestState({
+      inPlay: ['sc-self'],
+      cardTraits: {
+        'sc-self': { heroClass: null, team: null },
+      },
+      cardSizeChangingClasses: {
+        'sc-self': ['instinct'],
+      },
+    });
+
+    const result = evaluateCondition(
+      gameState,
+      '0',
+      { type: 'heroClassMatch', value: 'instinct' },
+      'sc-self',
+    );
+
+    assert.equal(result, false,
+      'the only in-play card is the triggering card — its own granted class is self-excluded');
+  });
+});
+
+describe('distinctHeroClassesAtLeast honors the Size-Changing grant (WP-290 / D-24074)', () => {
+  it('a single dual-class Size-Changing card contributes BOTH printed and granted classes', () => {
+    const gameState = makeTestState({
+      inPlay: ['giant-ego'],
+      cardTraits: {
+        'giant-ego': { heroClass: 'strength', team: null },
+      },
+      cardSizeChangingClasses: {
+        'giant-ego': ['tech'],
+      },
+    });
+
+    const reachesTwo = evaluateCondition(
+      gameState, '0', { type: 'distinctHeroClassesAtLeast', value: '2' },
+    );
+    const reachesThree = evaluateCondition(
+      gameState, '0', { type: 'distinctHeroClassesAtLeast', value: '3' },
+    );
+
+    assert.equal(reachesTwo, true,
+      'one card contributes 2 distinct effective classes (strength + tech), self-inclusive');
+    assert.equal(reachesThree, false,
+      'one dual-class card cannot reach 3 distinct classes');
+  });
+
+  it('a granted-only card (null printed class) still contributes its granted class to the count', () => {
+    const gameState = makeTestState({
+      inPlay: ['sc-granter', 'plain'],
+      cardTraits: {
+        'sc-granter': { heroClass: null, team: null },
+        'plain': { heroClass: 'covert', team: null },
+      },
+      cardSizeChangingClasses: {
+        'sc-granter': ['instinct'],
+      },
+    });
+
+    const result = evaluateCondition(
+      gameState, '0', { type: 'distinctHeroClassesAtLeast', value: '2' },
+    );
+
+    assert.equal(result, true,
+      'covert (printed) + instinct (granted-only) = 2 distinct effective classes');
   });
 });

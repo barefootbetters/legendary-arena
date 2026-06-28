@@ -70,6 +70,15 @@ export interface HeroAbilityHook {
   // provenance only — never affects execution. Additive optional: absent or empty
   // means "no composition resolved here" (legacy keywords + deferred markers yield neither).
   resolvedMarkers?: string[];
+  // why: D-24074 / WP-290 — the normalized Hero Classes this card GAINS when played
+  // (its printed "Size-Changing: [Class]" grant), parsed from the same-line `[hc:...]`
+  // tokens on a `[keyword:Size-Changing]` line. NOT a play-condition — these are an
+  // additive class source consulted at class-read time (heroClassMatch /
+  // distinctHeroClassesAtLeast), never written into G.cardTraits. buildInitialGameState
+  // collapses these per-card into G.cardSizeChangingClasses. Additive optional: absent
+  // or empty means "no granted class" (a Size-Changing line with no [hc:X], or any
+  // non-Size-Changing line).
+  sizeChangingClasses?: string[];
 }
 
 // ---------------------------------------------------------------------------
