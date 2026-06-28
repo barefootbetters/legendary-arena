@@ -111,6 +111,22 @@ export const HAND_ACTION_EXECUTED_KEYWORDS: readonly HeroKeyword[] = ['dodge'];
 // bidirectional test).
 export const FACE_DOWN_EXECUTED_KEYWORDS: readonly HeroKeyword[] = ['undercover'];
 
+// why: D-24074 — size-changing's effect is a class-grant realized at class-read time (no onPlay handler); membership keeps the play-time hook visit not-hollow (the wall-crawl pattern)
+// Size-Changing ("when you play this card, it has the [Class] class") has NO
+// HERO_EFFECT_HANDLERS entry and is NOT in HANDLED_KEYWORDS — like wall-crawl / dodge /
+// undercover. Its effect is realized by the class-condition reads (heroClassMatch /
+// distinctHeroClassesAtLeast) consulting cardSizeChangingClasses, not by an onPlay action.
+// It still joins MVP_KEYWORDS via this class-grant category for two load-bearing reasons:
+// (a) the hero mechanic ledger classifies an MVP_KEYWORDS member `executable`; (b)
+// classifyHeroEffectReason returns `applied` for it, so the onPlay hook that
+// executeHeroEffects visits at PLAY time classifies not-hollow instead of firing a
+// `no-handler` hollow — without this membership the now-recognized keyword would trade the
+// old parse-unrecognized hollow for a fresh no-handler one (a regression). Kept a SEPARATE
+// set from the recruit-/hand-/face-down-action categories (duplicate-first per §16.1 — they
+// execute at different sites); NOT added to HANDLED_KEYWORDS (that demands a handler and
+// would break the HERO_EFFECT_HANDLERS-keys ↔ HANDLED_KEYWORDS bidirectional test).
+export const CLASS_GRANT_KEYWORDS: readonly HeroKeyword[] = ['size-changing'];
+
 // why (WP-251 / D-24024; D-24049; D-24051; D-24060): MVP_KEYWORDS = HANDLED_KEYWORDS ∪ the
 // frozen-translated reveal keywords ∪ the recruit-time-executed keywords ∪ the
 // hand-action-executed keywords ∪ the face-down-action-executed keywords — the set of
@@ -126,6 +142,7 @@ export const MVP_KEYWORDS = new Set<string>([
   ...RECRUIT_TIME_EXECUTED_KEYWORDS,
   ...HAND_ACTION_EXECUTED_KEYWORDS,
   ...FACE_DOWN_EXECUTED_KEYWORDS,
+  ...CLASS_GRANT_KEYWORDS,
 ]);
 
 // why: D-24019 — the reward of an optional-ko-reward effect is dispatched to an

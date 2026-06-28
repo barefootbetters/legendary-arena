@@ -294,6 +294,13 @@ const KEYWORD_TIMING_DEFAULTS: Partial<Record<HeroKeyword, HeroAbilityTiming>> =
 // why: D-24055 — the rulebook value for Spectrum: ≥3 Hero classes.
 const SPECTRUM_CLASS_THRESHOLD = 3;
 
+// why: D-24074 / WP-290 — detects whether an ability line carries the Size-Changing
+// keyword. On such a line the same-line `[hc:...]` tokens are the GRANTED classes (the
+// card gains them when played), not `heroClassMatch` play-conditions — so Step 1a routes
+// them to the granted-class list instead of conditions. Non-global, stateless `.test`
+// (no lastIndex concern); case-insensitive to match the `[keyword:X]` lowercasing.
+const SIZE_CHANGING_MARKER_PATTERN = /\[keyword:size-changing\]/i;
+
 /**
  * Extracts structured hero ability metadata from a single ability text.
  *
@@ -313,11 +320,20 @@ function parseAbilityText(abilityText: string): {
   primitiveEffects: EffectNode[];
   unresolvedMarkers: string[];
   resolvedMarkers: string[];
+  sizeChangingClasses: string[];
   timing: HeroAbilityTiming;
 } {
   const keywords: HeroKeyword[] = [];
   const heroClassConditions: HeroCondition[] = [];
   const teamConditions: HeroCondition[] = [];
+  // why: D-24074 / WP-290 — the granted Hero Classes parsed from a Size-Changing line's
+  // same-line `[hc:...]` tokens (Step 1a). Empty on every non-Size-Changing line and on a
+  // Size-Changing line with no `[hc:X]` (recognized, no grant — graceful empty, no throw).
+  const sizeChangingClasses: string[] = [];
+  // why: D-24074 / WP-290 — when the line carries [keyword:Size-Changing], its [hc:...]
+  // tokens are the GRANTED classes, not heroClassMatch conditions. Computed once up front
+  // so Step 1a routes every same-line [hc:...] to the grant list (guardrail #4: extract ALL).
+  const lineHasSizeChanging = SIZE_CHANGING_MARKER_PATTERN.test(abilityText);
   const effects: HeroEffectDescriptor[] = [];
   // why: D-24031 — composition markers (Berserk) accumulate here as deep copies of their
   // registry AST, kept separate from `keywords`/`effects` (the open mechanic space).
@@ -341,10 +357,20 @@ function parseAbilityText(abilityText: string): {
   const heroClassRegex = new RegExp(HERO_CLASS_PATTERN.source, 'g');
   heroClassMatch = heroClassRegex.exec(abilityText);
   while (heroClassMatch !== null) {
-    heroClassConditions.push({
-      type: 'heroClassMatch',
-      value: normalizeTraitSlug(heroClassMatch[1]!),
-    });
+    const normalizedClass = normalizeTraitSlug(heroClassMatch[1]!);
+    if (lineHasSizeChanging) {
+      // why: D-24074 — on a Size-Changing line the [hc:...] tokens are the GRANTED classes
+      // (the card gains them on play), so route them to the grant list and emit NO
+      // heroClassMatch condition for them (extract ALL on this line — guardrail #4). The
+      // [keyword:Size-Changing] token itself is a recognized HeroKeyword (Step 2), so no
+      // unresolved marker is recorded either.
+      sizeChangingClasses.push(normalizedClass);
+    } else {
+      heroClassConditions.push({
+        type: 'heroClassMatch',
+        value: normalizedClass,
+      });
+    }
     heroClassMatch = heroClassRegex.exec(abilityText);
   }
 
@@ -781,6 +807,7 @@ function parseAbilityText(abilityText: string): {
     primitiveEffects,
     unresolvedMarkers,
     resolvedMarkers,
+    sizeChangingClasses,
     timing,
   };
 }
@@ -1442,6 +1469,14 @@ export function buildHeroAbilityHooks(
         // mechanic ledger reads this per card to classify composition markers by-hook.
         if (parsedAbility.resolvedMarkers.length > 0) {
           hook.resolvedMarkers = parsedAbility.resolvedMarkers;
+        }
+
+        // why: D-24074 / WP-290 — assign the granted-class list only when non-empty (same
+        // exactOptionalPropertyTypes conditional-construction pattern as the fields above).
+        // Absent means "no Size-Changing grant" — both non-Size-Changing lines and a
+        // Size-Changing line with no [hc:X] omit it; getGrantedClasses treats absent as [].
+        if (parsedAbility.sizeChangingClasses.length > 0) {
+          hook.sizeChangingClasses = parsedAbility.sizeChangingClasses;
         }
 
         hooks.push(hook);

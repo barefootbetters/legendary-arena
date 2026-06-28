@@ -52,12 +52,21 @@ describe('draw-or-empowered keyword (WP-286 / EC-318 / D-24069)', () => {
       'draw-or-empowered must be in HERO_KEYWORDS array',
     );
   });
+});
 
-  it('HERO_KEYWORDS array has exactly 22 entries after WP-286', () => {
+describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
+  it('is registered in HERO_KEYWORDS', () => {
+    assert.ok(
+      HERO_KEYWORDS.includes('size-changing'),
+      'size-changing must be in HERO_KEYWORDS array',
+    );
+  });
+
+  it('HERO_KEYWORDS array has exactly 23 entries after WP-290', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      22,
-      'HERO_KEYWORDS must have exactly 22 entries (21 post-WP-285 + draw-or-empowered)',
+      23,
+      'HERO_KEYWORDS must have exactly 23 entries (22 post-WP-286 + size-changing)',
     );
   });
 });

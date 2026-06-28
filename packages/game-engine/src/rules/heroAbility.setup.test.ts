@@ -233,7 +233,7 @@ describe('buildHeroAbilityHooks', () => {
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 22 canonical keyword values', () => {
+  it('contains exactly the 23 canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -257,12 +257,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'conditional',
       'victory-villain-attack', // why: D-24068 / WP-285 — victory-pile villain-pick mechanic
       'draw-or-empowered', // why: D-24069 / WP-286 — draw-or-empowered choose-one mechanic
+      'size-changing', // why: D-24074 / WP-290 — class-grant-on-play keyword
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      22,
-      'HERO_KEYWORDS must have exactly 22 entries',
+      23,
+      'HERO_KEYWORDS must have exactly 23 entries',
     );
 
     assert.deepStrictEqual(
@@ -1042,6 +1043,77 @@ describe('buildHeroAbilityHooks draw-or-empowered (WP-286 / D-24069)', () => {
       'the typo\'d prefix is not claimed by the draw-or-empowered pre-pass',
     );
     assert.ok(hook.primitiveEffects !== undefined, 'the typo\'d line falls through to the core empowered composition');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-290 — Size-Changing class-grant parsing (D-24074)
+//
+// On a `[keyword:Size-Changing]` line the same-line `[hc:...]` tokens are the GRANTED
+// classes the card gains when played (onto hook.sizeChangingClasses), NOT heroClassMatch
+// play-conditions, and the recognized keyword emits no unresolved marker. An `[hc:X]` on a
+// DIFFERENT ability line stays an ordinary condition; a Size-Changing line with no `[hc:X]`
+// parses to no grant (recognized, no hollow, no throw).
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — Size-Changing class-grant (WP-290 / D-24074)', () => {
+  /** Builds all hooks for a hero whose card carries the given ability line(s). */
+  function sizeChangingHooksFor(abilities: string[]) {
+    const registry = makeHeroRegistry('antm', 'size-changing-hero', [
+      { slug: 'size-changing-card', rarityLabel: 'Common 1', abilities },
+    ]);
+    const config: MatchSetupConfig = { ...createTestConfig(), heroDeckIds: ['antm/size-changing-hero'] };
+    return buildHeroAbilityHooks(registry, config);
+  }
+
+  it('AC-2: "[keyword:Size-Changing] [hc:tech]" → sizeChangingClasses [tech], no heroClassMatch condition, no unresolved marker', () => {
+    const hook = sizeChangingHooksFor(['[keyword:Size-Changing] [hc:tech]'])[0]!;
+    assert.deepStrictEqual(hook.sizeChangingClasses, ['tech'], 'tech is the granted class');
+    assert.ok((hook.keywords as string[]).includes('size-changing'), 'size-changing keyword is on the hook');
+    const conditions = hook.conditions ?? [];
+    assert.ok(
+      !conditions.some((condition) => condition.type === 'heroClassMatch'),
+      'the same-line [hc:tech] is the grant, NOT a heroClassMatch condition',
+    );
+    assert.ok(!(hook.keywords as string[]).includes('conditional'), 'no conditional keyword (the grant is not a condition)');
+    assert.ok(!(hook.unresolvedMarkers ?? []).includes('size-changing'), 'no unresolved marker for the recognized keyword');
+    assert.equal(hook.timing, 'onPlay', 'Size-Changing fires at onPlay (when you play this card)');
+  });
+
+  it('AC-2: extracts ALL same-line [hc:...] tokens (dual-class grant)', () => {
+    const hook = sizeChangingHooksFor(['[keyword:Size-Changing] [hc:strength] [hc:tech]'])[0]!;
+    assert.deepStrictEqual(hook.sizeChangingClasses, ['strength', 'tech'], 'both granted classes extracted in order');
+  });
+
+  it('AC-3 isolation: an [hc:X] on a DIFFERENT ability line stays an ordinary heroClassMatch condition', () => {
+    // why: holographic-image-inducer-shaped two-liner — line 1 grants tech (Size-Changing);
+    // line 2 is an ordinary class-gated draw whose [hc:strength] is a real condition.
+    const hooks = sizeChangingHooksFor([
+      '[keyword:Size-Changing] [hc:tech]',
+      '[hc:strength]: Draw two cards. [keyword:draw:2]',
+    ]);
+    const grantHook = hooks.find((hook) => (hook.keywords as string[]).includes('size-changing'))!;
+    const drawHook = hooks.find((hook) => (hook.keywords as string[]).includes('draw'))!;
+
+    assert.deepStrictEqual(grantHook.sizeChangingClasses, ['tech'], 'line 1 grants tech');
+    assert.equal(grantHook.conditions, undefined, 'the grant line carries no conditions');
+
+    assert.equal(drawHook.sizeChangingClasses, undefined, 'the draw line carries no grant');
+    assert.ok(
+      (drawHook.conditions ?? []).some(
+        (condition) => condition.type === 'heroClassMatch' && condition.value === 'strength',
+      ),
+      'line 2 [hc:strength] is an ordinary heroClassMatch condition',
+    );
+    // why: AC-4 — the second line still draws two cards (the real card behavior is preserved).
+    assert.deepStrictEqual(drawHook.effects, [{ type: 'draw', magnitude: 2 }], 'line 2 still draws 2');
+  });
+
+  it('AC-3 graceful empty: a "[keyword:Size-Changing]" line with no [hc:X] → no grant, recognized, no unresolved marker', () => {
+    const hook = sizeChangingHooksFor(['[keyword:Size-Changing] grants no class here.'])[0]!;
+    assert.ok((hook.keywords as string[]).includes('size-changing'), 'keyword still recognized');
+    assert.equal(hook.sizeChangingClasses, undefined, 'no grant assigned (empty list omitted)');
+    assert.ok(!(hook.unresolvedMarkers ?? []).includes('size-changing'), 'no unresolved marker, no hollow');
   });
 });
 

@@ -4,10 +4,10 @@
   "summary": {
     "totalRows": 628,
     "byStatus": {
-      "executable": 171,
+      "executable": 187,
       "deferred": 0,
       "condition": 5,
-      "unsupported": 405,
+      "unsupported": 389,
       "unmarked": 47
     },
     "distinctMechanics": 136
@@ -258,10 +258,10 @@
       "heroName": "Ant Army",
       "set": "amwp",
       "mechanic": "size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing"
     },
     {
       "extId": "amwp/ant-man",
@@ -298,10 +298,10 @@
       "heroName": "Ant-Man",
       "set": "amwp",
       "mechanic": "size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing"
     },
     {
       "extId": "amwp/cassie-lang",
@@ -318,10 +318,10 @@
       "heroName": "Cassie Lang",
       "set": "amwp",
       "mechanic": "size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing"
     },
     {
       "extId": "amwp/freedom-fighters",
@@ -548,10 +548,10 @@
       "heroName": "Ant-Man",
       "set": "antm",
       "mechanic": "size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing"
     },
     {
       "extId": "antm/black-knight",
@@ -598,10 +598,10 @@
       "heroName": "Jocasta",
       "set": "antm",
       "mechanic": "size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing"
     },
     {
       "extId": "antm/wasp",
@@ -628,10 +628,10 @@
       "heroName": "Wasp",
       "set": "antm",
       "mechanic": "size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing"
     },
     {
       "extId": "antm/wonder-man",
@@ -648,10 +648,10 @@
       "heroName": "Wonder Man",
       "set": "antm",
       "mechanic": "size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing"
     },
     {
       "extId": "asrd/beta-ray-bill",
@@ -1268,10 +1268,10 @@
       "heroName": "Gwenpool",
       "set": "chmp",
       "mechanic": "size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing"
     },
     {
       "extId": "chmp/gwenpool",
@@ -1318,10 +1318,10 @@
       "heroName": "Ms. Marvel",
       "set": "chmp",
       "mechanic": "size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing"
     },
     {
       "extId": "chmp/ms-marvel",
@@ -1358,10 +1358,10 @@
       "heroName": "Nova",
       "set": "chmp",
       "mechanic": "size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing"
     },
     {
       "extId": "chmp/nova",
@@ -1398,10 +1398,10 @@
       "heroName": "Totally Awesome Hulk",
       "set": "chmp",
       "mechanic": "size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing"
     },
     {
       "extId": "chmp/viv-vision",
@@ -1418,10 +1418,10 @@
       "heroName": "Viv Vision",
       "set": "chmp",
       "mechanic": "size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing"
     },
     {
       "extId": "chmp/viv-vision",
@@ -1888,10 +1888,10 @@
       "heroName": "Goliath",
       "set": "cvwr",
       "mechanic": "size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing"
     },
     {
       "extId": "cvwr/hercules",
@@ -1918,10 +1918,10 @@
       "heroName": "Hulkling",
       "set": "cvwr",
       "mechanic": "size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing"
     },
     {
       "extId": "cvwr/luke-cage",
@@ -1988,10 +1988,10 @@
       "heroName": "Stature",
       "set": "cvwr",
       "mechanic": "size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing"
     },
     {
       "extId": "cvwr/storm-black-panther",
@@ -2028,10 +2028,10 @@
       "heroName": "Vision",
       "set": "cvwr",
       "mechanic": "size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing"
     },
     {
       "extId": "cvwr/wiccan",
