@@ -36,6 +36,14 @@ into manufacturable, warrantied hardware — a bigger market and a bigger capita
 bet, with the costs (NRE, COGS, RMA, certification) named honestly in the master
 plan.
 
+## What it looks like assembled
+
+![Shelf-ready core display — an assembled high-tech sci-fi diorama room with blue LED lighting holding one to four 6-inch figures, annotated with external dimensions (14 × 10 × 12 in), a 6-inch figure scale reference, and front/side/top views](/legendary-forge/core-display-render.jpg)
+
+The shelf-ready **Core Display**: external footprint **14 × 10 × 12 in**, sized
+for a bookshelf and one to four 6-inch figures. The systems below are how it
+gets there.
+
 ## Architecture — five plug-and-play systems
 
 ![System architecture — the five plug-and-play systems and how they connect](/legendary-forge/system-architecture.png "width=50%")
