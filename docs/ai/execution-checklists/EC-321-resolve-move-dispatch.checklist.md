@@ -4,6 +4,7 @@
 **Source:** docs/ai/work-packets/WP-289-resolve-move-dispatch.md
 **Layer:** Game Engine (`packages/game-engine/src/simulation`)
 **Decisions:** D-24073 (sim MOVE_MAP must dispatch every SIMULATION_MOVE_NAMES move; missing = infinite within-turn loop)
+**Status:** ✅ Executed 2026-06-25 (PR #461 / squash `d1adb7fc`; branch commit `a318e18b`). Authoritative completion record lives in `EC_INDEX.md` (EC-321 = Done) + `WORK_INDEX.md` (WP-289 = Done). The unchecked `[ ]` boxes below are the original pre-execution contract, retained as-authored; they are NOT a live to-do list.
 
 ---
 

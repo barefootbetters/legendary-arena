@@ -1,6 +1,6 @@
 # WP-289 — Simulation Move-Dispatch Completeness for Interactive Resolve Moves
 
-**Status:** Ready to Execute
+**Status:** ✅ Done 2026-06-25 (PR #461 / squash `d1adb7fc`; EC-321 branch commit `a318e18b`). Authoritative record: `WORK_INDEX.md` WP-289 row + `EC_INDEX.md` EC-321 = Done. Engine `test` 1661 → 1666 / 0 (+5 drift cases); `sim:runtime-observed:check` byte-current; `finalStateHash` unchanged.
 **Layer:** Game Engine (`packages/game-engine/src/simulation`)
 **Depends on:** WP-286 ✅ (added `resolveDrawOrEmpowered` to the dispatch maps + `SIMULATION_MOVE_NAMES`), WP-285 ✅, WP-248 ✅, WP-242 ✅ (the resolve moves themselves)
 **EC:** EC-321
@@ -260,17 +260,17 @@ change, no determinism impact expected.
 
 ## Definition of Done
 
-- [ ] All 7 Acceptance Criteria pass
-- [ ] `pnpm --filter @legendary-arena/game-engine test` green (≥ baseline + drift cases)
-- [ ] `pnpm --filter @legendary-arena/game-engine exec tsc --noEmit` 0
-- [ ] `pnpm sim:runtime-observed:check` 0 (artifact byte-current); `finalStateHash` unchanged
-- [ ] `pnpm -r build` 0
-- [ ] `docs/ai/STATUS.md` updated with the WP-289 execution summary
-- [ ] `docs/ai/DECISIONS.md` — D-24073 flipped to Active
-- [ ] `docs/ai/work-packets/WORK_INDEX.md` — WP-289 checkbox flipped to `[x]`
-- [ ] `docs/ai/execution-checklists/EC_INDEX.md` — EC-321 flipped to Done
-- [ ] `docs/05-ROADMAP-MINDMAP.md` — WP-289 node added
-- [ ] No files outside `## Files Expected to Change` modified
-- [ ] **User-Visible Surface: none — infrastructure.** STATUS.md entry states "No
+- [x] All 7 Acceptance Criteria pass
+- [x] `pnpm --filter @legendary-arena/game-engine test` green (≥ baseline + drift cases) — 1661 → 1666 / 0
+- [x] `pnpm --filter @legendary-arena/game-engine exec tsc --noEmit` 0
+- [x] `pnpm sim:runtime-observed:check` 0 (artifact byte-current); `finalStateHash` unchanged
+- [x] `pnpm -r build` 0
+- [x] `docs/ai/STATUS.md` updated with the WP-289 execution summary
+- [x] `docs/ai/DECISIONS.md` — D-24073 landed
+- [x] `docs/ai/work-packets/WORK_INDEX.md` — WP-289 checkbox flipped to `[x]`
+- [x] `docs/ai/execution-checklists/EC_INDEX.md` — EC-321 flipped to Done
+- [x] `docs/05-ROADMAP-MINDMAP.md` — WP-289 node added
+- [x] No files outside `## Files Expected to Change` modified
+- [x] **User-Visible Surface: none — infrastructure.** STATUS.md entry states "No
       user-observable change — balance-simulation tooling only; closes the WP-286 Amendment-B
       systemic dispatch gap + adds a drift guard." D-24026 N/A (no live surface).
