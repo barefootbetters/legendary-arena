@@ -7,6 +7,24 @@
 
 ## Current State
 
+### WP-292 / EC-324 Executed — Villain Defeat-Requirement Gate (Game Engine + card-data overlay; D-24076) (2026-06-29)
+
+**WP-292 done (Game Engine + a surgical card-data overlay).** Enforces the printed villain restriction *"You can't defeat X unless you have a [class/team] Hero,"* which was shipping as **cosmetic card text** — an operator defeated **Blob** with an all-Avengers/Guardians board and no X-Men Hero (diagnostics `gitSha b108dc4`, match `FC6toc2rQQG`); the villain ledger confirmed `Blob = (unmarked)`. This is a fight **precondition** (checked before the fight resolves), architecturally distinct from the `onFight`/`onAmbush`/`onEscape` consequence hooks — there was no fight-precondition primitive in the engine at all.
+
+**What shipped:**
+- New `VillainDefeatRequirement { kind: 'team' | 'hero-class', value }` + the `VILLAIN_DEFEAT_REQUIREMENT_KINDS` drift array (`rules/villainAbility.types.ts`).
+- New marker grammar `[require-to-defeat:<kind>:<value>]` (`team` → `'team'`, `hc` → `'hero-class'`) parsed by `setup/villainDefeatRequirement.setup.ts` into per-instance entries (fanned via `villainCardInstanceExtIds`); unknown kind / empty value / no marker → no entry, no throw.
+- `G.villainDefeatRequirements` — immutable, built in `buildInitialGameState` via a **conditional-spread (omit-when-empty)**, so matches without a marked villain stay byte-identical (no `finalStateHash` shift).
+- Pure `moves/villainDefeatRequirement.logic.ts` (`getDefeatRequirement` + `playerMeetsDefeatRequirement`, scanning **hand ∪ inPlay only** — discard/deck excluded, operator decision) — the **single** gate authority.
+- `fightVillain` silent-return precondition gate after the attack-cost check, mirroring the Guard-block posture (no `G` mutation, no message, no event, no throw on block).
+- Data overlay `apply-defeat-requirement-markers.mjs` + curated `villain-defeat-requirements.json`: idempotent surgical append marking **Blob** (`core`/`brotherhood`, `team:x-men`), **Venom** (`core`/`spider-foes`, `hc:covert`), **Zombie Venom** (`ssw1`/`deadlands-the`, `hc:covert`); the cvwr Size-Changing "Venom" left **unmarked**.
+
+**Measured result.** Engine `build`/`tsc` **0**; `test` **1687 → 1710 / 0** (+23 new cases: type drift, parser, helper zone-scope + team-vs-class, the four gate cases); `pnpm -r build` **0**. `sim:runtime-observed:check` **byte-current** — no `finalStateHash` shift, no sentinel re-pin (the sweep does not fight these villains without a qualifying Hero). Data diff is surgical: 3 lines across `core.json` + `ssw1.json`; overlay re-run = zero-line diff. Lands **D-24076** (Active). Two-commit topology: EC-324 impl (`3e732c7f`) + SPEC govern-close.
+
+**`User-Visible Surface = play.legendary-arena.com`.** D-24026 live-verify **deferred to post-deploy**: in a match with Blob (or Venom / Zombie Venom) in the City and no qualifying Hero in hand/in-play, confirm the fight is blocked; add a qualifying Hero (X-Men for Blob, Covert for Venom) to hand or play and confirm it then succeeds.
+
+---
+
 ### WP-290 / EC-322 Executed — Size-Changing: Hero Class-Grant on Play (Game Engine; D-24074) (2026-06-28)
 
 **WP-290 done (Game Engine).** Implements the printed **Size-Changing** keyword's class-grant half — *"When you play this card, it has the [Class] class."* (`keywords-full.json` key `sizechanging`, pdfPage 33) — clearing the live `size-changing`/`parse-unrecognized` hollow on `antm/jocasta/holographic-image-inducer` (`gitSha 988ad2e`). This re-draft replaced the prior WP-290's fabricated *recruit-discount* design (no such mechanic exists on the card). Mirrors the WP-273 wall-crawl recognized-keyword-no-onPlay-handler pattern: the grant is a pure static second class source realized at class-read time, never a `cardTraits` mutation. **Attack-as-VP is out of scope** (no hero-deck VP scoring exists to attach it to — blocked follow-up).

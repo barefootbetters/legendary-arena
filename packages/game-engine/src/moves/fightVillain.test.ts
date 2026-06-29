@@ -29,6 +29,10 @@ import { initializeCity, initializeHq } from '../board/city.logic.js';
 function createMockGameState(options?: {
   city?: LegendaryGameState['city'];
   currentStage?: LegendaryGameState['currentStage'];
+  hand?: string[];
+  inPlay?: string[];
+  cardTraits?: LegendaryGameState['cardTraits'];
+  villainDefeatRequirements?: LegendaryGameState['villainDefeatRequirements'];
 }): LegendaryGameState {
   const config = {
     schemeId: 'test-scheme',
@@ -55,12 +59,16 @@ function createMockGameState(options?: {
     playerZones: {
       '0': {
         deck: [],
-        hand: [],
+        hand: (options?.hand ?? []) as LegendaryGameState['playerZones']['0']['hand'],
         discard: [],
-        inPlay: [],
+        inPlay: (options?.inPlay ?? []) as LegendaryGameState['playerZones']['0']['inPlay'],
         victory: [],
       },
     },
+    cardTraits: options?.cardTraits ?? {},
+    ...(options?.villainDefeatRequirements
+      ? { villainDefeatRequirements: options.villainDefeatRequirements }
+      : {}),
     piles: {
       bystanders: [],
       wounds: [],
@@ -296,6 +304,90 @@ describe('fightVillain', () => {
       moveContext.G.notableEvents.length,
       0,
       'stage-gated short-circuit must not push an event',
+    );
+  });
+});
+
+describe('fightVillain — defeat-requirement gate (WP-292 / D-24076)', () => {
+  const BLOB = 'core-villain-brotherhood-blob-01';
+  const TEAM_REQ = { kind: 'team', value: 'x-men' } as const;
+  const TRAITS = {
+    'core/cyclops/optic-blast#0': { heroClass: 'ranged', team: 'x-men' },
+    'starting-shield-agent': { heroClass: null, team: null },
+  } as unknown as LegendaryGameState['cardTraits'];
+
+  it('blocks the fight when the player holds no qualifying Hero (G unchanged)', () => {
+    const gameState = createMockGameState({
+      city: [BLOB, null, null, null, null],
+      hand: ['starting-shield-agent'],
+      cardTraits: TRAITS,
+      villainDefeatRequirements: { [BLOB]: TEAM_REQ },
+    });
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    assert.equal(moveContext.G.city[0], BLOB, 'villain must remain in the City');
+    assert.equal(
+      moveContext.G.playerZones['0']!.victory.length,
+      0,
+      'nothing moved to the victory pile',
+    );
+    assert.equal(moveContext.G.messages.length, 0, 'no message on a blocked fight');
+    assert.equal(moveContext.G.notableEvents.length, 0, 'no event on a blocked fight');
+  });
+
+  it('allows the fight when a qualifying Hero is in hand', () => {
+    const gameState = createMockGameState({
+      city: [BLOB, null, null, null, null],
+      hand: ['core/cyclops/optic-blast#0'],
+      cardTraits: TRAITS,
+      villainDefeatRequirements: { [BLOB]: TEAM_REQ },
+    });
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    assert.equal(moveContext.G.city[0], null, 'villain removed from the City');
+    assert.ok(
+      moveContext.G.playerZones['0']!.victory.includes(BLOB),
+      'villain moved to the victory pile',
+    );
+  });
+
+  it('allows the fight when a qualifying Hero is in play', () => {
+    const gameState = createMockGameState({
+      city: [BLOB, null, null, null, null],
+      inPlay: ['core/cyclops/optic-blast#0'],
+      cardTraits: TRAITS,
+      villainDefeatRequirements: { [BLOB]: TEAM_REQ },
+    });
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    assert.equal(moveContext.G.city[0], null, 'villain removed from the City');
+    assert.ok(
+      moveContext.G.playerZones['0']!.victory.includes(BLOB),
+      'villain moved to the victory pile',
+    );
+  });
+
+  it('does not gate a villain that carries no requirement (regression-free)', () => {
+    // why: the requirements table exists (Blob is marked) but the fought villain
+    // is unmarked — the gate must be a no-op for it.
+    const gameState = createMockGameState({
+      city: ['core-villain-skrulls-super-skrull-00', null, null, null, null],
+      hand: [],
+      cardTraits: TRAITS,
+      villainDefeatRequirements: { [BLOB]: TEAM_REQ },
+    });
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    assert.equal(moveContext.G.city[0], null, 'unmarked villain removed normally');
+    assert.ok(
+      moveContext.G.playerZones['0']!.victory.includes(
+        'core-villain-skrulls-super-skrull-00',
+      ),
+      'unmarked villain moved to the victory pile',
     );
   });
 });

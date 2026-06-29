@@ -174,10 +174,13 @@ export type {
   VillainAbilityHook,
   VillainAbilityTiming,
   VillainEffectKeyword,
+  VillainDefeatRequirement,
+  VillainDefeatRequirementKind,
 } from './rules/villainAbility.types.js';
 export {
   VILLAIN_ABILITY_TIMINGS,
   VILLAIN_EFFECT_KEYWORDS,
+  VILLAIN_DEFEAT_REQUIREMENT_KINDS,
 } from './rules/villainAbility.types.js';
 
 // why: WP-257 / D-24033 + D-24034 — hollow-effect detection contracts are
@@ -385,7 +388,10 @@ import type { HeroAbilityHook } from './rules/heroAbility.types.js';
 // why: D-24019 — PendingOptionalKoReward.rewardType is a value of the closed
 // HeroKeyword union (the reward dispatched on KO).
 import type { HeroKeyword } from './rules/heroKeywords.js';
-import type { VillainAbilityHook } from './rules/villainAbility.types.js';
+import type {
+  VillainAbilityHook,
+  VillainDefeatRequirement,
+} from './rules/villainAbility.types.js';
 import type { NotableGameEvent } from './events/notableEvents.types.js';
 // why: WP-257 / D-24034 — GameDiagnostics is the runtime-only hollow-effect
 // channel shape (plain JSON; never persisted, never gameplay input).
@@ -845,6 +851,16 @@ export interface LegendaryGameState {
   // villainEffects.execute.ts (WP-185).
   /** Villain/henchman ability hook declarations (data-only). */
   villainAbilityHooks: Readonly<VillainAbilityHook[]>;
+
+  // why: WP-292 / D-24076 — per-villain-instance defeat requirement ("You can't
+  // defeat X unless you have a [class/team] Hero"). A fight PRECONDITION read by
+  // the fightVillain gate, distinct from villainAbilityHooks (post-defeat
+  // consequences). Built once at setup from the [require-to-defeat:<kind>:<value>]
+  // marker, keyed by copy-suffixed instance ext_id, read-only at runtime. Additive
+  // optional + OMITTED ENTIRELY when no marked villain is in the match, so matches
+  // without these villains keep a byte-identical G shape (determinism).
+  /** Per-villain defeat requirements. Built at setup, read-only; absent when none. */
+  villainDefeatRequirements?: Record<CardExtId, VillainDefeatRequirement>;
 
   // why: WP-200 — append-only structured event log emitted at four fire
   // sites (fightVillain.ts, villainDeck.reveal.ts ambush branch,

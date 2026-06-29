@@ -234,6 +234,49 @@ export function descriptorToLegacyKeyword(
 }
 
 // ---------------------------------------------------------------------------
+// VillainDefeatRequirement (WP-292 / D-24076)
+// ---------------------------------------------------------------------------
+
+// why: D-24076 — a villain defeat-requirement is a fight PRECONDITION ("You
+// can't defeat X unless you have a [class/team] Hero"), architecturally distinct
+// from the onFight/onAmbush/onEscape consequence hooks above: it gates whether
+// the fight may resolve at all, rather than firing an effect after defeat. It is
+// sourced exclusively from the [require-to-defeat:<kind>:<value>] data marker
+// (WP-292), never from free text.
+
+/**
+ * Closed canonical union of villain defeat-requirement kinds.
+ *
+ * 'team' requires a Hero of a given team affiliation; 'hero-class' requires a
+ * Hero of a given class. The marker's `<kind>` token (`team` | `hc`) maps to
+ * these at parse time.
+ */
+export type VillainDefeatRequirementKind = 'team' | 'hero-class';
+
+// why: drift-detection array — must match VillainDefeatRequirementKind exactly
+// (villainAbility.types.test.ts asserts bidirectional parity). Adding a kind
+// requires updating both this array and the union together, plus a DECISIONS
+// entry. The marker tokens `team` / `hc` map to these two kinds respectively.
+/** All villain defeat-requirement kinds in canonical order. Single source of truth. */
+export const VILLAIN_DEFEAT_REQUIREMENT_KINDS: readonly VillainDefeatRequirementKind[] = [
+  'team',
+  'hero-class',
+] as const;
+
+/**
+ * The condition a player must satisfy to defeat a given villain.
+ *
+ * `value` is a normalized team slug (kind 'team', e.g. 'x-men') or hero-class
+ * slug (kind 'hero-class', e.g. 'covert'). Built once at setup from the
+ * [require-to-defeat:<kind>:<value>] marker and stored per villain-instance in
+ * G.villainDefeatRequirements; immutable during gameplay.
+ */
+export interface VillainDefeatRequirement {
+  kind: VillainDefeatRequirementKind;
+  value: string;
+}
+
+// ---------------------------------------------------------------------------
 // VillainAbilityHook — data-only descriptor
 // ---------------------------------------------------------------------------
 

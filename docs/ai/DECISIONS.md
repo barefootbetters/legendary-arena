@@ -25971,7 +25971,7 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 ### D-24076 — Villain Defeat-Requirement Gate ("You can't defeat X unless you have a [class/team] Hero")
 
-**Status:** **Drafted 2026-06-29; not yet landed** (reserved by WP-292 / EC-324, baseline `origin/main` @ `03f1d604`). Flips to **Active (post-execution)** when WP-292 executes. Engine + a surgical card-data marker overlay; no registry/server/contract change.
+**Status:** **Active** (landed 2026-06-29 by WP-292 / EC-324, impl commit `3e732c7f`; baseline `origin/main` @ `03f1d604`). Engine + a surgical card-data marker overlay; no registry/server/contract change.
 
 **Context.** Three printed villains carry a fight restriction — Blob (*"You can't defeat Blob unless you have an [team:x-men] Hero"*), Venom and Zombie Venom (*"…unless you have a [hc:covert] Hero"*) — that the engine never enforced. An operator defeated Blob with an all-Avengers/Guardians board and no X-Men Hero (diagnostics `gitSha b108dc4`, match `FC6toc2rQQG`, 2026-06-29); the villain-mechanic ledger confirms `Blob = (unmarked)`. The ability text was cosmetic: neither the card data nor the engine carried any defeat-requirement, and every existing villain effect is a *post-defeat consequence* fired on a timing hook (`VILLAIN_EFFECT_PRIMITIVES`) — there was no fight-**precondition** primitive anywhere in the engine.
 

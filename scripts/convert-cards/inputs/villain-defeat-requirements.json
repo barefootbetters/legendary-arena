@@ -1,0 +1,8 @@
+{
+  "_doc": "Curated villain defeat-requirement markers (WP-292 / D-24076). apply-defeat-requirement-markers.mjs appends a [require-to-defeat:<kind>:<value>] marker to the single ability line carrying the inline [<kind>:<value>] token on each named card. `kind` is the marker token: `team` or `hc` (hc → engine 'hero-class'). Pins exact set/group/card so look-alikes (e.g. the cvwr Size-Changing 'Venom') are never touched.",
+  "requirements": [
+    { "set": "core", "group": "brotherhood", "card": "blob", "kind": "team", "value": "x-men" },
+    { "set": "core", "group": "spider-foes", "card": "venom", "kind": "hc", "value": "covert" },
+    { "set": "ssw1", "group": "deadlands-the", "card": "zombie-venom", "kind": "hc", "value": "covert" }
+  ]
+}

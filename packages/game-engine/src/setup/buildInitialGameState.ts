@@ -46,6 +46,7 @@ import {
   isHeroAbilityRegistryReader,
 } from './heroAbility.setup.js';
 import { buildVillainAbilityHooks } from './villainAbility.setup.js';
+import { buildVillainDefeatRequirements } from './villainDefeatRequirement.setup.js';
 import { buildCardKeywords } from './buildCardKeywords.js';
 import { buildCardTraits } from './buildCardTraits.js';
 import {
@@ -339,6 +340,15 @@ export function buildInitialGameState(
   // the sizeChanging.logic.ts helper at class-read time; cardTraits is never mutated.
   const cardSizeChangingClasses = buildCardSizeChangingClasses(heroAbilityHooks);
 
+  // why: WP-292 / D-24076 — per-villain defeat requirements built from registry at
+  // setup, keyed by copy-indexed instance ext_id. A fight precondition read by the
+  // fightVillain gate; sibling-snapshot pattern, immutable during gameplay. Narrow
+  // test mocks → empty record (conditional-spread below keeps the G shape stable).
+  const villainDefeatRequirements = buildVillainDefeatRequirements(
+    registry as unknown,
+    config,
+  );
+
   // why: scheme setup runs after base construction, before first turn.
   // Instructions configure the board (counters, keywords, city state).
   // Separate from scheme twist execution (WP-024).
@@ -535,6 +545,12 @@ export function buildInitialGameState(
     // grant-attributable class-condition change). Absent ≡ empty (getGrantedClasses returns
     // [] either way), so games without a Size-Changing card stay byte-identical.
     ...(Object.keys(cardSizeChangingClasses).length > 0 ? { cardSizeChangingClasses } : {}),
+    // why: WP-292 / D-24076 — conditional spread, same hash-stability discipline as
+    // cardSizeChangingClasses above: include villainDefeatRequirements ONLY when a
+    // selected villain carries a [require-to-defeat:...] marker. Absent ≡ empty (the
+    // gate treats a missing entry as "no requirement"), so matches without Blob /
+    // Venom / Zombie Venom keep a byte-identical finalStateHash.
+    ...(Object.keys(villainDefeatRequirements).length > 0 ? { villainDefeatRequirements } : {}),
   };
 
   return executeSchemeSetup(baseState, schemeSetupInstructions);
