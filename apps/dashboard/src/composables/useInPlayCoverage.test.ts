@@ -185,14 +185,15 @@ test('useInPlayCoverage credits a fixed mechanic from the committed seed (dodge 
   assert.equal(view.percentResolved.value, 26.4);
 });
 
-test('useInPlayCoverage falls back to the bundled seed + ledger and reads 40.7% with dodge + undercover executable (WP-275 + WP-282)', () => {
-  // No injection: the real committed seed (140 obs) + the real hero ledger. Two of the seed's
-  // observed mechanics are now `executable`: dodge (37 obs, flipped by WP-275 / D-24051) and
-  // undercover (20 obs, flipped by WP-282's keyword integration), so they credit
-  // (37 + 20) / 140 = 57 / 140 = 40.7%. The remaining 12 observed mechanics (moonlight,
-  // conqueror, …) are still unsupported, so the worklist stays non-empty.
+test('useInPlayCoverage falls back to the bundled seed + ledger and reads 42.1% with dodge + undercover + size-changing executable (WP-275 + WP-282 + WP-290)', () => {
+  // No injection: the real committed seed (140 obs) + the real hero ledger. Three of the seed's
+  // observed mechanics are now `executable`: dodge (37 obs, flipped by WP-275 / D-24051),
+  // undercover (20 obs, flipped by WP-282's keyword integration), and size-changing (2 obs,
+  // flipped by WP-290 / D-24074), so they credit (37 + 20 + 2) / 140 = 59 / 140 = 42.1%. The
+  // remaining observed mechanics (moonlight, conqueror, …) are still unsupported, so the
+  // worklist stays non-empty.
   const view = useInPlayCoverage();
-  assert.equal(view.percentResolved.value, 40.7);
+  assert.equal(view.percentResolved.value, 42.1);
   assert.equal(view.totalObs.value, 140);
   assert.ok(view.remaining.value.length > 0);
 });
