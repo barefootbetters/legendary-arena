@@ -1355,7 +1355,7 @@
       "slug": "size-changing",
       "label": "Size Changing",
       "scope": "hero",
-      "source": "free-text",
+      "source": "keyword",
       "cardCount": 16,
       "cardIds": [
         "amwp/ant-army",
