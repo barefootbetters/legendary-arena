@@ -1878,7 +1878,7 @@
           "imageUrl": "https://images.legendary-arena.com/ssw1/ssw1-vi-deadlands-the-zombie-venom.webp",
           "abilities": [
             "Ambush: [keyword:Rise of The Living Dead]",
-            "You can't defeat Zombie Venom unless you have a [hc:covert] Hero.",
+            "You can't defeat Zombie Venom unless you have a [hc:covert] Hero. [require-to-defeat:hc:covert]",
             "Escape: Each player gains a Wound. [effect:gainWoundEachPlayer]"
           ],
           "copies": 1

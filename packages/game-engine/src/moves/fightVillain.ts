@@ -19,6 +19,10 @@ import { awardAttachedHeroes } from '../board/heroCapture.logic.js';
 import { getAvailableAttack, spendAttack } from '../economy/economy.logic.js';
 import { resolveFightCost } from '../economy/economy.resolve.js';
 import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic.js';
+import {
+  getDefeatRequirement,
+  playerMeetsDefeatRequirement,
+} from './villainDefeatRequirement.logic.js';
 import { executeVillainAbilities } from '../villain/villainEffects.execute.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
@@ -82,6 +86,19 @@ export function fightVillain(
   const requiredFightCost = baseFightCost + patrolModifier;
   const availableAttack = getAvailableAttack(G.turnEconomy);
   if (availableAttack < requiredFightCost) {
+    return;
+  }
+
+  // why: D-24076 — defeat-requirement precondition; a marked villain
+  // (Blob/Venom/Zombie Venom) can't be defeated unless the current player has a
+  // qualifying Hero in hand or in play. Silent return on block, mirroring the
+  // Guard-block gate above — no G mutation, no message, no event, no throw. The
+  // two helpers are the single authority for this test (no inline matching).
+  const defeatRequirement = getDefeatRequirement(G, cardId);
+  if (
+    defeatRequirement !== null &&
+    !playerMeetsDefeatRequirement(G, ctx.currentPlayer, defeatRequirement)
+  ) {
     return;
   }
 

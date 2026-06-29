@@ -14,6 +14,7 @@ import {
   VILLAIN_ABILITY_TIMINGS,
   VILLAIN_EFFECT_KEYWORDS,
   VILLAIN_EFFECT_PRIMITIVES,
+  VILLAIN_DEFEAT_REQUIREMENT_KINDS,
   LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR,
   descriptorToLegacyKeyword,
   getVillainHooksForCard,
@@ -23,6 +24,7 @@ import type {
   VillainAbilityTiming,
   VillainEffectKeyword,
   VillainEffectPrimitive,
+  VillainDefeatRequirementKind,
 } from './villainAbility.types.js';
 import type { CardExtId } from '../state/zones.types.js';
 
@@ -140,6 +142,47 @@ describe('VILLAIN_EFFECT_KEYWORDS drift-detection', () => {
       VILLAIN_EFFECT_KEYWORDS[6],
       'koHeroEachPlayerMag2',
       "'koHeroEachPlayerMag2' must be at position 6 (the appended slot for WP-202)",
+    );
+  });
+});
+
+describe('VILLAIN_DEFEAT_REQUIREMENT_KINDS drift-detection', () => {
+  // why: WP-292 / D-24076 — a canonical readonly array must match its union
+  // exactly (code-style §Drift Detection). A kind added to the union but not
+  // the array (or vice versa) would silently break defeat-requirement parsing /
+  // gating. The two kinds map from the marker tokens `team` / `hc`.
+  it('contains exactly the 2 canonical kinds in order', () => {
+    const expectedKinds: VillainDefeatRequirementKind[] = ['team', 'hero-class'];
+
+    assert.equal(
+      VILLAIN_DEFEAT_REQUIREMENT_KINDS.length,
+      2,
+      'VILLAIN_DEFEAT_REQUIREMENT_KINDS must have exactly 2 entries',
+    );
+
+    assert.deepStrictEqual(
+      [...VILLAIN_DEFEAT_REQUIREMENT_KINDS],
+      expectedKinds,
+      'VILLAIN_DEFEAT_REQUIREMENT_KINDS must match the canonical kinds in order',
+    );
+
+    const uniqueKinds = new Set(VILLAIN_DEFEAT_REQUIREMENT_KINDS);
+    assert.equal(
+      uniqueKinds.size,
+      VILLAIN_DEFEAT_REQUIREMENT_KINDS.length,
+      'VILLAIN_DEFEAT_REQUIREMENT_KINDS must have no duplicates',
+    );
+  });
+
+  // why: negative assertion — a phantom kind absent from the union must not be
+  // a member, so the drift guard cannot pass vacuously.
+  it('does not contain a phantom kind', () => {
+    assert.equal(
+      VILLAIN_DEFEAT_REQUIREMENT_KINDS.includes(
+        'color' as VillainDefeatRequirementKind,
+      ),
+      false,
+      "VILLAIN_DEFEAT_REQUIREMENT_KINDS must not include a phantom kind like 'color'",
     );
   });
 });
