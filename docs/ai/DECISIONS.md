@@ -25992,3 +25992,37 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 **Relates to.** WP-185 / WP-186 (the villain ability marker pipeline + `apply-effect-markers.mjs` + `villainCardInstanceExtIds` fan-out — the precedents this mirrors); WP-179 (`G.cardTraits` carrying `heroClass` + `team` — the ownership-read source); WP-191 (villain hooks keyed by copy-indexed instance ext_id); the Move Validation Contract in `.claude/rules/architecture.md` (the silent-return posture). WP-292 / EC-324 are the implementation.
 
 Protect this file.
+
+### D-24077 — Game-Signup Marketing Enqueue Is Fire-and-Forget / Fail-Open
+
+**Status:** **Drafted 2026-06-29; not yet landed** (reserved by WP-293 / EC-325, baseline `origin/main` @ `8b53b2a8`). Flips to **Active (post-execution)** when WP-293 executes. Server-only; no contract/registry/engine change.
+
+**Context.** WP-174 provisions a `legendary.players` row (with the Hanko-verified email) on first sign-in, but no path carries that email to Brevo — the `www` newsletter form (`functions/api/subscribe.js` → Brevo) is a separate surface that game signups never touch. Captured emails therefore sit in Postgres with no marketing reach (dashboard roadmap `au-email-capture`, not-started).
+
+**Decision.** On first-sign-in provisioning, the server best-effort adds the player's verified email to Brevo. The enqueue **NEVER throws, NEVER rejects, and NEVER alters the resolver's `Result`** — a Brevo outage, HTTP error, or missing config is swallowed (`console.warn`, full sentence) and provisioning returns its `accountId` unchanged. This mirrors the WP-105 badge-issuance fire-and-forget posture (D-10501): the authoritative record (the account) must not be held hostage to a derived side-effect (marketing). The call is awaited inside the fail-open wrapper (latency on first sign-in only — once per account, on the provision branch only; existing-account sign-ins never call it).
+
+Protect this file.
+
+### D-24078 — Reuse the Existing Newsletter List; Consent via Brevo Double-Opt-In
+
+**Status:** **Drafted 2026-06-29; not yet landed** (reserved by WP-293 / EC-325). Flips to **Active (post-execution)** when WP-293 executes.
+
+**Decision.** v1 adds game-signup emails to the **existing** Brevo newsletter list (`BREVO_LIST_ID`) with `updateEnabled: true` — **no** separate "players" list/segment and **no** `SIGNUP_SOURCE` (or any) contact attribute. Marketing consent is satisfied by Brevo's **list-level double-opt-in**: the player receives a confirmation email and only receives marketing after confirming — the same consent model the marketing pipeline already relies on (marketing-repo authority: `C:\www\legendary-arena-com\docs\brevo\email-automation.md`). A dedicated players list, the `SIGNUP_SOURCE` segmentation attribute, and welcome-drip logic are deferred follow-ups. **Rationale:** lowest-friction, no new Brevo dashboard object, reuses the verified sending domain + DOI already in place; segmentation can layer on later via the attribute the pipeline already plans. (Operator review point: same-list-vs-dedicated-list and double-opt-in-vs-explicit-checkbox were defaulted business-first per the CLAUDE.md commerce posture; revisit here if a different consent UX is wanted.)
+
+Protect this file.
+
+### D-24079 — Marketing Hook Attaches at the Resolver Orchestration Layer, Not the Pure Provisioning Helper
+
+**Status:** **Drafted 2026-06-29; not yet landed** (reserved by WP-293 / EC-325). Flips to **Active (post-execution)** when WP-293 executes.
+
+**Decision.** The marketing enqueue is invoked from `accountResolver.logic.ts` (the orchestration layer) immediately after `provisionPlayerAccount` returns ok — **not** inside `accountProvisioning.logic.ts`, which stays **byte-identical**. This mirrors how `competition.logic.ts` fires badge issuance after the authoritative submission record (D-10501): side-effects belong in the orchestrator, not the pure write helper. **Consequence:** the helper carries no `wasCreated` flag; a rare concurrent-first-sign-in double-add is acceptable because Brevo's `updateEnabled: true` makes a repeat add idempotent. `identity.*` / `accountLookup.logic.ts` / `sessionToken.logic.ts` also stay byte-identical (locked WP-052 / WP-112 contract surfaces).
+
+Protect this file.
+
+### D-24080 — Missing BREVO Config Is a No-Op, Not Production-Fatal
+
+**Status:** **Drafted 2026-06-29; not yet landed** (reserved by WP-293 / EC-325). Flips to **Active (post-execution)** when WP-293 executes.
+
+**Decision.** If `BREVO_API_KEY` or `BREVO_LIST_ID` is absent (or `BREVO_LIST_ID` is not a finite positive integer), `server.mjs` injects an `undefined` marketing dependency and the enqueue is a clean no-op, with a one-shot startup `console.warn` (mirroring `loadSweepSubmitToken`'s one-shot warning). It is explicitly **NOT production-fatal**: marketing capture is best-effort, so an unconfigured marketing integration must never refuse server startup or fail signup. This is a deliberate contrast with secrets like `SWEEP_SUBMIT_TOKEN` that ARE production-fatal when missing — marketing is non-load-bearing for correctness.
+
+Protect this file.
