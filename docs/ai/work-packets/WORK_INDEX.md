@@ -539,6 +539,21 @@ These packets ship the game and keep it running.
 - [x] WP-118 — HTTP API Surface Catalog (Architecture) — Done 2026-04-30
 - [x] WP-119 — Architecture Doc Hygiene — Done 2026-04-30
 
+### Backlog — Effect-Authoring / Size-Changing Follow-Ups (to be drafted)
+
+> Parked candidates, **not yet drafted** — no WP file, no reserved number, no
+> lint gate until drafting (the deferred-placeholder convention; numbers assigned
+> at draft time). Each is its own small WP later. Surfaced 2026-06-28 at the
+> Size-Changing class-grant WP's close. The Size-Changing items descend from
+> D-24074 §Scope note. **(Rows intentionally name no `WP-NNN` token so the
+> `roadmap-counts.mjs` ledger parser skips them — they are backlog, not WPs.)**
+
+- [ ] **(backlog — to be drafted)** Size-Changing: **Attack-as-Victory-Points** (the keyword's second printed effect). **BLOCKED** — the engine scores VP only from the victory pile by card type (`scoring/scoring.logic.ts`); there is no per-card VP field on `CardStatEntry` and no scoring of a player's own Hero cards, so "printed Attack is also its VP" has nothing to attach to until a **hero-deck VP-scoring subsystem** exists. Draft that subsystem (or confirm it) first. Source: D-24074 §Scope note.
+- [ ] **(backlog — to be drafted)** **Microscopic Size-Changing** (`[keyword:Microscopic Size-Changing]`, repeated `[hc:X]` icons) — a materially different keyword from plain Size-Changing (its `microscopic-size-changing` ledger rows stay `unsupported` after the class-grant WP, by design). Own keyword + parse path. Source: D-24074 §Scope note.
+- [ ] **(backlog — to be drafted)** **Villain / city-card Size-Changing** and the **divided-card two-sided form** — the class-grant on non-hero / two-sided cards. Source: D-24074 §Scope note.
+- [ ] **(backlog — to be drafted)** **UIState Size-Changing class display** — project the granted class into the arena-client trait display (cosmetic; class is not a gating affordance, so deferred from the class-grant WP). Client-only follow-up. Source: D-24074 §Scope note.
+- [ ] **(backlog — to be drafted)** **`reveal-multi-take` mechanic** — a new `unsupported` reveal-variant mechanic surfaced by `sim:coverage --check` at the Size-Changing WP's close (a *new-mechanic warning*, not a regression; unrelated to Size-Changing). Implement it as an effect-authoring grind target (likely a parameterized reveal variant via the collapsed-reveal grammar from the reveal-collapse WP). Source: Size-Changing execution session 2026-06-28.
+
 ---
 
 ## Pre-Planning System (Parallel-Safe with Phase 4+)
