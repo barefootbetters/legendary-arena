@@ -7,6 +7,24 @@
 
 ## Current State
 
+### WP-294 / EC-326 Executed — Separate the Message Log From the `finalStateHash` Oracle (Game Engine test-harness; D-24081) (2026-06-29)
+
+**No user-observable change — infrastructure only.** Payoff: the `finalStateHash`
+oracle (`hashGameState`) no longer double-counts `G.messages`, which already has a
+dedicated `messages` oracle layer in `runFixture`. So the upcoming observability
+log lines (WP-295) and the ongoing /coverage logging grind no longer churn the
+fixture hash — a log addition now touches only the dedicated `messages` oracle,
+never `finalStateHash`. `hashGameState` excludes the top-level `messages` field
+(explicit rest-destructure, D-24081); **`notableEvents` stays hashed** (no
+dedicated layer → the hash is its only guard); **`computeStateHash` /
+`replay.hash.ts` untouched** (locked D-0205; no stored constant; desync + PAR +
+run-vs-run uses unaffected). Added `hashGameState.test.ts` (message-invariance +
+non-vacuous state guard + notableEvents-still-hashed + key-order canonicality) and
+re-pinned the one stored constant (sentinel `finalStateHash` `ee37b1a1…` →
+`7bb990fc…`; `expected.messages` unchanged). Engine suite **1710 → 1714** (+4).
+No log line added in this packet (`coreMoves.impl.ts` / `heroEffects.execute.ts`
+byte-identical) — that is the dependent follow-on **WP-295**.
+
 ### WP-293 / EC-325 Executed — Game-Signup → Brevo Marketing List (Server-Side, Fire-and-Forget; D-24077..D-24080) (2026-06-29)
 
 **WP-293 done (Server layer).** Closes the auth-strategy gap: WP-174 captured each new player's Hanko-verified email in `legendary.players`, but no path carried it to Brevo (the `www` newsletter form → Brevo is a separate surface game signups never touch). On first-sign-in provisioning the server now best-effort adds that email to the **existing** Brevo newsletter list — **fire-and-forget, fail-open** (a Brevo outage / HTTP error / missing config is swallowed and provisioning is unaffected; D-24077, mirroring the badge-issuance hook D-10501).
