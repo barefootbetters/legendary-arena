@@ -7,7 +7,7 @@
 
 ## Current State
 
-### `www` Auth Surface Decision (D-24084, Active) — marketing WP-031 executed (nav links) + WP-298 drafted (avatar upload UI) (2026-06-30)
+### `www` Auth Surface Decision (D-24084, Active) — marketing WP-031 executed (nav links) + WP-298 executed (avatar upload UI now wired) (2026-06-30)
 
 Records **D-24084** (Active): `www.legendary-arena.com` stays a static marketing
 surface and does **not** own an authentication surface — all customer auth routes
@@ -27,18 +27,27 @@ ewiki had flagged as undecided.
   deferred. The marketing repo uses its own WP numbering and **no EC layer**, so
   this is its WP-031, not an engine-repo WP (01.0a Step 3 cross-repo rule); the
   engine repo carries only the decision (D-24084).
-- **WP-298 — Draft (engine repo, EC-329 drafted alongside):** owner profile
-  avatar **upload UI** — wires the already-shipped `POST /api/me/avatar` pipeline
-  (WP-106) into `MyProfilePage.vue`, which today only has an unusable free-text
-  avatar-URL field. Client-only; consumes the existing D-10601/D-10602 contract
-  (no server/D-entry change). Queued for a future execution session.
+- **WP-298 — EXECUTED (engine repo, EC-329):** owner profile avatar **upload UI**
+  now wired — `ownerProfileApi.ts` gains `uploadOwnerAvatar(authToken, file)`
+  (multipart `avatar` field, **no `Content-Type`** so the browser sets the
+  boundary, Bearer when token non-null, failure code read from `body.code` via an
+  upload-local parse, `{ ok:false, status:0, code:null }` on a thrown fetch) plus
+  the client-local `AVATAR_UPLOAD_ERROR_CODES` mirror (drift-tested) and the
+  `AvatarUploadApiResult` type; `MyProfilePage.vue` (`?route=me`) gains a
+  `<input type="file">` + "Upload avatar" control (disabled until a file is
+  selected and while an upload is in flight) with its own success/error lines that
+  sets `formAvatarUrl` to the returned avatar URL on success and maps each error
+  code to a full sentence. Client-only; consumes the existing D-10601/D-10602
+  contract (no server/contract/catalog/D-entry change). typecheck 0 /
+  arena-client test 618→624 (6 new) / build 0; 3 code/test files. **D-24026
+  live-verify pending post-deploy** on `play.legendary-arena.com`.
 
 **Reconciliation note:** most of the original "login for cart / scoreboard /
 avatar / change-password / LAGN upload" ask was found already shipped on
 `origin/main` (Hanko auth WP-099..WP-175; avatar pipeline WP-106 + host unify
 WP-296; LAGN import WP-291; email capture WP-293; passwordless = no
 change-password by design). The genuine gaps were the **decision** (now D-24084,
-executed via marketing WP-031) and the avatar **upload UI** (now WP-298, queued).
+executed via marketing WP-031) and the avatar **upload UI** (now WP-298, executed).
 **Marketing-repo hygiene flag:** the marketing site fails `hugo --minify` from a
 clean checkout — `themes/PaperMod/layouts/_partials/head.html` (and other theme
 partials) are **untracked** in its git, so the site only builds from the main
