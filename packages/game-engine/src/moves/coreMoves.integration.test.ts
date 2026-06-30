@@ -290,6 +290,10 @@ describe('playCard', () => {
 
     assert.deepEqual(gameState.playerZones['0']!.hand, ['card-y']);
     assert.deepEqual(gameState.playerZones['0']!.inPlay, ['card-x']);
+    // why: WP-295 / D-24082 — playing a card now emits an observability log
+    // line (G.messages -> UIState.log) so a played card is no longer silent.
+    assert.ok(gameState.messages.includes('Player 0 played card-x.'),
+      'playCard must append a "played" line to the game log.');
   });
 
   it('does not mutate G when cardId is not in hand', () => {

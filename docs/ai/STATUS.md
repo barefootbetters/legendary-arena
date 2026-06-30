@@ -7,6 +7,26 @@
 
 ## Current State
 
+### WP-295 / EC-327 Executed — Hero Play + Condition-Skip Observability Logging (Game Engine; D-24082) (2026-06-29)
+
+`playCard`/`applyCardPlay` now append `Player <id> played <ext-id>.` to
+`G.messages`, and the `executeHeroEffects` condition-failed branch appends
+`… ability did not activate — a play condition … was not met.` instead of a
+silent skip. Hero plays and synergy-suppressed (`[hc:X]:`) abilities are now
+observable in the game log (`UIState.log`) and diagnostics — closing the gap that
+made the X-Men diagnostic read as "most effects didn't trigger." Built on
+WP-294/D-24081: because `G.messages` is excluded from `finalStateHash`, these
+additions are byte-free on the hash — the sentinel `finalStateHash` is
+**unchanged** (`7bb990fc…`), only its `messages` + `snapshotPerTurn[].messages`
+re-pinned. D-24082 narrows the prior "condition-fail → no G mutation" invariant
+to "mutates nothing except one `G.messages` line" (pinned by the conditional
+test). Engine suite **1714 / 1714 / 0**; `hashGameState.ts` + `replay.hash.ts`
+byte-identical. **Live verification (surface = play.legendary-arena.com) deferred
+to post-deploy** — after deploy, a match log should show a "played" line and a
+class-gated "did not activate" line; test evidence stands until then. Per-effect
+amount logging, the Diamond Form over-fire, and hollow-prose card encoding are
+named follow-ups.
+
 ### WP-294 / EC-326 Executed — Separate the Message Log From the `finalStateHash` Oracle (Game Engine test-harness; D-24081) (2026-06-29)
 
 **No user-observable change — infrastructure only.** Payoff: the `finalStateHash`
