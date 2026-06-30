@@ -200,13 +200,19 @@ login surface** — confirming the play-vs-www split below.
 
 ## Open Questions
 
-- **Login on `www` is not yet captured in a Work Packet or DECISION.**
-  Whether the marketing site should gain its own sign-in surface, or
-  instead link/redirect to `play.legendary-arena.com/?route=login`, is
-  an open product question. This page only records the current state
-  (www has no sign-in surface); it does not make that decision — design
-  decisions belong in [DECISIONS.md](../docs/ai/DECISIONS.md) and a
-  future Work Packet.
+- **Login on `www` — RESOLVED by [D-24084](../docs/ai/DECISIONS.md) (2026-06-30).**
+  The marketing site does **not** gain its own sign-in surface; it stays
+  a static Hugo bundle and **links** to the existing Hanko sign-in on
+  `play` (`?route=login`) and profile (`?route=me`). Commerce needs no
+  `www`-owned login either (the shop checks out via Snipcart, WP-019; in-game
+  purchases via Stripe-on-Hanko). The link affordance is executed by the
+  **marketing repo's WP-031** (`C:\www\legendary-arena-com`) — two
+  `[[menu.main]]` entries in its `hugo.toml` — which completes the "Log In"
+  entry the marketing repo's WP-027 deferred. (The marketing site is
+  independently governed and uses no EC layer, so the execution is its WP-031,
+  not an engine-repo WP; the engine repo holds only the decision.) Product
+  guidance: account copy stays passwordless ("Manage sign-in methods", not
+  "change password"). No open auth-surface questions remain for `www`.
 
 ## References
 
