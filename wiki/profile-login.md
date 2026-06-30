@@ -18,7 +18,7 @@ source:
   - ../docs/ai/work-packets/WP-174-first-signin-auto-provisioning.md
   - ../docs/ai/work-packets/WP-175-arena-client-auth-nav.md
   - ../docs/ai/work-packets/WORK_INDEX.md
-last-reviewed: 2026-06-29
+last-reviewed: 2026-06-30
 ---
 
 # Profile Login
@@ -55,6 +55,64 @@ client UI:
 | Client sign-in UI | WP-160 | The actual login page on arena-client. |
 | API base URL | WP-161 | Makes client fetches target the API host, not the SPA origin. |
 | Auth-aware nav | WP-175 | "Sign in" / "My profile" / "Sign out" element in the header. |
+
+### Identity provider options (Google, Discord, Facebook)
+
+Hanko federates several upstream identity providers. Today the
+`auth_provider` enum recognises exactly three values —
+`'email' | 'google' | 'discord'` — with native email plus federated
+`ext:google` and `ext:discord` wired
+(`apps/server/src/auth/hanko/hankoVerifier.types.ts`,
+`HANKO_IDP_TO_AUTH_PROVIDER`). **Facebook is not in the enum and is not
+wired anywhere**; adding it is a governance change (the F-1
+replacement-safety gate guards the enum), not a dashboard toggle. The
+buttons a player actually sees are configured in the Hanko tenant
+dashboard, not in repo code.
+
+The trade-offs below are recorded for engineering reference. The
+authoritative decision (which providers ship, and any move to add
+Facebook) lives in [DECISIONS.md](../docs/ai/DECISIONS.md) and the
+grounded strategy brief
+[auth-and-file-management-strategy.md](../docs/ai/auth-and-file-management-strategy.md),
+not on this page.
+
+#### Google — *supported (wired)*
+
+| Pros | Cons |
+|------|------|
+| Near-universal account ownership — almost every player already has one; lowest sign-in friction. | Generic, not gaming-flavoured — no community hook back into a player network. |
+| Reliably returns a **verified email**, which directly feeds the marketing relationship (the captured email is written to `legendary.players.email` on first sign-in, WP-174). | Some privacy-conscious players avoid linking Google to game accounts. |
+| Mature, trusted OAuth; 2FA common; low support burden. | Returns minimal profile richness beyond name / email / avatar. |
+| Already federated through Hanko (`ext:google`). | — |
+
+#### Discord — *supported (wired)*
+
+| Pros | Cons |
+|------|------|
+| **Best audience fit** — gamers and tabletop communities live on Discord; signals "this is a game for people like you." | **Email scope is optional and must be requested.** If Discord returns no email, WP-174 provisioning is skipped and the user is hard-rejected with a 401 — there is no "add your email to finish" screen yet (see Edge Cases). This is the real operational catch. |
+| Opens the door to future community integration — server roles, presence, notifications, looking-for-game — a genuine retention lever. | Not universal: older / casual / lapsed players may not have a Discord account. |
+| Strong brand affinity with the target demographic. | Account-linking gap: a player who signs in with Discord and later with Google under the same email is rejected (`duplicate_email`), not linked. |
+| Already federated through Hanko (`ext:discord`). | — |
+
+#### Facebook — *not supported (not in the locked enum)*
+
+Recorded for completeness because it comes up; it is **not** an
+available provider and would require an architecture change plus a
+DECISION before it could ship.
+
+| Pros | Cons |
+|------|------|
+| Huge install base across broad and older demographics — widest raw reach if casual / lapsed players are the target. | Declining trust and engagement among younger gamers — off-brand for this audience. |
+| Returns email and a rich social graph; useful for social-invite virality. | Heavier privacy / permission baggage; users increasingly decline Facebook login. |
+| Familiar to non-gamer audiences. | Meta OAuth app review is onerous (business verification + periodic re-review) — real ongoing maintenance cost. |
+| — | **Not in the `auth_provider` enum** — net-new governance + engineering work, not a config toggle. |
+| — | Largely redundant: Google already covers the "universal verified-email login" job with less baggage. |
+
+**Net:** Google + Discord (both already wired) cover the two jobs that
+matter — universal low-friction email login (Google) and audience-fit
+community login (Discord). Facebook adds reach at the cost of trust,
+maintenance, and a governance change, and overlaps the job Google
+already does.
 
 ### Where the login UI lives
 
