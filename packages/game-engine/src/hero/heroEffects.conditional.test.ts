@@ -193,7 +193,7 @@ describe('executeHeroEffects — conditional execution (WP-023)', () => {
   // -------------------------------------------------------------------------
   // Test 4: condition evaluation does not mutate G
   // -------------------------------------------------------------------------
-  it('condition evaluation does not mutate G (deep equality check)', () => {
+  it('condition failure mutates nothing except an observability log line (WP-295)', () => {
     const gameState = makeTestState({
       inPlay: ['hero-x'],
       heroAbilityHooks: [
@@ -207,13 +207,26 @@ describe('executeHeroEffects — conditional execution (WP-023)', () => {
       ],
     });
 
-    const snapshot = JSON.parse(JSON.stringify(gameState));
+    // why: WP-295 / D-24082 — the condition-failed branch now appends ONE
+    // observability line to G.messages so a suppressed ability is no longer a
+    // silent skip. The semantic no-mutation invariant still holds for everything
+    // else, so compare with messages excluded to pin the exact mutation surface.
+    const messagesBefore = gameState.messages.length;
+    const snapshotWithoutMessages = JSON.parse(
+      JSON.stringify({ ...gameState, messages: [] }),
+    );
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    // why: condition fails so no effects execute — G should be identical
-    assert.deepEqual(gameState, snapshot,
-      'G must not be mutated when all conditions fail.');
+    const afterWithoutMessages = JSON.parse(
+      JSON.stringify({ ...gameState, messages: [] }),
+    );
+    assert.deepEqual(afterWithoutMessages, snapshotWithoutMessages,
+      'condition failure must not mutate any game state except G.messages.');
+    assert.equal(gameState.messages.length, messagesBefore + 1,
+      'condition failure must append exactly one observability log line.');
+    assert.match(gameState.messages[gameState.messages.length - 1]!, /did not activate/,
+      'the appended log line must explain the ability did not activate.');
   });
 
   // -------------------------------------------------------------------------

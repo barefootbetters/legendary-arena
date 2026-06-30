@@ -3,7 +3,10 @@
     "finalStateHash": "7bb990fc36f7d9d0c954a28022fa402b51b3cba05e55a844c07d85c1f8e253d0",
     "messages": [
       "Mastermind strike revealed — strike count incremented.",
-      "Mastermind strike revealed — strike count incremented."
+      "Player 0 played starting-shield-trooper.",
+      "Player 0 played starting-shield-agent.",
+      "Mastermind strike revealed — strike count incremented.",
+      "Player 1 played starting-shield-trooper."
     ],
     "outcome": {
       "counters": {
@@ -19,7 +22,9 @@
         },
         "matchId": "sentinel-core-doom-2p",
         "messages": [
-          "Mastermind strike revealed — strike count incremented."
+          "Mastermind strike revealed — strike count incremented.",
+          "Player 0 played starting-shield-trooper.",
+          "Player 0 played starting-shield-agent."
         ],
         "phase": "play",
         "players": [
@@ -51,7 +56,10 @@
         "matchId": "sentinel-core-doom-2p",
         "messages": [
           "Mastermind strike revealed — strike count incremented.",
-          "Mastermind strike revealed — strike count incremented."
+          "Player 0 played starting-shield-trooper.",
+          "Player 0 played starting-shield-agent.",
+          "Mastermind strike revealed — strike count incremented.",
+          "Player 1 played starting-shield-trooper."
         ],
         "phase": "play",
         "players": [

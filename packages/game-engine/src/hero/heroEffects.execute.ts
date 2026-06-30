@@ -297,8 +297,15 @@ export function executeHeroEffects(
     if (!evaluateAllConditions(G, playerID, hook.conditions, cardId)) {
       // why: WP-257 — a hook whose conditions failed reached a real (condition)
       // handler and intentionally did not execute — a `condition-failed` reachable
-      // outcome, NOT hollow. Skip detection entirely (no record), reproducing the
-      // existing `continue`.
+      // outcome, NOT hollow. No hollow-detection record is emitted (the WP-257
+      // detector channel is untouched by this branch).
+      // why: WP-295 / D-24082 — but DO surface a human-readable log line so a
+      // class/team-synergy gate that suppressed the ability is observable in the
+      // game log (G.messages -> UIState.log) instead of a silent skip — the
+      // exact "the effect did nothing" confusion from the live diagnostic.
+      G.messages.push(
+        `Player ${playerID}'s ${cardId} ability did not activate — a play condition (such as Hero class or team synergy) was not met.`,
+      );
       continue;
     }
 

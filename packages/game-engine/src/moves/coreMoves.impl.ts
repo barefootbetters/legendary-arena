@@ -145,6 +145,15 @@ export function applyCardPlay(
   const heroRecruit = cardStats ? cardStats.recruit : 0;
   G.turnEconomy = addResources(G.turnEconomy, heroAttack, heroRecruit);
 
+  // why: WP-295 / D-24082 — surface every hero card play in the game log
+  // (G.messages -> UIState.log). playCard was previously silent, so a played
+  // hero card and any effect it fired left no observable trace for diagnostics
+  // or the player's log panel. Ext-id form matches the existing
+  // "recruited <ext-id>" log lines. Emitted in the shared core so
+  // playFromUndercover is covered identically. Cheap now that WP-294 excluded
+  // G.messages from the finalStateHash oracle (D-24081).
+  G.messages.push(`Player ${playerID} played ${cardId}.`);
+
   // why: hero ability effects fire immediately after play, before any
   // fight/recruit actions. This preserves "play -> generate resources -> act."
   // Hero hook economy is additive to base card stats above (WP-022).
