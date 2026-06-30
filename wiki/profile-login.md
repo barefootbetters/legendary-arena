@@ -36,6 +36,10 @@ surface of its own.
 
 ## Mechanics
 
+![Auth stack and profile surface. Hanko issues an RS256 JWT to the WP-126 verifier; the server chain WP-099 to WP-112 to WP-126 to WP-131 to WP-174 provisions an account; the arena-client Pinia store holds the bearer token and feeds the WP-160 login UI, WP-161 API base URL, and WP-175 nav. Broker code is confined at two F-2 sites: the server apps/server/src/auth/hanko directory and the client hankoClient.ts.](/profile-login/auth-stack.svg "width=82%")
+
+*Top-to-bottom is build/dependency order; amber boxes are the two F-2 broker-confinement sites. Diagram source: [auth-stack.mmd](../ewiki/profile-login/auth-stack.mmd) — regenerate the render with `mmdc`.*
+
 Authentication is brokered through **Hanko**. The broker name is
 deliberately invisible at rest: the `auth_provider` enum stays
 `'email' | 'google' | 'discord'` and the literal string `'hanko'`

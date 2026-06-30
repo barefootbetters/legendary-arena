@@ -1,0 +1,36 @@
+%% Source-of-truth for ewiki/profile-login/auth-stack.svg
+%% The committed SVG is hand-rendered from this graph (no mmdc pass yet);
+%% regenerate the canonical render with:  mmdc -i auth-stack.mmd -o auth-stack.svg
+%% Gate labels: F-2 = broker-code confinement (sole import site).
+%%              F-1 = no-'hanko'-string replacement-safety on the auth_provider enum (not shown).
+flowchart TD
+  Hanko["Hanko Identity Provider<br/>external broker · RS256 JWT"]:::ext
+
+  subgraph Server["Server · apps/server — built in dependency order"]
+    direction TB
+    WP099["WP-099 · Broker selection<br/>Hanko chosen (governance only)"]
+    WP112["WP-112 · Session middleware<br/>broker-agnostic + SessionVerifier"]
+    WP126["WP-126 · Hanko session verifier<br/>F-2 confinement: apps/server/src/auth/hanko/"]:::conf
+    WP131["WP-131 · Production wiring<br/>verifier + account resolver at startup"]
+    WP174["WP-174 · First-sign-in auto-provisioning<br/>read-or-create account from JWT claims"]
+    WP099 --> WP112 --> WP126 --> WP131 --> WP174
+  end
+
+  subgraph Client["Client · arena-client (play.legendary-arena.com)"]
+    direction TB
+    Store["Pinia store · src/stores/auth.ts<br/>holds bearer token + accountId"]
+    Hc["hankoClient.ts<br/>F-2: only @teamhanko/* import"]:::conf
+    WP160["WP-160 · Login UI<br/>LoginPage.vue / MyProfilePage.vue"]
+    WP161["WP-161 · API base URL<br/>VITE_API_BASE_URL + buildApiUrl()"]
+    WP175["WP-175 · Auth-aware nav<br/>BrandHeader.vue"]
+    Hc -->|broker SDK| Store
+    Store -->|reads auth store| WP160
+    Store -->|reads auth store| WP161
+    Store -->|reads auth store| WP175
+  end
+
+  Hanko -->|JWT claims · RS256| WP126
+  WP174 -->|account: accountId + email| Store
+
+  classDef conf fill:#fff3cd,stroke:#b8860b,color:#1f2933;
+  classDef ext fill:#e3f2fd,stroke:#1565c0,color:#1f2933;

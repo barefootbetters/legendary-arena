@@ -1,0 +1,111 @@
+<svg viewBox="0 0 760 760" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
+  <defs>
+    <style>
+      .box{fill:#f8fafc;stroke:#cbd5e1;stroke-width:1.5}
+      .conf{fill:#fff3cd;stroke:#b8860b;stroke-width:1.5}
+      .ext{fill:#e3f2fd;stroke:#1565c0;stroke-width:1.5}
+      .t1{font-size:13px;font-weight:600;fill:#1f2933;text-anchor:middle}
+      .t2{font-size:10.5px;fill:#475569;text-anchor:middle}
+      .hdr{font-size:11.5px;font-weight:600;fill:#475569}
+      .el{font-size:10px;fill:#64748b;text-anchor:middle}
+      .els{font-size:10px;fill:#64748b}
+      .edge{fill:none;stroke:#94a3b8;stroke-width:1.6}
+      .div{stroke:#cbd5e1;stroke-width:1;stroke-dasharray:5 4}
+      .leg{font-size:11px;fill:#475569}
+    </style>
+    <marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="760" height="760" fill="#ffffff"/>
+
+  <!-- ===== SERVER SECTION ===== -->
+  <text class="hdr" x="200" y="98">Server · apps/server — built in dependency order  ↓</text>
+
+  <!-- Hanko (external) at top-left, feeds the verifier via an elbow -->
+  <rect class="ext" x="20" y="110" width="150" height="52" rx="7"/>
+  <text class="t1" x="95" y="132">Hanko Identity Provider</text>
+  <text class="t2" x="95" y="149">external broker · RS256 JWT</text>
+  <path class="edge" d="M95,162 L95,289 L198,289" marker-end="url(#a)"/>
+  <text class="els" x="104" y="232">JWT claims</text>
+  <text class="els" x="104" y="246">· RS256</text>
+
+  <!-- WP-099 -->
+  <rect class="box" x="200" y="110" width="320" height="54" rx="7"/>
+  <text class="t1" x="360" y="132">WP-099 · Broker selection</text>
+  <text class="t2" x="360" y="149">Hanko chosen (governance only)</text>
+  <path class="edge" d="M360,164 L360,186" marker-end="url(#a)"/>
+
+  <!-- WP-112 -->
+  <rect class="box" x="200" y="186" width="320" height="54" rx="7"/>
+  <text class="t1" x="360" y="208">WP-112 · Session middleware</text>
+  <text class="t2" x="360" y="225">broker-agnostic + SessionVerifier</text>
+  <path class="edge" d="M360,240 L360,262" marker-end="url(#a)"/>
+
+  <!-- WP-126 (confinement) -->
+  <rect class="conf" x="200" y="262" width="320" height="54" rx="7"/>
+  <text class="t1" x="360" y="284">WP-126 · Hanko session verifier</text>
+  <text class="t2" x="360" y="301">F-2 confinement: apps/server/src/auth/hanko/</text>
+  <path class="edge" d="M360,316 L360,338" marker-end="url(#a)"/>
+
+  <!-- WP-131 -->
+  <rect class="box" x="200" y="338" width="320" height="54" rx="7"/>
+  <text class="t1" x="360" y="360">WP-131 · Production wiring</text>
+  <text class="t2" x="360" y="377">verifier + account resolver at startup</text>
+  <path class="edge" d="M360,392 L360,414" marker-end="url(#a)"/>
+
+  <!-- WP-174 -->
+  <rect class="box" x="200" y="414" width="320" height="54" rx="7"/>
+  <text class="t1" x="360" y="436">WP-174 · First-sign-in auto-provisioning</text>
+  <text class="t2" x="360" y="453">read-or-create account from JWT claims</text>
+
+  <!-- ===== DIVIDER ===== -->
+  <line class="div" x1="24" y1="494" x2="736" y2="494"/>
+  <text class="hdr" x="24" y="513">Client · arena-client (play.legendary-arena.com)</text>
+
+  <!-- WP-174 -> Store -->
+  <path class="edge" d="M360,468 L334,524" marker-end="url(#a)"/>
+  <text class="el" x="470" y="500">account: accountId + email</text>
+
+  <!-- Pinia store -->
+  <rect class="box" x="210" y="524" width="240" height="54" rx="7"/>
+  <text class="t1" x="330" y="546">Pinia store · auth.ts</text>
+  <text class="t2" x="330" y="563">bearer token + accountId</text>
+
+  <!-- hankoClient (confinement) -> Store -->
+  <rect class="conf" x="500" y="524" width="210" height="54" rx="7"/>
+  <text class="t1" x="605" y="546">hankoClient.ts</text>
+  <text class="t2" x="605" y="563">F-2: only @teamhanko/* import</text>
+  <path class="edge" d="M500,551 L452,551" marker-end="url(#a)"/>
+  <text class="el" x="476" y="542">broker SDK</text>
+
+  <!-- Store -> bus -> three client-surface siblings -->
+  <text class="el" x="380" y="598">reads auth store · bearer token + accountId</text>
+  <path class="edge" d="M330,578 L330,606"/>
+  <path class="edge" d="M150,606 L610,606"/>
+  <path class="edge" d="M150,606 L150,640" marker-end="url(#a)"/>
+  <path class="edge" d="M380,606 L380,640" marker-end="url(#a)"/>
+  <path class="edge" d="M610,606 L610,640" marker-end="url(#a)"/>
+
+  <!-- WP-160 -->
+  <rect class="box" x="45" y="640" width="210" height="54" rx="7"/>
+  <text class="t1" x="150" y="662">WP-160 · Login UI</text>
+  <text class="t2" x="150" y="679">LoginPage / MyProfilePage</text>
+
+  <!-- WP-161 -->
+  <rect class="box" x="275" y="640" width="210" height="54" rx="7"/>
+  <text class="t1" x="380" y="662">WP-161 · API base URL</text>
+  <text class="t2" x="380" y="679">VITE_API_BASE_URL + buildApiUrl()</text>
+
+  <!-- WP-175 -->
+  <rect class="box" x="505" y="640" width="210" height="54" rx="7"/>
+  <text class="t1" x="610" y="662">WP-175 · Auth-aware nav</text>
+  <text class="t2" x="610" y="679">BrandHeader.vue</text>
+
+  <!-- ===== LEGEND ===== -->
+  <rect class="conf" x="150" y="714" width="16" height="12" rx="2"/>
+  <text class="leg" x="172" y="724">F-2 broker confinement (sole import site)</text>
+  <rect class="ext" x="470" y="714" width="16" height="12" rx="2"/>
+  <text class="leg" x="492" y="724">external identity provider</text>
+</svg>
