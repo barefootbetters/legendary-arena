@@ -59,7 +59,8 @@ Before writing a single line:
 - **Do NOT set a `Content-Type` header on the upload `fetch`.** Add a `// why:` comment: the browser must set `multipart/form-data; boundary=…` itself; a manual `Content-Type` breaks the multipart boundary and the server rejects it as `invalid_mime_type`.
 - Attach the session token the same way the existing wrappers do: `Authorization: Bearer ${authToken}` when `authToken !== null`, omitted otherwise.
 - The new wrapper returns a discriminated union (`{ ok: true; avatarUrl } | { ok: false; status; code }`) mirroring `OwnerProfileApiResult`'s shape; `code` is the client-local `AvatarUploadErrorCode` mirror or `null` on a network error / unmapped status.
-- The existing free-text `formAvatarUrl` field and `updateOwnerProfile` save flow stay — the upload control is **additive**. On a successful upload, set `formAvatarUrl` to the returned `avatarUrl` so the visible avatar reflects the new image.
+- The existing free-text `formAvatarUrl` field and `updateOwnerProfile` save flow stay — the upload control is **additive**. On a successful upload, set `formAvatarUrl` to the returned `avatarUrl` so the visible avatar reflects the new image. Treat `avatarUrl` as an opaque server-owned value — never derive, concatenate, interpolate, or reconstruct it client-side; the only post-upload source is the field returned by the endpoint.
+- The upload control consumes exactly the first selected `File` (no `multiple`); the handler returns without calling `uploadOwnerAvatar` when no file is selected; the "Upload avatar" button is disabled until a file is selected and while an upload is in flight (guard concurrent calls with an in-flight flag — no double-POST).
 - Error messages shown to the player are full sentences mapped from the code (e.g. `file_too_large` → "That image is larger than the 5 MB limit; choose a smaller file.").
 
 **Session protocol:**
@@ -74,16 +75,16 @@ Before writing a single line:
   - Build `const body = new FormData(); body.append('avatar', file);`
   - `fetch(buildApiUrl('/api/me/avatar'), { method: 'POST', headers: authToken === null ? {} : { Authorization: \`Bearer ${authToken}\` }, body })` — **no `Content-Type`** (`// why:` the browser sets the multipart boundary).
   - On `response.status === 200`: parse `{ avatarUrl }` and return `{ ok: true, avatarUrl }`.
-  - On non-200: reuse the existing `parseFailure` shape — return `{ ok: false, status, code }` where `code` is the body's `code` narrowed against the client-local `AVATAR_UPLOAD_ERROR_CODES` mirror, else `null`.
+  - On non-200: return `{ ok: false, status, code }` where `code` is read from **`body.code`** narrowed against the client-local `AVATAR_UPLOAD_ERROR_CODES` mirror, else `null`. **Do NOT reuse the sibling `parseFailure`** — it reads `body.error`, but this endpoint returns `{ code, message }`; reusing it would map every avatar error to `null`. Write an upload-local failure parse (or generalize the field) that reads `code`.
   - On a thrown fetch (network): return `{ ok: false, status: 0, code: null }`.
 - Add a client-local closed list `AVATAR_UPLOAD_ERROR_CODES` (mirror of the server union; `// why:` comment that it mirrors the server contract and a drift test guards it) + the `AvatarUploadApiResult` type.
 
 ### B) `MyProfilePage.vue` — file-upload control (additive)
 - In the avatar block of `<section class="profile-form">`, after the existing URL field, add:
-  - `<input type="file" accept="image/*" data-testid="my-profile-avatar-file">`
-  - an "Upload avatar" `<button data-testid="my-profile-avatar-upload">`
-  - an error line + a success line (mirroring the page's existing feedback style).
-- `onAvatarFileSelected` / `onUploadAvatar`: read the selected `File`, call `uploadOwnerAvatar(token, file)`; on `ok` set `formAvatarUrl` to `avatarUrl` and show the success line; on `!ok` map `code` → a full-sentence message. Never throws.
+  - `<input type="file" accept="image/*" data-testid="my-profile-avatar-file">` (single file — no `multiple`)
+  - an "Upload avatar" `<button data-testid="my-profile-avatar-upload">`, disabled until a file is selected and while an upload is in flight
+  - a dedicated upload error line + success line (the page's shared `errorBanner` is for profile load/save; do not overload it).
+- `onAvatarFileSelected` / `onUploadAvatar`: read the **first** selected `File` (return early if none), call `uploadOwnerAvatar(token, file)` guarded by an in-flight flag so concurrent calls cannot fire; on `ok` set `formAvatarUrl` to `avatarUrl`, show the success line, and clear any prior error line; on `!ok` map `code` → a full-sentence message and clear any prior success line. Never throws.
 
 ### C) Tests
 Add `node:test` coverage in `apps/arena-client/src/lib/api/ownerProfileApi.test.ts` (**new**):
@@ -91,7 +92,7 @@ Add `node:test` coverage in `apps/arena-client/src/lib/api/ownerProfileApi.test.
 - `400 { code: 'invalid_mime_type' }` and `400 { code: 'file_too_large' }` → `{ ok: false, status: 400, code }` with the code preserved.
 - `401 { code: 'unauthorized' }` → `{ ok: false, status: 401, code: 'unauthorized' }`.
 - A thrown fetch → `{ ok: false, status: 0, code: null }`.
-- Drift test: `AVATAR_UPLOAD_ERROR_CODES` contains exactly the 5 expected values (`// why:` failure means the client mirror drifted from the server union).
+- Drift test: `AVATAR_UPLOAD_ERROR_CODES` has exactly 5 entries, no duplicates, and set-equals the expected server union (order-independent) (`// why:` failure means the client mirror drifted from the server union).
 - No `boardgame.io` import; `node:test` + `node:assert` only.
 
 ---
@@ -114,7 +115,7 @@ Add `node:test` coverage in `apps/arena-client/src/lib/api/ownerProfileApi.test.
 - `apps/arena-client/src/pages/MyProfilePage.vue` — **modified** — additive file-input + "Upload avatar" control + handler.
 - Governance: `docs/ai/work-packets/WORK_INDEX.md` / `docs/ai/STATUS.md` (no new D-entry — the avatar contract is the pre-existing D-10601 / D-10602).
 
-**3 code/test files (1 modified + 1 new + 1 modified) + governance.** Lightweight-lane eligible. No other files may be modified.
+**3 code/test files (2 modified + 1 new) + governance.** Lightweight-lane eligible. No other files may be modified.
 
 ---
 
@@ -135,7 +136,7 @@ Add `node:test` coverage in `apps/arena-client/src/lib/api/ownerProfileApi.test.
 1. `ownerProfileApi.ts` exports `uploadOwnerAvatar(authToken, file)` that POSTs `multipart/form-data` (field `avatar`) to `buildApiUrl('/api/me/avatar')`, sets **no** `Content-Type`, and attaches `Authorization: Bearer ${authToken}` when the token is non-null (**AC-1**).
 2. On `200 { avatarUrl }` the wrapper returns `{ ok: true, avatarUrl }`; on a non-200 it returns `{ ok: false, status, code }` with the server `code` preserved when it is one of the 5 known codes, else `null`; on a thrown fetch it returns `{ ok: false, status: 0, code: null }` (**AC-2**).
 3. `AVATAR_UPLOAD_ERROR_CODES` (client mirror) contains exactly the 5 server codes; a drift test asserts it (**AC-3**).
-4. `MyProfilePage.vue` shows a `<input type="file">` (`data-testid="my-profile-avatar-file"`) + an "Upload avatar" button (`data-testid="my-profile-avatar-upload"`); a successful upload sets `formAvatarUrl` to the returned URL and shows a success line (**AC-4**).
+4. `MyProfilePage.vue` shows a `<input type="file">` (`data-testid="my-profile-avatar-file"`) + an "Upload avatar" button (`data-testid="my-profile-avatar-upload"`) that is disabled until a file is selected and while an upload is in flight; a successful upload sets `formAvatarUrl` to the returned URL, shows a success line, and clears any prior error line (and a failure clears any prior success line) (**AC-4**).
 5. An upload that returns `file_too_large` / `invalid_mime_type` shows a specific full-sentence message and leaves `formAvatarUrl` unchanged (**AC-5**).
 6. No cross-layer import (`apps/server` / `packages/*` runtime) and no `boardgame.io` import in `ownerProfileApi.ts`; the existing `fetchOwnerProfile` / `updateOwnerProfile` / `replaceOwnerLinks` wrappers are unchanged (**AC-6**).
 7. `pnpm --filter @legendary-arena/arena-client typecheck` 0; `test` 0 (prior count preserved + the new wrapper tests); `build` 0 (**AC-7**).
