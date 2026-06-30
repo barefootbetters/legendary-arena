@@ -113,7 +113,13 @@ async function buildThemeScenarioKeyMap() {
     return mapping;
   }
 
-  const themeFiles = entries.filter((name) => name.endsWith('.json'));
+  // why: index.json is the theme MANIFEST (an array of theme filenames),
+  // not a ThemeDefinition — exclude it so the loader does not validate it
+  // as a theme and emit a spurious "Expected object, received array" warning
+  // on every startup (the array fails the object-shaped theme schema).
+  const themeFiles = entries.filter(
+    (name) => name.endsWith('.json') && name !== 'index.json',
+  );
   let loaded = 0;
   let skipped = 0;
   for (const fileName of themeFiles) {
