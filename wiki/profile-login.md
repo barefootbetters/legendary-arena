@@ -22,6 +22,7 @@ source:
   - ../docs/ai/work-packets/WP-174-first-signin-auto-provisioning.md
   - ../docs/ai/work-packets/WP-175-arena-client-auth-nav.md
   - ../docs/ai/work-packets/WP-296-avatar-cdn-host-unification.md
+  - ../docs/ai/work-packets/WP-298-owner-profile-avatar-upload-ui.md
   - ../docs/ai/work-packets/WORK_INDEX.md
 last-reviewed: 2026-06-30
 ---
@@ -153,7 +154,7 @@ Like the login screen, none of it lives in the marketing repo:
 | Owner profile + edit | WP-104 | `?route=me` → `MyProfilePage.vue` | The signed-in player's own editable profile. Migration `009_create_player_profiles_and_links.sql` creates `legendary.player_profiles` + `legendary.player_links`; `PATCH /api/me/profile` is the edit path. |
 | Team affiliation | WP-109 | both profile views | Profile-level cooperative cohorts; extends `PublicProfileView` (4→5 keys) and `OwnerProfileView` (7→8 keys). |
 | Badges | WP-105 | both profile views | Tier-1 gameplay badges (migration 013); fire-and-forget issuance in the competition pipeline. |
-| Avatar | WP-106 — **host unified by [WP-296](../docs/ai/work-packets/WP-296-avatar-cdn-host-unification.md)** | owner profile | `POST /api/me/avatar` upload pipeline. Avatars are served from `https://images.legendary-arena.com/avatars/{accountId}.webp` — the **same** Cloudflare custom domain + `legendary-images` R2 bucket as card images, unified under **D-24083** (WP-296, 2026-06-30). The legacy `images.barefootbetters.com` avatar host is retired; `AVATAR_CDN_BASE`, the closed-origin `validateAvatarUrl` allowlist, and existing `avatar_url` rows (migration 021) all moved. See [R2 Image Naming Convention](r2-image-naming-convention.md). |
+| Avatar | WP-106 (pipeline) + **[WP-298](../docs/ai/work-packets/WP-298-owner-profile-avatar-upload-ui.md)** (upload UI) — host unified by **[WP-296](../docs/ai/work-packets/WP-296-avatar-cdn-host-unification.md)** | owner profile | `POST /api/me/avatar` upload pipeline. Avatars are served from `https://images.legendary-arena.com/avatars/{accountId}.webp` — the **same** Cloudflare custom domain + `legendary-images` R2 bucket as card images, unified under **D-24083** (WP-296, 2026-06-30). The legacy `images.barefootbetters.com` avatar host is retired; `AVATAR_CDN_BASE`, the closed-origin `validateAvatarUrl` allowlist, and existing `avatar_url` rows (migration 021) all moved. **WP-298 (2026-06-30)** wires the pipeline into the client: `MyProfilePage.vue` (`?route=me`) gained a `<input type="file">` + "Upload avatar" control that calls a new `uploadOwnerAvatar(authToken, file)` wrapper in `ownerProfileApi.ts` (multipart field `avatar`) and updates the displayed avatar on success. Before WP-298 the page exposed **only** a free-text avatar-URL field that was effectively unusable, because the closed-origin allowlist accepts only the `images.legendary-arena.com/avatars/` URLs this endpoint produces — a player had no way to generate one. The free-text field is retained alongside the uploader; the server still owns resize → `{accountId}.webp` (D-10601). See [R2 Image Naming Convention](r2-image-naming-convention.md). |
 | Billing & funding history | WP-108 | `BillingSection` in `MyProfilePage.vue` | Benefits / purchase history / community funding panels; `GET /api/me/billing/history`. |
 | Integrity / anti-cheat | WP-107 | admin-only | `/api/admin/players/:handle/` suspend / integrity / unsuspend endpoints over profiles. |
 
@@ -197,6 +198,17 @@ login surface** — confirming the play-vs-www split below.
   `"My account"` until the server `/api/me/profile` response was
   extended with identity fields; verify the current response shape
   before relying on the displayed name.
+- **Avatar upload has two non-obvious contract catches** (WP-298). First,
+  the upload `fetch` must **not** set a `Content-Type` header — the browser
+  sets `multipart/form-data; boundary=…` itself, and a manual `Content-Type`
+  drops the boundary so the server rejects the body as `invalid_mime_type`.
+  Second, the avatar endpoint's failure body is `{ code, message }`, **not**
+  the `{ error }` shape the sibling `/api/me/profile` endpoints use; the
+  client reads `body.code`, and the client-local `AVATAR_UPLOAD_ERROR_CODES`
+  mirror (`invalid_mime_type` / `file_too_large` / `rate_limited` /
+  `upload_failed` / `unauthorized`) is drift-guarded by a test against the
+  server union. Reusing the profile endpoints' parser here would silently map
+  every avatar error to `null`.
 
 ## Open Questions
 
@@ -227,6 +239,9 @@ login surface** — confirming the play-vs-www split below.
   — owner profile + edit; migration 009.
 - [WP-296 — Avatar CDN Host Unification](../docs/ai/work-packets/WP-296-avatar-cdn-host-unification.md)
   — avatars moved to `images.legendary-arena.com` (D-24083).
+- [WP-298 — Owner Profile Avatar Upload UI](../docs/ai/work-packets/WP-298-owner-profile-avatar-upload-ui.md)
+  — file-upload control wiring the `POST /api/me/avatar` pipeline into
+  `MyProfilePage.vue` (consumes D-10601 / D-10602 / D-24083; no new D-entry).
 - [WP-159 — Admin Session Gate](../docs/ai/work-packets/WP-159-admin-session-gate.md)
 - [WORK_INDEX.md](../docs/ai/work-packets/WORK_INDEX.md) — Auth Stack and
   Profile Surface dependency trees.
