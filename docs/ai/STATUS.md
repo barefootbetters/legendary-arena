@@ -21,10 +21,20 @@ additions are byte-free on the hash — the sentinel `finalStateHash` is
 re-pinned. D-24082 narrows the prior "condition-fail → no G mutation" invariant
 to "mutates nothing except one `G.messages` line" (pinned by the conditional
 test). Engine suite **1714 / 1714 / 0**; `hashGameState.ts` + `replay.hash.ts`
-byte-identical. **Live verification (surface = play.legendary-arena.com) deferred
-to post-deploy** — after deploy, a match log should show a "played" line and a
-class-gated "did not activate" line; test evidence stands until then. Per-effect
-amount logging, the Diamond Form over-fire, and hollow-prose card encoding are
+byte-identical. **Live verification (surface = play.legendary-arena.com) ✅ CONFIRMED
+2026-06-30** — a real match diagnostic on the deployed build (`gitSha 885b773`,
+match `Kbx7U9CdN4E`, heroes-win 53 VP) shows the logging live: per-play
+`Player 0 played <ext-id>.` lines throughout, plus 18 `… ability did not activate —
+a play condition (such as Hero class or team synergy) was not met` lines on the
+class/team-gated cards (Copy Powers, Keen Senses, Energy Drain, Psychic Link,
+Borrowed Brawn), and those same gated cards firing (no skip line) on turns when the
+synergy was present (e.g. Keen Senses after an Instinct card was in play) — proving
+the gate logs both ways. (Observability scope note: the skip log surfaces
+condition-FAILED, not hollow-and-empty; the prose-only cards with no marker —
+Healing Factor, Optic Blast, Determination, Unending Energy, Psychic Link's
+draw-half — still do nothing silently, which is the backlog hollow-prose encoding
+item, not a regression.) Per-effect amount logging, the Diamond Form over-fire, and
+hollow-prose card encoding are
 named follow-ups.
 
 ### WP-294 / EC-326 Executed — Separate the Message Log From the `finalStateHash` Oracle (Game Engine test-harness; D-24081) (2026-06-29)
