@@ -5,6 +5,8 @@ import {
   fetchOwnerProfile,
   replaceOwnerLinks,
   updateOwnerProfile,
+  uploadOwnerAvatar,
+  type AvatarUploadErrorCode,
   type OwnerProfileLink,
   type OwnerProfileView,
 } from '../lib/api/ownerProfileApi';
@@ -122,6 +124,30 @@ function bannerCopyForCode(code: string | null): string {
   return 'Could not load profile. Please try again later.';
 }
 
+/**
+ * Map an avatar-upload failure code to a full-sentence message shown beneath
+ * the upload control. A `null` code (network failure or an unrecognized
+ * status) falls through to the generic line.
+ */
+function avatarUploadMessageForCode(code: AvatarUploadErrorCode | null): string {
+  if (code === 'invalid_mime_type') {
+    return 'That file is not a supported image; choose a PNG, JPEG, GIF, or WebP picture.';
+  }
+  if (code === 'file_too_large') {
+    return 'That image is larger than the 5 MB limit; choose a smaller file.';
+  }
+  if (code === 'rate_limited') {
+    return 'You have uploaded too many avatars recently; wait a moment and try again.';
+  }
+  if (code === 'upload_failed') {
+    return 'The server could not process that image; try again in a moment.';
+  }
+  if (code === 'unauthorized') {
+    return 'You are not signed in. Sign in to upload an avatar.';
+  }
+  return 'The avatar upload failed. Check your connection and try again.';
+}
+
 export default defineComponent({
   name: 'MyProfilePage',
   components: { BillingSection },
@@ -136,6 +162,15 @@ export default defineComponent({
     const errorBanner = ref<string>('');
 
     const formAvatarUrl = ref<string>('');
+    // why: WP-298 — the avatar file-upload control owns its own feedback
+    // state, separate from the shared `errorBanner` (which is for profile
+    // load/save). `avatarFile` holds the first selected File; the in-flight
+    // flag guards against a double-POST; the success/error lines reset each
+    // other so a stale banner never lingers under a new outcome.
+    const avatarFile = ref<File | null>(null);
+    const avatarUploadInFlight = ref<boolean>(false);
+    const avatarUploadSuccess = ref<string>('');
+    const avatarUploadError = ref<string>('');
     const formAboutMe = ref<string>('');
     const formAvatarVisibility = ref<'private' | 'public'>('private');
     const formAboutMeVisibility = ref<'private' | 'public'>('private');
@@ -221,6 +256,47 @@ export default defineComponent({
       errorBanner.value = bannerCopyForCode(result.code);
     }
 
+    /**
+     * Record the first File chosen in the avatar file input (or clear the
+     * selection when the picker is dismissed with no file). Does not upload —
+     * the player triggers that explicitly via the "Upload avatar" button.
+     */
+    function onAvatarFileSelected(event: Event): void {
+      const target = event.target as HTMLInputElement;
+      avatarFile.value = target.files?.item(0) ?? null;
+    }
+
+    /**
+     * Upload the currently selected avatar file via `uploadOwnerAvatar`.
+     * Returns early when no file is selected or an upload is already in
+     * flight (no concurrent POSTs). On success sets `formAvatarUrl` to the
+     * returned opaque URL and shows the success line (clearing any error);
+     * on failure shows the mapped message (clearing any success). Never throws.
+     */
+    async function onUploadAvatar(): Promise<void> {
+      const file = avatarFile.value;
+      if (file === null) {
+        return;
+      }
+      if (avatarUploadInFlight.value === true) {
+        return;
+      }
+      avatarUploadInFlight.value = true;
+      try {
+        const result = await uploadOwnerAvatar(readAuthToken(), file);
+        if (result.ok === true) {
+          formAvatarUrl.value = result.avatarUrl;
+          avatarUploadSuccess.value = 'Your new avatar has been uploaded.';
+          avatarUploadError.value = '';
+          return;
+        }
+        avatarUploadError.value = avatarUploadMessageForCode(result.code);
+        avatarUploadSuccess.value = '';
+      } finally {
+        avatarUploadInFlight.value = false;
+      }
+    }
+
     async function saveLinks(): Promise<void> {
       const links: OwnerProfileLink[] = draftLinks.value.map(
         (draft, index) => ({
@@ -259,6 +335,12 @@ export default defineComponent({
       view,
       errorBanner,
       formAvatarUrl,
+      avatarFile,
+      avatarUploadInFlight,
+      avatarUploadSuccess,
+      avatarUploadError,
+      onAvatarFileSelected,
+      onUploadAvatar,
       formAboutMe,
       formAvatarVisibility,
       formAboutMeVisibility,
@@ -325,6 +407,39 @@ export default defineComponent({
             data-testid="my-profile-avatar-url"
           />
         </label>
+
+        <div class="profile-field profile-avatar-upload">
+          <span class="profile-field-label">Upload a new avatar</span>
+          <input
+            type="file"
+            accept="image/*"
+            data-testid="my-profile-avatar-file"
+            @change="onAvatarFileSelected"
+          />
+          <button
+            type="button"
+            class="profile-save"
+            data-testid="my-profile-avatar-upload"
+            :disabled="avatarFile === null || avatarUploadInFlight"
+            @click="onUploadAvatar"
+          >
+            Upload avatar
+          </button>
+          <p
+            v-if="avatarUploadSuccess !== ''"
+            class="profile-upload-success"
+            data-testid="my-profile-avatar-upload-success"
+          >
+            {{ avatarUploadSuccess }}
+          </p>
+          <p
+            v-if="avatarUploadError !== ''"
+            class="profile-upload-error"
+            data-testid="my-profile-avatar-upload-error"
+          >
+            {{ avatarUploadError }}
+          </p>
+        </div>
 
         <label class="profile-field">
           <span class="profile-field-label">Avatar visibility</span>
@@ -553,6 +668,22 @@ export default defineComponent({
 .profile-field-label {
   font-size: 0.875rem;
   font-weight: 500;
+}
+
+.profile-avatar-upload {
+  gap: 0.5rem;
+}
+
+.profile-upload-success {
+  font-size: 0.875rem;
+  color: #2a7d2a;
+  margin: 0.25rem 0 0 0;
+}
+
+.profile-upload-error {
+  font-size: 0.875rem;
+  color: #b3261e;
+  margin: 0.25rem 0 0 0;
 }
 
 .profile-save,

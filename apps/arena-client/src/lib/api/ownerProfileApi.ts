@@ -86,6 +86,36 @@ export type OwnerProfileApiResult =
   | { ok: true; value: OwnerProfileView }
   | { ok: false; status: number; code: string | null };
 
+// why: client-local mirror of the server's `AvatarUploadErrorCode` union in
+// apps/server/src/profile/avatarUpload.types.ts. The engine/server-isolation
+// rule forbids importing server-layer types directly, so the codes are
+// mirrored here by hand; the drift test in ownerProfileApi.test.ts asserts
+// the two stay in sync (set-equality), failing loudly if the server union moves.
+export const AVATAR_UPLOAD_ERROR_CODES = [
+  'invalid_mime_type',
+  'file_too_large',
+  'rate_limited',
+  'upload_failed',
+  'unauthorized',
+] as const;
+
+/**
+ * Closed set of failure codes the avatar-upload endpoint
+ * (`POST /api/me/avatar`) may return in its `{ code, message }` body.
+ * Client-local mirror of the server union (see `AVATAR_UPLOAD_ERROR_CODES`).
+ */
+export type AvatarUploadErrorCode = (typeof AVATAR_UPLOAD_ERROR_CODES)[number];
+
+/**
+ * Result discriminator for `uploadOwnerAvatar`. The success branch carries
+ * the new server-owned `avatarUrl`; the failure branch carries the HTTP
+ * status plus the closed-set error code (or `null` for a network failure or
+ * an unrecognized code). Mirrors the shape of `OwnerProfileApiResult`.
+ */
+export type AvatarUploadApiResult =
+  | { ok: true; avatarUrl: string }
+  | { ok: false; status: number; code: AvatarUploadErrorCode | null };
+
 async function parseFailure(
   response: Response,
 ): Promise<{ ok: false; status: number; code: string | null }> {
@@ -158,6 +188,83 @@ export async function updateOwnerProfile(
   }
   const value = (await response.json()) as OwnerProfileView;
   return { ok: true, value };
+}
+
+/**
+ * Narrow an unknown response-body `code` value to the closed avatar
+ * upload error-code set. Returns `null` when the value is absent, not a
+ * string, or not one of the known codes.
+ */
+function narrowAvatarUploadCode(raw: unknown): AvatarUploadErrorCode | null {
+  if (typeof raw !== 'string') {
+    return null;
+  }
+  for (const knownCode of AVATAR_UPLOAD_ERROR_CODES) {
+    if (knownCode === raw) {
+      return knownCode;
+    }
+  }
+  return null;
+}
+
+/**
+ * Parse a non-200 avatar-upload response into the failure branch. Reads the
+ * failure code from `body.code`.
+ */
+async function parseAvatarUploadFailure(
+  response: Response,
+): Promise<{ ok: false; status: number; code: AvatarUploadErrorCode | null }> {
+  let code: AvatarUploadErrorCode | null = null;
+  try {
+    // why: the avatar endpoint returns `{ code, message }`, NOT the `{ error }`
+    // shape the sibling profile endpoints use; reusing the sibling
+    // `parseFailure` here would read the absent `body.error` and map every
+    // avatar error to `null`, silently erasing the whole error matrix.
+    const body = (await response.json()) as { code?: unknown };
+    code = narrowAvatarUploadCode(body.code);
+  } catch {
+    // why: a malformed or empty JSON body is a transport-level failure; we
+    // surface the status alone and leave the code null so the page can render
+    // a generic upload-error line without crashing the promise chain.
+    code = null;
+  }
+  return { ok: false, status: response.status, code };
+}
+
+/**
+ * Upload a new avatar image for the authenticated owner. POSTs a
+ * `multipart/form-data` body with the single file field `avatar` to
+ * `POST /api/me/avatar` (WP-106). Returns `{ ok: true, avatarUrl }` with the
+ * server-owned CDN URL on HTTP 200; `{ ok: false, status, code }` on any
+ * other status (the server `code` when recognized, else `null`); and
+ * `{ ok: false, status: 0, code: null }` when `fetch` throws (network
+ * failure). Never throws.
+ */
+export async function uploadOwnerAvatar(
+  authToken: string | null,
+  file: File,
+): Promise<AvatarUploadApiResult> {
+  const body = new FormData();
+  body.append('avatar', file);
+  let response: Response;
+  try {
+    response = await fetch(buildApiUrl('/api/me/avatar'), {
+      method: 'POST',
+      // why: no `Content-Type` header is set — the browser must set
+      // `multipart/form-data; boundary=…` itself; a manual Content-Type omits
+      // the boundary and the server rejects the body as `invalid_mime_type`.
+      headers:
+        authToken === null ? {} : { Authorization: `Bearer ${authToken}` },
+      body,
+    });
+  } catch {
+    return { ok: false, status: 0, code: null };
+  }
+  if (response.status !== 200) {
+    return await parseAvatarUploadFailure(response);
+  }
+  const value = (await response.json()) as { avatarUrl: string };
+  return { ok: true, avatarUrl: value.avatarUrl };
 }
 
 /**
