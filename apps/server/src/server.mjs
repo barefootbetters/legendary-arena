@@ -41,7 +41,11 @@ import { registerLegendsPublisherRoutes } from './legends/legends.routes.js';
 import { registerAutoplayRoutes } from './autoplay/autoplay.mjs';
 import { requireAuthenticatedSession } from './auth/sessionToken.logic.js';
 import { createHankoSessionVerifier } from './auth/hanko/hankoVerifier.logic.js';
-import { productionAccountResolver } from './auth/accountResolver.logic.js';
+import { createProductionAccountResolver } from './auth/accountResolver.logic.js';
+import {
+  createBrevoClient,
+  enqueuePlayerToMarketingList,
+} from './marketing/brevoEnqueue.logic.js';
 import { LegendaryGame, setRegistryForSetup } from '@legendary-arena/game-engine';
 import { getVersionInfo } from './version.mjs';
 
@@ -188,6 +192,40 @@ function loadSweepSubmitToken() {
     console.warn(SWEEP_TOKEN_ONE_SHOT_WARNING);
   }
   return SWEEP_TOKEN_TEST_FALLBACK;
+}
+
+// why (D-24080 / WP-293): Brevo marketing config is BEST-EFFORT, so —
+// unlike SWEEP_SUBMIT_TOKEN above — a missing or invalid value is NOT
+// production-fatal. When BREVO_API_KEY is empty or BREVO_LIST_ID is not a
+// positive integer, marketing capture is disabled (the resolver gets no
+// enqueue dependency) and the server starts normally after one one-shot
+// warning. Marketing must never refuse startup or fail a signup.
+const BREVO_UNCONFIGURED_WARNING =
+  '[marketing] BREVO_API_KEY / BREVO_LIST_ID not set or invalid; game-signup Brevo enqueue disabled. Set both to enable marketing capture.';
+let hasWarnedAboutBrevo = false;
+
+/**
+ * Loads the Brevo marketing config from the environment. Returns
+ * `{ apiKey, listId }` when both are present and valid, or `undefined`
+ * (emitting one `console.warn` per process) when marketing is
+ * unconfigured. Never throws and never fails startup — marketing is
+ * best-effort, in deliberate contrast to `loadSweepSubmitToken`.
+ *
+ * @returns {{ apiKey: string, listId: number } | undefined}
+ */
+function loadBrevoConfig() {
+  const apiKey = process.env.BREVO_API_KEY;
+  const hasApiKey = typeof apiKey === 'string' && apiKey.length > 0;
+  const listId = Number.parseInt(process.env.BREVO_LIST_ID ?? '', 10);
+  const hasValidListId = Number.isInteger(listId) && listId > 0;
+  if (hasApiKey === false || hasValidListId === false) {
+    if (hasWarnedAboutBrevo === false) {
+      hasWarnedAboutBrevo = true;
+      console.warn(BREVO_UNCONFIGURED_WARNING);
+    }
+    return undefined;
+  }
+  return { apiKey, listId };
 }
 
 // why (D-23101 / WP-231): loud-fail-on-production guard for the
@@ -568,6 +606,29 @@ export async function startServer() {
     getScenarioKeysForTheme,
   });
 
+  // why: WP-293 / D-24077..D-24080 — build the marketing-enabled account
+  // resolver ONCE and reuse it across every authenticated route wiring.
+  // On a brand-new user's first authenticated call (any route), the
+  // resolver provisions the account and best-effort enqueues the verified
+  // email to the Brevo newsletter list (fail-open). When BREVO env is
+  // unset, marketingEnqueue is undefined and the resolver behaves exactly
+  // as the WP-174 default did.
+  const brevoConfig = loadBrevoConfig();
+  const brevoClient =
+    brevoConfig === undefined
+      ? undefined
+      : createBrevoClient(brevoConfig.apiKey);
+  const marketingEnqueue =
+    brevoConfig === undefined
+      ? undefined
+      : (account) =>
+          enqueuePlayerToMarketingList(
+            account,
+            brevoClient,
+            brevoConfig.listId,
+          );
+  const accountResolver = createProductionAccountResolver({ marketingEnqueue });
+
   // why: WP-104 / D-10408 — register the three owner-only routes
   // (/api/me/profile GET + PATCH, /api/me/links PUT) on the same
   // long-lived pool. requireAuthenticatedSession is the WP-112
@@ -580,7 +641,7 @@ export async function startServer() {
   registerOwnerProfileRoutes(server.router, pool, {
     requireAuthenticatedSession,
     verifier,
-    accountResolver: verifier === undefined ? undefined : productionAccountResolver,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
   });
 
   // why: WP-106 / D-10602 — register the avatar upload route
@@ -600,7 +661,7 @@ export async function startServer() {
   registerAvatarUploadRoutes(server.router, pool, {
     requireAuthenticatedSession,
     verifier,
-    accountResolver: verifier === undefined ? undefined : productionAccountResolver,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
     r2Client: {
       async putObject(params) {
         const { PutObjectCommand } = await import('@aws-sdk/client-s3');
@@ -640,7 +701,7 @@ export async function startServer() {
   registerTeamRoutes(server.router, pool, {
     requireAuthenticatedSession,
     verifier,
-    accountResolver: verifier === undefined ? undefined : productionAccountResolver,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
   });
 
   // why: WP-132 / D-13205 (a) — register the single entitlements
@@ -657,7 +718,7 @@ export async function startServer() {
   registerEntitlementRoutes(server.router, pool, {
     requireAuthenticatedSession,
     verifier,
-    accountResolver: verifier === undefined ? undefined : productionAccountResolver,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
   });
 
   // why: WP-133 / D-13301 + D-13303 + D-13305 + D-13309 — load the
@@ -691,7 +752,7 @@ export async function startServer() {
   registerBillingRoutes(server.router, pool, {
     requireAuthenticatedSession,
     verifier,
-    accountResolver: verifier === undefined ? undefined : productionAccountResolver,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
     billingConfig,
     stripeClient,
     resolveCustomerEmail: async (accountId, database) => {
@@ -717,7 +778,7 @@ export async function startServer() {
   registerAdminBillingRoutes(server.router, pool, {
     requireAdminSession,
     verifier,
-    accountResolver: verifier === undefined ? undefined : productionAccountResolver,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
   });
 
   // why: WP-107 / D-10701..D-10703 — register the three admin-only
@@ -735,7 +796,7 @@ export async function startServer() {
   registerAdminProfileRoutes(server.router, pool, {
     requireAdminSession,
     verifier,
-    accountResolver: verifier === undefined ? undefined : productionAccountResolver,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
   });
 
   // why: WP-205 / D-20501..D-20503 — register the four analytics
@@ -758,7 +819,7 @@ export async function startServer() {
   registerAnalyticsRoutes(server.router, pool, {
     requireAuthenticatedSession,
     verifier,
-    accountResolver: verifier === undefined ? undefined : productionAccountResolver,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
     analyticsUserIdSalt,
   });
 
@@ -776,7 +837,7 @@ export async function startServer() {
   registerSweepRoutes(server.router, pool, {
     requireAuthenticatedSession,
     verifier,
-    accountResolver: verifier === undefined ? undefined : productionAccountResolver,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
     sweepSubmitToken,
   });
 
@@ -794,7 +855,7 @@ export async function startServer() {
   registerInspectionRoutes(server.router, pool, {
     requireAuthenticatedSession,
     verifier,
-    accountResolver: verifier === undefined ? undefined : productionAccountResolver,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
     inspectionSubmitToken,
   });
 
@@ -813,7 +874,7 @@ export async function startServer() {
   registerHandoffRoutes(server.router, pool, {
     requireAuthenticatedSession,
     verifier,
-    accountResolver: verifier === undefined ? undefined : productionAccountResolver,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
     handoffSubmitToken,
   });
 
