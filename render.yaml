@@ -155,6 +155,14 @@ services:
         sync: false
       - key: R2_ACCOUNT_ID
         sync: false
+      # Brevo marketing enqueue (WP-293 / D-24077..D-24080). sync: false —
+      # secrets/config provisioned manually in the Render dashboard. Both must
+      # be set to enable game-signup → Brevo capture; if either is missing the
+      # enqueue is disabled and startup is unaffected (best-effort, NOT fatal).
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_LIST_ID
+        sync: false
       # why: kill switch per D-14202 — default "false" so test/dev/staging
       # runs do not write to prod R2. Set to "true" in the production
       # Render dashboard to enable the publisher.

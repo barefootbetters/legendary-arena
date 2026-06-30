@@ -18,7 +18,11 @@ import assert from 'node:assert/strict';
 
 import pg from 'pg';
 
-import { productionAccountResolver } from './accountResolver.logic.js';
+import {
+  productionAccountResolver,
+  createProductionAccountResolver,
+} from './accountResolver.logic.js';
+import type { ProvisionedAccount } from './accountProvisioning.logic.js';
 import type { VerifiedSessionClaim } from './sessionToken.types.js';
 
 const fixtureClaim: VerifiedSessionClaim = {
@@ -281,5 +285,86 @@ describe('productionAccountResolver — WP-174 provisioning', () => {
     await productionAccountResolver(claimUppercase, fakeDatabase);
 
     assert.equal(capturedEmail, 'alice@example.com');
+  });
+});
+
+describe('createProductionAccountResolver — WP-293 marketing enqueue', () => {
+  const claimWithEmail: VerifiedSessionClaim = {
+    authProvider: 'email',
+    authProviderSub: 'hanko-brevo-user',
+    expiresAt: '2099-01-01T00:00:00.000Z',
+    email: 'brevo@example.com',
+    displayName: 'Brevo User',
+  };
+
+  // Lookup miss (query 1) → INSERT returns the new row (query 2).
+  function buildProvisioningDatabase(): pg.Pool {
+    let queryCount = 0;
+    return {
+      query: async (_text: string, params: unknown[]) => {
+        queryCount += 1;
+        if (queryCount === 1) {
+          return { rows: [], rowCount: 0 };
+        }
+        return {
+          rows: [
+            {
+              ext_id: 'brevo-uuid',
+              email: params[1],
+              display_name: params[2],
+              auth_provider: params[3],
+              auth_provider_id: params[4],
+            },
+          ],
+          rowCount: 1,
+        };
+      },
+    } as unknown as pg.Pool;
+  }
+
+  test('calls marketingEnqueue once with the provisioned account on a fresh provision', async () => {
+    const enqueued: ProvisionedAccount[] = [];
+    const resolver = createProductionAccountResolver({
+      marketingEnqueue: async (account) => {
+        enqueued.push(account);
+      },
+    });
+
+    const result = await resolver(claimWithEmail, buildProvisioningDatabase());
+
+    assert.ok(result.ok === true);
+    assert.equal(result.value, 'brevo-uuid');
+    assert.equal(enqueued.length, 1);
+    const firstEnqueued = enqueued[0];
+    assert.ok(firstEnqueued !== undefined);
+    assert.equal(firstEnqueued.email, 'brevo@example.com');
+    assert.equal(firstEnqueued.accountId, 'brevo-uuid');
+  });
+
+  test('does NOT call marketingEnqueue when the account already exists (lookup hit)', async () => {
+    let enqueueCount = 0;
+    const resolver = createProductionAccountResolver({
+      marketingEnqueue: async () => {
+        enqueueCount += 1;
+      },
+    });
+    const hitDatabase = {
+      query: async () => ({
+        rows: [
+          {
+            ext_id: 'existing-account',
+            auth_provider: 'email',
+            auth_provider_id: 'hanko-brevo-user',
+          },
+        ],
+        rowCount: 1,
+      }),
+    } as unknown as pg.Pool;
+
+    const result = await resolver(claimWithEmail, hitDatabase);
+
+    assert.ok(result.ok === true);
+    assert.equal(result.value, 'existing-account');
+    assert.equal(enqueueCount, 0);
   });
 });
