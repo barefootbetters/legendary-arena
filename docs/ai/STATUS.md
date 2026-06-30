@@ -7,6 +7,35 @@
 
 ## Current State
 
+### SPEC Drafted — `www` Auth Surface Decision (D-24084) + WP-297 (`www` nav links) + WP-298 (avatar upload UI) (2026-06-30)
+
+Governance-only draft (no code executed). Records **D-24084**: `www.legendary-arena.com`
+stays a static marketing surface and does **not** own an authentication surface —
+all customer auth routes through the existing Hanko sign-in on `play`
+(`?route=login`) and profile (`?route=me`); the marketing site only links there.
+Commerce needs no `www`-owned login either (the shop checks out via Snipcart
+(WP-019); in-game purchases via Stripe-on-Hanko). Passwordless product guidance:
+avoid "change password" copy. This **closes the `wiki/profile-login.md` "Login on
+`www`" open question** the ewiki had flagged as undecided. Two Draft WPs drafted
+to the lightweight lane (D-24028), both registered in `WORK_INDEX.md`, ECs deferred
+to execution kickoff:
+
+- **WP-297** — `www` auth nav links (cross-repo; executes in `C:\www\legendary-arena-com`):
+  two config-only `[[menu.main]]` entries in `hugo.toml` linking to `play`'s
+  `?route=login` / `?route=me`. Carries D-24084.
+- **WP-298** — owner profile avatar **upload UI**: wires the already-shipped
+  `POST /api/me/avatar` pipeline (WP-106) into `MyProfilePage.vue`, which today
+  only has an unusable free-text avatar-URL field. Client-only; consumes the
+  existing D-10601/D-10602 contract (no server/D-entry change).
+
+**Reconciliation note:** most of the original "login for cart / scoreboard /
+avatar / change-password / LAGN upload" ask was found already shipped on
+`origin/main` (Hanko auth WP-099..WP-175; avatar pipeline WP-106 + host unify
+WP-296; LAGN import WP-291; email capture WP-293; passwordless = no
+change-password by design). The genuine gaps were the **decision** (now D-24084)
+and the avatar **upload UI** (now WP-298). **No user-observable change yet —
+governance + queued drafts only.**
+
 ### WP-296 / EC-328 Executed — Avatar CDN Host Unification (Server + Persistence; D-24083) (2026-06-30)
 
 Player avatars moved from the legacy `images.barefootbetters.com/avatars` host
