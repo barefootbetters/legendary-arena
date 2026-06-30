@@ -219,3 +219,15 @@ git diff --name-only
 - §19 Bridge-vs-HEAD — N/A: no repo-state-snapshot artifact authored.
 - §20 Funding Surface Gate — N/A: profile avatar UX; no donate/support copy, no funding affordance, no tournament-funding channel.
 - §21 API Catalog Update — N/A: no HTTP endpoint or `apps/server/src/**` library function added or modified; this packet is a **client consumer** of the already-cataloged `POST /api/me/avatar` row (the catalog tracks server endpoints + server library functions, not client callers).
+
+## Lint / Pre-Flight / Copilot (lightweight lane)
+
+**Lint (00.3): PASS** — all 21 sections resolved above; §15.1 (D-24026) + §17 (Vision) satisfied with real blocks; §11 addresses the reuse-existing-auth model; §20 / §21 N/A carry non-tautological reasons.
+
+**Condensed pre-flight (01.4): READY (lane).** Class = lightweight additive client UX (single layer; one modified wrapper + its new test + one additive control in an existing page). **Dependencies complete** — WP-106 ✅ (the `POST /api/me/avatar` pipeline this consumes), WP-296 ✅ (the CDN host the success URL uses), WP-104 ✅ (the `?route=me` profile + `OwnerProfileView`), WP-160 ✅ (the auth-store token), WP-161 ✅ (`buildApiUrl`) — all verified against source on `origin/main` @ `da0ef06b` (the server route contract + the client wrapper pattern both read from current `main`). **Scope locked** — 3 code/test files, additive, no contract/server/catalog/determinism/persistence surface. **Behavior-identity** is subsumed by the scaffold: the change is additive (a new wrapper + a new control; nothing previously passing is rewritten), so the suite is expected to hold at baseline + the new upload tests.
+
+**Targeted self-review (lane copilot): PASS.** Eligibility is demonstrated with artifacts (3-file count, no new contract file, no hash/determinism surface, the planned scaffold run), not argued in prose. The one real failure mode — a manually-set `Content-Type` breaking the multipart boundary — is pinned as a Locked Value + a required `// why:` + a Common Failure Smell in EC-329. The client-local error-code mirror is guarded by a drift test against the server union. No BLOCK; no inline-amendment budget consumed at draft.
+
+## Decision
+
+This packet reserves **no** new DECISIONS entry — it consumes the pre-existing avatar contract (D-10601 validation policy, D-10602 endpoint/success-URL, D-24083 host). The design choices (additive file-upload control beside the retained URL field; client-local error-code mirror; no `Content-Type` on the multipart POST) are operational, not architectural, and are pinned in the WP + EC-329 rather than as a durable decision.
