@@ -4,10 +4,14 @@
  *
  * The hash is the `finalStateHash` oracle layer — the tightest of the
  * three oracle layers, intended to catch subtle state-placement
- * differences that the message log does not surface. Two harness
- * invocations against identical inputs MUST produce byte-identical
- * hashes on any machine; that is the contract this file's canonical-JSON
- * rules enforce.
+ * differences that the message log does not surface. The top-level
+ * `messages` field is therefore EXCLUDED from the hash (D-24081): the
+ * human-readable log has its own dedicated `messages` oracle layer in
+ * `runFixture`, so hashing it too would double-count it and churn the
+ * hash on every log addition. `notableEvents` is NOT excluded — it has no
+ * dedicated layer, so the hash is its only guard. Two harness invocations
+ * against identical inputs MUST produce byte-identical hashes on any
+ * machine; that is the contract this file's canonical-JSON rules enforce.
  *
  * Distinct from `packages/game-engine/src/replay/replay.hash.ts`, which
  * implements a djb2 hash for the determinism-only replay harness
@@ -27,7 +31,7 @@ import type { LegendaryGameState } from '../../types.js';
  * Canonical-JSON `JSON.stringify` replacer that sorts object keys in
  * ASCII-lexicographic order at every nesting depth. Arrays are returned
  * unchanged — element order is semantically meaningful (deck order, zone
- * contents, message log) and MUST be preserved.
+ * contents) and MUST be preserved.
  *
  * `undefined` values are omitted by `JSON.stringify` by default; `null`
  * values are preserved as the JSON literal `null`. Numbers are
@@ -64,7 +68,16 @@ function sortKeysReplacer(_key: string, value: unknown): unknown {
  *   serialization of `state`.
  */
 export function hashGameState(state: LegendaryGameState): string {
-  const canonicalJson = JSON.stringify(state, sortKeysReplacer);
+  // why: D-24081 — exclude the human-readable message log from the
+  // finalStateHash oracle. runFixture already asserts a dedicated `messages`
+  // oracle layer (expected.messages vs result.messages, exact + length), so
+  // including the log here double-counts it and forces a sentinel re-pin on
+  // every log addition. The hash is the state-PLACEMENT catch-all; notableEvents
+  // (which has no dedicated oracle layer) deliberately STAYS in the hash. The
+  // exclusion is a rest-destructure of a fresh shallow copy — `state` is never
+  // mutated, and no nested `messages` key is affected (only the top-level field).
+  const { messages: _excludedMessageLog, ...stateWithoutMessageLog } = state;
+  const canonicalJson = JSON.stringify(stateWithoutMessageLog, sortKeysReplacer);
   const hasher = createHash('sha256');
   hasher.update(canonicalJson);
   return hasher.digest('hex');

@@ -26029,7 +26029,7 @@ Protect this file.
 
 ### D-24081 — The Message Log Is Excluded From the `finalStateHash` Oracle (Dedicated `messages` Oracle Owns It); `notableEvents` and `computeStateHash` Stay Unchanged
 
-**Status:** **Reserved (drafted 2026-06-29)** — WP-294 / EC-326; baseline `origin/main` @ `3371cec4`. Activates (post-execution) when WP-294 lands. Game-engine test-harness oracle only; no gameplay, registry, server, or contract change.
+**Status:** **Active (post-execution) 2026-06-29** (WP-294 / EC-326, impl commit pending on `claude/ec-326-message-log-hash`; baseline `origin/main` @ `2e0fb3d7`). Game-engine test-harness oracle only; no gameplay, registry, server, or contract change. Verified: engine suite 1710 → 1714 (+4 `hashGameState` tests), the sentinel `finalStateHash` re-pinned once (`ee37b1a1…` → `7bb990fc…`), `replay.hash.ts` byte-identical.
 
 **Context.** `hashGameState` (the WP-158 sha256 `finalStateHash` oracle) canonical-serializes the ENTIRE `LegendaryGameState`, including `G.messages`. But `runFixture` already asserts a **dedicated `messages` oracle layer** (`expected.messages` vs `result.messages`, exact content + length). So the free-text log is **double-counted**: tracked by its own oracle AND baked into the hash. Consequence: any new deterministic log line (the observability work in WP-295 and the ongoing /coverage logging grind) changes `finalStateHash` and forces a sentinel re-pin every time — even though the change is purely a log addition the dedicated oracle already captures. The `hashGameState` docstring itself frames the hash as catching "differences that the message log does not surface" — i.e. the two are meant to be **separate** oracle layers, not overlapping ones.
 
