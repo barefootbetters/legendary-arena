@@ -559,6 +559,21 @@ These packets ship the game and keep it running.
 - [ ] **(backlog — to be drafted)** **UIState Size-Changing class display** — project the granted class into the arena-client trait display (cosmetic; class is not a gating affordance, so deferred from the class-grant WP). Client-only follow-up. Source: D-24074 §Scope note.
 - [ ] **(backlog — to be drafted)** **`reveal-multi-take` mechanic** — a new `unsupported` reveal-variant mechanic surfaced by `sim:coverage --check` at the Size-Changing WP's close (a *new-mechanic warning*, not a regression; unrelated to Size-Changing). Implement it as an effect-authoring grind target (likely a parameterized reveal variant via the collapsed-reveal grammar from the reveal-collapse WP). Source: Size-Changing execution session 2026-06-28.
 
+### Backlog — Hero-Effect Observability & Authoring Follow-Ups (to be drafted)
+
+> Parked candidates, **not yet drafted** — no WP file, no reserved number, no
+> lint gate until drafting (the deferred-placeholder convention; numbers assigned
+> at draft time). Each is its own small WP later. Surfaced 2026-06-29 from the
+> X-Men "most effects didn't trigger" diagnostic (`gitSha 611e895`) and the
+> observability packets that followed (decisions D-24081 message-log/hash
+> separation + D-24082 play + condition-skip logging). **(Rows intentionally name
+> no `WP-NNN` token so the `roadmap-counts.mjs` ledger parser skips them — they
+> are backlog, not WPs; cross-references use D-numbers.)**
+
+- [ ] **(backlog — to be drafted)** **Diamond Form over-fire (correctness bug)** (`core/emma-frost/diamond-form`) — the printed "Whenever you defeat a Villain or Mastermind this turn, you get +3[icon:recruit]" parses to an **unconditional onPlay** `recruit:3` because the setup parser reads the `[icon:recruit]` magnitude but not the "Whenever you defeat …" trigger prose — so the card grants +3 Recruit on play instead of on defeat. Needs a triggered/conditional representation (a defeat-scoped recruit, or a "defeated-a-villain/mastermind-this-turn" gate) rather than a flat onPlay effect. Verify against `keywords-full.json` / the printed card before encoding. Source: the X-Men observability diagnosis (decision D-24082 cluster).
+- [ ] **(backlog — to be drafted)** **Hollow-prose hero card encoding** — core hero cards whose printed abilities are prose with **no machine marker**, so they parse to no executable effect and do nothing: `core/wolverine/healing-factor` (KO a Wound, then draw), `core/emma-frost/psychic-link` (each player may reveal another `[team:x-men]` Hero, then draws), `core/cyclops/determination` + `core/cyclops/optic-blast` (discard-to-play cost), `core/cyclops/unending-energy` (return-on-forced-discard). Encode each via the existing keyword / composition grammar (optional-KO-reward, team-reveal-draw, play-cost, return-on-discard) — an effect-authoring grind target off `/coverage`. Read the actual keyword defs + card corpus before picking the encoding (frequency ≠ tractability). Source: the X-Men observability diagnosis; the effect-authoring grind.
+- [ ] **(backlog — to be drafted)** **Per-effect amount logging** — extend the observability logging (decision D-24082) into the hero effect handlers so **applied** effects emit amounts in the game log (drew N, +N Attack, +N Recruit, KO'd X), not just the play + condition-skip lines. The deferred half of the minimal observability pair. Cheap on the regression fixtures (the message log is excluded from `finalStateHash` per decision D-24081) but will re-pin the dedicated `messages` / `snapshotPerTurn[].messages` oracle. Source: the X-Men observability diagnosis (decision D-24082 §Consequence).
+
 ---
 
 ## Pre-Planning System (Parallel-Safe with Phase 4+)
