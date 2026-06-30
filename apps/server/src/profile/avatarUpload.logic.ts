@@ -80,7 +80,7 @@ const rateLimitMap = new Map<string, number>();
  * CDN base URL for avatar objects. The canonical avatar URL for a
  * given account is `${AVATAR_CDN_BASE}/${accountId}.webp`.
  */
-const AVATAR_CDN_BASE = 'https://images.barefootbetters.com/avatars';
+const AVATAR_CDN_BASE = 'https://images.legendary-arena.com/avatars';
 
 /**
  * R2 key prefix for avatar objects.

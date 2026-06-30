@@ -161,9 +161,9 @@ export function validateAvatarUrl(
   // why: per-user canonical URL check prevents avatar impersonation
   // (cite D-10601). Without the accountId check, a user could point
   // their avatar_url at another user's R2 object. The per-user form
-  // is `https://images.barefootbetters.com/avatars/{accountId}.webp`.
+  // is `https://images.legendary-arena.com/avatars/{accountId}.webp`.
   if (accountId !== undefined) {
-    const canonicalUrl = `https://images.barefootbetters.com/avatars/${accountId}.webp`;
+    const canonicalUrl = `https://images.legendary-arena.com/avatars/${accountId}.webp`;
     if (candidate !== canonicalUrl) {
       return {
         ok: false,
@@ -176,12 +176,12 @@ export function validateAvatarUrl(
   }
 
   // Fallback for callers without accountId context: enforce R2 prefix only
-  const allowedPrefix = 'https://images.barefootbetters.com/avatars/';
+  const allowedPrefix = 'https://images.legendary-arena.com/avatars/';
   if (candidate.startsWith(allowedPrefix) === false) {
     return {
       ok: false,
       reason:
-        'avatarUrl must be a URL under the https://images.barefootbetters.com/avatars/ origin; external URLs are rejected per D-10601 closed-origin allowlist.',
+        'avatarUrl must be a URL under the https://images.legendary-arena.com/avatars/ origin; external URLs are rejected per D-10601 closed-origin allowlist.',
       code: 'invalid_avatar_url',
     };
   }
