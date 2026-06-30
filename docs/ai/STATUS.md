@@ -7,6 +7,28 @@
 
 ## Current State
 
+### WP-296 / EC-328 Executed — Avatar CDN Host Unification (Server + Persistence; D-24083) (2026-06-30)
+
+Player avatars moved from the legacy `images.barefootbetters.com/avatars` host
+to `images.legendary-arena.com/avatars` — the same Cloudflare custom domain and
+`legendary-images` R2 bucket that already serves card images — closing the drift
+the wiki flagged as stale. `AVATAR_CDN_BASE` (`avatarUpload.logic.ts`) and the
+closed-origin `validateAvatarUrl` allowlist (`ownerProfile.logic.ts`, D-10601)
+both target the new host; the two profile test files moved with them. New
+idempotent `data/migrations/021_rewrite_avatar_url_host.sql` rewrites the host
+prefix on existing `avatar_url` rows (preserves the `{accountId}.webp` tail,
+leaves `updated_at` untouched, no-op on second run). The `POST /api/me/avatar`
+catalog row updated in the same commit (D-11804); both wiki Edge Cases notes
+reconciled to "one image host." D-24083 supersedes the host string only in
+D-10601 / D-10602; both otherwise stand. Profile test surface **43 / 36 pass /
+0 fail / 7 DB-skip**; the full server suite's failing set is byte-identical to
+the unmodified baseline (DB-less env — pre-existing failures only, no
+regression). **No user-observable change — infrastructure only** (the avatar
+bytes and rendered image are identical; the new domain serves the same object).
+**Post-deploy (operator) — pending:** apply migration 021 to the deployed DB;
+confirm a real profile's avatar still renders and
+`curl -I https://images.legendary-arena.com/avatars/<accountId>.webp` → 200.
+
 ### WP-295 / EC-327 Executed — Hero Play + Condition-Skip Observability Logging (Game Engine; D-24082) (2026-06-29)
 
 `playCard`/`applyCardPlay` now append `Player <id> played <ext-id>.` to
