@@ -11,6 +11,7 @@ tags:
 related:
   - operational-health-checks.md
   - hugo-web-system.md
+  - data-file-locations.md
 status: draft
 source:
   - ../docs/ai/work-packets/WP-160-hanko-client-ui.md
