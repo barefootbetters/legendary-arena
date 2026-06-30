@@ -162,14 +162,21 @@ The header's "My profile" link (WP-175) points at `?route=me`; the
 public profile is reached by handle. The `www.legendary-arena.com` Hugo
 content tree (`content/`: `about`, `brand`, `shop`, `tournaments`,
 `leaderboard`, `posts`, `emails`, `diorama`) contains **no profile or
-login surface** — confirming the play-vs-www split below.
+login surface of its own**. As of the marketing repo's **WP-031**
+(executing **[D-24084](../docs/ai/DECISIONS.md)**, 2026-06-30) its header
+**links** to `play`'s sign-in (`?route=login`) and profile (`?route=me`)
+via two `[[menu.main]]` entries — but the auth surface itself lives
+entirely on `play`. Linking, not owning: this is the play-vs-www split
+below.
 
 ## Interactions
 
 - **[Hugo Web System](hugo-web-system.md)** — the marketing site
   (`www.legendary-arena.com`) is a separate Hugo project in a separate
-  repo. None of the auth Work Packets touch it, which is why login does
-  not appear there.
+  repo. None of the *engine* auth Work Packets touch it; the marketing
+  repo's own **WP-031** added "Sign in" / "My account" header links
+  pointing at `play` (per **D-24084**), but the sign-in surface itself
+  never appears on `www` — it carries no broker wiring.
 - **[Operational Health Checks](operational-health-checks.md)** —
   `pnpm check` probes Hanko JWKS / CORS connectivity, which the
   server-side verifier (WP-126 / WP-131) depends on.
@@ -180,11 +187,17 @@ login surface** — confirming the play-vs-www split below.
 
 ## Edge Cases
 
-- **`www` versus `play` confusion.** Login is present on
-  `play.legendary-arena.com` and absent on `www.legendary-arena.com`.
-  This is a consequence of where the WPs landed (arena-client only),
-  not a broken deploy or a regression — no Work Packet has ever added a
-  sign-in surface to the marketing repo.
+- **`www` versus `play` — linked, not duplicated.** The sign-in
+  **surface** is present on `play.legendary-arena.com` and absent on
+  `www.legendary-arena.com` — by decision, not accident (**D-24084**,
+  2026-06-30): `www` stays a static marketing site and **links** to
+  `play`'s sign-in rather than owning its own. The marketing repo's
+  **WP-031** added "Sign in" / "My account" header links
+  (→ `?route=login` / `?route=me`); no Work Packet has added a sign-in
+  *surface* (form / broker / session) to the marketing repo, and per
+  D-24084 none will. Commerce is split the same way: the `www` shop
+  checks out via Snipcart (its own flow, WP-019), in-game purchases via
+  Stripe over the `play` Hanko session — neither needs a `www` login.
 - **Relative API URLs broke once.** Before WP-161, the SPA issued
   relative `fetch('/api/me/profile', …)` calls that resolved to the
   Pages origin and returned HTML, hanging `MyProfilePage` on
