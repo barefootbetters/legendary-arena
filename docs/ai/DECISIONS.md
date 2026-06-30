@@ -26049,4 +26049,20 @@ Protect this file.
 
 **Consequence.** Hero plays and synergy-suppressed abilities are visible in the game log and diagnostics. The sentinel trajectory oracle re-pins `expected.messages` + `expected.snapshotPerTurn[].messages`; `finalStateHash` is byte-unchanged (the empirical WP-294 payoff). Per-effect amount logging (drew N, +N attack/recruit) is a deferred follow-up; this packet is the minimal play + condition-skip pair.
 
+---
+
+### D-24083 — Avatar CDN Host Unification: Avatars Move From `images.barefootbetters.com` to `images.legendary-arena.com` (Supersedes the Host String Only in D-10601 / D-10602)
+
+**Status:** **Drafted 2026-06-30; not yet landed** (WP-296 / EC-328; baseline `origin/main` @ `f11c2de1`). Flips to **Active (post-execution)** when WP-296 executes. Server layer + an idempotent `data/migrations/021` row rewrite + the api-endpoints catalog (D-11804) + the two wiki Edge Cases notes; no engine / registry / contract-file change.
+
+**Context.** Card images moved to the `images.legendary-arena.com` custom domain (the `R2_BASE_URL` in `packages/registry/src/heroImageUrl.ts`); `wiki/r2-image-naming-convention.md` §Edge Cases declares any `images.barefootbetters.com` reference stale, and `wiki/data-file-locations.md` §Edge Cases logs the avatar host as a known split. Avatars are the last code path still on the legacy host: `AVATAR_CDN_BASE` (write path, `avatarUpload.logic.ts`) and the closed-origin `validateAvatarUrl` allowlist (D-10601, `ownerProfile.logic.ts`) both target `https://images.barefootbetters.com/avatars/`, and existing `legendary.player_profiles.avatar_url` rows store that host. Both hosts are custom domains over the **same** `legendary-images` R2 bucket, so the avatar objects (`avatars/{accountId}.webp`) are already served by the new domain — no object move is needed.
+
+**Decision.** Adopt `https://images.legendary-arena.com/avatars/` for both the write path (`AVATAR_CDN_BASE`) and the closed-origin validation allowlist. A one-shot idempotent migration (`021_rewrite_avatar_url_host.sql`) rewrites the host prefix on existing `avatar_url` rows (preserving the `{accountId}.webp` tail; **not** advancing `updated_at` — a system migration is not an owner edit). After this, the old barefootbetters host is **no longer accepted on write** (the validation-tightening surface). This **supersedes the host string only** in D-10601 (the closed-origin allowlist) and D-10602 (the documented `{ avatarUrl }` success-URL); both decisions otherwise stand in full — the upload transform policy (MIME / size / pixel guards / EXIF strip / resize / rate limit / compensating delete), the per-user `{accountId}.webp` impersonation guard, the route, auth level, request shape, and error codes are all unchanged.
+
+**Scope boundary.** The `images.barefootbetters.com/metadata` (card-metadata JSON) and `/docs` (rules PDF) hosts are a separate question and are **out of scope** here. No shared host-constant module is introduced — the change is a mechanical per-file value swap, not a refactor.
+
+**Consequence.** One documented image host across the product; the `wiki` Edge Cases drift notes resolve to "host unified." `User-Visible Surface = none — infrastructure` — the avatar bytes and rendered image are identical before/after; the post-deploy check is a no-regression confirmation (new host returns 200 for a real avatar) plus migration idempotency. Two-session lane (NOT lightweight per D-24028): five non-governance files (4 server logic/test + 1 migration) exceed the lightweight budget, a `.sql` migration does not fit the "runtime-wiring" slot, and the change touches both the persistence surface and the api-endpoints catalog.
+
+**Packet:** WP-296 (EC-328). **Drafted:** 2026-06-30. **Supersedes (host string only):** D-10601, D-10602.
+
 Protect this file.

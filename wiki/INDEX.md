@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **28 / 50** entity pages.
-> Last regenerated: 2026-06-29.
+> **33 / 50** entity pages.
+> Last regenerated: 2026-06-30.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority.
 
@@ -75,6 +75,16 @@ High-level card categorizations recognised by the engine.
 
 Cross-cutting governance, methodology, and readiness assessments.
 
+- [Data & File Locations](data-file-locations.md) — Locator map for
+  where data and files live: card JSON + the convert pipeline,
+  metadata, the Postgres `legendary.*` tables, R2 key prefixes,
+  replays / LAGN, env / config, and the docs / coverage dirs. Links
+  out to the deep pages rather than restating them.
+- [Development Workflow](development-workflow.md) — The
+  develop-from-anywhere loop: laptop / workstation / phone drive
+  Claude Code sessions on WP/EC contracts → GitHub → auto-deploy via
+  Render + Cloudflare on merge to `main`; a nightly CI triage agent
+  turns sweep results into new work packets.
 - [Homepage Marketing Scorecard](homepage-marketing-scorecard.md) —
   SB7 + Player Needs Pyramid graded assessment of the homepage;
   tracks readiness across three questions (Problem / Product / Results).
@@ -100,6 +110,14 @@ Cross-cutting governance, methodology, and readiness assessments.
   the plug-and-play diorama venture: architecture, Smart Hub, connector
   strategy, business model, and status; canonical deep docs stay in its
   own private repo for sellability.
+- [Video Production Workflow](video-production-workflow.md) — Ten-step
+  pipeline from idea to published video, producing three artifacts per
+  video: the video, 3-7 Shorts clips, and a companion blog post on
+  `legendary-arena.com`.
+- [YouTube Channel Plan](youtube-channel-plan.md) — StoryBrand-driven
+  plan for the "Legendary Arena" channel: four series across the SB7
+  content modes and Player Needs Pyramid; the transitional CTA the
+  homepage needs.
 
 ## Tutorial
 
@@ -138,6 +156,10 @@ Step-by-step walkthroughs for completing specific tasks.
 
 Software tools and services used in development or operations.
 
+- [LAGN v1.0 Specification](lagn-v1.md) — Legendary Arena Game
+  Notation: the published npm spec (`@legendary-arena/lagn`) with Zod
+  validator, generated JSON Schema, TypeScript types, and a `lagn`
+  CLI; three optional tiers (setup / card catalog / replay log).
 - [Operational Health Checks](operational-health-checks.md) — Two
   operator probes: `pnpm check` walks the environment, toolchain,
   and external-service connectivity (PostgreSQL, R2, Pages, Hanko
@@ -197,6 +219,15 @@ following are useful entry points:
   [Card Type Taxonomy](card-type-taxonomy.md),
   [CardExtId](cardextid.md) (cross-cuts engine + registry),
   [R2 Image Naming Convention](r2-image-naming-convention.md).
+- **`auth`** — Player sign-in and identity:
+  [Profile Login](profile-login.md),
+  [Operational Health Checks](operational-health-checks.md)
+  (Hanko JWKS / CORS probes).
+- **`data-pipeline` / storage** — Where data and files live:
+  [Data & File Locations](data-file-locations.md),
+  [R2 Image Naming Convention](r2-image-naming-convention.md),
+  [LAGN v1.0 Specification](lagn-v1.md),
+  [Card Type Taxonomy](card-type-taxonomy.md).
 
 ---
 
