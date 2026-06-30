@@ -365,6 +365,8 @@ mindmap
         ["WP-106 ✅ Done — avatar upload pipeline"]
         ["WP-107 ✅ Profile integrity / anti-cheat surface"]
         ["WP-108 ✅ Profile billing & funding history UI"]
+        ["WP-296 ✅ Avatar CDN host unification (images.barefootbetters.com → images.legendary-arena.com — the card-image host/bucket; AVATAR_CDN_BASE + closed-origin validateAvatarUrl allowlist both retargeted + migration 021_rewrite_avatar_url_host.sql; api-endpoints catalog + wiki reconciled; D-24083 supersedes the host string in D-10601/D-10602; EC-328)"]
+        ["WP-298 ✅ Owner profile avatar upload UI (wires the already-shipped WP-106 POST /api/me/avatar pipeline into MyProfilePage.vue ?route=me — a file-input + 'Upload avatar' control replacing the unusable free-text-only avatar-URL field; new uploadOwnerAvatar(authToken,file) wrapper multipart 'avatar' field no Content-Type, failure code read from body.code not the sibling body.error, + client-local drift-guarded AVATAR_UPLOAD_ERROR_CODES mirror; additive client-only, no server/contract/catalog change; consumes D-10601/D-10602/D-24083 no new D-entry; Lightweight Lane D-24028; EC-329; typecheck 0/arena-client test 618→624/build 0; User-Visible Surface play.legendary-arena.com D-24026 post-deploy)"]
 
       Architecture & API Governance
         ["WP-116 ✅ Disconnect & reconnect semantics"]
@@ -454,14 +456,14 @@ mindmap
 | Dashboard & Operator Analytics | 14/14 | — |
 | Agent Triage Pipeline | 7/7 | — |
 | Admin & Route Wiring | 4/4 | — |
-| Phase 9 — Profile Surface Follow-ups | 4/4 | — |
+| Phase 9 — Profile Surface Follow-ups | 6/6 | — |
 | Architecture & API Governance | 4/4 | — |
 | Complete-Game Testing | 1/1 | — |
 | Cross-App Infrastructure | 1/1 | — |
 | Next Horizons | 0/5 | 5 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **291/292 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
+| **Total** | **293/294 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
 
 **Open / blocked WPs (derived from WORK_INDEX, 1):** WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
