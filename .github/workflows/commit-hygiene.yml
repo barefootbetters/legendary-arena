@@ -70,9 +70,15 @@ jobs:
           CHANGED=$(git diff --name-only "$BASE".."$HEAD")
           FAIL=0
 
-          # No .env files
-          if echo "$CHANGED" | grep -qE '\.env$|\.env\.'; then
-            echo "::error::PR includes .env file(s). Remove before merging."
+          # No real .env secret files. The .env.example / .env.sample /
+          # .env.template templates are tracked and meant to be edited
+          # (every WP adding an env var updates .env.example), so they are
+          # excluded; only actual secret env files are forbidden. The
+          # leading (^|/) anchor also avoids false-matching paths like
+          # "something.environment".
+          ENV_FILES=$(echo "$CHANGED" | grep -E '(^|/)\.env($|\.)' | grep -vE '\.env\.(example|sample|template)$' || true)
+          if [ -n "$ENV_FILES" ]; then
+            echo "::error::PR includes real .env secret file(s): $ENV_FILES. Remove before merging (the .env.example template is allowed)."
             FAIL=1
           fi
 
