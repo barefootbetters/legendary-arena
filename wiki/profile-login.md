@@ -12,12 +12,16 @@ related:
   - operational-health-checks.md
   - hugo-web-system.md
   - data-file-locations.md
+  - r2-image-naming-convention.md
 status: draft
 source:
+  - ../docs/ai/work-packets/WP-102-public-profile-page.md
+  - ../docs/ai/work-packets/WP-104-owner-profile-data-model-and-me-edit.md
   - ../docs/ai/work-packets/WP-160-hanko-client-ui.md
   - ../docs/ai/work-packets/WP-161-arena-client-api-base-url.md
   - ../docs/ai/work-packets/WP-174-first-signin-auto-provisioning.md
   - ../docs/ai/work-packets/WP-175-arena-client-auth-nav.md
+  - ../docs/ai/work-packets/WP-296-avatar-cdn-host-unification.md
   - ../docs/ai/work-packets/WORK_INDEX.md
 last-reviewed: 2026-06-30
 ---
@@ -139,11 +143,25 @@ display label plus "My profile" and "Sign out".
 
 ### Profile surface
 
-The profile pages are a parallel chain rooted in the identity model:
-public read-only profile (WP-102), owner profile and `/me` edit
-(WP-104), team affiliation (WP-109), badges, avatar upload, and billing
-history (WP-105 through WP-108). These all render in arena-client and
-read through the same authenticated API surface.
+The user profile is **two distinct pages plus layered data**, all
+rendered in **arena-client** and read through the same authenticated API.
+Like the login screen, none of it lives in the marketing repo:
+
+| Surface | Work Packet | Route / location | What it is |
+|---------|-------------|------------------|------------|
+| Public profile (read-only) | WP-102 (route wired by WP-152) | by player handle | `PublicProfileView` (closed field shape); returns **404** on no-match. |
+| Owner profile + edit | WP-104 | `?route=me` → `MyProfilePage.vue` | The signed-in player's own editable profile. Migration `009_create_player_profiles_and_links.sql` creates `legendary.player_profiles` + `legendary.player_links`; `PATCH /api/me/profile` is the edit path. |
+| Team affiliation | WP-109 | both profile views | Profile-level cooperative cohorts; extends `PublicProfileView` (4→5 keys) and `OwnerProfileView` (7→8 keys). |
+| Badges | WP-105 | both profile views | Tier-1 gameplay badges (migration 013); fire-and-forget issuance in the competition pipeline. |
+| Avatar | WP-106 — **host unified by [WP-296](../docs/ai/work-packets/WP-296-avatar-cdn-host-unification.md)** | owner profile | `POST /api/me/avatar` upload pipeline. Avatars are served from `https://images.legendary-arena.com/avatars/{accountId}.webp` — the **same** Cloudflare custom domain + `legendary-images` R2 bucket as card images, unified under **D-24083** (WP-296, 2026-06-30). The legacy `images.barefootbetters.com` avatar host is retired; `AVATAR_CDN_BASE`, the closed-origin `validateAvatarUrl` allowlist, and existing `avatar_url` rows (migration 021) all moved. See [R2 Image Naming Convention](r2-image-naming-convention.md). |
+| Billing & funding history | WP-108 | `BillingSection` in `MyProfilePage.vue` | Benefits / purchase history / community funding panels; `GET /api/me/billing/history`. |
+| Integrity / anti-cheat | WP-107 | admin-only | `/api/admin/players/:handle/` suspend / integrity / unsuspend endpoints over profiles. |
+
+The header's "My profile" link (WP-175) points at `?route=me`; the
+public profile is reached by handle. The `www.legendary-arena.com` Hugo
+content tree (`content/`: `about`, `brand`, `shop`, `tournaments`,
+`leaderboard`, `posts`, `emails`, `diorama`) contains **no profile or
+login surface** — confirming the play-vs-www split below.
 
 ## Interactions
 
@@ -197,6 +215,12 @@ read through the same authenticated API surface.
 - [WP-161 — Arena Client API Base URL](../docs/ai/work-packets/WP-161-arena-client-api-base-url.md)
 - [WP-174 — First-Sign-In Auto-Provisioning](../docs/ai/work-packets/WP-174-first-signin-auto-provisioning.md)
 - [WP-175 — Arena Client Auth-Aware Navigation](../docs/ai/work-packets/WP-175-arena-client-auth-nav.md)
+- [WP-102 — Public Player Profile Page](../docs/ai/work-packets/WP-102-public-profile-page.md)
+  — read-only profile (route wired by [WP-152](../docs/ai/work-packets/WP-152-wire-public-profile-route.md)).
+- [WP-104 — Owner Profile Data Model & `/me` Edit](../docs/ai/work-packets/WP-104-owner-profile-data-model-and-me-edit.md)
+  — owner profile + edit; migration 009.
+- [WP-296 — Avatar CDN Host Unification](../docs/ai/work-packets/WP-296-avatar-cdn-host-unification.md)
+  — avatars moved to `images.legendary-arena.com` (D-24083).
 - [WP-159 — Admin Session Gate](../docs/ai/work-packets/WP-159-admin-session-gate.md)
 - [WORK_INDEX.md](../docs/ai/work-packets/WORK_INDEX.md) — Auth Stack and
   Profile Surface dependency trees.
