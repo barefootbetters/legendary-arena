@@ -7,6 +7,21 @@
 
 ## Current State
 
+### WP-293 / EC-325 Executed — Game-Signup → Brevo Marketing List (Server-Side, Fire-and-Forget; D-24077..D-24080) (2026-06-29)
+
+**WP-293 done (Server layer).** Closes the auth-strategy gap: WP-174 captured each new player's Hanko-verified email in `legendary.players`, but no path carried it to Brevo (the `www` newsletter form → Brevo is a separate surface game signups never touch). On first-sign-in provisioning the server now best-effort adds that email to the **existing** Brevo newsletter list — **fire-and-forget, fail-open** (a Brevo outage / HTTP error / missing config is swallowed and provisioning is unaffected; D-24077, mirroring the badge-issuance hook D-10501).
+
+**What shipped:**
+- New `apps/server/src/marketing/`: `brevoClient.types.ts` (`BrevoClient` interface) + `brevoEnqueue.logic.ts` — `enqueuePlayerToMarketingList` (the single fail-open boundary) + `createBrevoClient` (built-in `fetch`, injectable for tests; `POST /v3/contacts`, `updateEnabled:true`; throws on non-2xx).
+- `accountResolver.logic.ts`: new `createProductionAccountResolver` factory threads an optional `marketingEnqueue` to the provisioning branch; the legacy `productionAccountResolver` const stays as the no-marketing default. The locked 2-arg `AccountResolver` interface is **unchanged** (no contract widening, no global singleton; D-24079).
+- `server.mjs`: `loadBrevoConfig` (best-effort, **NOT production-fatal**; D-24080) builds the client + `marketingEnqueue` from `BREVO_API_KEY`+`BREVO_LIST_ID` and injects one marketing-enabled resolver across all authenticated route wirings. `.env.example` + `render.yaml` declare the two vars (`sync:false`).
+- Consent via Brevo list-level double-opt-in; existing list reused, no `SIGNUP_SOURCE` attribute, no PG subscription state (D-24078). `accountProvisioning.logic.ts` / `identity.*` / `accountLookup.logic.ts` / `sessionToken.logic.ts` byte-identical.
+
+**Measured result.** Server `test` **643 → 650 / 0 fail / 66 skipped** (+7: 5 `brevoEnqueue.logic.test.ts` + 2 `accountResolver.logic.test.ts`); `pnpm -r build` **0** (server has no build/typecheck — tsx runtime path, no CI Typecheck-Server job). No new npm dependency; no HTTP endpoint added (§21 N/A). Lands **D-24077..D-24080** (Active). Two-commit topology: EC-325 impl (`8f3ed294`) + SPEC govern-close.
+
+**`User-Visible Surface = none — infrastructure`** (no in-app surface; payoff = new accounts enter the Brevo funnel). **Operator action (post-merge):** set `BREVO_API_KEY` + `BREVO_LIST_ID` in the Render dashboard to activate capture — until both are set the enqueue is a no-op by design and signup is unaffected. D-24026 live-verify (infrastructure-class): with a Brevo test list, a test first-sign-in adds a contact + DOI email — deferred to the operator dashboard step.
+
+
 ### WP-292 / EC-324 Executed — Villain Defeat-Requirement Gate (Game Engine + card-data overlay; D-24076) (2026-06-29)
 
 **WP-292 done (Game Engine + a surgical card-data overlay).** Enforces the printed villain restriction *"You can't defeat X unless you have a [class/team] Hero,"* which was shipping as **cosmetic card text** — an operator defeated **Blob** with an all-Avengers/Guardians board and no X-Men Hero (diagnostics `gitSha b108dc4`, match `FC6toc2rQQG`); the villain ledger confirmed `Blob = (unmarked)`. This is a fight **precondition** (checked before the fight resolves), architecturally distinct from the `onFight`/`onAmbush`/`onEscape` consequence hooks — there was no fight-precondition primitive in the engine at all.
