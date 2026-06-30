@@ -178,7 +178,7 @@ describe('owner profile logic (WP-104)', () => {
 
   test('validateAvatarUrl enforces closed-origin allowlist per D-10601', () => {
     const testAccountId = 'test-acct-owner-profile-drift';
-    const canonicalUrl = `https://images.barefootbetters.com/avatars/${testAccountId}.webp`;
+    const canonicalUrl = `https://images.legendary-arena.com/avatars/${testAccountId}.webp`;
 
     const accepted = validateAvatarUrl(canonicalUrl, testAccountId);
     assert.ok(accepted.ok === true);
@@ -192,7 +192,7 @@ describe('owner profile logic (WP-104)', () => {
     );
 
     const rejectedOtherUser = validateAvatarUrl(
-      'https://images.barefootbetters.com/avatars/other-user.webp',
+      'https://images.legendary-arena.com/avatars/other-user.webp',
       testAccountId,
     );
     assert.ok(rejectedOtherUser.ok === false);
@@ -209,7 +209,7 @@ describe('owner profile logic (WP-104)', () => {
     );
 
     // Without accountId, prefix-only check accepts any R2 URL
-    const acceptedPrefix = validateAvatarUrl('https://images.barefootbetters.com/avatars/any.webp');
+    const acceptedPrefix = validateAvatarUrl('https://images.legendary-arena.com/avatars/any.webp');
     assert.ok(acceptedPrefix.ok === true);
 
     // Without accountId, rejects non-R2 URLs

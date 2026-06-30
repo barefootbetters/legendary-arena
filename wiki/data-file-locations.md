@@ -101,7 +101,7 @@ reverse. Key prefixes:
 | Prefix | Contents | Host constant |
 |--------|----------|---------------|
 | `{setAbbr}/{setAbbr}-{ribbon}-{slug}.webp` | Card images, per-set directory | `R2_BASE_URL` → `images.legendary-arena.com` ([`heroImageUrl.ts`](../packages/registry/src/heroImageUrl.ts)) |
-| `avatars/{accountId}.webp` | Player avatars, keyed by immutable AccountId | `AVATAR_CDN_BASE` → `images.barefootbetters.com` ([`avatarUpload.logic.ts`](../apps/server/src/profile/avatarUpload.logic.ts)) — see Edge Cases |
+| `avatars/{accountId}.webp` | Player avatars, keyed by immutable AccountId | `AVATAR_CDN_BASE` → `images.legendary-arena.com` ([`avatarUpload.logic.ts`](../apps/server/src/profile/avatarUpload.logic.ts)) |
 | `metadata/` | Mirror of the converted card + metadata JSON | convert pipeline / rclone copy |
 | `themes/` | Gameplay UI themes from [`content/themes/`](../content/themes/) | [`scripts/upload-themes-to-r2.mjs`](../scripts/upload-themes-to-r2.mjs) |
 | `legends/…json` | Legends Snapshot Publisher output (separate `R2_LEGENDS_BUCKET`) | render.yaml secrets |
@@ -185,12 +185,15 @@ R2 credentials are **not committed**: local `.env` carries
 
 ## Edge Cases
 
-- **Two avatar/card image hosts.** Card images resolve to
-  `images.legendary-arena.com` (`R2_BASE_URL`) but avatars still resolve to
-  the legacy `images.barefootbetters.com` (`AVATAR_CDN_BASE`). Both are
-  custom domains over the same `legendary-images` bucket; the split is a
-  known drift, not two buckets. Verify the constant in code before quoting a
-  host.
+- **One image host (avatar/card split resolved, WP-296 / D-24083).** Card
+  images (`R2_BASE_URL`) and player avatars (`AVATAR_CDN_BASE`) both now
+  resolve to `images.legendary-arena.com`, two host constants over the same
+  `legendary-images` bucket. Avatars were historically on the legacy
+  `images.barefootbetters.com` host; WP-296 unified them (constant swap +
+  migration 021 rewriting existing `avatar_url` rows). Any remaining
+  `images.barefootbetters.com/avatars` reference is stale. (The
+  `images.barefootbetters.com/metadata` and `/docs` hosts are a separate
+  surface and were out of WP-296's scope.)
 - **Two `card-types.json` files.** The in-repo
   `data/metadata/card-types.json` is the Registry-Viewer taxonomy with **no**
   image-ribbon prefixes; the authoritative prefix registry is the *upstream*

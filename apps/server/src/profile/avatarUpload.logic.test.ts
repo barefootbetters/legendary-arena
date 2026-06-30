@@ -110,7 +110,7 @@ describe('avatarUpload — buildAvatarUrl', () => {
   test('constructs canonical CDN URL', () => {
     assert.equal(
       buildAvatarUrl('abc-123'),
-      'https://images.barefootbetters.com/avatars/abc-123.webp',
+      'https://images.legendary-arena.com/avatars/abc-123.webp',
     );
   });
 });
@@ -259,7 +259,7 @@ describe('avatarUpload — processAvatarUpload', () => {
 
 describe('avatarUpload — validateAvatarUrl closed-origin (D-10601)', () => {
   const testAccountId = 'test-account-abc-123';
-  const canonicalUrl = `https://images.barefootbetters.com/avatars/${testAccountId}.webp`;
+  const canonicalUrl = `https://images.legendary-arena.com/avatars/${testAccountId}.webp`;
 
   test('accepts canonical URL for the authenticated user', () => {
     const result = validateAvatarUrl(canonicalUrl, testAccountId);
@@ -275,7 +275,7 @@ describe('avatarUpload — validateAvatarUrl closed-origin (D-10601)', () => {
   });
 
   test('rejects another user\'s canonical avatar URL', () => {
-    const otherUrl = 'https://images.barefootbetters.com/avatars/other-user-id.webp';
+    const otherUrl = 'https://images.legendary-arena.com/avatars/other-user-id.webp';
     const result = validateAvatarUrl(otherUrl, testAccountId);
     assert.equal(result.ok, false);
     if (result.ok === false) {
@@ -292,7 +292,7 @@ describe('avatarUpload — validateAvatarUrl closed-origin (D-10601)', () => {
   });
 
   test('rejects HTTP (non-HTTPS) URL', () => {
-    const result = validateAvatarUrl('http://images.barefootbetters.com/avatars/test.webp', testAccountId);
+    const result = validateAvatarUrl('http://images.legendary-arena.com/avatars/test.webp', testAccountId);
     assert.equal(result.ok, false);
     if (result.ok === false) {
       assert.equal(result.code, 'invalid_avatar_url');
@@ -300,7 +300,7 @@ describe('avatarUpload — validateAvatarUrl closed-origin (D-10601)', () => {
   });
 
   test('without accountId, accepts R2 prefix', () => {
-    const result = validateAvatarUrl('https://images.barefootbetters.com/avatars/any-id.webp');
+    const result = validateAvatarUrl('https://images.legendary-arena.com/avatars/any-id.webp');
     assert.equal(result.ok, true);
   });
 

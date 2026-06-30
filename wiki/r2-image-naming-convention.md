@@ -232,7 +232,11 @@ are assigned in code rather than derived from `card-types.json` (see Edge Cases)
 - **The host moved.** Image URLs were historically on
   `images.barefootbetters.com`; the current host is
   `images.legendary-arena.com`, the single constant `R2_BASE_URL`. Any older
-  reference to the barefootbetters host is stale.
+  reference to the barefootbetters host is stale. The player-avatar surface
+  (`AVATAR_CDN_BASE` in `apps/server/src/profile/avatarUpload.logic.ts`) was
+  the last code path still on the legacy host; WP-296 / D-24083 unified it
+  onto `images.legendary-arena.com` (same `legendary-images` bucket), so card
+  images and avatars now share one host.
 
 ## Code Touchpoints
 
