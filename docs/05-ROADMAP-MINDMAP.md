@@ -168,6 +168,7 @@ mindmap
         ["WP-174 ✅ First-sign-in auto-provisioning (read-or-create account resolver)"]
         ["WP-175 ✅ Auth-aware navigation surface"]
         ["WP-192 ✅ Hanko JWKS refresh-interval parse guard"]
+        ["WP-293 ✅ Game-signup → Brevo marketing list (server fire-and-forget, fail-open after WP-174 provisioning; D-24077..D-24080)"]
 
       Engine + Server Wiring & Leaderboard HTTP
         ["WP-113 ✅ Engine-server registry wiring"]
@@ -220,6 +221,7 @@ mindmap
         ["WP-136 ✅ JSDOM opaque-origin storage fix"]
         ["WP-137 ✅ Hero card-instance distinctness + data-driven cardCounts"]
         ["WP-191 ✅ Card ext_id grammar reconciliation (zone instance IDs)"]
+        ["WP-294 ✅ Separate the message log from the finalStateHash oracle (hashGameState excludes G.messages; notableEvents stays hashed; D-24081)"]
 
       Physical Card Pipeline
         ["WP-138 ✅ Physical card abstraction layer"]
@@ -305,6 +307,7 @@ mindmap
         ["WP-286 ✅ One-Hit Wonder draw-or-empowered interactive choose-one"]
         ["WP-287 ✅ Draw-or-empowered choose-one UX (projection + client prompt)"]
         ["WP-289 ✅ Sim move-dispatch completeness for interactive resolve moves (WP-286 follow-up)"]
+        ["WP-295 ✅ Hero play + condition-skip observability logging (G.messages → UIState.log; condition-fail mutates only the log; D-24082)"]
         ["WP-290 ✅ Size-Changing hero class-grant on play (third re-draft target off the runtime-observed ranking — clears the size-changing/parse-unrecognized hollow on antm/jocasta/holographic-image-inducer gitSha 988ad2e; implements the printed 'when you play this card, it has the [Class] class' as a class-grant realized at class-read time, mirroring the WP-273 wall-crawl recognized-keyword-no-onPlay-handler pattern; new 'size-changing' keyword 22→23 + HeroAbilityHook.sizeChangingClasses + immutable G.cardSizeChangingClasses parsed at setup where the same-line [hc:...] is the GRANTED class NOT a heroClassMatch condition; new pure hero/sizeChanging.logic.ts cardHasClassWhenPlayed/getGrantedClasses effective class = printed ∪ granted with cardTraits never mutated, consulted by both inPlay class reads heroClassMatch + distinctHeroClassesAtLeast; 'size-changing' joins a new CLASS_GRANT_KEYWORDS set → MVP_KEYWORDS with no HERO_EFFECT_HANDLERS entry handler count unchanged at 10; grant proven load-bearing — null-printed-class yellowjacket/goliath + printed≠granted giant-ego/swarm-tactics; conditional-spread omit-when-empty G field keeps no-Size-Changing games byte-identical so no sentinel re-pin; Attack-as-VP no hero-deck VP scoring + Microscopic + villain/divided-card + UIState class display deferred follow-ups; engine test 1666→1687/0, pnpm -r build 0, ledger size-changing→executable 16 rows, runtime-observed hollow removed 11→10 mechanics, sim:coverage no regression; User-Visible Surface play.legendary-arena.com D-24026 post-deploy; 2026-06-28 commit 396526f3; D-24074)"]
         ["WP-292 ✅ Villain defeat-requirement gate — 'You can't defeat X unless you have a [class/team] Hero' (operator field report: Blob defeated with an all-Avengers/Guardians board + no X-Men Hero, gitSha b108dc4 match FC6toc2rQQG; ledger confirmed Blob=(unmarked) — the printed restriction was cosmetic card text, never enforced; a fight PRECONDITION distinct from the onFight/onAmbush/onEscape consequence hooks, the first fight-precondition primitive in the engine; new VillainDefeatRequirement {kind 'team'|'hero-class', value} + VILLAIN_DEFEAT_REQUIREMENT_KINDS drift array; new marker [require-to-defeat:<kind>:<value>] team→'team' hc→'hero-class' parsed by setup/villainDefeatRequirement.setup.ts into per-instance entries via villainCardInstanceExtIds, unknown-kind/empty-value/no-marker→no entry no throw; immutable G.villainDefeatRequirements built via conditional-spread omit-when-empty so matches without a marked villain stay byte-identical; pure moves/villainDefeatRequirement.logic.ts getDefeatRequirement + playerMeetsDefeatRequirement scanning hand∪inPlay ONLY — discard/deck excluded operator decision — the single gate authority; fightVillain silent-return precondition gate after the attack-cost check mirroring the Guard-block posture no mutation/message/event/throw on block; data overlay apply-defeat-requirement-markers.mjs + villain-defeat-requirements.json marks Blob core/brotherhood team:x-men + Venom core/spider-foes hc:covert + Zombie Venom ssw1/deadlands-the hc:covert, cvwr Size-Changing Venom left unmarked, idempotent surgical append re-run=zero-line diff; mastermind/henchman/multi-requirement/ledger-recognition/UX-hint deferred follow-ups; engine test 1687→1710/0 +23, pnpm -r build 0, sim:runtime-observed:check byte-current no re-pin; User-Visible Surface play.legendary-arena.com D-24026 post-deploy; 2026-06-29 commit 3e732c7f; D-24076)"]
         ["WP-273 ✅ Wall-Crawl onRecruit keyword + optional recruit-to-deck placement (first effect-authoring grind target off /coverage's runtime-observed ranking — wall-crawl is the 2nd-highest in-play hollow, 23 obs, 14 heroes/29 lines, Spider sets; makes the printed when-you-recruit-this-Hero-you-may-put-it-on-top-of-your-deck keyword execute: recognizes the existing [keyword:Wall-Crawl] marker + gives it an onRecruit default timing via a new KEYWORD_TIMING_DEFAULTS map so the recognized marker leaves the onPlay path empty and stops firing parse-unrecognized, + adds an additive optional toTopOfDeck arg to recruitHero placing a recruited wall-crawl hero on the top of the player's own deck instead of discard; flips wall-crawl unsupported→executable 29 lines + drops the 23 onPlay hollows; clean self-contained — no new zone model, no pending-choice/board-freeze, no new move so game.test.ts move-count unchanged; builds the first reusable onRecruit execution path; marker already in card data so no data/cards change; bot defaults toTopOfDeck false so the deterministic sweep zone state is unchanged, sentinel re-pinned only on divergence, all coverage artifacts regenerated; dodge/undercover/unleash ecosystem + the arena-client put-on-top toggle deferred; User-Visible Surface dashboard/coverage, D-24026 post-deploy; D-24049)"]
@@ -432,20 +435,20 @@ mindmap
 | Beta-Launch Pillar | 5/5 | — |
 | Engine Hardening | 2/2 | — |
 | Client Integration Cluster | 21/21 | — |
-| Auth Stack & Profile Surface | 14/14 | — |
+| Auth Stack & Profile Surface | 15/15 | — |
 | Engine + Server Wiring & Leaderboard HTTP | 3/3 | — |
 | Registry Viewer Enhancements | 23/23 | — |
 | Phase 8 — Interactive Board Layout | 3/3 | — |
 | G-State Extensions | 4/4 | — |
 | Monetization Stack | 3/3 | — |
-| Engine & Test-Harness Cleanup | 4/4 | — |
+| Engine & Test-Harness Cleanup | 5/5 | — |
 | Physical Card Pipeline | 5/5 | — |
 | Domain Cutover & Infrastructure | 7/7 | — |
 | Public Leaderboard (Marketing) | 2/2 | — |
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
 | Villain & Henchman Effects | 11/11 | — |
-| Hero Ability Coverage & Markup Pipeline | 44/44 | — |
+| Hero Ability Coverage & Markup Pipeline | 45/45 | — |
 | Notable Events & Overlays | 4/4 | — |
 | Simulation Sweep & Analytics Pipeline | 7/7 | — |
 | Dashboard & Operator Analytics | 14/14 | — |
@@ -458,7 +461,7 @@ mindmap
 | Next Horizons | 0/5 | 5 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **288/289 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
+| **Total** | **291/292 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
 
 **Open / blocked WPs (derived from WORK_INDEX, 1):** WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
