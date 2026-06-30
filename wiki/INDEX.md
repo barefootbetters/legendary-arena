@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **27 / 50** entity pages.
-> Last regenerated: 2026-06-18.
+> **28 / 50** entity pages.
+> Last regenerated: 2026-06-29.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority.
 
@@ -36,6 +36,10 @@ Coordinated subsystems spanning multiple files / phases.
 - [Scoring](scoring.md) — Two-layer measurement: scenario `ParBaseline`
   (Layer A) + per-match `FinalScore` (Layer B); version-pinned,
   replay-verified, JSON-serializable.
+- [Profile Login](profile-login.md) — Player sign-in and profile
+  surface (Hanko broker); the whole auth stack ships into arena-client
+  (`play.legendary-arena.com`); the marketing site (`www.`) has no
+  sign-in surface of its own.
 
 ## Concept
 
