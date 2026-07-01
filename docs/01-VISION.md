@@ -302,6 +302,14 @@ The distinction is precise:
 
 Profiles reflect proven history; they do not produce it.
 
+#### 19b. Profile Loadout Library (Saved, Shareable, Decorative)
+
+Players may save loadouts — deck and setup compositions in the portable LAGN format (§19) — to their account profile as a named library, and may share any saved loadout via a link or by marking it public.
+
+A saved loadout is **decorative, user-authored content** in the sense of §19a: it describes a setup the player assembled; it does not measure the player. Saved loadouts are freely editable, renameable, and deletable, and their visibility follows the same per-item private/public model as other profile content.
+
+Saved loadouts are **not** a competitive-submission path. A leaderboard or scoreboard entry is a merit-bearing surface derived from a *verified game run* (§19a, §23); a player-authored loadout file is never itself a scoreboard entry and cannot confer standing. Where a competitive run records the loadout that was played, that record is captured from the verified run — not uploaded or edited after the fact.
+
 ---
 
 ### Skill Measurement & Competitive Benchmarking
