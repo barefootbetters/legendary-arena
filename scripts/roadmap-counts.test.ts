@@ -102,11 +102,21 @@ test('parseWorkIndex count-parity holds against the real WORK_INDEX.md', () => {
   // AC#10: parseWorkIndex must capture EVERY checkbox WP row. The raw count
   // (checkbox + WP-3-digits, suffix-independent) must equal the parsed size;
   // any regex gap that drops or collides a row fails loudly here.
+  //
+  // why: the optional `**` / `~~` allows a row whose subject id is wrapped in
+  // bold or strikethrough markup (e.g. `- [x] **WP-287** — …`, a real WP row
+  // the corpus emphasises). Without it the oracle undercounts those rows while
+  // `parseWorkIndex` — which reads the first id token anywhere in the remainder
+  // — counts them, and the parity assertion fails on a legitimate row. The
+  // prefix is anchored to the id itself, so annotation rows like
+  // `- [x] **(deferred placeholder closed by WP-137 …)**` (id not the subject)
+  // stay excluded here, matching how `parseWorkIndex` dedups them against the
+  // real WP-137 row.
   const realWorkIndex = readFileSync(
     resolve(REPO_ROOT, 'docs', 'ai', 'work-packets', 'WORK_INDEX.md'),
     'utf8',
   );
-  const rawRowCount = (realWorkIndex.match(/^\s*-\s*\[[ xX]\]\s+WP-\d{3}/gm) ?? []).length;
+  const rawRowCount = (realWorkIndex.match(/^\s*-\s*\[[ xX]\]\s+(?:\*\*|~~)?WP-\d{3}/gm) ?? []).length;
   assert.ok(rawRowCount > 0, 'expected at least one WP row in WORK_INDEX.md');
   assert.equal(parseWorkIndex(realWorkIndex).size, rawRowCount);
 });
