@@ -80,9 +80,13 @@ acceptance gate.
 
 ### Packaging approach
 
-The classic `vercel/pkg` packager is archived; the strategy document evaluates
-the maintained `@yao-pkg/pkg` fork, Node's built-in Single Executable
-Applications (SEA), and `bun --compile`. Card and theme JSON ship either
+The classic `vercel/pkg` packager is archived. The strategy document's primary
+choice is the maintained `@yao-pkg/pkg` fork, with Node's built-in Single
+Executable Applications (SEA) as a parallel spike — now a one-step build via
+`--build-sea` (Node ≥25.5), no more `postject` wiring. `bun --compile` yields the
+smallest binary but runs **JavaScriptCore instead of V8**, so it is gated on
+first proving byte-identical `finalStateHash` parity — the engine-swap is a
+determinism risk, not just a library-compat one. Card and theme JSON ship either
 embedded as assets or as a verified sidecar `data/` folder beside the binary.
 
 ```
@@ -124,7 +128,7 @@ this page.
 
 | Risk | Why it bites | Mitigation / status |
 |---|---|---|
-| Determinism drift | packaging, the V8 snapshot, or a Node-version difference can perturb the hash | byte-identical replay is the Phase 1 gate; CI enforces parity |
+| Determinism drift | packaging, the V8 snapshot, a Node-version difference, or a non-V8 runtime (`bun` → JavaScriptCore) can perturb the hash | byte-identical replay is the Phase 1 gate; CI enforces parity; a non-V8 packager must clear it before adoption |
 | Antivirus / SmartScreen flags | packed Node binaries (pkg / SEA / bun) are routinely flagged | code-sign the exe; an EV/OV cert for wider distribution |
 | Native-module embedding | `sharp` / `pg` cannot live inside a V8 snapshot | Target A has no native deps; B/C ship them as sidecar `.node` files |
 | Card data at runtime | the registry reads JSON from disk at startup | embed as assets or ship a verified sidecar `data/` folder |
