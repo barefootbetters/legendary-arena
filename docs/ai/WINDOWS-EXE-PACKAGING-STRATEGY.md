@@ -8,6 +8,45 @@ This document proposes; it does not override layer boundaries or invariants.
 
 ---
 
+## At a Glance (TL;DR)
+
+**Goal.** Ship a standalone Windows `.exe` that runs the Legendary Arena game
+engine locally — no Node.js install, no database, no server.
+
+**The key realization.** `packages/game-engine` is a *library* with no
+entrypoint; something must host it. "An engine exe" is therefore three very
+different binaries, not one:
+
+| Target | Hosts | DB | Native deps | Verdict |
+|---|---|---|---|---|
+| **A — headless engine runner** | the existing `simulation/` harness (bot-vs-bot, fixture replay, determinism proof) | none | none | **Do this first** |
+| **B — local self-contained server** | `apps/server` (boardgame.io) | Postgres→SQLite | `sharp`, `pg`, boardgame.io CJS | Defer |
+| **C — full production server** | complete `apps/server` | Postgres | all of B + every route | Keep on Render |
+
+**Recommendation: Target A.** It's the truest "engine exe," ~80% already built
+(the sim harness runs headlessly today), and carries **zero native-module and
+zero database risk** — the two things that make Node→exe packaging painful.
+
+**Packaging tool.** `vercel/pkg` is archived — use **`@yao-pkg/pkg`** (spike
+`bun --compile` for A since it's pure JS; Node SEA is the fallback).
+
+**Load-bearing acceptance gate.** The binary must replay a seed to a
+**byte-identical `finalStateHash`** vs `node` on the same `dist/`. If it
+doesn't, it's worthless as an engine mirror. This is the first Phase 1 gate.
+
+**Phase 1 work packets (Target A):** WP-A1 `engine-runner` host + CLI → WP-A2
+bundle + `pkg` pipeline → WP-A3 determinism/acceptance harness → WP-A4 release +
+CI. (Phase 2 = Targets B; Phase 3/C stays on Render.) Full breakdown in §9.
+
+**Blocking decision before any WP is cut:** confirm scope = **A** (§2). That
+choice fixes the tool, dependency surface, and effort. Everything else follows.
+
+**Human-facing companion:** the ewiki page *Windows Engine Exe*
+(`wiki/windows-engine-exe.md`) is the descriptive read; this document is
+authoritative for scope, decisions, and the Definition of Done (§11).
+
+---
+
 ## 1. Purpose
 
 Produce a **standalone Windows `.exe`** that runs the Legendary Arena game engine
