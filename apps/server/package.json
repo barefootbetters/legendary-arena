@@ -13,6 +13,7 @@
     "@aws-sdk/client-s3": "^3.600.0",
     "@koa/multer": "^3.0.2",
     "@legendary-arena/game-engine": "workspace:*",
+    "@legendary-arena/lagn": "workspace:*",
     "@legendary-arena/registry": "workspace:*",
     "boardgame.io": "^0.50.0",
     "koa-body": "^5.0.0",

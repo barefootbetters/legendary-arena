@@ -256,6 +256,9 @@ importers:
       '@legendary-arena/game-engine':
         specifier: workspace:*
         version: link:../../packages/game-engine
+      '@legendary-arena/lagn':
+        specifier: workspace:*
+        version: link:../../packages/lagn-spec
       '@legendary-arena/registry':
         specifier: workspace:*
         version: link:../../packages/registry
