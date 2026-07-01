@@ -26144,4 +26144,22 @@ Protect this file.
 
 **Packet:** WP-302 + EC-333. **Drafted:** 2026-07-01.
 
+### D-24088 — Engine-Runner Host: `apps/engine-runner` Is a New App-Layer CLI Consuming the Public Engine Simulation Surface (Target A, Phase 1; No Packaging, No Engine Change)
+
+**Status:** **Drafted 2026-07-01; not yet landed** (reserved by WP-304 / EC-334; flips to Active when WP-304 executes).
+
+**Context.** `docs/ai/WINDOWS-EXE-PACKAGING-STRATEGY.md` recommends **Target A** — a standalone Windows `.exe` that runs the engine's headless simulation harness — as the first packaging target, decomposed A1 (engine-runner host + CLI) → A2 (bundle + pkg) → A3 (determinism / exe-parity harness) → A4 (release / CI). The engine already re-exports the bot-vs-bot harness (`runSimulation`, `createCompetentHeuristicPolicy`, `SimulationConfig` / `SimulationResult` / `AIPolicy`) on its public `.` surface (`packages/game-engine/src/index.ts`); the registry already loads card data from local files (`createRegistryFromLocalFiles`). Today the only headless drivers are `scripts/*.mjs` that deep-import `packages/game-engine/dist/simulation/*` — a repo-script shortcut, not a layered app surface.
+
+**Decision.** WP-304 SHALL add a new **`apps/engine-runner`** app — a host at the `apps/server` tier — that loads the registry from local files and drives the public simulation harness via a CLI. Locked choices:
+
+- **New app-layer CLI, public surface only.** `apps/engine-runner` MAY import `@legendary-arena/game-engine` (Runtime-Safe `.` subpath), `@legendary-arena/registry` (incl. `/setupContract`), and Node built-ins; it MUST NOT import `boardgame.io` directly, `pg`, `apps/server`, `preplan`, `vue-sfc-loader`, `@legendary-arena/game-engine/setup`, or any browser API, and MUST NOT deep-import `packages/game-engine/dist/**`. Its import-rules row is added to `ARCHITECTURE.md §Package Import Rules` and mirrored in `.claude/rules/architecture.md` (lockstep, per the D-24086 mirror-sync precedent).
+- **Target-A A1 scope only.** This packet ships the node-runnable runner + CLI (`run` + determinism `verify`) and its tests. **No packaging** (esbuild / pkg / SEA / bun / `.exe`), **no CI release job**, **no fixture-replay**, and **no `finalStateHash`** exposure — the latter two need `src/test/fixtures/*` on the public surface and are deferred to later WPs. No engine or registry source change.
+- **Determinism via the public contract.** `verify` runs an identical simulation twice and asserts a byte-identical `SimulationResult`, resting on `runSimulation`'s documented purity. The exe-vs-`node` `finalStateHash` parity gate (the strategy's load-bearing acceptance test) belongs to the packaging WP, not here.
+
+**Consequence.** `User-Visible Surface = none` (dev / ops tooling) → D-24026 N/A. No HTTP endpoint and no library-import-from-`apps/server` surface → `api-endpoints.md` / D-11804 / `00.3 §21` N/A. The runner is the foundation the packaging WP (A2) bundles into `legendary-engine.exe`. Supersedes nothing.
+
+**Rejected alternatives.** (a) A new `@legendary-arena/game-engine/simulation` export subpath — unnecessary; the harness is already on the `.` surface, so the runner needs no engine change. (b) Bundling A1 + A2 (build the runner AND produce the `.exe`) in one WP — mixes app code with build-tooling / binary concerns that can't be unit-tested as one unit; kept separate. (c) Deep-importing `dist/simulation/*` like the repo scripts — a layer violation for an app; the public surface is the contract. (d) Including fixture-replay / `finalStateHash` now — needs exposing `src/test/fixtures/*`; deferred.
+
+**Packet:** WP-304 + EC-334. **Drafted:** 2026-07-01.
+
 Protect this file.
