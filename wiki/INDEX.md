@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **33 / 50** entity pages.
-> Last regenerated: 2026-06-30.
+> **34 / 50** entity pages.
+> Last regenerated: 2026-07-01.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority.
 
@@ -36,6 +36,11 @@ Coordinated subsystems spanning multiple files / phases.
 - [Scoring](scoring.md) — Two-layer measurement: scenario `ParBaseline`
   (Layer A) + per-match `FinalScore` (Layer B); version-pinned,
   replay-verified, JSON-serializable.
+- [PAR Simulation Calibration](par-simulation-calibration.md) — The
+  Monte-Carlo pipeline that *devises* a scenario's PAR: the T2 competent
+  heuristic plays 500+ complete games, each scored with the live Raw Score
+  formula, and PAR is the 55th percentile of the distribution; hashed,
+  immutable `seed`/`simulation` artifacts gate leaderboard submission.
 - [Profile Login](profile-login.md) — Player sign-in and profile
   surface (Hanko broker); the whole auth stack ships into arena-client
   (`play.legendary-arena.com`); the marketing site (`www.`) has no
@@ -189,6 +194,7 @@ following are useful entry points:
   [Card Type Taxonomy](card-type-taxonomy.md),
   [Board Keywords](board-keywords.md),
   [Scoring](scoring.md),
+  [PAR Simulation Calibration](par-simulation-calibration.md),
   [Complete-Game Fixtures](complete-game-fixtures.md)
 - **`determinism`** — Pages where the engine's determinism invariant
   is the load-bearing concern:
@@ -196,6 +202,7 @@ following are useful entry points:
   [Turn System](turn-system.md),
   [CardExtId](cardextid.md),
   [Scoring](scoring.md),
+  [PAR Simulation Calibration](par-simulation-calibration.md),
   [Complete-Game Fixtures](complete-game-fixtures.md)
 - **`trigger`** — Pages that emit or consume rule triggers:
   [Villain Deck](villain-deck.md),
