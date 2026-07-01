@@ -23,102 +23,127 @@ last-reviewed: 2026-07-01
 
 # Windows Engine Exe
 
-> **Status: planning, not shipped.** This page describes an effort that has
-> **not landed in `main`**. It is a descriptive companion to the strategy
-> document at
-> [`docs/ai/WINDOWS-EXE-PACKAGING-STRATEGY.md`](../docs/ai/WINDOWS-EXE-PACKAGING-STRATEGY.md),
-> which is authoritative for scope, decisions, work packets, and the
-> Definition of Done. This page cites that document; it does not restate its
-> decisions. It will be promoted from `draft` to `canonical` once the Phase 1
-> binary exists and can be verified.
+> **Status: planning, not shipped.** This page describes a packaging and
+> distribution effort that has **not landed in `main`**. It is a descriptive
+> companion to the authoritative strategy document at
+> [`docs/ai/WINDOWS-EXE-PACKAGING-STRATEGY.md`](../docs/ai/WINDOWS-EXE-PACKAGING-STRATEGY.md)
+> — that document owns scope, decisions, work packets, and the Definition of
+> Done; this page cites it rather than restating them. It is promoted from
+> `draft` to `canonical` once the Phase 1 binary exists and its determinism
+> parity test passes.
 
 ## Summary
 
-The Windows Engine Exe is a proposed standalone `.exe` that runs the Legendary
-Arena game engine on a Windows machine **without a Node.js install, without a
-database, and without the server**. Its Phase 1 target is a *headless engine
-runner*: it hosts the engine's existing simulation harness to play bot-vs-bot
-matches, replay fixtures, and prove determinism as a single distributable
-binary. It is a packaging and distribution effort — no gameplay rule, move,
-phase, or determinism contract changes.
+The Windows Engine Exe is a proposed standalone Windows executable that runs the
+Legendary Arena game engine **locally — no Node.js install, no database, no
+server**. Its Phase 1 target is a *headless engine runner*: play bot-vs-bot
+matches, replay complete-game fixtures, and prove determinism, as one
+distributable binary. Production multiplayer hosting stays on Render; the exe is
+a complementary local verification-and-distribution vehicle, and it changes no
+gameplay rule, move, phase, or determinism contract.
 
 ## Mechanics
 
-`packages/game-engine` is a **library**: its `main` is `dist/index.js` and it
-exports `LegendaryGame`. It has no process entrypoint and cannot run by itself —
-something has to *host* it. The strategy document identifies three possible
-hosts and recommends the smallest one for the first binary:
+`packages/game-engine` is a **library** (`main` → `dist/index.js`, exports
+`LegendaryGame`) with no process entrypoint — something must *host* it. The
+monorepo is ESM-only on Node ≥22; the engine and registry compile to `dist/`
+via `tsc`, but `apps/server` runs TypeScript through the `tsx` loader at runtime
+and has **no build step**, and the card registry reads its JSON from the
+**filesystem** at startup. Those facts make Target A cheap (pure JavaScript, no
+native dependencies, no database) and Targets B/C expensive.
 
-- **Target A — headless engine runner (the Phase 1 target).** Hosts the
-  engine's `simulation/` harness only. No network, no database, no native
-  modules. This is the truest reading of "an exe of the game engine," and it is
-  already substantially built: the same harness is driven headlessly today by
-  the repo's simulation scripts.
-- **Target B — local self-contained server.** Packages `apps/server`
-  (the boardgame.io host), which pulls in native `sharp`, `pg`/PostgreSQL, and
-  boardgame.io's CJS-only server bundle. Deferred.
-- **Target C — full production server.** Recommended to stay on Render rather
-  than ship as a binary.
+### The three hosts, and why Target A is Phase 1
 
-The packaging constraints the strategy document works within are all properties
-of the current codebase: the monorepo is **ESM-only on Node ≥22**; the engine
-and registry already compile to `dist/` via `tsc`, but `apps/server` runs
-TypeScript through the `tsx` loader at runtime and has no build step; the card
-registry reads its JSON from the **filesystem** at startup, so any binary must
-carry that data as an asset or sidecar folder. These are the facts that make
-Target A cheap (pure JS, no native deps, no DB) and Targets B/C expensive.
+The strategy document evaluates three possible hosts and recommends the smallest
+viable surface for the first binary.
+
+| Target | What the exe runs | Datastore | Native deps | Phase |
+|---|---|---|---|---|
+| **A — Headless engine runner** | the existing `simulation/` harness only: bot-vs-bot play, fixture replay, determinism proof | none | none | **Phase 1 (recommended)** |
+| **B — Local self-contained server** | `apps/server` (boardgame.io host) | Postgres → SQLite / in-memory | `sharp`, `pg`, boardgame.io CJS bundle | deferred |
+| **C — Full production server** | the complete `apps/server` | Postgres (external) | all of B + every route's deps | stays on Render |
+
+Target A goes first because it has the **lowest dependency surface** → the
+fastest path to a verifiable binary; it **reuses the exact harness** PAR
+calibration and fixture replay already drive headlessly today; it has **zero
+native modules** → simpler asset bundling and a lower antivirus surface; and it
+delivers **immediate local value** for determinism verification and offline
+simulation work.
+
+### Determinism — the acceptance gate
+
+Determinism is the entire point of the binary. The exe must produce a
+**byte-identical `finalStateHash`** for a given seed, matching `node` running
+the same `dist/` tree. If it does not, it is worthless as an engine mirror. The
+strategy document makes this parity check the first, non-negotiable Phase 1
+acceptance gate.
+
+### Packaging approach
 
 The classic `vercel/pkg` packager is archived; the strategy document evaluates
 the maintained `@yao-pkg/pkg` fork, Node's built-in Single Executable
-Applications (SEA), and `bun --compile`, and treats a byte-identical
-determinism-hash replay (binary vs `node` on the same `dist/` and seed) as the
-load-bearing acceptance test.
+Applications (SEA), and `bun --compile`. Card and theme JSON ship either
+embedded as assets or as a verified sidecar `data/` folder beside the binary.
+
+```
+  pnpm -r build ──▶ packages/*/dist   (ESM, pure JS)
+        │
+        ├── + card / theme JSON       (embedded assets or sidecar data/)
+        ▼
+  esbuild bundle ──▶ engine-runner entry
+        ▼
+  @yao-pkg/pkg  |  Node SEA  |  bun --compile
+        ▼
+  legendary-engine.exe
+        └── modes:  run-match  ·  replay-fixture  ·  verify-determinism
+```
 
 ## Interactions
 
-- **[PAR Simulation Calibration](par-simulation-calibration.md).** This is the
-  closest neighbour. The Windows Engine Exe and the PAR pipeline **host the same
-  headless substrate** — the engine's `simulation/` harness
-  ([`sweep.runner.ts`](../packages/game-engine/src/simulation/sweep.runner.ts),
-  the T2 competent policy in
-  [`ai.competent.ts`](../packages/game-engine/src/simulation/ai.competent.ts),
-  and the per-game Monte-Carlo loop in
-  [`par.aggregator.ts`](../packages/game-engine/src/simulation/par.aggregator.ts)).
-  PAR Calibration uses that harness to *derive a scenario's PAR value*; the
-  Windows exe would *package that harness as a distributable binary*. They are
-  neighbours, not the same concern: one is a calibration methodology, the other
-  a distribution vehicle. Any new engine move must be added to that harness's
-  `MOVE_MAP` regardless of which host runs it — the same drift hazard both this
-  binary and calibration inherit.
-- **[Complete-Game Fixtures](complete-game-fixtures.md).** Fixture replay is one
-  of the Phase 1 runner's modes; the exe would replay recorded games through the
-  same duplicated move-dispatch path the fixture harness uses, and its
-  determinism check compares the resulting `finalStateHash` against `node`.
-- **[Scoring](scoring.md).** Bot matches run under the same Raw Score formula;
-  the exe changes nothing about scoring, it only relocates where the harness
-  executes.
-- **[Wiki Viewer](wiki-viewer.md).** This page is authored under the wiki schema
-  and projected read-only to `ewiki.legendary-arena.com`, like every other page.
+- **[PAR Simulation Calibration](par-simulation-calibration.md).** The nearest
+  neighbour. Both drive the same headless `simulation/` harness —
+  [`sweep.runner.ts`](../packages/game-engine/src/simulation/sweep.runner.ts),
+  the T2 competent policy, and the per-game `MOVE_MAP` loop. Calibration
+  *derives PAR values* from the harness; the exe *distributes* it. Any new
+  engine move must be added to that `MOVE_MAP` regardless of which host runs it
+  — a drift risk both inherit.
+- **[Complete-Game Fixtures](complete-game-fixtures.md).** A Phase 1 runner
+  mode: the exe replays recorded games through the same move-dispatch path the
+  fixture harness uses, and its determinism check compares the resulting
+  `finalStateHash` against `node`.
+- **[Scoring](scoring.md).** Unchanged — bot matches run under the existing Raw
+  Score formula. The exe only relocates where the harness executes.
+- **[Wiki Viewer](wiki-viewer.md).** This page follows the wiki schema and is
+  projected read-only to `ewiki.legendary-arena.com`, like every other page.
 
 ## Edge Cases
+
+The hazards are packaging-environment concerns, not engine-logic ones — the
+engine is unchanged. Each is owned by the future Phase 1 work packet, not by
+this page.
+
+| Risk | Why it bites | Mitigation / status |
+|---|---|---|
+| Determinism drift | packaging, the V8 snapshot, or a Node-version difference can perturb the hash | byte-identical replay is the Phase 1 gate; CI enforces parity |
+| Antivirus / SmartScreen flags | packed Node binaries (pkg / SEA / bun) are routinely flagged | code-sign the exe; an EV/OV cert for wider distribution |
+| Native-module embedding | `sharp` / `pg` cannot live inside a V8 snapshot | Target A has no native deps; B/C ship them as sidecar `.node` files |
+| Card data at runtime | the registry reads JSON from disk at startup | embed as assets or ship a verified sidecar `data/` folder |
+| Scope ambiguity | "engine exe" could mean runner, local server, or full server | the strategy document forces the choice before any work packet is cut |
 
 - **This is a plan, not a shipped tool.** Per the wiki schema, pages for
   features not yet in `main` are `draft`. Treat every forward-looking claim here
   as *proposed in the strategy document*, not as established engine behaviour.
-- **"Game engine exe" is ambiguous until scope is fixed.** The engine library
-  cannot run alone. A headless runner (Target A), a local server (Target B), and
-  a production server (Target C) are three very different binaries with very
-  different dependency surfaces; the strategy document exists to force that
-  choice before any work packet is cut.
-- **Native modules cannot be embedded.** `sharp` and `pg` (Targets B/C) ship as
-  sidecar `.node` files next to the binary, never inside the V8 snapshot. Target
-  A avoids the hazard entirely by having no native dependencies.
-- **Packed Node binaries are commonly antivirus-flagged.** Windows
-  Defender/SmartScreen routinely flags pkg/SEA output; code-signing is the
-  documented mitigation if the binary is distributed to end users.
-- **Determinism is the whole point.** If the packaged binary does not replay to a
-  byte-identical `finalStateHash` for a given seed, it has no value as an engine
-  mirror. The strategy document makes that parity the first acceptance gate.
+- **Binary size.** The Node runtime plus the card corpus can push the exe into
+  the tens of MB — acceptable for a tool, but noted for distribution.
+
+## Code Touchpoints
+
+- [`packages/game-engine/src/simulation/sweep.runner.ts`](../packages/game-engine/src/simulation/sweep.runner.ts)
+  — batch host over the scenario matrix; the harness Phase 1 packages
+- [`packages/game-engine/src/simulation/ai.competent.ts`](../packages/game-engine/src/simulation/ai.competent.ts)
+  — the T2 competent policy that drives bot-vs-bot play
+- [`packages/game-engine/src/simulation/par.aggregator.ts`](../packages/game-engine/src/simulation/par.aggregator.ts)
+  — the per-game Monte-Carlo loop and `MOVE_MAP` the runner reuses
 
 ## References
 
@@ -127,9 +152,6 @@ load-bearing acceptance test.
   pipeline, testing matrix, work-packet breakdown, and Definition of Done
 - [PAR Simulation Calibration](par-simulation-calibration.md) — the sibling
   consumer of the same headless simulation harness
-- [`packages/game-engine/src/simulation/sweep.runner.ts`](../packages/game-engine/src/simulation/sweep.runner.ts)
-  — batch host over the scenario matrix; the harness Phase 1 would package
-- [`packages/game-engine/src/simulation/ai.competent.ts`](../packages/game-engine/src/simulation/ai.competent.ts)
-  — the T2 competent policy that drives bot-vs-bot play
-- [`packages/game-engine/src/simulation/par.aggregator.ts`](../packages/game-engine/src/simulation/par.aggregator.ts)
-  — the per-game Monte-Carlo loop and `MOVE_MAP` the runner reuses
+- [Complete-Game Fixtures](complete-game-fixtures.md) — the fixture-replay
+  harness the runner reuses
+- [Scoring](scoring.md) — the Raw Score formula bot matches run under
