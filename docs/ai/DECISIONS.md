@@ -26127,7 +26127,7 @@ Protect this file.
 
 ### D-24087 — Profile Loadout Library (Client): Profile-Only MVP; Unguarded `?loadout=<shareSlug>` Public Route; Name-Level Summary; `apps/arena-client` Treats `lagn` As Opaque
 
-**Status:** **Drafted 2026-07-01; not yet landed** (reserved by WP-302 / EC-333; flips to Active when WP-302 executes).
+**Status:** **Active** (landed 2026-07-01 via WP-302 / EC-333).
 
 **Context.** WP-301 / D-24086 shipped the server half of the Vision §19b Profile Loadout Library — account-scoped storage plus the four `/api/me/loadouts*` (authenticated) + guest `/api/loadouts/:shareSlug` endpoints. WP-302 is the client half on `apps/arena-client` (play.legendary-arena.com). The play app builds loadouts only in the lobby (`lagnLoadout.ts` / `parseLoadoutJson.ts`, a one-shot match-creation flow); the profile page (`MyProfilePage.vue`) has no loadout surface, and there is no public "view a shared loadout" route. `apps/arena-client` does not import `@legendary-arena/lagn` today — its lobby reads LAGN fields hand-rolled to avoid a runtime validator import (the D-14401 boundary posture).
 
