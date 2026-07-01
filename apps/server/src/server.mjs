@@ -24,6 +24,7 @@ import { createPool } from './db/database.js';
 import { registerLeaderboardRoutes } from './leaderboards/leaderboard.routes.js';
 import { registerOwnerProfileRoutes } from './profile/ownerProfile.routes.js';
 import { registerAvatarUploadRoutes } from './profile/avatarUpload.routes.js';
+import { registerLoadoutLibraryRoutes } from './profile/loadoutLibrary.routes.js';
 import { registerProfileRoutes } from './profile/profile.routes.js';
 import { registerTeamRoutes } from './teams/team.routes.js';
 import { registerEntitlementRoutes } from './entitlements/entitlements.routes.js';
@@ -690,6 +691,18 @@ export async function startServer() {
       },
     },
     r2BucketName: process.env.R2_BUCKET_NAME ?? 'legendary-images',
+  });
+
+  // why: WP-301 / D-24086 — register the five profile-loadout-library
+  // routes (POST/GET /api/me/loadouts, PATCH/DELETE /api/me/loadouts/:id,
+  // and the guest GET /api/loadouts/:shareSlug) on the same long-lived
+  // pool. Same caller-injected auth deps as registerOwnerProfileRoutes;
+  // the guest slug read takes no auth. Saved loadouts are decorative
+  // (Vision §19b) — no leaderboard / competitive-score surface.
+  registerLoadoutLibraryRoutes(server.router, pool, {
+    requireAuthenticatedSession,
+    verifier,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
   });
 
   // why: WP-152 / D-10202 / D-11505 — wire the public profile route.
