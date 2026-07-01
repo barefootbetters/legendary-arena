@@ -14,9 +14,15 @@
 - Table: `legendary.player_loadouts` — `id uuid PK`, `player_id bigint FK→players(player_id) ON DELETE CASCADE`, `name text` (1–80, trimmed), `lagn_json jsonb`, `visibility 'private'|'public'` (CHECK, default private), `share_slug text UNIQUE` (partial-unique WHERE NOT NULL), `created_at`/`updated_at timestamptz`
 - Ownership keying: resolve `ext_id → player_id` inline (`WHERE player_id = (SELECT player_id FROM legendary.players WHERE ext_id = $1 LIMIT 1)`) — the migration-009 profile pattern, NOT an `account_id text` column
 - **`MAX_SAVED_LOADOUTS_PER_ACCOUNT = 50`** — a 51st create → `loadout_limit_reached`
-- Closed error union `LoadoutLibraryErrorCode`: `'unauthorized' | 'not_found' | 'invalid_lagn' | 'invalid_name' | 'loadout_limit_reached'` (+ generic 500) — canonical `readonly` array + drift test (mirror `OWNER_PROFILE_ERROR_CODES`)
+- Closed error union `LoadoutLibraryErrorCode`: `'unauthorized' | 'not_found' | 'invalid_lagn' | 'invalid_name' | 'loadout_limit_reached' | 'empty_update'` (+ generic 500) — canonical `readonly` array `LOADOUT_LIBRARY_ERROR_CODES` + drift test (mirror `OWNER_PROFILE_ERROR_CODES`)
 - Endpoints: `POST/GET /api/me/loadouts`, `PATCH/DELETE /api/me/loadouts/:id` (**authenticated-session-required**); `GET /api/loadouts/:shareSlug` (**guest**). `Auth` ∈ D-9905 closed set
-- `share_slug`: server-minted, random, URL-safe, opaque — NEVER derived from `id`/`name`/`accountId`; `null` when private
+- `share_slug`: server-minted via `crypto.randomBytes(SHARE_SLUG_BYTES=16)` → `base64url` (**≥128 bits, 22 chars**), opaque — NEVER derived from `id`/`name`/`accountId`; **collision-retried** until unique; `null` when private
+- **List ordering:** `GET /api/me/loadouts` returns rows `updated_at DESC`
+- **Name:** trimmed before validation, persisted trimmed; empty-after-trim or >80 → `invalid_name`
+- **LAGN storage:** persist the parsed `lagn` JSON value that passed `validate` into `jsonb` (Postgres canonicalizes); never the raw request text (lagn-spec `validate` returns `{valid}` only — do NOT change it)
+- **Visibility→slug transitions:** `private→public` mint · `public→public` **preserve** · `public→private` clear · `private→private` leave `null`
+- **PATCH semantics:** neither `name` nor `visibility` → `empty_update` (400), no write; any real change → `updated_at = now()`
+- **Malformed `:id`** (not a well-formed UUID) → `not_found` (no existence leak)
 
 ## Guardrails
 - **Validate server-side always** — `@legendary-arena/lagn` `validate` on every create/update before write; invalid → `invalid_lagn`, never stored. Never trust client validation
@@ -29,9 +35,11 @@
 
 ## Required `// why:` Comments
 - On the server-side `validate` (never trust client LAGN; invalid input must not reach storage)
-- On `share_slug` opacity (random/URL-safe, never derived — a derived slug would leak `id`/enumerate)
+- On `share_slug` opacity (random/URL-safe via `crypto.randomBytes`, never derived — a derived slug would leak `id`/enumerate)
+- On the slug-collision retry loop (partial-unique index is the backstop; retry keeps the mint deterministic-free of the race)
 - On the guest read's field allowlist (public-only projection — no `accountId`/`ext_id`, no private rows)
 - On `MAX_SAVED_LOADOUTS_PER_ACCOUNT` (free-tier quota; premium-unlimited is a future hook, not this packet)
+- On the `empty_update`/`updated_at` rule (a no-field PATCH writes nothing; any real change bumps the timestamp)
 
 ## Files to Produce
 - `data/migrations/022_create_player_loadouts.sql` (new)
@@ -48,14 +56,16 @@
 - `loadoutLibrary.types.ts` — the closed contract (view shapes, error union + array, deps bundle); locked once created
 
 ## Required Test Matrix (every row required)
-- create → 201 + row scoped to caller; list → only caller's rows
-- 51st create → `loadout_limit_reached`; empty/over-80 name → `invalid_name`; malformed LAGN → `invalid_lagn` (nothing written)
-- PATCH visibility public → `share_slug` minted; private → cleared; guest slug read → public row's `name`+`lagn`+`displayHandle`; private/missing slug → 404 (no `accountId` in any body)
-- account B PATCH/DELETE/GET account A's `:id` → `not_found` (isolation)
-- drift: `LOADOUT_LIBRARY_ERROR_CODES` set-equals the union, no duplicates
+- create → 201 + row scoped to caller; list → only caller's rows, ordered `updated_at DESC`
+- 51st create → `loadout_limit_reached`; empty/over-80 name → `invalid_name`; whitespace-padded name → stored trimmed; malformed LAGN → `invalid_lagn` (nothing written)
+- PATCH visibility public → `share_slug` minted; **`public→public` PATCH preserves the same slug**; private → cleared; guest slug read → public row's `name`+`lagn`+`displayHandle`; private/missing slug → 404 (no `accountId` in any body)
+- PATCH with a real change bumps `updated_at`; **PATCH with neither field → `empty_update` (400), no row written**
+- slug-collision path: inject a colliding generator then a unique one → mint retries and succeeds (final slug unique)
+- account B PATCH/DELETE/GET account A's `:id` → `not_found` (isolation); malformed-UUID `:id` → `not_found`
+- drift: `LOADOUT_LIBRARY_ERROR_CODES` set-equals the union (incl. `empty_update`), no duplicates
 
 ## After Completing
-- [ ] Migration 022 shape per Locked Values; `.types`/`.logic`/`.routes` created; validate+cap+opaque-slug+public-only-guest all present
+- [ ] Migration 022 shape per Locked Values; `.types`/`.logic`/`.routes` created; validate+cap+opaque-slug(`randomBytes`/collision-retry)+preserve-on-`public→public`+`updated_at DESC` list+trimmed-name+`empty_update`+malformed-`:id`→`not_found`+public-only-guest all present
 - [ ] `server.mjs` wires the routes; `apps/server/package.json` adds `@legendary-arena/lagn`; no forbidden import (grep clean)
 - [ ] Test matrix green; `node:test`, boardgame.io-free; DB-less skip parity with existing profile suites
 - [ ] `api-endpoints.md` 5 rows (closed Status/Auth); `pnpm -r build` 0; server test green
@@ -68,5 +78,7 @@
 - A share link exposes a private loadout or an `accountId` → the guest projection wasn't allowlisted / slug wasn't opacity-checked
 - Account B can read/edit account A's loadout → the query didn't scope by the resolved `player_id`
 - Library grows unbounded → the cap check is missing or runs after insert
+- A `public→public` PATCH changes the share link → the slug is being re-minted on every update instead of preserved (breaks already-shared links)
+- A no-field PATCH silently succeeds / touches `updated_at` → the `empty_update` guard is missing
 - `pnpm -r build` fails on `@legendary-arena/lagn` resolution → workspace dep not added to `apps/server/package.json`
 - Typecheck fails importing engine/registry types → use only `@legendary-arena/lagn` + `pg` + local types
