@@ -26105,3 +26105,24 @@ Protect this file.
 **Packet:** WP-300 + EC-331. **Drafted:** 2026-06-30.
 
 Protect this file.
+
+### D-24086 — Profile Loadout Library: Account-Scoped LAGN Storage; `apps/server` May Import `@legendary-arena/lagn`; Saved Loadouts Are Decorative, Never a Competitive Submission
+
+**Status:** **Drafted 2026-07-01; not yet landed** (reserved by WP-301 / EC-332; flips to Active when WP-301 executes).
+
+**Context.** LAGN loadouts (WP-244/245/291) are today a client-side, local-file interchange format — export downloads a `.lagn.json`, import reads one back; the DB and R2 never touch a LAGN file. Vision **§19b** (ratified 2026-07-01) makes a **profile loadout library** a first-class, decorative (§19a-class) capability: players save loadouts to their account, rename/edit/delete, and share via link or public visibility. That needs account-scoped server storage, which the public Cards viewer lacked (WP-288 deferred it for "identity/storage the public viewer lacks") — identity/storage now exist on `play` (WP-104/160). Validating a stored loadout requires the LAGN schema server-side; the published `@legendary-arena/lagn` validator (`validate` + `LAGN`, dep = `zod` only) is the same one the client uses.
+
+**Decision.** WP-301 SHALL add `legendary.player_loadouts` (migration 022) and the `/api/me/loadouts` (authenticated) + guest `/api/loadouts/:shareSlug` endpoints, with every write validated server-side by `@legendary-arena/lagn`. Four locked choices:
+
+- **`apps/server` MAY import `@legendary-arena/lagn`.** It is a pure, dep-light validation package (only `zod`; imports nothing from `boardgame.io`, the engine, the registry, or the server) — a leaf with no upward/sideways runtime edge. It is added to the server layer's allowed-import set in `ARCHITECTURE.md §Package Import Rules` (the first server import of a workspace validator beyond `registry`/`game-engine`), analogous to `registry`'s `zod` allowance. It is NOT game logic and computes no outcomes.
+- **Saved loadouts are decorative, never merit-bearing (§19b/§19a).** A saved loadout is user-authored content; it is never a leaderboard/scoreboard entry and touches no `competitive_scores`/`replay_blobs`/`player_badges` surface. The "upload a LAGN to the scoreboard" reading is explicitly rejected — competitive standing derives only from verified runs (§23).
+- **Share is by an opaque, server-minted `share_slug`.** A public loadout gets a random URL-safe slug (never derived from `id`/`name`/`accountId`); the guest read returns public-only data (`name` + `lagn` + `displayHandle`, never `accountId`/`ext_id`, never a private loadout, 404 otherwise).
+- **Per-account cap `MAX_SAVED_LOADOUTS_PER_ACCOUNT = 50`** (free-tier convenience quota; a create beyond it returns typed `loadout_limit_reached`). A premium "unlimited" tier is a future, un-reserved monetization hook — NG-1-safe because a saved deck file confers no gameplay advantage.
+
+**Consequence.** The owner-profile UI that consumes these endpoints is the deferred **WP-302** (contract-first / UI-defer). No engine, `G`, replay, RNG, or persistence-of-game-state surface — `lagn_json` is opaque application data. Supersedes nothing; WP-244/245/291 (the LAGN spec + client round-trip) all stand.
+
+**Rejected alternatives.** (a) Storing loadouts as scoreboard/competitive entries — violates §19a/§19b/§23; (b) mirroring the LAGN validator in the server instead of importing it — needless duplication of a pure, drift-tested package (the import is layer-clean); (c) an `account_id text` column instead of the `player_id` FK — inconsistent with the migration-009 profile tables; (d) a client-derived share slug — leaks `id`/enumerates.
+
+**Packet:** WP-301 + EC-332. **Drafted:** 2026-07-01.
+
+Protect this file.

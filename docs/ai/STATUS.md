@@ -98,6 +98,18 @@ ewiki had flagged as undecided.
   `play.legendary-arena.com`. Deferred profile features (drag-drop link reorder,
   avatar crop, completeness meter, "preview public profile", single-save +
   unsaved-changes guard, empty-state CTAs) remain future WPs.
+- **Vision §19b RATIFIED + WP-301 DRAFTED (2026-07-01):** the **Profile Loadout
+  Library** — players save LAGN loadouts to their account, rename/delete, toggle
+  public, share via link. `01-VISION.md §19b` ratifies it as decorative
+  (§19a-class) content and **forecloses the scoreboard-upload misread** (a saved
+  loadout is never a competitive submission; standing derives only from verified
+  runs, §23). **WP-301** (server half) is drafted, ready to execute: migration
+  `022_create_player_loadouts.sql` + `/api/me/loadouts` (authenticated) + guest
+  `/api/loadouts/:shareSlug` (public-only), server-side `@legendary-arena/lagn`
+  validate, per-account cap 50, opaque share slug. Reserves **D-24086** (also
+  authorizes the `apps/server`→`@legendary-arena/lagn` import). Standard
+  two-session lane (new contract + table). `User-Visible Surface = none` — the
+  owner-profile UI is the deferred **WP-302**. Not yet executed.
 
 **Reconciliation note:** most of the original "login for cart / scoreboard /
 avatar / change-password / LAGN upload" ask was found already shipped on
