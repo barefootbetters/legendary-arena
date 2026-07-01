@@ -26083,4 +26083,25 @@ Protect this file.
 
 **Packet:** marketing-repo **WP-031** (executes the link affordance) — engine-repo decision, no engine WP. **Drafted + executed:** 2026-06-30.
 
+### D-24085 — Public-Profile Link-Preview Meta Ships as a Cloudflare Pages Function Under `client-app`; `apps/arena-client/functions/` Is an Edge Subsurface, Not a New Category
+
+**Status:** **Drafted 2026-06-30; not yet landed** (flips to Active when WP-300 / EC-331 executes).
+
+**Context.** The public profile (WP-102) renders in the `apps/arena-client` Vue SPA at the query-string route `?profile=<handle>`. A shared profile link therefore reaches crawlers (Discord, X, iMessage, Slack) as the static `index.html` shell with a generic description — crawlers do not run the SPA JavaScript, so the paste does not unfurl. Rich link previews on a Cloudflare Pages SPA require server-rendered `<meta>` for crawlers. The public profile response (`GET /api/players/:handle/profile`, guest) intentionally omits any avatar URL (accountId is server-internal, WP-052 / D-5201), so a per-player composed image is not available without a public-contract change.
+
+**Decision.** WP-300 SHALL add link-preview meta via a **Cloudflare Pages Function** (`apps/arena-client/functions/_middleware.ts`) that transforms the served HTML response with `HTMLRewriter`, not via SSR/prerender and not via a static-file edit. The `apps/arena-client/functions/` directory IS part of the existing **`client-app`** code category (D-6511) as an **edge subsurface** — NOT a new category. `02-CODE-CATEGORIES.md §client-app` is extended to record it. The edge subsurface inherits `client-app`'s import prohibitions (no `boardgame.io`, no `@legendary-arena/registry` runtime, no engine runtime, no `pg`, no computing game outcomes, no persistence) but is **exempt from the browser-determinism constraints** (`Date.now()` / timeouts are permitted at the edge) because it is a server-side-at-edge presentation transform, not the gameplay render path and not replay-bearing.
+
+**Locked design choices (v1).**
+- **Static brand OG image**, not a per-player/avatar card. A per-player image is deferred until `avatarUrl` is added to the public contract (a separate follow-up WP); v1 uses a committed 1200×630 brand card at `/og/profile-card.png`.
+- **Inject-for-all matching requests + fail-soft**, NOT crawler user-agent sniffing. Every request whose response is HTML and whose URL carries a valid `?profile=<handle>` gets the meta; any non-200 / timeout (1500 ms bounded) / error / bad handle / non-HTML / non-GET returns the unmodified shell. Rationale: no UA allowlist to maintain, meta is harmless to humans, and the bounded fail-soft caps the added human-load latency. UA-gating is a rejected v1 alternative, revisitable if edge latency becomes a concern.
+- **Pure logic isolated + tested.** Meta composition and HTML-attribute escaping live in a framework-free, I/O-free `functions/lib/buildProfileMeta.ts` (unit-tested); the middleware is thin fetch + `HTMLRewriter` wiring covered by D-24026 live-verify. Attribute-escaping of the user-controlled `displayName`/`displayHandle` is the load-bearing safety property (prevents HTML injection into the served head).
+- **No server/contract/`index.html` change.** The function re-presents already-public data; `PublicProfileView`, `profile.routes.ts`, `api-endpoints.md` (§21 N/A), and the static shell + brand-token cascade (WP-007a / EC-148) are untouched.
+- **Description text is §23-compliant** — badge/team/replay counts only; never win/loss, rank, opponent, or challenge (player-vs-player combat) framing (Vision §23; enforced by a test guard).
+
+**Rejected alternatives.** (a) Full SSR / prerender of the SPA — a framework change far larger than the need; (b) editing `index.html` per-profile — impossible for a static shell serving all routes, and would break the EC-148 lock; (c) a new top-level code category for `functions/` — unnecessary, it is within `apps/arena-client/`; (d) a per-player OG image in v1 — blocked on a public-contract `avatarUrl` addition, correctly deferred.
+
+**Consequence / operator note.** The function activates only if the Cloudflare Pages project's **root directory** is `apps/arena-client/` so `functions/` is discovered and compiled (external project config, not in the repo). This is confirmed at the D-24026 live-verify step; if previews do not unfurl, the CF Pages project settings — not repo code — are the fix. Supersedes nothing.
+
+**Packet:** WP-300 + EC-331. **Drafted:** 2026-06-30.
+
 Protect this file.
