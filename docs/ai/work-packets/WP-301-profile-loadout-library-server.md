@@ -54,8 +54,10 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 **Packet-specific:**
 - **Validate server-side, always.** Every stored loadout is validated with `@legendary-arena/lagn` `validate` before insert/update; an invalid LAGN is rejected with a typed error and never written. Never trust the client's validation.
 - **Per-account cap.** A create that would exceed `MAX_SAVED_LOADOUTS_PER_ACCOUNT` (locked value **50**) is rejected with a typed `loadout_limit_reached` error — not silently dropped. (Premium "unlimited" is a future monetization hook, explicitly NOT built here.)
-- **`share_slug` is server-generated + opaque.** When a loadout is public, the server mints a random URL-safe slug (never derived from `id`, `name`, or `accountId`); the guest read is by slug only. A private loadout has `share_slug = null` and is never readable via the guest endpoint.
+- **`share_slug` is server-generated + opaque.** When a loadout is public, the server mints a random URL-safe slug via `crypto.randomBytes(SHARE_SLUG_BYTES)` → `base64url` (≥128 bits entropy, 22 chars; never derived from `id`, `name`, or `accountId`) and **retries on collision** until unique; the guest read is by slug only. A private loadout has `share_slug = null` and is never readable via the guest endpoint. The visibility→slug transitions are locked (mint on `private→public`, preserve on `public→public`, clear on `public→private`).
 - **The guest read exposes only public loadouts** — `GET /api/loadouts/:shareSlug` returns `404` for a missing/private slug, and returns only the loadout's `name` + `lagn` + owner `displayHandle` (never `accountId`, never `ext_id`, never a private loadout).
+- **Update writes are all-or-nothing on intent.** A `PATCH` with neither `name` nor `visibility` is rejected `empty_update` (400) and writes nothing; any real change sets `updated_at = now()`. `name` is trimmed before validation and persisted trimmed.
+- **Malformed `:id` is `not_found`.** A `:id` path param that is not a well-formed UUID returns `not_found` (no existence leak), consistent with cross-account isolation.
 - **Zone/engine boundary untouched.** `G`, the engine, and gameplay are not involved — this is profile persistence. The stored `lagn_json` is opaque application data, not game state.
 - Every closed error-code union has a canonical `readonly` array + a drift test (mirrors `OWNER_PROFILE_ERROR_CODES`).
 
@@ -73,7 +75,8 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 - `SavedLoadoutView` (`id`, `name`, `visibility`, `shareSlug: string | null`, `createdAt`, `updatedAt`, `lagn`), `SavedLoadoutSummary` (list item — same minus `lagn` if we choose lighter list; **decision: list includes `lagn`** so the client can render "view as cards" without a second fetch), the closed `LoadoutLibraryErrorCode` union + its `readonly` array, the route dependency bundle interface (mirrors `AvatarUploadRouteDependencies` — `requireAuthenticatedSession`, `verifier`, `accountResolver`).
 
 ### C) `loadoutLibrary.logic.ts` (pure-ish DB logic)
-- `createLoadout`, `listLoadouts`, `updateLoadout` (rename + visibility; mints/clears `share_slug` on the public⇄private transition), `deleteLoadout`, `getPublicLoadoutBySlug`. Each takes the `pg` pool + the resolved `accountId` (except the slug read). LAGN `validate` on create/update. Enforce the cap on create. Full `try/catch` → typed result union.
+- `createLoadout`, `listLoadouts`, `updateLoadout` (rename + visibility; mints/clears `share_slug` per the locked transition table), `deleteLoadout`, `getPublicLoadoutBySlug`. Each takes the `pg` pool + the resolved `accountId` (except the slug read). LAGN `validate` on create/update. Enforce the cap on create. Full `try/catch` → typed result union.
+- `listLoadouts` orders **`updated_at DESC`** (locked); `createLoadout`/`updateLoadout` trim `name` before validation and persist the trimmed value; `updateLoadout` rejects a no-field PATCH with `empty_update`, sets `updated_at = now()` on any real change, and follows the locked visibility→slug transition table (mint on `private→public`, preserve on `public→public`, clear on `public→private`); slug minting uses `crypto.randomBytes(SHARE_SLUG_BYTES)` → `base64url` and **retries on collision** until unique.
 
 ### D) `loadoutLibrary.routes.ts` (new)
 - `registerLoadoutLibraryRoutes(router, pool, deps)` registering: `POST /api/me/loadouts`, `GET /api/me/loadouts`, `PATCH /api/me/loadouts/:id`, `DELETE /api/me/loadouts/:id` (all `authenticated-session-required`), and `GET /api/loadouts/:shareSlug` (guest). Auth-first, typed-error mapping, `Cache-Control` on every path — mirrors `ownerProfile.routes.ts` / `avatarUpload.routes.ts`.
@@ -85,7 +88,7 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 - Add the 5 rows: 4 `/api/me/loadouts*` (`Auth = authenticated-session-required`) + 1 `/api/loadouts/:shareSlug` (`Auth = guest`), each `Status = Wired`.
 
 ### G) Tests
-- `loadoutLibrary.logic.test.ts` + `loadoutLibrary.routes.test.ts` (`node:test`): create/list/update/delete happy paths; **cap enforcement** (51st create → `loadout_limit_reached`); **invalid LAGN rejected**; **guest slug read returns public only, 404 on private/missing**; **cross-account isolation** (account B cannot read/update/delete account A's loadout by id); the error-code drift test. No `boardgame.io`; DB-backed tests follow the existing profile-test harness (skip when no DB, like the WP-296 profile suite).
+- `loadoutLibrary.logic.test.ts` + `loadoutLibrary.routes.test.ts` (`node:test`): create/list/update/delete happy paths; **list ordering** (`updated_at DESC`); **cap enforcement** (51st create → `loadout_limit_reached`); **invalid LAGN rejected**; **name trimmed** (leading/trailing whitespace stored trimmed); **slug stability** (`public→public` PATCH preserves the existing `share_slug`; `→private` clears it); **`updated_at` bumped** on a real PATCH; **empty PATCH** (neither field) → `empty_update`, no write; **slug collision** path retries and succeeds (inject a colliding generator, then a unique one); **malformed `:id`** → `not_found`; **guest slug read returns public only, 404 on private/missing**; **cross-account isolation** (account B cannot read/update/delete account A's loadout by id); the error-code drift test. No `boardgame.io`; DB-backed tests follow the existing profile-test harness (skip when no DB, like the WP-296 profile suite).
 
 ---
 
@@ -97,6 +100,7 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 - **No change** to `player_profiles` / `player_links` / avatar / the existing `/api/me/profile|links|avatar` endpoints, the `OwnerProfileView` contract, or the LAGN spec package.
 - **No composition mapping / registry lookup** — the server stores/serves the opaque LAGN JSON; the client owns LAGN→draft mapping (WP-291).
 - **No engine / `G` / gameplay / replay / RNG surface.**
+- **No list pagination / LAGN summarization.** `GET /api/me/loadouts` intentionally returns each row's **full `lagn`** so the client can render "view as cards" without a second fetch. At the 50-loadout cap this payload is bounded and acceptable. Pagination or a lighter list-summary projection (should the cap ever rise, e.g., a premium tier) is a **separate future WP**, not an amendment to this contract.
 
 ---
 
@@ -119,21 +123,36 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 
 ## Contract
 
-- **Endpoints** (all JSON): `POST /api/me/loadouts` `{name, lagn}` → `201 {SavedLoadoutView}` | typed error; `GET /api/me/loadouts` → `200 {loadouts: SavedLoadoutView[]}`; `PATCH /api/me/loadouts/:id` `{name?, visibility?}` → `200 {SavedLoadoutView}`; `DELETE /api/me/loadouts/:id` → `204`; `GET /api/loadouts/:shareSlug` (guest) → `200 {name, lagn, displayHandle}` | `404`.
-- **Closed error union** `LoadoutLibraryErrorCode`: `'unauthorized' | 'not_found' | 'invalid_lagn' | 'invalid_name' | 'loadout_limit_reached'` (+ the generic 500). Canonical `readonly` array + drift test.
+- **Endpoints** (all JSON): `POST /api/me/loadouts` `{name, lagn}` → `201 {SavedLoadoutView}` | typed error; `GET /api/me/loadouts` → `200 {loadouts: SavedLoadoutView[]}` (ordered `updated_at DESC`); `PATCH /api/me/loadouts/:id` `{name?, visibility?}` → `200 {SavedLoadoutView}`; `DELETE /api/me/loadouts/:id` → `204`; `GET /api/loadouts/:shareSlug` (guest) → `200 {name, lagn, displayHandle}` | `404`.
+- **Closed error union** `LoadoutLibraryErrorCode`: `'unauthorized' | 'not_found' | 'invalid_lagn' | 'invalid_name' | 'loadout_limit_reached' | 'empty_update'` (+ the generic 500). Canonical `readonly` array + drift test.
 - **Auth** ∈ `{ authenticated-session-required (the /api/me/* four), guest (the slug read) }` per D-9905.
-- **Locked value:** `MAX_SAVED_LOADOUTS_PER_ACCOUNT = 50`.
 - Canonical field names in the LAGN body match `00.2` / the LAGN schema exactly.
+
+### Locked Values (do not re-derive at execution)
+
+These centralize every behavioral decision so they are grep-able in one place rather than buried in Scope/AC prose.
+
+| Key | Value |
+|---|---|
+| `MAX_SAVED_LOADOUTS_PER_ACCOUNT` | **50** (free-tier quota; premium-unlimited is a future, un-reserved hook) |
+| `SHARE_SLUG_BYTES` | **16** → `crypto.randomBytes(16)` → **≥128 bits** entropy, `base64url`-encoded → **22-char** URL-safe opaque slug. Never derived from `id`/`name`/`accountId`. |
+| List ordering | `GET /api/me/loadouts` returns rows ordered **`updated_at DESC`** (most-recently-touched first) |
+| Name persistence | `name` is **trimmed before validation and persisted in trimmed form** (`" My Deck "` stores as `"My Deck"`); empty-after-trim or >80 chars → `invalid_name` |
+| LAGN persistence | Store the **parsed `lagn` JSON value** that passed `validate` into the `jsonb` column; Postgres `jsonb` canonicalizes serialization (whitespace-insensitive, no duplicate keys). Never store the raw request-body text. (The lagn-spec `validate` returns `{ valid }` only — normalizing beyond `jsonb` is Out of Scope.) |
+| Visibility → slug transitions | `private→public`: mint slug if none exists · `public→public`: **preserve** existing slug · `public→private`: **clear** slug (`null`) · `private→private`: leave `null` |
+| Slug collision | If a freshly minted slug collides with an existing `share_slug`, **retry generation until unique** before insert/update (partial-unique index is the backstop) |
+| `updated_at` on PATCH | Every PATCH that changes `name` or `visibility` sets `updated_at = now()`. A PATCH with **neither** `name` nor `visibility` is rejected `empty_update` (400) and **writes nothing** |
+| Malformed `:id` | A `:id` path param that is not a well-formed UUID returns **`not_found`** (no existence leak; consistent with cross-account isolation) |
 
 ---
 
 ## Acceptance Criteria
 
 1. Migration `022` creates `legendary.player_loadouts` with the columns/constraints in Scope A (FK CASCADE on `player_id`, `visibility` CHECK, partial-unique `share_slug`) (**AC-1**).
-2. `POST /api/me/loadouts` validates the body's `lagn` via `@legendary-arena/lagn` `validate`, enforces the 50-per-account cap (`loadout_limit_reached` on the 51st), trims+bounds `name` (`invalid_name` on empty/over-80), and inserts scoped to the caller's account (**AC-2**).
-3. `GET /api/me/loadouts` returns only the caller's loadouts; `PATCH`/`DELETE` by `:id` operate only on the caller's own rows (account B gets `not_found` for account A's id — cross-account isolation) (**AC-3**).
-4. `PATCH` to `visibility: 'public'` mints an opaque URL-safe `share_slug`; to `'private'` clears it; `GET /api/loadouts/:shareSlug` returns a **public** loadout's `name` + `lagn` + `displayHandle` and `404` for a missing/private slug — never `accountId`/`ext_id`, never a private loadout (**AC-4**).
-5. Every non-200 path returns a typed `LoadoutLibraryErrorCode`; the code has a canonical `readonly` array asserted by a drift test; no route throws uncaught (typed 500) (**AC-5**).
+2. `POST /api/me/loadouts` validates the body's `lagn` via `@legendary-arena/lagn` `validate`, enforces the 50-per-account cap (`loadout_limit_reached` on the 51st), trims `name` before validation and persists the trimmed value (`invalid_name` on empty-after-trim/over-80), and inserts the parsed `lagn` JSON scoped to the caller's account (**AC-2**).
+3. `GET /api/me/loadouts` returns only the caller's loadouts ordered `updated_at DESC`; `PATCH`/`DELETE` by `:id` operate only on the caller's own rows (account B gets `not_found` for account A's id — cross-account isolation; a malformed-UUID `:id` also returns `not_found`) (**AC-3**).
+4. `PATCH` to `visibility: 'public'` mints an opaque `crypto.randomBytes`-based `base64url` `share_slug` (≥128 bits, collision-retried), a subsequent `public→public` PATCH **preserves** it, and `→'private'` clears it; `GET /api/loadouts/:shareSlug` returns a **public** loadout's `name` + `lagn` + `displayHandle` and `404` for a missing/private slug — never `accountId`/`ext_id`, never a private loadout (**AC-4**).
+5. Every non-200 path returns a typed `LoadoutLibraryErrorCode`; a no-field PATCH returns `empty_update` and writes nothing while any real change bumps `updated_at`; the code union has a canonical `readonly` array asserted by a drift test; no route throws uncaught (typed 500) (**AC-5**).
 6. `apps/server` imports `@legendary-arena/lagn` and nothing else newly cross-layer; no `boardgame.io`/engine/registry-runtime import in the new files; `apps/server/package.json` lists `@legendary-arena/lagn` (**AC-6**).
 7. `api-endpoints.md` has the 5 new rows (closed `Status`/`Auth` sets) added in the same commit as the routes (D-11804); `00.3 §21` passes (**AC-7**).
 8. `pnpm -r build` 0; `pnpm --filter @legendary-arena/server test` green (new suites pass; DB-less env skips DB-backed cases exactly as the existing profile suites do, failing set unchanged) (**AC-8**).
@@ -156,8 +175,8 @@ Select-String -Path "apps\server\src\profile\loadoutLibrary.*.ts" -Pattern "boar
 Select-String -Path "apps\server\src\profile\loadoutLibrary.logic.ts" -Pattern "@legendary-arena/lagn"
 # Expected: present
 
-# Step 4 — the cap constant + closed error union exist
-Select-String -Path "apps\server\src\profile\loadoutLibrary.types.ts" -Pattern "MAX_SAVED_LOADOUTS_PER_ACCOUNT|loadout_limit_reached|LoadoutLibraryErrorCode"
+# Step 4 — the cap constant + slug-entropy constant + closed error union (incl. empty_update) exist
+Select-String -Path "apps\server\src\profile\loadoutLibrary.types.ts" -Pattern "MAX_SAVED_LOADOUTS_PER_ACCOUNT|SHARE_SLUG_BYTES|loadout_limit_reached|empty_update|LoadoutLibraryErrorCode"
 
 # Step 5 — the 5 catalog rows landed
 Select-String -Path "docs\ai\REFERENCE\api-endpoints.md" -Pattern "/api/me/loadouts|/api/loadouts/"
@@ -172,9 +191,9 @@ git diff --name-only   # Expected: only the ## Files Expected to Change set
 
 - [ ] All acceptance criteria pass
 - [ ] Migration `022` present; `player_loadouts` shape per Scope A
-- [ ] `loadoutLibrary.types.ts` / `.logic.ts` / `.routes.ts` created; LAGN-validated writes; 50-cap; opaque server-minted `share_slug`; guest read returns public-only (no `accountId`)
+- [ ] `loadoutLibrary.types.ts` / `.logic.ts` / `.routes.ts` created; LAGN-validated writes; 50-cap; opaque server-minted `share_slug` (`crypto.randomBytes`, ≥128 bits, collision-retried); locked visibility→slug transitions; `updated_at DESC` list ordering; trimmed-name persistence; `empty_update`-on-no-op PATCH; malformed-`:id`→`not_found`; guest read returns public-only (no `accountId`)
 - [ ] `server.mjs` wires `registerLoadoutLibraryRoutes` (01.5); `apps/server/package.json` adds `@legendary-arena/lagn`
-- [ ] Tests cover create/list/update/delete, cap, invalid-LAGN, guest public-only + 404, cross-account isolation, error-code drift; `node:test`, no `boardgame.io`
+- [ ] Tests cover create/list/update/delete, list ordering, cap, invalid-LAGN, name-trim, slug stability (`public→public` preserve), `updated_at` bump, empty-PATCH `empty_update`, slug-collision retry, malformed-`:id`, guest public-only + 404, cross-account isolation, error-code drift; `node:test`, no `boardgame.io`
 - [ ] `api-endpoints.md` 5 rows added same-commit (D-11804); closed `Status`/`Auth` sets
 - [ ] `pnpm -r build` 0; server test green (DB-less skip parity)
 - [ ] `DECISIONS.md` **D-24086** landed (Active); `WORK_INDEX` (WP-301) + `EC_INDEX` (EC-332) + `STATUS.md` updated
@@ -212,7 +231,7 @@ git diff --name-only   # Expected: only the ## Files Expected to Change set
 - §14 Acceptance Criteria — PASS: 8 binary, observable items naming real tables/endpoints/codes.
 - §15 Definition of Done — PASS: binary checkboxes incl. DECISIONS/indices/catalog + commit topology; §15.1 addressed.
 - §15.1 User-Visible Verification (D-24026) — PASS (N/A-with-reason): no UI in this packet; the live check is explicitly deferred to WP-302; this packet's proof is the suite + a DB-backed endpoint smoke, stated as such (not a tests-only hand-wave).
-- §16 Code Style — PASS: `for...of`/explicit `if-else` (no branching `.reduce()`); typed result unions; `// why:` on the slug-opacity + cap + server-validate decisions; JSDoc per function; named imports.
+- §16 Code Style — PASS: `for...of`/explicit `if-else` (no branching `.reduce()`); typed result unions; `// why:` on the slug-opacity + slug-collision-retry + cap + server-validate + `updated_at`/`empty_update` + guest-projection-allowlist decisions; JSDoc per function; named imports.
 - §17 Vision Alignment — PASS: `## Vision Alignment` present; §19b/§19a/§19; NG-1 + §23(b) addressed; determinism N/A.
 - §18 Prose-vs-Grep — PASS: verification greps target identifiers (`@legendary-arena/lagn`, `MAX_SAVED_LOADOUTS_PER_ACCOUNT`), not a count-literal echoed adjacent to its own check.
 - §19 Bridge-vs-HEAD — N/A: no repo-state snapshot artifact.
@@ -227,4 +246,4 @@ git diff --name-only   # Expected: only the ## Files Expected to Change set
 
 ## Decision (reserved, lands at execution)
 
-Reserves **D-24086**: (1) the `player_loadouts` data model + `/api/me/loadouts` + guest-slug contract; (2) authorization for `apps/server` to import `@legendary-arena/lagn` (a pure zod validator, no upward/sideways runtime edge — the first server import of a non-`registry`/`game-engine` workspace validator, added to the ARCHITECTURE allowed-import set for the server layer); (3) the decorative-not-merit lock (cites §19b — saved loadouts are never a competitive submission); (4) `MAX_SAVED_LOADOUTS_PER_ACCOUNT = 50` (free-tier quota; premium-unlimited is a future, un-reserved hook). Drafted 2026-07-01; not yet landed.
+Reserves **D-24086**: (1) the `player_loadouts` data model + `/api/me/loadouts` + guest-slug contract, including the locked behavioral semantics (list ordering `updated_at DESC`; trimmed-name persistence; parsed-`lagn`-into-`jsonb` storage; visibility→slug transitions mint/preserve/clear; `share_slug` = `crypto.randomBytes(16)`→`base64url`, ≥128 bits, collision-retried; `empty_update` on a no-field PATCH; malformed-`:id`→`not_found`); (2) authorization for `apps/server` to import `@legendary-arena/lagn` (a pure zod validator, no upward/sideways runtime edge — the first server import of a non-`registry`/`game-engine` workspace validator, added to the ARCHITECTURE allowed-import set for the server layer); (3) the decorative-not-merit lock (cites §19b — saved loadouts are never a competitive submission); (4) `MAX_SAVED_LOADOUTS_PER_ACCOUNT = 50` (free-tier quota; premium-unlimited is a future, un-reserved hook). Drafted 2026-07-01; not yet landed.
