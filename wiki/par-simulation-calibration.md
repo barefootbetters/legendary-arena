@@ -15,6 +15,7 @@ related:
   - turn-system.md
   - cardextid.md
   - complete-game-fixtures.md
+  - windows-engine-exe.md
 status: canonical
 source:
   - ../docs/01-VISION.md
@@ -331,6 +332,12 @@ newly-added scenario from "playable" into "competitively rankable".
   server through a duplicated `MOVE_MAP`; both must therefore add any new
   move to their dispatch map or a parked pending choice hangs the loop
   (the WP-286 / WP-289 resolve-move fixes).
+- **[Windows Engine Exe](windows-engine-exe.md).** The proposed standalone
+  engine binary packages this same `simulation/` harness — `sweep.runner.ts`,
+  the T2 competent policy, and the per-game `MOVE_MAP` loop — as a distributable
+  Windows `.exe`. Calibration *derives PAR values* from the harness; the exe
+  effort *distributes the harness* as a binary. Same substrate, different
+  purpose; the exe changes no calibration logic.
 - **Determinism & replays.** Calibration inherits the engine's determinism:
   identical seeds reproduce identical games and therefore an identical PAR.
   [13-REPLAYS-REFERENCE](../docs/13-REPLAYS-REFERENCE.md) requires that
