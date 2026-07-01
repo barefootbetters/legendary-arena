@@ -1,5 +1,5 @@
 <script lang="ts">
-import { defineComponent, onMounted, ref } from 'vue';
+import { computed, defineComponent, onMounted, ref, watch } from 'vue';
 
 import {
   fetchOwnerProfile,
@@ -131,7 +131,10 @@ function bannerCopyForCode(code: string | null): string {
  */
 function avatarUploadMessageForCode(code: AvatarUploadErrorCode | null): string {
   if (code === 'invalid_mime_type') {
-    return 'That file is not a supported image; choose a PNG, JPEG, GIF, or WebP picture.';
+    // why: the server's ALLOWED_MIME_TYPES (avatarUpload.logic.ts) accepts only
+    // JPEG, PNG, and WebP — GIF is NOT accepted; the copy must match the
+    // server contract so we don't promise a format the upload will reject.
+    return 'That file is not a supported image; choose a PNG, JPEG, or WebP picture.';
   }
   if (code === 'file_too_large') {
     return 'That image is larger than the 5 MB limit; choose a smaller file.';
@@ -171,11 +174,33 @@ export default defineComponent({
     const avatarUploadInFlight = ref<boolean>(false);
     const avatarUploadSuccess = ref<string>('');
     const avatarUploadError = ref<string>('');
+    // why: a bad or unreachable avatar URL should not render the browser's
+    // broken-image glyph on a polished page. The <img> preview hides itself
+    // on the `error` event; the watcher below re-arms it whenever the URL
+    // changes, so a previously-failed URL does not permanently suppress the
+    // preview and the user's typed value is never cleared by the preview.
+    const avatarPreviewFailed = ref<boolean>(false);
     const formAboutMe = ref<string>('');
     const formAvatarVisibility = ref<'private' | 'public'>('private');
     const formAboutMeVisibility = ref<'private' | 'public'>('private');
     const formLinksVisibility = ref<'private' | 'public'>('private');
     const draftLinks = ref<DraftLink[]>([]);
+
+    // why: re-arm the avatar preview whenever the URL changes. Once `@error`
+    // hides a broken URL, the <img> leaves the DOM, so `@load` can never fire
+    // to clear the flag — without this reset a single bad URL would suppress
+    // the preview for every later (valid) URL the user types.
+    watch(formAvatarUrl, () => {
+      avatarPreviewFailed.value = false;
+    });
+
+    // why: surface the remaining allowance for the 500-character About-me
+    // field (the textarea's maxlength enforces the ceiling; this only tells
+    // the user how much room is left). Math.max keeps the display at or above
+    // zero — defensive only; the maxlength stays the authoritative cap.
+    const aboutMeCharactersRemaining = computed(
+      () => Math.max(0, 500 - formAboutMe.value.length),
+    );
 
     function readAuthToken(): string | null {
       // why: WP-160 / D-16003 — the auth token is held in the Pinia
@@ -339,9 +364,11 @@ export default defineComponent({
       avatarUploadInFlight,
       avatarUploadSuccess,
       avatarUploadError,
+      avatarPreviewFailed,
       onAvatarFileSelected,
       onUploadAvatar,
       formAboutMe,
+      aboutMeCharactersRemaining,
       formAvatarVisibility,
       formAboutMeVisibility,
       formLinksVisibility,
@@ -398,6 +425,19 @@ export default defineComponent({
       <section class="profile-form" data-testid="my-profile-form">
         <h2>Profile</h2>
 
+        <div
+          v-if="formAvatarUrl !== '' && !avatarPreviewFailed"
+          class="profile-avatar-preview"
+        >
+          <img
+            :src="formAvatarUrl"
+            alt="Current profile avatar preview"
+            data-testid="my-profile-avatar-preview"
+            @error="avatarPreviewFailed = true"
+            @load="avatarPreviewFailed = false"
+          />
+        </div>
+
         <label class="profile-field">
           <span class="profile-field-label">Avatar URL (HTTPS)</span>
           <input
@@ -416,6 +456,10 @@ export default defineComponent({
             data-testid="my-profile-avatar-file"
             @change="onAvatarFileSelected"
           />
+          <p class="profile-field-hint">
+            PNG, JPEG, or WebP · up to 5 MB. A square image around 512×512
+            pixels looks best.
+          </p>
           <button
             type="button"
             class="profile-save"
@@ -458,6 +502,13 @@ export default defineComponent({
             placeholder="A short bio (max 500 characters)"
             data-testid="my-profile-about-me"
           ></textarea>
+          <span
+            class="profile-field-hint profile-char-count"
+            data-testid="my-profile-about-me-count"
+            aria-live="polite"
+          >
+            {{ aboutMeCharactersRemaining }} characters remaining
+          </span>
         </label>
 
         <label class="profile-field">
@@ -653,6 +704,36 @@ export default defineComponent({
   gap: 0.75rem;
 }
 
+/* why: subtle card treatment gives each major block visual separation
+   and scannability without changing layout flow. */
+.profile-form,
+.profile-links,
+.profile-teams,
+.profile-billing {
+  padding: 1.25rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.profile-avatar-preview img {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.profile-field-hint {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  margin: 0.15rem 0 0 0;
+}
+
+.profile-char-count {
+  align-self: flex-end;
+}
+
 .profile-form h2,
 .profile-links h2 {
   font-size: 1.125rem;
@@ -708,6 +789,14 @@ export default defineComponent({
   grid-template-columns: 7rem 1fr 5rem 5rem;
   gap: 0.5rem;
   align-items: center;
+}
+
+/* why: the four-column link row overflows on narrow screens; stack it to a
+   single column so provider/url/public/remove stay usable on mobile. */
+@media (max-width: 40rem) {
+  .profile-link-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .profile-link-public {
