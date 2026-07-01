@@ -172,6 +172,11 @@ Software tools and services used in development or operations.
   GitHub, rclone); `pnpm check:domains` walks the canonical
   subdomain manifest and classifies each entry against its declared
   `live` / `planned` state.
+- [Windows Engine Exe](windows-engine-exe.md) — *(draft, planning)*
+  proposed standalone Windows `.exe` that packages the engine's
+  headless `simulation/` harness (bot-vs-bot play, fixture replay,
+  determinism proof) into a single Node-free binary. Descriptive
+  companion to `docs/ai/WINDOWS-EXE-PACKAGING-STRATEGY.md`.
 
 ## Keyword
 
