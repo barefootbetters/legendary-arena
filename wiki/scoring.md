@@ -11,6 +11,7 @@ tags:
   - drift-detection
   - vision
 related:
+  - par-simulation-calibration.md
   - villain-deck.md
   - master-strike.md
   - scheme-twist.md
@@ -68,7 +69,9 @@ metaphor in [VISION §20](../docs/01-VISION.md):
 - **Layer A — PAR (course rating).** Static per-scenario expected
   outcome for a competent team. Encoded as `ParBaseline` (rounds,
   bystanders, victory points, escapes). Never adapts to the team
-  that played.
+  that played. The baseline itself is *derived by simulation* — see
+  [PAR Simulation Calibration](par-simulation-calibration.md) for the
+  Monte-Carlo pipeline that produces it.
 - **Layer B — Final Score (execution quality).** Computed per
   match: `finalScore = rawScore - parScore`. Lower is better;
   negative is under PAR. Driven by the same formula applied to the
