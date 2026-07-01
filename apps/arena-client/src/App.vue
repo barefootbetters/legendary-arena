@@ -61,12 +61,21 @@ const LoginPage = defineAsyncComponent(
   () => import('./pages/LoginPage.vue'),
 );
 
+// why: WP-302 — SharedLoadoutPage is the unguarded public shared-loadout
+// surface at ?loadout=<shareSlug>. Lazy-loaded for the same bundle-size
+// reason as the other routed pages; the component is only fetched when
+// route === 'shared-loadout' renders for the first time.
+const SharedLoadoutPage = defineAsyncComponent(
+  () => import('./pages/SharedLoadoutPage.vue'),
+);
+
 type AppRoute =
   | 'fixture'
   | 'play-fixture'
   | 'live'
   | 'lobby'
   | 'profile'
+  | 'shared-loadout'
   | 'me'
   | 'admin-billing'
   | 'login';
@@ -82,6 +91,7 @@ interface ParsedQuery {
   playFixture: boolean;
   live: LiveRouteParams | null;
   profileHandle: string | null;
+  shareSlug: string | null;
   meRoute: boolean;
   adminBillingRoute: boolean;
   loginRoute: boolean;
@@ -122,6 +132,12 @@ function parseQuery(search: string): ParsedQuery {
 
   const profileHandle = readQueryParam(params, 'profile');
 
+  // why: WP-302 — `?loadout=<shareSlug>` is the unguarded public
+  // shared-loadout route, mirroring `?profile=<handle>`. The slug is an
+  // opaque server-minted token; the guest endpoint returns public-only
+  // data and 404s any private/unknown slug.
+  const shareSlug = readQueryParam(params, 'loadout');
+
   // why: WP-104 — `?route=me` is the owner-edit surface. We look for the
   // literal `me` value to avoid false-positive matches on stale `?route=`
   // values left over from past sessions; future surfaces will extend the
@@ -143,6 +159,7 @@ function parseQuery(search: string): ParsedQuery {
     playFixture,
     live,
     profileHandle,
+    shareSlug,
     meRoute,
     adminBillingRoute,
     loginRoute,
@@ -152,14 +169,16 @@ function parseQuery(search: string): ParsedQuery {
 
 function selectRoute(parsed: ParsedQuery): AppRoute {
   // why: route discriminator precedence is
-  // `admin-billing > me > login > profile > fixture > live > lobby`.
-  // Explicit `?route=` values take priority over every other query
-  // param so the targeted surface always wins when the user has
-  // navigated to it (e.g., a stale `?match=` left over from a past
+  // `admin-billing > me > login > profile > shared-loadout > fixture >
+  // live > lobby`. Explicit `?route=` values take priority over every
+  // other query param so the targeted surface always wins when the user
+  // has navigated to it (e.g., a stale `?match=` left over from a past
   // session must not shadow the explicit route). `login` slots in
   // between `me` and `profile` so an explicit `?route=login` always
   // wins over a leftover `?profile=` from a past navigation
-  // (WP-160 §F + Locked Values precedence).
+  // (WP-160 §F + Locked Values precedence). `shared-loadout`
+  // (`?loadout=<shareSlug>`) is an unguarded public route at the same
+  // tier as `?profile=`, slotted just after it (WP-302).
   if (parsed.adminBillingRoute === true) {
     return 'admin-billing';
   }
@@ -171,6 +190,9 @@ function selectRoute(parsed: ParsedQuery): AppRoute {
   }
   if (parsed.profileHandle !== null) {
     return 'profile';
+  }
+  if (parsed.shareSlug !== null) {
+    return 'shared-loadout';
   }
   if (parsed.fixtureName !== null && parsed.playFixture) {
     return 'play-fixture';
@@ -209,6 +231,7 @@ export default defineComponent({
     MyProfilePage,
     AdminBillingPage,
     LoginPage,
+    SharedLoadoutPage,
   },
   props: {
     // why: `searchOverride` is a testing seam. Production callers never pass
@@ -233,6 +256,7 @@ export default defineComponent({
     const matchID = liveParams?.matchID ?? '';
     const playerID = liveParams?.playerID ?? '';
     const profileHandle = parsed.profileHandle ?? '';
+    const shareSlug = parsed.shareSlug ?? '';
 
     const liveClient = ref<LiveClientHandle | null>(null);
     // why: `import.meta.env` is Vite-provided; in the node:test runner there
@@ -346,6 +370,7 @@ export default defineComponent({
       matchID,
       playerID,
       profileHandle,
+      shareSlug,
       isDev,
       submitMove,
     };
@@ -375,6 +400,9 @@ export default defineComponent({
       </template>
       <template v-else-if="route === 'profile'">
         <PlayerProfilePage :handle="profileHandle" />
+      </template>
+      <template v-else-if="route === 'shared-loadout'">
+        <SharedLoadoutPage :share-slug="shareSlug" />
       </template>
       <template v-else-if="route === 'play-fixture'">
         <PlayViewport :submit-move="submitMove" />
