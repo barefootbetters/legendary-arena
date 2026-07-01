@@ -367,6 +367,9 @@ mindmap
         ["WP-108 ✅ Profile billing & funding history UI"]
         ["WP-296 ✅ Avatar CDN host unification (images.barefootbetters.com → images.legendary-arena.com — the card-image host/bucket; AVATAR_CDN_BASE + closed-origin validateAvatarUrl allowlist both retargeted + migration 021_rewrite_avatar_url_host.sql; api-endpoints catalog + wiki reconciled; D-24083 supersedes the host string in D-10601/D-10602; EC-328)"]
         ["WP-298 ✅ Owner profile avatar upload UI (wires the already-shipped WP-106 POST /api/me/avatar pipeline into MyProfilePage.vue ?route=me — a file-input + 'Upload avatar' control replacing the unusable free-text-only avatar-URL field; new uploadOwnerAvatar(authToken,file) wrapper multipart 'avatar' field no Content-Type, failure code read from body.code not the sibling body.error, + client-local drift-guarded AVATAR_UPLOAD_ERROR_CODES mirror; additive client-only, no server/contract/catalog change; consumes D-10601/D-10602/D-24083 no new D-entry; Lightweight Lane D-24028; EC-329; typecheck 0/arena-client test 618→624/build 0; User-Visible Surface play.legendary-arena.com D-24026 post-deploy)"]
+        ["WP-299 ✅ Owner profile edit-page UX polish (avatar preview thumbnail that hides on broken URL, accurate PNG/JPEG/WebP up-to-5MB upload hint sourced from server ALLOWED_MIME_TYPES + MAX_FILE_SIZE_BYTES, live About-me char counter, scoped card layout + one-column link row; presentation-only, no API/contract/store change, no new D-entry; Lightweight Lane D-24028; EC-330; arena-client test 624 unchanged/build 0)"]
+        ["WP-300 ✅ Public profile link-preview meta (Open Graph / Twitter Card via the repo's first Cloudflare Pages Function — functions/_middleware.ts uses HTMLRewriter to inject per-player preview meta tags into the SPA shell for ?profile=handle, fail-soft on any API failure/bad handle; buildProfileMeta.ts unit-tested attribute-escaping + §23 guard; extends client-app category to functions/; D-24085 edge-subsurface classification; EC-331; test 624→634/typecheck 0/build 0)"]
+        ["WP-301 ✅ Profile loadout library — data model + endpoints (server) (migration 022_create_player_loadouts.sql — player_id FK CASCADE, lagn_json jsonb, visibility CHECK, partial-unique share_slug; loadoutLibrary.{types,logic,routes}.ts + tests; 5 endpoints POST/GET /api/me/loadouts + PATCH/DELETE /api/me/loadouts/:id + guest GET /api/loadouts/:shareSlug public-only; server-side LAGN validate on every write, 50-cap, decorative-not-merit §19b; D-24086; EC-332; server suite 716→746/build 0)"]
 
       Architecture & API Governance
         ["WP-116 ✅ Disconnect & reconnect semantics"]
@@ -456,14 +459,14 @@ mindmap
 | Dashboard & Operator Analytics | 14/14 | — |
 | Agent Triage Pipeline | 7/7 | — |
 | Admin & Route Wiring | 4/4 | — |
-| Phase 9 — Profile Surface Follow-ups | 6/6 | — |
+| Phase 9 — Profile Surface Follow-ups | 9/9 | — |
 | Architecture & API Governance | 4/4 | — |
 | Complete-Game Testing | 1/1 | — |
 | Cross-App Infrastructure | 1/1 | — |
 | Next Horizons | 0/5 | 5 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **293/294 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
+| **Total** | **296/297 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
 
 **Open / blocked WPs (derived from WORK_INDEX, 1):** WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
