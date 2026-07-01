@@ -26108,7 +26108,7 @@ Protect this file.
 
 ### D-24086 — Profile Loadout Library: Account-Scoped LAGN Storage; `apps/server` May Import `@legendary-arena/lagn`; Saved Loadouts Are Decorative, Never a Competitive Submission
 
-**Status:** **Drafted 2026-07-01; not yet landed** (reserved by WP-301 / EC-332; flips to Active when WP-301 executes).
+**Status:** **Active** (landed 2026-07-01 with WP-301 / EC-332 execution).
 
 **Context.** LAGN loadouts (WP-244/245/291) are today a client-side, local-file interchange format — export downloads a `.lagn.json`, import reads one back; the DB and R2 never touch a LAGN file. Vision **§19b** (ratified 2026-07-01) makes a **profile loadout library** a first-class, decorative (§19a-class) capability: players save loadouts to their account, rename/edit/delete, and share via link or public visibility. That needs account-scoped server storage, which the public Cards viewer lacked (WP-288 deferred it for "identity/storage the public viewer lacks") — identity/storage now exist on `play` (WP-104/160). Validating a stored loadout requires the LAGN schema server-side; the published `@legendary-arena/lagn` validator (`validate` + `LAGN`, dep = `zod` only) is the same one the client uses.
 

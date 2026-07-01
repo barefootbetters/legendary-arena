@@ -7,6 +7,52 @@
 
 ## Current State
 
+### WP-301 / EC-332 Executed — Profile Loadout Library: Data Model + Endpoints (Server + Persistence; D-24086 Active) (2026-07-01)
+
+`apps/server` now ships the **server half** of the Vision **§19b** Profile
+Loadout Library: account-scoped storage for a player's LAGN loadouts. New
+migration `022_create_player_loadouts.sql` adds `legendary.player_loadouts`
+(`id uuid` PK, `player_id bigint` FK → `players` **ON DELETE CASCADE**,
+`name text`, `lagn_json jsonb`, `visibility` CHECK `('private','public')`,
+`share_slug text` with a **partial-unique index WHERE NOT NULL**, `created_at`
+/ `updated_at`). Five endpoints via `registerLoadoutLibraryRoutes` (wired in
+`server.mjs` alongside the other profile routes): `POST` / `GET
+/api/me/loadouts` + `PATCH` / `DELETE /api/me/loadouts/:id`
+(**authenticated-session-required**) and guest `GET
+/api/loadouts/:shareSlug` (**public-only** — 404 on missing/private; body
+carries only `name` + `lagn` + `displayHandle`, never `accountId`/`ext_id`,
+never a private loadout).
+
+Locked behavior (D-24086): every write **validated server-side** via
+`@legendary-arena/lagn` `validate` (invalid → `invalid_lagn`, nothing
+written — client validation is never the gate); per-account cap
+**`MAX_SAVED_LOADOUTS_PER_ACCOUNT = 50`** (51st → `loadout_limit_reached`);
+`share_slug` **server-minted, opaque** (`crypto.randomBytes(16)` →
+`base64url`, ≥128 bits, 22 chars, **collision-retried**), never derived from
+`id`/`name`/`accountId`; visibility→slug transitions mint (`private→public`) /
+**preserve** (`public→public`) / clear (`→private`); name trimmed before
+validation and persisted trimmed (empty/over-80 → `invalid_name`); list
+ordered `updated_at DESC`; no-field PATCH → `empty_update` (400, no write);
+malformed `:id` → `not_found` (no existence leak); **cross-account isolation**
+(account B on account A's id → `not_found`). Closed error union
+`LoadoutLibraryErrorCode` + canonical array + drift test.
+
+`apps/server` now imports `@legendary-arena/lagn` (a pure zod validator, no
+upward/sideways runtime edge) — added to the server allowed-import set in
+`ARCHITECTURE.md §Package Import Rules` per D-24086 (the derived
+`.claude/rules/architecture.md` mirror is a pending follow-up; ARCHITECTURE
+wins on conflict). Saved loadouts are **decorative, never merit-bearing**
+(§19b/§19a) — no `competitive_scores`/leaderboard surface.
+
+Proof: `pnpm -r build` 0; server suite `716→746 tests` (`650→674` pass,
+`66→72` DB-less skip, **0 fail**, no other suite delta); the 30 new-suite
+tests all **green against a real Postgres** (0 skipped) covering create/list/
+ordering/cap/slug-transitions/guest-read/cross-account isolation, plus a psql
+smoke of the migration (multi-null `share_slug` coexist, dup-slug rejection,
+FK CASCADE). **D-24026 N/A** — no UI in this packet; the live user-facing
+check is deferred to **WP-302** (owner-profile Save/list/share UI), which can
+now build against this contract on `main`.
+
 ### WP-300 / EC-331 Executed — Public Profile Link-Preview Meta (Client App edge subsurface; D-24085 Active) (2026-06-30)
 
 `apps/arena-client` now ships the repo's **first Cloudflare Pages Function**
