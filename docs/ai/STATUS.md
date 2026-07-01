@@ -7,6 +7,45 @@
 
 ## Current State
 
+### WP-300 / EC-331 Executed — Public Profile Link-Preview Meta (Client App edge subsurface; D-24085 Active) (2026-06-30)
+
+`apps/arena-client` now ships the repo's **first Cloudflare Pages Function**
+(`functions/_middleware.ts`), so shared public-profile links
+(`https://play.legendary-arena.com/?profile=<handle>`) **unfurl** into a rich
+Open Graph / Twitter Card preview in crawlers (Discord, X, iMessage, Slack)
+that do not run the SPA. The middleware runs ahead of static serving: it
+guards to a `GET` whose response is `text/html` and whose URL carries a valid
+`?profile=<handle>` (`^[a-z][a-z0-9_]{2,23}$`), fetches the existing guest
+`GET /api/players/:handle/profile` with a **1500 ms bounded** `AbortSignal.timeout`,
+and on 200 appends per-player `<meta>` (title = display name, description =
+§23-compliant badge/team/replay counts, image = a static 1200×630 brand card
+at `/og/profile-card.png`) to `<head>` via `HTMLRewriter`. Every other
+case — no `?profile=`, non-HTML, non-GET, malformed handle, any API non-200 /
+timeout / error — serves the **unmodified shell** (fail-soft; never 5xx).
+
+- **Pure logic isolated + tested:** meta composition and the load-bearing
+  HTML-attribute escaping (user-controlled `displayName`/`displayHandle`) live
+  in framework-free, I/O-free `functions/lib/buildProfileMeta.ts`, unit-tested
+  by 10 `node:test` cases (escaping, title→handle fallback, a §23 guard that
+  forbids win/rank/opponent/challenge framing, canonical `og:url`).
+- **API origin at the edge (R2):** resolved from
+  `context.env.VITE_API_BASE_URL` (the same var the SPA build already
+  requires, WP-161) with a documented `https://api.legendary-arena.com`
+  fallback.
+- **Boundaries:** edge subsurface of `client-app` (D-24085) — no game
+  framework / engine / registry / database-client import, computes no game
+  outcomes; `index.html` / `robots.txt` / `_redirects` and the WP-007a
+  brand-token cascade are untouched. `02-CODE-CATEGORIES.md §client-app`
+  extended to register `functions/`; **D-24085 → Active**.
+- **Baselines:** arena-client build 0 / test 624→634 (new suite discovered) /
+  typecheck 0 / typecheck:functions 0; forbidden-import grep clean.
+- **R1 operator action (pending):** previews only unfurl if the Cloudflare
+  Pages project **root directory is `apps/arena-client/`** so `functions/` is
+  discovered and compiled (external dashboard config, not in the repo).
+  **D-24026 live-verify pending post-deploy** — paste a real
+  `?profile=<handle>` URL into a link-preview debugger / Discord and confirm
+  the card; confirm `/` (no param) is unchanged.
+
 ### `www` Auth Surface Decision (D-24084, Active) — marketing WP-031 executed (nav links) + WP-298 executed (avatar upload UI now wired) (2026-06-30)
 
 Records **D-24084** (Active): `www.legendary-arena.com` stays a static marketing
