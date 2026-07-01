@@ -169,6 +169,79 @@ via two `[[menu.main]]` entries — but the auth surface itself lives
 entirely on `play`. Linking, not owning: this is the play-vs-www split
 below.
 
+### Profile UI design direction — evaluation (2026-06-30)
+
+Two external AI design passes (a general assistant and a Copilot
+enterprise-search pass) recommended re-skinning the `?route=me` owner
+profile as a **gamer-flavoured identity page** — a prominent "player
+identity" header (large ringed avatar, display name, title/rank line,
+short about-me) over a responsive card grid (Profile / Links / Teams /
+Billing / Achievements), in a dark slate theme with a gold "legendary"
+accent. The stated models were Steam / Discord / GitHub / MMO character
+pages rather than Salesforce / Azure / Stripe settings screens. Suggested
+structural references were Vuestic Admin, a Vue-3 profile-page template,
+and DevExpress's user-profile demo, plus avatar npm packages
+(`vue-profile-avatar`, `avatar-vue3`). Recorded here so the direction is
+evaluated once against the vision rather than re-litigated per WP.
+
+**Layout and aesthetic — mostly sound.**
+
+| Pros | Cons |
+|------|------|
+| The identity-header + modular card-grid shape fits the [WP-104](../docs/ai/work-packets/WP-104-owner-profile-data-model-and-me-edit.md) / [WP-299](../docs/ai/work-packets/WP-299-owner-profile-edit-ux-polish.md) direction and reinforces player identity over a generic account-settings feel. | "Player as a legend in the making" must not drift into pay-to-win prestige — decoration is fine, purchasable standing is not (NG-1 no-pay-to-win; §23's competitive question is never "who purchased more advantages"). |
+| Dark theme + a single gold accent reads as on-brand prestige; avatar UX (crop, client-side compression, explicit "Apply Changes" + toast) matches the WP-298 upload contract already wired. | The second "cyan/electric" accent is a net-new palette token — don't invent it unless it already exists in the arena-client theme. |
+| Build private-first and structure components so the public profile ([WP-102](../docs/ai/work-packets/WP-102-public-profile-page.md)) reuses them is the right sequencing. | Reusing components across the owner and public views must respect the **closed field shapes** (`PublicProfileView` vs `OwnerProfileView`) — the public view is a distinct, narrower projection, not the same page read-only. |
+
+**Stats / "dopamine" row — this is where the suggestions go wrong.** The
+proposed header pills (*Matches*, *Win Rate*, *Tournaments*, *Global
+Rank #47*) and a *"Challenge"* CTA import a real-time player-vs-player
+combat-ladder model the game explicitly does not have:
+
+| Proposed element | Problem | On-brand replacement |
+|---|---|---|
+| **Win Rate**, **Matches** | Win/loss + head-to-head "match" framing. §23 sanctions competition only as *scenario benchmarking* and *asynchronous comparison* — "players never act as opponents inside a match." | Scenarios cleared, best PAR delta, per-attempt efficiency (personal history is fine to *display*). |
+| **Global Rank #47** as a generic pill | A rank is legitimate **only** as the §23(b) seasonal / scenario ladder, and §25(a) forbids cumulative counts (wins/sessions/attempts) as ranking inputs — rankings must be quality-normalized (best-N-runs, avg PAR delta). | Seasonal standing labelled as a replay-verified scenario-benchmark ladder, not an ELO. |
+| **"Challenge" CTA** | Implies real-time PvP combat, which §23 rules out entirely. | "View replays" / "Compare runs" (comparison, not combat). |
+| Any raw stat slot | Building header slots for aggregates that aren't wired yet ships zeros or, worse, invented numbers. | Only surface metrics with data behind them today. |
+
+Note what is **already founded** and should be kept: **badges**
+([WP-105](../docs/ai/work-packets/WP-105-player-badges-data-model-and-display.md)) are
+replay-verified per §24 (an achievements showcase is real, not phantom),
+and **team affiliation**
+([WP-109](../docs/ai/work-packets/WP-109-team-affiliation.md)) is a wired
+profile surface (a Teams card has a data model behind it). Both are safe
+to feature early.
+
+**Scope.** WP-299 is UX polish on the private *edit* page. The full
+proposal (Teams, achievements showcase, public profiles, banner
+customization, activity feed, verified-replay gallery) is a multi-WP
+player-identity subsystem. It should be decomposed and sequenced — private
+edit view, then public profile ([WP-102](../docs/ai/work-packets/WP-102-public-profile-page.md)) —
+not folded under a "polish" label.
+
+**Structural reference (Vuestic Admin et al.) — do not adopt as a
+dependency.**
+
+| Pros | Cons |
+|------|------|
+| The referenced templates are genuinely useful *visual* inspiration for card layout and responsive breakpoints. | Pulling an admin framework in "to skin aggressively so it never looks like an admin panel" inherits a dependency and a design language you then fight — the arena-client is already Vue 3; extend its existing components. |
+| Avatar packages solve initials-fallback and image handling. | The avatar pipeline is **already** wired (WP-298: `uploadOwnerAvatar` → `POST /api/me/avatar` → server-owned resize to `{accountId}.webp`); a new avatar package would duplicate a solved, contract-bound path. |
+
+**Revenue lens.** A prettier *private* edit page is polish, not payroll.
+The business-relevant surface is the **public profile** — a shareable,
+marketing/virality asset. If any of this is prioritized, that is the
+piece that earns its keep.
+
+**Net:** adopt the identity-header + card-grid layout and the dark/gold
+skin; feature badges and teams early; **replace the combat/volume stat
+cluster (win-rate, match count, generic rank, "Challenge") with §23/§24/§25-compliant
+scenario-benchmark progression**; extend existing arena-client components
+rather than adopting Vuestic/DevExpress as dependencies; and split the
+public-profile ambitions into their own sequenced Work Packets. External
+enterprise-search artifacts (Copilot / SharePoint) are intentionally
+**not** linked here — the founded facts they surfaced are the WP rows
+above.
+
 ## Interactions
 
 - **[Hugo Web System](hugo-web-system.md)** — the marketing site
