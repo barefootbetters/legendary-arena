@@ -27,8 +27,10 @@ different binaries, not one:
 (the sim harness runs headlessly today), and carries **zero native-module and
 zero database risk** — the two things that make Node→exe packaging painful.
 
-**Packaging tool.** `vercel/pkg` is archived — use **`@yao-pkg/pkg`** (spike
-`bun --compile` for A since it's pure JS; Node SEA is the fallback).
+**Packaging tool.** `vercel/pkg` is archived — use **`@yao-pkg/pkg`**, with Node
+SEA (`--build-sea`, one-step since Node 25.5) as a parallel spike. `bun --compile`
+is smallest/fastest but runs JavaScriptCore, not V8 — **prove hash parity before
+adopting it**, since the whole point is a byte-identical `finalStateHash`.
 
 **Load-bearing acceptance gate.** The binary must replay a seed to a
 **byte-identical `finalStateHash`** vs `node` on the same `dist/`. If it
@@ -159,16 +161,19 @@ The classic `vercel/pkg` is **archived/unmaintained** and does not handle Node 2
 | Tool | ESM support | Native modules | Node 22 | Asset embedding | Verdict |
 |---|---|---|---|---|---|
 | **`@yao-pkg/pkg`** (maintained fork of vercel/pkg) | Good (via bundling) | Sidecar `.node` supported | Yes | `assets`/`scripts` in `pkg` config | **Recommended for A & B.** Closest to a turnkey `exe` with an established asset story. |
-| **Node.js SEA** (`--experimental-sea-config`, built into Node ≥20) | Partial/awkward (single-entry; ESM needs a bundle-to-one-file first) | Sidecar only; manual | Yes (official) | Manual blob injection via `postject` | Official, zero third-party dep, but immature DX; more manual wiring. Good fallback if we distrust the fork. |
-| **`bun build --compile`** | Native ESM | Good, but `sharp`/`pg`/boardgame.io compat is a real risk | n/a (Bun runtime) | Built-in | Fast, clean binaries — but swapping the runtime under a boardgame.io/pg/sharp stack is a compatibility gamble. Only consider for **Target A** (pure JS). |
+| **Node.js SEA** (built into Node) | Partial/awkward (single-entry; ESM needs a bundle-to-one-file first) | Sidecar only; manual | Yes (official) | `--build-sea` one-step (Node ≥25.5) | Official, zero third-party dep, and the DX is now much better: Node 25.5 (2026-01-26) added `--build-sea`, which collapses the old copy-node → `--experimental-sea-config` blob → `postject`-inject dance into a single command (`--experimental-sea-config` remains for dumping/verifying the blob). Strong modern fallback — worth a **parallel spike** for A, and preferred over `postject`-era wiring if we distrust the fork. |
+| **`bun build --compile`** | Native ESM | Good, but `sharp`/`pg`/boardgame.io compat is a real risk | n/a (Bun runtime) | Built-in | Fast, small binaries — but it runs **JavaScriptCore, not V8**. Every other candidate (pkg, SEA) embeds the same V8 the server runs; Bun swaps the JS engine wholesale. For a tool whose entire value is a **byte-identical `finalStateHash`**, that is a first-order determinism/hash-parity risk, not just a library-compat one. **Do not adopt for A until hash parity vs `node dist/` is proven on representative seeds/fixtures.** Also a library-compat gamble under boardgame.io/`pg`/`sharp` (B/C). |
 | **`nexe`** | Weaker ESM | Painful | Lagging | Limited | Not recommended. |
 
 ### Recommendation
 
 - **Target A:** `@yao-pkg/pkg` (primary) — engine + registry are pure ESM JS after
-  `tsc`, so this is a near-clean bundle + card-data assets. `bun --compile` is a
-  viable, faster-binary alternative worth a spike since there are no native deps
-  to break.
+  `tsc`, so this is a near-clean bundle + card-data assets. Run **Node SEA
+  (`--build-sea`, Node ≥25.5) as a parallel spike** — it is official, dependency-free,
+  and now a one-command build. `bun --compile` produces the smallest/fastest binary
+  but runs JavaScriptCore instead of V8; treat it as **prove-parity-first**, not a
+  default — do not adopt it until it replays a seed to a byte-identical
+  `finalStateHash` vs `node dist/` (see §4 and the determinism gate in §8).
 - **Target B/C:** `@yao-pkg/pkg` with **sidecar** `sharp`/`pg-native`/boardgame.io
   CJS `.node` artifacts. Node SEA is the fallback if the fork can't resolve the
   CJS-in-ESM server bundle cleanly.
@@ -243,8 +248,10 @@ decision.
 2. `pnpm -r build` (produces `packages/*/dist`)
 3. `esbuild` bundle the `engine-runner` entry → single `.mjs` (tree-shaken,
    externalizing nothing — pure JS graph).
-4. `@yao-pkg/pkg` (or `bun build --compile`) → `legendary-engine.exe`, declaring
-   the card/theme JSON dirs as `assets`.
+4. `@yao-pkg/pkg` → `legendary-engine.exe`, declaring the card/theme JSON dirs as
+   `assets`. (Node SEA `--build-sea` is the parallel-spike alternative; `bun
+   --compile` only if it clears the determinism-parity gate first — it runs
+   JavaScriptCore, not V8.)
 5. Smoke-run the exe on a clean Windows VM (no Node installed).
 6. Emit a versioned artifact (embed `__GIT_SHA__` per the existing D-24026
    git-sha-stamping convention so the binary is traceable).
@@ -326,7 +333,9 @@ with a concrete offline/desktop-host requirement.
 - **D-?? — Scope commitment (§2).** A vs B vs C. Blocks everything downstream.
   *Recommendation: A first.*
 - **D-?? — Packaging tool.** `@yao-pkg/pkg` vs Node SEA vs `bun --compile`.
-  *Recommendation: `@yao-pkg/pkg`; spike `bun` for A.*
+  *Recommendation: `@yao-pkg/pkg` primary; spike Node SEA (`--build-sea`, Node
+  ≥25.5) in parallel. `bun --compile` is gated on proving `finalStateHash` parity
+  first — it runs JavaScriptCore, not V8.*
 - **D-?? — Asset delivery.** Card/theme JSON embedded-in-binary vs sidecar
   `data/` folder. Sidecar is simpler to update and debug; embedded is a single
   self-contained file. *Lean sidecar for v1.*
