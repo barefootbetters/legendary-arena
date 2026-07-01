@@ -21,6 +21,8 @@ source:
   - ../docs/12-SCORING-REFERENCE.md
   - ../docs/12.1-PAR-ARTIFACT-INTEGRITY.md
   - ../docs/13-REPLAYS-REFERENCE.md
+  - ../docs/05-ROADMAP-MINDMAP.md
+  - ../docs/ai/DESIGN-HOLLOW-EFFECT-DETECTION.md
   - ../packages/game-engine/src/simulation/par.aggregator.ts
   - ../packages/game-engine/src/simulation/ai.tiers.ts
   - ../packages/game-engine/src/simulation/ai.competent.ts
@@ -32,6 +34,8 @@ source:
   - ../docs/ai/work-packets/WP-050-par-artifact-storage.md
   - ../docs/ai/work-packets/WP-051-par-publication-server-gate.md
   - ../docs/ai/work-packets/WP-048-par-scenario-scoring-leaderboards.md
+  - ../docs/ai/work-packets/WP-250-hero-effect-coverage-gate.md
+  - ../docs/ai/work-packets/WP-257-hollow-effect-detector.md
 last-reviewed: 2026-07-01
 ---
 
@@ -51,7 +55,77 @@ hashed PAR artifact competitive play depends on. The numeric scoring
 formula lives in [Scoring](scoring.md); this page documents how the
 distribution that feeds PAR is *generated*.
 
+**A working, rules-faithful game engine is the hard prerequisite.**
+Simulation faithfully measures whatever the engine actually does — so a PAR
+calibrated on an engine that does not yet play the scenario the way the
+printed rules dictate is a baseline for a *different, easier game*. Until
+core-set ability coverage is complete, calibration is a dry-run / smoke
+capability, not a source of published competitive baselines (see
+[Prerequisite: a rules-faithful engine](#prerequisite-a-rules-faithful-engine)).
+
 ## Mechanics
+
+### Prerequisite: a rules-faithful engine
+
+Calibration cannot produce a trustworthy PAR before the engine can actually
+*play the scenario correctly*. [VISION §26](../docs/01-VISION.md) and
+[12-SCORING-REFERENCE Phase 2](../docs/12-SCORING-REFERENCE.md) define PAR
+against **"competent, rules-faithful play"** — and simulation is a faithful
+mirror of engine behavior, not of the printed rulebook. If the engine
+under-implements a scenario, the Raw Score distribution reflects that
+weaker game, and the resulting PAR would be calibrated against the wrong
+target. Ordering matters: **build the game engine first, then calibrate.**
+This is not a wiki-imposed rule — the roadmap already gates on it: *"Core
+set keyword & ability coverage — get the core set fully playable first,
+then add sets incrementally"*
+([05-ROADMAP-MINDMAP Next Horizons](../docs/05-ROADMAP-MINDMAP.md)).
+
+Concretely, four engine-completeness gaps make calibration a dry-run today
+rather than a publishable-PAR capability:
+
+1. **Ability coverage is incomplete.** The hero reveal/rescue/draw
+   executors and the villain fight/ambush/escape/KO effects have largely
+   landed, but the deferred predicate machinery for filtered/targeted
+   villain effects and reveal player-choice breadth are still outstanding
+   before the core set is "fully playable"
+   ([05-ROADMAP-MINDMAP](../docs/05-ROADMAP-MINDMAP.md), roadmap detail).
+   Much of the printed ability corpus is still *hollow* — a declared card
+   ability whose executable handler is absent or unreachable — which the
+   engine now detects and surfaces at runtime
+   ([WP-257](../docs/ai/work-packets/WP-257-hollow-effect-detector.md);
+   [DESIGN-HOLLOW-EFFECT-DETECTION](../docs/ai/DESIGN-HOLLOW-EFFECT-DETECTION.md)).
+   The live executable-vs-hollow ratio is tracked on the dashboard
+   `/coverage` surface and gated in CI by the hero-effect coverage gate
+   ([WP-250](../docs/ai/work-packets/WP-250-hero-effect-coverage-gate.md)).
+   A hollow ability contributes nothing to the outcome, so it silently
+   shifts the distribution away from rules-faithful play.
+
+2. **Only one of five penalty producers exists.** `deriveScoringInputsFromFinalState`
+   populates `villainEscaped`; the other four `PenaltyEventType` categories
+   are safe-skipped to zero because no engine producer emits them yet
+   (D-4801). The penalty half of the Raw Score is therefore largely absent
+   from today's distribution.
+
+3. **The calibration loop is observation-only.** It defers rule hooks fired
+   via `ctx.events` (D-0205), so even effects that *are* implemented for
+   live play are not all exercised inside the current per-game loop.
+
+4. **The play-to-leaderboard loop is not yet closed.** The score-submission
+   HTTP wiring is still a Next Horizon
+   ([05-ROADMAP-MINDMAP](../docs/05-ROADMAP-MINDMAP.md)), so calibrated PAR
+   has no live consumer to gate yet.
+
+The consequence, by design: a scenario with incomplete ability coverage
+falls back to its Phase 1 content seed, explicitly marked `uncalibrated`
+([12-SCORING-REFERENCE Phase 2](../docs/12-SCORING-REFERENCE.md)); and any
+`simulation` PAR produced while coverage is still growing is provisional —
+each coverage improvement that changes the distribution is a
+`scoringConfigVersion` event, never a silent retroactive edit
+([Scoring](scoring.md)). Running the pipeline against today's engine is
+valuable as a smoke test and a variance/tier-ordering check (small-N,
+`validateParResult` inspection), but the PAR it yields should not be
+published as a competitive baseline until the scenario's rules are
+faithfully implemented.
 
 ### Why simulation, not a formula
 
@@ -267,6 +341,14 @@ newly-added scenario from "playable" into "competitively rankable".
 
 ## Edge Cases
 
+- **A green run is not a valid PAR if the engine is under-built.** The
+  pipeline runs to completion and produces a distribution even when many of
+  the scenario's abilities are hollow — nothing errors. The distribution is
+  simply calibrated against a weaker game than the printed rules describe.
+  Coverage completeness is a precondition the pipeline cannot self-check;
+  it is verified out-of-band on the `/coverage` surface and the hero-effect
+  coverage gate ([WP-250](../docs/ai/work-packets/WP-250-hero-effect-coverage-gate.md)).
+  See [Prerequisite: a rules-faithful engine](#prerequisite-a-rules-faithful-engine).
 - **PAR is never the mean.** A handful of blowout games can drag the mean
   arbitrarily; only the nearest-rank percentile is used. `aggregateParFromSimulation`
   throws `ParAggregationError` on an empty distribution or an out-of-range
@@ -367,8 +449,20 @@ newly-added scenario from "playable" into "competitively rankable".
 - [Scoring](scoring.md) — the Raw Score / Final Score formula, type
   contracts, and `scoringConfigVersion` pin (canonical home; not duplicated
   here)
+- [`docs/05-ROADMAP-MINDMAP.md`](../docs/05-ROADMAP-MINDMAP.md) — Next
+  Horizons ("get the core set fully playable first"); the roadmap detail on
+  what hero/villain ability coverage has landed vs what remains; the
+  score-submission HTTP wiring horizon — the engine prerequisite this page
+  documents
+- [`docs/ai/DESIGN-HOLLOW-EFFECT-DETECTION.md`](../docs/ai/DESIGN-HOLLOW-EFFECT-DETECTION.md)
+  — the detect→surface loop for hollow abilities (declared but unreachable),
+  the direct measure of the coverage gap
 - [WP-036](../docs/ai/work-packets/WP-036-ai-playtesting-balance-simulation.md),
   [WP-048](../docs/ai/work-packets/WP-048-par-scenario-scoring-leaderboards.md),
   [WP-049](../docs/ai/work-packets/WP-049-par-simulation-engine.md),
   [WP-050](../docs/ai/work-packets/WP-050-par-artifact-storage.md),
-  [WP-051](../docs/ai/work-packets/WP-051-par-publication-server-gate.md)
+  [WP-051](../docs/ai/work-packets/WP-051-par-publication-server-gate.md),
+  [WP-250](../docs/ai/work-packets/WP-250-hero-effect-coverage-gate.md)
+  (hero-effect coverage gate + `/coverage`),
+  [WP-257](../docs/ai/work-packets/WP-257-hollow-effect-detector.md)
+  (hollow-effect detector)
