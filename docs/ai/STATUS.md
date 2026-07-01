@@ -41,6 +41,24 @@ ewiki had flagged as undecided.
   contract (no server/contract/catalog/D-entry change). typecheck 0 /
   arena-client test 618→624 (6 new) / build 0; 3 code/test files. **D-24026
   live-verify pending post-deploy** on `play.legendary-arena.com`.
+- **WP-299 — EXECUTED (engine repo, EC-330):** presentation-only polish of the
+  `?route=me` owner profile edit page (`MyProfilePage.vue`) on top of WP-298 —
+  (1) a round avatar **preview thumbnail** that hides on a broken/unreachable URL
+  (and re-arms via a `watch` when the URL changes) without mutating the typed
+  `formAvatarUrl`; (2) an accurate **upload hint**
+  (**PNG/JPEG/WebP, up to 5 MB**) sourced from the server's `ALLOWED_MIME_TYPES`
+  + `MAX_FILE_SIZE_BYTES`, plus a fix to the pre-existing `invalid_mime_type`
+  copy that wrongly listed **GIF** (the server accepts only jpeg/png/webp);
+  (3) a live **About-me character counter** against the existing 500-char cap;
+  (4) scoped **card treatment** on the Profile/Links/Teams/Billing sections + a
+  `@media (max-width: 40rem)` one-column link row. Client-only; no
+  API/contract/store change, no new D-entry, no new unit test (browser-event UI;
+  no business-logic branch). typecheck 0 / arena-client test **624 unchanged** /
+  build 0; 1 code file +
+  governance. **D-24026 live-verify pending post-deploy** on
+  `play.legendary-arena.com`. Deferred profile features (drag-drop link reorder,
+  avatar crop, completeness meter, "preview public profile", single-save +
+  unsaved-changes guard, empty-state CTAs) remain future WPs.
 
 **Reconciliation note:** most of the original "login for cart / scoreboard /
 avatar / change-password / LAGN upload" ask was found already shipped on
