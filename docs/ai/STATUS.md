@@ -7,6 +7,44 @@
 
 ## Current State
 
+### WP-302 / EC-333 Executed — Profile Loadout Library: Owner UI + Public Share View (Client; D-24087 Active) (2026-07-01)
+
+`apps/arena-client` (play.legendary-arena.com) now ships the **client half** of
+the Vision **§19b** Profile Loadout Library, consuming the WP-301 server
+endpoints (D-24086) with **no new server surface**. `MyProfilePage.vue`
+(`?route=me`) gains a **"Saved Loadouts"** section between "Your teams" and
+billing: create by pasting a LAGN JSON document (a local `JSON.parse` guard
+surfaces an inline error and sends nothing on unparseable input), list, rename,
+toggle public/private, delete, and copy a public share link. A net-new
+**unguarded** `?loadout=<shareSlug>` route renders `SharedLoadoutPage.vue` — the
+loadout's `name`, the owner's `displayHandle`, and a composition summary on 200;
+a "not found or private" state on 404 — and **never renders an account
+identifier** (the guest projection is public-only server-side).
+
+New `loadoutLibraryApi.ts` mirrors the `ownerProfileApi.ts` pattern: the four
+`/api/me/loadouts*` calls attach `Authorization: Bearer <token>`, the guest
+`fetchSharedLoadout` attaches none; every function returns the discriminated
+union `{ ok: true; value } | { ok: false; status; code }` and **never throws** (a
+network/parse failure → `{ ok: false, status: 0, code: null }`). New pure
+`loadoutSummary.ts` reads the opaque `lagn` document defensively (mastermind /
+scheme / hero / villain / henchman names + counts, safe fallbacks) — **no
+`@legendary-arena/lagn` import**, `lagn` typed `unknown`; the server stays the
+sole LAGN-validation authority. `App.vue` extends the closed `AppRoute` union
+(`'shared-loadout'`), `parseQuery` (`?loadout=`), and `selectRoute` (unguarded,
+at the `?profile=` tier). Saved loadouts are **decorative, never merit-bearing**
+(§19b/§19a); lobby "Save this loadout" / "Load into lobby" integration is
+deferred to **WP-303**.
+
+Proof: `vue-tsc typecheck` 0; arena-client tests `634→650 pass` (+16, 0 fail);
+`vite build` 0 (`SharedLoadoutPage` + `loadoutSummary` lazy chunks emitted);
+grep clean — no `@legendary-arena/lagn` / engine-setup / registry / server / pg
+import, no new npm dependency. **D-24026 user-visible verification is PENDING
+the deploy** — the packet is not fully closed until, on the live
+play.legendary-arena.com, a signed-in save → make public → open the share link
+signed-out renders name + handle + summary with no account id.
+
+---
+
 ### WP-301 / EC-332 Executed — Profile Loadout Library: Data Model + Endpoints (Server + Persistence; D-24086 Active) (2026-07-01)
 
 `apps/server` now ships the **server half** of the Vision **§19b** Profile

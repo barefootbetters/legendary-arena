@@ -10,6 +10,14 @@ import {
   type OwnerProfileLink,
   type OwnerProfileView,
 } from '../lib/api/ownerProfileApi';
+import {
+  createLoadout,
+  deleteLoadout,
+  listLoadouts,
+  updateLoadout,
+  type SavedLoadoutView,
+} from '../lib/api/loadoutLibraryApi';
+import { summarizeLoadout } from '../lib/loadoutSummary';
 import BillingSection from '../components/BillingSection.vue';
 import {
   initializeHankoClient,
@@ -151,6 +159,52 @@ function avatarUploadMessageForCode(code: AvatarUploadErrorCode | null): string 
   return 'The avatar upload failed. Check your connection and try again.';
 }
 
+/**
+ * One row in the Saved Loadouts list: the server's view plus a local
+ * editable name draft for the inline rename control. The draft is
+ * seeded from `view.name` on load and after every mutation.
+ */
+interface LoadoutRow {
+  view: SavedLoadoutView;
+  nameDraft: string;
+}
+
+/**
+ * Map a loadout-library failure code (surfaced verbatim from the
+ * server's `{ error: code }` body, or `null` for a network/parse
+ * failure) to a full-sentence message shown inline on the Saved
+ * Loadouts section. Mirrors the `bannerCopyForCode` precedent.
+ */
+function loadoutMessageForCode(code: string | null): string {
+  if (code === 'invalid_lagn') {
+    return 'That is not a valid LAGN loadout; re-export it from the loadout builder and paste it again.';
+  }
+  if (code === 'invalid_name') {
+    return 'That name is not allowed; choose a shorter, non-empty name.';
+  }
+  if (code === 'loadout_limit_reached') {
+    return 'You have reached the 50 saved-loadout limit; delete one to save another.';
+  }
+  if (code === 'not_found') {
+    return 'That loadout no longer exists; it may have been deleted already.';
+  }
+  if (code === 'unauthorized') {
+    return 'You are not signed in. Sign in to manage your saved loadouts.';
+  }
+  return 'Could not reach the server. Check your connection and try again.';
+}
+
+/**
+ * Build the public share link for a loadout's opaque `shareSlug`, the
+ * URL the shared-loadout page (`?loadout=<shareSlug>`) resolves. Reads
+ * `window.location.origin` defensively (empty under a non-browser test
+ * runner).
+ */
+function shareLinkForSlug(shareSlug: string): string {
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  return `${origin}/?loadout=${shareSlug}`;
+}
+
 export default defineComponent({
   name: 'MyProfilePage',
   components: { BillingSection },
@@ -185,6 +239,22 @@ export default defineComponent({
     const formAboutMeVisibility = ref<'private' | 'public'>('private');
     const formLinksVisibility = ref<'private' | 'public'>('private');
     const draftLinks = ref<DraftLink[]>([]);
+
+    // why: WP-302 — the Saved Loadouts section owns its own state,
+    // separate from the profile/links surfaces. `loadoutRows` is the
+    // server list plus per-row rename drafts; `createName` /
+    // `createLagnText` back the paste-create form; the three message
+    // refs carry inline feedback (list-load error, create error, row
+    // mutation error) and the best-effort copy line — each independent
+    // so one surface's feedback never clobbers another's.
+    const loadoutRows = ref<LoadoutRow[]>([]);
+    const loadoutsError = ref<string>('');
+    const createName = ref<string>('');
+    const createLagnText = ref<string>('');
+    const createError = ref<string>('');
+    const createInFlight = ref<boolean>(false);
+    const rowError = ref<string>('');
+    const copyMessage = ref<string>('');
 
     // why: re-arm the avatar preview whenever the URL changes. Once `@error`
     // hides a broken URL, the <img> leaves the DOM, so `@load` can never fire
@@ -351,8 +421,152 @@ export default defineComponent({
       draftLinks.value.splice(index, 1);
     }
 
+    /**
+     * Fetch the caller's saved loadouts and rebuild the row list (each
+     * with a fresh rename draft). On failure sets the inline list-load
+     * error; never throws.
+     */
+    async function loadLoadouts(): Promise<void> {
+      loadoutsError.value = '';
+      const result = await listLoadouts(readAuthToken());
+      if (result.ok === true) {
+        loadoutRows.value = result.value.loadouts.map((view) => ({
+          view,
+          nameDraft: view.name,
+        }));
+        return;
+      }
+      loadoutsError.value = loadoutMessageForCode(result.code);
+    }
+
+    /**
+     * Replace one row in place with an updated server view, reseeding
+     * its rename draft. Leaves every other row untouched.
+     */
+    function replaceLoadoutRow(view: SavedLoadoutView): void {
+      loadoutRows.value = loadoutRows.value.map((row) =>
+        row.view.id === view.id ? { view, nameDraft: view.name } : row,
+      );
+    }
+
+    /**
+     * Create a saved loadout from the paste form. Guards the textarea
+     * with a local `JSON.parse` first — an unparseable paste surfaces an
+     * inline error and sends no request — then POSTs `{ name, lagn }` and
+     * refreshes the list on success. Never throws.
+     */
+    async function submitCreateLoadout(): Promise<void> {
+      createError.value = '';
+      copyMessage.value = '';
+      let parsedLagn: unknown;
+      try {
+        parsedLagn = JSON.parse(createLagnText.value);
+      } catch {
+        // why: guard the paste locally before any request — an unparseable
+        // textarea is a client-side error, so we surface it inline and send
+        // nothing rather than round-tripping to the server for invalid_lagn.
+        createError.value =
+          'That is not valid JSON. Paste a LAGN loadout document exported from the loadout builder.';
+        return;
+      }
+      if (createInFlight.value === true) {
+        return;
+      }
+      createInFlight.value = true;
+      try {
+        const result = await createLoadout(readAuthToken(), {
+          name: createName.value,
+          lagn: parsedLagn,
+        });
+        if (result.ok === true) {
+          createName.value = '';
+          createLagnText.value = '';
+          await loadLoadouts();
+          return;
+        }
+        createError.value = loadoutMessageForCode(result.code);
+      } finally {
+        createInFlight.value = false;
+      }
+    }
+
+    /**
+     * Rename one loadout to its current draft value via PATCH, reflecting
+     * the returned view on success. Sets the inline row error otherwise.
+     */
+    async function renameLoadout(row: LoadoutRow): Promise<void> {
+      rowError.value = '';
+      copyMessage.value = '';
+      const result = await updateLoadout(readAuthToken(), row.view.id, {
+        name: row.nameDraft,
+      });
+      if (result.ok === true) {
+        replaceLoadoutRow(result.value);
+        return;
+      }
+      rowError.value = loadoutMessageForCode(result.code);
+    }
+
+    /**
+     * Flip one loadout between public and private via PATCH. Making it
+     * public reveals a share slug; making it private clears it. Reflects
+     * the returned view on success; sets the inline row error otherwise.
+     */
+    async function toggleLoadoutVisibility(row: LoadoutRow): Promise<void> {
+      rowError.value = '';
+      copyMessage.value = '';
+      const nextVisibility =
+        row.view.visibility === 'public' ? 'private' : 'public';
+      const result = await updateLoadout(readAuthToken(), row.view.id, {
+        visibility: nextVisibility,
+      });
+      if (result.ok === true) {
+        replaceLoadoutRow(result.value);
+        return;
+      }
+      rowError.value = loadoutMessageForCode(result.code);
+    }
+
+    /**
+     * Delete one loadout via DELETE, removing its row on success. Sets
+     * the inline row error otherwise.
+     */
+    async function removeLoadout(row: LoadoutRow): Promise<void> {
+      rowError.value = '';
+      copyMessage.value = '';
+      const result = await deleteLoadout(readAuthToken(), row.view.id);
+      if (result.ok === true) {
+        loadoutRows.value = loadoutRows.value.filter(
+          (candidate) => candidate.view.id !== row.view.id,
+        );
+        return;
+      }
+      rowError.value = loadoutMessageForCode(result.code);
+    }
+
+    /**
+     * Copy a loadout's public share link to the clipboard (best-effort).
+     * A rejected or unavailable clipboard leaves the visible link intact
+     * so the player can copy it manually.
+     */
+    async function copyShareLink(shareSlug: string): Promise<void> {
+      const link = shareLinkForSlug(shareSlug);
+      try {
+        // why: clipboard writes are best-effort — a rejected or unavailable
+        // clipboard (denied permission, insecure context) must not break the
+        // page, so the failure is caught and the link stays visible to copy
+        // by hand.
+        await navigator.clipboard.writeText(link);
+        copyMessage.value = 'Share link copied to your clipboard.';
+      } catch {
+        copyMessage.value =
+          'Could not copy automatically — select the link above and copy it manually.';
+      }
+    }
+
     onMounted(() => {
       void load();
+      void loadLoadouts();
     });
 
     return {
@@ -378,6 +592,21 @@ export default defineComponent({
       saveLinks,
       addDraftLink,
       removeDraftLink,
+      loadoutRows,
+      loadoutsError,
+      createName,
+      createLagnText,
+      createError,
+      createInFlight,
+      rowError,
+      copyMessage,
+      submitCreateLoadout,
+      renameLoadout,
+      toggleLoadoutVisibility,
+      removeLoadout,
+      copyShareLink,
+      summarizeLoadout,
+      shareLinkForSlug,
       formatTeamSizeLabel,
       formatRoleLabel,
       formatJoinedDate,
@@ -641,6 +870,163 @@ export default defineComponent({
         </ul>
       </section>
 
+      <!-- why: WP-302 — the Saved Loadouts library (Vision §19b). Saved
+           loadouts are decorative, user-authored content (§19a) — never a
+           competitive-submission path. The create path is paste-LAGN only;
+           lobby "Save this loadout" / "Load into lobby" integration is a
+           deferred follow-on (WP-303 / D-24087). -->
+      <section class="profile-loadouts" data-testid="my-profile-loadouts">
+        <h2>Saved Loadouts</h2>
+        <p class="profile-help">
+          Save a loadout by pasting a LAGN document exported from the loadout
+          builder. Make one public to get a share link anyone can open.
+        </p>
+
+        <div class="profile-loadout-create" data-testid="my-profile-loadout-create">
+          <label class="profile-field">
+            <span class="profile-field-label">Loadout name</span>
+            <input
+              v-model="createName"
+              type="text"
+              placeholder="My Loki deck"
+              data-testid="my-profile-loadout-name"
+            />
+          </label>
+          <label class="profile-field">
+            <span class="profile-field-label">LAGN document (JSON)</span>
+            <textarea
+              v-model="createLagnText"
+              rows="5"
+              placeholder='{ "lagn_version": 1, "setup": { … } }'
+              data-testid="my-profile-loadout-lagn"
+            ></textarea>
+          </label>
+          <button
+            type="button"
+            class="profile-save"
+            data-testid="my-profile-loadout-save"
+            :disabled="createInFlight"
+            @click="submitCreateLoadout"
+          >
+            Save loadout
+          </button>
+          <p
+            v-if="createError !== ''"
+            class="profile-upload-error"
+            data-testid="my-profile-loadout-create-error"
+          >
+            {{ createError }}
+          </p>
+        </div>
+
+        <p
+          v-if="loadoutsError !== ''"
+          class="profile-upload-error"
+          data-testid="my-profile-loadouts-error"
+        >
+          {{ loadoutsError }}
+        </p>
+
+        <template v-if="loadoutRows.length === 0">
+          <p class="profile-help" data-testid="my-profile-loadouts-empty">
+            You have no saved loadouts yet. Paste one above to get started.
+          </p>
+        </template>
+        <ul v-else class="profile-loadouts-list">
+          <li
+            v-for="row in loadoutRows"
+            :key="row.view.id"
+            class="profile-loadout-row"
+            :data-testid="`my-profile-loadout-row-${row.view.id}`"
+          >
+            <div class="profile-loadout-name-edit">
+              <input
+                v-model="row.nameDraft"
+                type="text"
+                :data-testid="`my-profile-loadout-name-${row.view.id}`"
+              />
+              <button
+                type="button"
+                :data-testid="`my-profile-loadout-rename-${row.view.id}`"
+                @click="renameLoadout(row)"
+              >
+                Rename
+              </button>
+            </div>
+
+            <p class="profile-loadout-summary">
+              <span class="profile-loadout-summary-line">
+                {{ summarizeLoadout(row.view.lagn).mastermind }} ·
+                {{ summarizeLoadout(row.view.lagn).scheme }}
+              </span>
+              <span class="profile-loadout-summary-line">
+                {{ summarizeLoadout(row.view.lagn).heroes.length }} heroes ·
+                {{ summarizeLoadout(row.view.lagn).villainGroups.length }} villain groups
+              </span>
+            </p>
+
+            <div class="profile-loadout-controls">
+              <span
+                class="profile-loadout-visibility"
+                :data-testid="`my-profile-loadout-visibility-${row.view.id}`"
+              >
+                {{ row.view.visibility }}
+              </span>
+              <button
+                type="button"
+                :data-testid="`my-profile-loadout-toggle-${row.view.id}`"
+                @click="toggleLoadoutVisibility(row)"
+              >
+                {{ row.view.visibility === 'public' ? 'Make private' : 'Make public' }}
+              </button>
+              <button
+                type="button"
+                :data-testid="`my-profile-loadout-delete-${row.view.id}`"
+                @click="removeLoadout(row)"
+              >
+                Delete
+              </button>
+            </div>
+
+            <div
+              v-if="row.view.visibility === 'public' && row.view.shareSlug !== null"
+              class="profile-loadout-share"
+            >
+              <a
+                class="profile-loadout-share-link"
+                :href="shareLinkForSlug(row.view.shareSlug)"
+                :data-testid="`my-profile-loadout-share-link-${row.view.id}`"
+              >
+                {{ shareLinkForSlug(row.view.shareSlug) }}
+              </a>
+              <button
+                type="button"
+                :data-testid="`my-profile-loadout-copy-${row.view.id}`"
+                @click="copyShareLink(row.view.shareSlug)"
+              >
+                Copy link
+              </button>
+            </div>
+          </li>
+        </ul>
+
+        <p
+          v-if="rowError !== ''"
+          class="profile-upload-error"
+          data-testid="my-profile-loadout-row-error"
+        >
+          {{ rowError }}
+        </p>
+        <p
+          v-if="copyMessage !== ''"
+          class="profile-upload-success"
+          data-testid="my-profile-loadout-copy-message"
+          aria-live="polite"
+        >
+          {{ copyMessage }}
+        </p>
+      </section>
+
       <section class="profile-billing">
         <BillingSection :auth-token="readAuthToken()" />
       </section>
@@ -709,11 +1095,93 @@ export default defineComponent({
 .profile-form,
 .profile-links,
 .profile-teams,
+.profile-loadouts,
 .profile-billing {
   padding: 1.25rem;
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 0.5rem;
   background: rgba(255, 255, 255, 0.5);
+}
+
+.profile-loadouts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.profile-loadouts h2 {
+  font-size: 1.125rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.profile-loadout-create {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.profile-loadouts-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.profile-loadout-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 0.375rem;
+}
+
+.profile-loadout-name-edit {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.profile-loadout-name-edit input {
+  flex: 1;
+}
+
+.profile-loadout-summary {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.85rem;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.profile-loadout-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.profile-loadout-visibility {
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  opacity: 0.7;
+}
+
+.profile-loadout-share {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.profile-loadout-share-link {
+  font-size: 0.8rem;
+  word-break: break-all;
 }
 
 .profile-avatar-preview img {
