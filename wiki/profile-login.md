@@ -242,6 +242,51 @@ enterprise-search artifacts (Copilot / SharePoint) are intentionally
 **not** linked here — the founded facts they surfaced are the WP rows
 above.
 
+### Owner-page identity fields — `accountId`, `displayName`, `handle` (2026-06-30)
+
+Three identity fields live on `legendary.players`: **`ext_id`** (the
+`accountId` — an opaque UUID, mapped to `AccountId` per D-5201),
+**`display_name`** (the human profile name, WP-101), and **`handle`**
+(immutable, globally unique, URL-safe; migration `008_add_handle_to_players.sql`,
+WP-101). They are already surfaced on the **public** profile
+(`PublicProfileView` → `displayName` + `handleCanonical`, rendered by
+`PlayerProfilePage.vue`).
+
+The **owner** edit response omits all three by design. `OwnerProfileView`
+(`GET /api/me/profile`, [WP-104](../docs/ai/work-packets/WP-104-owner-profile-data-model-and-me-edit.md))
+carries only `avatarUrl`, `aboutMe`, the three visibility flags, `links`,
+`updatedAt`, `teamAffiliations`, and `badges` — **no `accountId`,
+`displayName`, or `handle`.** So `MyProfilePage.vue` (`?route=me`) has no
+access to them today and shows a generic "Your profile" heading rather than
+the player's name/handle.
+
+Displaying them on the owner page is a **server-contract change, not a
+display tweak** (so it is **not** lightweight-lane per D-24028):
+
+- `ownerProfile.types.ts` — add `accountId` / `displayName` / `handle` to
+  `OwnerProfileView`. This is a **locked WP-104 `.types.ts` contract**;
+  the change needs architecture review + a `DECISIONS.md` entry.
+- `ownerProfileApi.ts` (arena-client) — mirror the three fields on the
+  client's structural `OwnerProfileView` copy (also a locked contract file).
+- `ownerProfile.logic.ts` — the view-builder already joins the `players`
+  row, so it only needs to `SELECT ext_id, display_name, handle` and place
+  them on the composed view.
+- `api-endpoints.md` — the `GET /api/me/profile` response schema changes →
+  same-commit row update per **D-11804**.
+- `MyProfilePage.vue` — render them (e.g. `displayName` as the page heading,
+  `@handle` beneath, `accountId` as a muted/copyable support line).
+
+Two decisions gate the packet:
+
+- **Show vs edit `display_name`.** `OwnerProfilePatch` has no `display_name`
+  field, so it is set at provisioning (WP-174) and is **read-only** from the
+  profile today. Surfacing it is additive; making it editable here is extra
+  scope (extend the patch contract + validation). `handle` is immutable by
+  design (migration 008) → always display-only.
+- **Raw `accountId` visibility.** It is a UUID — useful as a "give support
+  this ID" affordance, not human identity. Options: always show, place it
+  behind a "copy account ID" control, or omit it and show only name + handle.
+
 ## Interactions
 
 - **[Hugo Web System](hugo-web-system.md)** — the marketing site
