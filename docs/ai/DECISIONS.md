@@ -26125,4 +26125,23 @@ Protect this file.
 
 **Packet:** WP-301 + EC-332. **Drafted:** 2026-07-01.
 
+### D-24087 — Profile Loadout Library (Client): Profile-Only MVP; Unguarded `?loadout=<shareSlug>` Public Route; Name-Level Summary; `apps/arena-client` Treats `lagn` As Opaque
+
+**Status:** **Drafted 2026-07-01; not yet landed** (reserved by WP-302 / EC-333; flips to Active when WP-302 executes).
+
+**Context.** WP-301 / D-24086 shipped the server half of the Vision §19b Profile Loadout Library — account-scoped storage plus the four `/api/me/loadouts*` (authenticated) + guest `/api/loadouts/:shareSlug` endpoints. WP-302 is the client half on `apps/arena-client` (play.legendary-arena.com). The play app builds loadouts only in the lobby (`lagnLoadout.ts` / `parseLoadoutJson.ts`, a one-shot match-creation flow); the profile page (`MyProfilePage.vue`) has no loadout surface, and there is no public "view a shared loadout" route. `apps/arena-client` does not import `@legendary-arena/lagn` today — its lobby reads LAGN fields hand-rolled to avoid a runtime validator import (the D-14401 boundary posture).
+
+**Decision.** WP-302 SHALL add a "Saved Loadouts" section to `MyProfilePage.vue` and a public `SharedLoadoutPage.vue`, consuming the WP-301 endpoints via a new `loadoutLibraryApi.ts` (mirroring `ownerProfileApi.ts`: Bearer on `/api/me/*`, discriminated-union results, inline view interfaces). Four locked choices:
+
+- **Profile-only MVP.** The create path is **paste-LAGN** (a name + a LAGN JSON textarea → `POST`); management is list / rename / visibility-toggle / delete / copy-share-link. Lobby **"Save this loadout" / "Load into lobby"** integration is deferred to a future **WP-303** — it couples the profile surface to the lobby view + its state, and the paste MVP already delivers the full save→share→view loop (a user can paste a LAGN exported from `cards.legendary-arena.com`).
+- **A net-new unguarded `?loadout=<shareSlug>` public route.** It mirrors the existing unguarded `?profile=<handle>` route and renders only the guest `PublicLoadoutView` (`name` + `displayHandle` + composition summary); a private/missing slug shows a not-found state. It never renders `accountId` / `ext_id` (the server projection is already public-only).
+- **Name-level composition summary, not a card gallery.** The saved list + shared view render mastermind/scheme/hero/villain **names** + counts via a local `loadoutSummary.ts` helper. Rendering the loadout "as cards" (registry image lookup, à la the cards-site WP-288) is deferred.
+- **`apps/arena-client` treats `lagn` as opaque JSON.** It does **not** import `@legendary-arena/lagn` (or engine-setup / registry / server): `lagn` is typed `unknown`, sent verbatim on create, received verbatim on read, and its `setup` display fields are read defensively. The App layer stays free of the validator; the server remains the sole LAGN-validation authority. **No new npm dependency.**
+
+**Consequence.** `User-Visible Surface = play.legendary-arena.com` → D-24026 live-verification is required at execution (save → make public → open the share link signed-out). No server, engine, `G`, replay, or RNG surface. Supersedes nothing; WP-301's contract stands unchanged. The deferred lobby integration is the anchor for a future WP-303.
+
+**Rejected alternatives.** (a) Lobby-integrated create in this WP — larger, two user surfaces, couples to lobby state; split to WP-303. (b) Importing `@legendary-arena/lagn` to strongly type `lagn` — adds a cross-layer import (a D-entry + ARCHITECTURE edit) for no client benefit, since the server validates; opaque `unknown` + defensive reads is layer-clean. (c) A full card-gallery shared view — needs registry image lookup; out of proportion to the MVP. (d) Management-only with no create path — strands the feature (nothing else writes loadouts on play yet).
+
+**Packet:** WP-302 + EC-333. **Drafted:** 2026-07-01.
+
 Protect this file.
