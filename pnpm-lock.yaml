@@ -39,6 +39,9 @@ importers:
         specifier: ^3.4.27
         version: 3.5.30(typescript@5.9.3)
     devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20260701.1
+        version: 4.20260701.1
       '@legendary-arena/game-engine':
         specifier: workspace:*
         version: link:../../packages/game-engine
@@ -558,6 +561,9 @@ packages:
 
   '@cloudflare/workers-types@4.20260317.1':
     resolution: {integrity: sha512-+G4eVwyCpm8Au1ex8vQBCuA9wnwqetz4tPNRoB/53qvktERWBRMQnrtvC1k584yRE3emMThtuY0gWshvSJ++PQ==}
+
+  '@cloudflare/workers-types@4.20260701.1':
+    resolution: {integrity: sha512-eGZ+PWPlu/yUxH+BJoplV45oSA709sjYFYr2kjrqSo+601qE15X4tsuZcPz1KE6Fb3ObGA9d9ZXn53n34NtyiA==}
 
   '@csstools/color-helpers@5.1.0':
     resolution: {integrity: sha512-S11EXWJyy0Mz5SYvRmY8nJYTFFd1LCNV+7cXyAgQtOOuzb4EsgfqDufL+9esx72/eLhsRdGZwaldu/h+E4t4BA==}
@@ -3745,6 +3751,8 @@ snapshots:
       '@babel/helper-validator-identifier': 7.28.5
 
   '@cloudflare/workers-types@4.20260317.1': {}
+
+  '@cloudflare/workers-types@4.20260701.1': {}
 
   '@csstools/color-helpers@5.1.0': {}
 

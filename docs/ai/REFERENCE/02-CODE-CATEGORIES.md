@@ -302,7 +302,23 @@ rules or compute game outcomes. Re-enter the engine.
 the client bundle). State drift between client projection and authoritative
 engine state. Bundle bloat from engine-runtime imports.
 
-**Directories:** `apps/arena-client/` (D-6511)
+**Edge subsurface (D-24085):** `apps/arena-client/functions/` holds
+Cloudflare Pages Functions — server-side-at-edge presentation transforms
+that run ahead of static asset serving. The first instance is
+`functions/_middleware.ts` (WP-300), which injects Open Graph / Twitter
+Card `<meta>` into the served HTML `<head>` for shared `?profile=<handle>`
+links. The subsurface **inherits** all `client-app` import prohibitions (no
+game framework, no engine runtime, no registry, no database client, no
+computing game outcomes, no persistence) but is **exempt from the
+browser-determinism constraints** — `Date.now()` and request timeouts are
+permitted at the edge, because this is a server-side presentation transform,
+not the gameplay render path and not replay-bearing. Pure logic
+(composition + HTML-attribute escaping) stays framework-free and I/O-free in
+`functions/lib/**` (unit-tested); the middleware is thin fetch + rewrite
+wiring. It reads only already-public API responses over HTTP.
+
+**Directories:** `apps/arena-client/` (D-6511); `apps/arena-client/functions/`
+edge subsurface (D-24085)
 
 ---
 

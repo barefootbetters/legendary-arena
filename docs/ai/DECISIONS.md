@@ -26085,7 +26085,7 @@ Protect this file.
 
 ### D-24085 — Public-Profile Link-Preview Meta Ships as a Cloudflare Pages Function Under `client-app`; `apps/arena-client/functions/` Is an Edge Subsurface, Not a New Category
 
-**Status:** **Drafted 2026-06-30; not yet landed** (flips to Active when WP-300 / EC-331 executes).
+**Status:** **Active** (landed 2026-06-30 by WP-300 / EC-331).
 
 **Context.** The public profile (WP-102) renders in the `apps/arena-client` Vue SPA at the query-string route `?profile=<handle>`. A shared profile link therefore reaches crawlers (Discord, X, iMessage, Slack) as the static `index.html` shell with a generic description — crawlers do not run the SPA JavaScript, so the paste does not unfurl. Rich link previews on a Cloudflare Pages SPA require server-rendered `<meta>` for crawlers. The public profile response (`GET /api/players/:handle/profile`, guest) intentionally omits any avatar URL (accountId is server-internal, WP-052 / D-5201), so a per-player composed image is not available without a public-contract change.
 
