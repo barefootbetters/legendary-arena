@@ -118,6 +118,10 @@ $repoRoot = git rev-parse --show-toplevel 2>$null
 if (-not $repoRoot) { $repoRoot = Get-Location }
 $envPath = Join-Path $repoRoot '.env'
 $placeholderCount = 0
+# why: R2 / credential SHAPE violations (e.g. R2_ACCOUNT_ID holding a full URL
+# instead of the bare 32-hex account id — the cause of the WP-106 avatar-upload
+# outage) are tracked separately from placeholders and force a non-zero exit.
+$formatErrors = 0
 
 if (-not (Test-Path $envPath)) {
     Write-Host "  ⚠ .env file not found at $envPath" -ForegroundColor Yellow
@@ -126,6 +130,9 @@ if (-not (Test-Path $envPath)) {
     Write-Host "  ✓ .env found at $envPath" -ForegroundColor Green
 
     $envLines = Get-Content $envPath
+    # why: collect name -> value in memory so the format-validation pass below
+    # can shape-check specific credential vars. Values are never printed.
+    $envVars = @{}
 
     foreach ($line in $envLines) {
         $trimmedLine = $line.Trim()
@@ -137,6 +144,7 @@ if (-not (Test-Path $envPath)) {
         if ($trimmedLine -match '^([^=]+)=(.*)$') {
             $varName = $Matches[1].Trim()
             $varValue = $Matches[2].Trim()
+            $envVars[$varName] = $varValue
 
             $status = "SET"
             $statusColor = "Green"
@@ -158,6 +166,40 @@ if (-not (Test-Path $envPath)) {
             # Never print the actual value — only the status
             Write-Host "  $($varName.PadRight(22)): $status $statusIcon" -ForegroundColor $statusColor
         }
+    }
+
+    # ── R2 / credential shape validation (never prints values) ──────────────
+    # why: the WP-106 avatar-upload outage was caused by R2_ACCOUNT_ID being set
+    # to the full S3 endpoint URL instead of the bare 32-hex Cloudflare account
+    # id. The server interpolates it into
+    # `https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com`, so a full-URL value
+    # double-wraps into a dead endpoint and every R2 write fails with a generic
+    # error. These checks catch that class of mistake (and malformed keys after
+    # a token rotation) before it reaches a deploy. Local .env stores the R2
+    # token under AWS_* names; R2_ACCOUNT_ID usually lives only on the Render
+    # deploy, but is validated here whenever it is present.
+    $hex32 = '^[0-9a-f]{32}$'
+    $hex64 = '^[0-9a-f]{64}$'
+
+    if ($envVars.ContainsKey('R2_ACCOUNT_ID')) {
+        $accountId = $envVars['R2_ACCOUNT_ID']
+        if ($accountId -match '^https?://' -or $accountId -notmatch $hex32) {
+            Write-Host "  ✗ R2_ACCOUNT_ID is malformed — expected the bare 32-hex account id, not a URL." -ForegroundColor Red
+            Write-Host "    The server builds https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com; a URL here double-wraps and breaks every R2 write." -ForegroundColor Yellow
+            $formatErrors++
+        } else {
+            Write-Host "  ✓ R2_ACCOUNT_ID shape looks correct (bare 32-hex)." -ForegroundColor Green
+        }
+    }
+
+    if ($envVars.ContainsKey('AWS_ACCESS_KEY_ID') -and $envVars['AWS_ACCESS_KEY_ID'] -ne '' -and $envVars['AWS_ACCESS_KEY_ID'] -notmatch $hex32) {
+        Write-Host "  ⚠ AWS_ACCESS_KEY_ID does not look like a Cloudflare R2 access key id (expected 32-hex)." -ForegroundColor Yellow
+    }
+    if ($envVars.ContainsKey('AWS_SECRET_ACCESS_KEY') -and $envVars['AWS_SECRET_ACCESS_KEY'] -ne '' -and $envVars['AWS_SECRET_ACCESS_KEY'] -notmatch $hex64) {
+        Write-Host "  ⚠ AWS_SECRET_ACCESS_KEY does not look like a Cloudflare R2 secret (expected 64-hex)." -ForegroundColor Yellow
+    }
+    if ($envVars.ContainsKey('R2_PUBLIC_URL') -and $envVars['R2_PUBLIC_URL'] -notmatch '^https://') {
+        Write-Host "  ⚠ R2_PUBLIC_URL should be an https:// URL." -ForegroundColor Yellow
     }
 }
 
@@ -183,6 +225,27 @@ if (-not (Test-Path $rcloneConfigPath)) {
     $configContent = Get-Content $rcloneConfigPath -Raw
     if ($configContent -match '\[r2\]') {
         Write-Host "  ✓ [r2] remote section found in config" -ForegroundColor Green
+
+        # why: validate the endpoint host is a single, well-formed R2 S3 URL —
+        # https://<32-hex-account-id>.r2.cloudflarestorage.com. Catches the same
+        # double-wrap / full-URL-in-account-id mistake that took down avatar
+        # upload (WP-106). The endpoint carries only the non-secret account id,
+        # and is not printed here regardless.
+        if ($configContent -match '(?m)^\s*endpoint\s*=\s*(\S+)') {
+            $rcloneEndpoint = $Matches[1]
+            if ($rcloneEndpoint -match '^https://[0-9a-f]{32}\.r2\.cloudflarestorage\.com/?$') {
+                Write-Host "  ✓ [r2] endpoint is well-formed" -ForegroundColor Green
+            } else {
+                Write-Host "  ✗ [r2] endpoint is malformed — expected https://<32-hex-account-id>.r2.cloudflarestorage.com" -ForegroundColor Red
+                $formatErrors++
+            }
+        }
+        # why: this remote uses env_auth (credentials read from AWS_ACCESS_KEY_ID
+        # / AWS_SECRET_ACCESS_KEY at runtime), so there is no stored secret in
+        # rclone.conf to rotate — rotating the .env values covers rclone too.
+        if ($configContent -match '(?m)^\s*env_auth\s*=\s*true') {
+            Write-Host "  ✓ [r2] uses env_auth (creds from AWS_* env vars; nothing to rotate in rclone.conf)" -ForegroundColor DarkGray
+        }
     } else {
         Write-Host "  ⚠ [r2] remote section NOT found in rclone config." -ForegroundColor Yellow
         Write-Host "    Run: rclone config  and create an 'r2' remote for Cloudflare R2." -ForegroundColor Yellow
@@ -235,6 +298,7 @@ Write-Host "── SUMMARY ─────────────────�
 $summaryItems = @()
 if ($toolsMissing -gt 0)    { $summaryItems += "Tools missing  : $toolsMissing" }
 if ($placeholderCount -gt 0) { $summaryItems += "Placeholders   : $placeholderCount" }
+if ($formatErrors -gt 0)     { $summaryItems += "Cred/format err: $formatErrors" }
 if ($configMissing)          { $summaryItems += "Config missing : rclone" }
 if ($packagesMissing -gt 0)  { $summaryItems += "Packages       : $packagesMissing missing" }
 
@@ -255,7 +319,8 @@ Write-Host ""
 $criticalFailure =
     ($toolsMissing -gt 0) -or
     ($configMissing)      -or
-    ($placeholderCount -gt 0)
+    ($placeholderCount -gt 0) -or
+    ($formatErrors -gt 0)
 
 if ($criticalFailure) {
     exit 1
