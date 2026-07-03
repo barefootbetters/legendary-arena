@@ -218,6 +218,14 @@ export async function processAvatarUpload(
         message: 'The uploaded image exceeds the maximum allowed pixel count of 20 megapixels.',
       };
     }
+    // why: the generic `upload_failed` code is all the client sees; without a
+    // server-side log of the underlying sharp error this failure mode is
+    // undiagnosable in production. Log the real cause (transcode failure,
+    // missing native binary, corrupt input) so Render logs carry the detail.
+    console.error(
+      `[avatar-upload] sharp image processing failed for account "${accountId}". ` +
+        `Underlying error: ${errorMessage}`,
+    );
     return {
       ok: false,
       code: 'upload_failed',
@@ -240,7 +248,18 @@ export async function processAvatarUpload(
       contentType: 'image/webp',
       cacheControl: 'public, max-age=300',
     });
-  } catch {
+  } catch (r2PutError: unknown) {
+    // why: this was previously a bare `catch {}` that discarded the R2 error
+    // entirely, so a prod PUT failure (bad/missing R2 credentials, wrong or
+    // unwritable bucket, endpoint misconfig) surfaced only as the generic
+    // `upload_failed` code with no server-side breadcrumb — undiagnosable in
+    // production. Log the underlying error plus the exact bucket and key we
+    // tried to write so the real cause is visible in Render logs.
+    const r2ErrorMessage = r2PutError instanceof Error ? r2PutError.message : 'unknown';
+    console.error(
+      `[avatar-upload] R2 PUT failed for account "${accountId}" ` +
+        `(bucket "${r2BucketName}", key "${r2Key}"). Underlying error: ${r2ErrorMessage}`,
+    );
     return {
       ok: false,
       code: 'upload_failed',
@@ -268,6 +287,13 @@ export async function processAvatarUpload(
       );
     }
     const dbMessage = databaseError instanceof Error ? databaseError.message : 'unknown';
+    // why: as with the sharp and R2 paths, the client only ever sees the
+    // generic `upload_failed` code — log the real DB error so a post-PUT
+    // rollback is diagnosable from server logs rather than invisible.
+    console.error(
+      `[avatar-upload] DB update failed after R2 PUT for account "${accountId}"; ` +
+        `avatar was rolled back via compensating delete. Underlying error: ${dbMessage}`,
+    );
     return {
       ok: false,
       code: 'upload_failed',
