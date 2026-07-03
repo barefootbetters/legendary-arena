@@ -523,6 +523,15 @@ const IMPORTANCE_DEFINITIONS = [
     'primevue',
     'axios',
     'echarts',
+    // why: R2 object storage is a runtime dependency of apps/server, not just
+    // build/upload tooling — avatar upload (WP-106, server.mjs: PutObject +
+    // compensating DeleteObject on the live request path) and the legends
+    // snapshot publisher (WP-142, index.mjs: PutObject on the scheduler path)
+    // both call this SDK at runtime. Classified Adopted (not Tooling): a
+    // runtime architectural surface now depends on R2 storage. It is not
+    // Foundational because the specific SDK is replaceable — R2 is
+    // S3-compatible, so any S3 client would serve.
+    '@aws-sdk/client-s3',
     { name: 'socket.io', transitiveVia: 'boardgame.io' },
     { name: 'socket.io-client', transitiveVia: 'boardgame.io' },
     { name: '@koa/router', transitiveVia: 'boardgame.io' },
@@ -544,11 +553,6 @@ const IMPORTANCE_DEFINITIONS = [
     '@vue/tsconfig',
     'eslint-plugin-vue',
     'eslint-plugin-vuejs-accessibility',
-    // why: R2 is foundational storage, but the SDK choice is replaceable.
-    // R2 is S3-compatible, so any S3 client would work. The SDK is used
-    // by scripts/validate-r2.mjs and upload tooling, never at runtime by
-    // any app — Tooling.
-    '@aws-sdk/client-s3',
     // why: pure type declarations, no runtime behavior.
     '@cloudflare/workers-types',
     // why: env-var loader for scripts. Not load-bearing for any
