@@ -145,15 +145,13 @@ services:
       - key: HANDOFF_SUBMIT_TOKEN
         sync: false
       # Legends Snapshot Publisher (WP-142 / D-14201..D-14207) AND the
-      # avatar upload pipeline (WP-106 / D-10602) share these R2 S3-API
-      # credentials. sync: false because they are secrets provisioned
-      # manually in the Render dashboard. NOTE: all three creds must be
-      # set for `POST /api/me/avatar` to succeed — if any is missing the
-      # avatar S3 client builds with empty credentials + an
-      # `https://undefined.r2.cloudflarestorage.com` endpoint and every
+      # avatar upload pipeline (WP-106 / D-10602) share these three R2
+      # S3-API credentials. sync: false because they are secrets
+      # provisioned manually in the Render dashboard. NOTE: all three must
+      # be set for `POST /api/me/avatar` to succeed — if any is missing (or
+      # if R2_ACCOUNT_ID holds the full endpoint URL instead of the bare
+      # 32-hex account id) the S3 client builds a broken endpoint and every
       # PutObject fails with the generic `upload_failed` code.
-      - key: R2_LEGENDS_BUCKET
-        sync: false
       - key: R2_ACCESS_KEY_ID
         sync: false
       - key: R2_SECRET_ACCESS_KEY
@@ -166,6 +164,17 @@ services:
       # served by images.legendary-arena.com (WP-296 / D-24083) and the
       # bucket the R2 token above is scoped to write.
       - key: R2_BUCKET_NAME
+        value: legendary-images
+      # Legends snapshot target bucket (WP-142). Non-secret bucket NAME
+      # (the creds above are the secret part), so declared inline rather
+      # than sync: false — a bucket name mistakenly left as an unprovisioned
+      # secret is why the publisher would start and then fail every publish
+      # with an empty bucket (`process.env.R2_LEGENDS_BUCKET ?? ''`, see
+      # apps/server/src/index.mjs). Must be a bucket the R2 token above can
+      # write; defaults to the same legendary-images bucket. To turn the
+      # publisher ON, set LEGENDS_PUBLISHER_ENABLED=true below (this bucket
+      # is then already in place). Verify via GET /health/legends-publisher.
+      - key: R2_LEGENDS_BUCKET
         value: legendary-images
       # Brevo marketing enqueue (WP-293 / D-24077..D-24080). sync: false —
       # secrets/config provisioned manually in the Render dashboard. Both must
