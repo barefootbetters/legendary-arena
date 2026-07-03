@@ -144,9 +144,14 @@ services:
       # authenticate to this endpoint.
       - key: HANDOFF_SUBMIT_TOKEN
         sync: false
-      # Legends Snapshot Publisher (WP-142 / D-14201..D-14207).
-      # R2 credentials for the S3-compatible API. sync: false because
-      # these are secrets provisioned manually in the Render dashboard.
+      # Legends Snapshot Publisher (WP-142 / D-14201..D-14207) AND the
+      # avatar upload pipeline (WP-106 / D-10602) share these R2 S3-API
+      # credentials. sync: false because they are secrets provisioned
+      # manually in the Render dashboard. NOTE: all three creds must be
+      # set for `POST /api/me/avatar` to succeed — if any is missing the
+      # avatar S3 client builds with empty credentials + an
+      # `https://undefined.r2.cloudflarestorage.com` endpoint and every
+      # PutObject fails with the generic `upload_failed` code.
       - key: R2_LEGENDS_BUCKET
         sync: false
       - key: R2_ACCESS_KEY_ID
@@ -155,6 +160,13 @@ services:
         sync: false
       - key: R2_ACCOUNT_ID
         sync: false
+      # Avatar upload target bucket (WP-106). Non-secret, so declared
+      # inline rather than sync: false — this removes the code-side
+      # `?? 'legendary-images'` fallback ambiguity. Must match the bucket
+      # served by images.legendary-arena.com (WP-296 / D-24083) and the
+      # bucket the R2 token above is scoped to write.
+      - key: R2_BUCKET_NAME
+        value: legendary-images
       # Brevo marketing enqueue (WP-293 / D-24077..D-24080). sync: false —
       # secrets/config provisioned manually in the Render dashboard. Both must
       # be set to enable game-signup → Brevo capture; if either is missing the

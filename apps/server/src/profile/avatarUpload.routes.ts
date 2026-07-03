@@ -135,7 +135,15 @@ export function registerAvatarUploadRoutes(
       koaContext.status = statusMap[result.code] ?? 500;
       koaContext.body = { code: result.code, message: result.message };
     } catch (caughtError) {
-      void caughtError;
+      // why: previously discarded via `void caughtError`, leaving an
+      // unexpected handler-level failure (e.g. auth/session throw, multer
+      // internals) mapped to `upload_failed` with no server-side trace. Log
+      // the real error so the 500 path is diagnosable in production.
+      const caughtMessage = caughtError instanceof Error ? caughtError.message : 'unknown';
+      console.error(
+        `[avatar-upload] Unexpected error in POST /api/me/avatar handler. ` +
+          `Underlying error: ${caughtMessage}`,
+      );
       koaContext.status = 500;
       koaContext.body = { code: 'upload_failed', message: 'An unexpected error occurred during the avatar upload.' };
     }
