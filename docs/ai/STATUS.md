@@ -39,9 +39,13 @@ double opt-in (WP-293 / D-24077).
 covers 401-without-session, success-with-session, exactly-two-routes registered
 — proving autoplay/spectator untouched — and 400 missing-matchID); `pnpm -r
 build` 0. D-24092 + D-24093 **Active**. `api-endpoints.md` updated (§21 — two
-guarded rows + native-lobby annotations). D-24026 live-verify on
-`play.legendary-arena.com` **PENDING post-deploy** (signed-out create/join →
-sign-in; signed-in create/join works; "Watch Bot Play" still guest-open).
+guarded rows + native-lobby annotations). D-24026 live-verify **CONFIRMED 2026-07-04** on the deployed `031a91b`
+(`api.legendary-arena.com`): unauthenticated `POST /api/match/create` + `/join`
+return `401 missing_token`; a forged bearer returns `401 invalid_token` (the
+Hanko verifier is live-validating, not merely presence-checking); the native
+`GET /games/legendary-arena` stays `200` (soft gate intact). The signed-in
+interactive UI flow (the `?route=login` redirect) is client glue over the
+verified server gate — visual confirm optional.
 
 ### WP-305 / EC-335 Executed — Owner-Page Identity Fields + Editable Display Name (Server + App; D-24089 / D-24090 Active) (2026-07-04)
 
