@@ -129,6 +129,28 @@ hard-to-copy lever that bridges the two businesses with zero pay-to-win, since t
 unlocks are purely cosmetic. Mechanics are owned by the `legendary-forge` repo;
 this page only notes the tie-in exists.
 
+## Additional revenue surfaces
+
+Two further applications of the existing streams, committed 2026-07-04
+(marketing-repo decision log). Neither is a new stream.
+
+- **Premium Digital Goods & Printables Store** (`legendary-arena.com` shop) —
+  printable playmats, art books, premium sound/theme packs, limited card-back
+  tools. Maps to **One-Time Cosmetic & Presentation Purchases** (+ rotating packs
+  via Subscriptions); rides the existing Snipcart/Stripe commerce layer. The
+  printables derive from Marvel/Upper Deck IP, so royalty routing (VISION:
+  royalties on all revenue) and licensing scope are launch prerequisites, not
+  afterthoughts.
+- **Tournament OS add-ons** — branded dashboards, automated reporting, private
+  scenario libraries, priority support for organizers. Maps to **Enterprise &
+  Organized-Play Licensing**. Platform→organizer billing only; never a path for
+  organizers to bill players for profit (see
+  [`docs/TOURNAMENT-FUNDING.md`](../docs/TOURNAMENT-FUNDING.md) / WP-097).
+
+Rollout sequencing and priorities live in the marketing repo
+(`docs/product/digital-goods-store-rollout.md`), not here — this page records
+that the surfaces exist and which streams they belong to.
+
 ## Guardrails (from VISION Non-Goals)
 
 1. **No paid competitive signal.** Nothing paid may confer — or *appear* to
