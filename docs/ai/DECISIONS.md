@@ -26146,7 +26146,7 @@ Protect this file.
 
 ### D-24088 — Engine-Runner Host: `apps/engine-runner` Is a New App-Layer CLI Consuming the Public Engine Simulation Surface (Target A, Phase 1; No Packaging, No Engine Change)
 
-**Status:** **Drafted 2026-07-01; not yet landed** (reserved by WP-304 / EC-334; flips to Active when WP-304 executes).
+**Status:** **Active** (landed 2026-07-03 by WP-304 / EC-334; `apps/engine-runner` created, import-rules row added to `ARCHITECTURE.md` + `.claude/rules/architecture.md` in lockstep).
 
 **Context.** `docs/ai/WINDOWS-EXE-PACKAGING-STRATEGY.md` recommends **Target A** — a standalone Windows `.exe` that runs the engine's headless simulation harness — as the first packaging target, decomposed A1 (engine-runner host + CLI) → A2 (bundle + pkg) → A3 (determinism / exe-parity harness) → A4 (release / CI). The engine already re-exports the bot-vs-bot harness (`runSimulation`, `createCompetentHeuristicPolicy`, `SimulationConfig` / `SimulationResult` / `AIPolicy`) on its public `.` surface (`packages/game-engine/src/index.ts`); the registry already loads card data from local files (`createRegistryFromLocalFiles`). Today the only headless drivers are `scripts/*.mjs` that deep-import `packages/game-engine/dist/simulation/*` — a repo-script shortcut, not a layered app surface.
 

@@ -1,0 +1,22 @@
+{
+  "name": "@legendary-arena/engine-runner",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Headless bot-vs-bot simulation runner CLI for the Legendary Arena engine (Windows-exe Target A, Phase 1)",
+  "main": "src/index.mjs",
+  "scripts": {
+    "start": "cd ../.. && node --import ./apps/engine-runner/node_modules/tsx/dist/loader.mjs apps/engine-runner/src/index.mjs",
+    "test": "cd ../.. && node --import ./apps/engine-runner/node_modules/tsx/dist/loader.mjs --test apps/engine-runner/src/cli.test.ts apps/engine-runner/src/runMatch.test.ts"
+  },
+  "dependencies": {
+    "@legendary-arena/game-engine": "workspace:*",
+    "@legendary-arena/registry": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.15.7"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

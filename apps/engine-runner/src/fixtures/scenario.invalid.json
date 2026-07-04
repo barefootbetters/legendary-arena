@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1.0",
+  "setupId": "engine-runner-invalid",
+  "createdAt": "2026-07-03T00:00:00.000Z",
+  "createdBy": "simulation",
+  "seed": "scenario-metadata-seed",
+  "playerCount": 1,
+  "expansions": ["core"],
+  "heroSelectionMode": "GROUP_STANDARD",
+  "composition": {
+    "schemeId": "core/this-scheme-does-not-exist",
+    "mastermindId": "core/magneto",
+    "villainGroupIds": ["core/skrulls"],
+    "henchmanGroupIds": ["core/hydra"],
+    "heroDeckIds": ["core/spider-man", "core/hulk", "core/wolverine", "core/black-widow"],
+    "bystandersCount": 30,
+    "woundsCount": 30,
+    "officersCount": 30,
+    "sidekicksCount": 12
+  }
+}
