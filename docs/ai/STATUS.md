@@ -7,6 +7,33 @@
 
 ## Current State
 
+### WP-306 / EC-336 Executed — Setup-Contract Per-Field ext_id Validation (Henchman Id-Space Fix; D-24091 Active) (2026-07-04)
+
+The registry-side MATCH-SETUP validator (`validateMatchSetupDocument`,
+`packages/registry/src/setupContract/`) now checks each composition field
+against its own entity id-space instead of one type-blind set built from
+`listCards().extId`. That set held no henchman-group `extId` (`flattenSet`
+emits zero henchmen), so it **false-rejected** every `henchmanGroupIds` entry
+the engine's authoritative `validateMatchSetup` accepts (e.g. `core/sentinel`),
+and — being type-blind — **false-accepted** a villain id (`core/hydra`) in the
+henchman slot. Both were confirmed by probe + scaffold. Live impact fixed:
+`apps/engine-runner` (WP-304) used this validator as its sole scenario gate and
+rejected every henchman-bearing scenario exit-2; the registry-viewer loadout
+builder's import / URL-preview / live-validation showed a false `unknown_extid`.
+
+The fix builds five per-field known sets — scheme/mastermind/villain/hero from
+`listCards()` by `cardType`; henchman-group from set data
+(`getSet(abbr).henchmen[].slug`), mirroring the engine's
+`buildKnownHenchmanGroupQualifiedIds`, re-derived registry-side (no game-engine
+import — layer boundary). `CardRegistryReader` widened (+`cardType`, +`listSets`,
++`getSet`; real registries already satisfy it — only test stubs changed) per
+**D-24091**. Engine-runner fixtures corrected (`core/hydra`→`core/sentinel`).
+Closes the D-24018 "layer-2 = layer-3 id space" invariant for henchmen.
+Distinct from WP-122 (viewer `flattenSet` picker fix — still an unexecuted
+draft; does not touch the validator). Suites: registry 130/0 (setupContract
+21/0), engine-runner 19/0, registry-viewer 110/0 + vue-tsc 0; `pnpm -r build` 0.
+`User-Visible Surface = none` (dev/ops tooling + validation-only) → D-24026 N/A.
+
 ### WP-307 / EC-337 Executed — Multiplayer-Play Authentication Gate (Server + App; D-24092 policy + D-24093 mechanism Active) (2026-07-04)
 
 Playing a seat in a multiplayer match on `play.legendary-arena.com` now
