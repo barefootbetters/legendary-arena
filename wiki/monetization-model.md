@@ -22,7 +22,7 @@ last-reviewed: 2026-07-04
 
 > This page publishes the settled view of how Legendary Arena makes money. Both
 > the revenue model (VISION §Financial Sustainability) and the profile-page
-> free/paid boundary (locked 2026-07-03) are decided. This page cites them; it
+> free/paid boundary (locked 2026-07-03, amended 2026-07-04) are decided. This page cites them; it
 > defines nothing.
 
 ## Summary
@@ -129,6 +129,28 @@ hard-to-copy lever that bridges the two businesses with zero pay-to-win, since t
 unlocks are purely cosmetic. Mechanics are owned by the `legendary-forge` repo;
 this page only notes the tie-in exists.
 
+## Additional revenue surfaces
+
+Two further applications of the existing streams, committed 2026-07-04
+(marketing-repo decision log). Neither is a new stream.
+
+- **Premium Digital Goods & Printables Store** (`legendary-arena.com` shop) —
+  printable playmats, art books, premium sound/theme packs, limited card-back
+  tools. Maps to **One-Time Cosmetic & Presentation Purchases** (+ rotating packs
+  via Subscriptions); rides the existing Snipcart/Stripe commerce layer. The
+  printables derive from Marvel/Upper Deck IP, so royalty routing (VISION:
+  royalties on all revenue) and licensing scope are launch prerequisites, not
+  afterthoughts.
+- **Tournament OS add-ons** — branded dashboards, automated reporting, private
+  scenario libraries, priority support for organizers. Maps to **Enterprise &
+  Organized-Play Licensing**. Platform→organizer billing only; never a path for
+  organizers to bill players for profit (see
+  [`docs/TOURNAMENT-FUNDING.md`](../docs/TOURNAMENT-FUNDING.md) / WP-097).
+
+Rollout sequencing and priorities live in the marketing repo
+(`docs/product/digital-goods-store-rollout.md`), not here — this page records
+that the surfaces exist and which streams they belong to.
+
 ## Guardrails (from VISION Non-Goals)
 
 1. **No paid competitive signal.** Nothing paid may confer — or *appear* to
@@ -146,4 +168,4 @@ this page only notes the tie-in exists.
 - [`docs/TOURNAMENT-FUNDING.md`](../docs/TOURNAMENT-FUNDING.md) — organizer-side tournament funding policy (WP-097)
 - [Profile Login](profile-login.md) — the profile/auth surface the paid layer attaches to
 - [Legendary Forge](legendary-forge.md) — the physical product behind the digital-unlock bridge
-- `C:\www\legendary-arena-com\docs\product\profile-features-free-vs-paid.md` — profile free/paid boundary **policy** (marketing repo, internal; locked 2026-07-03)
+- `C:\www\legendary-arena-com\docs\product\profile-features-free-vs-paid.md` — profile free/paid boundary **policy** (marketing repo, internal; locked 2026-07-03, amended 2026-07-04)
