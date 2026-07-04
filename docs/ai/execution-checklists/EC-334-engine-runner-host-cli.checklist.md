@@ -4,8 +4,9 @@
 **Layer:** App (`apps/engine-runner`, new) · **Standard two-session lane** (D-24028)
 
 ## Before Starting (Hard Gate)
-- [ ] Sim surface public: `grep -cE "runSimulation|createCompetentHeuristicPolicy" packages/game-engine/src/index.ts` ≥ 2 (consumed via `@legendary-arena/game-engine`, NOT a `dist/` deep import)
-- [ ] `SimulationConfig` shape confirmed at `packages/game-engine/src/simulation/ai.types.ts` = `{ games, seed, setupConfig: MatchSetupConfig, policies: AIPolicy[] }`
+- [ ] Sim surface public (proves pre-existing surface — no new export): `grep -cE "runSimulation|createCompetentHeuristicPolicy" packages/game-engine/src/index.ts` ≥ 2 (consumed via `@legendary-arena/game-engine`, NOT a `dist/` deep import)
+- [ ] `SimulationConfig` shape confirmed at `packages/game-engine/src/simulation/ai.types.ts` = `{ games, seed, setupConfig: MatchSetupConfig, policies: AIPolicy[] }`; seats = `config.policies.length` (`grep -n "config.policies.length" packages/game-engine/src/simulation/simulation.runner.ts` shows the `numPlayers` line)
+- [ ] **Scenario validator symbol confirmed:** `grep -c "validateMatchSetupDocument" packages/registry/src/setupContract/index.ts` ≥ 1 (exported from `@legendary-arena/registry/setupContract`, signature `(document, registry)`); the document envelope carries `playerCount` (`grep -n "playerCount" packages/registry/src/setupContract/setupContract.schema.ts`)
 - [ ] Registry loader pattern present: `grep -c "createRegistryFromLocalFiles" apps/server/src/server.mjs` ≥ 1 (`metadataDir: 'data/metadata'`, `cardsDir: 'data/cards'`)
 - [ ] Strategy authority on `main`: `docs/ai/WINDOWS-EXE-PACKAGING-STRATEGY.md` present (this packet = Target A, Phase-1 A1)
 - [ ] Baseline: `pnpm -r build` → 0. At close: same, plus `pnpm --filter @legendary-arena/engine-runner test` green; **no other suite delta**
@@ -13,11 +14,15 @@
 ## Locked Values (do not re-derive)
 - App name: `@legendary-arena/engine-runner` (private, `type: module`, `engines.node >=22`); deps `@legendary-arena/game-engine` + `@legendary-arena/registry` (`workspace:*`); devDep `tsx`
 - `RunnerConfig` = `{ mode: 'run' | 'verify', scenarioPath: string, games: number, seed: string, outPath?: string }`
-- `games` must parse to an **integer ≥ 1**; `seed` must be **non-empty**; `--scenario` **required** — any violation → structured parse error + non-zero exit, **no simulation run**
-- Registry load: `createRegistryFromLocalFiles({ metadataDir: 'data/metadata', cardsDir: 'data/cards' })` (mirror `apps/server`)
-- Policies: one `createCompetentHeuristicPolicy(seed)` **per player** in the scenario; the competent (T2) tier is the only policy this packet wires
-- Determinism contract: identical `(scenario, games, seed)` → **byte-identical `SimulationResult` JSON** across runs (rests on `runSimulation`'s documented purity); `verify` runs twice + canonical-JSON compares
-- `SimulationResult` fields (emit verbatim): `gamesPlayed`, `winRate`, `averageTurns`, `averageScore`, `escapedVillainsAverage`, `woundsAverage`, `seed`
+- `games` must parse to an **integer ≥ 1**; `seed` must be **non-empty**; `--scenario` **required** — any violation → structured parse error + **exit 1**, **no simulation run**
+- **Scenario file** = one **`MatchSetupDocument`** (the object `validateMatchSetupDocument(document, registry)` accepts: envelope `schemaVersion`/`setupId`/`createdAt`/`createdBy`/`seed`/`playerCount`/`expansions`/optional `themeId`/`heroSelectionMode` + the nine-field composition), raw JSON, **no wrapper**. Validate with `validateMatchSetupDocument` before running; reject → **exit 2**
+- **Seats = the document's `playerCount` (1–5)** — build exactly that many `createCompetentHeuristicPolicy` (T2, the only tier wired) and pass as `SimulationConfig.policies` (`runSimulation` reads `numPlayers = config.policies.length`). **No `--players` flag** — seats never come from CLI
+- **Seed:** `--seed` is the run seed → `SimulationConfig.seed`; the document's envelope `seed` is validated metadata, **not** the run seed (need not match). `SimulationConfig.setupConfig` = the nine-field composition from the validated document
+- Registry load: `createRegistryFromLocalFiles({ metadataDir: 'data/metadata', cardsDir: 'data/cards' })` — resolved **from repo root, exactly as `apps/server` does** (never app-dir / arbitrary `cwd`)
+- **Canonical JSON** = UTF-8 `JSON.stringify(result)` of `SimulationResult` in its native field order; `verifyDeterminism` compares canonicalized **strings**, never object identity or runtime key order
+- **Exit codes (locked):** `0` success · `1` CLI/arg error · `2` scenario validation error · `3` runtime execution failure · `4` determinism mismatch; every non-zero exit carries a full-sentence stderr
+- Determinism contract: identical `(scenario, games, seed)` → **byte-identical canonical `SimulationResult` JSON** across runs (rests on `runSimulation`'s documented purity)
+- `SimulationResult` fields (emit verbatim, in order): `gamesPlayed`, `winRate`, `averageTurns`, `averageScore`, `escapedVillainsAverage`, `woundsAverage`, `seed`
 - Import allowances (ARCHITECTURE.md row): MAY import `@legendary-arena/game-engine` (Runtime-Safe `.` subpath) + `@legendary-arena/registry` (+ `/setupContract`) + Node built-ins; MUST NOT import `boardgame.io`, `pg`, `apps/server`, `preplan`, `vue-sfc-loader`, `game-engine/setup`, browser APIs
 
 ## Guardrails
@@ -49,11 +54,12 @@
 - `index.mjs` — process concerns only (argv in, dispatch, error→stderr+exit); no business logic
 
 ## Required Test Matrix (every row required)
-- `cli.ts`: valid `run` argv → correct `RunnerConfig`; valid `verify` argv → correct config; missing `--scenario` / `--games 0` / non-integer games / empty `--seed` / unknown mode → structured error, no run
-- `runMatch`: `run` on a valid fixture scenario + real registry → well-formed `SimulationResult` (all 7 fields)
-- `verify`: repeated identical run → `identical: true` (end-to-end determinism)
-- invalid scenario (fails setup contract) → full-sentence error, non-zero; missing scenario file → full-sentence error, non-zero
-- layer grep: `grep -rE "boardgame\.io|from 'pg'|apps/server|/dist/" apps/engine-runner/src` → no matches
+- `cli.ts`: valid `run` argv → correct `RunnerConfig`; valid `verify` argv → correct config; missing `--scenario` / `--games 0` / non-integer games / empty `--seed` / unknown mode → structured error + **exit 1**, no run
+- `runMatch`: `run` on a valid fixture scenario document + real registry → well-formed `SimulationResult` (all 7 fields, native order); **seat count = the document's `playerCount`** (a 3-player document builds 3 policies)
+- `verify`: repeated identical run → `identical: true`, compared as **canonical JSON strings** (object reference equality is forbidden); a forced mismatch → **exit 4**
+- invalid scenario (fails `validateMatchSetupDocument`) → full-sentence error + **exit 2**; missing scenario file → full-sentence error + **exit 2**
+- layer grep: `grep -rE "boardgame\.io|from 'pg'|apps/server|/dist/|game-engine/setup|/simulation/" apps/engine-runner/src` → **no matches**
+- package-boundary grep: every new source file is under `apps/engine-runner/` — `git diff --name-only main | grep -vE "^(apps/engine-runner/|docs/|.claude/|pnpm-lock)"` → no source leakage into `packages/**` or other apps
 
 ## After Completing
 - [ ] App created; `run` + `verify` per Contract; determinism `verify` green; no packaging present
