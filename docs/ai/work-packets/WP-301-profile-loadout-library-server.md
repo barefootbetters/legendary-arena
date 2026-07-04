@@ -1,6 +1,6 @@
 # WP-301 — Profile Loadout Library: Data Model + Endpoints (Server)
 
-**Status:** Draft — ready to execute (drafted 2026-07-01) · **Standard two-session lane** (D-24028 — NOT lightweight: new `.types.ts` contract + new table + new endpoints + api-catalog row)
+**Status:** Done 2026-07-01 (drafted 2026-07-01) · **Standard two-session lane** (D-24028 — NOT lightweight: new `.types.ts` contract + new table + new endpoints + api-catalog row)
 **Primary Layer:** Server + Persistence (`apps/server`, `data/migrations`)
 **User-Visible Surface:** none in this packet — infrastructure (the owner-profile UI that consumes these endpoints is the deferred follow-on **WP-302**). Payoff surface: `play.legendary-arena.com` once WP-302 lands.
 **Dependencies:** WP-104 (the `/api/me/*` authenticated owner surface + route pattern) ✅; WP-160 (the auth session / `requireAuthenticatedSession`) ✅; WP-244 (`@legendary-arena/lagn` validator package) ✅; WP-291 (the LAGN validate + composition-mapping precedent) ✅; **01-VISION §19b** (the authority clause — ratified in this packet's SPEC PR).

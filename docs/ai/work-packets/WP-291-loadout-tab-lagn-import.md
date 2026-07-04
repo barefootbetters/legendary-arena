@@ -1,6 +1,6 @@
 # WP-291 — Loadout Tab "Load LAGN" Import (Close the LAGN Export/Import Round-Trip)
 
-**Status:** Draft — ready to execute (drafted 2026-06-25) · **Lightweight Lane** (D-24028)
+**Status:** Done 2026-06-25 (drafted 2026-06-25) · **Lightweight Lane** (D-24028)
 **Primary Layer:** Registry Viewer (`apps/registry-viewer`)
 **User-Visible Surface:** `cards.legendary-arena.com` (Registry Viewer — a "📥 Load LAGN (paste or file)" control on the Loadout tab)
 **Dependencies:** WP-245 (LAGN export — the `compositionToLagnSetup` mapping this reverses) ✅; WP-091 (`useLoadoutDraft` + the existing MATCH-SETUP JSON import) ✅; WP-244 (the published `@legendary-arena/lagn` validator + `LAGN` type) ✅. All landed.

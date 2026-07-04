@@ -1,6 +1,6 @@
 # WP-299 — Owner Profile Edit-Page UX Polish (Avatar Preview, Accurate Upload Hint, About-Me Counter, Card Layout)
 
-**Status:** Draft — ready to execute (drafted 2026-06-30) · **Lightweight Lane** (D-24028)
+**Status:** Done 2026-06-30 (drafted 2026-06-30) · **Lightweight Lane** (D-24028)
 **Primary Layer:** Arena Client (`apps/arena-client`)
 **User-Visible Surface:** `play.legendary-arena.com` (the `?route=me` owner profile edit page)
 **Dependencies:** WP-104 (the `?route=me` owner profile + `MyProfilePage.vue`) ✅; WP-298 / EC-329 (the avatar file-upload control this polishes) ✅; WP-106 / D-10601 (the server avatar-validation policy whose limits the hint copy must mirror) ✅.

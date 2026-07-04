@@ -1,6 +1,6 @@
 # WP-288 — Cards Tab "View Loadout as Cards" (Gallery Filter + Loadout-Tab / Tray Entry Points)
 
-**Status:** Draft — ready to execute (drafted 2026-06-24)
+**Status:** Done 2026-06-25 (drafted 2026-06-24) — status of record in `WORK_INDEX.md`
 **Primary Layer:** Registry Viewer (`apps/registry-viewer`)
 **User-Visible Surface:** `cards.legendary-arena.com` (Registry Viewer — Cards tab gallery + a "View as cards" affordance on the Loadout tab and the floating Loadout tray)
 **Dependencies:** WP-279 (shared `useLoadoutDraft` lifted to `App.vue` + `LoadoutTray.vue`) ✅ Done 2026-06-22; WP-278 (current Cards filter surface + post-`applyQuery` filter-stage pattern) ✅; WP-091 (`useLoadoutDraft` + LAGN/JSON import on the Loadout tab) ✅; WP-245 (LAGN export) ✅. All landed.

@@ -1,6 +1,6 @@
 # WP-298 — Owner Profile Avatar Upload UI (Wire the Existing `POST /api/me/avatar` Endpoint)
 
-**Status:** Draft — ready to execute (drafted 2026-06-30) · **Lightweight Lane** (D-24028)
+**Status:** Done 2026-06-30 (drafted 2026-06-30) · **Lightweight Lane** (D-24028)
 **Primary Layer:** Arena Client (`apps/arena-client`)
 **User-Visible Surface:** `play.legendary-arena.com` (the `?route=me` owner profile — a file picker + "Upload avatar" control that drives the existing server upload pipeline)
 **Dependencies:** WP-106 (the `POST /api/me/avatar` upload pipeline — server) ✅; WP-296 / D-24083 (the `images.legendary-arena.com/avatars/` CDN host + closed-origin `validateAvatarUrl` allowlist) ✅; WP-104 (the `?route=me` owner profile + `OwnerProfileView`) ✅; WP-160 (the Pinia auth store token) ✅; WP-161 (`buildApiUrl` + `VITE_API_BASE_URL`) ✅.

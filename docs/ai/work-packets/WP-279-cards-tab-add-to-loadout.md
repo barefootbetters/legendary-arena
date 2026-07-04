@@ -1,6 +1,6 @@
 # WP-279 — Cards Tab "Add to Loadout" (Shared Draft + Detail Button + Loadout Tray)
 
-**Status:** Draft — ready to execute (drafted 2026-06-22)
+**Status:** Done 2026-06-22 (drafted 2026-06-22) — status of record in `WORK_INDEX.md`
 **Primary Layer:** Registry Viewer (`apps/registry-viewer`)
 **User-Visible Surface:** `cards.legendary-arena.com` (Registry Viewer — Cards tab + a new floating Loadout tray)
 **Dependencies:** WP-091 (Loadout Builder + `useLoadoutDraft`) ✅ Done 2026-04-24; WP-114 (URL-preview composable instantiation precedent) ✅; WP-278 (current Cards filter surface) ✅. All landed.

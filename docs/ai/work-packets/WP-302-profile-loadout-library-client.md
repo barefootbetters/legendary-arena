@@ -1,6 +1,6 @@
 # WP-302 — Profile Loadout Library: Owner UI + Public Share View (Client)
 
-**Status:** Draft — ready to execute (drafted 2026-07-01) · **Standard two-session lane** (D-24028 — net-new page + new route + new API client across a management surface; NOT lightweight)
+**Status:** Done 2026-07-01 (drafted 2026-07-01) · **Standard two-session lane** (D-24028 — net-new page + new route + new API client across a management surface; NOT lightweight)
 **Primary Layer:** App (`apps/arena-client` — play.legendary-arena.com)
 **User-Visible Surface:** play.legendary-arena.com — the owner profile page (`?route=me`) gains a "Saved Loadouts" section, and a net-new public shared-loadout page (`?loadout=<shareSlug>`).
 **Dependencies:** WP-301 (the server data model + the five `/api/me/loadouts*` + guest `/api/loadouts/:shareSlug` endpoints — **Done**, on `main` @ D-24086 Active); WP-104 (the `ownerProfileApi.ts` client pattern + MyProfilePage) ✅; WP-160 / WP-131 (the Hanko bearer session the client already attaches) ✅.
