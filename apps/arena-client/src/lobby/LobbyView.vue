@@ -13,6 +13,7 @@ import type { ParsedLoadout } from './parseLoadoutJson';
 import { convertLagnUpload } from './lagnLoadout';
 import type { LagnDisplayNames } from './lagnLoadout';
 import { persistMatchSetup } from '../diagnostics/matchSetupSession';
+import { useAuthStore } from '../stores/auth';
 
 // why: defineComponent({ setup() { return {...} } }) is required (NOT
 // <script setup>) because the template references non-prop bindings under
@@ -159,6 +160,22 @@ export default defineComponent({
       }
     }
 
+    const authStore = useAuthStore();
+
+    // why: D-24092 — playing a seat in a multiplayer match requires a free
+    // account. Returns the bearer token when signed in; otherwise sends the
+    // visitor to the sign-in route and returns null so the caller aborts
+    // without issuing an unauthenticated create/join. Spectating and "Watch
+    // Bot Play" stay open and never call this.
+    function requireAuthTokenOrRedirectToLogin(): string | null {
+      const token = authStore.token;
+      if (token === null) {
+        window.location.search = '?route=login';
+        return null;
+      }
+      return token;
+    }
+
     async function submitCreate(): Promise<void> {
       if (isSubmitting.value) {
         return;
@@ -168,17 +185,26 @@ export default defineComponent({
           'The "playerName" field must not be empty before creating a match.';
         return;
       }
+      const authToken = requireAuthTokenOrRedirectToLogin();
+      if (authToken === null) {
+        return;
+      }
 
       isSubmitting.value = true;
       try {
         const config = buildConfig();
         const seatCount = parsePositiveInteger(numPlayers.value, 'numPlayers');
-        const created = await createMatch(config, seatCount);
+        const created = await createMatch(config, seatCount, authToken);
         // why: stash the submitted setup so the play-surface Download diagnostics
         // can include the input pile counts (matchSetupSession; client-local,
         // no network egress). Best-effort — never blocks create/join.
         persistMatchSetup(created.matchID, config);
-        const joined = await joinMatch(created.matchID, '0', playerName.value.trim());
+        const joined = await joinMatch(
+          created.matchID,
+          '0',
+          playerName.value.trim(),
+          authToken,
+        );
         const query =
           `?match=${encodeURIComponent(created.matchID)}` +
           `&player=0` +
@@ -207,6 +233,10 @@ export default defineComponent({
           'The "playerName" field must not be empty before joining a match.';
         return;
       }
+      const authToken = requireAuthTokenOrRedirectToLogin();
+      if (authToken === null) {
+        return;
+      }
 
       isSubmitting.value = true;
       try {
@@ -214,6 +244,7 @@ export default defineComponent({
           matchID,
           seatId,
           playerName.value.trim(),
+          authToken,
         );
         const query =
           `?match=${encodeURIComponent(matchID)}` +
@@ -342,16 +373,25 @@ export default defineComponent({
         return;
       }
 
+      const authToken = requireAuthTokenOrRedirectToLogin();
+      if (authToken === null) {
+        return;
+      }
+
       isSubmitting.value = true;
       try {
         // why: envelope `playerCount` maps to `numPlayers` at this call
         // site per docs/ai/REFERENCE/MATCH-SETUP-SCHEMA.md §Player Count
-        // and the verified `createMatch(config, numPlayers)` signature at
-        // apps/arena-client/src/lobby/lobbyApi.ts:45-47. The wire body
-        // becomes `{ numPlayers, setupData: composition }`; envelope
-        // fields other than playerCount are dropped on submission per
-        // D-9201 (envelope archival is a future server-side concern).
-        const created = await createMatch(parsed.composition, parsed.playerCount);
+        // and the `createMatch(config, numPlayers, authToken)` signature in
+        // `./lobbyApi.ts`. The wire body becomes `{ numPlayers, setupData:
+        // composition }`; envelope fields other than playerCount are dropped
+        // on submission per D-9201 (envelope archival is a future
+        // server-side concern).
+        const created = await createMatch(
+          parsed.composition,
+          parsed.playerCount,
+          authToken,
+        );
         // why: stash the submitted composition so the play-surface Download
         // diagnostics can include the input pile counts (matchSetupSession;
         // client-local, no network egress). Best-effort — never blocks create/join.
@@ -360,6 +400,7 @@ export default defineComponent({
           created.matchID,
           '0',
           playerName.value.trim(),
+          authToken,
         );
         const query =
           `?match=${encodeURIComponent(created.matchID)}` +
