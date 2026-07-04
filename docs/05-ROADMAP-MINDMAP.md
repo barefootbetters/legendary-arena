@@ -328,7 +328,7 @@ mindmap
         ["WP-205 ✅ analytics_events server (capture + query endpoints)"]
         ["WP-209 ✅ sweep_runs server (storage + submission + query + nightly)"]
         ["WP-211 ✅ Cross-app sweep type drift test (dashboard ↔ server)"]
-        ["WP-304 📝 Drafted — Engine-runner host + CLI (Windows Engine Exe Target A / Phase-1 A1): new apps/engine-runner headless CLI that loads the local registry + drives the engine's already-public bot-vs-bot harness (runSimulation + createCompetentHeuristicPolicy) for a scenario+seed; run mode emits SimulationResult JSON, verify mode is a byte-identical determinism self-check; no packaging + no engine/registry source change (the simulation surface is already re-exported); packaging (esbuild + pkg/SEA/bun → .exe), fixture-replay + exe-vs-node finalStateHash parity are explicitly follow-on WPs; EC-334; D-24088)"]
+        ["WP-304 ✅ Done — Engine-runner host + CLI (Windows Engine Exe Target A / Phase-1 A1): new apps/engine-runner headless CLI that loads the local registry + drives the engine's already-public bot-vs-bot harness (runSimulation + createCompetentHeuristicPolicy) for a scenario+seed; run mode emits SimulationResult JSON, verify mode is a byte-identical determinism self-check; no packaging + no engine/registry source change (the simulation surface is already re-exported); packaging (esbuild + pkg/SEA/bun → .exe), fixture-replay + exe-vs-node finalStateHash parity are explicitly follow-on WPs; EC-334; D-24088)"]
 
       Dashboard & Operator Analytics
         ["WP-157 ✅ Dashboard scaffold (PrimeVue + Pinia + ECharts)"]
@@ -457,7 +457,7 @@ mindmap
 | Villain & Henchman Effects | 11/11 | — |
 | Hero Ability Coverage & Markup Pipeline | 45/45 | — |
 | Notable Events & Overlays | 4/4 | — |
-| Simulation Sweep & Analytics Pipeline | 7/8 | 1 open |
+| Simulation Sweep & Analytics Pipeline | 8/8 | — |
 | Dashboard & Operator Analytics | 14/14 | — |
 | Agent Triage Pipeline | 7/7 | — |
 | Admin & Route Wiring | 4/4 | — |
@@ -468,9 +468,9 @@ mindmap
 | Next Horizons | 0/5 | 5 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **297/299 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 1 open |
+| **Total** | **298/299 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
 
-**Open / blocked WPs (derived from WORK_INDEX, 2):** WP-042.1 ⏸ blocked; WP-304 open.
+**Open / blocked WPs (derived from WORK_INDEX, 1):** WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
