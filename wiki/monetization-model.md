@@ -44,6 +44,11 @@ does not redefine anything.
 **this page is wrong** and must be corrected. Nothing here creates policy; it
 cites policy.
 
+**Change control.** The revenue model is amended only in VISION; the locked
+profile boundary is amended only via a new entry in the marketing-repo decision
+log (`docs/corporate-memory/01-decision-log.md`), never by editing this page or
+the policy doc in place. This page follows those sources — it does not lead them.
+
 ## The revenue model (canonical: VISION §Financial Sustainability)
 
 Four streams, all fairness-safe:
@@ -88,7 +93,9 @@ The free/paid boundary is **locked (2026-07-03)**. Key calls:
 
 Full split and rationale live in the marketing-repo policy doc
 `C:\www\legendary-arena-com\docs\product\profile-features-free-vs-paid.md` — this
-page cites it; that doc holds the detailed table.
+page cites it; that doc holds the detailed table. Reviewed on major
+profile-feature additions (and at least annually); changes land as a new
+decision-log entry, not an in-place edit.
 
 ## The physical → digital bridge
 
