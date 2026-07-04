@@ -26164,7 +26164,7 @@ Protect this file.
 
 ### D-24089 — Owner-Page Identity Fields on `OwnerProfileView` (Read): `accountId` / `displayName` / `handleCanonical` Surfaced; `accountId` Always Shown
 
-**Status:** **Drafted 2026-07-03; not yet landed** (reserved by WP-305 / EC-335; flips to Active when WP-305 executes).
+**Status:** **Active** (landed by WP-305 / EC-335, 2026-07-04; D-24026 live-verify PENDING deploy).
 
 **Context.** The owner-edit response (`GET /api/me/profile`, `OwnerProfileView`, WP-104) deliberately omitted the player's own identity, so `MyProfilePage.vue` (`?route=me`) showed a generic "Your profile" heading and the player could not see their name, handle, or account id — even though the **public** profile (`PublicProfileView`, WP-102) already surfaces `displayName` + `handleCanonical`. The three fields live on `legendary.players`: `ext_id` (= `AccountId`, D-5201), `display_name` (NOT NULL, WP-101), `display_handle` (nullable pre-claim, immutable, WP-101).
 
@@ -26182,7 +26182,7 @@ Protect this file.
 
 ### D-24090 — Editable `display_name` via `OwnerProfilePatch` (Write): Transactional `legendary.players` Update; `handle` Stays Immutable
 
-**Status:** **Drafted 2026-07-03; not yet landed** (reserved by WP-305 / EC-335; flips to Active when WP-305 executes).
+**Status:** **Active** (landed by WP-305 / EC-335, 2026-07-04; D-24026 live-verify PENDING deploy).
 
 **Context.** With `displayName` surfaced on the owner page (D-24089), the operator ratified (2026-07-03) that the owner page is the natural place to **rename** — `display_name` is set once at provisioning (WP-174) and had no edit path. `display_name` lives on `legendary.players`, a table the owner-profile PATCH does not currently write (it upserts only `legendary.player_profiles`). The identity layer already validates the field (`validateDisplayName`, `identity.logic.ts:66-98`) but that function is not exported (WP-052 locked module).
 

@@ -7,6 +7,70 @@
 
 ## Current State
 
+### WP-305 / EC-335 Executed — Owner-Page Identity Fields + Editable Display Name (Server + App; D-24089 / D-24090 Active) (2026-07-04)
+
+The owner profile surface (`GET`/`PATCH /api/me/profile`, `MyProfilePage.vue`
+at `?route=me`) now carries the player's **own identity**. `OwnerProfileView`
+gained three read fields (9 → 12 sorted keys, drift test locked): `accountId`
+(opaque `ext_id` UUID, always shown as a muted support line), `displayName`
+(`legendary.players.display_name`, NOT NULL), and `handleCanonical`
+(`legendary.players.handle_canonical`, lowercased canonical form, `null`
+pre-claim — **same wire name + form as `PublicProfileView`**, one concept /
+one name). All three resolve from the always-present `legendary.players` row
+and surface on every return path, so `synthesizeDefaultOwnerProfileView` is no
+longer a static literal (D-24089).
+
+`display_name` is now **editable from the owner page** (D-24090):
+`OwnerProfilePatch` gained `displayName?: string` (never `| null` — the column
+is NOT NULL and cannot be cleared), validated against a local
+`validateDisplayName` that mirrors the identity layer verbatim
+(`identity.logic.ts:66-98`: trim / 1-64 / no `0x00-0x1F`/`0x7F` control chars;
+new closed-set code `invalid_display_name` added to both the
+`OwnerProfileErrorCode` union and the `OWNER_PROFILE_ERROR_CODES` array). A
+present `displayName` is written to `legendary.players.display_name` via
+`UPDATE ... RETURNING display_name` inside **one `BEGIN/COMMIT`** with the
+`player_profiles` upsert (mirrors the `replaceOwnerLinks` transaction posture:
+`ROLLBACK` + `release` + `Promise.reject` → route 500 on a SQL fault) — both
+writes land or neither. The PATCH response reflects the **post-write** name
+(never a pre-write capture). `handleCanonical` and `accountId` stay
+display-only (no write path, no patch field). `MyProfilePage.vue` renders the
+display name as an editable field (`formDisplayName`, saved via the existing
+`updateOwnerProfile` PATCH — no new API call), `@handle` beneath it, the
+Account ID support line, and an inline `invalid_display_name` message; every
+new binding is returned from `setup()` (D-6512). The arena-client
+`OwnerProfileView` / `OwnerProfilePatch` mirrors stay **structural** (no
+`apps/server` / `packages/*` / `boardgame.io` import). No new endpoint / route
+/ table / migration (the `players` columns already exist); auth surface
+unchanged.
+
+**Gates.** Server suite green on a clean DB (`pnpm --filter
+@legendary-arena/server test` exit 0, zero failures; `ownerProfile.logic.test.ts`
+grew 14 → 25 with +11 WP-305 tests: read-field / synthesized-default,
+valid-rename-returns-new-name, trim, atomicity, three invalid-name validator
+paths, no-rename path). `pnpm -r build` exit 0. arena-client `typecheck` 0 /
+`test` 650 → **652** (+2 shape mirrors) / `build` 0. `api-endpoints.md` GET +
+PATCH `/api/me/profile` rows updated whole-row (D-11804). `git diff
+--name-only` = the 6 code/test files + governance only. **D-24026 live-verify
+PENDING deploy** — the `?route=me` heading/handle/account-ID render and the
+rename-persist / invalid-name-inline behavior are confirmed post-deploy on
+play.legendary-arena.com, not in this session.
+
+**Pre-existing test-fixture note (not a WP-305 regression):** two WP-104
+`ownerProfile.logic.test.ts` fixtures (`getOwnerProfile returns the row`;
+`sparse partial PATCH`) fail when the file is run **in isolation** on a clean
+DB — on pristine `origin/main` too — because they pass
+`avatarUrl: 'https://example.com/avatar.png'`, which `validateAvatarUrl`
+(WP-106 / D-10601 closed-origin allowlist) rejects, so `upsertOwnerProfile`
+returns `invalid_avatar_url` and the test's `ok === true` assertion fails.
+They pass in the full suite (test-ordering / shared-DB state). Latent WP-104
+fixture bug; flagged for a separate scoped fix.
+
+Lands **D-24089** (read surfacing; always-show accountId; handle display-only)
++ **D-24090** (editable display_name; transactional players write; handle
+immutable) — Active. 6 code/test files + governance
+(`api-endpoints.md` · `WORK_INDEX.md` · `EC_INDEX.md` · `STATUS.md` ·
+`DECISIONS.md`).
+
 ### WP-302 / EC-333 Executed — Profile Loadout Library: Owner UI + Public Share View (Client; D-24087 Active) (2026-07-01)
 
 `apps/arena-client` (play.legendary-arena.com) now ships the **client half** of
