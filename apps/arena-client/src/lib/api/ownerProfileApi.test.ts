@@ -15,6 +15,8 @@ import assert from 'node:assert/strict';
 import {
   uploadOwnerAvatar,
   AVATAR_UPLOAD_ERROR_CODES,
+  type OwnerProfilePatch,
+  type OwnerProfileView,
 } from './ownerProfileApi';
 
 interface CapturedRequest {
@@ -131,6 +133,51 @@ test('uploadOwnerAvatar returns status 0 with a null code when fetch throws', as
   } finally {
     stub.restore();
   }
+});
+
+test('OwnerProfileView client mirror carries the WP-305 identity fields (accountId / displayName / handleCanonical)', () => {
+  // why: the client OwnerProfileView is a structural mirror of the server
+  // wire shape (WP-305 / D-24089); this pins the three new identity fields
+  // onto the mirror so a drift from the server contract fails the client
+  // suite. handleCanonical is nullable (null before the handle is claimed).
+  const view: OwnerProfileView = {
+    accountId: '00000000-0000-4000-8000-000000000000',
+    displayName: 'Owner Example',
+    handleCanonical: null,
+    avatarUrl: null,
+    aboutMe: null,
+    avatarVisibility: 'private',
+    aboutMeVisibility: 'private',
+    linksVisibility: 'private',
+    links: [],
+    updatedAt: null,
+  };
+  const keys = Object.keys(view).sort();
+  assert.deepEqual(keys, [
+    'aboutMe',
+    'aboutMeVisibility',
+    'accountId',
+    'avatarUrl',
+    'avatarVisibility',
+    'displayName',
+    'handleCanonical',
+    'links',
+    'linksVisibility',
+    'updatedAt',
+  ]);
+  assert.equal(view.accountId, '00000000-0000-4000-8000-000000000000');
+  assert.equal(view.displayName, 'Owner Example');
+  assert.equal(view.handleCanonical, null);
+});
+
+test('OwnerProfilePatch client mirror accepts an optional displayName (WP-305 / D-24090)', () => {
+  // why: the editable-name PATCH surface — displayName is optional and
+  // never null; the page sends it through updateOwnerProfile alongside the
+  // existing profile fields.
+  const rename: OwnerProfilePatch = { displayName: 'New Name' };
+  assert.equal(rename.displayName, 'New Name');
+  const noRename: OwnerProfilePatch = { aboutMe: 'no rename here' };
+  assert.equal(noRename.displayName, undefined);
 });
 
 test('AVATAR_UPLOAD_ERROR_CODES mirrors the server union exactly (drift guard)', () => {

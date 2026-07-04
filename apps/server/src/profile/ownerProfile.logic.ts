@@ -103,33 +103,122 @@ const MAX_ABOUT_ME_LENGTH = 500;
 const MAX_LINK_URL_LENGTH = 2048;
 
 /**
- * Resolve the bigint `player_id` for an `AccountId`. Mirrors the
- * WP-102 `loadPlayerIdByAccountId` precedent verbatim. Returns
- * `null` when no `legendary.players` row matches the supplied
- * `accountId` (race against deletion or a never-provisioned
- * orchestrator-emitted accountId). Pure read — no mutation.
+ * Locked maximum length for `display_name` after trimming (matches
+ * the identity-layer rule and the `legendary.players.display_name`
+ * validation at provisioning).
+ */
+const MAX_DISPLAY_NAME_LENGTH = 64;
+
+/**
+ * Pure validator for a `displayName` candidate on the owner-edit
+ * PATCH path. Returns the trimmed value on success or a typed
+ * `Result.fail` with code `'invalid_display_name'` on any of the
+ * three failure branches: empty after trim, over 64 chars after
+ * trim, or any control character (0x00-0x1F / 0x7F).
+ *
+ * why: this re-derives the identity-layer rules from
+ * `apps/server/src/identity/identity.logic.ts:66-98`
+ * (`validateDisplayName`) verbatim rather than importing them.
+ * That validator is not exported (the WP-052 identity module is a
+ * locked surface), so the rules are mirrored here with this drift
+ * note. Any change to the identity-layer rules must be reflected
+ * here in the same pass — the two must stay identical so the name a
+ * player sets at provisioning and the name they set from their
+ * owner page pass or fail on the same criteria.
+ */
+function validateDisplayName(candidate: string): OwnerProfileResult<string> {
+  if (typeof candidate !== 'string') {
+    return {
+      ok: false,
+      reason: 'displayName must be a non-empty string; received a non-string value.',
+      code: 'invalid_display_name',
+    };
+  }
+  const trimmed = candidate.trim();
+  if (trimmed.length < 1) {
+    return {
+      ok: false,
+      reason:
+        'displayName must contain at least one non-whitespace character after trimming.',
+      code: 'invalid_display_name',
+    };
+  }
+  if (trimmed.length > MAX_DISPLAY_NAME_LENGTH) {
+    return {
+      ok: false,
+      reason: `displayName must be ${MAX_DISPLAY_NAME_LENGTH} characters or fewer after trimming.`,
+      code: 'invalid_display_name',
+    };
+  }
+  // why: control characters (0x00-0x1F, 0x7F) are rejected because
+  // they are never legitimate in displayed names and have been used
+  // in homoglyph / impersonation attacks against display-name
+  // surfaces (mirrors identity.logic.ts:87-90).
+  // eslint-disable-next-line no-control-regex
+  if (/[\x00-\x1F\x7F]/.test(trimmed)) {
+    return {
+      ok: false,
+      reason:
+        'displayName must not contain control characters (newlines, tabs, or other 0x00-0x1F / 0x7F characters).',
+      code: 'invalid_display_name',
+    };
+  }
+  return { ok: true, value: trimmed };
+}
+
+/**
+ * The owner's identity fields resolved from `legendary.players`:
+ * the internal `playerId`, the always-present `displayName`
+ * (`NOT NULL`), and `handleCanonical` (`null` before the handle is
+ * claimed). Composed into every `OwnerProfileView` return path per
+ * WP-305 / D-24089.
+ */
+interface OwnerPlayerIdentity {
+  readonly playerId: number;
+  readonly displayName: string;
+  readonly handleCanonical: string | null;
+}
+
+/**
+ * Resolve the bigint `player_id` plus the owner's `display_name`
+ * and `handle_canonical` for an `AccountId`. Returns `null` when
+ * no `legendary.players` row matches the supplied `accountId` (race
+ * against deletion or a never-provisioned orchestrator-emitted
+ * accountId). Pure read — no mutation.
+ *
+ * WP-305 / D-24089 extended the SELECT from `player_id` alone to
+ * also carry `display_name` + `handle_canonical` so every
+ * `OwnerProfileView` return path can surface the owner's own
+ * identity without a second round-trip. `accountId` (the input) is
+ * the third identity field and needs no read.
  *
  * Declared as a private file-local helper rather than re-imported
  * from `profile.logic.ts` because that module is locked under
  * WP-102 contract and importing across siblings would couple
- * WP-104 to a WP-102 internal export. The two-line SQL is small
- * enough to duplicate; future de-duplication can extract to a
- * shared identity-layer helper without touching either WP's
- * locked contract files.
+ * WP-104 to a WP-102 internal export. The small SQL is safe to
+ * duplicate; future de-duplication can extract to a shared
+ * identity-layer helper without touching either WP's locked
+ * contract files.
  */
 async function loadPlayerIdByAccountId(
   accountId: AccountId,
   database: DatabaseClient,
-): Promise<number | null> {
+): Promise<OwnerPlayerIdentity | null> {
   const result = await database.query(
-    'SELECT player_id FROM legendary.players WHERE ext_id = $1 LIMIT 1',
+    'SELECT player_id, display_name, handle_canonical ' +
+      'FROM legendary.players WHERE ext_id = $1 LIMIT 1',
     [accountId],
   );
   if (result.rows.length === 0) {
     return null;
   }
-  const rawId = result.rows[0].player_id;
-  return typeof rawId === 'string' ? Number(rawId) : rawId;
+  const row = result.rows[0];
+  const rawId = row.player_id;
+  return {
+    playerId: typeof rawId === 'string' ? Number(rawId) : rawId,
+    displayName: row.display_name,
+    handleCanonical: row.handle_canonical,
+  };
 }
 
 /**
@@ -391,8 +480,20 @@ function mapPlayerLinkRow(row: PlayerLinkRow): OwnerProfileLink {
  *
  * `updatedAt` is `null` in this state to make the no-edit-yet
  * condition explicit on the wire.
+ *
+ * why: WP-305 / D-24089 — this is NO LONGER a static literal. The
+ * `legendary.players` row ALWAYS exists on this path (the caller
+ * only reaches synthesis after `loadPlayerIdByAccountId` resolved a
+ * player), so the owner's real `accountId` / `displayName` /
+ * `handleCanonical` are threaded in even when no
+ * `legendary.player_profiles` row exists yet. Only the
+ * profile-editable fields (`avatarUrl` / `aboutMe` / visibility /
+ * `updatedAt`) carry the fail-closed defaults.
  */
-function synthesizeDefaultOwnerProfileView(): OwnerProfileView {
+function synthesizeDefaultOwnerProfileView(
+  identity: OwnerPlayerIdentity,
+  accountId: AccountId,
+): OwnerProfileView {
   // why: the synthesized view is the most-private fail-closed
   // default per D-10403 + Vision §3. A never-edited account leaks
   // nothing to any future surface-integration WP that joins these
@@ -400,8 +501,13 @@ function synthesizeDefaultOwnerProfileView(): OwnerProfileView {
   // / `aboutMe` / `updatedAt` represents "no edit yet"; clients
   // render an empty-state edit form. The first successful PATCH
   // creates the row via the upsert pattern in upsertOwnerProfile,
-  // which also bumps `updated_at` to `now()`.
+  // which also bumps `updated_at` to `now()`. The identity fields
+  // (accountId / displayName / handleCanonical) always resolve from
+  // the players row regardless of the profile-row absence.
   return {
+    accountId,
+    displayName: identity.displayName,
+    handleCanonical: identity.handleCanonical,
     avatarUrl: null,
     aboutMe: null,
     avatarVisibility: 'private',
@@ -420,10 +526,17 @@ function synthesizeDefaultOwnerProfileView(): OwnerProfileView {
  * — no DB access. Used by `getOwnerProfile`, `upsertOwnerProfile`,
  * and `replaceOwnerLinks` so all three exports return identically
  * shaped responses.
+ *
+ * The owner's identity fields (`accountId` / `displayName` /
+ * `handleCanonical`, WP-305 / D-24089) are supplied by the caller
+ * from the `legendary.players` read; this helper only maps the
+ * profile + link rows.
  */
 function composeOwnerProfileView(
   profileRow: PlayerProfileRow,
   linkRows: readonly PlayerLinkRow[],
+  identity: OwnerPlayerIdentity,
+  accountId: AccountId,
 ): OwnerProfileView {
   const links: OwnerProfileLink[] = [];
   for (const row of linkRows) {
@@ -434,6 +547,9 @@ function composeOwnerProfileView(
       ? profileRow.updated_at.toISOString()
       : profileRow.updated_at;
   return {
+    accountId,
+    displayName: identity.displayName,
+    handleCanonical: identity.handleCanonical,
     avatarUrl: profileRow.avatar_url,
     aboutMe: profileRow.about_me,
     avatarVisibility:
@@ -466,8 +582,8 @@ export async function getOwnerProfile(
   accountId: AccountId,
   database: DatabaseClient,
 ): Promise<OwnerProfileResult<OwnerProfileView>> {
-  const playerId = await loadPlayerIdByAccountId(accountId, database);
-  if (playerId === null) {
+  const identity = await loadPlayerIdByAccountId(accountId, database);
+  if (identity === null) {
     return {
       ok: false,
       reason:
@@ -475,6 +591,7 @@ export async function getOwnerProfile(
       code: 'unknown_account',
     };
   }
+  const playerId = identity.playerId;
 
   const profileResult = await database.query(
     'SELECT avatar_url, about_me, avatar_visibility, about_me_visibility, links_visibility, updated_at ' +
@@ -520,7 +637,7 @@ export async function getOwnerProfile(
     // and badges are composed identically regardless of whether the
     // legendary.player_profiles row exists, so the synthesized-
     // default branch returns the same shape as the normal branch.
-    const view = synthesizeDefaultOwnerProfileView();
+    const view = synthesizeDefaultOwnerProfileView(identity, accountId);
     const links: OwnerProfileLink[] = [];
     for (const row of linkResult.rows as PlayerLinkRow[]) {
       links.push(mapPlayerLinkRow(row));
@@ -540,6 +657,8 @@ export async function getOwnerProfile(
   const view = composeOwnerProfileView(
     profileRow,
     linkResult.rows as PlayerLinkRow[],
+    identity,
+    accountId,
   );
   return {
     ok: true,
@@ -593,6 +712,23 @@ export async function upsertOwnerProfile(
     | { kind: 'null' }
     | { kind: 'value'; value: string };
   const validatedFields = new Map<string, ValidatedFieldValue>();
+
+  // why: WP-305 / D-24090 — `displayName` lives on `legendary.players`,
+  // NOT `legendary.player_profiles`, so it is validated here but held
+  // separately from `validatedFields` (which drives the
+  // player_profiles upsert). When present it is validated against the
+  // identity-layer rules and written to `players.display_name` inside
+  // the same transaction as the profile upsert below. `null` is not a
+  // legal value (the type forbids it and `display_name` is NOT NULL);
+  // a non-string is rejected as `invalid_display_name`.
+  let validatedDisplayName: string | null = null;
+  if (Object.hasOwn(patch, 'displayName')) {
+    const validation = validateDisplayName(patch.displayName as string);
+    if (validation.ok === false) {
+      return validation;
+    }
+    validatedDisplayName = validation.value;
+  }
 
   if (Object.hasOwn(patch, 'avatarUrl')) {
     if (patch.avatarUrl === null) {
@@ -691,9 +827,10 @@ export async function upsertOwnerProfile(
   // DB round-trip to look up the player_id. A bogus accountId surfaces as
   // 'unknown_account'; the race between session validation and this PATCH
   // is rare but the WP-104 §Non-Negotiable Constraints table requires
-  // closed-set dispatch on it.
-  const playerId = await loadPlayerIdByAccountId(accountId, database);
-  if (playerId === null) {
+  // closed-set dispatch on it. The read also carries the owner's
+  // display_name + handle_canonical (WP-305 / D-24089) for the response.
+  const identity = await loadPlayerIdByAccountId(accountId, database);
+  if (identity === null) {
     return {
       ok: false,
       reason:
@@ -701,6 +838,7 @@ export async function upsertOwnerProfile(
       code: 'unknown_account',
     };
   }
+  const playerId = identity.playerId;
 
   const insertColumns: string[] = [];
   const insertPlaceholders: string[] = [];
@@ -744,8 +882,66 @@ export async function upsertOwnerProfile(
     `ON CONFLICT (player_id) DO UPDATE SET ${setClauseParts.join(', ')} ` +
     'RETURNING avatar_url, about_me, avatar_visibility, about_me_visibility, links_visibility, updated_at';
 
-  const profileResult = await database.query(sql, params);
-  const profileRow = profileResult.rows[0] as PlayerProfileRow;
+  // why: WP-305 / D-24090 — the profile upsert (legendary.player_profiles)
+  // and the optional display-name write (legendary.players) span TWO
+  // tables and MUST be atomic: a rename must not land while the profile
+  // upsert fails, and vice versa. Both run inside one BEGIN/COMMIT,
+  // mirroring the replaceOwnerLinks transaction posture below. When the
+  // PATCH carries no `displayName`, no legendary.players write fires and
+  // the transaction wraps the single profile upsert only.
+  // why: any caught SQL error is captured, ROLLBACK is issued explicitly
+  // before releasing the pooled client (pg-pool does NOT auto-rollback on
+  // release), and the captured error is surfaced via Promise.reject so
+  // the route's outer try/catch maps it to 500 { error: 'internal_error' }.
+  // The OwnerProfileErrorCode closed set has no infra-failure member, so
+  // Promise.reject is used rather than a misleading typed Result.fail
+  // (mirrors replaceOwnerLinks; copilot #22).
+  const client = await database.connect();
+  let transactionError: unknown = null;
+  let profileRow: PlayerProfileRow | null = null;
+  // why: effectiveDisplayName is the POST-write value the response must
+  // reflect (copilot #18). When the PATCH renamed the player, it is read
+  // back from `UPDATE ... RETURNING display_name` inside the transaction;
+  // otherwise the pre-read identity.displayName is already current (no
+  // write occurred), so the response shows the unchanged name.
+  let effectiveDisplayName = identity.displayName;
+  try {
+    await client.query('BEGIN');
+    if (validatedDisplayName !== null) {
+      const nameResult = await client.query(
+        'UPDATE legendary.players SET display_name = $2 WHERE player_id = $1 ' +
+          'RETURNING display_name',
+        [playerId, validatedDisplayName],
+      );
+      effectiveDisplayName = nameResult.rows[0].display_name;
+    }
+    const profileResult = await client.query(sql, params);
+    profileRow = profileResult.rows[0] as PlayerProfileRow;
+    await client.query('COMMIT');
+  } catch (caughtError) {
+    transactionError = caughtError;
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackError) {
+      void rollbackError;
+    }
+  }
+  client.release();
+  if (transactionError !== null) {
+    return Promise.reject(transactionError);
+  }
+  // why: profileRow is non-null on the success path (the profile upsert
+  // always RETURNs its row when the COMMIT succeeds); this narrows the
+  // `PlayerProfileRow | null` type for composeOwnerProfileView. A null
+  // here would mean COMMIT succeeded without a returned row — impossible
+  // for this INSERT ... RETURNING — so it is surfaced as an infra fault.
+  if (profileRow === null) {
+    return Promise.reject(
+      new Error(
+        'upsertOwnerProfile committed without a returned legendary.player_profiles row; the upsert RETURNING clause produced no row.',
+      ),
+    );
+  }
 
   const linkResult = await database.query(
     'SELECT provider, url, is_public, display_order ' +
@@ -756,7 +952,7 @@ export async function upsertOwnerProfile(
   );
 
   // why: WP-109 / D-10904 (PS-3 = YES) — upsertOwnerProfile
-  // returns the full OwnerProfileView (9 keys) so clients re-render
+  // returns the full OwnerProfileView so clients re-render
   // without an extra GET. teamAffiliations and badges are
   // observational and unaffected by the PATCH; composing them here
   // keeps the wire shape consistent across getOwnerProfile /
@@ -770,10 +966,26 @@ export async function upsertOwnerProfile(
   const badgeRows = await getPlayerBadges(playerId, database);
   const badges = composeBadgeSummaries(badgeRows);
 
+  // why: compose the response from the POST-write display_name
+  // (copilot #18) — a rename must return the NEW name, so
+  // effectiveDisplayName (the UPDATE ... RETURNING value) replaces the
+  // pre-write identity.displayName. handleCanonical / accountId are
+  // display-only and unchanged by any PATCH.
+  const postWriteIdentity: OwnerPlayerIdentity = {
+    playerId: identity.playerId,
+    displayName: effectiveDisplayName,
+    handleCanonical: identity.handleCanonical,
+  };
+
   return {
     ok: true,
     value: {
-      ...composeOwnerProfileView(profileRow, linkResult.rows as PlayerLinkRow[]),
+      ...composeOwnerProfileView(
+        profileRow,
+        linkResult.rows as PlayerLinkRow[],
+        postWriteIdentity,
+        accountId,
+      ),
       teamAffiliations: [...teamAffiliations],
       badges,
     },
@@ -803,8 +1015,8 @@ export async function replaceOwnerLinks(
     return validation;
   }
 
-  const playerId = await loadPlayerIdByAccountId(accountId, database);
-  if (playerId === null) {
+  const identity = await loadPlayerIdByAccountId(accountId, database);
+  if (identity === null) {
     return {
       ok: false,
       reason:
@@ -812,6 +1024,7 @@ export async function replaceOwnerLinks(
       code: 'unknown_account',
     };
   }
+  const playerId = identity.playerId;
 
   // why: BEGIN/COMMIT envelope so partial state is never visible to a
   // concurrent reader. The DELETE + INSERT sequence is atomic with

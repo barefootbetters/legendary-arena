@@ -53,6 +53,14 @@ export interface OwnerProfileLink {
  * intentionally absent.
  */
 export interface OwnerProfileView {
+  // why: WP-305 / D-24089 — the owner's own identity fields, mirrored
+  // structurally from the server `OwnerProfileView`. `accountId` is the
+  // opaque ext_id UUID (always present); `displayName` is NOT NULL;
+  // `handleCanonical` is the lowercased canonical handle (null before
+  // the handle is claimed), the same wire form as the public profile.
+  readonly accountId: string;
+  readonly displayName: string;
+  readonly handleCanonical: string | null;
   readonly avatarUrl: string | null;
   readonly aboutMe: string | null;
   readonly avatarVisibility: 'private' | 'public';
@@ -69,6 +77,11 @@ export interface OwnerProfileView {
  * field to that string". Mirrors the server `OwnerProfilePatch`.
  */
 export interface OwnerProfilePatch {
+  // why: WP-305 / D-24090 — the owner may rename themselves. Mirrors the
+  // server patch: `displayName` is optional and never `| null` (it is
+  // NOT NULL server-side and cannot be cleared). `handleCanonical` /
+  // `accountId` are not patchable (immutable / non-editable).
+  readonly displayName?: string;
   readonly avatarUrl?: string | null;
   readonly aboutMe?: string | null;
   readonly avatarVisibility?: 'private' | 'public';
