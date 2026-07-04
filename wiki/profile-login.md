@@ -23,8 +23,9 @@ source:
   - ../docs/ai/work-packets/WP-175-arena-client-auth-nav.md
   - ../docs/ai/work-packets/WP-296-avatar-cdn-host-unification.md
   - ../docs/ai/work-packets/WP-298-owner-profile-avatar-upload-ui.md
+  - ../docs/ai/work-packets/WP-299-owner-profile-edit-ux-polish.md
   - ../docs/ai/work-packets/WORK_INDEX.md
-last-reviewed: 2026-06-30
+last-reviewed: 2026-07-03
 ---
 
 # Profile Login
@@ -151,7 +152,7 @@ Like the login screen, none of it lives in the marketing repo:
 | Surface | Work Packet | Route / location | What it is |
 |---------|-------------|------------------|------------|
 | Public profile (read-only) | WP-102 (route wired by WP-152) | by player handle | `PublicProfileView` (closed field shape); returns **404** on no-match. |
-| Owner profile + edit | WP-104 | `?route=me` → `MyProfilePage.vue` | The signed-in player's own editable profile. Migration `009_create_player_profiles_and_links.sql` creates `legendary.player_profiles` + `legendary.player_links`; `PATCH /api/me/profile` is the edit path. |
+| Owner profile + edit | WP-104 (edit-page polish by **[WP-299](../docs/ai/work-packets/WP-299-owner-profile-edit-ux-polish.md)**) | `?route=me` → `MyProfilePage.vue` | The signed-in player's own editable profile. Migration `009_create_player_profiles_and_links.sql` creates `legendary.player_profiles` + `legendary.player_links`; `PATCH /api/me/profile` is the edit path. **WP-299 (Done 2026-06-30, PR #504)** polished this page — a live avatar **preview** thumbnail (hides on a broken URL, never mutates the typed value), an accurate upload **hint** (**PNG/JPEG/WebP · up to 5 MB**, sourced from the server `ALLOWED_MIME_TYPES` + `MAX_FILE_SIZE_BYTES`, correcting stale copy that wrongly listed **GIF**), a live **About-me character counter** against the 500-char cap, and scoped **card treatment** with a `@media (max-width: 40rem)` one-column link row. Presentation-only: no API/contract/store change, no new D-entry. |
 | Team affiliation | WP-109 | both profile views | Profile-level cooperative cohorts; extends `PublicProfileView` (4→5 keys) and `OwnerProfileView` (7→8 keys). |
 | Badges | WP-105 | both profile views | Tier-1 gameplay badges (migration 013); fire-and-forget issuance in the competition pipeline. |
 | Avatar | WP-106 (pipeline) + **[WP-298](../docs/ai/work-packets/WP-298-owner-profile-avatar-upload-ui.md)** (upload UI) — host unified by **[WP-296](../docs/ai/work-packets/WP-296-avatar-cdn-host-unification.md)** | owner profile | `POST /api/me/avatar` upload pipeline. Avatars are served from `https://images.legendary-arena.com/avatars/{accountId}.webp` — the **same** Cloudflare custom domain + `legendary-images` R2 bucket as card images, unified under **D-24083** (WP-296, 2026-06-30). The legacy `images.barefootbetters.com` avatar host is retired; `AVATAR_CDN_BASE`, the closed-origin `validateAvatarUrl` allowlist, and existing `avatar_url` rows (migration 021) all moved. **WP-298 (2026-06-30)** wires the pipeline into the client: `MyProfilePage.vue` (`?route=me`) gained a `<input type="file">` + "Upload avatar" control that calls a new `uploadOwnerAvatar(authToken, file)` wrapper in `ownerProfileApi.ts` (multipart field `avatar`) and updates the displayed avatar on success. Before WP-298 the page exposed **only** a free-text avatar-URL field that was effectively unusable, because the closed-origin allowlist accepts only the `images.legendary-arena.com/avatars/` URLs this endpoint produces — a player had no way to generate one. The free-text field is retained alongside the uploader; the server still owns resize → `{accountId}.webp` (D-10601). See [R2 Image Naming Convention](r2-image-naming-convention.md). |
@@ -212,7 +213,8 @@ and **team affiliation**
 profile surface (a Teams card has a data model behind it). Both are safe
 to feature early.
 
-**Scope.** WP-299 is UX polish on the private *edit* page. The full
+**Scope.** WP-299 (shipped 2026-06-30, PR #504) delivered UX polish on the
+private *edit* page — see the Owner-profile row above for what landed. The full
 proposal (Teams, achievements showcase, public profiles, banner
 customization, activity feed, verified-replay gallery) is a multi-WP
 player-identity subsystem. It should be decomposed and sequenced — private
@@ -243,6 +245,12 @@ enterprise-search artifacts (Copilot / SharePoint) are intentionally
 above.
 
 ### Owner-page identity fields — `accountId`, `displayName`, `handle` (2026-06-30)
+
+> **Status (2026-07-03 review): proposed — not scheduled.** No Work Packet is
+> drafted or registered in `WORK_INDEX.md` for this change; it remains a design
+> note pending architecture review + a `DECISIONS.md` entry. It touches the
+> locked `OwnerProfileView` `.types.ts` contract, so it is **not**
+> lightweight-lane (D-24028).
 
 Three identity fields live on `legendary.players`: **`ext_id`** (the
 `accountId` — an opaque UUID, mapped to `AccountId` per D-5201),
