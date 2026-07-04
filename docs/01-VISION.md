@@ -869,6 +869,26 @@ This is not a compromise.
 This is the hard truth that makes every other goal possible.
 **No margin, no mission.**
 
+### Access Model (Free Account for Multiplayer)
+
+Legendary Arena is played for free. A **free game account is required** to
+reach **multiplayer matchmaking and account-persisted surfaces** — saved
+profile, loadout library, stats, leaderboard entry, replay verification. A
+**first taste of play is ungated**: a guest may play the tutorial and at
+least one solo match against a villain/mastermind AI without an account.
+The account both anchors identity for cooperative and comparative play and
+captures the verified email that sustains the marketing relationship.
+
+Marketing email is sent **only** to players who give explicit, separately
+recorded consent (double opt-in) — never to every account by default. The
+account email and the marketable-contact list are distinct populations:
+every account has an email; only opted-in accounts are marketing contacts.
+
+Requiring a free identity in exchange for persistent, networked play is
+standard commerce, not a fairness compromise — the gate confers no gameplay
+advantage (NG‑1) and the free tier plays a real game. The operative
+boundary and its rationale are recorded in `docs/ai/DECISIONS.md` D-24092.
+
 ---
 
 ## How This Document Is Used

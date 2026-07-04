@@ -26216,4 +26216,24 @@ Protect this file.
 
 **Packet:** WP-306 + EC-336. **Drafted:** 2026-07-03.
 
+### D-24092 — Free Game Account Required for Multiplayer & Persistence; Guest Solo-vs-AI Play Is Ungated; Email Captured at Provisioning, Marketing Sends Gated on Explicit Opt-In
+
+**Status:** **Active** (policy ratified 2026-07-04) — decision-only; implementing WP TBD.
+
+**Context.** The full account + email-capture path already ships: Hanko sign-in on `play` (WP-099…175) with first-sign-in auto-provisioning (WP-174) writing the verified email to `legendary.players.email`. What was never decided is the **access gate** — whether a player must hold an account before playing, and where the wall sits. The business goal is a marketable email list; the vision constraint is that "accessibility" is protected ahead of features (VISION §Financial Sustainability, Operational Guardrails) and the game is cooperative hero-vs-villain, so solo-vs-AI play needs no second human. Neither VISION (before this decision), `wiki/profile-login.md`, nor D-24084 (which decides only *where* login lives) addressed the gate. VISION §Financial Sustainability now carries the policy parent (§Access Model) that this entry implements.
+
+**Decision.** A free game account SHALL be required to reach **multiplayer matchmaking and any account-persisted surface** — saved profile, loadout library, stats, leaderboard entry, replay verification. It SHALL NOT be required to reach a **first taste of play**: a guest MAY play the tutorial and at least one solo match against a villain/mastermind AI without an account. The account wall is placed on the *second* action (matchmake / save / persist), not the front door.
+
+**Locked choices.**
+- **Email is captured at account provisioning** — the existing WP-174 path writes the verified email to `legendary.players.email`. No change to how the account email is stored.
+- **Marketing sends are gated on a separate, explicit opt-in**, never on account existence. Account creation SHALL present a marketing-consent control; only consenters are written to the Brevo newsletter list, which then runs its list-level **double opt-in** (per `wiki/brevo-email-pipeline.md`). Sending marketing to non-consenting account emails is prohibited (deliverability + CAN-SPAM/GDPR).
+- **The account email and the marketing list are distinct populations.** Every account has an email; only opted-in accounts are marketable contacts.
+- **Guest solo play persists nothing** — no profile, no saved loadout, no leaderboard/replay record; those are exactly the surfaces the wall protects.
+
+**Consequence.** Requires an implementing WP in the engine repo (arena-client guest-play surface + the matchmake/persist gate + the account-creation marketing-consent control → Brevo enqueue). NG‑1-safe: the gate confers no gameplay advantage; the free tier plays a real game. Supersedes nothing; D-24084 (auth lives on `play`) stands.
+
+**Rejected alternatives.** (a) **Hard wall before any play** — maximizes capture-per-player but minimizes total players and yields the lowest-quality, worst-deliverability emails (bounced-before-value); in tension with the VISION accessibility guardrail. (b) **Account required but email optional / no marketing consent** — defeats the marketing goal and/or tanks sender reputation. (c) **No gate at all** — forgoes the list entirely.
+
+**Packet:** implementing WP TBD. **Drafted + ratified:** 2026-07-04.
+
 Protect this file.
