@@ -15,7 +15,7 @@ source:
   - ../docs/01-VISION.md
   - ../docs/TOURNAMENT-FUNDING.md
 status: draft
-last-reviewed: 2026-07-03
+last-reviewed: 2026-07-04
 ---
 
 # Monetization Model
@@ -78,14 +78,15 @@ is prestige, self-expression, and convenience, mapped onto VISION's streams
 (Pass = Supporter Subscriptions; frames/banners = One-Time Cosmetics; supporter
 flair = Premium Recognition Tiers).
 
-The free/paid boundary is **locked (2026-07-03)**. Key calls:
+The free/paid boundary is **locked (2026-07-03; amended 2026-07-04)**. Key calls:
 
 - **Always free:** unique handle + public URL, display name, static avatar, a
   generous bio, all earned badges, basic team display, replay verification,
-  personal stats/history, basic privacy controls.
+  recent personal history + basic stats, basic privacy controls.
 - **Paid (Legendary Pass / cosmetics):** animated avatars & frames, custom
-  banners, prestige themes, showcase slots & highlights, richer stat
-  visualizations (same data), granular privacy, larger replay gallery.
+  banners, prestige themes, showcase slots & highlights, full lifetime history
+  depth + search/filters, richer stat visualizations & dashboards (same data),
+  export tools, granular privacy, larger replay gallery.
 - **Convenience:** first handle change free, repeat changes paid.
 - **Not a tier lever:** bio length — everyone gets a decent length.
 - **Recognition, not rank:** supporter flair is allowed (VISION Premium
@@ -96,6 +97,29 @@ Full split and rationale live in the marketing-repo policy doc
 page cites it; that doc holds the detailed table. Reviewed on major
 profile-feature additions (and at least annually); changes land as a new
 decision-log entry, not an in-place edit.
+
+## Scoreboard & performance surfaces
+
+The paid convenience/cosmetic layer also covers the player-facing scoreboard and
+stats UI in **arena-client** (`play.legendary-arena.com` — the WP-054 / WP-149
+public-leaderboard and personal-stats work). This is *not* the `/scoring/` page
+on this wiki, which is the internal engineering doc for the scoring system, not a
+product surface.
+
+Same filter as everywhere: anything that confers no gameplay advantage
+(NG‑1…NG‑7) defaults to paid. Free keeps a real player experience — recent
+history, basic charts, own best PAR delta, replay verification, and the
+quality-normalized public views. Paid adds depth and tooling: full lifetime
+history + search, rich interactive visualizations & dashboards, high-quality
+branded exports, pin-to-profile highlights, and priority loading for large
+histories. **Comparison tooling** is the one fairness-sensitive line — free keeps
+a fair baseline (compare against public examples + modest slots); paid expands
+slots and the side-by-side viewer, gating quantity/tooling only, never the
+ability to learn from public examples.
+
+Detailed split: the marketing-repo policy doc
+`C:\www\legendary-arena-com\docs\product\profile-features-free-vs-paid.md`
+(§Scoreboard & performance surfaces).
 
 ## The physical → digital bridge
 
