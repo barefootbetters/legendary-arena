@@ -1,6 +1,6 @@
 # WP-215 — Hero Rescue and Reveal-Draw Effects (Engine + Data)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine + Card Data
 **Dependencies:** WP-021 (hero ability hook contracts), WP-022 (hero effects executor MVP), WP-023 (condition evaluation)
 

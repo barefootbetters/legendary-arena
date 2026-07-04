@@ -1,6 +1,6 @@
 # WP-230 — Pipeline Page Sweep Integration (Agent Lanes Consume Nightly Sweep Findings)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Dashboard (composable + UI only)
 **Dependencies:** WP-209 (sweep runs server), WP-210 (SweepHealthWidget), WP-229 (Pipeline page)
 

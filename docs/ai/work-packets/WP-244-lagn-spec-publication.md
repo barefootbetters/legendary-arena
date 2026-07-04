@@ -1,6 +1,6 @@
 # WP-244 — LAGN Spec Publication (NPM Package + GitHub Repo + Schema Hosting)
 
-**Status:** Draft (pending review)  
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Ecosystem / Open Standard (cross-cutting)  
 **Dependencies:** None — this is independent, can execute in parallel with any game WP  
 **Execution Category:** Publishing / Specification Work (not gameplay code)  

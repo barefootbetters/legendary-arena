@@ -1,6 +1,6 @@
 # WP-263 — Surface Simulation Hollow-Effect Diagnostics on the Capture/Sweep Projection (Engine; WP-259 Predecessor)
 
-**Status:** Draft — pending review. Pre-flight READY; copilot CONFIRM; lint 21/21 (§Pre-Flight & Copilot Verdicts).
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine (`packages/game-engine/src/simulation/**`). Single layer, single package — a small additive projection widening.
 **User-Visible Surface:** `none — infrastructure`. This widens an engine simulation **return projection**; a player cannot perceive it. D-24026 live-verification is **N/A** (STATUS records "No user-observable change — infrastructure only").
 **Dependencies:** WP-257 ✅ (the engine `G.diagnostics.hollowEffects` + `hollowEffectsDropped` channel + `HollowEffectRecord` / `GameDiagnostics`; D-24033/D-24034 — the runtime-only channel this reads). WP-193 ✅ (`simulateOneGameAndCaptureMoves` + the `CapturedGameResult` projection this extends). WP-194 ✅ (`sweepSetupMatrix` + the `SweepCellResult` projection this extends).

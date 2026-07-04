@@ -1,6 +1,6 @@
 # WP-125 — Registry Viewer: Card Abilities Effect-Tag Filter
 
-**Status:** Draft (authored 2026-05-01; awaiting user review and lint-gate sign-off)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Client UI (`apps/registry-viewer/`) + Registry schema (`packages/registry/src/schema.ts`)
 **Dependencies:**
 - **Hard:** WP-086 (Card-Types Taxonomy) — established the

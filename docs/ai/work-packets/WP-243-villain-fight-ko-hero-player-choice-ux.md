@@ -1,6 +1,6 @@
 # WP-243 — Villain Fight KO-Hero Player Choice: UX (Projection + Client Prompt + Discard Visibility)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine (UIState projection) + arena-client
 **Dependencies:** WP-242 (engine `pendingKoHeroChoices` queue + `resolveKoHeroChoice` move + block-all guards) — **must be merged to `origin/main` first**. WP-220/WP-222 (the `pendingHeroChoice` projection + `PendingHeroChoicePrompt` pattern this mirrors) ✅. WP-128/D-12803 (zone-redaction posture) ✅.
 **Co-release lock:** WP-242 and WP-243 ship together. WP-242 alone freezes the board on a KO choice the client cannot send; this packet is the UI that lets a human resolve it.

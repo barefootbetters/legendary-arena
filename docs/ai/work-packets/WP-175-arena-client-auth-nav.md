@@ -1,6 +1,6 @@
 # WP-175 — Arena Client Auth-Aware Navigation Surface
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Layer:** apps/arena-client (client-only)
 **Hard-deps:** WP-160 (Hanko client UI), WP-174 (first-sign-in auto-provisioning)
 **Baseline:** `origin/main` @ `08a092c` (2026-05-24, post-WP-174 merge)

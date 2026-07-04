@@ -1,6 +1,6 @@
 # WP-114 — Registry Viewer URL-Parameterized Setup Preview ("Game of the Week")
 
-**Status:** Draft (awaiting review)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Client UI (`apps/registry-viewer`)
 **Dependencies:**
 - **WP-086** — hard sequencing prerequisite. WP-086 (queued registry-viewer

@@ -1,6 +1,6 @@
 # WP-102 — Public Player Profile Page (Read-Only)
 
-**Status:** Draft (drafted 2026-04-25; lint-gate self-review PASS — see §Lint Self-Review at foot; staleness sweep 2026-04-28 [post-WP-101 baselines + migration `007` → `008` for the WP-101 handle migration + WP-053 contract immutability added]; pre-flight 2026-04-28 surfaced PS-1 / PS-2 / PS-3 / PS-5 + 4 copilot RISK fixes — applied this session; pre-flight re-run pending)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Server (read-only profile composition) + App (Vue SPA route + page)
 **Dependencies:** WP-052 (identity model + `legendary.replay_ownership`); WP-101 (handle claim + `findAccountByHandle`, **landed 2026-04-28 at Commit B `7b92734`**). Soft-dep on WP-112 (session token validation; renumbered from "WP-100" per D-10002) — **not required to land first**, because this packet's only public endpoint is unauthenticated; the WP-112 contract is not invoked.
 

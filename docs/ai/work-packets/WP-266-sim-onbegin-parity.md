@@ -1,6 +1,6 @@
 # WP-266 — Simulation onBegin Parity (Auto-Draw + Reveal Gate; WP-265 Unblocker)
 
-**Status:** Draft — pending review. Pre-flight READY; copilot CONFIRM; lint 21/21 (§Pre-Flight & Copilot Verdicts).
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine (`packages/game-engine/src/simulation/**` + the replay-fixture harness `packages/game-engine/src/test/fixtures/runFixture.ts`). Single layer, single package. The CI freshness artifact it regenerates (`docs/ai/coverage/runtime-observed-hollows.json` + its generator `scripts/runtime-observed-hollows.mjs`) is a forced consistency byproduct (see §Context), not a second layer.
 **User-Visible Surface:** `none — infrastructure`. This is an observation-only harness fix; a player cannot perceive it. The payoff is named in §User-Visible Impact. D-24026 live-verification is **N/A** (STATUS records "No user-observable change — infrastructure only").
 **Hard Dependencies:** WP-193 ✅ (`runPerTurnLoop` in `simulation.runner.ts`). WP-194 ✅ (`sweepSetupMatrix`). WP-195 ✅ (the PAR aggregator `par.aggregator.ts` per-game loop). WP-212 ✅ (the once-per-turn `villainRevealedThisTurn` guard + reset, mirrored here). WP-236 ✅ (the play-phase `onBegin` auto-draw this mirrors into the harnesses). WP-263 ✅ (the `cell.hollowEffects` sweep projection the scaffold reads). WP-259 ✅ (`runtime-observed-hollows.mjs` + the committed artifact this regenerates; the per-PR `sim:runtime-observed:check` gate).

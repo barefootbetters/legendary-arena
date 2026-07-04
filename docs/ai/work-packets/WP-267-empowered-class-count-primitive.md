@@ -1,6 +1,6 @@
 # WP-267 — Empowered via a Class-Count Value Primitive (D-24029 First Parameterized Composition; First Shared-Zone Read)
 
-**Status:** Draft — pending review.
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine / Contracts + Implementation (`packages/game-engine/src/{rules,hero,setup}/**`) + the Lever-3 coverage/ledger instruments (`scripts/coverage/**`, `docs/ai/coverage/**`).
 **Dependencies:** D-24029 ✅ (the composable-primitive model), WP-256 ✅ / D-24030 ✅ / D-24031 ✅ (the primitive registry, interpreter, transient `bind`/`ref` context, and the `HERO_COMPOSITION_MARKERS` open mechanic space this extends — `effectPrimitive.{types,interpret}.ts`, `heroCompositions.ts`), WP-179 ✅ (the `heroClassMatch` evaluator's `G.cardTraits[id].heroClass` read pattern this mirrors), WP-250 ✅ (the hero coverage gate this regenerates), WP-265 ✅ (the competent-play `runtime-observed-hollows.json` real-signal sweep this regenerates), the hero mechanic ledger (PR #349, `ledger:heroes:check`).
 **Baseline:** `origin/main` @ `58a5f017`.

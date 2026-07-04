@@ -1,6 +1,6 @@
 # WP-109 — Team Affiliation (Profile-Level Cooperative Cohorts)
 
-**Status:** Draft (drafted 2026-04-26; review-pass amendment 2026-05-03
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 hardened captain invariant, default invalidity behavior, same-size
 cohort exclusivity, read-time visibility, and timeline monotonicity;
 **hard dependency on WP-104 satisfied 2026-05-02 at `cea9108`** when

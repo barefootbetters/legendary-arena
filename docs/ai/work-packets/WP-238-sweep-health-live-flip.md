@@ -1,6 +1,6 @@
 # WP-238 — Sweep-Health LIVE Flip (Point the Dashboard at `GET /api/sweep/latest`)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Dashboard (`apps/dashboard/**`) only. No server, engine, registry, or migration change; no new endpoint; no new npm dependency.
 **Dependencies:** WP-209 ✅ (`GET /api/sweep/latest` shipped + `sweep_runs` storage), WP-210 ✅ (`SweepHealthWidget` + `useSweepHealth` mock-first), WP-211 ✅ (sweep type drift guard), WP-206 ✅ (`isLiveModeEnabled` + analytics LIVE-fetch pattern), WP-230 ✅ (Pipeline page sweep summary bar), WP-235 ✅ (Pipeline health-rate trend). Parallel-safe with WP-239.
 

@@ -1,6 +1,6 @@
 # WP-091 — Loadout Builder in Registry Viewer
 
-**Status:** Draft (awaiting review)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Registry / Contracts + Client UI (registry-viewer)
 **Dependencies:** WP-003 (CardRegistry), WP-005A (`MatchSetupConfig` 9-field
 contract), WP-055 (theme data model — `setupIntent` fields), WP-065

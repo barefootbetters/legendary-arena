@@ -1,6 +1,6 @@
 # WP-216 — Hero Ability Markup Corpus Sweep: Rescue and Reveal-Draw (Card Data + Tooling)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Card Data + Offline Tooling
 **Dependencies:** WP-215 (rescue/reveal executor + [keyword:X:N] markup syntax)
 

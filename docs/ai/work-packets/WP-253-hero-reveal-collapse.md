@@ -1,6 +1,6 @@
 # WP-253 — Hero Reveal-* Collapse (Parameterized Reveal Descriptor; Lever 1 for Heroes)
 
-**Status:** Draft — pending review.
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine / Contracts + Implementation
 **Dependencies:** WP-251 ✅ (the `HERO_EFFECT_HANDLERS` ImplementationMap this dispatches through), WP-252 ✅ (the villain parameterization pattern — frozen legacy-translation table + reverse-map this mirrors), WP-217/218/219/220/223 ✅ (the eight `reveal-*` keywords being collapsed), WP-009B ✅, WP-250 ✅ (the hero coverage gate — **this WP is gate-guarded**, unlike WP-252)
 

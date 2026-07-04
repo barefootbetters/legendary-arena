@@ -1,6 +1,6 @@
 # WP-250 — Hero-Effect Coverage Gate (`pnpm sim:coverage` + CI)
 
-**Status:** Draft — pending review
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Shared Tooling (`scripts/`) + CI (`.github/workflows/`)
 **Dependencies:** WP-021 ✅, WP-022 ✅, WP-023 ✅ (hero ability hook parser + `HERO_KEYWORDS`), WP-036 ✅ (simulation precedent), WP-158 ✅ (regression-harness precedent this promotes)
 

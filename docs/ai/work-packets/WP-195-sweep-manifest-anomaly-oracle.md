@@ -1,6 +1,6 @@
 # WP-195 — Sweep Manifest Anomaly Oracle (Engine + Scripts)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine (`packages/game-engine/src/simulation/`) + Scripts
 **Dependencies:** WP-194 (Setup-Matrix Sweep Runner) — Done 2026-06-01; WP-193 (Policy-Mode Fixture Recording) — Done 2026-06-01; WP-036 (Simulation Runner) — Done
 **EC:** EC-222 (to be authored alongside this WP in the same SPEC PR)

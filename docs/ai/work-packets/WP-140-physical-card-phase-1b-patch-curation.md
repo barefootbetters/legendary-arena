@@ -1,6 +1,6 @@
 # WP-140 — Physical Card Phase 1b: Per-Set Patch Curation Across Remaining Split-Side Heroes
 
-**Status:** Draft (drafted 2026-05-08; not yet executed; lint gate not yet
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 invoked — execution requires `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md`
 pass).
 **Primary Layer:** Tooling (`scripts/convert-cards/inputs/patches/`) +

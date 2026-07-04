@@ -1,6 +1,6 @@
 # WP-218 — Hero Reveal Compound Executor + VP-Cost Corpus Extension (Engine + Data)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine + Card Data + Offline Tooling
 **Dependencies:** WP-217 (reveal-ko, reveal-min executors + D-21701..D-21704 active)
 

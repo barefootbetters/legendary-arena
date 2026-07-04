@@ -1,6 +1,6 @@
 # WP-099 — Auth Provider Selection (Governance)
 
-**Status:** Draft (drafted 2026-04-25; lint-gate self-review complete — see §Lint Self-Review below; pre-flight + copilot-check applied 2026-04-27 against `01.4-pre-flight-invocation.md` and `01.7-copilot-check.md` — see §Pre-Flight & Copilot Check Review Log at foot; refreshed 2026-04-27 post-WP-098 close to absorb the new `00.3 §20` and D-9801 anchor)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Governance / Policy (no code; no engine, registry, server, or app touch)
 **Dependencies:** WP-052 (identity model exists; provider-agnostic envelope established)
 

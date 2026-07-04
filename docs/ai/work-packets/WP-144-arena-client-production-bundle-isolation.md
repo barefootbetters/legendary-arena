@@ -1,6 +1,6 @@
 # WP-144 — Arena-Client Production Bundle Isolation
 
-**Status:** Drafted 2026-05-09; not yet executed; lint gate not yet invoked
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine (package exports + barrel topology) + Build Tooling (CF Pages build-command shape) + Layer Boundary (formal runtime / setup-time split)
 **Last Updated:** 2026-05-09
 **Dependencies:** WP-061 (`apps/arena-client` skeleton + `vite build` script); WP-053a (`scoringConfigLoader` introduced under D-5306a — the canonical Node-IO loader this WP isolates); WP-090 (sole sanctioned runtime engine import in `apps/arena-client/src/client/bgioClient.ts`)

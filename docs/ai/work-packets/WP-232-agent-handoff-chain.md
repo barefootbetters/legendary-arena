@@ -1,6 +1,6 @@
 # WP-232 — Agent Handoff Chain (Finding-Lifecycle Store + Builder/Architect Handoff Contracts — Plumbing Only)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Server (`apps/server/src/handoff/`) + Migration (`data/migrations/`) + Build/CI tooling (`scripts/handoffs-sync.mjs`, root `package.json` script, additive step in `.github/workflows/inspection-nightly.yml`)
 **Dependencies:** WP-209 (sweep server storage) ✅, WP-210 (sweep composable) ✅, WP-230 (Pipeline page sweep integration) ✅, WP-231 (inspection module + `validateSharedSecret` helper + `inspection-nightly.yml`) ✅, WP-115 (Postgres bootstrap) ✅, WP-205 (route+logic+types module pattern, `{ data, error }` envelope, no-store + session-collapse carry-forwards) ✅, WP-118 (API catalog) ✅
 

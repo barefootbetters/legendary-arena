@@ -1,6 +1,6 @@
 # WP-241 — Dashboard Operator Auth + Bearer Cutover (Real Hanko Login → `Authorization: Bearer` on the LIVE Fetchers)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Dashboard (`apps/dashboard/**`) only. No `apps/server`, engine, registry, or migration change; no new endpoint. One new npm dependency (`@teamhanko/hanko-elements`, already used by `apps/arena-client`).
 **Dependencies:** WP-197 ✅ (dashboard CF Pages deploy + Access gate, mock-mode), WP-206 ✅ (analytics LIVE fetchers + `isLiveModeEnabled` gate), WP-238 ✅ (sweep LIVE fetcher), WP-239 ✅ (triage LIVE fetchers), WP-160 ✅ (arena-client Pinia auth-store contract — the pattern mirrored), WP-126 ✅ (`apps/arena-client/src/auth/hankoClient.ts` Hanko wrapper — the pattern mirrored), WP-112 ✅ (`requireAuthenticatedSession` — the bearer-only server contract this complies with).
 

@@ -1,6 +1,6 @@
 # WP-223 — Hero Reveal KO-Attack Compound Executor (Engine + Data)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine + Card Data + Offline Tooling
 **Dependencies:** WP-222 (baseline: `HERO_KEYWORDS` = 14, engine tests = 1170, client tests = 497)
 

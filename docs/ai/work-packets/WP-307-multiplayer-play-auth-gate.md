@@ -1,6 +1,6 @@
 # WP-307 — Multiplayer-Play Authentication Gate
 
-**Status:** Draft (not yet executed)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Layer:** Server + App (arena-client)
 **User-Visible Surface:** `play.legendary-arena.com` (the lobby / match-create-and-join surface)
 **Reserves:** D-24093

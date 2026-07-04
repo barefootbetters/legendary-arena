@@ -1,6 +1,6 @@
 # WP-233 — Closed-Loop Sweep Verification (Fix → Re-Sweep → Inspector Verify → Auto-Resolve / Re-Open)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Server (`apps/server/src/handoff/` — additive extension) + Build/CI tooling (`scripts/handoffs-verify.mjs`, root `package.json` script, additive step in `.github/workflows/inspection-nightly.yml`)
 **Dependencies:** WP-231 (inspection module + `fetchLatestInspectionReport` + `validateSharedSecret` + `inspection-nightly.yml`) ✅, WP-232 (`legendary.finding_handoffs` + `HANDOFF_STATUSES` + transition table + `applyHandoffTransition` + `HANDOFF_SUBMIT_TOKEN`) ✅, WP-209 (nightly full sweep) ✅, WP-205 (route+logic+types module pattern, `{ data, error }` envelope, no-store + session-collapse carry-forwards) ✅, WP-118 (API catalog) ✅
 

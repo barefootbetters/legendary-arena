@@ -1,6 +1,6 @@
 # WP-211 — Cross-App Sweep Type Drift Test (Dashboard ↔ Server)
 
-**Status:** Draft (candidate — not yet reviewed, not ready to execute)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Dashboard (`apps/dashboard/` — test surface only)
 **Dependencies:** WP-210 (introduced the dashboard `SweepRunSummary` mirror in `apps/dashboard/src/types/sweep.ts`); WP-209 (introduced the authoritative server `SweepRunSummary` in `apps/server/src/sweep/sweep.types.ts`)
 

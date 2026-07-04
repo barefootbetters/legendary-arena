@@ -1,6 +1,6 @@
 # WP-165 — Autoplay Status Endpoint (Server)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Server (`apps/server/src/autoplay/`)
 **Dependencies:** WP-163 (autoplay playback controls — server) — Done 2026-05-19
 **Paired with:** WP-164 (client). WP-164 hard-depends on this endpoint landing on `main`.

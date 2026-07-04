@@ -1,6 +1,6 @@
 # WP-092 — Lobby Loadout Intake (JSON → Create Match)
 
-**Status:** Draft (awaiting review)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Client UI (arena-client)
 **Dependencies:** WP-011 (lobby HTTP endpoints — `POST
 /games/legendary-arena/create`), WP-090 (arena-client lobby view + 9-

@@ -1,6 +1,6 @@
 # WP-097 — Tournament Funding Policy (Governance)
 
-**Status:** Draft (drafted 2026-04-25; pre-flight pending; lint-gate self-review complete — see §Lint Self-Review below)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Governance / Policy (no code; no engine, registry, server, or app touch)
 **Dependencies:** None — this WP can land standalone. Vision §Financial Sustainability (`docs/01-VISION.md`) and Vision §Non-Goals NG-1..7 must already be present (they are; introduced in pre-WP-001 vision authoring).
 

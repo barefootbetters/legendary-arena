@@ -1,6 +1,6 @@
 # WP-134 — Webhook → Entitlement Fulfillment Processor
 
-**Status:** Draft (drafted 2026-05-03; lint-gate self-review **PASS** — see §Lint Self-Review at foot)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Server (`apps/server/src/billing/**` extension; `scripts/process-stripe-events.mjs` for recovery)
 **Dependencies:** WP-052 (`AccountId` + `Result<T>` + `DatabaseClient`); WP-115 (`pg.Pool` lifecycle); WP-118 (catalog + D-11804); **WP-132 (`legendary.entitlements` table + `EntitlementKey` closed union — WP-134 is the WP that adds the INSERT site WP-132 deliberately deferred)**; **WP-133 (`legendary.stripe_events` + `legendary.stripe_checkout_sessions` tables + `billing.config.ts` + `BillingConfig.priceAllowlist` + Stripe SDK + webhook ingestion route)**.
 

@@ -1,6 +1,6 @@
 # WP-220 — Hero Reveal Attack-Choose Executor (Player-Choice Infrastructure + overhorns-and-underhorns)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine + Card Data + Offline Tooling
 **Dependencies:** WP-219 (reveal executor family; `HERO_KEYWORDS` count = 13, tests = 1144)
 

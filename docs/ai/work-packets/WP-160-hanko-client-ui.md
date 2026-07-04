@@ -1,6 +1,6 @@
 # WP-160 — Hanko Client UI (Production Sign-In Surface for arena-client)
 
-**Status:** Draft (drafted 2026-05-17; lint-gate self-review completed; pre-flight + copilot verdicts on record)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** App / Client (`apps/arena-client/**`)
 **Adjacent Layers consulted (READ-ONLY):** Server `apps/server/src/auth/**` (the WP-112/WP-126/WP-131 verifier this client produces tokens for)
 **Dependencies (all `✅` on `origin/main` at `295eec6`):**

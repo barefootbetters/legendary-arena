@@ -1,6 +1,6 @@
 # WP-126 — External Authentication Integration (Hanko Session Verifier)
 
-**Status:** Draft (drafted 2026-05-03; lint-gate self-review **PASS** — see §Lint Self-Review at the foot)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Server (`apps/server/src/auth/hanko/**` — module path locked by D-9904)
 **Dependencies:** WP-099 §A / §B / §C (Hanko broker selection, `apps/server/src/auth/hanko/` module-path lock, F-1..F-7 Future-Auth Gates); WP-112 (broker-agnostic orchestrator + `SessionVerifier` interface + `findAccountByAuthProviderSub` + closed-union error codes); WP-052 (identity model: `AccountId`, `AuthProvider`, `legendary.players` table)
 **Slot promotion:** Promoted from the deferred-placeholder row added at the `SPEC:` drafting commit for WP-112 (2026-05-02). The provisional WP-099 §B name "WP-1XX External Authentication Integration (Hanko)" was locked to WP-126 at that commit per D-11201.

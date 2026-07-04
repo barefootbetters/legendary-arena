@@ -1,6 +1,6 @@
 # WP-217 — Hero Reveal Executor Extensions: Reveal-KO-If-Zero and Reveal-Draw-At-Least (Engine + Data)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine + Card Data + Offline Tooling
 **Dependencies:** WP-216 (hero ability markup corpus sweep complete; D-21601..D-21603 active)
 

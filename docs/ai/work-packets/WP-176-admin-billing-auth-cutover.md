@@ -1,6 +1,6 @@
 # WP-176 — Admin Billing Auth Cutover (requireAdminSecret → requireAdminSession)
 
-**Status:** Drafted 2026-05-24
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Layer:** Server (`apps/server/`)
 **EC:** EC-198
 **Decisions:** D-17601, D-17602, D-17603 (reserved; landed at execution close)

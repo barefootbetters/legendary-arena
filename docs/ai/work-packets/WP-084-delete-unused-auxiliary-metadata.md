@@ -1,6 +1,6 @@
 # WP-084 — Delete Unused Auxiliary Metadata Schemas and Files
 
-**Status:** Draft — amended 2026-04-21 per pre-flight findings (amendment
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 A-084-01). Awaiting Gate 2+3 re-run + author approval.
 **Primary Layer:** Registry (`packages/registry/**`) + Content / Data
 (`data/metadata/`) + Registry Viewer dead-code cleanup

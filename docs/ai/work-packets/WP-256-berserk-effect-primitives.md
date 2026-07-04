@@ -1,6 +1,6 @@
 # WP-256 — Berserk via Composable Effect Primitives (D-24029 First Proof Case; Bootstraps the Primitive Infrastructure)
 
-**Status:** Draft — pending review.
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine / Contracts + Implementation (`packages/game-engine/src/{rules,hero,setup}/**`) + the Lever-3 coverage/ledger instruments (`scripts/**`, `docs/ai/coverage/**`).
 **Dependencies:** D-24029 ✅ (ratified 2026-06-16, `f295f6ae`; the effect-descriptor-model decision this WP is the first proof case of), WP-251 ✅ (the `HERO_EFFECT_HANDLERS` ImplementationMap pattern this mirrors for the primitive registry), WP-253 ✅ (the `reveal` collapse — closed drift-array + dual-grammar parser precedent), WP-250 ✅ (the hero coverage gate this regenerates), the hero mechanic ledger (PR #349, the `ledger:heroes:check` gate this regenerates).
 

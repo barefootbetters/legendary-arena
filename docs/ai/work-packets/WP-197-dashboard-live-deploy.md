@@ -1,6 +1,6 @@
 # WP-197 — Dashboard Live Deploy (Cloudflare Pages + Access Gate)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Server / Infra (no `apps/server` code change; CF Pages + Cloudflare Access configuration + `docs/ops/` governance)
 **Dependencies:** WP-157 (Dashboard Scaffold) — Done 2026-05-16; WP-162 (UI Polish) — Done 2026-05-21
 **EC:** EC-223 (`docs/ai/execution-checklists/EC-223-dashboard-live-deploy.checklist.md`)

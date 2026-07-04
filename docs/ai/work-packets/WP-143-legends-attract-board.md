@@ -1,6 +1,6 @@
 # WP-143 — Legends Attract Board (Public Scoreboard SPA)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Client / new app (`apps/legends-board`)
 **Dependencies:** WP-142 (Legends Snapshot Publisher — Done 2026-05-14)
 **EC:** EC-164

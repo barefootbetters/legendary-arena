@@ -1,6 +1,6 @@
 # WP-227 — Arena Client Typecheck Restoration (WP-214 + WP-222 UIState/UICityCard Backfill)
 
-**Status:** Draft (2026-06-09) — pre-flight READY TO EXECUTE; queued (EC-259)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Client (`apps/arena-client/**`) — App layer only; zero engine/registry/server/preplan changes
 **Dependencies:** WP-214 (landed — added `UIState.villainAttachedHeroes` + `UICityCard.attachedHeroes`/`fightCost`), WP-222 (landed — added `UIState.pendingHeroChoice?`). Both contracts are correct and read-only here; only the arena-client consumers were never conformed.
 

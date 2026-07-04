@@ -1,6 +1,6 @@
 # WP-258 — Hollow Effects on the Arena-Client Diagnostics Surface (Projection + Debug Panel; Reporting Loop, Surface 1 of 3)
 
-**Status:** Draft — pending review. Pre-flight READY; hardened per operator review 2026-06-17 (six contract tightenings, §Pre-Flight & Copilot Verdicts).
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine (UIState projection: `packages/game-engine/src/ui/**` + barrel) **+** Arena Client (`apps/arena-client/src/**`). Two layers, one WP — the standard engine-projects / client-renders pattern (WP-243 precedent).
 **User-Visible Surface:** `play.legendary-arena.com` — a small in-client debug panel listing the hollow effects observed in the current match, plus the structured records riding the **Download-diagnostics** export. (D-24026 live-verification applies, post-deploy.)
 **Dependencies:** WP-257 ✅ (the engine `G.diagnostics.hollowEffects` channel + `HollowEffectRecord` this projects). WP-128 ✅ / D-12803 (the `victoryCards` public-projection precedent the filter posture follows). WP-228 / EC-260 ✅ (the Download-diagnostics export that already serializes the full `UIState` snapshot — the records ride it with no diagnostics-module change). The `DESIGN-HOLLOW-EFFECT-DETECTION.md §6.1` "fastest path via the existing Download-diagnostics export" guidance.

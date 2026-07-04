@@ -1,6 +1,6 @@
 # WP-305 — Owner-Page Identity Fields (`accountId` / `displayName` / `handle` on `OwnerProfileView`; editable display name)
 
-**Status:** Draft — ready to execute (drafted 2026-07-03) · **Standard two-session lane** (D-24028 — extends two locked `.types.ts` contract files + a two-table transactional write + api-catalog rows; NOT lightweight)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Server (`apps/server`) + App (`apps/arena-client` — play.legendary-arena.com)
 **User-Visible Surface:** `play.legendary-arena.com` (the `?route=me` owner profile page)
 **Dependencies:** WP-104 (the `OwnerProfileView` / `OwnerProfilePatch` contract + `MyProfilePage.vue` this extends) ✅; WP-101 (`display_name` validation + `handle` columns this mirrors/surfaces) ✅; WP-131 (production auth wiring the endpoints already run under) ✅; WP-052 / D-5201 (`AccountId` = `ext_id` mapping) ✅.

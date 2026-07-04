@@ -1,6 +1,6 @@
 # WP-142 — Legends Snapshot Publisher
 
-**Status:** Draft (skeleton — not yet linted, not yet added to WORK_INDEX.md)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Server / Persistence
 **Dependencies:** WP-[NNN — leaderboards baseline that produced `apps/server/src/leaderboards/`], WP-[NNN — R2 client wiring if a prior packet established it; otherwise this packet establishes it]
 

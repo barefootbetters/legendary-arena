@@ -1,6 +1,6 @@
 # WP-234 — Full-Corpus Sweep Expansion (Weekly Rotating Window Beyond the 2×2 Smoke)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Shared Tooling / CI (`scripts/sweep-*.mjs`, `data/sweep-fixtures/**`, `.github/workflows/sweep-weekly.yml`, root `package.json`). No Game Engine / Registry / Server runtime change — the sweep runner + classifier + `POST /api/sweep/runs` endpoint already exist and are reused unchanged.
 **Dependencies:** WP-209 (`scripts/sweep-submit.mjs` + `scripts/sweep-setup-matrix.mjs` + `sweep-nightly.yml` + `POST /api/sweep/runs` + the engine `parseManifestLine` / `classifyManifestRecords`) ✅, WP-194 (the setup-matrix runner + per-cell seed chain D-19402) ✅, WP-195 (the manifest anomaly classifier) ✅. Parallel-safe with WP-231/232/233 (it expands the sweep cron; it touches no dashboard/handoff/inspection file).
 

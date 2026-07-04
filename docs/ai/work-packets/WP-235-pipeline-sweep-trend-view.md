@@ -1,6 +1,6 @@
 # WP-235 — Pipeline Page Sweep Health Trend View (Cadence-Aware Health-Rate Trends + Healthy-Class Constant)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** App (`apps/dashboard/**` only). No Game Engine / Registry / Server / migration change — the sweep read endpoint (`GET /api/sweep/latest`), the `sweep_runs` store, and the engine taxonomy are reused unchanged. This WP **amends one locked architectural contract** (D-20703 opaque-anomaly-key posture) with a single narrow, documented exception (D-23503) — it does NOT import `SweepAnomalyClass` and keeps every other anomaly key opaque.
 **Dependencies:** WP-230 (`useSweepHealth` + the Pipeline page sweep wiring + the `sweepHealthRate` Architect-lane input + `deriveTrendDirection`) ✅, WP-209 (`GET /api/sweep/latest` returning `{ latest, recentRuns[≤30] }`) ✅, WP-195 (the 4-class anomaly taxonomy — `endgame-reached` is the healthy class) ✅, WP-204 (the dashboard ECharts surface `BaseChart.vue`) ✅, WP-234 (the weekly full-corpus sweep + its `-weekly-w<windowIndex>` runId grammar) ✅. Parallel-safe with WP-231/232/233/236 (App-layer-only).
 

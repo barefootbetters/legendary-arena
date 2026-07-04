@@ -1,6 +1,6 @@
 # WP-123 — Viewer `cardType` Widening and `set.other[]` Dispatch (WP-086 Phase 2 Wire-Through)
 
-**Status:** Draft (authored 2026-05-01; awaiting user review and lint-gate sign-off)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Client UI (`apps/registry-viewer/`)
 **Dependencies:**
 - **Hard:** WP-086 (Registry Viewer Card-Types Upgrade — established the
