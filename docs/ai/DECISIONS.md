@@ -26162,4 +26162,40 @@ Protect this file.
 
 **Packet:** WP-304 + EC-334. **Drafted:** 2026-07-01.
 
+### D-24089 — Owner-Page Identity Fields on `OwnerProfileView` (Read): `accountId` / `displayName` / `handle` Surfaced; `accountId` Always Shown
+
+**Status:** **Drafted 2026-07-03; not yet landed** (reserved by WP-305 / EC-335; flips to Active when WP-305 executes).
+
+**Context.** The owner-edit response (`GET /api/me/profile`, `OwnerProfileView`, WP-104) deliberately omitted the player's own identity, so `MyProfilePage.vue` (`?route=me`) showed a generic "Your profile" heading and the player could not see their name, handle, or account id — even though the **public** profile (`PublicProfileView`, WP-102) already surfaces `displayName` + `handleCanonical`. The three fields live on `legendary.players`: `ext_id` (= `AccountId`, D-5201), `display_name` (NOT NULL, WP-101), `display_handle` (nullable pre-claim, immutable, WP-101).
+
+**Decision.** WP-305 SHALL add `accountId: AccountId`, `displayName: string`, and `handle: string | null` to `OwnerProfileView` (the WP-104-locked contract, 9 → 12 keys), composed on every return path (`getOwnerProfile` incl. the synthesized-default branch, `upsertOwnerProfile`, `replaceOwnerLinks`). Locked choices:
+
+- **`accountId` is always shown** (operator decision, 2026-07-03) — rendered as a muted, always-visible support line on the owner page, not hidden behind a copy control and not omitted. It is an opaque UUID (`ext_id`), useful as a "give support this id" affordance; display-only, never editable.
+- **`handle` is display-only** — immutable by design (migration 008; `claimHandle` is the sole writer). Surfaced from `display_handle` (cased presentation form), nullable pre-claim.
+- **The client mirror stays structural** — `apps/arena-client/src/lib/api/ownerProfileApi.ts` re-declares the three read fields by structural compatibility, not by importing the server type (no cross-layer edge).
+
+**Consequence.** The `OwnerProfileView` drift-detection test (`ownerProfile.logic.test.ts`) key-set lock moves 9 → 12. `api-endpoints.md` `GET /api/me/profile` row updates whole-row (D-11804). `synthesizeDefaultOwnerProfileView` can no longer be a static literal (the `legendary.players` row always exists on this path). Read-only surfacing of already-owned identity; no Vision / determinism / NG surface.
+
+**Rejected alternatives.** (a) Hide `accountId` behind a copy control, or omit it — overridden by the operator's always-show call. (b) Surface `handle_canonical` instead of `display_handle` — the cased form is the presentation value; canonical is for routing/uniqueness. (c) Also expose `email` / `authProvider` / `createdAt` — private account fields with no place on the owner-edit surface.
+
+**Packet:** WP-305 + EC-335. **Drafted:** 2026-07-03.
+
+### D-24090 — Editable `display_name` via `OwnerProfilePatch` (Write): Transactional `legendary.players` Update; `handle` Stays Immutable
+
+**Status:** **Drafted 2026-07-03; not yet landed** (reserved by WP-305 / EC-335; flips to Active when WP-305 executes).
+
+**Context.** With `displayName` surfaced on the owner page (D-24089), the operator ratified (2026-07-03) that the owner page is the natural place to **rename** — `display_name` is set once at provisioning (WP-174) and had no edit path. `display_name` lives on `legendary.players`, a table the owner-profile PATCH does not currently write (it upserts only `legendary.player_profiles`). The identity layer already validates the field (`validateDisplayName`, `identity.logic.ts:66-98`) but that function is not exported (WP-052 locked module).
+
+**Decision.** WP-305 SHALL add `displayName?: string` to `OwnerProfilePatch` (never `| null` — `display_name` is NOT NULL and cannot be cleared). Locked choices:
+
+- **Validation mirrors the identity layer.** A local `validateDisplayName` in `ownerProfile.logic.ts` re-derives the identity rules verbatim (trim; reject empty-after-trim, `> 64` after trim, any `0x00-0x1F`/`0x7F` control char) with a drift `// why:` citing `identity.logic.ts:66-98`; failure returns the new closed-set code `'invalid_display_name'` (added to both `OwnerProfileErrorCode` and `OWNER_PROFILE_ERROR_CODES`; HTTP 400 via the existing route mapping). Re-derivation is chosen over exporting the identity validator, which would widen the WP-052-locked identity contract.
+- **The name write is transactional with the profile upsert.** When the PATCH carries `displayName`, `upsertOwnerProfile` issues `UPDATE legendary.players SET display_name = $ WHERE player_id = $` inside one `BEGIN/COMMIT` with the `player_profiles` upsert (mirroring the `replaceOwnerLinks` transaction posture) — both land or neither. Absent `displayName` → no `players` write.
+- **`handle` and `accountId` remain non-editable** — `handle` is immutable (`claimHandle` sole writer); `accountId` is a system identifier. Neither is a patch field.
+
+**Consequence.** `OwnerProfileErrorCode` gains a value (drift test asserts union+array parity). `api-endpoints.md` `PATCH /api/me/profile` row updates whole-row (D-11804) — recognized fields gain `displayName`, error set gains `invalid_display_name`. The owner-profile logic now writes a second table under a transaction; an atomicity test (name write + profile write both land or neither) is required. No Vision / determinism surface; `display_name` never enters game state, ranking, or RNG.
+
+**Rejected alternatives.** (a) Display-only `display_name` (no edit) — overridden by the operator's editable call. (b) Route the write through a new exported identity-layer `updateDisplayName` — widens the WP-052 locked contract for one caller; a documented local mirror is lighter. (c) Non-transactional two-statement write — risks a renamed player on a failed profile upsert.
+
+**Packet:** WP-305 + EC-335. **Drafted:** 2026-07-03.
+
 Protect this file.
