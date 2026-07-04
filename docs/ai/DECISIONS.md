@@ -26216,4 +26216,36 @@ Protect this file.
 
 **Packet:** WP-306 + EC-336. **Drafted:** 2026-07-03.
 
+### D-24092 — Free Game Account Required for Multiplayer & Persistence; Guest Solo-vs-AI Play Is Ungated; Email Captured at Provisioning, Marketing Sends Gated on Explicit Opt-In
+
+**Status:** **Active** (policy ratified 2026-07-04) — decision-only; implementing WP TBD.
+
+**Context.** The full account + email-capture path already ships: Hanko sign-in on `play` (WP-099…175) with first-sign-in auto-provisioning (WP-174) writing the verified email to `legendary.players.email`. What was never decided is the **access gate** — whether a player must hold an account before playing, and where the wall sits. The business goal is a marketable email list; the vision constraint is that "accessibility" is protected ahead of features (VISION §Financial Sustainability, Operational Guardrails) and the game is cooperative hero-vs-villain, so solo-vs-AI play needs no second human. Neither VISION (before this decision), `wiki/profile-login.md`, nor D-24084 (which decides only *where* login lives) addressed the gate. VISION §Financial Sustainability now carries the policy parent (§Access Model) that this entry implements.
+
+**Decision.** A free game account SHALL be required to reach **multiplayer matchmaking and any account-persisted surface** — saved profile, loadout library, stats, leaderboard entry, replay verification. It SHALL NOT be required to reach a **first taste of play**: a guest MAY play the tutorial and at least one solo match against a villain/mastermind AI without an account. The account wall is placed on the *second* action (matchmake / save / persist), not the front door.
+
+**Locked choices.**
+- **Email is captured at account provisioning** — the existing WP-174 path writes the verified email to `legendary.players.email`. No change to how the account email is stored.
+- **Consent is enforced by Brevo double opt-in — the already-shipped mechanism.** On provisioning, the account email is enqueued to the Brevo newsletter list (WP-293 / D-24077, `apps/server/src/marketing/brevoEnqueue.logic.ts`, fired from `accountResolver.logic.ts`); the list's **list-level double opt-in** (per `wiki/brevo-email-pipeline.md`) means only contacts who click the confirmation ever become marketable. Marketing is therefore never sent to a non-confirming account email (deliverability + CAN-SPAM/GDPR). An explicit in-app marketing-consent control at account creation is a permitted **future enhancement**, not a requirement of this decision.
+- **The account email and the marketing list are distinct populations.** Every account has an email; only opted-in accounts are marketable contacts.
+- **The ungated taste is the shipped spectator surface.** "Watch Bot Play" (WP-163 / WP-164, `/api/match/autoplay`) lets a guest watch an all-AI match with no account and is the intended free taste; it persists nothing. Account-persisted surfaces (`/api/me/*`, loadouts, badges) are **already** authenticated today, so the only ungated valuable surface the wall must add is **playing a seat in a multiplayer match** — the boardgame.io lobby create/join path (`/games/legendary-arena/create` + `/join`) is currently unauthenticated.
+
+**Consequence.** The email-capture pipeline this policy depends on already ships end-to-end — provisioning writes `legendary.players.email` (WP-174) and enqueues to Brevo (WP-293 / D-24077). The only net-new work is the **gate itself**: requiring an authenticated Hanko session to play a seat in a multiplayer match — guard the boardgame.io lobby create/join path in `apps/server`, and attach the bearer token + redirect unauthenticated users to sign-in in `apps/arena-client` — while leaving "Watch Bot Play" and match spectating open. That is a single, single-repo, server+client Work Packet (implementing WP TBD). NG‑1-safe: the gate confers no gameplay advantage; the free tier watches real games and plays after a free sign-in. **Builds on, and is consistent with, D-24077 / WP-293 (email enqueue) and D-24084 (auth lives on `play`)** — it supersedes neither.
+
+**Rejected alternatives.** (a) **Hard wall before any play** — maximizes capture-per-player but minimizes total players and yields the lowest-quality, worst-deliverability emails (bounced-before-value); in tension with the VISION accessibility guardrail. (b) **Account required but email optional / no marketing consent** — defeats the marketing goal and/or tanks sender reputation. (c) **No gate at all** — forgoes the list entirely.
+
+**Packet:** WP-307 / EC-337 (drafted 2026-07-04; enforcement mechanism = D-24093). **Drafted + ratified:** 2026-07-04.
+
+### D-24093 — Multiplayer-Play Gate Is Enforced by Guarded `apps/server` Endpoints In Front of the boardgame.io Native Lobby, Not by Modifying Framework Internals; Spectator/Autoplay Stay Guest
+
+**Status:** **Drafted 2026-07-04; not yet landed** (reserved by WP-307 / EC-337; flips to Active when WP-307 executes).
+
+**Context.** D-24092 requires a free account to play a seat in a multiplayer match. Today the boardgame.io native lobby routes (`/games/legendary-arena/create`, `/join`) are exposed by `Server({ games, origins })` under `server.router` with no auth middleware, and `apps/arena-client/src/lobby/lobbyApi.ts` calls them directly with no bearer token. boardgame.io's lobby routes are framework-internal; the project already has a precedent for creating a match server-side without exposing the raw lobby — `POST /api/match/autoplay` (WP-163/164) builds an all-bot match through the same lobby and returns credentials.
+
+**Decision.** The gate SHALL be enforced by **new guarded `apps/server` endpoints in front of the native lobby** — `POST /api/match/create` and `POST /api/match/join` — each running `requireAuthenticatedSession` (WP-112) as its first step and then delegating match creation/join to the boardgame.io lobby server-side, mirroring the autoplay precedent. The native `/games/*` routes are **not** modified or removed, and boardgame.io internals are **not** patched. The arena-client switches its create/join calls to the guarded endpoints and attaches the bearer token; a signed-out create/join attempt redirects to `?route=login`. The **spectator/autoplay path stays guest** — `POST /api/match/autoplay` and match spectating add no auth, because they are the D-24092 ungated taste. The guarded handlers contain **no game logic** (server wires, engine decides — ARCHITECTURE §Layer Boundary): they authenticate, validate the `MatchSetupConfig` shape via the existing validator, and delegate.
+
+**Consequence.** `docs/ai/REFERENCE/api-endpoints.md` gains rows for the two endpoints (`Auth = authenticated-session-required`) plus an auth-posture annotation on the native lobby rows (§21 / D-11804). No new npm dependency, no migration, no engine / `G` / replay / RNG surface. Builds on D-24092 (policy) and WP-293 / D-24077 (the enqueue the gate feeds). Rejected alternatives: (a) a Koa middleware patched onto boardgame.io's internal lobby router — couples the gate to framework internals; (b) replacing the native lobby with custom match storage — far larger than the need and collides with the "`G` never persisted" boundary; (c) gating in the client only — trivially bypassable, not a real gate.
+
+**Packet:** WP-307 + EC-337. **Drafted:** 2026-07-04.
+
 Protect this file.
