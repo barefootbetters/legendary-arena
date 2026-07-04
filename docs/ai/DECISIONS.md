@@ -26250,4 +26250,16 @@ Protect this file.
 
 **Packet:** WP-307 + EC-337. **Drafted:** 2026-07-04. **Landed:** 2026-07-04 (Active).
 
+### D-24094 — Multiplayer-Play Hard Gate: Native Lobby Create/Join Gated by an App-Layer Guard (Session-or-Internal-Secret); Closes the D-24093 Soft-Gate Bypass
+
+**Status:** **Drafted 2026-07-04; not yet landed** (reserved by WP-308 / EC-338; flips to Active when WP-308 executes).
+
+**Context.** D-24093 shipped the multiplayer-play gate as a *soft* gate: the WP-307 guarded `/api/match/create|join` enforce the arena-client path, but the boardgame.io **native** `POST /games/legendary-arena/create` + `/join` stay open, so a raw API request bypasses the D-24092 account requirement (D-24093 §Enforcement level named this and deferred the hard gate). Both the WP-307 matchGate and the WP-163/164 autoplay loop reach those native routes by a server-internal loopback `fetch`, so any hard gate must keep the internal delegation working while blocking external callers.
+
+**Decision.** WP-308 SHALL close the bypass with an **app-layer Koa guard** (`apps/server/src/match/nativeLobbyGuard.ts`) that intercepts POST to the two native create/join paths and admits the request only if it carries **either** a valid authenticated session **or** a **process-local internal-delegation secret** (generated at startup with `crypto`, never exposed to a client); everything else returns `401`. The guard is mounted to run **before** the boardgame.io lobby router — primary mechanism `server.app.middleware.unshift(guard)`, verified at execution against the installed boardgame.io version; if the ordering cannot be achieved that way, the fallback is a loopback-source-IP check or a bgio lobby-config disable, **never** a patch of boardgame.io internals. The matchGate + autoplay loopback `fetch` sites attach the internal-delegation secret header (a single locked constant). The native `GET /games/legendary-arena` list, spectating, sockets, and every `/api/*` route pass through untouched. arena-client is **not** modified — it already reaches create/join through the WP-307 guarded endpoints.
+
+**Consequence.** The D-24092 gate becomes unbypassable — a signed-in account is required to play a seat by **any** path. `api-endpoints.md` native create/join Auth `guest` → `authenticated-session-required` (§21 / D-11804). No engine / `G` / replay / RNG / persistence / migration surface; no new npm dependency (`crypto` + `fetch` built-ins). **Supersedes the D-24093 §Enforcement-level soft-gate limitation**; D-24092 (policy), D-24093 (the guarded endpoints), D-24077 / WP-293 (enqueue) all stand. Rejected alternatives: (a) loopback-source-IP as the *primary* discriminator — environment-fragile (proxy / IPv6 edge cases); kept only as the ordering fallback; (b) removing the native routes and routing all creation through bgio internals — a far larger refactor of the shipped autoplay + matchGate loopback-delegation design; (c) leaving the soft gate — the accepted v1 posture, now superseded on operator request.
+
+**Packet:** WP-308 + EC-338. **Drafted:** 2026-07-04.
+
 Protect this file.
