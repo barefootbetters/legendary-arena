@@ -27,6 +27,7 @@ import { registerAvatarUploadRoutes } from './profile/avatarUpload.routes.js';
 import { registerLoadoutLibraryRoutes } from './profile/loadoutLibrary.routes.js';
 import { registerProfileRoutes } from './profile/profile.routes.js';
 import { registerTeamRoutes } from './teams/team.routes.js';
+import { registerMatchGateRoutes } from './match/matchGate.routes.js';
 import { registerEntitlementRoutes } from './entitlements/entitlements.routes.js';
 import { registerBillingRoutes } from './billing/billing.routes.js';
 import { registerAdminBillingRoutes } from './billing/adminBilling.routes.js';
@@ -721,6 +722,22 @@ export async function startServer() {
     requireAuthenticatedSession,
     verifier,
     accountResolver: verifier === undefined ? undefined : accountResolver,
+  });
+
+  // why: WP-307 / D-24092 / D-24093 — the multiplayer-play authentication
+  // gate. POST /api/match/create + /join require an authenticated Hanko
+  // session, then delegate to the boardgame.io native lobby over the same
+  // loopback origin the autoplay loop uses (autoplayServerUrl). Same
+  // caller-injected auth deps + pool as the profile/team routes. Soft gate
+  // per D-24093: the native /games/* routes stay open, so this enforces the
+  // arena-client path (which drives account creation), not an unbypassable
+  // boundary. The autoplay/spectator path (/api/match/autoplay) is left
+  // guest by design and is registered separately above.
+  registerMatchGateRoutes(server.router, pool, {
+    requireAuthenticatedSession,
+    verifier,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
+    serverUrl: autoplayServerUrl,
   });
 
   // why: WP-132 / D-13205 (a) — register the single entitlements

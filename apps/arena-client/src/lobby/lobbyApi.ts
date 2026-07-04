@@ -35,21 +35,29 @@ export interface LobbyMatchSummary {
 }
 
 /**
- * Creates a new match on the server.
+ * Creates a new match on the server via the authenticated match-gate
+ * endpoint (WP-307). Playing a seat requires a signed-in account (D-24092),
+ * so the caller must pass the bearer token from the auth store; the server
+ * validates the session, then delegates to the boardgame.io lobby.
  *
  * @param config  Nine-field MatchSetupConfig used as boardgame.io setupData.
  * @param numPlayers  Number of seats to allocate (1..5).
+ * @param authToken  Bearer token for the authenticated session.
  * @returns The server-assigned matchID.
  * @throws Error with a full-sentence message on non-2xx responses.
  */
 export async function createMatch(
   config: MatchSetupConfig,
   numPlayers: number,
+  authToken: string,
 ): Promise<{ matchID: string }> {
-  const endpoint = `${serverUrl}/games/legendary-arena/create`;
+  const endpoint = `${serverUrl}/api/match/create`;
   const response = await fetch(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${authToken}`,
+    },
     body: JSON.stringify({ numPlayers, setupData: config }),
   });
 
@@ -116,15 +124,16 @@ export async function listMatches(): Promise<LobbyMatchSummary[]> {
 }
 
 /**
- * Joins a match at the specified seat.
- *
- * Request body `{ playerID, playerName }` and response field
- * `playerCredentials` are the canonical contract per the running-server
- * verification recorded in D-90xx.
+ * Joins a match at the specified seat via the authenticated match-gate
+ * endpoint (WP-307). Requires a signed-in account (D-24092); the caller
+ * passes the bearer token and the server delegates to the boardgame.io
+ * lobby. `matchID` travels in the request body here (the native route
+ * carried it in the URL path).
  *
  * @param matchID  ID of the match to join.
  * @param playerID  Seat index, stringified (e.g. "0", "1").
  * @param playerName  Display name to show in the lobby list.
+ * @param authToken  Bearer token for the authenticated session.
  * @returns The playerCredentials secret to pass to boardgame.io Client().
  * @throws Error with a full-sentence message on non-2xx responses.
  */
@@ -132,12 +141,16 @@ export async function joinMatch(
   matchID: string,
   playerID: string,
   playerName: string,
+  authToken: string,
 ): Promise<{ playerCredentials: string }> {
-  const endpoint = `${serverUrl}/games/legendary-arena/${matchID}/join`;
+  const endpoint = `${serverUrl}/api/match/join`;
   const response = await fetch(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ playerID, playerName }),
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${authToken}`,
+    },
+    body: JSON.stringify({ matchID, playerID, playerName }),
   });
 
   if (!response.ok) {

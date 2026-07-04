@@ -79,12 +79,16 @@ describe('lobbyApi (WP-090)', () => {
 
   test('createMatch POSTs { numPlayers, setupData } to /games/legendary-arena/create and returns matchID', async () => {
     installFetchStub(() => jsonResponse(200, { matchID: 'match-abc' }));
-    const result = await createMatch(SAMPLE_CONFIG, 2);
+    const result = await createMatch(SAMPLE_CONFIG, 2, 'test-token');
 
     assert.equal(result.matchID, 'match-abc');
     assert.equal(calls.length, 1);
-    assert.equal(calls[0]!.url, `${serverUrl}/games/legendary-arena/create`);
+    assert.equal(calls[0]!.url, `${serverUrl}/api/match/create`);
     assert.equal(calls[0]!.init?.method, 'POST');
+    assert.equal(
+      (calls[0]!.init?.headers as Record<string, string>).Authorization,
+      'Bearer test-token',
+    );
 
     const bodyText = String(calls[0]!.init?.body);
     const parsed = JSON.parse(bodyText) as {
@@ -149,18 +153,21 @@ describe('lobbyApi (WP-090)', () => {
       }),
     );
 
-    const result = await joinMatch('match-abc', '0', 'Tester');
+    const result = await joinMatch('match-abc', '0', 'Tester', 'test-token');
     assert.equal(result.playerCredentials, 'secret-xyz');
-    assert.equal(
-      calls[0]!.url,
-      `${serverUrl}/games/legendary-arena/match-abc/join`,
-    );
+    assert.equal(calls[0]!.url, `${serverUrl}/api/match/join`);
     assert.equal(calls[0]!.init?.method, 'POST');
+    assert.equal(
+      (calls[0]!.init?.headers as Record<string, string>).Authorization,
+      'Bearer test-token',
+    );
 
     const parsed = JSON.parse(String(calls[0]!.init?.body)) as {
+      matchID: string;
       playerID: string;
       playerName: string;
     };
+    assert.equal(parsed.matchID, 'match-abc');
     assert.equal(parsed.playerID, '0');
     assert.equal(parsed.playerName, 'Tester');
   });
@@ -169,12 +176,12 @@ describe('lobbyApi (WP-090)', () => {
     installFetchStub(() => textResponse(500, 'internal boom'));
 
     await assert.rejects(
-      () => createMatch(SAMPLE_CONFIG, 2),
+      () => createMatch(SAMPLE_CONFIG, 2, 'test-token'),
       (error: unknown) => {
         assert.ok(error instanceof Error);
         assert.match(error.message, /Failed to create match/);
         assert.match(error.message, /HTTP 500/);
-        assert.match(error.message, /\/games\/legendary-arena\/create/);
+        assert.match(error.message, /\/api\/match\/create/);
         return true;
       },
     );
@@ -190,7 +197,7 @@ describe('lobbyApi (WP-090)', () => {
     );
 
     await assert.rejects(
-      () => joinMatch('match-abc', '0', 'Tester'),
+      () => joinMatch('match-abc', '0', 'Tester', 'test-token'),
       (error: unknown) => {
         assert.ok(error instanceof Error);
         assert.match(error.message, /Failed to join match match-abc/);
@@ -245,11 +252,12 @@ describe('parseLoadoutJson + createMatch (WP-092)', () => {
     const created = await createMatch(
       parsed.value.composition,
       parsed.value.playerCount,
+      'test-token',
     );
 
     assert.equal(created.matchID, 'match-from-json');
     assert.equal(calls.length, 1);
-    assert.equal(calls[0]!.url, `${serverUrl}/games/legendary-arena/create`);
+    assert.equal(calls[0]!.url, `${serverUrl}/api/match/create`);
     assert.equal(calls[0]!.init?.method, 'POST');
 
     const bodyText = String(calls[0]!.init?.body);
@@ -303,6 +311,7 @@ describe('parseLoadoutJson + createMatch (WP-092)', () => {
     const created = await createMatch(
       parsed.value.composition,
       parsed.value.playerCount,
+      'test-token',
     );
 
     assert.equal(created.matchID, 'match-default-mode');

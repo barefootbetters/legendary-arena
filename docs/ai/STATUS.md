@@ -7,6 +7,42 @@
 
 ## Current State
 
+### WP-307 / EC-337 Executed — Multiplayer-Play Authentication Gate (Server + App; D-24092 policy + D-24093 mechanism Active) (2026-07-04)
+
+Playing a seat in a multiplayer match on `play.legendary-arena.com` now
+requires an authenticated Hanko session; guest "Watch Bot Play" spectating
+stays open (the D-24092 ungated taste). Two guarded `apps/server` endpoints —
+`POST /api/match/create` → `{ matchID }` and `POST /api/match/join` →
+`{ playerCredentials }`, in new `apps/server/src/match/matchGate.routes.ts` —
+run `requireAuthenticatedSession` first (`401` on an absent/invalid session,
+`400` on a missing `matchID`), then delegate server-internal to the
+boardgame.io native lobby over the loopback origin, mirroring the WP-163/164
+autoplay precedent. No game logic (server wires, engine decides); registered in
+`server.mjs` with the existing `{ requireAuthenticatedSession, verifier,
+accountResolver }` bundle + `pool` + `serverUrl`. The arena-client
+`lobbyApi.ts` `createMatch`/`joinMatch` now target `/api/match/*` with a
+`Bearer` token (`matchID` moved into the join body); `LobbyView.vue` sends a
+signed-out create/join to `?route=login` across all three actions
+(`submitCreate`, `joinExisting`, `submitFromJson`).
+
+**Soft gate (operator decision, D-24093):** the native `/games/*` create/join
+routes stay open, so this enforces the arena-client path — which drives account
+creation for normal UI users — rather than an unbypassable boundary; a hard
+gate (app-layer middleware in front of the bgio router, or bgio lobby config)
+is a documented follow-up. This is the forcing function for the already-shipped
+email pipeline: first sign-in provisions the account, writes
+`legendary.players.email` (WP-174), and enqueues to Brevo with list-level
+double opt-in (WP-293 / D-24077).
+
+**Verification:** arena-client `test` 652/652 + `typecheck` 0; server suite
+761 tests / 683 pass / 0 fail / 78 DB-skip (new `matchGate.routes.test.ts`
+covers 401-without-session, success-with-session, exactly-two-routes registered
+— proving autoplay/spectator untouched — and 400 missing-matchID); `pnpm -r
+build` 0. D-24092 + D-24093 **Active**. `api-endpoints.md` updated (§21 — two
+guarded rows + native-lobby annotations). D-24026 live-verify on
+`play.legendary-arena.com` **PENDING post-deploy** (signed-out create/join →
+sign-in; signed-in create/join works; "Watch Bot Play" still guest-open).
+
 ### WP-305 / EC-335 Executed — Owner-Page Identity Fields + Editable Display Name (Server + App; D-24089 / D-24090 Active) (2026-07-04)
 
 The owner profile surface (`GET`/`PATCH /api/me/profile`, `MyProfilePage.vue`
