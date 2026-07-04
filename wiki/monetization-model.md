@@ -161,6 +161,9 @@ that the surfaces exist and which streams they belong to.
    competitive standing.
 4. **Royalties come first.** Revenue covers expenses + royalties before buffer or
    expansion.
+5. **No randomness.** Every purchase is deterministic, fully disclosed, and
+   purchase-known — no loot boxes, gacha, or randomized/mystery goods (mirrors
+   VISION's "deterministic, fully disclosed" cosmetics language).
 
 ## References
 
