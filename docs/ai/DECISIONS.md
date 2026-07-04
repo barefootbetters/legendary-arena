@@ -26234,6 +26234,18 @@ Protect this file.
 
 **Rejected alternatives.** (a) **Hard wall before any play** — maximizes capture-per-player but minimizes total players and yields the lowest-quality, worst-deliverability emails (bounced-before-value); in tension with the VISION accessibility guardrail. (b) **Account required but email optional / no marketing consent** — defeats the marketing goal and/or tanks sender reputation. (c) **No gate at all** — forgoes the list entirely.
 
-**Packet:** implementing WP TBD. **Drafted + ratified:** 2026-07-04.
+**Packet:** WP-307 / EC-337 (drafted 2026-07-04; enforcement mechanism = D-24093). **Drafted + ratified:** 2026-07-04.
+
+### D-24093 — Multiplayer-Play Gate Is Enforced by Guarded `apps/server` Endpoints In Front of the boardgame.io Native Lobby, Not by Modifying Framework Internals; Spectator/Autoplay Stay Guest
+
+**Status:** **Drafted 2026-07-04; not yet landed** (reserved by WP-307 / EC-337; flips to Active when WP-307 executes).
+
+**Context.** D-24092 requires a free account to play a seat in a multiplayer match. Today the boardgame.io native lobby routes (`/games/legendary-arena/create`, `/join`) are exposed by `Server({ games, origins })` under `server.router` with no auth middleware, and `apps/arena-client/src/lobby/lobbyApi.ts` calls them directly with no bearer token. boardgame.io's lobby routes are framework-internal; the project already has a precedent for creating a match server-side without exposing the raw lobby — `POST /api/match/autoplay` (WP-163/164) builds an all-bot match through the same lobby and returns credentials.
+
+**Decision.** The gate SHALL be enforced by **new guarded `apps/server` endpoints in front of the native lobby** — `POST /api/match/create` and `POST /api/match/join` — each running `requireAuthenticatedSession` (WP-112) as its first step and then delegating match creation/join to the boardgame.io lobby server-side, mirroring the autoplay precedent. The native `/games/*` routes are **not** modified or removed, and boardgame.io internals are **not** patched. The arena-client switches its create/join calls to the guarded endpoints and attaches the bearer token; a signed-out create/join attempt redirects to `?route=login`. The **spectator/autoplay path stays guest** — `POST /api/match/autoplay` and match spectating add no auth, because they are the D-24092 ungated taste. The guarded handlers contain **no game logic** (server wires, engine decides — ARCHITECTURE §Layer Boundary): they authenticate, validate the `MatchSetupConfig` shape via the existing validator, and delegate.
+
+**Consequence.** `docs/ai/REFERENCE/api-endpoints.md` gains rows for the two endpoints (`Auth = authenticated-session-required`) plus an auth-posture annotation on the native lobby rows (§21 / D-11804). No new npm dependency, no migration, no engine / `G` / replay / RNG surface. Builds on D-24092 (policy) and WP-293 / D-24077 (the enqueue the gate feeds). Rejected alternatives: (a) a Koa middleware patched onto boardgame.io's internal lobby router — couples the gate to framework internals; (b) replacing the native lobby with custom match storage — far larger than the need and collides with the "`G` never persisted" boundary; (c) gating in the client only — trivially bypassable, not a real gate.
+
+**Packet:** WP-307 + EC-337. **Drafted:** 2026-07-04.
 
 Protect this file.
