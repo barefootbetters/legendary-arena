@@ -25,7 +25,8 @@ None. This is engineering tooling: a CLI that runs the authoritative engine head
 - **The simulation harness is on the engine's public surface.** `@legendary-arena/game-engine` (the `.` subpath, Runtime-Safe Engine Surface) re-exports `runSimulation`, `createCompetentHeuristicPolicy`, and the `SimulationConfig` / `SimulationResult` / `AIPolicy` types (`packages/game-engine/src/index.ts`). The runner consumes these directly — **no deep `dist/` import, no new engine export subpath.** (Verified at `src/index.ts` lines re: "AI playtesting & balance simulation framework".)
 - **`runSimulation` is pure and deterministic.** Its JSDoc locks: "Given identical (config, registry) inputs the returned SimulationResult is byte-identical across runs." The `verify` mode's determinism self-check rests on this contract. (Verified at `packages/game-engine/src/simulation/simulation.runner.ts`.)
 - **The registry loads from local files.** `createRegistryFromLocalFiles({ metadataDir, cardsDir })` returns a `CardRegistry` that satisfies the `CardRegistryReader` interface `runSimulation` accepts — `apps/server` already loads it this way (`data/metadata` + `data/cards`). (Verified at `apps/server/src/server.mjs` + `packages/registry/src/impl/localRegistry.ts`.)
-- **`SimulationConfig` needs a `MatchSetupConfig`.** `SimulationConfig = { games, seed, setupConfig: MatchSetupConfig, policies: AIPolicy[] }`. The runner accepts the `setupConfig` as JSON input and validates it via the registry setup contract before running. (Verified at `packages/game-engine/src/simulation/ai.types.ts`.)
+- **`SimulationConfig` needs a `MatchSetupConfig` + a policy count.** `SimulationConfig = { games, seed, setupConfig: MatchSetupConfig, policies: AIPolicy[] }`, and `runSimulation` reads seats as `numPlayers = config.policies.length` (verified at `simulation.runner.ts`). The runner reads a scenario **document**, validates it, extracts the nine-field composition as `setupConfig`, and builds one competent policy per the document's `playerCount`. (Verified at `packages/game-engine/src/simulation/ai.types.ts` + `simulation.runner.ts`.)
+- **The scenario validator is a known symbol.** `@legendary-arena/registry/setupContract` exports `validateMatchSetupDocument(document, registry)` (never-throw structured result) and `MatchSetupDocumentSchema`; the document envelope carries `playerCount` (int 1–5) alongside the nine-field composition. (Verified at `packages/registry/src/setupContract/index.ts` + `setupContract.schema.ts` + `setupContract.validate.ts`.)
 - **A new app may import the engine + registry.** Per ARCHITECTURE.md §Layer Boundary, an app at the `apps/server` tier imports the Runtime-Safe Engine Surface + `registry` + Node built-ins. `apps/engine-runner` is such a host; its import-rules row is added under D-24088.
 
 If any of the above is false, this packet is **BLOCKED** and must not proceed.
@@ -108,15 +109,29 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 
 **New app — `apps/engine-runner` (import allowances, for the ARCHITECTURE.md row):**
 - **May import:** `@legendary-arena/game-engine` (Runtime-Safe Engine Surface; `.` subpath), `@legendary-arena/registry` (incl. `/setupContract`), Node built-ins.
-- **Must NOT import:** `boardgame.io` (directly), `pg`, `apps/server`, `preplan`, `vue-sfc-loader`, any `apps/*` UI, browser APIs, `@legendary-arena/game-engine/setup` (Setup-Tooling Surface is not needed by a read-only sim host).
+- **Must NOT import:** `boardgame.io` (directly), `pg`, `apps/server`, `preplan`, `vue-sfc-loader`, any `apps/*` UI, browser APIs, `@legendary-arena/game-engine/setup` (Setup-Tooling Surface is not needed by a read-only sim host), and **no deep import** of `packages/game-engine/dist/**` or any `.../simulation/**` path — the harness is consumed through the public `.` surface only.
+
+**D-24088 (this packet's decision, one line):** `apps/engine-runner` is classified as an application host (peer of `apps/server`) that MAY consume the Runtime-Safe Engine Surface and the Registry Surface directly; Target-A A1 scope only (no packaging, no engine change). Full rationale in `DECISIONS.md` D-24088.
+
+**Scenario file format (locked):** the `--scenario` file is **one `MatchSetupDocument`** — the exact object the registry's `validateMatchSetupDocument(document, registry)` accepts (`@legendary-arena/registry/setupContract`): the envelope (`schemaVersion`, `setupId`, `createdAt`, `createdBy`, `seed`, `playerCount`, `expansions`, optional `themeId`, `heroSelectionMode`) **plus** the nine-field composition block. It is serialized as **raw JSON with no wrapper object** (no `{ "setupConfig": … }` envelope of the runner's own). The runner validates it with `validateMatchSetupDocument` before running; a validation failure exits code 2 with a full-sentence stderr.
+
+**Player-seat derivation (locked):** the number of AI seats is **the validated document's `playerCount` (1–5)** — the runner builds exactly `playerCount` `createCompetentHeuristicPolicy` instances and passes them as `SimulationConfig.policies`. `runSimulation` reads `numPlayers = config.policies.length` (verified at `simulation.runner.ts`). Seat count is **never** taken from a CLI flag — there is no `--players` argument.
+
+**Seed + setupConfig (locked):** the `--seed` CLI argument is the authoritative **run seed** → `SimulationConfig.seed`. The document's envelope `seed` field is a required-for-validation metadata field and is **not** the source of run randomness (the two need not match). `SimulationConfig.setupConfig` is the nine-field composition (`MatchSetupConfig`) carried by the validated document.
+
+**Registry path resolution (locked):** the registry loads via `createRegistryFromLocalFiles({ metadataDir: 'data/metadata', cardsDir: 'data/cards' })`, resolved **from the repository root exactly as `apps/server` resolves them** — never relative to the app directory or an arbitrary `cwd`.
 
 **CLI surface:**
-- `engine-runner run --scenario <path.json> --games <n> --seed <string> [--out <path.json>]` — loads the registry, validates the scenario, runs `n` bot-vs-bot games at `seed`, writes the `SimulationResult` JSON to stdout (or `--out`). Exit 0 on success; non-zero + full-sentence stderr on any input/validation failure.
-- `engine-runner verify --scenario <path.json> --games <n> --seed <string>` — runs the identical simulation twice and compares the canonical-JSON `SimulationResult`. Exit 0 + `{ identical: true }` when byte-identical; non-zero + a short mismatch summary otherwise.
+- `engine-runner run --scenario <path.json> --games <n> --seed <string> [--out <path.json>]` — loads the registry, validates the scenario document, runs `n` bot-vs-bot games at `seed`, writes the `SimulationResult` **canonical JSON** to stdout (or `--out`).
+- `engine-runner verify --scenario <path.json> --games <n> --seed <string>` — runs the identical simulation twice and compares the **canonical JSON** `SimulationResult`. Exit 0 + `{ identical: true }` when byte-identical; exit 4 + a short mismatch summary otherwise.
 
-**Determinism contract:** for identical `(scenario, games, seed)`, two `run` invocations produce byte-identical `SimulationResult` JSON (guaranteed by `runSimulation`'s documented determinism). `verify` asserts exactly this.
+**Canonical JSON (locked):** the emitted and compared form is UTF-8 `JSON.stringify(result)` of the `SimulationResult` in its native field order — `gamesPlayed`, `winRate`, `averageTurns`, `averageScore`, `escapedVillainsAverage`, `woundsAverage`, `seed` (the order `runSimulation` constructs the object in). `verifyDeterminism` compares the two **canonicalized strings** — never object reference equality, and never a comparison that relies on incidental runtime key order.
 
-**`RunnerConfig` (internal, locked by `cli.ts`):** `{ mode: 'run' | 'verify', scenarioPath: string, games: number, seed: string, outPath?: string }`. `games` must parse to an integer ≥ 1; `seed` must be non-empty; `scenarioPath` required. Any violation → a structured parse error, non-zero exit, no simulation run.
+**Determinism contract:** for identical `(scenario, games, seed)`, two `run` invocations produce byte-identical canonical `SimulationResult` JSON (guaranteed by `runSimulation`'s documented purity). `verify` asserts exactly this.
+
+**Exit-code contract (locked):** `0` = success · `1` = CLI / argument validation error (bad `RunnerConfig`) · `2` = scenario validation error (file missing / unparseable, or `validateMatchSetupDocument` rejects) · `3` = runtime execution failure (an unexpected throw from the run) · `4` = determinism-verification mismatch (`verify` only). Every non-zero exit carries a full-sentence stderr message.
+
+**`RunnerConfig` (internal, locked by `cli.ts`):** `{ mode: 'run' | 'verify', scenarioPath: string, games: number, seed: string, outPath?: string }`. `games` must parse to an integer ≥ 1; `seed` must be non-empty; `scenarioPath` required. Any violation → a structured parse error, **exit code 1**, no simulation run.
 
 ---
 
@@ -132,11 +147,11 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 ## Acceptance Criteria
 
 - `pnpm -r build` → 0 (the new app has no build step but must not break the graph); `pnpm --filter @legendary-arena/engine-runner test` → all green.
-- `cli.ts` parses a valid `run`/`verify` argv into the correct `RunnerConfig`, and rejects: missing `--scenario`, `--games 0` / non-integer, empty `--seed`, unknown mode — each with a full-sentence error and no simulation.
-- `run` against a valid scenario + the real local registry emits a well-formed `SimulationResult` JSON (the documented fields: `gamesPlayed`, `winRate`, `averageTurns`, `averageScore`, `escapedVillainsAverage`, `woundsAverage`, `seed`).
-- `verify` returns `identical: true` for a repeated identical run (proves the runner preserves engine determinism end-to-end).
-- An invalid `--scenario` (fails the registry setup contract) and a missing scenario file each produce a full-sentence stderr error + non-zero exit — never a stack trace as primary UX, never a zeroed result presented as success.
-- Grep-clean layer boundary: no `boardgame.io` / `pg` / `apps/server` / `dist/` deep-import in `apps/engine-runner/src/**`.
+- `cli.ts` parses a valid `run`/`verify` argv into the correct `RunnerConfig`, and rejects (each with a full-sentence error, **exit code 1**, no simulation): missing `--scenario`, `--games 0` / non-integer, empty `--seed`, unknown mode.
+- `run` against a valid scenario document + the real local registry emits a well-formed `SimulationResult` **canonical JSON** (the documented fields, in `runSimulation`'s native order): `gamesPlayed`, `winRate`, `averageTurns`, `averageScore`, `escapedVillainsAverage`, `woundsAverage`, `seed`. Seat count equals the document's `playerCount`.
+- `verify` returns `identical: true` for a repeated identical run by comparing **canonicalized JSON strings** (not object identity); a forced mismatch exits **code 4**.
+- An invalid `--scenario` (fails `validateMatchSetupDocument`) and a missing scenario file each produce a full-sentence stderr error + **exit code 2** — never a stack trace as primary UX, never a zeroed result presented as success.
+- Grep-clean layer boundary: no `boardgame.io` / `pg` / `apps/server` / `/dist/` / `game-engine/setup` / `.../simulation/` deep-import in `apps/engine-runner/src/**`; every new source file lives under `apps/engine-runner/` (no leakage into `packages/**`).
 - ARCHITECTURE.md + `.claude/rules/architecture.md` both carry the identical new `apps/engine-runner` import-rules row; D-24088 is Active.
 
 ---
@@ -208,3 +223,7 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 - **§21 API Catalog:** N/A — no HTTP endpoint added/changed and no `apps/server/src/**` library function added/modified; the runner is a separate app not reachable by import from `apps/server`.
 
 **Lint verdict: PASS** (all applicable sections PASS; §10/§11/§19/§20/§21 explicitly N/A with justification).
+
+## Audit-Tightening Pass (post-merge SPEC, 2026-07-01)
+
+After the drafting SPEC merged (#520), a review pass tightened the Contract + EC to remove executor interpretation — all **additive locks**, no scope change: (1) scenario file is one `MatchSetupDocument` validated by `validateMatchSetupDocument` (no wrapper); (2) seats = the document's `playerCount`, never a CLI flag; (3) `--seed` is the run seed, envelope `seed` is metadata; (4) registry paths resolve from repo root as `apps/server` does; (5) **canonical JSON** = `JSON.stringify` in native field order, compared as strings; (6) locked **exit-code matrix** `0/1/2/3/4`; (7) EC adds a validator-symbol Before-Starting gate, a canonical-string test row, an expanded forbidden-import grep (`game-engine/setup`, `/simulation/`), and a package-boundary grep. The recorded Pre-flight / Copilot / Lint verdicts above predate this pass and are only **strengthened** by it (the tightenings close the ambiguities those gates would otherwise have flagged for execution).
