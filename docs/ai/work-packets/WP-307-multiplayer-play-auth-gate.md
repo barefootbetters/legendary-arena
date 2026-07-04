@@ -325,30 +325,66 @@ captured contacts.
 
 ## Pre-Flight Verdict (01.4)
 
-**NOT READY — one blocking pre-session action (PS-1); one design
-confirmation (PS-2).** WP-307 is otherwise correctly sequenced (all
-hard-deps are on `main`), scoped, and lint-clean.
+**READY TO EXECUTE.** Correctly sequenced (all hard-deps on `main`),
+scoped, lint-clean, and the validation-tightening scaffold has been run.
 
-- **PS-1 (blocking) — Empirical Scaffold required (01.4 §Empirical
-  Scaffold).** WP-307 changes an existing input path's acceptance
-  (unauthenticated match create/join was accepted; now `401`) and switches
-  the client off the native `/games/*` endpoints. Per the WP-254 precedent,
-  a READY verdict for this WP class must be grounded in an **observed** run,
-  not reasoning. Prototype the guard + client switch on a throwaway branch,
-  run `pnpm --filter @legendary-arena/server test` and
-  `pnpm --filter @legendary-arena/arena-client test`, and record the exact
-  set of pre-existing fixtures that break. `lobbyApi.test.ts` is already
-  folded into scope; the run must confirm no **other** call site or
-  server-side match-creation test routes the same path unguarded. Fold any
-  newly-observed breakage into `§Scope (In)` + `§Files Expected to Change`,
-  then re-run pre-flight.
-- **PS-2 (confirm) — framework singletons (WP-102 PS-1/PS-2 precedent).**
-  The guarded routes register Koa-style on `Server().router` (mirroring the
-  profile/teams `register*Routes(router, deps)` pattern), NOT Express. The
-  client redirect uses `App.vue`'s existing query-string router
-  (`?route=login`), NOT vue-router (which is not in the dependency graph and
-  is forbidden by the no-new-dep constraint). Confirm both against the live
-  code at execution start.
+- **PS-1 (RESOLVED) — Empirical Scaffold run (01.4 §Empirical Scaffold).**
+  Prototyped the client endpoint swap (`createMatch`/`joinMatch` →
+  `/api/match/*`) in `lobbyApi.ts` and ran
+  `pnpm --filter @legendary-arena/arena-client test` (2026-07-04).
+  **Observed breakage: exactly 4 tests, all in
+  `apps/arena-client/src/lobby/lobbyApi.test.ts`** (the create/join URL
+  assertions at lines 86/156/252 + the HTTP-500 error-message URL regex at
+  line 177). `listMatches` (GET, unchanged) did **not** break. No other
+  file and no other package regressed. Server-side: no test references the
+  native lobby create/join (static confirmation — the only callers are
+  `lobbyApi.test.ts` + `LobbyView.vue`, both already in the allowlist; the
+  guarded endpoints are net-new with no pre-existing fixture). **No scope
+  expansion needed** — the breakage is fully contained in files already in
+  `§Files Expected to Change`. Prototype reverted; the working tree is
+  clean.
+- **PS-2 (confirm at execution start) — framework singletons (WP-102
+  PS-1/PS-2 precedent).** The guarded routes register Koa-style on
+  `Server().router` (mirroring the profile/teams
+  `register*Routes(router, deps)` pattern), NOT Express. The client
+  redirect uses `App.vue`'s existing query-string router (`?route=login`),
+  NOT vue-router (absent from the dependency graph and forbidden by the
+  no-new-dep constraint). Non-blocking — the WP already encodes both
+  correctly; confirm against live code before wiring.
 
-Copilot check (01.7) runs only after pre-flight flips to READY, so it is
-deferred until PS-1 is resolved.
+**Request-body note (folds into Locked Values):** `POST /api/match/create`
+takes `{ numPlayers, setupData: MatchSetupConfig }` (unchanged from the
+native contract); `POST /api/match/join` takes `{ matchID, playerID,
+playerName }` — `matchID` moves from the URL path (native
+`/games/legendary-arena/:matchID/join`) into the request body for the
+guarded endpoint.
+
+## Copilot Check (01.7)
+
+**PASS** — audited WP + EC + pre-flight against the 30 failure modes.
+Most (determinism #2/#8/#23, mutation #3/#17, persistence #7/#19/#24,
+outcome-timing #18/#26) are N/A: this WP touches no engine / `G` / RNG /
+persistence / game-outcome surface. Substantive modes clear:
+
+- **#1 / #9 / #16 / #29 (boundaries):** the guarded handler authenticates,
+  validates the setup shape, and delegates — no game logic in `apps/server`
+  (Guardrail + `## Non-Negotiable Constraints`); the client swaps endpoints
+  + redirects, re-implementing nothing.
+- **#4 / #6 / #27 (contract):** `matchID` / `playerCredentials` /
+  `MatchSetupConfig` locked per 00.2; §21 whole-row catalog update required;
+  the scaffold empirically bounded the fixture drift.
+- **#10 / #22 (loud, typed failure):** unauthenticated → HTTP `401`,
+  `{ error: <full sentence> }` matching the `/api/me/*` shape.
+- **#11 (invariant tests):** the route test asserts 401-without-session
+  **and** success-with-session **and** spectator-path-unaffected — a
+  non-vacuous negative + positive + isolation triple.
+- **#12 / #30 (governance):** allowlist locked, Out-of-Scope explicit,
+  D-24093 reserved, index rows added.
+
+**RISK (documented, resolved inline) — #13 directory classification.** The
+new `apps/server/src/match/` directory inherits the existing **`server-app`**
+code category, exactly like the sibling route-handler directories
+(`autoplay/`, `entitlements/`, `teams/`, `profile/`, `marketing/`). It is
+**not** a new code category and needs **no** `02-CODE-CATEGORIES.md` update
+(contrast WP-300's `functions/`, which was a genuinely new edge subsurface).
+No further action required.
