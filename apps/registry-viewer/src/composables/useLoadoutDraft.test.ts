@@ -35,10 +35,37 @@ type RegistryCardFixture = {
   cardType: string;
   alwaysLeads?: readonly string[];
 };
-function makeRegistry(
-  cards: Array<RegistryCardFixture>,
-): { listCards: () => Array<RegistryCardFixture> } {
-  return { listCards: () => cards };
+function makeRegistry(cards: Array<RegistryCardFixture>): {
+  listCards: () => Array<RegistryCardFixture>;
+  listSets: () => Array<{ abbr: string }>;
+  getSet: (abbr: string) => unknown;
+} {
+  // why: D-24091 — the validator checks each field against its own entity
+  // id-space. Non-henchman ids select by `cardType` from listCards; henchman
+  // groups are NOT flat cards, so a henchman-typed fixture is surfaced via
+  // getSet().henchmen (its slug), never listCards — mirroring the real
+  // registry (flattenSet emits no henchmen).
+  const henchmenByAbbr = new Map<string, Array<{ slug: string }>>();
+  const abbrs = new Set<string>();
+  for (const card of cards) {
+    const slashIndex = card.extId.indexOf("/");
+    if (slashIndex <= 0) {
+      continue;
+    }
+    const abbr = card.extId.slice(0, slashIndex);
+    abbrs.add(abbr);
+    if (card.cardType === "henchman") {
+      const slug = card.extId.slice(slashIndex + 1);
+      const list = henchmenByAbbr.get(abbr) ?? [];
+      list.push({ slug });
+      henchmenByAbbr.set(abbr, list);
+    }
+  }
+  return {
+    listCards: () => cards,
+    listSets: () => [...abbrs].map((abbr) => ({ abbr })),
+    getSet: (abbr: string) => ({ abbr, henchmen: henchmenByAbbr.get(abbr) ?? [] }),
+  };
 }
 
 /** Builds a full theme setupIntent with sensible defaults the tests override. */

@@ -27,9 +27,23 @@
 // validating composition fields against `key` here green-lit loadouts the
 // engine then rejected with an HTTP 500. Reading `extId` makes this validator
 // accept exactly the id space the engine accepts.
+//
+// why: D-24091 — the reader is widened to `cardType` + `listSets` + `getSet`
+// so the validator can check each composition field against its OWN entity
+// id-space (per-field), not one type-blind global set. Scheme / mastermind /
+// villain-group / hero ids are emitted onto `extId` by flattenSet and select by
+// `cardType`; henchman-group ids are NOT emitted as flat cards, so they are
+// derived from set data (`getSet(abbr)` → `henchmen[].slug`) — the same slug
+// grammar the authoritative validator uses, re-derived registry-side to respect
+// the layer boundary (no cross-layer import). The real CardRegistry already
+// exposes all three members, so no production consumer changes.
 export interface CardRegistryReader {
-  /** Returns all cards. The validator uses the extId field for ext_id lookup. */
-  listCards(): Array<{ extId: string }>;
+  /** Returns all cards. The validator selects per-field ext_ids by cardType. */
+  listCards(): Array<{ extId: string; cardType: string }>;
+  /** All loaded set index entries; henchman-group ids derive from set data. */
+  listSets(): Array<{ abbr: string }>;
+  /** Full set data for one set (read for its `henchmen[].slug` list). */
+  getSet(abbr: string): unknown | undefined;
 }
 
 // why: SetupCompositionInput mirrors the engine's MatchSetupConfig

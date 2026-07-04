@@ -32,22 +32,29 @@ import { validateMatchSetupDocument } from "./setupContract.validate.js";
  */
 function buildStubRegistry(): CardRegistryReader {
   return {
-    // why: D-24018 — the validator reads `extId` (set-qualified ids), not the
-    // flat-card `key`. These stub ids use the locked "{setAbbr}/{slug}" form;
-    // the happy-path composition values below reference them verbatim.
+    // why: D-24091 — the validator selects each field's ext_id space by
+    // `cardType`. These stub ids use the locked "{setAbbr}/{slug}" form; the
+    // happy-path composition values below reference them verbatim. Henchman
+    // groups are NOT flat cards, so `core/henchman-group-one` is intentionally
+    // ABSENT from listCards and supplied only via getSet().henchmen — this
+    // mirrors the real registry (flattenSet emits no henchmen).
     listCards: () => [
-      { extId: "core/scheme-alpha" },
-      { extId: "core/mastermind-beta" },
-      { extId: "core/villain-group-one" },
-      { extId: "core/villain-group-two" },
-      { extId: "core/villain-group-three" },
-      { extId: "core/henchman-group-one" },
-      { extId: "core/hero-deck-alpha" },
-      { extId: "core/hero-deck-beta" },
-      { extId: "core/hero-deck-gamma" },
-      { extId: "core/hero-deck-delta" },
-      { extId: "core/hero-deck-epsilon" },
+      { extId: "core/scheme-alpha", cardType: "scheme" },
+      { extId: "core/mastermind-beta", cardType: "mastermind" },
+      { extId: "core/villain-group-one", cardType: "villain" },
+      { extId: "core/villain-group-two", cardType: "villain" },
+      { extId: "core/villain-group-three", cardType: "villain" },
+      { extId: "core/hero-deck-alpha", cardType: "hero" },
+      { extId: "core/hero-deck-beta", cardType: "hero" },
+      { extId: "core/hero-deck-gamma", cardType: "hero" },
+      { extId: "core/hero-deck-delta", cardType: "hero" },
+      { extId: "core/hero-deck-epsilon", cardType: "hero" },
     ],
+    listSets: () => [{ abbr: "core" }],
+    getSet: (abbr: string) =>
+      abbr === "core"
+        ? { abbr: "core", henchmen: [{ slug: "henchman-group-one" }] }
+        : undefined,
   };
 }
 
@@ -482,6 +489,74 @@ describe("setupContract (WP-091)", () => {
       qualifiedResult.ok,
       true,
       "Expected the set-qualified composition to pass validation.",
+    );
+  });
+
+  // why: D-24091 regression guard (false-reject). A henchman group is NOT a
+  // flat card (flattenSet emits none), so its ext_id is absent from
+  // listCards; it lives only in set data. The engine's authoritative
+  // validator accepts it, so this validator must too. The stub's
+  // `core/henchman-group-one` is supplied via getSet().henchmen, not
+  // listCards — the happy-path document already uses it, and #2 proves the
+  // whole document passes. This test isolates the henchman field: swapping in
+  // a DIFFERENT real henchman-from-set-data id must still pass, and a
+  // syntactically-valid but unknown henchman id must fail.
+  test("#20 henchman group id derived from set data (absent from listCards) is accepted; an unknown one is rejected", () => {
+    const registry = buildStubRegistry();
+    const document = buildValidDocument();
+    // The valid document's henchmanGroupIds is ["core/henchman-group-one"],
+    // which exists only in getSet().henchmen — never in listCards. It passes.
+    const acceptedResult = validateMatchSetupDocument(document, registry);
+    assert.equal(
+      acceptedResult.ok,
+      true,
+      "Expected a set-data-derived henchman group id to be accepted.",
+    );
+
+    const unknownHenchmanDocument: MatchSetupDocument = {
+      ...document,
+      composition: {
+        ...document.composition,
+        henchmanGroupIds: ["core/no-such-henchman"],
+      },
+    };
+    const unknownErrors = errorsOf(
+      validateMatchSetupDocument(unknownHenchmanDocument, registry),
+    );
+    assert.ok(
+      unknownErrors.some(
+        (candidate) =>
+          candidate.field === "composition.henchmanGroupIds[0]" &&
+          candidate.code === "unknown_extid",
+      ),
+      "Expected an unknown henchman group id to produce unknown_extid.",
+    );
+  });
+
+  // why: D-24091 regression guard (false-accept). Before per-field
+  // validation, one type-blind global set accepted a villain id placed in the
+  // henchman slot (the id existed as SOME card's ext_id). Per-field isolation
+  // rejects it: `core/villain-group-one` is a villain, not a henchman.
+  test("#21 a villain group id placed in the henchman slot is rejected (cross-type isolation)", () => {
+    const registry = buildStubRegistry();
+    const document = buildValidDocument();
+    const crossTypeDocument: MatchSetupDocument = {
+      ...document,
+      composition: {
+        ...document.composition,
+        henchmanGroupIds: ["core/villain-group-one"],
+      },
+    };
+    const errors = errorsOf(
+      validateMatchSetupDocument(crossTypeDocument, registry),
+    );
+    assert.ok(
+      errors.some(
+        (candidate) =>
+          candidate.field === "composition.henchmanGroupIds[0]" &&
+          candidate.code === "unknown_extid",
+      ),
+      "Expected a villain id in the henchman slot to be rejected as unknown_extid.",
     );
   });
 });

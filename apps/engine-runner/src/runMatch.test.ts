@@ -90,7 +90,7 @@ function makeThreePlayerDocument(): MatchSetupDocument {
       schemeId: "core/midtown-bank-robbery",
       mastermindId: "core/magneto",
       villainGroupIds: ["core/skrulls"],
-      henchmanGroupIds: ["core/hydra"],
+      henchmanGroupIds: ["core/sentinel"],
       heroDeckIds: ["core/spider-man", "core/hulk", "core/wolverine", "core/black-widow"],
       bystandersCount: 30,
       woundsCount: 30,
