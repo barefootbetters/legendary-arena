@@ -22,7 +22,7 @@ last-reviewed: 2026-07-04
 
 > This page publishes the settled view of how Legendary Arena makes money. Both
 > the revenue model (VISION §Financial Sustainability) and the profile-page
-> free/paid boundary (locked 2026-07-03) are decided. This page cites them; it
+> free/paid boundary (locked 2026-07-03, amended 2026-07-04) are decided. This page cites them; it
 > defines nothing.
 
 ## Summary
@@ -146,4 +146,4 @@ this page only notes the tie-in exists.
 - [`docs/TOURNAMENT-FUNDING.md`](../docs/TOURNAMENT-FUNDING.md) — organizer-side tournament funding policy (WP-097)
 - [Profile Login](profile-login.md) — the profile/auth surface the paid layer attaches to
 - [Legendary Forge](legendary-forge.md) — the physical product behind the digital-unlock bridge
-- `C:\www\legendary-arena-com\docs\product\profile-features-free-vs-paid.md` — profile free/paid boundary **policy** (marketing repo, internal; locked 2026-07-03)
+- `C:\www\legendary-arena-com\docs\product\profile-features-free-vs-paid.md` — profile free/paid boundary **policy** (marketing repo, internal; locked 2026-07-03, amended 2026-07-04)
