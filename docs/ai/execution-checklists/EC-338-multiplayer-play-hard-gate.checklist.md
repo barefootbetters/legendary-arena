@@ -13,7 +13,8 @@
 - [ ] Scaffold also runs `pnpm --filter @legendary-arena/server test` to
       enumerate any pre-existing native-lobby fixture breakage; fold into scope.
 - [ ] Scope lock: EXACT target set = the 7 files in `Files to Produce`; any
-      other file is a FAIL — surface as a blocker (arena-client stays untouched).
+      other file **created or modified** is a FAIL — surface as a blocker,
+      approve via amendment before proceeding (arena-client stays untouched).
 - [ ] `pnpm --filter @legendary-arena/server test` green at baseline.
 
 ## Locked Values (do not re-derive)
@@ -29,8 +30,16 @@
 - Server wires; engine decides — NO game/move/phase/rule logic in the guard.
 - Guard matches ONLY POST to the two native create/join paths; everything
   else (GET list, spectating, sockets, `/api/*`) passes through untouched.
+- Session branch reuses `requireAuthenticatedSession`
+  (`apps/server/src/auth/sessionToken.logic.ts`) — the same Bearer → verifier →
+  accountResolver path WP-307 uses. NO second authentication model.
+- Secret match is value-exact AND constant-time: `crypto.timingSafeEqual` on
+  equal-length buffers, never `===` / string compare. The header *name* alone
+  grants nothing — the exact secret value is required.
 - Internal secret is process-local: generated at startup (`crypto`), never
-  sent to a client, never logged, never committed.
+  sent to a client, never logged, never committed. A restart regenerates it;
+  it is never persisted or env-configured (guard + both delegating sites share
+  the one in-memory value, so a restart rotates all atomically).
 - No new npm dependency; Node built-in `crypto` + `fetch` only.
 - Hanko stays confined (WP-099); `auth_provider` never carries `'hanko'`.
 - No engine / `G` / replay / RNG / persistence / migration surface.
@@ -47,8 +56,9 @@
 
 ## Files to Produce
 - `apps/server/src/match/nativeLobbyGuard.ts` — **new** — guard middleware + predicate.
-- `apps/server/src/match/nativeLobbyGuard.test.ts` — **new** — 401 / secret-pass /
-  session-pass / GET-untouched / unrelated-path-untouched.
+- `apps/server/src/match/nativeLobbyGuard.test.ts` — **new** — no-secret-no-session
+  401 / wrong-secret-value 401 / secret-pass / session-pass / GET-untouched /
+  unrelated-path-untouched.
 - `apps/server/src/server.mjs` — **modified** — generate secret, unshift guard, thread secret.
 - `apps/server/src/match/matchGate.routes.ts` — **modified** — internal header on delegating fetch.
 - `apps/server/src/autoplay/autoplay.mjs` — **modified** — internal header on delegating fetch.
@@ -72,3 +82,5 @@
   delegating `fetch` is missing the internal header (or the constant drifted).
 - The soft gate still bypassable (raw native create returns `200`) means the
   guard is mounted AFTER the lobby router — the PS-1 ordering fallback is needed.
+- A present-but-wrong secret header passing through (should be `401`) means the
+  guard checks header *presence*, not value — use value-exact `timingSafeEqual`.
