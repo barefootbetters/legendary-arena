@@ -12,14 +12,19 @@
 The registry-side MATCH-SETUP validator (`validateMatchSetupDocument`,
 `packages/registry/src/setupContract/`) now checks each composition field
 against its own entity id-space instead of one type-blind set built from
-`listCards().extId`. That set held no henchman-group `extId` (`flattenSet`
-emits zero henchmen), so it **false-rejected** every `henchmanGroupIds` entry
-the engine's authoritative `validateMatchSetup` accepts (e.g. `core/sentinel`),
-and — being type-blind — **false-accepted** a villain id (`core/hydra`) in the
-henchman slot. Both were confirmed by probe + scaffold. Live impact fixed:
-`apps/engine-runner` (WP-304) used this validator as its sole scenario gate and
-rejected every henchman-bearing scenario exit-2; the registry-viewer loadout
-builder's import / URL-preview / live-validation showed a false `unknown_extid`.
+`listCards().extId`. Over the **package** registry (`packages/registry/src/shared.ts`
+`flattenSet`, used by the node / engine-runner path) that set held no
+henchman-group `extId` — the package `flattenSet` emits zero henchmen — so it
+**false-rejected** a real `henchmanGroupIds` entry the engine's authoritative
+`validateMatchSetup` accepts (e.g. `core/sentinel`); and — being type-blind for
+every consumer — it **false-accepted** a villain id (`core/hydra`) in the
+henchman slot. Both were confirmed by probe + scaffold. Load-bearing impact
+fixed: `apps/engine-runner` (WP-304) used this validator as its sole scenario
+gate over the package registry, so a *correct* henchman scenario was rejected
+exit-2. The registry-**viewer** builder was **not** affected by the false-reject
+— its `flattenSet` already emits henchmen with `extId` (WP-122; D-24018), so its
+`listCards().extId` carried henchman groups; WP-306's only viewer-side effect is
+closing the false-accept (a cross-type id in the henchman slot no longer passes).
 
 The fix builds five per-field known sets — scheme/mastermind/villain/hero from
 `listCards()` by `cardType`; henchman-group from set data
@@ -29,8 +34,8 @@ import — layer boundary). `CardRegistryReader` widened (+`cardType`, +`listSet
 +`getSet`; real registries already satisfy it — only test stubs changed) per
 **D-24091**. Engine-runner fixtures corrected (`core/hydra`→`core/sentinel`).
 Closes the D-24018 "layer-2 = layer-3 id space" invariant for henchmen.
-Distinct from WP-122 (viewer `flattenSet` picker fix — still an unexecuted
-draft; does not touch the validator). Suites: registry 130/0 (setupContract
+Distinct from WP-122 (viewer `flattenSet` picker/filter fix — **Done
+2026-05-01**, commit `a5c1653`; does not touch the validator). Suites: registry 130/0 (setupContract
 21/0), engine-runner 19/0, registry-viewer 110/0 + vue-tsc 0; `pnpm -r build` 0.
 `User-Visible Surface = none` (dev/ops tooling + validation-only) → D-24026 N/A.
 
