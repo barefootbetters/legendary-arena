@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **34 / 50** entity pages.
-> Last regenerated: 2026-07-01.
+> **35 / 50** entity pages.
+> Last regenerated: 2026-07-03.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority.
 
@@ -177,6 +177,17 @@ Software tools and services used in development or operations.
   headless `simulation/` harness (bot-vs-bot play, fixture replay,
   determinism proof) into a single Node-free binary. Descriptive
   companion to `docs/ai/WINDOWS-EXE-PACKAGING-STRATEGY.md`.
+
+## Brand
+
+Brand governance and commercial-positioning references.
+
+- [Monetization Model](monetization-model.md) — How Legendary Arena
+  makes money: four fairness-safe revenue streams (canonical:
+  VISION §Financial Sustainability), the locked profile-page
+  free/paid boundary, and the Legendary Forge
+  physical→digital cosmetic-unlock bridge. Cites VISION; defines
+  nothing.
 
 ## Keyword
 
