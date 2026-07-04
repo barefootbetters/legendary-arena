@@ -47,9 +47,35 @@ const MOCK_CARDS: Array<{ extId: string; cardType: string; alwaysLeads?: readonl
 ];
 
 function makeMockRegistry() {
+  // why: D-24091 — the validator checks each field against its own entity
+  // id-space. Non-henchman ids select by `cardType` from listCards; henchman
+  // groups are NOT flat cards, so a henchman-typed fixture is surfaced via
+  // getSet().henchmen (its slug), never listCards — mirroring the real registry.
+  const henchmenByAbbr = new Map<string, Array<{ slug: string }>>();
+  const abbrs = new Set<string>();
+  for (const mockCard of MOCK_CARDS) {
+    const slashIndex = mockCard.extId.indexOf("/");
+    if (slashIndex <= 0) {
+      continue;
+    }
+    const abbr = mockCard.extId.slice(0, slashIndex);
+    abbrs.add(abbr);
+    if (mockCard.cardType === "henchman") {
+      const slug = mockCard.extId.slice(slashIndex + 1);
+      const list = henchmenByAbbr.get(abbr) ?? [];
+      list.push({ slug });
+      henchmenByAbbr.set(abbr, list);
+    }
+  }
   return {
     listCards() {
       return MOCK_CARDS;
+    },
+    listSets() {
+      return [...abbrs].map((abbr) => ({ abbr }));
+    },
+    getSet(abbr: string) {
+      return { abbr, henchmen: henchmenByAbbr.get(abbr) ?? [] };
     },
   };
 }

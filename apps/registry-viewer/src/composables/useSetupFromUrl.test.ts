@@ -54,11 +54,34 @@ function restoreWindow(): void {
   }
 }
 
-function makeRegistry(knownExtIds: string[]): CardRegistryReader {
-  // why: D-24018 — the validator looks up set-qualified ext_ids via the
-  // `extId` field (not the flat-card `key`).
+function makeRegistry(
+  cards: Array<{ extId: string; cardType: string }>,
+): CardRegistryReader {
+  // why: D-24091 — the validator checks each composition field against its own
+  // entity id-space. Scheme / mastermind / villain / hero ids select by
+  // `cardType` from listCards; henchman groups are NOT flat cards, so a
+  // henchman-typed fixture is surfaced only via getSet().henchmen (its slug),
+  // mirroring the real registry (flattenSet emits no henchmen).
+  const henchmenByAbbr = new Map<string, Array<{ slug: string }>>();
+  const abbrs = new Set<string>();
+  for (const card of cards) {
+    const slashIndex = card.extId.indexOf("/");
+    if (slashIndex <= 0) {
+      continue;
+    }
+    const abbr = card.extId.slice(0, slashIndex);
+    abbrs.add(abbr);
+    if (card.cardType === "henchman") {
+      const slug = card.extId.slice(slashIndex + 1);
+      const list = henchmenByAbbr.get(abbr) ?? [];
+      list.push({ slug });
+      henchmenByAbbr.set(abbr, list);
+    }
+  }
   return {
-    listCards: () => knownExtIds.map((extId) => ({ extId })),
+    listCards: () => cards,
+    listSets: () => [...abbrs].map((abbr) => ({ abbr })),
+    getSet: (abbr: string) => ({ abbr, henchmen: henchmenByAbbr.get(abbr) ?? [] }),
   };
 }
 
@@ -73,11 +96,11 @@ describe("useSetupFromUrl (WP-114)", () => {
 
   it("synthesizes a valid MatchSetupDocument when all five entity arrays are registry-known", () => {
     const knownExtIds = [
-      "core/midtown-bank-robbery",
-      "core/loki",
-      "core/hydra",
-      "core/sentinel",
-      "core/spider-man",
+      { extId: "core/midtown-bank-robbery", cardType: "scheme" },
+      { extId: "core/loki", cardType: "mastermind" },
+      { extId: "core/hydra", cardType: "villain" },
+      { extId: "core/sentinel", cardType: "henchman" },
+      { extId: "core/spider-man", cardType: "hero" },
     ];
     setSearch(
       "?schemeId=core/midtown-bank-robbery" +
@@ -110,10 +133,10 @@ describe("useSetupFromUrl (WP-114)", () => {
     // unknown_extid surfaces with the canonical path
     // "composition.villainGroupIds[0]".
     const knownExtIds = [
-      "core/scheme-known",
-      "core/mastermind-known",
-      "core/henchman-known",
-      "core/hero-known",
+      { extId: "core/scheme-known", cardType: "scheme" },
+      { extId: "core/mastermind-known", cardType: "mastermind" },
+      { extId: "core/henchman-known", cardType: "henchman" },
+      { extId: "core/hero-known", cardType: "hero" },
     ];
     setSearch(
       "?schemeId=core/scheme-known" +
@@ -159,7 +182,7 @@ describe("useSetupFromUrl (WP-114)", () => {
     // original URL. The six constants are imported live from the editor
     // composable and compared against the preview's synthesized document.
     setSearch("?schemeId=core/scheme-foo");
-    const { previewDocument } = useSetupFromUrl(makeRegistry(["core/scheme-foo"]));
+    const { previewDocument } = useSetupFromUrl(makeRegistry([{ extId: "core/scheme-foo", cardType: "scheme" }]));
     const document = previewDocument.value;
     assert.notEqual(document, null);
     if (document === null) {
@@ -176,7 +199,7 @@ describe("useSetupFromUrl (WP-114)", () => {
 
   it("synthetic envelope uses fixed-string defaults that satisfy the determinism contract", () => {
     setSearch("?schemeId=core/scheme-foo");
-    const { previewDocument } = useSetupFromUrl(makeRegistry(["core/scheme-foo"]));
+    const { previewDocument } = useSetupFromUrl(makeRegistry([{ extId: "core/scheme-foo", cardType: "scheme" }]));
     const document = previewDocument.value;
     assert.notEqual(document, null);
     if (document === null) {

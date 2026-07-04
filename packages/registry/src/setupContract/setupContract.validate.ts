@@ -209,46 +209,45 @@ export function validateMatchSetupDocument(
     return { ok: false, errors };
   }
 
-  // ── Step 2 — registry ext_id existence checks ─────────────────────────
-  // why: D-24018 — build the known-id set from each card's `extId` (the
-  // set-qualified "{setAbbr}/{slug}" form), NOT its flat-card `key`. The
-  // engine's authoritative validator
-  // (packages/game-engine/src/matchSetup.validate.ts) rejects flat-card keys
-  // and bare slugs (D-10014) and accepts only the qualified form; building
-  // this set from `key` previously green-lit loadouts the engine then threw
-  // on (HTTP 500 at match creation). Reading `extId` makes a document
-  // accepted here accepted by the engine too. Built with for...of (never
-  // .reduce() — .claude/rules/code-style.md §Patterns to Avoid). Note: the
-  // engine uses per-field qualified sets (stricter cross-type isolation);
-  // this single global set is a necessary-but-looser superset, so it never
-  // rejects an engine-valid id.
-  const cards = registry.listCards();
-  const knownExtIds = new Set<string>();
-  for (const card of cards) {
-    knownExtIds.add(card.extId);
-  }
+  // ── Step 2 — registry ext_id existence checks (per-field id-space) ────
+  // why: D-24091 — each composition field is checked against its OWN entity
+  // id-space, mirroring the authoritative validator's per-field isolation.
+  // A single global `extId` set was wrong in two directions (both observed):
+  // it FALSE-REJECTED every henchman group (henchman ids are not flat cards —
+  // flattenSet emits none — so no henchman `extId` was ever in the set), and,
+  // being type-blind, it FALSE-ACCEPTED a villain id placed in the henchman
+  // slot. D-24018's invariant is that this validator accepts exactly the id
+  // space the authoritative one accepts; per-field sets restore that.
+  // Scheme / mastermind / villain / hero ids are emitted onto `extId` and
+  // select by `cardType`; henchman-group ids derive from set data. All sets
+  // built with for...of (never .reduce() — .claude/rules/code-style.md).
+  const knownSchemes = buildKnownExtIdsByCardType(registry, "scheme");
+  const knownMasterminds = buildKnownExtIdsByCardType(registry, "mastermind");
+  const knownVillainGroups = buildKnownExtIdsByCardType(registry, "villain");
+  const knownHeroes = buildKnownExtIdsByCardType(registry, "hero");
+  const knownHenchmanGroups = buildKnownHenchmanGroupExtIds(registry);
 
   const composition = parsed.data.composition;
 
-  if (!knownExtIds.has(composition.schemeId)) {
+  if (!knownSchemes.has(composition.schemeId)) {
     errors.push({
       field: "composition.schemeId",
       code: "unknown_extid",
-      message: `The composition.schemeId value "${composition.schemeId}" does not match any known card ext_id in the registry.`,
+      message: `The composition.schemeId value "${composition.schemeId}" does not match any known scheme ext_id in the registry.`,
     });
   }
 
-  if (!knownExtIds.has(composition.mastermindId)) {
+  if (!knownMasterminds.has(composition.mastermindId)) {
     errors.push({
       field: "composition.mastermindId",
       code: "unknown_extid",
-      message: `The composition.mastermindId value "${composition.mastermindId}" does not match any known card ext_id in the registry.`,
+      message: `The composition.mastermindId value "${composition.mastermindId}" does not match any known mastermind ext_id in the registry.`,
     });
   }
 
-  checkArrayExtIds("composition.villainGroupIds", composition.villainGroupIds, knownExtIds, errors);
-  checkArrayExtIds("composition.henchmanGroupIds", composition.henchmanGroupIds, knownExtIds, errors);
-  checkArrayExtIds("composition.heroDeckIds", composition.heroDeckIds, knownExtIds, errors);
+  checkArrayExtIds("composition.villainGroupIds", "villain group", composition.villainGroupIds, knownVillainGroups, errors);
+  checkArrayExtIds("composition.henchmanGroupIds", "henchman group", composition.henchmanGroupIds, knownHenchmanGroups, errors);
+  checkArrayExtIds("composition.heroDeckIds", "hero", composition.heroDeckIds, knownHeroes, errors);
 
   if (errors.length > 0) {
     return { ok: false, errors };
@@ -291,12 +290,70 @@ export function validateMatchSetupDocument(
 }
 
 /**
+ * Builds the set of set-qualified ext_ids for one flat-card cardType.
+ *
+ * Scheme / mastermind / villain-group / hero ext_ids are emitted by
+ * flattenSet onto `FlatCard.extId`, so their known set derives directly from
+ * `listCards()` filtered by `cardType`.
+ */
+// why: D-24091 — per-field known set; the field's own entity type only.
+function buildKnownExtIdsByCardType(
+  registry: CardRegistryReader,
+  cardType: string,
+): Set<string> {
+  const known = new Set<string>();
+  for (const card of registry.listCards()) {
+    if (card.cardType === cardType) {
+      known.add(card.extId);
+    }
+  }
+  return known;
+}
+
+/**
+ * Builds the set of set-qualified henchman-group ext_ids from set data.
+ *
+ * Henchman groups are NOT emitted as flat cards (flattenSet produces none),
+ * so their ids are derived from each loaded set's `henchmen[].slug` as
+ * `${abbr}/${slug}`. This re-derives the same slug grammar the authoritative
+ * validator uses; it is duplicated here (not imported) because this package
+ * must not depend on the engine package (layer boundary).
+ */
+// why: D-24091 / D-10014 — henchman-group id-space derives from set data,
+// mirroring the authoritative henchman known-set builder.
+function buildKnownHenchmanGroupExtIds(registry: CardRegistryReader): Set<string> {
+  const known = new Set<string>();
+  for (const setEntry of registry.listSets()) {
+    const setData = registry.getSet(setEntry.abbr);
+    if (!setData || typeof setData !== "object") {
+      continue;
+    }
+    const henchmen = (setData as { henchmen?: unknown }).henchmen;
+    if (!Array.isArray(henchmen)) {
+      continue;
+    }
+    for (const entry of henchmen) {
+      if (entry && typeof entry === "object") {
+        const slug = (entry as { slug?: unknown }).slug;
+        if (typeof slug === "string" && slug.length > 0) {
+          known.add(`${setEntry.abbr}/${slug}`);
+        }
+      }
+    }
+  }
+  return known;
+}
+
+/**
  * Pushes an `unknown_extid` error for every entry in `values` whose string
  * is not present in `knownExtIds`. The field path uses bracket notation to
  * identify the exact failing element (e.g., `composition.villainGroupIds[2]`).
+ * `entityKind` names the field's entity type in the message (e.g.,
+ * "villain group") so a cross-type id is reported against the right space.
  */
 function checkArrayExtIds(
   fieldPrefix: string,
+  entityKind: string,
   values: string[],
   knownExtIds: Set<string>,
   errors: MatchSetupValidationError[],
@@ -310,7 +367,7 @@ function checkArrayExtIds(
       errors.push({
         field: `${fieldPrefix}[${index}]`,
         code: "unknown_extid",
-        message: `The ${fieldPrefix}[${index}] value "${extId}" does not match any known card ext_id in the registry.`,
+        message: `The ${fieldPrefix}[${index}] value "${extId}" does not match any known ${entityKind} ext_id in the registry.`,
       });
     }
   }
