@@ -1,6 +1,6 @@
 # WP-225 — Hero Draw Markup Corpus Sweep (Card Data + Tooling)
 
-**Status:** Draft (2026-06-08)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Card Data + Offline Tooling (no engine changes)
 **Dependencies:** WP-216 (`apply-hero-ability-markers.mjs` + `hero-ability-markers.json` baseline). No hard engine dependency — the `draw` executor already ships (WP-021/WP-215). May execute in parallel with any other hero-ability WP.
 

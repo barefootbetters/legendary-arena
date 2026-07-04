@@ -1,6 +1,6 @@
 # WP-049 — PAR Simulation Engine
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Tooling / Simulation (Out-of-Band)
 **Dependencies:** WP-036, WP-048
 

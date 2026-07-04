@@ -1,6 +1,6 @@
 # WP-111 — UIState Card Display Projection (Engine-Side)
 
-**Status:** Draft (pre-flight 2026-04-29 PS-1..PS-10 applied; ready
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 for promotion to Ready pending re-verdict per pre-flight Authorized
 Next Step section)
 **Primary Layer:** Game Engine (`packages/game-engine/**`)

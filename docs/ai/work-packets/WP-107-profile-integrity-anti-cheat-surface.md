@@ -1,6 +1,6 @@
 # WP-107 — Profile Integrity / Anti-Cheat Surface
 
-**Status:** Draft — **READY TO EXECUTE** (2026-05-23). Phase 1 close-out gates all green post-Option-A RS-1 resolution: pre-flight `01.4` re-run = `READY TO EXECUTE`; copilot check `01.7` = `PASS` (CONFIRM); lint gate `00.3` self-review = `PASS` (all 38 Final Gate conditions). Structural dependency on WP-159 cleared 2026-05-17 via commit `295eec6` / PR #85. See §Lint Self-Review, §Pre-Flight Verdict (initial + re-run), and §Copilot Check Verdict blocks below. Session prompt at [`docs/ai/invocations/session-wp107-profile-integrity-anti-cheat-surface.md`](../invocations/session-wp107-profile-integrity-anti-cheat-surface.md) needs §Pre-Execution Checks reconciled against Option A scope (§G removal) before execution opens.
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Server (`apps/server/src/profile/admin/**`, `apps/server/src/identity/**`) + Database (`data/migrations/015_*`) + Reference (`docs/ai/REFERENCE/api-endpoints.md`)
 **Dependencies:**
 - WP-052 (`legendary.players`; `AccountId` brand)

@@ -1,6 +1,6 @@
 # WP-145 — Architecture Inventory ↔ Engineering Wiki Integration
 
-**Status:** Draft (drafted 2026-05-09; not yet executed; lint gate not yet
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 invoked — execution requires `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md`
 pass; not yet added to `WORK_INDEX.md`).
 **Primary Layer:** Tooling pipeline + `apps/wiki-viewer/` build pipeline.

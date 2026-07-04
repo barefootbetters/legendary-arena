@@ -1,6 +1,6 @@
 # WP-112 — Session Token Validation Middleware
 
-**Status:** Draft (drafted 2026-05-02; lint-gate self-review **PASS** — see §Lint Self-Review at the foot)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Server (`apps/server/src/auth/**` — sibling to `apps/server/src/identity/**`)
 **Dependencies:** WP-099 §A "Session Validation Middleware" (policy contract, F-1..F-7 Future-Auth Gates); WP-052 (identity model: `AccountId`, `PlayerAccount`, `authProvider`, `authProviderId`, `legendary.players` table)
 **Renumbered from:** "WP-100" per D-10002 (the WP-100 slot was reassigned to Interactive Gameplay Surface on 2026-04-26)

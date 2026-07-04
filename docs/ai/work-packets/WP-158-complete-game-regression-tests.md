@@ -1,6 +1,6 @@
 # WP-158 — Complete-Game Regression Tests (Seed-Faithful Fixture Harness)
 
-**Status:** Draft (Needs review)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine (`packages/game-engine/src/test/fixtures/**`) + scripts
 **Dependencies:** WP-013, WP-027, WP-036, WP-079, WP-080 (all Done)
 **EC:** [EC-172](../execution-checklists/EC-172-complete-game-regression-tests.checklist.md)

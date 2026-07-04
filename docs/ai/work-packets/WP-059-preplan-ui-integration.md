@@ -1,6 +1,6 @@
 # WP-059 — Pre-Plan UI Integration (Store, Notification, Step Display)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Client / Pre-Planning Integration (`apps/arena-client/**`, consuming `packages/preplan/**`)
 **Dependencies:** WP-028 (UIState contract), WP-056 (PrePlan state model), WP-057 (sandbox + speculative ops), WP-058 (disruption pipeline), WP-061 (arena-client bootstrap), WP-065 (Vue SFC test transform)
 

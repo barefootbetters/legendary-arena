@@ -1,6 +1,6 @@
 # WP-141 — Physical Card Phase 2: Engine + Viewer Consumer Migration
 
-**Status:** Draft (drafted 2026-05-08; not yet executed; lint gate not yet
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 invoked — execution requires `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md`
 pass).
 **Primary Layer:** Game Engine (`packages/game-engine/src/setup/`,

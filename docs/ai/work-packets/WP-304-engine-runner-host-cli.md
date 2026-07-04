@@ -1,6 +1,6 @@
 # WP-304 — Engine-Runner Host + CLI (Headless Simulation Runner; Phase 1 of the Windows Engine Exe)
 
-**Status:** Draft — ready to execute (drafted 2026-07-01) · **Standard two-session lane** (D-24028 — NOT lightweight: net-new app + a new architectural layer entry (import-rules row) + a reserved D-entry)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** App (new `apps/engine-runner`) — a host at the same layer as `apps/server`; consumes the engine's Runtime-Safe surface + the registry loader. No engine or registry source changes.
 **User-Visible Surface:** none — developer/ops tooling (a Node CLI). Not a player-facing surface; no `play.legendary-arena.com` payoff.
 **Dependencies:** The engine's public simulation surface — `runSimulation`, `createCompetentHeuristicPolicy`, `SimulationConfig`, `SimulationResult`, `AIPolicy` (WP-036 / WP-049, already re-exported from `@legendary-arena/game-engine`) ✅; the registry local loader `createRegistryFromLocalFiles` (`@legendary-arena/registry`, used by `apps/server`) ✅; `MatchSetupConfig` + the registry setup contract (`@legendary-arena/registry/setupContract`) ✅; the design authority `docs/ai/WINDOWS-EXE-PACKAGING-STRATEGY.md` (Target A, Phase 1).

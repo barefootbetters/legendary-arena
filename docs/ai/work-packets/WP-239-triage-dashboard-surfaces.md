@@ -1,6 +1,6 @@
 # WP-239 — Triage Dashboard Surfaces (Inspection Findings + Handoff Lifecycle on the Pipeline Inspector Lane)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Dashboard (`apps/dashboard/**`) only. No server, engine, registry, or migration change; no new endpoint; no new npm dependency. Read-only consumption of two already-`Wired` GET endpoints.
 **Dependencies:** WP-231 ✅ (`GET /api/inspection/latest` + `inspection_reports`), WP-232 ✅ (`GET /api/handoffs/latest` + `finding_handoffs`), WP-233 ✅ (closed-loop verify transitions recorded on `finding_handoffs`), WP-230 ✅ (Pipeline page + Inspector lane + sweep-item injection precedent), WP-206 ✅ (`isLiveModeEnabled` LIVE-fetch gate), WP-211 ✅ (layer-safe type drift-guard pattern). Parallel-safe with WP-238 (both reuse the WP-206 gate independently; this WP defines its own object-envelope fetchers).
 

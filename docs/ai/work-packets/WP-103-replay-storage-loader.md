@@ -1,6 +1,6 @@
 # WP-103 — Server-Side Replay Storage & Loader
 
-**Status:** Draft (lint-gate self-review PASS; pre-flight pending)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Server / Replay Storage
 **Version:** 1.0
 **Last Updated:** 2026-04-25

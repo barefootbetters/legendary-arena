@@ -1,6 +1,6 @@
 # WP-098 — Funding Surface Gate Trigger (00.3 §20)
 
-**Status:** Draft (drafted 2026-04-26; lint-gate self-review PASS; pre-flight pending; **blocked on WP-097 execution** — D-9701 must exist in `docs/ai/DECISIONS.md` before §20 can cite it).
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Governance / Policy (docs-only; lint-gate enforcement)
 **Dependencies:** **Hard dep on WP-097** (D-9701 must land first; §20 cites D-9701 + the WP-097 §F G-1..G-7 gate items as the canonical authority). No code deps.
 

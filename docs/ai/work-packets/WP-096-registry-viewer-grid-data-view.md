@@ -1,6 +1,6 @@
 # WP-096 — Registry Viewer: Grid Data View Mode
 
-**Status:** Draft (authored 2026-04-24; awaiting user review and lint-gate sign-off)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Client UI (`apps/registry-viewer/`)
 **Dependencies:**
 - **Hard:** WP-066 (image-to-data view toggle — established `useCardViewMode`,

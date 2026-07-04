@@ -1,6 +1,6 @@
 # WP-264 — Parameterized Simulation Turn Cap (`maxTurns` option; WP-265 Enabler)
 
-**Status:** Draft — pending review. Pre-flight READY; copilot CONFIRM; lint 21/21 (§Pre-Flight & Copilot Verdicts).
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine (`packages/game-engine/src/simulation/**`). Single layer, single package — a small additive parameterization.
 **User-Visible Surface:** `none — infrastructure`. This adds an opt-in simulation parameter with a behavior-preserving default; a player cannot perceive it. D-24026 live-verification is **N/A** (STATUS records "No user-observable change — infrastructure only").
 **Hard Dependencies:** WP-193 ✅ (`simulateOneGameAndCaptureMoves` + the per-turn loop `runPerTurnLoop`). WP-194 ✅ (`sweepSetupMatrix`). WP-036 ✅ (`runSimulation` + the `MAX_TURNS_PER_GAME` cap this parameterizes).

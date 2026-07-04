@@ -1,6 +1,6 @@
 # WP-133 — Stripe Checkout Session Creation & Webhook Ingestion (No Fulfillment)
 
-**Status:** Draft (drafted 2026-05-03; lint-gate self-review **PASS** — see §Lint Self-Review at foot)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Server (`apps/server/src/billing/**`; `data/migrations/012`)
 **Dependencies:** WP-052 (`AccountId` brand + `legendary.players` table + `Result<T>` + `DatabaseClient` contracts); WP-112 (`SessionVerifier` interface + `requireAuthenticatedSession` orchestrator + `AccountResolver` caller-injected pattern); WP-115 (long-lived `pg.Pool` lifecycle anchor at `apps/server/src/server.mjs`); WP-118 (HTTP API catalog + `D-11804` update obligation); WP-131 (production wiring of `requireAuthenticatedSession`'s deps — required so `POST /api/billing/checkout-session` is genuinely authenticated rather than fail-closed `'session_verifier_not_configured'`); **WP-132 (entitlement substrate — `legendary.entitlements` table + `EntitlementKey` closed union; the price-id-to-entitlement-key allowlist in WP-133 names `EntitlementKey` values WP-132 locked)**.
 

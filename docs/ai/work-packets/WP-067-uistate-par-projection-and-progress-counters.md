@@ -1,6 +1,6 @@
 # WP-067 — UIState Projection of PAR Scoring & Progress Counters
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine (UI projection)
 **Dependencies:** WP-028 (UIState contract), WP-048 (PAR scoring engine types)
 

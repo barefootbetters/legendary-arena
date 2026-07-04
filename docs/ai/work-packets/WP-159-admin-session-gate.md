@@ -1,6 +1,6 @@
 # WP-159 — Admin Session Gate (Session-Based Admin Authentication)
 
-**Status:** Draft (drafted 2026-05-17; lint-gate self-review pending)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Server (`apps/server/src/auth/**`, `apps/server/src/identity/**`) + Database (`data/migrations/014_*`)
 **Dependencies:**
 - WP-052 (`legendary.players` table; `AccountId` brand; `Result<T>` shape)

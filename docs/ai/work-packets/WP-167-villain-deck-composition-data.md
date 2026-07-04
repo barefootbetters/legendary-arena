@@ -1,6 +1,6 @@
 # WP-167 — Villain Deck Composition Data (Registry)
 
-**Status:** Draft — BLOCKED pending SPEC commit (D-16701, D-16702, D-16703) and human review
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Registry / Schema + Card Data Pipeline (`scripts/convert-cards/`)
 **Dependencies:** none blocking. Supersedes the count assumptions in D-1411 and D-1412 (see `## Decisions to Record`).
 

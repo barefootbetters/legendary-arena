@@ -1,6 +1,6 @@
 # WP-281 — Mechanic Coverage Dashboard: Condition-Gate Status Display
 
-**Status:** Drafted 2026-06-23  
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Baseline:** `origin/main` at commit `1d411682` (governance draft commit)  
 **Paired with:** EC-312
 

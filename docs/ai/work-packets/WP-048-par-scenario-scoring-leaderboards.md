@@ -1,6 +1,6 @@
 # WP-048 — PAR Scenario Scoring & Leaderboards
 
-**Status:** Draft — Amended 2026-04-17 (pre-flight + copilot resolution; see §Amendments)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine (Scoring) + Server (Leaderboard Storage)
 **Dependencies:** WP-020, WP-027, WP-030
 

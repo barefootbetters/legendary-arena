@@ -1,6 +1,6 @@
 # WP-219 — Hero Reveal Cost-Attack + Odd-Draw Executors (Engine + Data)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine + Card Data + Offline Tooling
 **Dependencies:** WP-218 (reveal-ko-or-draw executor + D-21801..D-21803 active)
 

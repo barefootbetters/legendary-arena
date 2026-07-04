@@ -1,6 +1,6 @@
 # WP-272 — Empowered: Conditional-Prefix Class-Gated Core Form (Parser-Only; Second Empowered Form)
 
-**Status:** Draft — pending review.
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine — parser only (`packages/game-engine/src/setup/heroAbility.setup.ts` + tests) + the Lever-3 coverage/ledger instruments (`scripts/coverage/**` regenerated, `docs/ai/coverage/**`).
 **Dependencies:** WP-267 ✅ / D-24044 ✅ (the parameterized Empowered composition + the anchored-tail parser branch + `buildEmpoweredComposition` this extends), WP-268 ✅ / D-24045 ✅ (the parser `resolvedMarkers` provenance field the new resolve path also pushes to), WP-256 ✅ / D-24029..31 ✅ (the `hook.primitiveEffects` executor loop that runs inside the conditions-passed gate), WP-179 ✅ (the `heroClassMatch` condition the retained prefix gate reuses), WP-250 ✅ (the coverage gate this regenerates), WP-265 ✅ (the competent-play `runtime-observed-hollows.json` sweep this regenerates), the hero mechanic ledger (`ledger:heroes:check`).
 **Baseline:** `origin/main` @ `a54726b7`.

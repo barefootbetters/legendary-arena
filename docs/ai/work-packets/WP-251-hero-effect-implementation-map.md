@@ -1,6 +1,6 @@
 # WP-251 — Hero Effect ImplementationMap (Open Dispatch, Behavior-Preserving)
 
-**Status:** Draft — pending review
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine / Implementation
 **Dependencies:** WP-021 ✅, WP-022 ✅, WP-023 ✅ (hero ability hooks + `executeSingleEffect`), WP-009B ✅ (the ImplementationMap pattern this mirrors), WP-247 ✅, WP-248 ✅ (latest hero keywords), WP-250 ✅ (the coverage gate that guards this refactor)
 

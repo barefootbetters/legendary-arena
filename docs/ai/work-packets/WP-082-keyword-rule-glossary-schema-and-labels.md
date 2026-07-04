@@ -1,6 +1,6 @@
 # WP-082 — Keyword & Rule Glossary Schema, Label, and PDF Page Reference
 
-**Status:** Draft (awaiting pre-flight lint + author approval)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Registry (`packages/registry/src/schema.ts`) + Registry Viewer (`apps/registry-viewer/src/**`) + Content / Data (`data/metadata/`)
 **Schema Version:** 1
 **Last Updated:** 2026-04-21

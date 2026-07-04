@@ -1,6 +1,6 @@
 # WP-169 — Scheme Villain-Deck Twist & Bystander Count Curation (Pipeline Data)
 
-**Status:** Draft — pending pre-flight + copilot gates and human review
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Registry / Card Data Pipeline (`scripts/convert-cards/`)
 **Dependencies:** WP-167 (complete) — provides the optional `SchemeSchema.villainDeckTwistCount` / `villainDeckBystanderCount` fields (D-16702), the `inputs/scheme-deck-counts.json` input file, and the `applySchemeDeckCounts` converter wiring + loud-fail. Does **not** depend on WP-168.
 

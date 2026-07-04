@@ -1,6 +1,6 @@
 # WP-104 — Owner Profile Data Model & `/me` Edit
 
-**Status:** Draft (drafted 2026-05-02; lint-gate self-review **PASS** — see §Lint Self-Review at foot)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Server (`apps/server/src/profile/**` extension; `data/migrations/009`) + Arena Client (`apps/arena-client/src/{pages,lib/api}/`, `App.vue`)
 **Dependencies:** WP-102 (`apps/server/src/profile/` module + page conventions; landed 2026-04-28 at Commit A `369c0a4`); WP-112 (session-token validation orchestrator + `requireAuthenticatedSession(req, options)` contract; landed 2026-05-02 at `EC-112:`); WP-052 (`legendary.players` + `AccountId` + `Result<T>` + `DatabaseClient` contracts); WP-101 (handle claim flow — `findAccountByHandle` consumed by the future surface-integration WP that joins owner-edit fields onto the public profile; WP-104 itself does NOT modify the public profile)
 

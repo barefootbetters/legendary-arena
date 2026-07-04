@@ -1,6 +1,6 @@
 # WP-240 — Roadmap Count-Table Generator (Derive the Count Table from WORK_INDEX × Mindmap Membership; Cron Auto-PR; Orphan-Fail Gate)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Shared Tooling / INFRA (`scripts/**` + `.github/workflows/**`) — reads two governed docs, regenerates one marker-bounded section of `docs/05-ROADMAP-MINDMAP.md`. No engine/registry/server/app runtime, no package dependency, no migration.
 **Dependencies:** None hard. Mirrors the shipped architecture-inventory cron pattern (`scripts/architecture-inventory.mjs` + `.github/workflows/architecture-inventory.yml`, WP-139 / D-14501). `docs/05-ROADMAP-MINDMAP.md` + `docs/ai/work-packets/WORK_INDEX.md` already exist. Baseline `origin/main` at draft: `d0623dd`.
 

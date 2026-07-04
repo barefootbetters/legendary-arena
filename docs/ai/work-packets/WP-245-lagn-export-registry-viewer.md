@@ -1,6 +1,6 @@
 # WP-245 — LAGN Export in Registry Viewer Loadout Tab
 
-**Status:** Draft (pending review)  
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Web UI / Registry Viewer  
 **Dependencies:** WP-244 ✅ (LAGN spec + `@legendary-arena/lagn` published on NPM)  
 **Execution Category:** Feature Implementation (browser UI + export logic)  

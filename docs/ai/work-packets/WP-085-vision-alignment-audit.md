@@ -1,6 +1,6 @@
 # WP-085 — Vision Alignment Audit (Detection, Classification & Gating)
 
-**Status:** Draft (drafted 2026-04-22; pre-flight pending)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Governance / Audit Tooling
 **Dependencies:** None (builds on the audit scaffold landed at INFRA `24996a9` and the §17 gate landed at SPEC `0689406`)
 

@@ -1,6 +1,6 @@
 # WP-101 — Handle Claim Flow & Global Uniqueness
 
-**Status:** Draft (lint-gate self-review PASS; pre-flight pending)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Server / Identity
 **Dependencies:** WP-052
 

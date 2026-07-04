@@ -1,6 +1,6 @@
 # WP-053a — PAR Artifact Carries Full `ScenarioScoringConfig` (Predecessor to WP-053)
 
-**Status:** Drafted 2026-04-25; A0 SPEC bundle landing this WP + D-5306 + D-5306a/b/c/d
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Phase:** Server / PAR Contract Extension
 **Hard-deps:** WP-048 (`ScenarioScoringConfig` type locked) + WP-049 (PAR aggregator) + WP-050 (PAR artifact storage) + WP-051 (server gate)
 **Blocks:** WP-053

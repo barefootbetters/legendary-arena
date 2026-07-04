@@ -1,6 +1,6 @@
 # WP-161 — Arena Client API Base URL Surfacing
 
-**Status:** Drafted 2026-05-18 (single-session draft + execute pattern; surfaced as a hard prerequisite for WP-160's smoke verification, scoped separately rather than folded inline because EC-174 is `Done`).
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** App / Client (`apps/arena-client/src/lib/api/**`)
 **Dependencies:** WP-104, WP-106, WP-108, WP-110, WP-132, WP-133, WP-160 — all ✅.
 **Unblocks:** End-to-end exercise of every authenticated `/api/me/*` HTTP path from the deployed arena-client SPA. WP-160's smoke verification (operator-side, post-merge) is the immediate first user.

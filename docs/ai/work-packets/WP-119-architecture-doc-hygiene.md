@@ -1,6 +1,6 @@
 # WP-119 — Architecture Doc Hygiene
 
-**Status:** Draft (stub — pre-lint, pre-pre-flight)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Governance / Documentation (no code; pure doc edits)
 **Dependencies:** None — these are independent low-risk doc cleanups.
 

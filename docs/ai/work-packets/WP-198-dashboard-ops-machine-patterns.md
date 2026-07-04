@@ -1,6 +1,6 @@
 # WP-198 — Dashboard "Ops Machine" Patterns (Cadence Horizons, On/Off-Track Chip, Vision Card, Governance Throughput, Recent Activity)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Client (`apps/dashboard`)
 **Dependencies:** WP-157 (Dashboard Scaffold) — Done 2026-05-16; WP-162 (UI Polish + Daily Execution) — Done 2026-05-21
 **EC:** Split into EC-224a (Sub-tasks A + B + C — UI: cadence horizons, status chip, vision card) + EC-224b (Sub-tasks D + E + F — build-time governance snapshot generator + throughput / activity widgets + shared support). EC-224a MUST land on `main` before EC-224b opens; `OverviewPage.vue` is touched by both ECs with non-overlapping inserts.

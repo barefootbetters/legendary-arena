@@ -1,6 +1,6 @@
 # WP-214 — Villain Hero Capture & Dynamic Attack Resolution (Engine + Data)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine + Card Data
 **Dependencies:** WP-185 (villain effect infrastructure), WP-187 (effect-marker enrichment tooling), WP-191 (ext_id grammar reconciliation), WP-202 (magnitude-N vocabulary precedent), WP-200 (notable event log)
 

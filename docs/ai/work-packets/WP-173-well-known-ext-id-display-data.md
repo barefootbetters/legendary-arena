@@ -1,6 +1,6 @@
 # WP-173 — Well-Known Ext_id Display Data Coverage (Pile + Starting Cards)
 
-**Status:** Drafted
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine / Setup (`packages/game-engine/src/setup/`)
 **Dependencies:** WP-172 ✅ (introduced D-17201 tiered display resolution + structural reader pattern this WP extends), WP-111 / EC-118 ✅ (introduced `G.cardDisplayData`)
 

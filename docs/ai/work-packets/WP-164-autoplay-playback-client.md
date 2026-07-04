@@ -1,6 +1,6 @@
 # WP-164 — Autoplay Playback Controls (Client)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Client (`apps/arena-client/src/`)
 **Dependencies:** WP-163 (autoplay server controls) — Done 2026-05-19; WP-165
 (autoplay status endpoint) — Done 2026-05-19 (`b39f17b`); WP-161

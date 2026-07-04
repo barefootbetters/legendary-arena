@@ -1,6 +1,6 @@
 # WP-157 — Dashboard Scaffold: Monorepo Integration + PrimeVue
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Client / new app (`apps/dashboard`)
 **Dependencies:** None (parallel-safe with WP-153–156)
 **EC:** EC-168

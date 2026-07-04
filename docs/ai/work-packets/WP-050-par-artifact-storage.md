@@ -1,6 +1,6 @@
 # WP-050 — PAR Artifact Storage & Indexing
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Tooling / Data (Out-of-Band)
 **Dependencies:** WP-049, WP-048
 

@@ -1,6 +1,6 @@
 # WP-236 — Engine-Authoritative Start-of-Turn Draw (Auto-Draw + Once-Per-Turn Guard, Retire Draw Scaffold)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine / Implementation (cross-layer: Server autoplay + Arena-Client play surface)
 **Dependencies:** WP-007A (TURN_STAGES + drift arrays), WP-008A (core move validation + stage gating), WP-009B (rule-effect pipeline incl. `drawCards` effect), WP-100 (click-to-play surface + Draw scaffold), WP-158 (complete-game regression fixture), WP-212 (once-per-turn guard precedent for `revealVillainCard`)
 

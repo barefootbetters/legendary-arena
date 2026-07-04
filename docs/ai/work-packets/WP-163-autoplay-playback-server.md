@@ -1,6 +1,6 @@
 # WP-163 — Autoplay Playback Controls (Server)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Server (`apps/server/src/autoplay/`)
 **Dependencies:** WP-090 (Socket.IO transport), WP-118 (HTTP API Surface Catalog, D-11804) — both Done
 **Paired with:** WP-164 (Autoplay Playback Controls — Client). WP-164 hard-depends on

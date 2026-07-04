@@ -1,6 +1,6 @@
 # WP-242 — Villain Fight KO-Hero Player Choice: Engine (Park → Resolve, Bot Auto-Resolve)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine (+ Simulation)
 **Dependencies:** WP-185 (villain ability executor + `koHeroCurrentPlayer`) ✅, WP-191 (ext_id grammar — hooks resolve end-to-end) ✅, WP-220 (`PendingHeroChoice` / `resolveHeroChoice` precedent) ✅, WP-236 (sim move-stream + sentinel-regen precedent) ✅
 **Paired with:** WP-243 — Villain Fight KO-Hero Player Choice: UX (UIState projection + client prompt). **Co-release lock:** WP-242 must NOT be deployed to `play.legendary-arena.com` ahead of WP-243. Without the client prompt, a live human game whose Fight KO has ≥2 eligible heroes soft-locks (the board freezes on a choice the client cannot send). Bots and the sweep are unaffected (they auto-resolve in-engine). See §Out of Scope and §Risk Review.

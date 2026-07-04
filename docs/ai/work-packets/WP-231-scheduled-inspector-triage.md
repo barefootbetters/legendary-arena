@@ -1,6 +1,6 @@
 # WP-231 — Scheduled Inspector Triage (LLM Agent → `inspection_reports` Storage + Nightly CI Invocation)
 
-**Status:** Draft
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Server (`apps/server/src/inspection/`) + Migration (`data/migrations/`) + Build/CI tooling (`scripts/inspection-fetch.mjs`, `scripts/inspection-submit.mjs`, `scripts/inspection-triage-prompt.md`, `.github/workflows/inspection-nightly.yml`, root `package.json` scripts)
 **Dependencies:** WP-209 (sweep server storage + endpoints) ✅, WP-210 (sweep composable) ✅, WP-230 (Pipeline page sweep integration) ✅, WP-115 (Postgres bootstrap) ✅, WP-133 + WP-205 (route+logic+types module pattern) ✅, WP-118 (API catalog) ✅
 

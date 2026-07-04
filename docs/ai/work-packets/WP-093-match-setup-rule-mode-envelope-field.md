@@ -1,6 +1,6 @@
 # WP-093 — Match-Setup Rule-Mode Envelope Field (Governance)
 
-**Status:** Draft (awaiting review)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Governance / Reference Documentation
 **Dependencies:** None (governance-only prerequisite for WP-091 / WP-092)
 **Planning alias:** "WP-090.5" (as referenced in WP-091/092 planning notes)

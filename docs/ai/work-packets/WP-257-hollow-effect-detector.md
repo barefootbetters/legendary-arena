@@ -1,6 +1,6 @@
 # WP-257 — Hollow Effect Detector (Engine Runtime Invariant; D-24033 + D-24034; Foundation for the Hollow-Effect Reporting Loop)
 
-**Status:** Draft — pending review. Pre-flight READY (gates below).
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Game Engine (`packages/game-engine/src/{diagnostics,hero,villain,setup,rules}/**`). Single layer; no UI/registry/server surface.
 **User-Visible Surface:** `none — infrastructure` — the detector emits a `G.messages` line (which already projects to `UIState.log`) and a runtime-only `G.diagnostics.hollowEffects` channel; the operator-facing surfaces (`/debug`, `/coverage`, the architect lane) are WP-258/259/260. STATUS.md at close states "No user-observable feature — infrastructure only; a hollow-effect log line may appear for a card that already did nothing."
 **Dependencies:** `DESIGN-HOLLOW-EFFECT-DETECTION.md` (the design spine this implements — §2 invariant, §3 boundary, §4 seams, §5 channel, §8 AC). WP-251 ✅ (the `HANDLED_KEYWORDS`/`MVP_KEYWORDS` membership checks the hero detection reads, + the ImplementationMap drift pattern reused for the closed reason array). WP-200 ✅ (the `executeVillainAbilities` applied-keyword return + the ambush fire site this reads alongside). The hero mechanic ledger (PR #349) + coverage probe (WP-250) — the static counterparts this complements at runtime (NOT modified here).

@@ -1,6 +1,6 @@
 # WP-115 — Public Leaderboard HTTP Endpoints + pg.Pool Bootstrap
 
-**Status:** Draft (BLOCKED on WP-054 merge — see §Assumes)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Server (`apps/server/**`) — wiring layer
 **Version:** 1.1
 **Last Updated:** 2026-05-01

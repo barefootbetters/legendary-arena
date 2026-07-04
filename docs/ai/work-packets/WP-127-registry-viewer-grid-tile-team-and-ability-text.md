@@ -1,6 +1,6 @@
 # WP-127 — Registry Viewer: Grid Tile Team & Ability Text (Threshold-Gated)
 
-**Status:** Draft (authored 2026-05-02; awaiting user review and lint-gate sign-off)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Client UI (`apps/registry-viewer/`)
 **Dependencies:**
 - **Hard:** WP-096 (locked the grid-tile data view at `CardDataTile.vue` under D-9601 — the field set, AND-semantics guards, ability-text omission, and `.img-wrap`-internal `viewMode` branch are all sourced from that decision; this packet amends D-9601 in place rather than supersedes it).

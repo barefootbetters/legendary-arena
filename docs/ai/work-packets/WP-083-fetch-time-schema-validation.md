@@ -1,6 +1,6 @@
 # WP-083 — Fetch-Time Schema Validation for Registry-Viewer Clients
 
-**Status:** Draft — A-083-04 landed 2026-04-21 at A0 SPEC; READY TO EXECUTE after pre-flight v2 + copilot-check v2 CONFIRM
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Registry (`packages/registry/src/schema.ts` + `packages/registry/package.json`) + Registry Viewer (`apps/registry-viewer/src/lib/**`)
 **Schema Version:** 1
 **Last Updated:** 2026-04-21 (A-083-04 amendment)

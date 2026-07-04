@@ -1,6 +1,6 @@
 # WP-110 — Admin Billing Visibility (Read-Only Backoffice Surface)
 
-**Status:** Draft (drafted 2026-05-15; lint-gate self-review pending)
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 **Primary Layer:** Server (`apps/server/src/billing/**` extension) + Client (`apps/arena-client/src/**`)
 **Dependencies:** WP-132 (`legendary.entitlements` table + `EntitlementKey`); WP-133 (`legendary.stripe_checkout_sessions` table + `BillingConfig`); WP-134 (fulfillment processor — the table rows this WP reads are populated by WP-134); WP-112 (session token validation middleware — `requireAuthenticatedSession`).
 

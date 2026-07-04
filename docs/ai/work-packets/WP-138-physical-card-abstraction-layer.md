@@ -1,6 +1,6 @@
 # WP-138 — Physical Card Abstraction Layer (Split-Side Hero Cards)
 
-**Status:** Draft (drafted 2026-05-07; not yet executed; lint gate not yet
+**Status:** Done — executed (see `WORK_INDEX.md` for the execution record; header flipped 2026-07-04 to match the status authority).
 invoked — execution requires `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md` pass).
 **Rescoped 2026-05-07** per pre-flight PS-3 to **Phase 1a only** —
 schema + tooling + solo auto-path + audit warnings + drift validation +
