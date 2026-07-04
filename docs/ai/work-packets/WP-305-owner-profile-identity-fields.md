@@ -44,15 +44,17 @@ The wiki reference [`profile-login`](../../../wiki/profile-login.md) recorded th
 ## Scope (In)
 
 ### A) `ownerProfile.types.ts` (server, locked contract) — read + write shape
-- Add to `OwnerProfileView`: `readonly accountId: AccountId`, `readonly displayName: string`, `readonly handle: string | null`. New sorted key set (**9 → 12 keys**): `accountId, aboutMe, aboutMeVisibility, avatarUrl, avatarVisibility, badges, displayName, handle, links, linksVisibility, teamAffiliations, updatedAt`.
-- Add to `OwnerProfilePatch`: `readonly displayName?: string`. **Not** `| null` — `display_name` is `NOT NULL`; it cannot be cleared. `handle` and `accountId` are **not** in the patch (immutable / non-editable).
+- Add to `OwnerProfileView`: `readonly accountId: AccountId`, `readonly displayName: string`, `readonly handleCanonical: string | null`. **Field name matches `PublicProfileView` (`handleCanonical`, sourced from `handle_canonical` — the lowercased canonical form; `null` pre-claim). Do NOT introduce a second `handle` / `display_handle` representation on the owner view** — one concept, one wire name (copilot #27 fix; the owner sees the same handle form as everyone else). New sorted key set (**9 → 12 keys**): `accountId, aboutMe, aboutMeVisibility, avatarUrl, avatarVisibility, badges, displayName, handleCanonical, links, linksVisibility, teamAffiliations, updatedAt`.
+- Add to `OwnerProfilePatch`: `readonly displayName?: string`. **Not** `| null` — `display_name` is `NOT NULL`; it cannot be cleared. `handleCanonical` and `accountId` are **not** in the patch (immutable / non-editable).
 - Add `'invalid_display_name'` to `OwnerProfileErrorCode` **and** `OWNER_PROFILE_ERROR_CODES` (both, same change — the drift test asserts forward+backward inclusion).
 
 ### B) `ownerProfile.logic.ts` (server) — read composition + editable name write
-- Extend the player-row read (`loadPlayerIdByAccountId` → a helper that also returns `display_name` + `display_handle`) so `accountId` (the input), `displayName`, and `handle` reach the view.
+- Extend the player-row read (`loadPlayerIdByAccountId` → a helper that also returns `display_name` + `handle_canonical`) so `accountId` (the input), `displayName`, and `handleCanonical` reach the view.
 - Thread the three fields into `composeOwnerProfileView` and `synthesizeDefaultOwnerProfileView` (the latter can no longer be a static literal — the `legendary.players` row always exists, so the synthesized-default branch carries real identity fields).
 - Add a **local** `validateDisplayName` (trim / 1-64 / no control chars) with a drift `// why:` citing `identity.logic.ts` as the source; failure returns `code: 'invalid_display_name'`.
 - In `upsertOwnerProfile`: when `Object.hasOwn(patch, 'displayName')`, validate it, then `UPDATE legendary.players SET display_name = $ WHERE player_id = $` **in the same transaction** as the `player_profiles` upsert (wrap both in `BEGIN/COMMIT`, mirroring the `replaceOwnerLinks` transaction posture). Absent `displayName` → no `players` write and no transaction-shape change beyond the wrap.
+- **Return the just-written name (copilot #18 fix).** The composed `OwnerProfileView` returned by a PATCH that carried `displayName` MUST reflect the **post-write** value — read it from `UPDATE ... RETURNING display_name`, or re-read the `players` row inside the transaction. Composing from a `display_name` captured at the top of the function (before the UPDATE) returns the **stale** name; AC-2 pins a test that a rename's response shows the new name.
+- **Transaction-failure posture (copilot #22 fix).** On a SQL error inside the `BEGIN/COMMIT`, mirror `replaceOwnerLinks` exactly: capture the error, issue `ROLLBACK`, `release()` the client, then `Promise.reject` the captured error so the route's outer `catch` maps it to `500 { error: 'internal_error' }`. Do **not** invent a typed `Result.fail` — `OwnerProfileErrorCode` has no infra-failure member.
 
 ### C) `ownerProfileApi.ts` (arena-client, locked mirror) — mirror the shapes
 - Mirror the three read fields on the client `OwnerProfileView` and `displayName?: string` on the client `OwnerProfilePatch`. No behavior change to the fetch/patch wrappers.
@@ -66,7 +68,7 @@ The wiki reference [`profile-login`](../../../wiki/profile-login.md) recorded th
 - `ownerProfileApi.test.ts`: extend the structural-shape assertions to include the three new fields.
 
 ### F) Governance / catalog
-- `api-endpoints.md`: **whole-row** update (D-11804) of the `GET /api/me/profile` row (response gains `accountId`/`displayName`/`handle`) and the `PATCH /api/me/profile` row (recognized fields gain `displayName`; error set gains `invalid_display_name`). Updated in the **impl commit**, not the draft.
+- `api-endpoints.md`: **whole-row** update (D-11804) of the `GET /api/me/profile` row (response gains `accountId`/`displayName`/`handleCanonical`) and the `PATCH /api/me/profile` row (recognized fields gain `displayName`; error set gains `invalid_display_name`). Updated in the **impl commit**, not the draft.
 - `WORK_INDEX.md` (WP-305) + `EC_INDEX.md` (EC-335) + `STATUS.md`; `DECISIONS.md` D-24089 + D-24090 flip Drafted → Active at execution.
 
 ---
@@ -102,21 +104,21 @@ The wiki reference [`profile-login`](../../../wiki/profile-login.md) recorded th
 
 ## Contract
 
-- **`OwnerProfileView` (read):** `+accountId: AccountId` (always present; `ext_id`), `+displayName: string` (`players.display_name`, NOT NULL), `+handle: string | null` (`players.display_handle`, null pre-claim). Every return path (`getOwnerProfile` including synthesized default, `upsertOwnerProfile`, `replaceOwnerLinks`) carries all three. Sorted key set = the 12 listed in Scope A; the drift test locks it.
-- **`OwnerProfilePatch` (write):** `+displayName?: string`. Present → validated + written to `legendary.players.display_name`; absent → unchanged. Cannot be `null`.
+- **`OwnerProfileView` (read):** `+accountId: AccountId` (always present; `ext_id`), `+displayName: string` (`players.display_name`, NOT NULL), `+handleCanonical: string | null` (`players.handle_canonical`, null pre-claim — **same wire name + form as `PublicProfileView`**). Every return path (`getOwnerProfile` including synthesized default, `upsertOwnerProfile`, `replaceOwnerLinks`) carries all three. Sorted key set = the 12 listed in Scope A; the drift test locks it.
+- **`OwnerProfilePatch` (write):** `+displayName?: string`. Present → validated + written to `legendary.players.display_name`; absent → unchanged. Cannot be `null`. **The PATCH response reflects the post-write `display_name`** (RETURNING / re-read inside the transaction), never the pre-write value.
 - **Validation (`displayName`):** trim; reject empty-after-trim, `> 64` after trim, or any `0x00-0x1F`/`0x7F` control char → `code: 'invalid_display_name'` (HTTP 400 via the existing route mapping). Rules mirror `identity.logic.ts:66-98` verbatim (drift `// why:` required).
-- **Atomicity:** a PATCH carrying `displayName` writes `legendary.players` **and** `legendary.player_profiles` inside one transaction — both land or neither.
-- **Immutability:** `handle` and `accountId` are display-only; no write path, no patch field.
+- **Atomicity:** a PATCH carrying `displayName` writes `legendary.players` **and** `legendary.player_profiles` inside one transaction — both land or neither; a SQL failure `ROLLBACK`s and surfaces as a route `500` via `Promise.reject` (mirrors `replaceOwnerLinks`).
+- **Immutability:** `handleCanonical` and `accountId` are display-only; no write path, no patch field.
 - **Error set:** `OwnerProfileErrorCode` gains `'invalid_display_name'`; union + `OWNER_PROFILE_ERROR_CODES` array updated together.
 
 ---
 
 ## Acceptance Criteria
 
-1. `GET /api/me/profile` returns `accountId`, `displayName`, `handle` on every path (real row, synthesized default, post-PATCH, post-PUT); the drift test asserts the exact 12-key set (**AC-1**).
-2. `PATCH /api/me/profile` with a valid `displayName` updates `legendary.players.display_name` and returns the updated view; the name write and the profile upsert are atomic (both or neither) (**AC-2**).
+1. `GET /api/me/profile` returns `accountId`, `displayName`, `handleCanonical` on every path (real row, synthesized default, post-PATCH, post-PUT); the drift test asserts the exact 12-key set (**AC-1**).
+2. `PATCH /api/me/profile` with a valid `displayName` updates `legendary.players.display_name` and **returns a view whose `displayName` is the just-written value** (a test renames and asserts the response shows the new name, not the old); the name write and the profile upsert are atomic (both or neither) (**AC-2**).
 3. `PATCH` with an empty/whitespace, `>64`-char, or control-char `displayName` returns `400 { error: 'invalid_display_name' }` and writes nothing (**AC-3**).
-4. `handle` and `accountId` have no write path — no patch field accepts them; a body attempting them leaves both unchanged (**AC-4**).
+4. `handleCanonical` and `accountId` have no write path — no patch field accepts them; a body attempting them leaves both unchanged (**AC-4**).
 5. `MyProfilePage.vue` renders `displayName` (editable, saved via the existing PATCH), `@handle` (display-only), and `accountId` (always-visible support line); every new binding is returned from `setup()` (**AC-5**).
 6. Client `OwnerProfileView` / `OwnerProfilePatch` mirrors carry the new fields; the `ownerProfileApi.test.ts` shape assertions pass (**AC-6**).
 7. `api-endpoints.md` GET + PATCH `/api/me/profile` rows updated whole-row (D-11804), field names matching `00.2` (**AC-7**).
@@ -193,7 +195,7 @@ Reserves **D-24089** and **D-24090** (drafted 2026-07-03; land Active at executi
 - §3 Assumes — PASS: contract files, DB columns, identity validator, two-table fact, and read-helper all cited with file:line.
 - §4 Context — split-vs-single + two-DECISIONS rationale recorded.
 - §5 Output Completeness — PASS: 6 code/test files + governance, each with a one-line role; two-layer, no cross-layer import.
-- §6 Naming — PASS: canonical `displayName` / `handle` / `accountId` (match `00.2`); no abbreviations.
+- §6 Naming — PASS: canonical `displayName` / `handleCanonical` / `accountId` — `handleCanonical` matches the `PublicProfileView` precedent (WP-102); no abbreviations.
 - §7 Dependency Discipline — PASS: WP-104 / WP-101 / WP-131 / WP-052 all ✅ on `main`; no new npm dep.
 - §8 Architectural Boundaries — PASS: server contract + structural client mirror (no import edge); no new endpoint; auth unchanged.
 - §9 Windows Compatibility — PASS: `pwsh` + `Select-String` + `\` paths.
@@ -215,6 +217,13 @@ Reserves **D-24089** and **D-24090** (drafted 2026-07-03; land Active at executi
 
 **Lint (00.3): PASS** — 21 sections resolved; §21 applies and is scoped to the impl commit; §10/§19/§20 carry non-tautological N/A.
 
-**Pre-flight (01.4): READY TO EXECUTE.** Class = standard two-session (contract + two-layer + api-catalog). **Dependencies complete** — WP-104 ✅ (contract + page), WP-101 ✅ (name validation + handle), WP-131 ✅ (auth wiring), WP-052 ✅ (`AccountId` mapping) — all verified against source on `origin/main` @ `775bd71d`. **Scope locked** — 6 code/test files + governance; extension of an existing contract, no new endpoint/route/table. **Ambiguities resolved** — the two operator decisions (editable name; always-show accountId) are locked in D-24089/D-24090; the two-table transactional write and the `synthesizeDefaultOwnerProfileView` non-static change are called out so the executor does not discover them mid-flight.
+**Pre-flight (01.4): READY TO EXECUTE** (full procedure run 2026-07-03 against source, post-draft-merge). Class = standard two-session (contract + two-layer + api-catalog). **Dependencies complete** — WP-104 ✅ (contract + page), WP-101 ✅ (name validation + handle), WP-131 ✅ (auth wiring), WP-052 ✅ (`AccountId` mapping) — all verified against source. **Scope locked** — 6 code/test files + governance; extension of an existing contract, no new endpoint/route/table. **Ambiguities resolved** — the two operator decisions (editable name; always-show accountId) are locked in D-24089/D-24090; the two-table transactional write and the `synthesizeDefaultOwnerProfileView` non-static change are called out so the executor does not discover them mid-flight.
 
-**Copilot (01.7): PASS.** The one correctness risk — the local `displayName` validator drifting from the identity-layer rules — is pinned as a Locked Value sourced from `identity.logic.ts:66-98` with a required drift `// why:`. The second risk — a partial name/profile write on failure — is closed by the mandated single transaction (AC-2 atomicity test). No BLOCK.
+**Copilot (01.7): HOLD → CONFIRM** (30-issue lens run 2026-07-03; four scope-neutral FIXes applied in-place, then re-confirmed). Findings and resolutions:
+
+- **#18 Outcome-timing / #4 Contract drift — the PATCH response returned the stale `display_name`.** Composing the returned view from a `display_name` captured before the `UPDATE` would show the old name after a rename. **FIX (applied):** Scope B + Contract + AC-2 now require the returned view to reflect the post-write value (`RETURNING` / re-read inside the transaction) with a rename-response test.
+- **#27 Canonical naming / #4 Contract drift — `handle` vs the public `handleCanonical`.** The owner field was named `handle` (from `display_handle`) while `PublicProfileView` exposes `handleCanonical` (from `handle_canonical`) — two names + two forms for one concept. **FIX (applied):** renamed the owner field to `handleCanonical`, sourced from `handle_canonical`, matching the public contract; 12-key set updated.
+- **#22 Fail semantics — transaction-failure posture unspecified.** **FIX (applied):** locked to mirror `replaceOwnerLinks` (`ROLLBACK` + `release` + `Promise.reject` → route `500`; no invented `Result.fail`).
+- **#11 Invariant testing — no locked baseline.** **FIX (applied in EC-335):** record the server + arena-client baseline test counts at session start; the suite may grow only by the new tests.
+
+All four are scope-neutral (no allowlist change). Remaining 26 issues: PASS. Disposition **CONFIRM** after the fixes — session-prompt/execution authorized.

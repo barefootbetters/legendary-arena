@@ -9,19 +9,23 @@ Authority order: `.claude/CLAUDE.md` → `ARCHITECTURE.md` → `.claude/rules/*`
 - [ ] Deps ✅ on `main`: WP-104 (contract + page), WP-101 (`validateDisplayName` + `display_handle`), WP-131 (auth), WP-052/D-5201 (`AccountId`=`ext_id`).
 - [ ] Read `ownerProfile.types.ts`, `ownerProfile.logic.ts` (esp. `loadPlayerIdByAccountId`, `synthesizeDefaultOwnerProfileView`, `composeOwnerProfileView`, `upsertOwnerProfile`), `ownerProfileApi.ts`, `MyProfilePage.vue`, and `identity.logic.ts:66-98`.
 - [ ] Baseline green: `pnpm --filter @legendary-arena/server test`, `pnpm -r build`, arena-client `typecheck`/`test`/`build`. DB suites need `TEST_DATABASE_URL` (repo `.env` `DATABASE_URL`).
+- [ ] **Record the server + arena-client baseline test counts** before editing (copilot #11 lock). The suite may grow ONLY by the new tests; any pre-existing test that flips red is a regression to STOP on, not to "fix while here".
 
 ## Locked Values (do NOT re-derive)
-- New `OwnerProfileView` sorted key set (**12**): `accountId, aboutMe, aboutMeVisibility, avatarUrl, avatarVisibility, badges, displayName, handle, links, linksVisibility, teamAffiliations, updatedAt`.
-- Field types: `accountId: AccountId` · `displayName: string` (NOT NULL) · `handle: string | null` (from `display_handle`, null pre-claim).
-- `OwnerProfilePatch` adds ONLY `displayName?: string` (never `| null`). `handle`/`accountId` are NOT patchable.
+- New `OwnerProfileView` sorted key set (**12**): `accountId, aboutMe, aboutMeVisibility, avatarUrl, avatarVisibility, badges, displayName, handleCanonical, links, linksVisibility, teamAffiliations, updatedAt`.
+- Field types: `accountId: AccountId` · `displayName: string` (NOT NULL) · `handleCanonical: string | null` (from `handle_canonical`, null pre-claim). **Name + form MATCH `PublicProfileView.handleCanonical` — do NOT introduce a `handle`/`display_handle` variant on the owner view** (copilot #27).
+- `OwnerProfilePatch` adds ONLY `displayName?: string` (never `| null`). `handleCanonical`/`accountId` are NOT patchable.
 - `display_name` rules (mirror `identity.logic.ts:66-98`): trim; reject empty-after-trim, `>64` after trim, any `0x00-0x1F`/`0x7F` control char → `code: 'invalid_display_name'`.
 - New error code `'invalid_display_name'` added to BOTH `OwnerProfileErrorCode` union AND `OWNER_PROFILE_ERROR_CODES` array. Route maps it to 400 (existing "remaining codes → 400" branch).
 - `display_name` is on `legendary.players` (NOT `legendary.player_profiles`) → editable-name PATCH writes a SECOND table.
+- **The PATCH response `displayName` is the POST-write value** (`UPDATE ... RETURNING display_name`, or re-read inside the transaction) — NOT a value captured before the UPDATE (copilot #18).
+- **Transaction-failure posture = mirror `replaceOwnerLinks`**: capture error → `ROLLBACK` → `release()` → `Promise.reject` → route `500 { error: 'internal_error' }`. No new `OwnerProfileErrorCode` member (copilot #22).
 
 ## Guardrails
 - [ ] Name write (`UPDATE legendary.players SET display_name`) and the `player_profiles` upsert run in ONE `BEGIN/COMMIT` (mirror `replaceOwnerLinks`); both land or neither. No `displayName` in body → no `players` write.
-- [ ] `synthesizeDefaultOwnerProfileView` is NO LONGER a static literal — it must carry the real `accountId`/`displayName`/`handle` (the `legendary.players` row always exists).
-- [ ] `handle` + `accountId` are display-only — no write path, no patch field, no route acceptance.
+- [ ] `synthesizeDefaultOwnerProfileView` is NO LONGER a static literal — it must carry the real `accountId`/`displayName`/`handleCanonical` (the `legendary.players` row always exists).
+- [ ] A PATCH that renames MUST return the NEW `displayName` (post-write) — compose from the `UPDATE ... RETURNING` / a post-write re-read, never from a pre-write capture.
+- [ ] `handleCanonical` + `accountId` are display-only — no write path, no patch field, no route acceptance.
 - [ ] Client mirror stays STRUCTURAL — no `apps/server` / `packages/*` / `boardgame.io` import added to arena-client.
 - [ ] No new endpoint/route; reuse `GET`/`PATCH /api/me/profile`. Auth surface unchanged.
 - [ ] Every new `MyProfilePage.vue` binding (`formDisplayName`, name-error state, etc.) is returned from `setup()` (D-6512 separate-compile).
@@ -51,3 +55,5 @@ Authority order: `.claude/CLAUDE.md` → `ARCHITECTURE.md` → `.claude/rules/*`
 - Leaving `synthesizeDefaultOwnerProfileView` static → never-edited accounts return `undefined`/missing identity fields and the drift test fails.
 - Reusing the sibling `{ error }` parse for a `displayName` validation failure — fine here (profile endpoints use `{ error }`); do NOT copy the avatar `{ code }` parser.
 - Non-atomic name write → a failed profile upsert leaves a renamed player (AC-2 atomicity test catches it).
+- Composing the returned view from a `display_name` read at the TOP of `upsertOwnerProfile` → a rename returns the STALE name (must compose from the post-write `RETURNING`/re-read).
+- Naming the owner field `handle` (from `display_handle`) instead of `handleCanonical` (from `handle_canonical`) → drift vs `PublicProfileView`; two names for one concept.
