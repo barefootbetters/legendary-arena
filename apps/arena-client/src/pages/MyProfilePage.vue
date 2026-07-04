@@ -218,6 +218,15 @@ export default defineComponent({
     const view = ref<OwnerProfileViewWithTeams | null>(null);
     const errorBanner = ref<string>('');
 
+    // why: WP-305 / D-24090 — the editable display name. `formDisplayName`
+    // is seeded from `view.displayName` on load and saved through the
+    // existing updateOwnerProfile PATCH (no new API call). `nameError`
+    // carries the inline `invalid_display_name` message beneath the field,
+    // kept separate from the shared `errorBanner` so a name-validation
+    // failure shows next to the input, not as a page-level banner. Both
+    // are returned from setup() so the template can bind them (D-6512).
+    const formDisplayName = ref<string>('');
+    const nameError = ref<string>('');
     const formAvatarUrl = ref<string>('');
     // why: WP-298 — the avatar file-upload control owns its own feedback
     // state, separate from the shared `errorBanner` (which is for profile
@@ -310,6 +319,8 @@ export default defineComponent({
 
     function applyView(loaded: OwnerProfileView): void {
       view.value = loaded as OwnerProfileViewWithTeams;
+      formDisplayName.value = loaded.displayName;
+      nameError.value = '';
       formAvatarUrl.value = loaded.avatarUrl ?? '';
       formAboutMe.value = loaded.aboutMe ?? '';
       formAvatarVisibility.value = loaded.avatarVisibility;
@@ -337,7 +348,9 @@ export default defineComponent({
     }
 
     async function saveProfile(): Promise<void> {
+      nameError.value = '';
       const result = await updateOwnerProfile(readAuthToken(), {
+        displayName: formDisplayName.value,
         avatarUrl: formAvatarUrl.value === '' ? null : formAvatarUrl.value,
         aboutMe: formAboutMe.value === '' ? null : formAboutMe.value,
         avatarVisibility: formAvatarVisibility.value,
@@ -346,6 +359,14 @@ export default defineComponent({
       });
       if (result.ok === true) {
         applyView(result.value);
+        return;
+      }
+      // why: WP-305 — an invalid_display_name failure shows inline beneath
+      // the name field (the field the player can fix), NOT as the shared
+      // page-level banner; every other code stays on the banner.
+      if (result.code === 'invalid_display_name') {
+        nameError.value =
+          'That name is not allowed. Use 1–64 characters with no control characters.';
         return;
       }
       errorBanner.value = bannerCopyForCode(result.code);
@@ -573,6 +594,8 @@ export default defineComponent({
       state,
       view,
       errorBanner,
+      formDisplayName,
+      nameError,
       formAvatarUrl,
       avatarFile,
       avatarUploadInFlight,
@@ -634,7 +657,9 @@ export default defineComponent({
 
       <header class="profile-header" data-testid="my-profile-header">
         <div class="profile-header-row">
-          <h1>Your profile</h1>
+          <h1 data-testid="my-profile-heading">
+            {{ formDisplayName === '' ? 'Your profile' : formDisplayName }}
+          </h1>
           <button
             type="button"
             class="profile-sign-out"
@@ -644,6 +669,27 @@ export default defineComponent({
             Sign out
           </button>
         </div>
+
+        <!-- why: WP-305 / D-24089 — the owner's own identity. `@handle`
+             renders from the immutable handleCanonical (display-only, absent
+             until the handle is claimed); the account-ID line is always
+             visible as a muted support line. Editing the name happens in the
+             editable field below (bound to formDisplayName). -->
+        <p
+          v-if="view !== null && view.handleCanonical !== null"
+          class="profile-handle"
+          data-testid="my-profile-handle"
+        >
+          @{{ view.handleCanonical }}
+        </p>
+        <p
+          v-if="view !== null"
+          class="profile-account-id"
+          data-testid="my-profile-account-id"
+        >
+          Account ID: {{ view.accountId }}
+        </p>
+
         <p class="profile-help">
           Edit your owner-only profile details below. Privacy toggles default to
           <em>private</em>; flip to <em>public</em> only when you want a section
@@ -653,6 +699,27 @@ export default defineComponent({
 
       <section class="profile-form" data-testid="my-profile-form">
         <h2>Profile</h2>
+
+        <!-- why: WP-305 / D-24090 — the editable display name. Saved via the
+             existing "Save profile" button (updateOwnerProfile PATCH); an
+             invalid_display_name failure shows inline beneath the field. -->
+        <label class="profile-field">
+          <span class="profile-field-label">Display name</span>
+          <input
+            v-model="formDisplayName"
+            type="text"
+            maxlength="64"
+            placeholder="Your display name"
+            data-testid="my-profile-display-name"
+          />
+          <span
+            v-if="nameError !== ''"
+            class="profile-upload-error"
+            data-testid="my-profile-display-name-error"
+          >
+            {{ nameError }}
+          </span>
+        </label>
 
         <div
           v-if="formAvatarUrl !== '' && !avatarPreviewFailed"
@@ -1081,6 +1148,24 @@ export default defineComponent({
   font-size: 0.875rem;
   opacity: 0.75;
   margin: 0.25rem 0 0 0;
+}
+
+/* why: WP-305 — @handle sits just under the heading in a slightly
+   emphasized tone; the account-ID line is a muted always-visible
+   support line beneath it. */
+.profile-handle {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0.1rem 0 0 0;
+  opacity: 0.85;
+}
+
+.profile-account-id {
+  font-size: 0.8rem;
+  opacity: 0.6;
+  margin: 0.1rem 0 0 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  word-break: break-all;
 }
 
 .profile-form,

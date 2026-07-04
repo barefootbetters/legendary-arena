@@ -115,6 +115,7 @@ describe('owner profile logic (WP-104)', () => {
       'invalid_request',
       'invalid_avatar_url',
       'invalid_link_url',
+      'invalid_display_name',
       'too_many_links',
       'unknown_account',
     ]);
@@ -133,8 +134,11 @@ describe('owner profile logic (WP-104)', () => {
     }
   });
 
-  test('OwnerProfileView shape contains exactly the eight locked fields (WP-109 PS-3 = YES extension) and excludes private account fields', () => {
+  test('OwnerProfileView shape contains exactly the twelve locked fields (WP-305 D-24089 identity extension) and excludes private account fields', () => {
     const view: OwnerProfileView = {
+      accountId: '00000000-0000-4000-8000-000000000000' as AccountId,
+      displayName: 'Owner Example',
+      handleCanonical: null,
       avatarUrl: null,
       aboutMe: null,
       avatarVisibility: 'private',
@@ -143,18 +147,31 @@ describe('owner profile logic (WP-104)', () => {
       links: [],
       updatedAt: null,
       teamAffiliations: [],
+      badges: [],
     };
     const keys = Object.keys(view).sort();
+    // why: WP-305 / D-24089 locked 12-key set — 9 prior keys plus the
+    // owner's own identity (accountId, displayName, handleCanonical).
+    // The drift test pins this exactly; adding a field requires
+    // updating this list AND the OwnerProfileView interface together.
     assert.deepEqual(keys, [
       'aboutMe',
       'aboutMeVisibility',
+      'accountId',
       'avatarUrl',
       'avatarVisibility',
+      'badges',
+      'displayName',
+      'handleCanonical',
       'links',
       'linksVisibility',
       'teamAffiliations',
       'updatedAt',
     ]);
+    // why: the private account fields on legendary.players
+    // (email / authProvider / authProviderId / createdAt) stay OFF the
+    // owner-edit surface even though the identity read now touches that
+    // table — only display_name / handle_canonical / ext_id surface.
     assert.ok(!('email' in view));
     assert.ok(!('authProvider' in view));
     assert.ok(!('authProviderId' in view));
@@ -422,6 +439,85 @@ describe('owner profile logic (WP-104)', () => {
     },
   );
 
+  test('upsertOwnerProfile rejects an empty/whitespace displayName with code invalid_display_name before any DB access (validator-path; DB unused)', async () => {
+    // why: validateDisplayName runs before the player_id lookup, so an
+    // invalid name never touches the database — this proves AC-3's
+    // "writes nothing" property without a live DB. The recording DB
+    // throws on any access to catch a regression that moved validation
+    // after the first query.
+    const recordingDatabase = {
+      query: async () => {
+        throw new Error(
+          'upsertOwnerProfile must reject an invalid displayName before any database query',
+        );
+      },
+      connect: async () => {
+        throw new Error(
+          'upsertOwnerProfile must reject an invalid displayName before any pool.connect()',
+        );
+      },
+    } as unknown as pg.Pool;
+    const accountId = '00000000-0000-4000-8000-000000000002' as AccountId;
+    const result = await upsertOwnerProfile(
+      accountId,
+      { displayName: '   ' },
+      recordingDatabase,
+    );
+    assert.ok(result.ok === false);
+    assert.equal((result as { code: string }).code, 'invalid_display_name');
+  });
+
+  test('upsertOwnerProfile rejects an over-64-character displayName with code invalid_display_name (validator-path; DB unused)', async () => {
+    const recordingDatabase = {
+      query: async () => {
+        throw new Error(
+          'upsertOwnerProfile must reject an over-length displayName before any database query',
+        );
+      },
+      connect: async () => {
+        throw new Error(
+          'upsertOwnerProfile must reject an over-length displayName before any pool.connect()',
+        );
+      },
+    } as unknown as pg.Pool;
+    const accountId = '00000000-0000-4000-8000-000000000003' as AccountId;
+    const result = await upsertOwnerProfile(
+      accountId,
+      { displayName: 'x'.repeat(65) },
+      recordingDatabase,
+    );
+    assert.ok(result.ok === false);
+    assert.equal((result as { code: string }).code, 'invalid_display_name');
+  });
+
+  test('upsertOwnerProfile rejects a control-character displayName with code invalid_display_name (validator-path; DB unused)', async () => {
+    const recordingDatabase = {
+      query: async () => {
+        throw new Error(
+          'upsertOwnerProfile must reject a control-character displayName before any database query',
+        );
+      },
+      connect: async () => {
+        throw new Error(
+          'upsertOwnerProfile must reject a control-character displayName before any pool.connect()',
+        );
+      },
+    } as unknown as pg.Pool;
+    const accountId = '00000000-0000-4000-8000-000000000004' as AccountId;
+    // why: build a name containing a literal NUL (0x00) control char via
+    // String.fromCharCode so the source stays printable —
+    // validateDisplayName rejects any 0x00-0x1F / 0x7F character to block
+    // homoglyph / impersonation names (mirrors identity.logic.ts).
+    const controlCharName = `Bad${String.fromCharCode(0)}Name`;
+    const result = await upsertOwnerProfile(
+      accountId,
+      { displayName: controlCharName },
+      recordingDatabase,
+    );
+    assert.ok(result.ok === false);
+    assert.equal((result as { code: string }).code, 'invalid_display_name');
+  });
+
   test('upsertOwnerProfile rejects an invalid avatar URL with code invalid_avatar_url (validator-path; DB unused)', async () => {
     const recordingDatabase = {
       query: async () => {
@@ -627,6 +723,175 @@ describe('owner profile logic (WP-104)', () => {
       );
       assert.equal(owner.value.teamAffiliations[0].teamSize, 3);
       assert.equal(owner.value.teamAffiliations[0].role, 'member');
+    },
+  );
+
+  test(
+    'getOwnerProfile surfaces the owner identity fields (accountId / displayName / handleCanonical) on the synthesized-default branch (WP-305 AC-1)',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      // provisionAccount sets display_name = `Owner${labelSuffix}` and
+      // claims no handle, so handle_canonical is null. This account has
+      // no legendary.player_profiles row → the synthesized-default read
+      // branch, which must still carry the real identity fields.
+      const accountId = await provisionAccount(testPool, 'idread');
+      const result = await getOwnerProfile(accountId, testPool);
+      assert.ok(result.ok === true);
+      assert.equal(result.value.accountId, accountId);
+      assert.equal(result.value.displayName, 'Owneridread');
+      assert.equal(
+        result.value.handleCanonical,
+        null,
+        'a never-claimed handle must surface as null on the owner view',
+      );
+      // the synthesized-default profile fields remain the fail-closed
+      // defaults regardless of the identity fields being populated
+      assert.equal(result.value.avatarUrl, null);
+      assert.equal(result.value.updatedAt, null);
+    },
+  );
+
+  test(
+    'upsertOwnerProfile renames the player and returns the POST-write displayName; the rename persists (WP-305 AC-2)',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const accountId = await provisionAccount(testPool, 'rename');
+
+      const renamed = await upsertOwnerProfile(
+        accountId,
+        { displayName: 'Renamed Owner' },
+        testPool,
+      );
+      assert.ok(renamed.ok === true);
+      // why: the response MUST reflect the just-written name, NOT the
+      // pre-write value captured at the top of upsertOwnerProfile
+      // (copilot #18). A stale-name regression fails right here.
+      assert.equal(renamed.value.displayName, 'Renamed Owner');
+
+      // the rename persisted: a fresh GET shows the new name
+      const reread = await getOwnerProfile(accountId, testPool);
+      assert.ok(reread.ok === true);
+      assert.equal(reread.value.displayName, 'Renamed Owner');
+
+      // and the underlying legendary.players row was actually updated
+      const dbRow = await testPool.query(
+        'SELECT display_name FROM legendary.players WHERE ext_id = $1',
+        [accountId],
+      );
+      assert.equal(dbRow.rows[0].display_name, 'Renamed Owner');
+    },
+  );
+
+  test(
+    'upsertOwnerProfile trims the displayName before writing (mirrors identity-layer trim rule)',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const accountId = await provisionAccount(testPool, 'trim');
+      const result = await upsertOwnerProfile(
+        accountId,
+        { displayName: '  Trimmed Name  ' },
+        testPool,
+      );
+      assert.ok(result.ok === true);
+      assert.equal(result.value.displayName, 'Trimmed Name');
+    },
+  );
+
+  test(
+    'upsertOwnerProfile writes the name and the profile fields atomically (both land) (WP-305 AC-2 atomicity)',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const accountId = await provisionAccount(testPool, 'atomic');
+      // a single PATCH carrying BOTH a rename (legendary.players) and a
+      // profile field (legendary.player_profiles) — both must land in
+      // one transaction.
+      const result = await upsertOwnerProfile(
+        accountId,
+        { displayName: 'Atomic Owner', aboutMe: 'Both writes land together.' },
+        testPool,
+      );
+      assert.ok(result.ok === true);
+      assert.equal(result.value.displayName, 'Atomic Owner');
+      assert.equal(result.value.aboutMe, 'Both writes land together.');
+
+      // verify both tables reflect the write
+      const nameRow = await testPool.query(
+        'SELECT display_name FROM legendary.players WHERE ext_id = $1',
+        [accountId],
+      );
+      assert.equal(nameRow.rows[0].display_name, 'Atomic Owner');
+      const reread = await getOwnerProfile(accountId, testPool);
+      assert.ok(reread.ok === true);
+      assert.equal(reread.value.aboutMe, 'Both writes land together.');
+    },
+  );
+
+  test(
+    'upsertOwnerProfile with an invalid displayName writes nothing — the players row is unchanged (WP-305 AC-3)',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const accountId = await provisionAccount(testPool, 'novrite');
+      // provisionAccount set the name to `Ownernovrite`; an invalid
+      // rename must leave that untouched (no players write, no profile
+      // row created).
+      const result = await upsertOwnerProfile(
+        accountId,
+        { displayName: '' },
+        testPool,
+      );
+      assert.ok(result.ok === false);
+      assert.equal((result as { code: string }).code, 'invalid_display_name');
+
+      const nameRow = await testPool.query(
+        'SELECT display_name FROM legendary.players WHERE ext_id = $1',
+        [accountId],
+      );
+      assert.equal(
+        nameRow.rows[0].display_name,
+        'Ownernovrite',
+        'an invalid displayName must not change legendary.players.display_name',
+      );
+      // and no legendary.player_profiles row was created by the failed PATCH
+      const playerIdRow = await testPool.query(
+        'SELECT player_id FROM legendary.players WHERE ext_id = $1',
+        [accountId],
+      );
+      const profileRow = await testPool.query(
+        'SELECT 1 FROM legendary.player_profiles WHERE player_id = $1',
+        [playerIdRow.rows[0].player_id],
+      );
+      assert.equal(
+        profileRow.rows.length,
+        0,
+        'a rejected PATCH must not create a legendary.player_profiles row',
+      );
+    },
+  );
+
+  test(
+    'upsertOwnerProfile without a displayName leaves the name unchanged and creates no players write (WP-305 read-only-name path)',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const accountId = await provisionAccount(testPool, 'noname');
+      const result = await upsertOwnerProfile(
+        accountId,
+        { aboutMe: 'Just a bio, no rename.' },
+        testPool,
+      );
+      assert.ok(result.ok === true);
+      // the response still carries the (unchanged) identity name
+      assert.equal(result.value.displayName, 'Ownernoname');
+      const nameRow = await testPool.query(
+        'SELECT display_name FROM legendary.players WHERE ext_id = $1',
+        [accountId],
+      );
+      assert.equal(nameRow.rows[0].display_name, 'Ownernoname');
     },
   );
 });

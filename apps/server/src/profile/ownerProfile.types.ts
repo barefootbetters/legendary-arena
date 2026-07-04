@@ -108,14 +108,17 @@ export interface OwnerProfileLink {
  * authoritative state without client-side merge.
  *
  * `Object.keys(view).sort()` MUST equal exactly:
- *   `['aboutMe','aboutMeVisibility','avatarUrl','avatarVisibility',
- *     'badges','links','linksVisibility','teamAffiliations','updatedAt']`
+ *   `['aboutMe','aboutMeVisibility','accountId','avatarUrl',
+ *     'avatarVisibility','badges','displayName','handleCanonical',
+ *     'links','linksVisibility','teamAffiliations','updatedAt']`
  * — drift-detection test in `ownerProfile.logic.test.ts` enforces
  * this. WP-109 / D-10904 extended from 7 to 8 keys with
  * `teamAffiliations[]`; WP-105 / D-10501 extended from 8 to 9 keys
  * with `badges[]` — composed by the same
  * shared helper that powers the public profile per pre-flight
- * PS-3. `email`, `authProvider`, `authProviderId`, `createdAt`
+ * PS-3. WP-305 / D-24089 extended from 9 to 12 keys with the owner's
+ * own identity (`accountId`, `displayName`, `handleCanonical`).
+ * `email`, `authProvider`, `authProviderId`, `createdAt`
  * from `legendary.players` are deliberately absent: they are
  * private fields of the account and have no business on the
  * owner-edit surface.
@@ -134,6 +137,18 @@ export interface OwnerProfileLink {
  * values; clients MUST NOT defensively re-sort.
  */
 export interface OwnerProfileView {
+  // why: WP-305 / D-24089 — the owner's own identity fields, surfaced
+  // on their own edit page. `accountId` is the opaque `ext_id` UUID
+  // (D-5201), always present; `displayName` is `players.display_name`
+  // (NOT NULL); `handleCanonical` is `players.handle_canonical`
+  // (null pre-claim) — SAME wire name + lowercased canonical form as
+  // `PublicProfileView.handleCanonical` (WP-102), so the owner sees the
+  // same handle representation as everyone else. `displayName` is
+  // editable via `OwnerProfilePatch`; `accountId` / `handleCanonical`
+  // are display-only.
+  readonly accountId: AccountId;
+  readonly displayName: string;
+  readonly handleCanonical: string | null;
   readonly avatarUrl: string | null;
   readonly aboutMe: string | null;
   readonly avatarVisibility: 'private' | 'public';
@@ -172,6 +187,7 @@ export type OwnerProfileErrorCode =
   | 'invalid_request'
   | 'invalid_avatar_url'
   | 'invalid_link_url'
+  | 'invalid_display_name'
   | 'too_many_links'
   | 'unknown_account';
 
@@ -184,6 +200,7 @@ export const OWNER_PROFILE_ERROR_CODES: readonly OwnerProfileErrorCode[] = [
   'invalid_request',
   'invalid_avatar_url',
   'invalid_link_url',
+  'invalid_display_name',
   'too_many_links',
   'unknown_account',
 ] as const;
@@ -225,6 +242,15 @@ export type OwnerProfileResult<T> =
  * `exactOptionalPropertyTypes` and are forbidden.
  */
 export interface OwnerProfilePatch {
+  // why: WP-305 / D-24090 — the owner may rename themselves from their
+  // own page. `displayName` is validated against the identity-layer
+  // rules (trim / 1-64 / no control chars; code `invalid_display_name`)
+  // and written to `legendary.players.display_name`. It is NOT
+  // `| null`: `display_name` is `NOT NULL` and cannot be cleared.
+  // `handleCanonical` and `accountId` are deliberately absent —
+  // `handle` is immutable (WP-101 `claimHandle` is the sole writer)
+  // and `accountId` is non-editable.
+  readonly displayName?: string;
   readonly avatarUrl?: string | null;
   readonly aboutMe?: string | null;
   readonly avatarVisibility?: 'private' | 'public';
