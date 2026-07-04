@@ -1,6 +1,6 @@
 # WP-306 — Setup-Contract Per-Field ext_id Validation (Henchman Id-Space Fix)
 
-**Status:** Draft (authored 2026-07-03; awaiting user review and execution)
+**Status:** Done — executed 2026-07-04 (`EC-336:` impl `f84035af` + `SPEC:` govern-close `b774eaed`; PR #540; D-24091 Active). See `WORK_INDEX.md` for the full execution record.
 **Primary Layer:** Registry (`packages/registry/`), with mechanical fixture
 ripple into App-layer consumers (`apps/registry-viewer/` test stubs,
 `apps/engine-runner/` fixtures).
@@ -16,9 +16,9 @@ ripple into App-layer consumers (`apps/registry-viewer/` test stubs,
 - **Hard:** WP-304 / EC-334 (engine-runner — the shipped consumer whose
   `scenario.valid.json` fixture this WP corrects). ✅ landed (`2de09ff9`).
 - **Related (NOT a dependency, NOT superseding):** WP-122 (viewer henchman
-  `flattenSet` emission) — a *distinct* draft that populates the builder's
-  empty henchman *picker* (`apps/registry-viewer/src/registry/shared.ts`). It
-  does not touch the validator and does not fix this gap; see §Context.
+  `flattenSet` emission) — **Done 2026-05-01** (commit `a5c1653`); it made the
+  viewer's henchman filter/picker work (`apps/registry-viewer/src/registry/shared.ts`).
+  A *distinct* concern — it touches the picker/filter, not the validator; see §Context.
 
 ---
 
@@ -72,40 +72,55 @@ fields against that single set. Its own comment claims the set "never rejects
 an engine-valid id." That claim is false in two directions, and both were
 confirmed empirically (probe + scaffold, 2026-07-03):
 
-- **False reject.** `flattenSet` emits flat cards for heroes, masterminds,
+> **Record correction (2026-07-04).** An earlier draft of this section
+> claimed the registry-viewer builder false-rejected henchmen and that WP-122
+> was unexecuted. Both were wrong: WP-122 shipped 2026-05-01 (commit
+> `a5c1653`), and the viewer's `flattenSet` emits henchmen with `extId`
+> (D-24018), so the viewer already accepted henchman ids. The load-bearing
+> break was the **engine-runner** (package-registry path); the code fix is
+> unaffected. Corrected below.
+
+- **False reject (package-registry path only).** The **package** `flattenSet`
+  (`packages/registry/src/shared.ts`, used by the node / engine-runner path via
+  `createRegistryFromLocalFiles`) emits flat cards for heroes, masterminds,
   villains, and schemes — **never henchmen** (probe: `flat cards with cardType
-  'henchman': 0`). So the global set contains **no** henchman-group `extId`,
-  and `validateMatchSetupDocument` returns `unknown_extid` for **every**
-  `henchmanGroupIds` entry — while the engine's authoritative
-  `validateMatchSetup` accepts it.
-- **False accept.** Because the set is type-blind, a **villain** id
-  (`core/hydra`) placed in the henchman slot *passes* layer-2 (the set
-  contains `core/hydra` as a villain `extId`); the engine's per-field
-  validator would reject it. The engine-runner's own `scenario.valid.json`
-  relies on exactly this accident (`henchmanGroupIds: ["core/hydra"]`).
+  'henchman': 0`). So that registry's global set contains **no** henchman-group
+  `extId`, and `validateMatchSetupDocument` returns `unknown_extid` for a real
+  `henchmanGroupIds` entry — while the engine's authoritative `validateMatchSetup`
+  accepts it. The registry-**viewer**'s own `flattenSet`
+  (`apps/registry-viewer/src/registry/shared.ts`) DOES emit henchmen with `extId`
+  (WP-122, Done 2026-05-01; D-24018), so the viewer's `listCards().extId` already
+  carried henchman groups — the false-reject never bit the viewer.
+- **False accept (all consumers).** Because the set is type-blind, a **villain**
+  id (`core/hydra`) placed in the henchman slot *passes* layer-2 (the set
+  contains `core/hydra` as a villain `extId`) — in the viewer as well as the
+  package path; the engine's per-field validator would reject it. The
+  engine-runner's own `scenario.valid.json` relies on exactly this accident
+  (`henchmanGroupIds: ["core/hydra"]`).
 
 **Live impact (why now):**
 - `apps/engine-runner` (WP-304, shipped `2de09ff9`) validates every scenario
-  UP FRONT with `validateMatchSetupDocument` as its **sole** gate
-  (`runMatch.ts:loadScenarioDocument`, exit code 2 on failure) — the
-  simulation path does not run the engine validator. So **any** scenario with
-  a real henchman group is rejected exit-2. Standard Legendary setups almost
-  always include a henchman group.
+  UP FRONT with `validateMatchSetupDocument` (over the **package** registry) as
+  its **sole** gate (`runMatch.ts:loadScenarioDocument`, exit code 2 on failure)
+  — the simulation path does not run the engine validator. So a **correct**
+  scenario with a real henchman group (`core/sentinel`) was rejected exit-2.
+  Standard Legendary setups almost always include a henchman group. **This is
+  the load-bearing break.**
 - The registry-viewer loadout builder validates live via
-  `validateMatchSetupDocument` (`useLoadoutDraft`, `useSetupFromUrl`): importing
-  or URL-previewing any engine-valid loadout with a henchman group fails, and
-  the live panel shows a false `unknown_extid`.
+  `validateMatchSetupDocument` (`useLoadoutDraft`, `useSetupFromUrl`) over the
+  viewer registry, which already carried henchman `extId`s — so it did **not**
+  false-reject henchmen. WP-306's only viewer-side effect is closing the
+  type-blind **false-accept**: a cross-type id (a villain) in the henchman slot
+  no longer passes.
 
-**Relationship to WP-122 (distinct, complementary).** WP-122 fixes the
-*viewer-local* `flattenSet` (`apps/registry-viewer/src/registry/shared.ts`) so
-the builder's henchman *picker* is non-empty — a different file, a different
-symptom (Gap B: unpickable henchmen). It does **not** touch the validator and
-does **not** fix this gap; its 2026-05-01 rationale ("the engine has no
-consumer of henchman FlatCards") predates D-24018 making the validator a
-`FlatCard.extId` consumer, and is now stale. This WP's per-field approach
-derives henchman ids from **set data**, so it is correct independently of
-whether either `flattenSet` copy ever emits henchmen. The two WPs do not
-overlap and neither subsumes the other.
+**Relationship to WP-122 (distinct, complementary — WP-122 is Done).** WP-122
+fixed the *viewer-local* `flattenSet` (`apps/registry-viewer/src/registry/shared.ts`)
+so the Cards-tab henchman filter and the Loadout picker surface henchmen —
+executed 2026-05-01 (commit `a5c1653`), with `extId` added to that emission by
+D-24018. It touches the picker/filter, not the validator. WP-306 fixes the
+validator's per-field id-space and derives henchman ids from **set data**, so it
+is correct independently of whether either `flattenSet` copy emits henchmen — it
+neither depends on nor is blocked by WP-122. The two do not overlap.
 
 Read before coding:
 - `packages/registry/src/setupContract/setupContract.validate.ts` — Step 2
@@ -183,7 +198,8 @@ behavior unchanged; these are fixture-shape updates only.
 
 - **No `flattenSet` change** (neither `packages/registry/src/shared.ts` nor the
   viewer copy). Henchman ids derive from set data, not from FlatCard emission.
-  Populating the builder's henchman picker is WP-122's job, not this WP's.
+  The builder's henchman picker was already populated by WP-122 (Done
+  2026-05-01) — out of scope here regardless.
 - **No engine change** (`packages/game-engine/**`). The engine's per-field
   validator is already correct; this WP mirrors it registry-side.
 - **No new endpoint, route, or DB surface.** `apps/server` untouched → §21

@@ -1,6 +1,9 @@
 # WP-122 — Viewer Henchman flattenSet Emission Fix
 
-**Status:** Draft (authored 2026-05-01; awaiting user review and lint-gate sign-off)
+**Status:** Done — executed 2026-05-01 (commit `a5c1653`; D-12201). The
+viewer-local `flattenSet` emits one henchman FlatCard per group; the header
+was left on "Draft" by oversight and corrected 2026-07-04 to match
+`WORK_INDEX.md` (the status authority).
 **Primary Layer:** Client UI (`apps/registry-viewer/`)
 **Dependencies:**
 - **Hard:** WP-003 (CardRegistry + `FlatCard` — the data shape rendered by the
