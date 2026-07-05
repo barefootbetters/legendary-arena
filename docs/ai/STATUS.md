@@ -7,6 +7,42 @@
 
 ## Current State
 
+### WP-310 / EC-342 Executed — Empowered Multi-Class Form (`by [hc:X] and [hc:Y]`; D-24098 Active) (2026-07-05)
+
+The empowered parser now recognizes the printed **multi-class** form "you get
+[keyword:Empowered] by [hc:X] and [hc:Y] (and [hc:Z]…)", emitting one
+`buildEmpoweredComposition(class)` primitive per parsed class (the applied bonus
+is their sum: `+1 Attack per HQ card of each named class`) instead of a
+`parse-unrecognized` hollow. This clears the
+`antm/wonder-man/8th-wonder-of-the-world` empowered hollow that surfaced in live
+diagnostics (2026-07-05).
+
+`tryResolveEmpoweredMultiClass` slots into the empowered dispatch chain in
+`packages/game-engine/src/setup/heroAbility.setup.ts` AFTER the single-class
+core + conditional-prefix paths and BEFORE the free-choice/dynamic fallbacks, so
+no existing form's routing changes. Its anchored `EMPOWERED_MULTICLASS_FULL_TAIL_PATTERN`
+requires an `and [hc:…]` continuation (a single-class line never matches it), and
+its honest-partial gate generalizes the core path's sole-condition rule to N
+classes — a prefix-gated multi-class stays hollow. Reuses the WP-256 substrate:
+**no new `HeroKeyword`/`ValueExpression`/`EffectNode` type, no `data/cards` edit.**
+
+Honest-partial: the card's HQ-choose prefix ("Choose any number of cards from
+the HQ…") stays unimplemented — a named follow-up. It is **unmarked prose**, so
+it is not a flagged hollow (the marker-based detector only flags marker'd
+effects); the executed reality is "the Empowered tail resolves; the HQ-choose
+prose emits no primitive" (see D-24098 for the accuracy note vs the WP's original
+wording).
+
+**Verification:** engine suite **1716/1716** (the two D-24044 multi-class
+deferral-assertion tests flipped to resolved; +2 net-new: single-class
+regression + the 8th-wonder compound-clause proof); deterministic-sweep
+`finalStateHash` **unchanged** (core-only fixture); `pnpm -r build` 0. All
+`:check`-gated coverage feeds already current (they track mechanic presence, not
+the live parse result). Ran the scaffold-first lane (per the gate decision): the
+only "fixture breaks" were the two intended deferral-flip tests + hash held, so
+it completed in one session. **D-24026 live-verify (play `8th-wonder-of-the-world`,
+observe the Empowered bonus / hollow cleared) is operator-pending** on deploy.
+
 ### WP-312 / EC-341 Executed — Client Move-Acknowledgment Watchdog (Desync Auto-Recovery; D-24097 Active) (2026-07-05)
 
 The **actual** fix for the recurring play.legendary-arena.com mid-match freeze
