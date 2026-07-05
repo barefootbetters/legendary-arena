@@ -42,6 +42,7 @@ import type {
   SessionTokenRequest,
   SessionVerifier,
 } from '../auth/sessionToken.types.js';
+import { INTERNAL_DELEGATION_HEADER } from './nativeLobbyGuard.js';
 
 /**
  * Closed-set re-statement of the orchestrator's session-validation result
@@ -79,6 +80,11 @@ export interface MatchGateDependencies {
   // a same-process loopback request — mirroring the autoplay precedent —
   // never a public egress.
   readonly serverUrl: string;
+  // why: WP-308 / D-24094 — the process-local secret the native-lobby guard
+  // requires on its two POST create/join routes. This loopback delegation
+  // attaches it so the hard gate admits the server-internal call while
+  // rejecting external unauthenticated callers.
+  readonly internalDelegationSecret: string;
 }
 
 /**
@@ -190,7 +196,13 @@ export function registerMatchGateRoutes(
         `${deps.serverUrl}/games/legendary-arena/create`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          // why: WP-308 / D-24094 — carry the internal-delegation secret so the
+          // native-lobby guard admits this loopback create; the header value is
+          // never sent to a client and never logged.
+          headers: {
+            'Content-Type': 'application/json',
+            [INTERNAL_DELEGATION_HEADER]: deps.internalDelegationSecret,
+          },
           body: JSON.stringify({
             numPlayers: requestBody.numPlayers,
             setupData: requestBody.setupData,
@@ -252,7 +264,12 @@ export function registerMatchGateRoutes(
         `${deps.serverUrl}/games/legendary-arena/${matchId}/join`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          // why: WP-308 / D-24094 — same internal-delegation secret as the
+          // create call above; admits this loopback join past the hard gate.
+          headers: {
+            'Content-Type': 'application/json',
+            [INTERNAL_DELEGATION_HEADER]: deps.internalDelegationSecret,
+          },
           body: JSON.stringify({
             playerID: requestBody.playerID,
             playerName: requestBody.playerName,

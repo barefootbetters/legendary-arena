@@ -28,6 +28,7 @@ import {
   classifyDispatch,
   buildAbortReason,
 } from './botLoopProgress.mjs';
+import { INTERNAL_DELEGATION_HEADER } from '../match/nativeLobbyGuard.js';
 
 /**
  * Per-match playback controllers, keyed by match id. A controller is
@@ -260,9 +261,11 @@ export async function handleAutoplayStatusRequest(koaContext) {
  * @param {object} context.transport - boardgame.io SocketIO transport instance.
  * @param {object} context.auth - boardgame.io Auth instance.
  * @param {string} context.serverUrl - Base URL for internal lobby API calls.
+ * @param {string} context.internalDelegationSecret - Process-local secret the
+ *   native-lobby guard requires on its loopback create/join calls (WP-308).
  */
 export function registerAutoplayRoutes(router, context) {
-  const { db, transport, auth, serverUrl } = context;
+  const { db, transport, auth, serverUrl, internalDelegationSecret } = context;
 
   const processedGame = ProcessGameConfig(LegendaryGame);
 
@@ -287,7 +290,13 @@ export function registerAutoplayRoutes(router, context) {
     try {
       const createResponse = await fetch(`${serverUrl}/games/legendary-arena/create`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // why: WP-308 / D-24094 — carry the internal-delegation secret so the
+        // native-lobby guard admits this loopback create; the autoplay/spectator
+        // surface stays guest, but its match creation now rides the same secret.
+        headers: {
+          'Content-Type': 'application/json',
+          [INTERNAL_DELEGATION_HEADER]: internalDelegationSecret,
+        },
         body: JSON.stringify({ numPlayers: playerCount, setupData }),
       });
       if (!createResponse.ok) {
@@ -312,7 +321,12 @@ export function registerAutoplayRoutes(router, context) {
           `${serverUrl}/games/legendary-arena/${matchId}/join`,
           {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            // why: WP-308 / D-24094 — same internal-delegation secret as the
+            // create call above; admits each bot join past the hard gate.
+            headers: {
+              'Content-Type': 'application/json',
+              [INTERNAL_DELEGATION_HEADER]: internalDelegationSecret,
+            },
             body: JSON.stringify({
               playerID: String(playerIndex),
               playerName: `Bot ${playerIndex}`,

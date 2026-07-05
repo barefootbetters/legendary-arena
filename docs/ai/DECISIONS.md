@@ -26252,7 +26252,7 @@ Protect this file.
 
 ### D-24094 — Multiplayer-Play Hard Gate: Native Lobby Create/Join Gated by an App-Layer Guard (Session-or-Internal-Secret); Closes the D-24093 Soft-Gate Bypass
 
-**Status:** **Drafted 2026-07-04; not yet landed** (reserved by WP-308 / EC-338; flips to Active when WP-308 executes).
+**Status:** **Active** (landed 2026-07-04 by WP-308 / EC-338). Closes the D-24093 §Enforcement-level soft-gate limitation — the native lobby create/join are now hard-gated.
 
 **Context.** D-24093 shipped the multiplayer-play gate as a *soft* gate: the WP-307 guarded `/api/match/create|join` enforce the arena-client path, but the boardgame.io **native** `POST /games/legendary-arena/create` + `/join` stay open, so a raw API request bypasses the D-24092 account requirement (D-24093 §Enforcement level named this and deferred the hard gate). Both the WP-307 matchGate and the WP-163/164 autoplay loop reach those native routes by a server-internal loopback `fetch`, so any hard gate must keep the internal delegation working while blocking external callers.
 
