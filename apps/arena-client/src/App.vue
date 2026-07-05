@@ -26,6 +26,7 @@ import {
   initializeHankoClient,
   subscribeToSessionEvents,
 } from './auth/hankoClient';
+import { isGuardedRoute, shouldHydrateSession } from './auth/routeAuthPolicy';
 import { useAuthStore } from './stores/auth';
 
 // why: PlayerProfilePage is lazy-loaded via defineAsyncComponent so the
@@ -275,23 +276,19 @@ export default defineComponent({
     // original `?route=me`; only the rendered component differs until
     // the LoginPage's full-reload navigation re-runs this setup with
     // the cached cookie populated.
-    const isGuardedRoute =
-      initialRoute === 'me' || initialRoute === 'admin-billing';
-
     // why: WP-307 gated lobby create/join on a signed-in bearer token, but
     // the token was only ever hydrated from the broker cookie on the guarded
-    // routes above. On the lobby a signed-in user's auth store stayed empty,
-    // so LobbyView's requireAuthTokenOrRedirectToLogin() bounced them to
-    // `?route=login` on every create/join — even right after signing in,
-    // because the LoginPage's full-reload lands back on the lobby, which
-    // never re-read the cookie (an endless bounce loop). The lobby must
-    // hydrate the cached token too, but UNLIKE a guarded route it does NOT
+    // routes (me / admin-billing). On the lobby a signed-in user's auth store
+    // stayed empty, so LobbyView's requireAuthTokenOrRedirectToLogin() bounced
+    // them to `?route=login` on every create/join — even right after signing
+    // in, because the LoginPage's full-reload lands back on the lobby, which
+    // never re-read the cookie (an endless bounce loop, PR #547). The lobby
+    // must hydrate the cached token too, but UNLIKE a guarded route it does NOT
     // block render (the lobby is public — spectating and Watch Bot Play stay
     // guest) and does NOT redirect when no session exists (only create/join
-    // redirects, and only on click). Hence the two flags are decoupled:
-    // `isAuthBootstrapping` gates the render for guarded routes only, while
-    // `shouldHydrateSession` also covers the lobby.
-    const shouldHydrateSession = isGuardedRoute || initialRoute === 'lobby';
+    // redirects, and only on click). The `isGuardedRoute` / `shouldHydrateSession`
+    // split (see ./auth/routeAuthPolicy) encodes exactly that difference.
+    const routeIsGuarded = isGuardedRoute(initialRoute);
 
     // why: isAuthBootstrapping is provided via Vue provide/inject (D-17501)
     // so the BrandHeader's useAuthNav composable can read it without
@@ -299,17 +296,17 @@ export default defineComponent({
     // app-lifecycle concern, not a durable auth-session property. Only a
     // guarded route blocks render on it; the lobby renders immediately and
     // hydrates the token in the background.
-    const isAuthBootstrapping = ref(isGuardedRoute);
+    const isAuthBootstrapping = ref(routeIsGuarded);
     provide('isAuthBootstrapping', isAuthBootstrapping);
 
-    if (shouldHydrateSession === true) {
+    if (shouldHydrateSession(initialRoute) === true) {
       const tenantBaseUrl = readTenantBaseUrl();
       if (tenantBaseUrl === '') {
         // why: no tenant configured (test runs, missing build-time env). A
         // guarded route routes immediately to the LoginPage's 'unavailable'
         // state; the lobby simply renders signed-out (create/join redirects
         // on click).
-        if (isGuardedRoute === true) {
+        if (routeIsGuarded === true) {
           returnTo.value = initialRoute;
           route.value = 'login';
         }
@@ -323,7 +320,7 @@ export default defineComponent({
               // why: only a guarded route redirects to login when no cached
               // session exists; the public lobby stays put and renders
               // signed-out.
-              if (isGuardedRoute === true) {
+              if (routeIsGuarded === true) {
                 returnTo.value = initialRoute;
                 route.value = 'login';
               }
@@ -354,7 +351,7 @@ export default defineComponent({
             // LoginPage's 'unavailable' surface; the lobby renders
             // signed-out. The underlying error is swallowed inside the
             // wrapper per D-16009.
-            if (isGuardedRoute === true) {
+            if (routeIsGuarded === true) {
               returnTo.value = initialRoute;
               route.value = 'login';
             }
