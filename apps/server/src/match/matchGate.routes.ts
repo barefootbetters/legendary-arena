@@ -43,6 +43,7 @@ import type {
   SessionVerifier,
 } from '../auth/sessionToken.types.js';
 import { INTERNAL_DELEGATION_HEADER } from './nativeLobbyGuard.js';
+import koaBody from 'koa-body';
 
 /**
  * Closed-set re-statement of the orchestrator's session-validation result
@@ -163,6 +164,39 @@ async function isRequestAuthenticated(
   return false;
 }
 
+// why: boardgame.io installs koa-body ONLY on its own /games/* routes — there
+// is no global body parser (same note as billing/sweep/handoff/inspection/
+// analytics/autoplay) — so these guarded routes must parse their own JSON body.
+// Without it, koaContext.request.body is undefined, the client's setupData is
+// forwarded to the native lobby as undefined, and Game.setup rejects the create
+// with "Missing setupData". This gap was latent: the unit tests inject
+// request.body directly and the WP-307 live-verify only exercised the 401 paths.
+const guardedRouteJsonBodyParser = koaBody();
+
+/**
+ * Parse the JSON request body into `koaContext.request.body` when a real Node
+ * request stream is present. A no-op for the unit-test fake context (which
+ * injects `request.body` directly and exposes no stream), so the same handler
+ * works in production and under `node:test` — mirroring the billing/sweep
+ * `parseCheckoutSessionJsonBody` test-friendly short-circuit.
+ *
+ * @param koaContext The guarded-route request context.
+ */
+async function ensureJsonBodyParsed(
+  koaContext: KoaMatchGateContext,
+): Promise<void> {
+  const nodeRequest = koaContext.req as { on?: unknown };
+  if (typeof nodeRequest.on !== 'function') {
+    return;
+  }
+  await (
+    guardedRouteJsonBodyParser as unknown as (
+      koaContext: KoaMatchGateContext,
+      next: () => Promise<void>,
+    ) => Promise<void>
+  )(koaContext, async () => {});
+}
+
 /**
  * Register the two guarded multiplayer-play endpoints on the Koa router.
  *
@@ -185,6 +219,7 @@ export function registerMatchGateRoutes(
     if (!(await isRequestAuthenticated(koaContext, database, deps))) {
       return;
     }
+    await ensureJsonBodyParsed(koaContext);
 
     const requestBody = (koaContext.request.body ?? {}) as {
       numPlayers?: unknown;
@@ -241,6 +276,7 @@ export function registerMatchGateRoutes(
     if (!(await isRequestAuthenticated(koaContext, database, deps))) {
       return;
     }
+    await ensureJsonBodyParsed(koaContext);
 
     const requestBody = (koaContext.request.body ?? {}) as {
       matchID?: unknown;
