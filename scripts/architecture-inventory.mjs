@@ -447,7 +447,13 @@ const FIRST_PARTY_SUBSYSTEMS = [
   },
   {
     name: 'LAGN v1.0 Specification',
-    location: 'packages/lagn-spec',
+    // why: contract symbols are declared in the package's `src/` tree
+    // (index.ts / validator.ts / types.ts), not at the package root.
+    // collectExportedSymbols() is non-recursive, so the location must
+    // point at the directory that directly holds the source files —
+    // matching the `.../src/*` convention the other subsystems use.
+    // Pointing at the package root reported all symbols as false-missing.
+    location: 'packages/lagn-spec/src',
     owningWp: 'WP-244',
     owningWpPath: 'docs/ai/work-packets/WP-244-lagn-spec-publication.md',
     description:
