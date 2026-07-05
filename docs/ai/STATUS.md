@@ -7,6 +7,41 @@
 
 ## Current State
 
+### WP-312 / EC-341 Executed — Client Move-Acknowledgment Watchdog (Desync Auto-Recovery; D-24097 Active) (2026-07-05)
+
+The **actual** fix for the recurring play.legendary-arena.com mid-match freeze
+that WP-309 (durable store) and WP-311 (disconnect banner) did not fully close.
+Render logs (matches `bLCYAwi2tkp`, `B66jmk2QyP5`) confirmed the freeze is a
+**connected desync**, not a disconnect: the client drops one server `patch`
+(socket.io does not redeliver across a micro-reconnect) and falls one boardgame.io
+`_stateID` behind; the idle server then **silently rejects** the client's stale
+moves (`invalid stateID, was=[N] expected=[N+1]` → the master `return`s, sending
+the client nothing) and boardgame.io's patch-fail-sync fallback never fires (no
+next patch on an idle turn). `isConnected` stays true (socket alive), so WP-311's
+banner never shows.
+
+Because all engine moves are `client: false` (D-10008 — no client-side
+prediction), `_stateID` advances **only** on a server-authoritative frame, which
+makes "submitted a move but `_stateID` didn't advance" a reliable wedge signal.
+WP-312 adds a **move-acknowledgment watchdog** in
+`apps/arena-client/src/client/bgioClient.ts` `createLiveClient`: on `submitMove`
+(real dispatch only) it records `_stateID` and arms a timer; a server frame
+advancing `_stateID` acknowledges the move and clears it; if `MOVE_ACK_TIMEOUT_MS`
+(4000 ms) elapses with no advance, it fires WP-311's `resync()` (`stop()`+`start()`
+re-anchor), bounded by `RESYNC_COOLDOWN_MS` (8000 ms) so a stuck client cannot
+resync-storm; timers are cleared on `stop()`. Recovery re-reads authoritative
+state via boardgame.io's own sync — it never resubmits the lost move or pokes
+`_stateID`.
+
+Client-only — no engine/move/`G`/server change, no new state surface in `G`, no
+new dependency. **Verification:** arena-client suite **680/680** (5 new
+`node:test` mock-timer watchdog tests: ack→no-resync / no-ack→resync / cooldown /
+unknown-move-no-arm / clear-on-stop), `vue-tsc` typecheck clean, `pnpm -r build`
+0. Fix arc for the freeze: WP-309 (durable state) → WP-311 (`resync()` +
+connection surface) → **WP-312 (move-ack watchdog — the real trigger)**.
+**D-24026 live-verify (a mid-match wedge auto-recovers within ~`MOVE_ACK_TIMEOUT_MS`,
+no reload) is operator-pending** on deploy.
+
 ### WP-311 / EC-340 Executed — Client Reconnect & Desync Auto-Resync (arena-client; D-24096 Active) (2026-07-05)
 
 A live-match client that loses its transport connection (or falls behind the
