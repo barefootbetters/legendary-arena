@@ -7,6 +7,39 @@
 
 ## Current State
 
+### WP-311 / EC-340 Executed — Client Reconnect & Desync Auto-Resync (arena-client; D-24096 Active) (2026-07-05)
+
+A live-match client that loses its transport connection (or falls behind the
+server's authoritative state) now shows a **"Connection lost — reconnecting…"**
+banner and re-anchors to the match instead of freezing. This is the client half
+of WP-116's `reconnect` policy and the direct fix for the 2026-07-05
+play.legendary-arena.com freeze that WP-309 exposed: the server stayed up and the
+match state was durable (WP-309), but the arena-client fell one boardgame.io
+`_stateID` behind after a transient socket drop and never re-synced, so the
+server rejected every subsequent move (`invalid stateID, was=[N] expected=[N+1]`)
+and the player froze at turn 14 (match `B66jmk2QyP5`).
+
+`apps/arena-client/src/client/bgioClient.ts` previously read only `state.G` and
+ignored `state.isConnected`. WP-311 reads `state.isConnected` + `_stateID` on
+every subscribe frame (before any `G` handling, so drops register even on
+null/malformed frames) → a new `connection` Pinia store → the non-blocking
+`ConnectionStatusBanner.vue` (shown only after a real drop:
+`hasEverConnected && !isConnected`). The live handle gains **`resync()`** =
+`client.stop()` + `client.start()`, which re-runs the SocketIO connect → server
+`onSync` handshake → re-anchors `_stateID`; it never pokes `_stateID`, fabricates
+a frame, or calls a server endpoint. The banner's "Reconnect now" action and a
+disconnect→reconnect transition both recover the client **without a full page
+reload**. Combined with WP-309 the freeze is closed end-to-end: state durable +
+client re-syncs to it.
+
+Client-only — no engine/server/`G` change, no new state surface in `G` (the
+WP-116 constraint honoured), no new dependency. **Server-side WP-116 cells are
+DEFERRED** (D-11601 grace / D-11602 pause / D-11604 abandonment / D-11605
+replay-on-abort / D-11606 spectator) to a later server-side WP; recorded in
+D-24096. **Verification:** arena-client suite **675/675**, `vue-tsc` typecheck
+clean, `pnpm -r build` 0. **D-24026 live-verify (mid-match drop → banner → client
+re-anchors without a full reload) is operator-pending** on deploy.
+
 ### WP-309 / EC-339 Executed — Durable boardgame.io Match Storage (Survive Deploy / Restart; D-24095 Active) (2026-07-05)
 
 In-progress matches now **survive a server deploy or restart**. Before this
