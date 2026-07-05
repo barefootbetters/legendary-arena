@@ -152,6 +152,8 @@ mindmap
         ["WP-179 ✅ Card traits + superpower condition evaluation"]
         ["WP-228 ✅ Arena-client diagnostic capture + export (shareable freeze log)"]
         ["WP-246 ✅ Arena-client diagnostic UIState snapshot (richer freeze report)"]
+        ["WP-311 ✅ Client reconnect & desync auto-resync (arena-client reads state.isConnected → connection Pinia store → non-blocking 'reconnecting' banner; LiveClientHandle.resync() = client.stop()+start() re-anchors _stateID via bgio's own onSync; the client half of the WP-116 reconnect policy; server-side pause/abandonment deferred; D-24096; EC-340)"]
+        ["WP-312 ✅ Client move-ack watchdog (the REAL fix for the connected-desync mid-match freeze — arm on submitMove, fire resync() when _stateID doesn't advance within MOVE_ACK_TIMEOUT_MS=4s, RESYNC_COOLDOWN_MS=8s storm-guard; reliable because all moves are client:false D-10008 so _stateID advances only on a server frame; confirmed from Render logs invalid stateID with no disconnect; D-24097; EC-341)"]
 
       Auth Stack & Profile Surface
         ["WP-099 ✅ Auth provider selection (Hanko)"]
@@ -169,6 +171,8 @@ mindmap
         ["WP-175 ✅ Auth-aware navigation surface"]
         ["WP-192 ✅ Hanko JWKS refresh-interval parse guard"]
         ["WP-293 ✅ Game-signup → Brevo marketing list (server fire-and-forget, fail-open after WP-174 provisioning; D-24077..D-24080)"]
+        ["WP-307 ✅ Multiplayer-play authentication gate (guarded /api/match/create+join require a Hanko session then delegate to the native bgio lobby over loopback; soft gate per operator decision — native /games/* stay open; drives account creation on the arena-client path; D-24092 policy + D-24093 mechanism; EC-337)"]
+        ["WP-308 ✅ Multiplayer-play hard gate (app-layer Koa guard unshifted before the bgio lobby router — native create/join reject external callers lacking a valid session OR the process-local internal-delegation secret the matchGate+autoplay loopback carry; closes the D-24093 soft-gate bypass; D-24094; EC-338)"]
 
       Engine + Server Wiring & Leaderboard HTTP
         ["WP-113 ✅ Engine-server registry wiring"]
@@ -313,6 +317,7 @@ mindmap
         ["WP-273 ✅ Wall-Crawl onRecruit keyword + optional recruit-to-deck placement (first effect-authoring grind target off /coverage's runtime-observed ranking — wall-crawl is the 2nd-highest in-play hollow, 23 obs, 14 heroes/29 lines, Spider sets; makes the printed when-you-recruit-this-Hero-you-may-put-it-on-top-of-your-deck keyword execute: recognizes the existing [keyword:Wall-Crawl] marker + gives it an onRecruit default timing via a new KEYWORD_TIMING_DEFAULTS map so the recognized marker leaves the onPlay path empty and stops firing parse-unrecognized, + adds an additive optional toTopOfDeck arg to recruitHero placing a recruited wall-crawl hero on the top of the player's own deck instead of discard; flips wall-crawl unsupported→executable 29 lines + drops the 23 onPlay hollows; clean self-contained — no new zone model, no pending-choice/board-freeze, no new move so game.test.ts move-count unchanged; builds the first reusable onRecruit execution path; marker already in card data so no data/cards change; bot defaults toTopOfDeck false so the deterministic sweep zone state is unchanged, sentinel re-pinned only on divergence, all coverage artifacts regenerated; dodge/undercover/unleash ecosystem + the arena-client put-on-top toggle deferred; User-Visible Surface dashboard/coverage, D-24026 post-deploy; D-24049)"]
         ["WP-274 ✅ In-play coverage metric — % of in-play hollow observations resolved (dashboard /coverage gets a 2nd headline beside %-executable, OBS-WEIGHTED — each unsupported mechanic contributes its runtime-observed hitCount, resolved when it's executable in the hero ledger — so fixing a high-frequency hollow dodge-37/undercover-20/moonlight-18 moves the needle proportionally, unlike the existing mechanic-counted worst-case rollup that hides partial progress; percentResolved = Σ peakObs[executable] / Σ peakObs[all], peakObs = max(committed-baseline, live), ledger-gated NOT live-obs-gated since the sweep is a sample; reads 0% today 0/140, 26.4% once an OBSERVED mechanic like dodge-37 lands (wall-crawl is NOT in the sweep so it leaves the needle flat); self-contained dashboard layer only — no @legendary-arena import, additive existing headline+table untouched; new useInPlayCoverage composable + a committed obs-baseline seed in-play-hollow-baseline.json that preserves fixed mechanics' obs after they vanish from the live artifact + a deliberate monotonic maintenance script; the dashboard CI gate set lint/typecheck/test:coverage/format:check/build stayed green; stacks on WP-273 for governance only; User-Visible Surface dashboard/coverage D-24026 post-deploy; Done 2026-06-21 commit 8704c782; D-24050)"]
         ["WP-275 ✅ Dodge hand-discard-to-draw move + recognized keyword (second effect-authoring grind target off /coverage's runtime-observed ranking — dodge is the #1 in-play hollow, 37 obs, the single biggest player-facing gap; 25 [keyword:Dodge] lines bkwd-10+vill-15; makes the printed during-your-turn-discard-this-from-hand-to-draw-another keyword execute: recognizes the existing [keyword:Dodge] marker so the recognized keyword leaves the onPlay path empty and stops firing parse-unrecognized, + adds a new non-core dodgeCard({cardId}) move on the recruitHero internal-gating precedent that discards a Dodge card from hand to discard + draws one replacement; ignore-all-other-text is automatic since the card is discarded never played; dodge ∈ MVP_KEYWORDS via a new HAND_ACTION_EXECUTED_KEYWORDS set sibling to WP-273's RECRUIT_TIME_EXECUTED_KEYWORDS, no play-time handler so the play-time visit is a not-hollow no-op; flips dodge unsupported→executable + drops the 37 onPlay hollows; clean self-contained — no new zone model, no pending-choice/board-freeze; builds the first hand-resident optional move; marker already in card data so no data/cards change; the new move bumps game.test.ts move-count 11→12 but is NOT added to the sim's getLegalMoves so the deterministic sweep never dodges and the sentinel finalStateHash is unchanged — the determinism lever, mirrors WP-273's bot decline; honest-partial — the dodge-entangled rider lines Twilight-Ops flip not-hollow per the mixed-hook rule but undercover/unleash stay reported on their standalone lines; teaching the bot to dodge + the arena-client discard-to-draw affordance + undercover/unleash+zone-model are deferred follow-ups; extends WP-273's MVP move-executed category + ledger handler-module mapping; User-Visible Surface dashboard/coverage, D-24026 post-deploy; D-24051)"]
+        ["WP-310 ✅ Empowered multi-class form (sixth Empowered form; by [hc:X] and [hc:Y] → one buildEmpoweredComposition per parsed class in printed order = the sum; new tryResolveEmpoweredMultiClass after core+conditional-prefix, before free-choice/dynamic; honest-partial = core's sole-condition gate generalized to N; clears the antm/wonder-man/8th-wonder-of-the-world empowered hollow; reuses WP-256 substrate, no new keyword/value-expr/node type, no data/cards edit; engine 1716/1716, finalStateHash unchanged; D-24098; EC-342)"]
 
       Notable Events & Overlays
         ["WP-200 ✅ Notable game event log (engine)"]
@@ -372,25 +377,28 @@ mindmap
         ["WP-300 ✅ Public profile link-preview meta (Open Graph / Twitter Card via the repo's first Cloudflare Pages Function — functions/_middleware.ts uses HTMLRewriter to inject per-player preview meta tags into the SPA shell for ?profile=handle, fail-soft on any API failure/bad handle; buildProfileMeta.ts unit-tested attribute-escaping + §23 guard; extends client-app category to functions/; D-24085 edge-subsurface classification; EC-331; test 624→634/typecheck 0/build 0)"]
         ["WP-301 ✅ Profile loadout library — data model + endpoints (server) (migration 022_create_player_loadouts.sql — player_id FK CASCADE, lagn_json jsonb, visibility CHECK, partial-unique share_slug; loadoutLibrary.{types,logic,routes}.ts + tests; 5 endpoints POST/GET /api/me/loadouts + PATCH/DELETE /api/me/loadouts/:id + guest GET /api/loadouts/:shareSlug public-only; server-side LAGN validate on every write, 50-cap, decorative-not-merit §19b; D-24086; EC-332; server suite 716→746/build 0)"]
         ["WP-302 ✅ Profile loadout library — owner UI + public share view (client) (consumes the WP-301 endpoints, no new server surface; MyProfilePage.vue Saved Loadouts section — paste-LAGN create / list / rename / public-private toggle / delete / copy-share-link; net-new unguarded ?loadout=<shareSlug> SharedLoadoutPage.vue — name + displayHandle + composition summary, 404 on private/missing, never an account id; loadoutLibraryApi.ts Bearer client + guest read + loadoutSummary.ts defensive helper, lagn opaque unknown no @legendary-arena/lagn import, no new npm dep; decorative-not-merit §19b/§19a; D-24087; EC-333; arena-client test 634→650/typecheck 0/build 0; lobby integration deferred WP-303)"]
+        ["WP-305 ✅ Owner-page identity fields (accountId / displayName / handleCanonical on OwnerProfileView; editable display name via transactional legendary.players update, handle stays immutable; D-24089/D-24090; EC-335)"]
 
       Architecture & API Governance
         ["WP-116 ✅ Disconnect & reconnect semantics"]
         ["WP-117 ✅ Client routing strategy"]
         ["WP-118 ✅ HTTP API surface catalog"]
         ["WP-119 ✅ Architecture doc hygiene"]
+        ["WP-306 ✅ Setup-contract per-field ext_id validation (henchman id-space fix — henchmen aren't flat cards so the shared validator over-rejected; per-field validation with henchman groups deriving from set data; CardRegistryReader widened cardType/listSets/getSet; D-24091; EC-336)"]
 
       Complete-Game Testing
         ["WP-158 ✅ Complete-game regression tests (seed-faithful fixture harness)"]
 
       Cross-App Infrastructure
         ["WP-180 ✅ Build-time version stamping"]
+        ["WP-309 ✅ Durable boardgame.io match storage (the authored form of Future-WP-I — custom StorageAPI.Async adapter over the WP-115 pg.Pool storing bgio's opaque match blob as jsonb in a dedicated bgio schema, wired as db: into Server({...}); an in-progress match survives a deploy/restart instead of freezing; framework-store exemption reconciliation in ARCHITECTURE.md + rules mirror; no ORM Option-B rejected; D-24095; EC-339)"]
 
       Next Horizons
         ["📦 Core set keyword & ability coverage — get the core set fully playable first, then add sets incrementally"]
-        ["📦 Live PvP matchmaking & reconnect — implement WP-116 architecture + match discovery UX"]
+        ["📦 Live PvP matchmaking & reconnect — reconnect/desync recovery SHIPPED (WP-311 banner+resync, WP-312 move-ack watchdog); remaining: server-side WP-116 pause/grace/abandonment + match discovery UX"]
         ["📦 Score submission HTTP wiring — close the play-to-leaderboard loop"]
         ["📦 Agent triage pipeline — WP-230..235 wire simulation sweep data into agent lanes + scheduled triage sessions"]
-        ["📦 Durable match storage — back boardgame.io match state with Postgres so a deploy/restart no longer wipes in-progress matches (Future-WP-I; root cause of the 2026-06-16 play.legendary-arena.com freeze)"]
+        ["✅ Durable match storage — SHIPPED as WP-309 (Future-WP-I; Postgres-backed bgio store, survives deploy/restart). The residual mid-match freeze was a client-side connected-desync, fixed by WP-311/WP-312"]
 
       Phase 10 — Debugging, Testing & Troubleshooting
         ["Future-WP-A 📝 Placeholder — replay diff tool"]
@@ -441,8 +449,8 @@ mindmap
 | Scoring & PAR Pipeline | 4/4 | — |
 | Beta-Launch Pillar | 5/5 | — |
 | Engine Hardening | 2/2 | — |
-| Client Integration Cluster | 21/21 | — |
-| Auth Stack & Profile Surface | 15/15 | — |
+| Client Integration Cluster | 23/23 | — |
+| Auth Stack & Profile Surface | 17/17 | — |
 | Engine + Server Wiring & Leaderboard HTTP | 3/3 | — |
 | Registry Viewer Enhancements | 23/23 | — |
 | Phase 8 — Interactive Board Layout | 3/3 | — |
@@ -455,20 +463,19 @@ mindmap
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
 | Villain & Henchman Effects | 11/11 | — |
-| Hero Ability Coverage & Markup Pipeline | 45/45 | — |
+| Hero Ability Coverage & Markup Pipeline | 46/46 | — |
 | Notable Events & Overlays | 4/4 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
 | Dashboard & Operator Analytics | 14/14 | — |
 | Agent Triage Pipeline | 7/7 | — |
 | Admin & Route Wiring | 4/4 | — |
-| Phase 9 — Profile Surface Follow-ups | 10/10 | — |
-| Architecture & API Governance | 4/4 | — |
+| Phase 9 — Profile Surface Follow-ups | 11/11 | — |
+| Architecture & API Governance | 5/5 | — |
 | Complete-Game Testing | 1/1 | — |
-| Cross-App Infrastructure | 1/1 | — |
-| Next Horizons | 0/5 | 5 📦 queued |
+| Cross-App Infrastructure | 2/2 | — |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **298/299 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
+| **Total** | **306/307 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
 
 **Open / blocked WPs (derived from WORK_INDEX, 1):** WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
