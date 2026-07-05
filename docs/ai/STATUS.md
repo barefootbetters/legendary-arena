@@ -7,6 +7,51 @@
 
 ## Current State
 
+### WP-309 / EC-339 Executed — Durable boardgame.io Match Storage (Survive Deploy / Restart; D-24095 Active) (2026-07-05)
+
+In-progress matches now **survive a server deploy or restart**. Before this
+session, `Server({ games, origins })` at `apps/server/src/server.mjs` was built
+with **no `db:` option**, so boardgame.io fell back to its in-memory match
+store; because the server auto-deploys on every push to `main`, each deploy
+restarted the process and wiped every live match — clients froze on their
+last-rendered board (the 2026-06-16 + 2026-07-05 play.legendary-arena.com
+incidents; roadmap Future-WP-I). WP-309 backs boardgame.io's match store with
+the existing PostgreSQL via a custom `StorageAPI.Async` adapter
+(`apps/server/src/db/bgioPgStore.js`) over the single long-lived WP-115
+`pg.Pool` (no second pool), storing bgio's opaque match blob as `jsonb` in a
+**dedicated `bgio` schema** (`bgio.matches`, PK `match_id text`) —
+`data/migrations/023_create_bgio_match_store.sql`. The pool is now constructed
+ahead of `Server({...})` so `db: createBgioPgStore(pool)` wires at construction
+time, and a startup log line names the active store. After a restart, the match
+state is reloaded from Postgres and the client can keep submitting moves.
+
+The adapter **stores only** — it never reads, interprets, or branches on the
+match blob's game state, imports no engine code, and is the sole reader/writer
+of `bgio.matches`; no route handler or engine code queries it. The engine,
+moves, zone ops, and snapshot code are **unchanged**; `G` remains
+JSON-serializable. **Option A** (dependency-free custom adapter) was chosen over
+Option B (`bgio-postgres` + Sequelize ORM, rejected). Carries the
+operator-approved **architecture-invariant reconciliation** (D-24095): the
+"`G` is never persisted" invariant means *application code* never persists `G`
+to the `legendary.*` domain schema — boardgame.io's own framework store
+round-tripping its opaque blob to a dedicated non-domain schema is an
+operational durability concern, categorically distinct. The identical
+reconciliation note landed in `docs/ai/ARCHITECTURE.md` + the
+`.claude/rules/architecture.md` mirror + a `DECISIONS.md` D-24095 entry, in the
+implementation commit.
+
+**Verification:** the DB-gated `bgioPgStore` suite (9 tests) passes with
+`TEST_DATABASE_URL` set — the restart-survival proof (write via one adapter,
+read back via a fresh pool + fresh adapter) runs, not skips; `pnpm -r build`
+exits 0. Two fold-inline deviations from the WP/EC allowlist, recorded in
+D-24095: the migration landed at `data/migrations/023_…` (the repo's real
+migration convention) rather than the WP's stated `apps/server/migrations/`
+path; and `pnpm --filter @legendary-arena/server build` is a no-op (apps/server
+has no `build` script), so `pnpm -r build` + the DB suite are the effective
+gates. **D-24026 live-verify (restart a deployed match, confirm a move still
+applies) is operator-pending** — it requires the change deployed to
+play.legendary-arena.com.
+
 ### WP-308 / EC-338 Executed — Multiplayer-Play Hard Gate (Native-Lobby Bypass Closed; D-24094 Active) (2026-07-04)
 
 The boardgame.io **native** lobby routes (`POST /games/legendary-arena/create`
