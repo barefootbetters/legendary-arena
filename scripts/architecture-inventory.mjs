@@ -474,6 +474,40 @@ const FIRST_PARTY_SUBSYSTEMS = [
       'GameResult',
     ],
   },
+  {
+    name: 'Multiplayer-Play Authentication Boundary',
+    location: 'apps/server/src/match',
+    owningWp: 'WP-308',
+    owningWpPath: 'docs/ai/work-packets/WP-308-multiplayer-play-hard-gate.md',
+    description:
+      'The server-layer gate that requires a free authenticated account to play ' +
+      'a seat in a multiplayer match (D-24092 Access Model). Two layers sit in ' +
+      'front of the boardgame.io native lobby. The WP-307 guarded endpoints ' +
+      '(`POST /api/match/create|join`) run `requireAuthenticatedSession` and ' +
+      'then delegate server-internal (loopback `fetch`) to the native routes. ' +
+      'The WP-308 `nativeLobbyGuard` — the FIRST app-level Koa middleware in ' +
+      '`apps/server`, mounted before the bgio lobby router via ' +
+      '`server.app.middleware.unshift` — rejects a raw external POST to the ' +
+      'native create/join paths unless it carries a valid authenticated session ' +
+      'OR a process-local internal-delegation secret (`node:crypto` ' +
+      '`randomBytes`, compared value-exact and constant-time via ' +
+      '`timingSafeEqual`), closing the D-24093 soft-gate bypass. The matchGate ' +
+      'and the WP-163/164 autoplay loopback delegations attach that secret; the ' +
+      '`GET` match list, spectating, and sockets stay guest. Server wires, ' +
+      'engine decides — no game logic (D-24094). Framework note: on ' +
+      'boardgame.io@0.50.2 the lobby router is applied INSIDE `server.run()` ' +
+      '(via `configureApp`), not at `Server()` construction, so an `unshift` ' +
+      'after `Server()` reliably precedes it — the middleware ordering the hard ' +
+      'gate depends on (verified by the EC-338 PS-1 scaffold).',
+    contractSymbols: [
+      'registerMatchGateRoutes',
+      'MatchGateDependencies',
+      'createNativeLobbyGuard',
+      'generateInternalDelegationSecret',
+      'INTERNAL_DELEGATION_HEADER',
+      'NativeLobbyGuardDependencies',
+    ],
+  },
 ];
 
 // ---------------------------------------------------------------------------
