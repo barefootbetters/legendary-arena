@@ -14,16 +14,25 @@ import {
   type BgioClientFactory,
 } from './bgioClient';
 import { useUiStateStore } from '../stores/uiState';
+import { useConnectionStore } from '../stores/connection';
 import App from '../App.vue';
 
 interface StubSubscriber {
-  callback: (state: { G?: unknown } | null | undefined) => void;
+  callback: (
+    state:
+      | { G?: unknown; isConnected?: boolean; _stateID?: number }
+      | null
+      | undefined,
+  ) => void;
 }
 
 interface StubClient extends BgioClientLike {
   _subscribers: StubSubscriber[];
   _starts: number;
   _stops: number;
+  // why: WP-311 — records start/stop call ORDER so the resync() test can assert
+  // stop-then-start (a re-anchor tears the socket down before re-establishing it).
+  _ops: string[];
   _moveLog: Array<{ name: string; args: unknown[] }>;
 }
 
@@ -38,6 +47,7 @@ function makeStubFactory(): {
       _subscribers: [],
       _starts: 0,
       _stops: 0,
+      _ops: [],
       _moveLog: [],
       moves: {
         drawCards: (...args: unknown[]) => {
@@ -46,9 +56,11 @@ function makeStubFactory(): {
       },
       start: () => {
         stub._starts += 1;
+        stub._ops.push('start');
       },
       stop: () => {
         stub._stops += 1;
+        stub._ops.push('stop');
       },
       subscribe: (listener) => {
         stub._subscribers.push({ callback: listener });
@@ -73,7 +85,7 @@ describe('createLiveClient', () => {
     resetLiveClientCallLog();
   });
 
-  test('returns a handle with exactly the three locked methods — start, stop, submitMove', () => {
+  test('returns a handle with exactly the locked methods — resync, start, stop, submitMove', () => {
     const { factory } = makeStubFactory();
     setClientFactoryForTesting(factory);
 
@@ -86,10 +98,64 @@ describe('createLiveClient', () => {
     });
 
     const keys = Object.keys(handle).sort();
-    assert.deepEqual(keys, ['start', 'stop', 'submitMove']);
+    assert.deepEqual(keys, ['resync', 'start', 'stop', 'submitMove']);
     assert.equal(typeof handle.start, 'function');
     assert.equal(typeof handle.stop, 'function');
     assert.equal(typeof handle.submitMove, 'function');
+    assert.equal(typeof handle.resync, 'function');
+  });
+
+  test('resync() re-anchors by calling stop() then start() in that order (WP-311)', () => {
+    const { factory, lastClient } = makeStubFactory();
+    setClientFactoryForTesting(factory);
+
+    const handle = createLiveClient({
+      matchID: 'match-resync',
+      playerID: '0',
+      credentials: 'secret',
+      serverUrl: 'http://localhost:8000',
+    });
+
+    const stub = lastClient();
+    assert.ok(stub !== null);
+    // why: createLiveClient itself does not call start() (App.vue does), so the
+    // op log starts empty and captures only the resync() sequence.
+    assert.deepEqual(stub!._ops, []);
+
+    handle.resync();
+
+    assert.deepEqual(stub!._ops, ['stop', 'start']);
+    assert.equal(stub!._stops, 1);
+    assert.equal(stub!._starts, 1);
+  });
+
+  test('subscribe callback surfaces state.isConnected + _stateID to the connection store (WP-311)', () => {
+    const { factory, lastClient } = makeStubFactory();
+    setClientFactoryForTesting(factory);
+
+    createLiveClient({
+      matchID: 'match-conn',
+      playerID: '0',
+      credentials: 'secret',
+      serverUrl: 'http://localhost:8000',
+    });
+
+    const stub = lastClient();
+    assert.ok(stub !== null);
+    const connection = useConnectionStore();
+
+    // A connected frame latches hasEverConnected and records the stateID.
+    stub!._subscribers[0]!.callback({ G: {}, isConnected: true, _stateID: 7 });
+    assert.equal(connection.isConnected, true);
+    assert.equal(connection.lastStateId, 7);
+    assert.equal(connection.hasEverConnected, true);
+
+    // A dropped frame flips isConnected false but keeps the hasEverConnected
+    // latch, so the banner shows. A null/malformed G frame must still update
+    // the connection status (the write runs before any G handling).
+    stub!._subscribers[0]!.callback({ G: null, isConnected: false, _stateID: 7 });
+    assert.equal(connection.isConnected, false);
+    assert.equal(connection.hasEverConnected, true);
   });
 
   test('submitMove delegates to the underlying client.moves[name] bag', () => {

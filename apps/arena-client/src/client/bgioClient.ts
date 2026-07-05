@@ -73,6 +73,7 @@ const Client: ClientCtor = resolvedClient;
 const SocketIO: SocketIOCtor = resolvedSocketIO;
 
 import { useUiStateStore } from '../stores/uiState.js';
+import { useConnectionStore } from '../stores/connection.js';
 import { usePreplanStore } from '../stores/preplan.js';
 import { detectPlayerAffectingMutations } from '../preplan/mutationDetector.js';
 import { executeDisruptionPipeline } from '@legendary-arena/preplan';
@@ -87,7 +88,20 @@ export interface BgioClientLike {
   start(): void;
   stop(): void;
   moves: Record<string, (...args: unknown[]) => void>;
-  subscribe(listener: (state: { G?: unknown } | null | undefined) => void): unknown;
+  // why: boardgame.io delivers `ClientState<G> = null | (State<G> & {
+  // isConnected: boolean })` to subscribers, so every frame carries the
+  // transport status (`isConnected`, from `transport.isConnected`) and the
+  // authoritative `_stateID` alongside the `G` projection. WP-090 read only
+  // `G`; WP-311 also reads `isConnected` / `_stateID` to drive the reconnect
+  // banner. The two fields are optional here so test stubs may omit them.
+  subscribe(
+    listener: (
+      state:
+        | { G?: unknown; isConnected?: boolean; _stateID?: number }
+        | null
+        | undefined,
+    ) => void,
+  ): unknown;
 }
 
 export interface BgioClientFactoryArgs {
@@ -117,6 +131,12 @@ export interface LiveClientHandle {
   start(): void;
   stop(): void;
   submitMove(name: string, ...args: unknown[]): void;
+  /**
+   * Forces a re-sync with the server, re-anchoring the client's `_stateID`
+   * to the server's authoritative state. Used to recover a client that has
+   * fallen behind (the WP-311 desync freeze) without a full page reload.
+   */
+  resync(): void;
 }
 
 function defaultClientFactory(args: BgioClientFactoryArgs): BgioClientLike {
@@ -178,6 +198,19 @@ export function createLiveClient(
   let previousUIState: UIState | null = null;
 
   client.subscribe((state) => {
+    // why: WP-311 — record the transport connection status on EVERY frame,
+    // before any G handling, so the reconnect banner reflects a drop even on
+    // frames whose G projection is null/malformed (the early returns below).
+    // boardgame.io sets `state.isConnected` from `transport.isConnected`; a
+    // null frame means no connection, so `isConnected` is treated as false.
+    const isConnected = state?.isConnected === true;
+    // why: read the frame's stateID for the connection store; never assign
+    // `_stateID` (the client never pokes boardgame.io's authoritative version —
+    // resync() re-anchors it via the framework's own sync instead).
+    const rawStateId = state?._stateID;
+    const stateId = typeof rawStateId === 'number' ? rawStateId : null;
+    useConnectionStore().setConnected(isConnected, stateId);
+
     const projection = state?.G;
     if (projection !== null && projection !== undefined && typeof projection !== 'object') {
       // why: fail-closed on malformed server frames — a non-object projection
@@ -251,6 +284,17 @@ export function createLiveClient(
       if (typeof move === 'function') {
         move(...args);
       }
+    },
+    // why: WP-311 / D-24096 — force a re-sync by tearing down and
+    // re-establishing the boardgame.io client (`stop()` then `start()`). That
+    // re-runs the SocketIO connect → server `onSync` handshake, which re-anchors
+    // the client's `_stateID` to the server's authoritative state. This is the
+    // recovery for a client wedged one `_stateID` behind (the freeze this WP
+    // fixes) — it re-reads authoritative state via boardgame.io's own sync,
+    // never pokes `_stateID`, fabricates a frame, or calls a server endpoint.
+    resync: (): void => {
+      client.stop();
+      client.start();
     },
   };
 }
