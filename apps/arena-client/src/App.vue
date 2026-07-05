@@ -275,23 +275,44 @@ export default defineComponent({
     // original `?route=me`; only the rendered component differs until
     // the LoginPage's full-reload navigation re-runs this setup with
     // the cached cookie populated.
-    const isAuthBootstrapping = ref(
-      initialRoute === 'me' || initialRoute === 'admin-billing',
-    );
+    const isGuardedRoute =
+      initialRoute === 'me' || initialRoute === 'admin-billing';
+
+    // why: WP-307 gated lobby create/join on a signed-in bearer token, but
+    // the token was only ever hydrated from the broker cookie on the guarded
+    // routes above. On the lobby a signed-in user's auth store stayed empty,
+    // so LobbyView's requireAuthTokenOrRedirectToLogin() bounced them to
+    // `?route=login` on every create/join — even right after signing in,
+    // because the LoginPage's full-reload lands back on the lobby, which
+    // never re-read the cookie (an endless bounce loop). The lobby must
+    // hydrate the cached token too, but UNLIKE a guarded route it does NOT
+    // block render (the lobby is public — spectating and Watch Bot Play stay
+    // guest) and does NOT redirect when no session exists (only create/join
+    // redirects, and only on click). Hence the two flags are decoupled:
+    // `isAuthBootstrapping` gates the render for guarded routes only, while
+    // `shouldHydrateSession` also covers the lobby.
+    const shouldHydrateSession = isGuardedRoute || initialRoute === 'lobby';
 
     // why: isAuthBootstrapping is provided via Vue provide/inject (D-17501)
     // so the BrandHeader's useAuthNav composable can read it without
     // extending the Pinia auth store. The bootstrapping state is a transient
-    // app-lifecycle concern, not a durable auth-session property.
+    // app-lifecycle concern, not a durable auth-session property. Only a
+    // guarded route blocks render on it; the lobby renders immediately and
+    // hydrates the token in the background.
+    const isAuthBootstrapping = ref(isGuardedRoute);
     provide('isAuthBootstrapping', isAuthBootstrapping);
 
-    if (isAuthBootstrapping.value === true) {
+    if (shouldHydrateSession === true) {
       const tenantBaseUrl = readTenantBaseUrl();
       if (tenantBaseUrl === '') {
-        // No tenant configured (test runs, missing build-time env);
-        // route immediately to the LoginPage's 'unavailable' state.
-        returnTo.value = initialRoute;
-        route.value = 'login';
+        // why: no tenant configured (test runs, missing build-time env). A
+        // guarded route routes immediately to the LoginPage's 'unavailable'
+        // state; the lobby simply renders signed-out (create/join redirects
+        // on click).
+        if (isGuardedRoute === true) {
+          returnTo.value = initialRoute;
+          route.value = 'login';
+        }
         isAuthBootstrapping.value = false;
       } else {
         void (async () => {
@@ -299,17 +320,26 @@ export default defineComponent({
             const handle = await initializeHankoClient({ tenantBaseUrl });
             const token = getCurrentTokenFromHandle(handle);
             if (token === null) {
-              returnTo.value = initialRoute;
-              route.value = 'login';
+              // why: only a guarded route redirects to login when no cached
+              // session exists; the public lobby stays put and renders
+              // signed-out.
+              if (isGuardedRoute === true) {
+                returnTo.value = initialRoute;
+                route.value = 'login';
+              }
               return;
             }
             useAuthStore().bootstrapFromCachedToken(token);
             subscribeToSessionEvents(handle, {
               onSessionCreated: () => {
-                // why: sign-in already happened on the LoginPage's
-                // navigation back to this guarded route; App.vue's
-                // subscription only cares about the expiry/logout
-                // side. Re-firing setSession here would be redundant.
+                // why: on a guarded route the sign-in already happened via
+                // the LoginPage full-reload; on the lobby a session created
+                // in this tab (or another) must hydrate the store so
+                // create/join finds the token without a reload.
+                // bootstrapFromCachedToken(null) is a safe no-op.
+                useAuthStore().bootstrapFromCachedToken(
+                  getCurrentTokenFromHandle(handle),
+                );
               },
               onSessionExpired: () => {
                 useAuthStore().clearSession();
@@ -319,12 +349,15 @@ export default defineComponent({
               },
             });
           } catch {
-            // Broker initialization failed (network, bundle load,
-            // tenant unreachable) — fall back to the LoginPage's
-            // 'unavailable' surface. The underlying error is swallowed
-            // inside the wrapper per D-16009.
-            returnTo.value = initialRoute;
-            route.value = 'login';
+            // why: broker initialization failed (network, bundle load,
+            // tenant unreachable). A guarded route falls back to the
+            // LoginPage's 'unavailable' surface; the lobby renders
+            // signed-out. The underlying error is swallowed inside the
+            // wrapper per D-16009.
+            if (isGuardedRoute === true) {
+              returnTo.value = initialRoute;
+              route.value = 'login';
+            }
           } finally {
             isAuthBootstrapping.value = false;
           }
