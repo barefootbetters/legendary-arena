@@ -7,6 +7,53 @@
 
 ## Current State
 
+### WP-308 / EC-338 Executed — Multiplayer-Play Hard Gate (Native-Lobby Bypass Closed; D-24094 Active) (2026-07-04)
+
+The boardgame.io **native** lobby routes (`POST /games/legendary-arena/create`
+and `/{matchID}/join`) are now hard-gated. Before this session they stayed
+open, so the WP-307 / D-24092 account gate held only on the arena-client path
+(D-24093 §Enforcement level named this soft-gate bypass) — a raw API request
+straight to the native routes created or joined a match with no account. WP-308
+adds an app-layer Koa guard (`apps/server/src/match/nativeLobbyGuard.ts`),
+mounted **before** the bgio lobby router via `server.app.middleware.unshift`,
+that admits a request to those two POST paths only if it carries **either** a
+valid authenticated session (the same Bearer → Hanko-verifier → accountResolver
+path WP-307 uses) **or** a process-local **internal-delegation secret**
+(`crypto.randomBytes`, generated once at startup, never sent to a client, never
+logged, never persisted; a restart rotates it). The secret compare is
+value-exact and constant-time (`crypto.timingSafeEqual` on equal-length
+buffers) — the header *name* alone grants nothing. The WP-307 matchGate and the
+WP-163/164 autoplay loop attach the secret to their existing loopback `fetch`,
+so both delegations keep working; the `GET` list, spectating, sockets, and
+every `/api/*` route pass through untouched. Server wires, engine decides — the
+guard contains no game/move/phase/rule logic. arena-client is not touched (it
+already reaches create/join through the guarded `/api/match/*`).
+
+**PS-1 scaffold (blocking) PASSED with the primary approach:** on
+boardgame.io@0.50.2, `Server()` returns before its `configureApp` appends
+cors → api-secret → `router.routes()` (that runs inside `server.run()`), so
+`server.app.middleware.unshift(guard)` after `Server()` places the guard at the
+front of the Koa stack, ahead of the lobby router. A throwaway scaffold
+confirmed a raw native `POST …/create` returns `401` without the secret and
+`200` with it (wrong value → `401`; `GET` list untouched → `200`); no fallback
+(loopback-source-IP / bgio lobby config) was needed. A real-guard integration
+smoke (the actual `createNativeLobbyGuard` on a real bgio `Server`) confirmed
+no-auth / wrong-secret / forged-session → `401` and secret / valid-session →
+pass-through. The validation-tightening sweep found no pre-existing server-side
+test fixture that POSTs to the native lobby unauthenticated
+(`matchGate.routes.test.ts` stubs `globalThis.fetch`; the two
+`apps/server/scripts/*.mjs` are manual CLI tools, not test fixtures).
+
+Server suite 761→770 tests (+9 guard unit tests) / 692 pass / 0 fail / 78
+DB-skip; `pnpm -r build` 0. §21 catalog: native create/join Auth
+`guest` → `authenticated-session-required` (D-11804 whole-row) + internal-secret
+Notes. **D-24094 Active** (supersedes the D-24093 §Enforcement-level soft-gate
+limitation; D-24092 policy, D-24093 guarded endpoints all stand).
+`User-Visible Surface = play.legendary-arena.com` (enforcement only, no visible
+UI change) → **D-24026 live-verify PENDING post-deploy**: on the deployed
+build, a raw native `POST …/create` with no auth now returns `401` (was `200`),
+while the WP-307 signed-in flow and "Watch Bot Play" still work.
+
 ### WP-306 / EC-336 Executed — Setup-Contract Per-Field ext_id Validation (Henchman Id-Space Fix; D-24091 Active) (2026-07-04)
 
 The registry-side MATCH-SETUP validator (`validateMatchSetupDocument`,
