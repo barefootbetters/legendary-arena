@@ -81,9 +81,9 @@ keep working unchanged.
   server-internal secret path.
 - Land **D-24094** (the hard-gate mechanism; supersedes D-24093's soft-gate
   limitation).
-- Tests: guard unit tests (no secret + no session → 401; valid secret →
-  pass-through; valid session → pass-through; `GET` list untouched; non-lobby
-  path untouched).
+- Tests: guard unit tests (no secret + no session → 401; **wrong/invalid
+  secret value → 401**; valid secret → pass-through; valid session →
+  pass-through; `GET` list untouched; non-lobby path untouched).
 
 ## Out of Scope
 
@@ -106,8 +106,8 @@ keep working unchanged.
 - `apps/server/src/match/nativeLobbyGuard.ts` — **new** — the Koa guard
   middleware + the allow-if-secret-or-session predicate.
 - `apps/server/src/match/nativeLobbyGuard.test.ts` — **new** — `node:test`:
-  no-secret-no-session → 401; secret → pass; session → pass; `GET` list
-  untouched; unrelated path untouched.
+  no-secret-no-session → 401; wrong-secret-value → 401; secret → pass;
+  session → pass; `GET` list untouched; unrelated path untouched.
 - `apps/server/src/server.mjs` — **modified** — generate the secret, mount
   the guard before the lobby router, thread the secret to the matchGate +
   autoplay registrations.
@@ -133,8 +133,21 @@ keep working unchanged.
 - The guard matches **only** POST to the two native create/join paths.
   Every other path and method passes through untouched (the `GET` list,
   spectating, sockets, `/api/*`).
+- **Session branch reuses the existing model.** The guard's session check
+  calls `requireAuthenticatedSession` (`apps/server/src/auth/sessionToken.logic.ts`)
+  — the same Bearer-token → Hanko-verifier → accountResolver path the WP-307
+  `/api/match/*` guard uses. The guard introduces NO second authentication
+  model.
 - The internal-delegation secret is **process-local, never sent to a
-  client**, never logged, never committed. Generated at startup.
+  client**, never logged, never committed. Generated at startup; a process
+  restart **regenerates** it. It is never persisted, env-configured, or
+  backward-compatible across restarts — the guard and both delegating call
+  sites share the one in-memory value, so a restart rotates all of them
+  atomically.
+- **Secret match is value-exact and constant-time.** Possession of the
+  header *name* grants nothing; the request must carry the exact
+  process-generated secret value, compared with `crypto.timingSafeEqual` on
+  equal-length buffers (never `===` / string compare).
 - No new npm dependency; Node built-in `crypto` + `fetch` only.
 - Hanko stays confined (WP-099); `auth_provider` never carries `'hanko'`.
 - No engine / `G` / replay / RNG / persistence surface; no migration.
@@ -188,26 +201,29 @@ list row stays `guest` (unchanged).
    internal secret returns `401`; no match is created.
 2. External `POST /games/legendary-arena/{matchID}/join` with no session and
    no internal secret returns `401`.
-3. A request carrying the valid internal-delegation secret passes through to
+3. External `POST …/create` carrying the internal header with a **wrong /
+   invalid secret value** (header present, value incorrect) returns `401`;
+   no match is created. (Guards against a presence-only check.)
+4. A request carrying the valid internal-delegation secret passes through to
    the native lobby (the matchGate + autoplay delegation still succeeds).
-4. `GET /games/legendary-arena` (list / spectating) still returns `200`
+5. `GET /games/legendary-arena` (list / spectating) still returns `200`
    with no auth — untouched.
-5. The WP-307 guarded `POST /api/match/create` + `/join` still work
+6. The WP-307 guarded `POST /api/match/create` + `/join` still work
    end-to-end for a signed-in caller (auth → delegate-with-secret → native).
-6. "Watch Bot Play" (`POST /api/match/autoplay`) still creates a bot match
+7. "Watch Bot Play" (`POST /api/match/autoplay`) still creates a bot match
    with no user auth (delegation carries the secret).
-7. The internal secret appears in no client response, no log line, and no
+8. The internal secret appears in no client response, no log line, and no
    committed file.
-8. `D-24094` is present in `docs/ai/DECISIONS.md` and marked Active.
-9. `apps/server` build + tests green; `pnpm -r build` 0.
-10. No file outside `## Files Expected to Change` is modified (arena-client
-    untouched).
+9. `D-24094` is present in `docs/ai/DECISIONS.md` and marked Active.
+10. `apps/server` build + tests green; `pnpm -r build` 0.
+11. No file outside `## Files Expected to Change` is **created or modified**
+    (arena-client untouched).
 
 ## Verification Steps
 
 - `pnpm --filter @legendary-arena/server test` — new `nativeLobbyGuard.test.ts`
-  green (401 without secret/session; pass with secret; pass with session;
-  `GET` list + unrelated path untouched).
+  green (401 without secret/session; 401 with a wrong secret value; pass with
+  the valid secret; pass with session; `GET` list + unrelated path untouched).
 - `pnpm -r build` — exits 0.
 - **Scaffold (PS-1, at execution):** stand up a minimal boardgame.io
   `Server`, `unshift` the guard, and `curl` `POST …/create` — expect `401`
@@ -256,8 +272,9 @@ WP-293). Normal UI users see exactly what WP-307 already gives them.
 - **§12 Tests:** PASS — `node:test`; no network/DB/boardgame.io import in the
   guard unit test (structural fakes).
 - **§13 Verification / §14 Acceptance / §15 DoD:** PASS — exact commands;
-  10 binary criteria; DoD carries STATUS/DECISIONS/WORK_INDEX + scope-boundary
-  + live-on-surface (surface ≠ none).
+  11 binary criteria (incl. wrong-secret-value → 401, guarding against a
+  presence-only check); DoD carries STATUS/DECISIONS/WORK_INDEX +
+  scope-boundary + live-on-surface (surface ≠ none).
 - **§16 Code Style:** PASS — bound to 00.6.
 - **§17 Vision Alignment:** PASS (triggered §3/§4/§11 + identity) — block
   present with clauses + NG-1 check + determinism-N/A line.
