@@ -26274,4 +26274,16 @@ Protect this file.
 
 **Packet:** WP-309 + EC-339. **Drafted:** 2026-07-05.
 
+### D-24096 — Client Reconnect & Desync Auto-Resync: `stop()`+`start()` Re-Anchor Primitive + Non-Blocking Banner; Server-Side WP-116 Cells Deferred
+
+**Status:** **Active** (landed 2026-07-05 by WP-311 / EC-340). Wires the client half of the WP-116 reconnect policy.
+
+**Context.** After WP-309 made the match store durable, the 2026-07-05 play.legendary-arena.com freeze recurred for a **different** reason (confirmed from Render logs): the arena-client fell one boardgame.io `_stateID` behind after a transient socket drop and never re-anchored, so the server rejected every subsequent move (`ERROR: invalid stateID, was=[N], expected=[N+1]`) and the player froze at turn 14 (match `B66jmk2QyP5`). `apps/arena-client/src/client/bgioClient.ts` read only `state.G` and **ignored `state.isConnected`** (which boardgame.io sets from `transport.isConnected` on every frame); there was no reconnect UX or forced re-sync anywhere in the client. WP-116 locked the reconnect **policy** (D-11601..D-11605) but produced no code and deferred wiring to "a future implementation WP."
+
+**Decision.** WP-311 wires the **client** half only. (1) The `bgioClient` subscribe callback reads `state.isConnected` + `state._stateID` on **every** frame (before any `G` handling, so drops register even on null/malformed frames) and writes a `connection` Pinia store (`{ isConnected, lastStateId, hasEverConnected }`); a non-blocking `ConnectionStatusBanner.vue` shows "Connection lost — reconnecting…" when `hasEverConnected && !isConnected`. (2) `LiveClientHandle.resync()` = `client.stop()` then `client.start()` — this re-runs the SocketIO connect → server `onSync` handshake, which re-anchors the client's `_stateID` to the server's authoritative state. **Rejected alternatives:** poking `_stateID` directly, fabricating a sync frame, or calling a server sync endpoint from the client — all bypass boardgame.io's authoritative sync and risk compounding the desync; `stop()`+`start()` reuses the framework's own re-anchor path and keeps the client a read-only consumer of authoritative state. The banner is non-blocking + read-only — it never mutates match state and never gates a move the engine would accept. (3) The **server-side WP-116 cells are DEFERRED** to a later server-side implementation WP: D-11601 (phase-aware grace), D-11602 (pause-on-drop), D-11604 (hard-timeout abandonment + `endReason:'abandoned'` replay), D-11605 (replay-on-abort), D-11606 (spectator-on-drop). Solo/duo desync recovery — the observed freeze — needs none of them.
+
+**Consequence.** A dropped or wedged client shows a reconnecting banner and re-anchors to the live match (automatically on a socket reconnect, or via the banner's "Reconnect now" action) **without a full page reload** — closing the freeze end-to-end: WP-309 keeps the state durable, WP-311 re-syncs the client to it. Client-only: no engine/server/`G`/move change, **no new state surface in `G`** for connection tracking (the WP-116 constraint that disconnect tracking lives in framework/client state, honoured), no new npm dependency. `G` and determinism are unaffected — `resync()` re-reads the same authoritative frame the server already computed.
+
+**Packet:** WP-311 + EC-340. **Drafted:** 2026-07-05.
+
 Protect this file.

@@ -12,6 +12,7 @@ import ArenaHud from './components/hud/ArenaHud.vue';
 import AppShell from './components/branding/AppShell.vue';
 import LobbyView from './lobby/LobbyView.vue';
 import PlayViewport from './pages/PlayViewport.vue';
+import ConnectionStatusBanner from './components/ConnectionStatusBanner.vue';
 import {
   createLiveClient,
   type LiveClientHandle,
@@ -228,6 +229,7 @@ export default defineComponent({
     ArenaHud,
     LobbyView,
     PlayViewport,
+    ConnectionStatusBanner,
     PlayerProfilePage,
     MyProfilePage,
     AdminBillingPage,
@@ -393,6 +395,15 @@ export default defineComponent({
       liveClient.value?.submitMove(name, args);
     };
 
+    // why: WP-311 / D-24096 — prop-drill the live client's resync() into
+    // <ConnectionStatusBanner> so the banner's "Reconnect now" action can
+    // re-anchor a wedged client. The closure reads liveClient.value at call
+    // time so a click before mount silently no-ops rather than crashing —
+    // mirroring the submitMove closure above.
+    const resync = (): void => {
+      liveClient.value?.resync();
+    };
+
     return {
       route,
       returnTo,
@@ -403,6 +414,7 @@ export default defineComponent({
       shareSlug,
       isDev,
       submitMove,
+      resync,
     };
   },
 });
@@ -441,6 +453,10 @@ export default defineComponent({
         <ArenaHud />
       </template>
       <template v-else-if="route === 'live'">
+        <!-- why: WP-311 / D-24096 — non-blocking reconnect banner above the
+             board; shows only after a real drop (hasEverConnected && !isConnected)
+             and its "Reconnect now" action calls the live client's resync(). -->
+        <ConnectionStatusBanner :resync="resync" />
         <!-- why: additive matchId prop-drill (D-16501) — binds the
              already-parsed live matchID so PlayDesktop can probe autoplay
              status. No query-parsing / route change, no ?autoplay key. -->
