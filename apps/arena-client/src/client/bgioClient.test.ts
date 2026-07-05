@@ -1,6 +1,6 @@
 import '../testing/jsdom-setup';
 
-import { test, describe, beforeEach, afterEach } from 'node:test';
+import { test, describe, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
@@ -10,6 +10,8 @@ import {
   setClientFactoryForTesting,
   getLiveClientCallLog,
   resetLiveClientCallLog,
+  MOVE_ACK_TIMEOUT_MS,
+  RESYNC_COOLDOWN_MS,
   type BgioClientLike,
   type BgioClientFactory,
 } from './bgioClient';
@@ -221,6 +223,100 @@ describe('createLiveClient', () => {
     // propagate a primitive cast as UIState.
     stub!._subscribers[0]!.callback({ G: 'this is not an object' as unknown });
     assert.equal(store.snapshot, null);
+  });
+});
+
+describe('createLiveClient move-ack watchdog (WP-312)', () => {
+  // why: the watchdog arms a setTimeout on submitMove; mock timers let us tick
+  // past MOVE_ACK_TIMEOUT_MS deterministically without a real 4s wait. Scoped to
+  // this describe so the other suites keep real timers.
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    resetLiveClientCallLog();
+    mock.timers.enable({ apis: ['setTimeout'] });
+  });
+
+  afterEach(() => {
+    mock.timers.reset();
+    setClientFactoryForTesting(null);
+    resetLiveClientCallLog();
+  });
+
+  /**
+   * Drives a fresh live client with a stub factory and pushes an initial frame
+   * at the given stateID so the watchdog has a baseline. Returns the handle +
+   * the captured stub.
+   */
+  function startClientAtStateId(stateId: number): {
+    handle: ReturnType<typeof createLiveClient>;
+    stub: StubClient;
+  } {
+    const { factory, lastClient } = makeStubFactory();
+    setClientFactoryForTesting(factory);
+    const handle = createLiveClient({
+      matchID: 'match-watchdog',
+      playerID: '0',
+      credentials: 'secret',
+      serverUrl: 'http://localhost:8000',
+    });
+    const stub = lastClient();
+    assert.ok(stub !== null);
+    stub!._subscribers[0]!.callback({ G: {}, isConnected: true, _stateID: stateId });
+    return { handle, stub: stub! };
+  }
+
+  test('a move acknowledged before the timeout does NOT trigger a resync', () => {
+    const { handle, stub } = startClientAtStateId(5);
+    handle.submitMove('drawCards', 1); // arms watchdog, baseline _stateID = 5
+    // server advances _stateID -> the move is acknowledged, watchdog cleared
+    stub._subscribers[0]!.callback({ G: {}, isConnected: true, _stateID: 6 });
+    mock.timers.tick(MOVE_ACK_TIMEOUT_MS + 1);
+    // no resync: createLiveClient never called start()/stop() on its own
+    assert.deepEqual(stub._ops, []);
+  });
+
+  test('a move NOT acknowledged within the timeout triggers exactly one resync', () => {
+    const { handle, stub } = startClientAtStateId(5);
+    handle.submitMove('drawCards', 1); // arms watchdog, baseline 5
+    // no server frame advances _stateID (the wedge); the deadline elapses
+    mock.timers.tick(MOVE_ACK_TIMEOUT_MS + 1);
+    // resync re-anchors via stop() then start()
+    assert.deepEqual(stub._ops, ['stop', 'start']);
+  });
+
+  test('a second stuck move within the cooldown does NOT trigger a second resync', () => {
+    const { handle, stub } = startClientAtStateId(5);
+    handle.submitMove('drawCards', 1);
+    mock.timers.tick(MOVE_ACK_TIMEOUT_MS + 1); // first resync fires
+    assert.deepEqual(stub._ops, ['stop', 'start']);
+
+    // still stuck (no new frame); a second submit within the cooldown must not
+    // arm a new watchdog, so ticking again produces no second resync.
+    handle.submitMove('drawCards', 1);
+    mock.timers.tick(MOVE_ACK_TIMEOUT_MS + 1);
+    assert.deepEqual(stub._ops, ['stop', 'start']);
+
+    // after the cooldown elapses, the watchdog is available again
+    mock.timers.tick(RESYNC_COOLDOWN_MS + 1);
+    handle.submitMove('drawCards', 1);
+    mock.timers.tick(MOVE_ACK_TIMEOUT_MS + 1);
+    assert.deepEqual(stub._ops, ['stop', 'start', 'stop', 'start']);
+  });
+
+  test('an unknown (no-op) move name does not arm the watchdog', () => {
+    const { handle, stub } = startClientAtStateId(5);
+    handle.submitMove('nonexistentMove', 1); // not in the stub moves bag → no dispatch
+    mock.timers.tick(MOVE_ACK_TIMEOUT_MS + 1);
+    assert.deepEqual(stub._ops, []);
+  });
+
+  test('the watchdog timer is cleared on stop() (no resync fires afterward)', () => {
+    const { handle, stub } = startClientAtStateId(5);
+    handle.submitMove('drawCards', 1); // arms watchdog
+    handle.stop(); // clears the watchdog + calls client.stop()
+    mock.timers.tick(MOVE_ACK_TIMEOUT_MS + 1);
+    // only the explicit stop() ran; the watchdog did not fire a resync
+    assert.deepEqual(stub._ops, ['stop']);
   });
 });
 
