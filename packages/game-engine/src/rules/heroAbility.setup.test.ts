@@ -814,12 +814,71 @@ describe('buildHeroAbilityHooks Empowered parameterized composition (WP-267 / D-
     assert.equal(hook.primitiveEffects, undefined, 'Double Empowered is not the parameterized empowered marker');
   });
 
-  it('multi-class ("Empowered by [hc:ranged] and [hc:strength]") → deferred (residual condition)', () => {
+  it('multi-class ("Empowered by [hc:ranged] and [hc:strength]") → one composition per class, printed order (WP-310 / D-24098)', () => {
+    // why: WP-310 lifted the D-24044 multi-class deferral — the unconditional multi-class form now
+    // resolves to ONE gain-resource composition per parsed class (the sum), reusing the WP-256
+    // substrate. No new keyword/value-expression/node type.
     const hook = empoweredHookFor('You get [keyword:Empowered] by [hc:ranged] and [hc:strength].');
-    assert.equal(hook.primitiveEffects, undefined, 'a second class param leaves a residual condition → defer');
-    assert.ok(
-      (hook.unresolvedMarkers ?? []).includes('empowered'),
-      'a deferred multi-class Empowered records an unresolved marker',
+    assert.ok(hook.primitiveEffects !== undefined, 'the multi-class form now resolves');
+    assert.deepStrictEqual(
+      hook.primitiveEffects,
+      [
+        {
+          type: 'gain-resource',
+          resource: 'attack',
+          amount: { type: 'count-cards-by-class-in-zone', heroClass: 'ranged', zone: 'hq' },
+        },
+        {
+          type: 'gain-resource',
+          resource: 'attack',
+          amount: { type: 'count-cards-by-class-in-zone', heroClass: 'strength', zone: 'hq' },
+        },
+      ],
+      'one composition per parsed class, in printed order (ranged then strength) — the sum',
+    );
+    // why: WP-310 — both [hc:X] tokens are consumed count params (the line's sole conditions),
+    // so they are cleared; no residual conditions, no 'conditional' keyword.
+    assert.equal(hook.conditions, undefined, 'both consumed count params suppressed → no conditions');
+    assert.equal(hook.unresolvedMarkers, undefined, 'a resolved multi-class records no unresolved marker');
+  });
+
+  it('single-class ("Empowered by [hc:strength]") is unchanged — one composition via the core path (WP-310 regression)', () => {
+    // why: WP-310 — the multi-class pre-pass requires an `and [hc:…]` continuation, so a
+    // single-class line NEVER matches it and still routes through tryResolveEmpoweredCore.
+    const hook = empoweredHookFor('You get [keyword:Empowered] by [hc:strength].');
+    assert.ok(hook.primitiveEffects !== undefined, 'the single-class core form still resolves');
+    assert.equal(hook.primitiveEffects!.length, 1, 'exactly one composition (not captured by the multi-class pre-pass)');
+    assert.deepStrictEqual(hook.primitiveEffects![0], {
+      type: 'gain-resource',
+      resource: 'attack',
+      amount: { type: 'count-cards-by-class-in-zone', heroClass: 'strength', zone: 'hq' },
+    });
+  });
+
+  it('8th-wonder compound clause: the multi-class Empowered resolves; the HQ-choose prose stays unimplemented (honest-partial, WP-310)', () => {
+    // why: WP-310 honest-partial — the printed clause "Choose any number of cards from the HQ.
+    // Put them on the bottom of the Hero Deck. Then you get [keyword:Empowered] by [hc:ranged] and
+    // [hc:strength]." resolves ONLY the Empowered tail. The HQ-choose prefix is UNMARKED prose
+    // (no [keyword:X]), so it emits no primitive and is deliberately left unimplemented (a named
+    // follow-up) — never silently mis-resolved into an effect.
+    const hook = empoweredHookFor(
+      'Choose any number of cards from the HQ. Put them on the bottom of the Hero Deck. Then you get [keyword:Empowered] by [hc:ranged] and [hc:strength].',
+    );
+    assert.deepStrictEqual(
+      hook.primitiveEffects,
+      [
+        {
+          type: 'gain-resource',
+          resource: 'attack',
+          amount: { type: 'count-cards-by-class-in-zone', heroClass: 'ranged', zone: 'hq' },
+        },
+        {
+          type: 'gain-resource',
+          resource: 'attack',
+          amount: { type: 'count-cards-by-class-in-zone', heroClass: 'strength', zone: 'hq' },
+        },
+      ],
+      'only the Empowered multi-class tail resolves (2 compositions); the HQ-choose prose adds nothing',
     );
   });
 });
@@ -1164,18 +1223,17 @@ describe('buildHeroAbilityHooks — resolved composition markers (WP-268 / D-240
     assert.equal(hook.unresolvedMarkers, undefined, 'a resolved conditional-prefix records no unresolved marker');
   });
 
-  it('a still-deferred Empowered variant (multi-class) excludes empowered from resolvedMarkers AND flags it unresolved', () => {
-    // why: D-24045 — a still-deferred variant (multi-class — no class-set count primitive) keeps
-    // the symmetric Honest-Partial signal: never resolved, always flagged unresolved.
+  it('a resolved Empowered multi-class variant records empowered in resolvedMarkers and NOT unresolved (WP-310)', () => {
+    // why: D-24045 — the unconditional multi-class form now resolves (WP-310 / D-24098), so it
+    // carries the SAME by-hook provenance signal as the core / conditional-prefix paths: recorded
+    // resolved, never flagged unresolved. (A PREFIX-GATED multi-class still stays hollow — the
+    // Honest-Partial guard for that lives in the WP-272 describe block.)
     const hook = resolvedMarkersHookFor('You get [keyword:Empowered] by [hc:ranged] and [hc:strength].');
     assert.ok(
-      !(hook.resolvedMarkers ?? []).includes('empowered'),
-      'a deferred variant does not record empowered as resolved',
+      (hook.resolvedMarkers ?? []).includes('empowered'),
+      'a resolved multi-class records empowered as resolved (executable by-hook)',
     );
-    assert.ok(
-      (hook.unresolvedMarkers ?? []).includes('empowered'),
-      'a deferred variant flags empowered unresolved — the consistent Honest-Partial signal',
-    );
+    assert.equal(hook.unresolvedMarkers, undefined, 'a resolved multi-class records no unresolved marker');
   });
 
   it('a non-composition keyword line records NO resolvedMarkers (absent)', () => {
