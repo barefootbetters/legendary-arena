@@ -150,6 +150,15 @@ const EMPOWERED_MARKER_COUNT_PATTERN = /\[keyword:empowered\]/gi;
 /** Regex for an `and [hc:...]` multi-class continuation immediately after the count tail. */
 const EMPOWERED_MULTICLASS_TAIL_PATTERN = /^\s*and\s*\[hc:/i;
 
+// why: WP-310 / D-24098 — the anchored MULTI-class Empowered tail
+// `by [hc:X] and [hc:Y] (and [hc:Z]…)`. The `(?:…)+` requires at least ONE
+// `and [hc:…]` continuation, so this NEVER matches the single-class `by [hc:X]`
+// form (owned by tryResolveEmpoweredCore) — preserving the single-class path.
+// Anchored to the post-marker slice, non-global, stateless `.exec`.
+/** Regex for the anchored multi-class `by [hc:X] and [hc:Y] (and …)` tail. */
+const EMPOWERED_MULTICLASS_FULL_TAIL_PATTERN =
+  /^\s*by\s*\[hc:[a-z0-9-]+\](?:\s*and\s*\[hc:[a-z0-9-]+\])+/i;
+
 // why: D-24063 — anchored "Choose one:" prefix gate for the choose-one Empowered pre-pass.
 // Non-global + anchored so it only fires when the line STARTS with this prefix; reuses the
 // stateless `.test` discipline of EMPOWERED_PREFIX_GATE_PATTERN (no lastIndex concern).
@@ -503,22 +512,46 @@ function parseAbilityText(abilityText: string): {
               conditions.splice(consumedParamIndex, 1);
             }
           } else {
-            const freeChoiceComposition = tryResolveEmpoweredFreeChoice(textAfterMarker, conditions);
-            if (freeChoiceComposition !== undefined) {
-              primitiveEffects.push(freeChoiceComposition);
+            // why: WP-310 / D-24098 — the unconditional MULTI-class form
+            // `by [hc:X] and [hc:Y] (and …)`. Tried AFTER the single-class core +
+            // conditional-prefix paths (which both defer a multi-class tail) and BEFORE the
+            // free-choice/dynamic fallbacks, so no existing form's routing changes.
+            const multiClassCompositions = tryResolveEmpoweredMultiClass(
+              textAfterMarker,
+              conditions,
+            );
+            if (multiClassCompositions !== undefined) {
+              // why: WP-310 — push one composition per parsed class in printed order; the
+              // executor runs each (every entry grants +Attack by that class's HQ count), so
+              // the applied bonus is their sum.
+              for (const composition of multiClassCompositions) {
+                primitiveEffects.push(composition);
+              }
               // why: D-24045 — same by-hook provenance gate as all other resolution paths.
               resolvedMarkers.push(normalizedKeyword);
+              // why: WP-310 — the parsed classes are the line's SOLE conditions (the resolve
+              // gate guaranteed conditions === the N count params), so clear them all —
+              // mirroring the core path's sole-condition shortcut. This prevents the consumed
+              // count params gating the hook or adding a stray 'conditional' keyword downstream.
+              conditions.splice(0, conditions.length);
             } else {
-              // why: D-24065 — dynamic fallback: recognizes "by the Hero Classes of the card
-              // you revealed this way" (cross-the-multiverse); last fallback before the
-              // unresolved-marker path.
-              const dynamicComposition = tryResolveEmpoweredDynamic(textAfterMarker);
-              if (dynamicComposition !== undefined) {
-                primitiveEffects.push(dynamicComposition);
+              const freeChoiceComposition = tryResolveEmpoweredFreeChoice(textAfterMarker, conditions);
+              if (freeChoiceComposition !== undefined) {
+                primitiveEffects.push(freeChoiceComposition);
                 // why: D-24045 — same by-hook provenance gate as all other resolution paths.
                 resolvedMarkers.push(normalizedKeyword);
               } else {
-                unresolvedMarkers.push(normalizedKeyword);
+                // why: D-24065 — dynamic fallback: recognizes "by the Hero Classes of the card
+                // you revealed this way" (cross-the-multiverse); last fallback before the
+                // unresolved-marker path.
+                const dynamicComposition = tryResolveEmpoweredDynamic(textAfterMarker);
+                if (dynamicComposition !== undefined) {
+                  primitiveEffects.push(dynamicComposition);
+                  // why: D-24045 — same by-hook provenance gate as all other resolution paths.
+                  resolvedMarkers.push(normalizedKeyword);
+                } else {
+                  unresolvedMarkers.push(normalizedKeyword);
+                }
               }
             }
           }
@@ -891,6 +924,69 @@ function tryResolveEmpoweredCore(
     return undefined;
   }
   return buildEmpoweredComposition(heroClass);
+}
+
+/**
+ * Resolves the unconditional MULTI-class Empowered form
+ * (`by [hc:X] and [hc:Y] (and [hc:Z]…)`), or undefined for a deferred variant. Returns ONE
+ * built `gain-resource` composition PER parsed class, in printed order — the total is the sum
+ * of each class's HQ count (e.g. `by [hc:ranged] and [hc:strength]` grants +1 Attack per Ranged
+ * card plus +1 per Strength card in the HQ). Resolves ONLY when (a) the text immediately after
+ * the marker is an anchored `by [hc:X] and [hc:Y]…` tail with two-or-more classes, AND (b) those
+ * parsed classes are the line's SOLE conditions (each a consumed count param — no prefix gate,
+ * no team gate, no residual). Any miss → undefined, so the caller records an unresolved marker
+ * (the Honest-Partial Invariant — e.g. a prefix-gated multi-class stays hollow). Reuses the
+ * WP-256 `buildEmpoweredComposition` substrate — no new keyword / value-expression / node type.
+ * Does not mutate `conditions`; the caller clears the consumed params on a match.
+ *
+ * @param textAfterMarker - The ability text immediately following the `[keyword:Empowered]` token.
+ * @param conditions - The line's conditions (heroClassMatch + requiresTeam), in hook order.
+ * @returns One composition per parsed class in printed order, or undefined for a deferred variant.
+ */
+function tryResolveEmpoweredMultiClass(
+  textAfterMarker: string,
+  conditions: HeroCondition[],
+): EffectNode[] | undefined {
+  // why: WP-310 — anchored multi-class tail only; the `(?:and [hc:…])+` requirement means the
+  // single-class `by [hc:X]` form (owned by tryResolveEmpoweredCore) never matches here.
+  const tailMatch = EMPOWERED_MULTICLASS_FULL_TAIL_PATTERN.exec(textAfterMarker);
+  if (tailMatch === null) {
+    return undefined;
+  }
+  // why: WP-310 — extract every `[hc:X]` class token from the matched tail, in printed order.
+  // A fresh global RegExp avoids carrying lastIndex state on a shared module-level const.
+  const classTokenRegex = /\[hc:([a-z0-9-]+)\]/gi;
+  const parsedClasses: string[] = [];
+  let classMatch = classTokenRegex.exec(tailMatch[0]!);
+  while (classMatch !== null) {
+    parsedClasses.push(normalizeTraitSlug(classMatch[1]!));
+    classMatch = classTokenRegex.exec(tailMatch[0]!);
+  }
+  // why: WP-310 Honest-Partial — resolve ONLY when the parsed classes are the line's SOLE
+  // conditions (each a consumed count param). This generalizes tryResolveEmpoweredCore's
+  // sole-condition gate to N classes: a residual condition (a leading [hc:X]:/[team:X]: prefix
+  // gate, a team gate, or any non-heroClassMatch) makes the counts unequal or the type check
+  // fail → a deferred variant, kept hollow.
+  if (conditions.length !== parsedClasses.length) {
+    return undefined;
+  }
+  for (const condition of conditions) {
+    if (condition.type !== 'heroClassMatch') {
+      return undefined;
+    }
+  }
+  for (const parsedClass of parsedClasses) {
+    if (findFirstHeroClassMatchIndex(conditions, parsedClass) === -1) {
+      return undefined;
+    }
+  }
+  // why: WP-310 / D-24098 — one buildEmpoweredComposition per parsed class, pushed in printed
+  // order. The sum is commutative but the order is fixed for deterministic replay. No `.reduce()`.
+  const compositions: EffectNode[] = [];
+  for (const parsedClass of parsedClasses) {
+    compositions.push(buildEmpoweredComposition(parsedClass));
+  }
+  return compositions;
 }
 
 /**
