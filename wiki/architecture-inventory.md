@@ -125,7 +125,7 @@ AI-policy-driven calibration pipeline. T0 RandomPolicy and T2 CompetentHeuristic
 
 ### LAGN v1.0 Specification
 
-- **Location:** `packages/lagn-spec`
+- **Location:** `packages/lagn-spec/src`
 - **Owning work packet:** [WP-244](docs/ai/work-packets/WP-244-lagn-spec-publication.md)
 
 Legendary Arena Game Notation — the open standard format for game setup, card catalog, and deterministic replay logs. Published as an NPM package with Zod validator, generated JSON Schema, TypeScript types, and CLI tooling. Three-tier format: Tier 1 (mandatory game setup), Tier 2 (optional card catalog), Tier 3 (optional replay sequence). Single source of truth is the Zod schema; TypeScript types are inferred; JSON Schema is auto-generated and versioned at @legendary-arena/lagn@1.0.0 and published via npm and schema CDN.
@@ -134,19 +134,19 @@ Legendary Arena Game Notation — the open standard format for game setup, card 
 
 | Symbol | Status |
 |---|---|
-| `validate` | ⚠ missing |
-| `summarize` | ⚠ missing |
-| `generateSchema` | ⚠ missing |
-| `lagnSchema` | ⚠ missing |
-| `LAGN` | ⚠ missing |
-| `GameSetup` | ⚠ missing |
-| `CardCatalog` | ⚠ missing |
-| `Replay` | ⚠ missing |
-| `Card` | ⚠ missing |
-| `Action` | ⚠ missing |
-| `VillainEvent` | ⚠ missing |
-| `Turn` | ⚠ missing |
-| `GameResult` | ⚠ missing |
+| `validate` | present |
+| `summarize` | present |
+| `generateSchema` | present |
+| `lagnSchema` | present |
+| `LAGN` | present |
+| `GameSetup` | present |
+| `CardCatalog` | present |
+| `Replay` | present |
+| `Card` | present |
+| `Action` | present |
+| `VillainEvent` | present |
+| `Turn` | present |
+| `GameResult` | present |
 
 ### Multiplayer-Play Authentication Boundary
 
