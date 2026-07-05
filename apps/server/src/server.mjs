@@ -28,6 +28,10 @@ import { registerLoadoutLibraryRoutes } from './profile/loadoutLibrary.routes.js
 import { registerProfileRoutes } from './profile/profile.routes.js';
 import { registerTeamRoutes } from './teams/team.routes.js';
 import { registerMatchGateRoutes } from './match/matchGate.routes.js';
+import {
+  createNativeLobbyGuard,
+  generateInternalDelegationSecret,
+} from './match/nativeLobbyGuard.js';
 import { registerEntitlementRoutes } from './entitlements/entitlements.routes.js';
 import { registerBillingRoutes } from './billing/billing.routes.js';
 import { registerAdminBillingRoutes } from './billing/adminBilling.routes.js';
@@ -558,6 +562,13 @@ export async function startServer() {
 
   registerHealthRoute(server.router);
 
+  // why: WP-308 / D-24094 — the process-local internal-delegation secret for
+  // the native-lobby hard gate. Generated once here (never a configured env
+  // var, so it cannot leak via deployment config; a restart rotates it), held
+  // in memory, and threaded into the guard + both loopback delegating call
+  // sites (autoplay + matchGate). Never sent to a client, never logged.
+  const internalDelegationSecret = generateInternalDelegationSecret();
+
   // why: read-only diagnostics for deployment freshness verification
   server.router.get('/api/version', (koaContext) => {
     koaContext.body = getVersionInfo();
@@ -574,6 +585,10 @@ export async function startServer() {
     transport: server.transport,
     auth: server.auth,
     serverUrl: autoplayServerUrl,
+    // why: WP-308 / D-24094 — the autoplay loop's loopback create/join carry
+    // this secret so the native-lobby guard admits them while blocking
+    // external unauthenticated callers.
+    internalDelegationSecret,
   });
 
   // why: WP-115 — construct the long-lived pg.Pool exactly once
@@ -738,7 +753,28 @@ export async function startServer() {
     verifier,
     accountResolver: verifier === undefined ? undefined : accountResolver,
     serverUrl: autoplayServerUrl,
+    internalDelegationSecret,
   });
+
+  // why: WP-308 / D-24094 — mount the native-lobby hard gate. `unshift` (not
+  // `app.use`) places it at the FRONT of the Koa middleware stack, ahead of
+  // the boardgame.io lobby router that `server.run()` appends via
+  // `configureApp` — the ordering (PS-1 scaffold-verified against
+  // boardgame.io@0.50.2) that lets the guard reject an unauthenticated native
+  // create/join before the framework handles it. The guard admits a request
+  // carrying the internal-delegation secret (the loopback delegations above)
+  // OR a valid authenticated session; everything else on the two native POST
+  // create/join paths gets 401. The GET list, spectating, sockets, and every
+  // /api/* route pass through untouched.
+  server.app.middleware.unshift(
+    createNativeLobbyGuard({
+      internalSecret: internalDelegationSecret,
+      requireAuthenticatedSession,
+      verifier,
+      accountResolver: verifier === undefined ? undefined : accountResolver,
+      database: pool,
+    }),
+  );
 
   // why: WP-132 / D-13205 (a) — register the single entitlements
   // read endpoint (GET /api/me/entitlements) on the same long-lived
