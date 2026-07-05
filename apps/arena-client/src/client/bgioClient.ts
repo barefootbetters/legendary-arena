@@ -79,6 +79,27 @@ import { detectPlayerAffectingMutations } from '../preplan/mutationDetector.js';
 import { executeDisruptionPipeline } from '@legendary-arena/preplan';
 import { applyDisruptionToStore } from '../preplan/preplanLifecycle.js';
 
+// why: WP-312 / D-24097 — the move-acknowledgment watchdog deadline. After the
+// player submits a move, the client's `_stateID` must advance (a server frame)
+// within this window; if it does not, the move was dropped/rejected (the
+// connected-desync wedge) and the client force-resyncs. Sized conservatively
+// (4s) so a normal rapid-click race — which self-heals in well under a second
+// when the real patch arrives — never trips it, while a genuine wedge (idle
+// server, silently-rejected stale move) still recovers within a few seconds.
+// This signal is reliable ONLY because every engine move is `client: false`
+// (D-10008): with no client-side prediction, `_stateID` advances solely on a
+// server-authoritative frame, so a non-advancing `_stateID` means the server
+// did not acknowledge the move.
+export const MOVE_ACK_TIMEOUT_MS = 4000;
+
+// why: WP-312 / D-24097 — minimum gap between automatic resyncs. After the
+// watchdog fires a resync, further auto-resyncs are suppressed for this window
+// so a persistently-stuck client (or button-mashing during a real outage)
+// cannot trigger a resync storm (each resync tears down and re-establishes the
+// socket, which is disruptive). A manual `resync()` from the WP-311 banner is
+// not gated by this cooldown.
+export const RESYNC_COOLDOWN_MS = 8000;
+
 /**
  * The minimal subset of boardgame.io's Client object that this module uses.
  * Declared structurally so tests can inject a lightweight stand-in without
@@ -197,6 +218,74 @@ export function createLiveClient(
 
   let previousUIState: UIState | null = null;
 
+  // why: WP-312 / D-24097 — move-acknowledgment watchdog state. `latestStateId`
+  // tracks the newest server-authoritative `_stateID` (updated in the subscribe
+  // callback). `pendingBaselineStateId` is the `_stateID` captured when a move
+  // was submitted; the move is "acknowledged" once `latestStateId` advances past
+  // it. `resyncCoolingDown` suppresses auto-resync storms after a fire.
+  let latestStateId: number | null = null;
+  let pendingBaselineStateId: number | null = null;
+  let watchdogTimer: ReturnType<typeof setTimeout> | null = null;
+  let resyncCoolingDown = false;
+  let cooldownTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /**
+   * Re-anchors the client to the server's authoritative state by tearing down
+   * and re-establishing the boardgame.io client (`stop()` then `start()`),
+   * which re-runs the SocketIO connect → server `onSync` handshake. Shared by
+   * the handle's manual `resync()` (WP-311 banner) and the watchdog fire.
+   */
+  function performResync(): void {
+    client.stop();
+    client.start();
+  }
+
+  /** Clears the pending move watchdog (timer + baseline). */
+  function clearWatchdog(): void {
+    if (watchdogTimer !== null) {
+      clearTimeout(watchdogTimer);
+      watchdogTimer = null;
+    }
+    pendingBaselineStateId = null;
+  }
+
+  /**
+   * Fired when a submitted move is not acknowledged within
+   * {@link MOVE_ACK_TIMEOUT_MS}: the move was dropped/rejected (the wedge), so
+   * force a resync and open the cooldown window so we do not auto-resync again
+   * immediately.
+   */
+  function onWatchdogFire(): void {
+    watchdogTimer = null;
+    pendingBaselineStateId = null;
+    performResync();
+    resyncCoolingDown = true;
+    if (cooldownTimer !== null) {
+      clearTimeout(cooldownTimer);
+    }
+    cooldownTimer = setTimeout(() => {
+      resyncCoolingDown = false;
+      cooldownTimer = null;
+    }, RESYNC_COOLDOWN_MS);
+  }
+
+  /**
+   * Arms the watchdog after a real move is dispatched. No-ops when cooling down
+   * or before the first server frame (no baseline `_stateID` to compare
+   * against). Re-arming resets the deadline so a burst of moves is covered by a
+   * single pending window.
+   */
+  function armWatchdog(): void {
+    if (resyncCoolingDown || latestStateId === null) {
+      return;
+    }
+    pendingBaselineStateId = latestStateId;
+    if (watchdogTimer !== null) {
+      clearTimeout(watchdogTimer);
+    }
+    watchdogTimer = setTimeout(onWatchdogFire, MOVE_ACK_TIMEOUT_MS);
+  }
+
   client.subscribe((state) => {
     // why: WP-311 — record the transport connection status on EVERY frame,
     // before any G handling, so the reconnect banner reflects a drop even on
@@ -210,6 +299,20 @@ export function createLiveClient(
     const rawStateId = state?._stateID;
     const stateId = typeof rawStateId === 'number' ? rawStateId : null;
     useConnectionStore().setConnected(isConnected, stateId);
+
+    // why: WP-312 / D-24097 — track the newest server-authoritative `_stateID`
+    // and, if it has advanced past a pending move's baseline, acknowledge that
+    // move (clear the watchdog). Runs before any G handling so an ack registers
+    // even on a frame whose G projection is null/malformed.
+    if (stateId !== null) {
+      latestStateId = stateId;
+      if (
+        pendingBaselineStateId !== null &&
+        latestStateId > pendingBaselineStateId
+      ) {
+        clearWatchdog();
+      }
+    }
 
     const projection = state?.G;
     if (projection !== null && projection !== undefined && typeof projection !== 'object') {
@@ -275,14 +378,28 @@ export function createLiveClient(
 
   return {
     start: () => client.start(),
-    stop: () => client.stop(),
+    // why: WP-312 — clear the watchdog + cooldown timers before stopping so no
+    // timer outlives the client (mirrors the WP-262 interval-cleanup discipline;
+    // a leaked timer would keep firing against a stopped client).
+    stop: (): void => {
+      clearWatchdog();
+      if (cooldownTimer !== null) {
+        clearTimeout(cooldownTimer);
+        cooldownTimer = null;
+      }
+      client.stop();
+    },
     // why: the client submits intent via boardgame.io's move API; the
     // server receives the intent and dispatches to the authoritative engine.
     // The client never computes outcomes.
+    // why: WP-312 — arm the move-acknowledgment watchdog only after a real move
+    // was dispatched (never for an unknown/no-op name), so a dropped/rejected
+    // move that never advances `_stateID` triggers an auto-resync.
     submitMove: (name: string, ...args: unknown[]): void => {
       const move = client.moves[name];
       if (typeof move === 'function') {
         move(...args);
+        armWatchdog();
       }
     },
     // why: WP-311 / D-24096 — force a re-sync by tearing down and
@@ -292,9 +409,11 @@ export function createLiveClient(
     // recovery for a client wedged one `_stateID` behind (the freeze this WP
     // fixes) — it re-reads authoritative state via boardgame.io's own sync,
     // never pokes `_stateID`, fabricates a frame, or calls a server endpoint.
+    // why: WP-312 — a manual resync also clears any pending watchdog (we are
+    // re-anchoring now); it is NOT gated by the auto-resync cooldown.
     resync: (): void => {
-      client.stop();
-      client.start();
+      clearWatchdog();
+      performResync();
     },
   };
 }
