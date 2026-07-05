@@ -50,9 +50,17 @@ DB-skip; `pnpm -r build` 0. §21 catalog: native create/join Auth
 Notes. **D-24094 Active** (supersedes the D-24093 §Enforcement-level soft-gate
 limitation; D-24092 policy, D-24093 guarded endpoints all stand).
 `User-Visible Surface = play.legendary-arena.com` (enforcement only, no visible
-UI change) → **D-24026 live-verify PENDING post-deploy**: on the deployed
-build, a raw native `POST …/create` with no auth now returns `401` (was `200`),
-while the WP-307 signed-in flow and "Watch Bot Play" still work.
+UI change) → **D-24026 live-verify: server-side CONFIRMED 2026-07-05** on the
+deployed build (`gitSha 0292d55`): a raw native `POST …/create` with no auth
+now returns **`401`** (was `200`), the guarded `POST /api/match/create` no-auth
+returns `401`, the `GET /games/legendary-arena` guest list returns `200`, and
+"Watch Bot Play" (`POST /api/match/autoplay`) returns `200` — proving the
+internal-delegation secret carries both the matchGate and autoplay loopback
+delegations past the guard. The WP-307 **signed-in** create flow was regressed
+client-side (a missing lobby token-hydration in `App.vue` bounced signed-in
+users to `?route=login`); fixed in PR #547 (`2795908f`, deployed in `0292d55`)
+— the final human sign-in click-test (sign in → lobby → Create match → no
+redirect) is operator-pending.
 
 ### WP-306 / EC-336 Executed — Setup-Contract Per-Field ext_id Validation (Henchman Id-Space Fix; D-24091 Active) (2026-07-04)
 
