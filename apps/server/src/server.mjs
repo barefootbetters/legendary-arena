@@ -21,6 +21,7 @@ import { buildScenarioKey } from '@legendary-arena/game-engine';
 import { loadRules, getRules } from './rules/loader.mjs';
 import { createParGate } from './par/parGate.mjs';
 import { createPool } from './db/database.js';
+import { createBgioPgStore } from './db/bgioPgStore.js';
 import { registerLeaderboardRoutes } from './leaderboards/leaderboard.routes.js';
 import { registerOwnerProfileRoutes } from './profile/ownerProfile.routes.js';
 import { registerAvatarUploadRoutes } from './profile/avatarUpload.routes.js';
@@ -506,6 +507,18 @@ export async function startServer() {
   const rules = getRules();
   const rulesCount = Object.keys(rules.rules).length;
 
+  // why: WP-115 — construct the long-lived pg.Pool exactly once here.
+  // Lifetime is the process lifetime; close-on-SIGTERM is owned by index.mjs
+  // (after the HTTP server's graceful-shutdown step resolves), never by a
+  // route handler.
+  // why: WP-309 / D-24095 — the pool is constructed BEFORE Server({...}) (it
+  // was built after Server() prior to this packet) so the boardgame.io storage
+  // adapter can be passed as the `db:` option at construction time. The adapter
+  // reuses THIS single pool — no second pool is created — preserving the
+  // single-pool + close-on-SIGTERM invariant that database.js + index.mjs own.
+  const pool = createPool();
+  console.log('[server] pg.Pool constructed (max=10)');
+
   // why: boardgame.io Server() is the authoritative game server. On Render,
   // it handles both HTTP (health checks, lobby API) and WebSocket (real-time
   // game state sync) traffic on a single port. Render's load balancer
@@ -558,9 +571,25 @@ export async function startServer() {
       'https://cards.legendary-arena.com',
       'http://localhost:5173',
     ],
+    // why: WP-309 / D-24095 — back boardgame.io's match store with Postgres via
+    // the custom StorageAPI.Async adapter over the single WP-115 pool, so an
+    // in-progress match survives a server deploy/restart instead of freezing
+    // when the default in-memory store is wiped. The adapter stores bgio's
+    // opaque match blob as jsonb in the dedicated `bgio` schema (never
+    // `legendary.*`) and never reads or interprets it — a Server-layer wiring
+    // artifact that stores, it does not decide gameplay.
+    db: createBgioPgStore(pool),
   });
 
   registerHealthRoute(server.router);
+
+  // why: WP-309 — name the active match store at startup so a deploy that
+  // silently fell back to the in-memory store (e.g. a construction error) is
+  // observable in the logs rather than rediscovered as another mid-match
+  // freeze. The store is always Postgres-backed after this packet.
+  console.log(
+    '[server] boardgame.io match store: Postgres (bgio schema) — durable across deploy/restart',
+  );
 
   // why: WP-308 / D-24094 — the process-local internal-delegation secret for
   // the native-lobby hard gate. Generated once here (never a configured env
@@ -591,18 +620,12 @@ export async function startServer() {
     internalDelegationSecret,
   });
 
-  // why: WP-115 — construct the long-lived pg.Pool exactly once
-  // here. Lifetime is the process lifetime; close-on-SIGTERM is
-  // owned by index.mjs (after the HTTP server's graceful-shutdown
-  // step resolves), never by a route handler. parGate is now bound
-  // (no longer dangling per the pre-existing `void parGate;`
-  // placeholder removed in this commit) — registerLeaderboardRoutes
-  // injects parGate.checkParPublished into every WP-054 call site.
-  // WP-102's registerProfileRoutes is intentionally NOT wired here
-  // per D-10202 — that follow-up WP owns its own commit even though
-  // the pool introduced here is the lifecycle anchor it needs.
-  const pool = createPool();
-  console.log('[server] pg.Pool constructed (max=10)');
+  // why: WP-309 / D-24095 — the pg.Pool is now constructed ahead of
+  // Server({...}) above (it must exist when the `db:` storage adapter is
+  // wired). The parGate binding + registerLeaderboardRoutes injection that
+  // historically sat beside the pool construction are unchanged; only the
+  // pool's construction site moved earlier in startServer(). WP-102's
+  // registerProfileRoutes remains wired in its own commit per D-10202.
   const verifier = tryConstructHankoVerifier();
 
   // why: WP-150 / D-15001 + D-15002 — build the themeId →

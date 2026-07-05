@@ -64,7 +64,7 @@ Source: ARCHITECTURE.md, Architectural Principles #1
 Source: ARCHITECTURE.md, Architectural Principles #2
 
 ### G and ctx Are Runtime-Only
-- `G` is never persisted, stored, cached, or written to any database
+- `G` is never persisted **by application code**, nor written to any `legendary.*` domain table (but see the boardgame.io framework-store exemption, D-24095, under §Persistence Boundary (Cross-Layer))
 - `ctx` is never persisted or serialized by application code
 - Snapshots may store **counts only**, never zone contents
 
@@ -313,6 +313,14 @@ Forbidden examples:
 - Only the server/application layer may persist data
 - Snapshots are **derived records**, never live state
 - No layer may treat snapshots as save-games
+
+> **boardgame.io framework-store exemption (D-24095).** `G` is never persisted
+> by application code, nor written to the `legendary.*` domain schema.
+> boardgame.io's own storage adapter MAY persist its opaque match state (its
+> internal serialization of `G`/`ctx`) to a dedicated non-domain store (the
+> `bgio` schema) as an operational durability concern; that blob is never read
+> or interpreted by application code, never a save-game, and never a source of
+> derived features. Snapshots remain counts-only.
 
 This applies across **all layers**.
 
