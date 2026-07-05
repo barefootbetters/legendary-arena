@@ -504,7 +504,23 @@ const FIRST_PARTY_SUBSYSTEMS = [
       'boardgame.io@0.50.2 the lobby router is applied INSIDE `server.run()` ' +
       '(via `configureApp`), not at `Server()` construction, so an `unshift` ' +
       'after `Server()` reliably precedes it — the middleware ordering the hard ' +
-      'gate depends on (verified by the EC-338 PS-1 scaffold).',
+      'gate depends on (verified by the EC-338 PS-1 scaffold). Integration ' +
+      'constraints (each the root of a shipped regression, all surfaced ' +
+      '2026-07-05 the first time a signed-in create ran end-to-end): (1) ' +
+      'CLIENT — every arena-client route that consumes the bearer token must ' +
+      'hydrate it from the broker cookie on load, not only the guarded ' +
+      '`?route=me` / `admin-billing` pages; the lobby omitting this bounced ' +
+      'signed-in users to `?route=login` on every create/join (fixed in ' +
+      '`apps/arena-client/src/App.vue`, PR #547). (2) SERVER — the guarded ' +
+      '`/api/match/*` routes must attach their own `koaBody()` (boardgame.io ' +
+      'installs a body parser only on its own `/games/*` routes — there is no ' +
+      'global one), else `request.body` is undefined, the delegated `setupData` ' +
+      'is dropped, and the native `Game.setup` rejects the create with "Missing ' +
+      'setupData" (fixed in `matchGate.routes.ts`, PR #551). (3) TESTING — the ' +
+      'matchGate unit tests inject `request.body` / the session into a fake ' +
+      'context, so none exercised the real end-to-end signed-in create; a ' +
+      'single integration test (real request stream → assert `setupData` ' +
+      'reaches the delegation) would have caught both (1) and (2).',
     contractSymbols: [
       'registerMatchGateRoutes',
       'MatchGateDependencies',
