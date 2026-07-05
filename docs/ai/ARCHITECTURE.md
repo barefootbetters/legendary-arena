@@ -85,7 +85,11 @@ All persisted artefacts (replays, saves, campaign state, snapshots) are:
 - migrated deterministically
 - rejected loudly if incompatible with the current engine version
 
-Live runtime state (`G`, `ctx`) is **never** persisted.
+Live runtime state (`G`, `ctx`) is **never** persisted by application code, nor
+written to the `legendary.*` domain schema. (boardgame.io's own storage adapter
+MAY persist its opaque match blob to a dedicated non-domain store as an
+operational durability concern — see the framework-store exemption, D-24095, in
+§Persistence Boundaries.)
 
 ### 4. Growth Is Constrained, Not Free
 
@@ -335,6 +339,14 @@ Shared Tooling (orthogonal):
 - Snapshots are **derived records**, never live state.
 - No layer may treat snapshots as save-games.
 
+> **boardgame.io framework-store exemption (D-24095).** `G` is never persisted
+> by application code, nor written to the `legendary.*` domain schema.
+> boardgame.io's own storage adapter MAY persist its opaque match state (its
+> internal serialization of `G`/`ctx`) to a dedicated non-domain store (the
+> `bgio` schema) as an operational durability concern; that blob is never read
+> or interpreted by application code, never a save-game, and never a source of
+> derived features. Snapshots remain counts-only.
+
 #### Enforcement Rule
 
 If unsure where code belongs: **If it decides gameplay** → Game Engine.
@@ -576,6 +588,7 @@ to real cards in the registry. Registry ext_id existence is validated by
 | Match setup config | boardgame.io matchData | No (input) |
 | Live game state (G) | boardgame.io in-memory | Yes — via moves only |
 | boardgame.io metadata (ctx) | boardgame.io in-memory | Yes — by boardgame.io internals |
+| boardgame.io match store (durable) | Postgres `bgio.matches` (framework-owned, dedicated `bgio` schema; D-24095) | Yes — by boardgame.io internals only; never read/interpreted by application code |
 | Match credentials | boardgame.io in-memory | No |
 | Snapshots | Application layer (future) | No (immutable records) |
 | Rules text (seeded) | PostgreSQL (`legendary.rules`) | No (seeded at deploy) |
@@ -601,7 +614,7 @@ is running. They must never be written to PostgreSQL, Redis, files, or any store
 
 | Object | Why it must not be persisted |
 |---|---|
-| `G` (entire object) | Managed by boardgame.io; re-hydrating from DB would bypass boardgame.io's state integrity guarantees |
+| `G` (entire object) | Managed by boardgame.io; **application code** re-hydrating it from DB would bypass boardgame.io's state integrity guarantees. (boardgame.io's own storage adapter round-tripping its opaque match blob to survive a restart is the framework-store exemption, D-24095 — a framework durability concern, never an application-code read of `G`.) |
 | `ctx` | boardgame.io internal metadata; no public contract |
 | `matchState` / `stateID` | boardgame.io internals; format may change across versions |
 | In-flight `RuleEffect[]` | Transient execution artifact; valid only within a single move |
