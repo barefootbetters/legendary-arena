@@ -323,6 +323,8 @@ export type {
   UIPendingKoHeroChoice,
   UIPendingOptionalKoReward,
   UIPendingDrawOrEmpowered,
+  UIPendingVictoryPileCardPick,
+  UIVictoryPileVillainChoice,
   UIEligibleKoHeroCard,
 } from "./ui/uiState.types.js";
 // why: WP-258 / D-16502 — the arena-client HollowEffectsPanel imports BOTH

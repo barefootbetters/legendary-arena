@@ -98,6 +98,13 @@ export interface UIState {
   // (undefined) means no pending draw-or-empowered choice; the client must not render
   // the prompt in that case.
   pendingDrawOrEmpowered?: UIPendingDrawOrEmpowered;
+  // why: WP-313 / D-24099 — projects the FRONT entry of G.pendingVictoryPileCardPick
+  // with the eligible victory-pile villains (each carrying its printed-attack value =
+  // the villain's fightCost) so the chooser can render the "Choose a Villain from your
+  // Victory Pile" prompt. Redacted (omitted) for every audience except the chooser
+  // (keyed on .playerID), mirroring pendingDrawOrEmpowered. Absent (undefined) means no
+  // pending victory-pile pick; the client must not render the prompt in that case.
+  pendingVictoryPileCardPick?: UIPendingVictoryPileCardPick;
   // why: WP-258 — projects the WP-257 runtime hollow-effect channel
   // (G.diagnostics.hollowEffects) so the client can render a structured debug
   // panel + carry the records on the Download-diagnostics export. OPTIONAL on
@@ -569,6 +576,35 @@ export interface UIPendingDrawOrEmpowered {
   // why: D-24071 — derived once in uiState.build.ts by a single deterministic
   // empoweredClass→display mapping; never an ad-hoc or per-card string.
   empoweredLabel: string;
+}
+
+/**
+ * One eligible villain the player may pick from their victory pile for a
+ * victory-villain-attack (`The Ebony Blade`) resolution (WP-313 / D-24099).
+ * `attackValue` is the villain's printed attack (stored as `fightCost`; a
+ * villain's `.attack` is always 0 — WP-285). The client renders each entry and
+ * submits `resolveVictoryPileCardPick({ cardId })` for the chosen villain.
+ */
+export interface UIVictoryPileVillainChoice {
+  cardId: string;
+  display: UICardDisplay;
+  attackValue: number;
+}
+
+/**
+ * UI contract for resolving a pending victory-pile villain-pick choice
+ * (WP-313 / D-24099 — the UX half of WP-285's `victory-villain-attack`).
+ * Only visible to the choosing player; redacted for opponents and spectators.
+ * `eligibleVillains` is recomputed fresh from `G` at projection time via the
+ * engine's `getEligibleVictoryVillains` (victory pile ∩ villain type), in
+ * victory-pile order, so the client's `{ cardId }` selection always maps to a
+ * villain the engine resolve accepts (the round-trip rule).
+ */
+export interface UIPendingVictoryPileCardPick {
+  // why: D-24099 — the redaction key; the chooser-only filter compares
+  // audience.playerId against this, mirroring UIPendingDrawOrEmpowered.playerID.
+  playerID: string;
+  eligibleVillains: UIVictoryPileVillainChoice[];
 }
 
 export type { UIAudience } from "./uiAudience.types.js";

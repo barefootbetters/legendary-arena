@@ -26312,4 +26312,16 @@ Protect this file.
 
 **Packet:** WP-310 + EC-342. **Drafted:** 2026-07-05.
 
+### D-24099 — Victory-Pile Villain-Pick UX: Chooser-Redacted UIState Projection + Client Prompt (the Missing WP-285 UX Half)
+
+**Status:** **Active** (landed 2026-07-05 by WP-313 / EC-343). Closes a guaranteed live hard-freeze.
+
+**Context.** WP-285 shipped the engine `victory-villain-attack` (The Ebony Blade): playing it parks `G.pendingVictoryPileCardPick` and a **block-all guard in every move** rejects all actions except `resolveVictoryPileCardPick` until the player picks a villain from their victory pile. But WP-285 never projected the pending pick into UIState nor built a client prompt — so the player could neither see nor submit the pick, and every action (including End Turn) was rejected → **hard freeze** (confirmed 2026-07-05, match `D0_OMZnnUWQ`, turn 22, gitSha `36bf9a8`). WP-289 taught the *simulation* to resolve it, so it passed all engine tests + bot sweeps — only real human play hit the missing UI. Its two sibling pending-choices (WP-249 optional-KO-reward, WP-287 draw-or-empowered) both got the projection + prompt.
+
+**Decision.** WP-313 adds the missing UX half, mirroring WP-287. **Engine (read-only `ui/`):** `buildUIState` projects `pendingVictoryPileCardPick?: UIPendingVictoryPileCardPick` — the FRONT entry with the eligible villains recomputed fresh via the engine's `getEligibleVictoryVillains` (victory pile ∩ villain type, in pile order — the round-trip rule), each carrying its printed attack (`G.cardStats[id].fightCost`; a villain's `.attack` is always 0); the new `UIPendingVictoryPileCardPick` + `UIVictoryPileVillainChoice` types are re-exported from `index.ts`. The field is **optional** (no arena-client fixture backfill). `uiState.filter.ts` redacts it to the **chooser-only** audience (present only when `audience.playerId === pick.playerID`), mirroring `pendingDrawOrEmpowered`. **Client (arena-client):** a non-dismissible `VictoryPileCardPickPrompt.vue` lists the eligible villains (name + "+N Attack"); clicking one submits `resolveVictoryPileCardPick({ cardId })`; `resolveVictoryPileCardPick` is added to `UiMoveName`; End Turn / Pass Priority are gated on `hasPendingVictoryPileCardPick` (via the new field) at every stage, mounted in PlayDesktop/PlayMobile. **No engine gameplay change** — the projection is read-only; the move, park, block-all guards, and attack math are WP-285's, unchanged.
+
+**Consequence.** Playing The Ebony Blade with ≥1 villain in the victory pile now shows the pick prompt, the player picks, gains the Attack, and continues — no freeze. Engine 1725/1725 (new projection + redaction tests), arena-client 690/690 (new prompt + End-Turn-gate tests), `vue-tsc` clean, `pnpm -r build` 0. **Fold-inline amendment:** EC-343's Files list omitted `uiState.filter.ts` + `uiState.filter.test.ts`; they are in-scope (the chooser redaction is intrinsic to the projection being chooser-scoped, and WP-287's EC-319 included them) and were added in the impl commit.
+
+**Packet:** WP-313 + EC-343. **Drafted:** 2026-07-05.
+
 Protect this file.
