@@ -1,0 +1,218 @@
+/**
+ * Card-effect provenance for the freeze diagnostic (WP-314 / EC-344 / D-24100).
+ *
+ * Derives a compact, top-level "why is this stuck / did that card fire" summary from
+ * the audience-filtered UIState snapshot the diagnostic already carries — so a
+ * "froze after I played card X" report names its own cause instead of needing an
+ * engine trace. Two fields:
+ *
+ * - `awaitingPlayerInput` — what (if anything) the turn is blocked on: the pending-choice
+ *   kind + chooser, read from the projected `pending*` UIState fields. `null` when nothing
+ *   is pending. This is the primary deliverable — a block-all pending choice (e.g. The
+ *   Ebony Blade's victory-pile pick, WP-313) is exactly the freeze class this was motivated
+ *   by, and it was previously invisible in the export.
+ * - `recentlyPlayedCards` — for the last {@link RECENTLY_PLAYED_CARDS_CAP} "played …" log
+ *   lines, each card's ext_id, an `outcome` classification inferred from the signals
+ *   already in the snapshot (`hollowEffects` + the pending kind + the "did not activate"
+ *   log lines), and an `abilityText` populated via an injected resolver.
+ *
+ * // why: PURE + boundary-clean. This module imports NOTHING from the engine / registry
+ * (mirrors diagnostics.ts, EC-260 boundary). The snapshot is read structurally from
+ * `unknown`; card text is INJECTED via `resolveCardText`, never imported. The arena-client
+ * has no client-side card-text source today, so the default resolver returns `null` and
+ * every `abilityText` degrades to `null` (fail-soft) — the injection point stays open for
+ * a future engine UIState projection or registry client to populate it (WP-314 Option B).
+ */
+
+/** The block-all pending-choice kinds that freeze the turn until resolved. */
+export type AwaitingInputKind =
+  | 'victoryPileCardPick'
+  | 'optionalKoReward'
+  | 'drawOrEmpowered'
+  | 'koHeroChoice';
+
+/** What the turn is currently blocked on, awaiting the chooser's input. */
+export interface AwaitingPlayerInput {
+  kind: AwaitingInputKind;
+  /** The chooser's playerID, or null when the projected field carried none. */
+  playerID: string | null;
+}
+
+/** Inferred outcome of a recently-played card, from signals already in the snapshot. */
+export type PlayedCardOutcome =
+  | 'resolved'
+  | 'hollow'
+  | 'awaitingChoice'
+  | 'conditionNotMet';
+
+/** One recently-played card with its inferred outcome + (injected) ability text. */
+export interface RecentlyPlayedCard {
+  extId: string;
+  /**
+   * The card's printed ability text, via the injected `resolveCardText`. `null` when no
+   * resolver is supplied (the arena-client has no client-side card-text source today) or
+   * the resolver returns null — fail-soft, never a throw. Look up the ext_id in the card
+   * data for the text until a resolver is wired.
+   */
+  abilityText: string | null;
+  outcome: PlayedCardOutcome;
+}
+
+/** The top-level effect-provenance block attached to the diagnostic export. */
+export interface EffectProvenance {
+  awaitingPlayerInput: AwaitingPlayerInput | null;
+  recentlyPlayedCards: RecentlyPlayedCard[];
+}
+
+// why: bound the played-card scan so the export cannot bloat on a long (900-line) match
+// log. Five is enough to cover the last turn's plays that could have caused a freeze.
+export const RECENTLY_PLAYED_CARDS_CAP = 5;
+
+/** The projected `pending*` fields this reads, mapped to their `AwaitingInputKind`. */
+const PENDING_FIELD_TO_KIND: ReadonlyArray<readonly [string, AwaitingInputKind]> = [
+  ['pendingVictoryPileCardPick', 'victoryPileCardPick'],
+  ['pendingOptionalKoReward', 'optionalKoReward'],
+  ['pendingDrawOrEmpowered', 'drawOrEmpowered'],
+  ['pendingKoHeroChoice', 'koHeroChoice'],
+];
+
+/** Narrows an unknown value to a plain record for structural field reads. */
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+/**
+ * Reads the pending-choice the turn is blocked on from the snapshot's projected
+ * `pending*` fields. Only one is set at a time (the engine's block-all guard), so the
+ * first present field wins. Returns null when nothing is pending.
+ */
+function readAwaitingPlayerInput(snapshotRecord: Record<string, unknown>): AwaitingPlayerInput | null {
+  for (const [field, kind] of PENDING_FIELD_TO_KIND) {
+    const pending = asRecord(snapshotRecord[field]);
+    if (pending !== null) {
+      const playerID = pending['playerID'];
+      return { kind, playerID: typeof playerID === 'string' ? playerID : null };
+    }
+  }
+  return null;
+}
+
+/** Collects the ext_ids in `hollowEffects` (WP-257 records carry `cardId`). */
+function collectHollowCardIds(snapshotRecord: Record<string, unknown>): Set<string> {
+  const hollowCardIds = new Set<string>();
+  const hollowEffects = snapshotRecord['hollowEffects'];
+  if (Array.isArray(hollowEffects)) {
+    for (const record of hollowEffects) {
+      const hollow = asRecord(record);
+      const cardId = hollow?.['cardId'];
+      if (typeof cardId === 'string') {
+        hollowCardIds.add(cardId);
+      }
+    }
+  }
+  return hollowCardIds;
+}
+
+// why: the log lines this parses are the engine's `G.messages` prose (D-24017), projected
+// to UIState.log. "Player 0 played <extId>." and the paired
+// "Player 0's <extId> ability did not activate — …" are the two shapes read here.
+const PLAYED_LINE = /^Player \d+ played (.+?)\.$/;
+const DID_NOT_ACTIVATE_LINE = / ability did not activate/;
+
+/**
+ * Classifies a played card's outcome from the signals already in the snapshot.
+ * Priority: a paired "did not activate" line → conditionNotMet; else a hollow record for
+ * the ext_id → hollow; else if it is the most-recent play and a choice is pending →
+ * awaitingChoice; else resolved (the default — the absence of a negative signal, NOT a
+ * positive engine confirmation).
+ */
+function classifyOutcome(
+  extId: string,
+  followingLines: string[],
+  hollowCardIds: Set<string>,
+  isMostRecentPlay: boolean,
+  awaitingPlayerInput: AwaitingPlayerInput | null,
+): PlayedCardOutcome {
+  for (const line of followingLines) {
+    if (line.includes(extId) && DID_NOT_ACTIVATE_LINE.test(line)) {
+      return 'conditionNotMet';
+    }
+  }
+  if (hollowCardIds.has(extId)) {
+    return 'hollow';
+  }
+  if (isMostRecentPlay && awaitingPlayerInput !== null) {
+    return 'awaitingChoice';
+  }
+  return 'resolved';
+}
+
+/**
+ * Builds the effect-provenance block from a diagnostic UIState snapshot.
+ *
+ * Pure and fail-soft: a null/malformed snapshot yields an empty provenance; a resolver
+ * that throws or returns null yields `abilityText: null`. Never throws (the export must
+ * stay robust).
+ *
+ * @param snapshot The audience-filtered UIState snapshot (opaque `unknown`).
+ * @param resolveCardText Optional ext_id → ability-text resolver. Defaults to `() => null`
+ *   because the arena-client has no client-side card-text source; the injection point is
+ *   kept for a future engine/registry source (WP-314 Option B).
+ * @returns The `{ awaitingPlayerInput, recentlyPlayedCards }` block.
+ */
+export function buildEffectProvenance(
+  snapshot: unknown,
+  resolveCardText: (extId: string) => string | null = () => null,
+): EffectProvenance {
+  const snapshotRecord = asRecord(snapshot);
+  if (snapshotRecord === null) {
+    return { awaitingPlayerInput: null, recentlyPlayedCards: [] };
+  }
+
+  const awaitingPlayerInput = readAwaitingPlayerInput(snapshotRecord);
+  const hollowCardIds = collectHollowCardIds(snapshotRecord);
+
+  const log = snapshotRecord['log'];
+  const logLines: string[] = Array.isArray(log)
+    ? log.filter((line): line is string => typeof line === 'string')
+    : [];
+
+  // why: collect the ext_id + log index of every "played …" line, then keep the last N.
+  const playedEntries: Array<{ extId: string; lineIndex: number }> = [];
+  for (let index = 0; index < logLines.length; index += 1) {
+    const match = PLAYED_LINE.exec(logLines[index]!);
+    if (match !== null) {
+      playedEntries.push({ extId: match[1]!, lineIndex: index });
+    }
+  }
+  const recentEntries = playedEntries.slice(-RECENTLY_PLAYED_CARDS_CAP);
+
+  const recentlyPlayedCards: RecentlyPlayedCard[] = [];
+  for (let entryIndex = 0; entryIndex < recentEntries.length; entryIndex += 1) {
+    const entry = recentEntries[entryIndex]!;
+    const isMostRecentPlay = entryIndex === recentEntries.length - 1;
+    const followingLines = logLines.slice(entry.lineIndex + 1);
+    // why: fail-soft — a resolver that throws must not break the export.
+    let abilityText: string | null = null;
+    try {
+      abilityText = resolveCardText(entry.extId);
+    } catch {
+      abilityText = null;
+    }
+    recentlyPlayedCards.push({
+      extId: entry.extId,
+      abilityText,
+      outcome: classifyOutcome(
+        entry.extId,
+        followingLines,
+        hollowCardIds,
+        isMostRecentPlay,
+        awaitingPlayerInput,
+      ),
+    });
+  }
+
+  return { awaitingPlayerInput, recentlyPlayedCards };
+}

@@ -20,6 +20,8 @@
  * Posture locked by WP-228 / EC-260 / D-22801.
  */
 
+import { buildEffectProvenance, type EffectProvenance } from './effectProvenance';
+
 /**
  * One captured diagnostic event — a console call, an uncaught `window` error,
  * or an unhandled promise rejection.
@@ -108,6 +110,14 @@ export interface DiagnosticReport {
    * persisted. Carried through opaque — see {@link DiagnosticContext.matchSetup}.
    */
   matchSetup: unknown;
+  /**
+   * Derived card-effect provenance (WP-314 / D-24100): what the turn is blocked on
+   * (`awaitingPlayerInput`) and the recently-played cards with an inferred `outcome`,
+   * computed from the `uiStateSnapshot` this report already carries. Makes a
+   * "froze after I played X" report name its own cause. Always present (empty when no
+   * snapshot); never throws.
+   */
+  effectProvenance: EffectProvenance;
   entries: DiagnosticEntry[];
 }
 
@@ -479,6 +489,11 @@ export function buildDiagnosticReport(
     truncated: context.entryDroppedCount > 0,
     uiStateSnapshot: context.uiStateSnapshot,
     matchSetup: context.matchSetup,
+    // why: derive provenance from the snapshot the caller already collected — no new
+    // context field, so the impure exporter (DiagnosticExportButton) is unchanged. No
+    // resolver is passed: the arena-client has no client-side card-text source, so
+    // abilityText degrades to null (fail-soft) per D-24100.
+    effectProvenance: buildEffectProvenance(context.uiStateSnapshot),
     entries,
   };
 }
