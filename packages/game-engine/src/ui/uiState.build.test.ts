@@ -279,6 +279,41 @@ describe('buildUIState — display projection (WP-111 / EC-118)', () => {
     assert.equal(ui.mastermind.display.cost, 9);
   });
 
+  it('carries abilityText from cardDisplayData into projected display via resolveDisplay (WP-315)', () => {
+    const gameState = makeGameStateWithDisplayData();
+    const heroExtId = 'core/black-widow/strike#0' as CardExtId;
+    // why: WP-315 — abilityText rides resolveDisplay's `{ ...entry }` spread with no
+    // projection-code edit; inject it on the display entry and assert every projected copy
+    // carries it, while a card without it stays absent.
+    (gameState.cardDisplayData as Record<CardExtId, UICardDisplay>)[heroExtId] = {
+      ...gameState.cardDisplayData[heroExtId]!,
+      abilityText: '[keyword:Empowered] by the color of your choice.',
+    };
+
+    const ui = buildUIState(gameState, mockCtx);
+
+    const handDisplay = ui.players[0]!.handDisplay;
+    assert.equal(
+      handDisplay![0]!.abilityText,
+      '[keyword:Empowered] by the color of your choice.',
+      'abilityText rides into handDisplay',
+    );
+    const hqSlot0 = ui.hq.slotDisplay![0];
+    assert.equal(
+      hqSlot0!.display.abilityText,
+      '[keyword:Empowered] by the color of your choice.',
+      'abilityText rides into HQ slot display',
+    );
+
+    // City space 0 holds the villain, which has no injected abilityText → absent.
+    const citySpace0 = ui.city.spaces[0];
+    assert.equal(
+      citySpace0!.display.abilityText,
+      undefined,
+      'a card with no abilityText projects without the field',
+    );
+  });
+
   it('opponent handCards redaction also redacts handDisplay', () => {
     // why: privacy symmetry — leaking display data is identical to
     // leaking the CardExtId for opponent privacy purposes.

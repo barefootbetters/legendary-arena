@@ -88,11 +88,11 @@ describe('UIState type drift (WP-067)', () => {
 });
 
 describe('UIState type drift (WP-111 / EC-118)', () => {
-  it('UICardDisplay has exactly the six locked fields', () => {
+  it('UICardDisplay has exactly the seven locked fields', () => {
     // why: WP-111 locked the first four fields; WP-179 adds `heroClass`
-    // and `team` (optional in TS, always assigned at runtime). Adding
-    // further fields (e.g., `cardType`, `keywords`) is scope creep —
-    // separate WP required.
+    // and `team`; WP-315 adds `abilityText` (optional in TS, populated only
+    // for hero card instances at setup). Adding further fields (e.g.,
+    // `cardType`, `keywords`) is scope creep — separate WP required.
     const fixture = {
       extId: 'core/black-widow/strike#0',
       name: 'Mission Accomplished',
@@ -100,9 +100,11 @@ describe('UIState type drift (WP-111 / EC-118)', () => {
       cost: 2,
       heroClass: 'covert',
       team: 'avengers',
+      abilityText: 'You get +1 Attack. [keyword:draw:1]',
     } satisfies UICardDisplay;
 
     assert.deepStrictEqual(Object.keys(fixture).sort(), [
+      'abilityText',
       'cost',
       'extId',
       'heroClass',
