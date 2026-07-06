@@ -7,6 +7,34 @@
 
 ## Current State
 
+### WP-315 / EC-345 Executed — Card Ability Text in `UICardDisplay` + Diagnostic Embedding (WP-314 Option B; D-24101 Active) (2026-07-05)
+
+The diagnostic export now carries each played card's **printed ability text**, completing
+WP-314 Option B (D-24100). WP-314 had left `recentlyPlayedCards[].abilityText` as an injected
+resolver defaulting to `null` because the arena-client has no client-side card-text source and
+`diagnostics.ts` is boundary-pure. WP-315 supplies the text the architecturally-aligned way —
+through the engine's existing display channel:
+
+- **Engine:** an optional `abilityText?: string` on `UICardDisplay`, populated at setup in
+  `buildCardDisplayData §1b` (hero card instances, both the physicalCards and per-card fallback
+  branches) from the registry's `card.abilities` — joined by newline, **markers preserved verbatim**
+  (`[keyword:…]`, `[hc:…]`), omitted when absent (never `''`). It rides every UIState display
+  projection automatically via `resolveDisplay`'s `{ ...entry }` spread (no projection edit) and
+  survives `uiState.filter.ts`'s `{ ...display }` shallow copy (no filter edit).
+- **Client:** `buildEffectProvenance` derives an `extId → abilityText` map from the snapshot's own
+  projected display (a bounded structural deep-walk, depth 12) and uses it as the default resolver,
+  replacing the `() => null`. No new card-text source, no registry/engine import — boundary purity
+  (EC-260) preserved.
+
+Deliberately **hero-scope** (villain/mastermind/scheme text deferred) and **read-side + additive
+only**: no gameplay/move/zone/RNG change; `finalStateHash` unchanged (setup-time static data). The
+7-file allowlist held exactly — the conditional `uiState.filter.ts` fold-inline resolved to no
+change, and no `diagnostics.ts` edit was needed.
+
+**Verification:** engine **1728/1728** (+3), arena-client **714/714** (+4), `vue-tsc` clean,
+`pnpm -r build` 0. **D-24026 live-verify** (play a hero card → export → `recentlyPlayedCards[].abilityText`
+shows the printed text) is **operator-pending** on deploy.
+
 ### WP-314 / EC-344 Executed — Diagnostic Export: Card-Effect Provenance (D-24100 Active) (2026-07-05)
 
 A "froze after I played card X" report now **names its own cause**. The Ebony Blade
