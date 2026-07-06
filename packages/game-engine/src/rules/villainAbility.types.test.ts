@@ -23,6 +23,7 @@ import type {
   VillainAbilityHook,
   VillainAbilityTiming,
   VillainEffectKeyword,
+  VillainEffectResult,
   VillainEffectPrimitive,
   VillainDefeatRequirementKind,
 } from './villainAbility.types.js';
@@ -265,6 +266,37 @@ describe('VillainAbilityHook serialization', () => {
 
     const deserialized = JSON.parse(serialized) as VillainAbilityHook;
     assert.deepStrictEqual(deserialized, sample, 'hook must survive JSON round-trip');
+  });
+});
+
+describe('VillainEffectResult contract (WP-316 / D-24102)', () => {
+  it('JSON round-trips a result carrying targets', () => {
+    const sample: VillainEffectResult = {
+      keyword: 'captureHqHeroRightmost',
+      targets: ['core-hero-ironman' as CardExtId],
+    };
+    const deserialized = JSON.parse(JSON.stringify(sample)) as VillainEffectResult;
+    assert.deepStrictEqual(deserialized, sample, 'result must survive JSON round-trip');
+  });
+
+  it('omits pending when the effect was not a parked interactive KO', () => {
+    const sample: VillainEffectResult = {
+      keyword: 'gainWoundEachPlayer',
+      targets: [],
+    };
+    assert.equal('pending' in sample, false, 'pending is absent for non-parked effects');
+  });
+
+  it('results.map((result) => result.keyword) narrows to the WP-200 keyword surface', () => {
+    // why: WP-316 byte-identity — the fire sites project results→keywords for the
+    // fightResolved/ambushResolved appliedEffects field, which MUST stay
+    // VillainEffectKeyword[]. This pins the projection type + order.
+    const results: VillainEffectResult[] = [
+      { keyword: 'koHeroCurrentPlayer', targets: [], pending: true },
+      { keyword: 'captureBystander', targets: [] },
+    ];
+    const keywords: VillainEffectKeyword[] = results.map((result) => result.keyword);
+    assert.deepStrictEqual(keywords, ['koHeroCurrentPlayer', 'captureBystander']);
   });
 });
 

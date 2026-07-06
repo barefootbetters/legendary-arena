@@ -18,6 +18,7 @@ import {
   composeAmbushNarrative,
   composeSchemeTwistNarrative,
   composeMastermindStrikeNarrative,
+  composeEffectResultLogLine,
 } from './notableEvents.compose.js';
 
 describe('composeFightNarrative', () => {
@@ -165,6 +166,57 @@ describe('composeSchemeTwistNarrative', () => {
       narrative,
       'Scheme Twist "core-scheme-twist-legacy-virus": players were forced to reveal a matching hero or suffer a penalty.',
     );
+  });
+});
+
+describe('composeEffectResultLogLine (WP-316)', () => {
+  it('names the resolved target of a single KO effect in parentheses', () => {
+    const line = composeEffectResultLogLine([
+      { keyword: 'koHeroCurrentPlayer', targetNames: ['Spider-Man'] },
+    ]);
+    assert.equal(line, 'the active player KO’d a hero (Spider-Man)');
+  });
+
+  it('emits the fixed pending phrase (no target) for a parked interactive KO', () => {
+    const line = composeEffectResultLogLine([
+      { keyword: 'koHeroCurrentPlayer', targetNames: [], pending: true },
+    ]);
+    assert.equal(line, 'the active player must KO a hero');
+  });
+
+  it('renders the bare generic label for a no-target effect (wound / bystander)', () => {
+    const line = composeEffectResultLogLine([
+      { keyword: 'gainWoundEachPlayer', targetNames: [] },
+    ]);
+    assert.equal(line, 'every player gained a wound');
+  });
+
+  it('joins multiple resolved target names with ", " inside the parentheses', () => {
+    const line = composeEffectResultLogLine([
+      { keyword: 'koHeroEachPlayer', targetNames: ['Spider-Man', 'Hulk'] },
+    ]);
+    assert.equal(line, 'every player KO’d a hero (Spider-Man, Hulk)');
+  });
+
+  it('joins multiple effect clauses with "; " in dispatch order', () => {
+    const line = composeEffectResultLogLine([
+      { keyword: 'koHeroCurrentPlayer', targetNames: ['Spider-Man'] },
+      { keyword: 'captureHqHeroRightmost', targetNames: ['Iron Man'] },
+      { keyword: 'gainWoundEachPlayer', targetNames: [] },
+    ]);
+    assert.equal(
+      line,
+      'the active player KO’d a hero (Spider-Man); the rightmost HQ hero was captured (Iron Man); every player gained a wound',
+    );
+  });
+
+  it('falls back to the raw ext_id when the fire site could not resolve a name', () => {
+    // why: the fire site substitutes the raw ext_id into targetNames when
+    // G.cardDisplayData had no entry; the composer renders it verbatim.
+    const line = composeEffectResultLogLine([
+      { keyword: 'heroDeckTopToEscape', targetNames: ['core-hero-spider-man-00'] },
+    ]);
+    assert.equal(line, 'the top of the hero deck escaped (core-hero-spider-man-00)');
   });
 });
 

@@ -1391,10 +1391,16 @@ describe('executeVillainAbilities — koHeroEachPlayerMag2 (WP-202)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// WP-200 — return-shape assertions (additive)
+// WP-200 → WP-316 — return-shape assertions (keyword surface byte-identity)
+//
+// WP-316 widens the return from VillainEffectKeyword[] to VillainEffectResult[].
+// These tests keep pinning the WP-200 keyword surface via
+// `results.map((r) => r.keyword)` — the projection MUST be byte-identical so the
+// fightResolved/ambushResolved appliedEffects field + finalStateHash are
+// unchanged. Per-target assertions live in the WP-316 block further down.
 // ---------------------------------------------------------------------------
 
-describe('executeVillainAbilities — WP-200 return shape', () => {
+describe('executeVillainAbilities — WP-200/WP-316 return shape (keyword surface)', () => {
   it('returns the applied keywords in dispatch order for a multi-effect hook', () => {
     const G = makeG({
       hooks: [
@@ -1403,13 +1409,16 @@ describe('executeVillainAbilities — WP-200 return shape', () => {
       bystanders: ['b0'] as CardExtId[],
       wounds: ['w0'] as CardExtId[],
     });
-    const applied = executeVillainAbilities(
+    const results = executeVillainAbilities(
       G,
       CTX,
       'v-x' as CardExtId,
       'onFight',
     );
-    assert.deepStrictEqual(applied, ['captureBystander', 'gainWoundCurrentPlayer']);
+    assert.deepStrictEqual(
+      results.map((result) => result.keyword),
+      ['captureBystander', 'gainWoundCurrentPlayer'],
+    );
   });
 
   it('returns [] when no hooks match the (cardId, timing)', () => {
@@ -1417,32 +1426,31 @@ describe('executeVillainAbilities — WP-200 return shape', () => {
       hooks: [hook('v-x', 'onAmbush', ['captureBystander'])],
       bystanders: ['b0'] as CardExtId[],
     });
-    const applied = executeVillainAbilities(
+    const results = executeVillainAbilities(
       G,
       CTX,
       'v-x' as CardExtId,
       'onFight',
     );
-    assert.deepStrictEqual(applied, []);
+    assert.deepStrictEqual(results, []);
   });
 
   it('returns [] when villainAbilityHooks is empty (guard path)', () => {
     const G = makeG({ hooks: [] });
-    const applied = executeVillainAbilities(
+    const results = executeVillainAbilities(
       G,
       CTX,
       'v-x' as CardExtId,
       'onFight',
     );
-    assert.deepStrictEqual(applied, []);
+    assert.deepStrictEqual(results, []);
   });
 
   it('post-safe-skip: out-of-vocab effects are NOT in the returned array', () => {
-    // why: WP-200 D-20003 — the executor's `appliedEffects[]` lists only
-    // effects whose case branch ran. Parsed-but-unknown keywords (default
-    // branch) are excluded. Constructing a hook with an out-of-vocab token
-    // via the `as` cast simulates the malformed-hook code path that the
-    // safe-skip default branch handles.
+    // why: WP-200 D-20003 — the executor's results list only effects whose case
+    // branch ran. Parsed-but-unknown keywords (default branch) are excluded.
+    // Constructing a hook with an out-of-vocab token via the `as` cast simulates
+    // the malformed-hook code path that the safe-skip default branch handles.
     const G = makeG({
       hooks: [
         hook('v-x', 'onFight', [
@@ -1452,13 +1460,16 @@ describe('executeVillainAbilities — WP-200 return shape', () => {
       ],
       bystanders: ['b0'] as CardExtId[],
     });
-    const applied = executeVillainAbilities(
+    const results = executeVillainAbilities(
       G,
       CTX,
       'v-x' as CardExtId,
       'onFight',
     );
-    assert.deepStrictEqual(applied, ['captureBystander']);
+    assert.deepStrictEqual(
+      results.map((result) => result.keyword),
+      ['captureBystander'],
+    );
   });
 
   it('mutation-guarded short-circuit still appears in the applied array', () => {
@@ -1471,13 +1482,154 @@ describe('executeVillainAbilities — WP-200 return shape', () => {
       hooks: [hook('v-x', 'onFight', ['gainWoundCurrentPlayer'])],
       wounds: [],
     });
-    const applied = executeVillainAbilities(
+    const results = executeVillainAbilities(
       G,
       CTX,
       'v-x' as CardExtId,
       'onFight',
     );
-    assert.deepStrictEqual(applied, ['gainWoundCurrentPlayer']);
+    assert.deepStrictEqual(
+      results.map((result) => result.keyword),
+      ['gainWoundCurrentPlayer'],
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-316 — per-effect result targets + pending
+// ---------------------------------------------------------------------------
+
+describe('executeVillainAbilities — WP-316 result targets', () => {
+  it('koHeroCurrentPlayer auto-KO (exactly 1 eligible) reports the KO\'d hero as the target', () => {
+    const G = makeG({
+      hooks: [hook('v-x', 'onFight', ['koHeroCurrentPlayer'])],
+      playerZones: {
+        '0': {
+          deck: [],
+          hand: [WOUND] as CardExtId[],
+          discard: ['core-hero-a-00', WOUND] as CardExtId[],
+          inPlay: [],
+          victory: [],
+        },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    const results = executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
+    assert.deepStrictEqual(results, [
+      { keyword: 'koHeroCurrentPlayer', targets: ['core-hero-a-00'] },
+    ]);
+  });
+
+  it('koHeroCurrentPlayer with ≥2 eligible reports pending: true and no targets', () => {
+    const G = makeG({
+      hooks: [hook('v-x', 'onFight', ['koHeroCurrentPlayer'])],
+      playerZones: {
+        '0': {
+          deck: [],
+          hand: ['core-hero-z-00'] as CardExtId[],
+          discard: ['core-hero-b-00', 'core-hero-a-00'] as CardExtId[],
+          inPlay: [],
+          victory: [],
+        },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    const results = executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
+    assert.deepStrictEqual(results, [
+      { keyword: 'koHeroCurrentPlayer', targets: [], pending: true },
+    ]);
+  });
+
+  it('koHeroCurrentPlayer with 0 eligible (wounds only) reports empty targets, no pending', () => {
+    const G = makeG({
+      hooks: [hook('v-x', 'onFight', ['koHeroCurrentPlayer'])],
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [WOUND] as CardExtId[], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    const results = executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
+    assert.deepStrictEqual(results, [
+      { keyword: 'koHeroCurrentPlayer', targets: [] },
+    ]);
+  });
+
+  it('koHeroEachPlayer reports every KO\'d hero across players in mutation order', () => {
+    const G = makeG({
+      hooks: [hook('v-x', 'onFight', ['koHeroEachPlayer'])],
+      playerZones: {
+        '0': {
+          deck: [],
+          hand: [],
+          discard: ['core-hero-p0-a' as CardExtId],
+          inPlay: [],
+          victory: [],
+        },
+        '1': {
+          deck: [],
+          hand: ['core-hero-p1-a' as CardExtId],
+          discard: [WOUND],
+          inPlay: [],
+          victory: [],
+        },
+        '2': { deck: [], hand: [], discard: [WOUND], inPlay: [], victory: [] },
+      },
+    });
+    const results = executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
+    assert.deepStrictEqual(results, [
+      { keyword: 'koHeroEachPlayer', targets: ['core-hero-p0-a', 'core-hero-p1-a'] },
+    ]);
+  });
+
+  it('capture-hq-hero reports the captured hero; gain-wound + capture-bystander report []', () => {
+    const G = makeG({
+      hooks: [
+        hook('v-x', 'onAmbush', [
+          'captureHqHeroRightmost',
+          'gainWoundEachPlayer',
+          'captureBystander',
+        ]),
+      ],
+      hq: [null, null, null, null, 'h4' as CardExtId],
+      wounds: ['w0', 'w1'] as CardExtId[],
+      bystanders: ['b0'] as CardExtId[],
+    });
+    const results = executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onAmbush');
+    assert.deepStrictEqual(results, [
+      { keyword: 'captureHqHeroRightmost', targets: ['h4'] },
+      { keyword: 'gainWoundEachPlayer', targets: [] },
+      { keyword: 'captureBystander', targets: [] },
+    ]);
+  });
+
+  it('capture-hq-hero on an empty HQ reports empty targets (reachable no-op)', () => {
+    const G = makeG({
+      hooks: [hook('v-x', 'onAmbush', ['captureHqHeroRightmost'])],
+      hq: [null, null, null, null, null],
+    });
+    const results = executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onAmbush');
+    assert.deepStrictEqual(results, [
+      { keyword: 'captureHqHeroRightmost', targets: [] },
+    ]);
+  });
+
+  it('hero-deck-top-to-escape reports the escaped card as the target', () => {
+    const G = makeG({
+      hooks: [hook('v-x', 'onEscape', ['heroDeckTopToEscape'])],
+      heroDeck: ['h0', 'h1'] as CardExtId[],
+    });
+    const results = executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onEscape');
+    assert.deepStrictEqual(results, [
+      { keyword: 'heroDeckTopToEscape', targets: ['h0'] },
+    ]);
+  });
+
+  it('hero-deck-top-to-escape on an empty hero deck reports empty targets', () => {
+    const G = makeG({ hooks: [hook('v-x', 'onEscape', ['heroDeckTopToEscape'])] });
+    const results = executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onEscape');
+    assert.deepStrictEqual(results, [
+      { keyword: 'heroDeckTopToEscape', targets: [] },
+    ]);
   });
 });
 
@@ -1517,8 +1669,11 @@ describe('executeVillainAbilities — captureHqHeroRightmost (WP-214)', () => {
       hooks: [hook('v-skrull', 'onAmbush', ['captureHqHeroRightmost'])],
       hq: [null, null, null, null, 'h4' as CardExtId],
     });
-    const applied = executeVillainAbilities(G, CTX, 'v-skrull' as CardExtId, 'onAmbush');
-    assert.deepStrictEqual(applied, ['captureHqHeroRightmost']);
+    const results = executeVillainAbilities(G, CTX, 'v-skrull' as CardExtId, 'onAmbush');
+    assert.deepStrictEqual(
+      results.map((result) => result.keyword),
+      ['captureHqHeroRightmost'],
+    );
   });
 });
 
@@ -1541,8 +1696,11 @@ describe('executeVillainAbilities — captureHqHeroHighestCost (WP-214)', () => 
       hq: [null, 'h1' as CardExtId, null, null, null],
       cardStats: { h1: { cost: 4 } },
     });
-    const applied = executeVillainAbilities(G, CTX, 'v-skrull' as CardExtId, 'onAmbush');
-    assert.deepStrictEqual(applied, ['captureHqHeroHighestCost']);
+    const results = executeVillainAbilities(G, CTX, 'v-skrull' as CardExtId, 'onAmbush');
+    assert.deepStrictEqual(
+      results.map((result) => result.keyword),
+      ['captureHqHeroHighestCost'],
+    );
   });
 });
 
@@ -1565,8 +1723,11 @@ describe('executeVillainAbilities — captureHqHeroLowestCost (WP-214)', () => {
       hq: ['h0' as CardExtId, null, null, null, null],
       cardStats: { h0: { cost: 2 } },
     });
-    const applied = executeVillainAbilities(G, CTX, 'v-skrull' as CardExtId, 'onAmbush');
-    assert.deepStrictEqual(applied, ['captureHqHeroLowestCost']);
+    const results = executeVillainAbilities(G, CTX, 'v-skrull' as CardExtId, 'onAmbush');
+    assert.deepStrictEqual(
+      results.map((result) => result.keyword),
+      ['captureHqHeroLowestCost'],
+    );
   });
 });
 
@@ -1676,9 +1837,13 @@ describe('executeVillainAbilities — hollow-effect detection (WP-257)', () => {
         bystanders: ['b0'] as CardExtId[],
       }),
     );
-    const applied = executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
+    const results = executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
 
-    assert.deepStrictEqual(applied, ['captureBystander'], 'applied return byte-unchanged');
+    assert.deepStrictEqual(
+      results.map((result) => result.keyword),
+      ['captureBystander'],
+      'applied keyword surface byte-unchanged',
+    );
     assert.equal(records(G).length, 1, 'the unhandled effect still flags hollow');
   });
 

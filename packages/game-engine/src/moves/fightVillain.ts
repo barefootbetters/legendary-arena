@@ -23,12 +23,18 @@ import {
   getDefeatRequirement,
   playerMeetsDefeatRequirement,
 } from './villainDefeatRequirement.logic.js';
-import { executeVillainAbilities } from '../villain/villainEffects.execute.js';
+import {
+  executeVillainAbilities,
+  resolveEffectResultNames,
+} from '../villain/villainEffects.execute.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
-import { composeFightNarrative } from '../events/notableEvents.compose.js';
+import {
+  composeFightNarrative,
+  composeEffectResultLogLine,
+} from '../events/notableEvents.compose.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -145,9 +151,14 @@ export function fightVillain(
   // the message push, so they observe post-award pile state. A Fight:
   // captureBystander awards the newly attached bystander immediately (the card
   // is already in the victory pile), avoiding a stranded bystander (WP-185).
-  // WP-200: capture the executor's return — the applied effect keywords in
-  // dispatch order — for the fightResolved emission below.
-  const appliedFightEffects = executeVillainAbilities(G, ctx, cardId, 'onFight');
+  // WP-316: capture the executor's per-effect results (keywords + targets) for
+  // the fightResolved emission and the effect-narration log line below.
+  const appliedFightResults = executeVillainAbilities(G, ctx, cardId, 'onFight');
+  // why: WP-316 — map results→keywords so the fightResolved `appliedEffects`
+  // field and the composeFightNarrative string stay byte-identical to main; the
+  // hashed notableEvents surface (and the arena-client) never observe the
+  // per-target widening, so finalStateHash is unchanged.
+  const appliedFightEffects = appliedFightResults.map((result) => result.keyword);
 
   G.messages.push(
     `Player ${ctx.currentPlayer} fought "${cardId}" at city space ${cityIndex}.`,
@@ -156,6 +167,18 @@ export function fightVillain(
   if (awardResult.playerVictory.length > victoryBefore) {
     G.messages.push(
       `Player ${ctx.currentPlayer} rescued ${bystandersRescued} bystander(s) from "${cardId}".`,
+    );
+  }
+
+  // why: WP-316 — narrate the Fight: effect targets into the durable log
+  // (G.messages, hash-excluded per D-24081), after the fought/rescued pushes and
+  // before the fightResolved event push. Length-guarded: no line when no effect
+  // applied (an effectless fight pushes no effect line). Names resolve at the
+  // fire site via G.cardDisplayData (the composer stays pure).
+  if (appliedFightResults.length > 0) {
+    const resolvedFightResults = resolveEffectResultNames(G, appliedFightResults);
+    G.messages.push(
+      `Fight effect: ${composeEffectResultLogLine(resolvedFightResults)}.`,
     );
   }
 

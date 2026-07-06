@@ -30,12 +30,18 @@ import {
 } from '../board/bystanders.logic.js';
 import { hasAmbush } from '../board/boardKeywords.logic.js';
 import { koAttachedHeroesOnEscape } from '../board/heroCapture.logic.js';
-import { executeVillainAbilities } from '../villain/villainEffects.execute.js';
+import {
+  executeVillainAbilities,
+  resolveEffectResultNames,
+} from '../villain/villainEffects.execute.js';
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
-import { composeAmbushNarrative } from '../events/notableEvents.compose.js';
+import {
+  composeAmbushNarrative,
+  composeEffectResultLogLine,
+} from '../events/notableEvents.compose.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -242,7 +248,24 @@ export function performVillainReveal(
       // (D-18704..D-18708), pushResult.escapedCard is the zone-instance
       // ext_id the per-card hook lookup expects, so villain onEscape effects
       // now fire end-to-end on real cards (D-18508 CLOSED).
-      executeVillainAbilities(G, ctx, pushResult.escapedCard, 'onEscape');
+      const appliedEscapeResults = executeVillainAbilities(
+        G,
+        ctx,
+        pushResult.escapedCard,
+        'onEscape',
+      );
+      // why: WP-316 — Escape is LOG-ONLY: narrate the Escape: effect targets
+      // into G.messages (hash-excluded, D-24081) but add NO escapeResolved (or
+      // any) notableEvent. G.notableEvents is hashed + projected to the
+      // arena-client, so a new event would re-pin the sentinel finalStateHash.
+      // Length-guarded: no line when no effect applied. Names resolve at the
+      // fire site via G.cardDisplayData (the composer stays pure).
+      if (appliedEscapeResults.length > 0) {
+        const resolvedEscapeResults = resolveEffectResultNames(G, appliedEscapeResults);
+        G.messages.push(
+          `Escape effect: ${composeEffectResultLogLine(resolvedEscapeResults)}.`,
+        );
+      }
       // why: captured heroes KO'd when villain escapes (tabletop rules)
       koAttachedHeroesOnEscape(G, pushResult.escapedCard);
     }
@@ -266,7 +289,12 @@ export function performVillainReveal(
     // edge (a contract violation the move never hits in production but
     // the emission must remain defensive).
     if (hasAmbush(cardId, G.cardKeywords ?? {})) {
-      const appliedAmbushEffects = executeVillainAbilities(G, ctx, cardId, 'onAmbush');
+      const appliedAmbushResults = executeVillainAbilities(G, ctx, cardId, 'onAmbush');
+      // why: WP-316 — map results→keywords so the ambushResolved `appliedEffects`
+      // field and the composeAmbushNarrative string stay byte-identical to main;
+      // the hashed notableEvents surface (and the arena-client) never observe the
+      // per-target widening, so finalStateHash is unchanged.
+      const appliedAmbushEffects = appliedAmbushResults.map((result) => result.keyword);
       // why: WP-200 — defensive access; legacy test states may leave
       // `cardDisplayData` undefined. Production setup always builds it.
       const ambushCardDisplay = G.cardDisplayData?.[cardId];
@@ -278,6 +306,18 @@ export function performVillainReveal(
         const found = G.city.indexOf(cardId);
         return found >= 0 ? found : 0;
       })();
+      // why: WP-316 — narrate the Ambush: effect targets into the durable log
+      // (G.messages, hash-excluded per D-24081) after the executor runs and
+      // BEFORE the ambushResolved event push. Length-guarded: no line when no
+      // effect applied. Names resolve at the fire site via G.cardDisplayData
+      // (the composer stays pure). The unconditional city-entry bystander attach
+      // below is NOT an Ambush effect and never appears here.
+      if (appliedAmbushResults.length > 0) {
+        const resolvedAmbushResults = resolveEffectResultNames(G, appliedAmbushResults);
+        G.messages.push(
+          `Ambush effect: ${composeEffectResultLogLine(resolvedAmbushResults)}.`,
+        );
+      }
       G.notableEvents.push({
         type: 'ambushResolved',
         revealedCardId: cardId,
