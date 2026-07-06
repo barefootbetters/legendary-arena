@@ -3,7 +3,7 @@
 > An internal engineering reference for game systems, mechanics, and
 > concepts in the Legendary Arena engine.
 >
-> **Last updated:** 2026-05-07
+> **Last updated:** 2026-07-06
 
 ---
 
@@ -339,3 +339,63 @@ The pattern is loosely inspired by Andrej Karpathy's LLM Wiki:
 The schema, conventions, and authority position are project-specific
 and locked in [SCHEMA.md](SCHEMA.md) for **this** project — the
 inspiration is the *idea*, not the format.
+
+---
+
+## Tradeoffs
+
+An LLM-maintained wiki is not free. This section states what the
+pattern buys and what it costs, so the choice stays legible to future
+maintainers. Each cost names the schema guardrail that contains it —
+the guardrails are what separate this from an ungoverned pile of
+AI-written markdown.
+
+**What it buys**
+
+- **Persistent, linked knowledge over re-discovery.** Connections are
+  written down once (`related`, body links, tags) instead of an agent
+  re-deriving them from raw sources on every query. Knowledge
+  compounds as pages are added.
+- **A machine-readable review surface.** The fixed section set and
+  front-matter contract make pages parseable, diffable, and lintable —
+  a page that drifts from the shape is visibly wrong, not silently
+  degraded.
+- **Markdown-native, tool-agnostic.** Plain `.md` renders in any
+  viewer and projects cleanly to the Hugo build; no proprietary vault
+  format and no lock-in.
+- **Cheap navigation, cited explanations.** [INDEX.md](INDEX.md) plus
+  tags give fast entry points, while every `canonical` claim carries a
+  citation — the wiki explains without becoming a second source of
+  truth.
+
+**What it costs (and how the schema contains it)**
+
+- **LLM drift into canon.** An agent maintaining pages can quietly
+  rewrite a claim or invent a "contradiction." Contained by the
+  [SCHEMA.md § Authority Position](SCHEMA.md): the wiki sits at
+  authority position 7, cites entries 1–6, and governs nothing — a
+  wiki/authority disagreement means *the wiki is wrong*. Any uncited
+  factual claim is `draft`, never `canonical`.
+- **Opinion / rationale creep.** Pros-and-cons, design rationale, and
+  policy do not belong on entity pages
+  ([SCHEMA.md § Scope Exclusion](SCHEMA.md)); they route to
+  [DECISIONS.md](../docs/ai/DECISIONS.md). (This very section lives in
+  `README.md`, a reserved non-entity file, *because* the entity
+  contract forbids it on a page.)
+- **Two-surface drift.** A rendered site can quietly become a second
+  place to edit. Contained by the read-only
+  [SCHEMA.md § Publish / Sync Boundary](SCHEMA.md): `wiki/` is the only
+  authoring surface; the Hugo projection is regenerated, never
+  hand-edited.
+- **Maintenance and scale.** Link integrity and index freshness need
+  upkeep, and a flat directory eventually stops scaling. Contained by
+  the commit-time link gate (`wiki-viewer:check-links`), the
+  incremental *write → validate → retro-link* model, and the 50-page
+  [SCHEMA.md § Flat-structure cap](SCHEMA.md) that forces a
+  partitioning decision before the directory becomes unmanageable
+  (currently 35 / 50).
+
+Net: the pattern's value is real, but it is entirely dependent on the
+authority position, scope exclusion, and publish/sync boundary. Keep
+those three and the wiki compounds; drop any one and it decays into an
+unverifiable second source of truth.
