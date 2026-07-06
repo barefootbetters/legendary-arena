@@ -1249,6 +1249,166 @@ describe('revealVillainCard — WP-200 ambushResolved emission', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// WP-316 — Ambush / Escape effect log narration (per-target)
+// ---------------------------------------------------------------------------
+
+describe('revealVillainCard — WP-316 Ambush effect log narration', () => {
+  it('names the captured HQ hero in an Ambush effect line and keeps ambushResolved byte-identical', () => {
+    const villainExtId = 'ambush-v' as CardExtId;
+    const gameState = createMockGameState({
+      deck: [villainExtId],
+      discard: [],
+      cardTypes: { [villainExtId]: 'villain' },
+      cardKeywords: { [villainExtId]: ['ambush'] },
+      villainAbilityHooks: [
+        {
+          cardId: villainExtId,
+          timing: 'onAmbush',
+          keywords: ['captureHqHeroRightmost'],
+          effects: [{ primitive: 'capture-hq-hero', selector: 'rightmost' }],
+        },
+      ],
+    });
+    gameState.playerZones['0'] = { deck: [], hand: [], discard: [], inPlay: [], victory: [] };
+    gameState.hq = [null, null, null, null, 'core-hero-ironman' as CardExtId];
+    gameState.heroDeck = [];
+    (gameState as { cardDisplayData?: unknown }).cardDisplayData = {
+      'ambush-v': { name: 'Sentinel' },
+      'core-hero-ironman': { name: 'Iron Man' },
+    };
+
+    const moveContext = createMockMoveContext(gameState);
+    revealVillainCard(moveContext);
+
+    assert.ok(
+      gameState.messages.includes(
+        'Ambush effect: the rightmost HQ hero was captured (Iron Man).',
+      ),
+      'the durable log names the captured HQ hero',
+    );
+    // why: WP-316 byte-identity — exactly one ambushResolved (no new event
+    // type), with unchanged appliedEffects + narrative.
+    assert.equal(gameState.notableEvents.length, 1, 'exactly one ambushResolved event');
+    const event = gameState.notableEvents[0]!;
+    assert.equal(event.type, 'ambushResolved');
+    if (event.type === 'ambushResolved') {
+      assert.deepStrictEqual(event.appliedEffects, ['captureHqHeroRightmost']);
+      assert.equal(
+        event.narrative,
+        '"Sentinel" ambushed: the rightmost HQ hero was captured.',
+      );
+    }
+  });
+
+  it('pushes no Ambush effect line for an effectless ambush', () => {
+    const villainExtId = 'ambush-empty' as CardExtId;
+    const gameState = createMockGameState({
+      deck: [villainExtId],
+      discard: [],
+      cardTypes: { [villainExtId]: 'villain' },
+      cardKeywords: { [villainExtId]: ['ambush'] },
+      villainAbilityHooks: [],
+    });
+    gameState.playerZones['0'] = { deck: [], hand: [], discard: [], inPlay: [], victory: [] };
+
+    const moveContext = createMockMoveContext(gameState);
+    revealVillainCard(moveContext);
+
+    assert.equal(
+      gameState.messages.filter((message) => message.startsWith('Ambush effect:')).length,
+      0,
+      'no effect line when the ambush applied no effect',
+    );
+  });
+});
+
+describe('revealVillainCard — WP-316 Escape effect log narration (log-only)', () => {
+  it('names the escaped hero-deck card in an Escape effect line and adds NO notableEvent', () => {
+    const escapedCardId = 'core-villain-spider-foes-venom-00' as CardExtId;
+    const gameState = createMockGameState({
+      deck: ['new-villain' as CardExtId],
+      discard: [],
+      cardTypes: { 'new-villain': 'villain' },
+      villainAbilityHooks: [
+        {
+          cardId: escapedCardId,
+          timing: 'onEscape',
+          keywords: ['heroDeckTopToEscape'],
+          effects: [{ primitive: 'hero-deck-top-to-escape' }],
+        },
+      ],
+    });
+    gameState.city = [
+      'c0' as CardExtId,
+      'c1' as CardExtId,
+      'c2' as CardExtId,
+      'c3' as CardExtId,
+      escapedCardId,
+    ];
+    gameState.playerZones = {
+      '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+    };
+    gameState.piles.wounds = ['w0'] as CardExtId[];
+    gameState.heroDeck = ['core-hero-thor'] as CardExtId[];
+    (gameState as { cardDisplayData?: unknown }).cardDisplayData = {
+      'core-hero-thor': { name: 'Thor' },
+    };
+
+    const moveContext = createMockMoveContext(gameState);
+    revealVillainCard(moveContext);
+
+    assert.ok(
+      gameState.messages.includes(
+        'Escape effect: the top of the hero deck escaped (Thor).',
+      ),
+      'the durable log names the escaped hero-deck card',
+    );
+    // why: WP-316 — Escape is LOG-ONLY. The entering 'new-villain' has no
+    // Ambush keyword, and the escape adds no event, so notableEvents stays
+    // empty — proving no escapeResolved (or any) event was added.
+    assert.equal(
+      gameState.notableEvents.length,
+      0,
+      'Escape narration adds NO notableEvent (hash-preserving)',
+    );
+    assert.ok(
+      gameState.escapedPile.includes('core-hero-thor' as CardExtId),
+      'the escaped hero-deck card moved to the escaped pile',
+    );
+  });
+
+  it('pushes no Escape effect line when the escaped card has no Escape effect', () => {
+    const escapedCardId = 'henchman-doombot-legion-04' as CardExtId;
+    const gameState = createMockGameState({
+      deck: ['new-villain' as CardExtId],
+      discard: [],
+      cardTypes: { 'new-villain': 'villain' },
+      villainAbilityHooks: [],
+    });
+    gameState.city = [
+      'c0' as CardExtId,
+      'c1' as CardExtId,
+      'c2' as CardExtId,
+      'c3' as CardExtId,
+      escapedCardId,
+    ];
+    gameState.playerZones = {
+      '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+    };
+    gameState.piles.wounds = ['w0'] as CardExtId[];
+
+    const moveContext = createMockMoveContext(gameState);
+    revealVillainCard(moveContext);
+
+    assert.equal(
+      gameState.messages.filter((message) => message.startsWith('Escape effect:')).length,
+      0,
+      'no effect line when the escaped card applied no Escape effect',
+    );
+  });
+});
+
 describe('revealVillainCard — real-registry villain end-to-end (WP-186 §Files #7c; WP-191 consumption)', () => {
   it('a real Venom escape fires its Escape: [effect:gainWoundEachPlayer] marker on every player', () => {
     // why: this is the test that would have FAILED under the D-18508 grammar

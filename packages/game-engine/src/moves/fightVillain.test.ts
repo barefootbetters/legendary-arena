@@ -13,6 +13,9 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { fightVillain } from './fightVillain.js';
 import type { LegendaryGameState } from '../types.js';
+import type { CardExtId } from '../state/zones.types.js';
+import type { VillainAbilityHook } from '../rules/villainAbility.types.js';
+import { LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR } from '../rules/villainAbility.types.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import { TURN_STAGES } from '../turn/turnPhases.types.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
@@ -31,8 +34,11 @@ function createMockGameState(options?: {
   currentStage?: LegendaryGameState['currentStage'];
   hand?: string[];
   inPlay?: string[];
+  discard?: string[];
   cardTraits?: LegendaryGameState['cardTraits'];
   villainDefeatRequirements?: LegendaryGameState['villainDefeatRequirements'];
+  villainAbilityHooks?: VillainAbilityHook[];
+  cardDisplayData?: LegendaryGameState['cardDisplayData'];
 }): LegendaryGameState {
   const config = {
     schemeId: 'test-scheme',
@@ -60,12 +66,17 @@ function createMockGameState(options?: {
       '0': {
         deck: [],
         hand: (options?.hand ?? []) as LegendaryGameState['playerZones']['0']['hand'],
-        discard: [],
+        discard: (options?.discard ?? []) as LegendaryGameState['playerZones']['0']['discard'],
         inPlay: (options?.inPlay ?? []) as LegendaryGameState['playerZones']['0']['inPlay'],
         victory: [],
       },
     },
     cardTraits: options?.cardTraits ?? {},
+    // why: WP-316 — villain ability hooks + display data drive the Fight:
+    // effect narration. Absent by default (empty hooks → no effect line), so
+    // existing tests are unaffected.
+    villainAbilityHooks: options?.villainAbilityHooks ?? [],
+    ...(options?.cardDisplayData ? { cardDisplayData: options.cardDisplayData } : {}),
     ...(options?.villainDefeatRequirements
       ? { villainDefeatRequirements: options.villainDefeatRequirements }
       : {}),
@@ -304,6 +315,93 @@ describe('fightVillain', () => {
       moveContext.G.notableEvents.length,
       0,
       'stage-gated short-circuit must not push an event',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-316 — Fight: effect log narration (per-target)
+// ---------------------------------------------------------------------------
+
+/** Builds an onFight villain ability hook for a single legacy keyword. */
+function fightHook(
+  cardId: string,
+  keyword: keyof typeof LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR,
+): VillainAbilityHook {
+  return {
+    cardId: cardId as CardExtId,
+    timing: 'onFight',
+    keywords: [keyword],
+    effects: [{ ...LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR[keyword] }],
+  };
+}
+
+describe('fightVillain — WP-316 Fight: effect log narration', () => {
+  it('auto-KO (1 eligible) pushes a Fight effect line naming the resolved hero', () => {
+    const gameState = createMockGameState({
+      city: ['villain-a', null, null, null, null],
+      discard: ['core-hero-spidey'],
+      villainAbilityHooks: [fightHook('villain-a', 'koHeroCurrentPlayer')],
+      cardDisplayData: {
+        'core-hero-spidey': { name: 'Spider-Man' },
+      } as unknown as LegendaryGameState['cardDisplayData'],
+    });
+    const moveContext = createMockMoveContext(gameState);
+
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    assert.ok(
+      moveContext.G.messages.includes(
+        'Fight effect: the active player KO’d a hero (Spider-Man).',
+      ),
+      'the durable log names the specific KO\'d hero',
+    );
+    // why: WP-316 byte-identity — the fightResolved event keyword surface +
+    // narrative are unchanged by the per-target widening.
+    const event = moveContext.G.notableEvents[0]!;
+    assert.equal(event.type, 'fightResolved');
+    if (event.type === 'fightResolved') {
+      assert.deepStrictEqual(event.appliedEffects, ['koHeroCurrentPlayer']);
+      assert.equal(
+        event.narrative,
+        'Fought "villain-a"; Fight effect: the active player KO’d a hero.',
+      );
+    }
+  });
+
+  it('≥2 eligible (pending KO) pushes a Fight effect line that says the choice is pending', () => {
+    const gameState = createMockGameState({
+      city: ['villain-a', null, null, null, null],
+      discard: ['core-hero-a', 'core-hero-b'],
+      villainAbilityHooks: [fightHook('villain-a', 'koHeroCurrentPlayer')],
+    });
+    const moveContext = createMockMoveContext(gameState);
+
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    assert.ok(
+      moveContext.G.messages.includes('Fight effect: the active player must KO a hero.'),
+      'a parked interactive KO logs the pending phrase, not a hero name',
+    );
+    assert.equal(
+      moveContext.G.pendingKoHeroChoices?.length,
+      1,
+      'the choice is parked pending',
+    );
+  });
+
+  it('an effectless fight pushes no Fight effect line', () => {
+    const gameState = createMockGameState({
+      city: ['villain-a', null, null, null, null],
+    });
+    const moveContext = createMockMoveContext(gameState);
+
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    assert.equal(
+      moveContext.G.messages.filter((message) => message.startsWith('Fight effect:')).length,
+      0,
+      'no effect line when the villain applied no Fight: effect',
     );
   });
 });

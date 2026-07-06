@@ -26389,7 +26389,18 @@ change either — `buildEffectProvenance` derives the resolver from the snapshot
 
 ### D-24102 — Villain-Deck Per-Target Effect Narration in the Log (Fight / Ambush / Escape; executor return widened to `VillainEffectResult[]`)
 
-**Status:** Drafted 2026-07-06; not yet landed (flips to Active on WP-316 execution).
+**Status:** **Active** — landed 2026-07-06 by WP-316 / EC-346 (impl commit + SPEC
+close). `executeVillainAbilities` now returns `VillainEffectResult[]` for all
+three timings; the three fire sites push a target-naming `Fight/Ambush/Escape
+effect: …` line into `G.messages`, with Escape log-only (no `escapeResolved`).
+Byte-identity held: the sweep sentinel `finalStateHash` (`7bb990fc…`) is
+unchanged and no new `notableEvent` type was added. Two small
+implementation choices within the decision's envelope: the composer's pure
+input DTO `ResolvedEffectResult` + `composeEffectResultLogLine` live in
+`notableEvents.compose.ts`; the shared `G.cardDisplayData` name-resolution helper
+`resolveEffectResultNames` (extracted at the 3rd fire site per duplicate-first)
+lives in `villainEffects.execute.ts` (kept out of the pure composer and out of
+`executeVillainAbilities` itself). `D-24026` live-verify operator-pending on deploy.
 
 **Context.** The villain-effect executor (`executeVillainAbilities`) is
 timing-agnostic and fires at three sites — `onFight` (defeat, in

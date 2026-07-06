@@ -1,13 +1,15 @@
 /**
  * Villain & henchman ability execution for the Legendary Arena game engine.
  *
- * executeVillainAbilities applies the locked 6-keyword MVP effect vocabulary
- * for a card at a given timing (onAmbush / onFight / onEscape). It mutates G
- * directly via existing zone helpers and returns the applied
- * `VillainEffectKeyword[]` in dispatch order (WP-200) so the four fire-site
- * emissions can record which effects actually ran. It is deliberately
- * separate from the global rule-hook pipeline (D-18501). Out-of-vocabulary
- * effects safe-skip silently and are NOT included in the return array.
+ * executeVillainAbilities applies the locked MVP effect vocabulary for a card at
+ * a given timing (onAmbush / onFight / onEscape). It mutates G directly via
+ * existing zone helpers and returns a `VillainEffectResult[]` in dispatch order
+ * (WP-316) — each result carries the reverse-mapped legacy keyword plus the card
+ * ext_id targets the effect touched — so the three fire sites can narrate
+ * per-target log lines. `results.map((r) => r.keyword)` reproduces the WP-200
+ * keyword surface byte-identically. It is deliberately separate from the global
+ * rule-hook pipeline (D-18501). Out-of-vocabulary effects safe-skip silently and
+ * are NOT included in the return array.
  *
  * Imports no game framework and no registry package. No .reduce().
  * Uses existing helpers only: gainWound, koCard, moveCardFromZone,
@@ -20,6 +22,7 @@ import type {
   VillainAbilityTiming,
   VillainAbilityHook,
   VillainEffectKeyword,
+  VillainEffectResult,
   VillainEffectDescriptor,
   VillainEffectPrimitive,
 } from '../rules/villainAbility.types.js';
@@ -28,6 +31,7 @@ import {
   descriptorToLegacyKeyword,
   VILLAIN_EFFECT_PRIMITIVES,
 } from '../rules/villainAbility.types.js';
+import type { ResolvedEffectResult } from '../events/notableEvents.compose.js';
 import type { HollowEffectRecord } from '../diagnostics/hollowEffect.types.js';
 import { recordHollowEffect } from '../diagnostics/hollowEffect.record.js';
 import { gainWound } from '../board/wounds.logic.js';
@@ -37,6 +41,7 @@ import {
   awardAttachedBystanders,
 } from '../board/bystanders.logic.js';
 import { captureHeroFromHq } from '../board/heroCapture.logic.js';
+import type { CaptureHeroResult } from '../board/heroCapture.logic.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import {
@@ -73,32 +78,32 @@ export interface KoHeroTarget {
  *   import. Only ctx.currentPlayer is read.
  * @param cardId - The villain/henchman card-instance ext_id that triggered.
  * @param timing - Which timing fired ('onAmbush', 'onFight', or 'onEscape').
- * @returns The applied effect keywords in dispatch order (post-safe-skip).
- *   WP-200 widening (D-20003): the return value lets the four fire-site
- *   emissions record which Fight: / Ambush: effects actually ran. Body
- *   behaviour is unchanged from WP-185 — only the return signature
- *   widens from `void` to `VillainEffectKeyword[]`. Out-of-vocabulary
- *   effects safe-skip and are NOT included. Callers that ignore the
- *   return value compile unchanged.
+ * @returns The applied effect results in dispatch order (post-safe-skip).
+ *   WP-316 widening (D-24102): each result carries the reverse-mapped legacy
+ *   `keyword` plus the card ext_id `targets` the effect touched (and `pending`
+ *   for a parked interactive KO), so the three fire sites can narrate per-target
+ *   log lines. `results.map((r) => r.keyword)` reproduces the WP-200
+ *   `VillainEffectKeyword[]` return byte-identically, so the fightResolved /
+ *   ambushResolved keyword surface is unchanged. Out-of-vocabulary effects
+ *   safe-skip and are NOT included.
  */
 export function executeVillainAbilities(
   G: LegendaryGameState,
   ctx: unknown,
   cardId: CardExtId,
   timing: VillainAbilityTiming,
-): VillainEffectKeyword[] {
-  // why: WP-200 — accumulator captures the effect keywords whose case
-  // branches actually ran, in dispatch order. Returned to the caller so
-  // emissions can record exactly which Fight/Ambush effects fired.
-  // Out-of-vocab effects (the default case) are NOT appended; the
-  // emission sites see only effects whose state mutation was attempted.
-  const appliedEffects: VillainEffectKeyword[] = [];
+): VillainEffectResult[] {
+  // why: WP-316 — accumulator captures a result per effect whose handler ran,
+  // in dispatch order. Each result pairs the reverse-mapped legacy keyword with
+  // the ext_ids the effect touched. Out-of-vocab effects (no handler) are NOT
+  // appended; the fire sites see only effects whose mutation was attempted.
+  const results: VillainEffectResult[] = [];
 
   // why: guard against older test mocks (and pre-WP-185 G states) that lack
   // villainAbilityHooks — mirrors the WP-022 heroAbilityHooks guard. No hooks
   // means no effects.
   if (!G.villainAbilityHooks || G.villainAbilityHooks.length === 0) {
-    return appliedEffects;
+    return results;
   }
 
   // why: ctx is typed `unknown` and narrowed via `as` to the one field this
@@ -121,24 +126,35 @@ export function executeVillainAbilities(
   const hooks = getVillainHooksForCard(G.villainAbilityHooks, cardId, timing);
   for (const hook of hooks) {
     for (const descriptor of hook.effects) {
-      const applied = applyVillainEffect(G, currentPlayer, cardId, timing, descriptor);
-      if (applied) {
-        // why: D-24023 — the applied-effects accumulator stays
-        // VillainEffectKeyword[] (reverse-mapped from the dispatched descriptor)
-        // so notableEvents, EFFECT_KEYWORD_LABELS, the replay state-hash, and the
-        // arena-client projection are byte-identical. Every dispatched descriptor
-        // came from a legacy marker, so the reverse-map always resolves; an
-        // unresolvable descriptor (none in this WP) is simply not recorded.
+      const application = applyVillainEffect(G, currentPlayer, cardId, timing, descriptor);
+      if (application !== null) {
+        // why: D-24023 — each result's `keyword` stays VillainEffectKeyword
+        // (reverse-mapped from the dispatched descriptor) so notableEvents,
+        // EFFECT_KEYWORD_LABELS, the replay state-hash, and the arena-client
+        // projection are byte-identical (WP-316 adds only the hash-excluded
+        // targets). Every dispatched descriptor came from a legacy marker, so
+        // the reverse-map always resolves; an unresolvable descriptor (none in
+        // this WP) is simply not recorded.
         const legacyKeyword = descriptorToLegacyKeyword(descriptor);
         if (legacyKeyword !== undefined) {
-          appliedEffects.push(legacyKeyword);
+          const result: VillainEffectResult = {
+            keyword: legacyKeyword,
+            targets: application.targets,
+          };
+          // why: WP-316 — carry `pending` only when the handler parked an
+          // interactive KO, so the omit-when-absent shape matches the type's
+          // optional field (no `pending: undefined` noise).
+          if (application.pending === true) {
+            result.pending = true;
+          }
+          results.push(result);
         }
       } else {
-        // why: WP-257 / D-24033 — `applied === false` is the out-of-vocabulary
+        // why: WP-257 / D-24033 — `application === null` is the out-of-vocabulary
         // skip site: applyVillainEffect reached NO handler for this descriptor.
         // Classify on handler REACHABILITY (never state-diff) and record a hollow
-        // event. This is purely additive — appliedEffects is byte-unchanged
-        // (a non-applied descriptor was never recorded there).
+        // event. This is purely additive — results is byte-unchanged (a
+        // non-applied descriptor was never recorded there).
         recordHollowEffect(G, buildVillainDescriptorHollowRecord(cardId, cardType, timing, descriptor, turn));
       }
     }
@@ -148,7 +164,66 @@ export function executeVillainAbilities(
     detectVillainUnresolvedMarkers(G, cardId, cardType, hook, turn);
   }
 
-  return appliedEffects;
+  return results;
+}
+
+// ---------------------------------------------------------------------------
+// Fire-site name resolution (WP-316)
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolves each effect result's target ext_ids to display names for the log.
+ *
+ * Shared by all three fire sites (Fight / Ambush / Escape) — extracted at the
+ * third identical copy per the duplicate-first rule. Reads `G.cardDisplayData`
+ * (the fire site's to read, D-11106 pattern) so the pure composer stays free of
+ * any `G` dependency. The returned `ResolvedEffectResult[]` feeds
+ * `composeEffectResultLogLine`.
+ *
+ * @param G - Game state (read-only here; only `G.cardDisplayData` is consulted).
+ * @param results - The executor's per-effect results in dispatch order.
+ * @returns The results with each target ext_id resolved to a display name.
+ */
+export function resolveEffectResultNames(
+  G: LegendaryGameState,
+  results: VillainEffectResult[],
+): ResolvedEffectResult[] {
+  const resolved: ResolvedEffectResult[] = [];
+  for (const result of results) {
+    const targetNames: string[] = [];
+    for (const targetId of result.targets) {
+      targetNames.push(resolveCardDisplayName(G, targetId));
+    }
+    const resolvedResult: ResolvedEffectResult = {
+      keyword: result.keyword,
+      targetNames,
+    };
+    if (result.pending === true) {
+      resolvedResult.pending = true;
+    }
+    resolved.push(resolvedResult);
+  }
+  return resolved;
+}
+
+/**
+ * Resolves a single card ext_id to its display name, falling back to the raw
+ * ext_id when `G.cardDisplayData` has no usable entry.
+ *
+ * Defensive access mirrors the fightResolved / ambushResolved name resolution:
+ * legacy test G states may leave `cardDisplayData` undefined; production setup
+ * always builds it.
+ *
+ * @param G - Game state.
+ * @param extId - The card-instance ext_id to name.
+ * @returns The display name, or the raw ext_id when none is available.
+ */
+function resolveCardDisplayName(G: LegendaryGameState, extId: CardExtId): string {
+  const display = G.cardDisplayData?.[extId];
+  if (display && typeof display.name === 'string' && display.name.length > 0) {
+    return display.name;
+  }
+  return extId;
 }
 
 // ---------------------------------------------------------------------------
@@ -304,10 +379,25 @@ function isVillainEffectPrimitive(value: string): value is VillainEffectPrimitiv
 // ---------------------------------------------------------------------------
 
 /**
+ * The per-effect outcome a handler reports (WP-316): the card ext_ids it
+ * affected, and whether it parked an interactive choice instead of acting now.
+ *
+ * The executor pairs this with the reverse-mapped legacy keyword to build a
+ * `VillainEffectResult`. A handler that ran but touched nothing (empty pile,
+ * no eligible hero) returns `{ targets: [] }` — still "applied" (the dispatcher
+ * decides applied by handler presence, not by mutation).
+ */
+interface VillainEffectApplication {
+  targets: CardExtId[];
+  pending?: boolean;
+}
+
+/**
  * Handler signature for one villain effect primitive (WP-252 / D-24023).
  *
  * Mirrors the WP-251 HeroEffectHandler shape. Handlers mutate G directly and
- * return void; the dispatcher decides "applied" by primitive presence.
+ * return the effect's targets (WP-316); the dispatcher decides "applied" by
+ * primitive presence.
  */
 type VillainEffectHandler = (
   G: LegendaryGameState,
@@ -315,7 +405,7 @@ type VillainEffectHandler = (
   cardId: CardExtId,
   timing: VillainAbilityTiming,
   descriptor: VillainEffectDescriptor,
-) => void;
+) => VillainEffectApplication;
 
 /**
  * gain-wound primitive — every player or the current player gains 1 wound.
@@ -330,7 +420,9 @@ function villainEffectGainWound(
   _cardId: CardExtId,
   _timing: VillainAbilityTiming,
   descriptor: VillainEffectDescriptor,
-): void {
+): VillainEffectApplication {
+  // why: WP-316 — wounds narrate via the generic keyword label, not a card
+  // name; targets stays [] for both branches.
   if (descriptor.target === 'each') {
     // why: every player gains 1 wound (subject to wound-pile availability),
     // mirroring the existing escape-wound no-op-on-empty semantics.
@@ -347,19 +439,20 @@ function villainEffectGainWound(
         G.turnEconomy.woundsDrawn += 1;
       }
     }
-    return;
+    return { targets: [] };
   }
   // why: target === 'current'. WP-200 — mutation-guarded short-circuit still
   // counts as "applied" per the post-safe-skip contract (the dispatcher records
   // applied by primitive presence, not by mutation). The empty-pile /
   // missing-zone guards short-circuit body work, not the dispatch.
   const zones = G.playerZones[currentPlayer];
-  if (!zones) return;
-  if (G.piles.wounds.length === 0) return;
+  if (!zones) return { targets: [] };
+  if (G.piles.wounds.length === 0) return { targets: [] };
   const result = gainWound(G.piles.wounds, zones.discard);
   G.piles.wounds = result.woundsPile;
   zones.discard = result.playerDiscard;
   G.turnEconomy.woundsDrawn += 1;
+  return { targets: [] };
 }
 
 /**
@@ -377,7 +470,7 @@ function villainEffectKoHero(
   _cardId: CardExtId,
   _timing: VillainAbilityTiming,
   descriptor: VillainEffectDescriptor,
-): void {
+): VillainEffectApplication {
   if (descriptor.target === 'current') {
     // why: interactive KO for the current player (supersedes the WP-185
     // auto-resolution deferral, D-24006). 0 eligible → no-op; exactly 1 →
@@ -385,16 +478,21 @@ function villainEffectKoHero(
     // pending choice and KO nothing yet (the player picks via
     // resolveKoHeroChoice, D-24007).
     const zones = G.playerZones[currentPlayer];
-    if (!zones) return;
+    if (!zones) return { targets: [] };
     const eligible = buildKoEligibleTargets(zones);
-    if (eligible.length === 0) return;
+    if (eligible.length === 0) return { targets: [] };
     if (eligible.length === 1) {
-      koSingleTarget(G, zones, eligible[0]!);
-      return;
+      // why: WP-316 — the auto-KO'd hero is the log target; koSingleTarget
+      // returns its ext_id (or null if the move unexpectedly missed).
+      const koedId = koSingleTarget(G, zones, eligible[0]!);
+      return { targets: koedId !== null ? [koedId] : [] };
     }
     if (!G.pendingKoHeroChoices) G.pendingKoHeroChoices = [];
     G.pendingKoHeroChoices.push({ choiceType: 'ko-hero', playerID: currentPlayer });
-    return;
+    // why: WP-316 / D-24102 — pending: true marks the parked interactive KO; no
+    // hero is KO'd yet at this fire site, so no target name is known (resolve-time
+    // naming is a deferred follow-up, WP-316 §Scope Out). targets stays [].
+    return { targets: [], pending: true };
   }
   // why: target === 'each'. Iteration order is Object.keys(G.playerZones).sort()
   // — default JavaScript string compare → lexical ascending (D-18902), NOT
@@ -410,11 +508,20 @@ function villainEffectKoHero(
   // by the shared-resolver parity test on a single-player G.
   const repetitions = descriptor.magnitude ?? 1;
   const playerIds = Object.keys(G.playerZones).sort();
+  // why: WP-316 — collect the KO'd ext_ids across every player/iteration in the
+  // same order the resolver mutates G.ko; a zero-eligible iteration returns null
+  // and contributes no target. This only reads the resolver's return — it does
+  // NOT post-process the mutation (D-18902 mutation-location lock preserved).
+  const targets: CardExtId[] = [];
   for (const playerId of playerIds) {
     for (let iteration = 0; iteration < repetitions; iteration++) {
-      koOneHeroForPlayer(G, playerId);
+      const koedId = koOneHeroForPlayer(G, playerId);
+      if (koedId !== null) {
+        targets.push(koedId);
+      }
     }
   }
+  return { targets };
 }
 
 /**
@@ -430,23 +537,40 @@ function villainEffectCaptureHqHero(
   cardId: CardExtId,
   _timing: VillainAbilityTiming,
   descriptor: VillainEffectDescriptor,
-): void {
+): VillainEffectApplication {
   if (descriptor.selector === 'rightmost') {
     // why: captures the rightmost non-null hero from the HQ (index 4 → 0)
-    captureHeroFromHq(G, cardId, 'rightmost');
-    return;
+    return applicationFromCapture(captureHeroFromHq(G, cardId, 'rightmost'));
   }
   if (descriptor.selector === 'highest-cost') {
     // why: captures the highest-cost hero from the HQ; ties resolved by
     // rightmost index per selector determinism contract (WP-214)
-    captureHeroFromHq(G, cardId, 'highestCost');
-    return;
+    return applicationFromCapture(captureHeroFromHq(G, cardId, 'highestCost'));
   }
   if (descriptor.selector === 'lowest-cost') {
     // why: captures the lowest-cost hero from the HQ; ties resolved by
     // rightmost index per selector determinism contract (WP-214)
-    captureHeroFromHq(G, cardId, 'lowestCost');
+    return applicationFromCapture(captureHeroFromHq(G, cardId, 'lowestCost'));
   }
+  // why: an unknown selector matched no branch — the handler ran but touched
+  // nothing (no capture). Still "applied" per the post-safe-skip contract.
+  return { targets: [] };
+}
+
+/**
+ * Builds the effect application from a `captureHeroFromHq` result: the captured
+ * hero ext_id is the log target, or `targets: []` when the HQ was empty (null).
+ *
+ * @param captureResult - The `captureHeroFromHq` return, or null on empty HQ.
+ * @returns The effect application carrying the captured hero, if any.
+ */
+function applicationFromCapture(
+  captureResult: CaptureHeroResult | null,
+): VillainEffectApplication {
+  if (captureResult === null) {
+    return { targets: [] };
+  }
+  return { targets: [captureResult.capturedHeroId] };
 }
 
 /**
@@ -460,15 +584,17 @@ function villainEffectHeroDeckTopToEscape(
   _cardId: CardExtId,
   _timing: VillainAbilityTiming,
   _descriptor: VillainEffectDescriptor,
-): void {
+): VillainEffectApplication {
   // why: WP-185 §Scope wrote "G.piles.heroDeck[0]" but the engine's hero
   // reservoir is the top-level G.heroDeck (GlobalPiles has no heroDeck); this
   // moves the top of that reservoir to the escaped pile. Silent no-op when the
   // reservoir is empty.
-  if (G.heroDeck.length === 0) return;
+  if (G.heroDeck.length === 0) return { targets: [] };
   const topCard = G.heroDeck[0]!;
   G.heroDeck = G.heroDeck.slice(1);
   G.escapedPile = [...G.escapedPile, topCard];
+  // why: WP-316 — the escaped hero-deck card is the log target.
+  return { targets: [topCard] };
 }
 
 /**
@@ -483,7 +609,7 @@ function villainEffectCaptureBystander(
   cardId: CardExtId,
   timing: VillainAbilityTiming,
   _descriptor: VillainEffectDescriptor,
-): void {
+): VillainEffectApplication {
   const attachResult = attachBystanderToVillain(
     G.piles.bystanders,
     cardId,
@@ -508,6 +634,9 @@ function villainEffectCaptureBystander(
       zones.victory = awardResult.playerVictory;
     }
   }
+  // why: WP-316 — a captured bystander narrates via the generic keyword label,
+  // not a card name; targets stays [].
+  return { targets: [] };
 }
 
 // why: D-24023 — the ImplementationMap keyed by primitive (mirrors WP-251's
@@ -532,11 +661,12 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
  * @param cardId - The triggering villain/henchman card-instance ext_id.
  * @param timing - The timing that fired (changes capture-bystander behavior).
  * @param descriptor - The parameterized effect descriptor to apply.
- * @returns `true` when an in-vocab primitive handler ran (regardless of whether
- *   mutation guards short-circuited inside it); `false` only when no handler
+ * @returns The handler's `VillainEffectApplication` (its targets + optional
+ *   pending flag) when an in-vocab primitive handler ran (regardless of whether
+ *   mutation guards short-circuited inside it); `null` only when no handler
  *   exists for the primitive (the former out-of-vocab default). WP-200 D-20003
- *   carries forward: drives the reverse-mapped `appliedEffects` array — only
- *   descriptors whose handler ran are recorded (post-safe-skip contract).
+ *   carries forward: drives the reverse-mapped results array — only descriptors
+ *   whose handler ran are recorded (post-safe-skip contract).
  */
 function applyVillainEffect(
   G: LegendaryGameState,
@@ -544,18 +674,17 @@ function applyVillainEffect(
   cardId: CardExtId,
   timing: VillainAbilityTiming,
   descriptor: VillainEffectDescriptor,
-): boolean {
+): VillainEffectApplication | null {
   const handler = VILLAIN_EFFECT_HANDLERS[descriptor.primitive];
   if (handler === undefined) {
     // why: out-of-vocabulary primitives safe-skip silently — moves never throw,
     // no console output, no message push (matches the WP-022 hero-effects
     // precedent). Reachable only via a malformed hook; the parser validates
-    // markers before building descriptors. Returning false excludes the
-    // descriptor from the executor's appliedEffects[] (post-safe-skip contract).
-    return false;
+    // markers before building descriptors. Returning null excludes the
+    // descriptor from the executor's results[] (post-safe-skip contract).
+    return null;
   }
-  handler(G, currentPlayer, cardId, timing, descriptor);
-  return true;
+  return handler(G, currentPlayer, cardId, timing, descriptor);
 }
 
 // ---------------------------------------------------------------------------
@@ -608,9 +737,9 @@ function applyVillainEffect(
 function koOneHeroForPlayer(
   G: LegendaryGameState,
   playerId: string,
-): void {
+): CardExtId | null {
   const zones = G.playerZones[playerId];
-  if (!zones) return;
+  if (!zones) return null;
 
   const discardTarget = selectKoHeroTarget(zones.discard);
   if (discardTarget !== null) {
@@ -618,10 +747,12 @@ function koOneHeroForPlayer(
     if (moveResult.found) {
       zones.discard = moveResult.from;
       G.ko = koCard(G.ko, discardTarget);
+      // why: WP-316 — return the KO'd ext_id for the log target.
+      return discardTarget;
     }
     // why: discard has strict priority — once a discard hero is chosen we stop
     // and never fall through to hand or inPlay.
-    return;
+    return null;
   }
 
   const handTarget = selectKoHeroTarget(zones.hand);
@@ -630,9 +761,11 @@ function koOneHeroForPlayer(
     if (moveResult.found) {
       zones.hand = moveResult.from;
       G.ko = koCard(G.ko, handTarget);
+      // why: WP-316 — return the KO'd ext_id for the log target.
+      return handTarget;
     }
     // why: hand wins over inPlay once a hand hero is chosen.
-    return;
+    return null;
   }
 
   // why: D-20603 — inPlay is the third tier. The autoplay flow runs
@@ -650,8 +783,13 @@ function koOneHeroForPlayer(
     if (moveResult.found) {
       zones.inPlay = moveResult.from;
       G.ko = koCard(G.ko, inPlayTarget);
+      // why: WP-316 — return the KO'd ext_id for the log target.
+      return inPlayTarget;
     }
   }
+  // why: WP-316 — no eligible hero in any zone (or the move missed); no KO,
+  // no target.
+  return null;
 }
 
 /**
@@ -779,15 +917,19 @@ export function selectDefaultKoTarget(zones: PlayerZones): KoHeroTarget | null {
  * @param G - Game state (mutated under Immer draft).
  * @param zones - The player's card zones (the source zone is shortened in place).
  * @param target - The { zone, cardId } to KO.
+ * @returns The KO'd card ext_id (WP-316 log target), or null when the move
+ *   found no matching card.
  */
 function koSingleTarget(
   G: LegendaryGameState,
   zones: PlayerZones,
   target: KoHeroTarget,
-): void {
+): CardExtId | null {
   const moveResult = moveCardFromZone(zones[target.zone], [], target.cardId);
   if (moveResult.found) {
     zones[target.zone] = moveResult.from;
     G.ko = koCard(G.ko, target.cardId);
+    return target.cardId;
   }
+  return null;
 }

@@ -82,6 +82,67 @@ function joinEffectLabels(effects: VillainEffectKeyword[]): string {
 }
 
 // ---------------------------------------------------------------------------
+// Effect-result log line (WP-316)
+// ---------------------------------------------------------------------------
+
+/**
+ * A villain-effect result with its target ext_ids already resolved to display
+ * names (WP-316).
+ *
+ * The fire site (which owns `G.cardDisplayData`) resolves each result's targets
+ * to names and hands this pure DTO to `composeEffectResultLogLine`, so the
+ * composer keeps its no-`G` purity. `pending` marks a parked interactive KO for
+ * which no target has been chosen yet.
+ */
+export interface ResolvedEffectResult {
+  keyword: VillainEffectKeyword;
+  targetNames: string[];
+  pending?: boolean;
+}
+
+/**
+ * Composes the clause for a `Fight effect:` / `Ambush effect:` / `Escape effect:`
+ * log line from the resolved per-effect results.
+ *
+ * Pure + byte-stable. Each result renders as its generic keyword label with the
+ * resolved target names appended in parentheses when present, or the fixed
+ * "the active player must KO a hero" phrase when the KO is still pending. Clauses
+ * join with "; " in dispatch order. The caller supplies the leading
+ * `<timing> effect: ` label and the trailing period.
+ *
+ * @param results - The resolved effect results in dispatch order (>= 1).
+ * @returns The joined clause string (no leading label, no trailing period).
+ */
+export function composeEffectResultLogLine(results: ResolvedEffectResult[]): string {
+  const clauses: string[] = [];
+  for (const result of results) {
+    clauses.push(composeEffectResultClause(result));
+  }
+  return clauses.join('; ');
+}
+
+/**
+ * Composes one effect-result clause: the pending phrase, or the keyword label
+ * with resolved target names appended when any were affected.
+ *
+ * @param result - One resolved effect result.
+ * @returns The clause for this single effect.
+ */
+function composeEffectResultClause(result: ResolvedEffectResult): string {
+  if (result.pending === true) {
+    // why: WP-316 — no hero is KO'd yet for a parked interactive KO; the player
+    // picks via resolveKoHeroChoice later, so name no target here (resolve-time
+    // naming is a deferred follow-up, WP-316 §Scope Out).
+    return 'the active player must KO a hero';
+  }
+  const label = labelForEffect(result.keyword);
+  if (result.targetNames.length > 0) {
+    return `${label} (${result.targetNames.join(', ')})`;
+  }
+  return label;
+}
+
+// ---------------------------------------------------------------------------
 // Fight narrative
 // ---------------------------------------------------------------------------
 

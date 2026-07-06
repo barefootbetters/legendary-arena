@@ -117,6 +117,34 @@ export const VILLAIN_EFFECT_KEYWORDS: readonly VillainEffectKeyword[] = [
 ] as const;
 
 // ---------------------------------------------------------------------------
+// VillainEffectResult (WP-316 / D-24102)
+// ---------------------------------------------------------------------------
+
+/**
+ * Per-effect outcome the villain-effect executor reports for one applied effect
+ * (WP-316 / D-24102).
+ *
+ * `keyword` is the reverse-mapped legacy keyword, kept keyword-typed so the
+ * fightResolved / ambushResolved `appliedEffects` surface stays byte-identical
+ * to WP-200. `targets` names the card ext_ids the effect touched: the KO'd
+ * hero(es), the captured HQ hero, or the escaped card. Wound / bystander effects
+ * report `targets: []` (they narrate via the generic keyword label). `pending:
+ * true` marks a parked interactive KO (a ≥2-eligible current-player KO) for which
+ * no hero is KO'd yet at this fire site — the player picks later via
+ * resolveKoHeroChoice, so no target name is known now.
+ *
+ * Additive over the WP-200 `VillainEffectKeyword[]` return: `results.map((r) =>
+ * r.keyword)` reproduces the exact prior keyword array. The richer per-target
+ * data feeds only the hash-excluded `G.messages` log lines (D-24081); the hashed
+ * `G.notableEvents` surface (and the arena-client projection) never observe it.
+ */
+export interface VillainEffectResult {
+  keyword: VillainEffectKeyword;
+  targets: CardExtId[];
+  pending?: boolean;
+}
+
+// ---------------------------------------------------------------------------
 // VillainEffectPrimitive + VillainEffectDescriptor (WP-252 / D-24023)
 // ---------------------------------------------------------------------------
 

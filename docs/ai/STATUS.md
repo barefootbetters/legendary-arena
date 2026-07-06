@@ -7,6 +7,40 @@
 
 ## Current State
 
+### WP-316 / EC-346 Executed — Villain-Deck Effect Log Narration (Fight / Ambush / Escape, Per-Target Results; D-24102 Active) (2026-07-06)
+
+The durable play-by-play log (`G.messages` → `UIState.log`, the quiet log panel on
+`play.legendary-arena.com`) now narrates **what each villain-deck effect did, including the
+specific targets** — e.g. `Fight effect: the active player KO’d a hero (Spider-Man).` — for all
+three timing fire sites, closing the operator report "defeat a villain with a Fight: effect → the
+message should display it **and the results**."
+
+- **Executor contract widened** (`rules/villainAbility.types.ts`, D-24102): new additive interface
+  `VillainEffectResult = { keyword; targets: CardExtId[]; pending? }`; `executeVillainAbilities`
+  returns `VillainEffectResult[]` for all timings. Each handler reports its targets — the KO'd
+  hero(s), the captured HQ hero, the escaped hero-deck card; `gain-wound` / `capture-bystander`
+  report `[]` (generic label); a ≥2-eligible current-player KO reports `pending: true` (no hero
+  KO'd yet → "must KO a hero", resolve-time naming deferred). The internal KO resolvers
+  (`koOneHeroForPlayer` / `koSingleTarget`) now return the KO'd ext_id.
+- **Narration** at all three sites: Fight (`fightVillain.ts`), Ambush + Escape
+  (`villainDeck.reveal.ts`) resolve `targets` → display names via `G.cardDisplayData` (ext_id
+  fallback) through a shared `resolveEffectResultNames` helper and push one length-guarded
+  `Fight effect:` / `Ambush effect:` / `Escape effect:` line via the new pure composer
+  `composeEffectResultLogLine` (`notableEvents.compose.ts`). **Escape is log-only** — no
+  `escapeResolved` (or any) `notableEvent`.
+- **Byte-identity held (no hash / no client change):** `fightResolved` + `ambushResolved` keep
+  `appliedEffects = results.map(r => r.keyword)` + their narrative byte-identical to `main`, and
+  no new `notableEvent` type was added; the richer per-target data feeds ONLY the hash-excluded
+  `G.messages` log (D-24081). Engine-only.
+
+**Verification:** full engine suite **green** (0 fail; touched sweep + full run, plus new WP-316
+result / composer / fire-site / type tests), sweep sentinel `finalStateHash` (`7bb990fc…`)
+**byte-identical**, `pnpm -r build` **0**, `git diff --name-only` = the 10-file engine allowlist
+exactly. **Scope-out:** Mastermind tactics (`fightMastermind.ts` — separate subsystem, tactic text
+unimplemented → WP-024) and parked-KO resolve-time naming (`resolveKoHeroChoice`). **D-24026
+live-verify** (defeat / ambush / escape a KO/HQ-capture villain → the log panel names the specific
+hero per timing) is **operator-pending** on deploy.
+
 ### WP-315 / EC-345 Executed — Card Ability Text in `UICardDisplay` + Diagnostic Embedding (WP-314 Option B; D-24101 Active) (2026-07-05)
 
 The diagnostic export now carries each played card's **printed ability text**, completing
