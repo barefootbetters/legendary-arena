@@ -1165,6 +1165,78 @@ describe('buildUIState — pendingDrawOrEmpowered projection (WP-287 / D-24071)'
 });
 
 // ---------------------------------------------------------------------------
+// WP-313 / EC-343 — pendingVictoryPileCardPick projection (D-24099)
+// ---------------------------------------------------------------------------
+
+describe('buildUIState — pendingVictoryPileCardPick projection (WP-313 / D-24099)', () => {
+  const villainWithDisplay = 'core-villain-brotherhood-magneto-00' as CardExtId;
+  const villainNoDisplay = 'core-villain-skrulls-super-skrull-00' as CardExtId;
+  const henchman = 'henchman-doombot-legion-00' as CardExtId;
+
+  /**
+   * Builds a game state whose player-0 victory pile holds two villains + one
+   * henchman, with a pending victory-pile pick for player 0. The henchman is
+   * NOT type 'villain', so it must be excluded from the eligible list.
+   */
+  function withVictoryPilePick(): LegendaryGameState {
+    const gameState = makeGameStateWithDisplayData();
+    gameState.playerZones['0']!.victory.push(villainWithDisplay, henchman, villainNoDisplay);
+    const types = gameState.villainDeckCardTypes as Record<string, string>;
+    types[villainWithDisplay] = 'villain';
+    types[villainNoDisplay] = 'villain';
+    types[henchman] = 'henchman';
+    const stats = gameState.cardStats as Record<string, { attack: number; recruit: number; cost: number; fightCost: number }>;
+    stats[villainWithDisplay] = { attack: 0, recruit: 0, cost: 5, fightCost: 5 };
+    stats[villainNoDisplay] = { attack: 0, recruit: 0, cost: 4, fightCost: 4 };
+    gameState.pendingVictoryPileCardPick = [{ playerID: '0', rewardType: 'attack' }];
+    return gameState;
+  }
+
+  it('is undefined when the engine queue is empty', () => {
+    const gameState = createTestGameState();
+    assert.equal(gameState.pendingVictoryPileCardPick, undefined);
+    const ui = buildUIState(gameState, mockCtx);
+    assert.equal(ui.pendingVictoryPileCardPick, undefined, 'absent when no pending pick');
+  });
+
+  it('projects the FRONT entry with playerID + eligible villains in victory-pile order, henchman excluded', () => {
+    const ui = buildUIState(withVictoryPilePick(), mockCtx);
+    assert.ok(ui.pendingVictoryPileCardPick !== undefined, 'present when queue non-empty');
+    assert.equal(ui.pendingVictoryPileCardPick!.playerID, '0');
+    const eligible = ui.pendingVictoryPileCardPick!.eligibleVillains;
+    assert.equal(eligible.length, 2, 'only the two villains are eligible (henchman excluded)');
+    assert.deepEqual(
+      eligible.map((v) => v.cardId),
+      [villainWithDisplay, villainNoDisplay],
+      'in victory-pile order',
+    );
+  });
+
+  it('carries each villain\'s printed attack (fightCost) as attackValue', () => {
+    const eligible = buildUIState(withVictoryPilePick(), mockCtx).pendingVictoryPileCardPick!.eligibleVillains;
+    assert.equal(eligible.find((v) => v.cardId === villainWithDisplay)!.attackValue, 5);
+    assert.equal(eligible.find((v) => v.cardId === villainNoDisplay)!.attackValue, 4);
+  });
+
+  it('projects only the FRONT entry when the queue holds more than one', () => {
+    const gameState = withVictoryPilePick();
+    gameState.pendingVictoryPileCardPick = [
+      { playerID: '0', rewardType: 'attack' },
+      { playerID: '1', rewardType: 'attack' },
+    ];
+    const ui = buildUIState(gameState, mockCtx);
+    assert.equal(ui.pendingVictoryPileCardPick!.playerID, '0', 'front entry projected, not the second');
+  });
+
+  it('buildUIState does not mutate G (purity)', () => {
+    const gameState = withVictoryPilePick();
+    const before = JSON.stringify(gameState);
+    buildUIState(gameState, mockCtx);
+    assert.equal(JSON.stringify(gameState), before, 'G byte-identical after projection');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-258 / EC-289 — hollowEffects projection (WP-257 G.diagnostics channel)
 // ---------------------------------------------------------------------------
 

@@ -35,8 +35,15 @@ import type {
   UIPendingKoHeroChoice,
   UIPendingOptionalKoReward,
   UIPendingDrawOrEmpowered,
+  UIPendingVictoryPileCardPick,
+  UIVictoryPileVillainChoice,
   UIEligibleKoHeroCard,
 } from './uiState.types.js';
+// why: WP-313 — reuse the engine's authoritative victory-pile eligibility helper
+// (victory pile ∩ villainDeckCardTypes === 'villain') so the projected list is
+// byte-identical to what resolveVictoryPileCardPick re-filters at resolve time
+// (the round-trip rule) — never a re-implemented filter.
+import { getEligibleVictoryVillains } from '../moves/resolveVictoryPileCardPick.js';
 // why: WP-258 — the projected hollow-effect record type is the engine's
 // canonical HollowEffectRecord (WP-257), reused directly, not a parallel UI type.
 import type { HollowEffectRecord } from '../diagnostics/hollowEffect.types.js';
@@ -860,6 +867,41 @@ export function buildUIState(
     };
   }
 
+  // --- 13c.3 Project pending victory-pile villain-pick choice (front of queue) ---
+  // why: WP-313 / D-24099 — project the FRONT entry of G.pendingVictoryPileCardPick
+  // with the eligible victory-pile villains recomputed fresh from current G via the
+  // engine's getEligibleVictoryVillains (WP-285 stores no snapshot). The list mirrors
+  // the resolve-time filter (victory pile ∩ villain type), in victory-pile order and
+  // unfiltered, so the client's { cardId } selection always maps to a villain the
+  // engine resolve accepts (the round-trip rule). Each entry's attackValue is the
+  // villain's printed attack, read from G.cardStats[cardId].fightCost the same way the
+  // resolve move reads it (a villain's .attack is always 0 — WP-285). resolveDisplay
+  // is spread fresh so the projection holds no reference into G.cardDisplayData
+  // (aliasing defense, WP-111 D-11105). Redaction to the chooser-only audience is
+  // enforced by filterUIStateForAudience (D-24099 — keyed on .playerID).
+  let pendingVictoryPileCardPick: UIPendingVictoryPileCardPick | undefined;
+  if (
+    gameState.pendingVictoryPileCardPick !== undefined &&
+    gameState.pendingVictoryPileCardPick.length > 0
+  ) {
+    const frontPick = gameState.pendingVictoryPileCardPick[0]!;
+    const eligibleVillains: UIVictoryPileVillainChoice[] = [];
+    for (const cardId of getEligibleVictoryVillains(gameState, frontPick.playerID)) {
+      const stats = gameState.cardStats[cardId];
+      eligibleVillains.push({
+        cardId,
+        display: { ...resolveDisplay(cardId, gameState) },
+        // why: WP-285 — the villain's printed [icon:attack] is stored as fightCost;
+        // 0 when stats are somehow absent (never throws — the projection is read-only).
+        attackValue: stats !== undefined ? stats.fightCost : 0,
+      });
+    }
+    pendingVictoryPileCardPick = {
+      playerID: frontPick.playerID,
+      eligibleVillains,
+    };
+  }
+
   // --- 13d. Project hollow-effect diagnostics (read-only) ---
   // why: WP-258 — surface the WP-257 runtime channel G.diagnostics.hollowEffects
   // onto UIState. Read-only over G (buildUIState NEVER mutates G); per-record
@@ -938,6 +980,9 @@ export function buildUIState(
     // why: WP-287 — conditional spread so an absent choice omits the field (no
     // `pendingDrawOrEmpowered: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingDrawOrEmpowered !== undefined ? { pendingDrawOrEmpowered } : {}),
+    // why: WP-313 — conditional spread so an absent pick omits the field (no
+    // `pendingVictoryPileCardPick: undefined` literal under exactOptionalPropertyTypes).
+    ...(pendingVictoryPileCardPick !== undefined ? { pendingVictoryPileCardPick } : {}),
     // why: WP-258 — conditional spread so an absent channel omits the field
     // (no `hollowEffects: undefined` literal under exactOptionalPropertyTypes,
     // and no empty-array injection that would dirty optional-field fixtures).

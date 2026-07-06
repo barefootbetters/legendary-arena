@@ -40,6 +40,7 @@ import PendingHeroChoicePrompt from '../components/play/PendingHeroChoicePrompt.
 import PendingKoHeroChoicePrompt from '../components/play/PendingKoHeroChoicePrompt.vue';
 import OptionalKoRewardPrompt from '../components/play/OptionalKoRewardPrompt.vue';
 import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue';
+import VictoryPileCardPickPrompt from '../components/play/VictoryPileCardPickPrompt.vue';
 import type { SubmitMove } from '../components/play/uiMoveName.types';
 
 interface ActivePile {
@@ -91,6 +92,7 @@ export default defineComponent({
     PendingKoHeroChoicePrompt,
     OptionalKoRewardPrompt,
     DrawOrEmpoweredPrompt,
+    VictoryPileCardPickPrompt,
   },
   props: {
     submitMove: {
@@ -339,6 +341,13 @@ export default defineComponent({
       () => snapshot.value?.pendingDrawOrEmpowered !== undefined,
     );
 
+    // why: WP-313 / D-24099 — derived from UIState.pendingVictoryPileCardPick !== undefined.
+    // Passed to TurnActionBar to block end-turn and pass-priority at EVERY stage while a
+    // victory-pile villain pick is pending (board frozen, mirrors hasPendingDrawOrEmpowered).
+    const hasPendingVictoryPileCardPick = computed<boolean>(
+      () => snapshot.value?.pendingVictoryPileCardPick !== undefined,
+    );
+
     return {
       snapshot,
       viewer,
@@ -360,6 +369,7 @@ export default defineComponent({
       hasPendingKoChoice,
       hasPendingOptionalKoReward,
       hasPendingDrawOrEmpowered,
+      hasPendingVictoryPileCardPick,
     };
   },
 });
@@ -524,6 +534,14 @@ export default defineComponent({
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
+          <!-- why: WP-313 / D-24099 — the victory-pile villain-pick prompt renders above
+               TurnActionBar in DOM order; appears only for the choosing player when
+               pendingVictoryPileCardPick is set (The Ebony Blade). Normal document flow. -->
+          <VictoryPileCardPickPrompt
+            :pending-victory-pile-card-pick="snapshot.pendingVictoryPileCardPick"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
           <!-- why: D-22201 + WP-222 — prompt renders above TurnActionBar in DOM
                order; appears only for the choosing player when pendingHeroChoice
                is set. NOT a modal; NOT position:fixed. Normal document flow. -->
@@ -539,6 +557,7 @@ export default defineComponent({
             :has-pending-ko-choice="hasPendingKoChoice"
             :has-pending-optional-ko-reward="hasPendingOptionalKoReward"
             :has-pending-draw-or-empowered="hasPendingDrawOrEmpowered"
+            :has-pending-victory-pile-card-pick="hasPendingVictoryPileCardPick"
             :submit-move="submitMove"
           />
         </template>

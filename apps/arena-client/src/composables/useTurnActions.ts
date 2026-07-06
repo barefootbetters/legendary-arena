@@ -108,6 +108,7 @@ export function useTurnActions(
   hasPendingKoChoice: boolean = false,
   hasPendingOptionalKoReward: boolean = false,
   hasPendingDrawOrEmpowered: boolean = false,
+  hasPendingVictoryPileCardPick: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -189,6 +190,15 @@ export function useTurnActions(
           reason: 'Choose Draw a card or Empowered before taking another action.',
         };
       }
+      // why: WP-313 / D-24099 — End Turn / Pass Priority blocked at any stage while a
+      // victory-pile villain pick is pending (WP-285's block-all guard freezes the
+      // board, mirroring hasPendingDrawOrEmpowered).
+      if (hasPendingVictoryPileCardPick) {
+        return {
+          allowed: false,
+          reason: 'Pick a Villain from your Victory Pile before taking another action.',
+        };
+      }
       if (currentStage === 'cleanup' && hasPendingChoice) {
         return {
           allowed: false,
@@ -225,6 +235,15 @@ export function useTurnActions(
         return {
           allowed: false,
           reason: 'Choose Draw a card or Empowered before taking another action.',
+        };
+      }
+      if (hasPendingVictoryPileCardPick) {
+        // why: WP-313 / D-24099 — WP-285's block-all turn-end guard blocks endTurn
+        // while pendingVictoryPileCardPick is non-empty; this client-side gate
+        // surfaces the reason so the player sees a tooltip instead of a silent rejection.
+        return {
+          allowed: false,
+          reason: 'Pick a Villain from your Victory Pile before taking another action.',
         };
       }
       if (currentStage === 'cleanup' && hasPendingChoice) {

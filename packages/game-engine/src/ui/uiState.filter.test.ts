@@ -533,6 +533,49 @@ describe('filterUIStateForAudience — pendingDrawOrEmpowered redaction (D-24071
 });
 
 // ---------------------------------------------------------------------------
+// WP-313 / EC-343 — pendingVictoryPileCardPick redaction (D-24099, D-24011 analog)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where player '0' owes a victory-pile villain pick. The pending
+ * choice is chooser-scoped (only they may resolve it) — it must not appear in a
+ * non-chooser's UIState. An empty victory pile is fine here: the field still
+ * projects (with an empty eligibleVillains list), which is all the redaction test needs.
+ */
+function createVictoryPilePickUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+  gameState.pendingVictoryPileCardPick = [{ playerID: '0', rewardType: 'attack' }];
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingVictoryPileCardPick redaction (D-24099)', () => {
+  it('the chooser sees pendingVictoryPileCardPick', () => {
+    const result = filterUIStateForAudience(createVictoryPilePickUIState(), PLAYER_0);
+    assert.ok(result.pendingVictoryPileCardPick !== undefined, 'chooser sees the victory-pile pick');
+    assert.equal(result.pendingVictoryPileCardPick!.playerID, '0');
+  });
+
+  it('an opponent does NOT see pendingVictoryPileCardPick', () => {
+    const result = filterUIStateForAudience(createVictoryPilePickUIState(), PLAYER_1);
+    assert.equal(result.pendingVictoryPileCardPick, undefined, 'opponent must not see the pick');
+  });
+
+  it('a spectator does NOT see pendingVictoryPileCardPick', () => {
+    const result = filterUIStateForAudience(createVictoryPilePickUIState(), SPECTATOR);
+    assert.equal(result.pendingVictoryPileCardPick, undefined, 'spectator must not see the pick');
+  });
+
+  it('does not mutate the input UIState', () => {
+    const uiState = createVictoryPilePickUIState();
+    filterUIStateForAudience(uiState, PLAYER_1);
+    assert.ok(uiState.pendingVictoryPileCardPick !== undefined, 'source UIState unchanged');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-258 / EC-289 — hollowEffects public value-preserving pass-through (D-12803)
 // ---------------------------------------------------------------------------
 

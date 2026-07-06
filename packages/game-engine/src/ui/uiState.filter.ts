@@ -546,6 +546,32 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: D-24099 — the pending victory-pile villain-pick is scoped to the chooser (only
+  // they may resolve it). Redacted for EVERY audience except the choosing player;
+  // present only when the audience is a player whose playerId equals the chooser's
+  // playerID; omitted (conditional assignment, never an `undefined` literal) for
+  // opponents AND spectators — mirroring the pendingDrawOrEmpowered posture. The
+  // eligibleVillains list is victory-pile (public) data, but the pending-choice state
+  // itself is chooser-scoped; per-entry display spread prevents aliasing with the input.
+  if (
+    uiState.pendingVictoryPileCardPick !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingVictoryPileCardPick.playerID
+  ) {
+    const eligibleVillainsCopy = [];
+    for (const entry of uiState.pendingVictoryPileCardPick.eligibleVillains) {
+      eligibleVillainsCopy.push({
+        cardId: entry.cardId,
+        display: { ...entry.display },
+        attackValue: entry.attackValue,
+      });
+    }
+    result.pendingVictoryPileCardPick = {
+      playerID: uiState.pendingVictoryPileCardPick.playerID,
+      eligibleVillains: eligibleVillainsCopy,
+    };
+  }
+
   // why: WP-258 / D-12803 — hollowEffects is PUBLIC card/mechanic data, not
   // hidden info. The filter passes it through value-unchanged for EVERY
   // audience (own-player AND other-player AND spectator) — it redacts /

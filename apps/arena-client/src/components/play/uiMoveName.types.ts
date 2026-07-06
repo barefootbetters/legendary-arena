@@ -54,7 +54,9 @@ export type UiMoveName =
   | 'resolveHeroChoice'
   | 'resolveKoHeroChoice'
   | 'resolveOptionalKoReward'
-  | 'resolveDrawOrEmpowered';
+  | 'resolveDrawOrEmpowered'
+  // why: WP-313 / D-24099 — unblocks the victory-pile villain-pick prompt (The Ebony Blade).
+  | 'resolveVictoryPileCardPick';
 
 /**
  * Function signature shared by every prop-drilled `submitMove` in the

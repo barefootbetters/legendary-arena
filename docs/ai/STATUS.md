@@ -7,6 +7,39 @@
 
 ## Current State
 
+### WP-313 / EC-343 Executed — Victory-Pile Villain-Pick UX (Closes The Ebony Blade Hard-Freeze; D-24099 Active) (2026-07-05)
+
+Playing `antm/black-knight/the-ebony-blade` (or any `victory-villain-attack` card)
+no longer **hard-freezes** the match. WP-285 shipped the engine half — the card
+parks `G.pendingVictoryPileCardPick` and a **block-all guard in every move** rejects
+all actions except `resolveVictoryPileCardPick` until the player picks a villain from
+their victory pile — but never projected the pending pick into UIState nor built a
+client prompt, so the player could neither see nor submit the pick and every click
+(incl. End Turn) was rejected → freeze (confirmed match `D0_OMZnnUWQ`, turn 22,
+gitSha `36bf9a8`). Because WP-289 taught the simulation to resolve it, it passed all
+engine tests + bot sweeps; only real human play hit the missing UI. Its two sibling
+pending-choices (WP-249, WP-287) both got the UX; this one didn't.
+
+WP-313 adds the missing UX half, mirroring WP-287. **Engine (read-only `ui/`):**
+`buildUIState` projects `pendingVictoryPileCardPick?` (FRONT entry, chooser-redacted,
+eligible villains via the engine's `getEligibleVictoryVillains` + each villain's
+`fightCost` printed attack); new `UIPendingVictoryPileCardPick` +
+`UIVictoryPileVillainChoice` re-exported from `index.ts`; `uiState.filter.ts` redacts
+to the chooser-only audience. Optional field → no fixture backfill; **no engine
+gameplay/move/guard change.** **Client (arena-client):** a non-dismissible
+`VictoryPileCardPickPrompt.vue` lists the eligible villains (name + "+N Attack") →
+`resolveVictoryPileCardPick({cardId})`; added to `UiMoveName`; End Turn / Pass gated
+on `hasPendingVictoryPileCardPick` via `TurnActionBar`/`useTurnActions`; mounted in
+PlayDesktop/PlayMobile.
+
+**Verification:** engine **1725/1725** (new projection + chooser-redaction tests),
+arena-client **690/690** (new prompt + End-Turn-gate tests), `vue-tsc` clean,
+`pnpm -r build` 0. Fold-inline: EC-343 omitted `uiState.filter.ts` + its test from the
+allowlist; added (chooser redaction is intrinsic; WP-287's EC-319 included them) —
+recorded in D-24099. **D-24026 live-verify (play The Ebony Blade, pick a villain, gain
+Attack, no freeze) is operator-pending** on deploy. WP-314 (diagnostic effect-provenance,
+so this freeze class is self-diagnosing in the export) remains drafted.
+
 ### WP-310 / EC-342 Executed — Empowered Multi-Class Form (`by [hc:X] and [hc:Y]`; D-24098 Active) (2026-07-05)
 
 The empowered parser now recognizes the printed **multi-class** form "you get
