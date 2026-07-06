@@ -26385,4 +26385,62 @@ change either — `buildEffectProvenance` derives the resolver from the snapshot
 
 **Packet:** WP-315 + EC-345. **Drafted:** 2026-07-05. **Executed:** 2026-07-05.
 
+---
+
+### D-24102 — Villain-Deck Per-Target Effect Narration in the Log (Fight / Ambush / Escape; executor return widened to `VillainEffectResult[]`)
+
+**Status:** Drafted 2026-07-06; not yet landed (flips to Active on WP-316 execution).
+
+**Context.** The villain-effect executor (`executeVillainAbilities`) is
+timing-agnostic and fires at three sites — `onFight` (defeat, in
+`fightVillain.ts`), `onAmbush` (City entry) and `onEscape` (escape edge,
+both in `villainDeck.reveal.ts`). Fight + Ambush compose a narrative into
+their `NotableGameEvent` (`fightResolved` / `ambushResolved` — the
+**overlay** channel: transient, part of `finalStateHash`, projected to
+the arena-client) at keyword-label granularity, never naming *which*
+hero; Escape narrates nothing (its site ignores the return). The durable
+**log** channel (`G.messages` → `UIState.log`, `uiState.build.ts:681`)
+carries only terse `fought`/`rescued`/reveal lines. The operator asked
+for "the message should display it and **the results**," across the
+villain deck's effect timings.
+
+**Decision.** WP-316 widens the executor to report per-effect **results**
+and narrates them (with resolved display names) into the log at all three
+fire sites.
+
+- **Contract widen.** New additive interface `VillainEffectResult =
+  { keyword: VillainEffectKeyword; targets: CardExtId[]; pending?: boolean }`
+  in `rules/villainAbility.types.ts`. `executeVillainAbilities` returns
+  `VillainEffectResult[]` (was `VillainEffectKeyword[]`) for all timings.
+  Each handler reports its target(s): auto-KO → the KO'd hero; capture-hq
+  → the `captureHeroFromHq` return; hero-deck-escape → the moved card;
+  gain-wound / capture-bystander → `[]` (generic-label granularity). A
+  ≥2-eligible current-player KO reports `pending: true` (no hero KO'd at
+  the fire site — resolve-time naming deferred to `resolveKoHeroChoice`).
+- **Byte-identity guarantee (no hash / no client change).** At the two
+  existing events (`fightResolved`, `ambushResolved`), `appliedEffects =
+  results.map((r) => r.keyword)` and the composed narrative stay
+  **byte-identical to `main`**, and **no new notableEvent is added** — in
+  particular Escape gets a **log line only, not an `escapeResolved`
+  event**, because `G.notableEvents` is hashed and projected to the
+  client. So `finalStateHash` needs no re-pin and the arena-client is
+  untouched; the richer per-target data feeds **only** the hash-excluded
+  `G.messages` log lines (D-24081 / WP-294). Name resolution
+  (`G.cardDisplayData[extId]?.name`, ext_id fallback) lives at each fire
+  site; the log composer stays pure.
+- **Log lines:** `Fight effect: …` / `Ambush effect: …` / `Escape
+  effect: …`, emitted iff ≥1 effect applied at that site.
+- **Engine-only, standard two-session lane** (D-24028): return-type widen
+  + a contracts-file touch + three fire-site call sites. NOT lightweight.
+- **Scope-Out:** resolve-time narration of the parked interactive KO
+  (`resolveKoHeroChoice`); **mastermind tactics / Master Strike**
+  narration — `fightMastermind.ts` uses a separate subsystem
+  (`defeatTopTactic`), NOT the villain effect vocabulary, and tactic text
+  effects are **unimplemented** (deferred to WP-024), so there is nothing
+  to narrate; it is a separate future WP after WP-024, with its own result
+  type. `composeMastermindDefeatedNarrative` /
+  `composeMastermindStrikeNarrative` unchanged.
+
+**Packet:** WP-316 + EC-346. **Drafted:** 2026-07-06. **Executed:** —
+
 Protect this file.
