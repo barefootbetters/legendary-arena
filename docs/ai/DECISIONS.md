@@ -26342,4 +26342,41 @@ Wired in `buildDiagnosticReport` (reads `context.uiStateSnapshot`) so the impure
 
 **Packet:** WP-314 + EC-344. **Drafted:** 2026-07-05.
 
+### D-24101 — Card Ability Text on `UICardDisplay`: Setup-Time Projection from `card.abilities` (WP-314 Option B)
+
+**Status:** **Drafted 2026-07-05; not yet landed** (flips to Active when WP-315 / EC-345 executes).
+
+**Context.** WP-314 / D-24100 left `recentlyPlayedCards[].abilityText` as an injected
+`resolveCardText` seam defaulting to `null` because the arena-client has no client-side
+card-text source and `diagnostics.ts` is boundary-pure. Jeff asked for Option B — literally
+embed the printed card text in the diagnostic export.
+
+**Decision (reserved).** Project card ability text through the existing engine display channel:
+- Add an **optional** `abilityText?: string` to `UICardDisplay` (`uiState.types.ts`, a contract
+  file — this additive field is the authorized contract change per the code-style
+  contract-change→DECISIONS rule).
+- Populate it at setup in `buildCardDisplayData §1b` (hero card instances, both the physicalCards
+  and per-card fallback branches) from the registry hero card entry's `abilities` array, joined by
+  a single newline with **marker annotations preserved verbatim** (`[keyword:…]`, `[hc:…]` — the
+  diagnostic reads printed-text-plus-annotation to check effect-vs-text). Absent/empty `abilities`
+  → field **omitted** (never an empty string).
+- The UIState projection carries it automatically via `resolveDisplay`'s `{ ...entry, heroClass,
+  team }` spread (`uiState.build.ts:125`) — no projection-code edit.
+- The diagnostic `buildEffectProvenance` derives an `extId → abilityText` map from the snapshot's
+  own display-bearing zones and uses it as the default `abilityText` source — the client reads text
+  ONLY from the snapshot it already holds (boundary purity preserved; no registry/engine import in
+  `diagnostics/*`).
+
+**Scope lock.** Hero card instances ONLY (the cards `recentlyPlayedCards` tracks). Villain /
+mastermind / henchman / scheme / bystander / master-strike display entries do NOT get `abilityText`
+(deferred to a future WP if an in-HUD tooltip needs it). No gameplay / move / zone / RNG change;
+`finalStateHash` unchanged (setup-time static registry data already in `G`). Wire cost is bounded
+and one-time (static `cardDisplayData` rides boardgame.io deltas — re-sent only on full sync/resync).
+
+**Consequence (expected at execution).** A "froze after I played card X" diagnostic export carries
+the played card's printed text next to its inferred `outcome`, so effect-vs-text is one read.
+Engine + arena-client suites green; `vue-tsc` clean; `pnpm -r build` 0; determinism unaffected.
+
+**Packet:** WP-315 + EC-345. **Drafted:** 2026-07-05.
+
 Protect this file.
