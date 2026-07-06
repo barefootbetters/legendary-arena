@@ -26400,7 +26400,10 @@ input DTO `ResolvedEffectResult` + `composeEffectResultLogLine` live in
 `notableEvents.compose.ts`; the shared `G.cardDisplayData` name-resolution helper
 `resolveEffectResultNames` (extracted at the 3rd fire site per duplicate-first)
 lives in `villainEffects.execute.ts` (kept out of the pure composer and out of
-`executeVillainAbilities` itself). `D-24026` live-verify operator-pending on deploy.
+`executeVillainAbilities` itself). `D-24026` **live-verified 2026-07-06** — a prod diagnostic at gitSha `6c64d92` (match
+`f2Yzlzb9yLh`) shows the `Ambush effect: … (One-Hit Wonder)` / `… (The Ebony Blade)` per-target
+lines and the `Fight effect: the active player must KO a hero` pending line, with the
+`fightResolved`/`ambushResolved` events byte-identical and no `escapeResolved` event.
 
 **Context.** The villain-effect executor (`executeVillainAbilities`) is
 timing-agnostic and fires at three sites — `onFight` (defeat, in
@@ -26453,5 +26456,48 @@ fire sites.
   `composeMastermindStrikeNarrative` unchanged.
 
 **Packet:** WP-316 + EC-346. **Drafted:** 2026-07-06. **Executed:** —
+
+---
+
+### D-24103 — Composable `gain-resource` Grant Observability Logging (Empowered / Berserk)
+
+**Status:** Drafted 2026-07-06; not yet landed (flips to Active on WP-317 execution).
+
+**Context.** The composable-primitive interpreter's `gain-resource` executor
+(`interpretGainResourceNode`, `hero/effectPrimitive.interpret.ts`) adds Attack /
+Recruit to `G.turnEconomy` via `addResources` but pushes **no** `G.messages`
+line on success — it only warns (via `pushPrimitiveWarning`) when the economy is
+missing. Every mechanic built on the D-24029 / D-24044 composable substrate —
+Empowered (all four forms: per-class, free-choice, choose-one, dynamic) and
+Berserk — therefore grants **invisibly**. WP-295 (D-24082) added the `played`
+line and the class-gate `did not activate` line but explicitly deferred
+"per-effect amount logging (drew N, +N attack, +N recruit inside the handlers)"
+(`WP-295 §Out of Scope`). The prod diagnostic from match `f2Yzlzb9yLh`
+(2026-07-06, gitSha `6c64d92`) is the concrete cost: an Empowered-heavy deck
+showed only condition-skip failures and silence, so Empowered *looked* broken
+when it was granting Attack the whole time (the free-choice / multi-class forms
+are unconditional and were silently adding the HQ class count).
+
+**Decision.** WP-317 makes the composable grant observable. `interpretGainResourceNode`
+appends one `G.messages` line per grant, naming the source card (threaded as a
+plain `sourceCardId` argument through `interpretHeroPrimitiveEffect` — provenance
+only, never written to `G`, a binding, or the `EffectExecutionContext` map, so
+the D-24029 §9 replay invariant holds), the amount, and the resource:
+
+- card known: `` `Player ${playerID}'s ${sourceCardId} gained +${amount} ${resource}.` ``
+- card unknown: `` `Player ${playerID} gained +${amount} ${resource}.` ``
+
+Emitted for **every** run **including `amount === 0`** — a `+0` line distinguishes
+"the composition ran but counted zero matching cards" (a correct no-op) from
+WP-295's `did not activate` (a condition-gated skip, a different cause). The
+interpreter stays **mechanic-agnostic**: the copy names no mechanic. `G.messages`
+is excluded from `finalStateHash` (D-24081 / WP-294), so the hash and the
+`notableEvents` surface are byte-unchanged; only the dedicated `messages` oracle
+observes the new line. The legacy `HeroEffectDescriptor` grant path (which already
+logs `Count-scaled attack: +N`, D-24016) is untouched. `D-24026` live-verify
+operator-pending on deploy (play an Empowered / Berserk card → the log shows the
+grant).
+
+**Packet:** WP-317 + EC-347. **Drafted:** 2026-07-06. **Executed:** —
 
 Protect this file.

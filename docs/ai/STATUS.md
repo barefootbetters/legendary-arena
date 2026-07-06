@@ -39,7 +39,11 @@ result / composer / fire-site / type tests), sweep sentinel `finalStateHash` (`7
 exactly. **Scope-out:** Mastermind tactics (`fightMastermind.ts` — separate subsystem, tactic text
 unimplemented → WP-024) and parked-KO resolve-time naming (`resolveKoHeroChoice`). **D-24026
 live-verify** (defeat / ambush / escape a KO/HQ-capture villain → the log panel names the specific
-hero per timing) is **operator-pending** on deploy.
+hero per timing) is **CONFIRMED live 2026-07-06** — prod diagnostic at gitSha `6c64d92` (match
+`f2Yzlzb9yLh`) shows `Ambush effect: the rightmost HQ hero was captured (One-Hit Wonder)`,
+`Ambush effect: the highest-cost HQ hero was captured (The Ebony Blade)`, and `Fight effect: the
+active player must KO a hero`, with `fightResolved`/`ambushResolved` byte-identical and no
+`escapeResolved` event.
 
 ### WP-315 / EC-345 Executed — Card Ability Text in `UICardDisplay` + Diagnostic Embedding (WP-314 Option B; D-24101 Active) (2026-07-05)
 
