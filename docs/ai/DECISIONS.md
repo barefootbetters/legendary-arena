@@ -26461,7 +26461,18 @@ fire sites.
 
 ### D-24103 — Composable `gain-resource` Grant Observability Logging (Empowered / Berserk)
 
-**Status:** Drafted 2026-07-06; not yet landed (flips to Active on WP-317 execution).
+**Status:** **Active** — landed 2026-07-06 by WP-317 / EC-347 (impl commit + SPEC
+close). `interpretGainResourceNode` now appends one `G.messages` line per grant
+(`Player <id>'s <ext-id> gained +<N> <attack|recruit>.`, no-card fallback for the
+draw-or-empowered resolve path, emitted including `+0`); the source card is
+threaded as an optional `sourceCardId` argument through
+`interpretHeroPrimitiveEffect` (provenance only — never written to `G`, `ctx`, a
+binding, or the `EffectExecutionContext` map, so the D-24029 §9 replay invariant
+holds). Byte-identity held: the sentinel `finalStateHash` (`7bb990fc…`) is
+unchanged, the sentinel fixture is untouched (no composition card in its
+trajectory), and `hashGameState.ts` / `replay.hash.ts` were not edited. Full
+engine suite 1758/1758; `pnpm -r build` 0; 4-file engine allowlist held.
+`D-24026` live-verify operator-pending on deploy.
 
 **Context.** The composable-primitive interpreter's `gain-resource` executor
 (`interpretGainResourceNode`, `hero/effectPrimitive.interpret.ts`) adds Attack /
