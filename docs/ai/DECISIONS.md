@@ -26400,7 +26400,10 @@ input DTO `ResolvedEffectResult` + `composeEffectResultLogLine` live in
 `notableEvents.compose.ts`; the shared `G.cardDisplayData` name-resolution helper
 `resolveEffectResultNames` (extracted at the 3rd fire site per duplicate-first)
 lives in `villainEffects.execute.ts` (kept out of the pure composer and out of
-`executeVillainAbilities` itself). `D-24026` live-verify operator-pending on deploy.
+`executeVillainAbilities` itself). `D-24026` **live-verified 2026-07-06** — a prod diagnostic at gitSha `6c64d92` (match
+`f2Yzlzb9yLh`) shows the `Ambush effect: … (One-Hit Wonder)` / `… (The Ebony Blade)` per-target
+lines and the `Fight effect: the active player must KO a hero` pending line, with the
+`fightResolved`/`ambushResolved` events byte-identical and no `escapeResolved` event.
 
 **Context.** The villain-effect executor (`executeVillainAbilities`) is
 timing-agnostic and fires at three sites — `onFight` (defeat, in
