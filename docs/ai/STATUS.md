@@ -7,6 +7,44 @@
 
 ## Current State
 
+### WP-314 / EC-344 Executed — Diagnostic Export: Card-Effect Provenance (D-24100 Active) (2026-07-05)
+
+A "froze after I played card X" report now **names its own cause**. The Ebony Blade
+freeze (WP-313/D-24099) was invisible in the exported diagnostic — the file showed a
+valid board with the card played, but nothing said the turn was blocked awaiting a
+victory-pile pick, so root-causing needed engine tracing. WP-314 adds a top-level
+`effectProvenance` block to the WP-228/246 export, derived client-side by a pure,
+boundary-clean `buildEffectProvenance(snapshot, resolveCardText)`:
+
+- **`awaitingPlayerInput`** — `{ kind, playerID } | null`, read from the projected
+  `pending*` UIState fields the snapshot already carries (`kind` ∈ `{ victoryPileCardPick,
+  optionalKoReward, drawOrEmpowered, koHeroChoice }`). This is the primary deliverable —
+  it names a block-all freeze's cause in one read (`victoryPileCardPick` for The Ebony
+  Blade).
+- **`recentlyPlayedCards`** — the last **N=5** "played …" log lines, each with its ext_id,
+  an `abilityText`, and an `outcome` ∈ `{ resolved, hollow, awaitingChoice, conditionNotMet }`
+  inferred from `hollowEffects` + the pending kind + the "did not activate" lines
+  (`resolved` = default/inference, not a positive engine confirmation — that's deferred
+  Option B).
+
+**Execution correction (D-24100):** the WP/EC assumed a client-side "registry card-text
+lookup the HUD already uses" for `abilityText` — **it does not exist** (the arena-client
+has no card-text/registry source; the UIState display carries name/image/cost only, and
+`diagnostics.ts` is boundary-pure per EC-260). So `abilityText` is an **injected**
+`resolveCardText` param defaulting to `() => null`; with no resolver wired it degrades to
+`null` for every card — exactly the WP/EC fail-soft rule. The debugging value is delivered
+by `outcome` ("did it fire?") + the ext_id (identifies the card for a `data/cards/*.json`
+lookup); the resolver injection point stays open for a future engine/registry source
+(Option B). Wired in `buildDiagnosticReport` (reads the snapshot it already has) so the
+impure `DiagnosticExportButton` is unchanged.
+
+**Verification:** arena-client **710/710** (+20 new), `vue-tsc` clean, `pnpm -r build` 0.
+Client-only (diff is `apps/arena-client/src/diagnostics/` only — no `packages/` or
+`apps/server`); no on-screen UI change; no redaction regression. **No D-24026 live gate —
+diagnostics-only surface.** With this, the freeze arc's four fixes (309 durable store →
+311 reconnect banner → 312 move-ack watchdog → 313 victory-pile UX) are now each
+self-diagnosing in the export.
+
 ### WP-313 / EC-343 Executed — Victory-Pile Villain-Pick UX (Closes The Ebony Blade Hard-Freeze; D-24099 Active) (2026-07-05)
 
 Playing `antm/black-knight/the-ebony-blade` (or any `victory-villain-attack` card)

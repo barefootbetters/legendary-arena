@@ -26324,4 +26324,22 @@ Protect this file.
 
 **Packet:** WP-313 + EC-343. **Drafted:** 2026-07-05.
 
+### D-24100 — Diagnostic Export: Card-Effect Provenance (`awaitingPlayerInput` + `recentlyPlayedCards`); `abilityText` Is Injected, Not Imported
+
+**Status:** **Active** (landed 2026-07-05 by WP-314 / EC-344). Diagnostics-only; no live gate.
+
+**Context.** The Ebony Blade freeze (D-24099) was **invisible in the exported diagnostic**: the file (WP-228/246) showed a valid board with the card played, but nothing said the turn was blocked awaiting a victory-pile pick — root-causing needed engine tracing. Pending choices are the exact freeze class the export failed to name.
+
+**Decision.** WP-314 adds a top-level `effectProvenance` block to the export, derived client-side by a pure, boundary-clean `buildEffectProvenance(snapshot, resolveCardText)` in `apps/arena-client/src/diagnostics/effectProvenance.ts`:
+- `awaitingPlayerInput: { kind, playerID } | null` — the block-all pending-choice the turn is stuck on, read from the projected `pending*` UIState fields the snapshot already carries. `kind` closed set = `{ victoryPileCardPick, optionalKoReward, drawOrEmpowered, koHeroChoice }`; `null` when none pending. **This is the primary deliverable** — it names a block-all freeze's cause in one read.
+- `recentlyPlayedCards: { extId, abilityText, outcome }[]` — the last **N = 5** "played …" log lines, each with its ext_id, an `abilityText`, and an `outcome` ∈ `{ resolved, hollow, awaitingChoice, conditionNotMet }` inferred from `hollowEffects` + the pending kind + the "did not activate" log lines. `resolved` is the **default** (absence of a negative signal), NOT a positive engine confirmation (that richer engine effect-result channel is the deferred **Option B**). Priority: `conditionNotMet` (a paired "did not activate" line) > `hollow` (an ext_id in `hollowEffects`) > `awaitingChoice` (the most-recent play while a choice is pending) > `resolved`.
+
+Wired in `buildDiagnosticReport` (reads `context.uiStateSnapshot`) so the impure exporter (`DiagnosticExportButton`) is **unchanged** — no new `DiagnosticContext` field, allowlist stays `diagnostics.ts` + the new module.
+
+**`abilityText` is injected, not imported (execution correction to the WP/EC).** The WP + EC assumed "the registry card-text lookup the HUD already uses" — **it does not exist**: the arena-client has **no** client-side card-text/registry source (the UIState card display carries name/image/cost only, no ability text), and `diagnostics.ts` is boundary-pure (EC-260 forbids importing the engine/registry). So `abilityText` is an **injected** `resolveCardText(extId)` parameter that defaults to `() => null`; with no resolver wired it degrades to `null` for every card — exactly the WP/EC fail-soft rule ("missing registry entry → `abilityText: null`"). The debugging value is delivered by `outcome` ("did it fire?") + the ext_id (which already identifies the card for a `data/cards/*.json` lookup); the resolver injection point stays open for a future source. Embedding literal card text client-side would require **Option B** — an engine UIState projection of ability text, or a client registry fetch — both out of this client-only lane.
+
+**Consequence.** A "froze after I played X" report now names its own cause (`awaitingPlayerInput`) and shows each recent play's `outcome`, without an engine trace. Pure + fail-soft: a null/malformed snapshot or a throwing resolver yields an empty/`null`-populated block, never a throw (WP-246 robustness). Client-only (diff is `apps/arena-client/src/diagnostics/` only); no `packages/` or `apps/server` change; no on-screen UI change (`HollowEffectsPanel` still owns the on-screen hollow view); no redaction regression (reads only the already-audience-filtered snapshot). arena-client 710/710 (+20 new), `vue-tsc` clean, `pnpm -r build` 0.
+
+**Packet:** WP-314 + EC-344. **Drafted:** 2026-07-05.
+
 Protect this file.
