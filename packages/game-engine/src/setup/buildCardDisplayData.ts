@@ -126,6 +126,12 @@ interface DisplayDataHeroCardEntry {
   imageUrl?: string;
   /** Per-card recruit cost; raw from registry. Null/undefined → "no cost shown". */
   cost?: string | number | null | undefined;
+  /**
+   * Printed ability lines (marker-annotated), verbatim from the registry
+   * `card.abilities`. Read by the WP-315 `abilityText` projection. Absent on
+   * cards with no printed ability.
+   */
+  abilities?: string[];
 }
 
 /**
@@ -402,6 +408,7 @@ export function buildCardDisplayData(
         const cardEntry = findCardEntryBySlug(heroEntry.cards, canonicalSlug);
         const name = cardEntry !== null && typeof cardEntry.name === 'string' ? cardEntry.name : '';
         const cost = cardEntry !== null ? parseCostNullable(cardEntry.cost ?? null) : null;
+        const abilityText = resolveHeroAbilityText(cardEntry);
         const imageUrl = physicalCard.imageUrl;
         const baseExtId = `${parsed.setAbbr}/${parsed.slug}/${canonicalSlug}`;
         for (let copyIndex = 0; copyIndex < physicalCard.count; copyIndex++) {
@@ -409,12 +416,13 @@ export function buildCardDisplayData(
           // why: per-copy fresh object literal — no aliasing across keys
           // (WP-028 D-2802 aliasing prevention extended to setup-time
           // sibling-snapshot fan-out).
-          result[extId] = {
-            extId,
-            name,
-            imageUrl,
-            cost,
-          };
+          const display: UICardDisplay = { extId, name, imageUrl, cost };
+          // why: WP-315 — omit abilityText when the card has no printed ability
+          // (never an empty string) so the optional-field contract holds.
+          if (abilityText !== undefined) {
+            display.abilityText = abilityText;
+          }
+          result[extId] = display;
         }
       }
     } else {
@@ -435,15 +443,17 @@ export function buildCardDisplayData(
         const name = typeof heroCardEntry.name === 'string' ? heroCardEntry.name : '';
         const imageUrl = typeof heroCardEntry.imageUrl === 'string' ? heroCardEntry.imageUrl : '';
         const cost = parseCostNullable(heroCardEntry.cost ?? null);
+        const abilityText = resolveHeroAbilityText(heroCardEntry);
         for (let copyIndex = 0; copyIndex < copyCount; copyIndex++) {
           const extId = `${baseExtId}#${copyIndex}` as CardExtId;
           // why: per-copy fresh object literal — no aliasing across keys
-          result[extId] = {
-            extId,
-            name,
-            imageUrl,
-            cost,
-          };
+          const display: UICardDisplay = { extId, name, imageUrl, cost };
+          // why: WP-315 — omit abilityText when the card has no printed ability
+          // (never an empty string) so the optional-field contract holds.
+          if (abilityText !== undefined) {
+            display.abilityText = abilityText;
+          }
+          result[extId] = display;
         }
       }
     }
@@ -1150,6 +1160,38 @@ function findCardEntryBySlug(
     if (cardEntry.slug === slug) return cardEntry;
   }
   return null;
+}
+
+/**
+ * Resolves the WP-315 `abilityText` for a hero card entry from its registry
+ * `abilities` array.
+ *
+ * Joins the non-empty printed lines with a single newline, preserving marker
+ * annotations verbatim. Returns undefined (field omitted, never an empty string)
+ * when the entry is null, `abilities` is absent/not-an-array, or every line is
+ * empty — fail-soft so a card with no printed ability keeps a clean display entry.
+ *
+ * @param cardEntry - The hero card entry, or null when no match was found.
+ * @returns The joined ability text, or undefined when there is none.
+ */
+function resolveHeroAbilityText(
+  cardEntry: DisplayDataHeroCardEntry | null,
+): string | undefined {
+  // why: WP-315 — markers (`[keyword:…]`, `[hc:…]`) are kept verbatim; the
+  // diagnostic reads printed-text-plus-annotation to check effect-vs-text.
+  if (cardEntry === null || !Array.isArray(cardEntry.abilities)) {
+    return undefined;
+  }
+  const lines: string[] = [];
+  for (const line of cardEntry.abilities) {
+    if (typeof line === 'string' && line.length > 0) {
+      lines.push(line);
+    }
+  }
+  if (lines.length === 0) {
+    return undefined;
+  }
+  return lines.join('\n');
 }
 
 // ---------------------------------------------------------------------------

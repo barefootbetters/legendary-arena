@@ -162,7 +162,7 @@ describe('buildEffectProvenance — recentlyPlayedCards', () => {
 });
 
 describe('buildEffectProvenance — abilityText (injected resolver)', () => {
-  test('defaults to null (no client-side card-text source)', () => {
+  test('is null when the snapshot carries no display text for the card', () => {
     const provenance = buildEffectProvenance(
       snapshotWith({ log: ['Player 0 played set/hero/card#0.'] }),
     );
@@ -188,6 +188,90 @@ describe('buildEffectProvenance — abilityText (injected resolver)', () => {
       },
     );
     assert.equal(provenance.recentlyPlayedCards[0]!.abilityText, null);
+  });
+});
+
+describe('buildEffectProvenance — abilityText from the snapshot display (WP-315)', () => {
+  test('reads the printed text from a projected display entry for the played card', () => {
+    const provenance = buildEffectProvenance(
+      snapshotWith({
+        log: ['Player 0 played antm/black-knight/the-ebony-blade#0.'],
+        // the engine projects abilityText onto the played card's inPlay display entry
+        players: {
+          '0': {
+            inPlayDisplay: [
+              {
+                extId: 'antm/black-knight/the-ebony-blade#0',
+                name: 'The Ebony Blade',
+                abilityText: '[keyword:Empowered] by the color of your choice.',
+              },
+            ],
+          },
+        },
+      }),
+    );
+    assert.equal(
+      provenance.recentlyPlayedCards[0]!.abilityText,
+      '[keyword:Empowered] by the color of your choice.',
+    );
+  });
+
+  test('finds display entries nested inside { extId, display } shapes', () => {
+    const provenance = buildEffectProvenance(
+      snapshotWith({
+        log: ['Player 0 played set/hero/card#0.'],
+        victoryCards: [
+          {
+            extId: 'set/hero/card#0',
+            display: { extId: 'set/hero/card#0', abilityText: 'Draw a card.' },
+          },
+        ],
+      }),
+    );
+    assert.equal(provenance.recentlyPlayedCards[0]!.abilityText, 'Draw a card.');
+  });
+
+  test('a card with no display entry in the snapshot stays null (e.g. an opponent play)', () => {
+    const provenance = buildEffectProvenance(
+      snapshotWith({
+        log: [
+          'Player 0 played set/hero/mine#0.',
+          'Player 1 played set/hero/theirs#0.',
+        ],
+        players: {
+          '0': {
+            inPlayDisplay: [
+              { extId: 'set/hero/mine#0', abilityText: 'My text.' },
+            ],
+          },
+        },
+      }),
+    );
+    const mine = provenance.recentlyPlayedCards.find(
+      (card) => card.extId === 'set/hero/mine#0',
+    );
+    const theirs = provenance.recentlyPlayedCards.find(
+      (card) => card.extId === 'set/hero/theirs#0',
+    );
+    assert.equal(mine!.abilityText, 'My text.');
+    assert.equal(theirs!.abilityText, null);
+  });
+
+  test('an explicit resolver override wins over the snapshot display', () => {
+    const provenance = buildEffectProvenance(
+      snapshotWith({
+        log: ['Player 0 played set/hero/card#0.'],
+        players: {
+          '0': {
+            inPlayDisplay: [
+              { extId: 'set/hero/card#0', abilityText: 'From snapshot.' },
+            ],
+          },
+        },
+      }),
+      () => 'From override.',
+    );
+    assert.equal(provenance.recentlyPlayedCards[0]!.abilityText, 'From override.');
   });
 });
 

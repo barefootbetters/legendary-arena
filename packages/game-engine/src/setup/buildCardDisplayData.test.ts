@@ -973,6 +973,109 @@ describe('buildCardDisplayData — physicalCards (D-14102 / D-14103)', () => {
     assert.equal(soloEntry.imageUrl, 'https://img/solo-card.webp', 'solo imageUrl from physicalCard');
   });
 
+  it('populates abilityText from card.abilities — physicalCards branch (WP-315)', () => {
+    const setData = {
+      abbr: 'antm',
+      villains: [],
+      henchmen: [],
+      masterminds: [],
+      heroes: [
+        {
+          slug: 'black-knight',
+          cards: [
+            {
+              slug: 'ebony-blade',
+              name: 'The Ebony Blade',
+              rarityLabel: 'Rare',
+              cost: 6,
+              abilities: ['[keyword:Size-Changing] [hc:tech]', 'Draw a card. [keyword:draw:1]'],
+            },
+            { slug: 'plain-card', name: 'Plain Card', rarityLabel: 'Common 1', cost: 1, abilities: [] },
+          ],
+          physicalCards: [
+            { id: 'p1', count: 1, imageUrl: 'https://img/ebony.webp', sides: ['ebony-blade'] },
+            { id: 'p2', count: 1, imageUrl: 'https://img/plain.webp', sides: ['plain-card'] },
+          ],
+        },
+      ],
+    };
+    const registry = {
+      listCards: () => [],
+      getSet: (abbr: string) => (abbr === 'antm' ? setData : undefined),
+    };
+    const config: MatchSetupConfig = {
+      schemeId: 'antm/s',
+      mastermindId: 'antm/mm',
+      villainGroupIds: [],
+      henchmanGroupIds: [],
+      heroDeckIds: ['antm/black-knight'],
+      bystandersCount: 0,
+      woundsCount: 0,
+      officersCount: 0,
+      sidekicksCount: 0,
+    };
+
+    const result = buildCardDisplayData(registry, config, 2);
+
+    const ebony = result['antm/black-knight/ebony-blade#0'];
+    assert.ok(ebony, 'ebony-blade#0 must exist');
+    // why: printed lines joined by newline, markers preserved verbatim (WP-315 lock)
+    assert.equal(
+      ebony.abilityText,
+      '[keyword:Size-Changing] [hc:tech]\nDraw a card. [keyword:draw:1]',
+    );
+
+    const plain = result['antm/black-knight/plain-card#0'];
+    assert.ok(plain, 'plain-card#0 must exist');
+    assert.equal(plain.abilityText, undefined, 'empty abilities → abilityText omitted');
+    assert.ok(!('abilityText' in plain), 'omitted as absent key, not undefined value');
+  });
+
+  it('populates abilityText from card.abilities — per-card fallback branch (WP-315)', () => {
+    const setData = {
+      abbr: 'core',
+      villains: [],
+      henchmen: [],
+      masterminds: [],
+      heroes: [
+        {
+          slug: 'test-hero',
+          cards: [
+            {
+              slug: 'card-c1',
+              name: 'Card C1',
+              rarityLabel: 'Common 1',
+              imageUrl: 'https://img/c1.webp',
+              cost: 2,
+              abilities: ['Draw a Card. [keyword:draw:1]'],
+            },
+          ],
+        },
+      ],
+    };
+    const registry = {
+      listCards: () => [],
+      getSet: (abbr: string) => (abbr === 'core' ? setData : undefined),
+    };
+    const config: MatchSetupConfig = {
+      schemeId: 'core/s',
+      mastermindId: 'core/mm',
+      villainGroupIds: [],
+      henchmanGroupIds: [],
+      heroDeckIds: ['core/test-hero'],
+      bystandersCount: 0,
+      woundsCount: 0,
+      officersCount: 0,
+      sidekicksCount: 0,
+    };
+
+    const result = buildCardDisplayData(registry, config, 2);
+
+    const entry = result['core/test-hero/card-c1#0'];
+    assert.ok(entry, 'card-c1#0 must exist via fallback path');
+    assert.equal(entry.abilityText, 'Draw a Card. [keyword:draw:1]');
+  });
+
   it('falls back to card.imageUrl when physicalCards is absent', () => {
     const setData = {
       abbr: 'core',

@@ -138,6 +138,14 @@ export interface UICardDisplay {
   cost: number | null;
   heroClass?: string | null;
   team?: string | null;
+  /**
+   * The card's printed ability lines joined by a single newline, with marker
+   * annotations (`[keyword:…]`, `[hc:…]`) preserved verbatim. Optional — populated
+   * only for hero card instances at setup (WP-315 / D-24101), from the registry's
+   * `card.abilities`; absent when the card has no abilities (never an empty string).
+   * Consumed by the diagnostic export (WP-314 Option B) to show printed-text-vs-outcome.
+   */
+  abilityText?: string;
 }
 
 /**

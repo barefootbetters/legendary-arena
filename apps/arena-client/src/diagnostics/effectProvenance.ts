@@ -115,6 +115,57 @@ function collectHollowCardIds(snapshotRecord: Record<string, unknown>): Set<stri
   return hollowCardIds;
 }
 
+// why: bound the recursion so a malformed/deeply-nested snapshot cannot blow the stack —
+// the real UIState projection is shallow (zones → display entries), well under this.
+const ABILITY_TEXT_WALK_MAX_DEPTH = 12;
+
+/**
+ * Collects every `{ extId, abilityText }` pair reachable in the snapshot into `target`.
+ *
+ * The engine projects `abilityText` onto hero-card `UICardDisplay` entries (WP-315), which
+ * ride the snapshot inside per-zone display arrays. A structural deep walk keyed on the
+ * presence of a string `abilityText` finds them wherever they sit without the client needing
+ * to know the exact zone shape. First writer wins (all copies of a card share one text).
+ */
+function collectAbilityTextInto(
+  value: unknown,
+  target: Map<string, string>,
+  depth: number,
+): void {
+  if (depth > ABILITY_TEXT_WALK_MAX_DEPTH || value === null || typeof value !== 'object') {
+    return;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectAbilityTextInto(item, target, depth + 1);
+    }
+    return;
+  }
+  const record = value as Record<string, unknown>;
+  const extId = record['extId'];
+  const abilityText = record['abilityText'];
+  if (typeof extId === 'string' && typeof abilityText === 'string' && !target.has(extId)) {
+    target.set(extId, abilityText);
+  }
+  for (const key of Object.keys(record)) {
+    collectAbilityTextInto(record[key], target, depth + 1);
+  }
+}
+
+/**
+ * Builds an ext_id → ability-text resolver from the snapshot's own projected card display.
+ *
+ * @param snapshotRecord The audience-filtered UIState snapshot (already narrowed to a record).
+ * @returns A resolver returning the printed text for an ext_id, or null when absent.
+ */
+function buildSnapshotAbilityTextResolver(
+  snapshotRecord: Record<string, unknown>,
+): (extId: string) => string | null {
+  const abilityTextByExtId = new Map<string, string>();
+  collectAbilityTextInto(snapshotRecord, abilityTextByExtId, 0);
+  return (extId: string): string | null => abilityTextByExtId.get(extId) ?? null;
+}
+
 // why: the log lines this parses are the engine's `G.messages` prose (D-24017), projected
 // to UIState.log. "Player 0 played <extId>." and the paired
 // "Player 0's <extId> ability did not activate — …" are the two shapes read here.
@@ -157,14 +208,15 @@ function classifyOutcome(
  * stay robust).
  *
  * @param snapshot The audience-filtered UIState snapshot (opaque `unknown`).
- * @param resolveCardText Optional ext_id → ability-text resolver. Defaults to `() => null`
- *   because the arena-client has no client-side card-text source; the injection point is
- *   kept for a future engine/registry source (WP-314 Option B).
+ * @param resolveCardText Optional ext_id → ability-text resolver override. When omitted, the
+ *   text is read from the snapshot's own projected card display (WP-315 / D-24101: the engine
+ *   projects `UICardDisplay.abilityText` for hero cards, so the played card's printed text
+ *   already rides the snapshot). The parameter stays for tests / future sources.
  * @returns The `{ awaitingPlayerInput, recentlyPlayedCards }` block.
  */
 export function buildEffectProvenance(
   snapshot: unknown,
-  resolveCardText: (extId: string) => string | null = () => null,
+  resolveCardText?: (extId: string) => string | null,
 ): EffectProvenance {
   const snapshotRecord = asRecord(snapshot);
   if (snapshotRecord === null) {
@@ -173,6 +225,10 @@ export function buildEffectProvenance(
 
   const awaitingPlayerInput = readAwaitingPlayerInput(snapshotRecord);
   const hollowCardIds = collectHollowCardIds(snapshotRecord);
+  // why: WP-315 — with no override, read each played card's printed text from the snapshot's
+  // own projected display (the engine now embeds `abilityText` on hero-card `UICardDisplay`),
+  // so the client needs no card-text source of its own — boundary purity (EC-260) preserved.
+  const resolveText = resolveCardText ?? buildSnapshotAbilityTextResolver(snapshotRecord);
 
   const log = snapshotRecord['log'];
   const logLines: string[] = Array.isArray(log)
@@ -197,7 +253,7 @@ export function buildEffectProvenance(
     // why: fail-soft — a resolver that throws must not break the export.
     let abilityText: string | null = null;
     try {
-      abilityText = resolveCardText(entry.extId);
+      abilityText = resolveText(entry.extId);
     } catch {
       abilityText = null;
     }

@@ -26344,14 +26344,14 @@ Wired in `buildDiagnosticReport` (reads `context.uiStateSnapshot`) so the impure
 
 ### D-24101 — Card Ability Text on `UICardDisplay`: Setup-Time Projection from `card.abilities` (WP-314 Option B)
 
-**Status:** **Drafted 2026-07-05; not yet landed** (flips to Active when WP-315 / EC-345 executes).
+**Status:** **Active** (landed 2026-07-05 by WP-315 / EC-345).
 
 **Context.** WP-314 / D-24100 left `recentlyPlayedCards[].abilityText` as an injected
 `resolveCardText` seam defaulting to `null` because the arena-client has no client-side
 card-text source and `diagnostics.ts` is boundary-pure. Jeff asked for Option B — literally
 embed the printed card text in the diagnostic export.
 
-**Decision (reserved).** Project card ability text through the existing engine display channel:
+**Decision.** Project card ability text through the existing engine display channel:
 - Add an **optional** `abilityText?: string` to `UICardDisplay` (`uiState.types.ts`, a contract
   file — this additive field is the authorized contract change per the code-style
   contract-change→DECISIONS rule).
@@ -26373,10 +26373,16 @@ mastermind / henchman / scheme / bystander / master-strike display entries do NO
 `finalStateHash` unchanged (setup-time static registry data already in `G`). Wire cost is bounded
 and one-time (static `cardDisplayData` rides boardgame.io deltas — re-sent only on full sync/resync).
 
-**Consequence (expected at execution).** A "froze after I played card X" diagnostic export carries
-the played card's printed text next to its inferred `outcome`, so effect-vs-text is one read.
-Engine + arena-client suites green; `vue-tsc` clean; `pnpm -r build` 0; determinism unaffected.
+**Consequence.** A "froze after I played card X" diagnostic export carries the played card's
+printed text next to its inferred `outcome`, so effect-vs-text is one read. The client resolves the
+text from the snapshot via a bounded structural deep-walk (`collectAbilityTextInto`, max depth 12)
+that collects every `{ extId, abilityText }` pair — no zone-shape knowledge, no import. Engine
+**1728/1728** (+3), arena-client **714/714** (+4), `vue-tsc` clean, `pnpm -r build` 0; determinism
+unaffected (setup-time static data). **Conditional fold-inline resolved to NO change:**
+`uiState.filter.ts` copies visible-zone display via `{ ...display }` shallow spread, which preserves
+`abilityText` — so the filter was not touched and the allowlist held at 7 files. No `diagnostics.ts`
+change either — `buildEffectProvenance` derives the resolver from the snapshot it already receives.
 
-**Packet:** WP-315 + EC-345. **Drafted:** 2026-07-05.
+**Packet:** WP-315 + EC-345. **Drafted:** 2026-07-05. **Executed:** 2026-07-05.
 
 Protect this file.
