@@ -109,6 +109,10 @@ export function resolveDrawOrEmpowered(
     executeSingleEffect(G, context, playerID, '' as CardExtId, { type: 'draw', magnitude: 1 });
   } else {
     // why: reuse the empowered composition (no re-implementation of the count); same amount the core path grants (D-24069)
+    // why: WP-317 — no sourceCardId is threaded here: PendingDrawOrEmpowered records only
+    // the player + empowered class (not the originating card), so the grant log uses the
+    // no-card form (`Player <id> gained +N attack.`). Extending the pending entry with the
+    // card id is out of scope (a contract change for a cosmetic attribution).
     interpretHeroPrimitiveEffect(G, context, playerID, buildEmpoweredComposition(front.empoweredClass));
   }
 

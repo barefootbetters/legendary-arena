@@ -326,7 +326,10 @@ export function executeHeroEffects(
     // top-level node gets its own fresh, never-persisted execution context.
     if (hook.primitiveEffects !== undefined) {
       for (const primitiveEffect of hook.primitiveEffects) {
-        interpretHeroPrimitiveEffect(G, ctx, playerID, primitiveEffect);
+        // why: WP-317 — pass the hook's source card so a composable gain-resource grant
+        // (Empowered / Berserk) logs which card granted, mirroring the card-named
+        // `did not activate` line above.
+        interpretHeroPrimitiveEffect(G, ctx, playerID, primitiveEffect, cardId);
       }
     }
 
