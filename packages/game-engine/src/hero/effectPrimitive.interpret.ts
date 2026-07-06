@@ -392,6 +392,11 @@ function evaluateValueExpression(
  * A single effect-node handler. Mutates `G` for one node; returns void. `ctx` is threaded
  * for signature parity (boardgame.io ctx, passed as unknown to avoid the import) but is
  * unused by Berserk's primitives. `context` is the transient bind/ref store.
+ *
+ * `sourceCardId` (WP-317) is the card whose composition is running, or undefined when the
+ * caller has no source card (the draw-or-empowered resolve path). It is execution
+ * provenance for the `gain-resource` grant log only — never written to `G`, `ctx`, a
+ * binding, or `context` (the D-24029 §9 replay invariant).
  */
 type EffectNodeHandler = (
   G: LegendaryGameState,
@@ -399,6 +404,7 @@ type EffectNodeHandler = (
   playerID: string,
   node: EffectNode,
   context: EffectExecutionContext,
+  sourceCardId: CardExtId | undefined,
 ) => void;
 
 /**
@@ -411,10 +417,13 @@ function interpretSequenceNode(
   playerID: string,
   node: EffectNode,
   context: EffectExecutionContext,
+  sourceCardId: CardExtId | undefined,
 ): void {
   const sequenceNode = node as SequenceNode;
   for (const step of sequenceNode.steps) {
-    dispatchEffectNode(G, ctx, playerID, step, context);
+    // why: WP-317 — forward the source card so a nested gain-resource (e.g. Berserk's
+    // discard-then-gain sequence) attributes its grant log to the composition's card.
+    dispatchEffectNode(G, ctx, playerID, step, context, sourceCardId);
   }
 }
 
@@ -429,6 +438,7 @@ function interpretMoveCardNode(
   playerID: string,
   node: EffectNode,
   context: EffectExecutionContext,
+  _sourceCardId: CardExtId | undefined,
 ): void {
   const moveNode = node as MoveCardNode;
   // why: EFFECT_OWNER_KINDS is closed to 'current-player' — both endpoints resolve to
@@ -470,6 +480,7 @@ function interpretGainResourceNode(
   playerID: string,
   node: EffectNode,
   context: EffectExecutionContext,
+  sourceCardId: CardExtId | undefined,
 ): void {
   const gainNode = node as GainResourceNode;
   // why: an undefined turn economy → warn + skip before evaluating, mirroring the reveal
@@ -484,10 +495,53 @@ function interpretGainResourceNode(
   const amount = evaluateValueExpression(G, gainNode.amount, context, playerID);
   if (gainNode.resource === 'attack') {
     G.turnEconomy = addResources(G.turnEconomy, amount, 0);
-    return;
+  } else {
+    // why: 'recruit' is the only other EffectResourceKind (closed union)
+    G.turnEconomy = addResources(G.turnEconomy, 0, amount);
   }
-  // why: 'recruit' is the only other EffectResourceKind (closed union)
-  G.turnEconomy = addResources(G.turnEconomy, 0, amount);
+  // why: WP-317 / D-24103 — the composable grant is otherwise silent, so every mechanic
+  // on the D-24029/D-24044 substrate (Empowered, Berserk) added resources with no trace in
+  // the play log — the "Empowered looks broken" confusion in the 2026-07-06 prod
+  // diagnostic. This extends WP-295's per-play/skip logging with the per-grant amount it
+  // deferred. `G.messages` is excluded from finalStateHash (D-24081/WP-294), so the log is
+  // hash-safe.
+  pushGainResourceLog(G, playerID, sourceCardId, amount, gainNode.resource);
+}
+
+/**
+ * Appends the WP-317 grant-observability line for a composable `gain-resource` grant.
+ *
+ * Names the source card (when known), the granted amount, and the resource so a
+ * composition-marker mechanic (Empowered, Berserk) is visible in the play log instead of
+ * granting silently. Emitted for EVERY grant including `+0` — a `+0` line distinguishes a
+ * composition that ran but counted zero matching cards (a correct no-op) from a
+ * class/team-synergy gate that suppressed the ability (WP-295's `did not activate`, a
+ * different cause). Reuses the `Array.isArray` guard so a narrow fixture `G` without a
+ * `messages` array never throws.
+ *
+ * @param G - Game state (mutated under Immer draft when messages is present).
+ * @param playerID - Active player ID.
+ * @param sourceCardId - The card whose composition granted, or undefined (resolve path).
+ * @param amount - The granted amount (may be 0).
+ * @param resource - The granted resource ('attack' or 'recruit').
+ */
+function pushGainResourceLog(
+  G: LegendaryGameState,
+  playerID: string,
+  sourceCardId: CardExtId | undefined,
+  amount: number,
+  resource: GainResourceNode['resource'],
+): void {
+  // why: mechanic-agnostic — the interpreter does not know Empowered vs Berserk, so the
+  // copy names only the card + amount + resource, never the mechanic. ext-id form matches
+  // WP-295's `… did not activate …` line and the `recruited <ext-id>` convention.
+  const message =
+    sourceCardId !== undefined
+      ? `Player ${playerID}'s ${sourceCardId} gained +${amount} ${resource}.`
+      : `Player ${playerID} gained +${amount} ${resource}.`;
+  if (Array.isArray(G.messages)) {
+    G.messages.push(message);
+  }
 }
 
 // why: D-24030 — node-type ImplementationMap (mirrors HERO_EFFECT_HANDLERS), held OUTSIDE
@@ -513,6 +567,8 @@ export const EFFECT_NODE_HANDLERS: Partial<Record<EffectNodeType, EffectNodeHand
  * @param playerID - Active player ID.
  * @param node - The effect node to interpret.
  * @param context - The transient bind/ref store (threaded down the recursion).
+ * @param sourceCardId - The card whose composition is running, or undefined; forwarded to
+ *   the handler for the WP-317 grant log (provenance only, never state).
  */
 function dispatchEffectNode(
   G: LegendaryGameState,
@@ -520,6 +576,7 @@ function dispatchEffectNode(
   playerID: string,
   node: EffectNode,
   context: EffectExecutionContext,
+  sourceCardId: CardExtId | undefined,
 ): void {
   const handler = EFFECT_NODE_HANDLERS[node.type];
   // why: runtime dispatch guard — confirm the key resolves BEFORE indexing the
@@ -532,7 +589,7 @@ function dispatchEffectNode(
     );
     return;
   }
-  handler(G, ctx, playerID, node, context);
+  handler(G, ctx, playerID, node, context, sourceCardId);
 }
 
 /**
@@ -546,17 +603,22 @@ function dispatchEffectNode(
  * @param ctx - boardgame.io context (passed as unknown; unused by Berserk's primitives).
  * @param playerID - Active player ID (plain string, no framework import).
  * @param node - The top-level effect node (a composition's root, typically a `sequence`).
+ * @param sourceCardId - The card whose composition is running (WP-317), used only to
+ *   attribute the `gain-resource` grant log. Optional: the draw-or-empowered resolve path
+ *   has no source card and passes it undefined (the grant log then omits the card). It is
+ *   never written to `G`, `ctx`, or the execution context — provenance only.
  */
 export function interpretHeroPrimitiveEffect(
   G: LegendaryGameState,
   ctx: unknown,
   playerID: string,
   node: EffectNode,
+  sourceCardId?: CardExtId,
 ): void {
   // why: D-24029 §9 / D-24030 — a FRESH EffectExecutionContext per top-level effect
   // evaluation, lexically scoped to this call and NEVER written to G/ctx. Transient
   // interpreter state, re-derived identically on replay, not game state — a persisted
   // binding would break the persistence boundary and risk replay double-application.
   const context: EffectExecutionContext = new Map<string, CardExtId>();
-  dispatchEffectNode(G, ctx, playerID, node, context);
+  dispatchEffectNode(G, ctx, playerID, node, context, sourceCardId);
 }

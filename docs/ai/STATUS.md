@@ -7,6 +7,38 @@
 
 ## Current State
 
+### WP-317 / EC-347 Executed — Composable `gain-resource` Grant Observability Logging (Empowered / Berserk; D-24103 Active) (2026-07-06)
+
+Follow-up from the WP-316 live-verify diagnostic (match `f2Yzlzb9yLh`): the composable-primitive
+`gain-resource` executor (`interpretGainResourceNode`, `hero/effectPrimitive.interpret.ts`) added
+Attack/Recruit to `G.turnEconomy` but pushed **no** `G.messages` line on success, so every
+D-24029/D-24044 mechanic — **Empowered** (all four forms) and **Berserk** — granted **invisibly**.
+An Empowered-heavy deck therefore showed only condition-skip failures + silence in the log →
+Empowered *looked* broken when it was granting Attack the whole time. WP-295 added the `played` +
+`did not activate` lines but explicitly deferred per-effect amount logging; this is that deferred
+pass, scoped to the composable substrate.
+
+- **Grant log:** `interpretGainResourceNode` now appends one line per grant —
+  `Player <id>'s <ext-id> gained +<N> <attack|recruit>.` (a no-card form for the draw-or-empowered
+  resolve path, which carries no source card), for **every** run **including `+0`** (a `+0` line
+  distinguishes a composition that ran but counted zero matching cards — a correct no-op — from
+  WP-295's `did not activate` condition-skip, a different cause). The interpreter stays
+  **mechanic-agnostic** (no mechanic name in the copy).
+- **Source card threading:** an optional `sourceCardId` argument through
+  `interpretHeroPrimitiveEffect` (forwarded through `interpretSequenceNode`'s recursion so a nested
+  gain-resource in a Berserk sequence attributes correctly). Provenance only — never written to
+  `G`, `ctx`, a binding, or the `EffectExecutionContext` map (D-24029 §9 replay invariant preserved).
+- **Hash-safe:** `G.messages` is excluded from `finalStateHash` (D-24081/WP-294) → the hash +
+  `notableEvents` are byte-unchanged; the sentinel fixture was **untouched** (no composition card in
+  its trajectory), and `hashGameState.ts` / `replay.hash.ts` were not edited. The legacy
+  `HeroEffectDescriptor` grant path (`Count-scaled attack: +N`, D-24016) is untouched.
+
+**Verification:** full engine suite **1758/1758** (+7 grant-log tests: attack / recruit / no-card /
+`+0` / Berserk-sequence / no-throw-on-missing-messages), sentinel `finalStateHash` (`7bb990fc…`)
+**byte-identical**, `pnpm -r build` **0**, `git diff --name-only` = the 4-file engine allowlist
+exactly. **D-24026 live-verify** (play an Empowered / Berserk card → the log panel shows a
+`… gained +N attack.` line) is **operator-pending** on deploy.
+
 ### WP-316 / EC-346 Executed — Villain-Deck Effect Log Narration (Fight / Ambush / Escape, Per-Target Results; D-24102 Active) (2026-07-06)
 
 The durable play-by-play log (`G.messages` → `UIState.log`, the quiet log panel on

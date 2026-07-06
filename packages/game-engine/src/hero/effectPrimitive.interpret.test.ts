@@ -17,8 +17,11 @@ import {
   buildEmpoweredFreeChoiceComposition,
   buildEmpoweredChooseOneComposition,
   buildDynamicEmpoweredComposition,
+  HERO_COMPOSITION_MARKERS,
 } from '../rules/heroCompositions.js';
 import type { LegendaryGameState } from '../types.js';
+import type { CardExtId } from '../state/zones.types.js';
+import type { EffectNode } from '../rules/effectPrimitive.types.js';
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -339,5 +342,103 @@ describe('interpretHeroPrimitiveEffect — top-deck-card-class-count-in-zone (de
     interpretHeroPrimitiveEffect(G, CTX, '0', buildDynamicEmpoweredComposition());
 
     assert.equal(G.turnEconomy!.attack, 1, 'null HQ slots skipped; only the one speed card counts');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-317 — gain-resource grant observability log (D-24103)
+// ---------------------------------------------------------------------------
+
+describe('interpretHeroPrimitiveEffect — WP-317 grant log', () => {
+  const SOURCE = 'antm/black-knight/amulet-of-avalon#2' as CardExtId;
+
+  it('names the source card, amount, and resource for an attack grant', () => {
+    const G = makeState({
+      hq: ['a', 'b', 'c', null, null],
+      cardTraits: {
+        a: { heroClass: 'instinct', team: null },
+        b: { heroClass: 'instinct', team: null },
+        c: { heroClass: 'instinct', team: null },
+      },
+    });
+    interpretHeroPrimitiveEffect(G, CTX, '0', buildEmpoweredFreeChoiceComposition(), SOURCE);
+    assert.ok(
+      (G.messages as string[]).includes(`Player 0's ${SOURCE} gained +3 attack.`),
+      'the grant line names the card + amount + attack resource',
+    );
+  });
+
+  it('uses the recruit resource word for a recruit grant', () => {
+    const G = makeState({
+      hq: ['a', 'b', null, null, null],
+      cardTraits: {
+        a: { heroClass: 'ranged', team: null },
+        b: { heroClass: 'ranged', team: null },
+      },
+    });
+    // why: no builder grants recruit (Empowered/Berserk are attack-only), so hand-build a
+    // recruit gain-resource node to pin the resource word.
+    const recruitNode = {
+      type: 'gain-resource',
+      resource: 'recruit',
+      amount: { type: 'max-class-count-in-zone', classes: 'all', zone: 'hq' },
+    } as EffectNode;
+    interpretHeroPrimitiveEffect(G, CTX, '0', recruitNode, SOURCE);
+    assert.ok(
+      (G.messages as string[]).includes(`Player 0's ${SOURCE} gained +2 recruit.`),
+      'the grant line uses the recruit resource word',
+    );
+    assert.equal(G.turnEconomy!.recruit, 2, 'recruit economy increased by the granted amount');
+  });
+
+  it('omits the card when no sourceCardId is supplied (the draw-or-empowered resolve path)', () => {
+    const G = makeState({
+      hq: ['a', null, null, null, null],
+      cardTraits: { a: { heroClass: 'covert', team: null } },
+    });
+    interpretHeroPrimitiveEffect(G, CTX, '0', buildEmpoweredFreeChoiceComposition());
+    assert.ok(
+      (G.messages as string[]).includes('Player 0 gained +1 attack.'),
+      'the no-card form is used when the source card is unknown',
+    );
+  });
+
+  it('logs a +0 grant so a zero-count composition is observable, not silent', () => {
+    const G = makeState({ hq: [null, null, null, null, null], cardTraits: {} });
+    interpretHeroPrimitiveEffect(G, CTX, '0', buildEmpoweredFreeChoiceComposition(), SOURCE);
+    assert.ok(
+      (G.messages as string[]).includes(`Player 0's ${SOURCE} gained +0 attack.`),
+      'a zero-count composition still logs a +0 line (distinct from a condition-skip)',
+    );
+  });
+
+  it('attributes a Berserk-shaped sequence grant to the sequence source card', () => {
+    const BERSERK = 'test-berserk-card' as CardExtId;
+    const G = makeState({ hq: [] });
+    G.playerZones['0']!.deck = ['berserk-fodder'] as unknown as typeof G.playerZones['0']['deck'];
+    (G.cardStats as Record<string, { attack: number }>)['berserk-fodder'] = { attack: 4 };
+    interpretHeroPrimitiveEffect(G, CTX, '0', HERO_COMPOSITION_MARKERS.berserk, BERSERK);
+    assert.ok(
+      (G.messages as string[]).includes(`Player 0's ${BERSERK} gained +4 attack.`),
+      'the nested gain-resource in the sequence names the sequence source card',
+    );
+    assert.deepStrictEqual(
+      G.playerZones['0']!.discard,
+      ['berserk-fodder'],
+      'the sequence still moved the deck-top card to discard',
+    );
+  });
+
+  it('does not throw when G.messages is absent (array-guard preserved)', () => {
+    const G = makeState({
+      hq: ['a', null, null, null, null],
+      cardTraits: { a: { heroClass: 'tech', team: null } },
+      omitMessages: true,
+    });
+    assert.doesNotThrow(
+      () => interpretHeroPrimitiveEffect(G, CTX, '0', buildEmpoweredFreeChoiceComposition(), SOURCE),
+      'a missing G.messages must not turn the grant log into a throw',
+    );
+    assert.equal(G.turnEconomy!.attack, 1, 'the grant still applied without a messages array');
   });
 });
