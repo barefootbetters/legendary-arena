@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **35 / 50** entity pages.
-> Last regenerated: 2026-07-03.
+> **37 / 50** entity pages.
+> Last regenerated: 2026-07-07.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority.
 
@@ -123,6 +123,11 @@ Cross-cutting governance, methodology, and readiness assessments.
   plan for the "Legendary Arena" channel: four series across the SB7
   content modes and Player Needs Pyramid; the transitional CTA the
   homepage needs.
+- [Sound Effects](sound-effects.md) — *(draft, research)* design
+  reference for adding audio to `play.legendary-arena.com`: maps the
+  five `notableEvents` (Master Strike, Scheme Twist, fight/ambush,
+  mastermind defeat) and player-action moves to candidate sounds, plus
+  a CC0-first library survey (Kenney, OpenGameArt, Freesound, Zapsplat).
 
 ## Tutorial
 
