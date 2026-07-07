@@ -91,16 +91,27 @@ export function abilityTextToPlainText(abilityText: string | undefined): string 
  * @param extId The played card's ext-id.
  * @returns The formatted label.
  */
+export function formatCardRef(
+  cardDisplayData: CardDisplayData | undefined,
+  extId: CardExtId,
+): string {
+  // why: WP-324 — the `{Name} ({ext-id})` reference used across the non-play log
+  // lines (fought, recruited, dodged, escaped, captured, claimed, grant). The name
+  // is for readability; the ext-id is retained for diagnostics / instance
+  // disambiguation (the same choice as the WP-323 play label).
+  return `${resolveCardName(cardDisplayData, extId)} (${extId})`;
+}
+
 export function formatPlayedCardLabel(
   cardDisplayData: CardDisplayData | undefined,
   extId: CardExtId,
 ): string {
-  const name = resolveCardName(cardDisplayData, extId);
+  const cardRef = formatCardRef(cardDisplayData, extId);
   const plainEffect = abilityTextToPlainText(cardDisplayData?.[extId]?.abilityText);
   // why: only append the effect clause when the card has printed ability text —
   // starters (S.H.I.E.L.D. Agent / Trooper) have none and stay "{Name} ({extId})".
   if (plainEffect.length === 0) {
-    return `${name} (${extId})`;
+    return cardRef;
   }
-  return `${name} (${extId}) — ${plainEffect}`;
+  return `${cardRef} — ${plainEffect}`;
 }

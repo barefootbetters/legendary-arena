@@ -884,7 +884,7 @@ describe('revealVillainCard — onEscape fire site (WP-186 §Files #7a)', () => 
     // (e) Order proof — the escape message precedes the wound message which
     // precedes the bystander release message (existing emission order).
     const escapeMessageIndex = moveContext.G.messages.findIndex((m) =>
-      m.includes(`Villain "${escapedCardId}" escaped`),
+      m.includes(`(${escapedCardId}) escaped`),
     );
     const woundMessageIndex = moveContext.G.messages.findIndex((m) =>
       m.includes('gained a wound from villain escape'),

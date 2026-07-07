@@ -35,6 +35,7 @@ import { koCard } from '../board/ko.logic.js';
 import { resolveCountSource } from './heroCountSource.resolve.js';
 import { interpretHeroPrimitiveEffect } from './effectPrimitive.interpret.js';
 import { getEligibleVictoryVillains } from '../moves/resolveVictoryPileCardPick.js';
+import { formatCardRef } from '../log/logDisplay.js';
 
 // ---------------------------------------------------------------------------
 // MVP keyword set
@@ -304,7 +305,7 @@ export function executeHeroEffects(
       // game log (G.messages -> UIState.log) instead of a silent skip — the
       // exact "the effect did nothing" confusion from the live diagnostic.
       G.messages.push(
-        `Player ${playerID}'s ${cardId} ability did not activate — a play condition (such as Hero class or team synergy) was not met.`,
+        `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ability did not activate — a play condition (such as Hero class or team synergy) was not met.`,
       );
       continue;
     }

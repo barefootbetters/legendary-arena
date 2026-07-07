@@ -97,8 +97,8 @@ log is uniformly named.
 | `packages/game-engine/src/moves/resolveVictoryPileCardPick.ts` | **Modified** — villain name+id on the Ebony-Blade claim line |
 | `packages/game-engine/src/hero/heroEffects.execute.ts` | **Modified** — hero card name+id on the synergy-gate skip line |
 | `packages/game-engine/src/hero/effectPrimitive.interpret.ts` | **Modified** — name the card in the composed grant message |
-| affected move tests (`fightVillain.test.ts`, `recruitHero.test.ts`, `dodgeCard.test.ts`, + scaffold-surfaced) | **Modified** — re-pin enriched lines |
-| replay fixture(s) with a `messages` oracle (`sentinel-core-doom-2p.replay.json`) | **Modified** — re-pin via regeneration |
+| `hero/effectPrimitive.interpret.test.ts`, `moves/recruitHero.test.ts`, `moves/dodgeCard.test.ts`, `villainDeck/villainDeck.reveal.test.ts` | **Modified** — re-pinned the 10 byte-locked assertions (scaffold-confirmed) to the `{extId} ({extId})` fallback |
+| ~~replay fixture~~ | **Unchanged** — the `sentinel-core-doom-2p` trace plays only starters, so no fight/recruit/escape line was in its oracle; no re-pin needed |
 | `docs/ai/DECISIONS.md` | **Modified** — D-24110 |
 | `docs/ai/STATUS.md` | **Modified** — record the change |
 | `docs/ai/work-packets/WORK_INDEX.md` | **Modified** — WP-324 row |

@@ -197,7 +197,7 @@ describe('dodgeCard — honest fix (discard one Dodge card from hand, draw one r
     assert.equal(gameState.messages.length - messagesBefore, 1, 'exactly one G.messages line is pushed');
     assert.equal(
       gameState.messages[gameState.messages.length - 1],
-      'Player 0 dodged DODGE (discarded from hand, drew 1 replacement)',
+      'Player 0 dodged DODGE (DODGE) (discarded from hand, drew 1 replacement)',
       'the dodge log line matches the byte-locked format exactly',
     );
   });

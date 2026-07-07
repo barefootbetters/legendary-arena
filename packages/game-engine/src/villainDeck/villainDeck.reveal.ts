@@ -14,6 +14,7 @@
 
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
+import { formatCardRef } from '../log/logDisplay.js';
 import type { RuleEffect } from '../rules/ruleHooks.types.js';
 import type { ImplementationMap } from '../rules/ruleRuntime.execute.js';
 import { executeRuleHooks } from '../rules/ruleRuntime.execute.js';
@@ -199,7 +200,7 @@ export function performVillainReveal(
       G.escapedPile = [...G.escapedPile, pushResult.escapedCard];
 
       G.messages.push(
-        `Villain "${pushResult.escapedCard}" escaped from the city.`,
+        `Villain ${formatCardRef(G.cardDisplayData, pushResult.escapedCard)} escaped from the city.`,
       );
 
       // why: escape causes wound — MVP rule linking escapes to player penalty.
@@ -231,7 +232,7 @@ export function performVillainReveal(
       G.piles.bystanders = escapeBystanderResult.bystandersPile;
       if (escapeBystanderResult.bystandersPile.length > bystanderPileBefore) {
         G.messages.push(
-          `Bystanders from escaped villain "${pushResult.escapedCard}" returned to supply.`,
+          `Bystanders from escaped villain ${formatCardRef(G.cardDisplayData, pushResult.escapedCard)} returned to supply.`,
         );
       }
 
@@ -439,7 +440,7 @@ export function performVillainReveal(
       };
     }
     G.messages.push(
-      `Bystander "${cardId}" revealed and captured by "${captorCardId}".`,
+      `${formatCardRef(G.cardDisplayData, cardId)} revealed and captured by ${formatCardRef(G.cardDisplayData, captorCardId)}.`,
     );
   } else if (cardType === 'scheme-twist') {
     // why: scheme-twist cards route to G.scheme.twistPile (not discard)
