@@ -104,9 +104,8 @@ engine already carries every name/effect needed; this is a string-authoring chan
 | `packages/game-engine/src/moves/coreMoves.impl.ts` | **Modified** — card-play line uses `formatPlayedCardLabel` |
 | `packages/game-engine/src/moves/playFromUndercover.ts` | **Modified** — face-down play line uses the label |
 | `packages/game-engine/src/moves/fightMastermind.ts` | **Modified** — mastermind + tactic names |
-| `packages/game-engine/src/moves/coreMoves.impl.test.ts` **or** the play-move test asserting the line | **Modified** — re-pin the enriched play line (exact file confirmed at scaffold) |
-| `packages/game-engine/src/moves/fightMastermind.test.ts` | **Modified** — re-pin the enriched mastermind line |
-| replay fixture(s) carrying a `messages` oracle | **Modified** — re-pin via `record-game-fixture.mjs` |
+| `packages/game-engine/src/moves/coreMoves.integration.test.ts` | **Modified** — re-pin the enriched play line (scaffold-confirmed: the only unit test asserting a changed line) |
+| `packages/game-engine/src/test/fixtures/games/sentinel-core-doom-2p.replay.json` | **Modified** — re-pin the `messages` oracle via `record-game-fixture.mjs --input` (messages-only diff; hash/meta/seed unchanged) |
 | `docs/ai/DECISIONS.md` | **Modified** — D-24109 |
 | `docs/ai/STATUS.md` | **Modified** — record the change |
 | `docs/ai/work-packets/WORK_INDEX.md` | **Modified** — WP-323 row |

@@ -26660,7 +26660,7 @@ operator-pending on deploy.
 
 ### D-24109 — Game Log Name Enrichment: Card Plays + Mastermind Tactics
 
-**Status:** Drafted 2026-07-07; not yet landed (flips to Active on WP-323 execution).
+**Status:** Active (post-execution) 2026-07-07. `D-24026` live-verify operator-pending on deploy.
 
 **User-Visible Surface:** play.legendary-arena.com (the Game Log panel + WP-322 export).
 
@@ -26703,6 +26703,6 @@ authorship unchanged); the replay **message oracle** is re-pinned by regeneratio
 `boardgame.io` and reaches into no `G` (args in). `D-24026` live-verify
 operator-pending on deploy.
 
-**Packet:** WP-323 + EC-353. **Drafted:** 2026-07-07. **Executed:** —
+**Packet:** WP-323 + EC-353. **Drafted:** 2026-07-07. **Executed:** 2026-07-07.
 
 Protect this file.

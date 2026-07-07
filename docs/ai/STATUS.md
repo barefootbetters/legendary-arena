@@ -7,6 +7,34 @@
 
 ## Current State
 
+### WP-323 / EC-353 Executed — Game Log Name Enrichment: Card Plays + Mastermind Tactics (D-24109 Active) (2026-07-07)
+
+Enriches the two most jarring log lines with display names resolved from `G.cardDisplayData`
+(already in scope in moves — no registry access), triggered by a real Magneto match log:
+
+- **Card play** → `played {Name} ({ext-id}) — {plain-text effect}` (`coreMoves.impl.ts` `applyCardPlay`
+  + `playFromUndercover.ts`). Starters (no `abilityText`) stay `{Name} ({ext-id})`.
+- **Mastermind** → `fought {Mastermind} and defeated the tactic "{Tactic}"` and
+  `mastermind {Mastermind} is vanquished` (`fightMastermind.ts`; mastermind name via
+  `baseCardId` → `cardDisplayData`, mirroring the ~148 notableEvent resolution; tactic via the
+  `defeatedTacticId` captured before `defeatTopTactic`).
+- **New pure `packages/game-engine/src/log/logDisplay.ts`:** `resolveCardName` (`name ?? extId`
+  fallback) + `abilityTextToPlainText` (markup `[icon|keyword|hc:...]` → words; collapses newlines
+  to one line) + `formatPlayedCardLabel`. No `boardgame.io` import, no `G` reach-through (args in).
+  **WP-324** reuses these for the remaining ~37 push sites.
+- **Message text only** — no engine state/logic/RNG/turn-flow change, no `cardDisplayData` shape
+  change. `G.messages` is hash-excluded (D-24081), so no replay-outcome change; the
+  `sentinel-core-doom-2p` replay message oracle was re-pinned by **regeneration**
+  (`record-game-fixture.mjs --input`) — messages-only diff, `finalStateHash`/meta/seed unchanged.
+- **Gates:** engine suite **1768/1768** (10 new `logDisplay` tests + re-pinned play assertion);
+  `pnpm -r build` 0. Drift was exactly the two scaffold-predicted points.
+- **Deferred:** WP-324 (the remaining log sites); **WP-B** = effect **outcome** logging (did the
+  What-If fire / the realized grant — the silent-hero-effect gap). This WP prints the *printed*
+  effect only.
+- **User-Visible Surface = play.legendary-arena.com.** D-24026 live-verify **operator-pending on
+  deploy**: a live match's Game Log shows named plays with the printed effect and named
+  mastermind/tactic lines.
+
 ### WP-322 / EC-352 Executed — Copy, Save, and Full-Screen Expand for the Live HUD Game Log (D-24108 Active) (2026-07-07)
 
 Extends the WP-321 compact HUD log with three viewer affordances, entirely client-side over the
