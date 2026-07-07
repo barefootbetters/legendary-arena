@@ -26610,4 +26610,50 @@ scroll-up respected).
 
 **Packet:** WP-321 + EC-351. **Drafted:** 2026-07-07. **Executed:** 2026-07-07.
 
+---
+
+### D-24108 — Copy, Save, and Full-Screen Expand for the Live HUD Game Log
+
+**Status:** Drafted 2026-07-07; not yet landed (flips to Active on WP-322 execution).
+
+**User-Visible Surface:** play.legendary-arena.com (the in-match Game Log panel).
+
+**Context.** WP-321 shipped the compact, auto-scrolling, chronological HUD log. A
+compact window implies viewer affordances the operator asked for next: read the
+whole transcript, and get it out of the browser to attach to a bug report or share.
+
+**Decision.** Add a Copy / Save / Expand toolbar to `GameLogPanel`, entirely
+client-side, over the existing read-only `UIState.log` projection:
+
+- **Copy** writes the full log (one entry per line) to the clipboard via a
+  best-effort, guarded `navigator.clipboard?.writeText` (the `DiagnosticExportButton`
+  idiom — a missing/rejecting clipboard is swallowed, never thrown into the UI).
+- **Save** downloads the same text as `game-log.txt` via a transient object-URL
+  `<a download>` anchor (revoked after click). Save is a **human-readable log
+  transcript**, deliberately distinct from the JSON diagnostics export
+  (`DiagnosticExportButton` / WP-228 / D-22801): different artifact, different
+  audience — the JSON export is not reused, imported, or modified.
+- **Expand** opens a full-screen overlay of the same chronological log via
+  `<Teleport v-if="isExpanded" to="body">` (`role="dialog"`, `aria-modal`), mirroring
+  `PileBrowseModal` (EC-189): close on a Collapse button, backdrop click, or
+  `Escape`; the ESC listener attaches on the expanded transition and detaches on
+  collapse and `onBeforeUnmount` (no leak). The overlay scrolls to the newest entry
+  when opened.
+
+The export text builder `buildGameLogText(log)` (one entry per line, trailing
+newline; empty log → `''`) is a pure helper (`gameLogExport.ts`), extracted so the
+export payload is unit-testable without the clipboard/Blob browser APIs — the
+WP-321 `gameLogScroll` testability precedent (§16.1 disposition: the helper exists
+for testability, not premature abstraction).
+
+**Invariants preserved.** Chronological order is never reversed (D-20002); the
+client re-authors nothing (engine owns the log). No engine / `UIState` / projection
+change and no `finalStateHash` impact (`G.messages` is hash-excluded, D-24081). The
+WP-321 compact viewport + polite auto-scroll are retained unchanged. No new npm
+dependency (`<Teleport>`, `navigator.clipboard`, `Blob`/`URL.createObjectURL` are
+Vue/browser built-ins already used in this app). `D-24026` live-verify
+operator-pending on deploy.
+
+**Packet:** WP-322 + EC-352. **Drafted:** 2026-07-07. **Executed:** —
+
 Protect this file.
