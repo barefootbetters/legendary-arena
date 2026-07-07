@@ -292,8 +292,11 @@ describe('playCard', () => {
     assert.deepEqual(gameState.playerZones['0']!.inPlay, ['card-x']);
     // why: WP-295 / D-24082 — playing a card now emits an observability log
     // line (G.messages -> UIState.log) so a played card is no longer silent.
-    assert.ok(gameState.messages.includes('Player 0 played card-x.'),
-      'playCard must append a "played" line to the game log.');
+    // WP-323 enriches it to "{Name} ({ext-id}) — {effect}"; this synthetic
+    // `card-x` has no cardDisplayData entry, so it exercises the name fallback
+    // ("card-x") with no effect suffix -> "card-x (card-x)".
+    assert.ok(gameState.messages.includes('Player 0 played card-x (card-x).'),
+      'playCard must append an enriched "played" line to the game log.');
   });
 
   it('does not mutate G when cardId is not in hand', () => {
