@@ -7,6 +7,29 @@
 
 ## Current State
 
+### WP-320 / EC-350 Executed — Newest-First Game Log Feed in the Live HUD (D-24106 Active) (2026-07-07)
+
+Operator follow-up to WP-318 (2026-07-07): "reverse, with latest feed pushing the log file down." The
+live HUD Game Log now reads as a feed — the latest entry on top, older entries pushed down.
+
+- **`GameLogPanel.vue`** gains an optional `newestFirst` prop (default `false`); `PlayDesktop.vue` /
+  `PlayMobile.vue` pass `:newest-first="true"`. Reverses **display** order only — each entry is paired
+  with its ORIGINAL append-order index so the `:key` stays stable (an append moves rows rather than
+  rebuilding the list), and the source `log` array is never mutated (`.slice().reverse()`). The replay
+  inspector + pre-plan notification keep chronological (oldest-first) order via the `false` default.
+- **Impl note (D-6512):** `GameLogPanel` now derives display order via a `computed`, so it converts from
+  `<script setup>` to `defineComponent({ setup() { return {...} } })`. Under vue-sfc-loader's
+  separate-compile pipeline a leaf `<script setup>` reliably exposes only props to the template, not
+  arbitrary setup bindings — a leaf `<script setup>` computed renders zero rows (caught in test before
+  the conversion).
+- Pure client render — no engine/`UIState`/projection change, no `finalStateHash` impact (`G.messages`
+  hash-excluded, D-24081; D-20002 log authorship unchanged).
+
+**Verification:** `vue-tsc` clean, arena-client suite **708/708** (+3 assertions: reversed order + stable
+original index + no-mutation, and the desktop HUD asserts newest-on-top), `vite build` 0, diff = the
+5-file client allowlist. **D-24026 live-verify** (the live HUD Game Log shows the latest entry on top) is
+**operator-pending** on deploy.
+
 ### WP-318 / EC-348 Executed — Game Log Panel in the Live Play HUD (D-24104 Active) (2026-07-06)
 
 Closes the WP-316 visibility gap the operator caught on 2026-07-07 (match `VvNJEjQUPJ5`): "I don't

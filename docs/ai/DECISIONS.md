@@ -26573,4 +26573,33 @@ popup names the hero).
 
 **Packet:** WP-319 + EC-349. **Drafted:** 2026-07-06. **Executed:** 2026-07-06.
 
+---
+
+### D-24106 — Newest-First Game Log Feed in the Live HUD
+
+**Status:** **Active** — landed 2026-07-07 by WP-320 / EC-350 (lightweight
+single-session). `GameLogPanel.vue` gains an optional `newestFirst` prop (default
+`false`); `PlayDesktop.vue` / `PlayMobile.vue` pass `:newest-first="true"`, so the
+live in-match Game Log reads as a feed (latest entry on top, older pushed down).
+Operator request 2026-07-07.
+
+**Decision.** Reverse only the **display** order — pair each entry with its
+original append-order index so the `:key` stays stable (an append moves rows
+rather than rebuilding the list); the source `log` array is never mutated
+(`.slice().reverse()`). The replay inspector + pre-plan notification keep
+chronological (oldest-first) order via the `false` default (a replay is read
+top-to-bottom). Pure client render — no engine/`UIState`/projection change, no
+`finalStateHash` impact (`G.messages` is hash-excluded, D-24081; the client only
+chooses display direction, D-20002 log authorship unchanged).
+
+**Implementation note.** Because `GameLogPanel` now derives display order via a
+`computed`, it converts from `<script setup>` to the `defineComponent({ setup()
+{ return {...} } })` form per EC-132 §2 / D-6512: under vue-sfc-loader's
+separate-compile pipeline a leaf `<script setup>` reliably exposes only props to
+the template, not arbitrary setup bindings, so `displayEntries` must be an
+explicit setup return (a leaf `<script setup>` computed renders zero rows). `D-24026`
+live-verify operator-pending on deploy (the live HUD log shows the latest on top).
+
+**Packet:** WP-320 + EC-350. **Drafted:** 2026-07-07. **Executed:** 2026-07-07.
+
 Protect this file.
