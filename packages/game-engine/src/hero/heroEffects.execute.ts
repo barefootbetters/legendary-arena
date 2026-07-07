@@ -36,6 +36,11 @@ import { resolveCountSource } from './heroCountSource.resolve.js';
 import { interpretHeroPrimitiveEffect } from './effectPrimitive.interpret.js';
 import { getEligibleVictoryVillains } from '../moves/resolveVictoryPileCardPick.js';
 import { formatCardRef } from '../log/logDisplay.js';
+import {
+  describeRevealPredicate,
+  describeRevealActions,
+  formatRevealOutcomeLine,
+} from './revealLog.js';
 
 // ---------------------------------------------------------------------------
 // MVP keyword set
@@ -737,17 +742,46 @@ function applyRevealRules(
   cost: number,
   rules: RevealRule[],
 ): void {
+  // why: WP-325 — accumulate the reveal outcome so ONE line summarizes the peeked
+  // card (a `continue: true` chain matches more than one rule). The first matched
+  // predicate + every matched rule's actions compose the line after the loop.
+  let matchedPredicateText: string | undefined;
+  const matchedActionPhrases: string[] = [];
   for (const rule of rules) {
     if (!revealPredicateMatches(G, rule.predicate, cost)) {
       continue;
     }
+    if (matchedPredicateText === undefined) {
+      matchedPredicateText = describeRevealPredicate(rule.predicate);
+    }
+    matchedActionPhrases.push(describeRevealActions(rule.actions));
     applyRevealRuleActions(G, playerID, playerZones, topCardId, cost, rule.actions);
     // why: first-match-wins unless the rule opts into `continue` — the
     // reveal-attack-choose attack rule sets continue so the always→choose rule still
-    // parks the choice after the attack. (D-24024)
+    // parks the choice after the attack. (D-24024) `break` (not `return`) so the
+    // reveal-outcome line below still emits; the reveal behavior is unchanged — the
+    // same rules are applied in the same order with the same stop condition.
     if (rule.continue !== true) {
-      return;
+      break;
     }
+  }
+  // why: WP-325 — one reveal-outcome line per peeked card, naming the revealed card +
+  // cost + predicate result + action(s), so a conditional "What If…?" effect is no
+  // longer silent (the last silent effect path). G.messages is excluded from
+  // finalStateHash (D-24081), so this is replay-safe; the Array.isArray guard tolerates
+  // a narrow reveal-test fixture G that omits the messages array.
+  if (Array.isArray(G.messages)) {
+    const outcome =
+      matchedPredicateText === undefined
+        ? { matched: false }
+        : {
+            matched: true,
+            predicateText: matchedPredicateText,
+            actionsText: matchedActionPhrases.join(', '),
+          };
+    G.messages.push(
+      formatRevealOutcomeLine(G.cardDisplayData, playerID, topCardId, cost, outcome),
+    );
   }
 }
 

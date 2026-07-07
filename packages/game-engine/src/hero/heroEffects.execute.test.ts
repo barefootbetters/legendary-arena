@@ -2039,6 +2039,13 @@ describe('executeHeroEffects reveal collapse (WP-253 / D-24024)', () => {
       'reveal M=0 must draw the cost-0 card (cost-lte 0 matches a cost-0 top).');
     assert.deepEqual(gameState.playerZones['0'].deck, [],
       'deck should be empty after the cost-0 card is drawn.');
+    // why: WP-325 — the reveal now logs its outcome (revealed card + cost + matched predicate + action).
+    assert.ok(
+      gameState.messages.includes(
+        'Player 0 revealed cost-zero-card (cost-zero-card) (cost 0) — cost ≤ 0 matched: drew it.',
+      ),
+      'the reveal-outcome line names the revealed card, cost, matched predicate, and action.',
+    );
   });
 
   it('reveal M=0 leaves a cost-1 card on deck (cost-lte 0 does not match cost 1)', () => {
@@ -2065,6 +2072,13 @@ describe('executeHeroEffects reveal collapse (WP-253 / D-24024)', () => {
       'reveal M=0 must leave a cost-1 card on deck (cost-lte 0 fails for cost 1).');
     assert.deepEqual(gameState.playerZones['0'].hand, [],
       'hand should remain empty when the top card cost exceeds 0.');
+    // why: WP-325 — a reveal whose predicate does not match logs the no-branch-matched outcome.
+    assert.ok(
+      gameState.messages.includes(
+        'Player 0 revealed cost-one-card (cost-one-card) (cost 1) — no branch matched (left on top).',
+      ),
+      'the reveal-outcome line reports no branch matched when the predicate fails.',
+    );
   });
 
   it('reveal-min M=0 draws every card (valid tier — M=0 builds cost-gte 0, draws even a high-cost top)', () => {
