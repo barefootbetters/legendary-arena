@@ -7,6 +7,34 @@
 
 ## Current State
 
+### WP-321 / EC-351 Executed — Compact, Auto-Scrolling Chronological Game Log in the Live HUD (D-24107 Active) (2026-07-07)
+
+Replaces the **abandoned WP-320** (newest-first). WP-320 reversed the HUD log so the latest line
+showed without scrolling; it was closed pre-merge (PR #576) because reversing display order makes a
+multi-line event read **consequence-before-cause** — a fight pushes `fought → rescued → Fight effect:
+… (hero)`, and reversed you'd read the KO before the fight. Nothing from WP-320 landed on `main`
+(D-24106 is void).
+
+- **Fix (client-only):** keep **chronological** order; make `GameLogPanel` a compact ~5-6 line window
+  (`max-height: 9rem`, `overflow-y: auto`) that **auto-scrolls to the bottom** so the newest entry is
+  always in view — the standard chat/console pattern. The stick is **polite**: a new entry scrolls to
+  bottom only when the viewer was already pinned there (measured at the watcher's `pre` flush, before
+  the DOM grows; scrolled after `nextTick`), so scrolling up to read history is respected.
+- **Testability:** the stick decision is a pure `isPinnedToBottom(scrollHeight, scrollTop, clientHeight,
+  threshold?)` helper (`gameLogScroll.ts`), unit-tested at the boundaries — jsdom computes no scroll
+  layout, so the DOM scroll itself is deferred to D-24026 live-verify.
+- **Impl note (D-6512):** `GameLogPanel` now runs setup logic (`ref` + `watch`), so it converts from
+  `<script setup>` to `defineComponent({ setup() { return {...} } })` (a leaf `<script setup>` does not
+  expose setup bindings to the template under vue-sfc-loader). Pages untouched — height + scroll live in
+  the component.
+- Pure client render — no engine/`UIState`/projection change, no `finalStateHash` impact (`G.messages`
+  hash-excluded, D-24081; D-20002 log authorship unchanged).
+
+**Verification:** `vue-tsc` clean, arena-client suite **713/713** (the existing GameLogPanel render tests
+pass unchanged + new `isPinnedToBottom` boundary tests), `vite build` 0, diff = the 3-file client
+allowlist. **D-24026 live-verify** (compact HUD log stays scrolled to the newest chronological line;
+scroll-up respected) is **operator-pending** on deploy.
+
 ### WP-318 / EC-348 Executed — Game Log Panel in the Live Play HUD (D-24104 Active) (2026-07-06)
 
 Closes the WP-316 visibility gap the operator caught on 2026-07-07 (match `VvNJEjQUPJ5`): "I don't

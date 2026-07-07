@@ -26573,4 +26573,41 @@ popup names the hero).
 
 **Packet:** WP-319 + EC-349. **Drafted:** 2026-07-06. **Executed:** 2026-07-06.
 
+---
+
+### D-24107 — Compact, Auto-Scrolling Chronological Game Log in the Live HUD
+
+**Status:** **Active** — landed 2026-07-07 by WP-321 / EC-351 (lightweight
+single-session). The live HUD `GameLogPanel` is a compact ~5-6 line window
+(`max-height: 9rem`, `overflow-y: auto`) that keeps **chronological** order and
+**auto-scrolls to the bottom** so the newest entry is always in view.
+
+**Context — supersedes the abandoned D-24106 / WP-320.** WP-320 (D-24106) reversed
+the log to newest-first so the latest line showed without scrolling; it was
+**abandoned pre-merge** (PR #576 closed, branch deleted — nothing landed on
+`main`) because reversing display order makes a multi-line event read
+consequence-before-cause: a fight pushes `fought → rescued → Fight effect: …
+(hero)`, and reversed you read the KO before the fight. D-24106 is therefore
+**void** (never active on `main`); this decision is the chosen replacement.
+
+**Decision.** Keep chronological order; solve visibility with a compact
+auto-scrolling window (the standard chat/console pattern). The auto-scroll is
+**polite**: on a new entry, stick to the bottom only when the viewer was already
+pinned there (measured at the watcher's `pre` flush, before the DOM grows;
+scrolled after `nextTick`), so a mid-game scroll-up to read history is not yanked
+down. The stick decision is a pure `isPinnedToBottom(...)` helper
+(`gameLogScroll.ts`) — unit-tested without a layout engine, since jsdom does not
+compute `scrollHeight`/`clientHeight`. Pure client render — no engine/`UIState`/
+projection change, no `finalStateHash` impact (`G.messages` hash-excluded,
+D-24081; D-20002 log authorship unchanged).
+
+**Implementation note.** `GameLogPanel` now runs setup logic (a template ref + a
+`watch`), so it converts `<script setup>` → `defineComponent({ setup() { return
+{...} } })` per EC-132 §2 / D-6512 (a leaf `<script setup>` does not expose setup
+bindings to the template under vue-sfc-loader). `D-24026` live-verify
+operator-pending on deploy (compact HUD log stays scrolled to the newest line;
+scroll-up respected).
+
+**Packet:** WP-321 + EC-351. **Drafted:** 2026-07-07. **Executed:** 2026-07-07.
+
 Protect this file.
