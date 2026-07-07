@@ -26705,4 +26705,45 @@ operator-pending on deploy.
 
 **Packet:** WP-323 + EC-353. **Drafted:** 2026-07-07. **Executed:** 2026-07-07.
 
+---
+
+### D-24110 — Game Log Name Enrichment: Remaining Log Sites
+
+**Status:** Drafted 2026-07-07; not yet landed (flips to Active on WP-324 execution).
+
+**User-Visible Surface:** play.legendary-arena.com (the Game Log panel + WP-322 export).
+
+**Context.** WP-323 / D-24109 named card plays and mastermind tactics and built the
+reusable `logDisplay` helpers, but the same match log still shows raw ext-ids on
+`recruited …`, `fought "…"`, `Bystander "…" … captured by "…"`, and `claimed … from
+…`. This finishes the pass so the log is uniformly named.
+
+**Decision.** Apply the WP-323 helpers to the remaining player-facing
+`G.messages.push` sites that embed a raw `CardExtId`, formatting each as `{Name}
+({ext-id})` (the play format from D-24109, minus the effect clause — these are not
+card plays; the ext-id is retained for diagnostics/instance disambiguation). Add
+`formatCardRef(cardDisplayData, extId)` = `{Name} ({extId})` to `logDisplay.ts` and
+refactor `formatPlayedCardLabel` to reuse it (output unchanged). Sites: `fightVillain`
+(fought/rescued villain), `recruitHero`, `dodgeCard`, `villainDeck.reveal` (villain
+escape + bystander/captor capture), `resolveVictoryPileCardPick` (Ebony-Blade claim),
+`heroEffects.execute` (synergy-gate skip), and `effectPrimitive.interpret` (the composed
+grant message).
+
+**Scope discipline.** Excluded: the skip/diagnostic/error lines with no player-facing
+card identity, the "Fight/Ambush/Escape effect: …" lines already named via
+`composeEffectResultLogLine`, `sendUndercover` (a zone **instanceId**, not a
+`cardDisplayData`-resolvable ext-id), and the WP-323 play/mastermind lines. The
+`effectPrimitive` grant message **self-demotes to WP-325** if naming it requires more
+than threading `cardDisplayData` into the existing builder. Effect **outcome** logging
+(did the effect fire / the "What If…?" result) remains **WP-B**.
+
+**Invariants preserved.** Message text only — no `G` state / move-logic / RNG /
+turn-flow / `cardDisplayData` shape change. `G.messages` is hash-excluded (D-24081) and
+not part of replay determinism (D-20002), so no replay outcome changes; the replay
+message oracle is re-pinned by regeneration (`record-game-fixture.mjs`), never
+hand-edited. `logDisplay.ts` stays pure (no `boardgame.io`, args in). `D-24026`
+live-verify operator-pending on deploy.
+
+**Packet:** WP-324 + EC-354. **Drafted:** 2026-07-07. **Executed:** —
+
 Protect this file.
