@@ -1287,8 +1287,9 @@ describe('revealVillainCard — WP-316 Ambush effect log narration', () => {
       ),
       'the durable log names the captured HQ hero',
     );
-    // why: WP-316 byte-identity — exactly one ambushResolved (no new event
-    // type), with unchanged appliedEffects + narrative.
+    // why: WP-316 keyword-surface byte-identity (appliedEffects, exactly one
+    // ambushResolved, no new event type) + WP-319 the narrative NAMES the
+    // captured HQ hero (shown by the center-screen overlay).
     assert.equal(gameState.notableEvents.length, 1, 'exactly one ambushResolved event');
     const event = gameState.notableEvents[0]!;
     assert.equal(event.type, 'ambushResolved');
@@ -1296,7 +1297,7 @@ describe('revealVillainCard — WP-316 Ambush effect log narration', () => {
       assert.deepStrictEqual(event.appliedEffects, ['captureHqHeroRightmost']);
       assert.equal(
         event.narrative,
-        '"Sentinel" ambushed: the rightmost HQ hero was captured.',
+        '"Sentinel" ambushed: the rightmost HQ hero was captured (Iron Man).',
       );
     }
   });

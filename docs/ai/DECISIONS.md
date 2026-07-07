@@ -26539,5 +26539,38 @@ the hashed `notableEvents`). `D-24026` live-verify operator-pending on deploy (a
 live match shows the Game Log with the effect + grant lines).
 
 **Packet:** WP-318 + EC-348. **Drafted:** 2026-07-06. **Executed:** 2026-07-06.
+### D-24105 — Per-Target Hero Naming in the Fight/Ambush Center-Screen Overlay Narrative
+
+**Status:** **Active** — landed 2026-07-06 by WP-319 / EC-349 (impl + SPEC close).
+`composeFightNarrative` / `composeAmbushNarrative` now take `ResolvedEffectResult[]`
+(names resolved at the fire site) and build the effect clause via the shared
+`composeEffectResultLogLine`, so the `fightResolved` / `ambushResolved` narrative
+NAMES the specific effect target(s) — the KO'd hero, the captured HQ hero, etc.
+Since `NotableEventOverlay.vue` renders `event.narrative` verbatim, the
+center-screen popup now announces the hero with no client change.
+
+**Context.** WP-316 deliberately kept the fight/ambush narrative keyword-granular
+(`… KO'd a hero.`) to preserve `finalStateHash` byte-identity, routing the
+per-target detail only to the hash-excluded `G.messages` log. WP-318 then surfaced
+that log in the live HUD. This decision handles the operator's other request (the
+prominent center-screen popup naming the hero, 2026-07-07): enrich the hashed
+narrative itself. **Note:** WP-318 (D-24104) and this packet (D-24105) were built
+in parallel off the same `main` tip; their governance-ledger appends conflict
+mechanically at the second merge (keep both entries / rows).
+
+**Decision (supersedes the WP-316 narrative-byte-identity choice).** Enrich the
+narrative to name the target(s), reusing WP-316's `resolveEffectResultNames` (the
+fire sites already computed it for the log line — hoisted so the same results feed
+both). **`appliedEffects` (the keyword array) on both events is UNCHANGED** — the
+overlay's keyword badges and any keyword consumer stay byte-identical. **The
+`finalStateHash` is byte-unchanged**: the sole committed replay fixture
+(`sentinel-core-doom-2p.replay.json`) fires no fight/ambush event, so its
+`notableEvents` are untouched (verified — full engine suite 1759/1759 + the
+replay-hash oracle green, fixture untouched). Escape stays log-only (no
+notableEvent). Removed the now-dead `joinEffectLabels`. `D-24026` live-verify
+operator-pending on deploy (defeat/reveal a Fight/Ambush-effect villain → the
+popup names the hero).
+
+**Packet:** WP-319 + EC-349. **Drafted:** 2026-07-06. **Executed:** 2026-07-06.
 
 Protect this file.

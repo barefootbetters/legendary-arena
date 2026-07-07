@@ -170,13 +170,16 @@ export function fightVillain(
     );
   }
 
+  // why: WP-316 + WP-319 — resolve the effect targets to display names ONCE (via
+  // G.cardDisplayData; the composer stays pure). The same resolved results feed
+  // BOTH the durable `Fight effect:` log line below AND the fightResolved
+  // narrative (so the center-screen overlay and the log name the same hero).
+  const resolvedFightResults = resolveEffectResultNames(G, appliedFightResults);
   // why: WP-316 — narrate the Fight: effect targets into the durable log
   // (G.messages, hash-excluded per D-24081), after the fought/rescued pushes and
   // before the fightResolved event push. Length-guarded: no line when no effect
-  // applied (an effectless fight pushes no effect line). Names resolve at the
-  // fire site via G.cardDisplayData (the composer stays pure).
+  // applied (an effectless fight pushes no effect line).
   if (appliedFightResults.length > 0) {
-    const resolvedFightResults = resolveEffectResultNames(G, appliedFightResults);
     G.messages.push(
       `Fight effect: ${composeEffectResultLogLine(resolvedFightResults)}.`,
     );
@@ -204,10 +207,14 @@ export function fightVillain(
     citySpace: cityIndex,
     bystandersRescued,
     appliedEffects: appliedFightEffects,
+    // why: WP-319 — the narrative now names the specific effect target(s) (the
+    // KO'd hero, captured HQ hero, etc.) via the resolved results, so the
+    // center-screen NotableEventOverlay announces the hero. `appliedEffects`
+    // above stays the keyword array (byte-identical) for the overlay's badges.
     narrative: composeFightNarrative(
       fightCardName,
       bystandersRescued,
-      appliedFightEffects,
+      resolvedFightResults,
     ),
   });
 }

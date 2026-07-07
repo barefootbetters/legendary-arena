@@ -40,6 +40,35 @@ Game Log with the effect + grant lines) is **operator-pending** on deploy.
 `notableEvents` with per-target data and re-pins the sentinel `finalStateHash` (the cost WP-316
 avoided). The overlay already fires during live play (operator-confirmed), so it's an enrichment, not
 a new surface.
+### WP-319 / EC-349 Executed — Per-Target Hero Naming in the Fight/Ambush Center-Screen Overlay (D-24105 Active) (2026-07-06)
+
+The other half of the operator's 2026-07-07 "Both" ask. WP-318 surfaced the durable **log panel** in the
+live HUD; this names the specific hero in the prominent **center-screen popup** (`NotableEventOverlay`).
+WP-316 kept the `fightResolved`/`ambushResolved` narrative keyword-granular (`… KO'd a hero.`) to preserve
+`finalStateHash` byte-identity; this **enriches that narrative to name the target** — e.g. `Fought
+"Sentinel" and rescued 2 bystander(s); Fight effect: the active player KO'd a hero (Spider-Man).` and
+`"Skrull Queen Veranke" ambushed: the highest-cost HQ hero was captured (Amulet of Avalon).`
+
+- **Engine-only, no client change:** `composeFightNarrative`/`composeAmbushNarrative` now take
+  `ResolvedEffectResult[]` and build the effect clause via the shared `composeEffectResultLogLine` (the
+  same one the WP-316 log line uses); the fire sites hoist `resolveEffectResultNames` so the **same**
+  resolved names feed both the log line and the narrative. `NotableEventOverlay.vue` renders
+  `event.narrative` verbatim, so the enriched hero name flows through with no client edit.
+- **`appliedEffects` (keyword array) UNCHANGED** — the overlay's keyword badges stay byte-identical.
+- **`finalStateHash` byte-unchanged:** the sole committed replay fixture (`sentinel-core-doom-2p`) fires
+  no fight/ambush event, so its `notableEvents` are untouched (verified — full engine suite **1759/1759**
+  + the replay-hash oracle green, fixture untouched). Removed the now-dead `joinEffectLabels`.
+- **Supersedes** the WP-316 decision to keep the narrative keyword-granular (operator-requested).
+
+**Verification:** engine `build` + `test` **1759/1759**, sentinel `finalStateHash` `7bb990fc…`
+**byte-identical**, `pnpm -r build` **0** (arena-client unaffected — overlay renders verbatim), diff =
+the 6-file engine allowlist. **D-24026 live-verify** (defeat/reveal a Fight/Ambush-effect villain → the
+center-screen popup names the hero) is **operator-pending** on deploy.
+
+**Parallel-merge note:** WP-319 was built off the same `main` tip as WP-318 (PR #574, still open at the
+time of writing) because the two are file-disjoint. Their governance-ledger appends (D-entries +
+WORK_INDEX/EC_INDEX/STATUS rows) will conflict mechanically at the second merge — resolve by keeping both
+entries. Recommended order: merge #574 (WP-318) first, then #575 (WP-319) rebases/resolves cleanly.
 
 ### WP-317 / EC-347 Executed — Composable `gain-resource` Grant Observability Logging (Empowered / Berserk; D-24103 Active) (2026-07-06)
 

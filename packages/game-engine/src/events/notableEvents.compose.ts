@@ -56,31 +56,6 @@ function labelForEffect(effect: VillainEffectKeyword): string {
   return effect;
 }
 
-/**
- * Joins a list of effect labels into a single phrase using comma + final "and".
- *
- * Byte-stable: identical inputs produce identical output. Empty array
- * returns `''`. Single entry returns that entry verbatim. Two entries
- * use " and " between them. Three or more entries use ", " between
- * entries with " and " before the last.
- *
- * @param effects - Effect keywords in dispatch order.
- * @returns Joined human phrase or empty string when no effects applied.
- */
-function joinEffectLabels(effects: VillainEffectKeyword[]): string {
-  if (effects.length === 0) return '';
-  if (effects.length === 1) return labelForEffect(effects[0]!);
-  if (effects.length === 2) {
-    return `${labelForEffect(effects[0]!)} and ${labelForEffect(effects[1]!)}`;
-  }
-  const head: string[] = [];
-  for (let index = 0; index < effects.length - 1; index += 1) {
-    head.push(labelForEffect(effects[index]!));
-  }
-  const tail = labelForEffect(effects[effects.length - 1]!);
-  return `${head.join(', ')}, and ${tail}`;
-}
-
 // ---------------------------------------------------------------------------
 // Effect-result log line (WP-316)
 // ---------------------------------------------------------------------------
@@ -154,22 +129,30 @@ function composeEffectResultClause(result: ResolvedEffectResult): string {
  *
  * @param cardName - Human-facing name of the defeated card.
  * @param bystandersRescued - Bystanders rescued into the victory pile (>= 0).
- * @param appliedEffects - Fight: effect keywords the executor applied.
+ * @param effectResults - Fight: effect results the executor applied, with target
+ *   ext_ids already resolved to display names (WP-319).
  * @returns Single English sentence describing the resolved fight.
  */
 export function composeFightNarrative(
   cardName: string,
   bystandersRescued: number,
-  appliedEffects: VillainEffectKeyword[],
+  effectResults: ResolvedEffectResult[],
 ): string {
   const bystanderClause =
     bystandersRescued > 0
       ? ` and rescued ${String(bystandersRescued)} bystander(s)`
       : '';
-  if (appliedEffects.length === 0) {
+  if (effectResults.length === 0) {
     return `Fought "${cardName}"${bystanderClause}.`;
   }
-  const effectClause = joinEffectLabels(appliedEffects);
+  // why: WP-319 / D-24105 — the fightResolved narrative (shown by the
+  // center-screen NotableEventOverlay) now NAMES the specific effect target(s)
+  // via the shared composeEffectResultLogLine, matching the durable-log
+  // `Fight effect:` line. Supersedes the WP-316 choice to keep this narrative
+  // keyword-granular for byte-identity: the sentinel replay fires no fight
+  // event, so `finalStateHash` is unchanged (verified). The `appliedEffects`
+  // keyword field on the event is unchanged; only this narrative string is enriched.
+  const effectClause = composeEffectResultLogLine(effectResults);
   return `Fought "${cardName}"${bystanderClause}; Fight effect: ${effectClause}.`;
 }
 
@@ -185,17 +168,21 @@ export function composeFightNarrative(
  * `executeVillainAbilities(...,'onAmbush')` are referenced.
  *
  * @param cardName - Human-facing name of the revealed villain.
- * @param appliedEffects - Ambush: effect keywords the executor applied.
+ * @param effectResults - Ambush: effect results the executor applied, with target
+ *   ext_ids already resolved to display names (WP-319).
  * @returns Single English sentence describing the resolved ambush.
  */
 export function composeAmbushNarrative(
   cardName: string,
-  appliedEffects: VillainEffectKeyword[],
+  effectResults: ResolvedEffectResult[],
 ): string {
-  if (appliedEffects.length === 0) {
+  if (effectResults.length === 0) {
     return `"${cardName}" entered the city with no Ambush effect.`;
   }
-  const effectClause = joinEffectLabels(appliedEffects);
+  // why: WP-319 / D-24105 — names the specific effect target(s) in the
+  // ambushResolved narrative (overlay + log) via the shared
+  // composeEffectResultLogLine; supersedes the WP-316 keyword-granular narrative.
+  const effectClause = composeEffectResultLogLine(effectResults);
   return `"${cardName}" ambushed: ${effectClause}.`;
 }
 
