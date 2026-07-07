@@ -7,6 +7,38 @@
 
 ## Current State
 
+### WP-325 / EC-355 Executed — Reveal / "What If…?" Test-Result Logging (D-24111 Active) (2026-07-07)
+
+Closes the last silent effect path (WP-B.1). The reveal / "What If…?" pipeline
+(`heroEffects.execute.ts` `applyRevealRules`) peeked the deck top, tested a predicate, and
+applied an action — all silent, which is why the field report said "unknown if the What-If
+test fired." It now emits one game-log line per peeked card:
+
+- `Player 0 revealed Amulet of Avalon (antm/…#3) (cost 3) — cost ≤ 3 matched: drew it.`
+- `Player 0 revealed Wound (core-wound) (cost 5) — no branch matched (left on top).`
+
+- **New pure `hero/revealLog.ts`:** `describeRevealPredicate` (`always` / `cost is 0` / `cost
+  is odd` / `cost ≤ T` / `cost ≥ T`) + `describeRevealActions` (`drew it` / `KO'd it` / `gained
+  attack` / `queued a choice`) + `formatRevealOutcomeLine` (reuses `formatCardRef`, WP-324). No
+  `boardgame.io` import, no `G` reach-through.
+- **Implementation:** `applyRevealRules` accumulates the first matched predicate + every
+  matched rule's actions and emits ONE line after the loop (a `continue: true` chain is
+  summarized in one line). The early `return` became `break` so the line still emits — the
+  reveal *behavior* is byte-identical (same rules, order, stop condition; peek-offset lives in
+  the caller). `Array.isArray(G.messages)` guarded.
+- **Message text only** — no reveal-behavior/state/RNG change; `G.messages` hash-excluded
+  (D-24081), replay-safe; the reveal-keyword freeze (D-21902/D-24024) untouched.
+- **Drift:** ZERO existing tests (no reveal test asserted `G.messages`). Two integration
+  assertions were **added** to the WP-253 reveal-collapse suite (matched + no-branch-matched);
+  the `sentinel-core-doom-2p` fixture was UNCHANGED (starter-only trace, no reveals).
+- **Gates:** engine suite **1777/1777** (6 new `revealLog` tests + 2 integration assertions);
+  `pnpm -r build` 0. Mindmap WP-325 node flipped 📝→✅.
+- **Deferred (per D-24111):** WP-B.2 (per-action realized results + move/sequence no-ops →
+  roadmap `📦`); WP-B.3 (structured `outcome`-field contract + colour-coding → roadmap `📝`,
+  own design review before packets).
+- **User-Visible Surface = play.legendary-arena.com.** D-24026 live-verify **operator-pending
+  on deploy**: a "What If…?" reveal shows the revealed card + cost + pass/fail + action.
+
 ### WP-324 / EC-354 Executed — Game Log Name Enrichment: Remaining Log Sites (D-24110 Active) (2026-07-07)
 
 Finishes the readable-log pass WP-323 began, reusing the `logDisplay` helpers. The remaining
