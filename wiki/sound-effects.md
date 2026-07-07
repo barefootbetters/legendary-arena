@@ -318,11 +318,12 @@ starting points to audition, not final picks.
 
 ### Audio previews
 
-A few of the CC0 candidate clips, hosted on R2 and embedded with the
+One CC0 candidate clip per event, hosted on R2 and embedded with the
 `audio` shortcode — native `<audio>` controls, no JavaScript, so the
 wiki's JS-free invariant holds. Representative picks, not final
 selections; the shortcode is documented in
-[Ewiki Authoring](ewiki-authoring.md).
+[Ewiki Authoring](ewiki-authoring.md). Grouped by the four signal
+surfaces above.
 
 **Master Strike** — dramatic boss stinger:
 
@@ -344,6 +345,18 @@ selections; the shortcode is documented in
 
 {{< audio src="https://images.legendary-arena.com/audio/sound-effects/mastermind-defeated-win.mp3" caption="OpenGameArt CC0 — Victory Theme for RPG" >}}
 
+**Wound gained** — a dull, painful thud:
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/wound-gained.mp3" caption="OpenGameArt 80 CC0 RPG SFX — creature hurt" >}}
+
+**Hero KO'd** — a sharp negative cue:
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/hero-ko.mp3" caption="Kenney Interface Sounds (CC0) — error" >}}
+
+**Bystander captured** — an ominous grab:
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/bystander-captured.mp3" caption="OpenGameArt 80 CC0 RPG SFX — chains" >}}
+
 **Bystander rescued** — bright reward chime:
 
 {{< audio src="https://images.legendary-arena.com/audio/sound-effects/bystander-rescued.mp3" caption="OpenGameArt 80 CC0 RPG SFX — coins" >}}
@@ -351,6 +364,34 @@ selections; the shortcode is documented in
 **Play a card** — card place:
 
 {{< audio src="https://images.legendary-arena.com/audio/sound-effects/play-card.mp3" caption="Kenney Casino Audio (CC0) — card place" >}}
+
+**Recruit a hero** — positive purchase chime:
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/recruit-hero.mp3" caption="Kenney Interface Sounds (CC0) — confirmation" >}}
+
+**Attack a villain** — a sword swing:
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/attack-villain.mp3" caption="OpenGameArt 80 CC0 RPG SFX — blade" >}}
+
+**Draw cards** — card draw:
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/draw-cards.mp3" caption="Kenney Casino Audio (CC0) — card draw" >}}
+
+**Dodge** — a quick card flick:
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/dodge.mp3" caption="Kenney Casino Audio (CC0) — card flick" >}}
+
+**End turn** — a soft confirm:
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/end-turn.mp3" caption="Kenney Interface Sounds (CC0) — soft confirm" >}}
+
+**Your turn begins** — a gentle attention cue:
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/turn-start.mp3" caption="Kenney Interface Sounds (CC0) — attention tone" >}}
+
+**Heroes lose** — a somber endgame cue:
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/heroes-lose.mp3" caption="OpenGameArt CC0 — Epic Endgame Cinematic" >}}
 
 ### Where an audio layer would live
 
