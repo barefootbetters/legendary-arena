@@ -572,7 +572,8 @@ export default defineComponent({
              Read-only projection — the engine owns log authorship (D-20002). -->
         <section class="play-desktop__log" data-testid="play-desktop-log">
           <h2 class="play-desktop__log-heading">Game Log</h2>
-          <GameLogPanel :log="snapshot.log" />
+          <!-- why: WP-320 — newest-first feed in the live HUD (latest entry on top). -->
+          <GameLogPanel :log="snapshot.log" :newest-first="true" />
         </section>
         <!-- why: D-12908 — pre-plan affordance slot reserved for WP-059;
              this page declares the slot only. WP-059 owns the integration

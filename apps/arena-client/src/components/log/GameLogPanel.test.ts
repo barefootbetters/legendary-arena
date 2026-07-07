@@ -29,6 +29,33 @@ test('GameLogPanel renders one <li> per entry in source order with stable data-i
   assert.equal(lines[2]?.attributes('data-index'), '2');
 });
 
+test('GameLogPanel with newestFirst reverses display order but keeps the original data-index (WP-320)', () => {
+  const log = ['first entry', 'second entry', 'third entry'];
+
+  const wrapper = mount(GameLogPanel, { props: { log, newestFirst: true } });
+
+  const lines = wrapper.findAll('[data-testid="game-log-line"]');
+  assert.equal(lines.length, 3);
+  // why: newest (last-appended) entry on top, older pushed down.
+  assert.equal(lines[0]?.text(), 'third entry');
+  assert.equal(lines[1]?.text(), 'second entry');
+  assert.equal(lines[2]?.text(), 'first entry');
+  // why: data-index stays the ORIGINAL append-order index (stable :key across
+  // direction), so appends move rows rather than rebuild the list.
+  assert.equal(lines[0]?.attributes('data-index'), '2');
+  assert.equal(lines[1]?.attributes('data-index'), '1');
+  assert.equal(lines[2]?.attributes('data-index'), '0');
+});
+
+test('GameLogPanel does not mutate the supplied log array under newestFirst (WP-320)', () => {
+  const log = ['alpha', 'bravo', 'charlie'];
+  const before = JSON.stringify(log);
+
+  mount(GameLogPanel, { props: { log, newestFirst: true } });
+
+  assert.strictEqual(JSON.stringify(log), before);
+});
+
 test('GameLogPanel list element carries aria-live="polite"', () => {
   const wrapper = mount(GameLogPanel, {
     props: { log: ['only entry'] },

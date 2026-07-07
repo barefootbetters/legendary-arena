@@ -178,6 +178,16 @@ describe('PlayDesktop (WP-129)', () => {
       lines.some((line) => line.includes('gained +2 attack')),
       'the WP-317 Empowered grant line is visible in the live HUD log',
     );
+    // why: WP-320 — the live HUD renders newest-first, so the last-appended
+    // engine log line is on top and the first-appended is at the bottom.
+    assert.ok(
+      lines[0]?.includes('gained +2 attack'),
+      'the newest entry is on top (newest-first HUD feed)',
+    );
+    assert.ok(
+      lines[lines.length - 1]?.includes('fought "henchman-sentinel-00"'),
+      'the oldest entry is at the bottom',
+    );
   });
 
   test('WP-243: with both pending choices for the viewer, the KO prompt renders ABOVE the hero prompt, both ABOVE TurnActionBar', () => {
