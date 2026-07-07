@@ -406,6 +406,12 @@ mindmap
         ["WP-318 ✅ Game log panel in the live play HUD — mounts GameLogPanel in PlayDesktop/PlayMobile fed snapshot.log (was replay-inspector-only); surfaces the WP-316/317 narration during play; EC-348; D-24104"]
         ["WP-319 ✅ Per-target hero naming in the fight/ambush center-screen overlay — enriches the fightResolved/ambushResolved narrative (overlay renders it verbatim, no client change); finalStateHash byte-unchanged; EC-349; D-24105"]
         ["WP-321 ✅ Compact, auto-scrolling chronological game log in the live HUD — ~5-6 line window + polite auto-scroll-to-bottom; replaces the abandoned WP-320 newest-first (D-24106 void); EC-351; D-24107"]
+        ["WP-322 ✅ Copy, Save, and full-screen Expand for the live HUD game log — Copy→clipboard / Save→game-log.txt / Expand→Teleport overlay; mirrors PileBrowseModal + DiagnosticExportButton; pure client render; EC-352; D-24108"]
+        ["WP-323 ✅ Game log name enrichment: card plays + mastermind tactics — played {Name} ({ext-id}) — {printed effect}; fought {Mastermind} and defeated the tactic {Tactic}; new pure logDisplay.ts; EC-353; D-24109"]
+        ["WP-324 ✅ Game log name enrichment: remaining log sites — fights/recruits/dodges/escapes/captures/claims/grants → {Name} ({ext-id}) via formatCardRef; EC-354; D-24110"]
+        ["WP-325 📝 Reveal / What If…? test-result logging — revealed {card} (cost N) — {predicate} matched: {action}; the last silent effect path; new pure hero/revealLog.ts; EC-355; D-24111"]
+        ["📦 Effect-outcome fill-in (WP-B.2) — reveal-action realized results + move-card/sequence no-ops; deferred per D-24111"]
+        ["📝 Structured log-outcome contract + colour-coding (WP-B.3) — G.messages string array → records with a machine-readable outcome field (green/red/yellow); own design review before packets; deferred per D-24111"]
 
       Next Horizons
         ["📦 Core set keyword & ability coverage — get the core set fully playable first, then add sets incrementally (in progress via the effect-authoring grind — e.g. WP-310/316/317)"]
@@ -487,13 +493,13 @@ mindmap
 | Cross-App Infrastructure | 1/1 | — |
 | Multiplayer Play & Match Durability (2026-07) | 6/6 | — |
 | Hero/Villain Effects & Diagnostics (2026-07) | 5/5 | — |
-| Live-Play HUD & Pending-Choice UX (2026-07) | 4/4 | — |
+| Live-Play HUD & Pending-Choice UX (2026-07) | 7/8 | 1 open |
 | Next Horizons | 0/3 | 3 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **314/315 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
+| **Total** | **317/319 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 1 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 1):** WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 2):** WP-042.1 ⏸ blocked; WP-325 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
