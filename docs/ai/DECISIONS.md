@@ -26656,4 +26656,53 @@ operator-pending on deploy.
 
 **Packet:** WP-322 + EC-352. **Drafted:** 2026-07-07. **Executed:** 2026-07-07.
 
+---
+
+### D-24109 — Game Log Name Enrichment: Card Plays + Mastermind Tactics
+
+**Status:** Drafted 2026-07-07; not yet landed (flips to Active on WP-323 execution).
+
+**User-Visible Surface:** play.legendary-arena.com (the Game Log panel + WP-322 export).
+
+**Context.** A real match log (Magneto, 2026-07-07) surfaced the two most unreadable
+lines: `played wtif/star-lord-tchalla/interstellar-adventures#0` (raw ext-id, no
+effect) and four identical `fought mastermind "core/magneto" and defeated a tactic`.
+The engine already carries every name and printed effect needed (`G.cardDisplayData`,
+populated at setup, keyed by `CardExtId`, with `name` + optional `abilityText` per
+WP-315), so this is a message-authoring change, not new plumbing.
+
+**Decision.** Enrich three engine log lines with display names, and add a new pure
+module `packages/game-engine/src/log/logDisplay.ts`:
+
+- `resolveCardName(cardDisplayData, extId)` = `cardDisplayData?.[extId]?.name ?? extId`
+  (the `fightVillain.ts:198` defensive pattern — never throws, never emits `undefined`).
+- `abilityTextToPlainText(abilityText)` — converts the card-ability markup tokens
+  `[icon:X]` / `[keyword:X]` / `[hc:X]` (and any `[type:value]`) to readable words and
+  **collapses all whitespace/newlines to a single space** so a multi-line ability
+  cannot split the one-entry-per-line log; empty/undefined → `''`.
+- `formatPlayedCardLabel(cardDisplayData, extId)` = `{Name} ({extId})`, plus
+  ` — {plain effect}` when `abilityText` is present (starters have none → no suffix).
+
+Applied at the card-play line (`coreMoves.impl.ts` ~155, `playFromUndercover.ts` ~121)
+and the mastermind fight (`fightMastermind.ts` ~88 — the mastermind name via
+`G.mastermind.baseCardId` → `cardDisplayData`, mirroring the ~148 notableEvent
+resolution; the tactic via the `defeatedTacticId` captured at ~83).
+
+**Scope discipline.** This WP builds the reusable helpers and enriches only the two
+cited cases. The remaining ~37 `G.messages.push` sites (recruit, fight-villain,
+villain-deck reveals/captures, empower grants) are **WP-324**, reusing these helpers.
+Effect **outcome** logging — whether an effect actually fired, the "What If…?" test
+result, or the realized grant (the silent-hero-effect gap, WP-294/295) — is a
+separate **WP-B**; this WP prints the *printed* effect only.
+
+**Invariants preserved.** Message text only — no change to `G` state, move logic,
+RNG, turn flow, or `G.cardDisplayData` shape. `G.messages` is hash-excluded (D-24081)
+and not part of replay determinism, so no replay outcome changes (D-20002 log
+authorship unchanged); the replay **message oracle** is re-pinned by regeneration
+(`scripts/record-game-fixture.mjs`), never hand-edited. `logDisplay.ts` imports no
+`boardgame.io` and reaches into no `G` (args in). `D-24026` live-verify
+operator-pending on deploy.
+
+**Packet:** WP-323 + EC-353. **Drafted:** 2026-07-07. **Executed:** —
+
 Protect this file.
