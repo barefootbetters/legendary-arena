@@ -22,6 +22,7 @@ import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
+import { formatPlayedCardLabel } from '../log/logDisplay.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -146,13 +147,15 @@ export function applyCardPlay(
   G.turnEconomy = addResources(G.turnEconomy, heroAttack, heroRecruit);
 
   // why: WP-295 / D-24082 — surface every hero card play in the game log
-  // (G.messages -> UIState.log). playCard was previously silent, so a played
-  // hero card and any effect it fired left no observable trace for diagnostics
-  // or the player's log panel. Ext-id form matches the existing
-  // "recruited <ext-id>" log lines. Emitted in the shared core so
-  // playFromUndercover is covered identically. Cheap now that WP-294 excluded
-  // G.messages from the finalStateHash oracle (D-24081).
-  G.messages.push(`Player ${playerID} played ${cardId}.`);
+  // (G.messages -> UIState.log); playCard was previously silent. WP-323 enriches
+  // the raw ext-id to "{Name} ({ext-id}) — {printed effect}" via
+  // formatPlayedCardLabel, resolving the name/effect from G.cardDisplayData
+  // (already in scope). Emitted in the shared core so playFromUndercover is
+  // covered identically. Cheap: WP-294 excluded G.messages from the
+  // finalStateHash oracle (D-24081).
+  G.messages.push(
+    `Player ${playerID} played ${formatPlayedCardLabel(G.cardDisplayData, cardId)}.`,
+  );
 
   // why: hero ability effects fire immediately after play, before any
   // fight/recruit actions. This preserves "play -> generate resources -> act."

@@ -24,6 +24,7 @@ import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
+import { resolveCardName } from '../log/logDisplay.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -85,8 +86,18 @@ export function fightMastermind(
   G.playerZones[ctx.currentPlayer]!.victory.push(defeatedTacticId);
   G.turnEconomy = spendAttack(G.turnEconomy, requiredFightCost);
 
+  // why: WP-323 — name the mastermind (G.mastermind.id is the qualified
+  // "core/magneto", not a display name; baseCardId keys cardDisplayData — the
+  // same resolution the vanquish notableEvent uses below) and the specific tactic
+  // just defeated (defeatedTacticId, captured above before defeatTopTactic moved
+  // it from the deck).
+  const mastermindDisplayName = resolveCardName(
+    G.cardDisplayData,
+    G.mastermind.baseCardId,
+  );
+  const defeatedTacticName = resolveCardName(G.cardDisplayData, defeatedTacticId);
   G.messages.push(
-    `Player ${ctx.currentPlayer} fought mastermind "${G.mastermind.id}" and defeated a tactic.`,
+    `Player ${ctx.currentPlayer} fought ${mastermindDisplayName} and defeated the tactic "${defeatedTacticName}".`,
   );
 
   // why: EVERY tactic defeat rescues all bystanders the Mastermind is
@@ -133,8 +144,9 @@ export function fightMastermind(
     // why: setting MASTERMIND_DEFEATED counter to 1 triggers the endgame
     // evaluator from WP-010 — use constant, never string literal
     G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED] = 1;
+    // why: WP-323 — reuse the mastermind display name resolved above.
     G.messages.push(
-      `All tactics defeated — mastermind "${G.mastermind.id}" is vanquished!`,
+      `All tactics defeated — mastermind ${mastermindDisplayName} is vanquished!`,
     );
 
     // why: D-20008 parity with fightVillain's fightResolved event — surface
