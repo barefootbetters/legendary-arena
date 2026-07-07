@@ -7,6 +7,32 @@
 
 ## Current State
 
+### WP-324 / EC-354 Executed — Game Log Name Enrichment: Remaining Log Sites (D-24110 Active) (2026-07-07)
+
+Finishes the readable-log pass WP-323 began, reusing the `logDisplay` helpers. The remaining
+player-facing `G.messages.push` lines that embedded a raw `CardExtId` now read `{Name} ({ext-id})`:
+
+- `fightVillain` (fought / rescued-from villain), `recruitHero` (recruited card), `dodgeCard`
+  (dodged card), `villainDeck.reveal` (villain escape ×2 + bystander/captor capture — dropped the
+  redundant leading "Bystander " literal, since `formatCardRef` already names it),
+  `resolveVictoryPileCardPick` (Ebony-Blade claim), `heroEffects.execute` (synergy-gate "did not
+  activate"), `effectPrimitive.interpret` (the composable gain-resource grant).
+- Added `formatCardRef(cardDisplayData, extId)` = `{Name} ({extId})` to `logDisplay.ts`; refactored
+  `formatPlayedCardLabel` to reuse it (output unchanged, WP-323 tests still green).
+- **`effectPrimitive` did NOT self-demote to WP-325** — `G` (hence `G.cardDisplayData`) was already
+  in scope in `pushGainResourceLog`, so it was a clean one-line thread-through.
+- **Message text only** — no engine state/logic/RNG change, no `cardDisplayData` shape change;
+  `G.messages` hash-excluded (D-24081).
+- **Drift:** 10 byte-locked unit assertions across 4 test files (effectPrimitive grant ×4,
+  recruitHero ×4, dodgeCard ×1, villainDeck escape ×1), re-pinned to the `{extId} ({extId})`
+  fallback (those tests set no `cardDisplayData`). The `sentinel-core-doom-2p` fixture was
+  **UNCHANGED** — its recorded trace plays only starters (no recruit/fight/escape lines).
+- **Gates:** engine suite **1771/1771** (3 new `formatCardRef` tests); `pnpm -r build` 0.
+- **Deferred:** WP-325 (conditional: `sendUndercover` instanceId naming, if wanted); **WP-B** =
+  effect **outcome** logging (did the effect fire / What-If result / realized grant).
+- **User-Visible Surface = play.legendary-arena.com.** D-24026 live-verify **operator-pending on
+  deploy**: a live match's Game Log shows named recruits / fights / escapes / captures / claims.
+
 ### WP-323 / EC-353 Executed — Game Log Name Enrichment: Card Plays + Mastermind Tactics (D-24109 Active) (2026-07-07)
 
 Enriches the two most jarring log lines with display names resolved from `G.cardDisplayData`

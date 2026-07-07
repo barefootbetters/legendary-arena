@@ -26709,7 +26709,7 @@ operator-pending on deploy.
 
 ### D-24110 — Game Log Name Enrichment: Remaining Log Sites
 
-**Status:** Drafted 2026-07-07; not yet landed (flips to Active on WP-324 execution).
+**Status:** Active (post-execution) 2026-07-07. `D-24026` live-verify operator-pending on deploy.
 
 **User-Visible Surface:** play.legendary-arena.com (the Game Log panel + WP-322 export).
 
@@ -26744,6 +26744,9 @@ message oracle is re-pinned by regeneration (`record-game-fixture.mjs`), never
 hand-edited. `logDisplay.ts` stays pure (no `boardgame.io`, args in). `D-24026`
 live-verify operator-pending on deploy.
 
-**Packet:** WP-324 + EC-354. **Drafted:** 2026-07-07. **Executed:** —
+**Packet:** WP-324 + EC-354. **Drafted:** 2026-07-07. **Executed:** 2026-07-07. The
+`effectPrimitive` grant did NOT self-demote (`G` was already in scope — a clean
+thread-through). The `sentinel-core-doom-2p` fixture was UNCHANGED (its trace plays
+only starters); drift was 10 byte-locked unit assertions across 4 test files.
 
 Protect this file.
