@@ -26511,4 +26511,33 @@ grant).
 
 **Packet:** WP-317 + EC-347. **Drafted:** 2026-07-06. **Executed:** —
 
+---
+
+### D-24104 — Game Log Panel in the Live Play HUD
+
+**Status:** **Active** — landed 2026-07-06 by WP-318 / EC-348 (lightweight
+single-session; impl + SPEC close). `GameLogPanel.vue` is now mounted in the live
+play pages (`PlayDesktop.vue` inside the `boardVisible` block, outside the
+`viewer !== null` gate so spectators see it; `PlayMobile.vue` at the bottom of
+`<main>`), fed `:log="snapshot.log"`.
+
+**Context.** WP-316 shipped the villain-deck effect narration (Fight / Ambush /
+Escape, per-target) to `G.messages` → `UIState.log`, and WP-317 added the
+composable grant lines — but the arena-client rendered `UIState.log` only in
+`ReplayInspector.vue` and `PrePlanNotification.vue`, never in the live HUD. So the
+narration had no on-screen home during a match; WP-316's D-24026 "live-verify"
+had been recorded from a diagnostic's `uiStateSnapshot.log` (engine + projection),
+not from the rendered client UX — the gap the operator caught on 2026-07-07 (match
+`VvNJEjQUPJ5`).
+
+**Decision.** Mount the existing, tested `GameLogPanel` in both play pages,
+read-only over `snapshot.log` (the engine owns log authorship, D-20002). Pure
+client render — no `UIState`/engine/projection change, no `finalStateHash` impact
+(`G.messages` is hash-excluded, D-24081). Naming the specific hero in the
+transient center-screen `NotableEventOverlay` is the separate WP-319 (it enriches
+the hashed `notableEvents`). `D-24026` live-verify operator-pending on deploy (a
+live match shows the Game Log with the effect + grant lines).
+
+**Packet:** WP-318 + EC-348. **Drafted:** 2026-07-06. **Executed:** 2026-07-06.
+
 Protect this file.

@@ -113,6 +113,28 @@ describe('PlayMobile (WP-129)', () => {
     assert.equal(wrapper.find('[data-testid="play-ko-pile"]').exists(), true);
     assert.equal(wrapper.find('[data-testid="play-economy-bar"]').exists(), true);
     assert.equal(wrapper.find('[data-testid="play-hand-row"]').exists(), true);
+    // why: WP-318 — the persistent game log is mounted in the live mobile HUD.
+    assert.equal(wrapper.find('[data-testid="play-mobile-log"]').exists(), true);
+    assert.equal(wrapper.find('[data-testid="game-log-panel"]').exists(), true);
+  });
+
+  test('WP-318: the live mobile HUD game log renders the engine log lines verbatim', () => {
+    setActivePinia(createPinia());
+    const frame = snapshot();
+    frame.log = [
+      'Ambush effect: the highest-cost HQ hero was captured (Amulet of Avalon).',
+    ];
+    const store = useUiStateStore();
+    store.setSnapshot(frame);
+    const wrapper = mount(PlayMobile, { props: { submitMove: noopSubmitMove } });
+
+    const lines = wrapper
+      .findAll('[data-testid="play-mobile-log"] [data-testid="game-log-line"]')
+      .map((node) => node.text());
+    assert.ok(
+      lines.some((line) => line.includes('Ambush effect: the highest-cost HQ hero was captured (Amulet of Avalon)')),
+      'the Ambush effect narration is visible in the live mobile HUD log',
+    );
   });
 
   test('WP-243: with both pending choices for the viewer, the KO prompt renders ABOVE the hero prompt, both ABOVE TurnActionBar', () => {
