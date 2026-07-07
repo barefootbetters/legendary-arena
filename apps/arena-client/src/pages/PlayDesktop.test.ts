@@ -149,6 +149,35 @@ describe('PlayDesktop (WP-129)', () => {
     assert.equal(wrapper.find('[data-testid="play-your-deck-discard"]').exists(), true);
     assert.equal(wrapper.find('[data-testid="play-your-victory-pile"]').exists(), true);
     assert.equal(wrapper.find('[data-testid="play-turn-action-bar"]').exists(), true);
+    // why: WP-318 — the persistent game log is mounted in the live HUD.
+    assert.equal(wrapper.find('[data-testid="play-desktop-log"]').exists(), true);
+    assert.equal(wrapper.find('[data-testid="game-log-panel"]').exists(), true);
+  });
+
+  test('WP-318: the live HUD game log renders the engine log lines verbatim', () => {
+    setActivePinia(createPinia());
+    const frame = snapshot();
+    frame.log = [
+      'Player 0 fought "henchman-sentinel-00" at city space 1.',
+      'Fight effect: the active player KO’d Spider-Man from their discard.',
+      "Player 0's antm/black-knight/amulet-of-avalon#1 gained +2 attack.",
+    ];
+    const store = useUiStateStore();
+    store.setSnapshot(frame);
+    const wrapper = mount(PlayDesktop, { props: { submitMove: noopSubmitMove } });
+
+    const lines = wrapper
+      .findAll('[data-testid="play-desktop-log"] [data-testid="game-log-line"]')
+      .map((node) => node.text());
+    assert.equal(lines.length, 3, 'every engine log line renders');
+    assert.ok(
+      lines.some((line) => line.includes('Fight effect: the active player KO’d Spider-Man')),
+      'the Fight effect narration is visible in the live HUD log',
+    );
+    assert.ok(
+      lines.some((line) => line.includes('gained +2 attack')),
+      'the WP-317 Empowered grant line is visible in the live HUD log',
+    );
   });
 
   test('WP-243: with both pending choices for the viewer, the KO prompt renders ABOVE the hero prompt, both ABOVE TurnActionBar', () => {

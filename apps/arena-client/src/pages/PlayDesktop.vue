@@ -35,6 +35,7 @@ import YourVictoryPile from '../components/play/YourVictoryPile.vue';
 import TurnActionBar from '../components/play/TurnActionBar.vue';
 import LobbyControls from '../components/play/LobbyControls.vue';
 import NotableEventOverlay from '../components/play/NotableEventOverlay.vue';
+import GameLogPanel from '../components/log/GameLogPanel.vue';
 import PileBrowseModal from '../components/play/PileBrowseModal.vue';
 import PendingHeroChoicePrompt from '../components/play/PendingHeroChoicePrompt.vue';
 import PendingKoHeroChoicePrompt from '../components/play/PendingKoHeroChoicePrompt.vue';
@@ -87,6 +88,7 @@ export default defineComponent({
     TurnActionBar,
     LobbyControls,
     NotableEventOverlay,
+    GameLogPanel,
     PileBrowseModal,
     PendingHeroChoicePrompt,
     PendingKoHeroChoicePrompt,
@@ -561,6 +563,17 @@ export default defineComponent({
             :submit-move="submitMove"
           />
         </template>
+        <!-- why: WP-318 — the persistent game log (G.messages -> UIState.log)
+             rendered in the live HUD. Fight/Ambush/Escape effect lines (naming
+             the hero, WP-316), Empowered/Berserk grants (WP-317), and every
+             other engine log line were previously visible only in the replay
+             inspector; mounting GameLogPanel here surfaces them during play.
+             Outside the `viewer !== null` block so a spectator sees the log too.
+             Read-only projection — the engine owns log authorship (D-20002). -->
+        <section class="play-desktop__log" data-testid="play-desktop-log">
+          <h2 class="play-desktop__log-heading">Game Log</h2>
+          <GameLogPanel :log="snapshot.log" />
+        </section>
         <!-- why: D-12908 — pre-plan affordance slot reserved for WP-059;
              this page declares the slot only. WP-059 owns the integration
              shape. -->
@@ -598,6 +611,18 @@ export default defineComponent({
   gap: 0.5rem;
   align-items: flex-start;
   flex-wrap: wrap;
+}
+
+.play-desktop__log {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.play-desktop__log-heading {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
 .play-desktop__opponents {
