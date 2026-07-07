@@ -7,6 +7,33 @@
 
 ## Current State
 
+### WP-322 / EC-352 Executed — Copy, Save, and Full-Screen Expand for the Live HUD Game Log (D-24108 Active) (2026-07-07)
+
+Extends the WP-321 compact HUD log with three viewer affordances, entirely client-side over the
+read-only `UIState.log` projection:
+
+- **Copy** — the whole transcript to the clipboard via a best-effort, guarded
+  `navigator.clipboard?.writeText` (the `DiagnosticExportButton` idiom; a missing/rejecting clipboard
+  is swallowed, never thrown into the UI).
+- **Save** — the whole transcript as `game-log.txt` via a transient object-URL `<a download>` anchor
+  (revoked after click). A **human-readable log transcript**, deliberately distinct from the JSON
+  diagnostics export (`DiagnosticExportButton` / WP-228 / D-22801 — not reused or modified).
+- **Expand** — a full-screen overlay of the same chronological log via `<Teleport v-if="isExpanded"
+  to="body">` (`role="dialog"`, `aria-modal`), mirroring `PileBrowseModal` (EC-189): closes on a
+  Collapse button, backdrop click, or `Escape`; the ESC listener attaches only while expanded and is
+  cleaned up on collapse and `onBeforeUnmount`. The overlay scrolls to the newest entry when opened.
+- **Testability:** the export text is a pure `buildGameLogText(log)` helper (`gameLogExport.ts`),
+  unit-tested at the boundaries — jsdom has no clipboard/download/scroll layout, so those side effects
+  are deferred to D-24026 live-verify.
+- Pure client render — chronological order retained (D-20002), no engine/`UIState`/projection change,
+  no `finalStateHash` impact (`G.messages` hash-excluded, D-24081); the WP-321 compact viewport +
+  polite auto-scroll are retained unchanged. No new npm dependency.
+- **Gates:** `vue-tsc` clean; arena-client `test` **734/734** (11 new); `vite build` 0. 4-file client
+  allowlist held (`GameLogPanel.vue` + `GameLogPanel.test.ts` + `gameLogExport.ts`/`.test.ts`).
+- **User-Visible Surface = play.legendary-arena.com.** D-24026 live-verify **operator-pending on
+  deploy**: Copy puts the transcript on the clipboard, Save downloads `game-log.txt`, and Expand opens
+  a full-screen scrollable chronological log that closes back to the compact window.
+
 ### WP-321 / EC-351 Executed — Compact, Auto-Scrolling Chronological Game Log in the Live HUD (D-24107 Active) (2026-07-07)
 
 Replaces the **abandoned WP-320** (newest-first). WP-320 reversed the HUD log so the latest line
