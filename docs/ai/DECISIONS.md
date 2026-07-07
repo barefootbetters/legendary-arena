@@ -26753,7 +26753,7 @@ only starters); drift was 10 byte-locked unit assertions across 4 test files.
 
 ### D-24111 — Reveal / "What If…?" Test-Result Logging in the Game Log
 
-**Status:** Drafted 2026-07-07; not yet landed (flips to Active on WP-325 execution).
+**Status:** Active (post-execution) 2026-07-07. `D-24026` live-verify operator-pending on deploy.
 
 **User-Visible Surface:** play.legendary-arena.com (the Game Log panel + WP-322 export).
 
@@ -26796,6 +26796,11 @@ operator-pending on deploy.
   `05-ROADMAP-MINDMAP.md`; graduates to a design doc (its own, or a section appended to
   `DESIGN-HOLLOW-EFFECT-DETECTION.md`) when scoped. Deliberately **not** authored speculatively.
 
-**Packet:** WP-325 + EC-355. **Drafted:** 2026-07-07. **Executed:** —
+**Packet:** WP-325 + EC-355. **Drafted:** 2026-07-07. **Executed:** 2026-07-07. Implemented
+by accumulating the matched predicate/actions in `applyRevealRules` and emitting one line
+after the loop (the early `return` became `break`; reveal behavior byte-identical). The
+`sentinel-core-doom-2p` fixture was UNCHANGED (starter-only trace, no reveals); drift was
+**zero** existing tests (no reveal test asserted `G.messages`) — two integration assertions
+were **added** to the WP-253 reveal-collapse suite instead.
 
 Protect this file.

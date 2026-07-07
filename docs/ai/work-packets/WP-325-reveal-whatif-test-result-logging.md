@@ -102,8 +102,9 @@ gap and directly answers a live field report.
 | `packages/game-engine/src/hero/revealLog.ts` | **New** — pure `describeRevealPredicate` + `formatRevealOutcomeLine` |
 | `packages/game-engine/src/hero/revealLog.test.ts` | **New** — predicate/outcome boundary tests |
 | `packages/game-engine/src/hero/heroEffects.execute.ts` | **Modified** — emit the reveal-outcome line in `applyRevealRules` |
-| reveal unit tests in `packages/game-engine/src/hero/heroEffects.execute.test.ts` | **Modified** — re-pin `G.messages` reveal assertions (scaffold-confirmed) |
-| replay fixture(s) with a `messages` oracle | **Modified only if the scaffold shows a reveal in the recorded trace** (the `sentinel-core-doom-2p` trace plays only starters — likely unchanged; regenerate if it moves) |
+| `packages/game-engine/src/hero/heroEffects.execute.test.ts` | **Modified** — **added** two integration assertions to the WP-253 reveal-collapse suite (matched + no-branch-matched); no existing reveal test asserted `G.messages`, so nothing needed re-pinning |
+| ~~replay fixture~~ | **Unchanged** — the `sentinel-core-doom-2p` trace plays only starters (no reveals), so its oracle did not move; no re-pin |
+| `docs/05-ROADMAP-MINDMAP.md` | **Modified** (inline amendment) — flip the WP-325 node `📝 → ✅` + `roadmap-counts --write` |
 | `docs/ai/DECISIONS.md` | **Modified** — D-24111 |
 | `docs/ai/STATUS.md` | **Modified** — record the change |
 | `docs/ai/work-packets/WORK_INDEX.md` | **Modified** — WP-325 row |
