@@ -21,7 +21,7 @@ import {
   composeEffectResultLogLine,
 } from './notableEvents.compose.js';
 
-describe('composeFightNarrative', () => {
+describe('composeFightNarrative (WP-319 — names the effect targets)', () => {
   it('emits the bare-fight sentence when no effects applied and no bystanders rescued', () => {
     const narrative = composeFightNarrative('Magneto', 0, []);
     assert.equal(narrative, 'Fought "Magneto".');
@@ -32,34 +32,41 @@ describe('composeFightNarrative', () => {
     assert.equal(narrative, 'Fought "Magneto" and rescued 2 bystander(s).');
   });
 
-  it('includes the effect clause on a single applied effect', () => {
-    const narrative = composeFightNarrative('Toad', 0, ['captureBystander']);
-    assert.equal(
-      narrative,
-      'Fought "Toad"; Fight effect: a bystander was captured.',
-    );
+  it('renders a no-target effect with its generic label (unchanged from WP-316)', () => {
+    const narrative = composeFightNarrative('Toad', 0, [
+      { keyword: 'captureBystander', targetNames: [] },
+    ]);
+    assert.equal(narrative, 'Fought "Toad"; Fight effect: a bystander was captured.');
   });
 
-  it('joins multiple applied effects with comma + final "and"', () => {
-    const narrative = composeFightNarrative('Pyro', 1, [
-      'captureBystander',
-      'gainWoundEachPlayer',
+  it('NAMES the KO’d hero for a target-bearing Fight effect', () => {
+    const narrative = composeFightNarrative('Sentinel', 1, [
+      { keyword: 'koHeroCurrentPlayer', targetNames: ['Spider-Man'] },
     ]);
     assert.equal(
       narrative,
-      'Fought "Pyro" and rescued 1 bystander(s); Fight effect: a bystander was captured and every player gained a wound.',
+      'Fought "Sentinel" and rescued 1 bystander(s); Fight effect: the active player KO’d a hero (Spider-Man).',
     );
   });
 
-  it('joins three effects with comma separators and Oxford-style final "and"', () => {
-    const narrative = composeFightNarrative('Sabretooth', 0, [
-      'gainWoundCurrentPlayer',
-      'captureBystander',
-      'koHeroCurrentPlayer',
+  it('joins multiple effects with "; " and names each target', () => {
+    const narrative = composeFightNarrative('Pyro', 0, [
+      { keyword: 'koHeroCurrentPlayer', targetNames: ['Iron Man'] },
+      { keyword: 'gainWoundEachPlayer', targetNames: [] },
     ]);
     assert.equal(
       narrative,
-      'Fought "Sabretooth"; Fight effect: the active player gained a wound, a bystander was captured, and the active player KO’d a hero.',
+      'Fought "Pyro"; Fight effect: the active player KO’d a hero (Iron Man); every player gained a wound.',
+    );
+  });
+
+  it('renders the pending phrase for a parked interactive KO', () => {
+    const narrative = composeFightNarrative('Sentinel', 0, [
+      { keyword: 'koHeroCurrentPlayer', targetNames: [], pending: true },
+    ]);
+    assert.equal(
+      narrative,
+      'Fought "Sentinel"; Fight effect: the active player must KO a hero.',
     );
   });
 
@@ -76,25 +83,26 @@ describe('composeFightNarrative', () => {
   });
 });
 
-describe('composeAmbushNarrative', () => {
+describe('composeAmbushNarrative (WP-319 — names the effect targets)', () => {
   it('emits the no-effect sentence when the executor returned an empty array', () => {
     const narrative = composeAmbushNarrative('Magneto', []);
     assert.equal(narrative, '"Magneto" entered the city with no Ambush effect.');
   });
 
-  it('emits the single-effect sentence when one Ambush effect applied', () => {
-    const narrative = composeAmbushNarrative('Toad', ['gainWoundEachPlayer']);
+  it('renders a no-target effect with its generic label', () => {
+    const narrative = composeAmbushNarrative('Toad', [
+      { keyword: 'gainWoundEachPlayer', targetNames: [] },
+    ]);
     assert.equal(narrative, '"Toad" ambushed: every player gained a wound.');
   });
 
-  it('joins multiple Ambush effects with comma + final "and"', () => {
-    const narrative = composeAmbushNarrative('Pyro', [
-      'gainWoundCurrentPlayer',
-      'captureBystander',
+  it('NAMES the captured HQ hero for a target-bearing Ambush effect', () => {
+    const narrative = composeAmbushNarrative('Skrull Queen Veranke', [
+      { keyword: 'captureHqHeroHighestCost', targetNames: ['Amulet of Avalon'] },
     ]);
     assert.equal(
       narrative,
-      '"Pyro" ambushed: the active player gained a wound and a bystander was captured.',
+      '"Skrull Queen Veranke" ambushed: the highest-cost HQ hero was captured (Amulet of Avalon).',
     );
   });
 

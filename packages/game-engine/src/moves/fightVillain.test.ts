@@ -356,15 +356,15 @@ describe('fightVillain — WP-316 Fight: effect log narration', () => {
       ),
       'the durable log names the specific KO\'d hero',
     );
-    // why: WP-316 byte-identity — the fightResolved event keyword surface +
-    // narrative are unchanged by the per-target widening.
+    // why: WP-316 keyword-surface byte-identity (appliedEffects) + WP-319 the
+    // narrative NAMES the KO'd hero (shown by the center-screen overlay).
     const event = moveContext.G.notableEvents[0]!;
     assert.equal(event.type, 'fightResolved');
     if (event.type === 'fightResolved') {
       assert.deepStrictEqual(event.appliedEffects, ['koHeroCurrentPlayer']);
       assert.equal(
         event.narrative,
-        'Fought "villain-a"; Fight effect: the active player KO’d a hero.',
+        'Fought "villain-a"; Fight effect: the active player KO’d a hero (Spider-Man).',
       );
     }
   });

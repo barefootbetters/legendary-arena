@@ -306,14 +306,16 @@ export function performVillainReveal(
         const found = G.city.indexOf(cardId);
         return found >= 0 ? found : 0;
       })();
+      // why: WP-316 + WP-319 — resolve the effect targets to display names ONCE;
+      // the same resolved results feed BOTH the durable `Ambush effect:` log line
+      // AND the ambushResolved narrative (so the overlay + log name the same hero).
+      const resolvedAmbushResults = resolveEffectResultNames(G, appliedAmbushResults);
       // why: WP-316 — narrate the Ambush: effect targets into the durable log
       // (G.messages, hash-excluded per D-24081) after the executor runs and
       // BEFORE the ambushResolved event push. Length-guarded: no line when no
-      // effect applied. Names resolve at the fire site via G.cardDisplayData
-      // (the composer stays pure). The unconditional city-entry bystander attach
-      // below is NOT an Ambush effect and never appears here.
+      // effect applied. The unconditional city-entry bystander attach below is
+      // NOT an Ambush effect and never appears here.
       if (appliedAmbushResults.length > 0) {
-        const resolvedAmbushResults = resolveEffectResultNames(G, appliedAmbushResults);
         G.messages.push(
           `Ambush effect: ${composeEffectResultLogLine(resolvedAmbushResults)}.`,
         );
@@ -323,7 +325,10 @@ export function performVillainReveal(
         revealedCardId: cardId,
         citySpace: ambushCitySpace,
         appliedEffects: appliedAmbushEffects,
-        narrative: composeAmbushNarrative(ambushCardName, appliedAmbushEffects),
+        // why: WP-319 — the narrative now names the captured HQ hero / KO'd hero
+        // (etc.) via the resolved results, so the center-screen overlay announces
+        // the specific hero. `appliedEffects` stays the keyword array (badges).
+        narrative: composeAmbushNarrative(ambushCardName, resolvedAmbushResults),
       });
     }
 
