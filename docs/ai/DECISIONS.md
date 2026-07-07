@@ -26614,7 +26614,7 @@ scroll-up respected).
 
 ### D-24108 — Copy, Save, and Full-Screen Expand for the Live HUD Game Log
 
-**Status:** Drafted 2026-07-07; not yet landed (flips to Active on WP-322 execution).
+**Status:** Active (post-execution) 2026-07-07. `D-24026` live-verify operator-pending on deploy.
 
 **User-Visible Surface:** play.legendary-arena.com (the in-match Game Log panel).
 
@@ -26654,6 +26654,6 @@ dependency (`<Teleport>`, `navigator.clipboard`, `Blob`/`URL.createObjectURL` ar
 Vue/browser built-ins already used in this app). `D-24026` live-verify
 operator-pending on deploy.
 
-**Packet:** WP-322 + EC-352. **Drafted:** 2026-07-07. **Executed:** —
+**Packet:** WP-322 + EC-352. **Drafted:** 2026-07-07. **Executed:** 2026-07-07.
 
 Protect this file.
