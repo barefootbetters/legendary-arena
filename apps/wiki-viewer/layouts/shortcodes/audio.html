@@ -1,0 +1,30 @@
+{{- /*
+  Audio player shortcode for the engineering wiki.
+
+  why: the wiki is JS-free (hugo.toml `unsafe = false` + the CI zero-<script>
+  gate in .github/workflows/wiki-viewer.yml). An <audio controls> element uses
+  the browser's own native controls — no JavaScript — so it satisfies that
+  invariant while letting readers audition clips. `unsafe = false` strips raw
+  HTML written inline in markdown source, but NOT shortcode output, so a
+  shortcode is the sanctioned way to emit a player.
+
+  why: output is fully static (no timestamps, no randomness), so it does not
+  break the two-build byte-identical determinism lock (WP-139 Verification 2).
+
+  Params:
+    src     (required) — absolute URL to the audio file (hosted on R2).
+    caption (optional) — short label rendered under the player.
+*/ -}}
+{{- $src := .Get "src" -}}
+{{- if not $src -}}
+  {{- errorf "audio shortcode: missing required 'src' parameter (%s)" .Position -}}
+{{- end -}}
+<figure class="wiki-audio">
+  <audio controls preload="none">
+    <source src="{{ $src }}" type="audio/mpeg">
+    Your browser does not support the audio element. <a href="{{ $src }}">Download the clip</a>.
+  </audio>
+  {{- with .Get "caption" }}
+  <figcaption>{{ . }}</figcaption>
+  {{- end }}
+</figure>

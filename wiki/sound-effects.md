@@ -316,6 +316,42 @@ starting points to audition, not final picks.
 - OpenGameArt CC0 Cinematic — "Epic Endgame Cinematic"
 - [Freesound CC0: "game over"](https://freesound.org/search/?q=game+over&f=license:%22Creative+Commons+0%22)
 
+### Audio previews
+
+A few of the CC0 candidate clips, hosted on R2 and embedded with the
+`audio` shortcode — native `<audio>` controls, no JavaScript, so the
+wiki's JS-free invariant holds. Representative picks, not final
+selections; the shortcode is documented in
+[Ewiki Authoring](ewiki-authoring.md).
+
+**Master Strike** — dramatic boss stinger:
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/master-strike.mp3" caption="OpenGameArt CC0 — Sinister Boss Appears" >}}
+
+**Scheme Twist** — ominous approach:
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/scheme-twist.mp3" caption="OpenGameArt CC0 — Evil Approach" >}}
+
+**Villain Ambush** — a menacing entrance:
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/villain-ambush.mp3" caption="OpenGameArt 80 CC0 RPG SFX — creature roar" >}}
+
+**Villain defeated** — a solid hit:
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/villain-defeated.mp3" caption="OpenGameArt 80 CC0 RPG SFX — metal impact" >}}
+
+**Mastermind defeated (win)** — victory fanfare:
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/mastermind-defeated-win.mp3" caption="OpenGameArt CC0 — Victory Theme for RPG" >}}
+
+**Bystander rescued** — bright reward chime:
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/bystander-rescued.mp3" caption="OpenGameArt 80 CC0 RPG SFX — coins" >}}
+
+**Play a card** — card place:
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/play-card.mp3" caption="Kenney Casino Audio (CC0) — card place" >}}
+
 ### Where an audio layer would live
 
 Audio belongs entirely in `arena-client` (the Vue app at

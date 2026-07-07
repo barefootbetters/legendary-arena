@@ -14,7 +14,8 @@ status: draft
 source:
   - ../apps/wiki-viewer/assets/css/style.css
   - ../apps/wiki-viewer/hugo.toml
-last-reviewed: 2026-06-20
+  - ../apps/wiki-viewer/layouts/shortcodes/audio.html
+last-reviewed: 2026-07-07
 ---
 
 # Ewiki Authoring
@@ -186,16 +187,43 @@ The wiki viewer intentionally restricts certain features:
   You cannot embed `<div>`, `<span>`, `<style>`, or any HTML tags.
 - **No syntax highlighting.** Fenced code blocks render as plain
   monospace. Language hints (` ```js `) are accepted but ignored.
-- **No custom shortcodes; no `highlight` shortcode.** The viewer defines
-  none of its own. Hugo's built-in shortcodes still run, so long as their
-  output is static and JS-free — `youtube` renders an `<iframe>` and is
-  fine ([Hugo Web System](hugo-web-system.md)). The `highlight` shortcode
-  is **out**: its Chroma output is non-deterministic and fails the
+- **Custom shortcodes: only `audio`.** The viewer defines exactly one
+  custom shortcode — `audio` (see *Embedding audio* below). Hugo's
+  built-in shortcodes still run, so long as their output is static and
+  JS-free — `youtube` renders an `<iframe>` and is fine
+  ([Hugo Web System](hugo-web-system.md)). The `highlight` shortcode is
+  **out**: its Chroma output is non-deterministic and fails the
   determinism gate.
 - **No JavaScript.** Production builds emit zero `<script>` tags.
 - **No custom CSS classes in markdown.** Standard markdown has no
   mechanism to apply CSS classes to elements. All styling comes from
   element-level CSS rules in the theme.
+
+### Embedding audio
+
+The wiki has one custom shortcode, `audio`, for embedding a playable
+clip (rules narration, card commentary, sound-effect previews). It emits
+a native `<audio controls>` element — the browser paints the controls,
+so **no JavaScript** is involved and the JS-free invariant holds.
+`unsafe = false` strips raw HTML from markdown *source*, but not
+shortcode *output*, so this is the sanctioned way to embed a player.
+
+Host the audio on R2 (the `legendary-images` bucket, served at
+`images.legendary-arena.com`) rather than committing the bytes into the
+repo, and reference it by absolute URL:
+
+```
+{{</* audio src="https://images.legendary-arena.com/audio/sound-effects/master-strike.mp3" caption="Master Strike stinger" */>}}
+```
+
+- `src` (required) — absolute URL to an MP3 (`audio/mpeg`).
+- `caption` (optional) — a short label rendered under the player.
+
+Use **MP3**: it plays in the native `<audio>` element across every
+browser with no JavaScript, which is exactly what the JS-free constraint
+wants. Implementation lives in
+`apps/wiki-viewer/layouts/shortcodes/audio.html`, styled by the
+`.wiki-audio` rule in the theme stylesheet.
 
 ### Showing shortcode or template syntax
 
