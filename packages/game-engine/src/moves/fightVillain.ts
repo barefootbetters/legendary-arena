@@ -14,6 +14,7 @@
 
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
+import { formatCardRef } from '../log/logDisplay.js';
 import { awardAttachedBystanders } from '../board/bystanders.logic.js';
 import { awardAttachedHeroes } from '../board/heroCapture.logic.js';
 import { getAvailableAttack, spendAttack } from '../economy/economy.logic.js';
@@ -161,12 +162,12 @@ export function fightVillain(
   const appliedFightEffects = appliedFightResults.map((result) => result.keyword);
 
   G.messages.push(
-    `Player ${ctx.currentPlayer} fought "${cardId}" at city space ${cityIndex}.`,
+    `Player ${ctx.currentPlayer} fought ${formatCardRef(G.cardDisplayData, cardId)} at city space ${cityIndex}.`,
   );
   const bystandersRescued = awardResult.playerVictory.length - victoryBefore;
   if (awardResult.playerVictory.length > victoryBefore) {
     G.messages.push(
-      `Player ${ctx.currentPlayer} rescued ${bystandersRescued} bystander(s) from "${cardId}".`,
+      `Player ${ctx.currentPlayer} rescued ${bystandersRescued} bystander(s) from ${formatCardRef(G.cardDisplayData, cardId)}.`,
     );
   }
 

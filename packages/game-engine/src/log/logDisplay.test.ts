@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   resolveCardName,
   abilityTextToPlainText,
+  formatCardRef,
   formatPlayedCardLabel,
 } from './logDisplay';
 import type { UICardDisplay } from '../ui/uiState.types';
@@ -90,4 +91,22 @@ test('formatPlayedCardLabel falls back to the ext-id (no effect) when the entry 
     formatPlayedCardLabel({}, 'core/missing#0'),
     'core/missing#0 (core/missing#0)',
   );
+});
+
+test('formatCardRef renders {Name} ({ext-id}) with no effect clause', () => {
+  const extId = 'core-villain-skrulls-super-skrull-00';
+  const data = { [extId]: display(extId, 'Super-Skrull') };
+  assert.equal(formatCardRef(data, extId), 'Super-Skrull (core-villain-skrulls-super-skrull-00)');
+});
+
+test('formatCardRef omits the effect even when the card has ability text (non-play line)', () => {
+  const extId = 'wtif/star-lord-tchalla/interstellar-adventures#0';
+  const data = {
+    [extId]: display(extId, 'Interstellar Adventures', '[keyword:What If...?]: You get +3[icon:recruit].'),
+  };
+  assert.equal(formatCardRef(data, extId), 'Interstellar Adventures (wtif/star-lord-tchalla/interstellar-adventures#0)');
+});
+
+test('formatCardRef falls back to the raw ext-id when the entry is absent', () => {
+  assert.equal(formatCardRef({}, 'henchman-sentinel-06'), 'henchman-sentinel-06 (henchman-sentinel-06)');
 });

@@ -36,6 +36,7 @@ import type {
 } from '../rules/effectPrimitive.types.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
 import { addResources } from '../economy/economy.logic.js';
+import { formatCardRef } from '../log/logDisplay.js';
 
 // ---------------------------------------------------------------------------
 // Best-effort warning (non-throwing)
@@ -537,7 +538,7 @@ function pushGainResourceLog(
   // WP-295's `… did not activate …` line and the `recruited <ext-id>` convention.
   const message =
     sourceCardId !== undefined
-      ? `Player ${playerID}'s ${sourceCardId} gained +${amount} ${resource}.`
+      ? `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, sourceCardId)} gained +${amount} ${resource}.`
       : `Player ${playerID} gained +${amount} ${resource}.`;
   if (Array.isArray(G.messages)) {
     G.messages.push(message);

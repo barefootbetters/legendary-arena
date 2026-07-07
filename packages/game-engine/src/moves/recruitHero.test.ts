@@ -352,7 +352,7 @@ describe('recruitHero — WP-135 G.messages locked log format', () => {
     const lastMessage = moveContext.G.messages[moveContext.G.messages.length - 1];
     assert.equal(
       lastMessage,
-      'Player 0 recruited core/spider-man/astonishing-strength; HQ slot 0 refilled from heroDeck (heroDeck.length: 1)',
+      'Player 0 recruited core/spider-man/astonishing-strength (core/spider-man/astonishing-strength); HQ slot 0 refilled from heroDeck (heroDeck.length: 1)',
       'Locked WP-135 byte-equality format must match exactly',
     );
   });
@@ -369,7 +369,7 @@ describe('recruitHero — WP-135 G.messages locked log format', () => {
     const lastMessage = moveContext.G.messages[moveContext.G.messages.length - 1];
     assert.equal(
       lastMessage,
-      'Player 0 recruited core/spider-man/astonishing-strength; HQ slot 0 refilled from heroDeck (heroDeck empty; slot left null)',
+      'Player 0 recruited core/spider-man/astonishing-strength (core/spider-man/astonishing-strength); HQ slot 0 refilled from heroDeck (heroDeck empty; slot left null)',
       'Empty-deck branch must substitute the locked trailing parenthetical',
     );
   });
@@ -442,7 +442,7 @@ describe('recruitHero — WP-273 Wall-Crawl deck-top placement', () => {
     const lastMessage = moveContext.G.messages[moveContext.G.messages.length - 1];
     assert.equal(
       lastMessage,
-      `Player 0 recruited ${WALL_CRAWL_CARD}; HQ slot 0 refilled from heroDeck (heroDeck.length: 0) (Wall-Crawl: placed on top of deck)`,
+      `Player 0 recruited ${WALL_CRAWL_CARD} (${WALL_CRAWL_CARD}); HQ slot 0 refilled from heroDeck (heroDeck.length: 0) (Wall-Crawl: placed on top of deck)`,
       'deck-top branch appends the byte-locked Wall-Crawl placement note',
     );
   });
@@ -463,7 +463,7 @@ describe('recruitHero — WP-273 Wall-Crawl deck-top placement', () => {
     const lastMessage = moveContext.G.messages[moveContext.G.messages.length - 1];
     assert.equal(
       lastMessage,
-      `Player 0 recruited ${WALL_CRAWL_CARD}; HQ slot 0 refilled from heroDeck (heroDeck.length: 0)`,
+      `Player 0 recruited ${WALL_CRAWL_CARD} (${WALL_CRAWL_CARD}); HQ slot 0 refilled from heroDeck (heroDeck.length: 0)`,
       'discard branch log line is byte-identical to the locked WP-135 format (no placement note)',
     );
   });
