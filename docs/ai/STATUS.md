@@ -7,6 +7,40 @@
 
 ## Current State
 
+### WP-318 / EC-348 Executed — Game Log Panel in the Live Play HUD (D-24104 Active) (2026-07-06)
+
+Closes the WP-316 visibility gap the operator caught on 2026-07-07 (match `VvNJEjQUPJ5`): "I don't
+see any announcement of a villain fight/ambush effect." **Root cause:** WP-316 shipped the
+Fight/Ambush/Escape per-target narration to `G.messages` → `UIState.log`, and WP-317 added the
+composable grant lines — but the arena-client rendered `UIState.log` only in `ReplayInspector.vue`
+and `PrePlanNotification.vue`, **never in the live play HUD** (`PlayDesktop.vue` / `PlayMobile.vue`).
+So the narration had no on-screen home during a match. My WP-316 D-24026 "live-verify" had confirmed
+the strings in a diagnostic's `uiStateSnapshot.log` — the engine + projection — not the rendered
+client UX; that was the miss.
+
+- **Fix:** mount the existing, tested `GameLogPanel.vue` in both live pages, fed `:log="snapshot.log"`.
+  Desktop mounts it inside the `boardVisible` block, **outside** the `viewer !== null` gate (so a
+  spectator / rewound-autoplay frame sees the log too), before the pre-plan slot; mobile mounts it at
+  the bottom of `<main>`. Read-only — the engine owns log authorship (D-20002); the client renders the
+  projection verbatim through the leaf component.
+- **No engine change, no hash impact:** `UIState.log` is already projected; `G.messages` is excluded
+  from `finalStateHash` (D-24081). Pure client render.
+- The diagnostic that surfaced this (match `VvNJEjQUPJ5`, gitSha `0094b70`) also confirmed WP-316 +
+  WP-317 are firing correctly in the engine: `Fight effect: the active player must KO a hero.`,
+  `Ambush effect: the highest-cost HQ hero was captured (Amulet of Avalon).`, and (WP-317) Ionic
+  Energy now shows `gained +2 attack` where it used to say "did not activate", plus the `+0` case.
+
+**Verification:** `vue-tsc --noEmit` clean, arena-client suite **green** (+4 assertions: each page
+renders the log section + panel, and a `Fight effect:` / `Ambush effect:` / `gained +N attack.` line
+surfaces verbatim), `vite build` succeeds. **D-24026 live-verify** (a live match shows the persistent
+Game Log with the effect + grant lines) is **operator-pending** on deploy.
+
+**Follow-up — WP-319 (not yet drafted):** name the specific hero in the transient center-screen
+`NotableEventOverlay` for fight/ambush. That enriches the hashed `fightResolved`/`ambushResolved`
+`notableEvents` with per-target data and re-pins the sentinel `finalStateHash` (the cost WP-316
+avoided). The overlay already fires during live play (operator-confirmed), so it's an enrichment, not
+a new surface.
+
 ### WP-317 / EC-347 Executed — Composable `gain-resource` Grant Observability Logging (Empowered / Berserk; D-24103 Active) (2026-07-06)
 
 Follow-up from the WP-316 live-verify diagnostic (match `f2Yzlzb9yLh`): the composable-primitive
