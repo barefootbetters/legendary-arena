@@ -210,13 +210,111 @@ music, then it returns — a standard "sidechain" polish move.
 
 #### Sourcing the score (CC0-first)
 
-- **OpenGameArt CC0 music** — CC0, no attribution: loopable tracks plus
-  cinematic/boss tension pieces. The base layer for all three tiers.
+- **OpenGameArt CC0 music** — CC0, no attribution. Real tracks from the
+  CC0 Cinematic Music pack map straight onto the tiers: calm —
+  "Medieval: The Old Tower Inn" / "At Home - Orchestral"; tense —
+  "Battle Theme A" / "Determined Pursuit"; critical — "Boss Battle
+  Music" / "Sinister Boss Appears!" / "Prepare to fight"; win —
+  "Victory Theme for RPG"; loss — "Laments of the War" / "Epic Endgame
+  Cinematic". The base layer for the whole score.
 - **Incompetech / Kevin MacLeod** — a large, high-quality tension and
   orchestral catalog, but **CC-BY (attribution required), not CC0.**
   Usable if the credit string is tracked; a paid no-attribution license
   (~$30/track) exists if you want it clean.
 - Avoid CC-BY-NC (non-commercial) music entirely — see licensing below.
+
+### Example sound picks per event/action
+
+Three concrete, commercially-safe starting points per event. The
+**Freesound** links are pre-filtered to CC0; the named **OpenGameArt**
+and **Kenney** entries point at specific CC0 packs (audition and
+confirm each asset's license on its page before use). These are
+starting points to audition, not final picks.
+
+**Master Strike (`mastermindStrikeResolved`)** — a big dramatic hit:
+- OpenGameArt CC0 Cinematic — "Sinister Boss Appears!" (short intro sting)
+- Kenney Impact Sounds — a heavy bell / metal impact
+- [Freesound CC0: "orchestral hit"](https://freesound.org/search/?q=orchestral+hit&f=license:%22Creative+Commons+0%22)
+
+**Scheme Twist (`schemeTwistResolved`)** — ominous, lower than a Strike:
+- OpenGameArt CC0 Cinematic — "Evil Approach" (opening bars)
+- [Freesound CC0: "ominous sting"](https://freesound.org/search/?q=ominous+sting&f=license:%22Creative+Commons+0%22)
+- [Freesound CC0: "dark whoosh"](https://freesound.org/search/?q=dark+whoosh&f=license:%22Creative+Commons+0%22)
+
+**Villain Ambush (`ambushResolved`)** — a menacing entrance:
+- OpenGameArt 80 CC0 RPG SFX — a creature roar
+- Kenney Impact Sounds — a sharp plate / punch impact
+- [Freesound CC0: "monster roar"](https://freesound.org/search/?q=monster+roar&f=license:%22Creative+Commons+0%22)
+
+**Villain defeated (`fightResolved`)** — a satisfying hit, coin flourish when a bystander is freed:
+- Kenney Impact Sounds — a solid punch / metal impact
+- OpenGameArt 80 CC0 RPG SFX — coins / gems (the bystander flourish)
+- [Freesound CC0: "sword impact"](https://freesound.org/search/?q=sword+impact&f=license:%22Creative+Commons+0%22)
+
+**Mastermind defeated / win (`mastermindDefeated`)** — the biggest positive cue:
+- OpenGameArt CC0 Cinematic — "Victory Theme for RPG"
+- OpenGameArt CC0 Cinematic — "A Legend Will Rise (Orchestral)"
+- [Freesound CC0: "victory fanfare"](https://freesound.org/search/?q=victory+fanfare&f=license:%22Creative+Commons+0%22)
+
+**Wound gained** — a dull, painful thud:
+- OpenGameArt 80 CC0 RPG SFX — a creature "hurt"
+- Kenney Impact Sounds — a soft body impact
+- [Freesound CC0: "punch impact"](https://freesound.org/search/?q=punch+impact&f=license:%22Creative+Commons+0%22)
+
+**Hero KO'd** — a sharp negative loss cue:
+- Kenney Interface Sounds — an "error" / negative tone
+- [Freesound CC0: "power down"](https://freesound.org/search/?q=power+down&f=license:%22Creative+Commons+0%22)
+- [Freesound CC0: "defeat"](https://freesound.org/search/?q=defeat&f=license:%22Creative+Commons+0%22)
+
+**Bystander captured** — an ominous grab:
+- OpenGameArt 80 CC0 RPG SFX — chains
+- OpenGameArt CC0 Cinematic — "Bit Forest stinger"
+- [Freesound CC0: "chains"](https://freesound.org/search/?q=chains&f=license:%22Creative+Commons+0%22)
+
+**Bystander rescued** — a bright reward chime:
+- OpenGameArt 80 CC0 RPG SFX — coins / gems
+- Kenney Interface Sounds — a "confirmation" / positive tone
+- [Freesound CC0: "reward chime"](https://freesound.org/search/?q=reward+chime&f=license:%22Creative+Commons+0%22)
+
+**Play card (`playCard`)** — a card whoosh / place:
+- OpenGameArt Card Game Sounds — "Play card"
+- [Freesound CC0: "card place"](https://freesound.org/search/?q=card+place&f=license:%22Creative+Commons+0%22)
+- [Freesound CC0: "card flip"](https://freesound.org/search/?q=card+flip&f=license:%22Creative+Commons+0%22)
+
+**Recruit hero (`recruitHero`)** — a positive purchase chime:
+- Kenney Interface Sounds — a "confirmation" chime
+- OpenGameArt 80 CC0 RPG SFX — coins
+- [Freesound CC0: "cash register"](https://freesound.org/search/?q=cash+register&f=license:%22Creative+Commons+0%22)
+
+**Attack a villain (`fightVillain`)** — a sword swing:
+- OpenGameArt 80 CC0 RPG SFX — blade
+- Kenney RPG Audio — a metal / impact hit
+- [Freesound CC0: "sword swing"](https://freesound.org/search/?q=sword+swing&f=license:%22Creative+Commons+0%22)
+
+**Draw cards (`drawCards`)** — a card draw / short shuffle:
+- OpenGameArt Card Game Sounds — "Draw card"
+- OpenGameArt Card Game Sounds — "Shuffle"
+- [Freesound CC0: "card deal"](https://freesound.org/search/?q=card+deal&f=license:%22Creative+Commons+0%22)
+
+**Dodge (`dodgeCard`)** — a quick card flick:
+- OpenGameArt Card Game Sounds — "Tap" / "Untap"
+- Kenney Interface Sounds — a "tick" / switch
+- [Freesound CC0: "card swipe"](https://freesound.org/search/?q=card+swipe&f=license:%22Creative+Commons+0%22)
+
+**End turn (`endTurn` / `onTurnEnd`)** — a soft confirm / pass:
+- OpenGameArt Card Game Sounds — "Notification (pass turn)"
+- Kenney UI Audio — a soft switch / confirm
+- [Freesound CC0: "notification chime"](https://freesound.org/search/?q=notification+chime&f=license:%22Creative+Commons+0%22)
+
+**Your turn begins (`onTurnStart`)** — a gentle attention cue:
+- Kenney Interface Sounds — a "select" / bong tone
+- OpenGameArt Card Game Sounds — "Notification"
+- [Freesound CC0: "notification bell"](https://freesound.org/search/?q=notification+bell&f=license:%22Creative+Commons+0%22)
+
+**Heroes lose (endgame — escape cap or `schemeLoss`)** — a somber sting:
+- OpenGameArt CC0 Cinematic — "Laments of the War" (closing bars)
+- OpenGameArt CC0 Cinematic — "Epic Endgame Cinematic"
+- [Freesound CC0: "game over"](https://freesound.org/search/?q=game+over&f=license:%22Creative+Commons+0%22)
 
 ### Where an audio layer would live
 
