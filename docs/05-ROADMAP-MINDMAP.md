@@ -408,11 +408,9 @@ mindmap
         ["WP-321 ✅ Compact, auto-scrolling chronological game log in the live HUD — ~5-6 line window + polite auto-scroll-to-bottom; replaces the abandoned WP-320 newest-first (D-24106 void); EC-351; D-24107"]
 
       Next Horizons
-        ["📦 Core set keyword & ability coverage — get the core set fully playable first, then add sets incrementally"]
-        ["📦 Live PvP matchmaking & reconnect — implement WP-116 architecture + match discovery UX"]
-        ["📦 Score submission HTTP wiring — close the play-to-leaderboard loop"]
-        ["📦 Agent triage pipeline — WP-230..235 wire simulation sweep data into agent lanes + scheduled triage sessions"]
-        ["📦 Durable match storage — back boardgame.io match state with Postgres so a deploy/restart no longer wipes in-progress matches (Future-WP-I; root cause of the 2026-06-16 play.legendary-arena.com freeze)"]
+        ["📦 Core set keyword & ability coverage — get the core set fully playable first, then add sets incrementally (in progress via the effect-authoring grind — e.g. WP-310/316/317)"]
+        ["📦 Live PvP matchmaking & match-discovery UX — reconnect/desync resilience now SHIPPED (WP-116 policy + WP-311 reconnect + WP-312 move-ack watchdog); what remains is matchmaking + a match-discovery/join UX"]
+        ["📦 Score submission HTTP wiring — close the play-to-leaderboard loop (server submission + verification shipped WP-053, public leaderboards WP-054; remaining: client game-end submission wiring)"]
 
       Phase 10 — Debugging, Testing & Troubleshooting
         ["Future-WP-A 📝 Placeholder — replay diff tool"]
@@ -490,7 +488,7 @@ mindmap
 | Multiplayer Play & Match Durability (2026-07) | 6/6 | — |
 | Hero/Villain Effects & Diagnostics (2026-07) | 5/5 | — |
 | Live-Play HUD & Pending-Choice UX (2026-07) | 4/4 | — |
-| Next Horizons | 0/5 | 5 📦 queued |
+| Next Horizons | 0/3 | 3 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
 | **Total** | **314/315 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
@@ -500,7 +498,7 @@ mindmap
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
 >
-> **Counting convention (encoded by the generator, not redefined):** each row counts the distinct `WORK_INDEX.md` work-packets homed in that cluster (combined lines like `WP-005A/B` count their members; range lines like `WP-043..047` expand to each member; the Phase-6 `WP-048..051` line is a cross-reference — any node containing `(see ` — counted once under Scoring & PAR). Foundation = 4 Foundation Prompts (not WPs), reported as a separate `+N/N` addend. `Next Horizons` (4 📦) and `Phase 10` (8 📝) are forward-looking nav placeholders rendered `0/N`, not WPs; the `Reference (one-line pointers)` cluster is navigation and is excluded from the table. The only open WP is the blocked **WP-042.1** (deferred PostgreSQL seeding, awaiting Foundation Prompt 03 revival).
+> **Counting convention (encoded by the generator, not redefined):** each row counts the distinct `WORK_INDEX.md` work-packets homed in that cluster (combined lines like `WP-005A/B` count their members; range lines like `WP-043..047` expand to each member; the Phase-6 `WP-048..051` line is a cross-reference — any node containing `(see ` — counted once under Scoring & PAR). Foundation = 4 Foundation Prompts (not WPs), reported as a separate `+N/N` addend. `Next Horizons` (3 📦) and `Phase 10` (8 📝) are forward-looking nav placeholders rendered `0/N`, not WPs; the `Reference (one-line pointers)` cluster is navigation and is excluded from the table. The only open WP is the blocked **WP-042.1** (deferred PostgreSQL seeding, awaiting Foundation Prompt 03 revival).
 
 ---
 
