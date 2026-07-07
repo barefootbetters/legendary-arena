@@ -26749,4 +26749,53 @@ live-verify operator-pending on deploy.
 thread-through). The `sentinel-core-doom-2p` fixture was UNCHANGED (its trace plays
 only starters); drift was 10 byte-locked unit assertions across 4 test files.
 
+---
+
+### D-24111 — Reveal / "What If…?" Test-Result Logging in the Game Log
+
+**Status:** Drafted 2026-07-07; not yet landed (flips to Active on WP-325 execution).
+
+**User-Visible Surface:** play.legendary-arena.com (the Game Log panel + WP-322 export).
+
+**Context.** WP-323/324 named every log line, but the game still could not tell a player
+whether a *conditional* effect fired. A survey of hero-effect outcome logging (WP-295 gate
+skips, WP-317 grants, WP-257 hollow records) found the **reveal / "What If…?"** pipeline is
+the one path that logs **nothing**: `heroEffects.execute.ts` `applyRevealRules` (~732) peeks
+the deck top, tests a predicate, and applies an action — the revealed card, the cost, the
+pass/fail, and the action are all silent. "What If…?: You get +3 recruit" is *conditional on
+that hidden test*, which is exactly why the field report said "unknown if the What-If test
+fired."
+
+**Decision.** Emit one game-log line per reveal in `applyRevealRules`, naming the revealed
+card (via `formatCardRef`, WP-324), its cost, the predicate outcome, and the action:
+`Player {id} revealed {Name} ({ext-id}) (cost {N}) — {predicate} matched: {action}.` (or
+`… — no branch matched (left on top).`). A new pure `hero/revealLog.ts`
+(`describeRevealPredicate` + `formatRevealOutcomeLine`) composes it; predicate text is
+`always` / `cost is 0` / `cost is odd` / `cost ≤ {threshold}` / `cost ≥ {threshold}`. This is
+**WP-B.1**, the tractable, highest-value slice of the effect-outcome work.
+
+**Invariants preserved.** Message text only — no change to reveal behavior (predicate
+evaluation, action application, peek-offset — the WP-253 count=2 test stays byte-identical),
+`G` state, RNG, or turn flow. `G.messages` is hash-excluded (D-24081), so no replay outcome
+changes; the reveal-keyword freeze (D-21902/D-24024) is untouched (a log line is not a keyword
+change). `revealLog.ts` is pure (no `boardgame.io`, args in). `D-24026` live-verify
+operator-pending on deploy.
+
+**Deferred follow-ups (the rest of "WP-B"), recorded here so they are not lost:**
+- **WP-B.2 — fill the remaining silent primitives:** the reveal *actions'* realized results
+  (did the draw/ko/attack actually mutate, the amount), and `move-card` / `sequence`
+  empty-source no-ops. Incremental; message-only; lower marginal value than B.1. Tracked as a
+  `📦 Queued` node in `05-ROADMAP-MINDMAP.md`.
+- **WP-B.3 — structured outcome contract + colour-coding:** change `G.messages` from
+  `string[]` to structured records carrying a machine-readable `{card, effect, outcome,
+  amount}`, which enables the green/red/yellow outcome colour-coding from the original
+  Feature-1 request and would let the client `effectProvenance` heuristic be retired. This is
+  a real contract change (every log caller + the `UIState.log` projection + client rendering +
+  the replay message oracle) and needs its **own design review** before packets — the same
+  posture as `DESIGN-HOLLOW-EFFECT-DETECTION.md`. Tracked as a `📝 Placeholder` node in
+  `05-ROADMAP-MINDMAP.md`; graduates to a design doc (its own, or a section appended to
+  `DESIGN-HOLLOW-EFFECT-DETECTION.md`) when scoped. Deliberately **not** authored speculatively.
+
+**Packet:** WP-325 + EC-355. **Drafted:** 2026-07-07. **Executed:** —
+
 Protect this file.
