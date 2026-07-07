@@ -1,6 +1,6 @@
 # Wiki Index
 
-> **37 / 50** entity pages.
+> **38 / 50** entity pages.
 > Last regenerated: 2026-07-07.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority.
@@ -131,6 +131,12 @@ Cross-cutting governance, methodology, and readiness assessments.
   (`escapedVillains` + `scheme.twistCount`). Includes a CC0-first
   library survey (Kenney, OpenGameArt, Freesound, Incompetech, Zapsplat)
   and the horizontal-re-sequencing + howler.js implementation shape.
+- [Music Authoring](music-authoring.md) — *(draft)* the Suno pipeline
+  for per-theme and per-hero music: one seed → eight derivatives (four
+  `MT` tracks + four `ES` event stings), WAV masters local, MP3s to R2,
+  wired through `themeSchemaVersion: 2` theme JSON (`musicAssets`).
+  Covers the crop scripts, file-naming lock, and working-vs-tracked
+  layout; companion to Sound Effects.
 
 ## Tutorial
 

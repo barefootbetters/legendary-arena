@@ -210,6 +210,12 @@ music, then it returns — a standard "sidechain" polish move.
 
 #### Sourcing the score (CC0-first)
 
+> For **bespoke per-theme** music (a unique score per scenario or hero
+> rather than shared CC0 tracks), see [Music Authoring](music-authoring.md)
+> — the Suno pipeline that produces the `ambient-loop` / `main-theme`
+> tiers and event stings referenced from theme JSON. The CC0 options
+> below are the generic fallback.
+
 - **OpenGameArt CC0 music** — CC0, no attribution. Real tracks from the
   CC0 Cinematic Music pack map straight onto the tiers: calm —
   "Medieval: The Old Tower Inn" / "At Home - Orchestral"; tense —
