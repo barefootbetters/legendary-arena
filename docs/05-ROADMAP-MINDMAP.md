@@ -372,6 +372,7 @@ mindmap
         ["WP-300 ✅ Public profile link-preview meta (Open Graph / Twitter Card via the repo's first Cloudflare Pages Function — functions/_middleware.ts uses HTMLRewriter to inject per-player preview meta tags into the SPA shell for ?profile=handle, fail-soft on any API failure/bad handle; buildProfileMeta.ts unit-tested attribute-escaping + §23 guard; extends client-app category to functions/; D-24085 edge-subsurface classification; EC-331; test 624→634/typecheck 0/build 0)"]
         ["WP-301 ✅ Profile loadout library — data model + endpoints (server) (migration 022_create_player_loadouts.sql — player_id FK CASCADE, lagn_json jsonb, visibility CHECK, partial-unique share_slug; loadoutLibrary.{types,logic,routes}.ts + tests; 5 endpoints POST/GET /api/me/loadouts + PATCH/DELETE /api/me/loadouts/:id + guest GET /api/loadouts/:shareSlug public-only; server-side LAGN validate on every write, 50-cap, decorative-not-merit §19b; D-24086; EC-332; server suite 716→746/build 0)"]
         ["WP-302 ✅ Profile loadout library — owner UI + public share view (client) (consumes the WP-301 endpoints, no new server surface; MyProfilePage.vue Saved Loadouts section — paste-LAGN create / list / rename / public-private toggle / delete / copy-share-link; net-new unguarded ?loadout=<shareSlug> SharedLoadoutPage.vue — name + displayHandle + composition summary, 404 on private/missing, never an account id; loadoutLibraryApi.ts Bearer client + guest read + loadoutSummary.ts defensive helper, lagn opaque unknown no @legendary-arena/lagn import, no new npm dep; decorative-not-merit §19b/§19a; D-24087; EC-333; arena-client test 634→650/typecheck 0/build 0; lobby integration deferred WP-303)"]
+        ["WP-305 ✅ Owner-page identity fields — accountId / displayName / handleCanonical on OwnerProfileView + an editable display name; EC-335"]
 
       Architecture & API Governance
         ["WP-116 ✅ Disconnect & reconnect semantics"]
@@ -384,6 +385,27 @@ mindmap
 
       Cross-App Infrastructure
         ["WP-180 ✅ Build-time version stamping"]
+
+      Multiplayer Play & Match Durability (2026-07)
+        ["WP-306 ✅ Setup-contract per-field ext_id validation (henchman id-space fix) — per-field FlatCard.extId checks in parseLoadoutJson/setupContract; henchmen aren't flat cards; EC-336; D-24091"]
+        ["WP-307 ✅ Multiplayer-play authentication gate (soft) — server + app gate the native games create/join behind auth; EC-337; D-24092/24093"]
+        ["WP-308 ✅ Multiplayer-play hard gate (close the native-lobby bypass) — server.app.middleware.unshift precedes the bgio lobby router so a raw native create returns 401; EC-338; D-24094"]
+        ["WP-309 ✅ Durable boardgame.io match storage — custom StorageAPI.Async over the WP-115 pg.Pool, blob→jsonb in a dedicated bgio schema; survives deploy/restart (root-cause fix for the mid-match freeze); EC-339; D-24095"]
+        ["WP-311 ✅ Client reconnect & desync auto-resync — connection store + non-blocking banner + resync() (stop/start re-anchors _stateID); EC-340; D-24096"]
+        ["WP-312 ✅ Client move-ack watchdog — arm on submitMove, resync when _stateID doesn't advance within the timeout (storm-guarded); closes the connected-desync freeze; EC-341; D-24097"]
+
+      Hero/Villain Effects & Diagnostics (2026-07)
+        ["WP-310 ✅ Empowered multi-class form (by [hc:X] and [hc:Y]) — per-class composition sum on the WP-256 substrate; clears the 8th-wonder empowered hollow; EC-342; D-24098"]
+        ["WP-314 ✅ Diagnostic export: card-effect provenance — awaitingPlayerInput + recentlyPlayedCards with an outcome, so a 'froze after card X' report names its own cause; EC-344; D-24100"]
+        ["WP-315 ✅ Card ability text in UICardDisplay + diagnostic — optional abilityText populated from the registry at setup; rides every display projection; EC-345; D-24101"]
+        ["WP-316 ✅ Villain-deck effect narration (Fight/Ambush/Escape, per-target) — executor returns VillainEffectResult[]; the log names the specific hero; byte-identity held (no new notableEvent); EC-346; D-24102"]
+        ["WP-317 ✅ Composable gain-resource grant observability logging — interpretGainResourceNode logs each Empowered/Berserk grant (incl +0); the per-effect amount logging WP-295 deferred; EC-347; D-24103"]
+
+      Live-Play HUD & Pending-Choice UX (2026-07)
+        ["WP-313 ✅ Victory-pile villain-pick UX — projects pendingVictoryPileCardPick + a client prompt + End-Turn gate; closes The Ebony Blade hard-freeze; EC-343; D-24099"]
+        ["WP-318 ✅ Game log panel in the live play HUD — mounts GameLogPanel in PlayDesktop/PlayMobile fed snapshot.log (was replay-inspector-only); surfaces the WP-316/317 narration during play; EC-348; D-24104"]
+        ["WP-319 ✅ Per-target hero naming in the fight/ambush center-screen overlay — enriches the fightResolved/ambushResolved narrative (overlay renders it verbatim, no client change); finalStateHash byte-unchanged; EC-349; D-24105"]
+        ["WP-321 ✅ Compact, auto-scrolling chronological game log in the live HUD — ~5-6 line window + polite auto-scroll-to-bottom; replaces the abandoned WP-320 newest-first (D-24106 void); EC-351; D-24107"]
 
       Next Horizons
         ["📦 Core set keyword & ability coverage — get the core set fully playable first, then add sets incrementally"]
@@ -461,14 +483,17 @@ mindmap
 | Dashboard & Operator Analytics | 14/14 | — |
 | Agent Triage Pipeline | 7/7 | — |
 | Admin & Route Wiring | 4/4 | — |
-| Phase 9 — Profile Surface Follow-ups | 10/10 | — |
+| Phase 9 — Profile Surface Follow-ups | 11/11 | — |
 | Architecture & API Governance | 4/4 | — |
 | Complete-Game Testing | 1/1 | — |
 | Cross-App Infrastructure | 1/1 | — |
+| Multiplayer Play & Match Durability (2026-07) | 6/6 | — |
+| Hero/Villain Effects & Diagnostics (2026-07) | 5/5 | — |
+| Live-Play HUD & Pending-Choice UX (2026-07) | 4/4 | — |
 | Next Horizons | 0/5 | 5 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **298/299 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
+| **Total** | **314/315 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
 
 **Open / blocked WPs (derived from WORK_INDEX, 1):** WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
