@@ -125,9 +125,12 @@ Cross-cutting governance, methodology, and readiness assessments.
   homepage needs.
 - [Sound Effects](sound-effects.md) — *(draft, research)* design
   reference for adding audio to `play.legendary-arena.com`: maps the
-  five `notableEvents` (Master Strike, Scheme Twist, fight/ambush,
-  mastermind defeat) and player-action moves to candidate sounds, plus
-  a CC0-first library survey (Kenney, OpenGameArt, Freesound, Zapsplat).
+  client-visible signals (notable events, `appliedEffects` for
+  wound/KO/bystander-capture, player moves) to candidate sounds, and
+  specifies an adaptive background score driven by a danger meter
+  (`escapedVillains` + `scheme.twistCount`). Includes a CC0-first
+  library survey (Kenney, OpenGameArt, Freesound, Incompetech, Zapsplat)
+  and the horizontal-re-sequencing + howler.js implementation shape.
 
 ## Tutorial
 
