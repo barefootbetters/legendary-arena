@@ -124,10 +124,11 @@ worked example — it carries the `musicAIPrompt` seed and the eight
 
 ### Working layout vs tracked runtime
 
-- **Working area (gitignored):** `content/media/` holds the authoring
-  guide, the per-theme/hero research `.md`, the WAV masters and
-  derivative MP3s, and the committed crop scripts. It is **not** in git
-  (141 MB of audio; see Edge Cases).
+- **Working area (`content/media/`):** holds the authoring guide, the
+  per-theme/hero research `.md`, the WAV masters and derivative MP3s,
+  and the committed crop scripts. The **docs and crop scripts are
+  tracked**; only the audio (`*.wav`, `*.mp3`) and cover images
+  (`*.jpg`) are gitignored (~141 MB, hosted on R2).
 - **Tracked runtime:** `content/themes/*.json` (and
   [CATALOG.md](../content/themes/CATALOG.md) /
   [THEME-INDEX.md](../content/themes/THEME-INDEX.md)) hold the
@@ -160,13 +161,12 @@ the `audio` shortcode (see [Ewiki Authoring](ewiki-authoring.md)):
 
 ## Edge Cases
 
-- **`content/media/` is gitignored, so the working pipeline is not in the
-  repo.** The authoring guide, hero research, crop scripts, and all WAV/
-  MP3 files are untracked (`.gitignore` excludes the whole directory to
-  keep ~141 MB of audio out of git). Only the runtime theme JSON in
-  `content/themes/` is version-controlled. The small text docs and
-  scripts are therefore un-backed-up in git — a candidate for a
-  narrow un-ignore (see Open Questions).
+- **Only the audio is gitignored, not the docs.** `.gitignore` keeps the
+  WAV masters, derivative MP3s, and cover images out of git (~141 MB,
+  hosted on R2), while the authoring guide, hero research, template,
+  index, and crop scripts under `content/media/` are tracked and
+  version-controlled. The runtime theme JSON in `content/themes/` is
+  tracked as before.
 - **Masters are never uploaded.** Only the MP3 derivatives ship to R2;
   the `_MASTER.wav` seed stays local. Batch-encode recipes guard against
   encoding the master as a distribution asset.
@@ -197,10 +197,6 @@ the `audio` shortcode (see [Ewiki Authoring](ewiki-authoring.md)):
 
 ## Open Questions
 
-- **Un-ignore the docs?** The authoring guide, research `.md`, template,
-  and crop scripts under `content/media/` are source, not binaries —
-  tracking them (while keeping WAV/MP3 ignored) would version-control and
-  back them up. Not yet done; needs a `.gitignore` change.
 - **Client consumption.** Which WP wires `musicAssets.*Url` into the
   arena-client playback layer (and how it maps to the adaptive
   danger-meter tiers on [Sound Effects](sound-effects.md)) is not yet

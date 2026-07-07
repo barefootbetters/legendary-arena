@@ -1,0 +1,4085 @@
+{
+  "generatedAt": "2026-04-20T23:02:18.709Z",
+  "sourceDirectory": "data/cards",
+  "setFileCount": 40,
+  "heroCount": 279,
+  "totalAppearances": 307,
+  "heroesInMultipleSets": 23,
+  "teamCounts": {
+    "avengers": 57,
+    "shield": 18,
+    "spider-friends": 14,
+    "champions": 7,
+    "unaffiliated": 19,
+    "x-men": 41,
+    "guardians-of-the-multiverse": 8,
+    "illuminati": 4,
+    "heroes-of-asgard": 5,
+    "inhumans": 5,
+    "cabal": 6,
+    "marvel-knights": 20,
+    "midnight-sons": 2,
+    "hydra": 2,
+    "fantastic-four": 7,
+    "crime-syndicate": 4,
+    "x-force": 8,
+    "warbound": 6,
+    "venomverse": 4,
+    "sinister-six": 6,
+    "guardians-of-the-galaxy": 11,
+    "foes-of-asgard": 7,
+    "heroes-of-wakanda": 5,
+    "brotherhood": 4,
+    "x-factor-investigations": 5,
+    "mercs-for-money": 3,
+    "new-warriors": 1
+  },
+  "heroes": [
+    {
+      "slug": "adam-warlock",
+      "name": "Adam Warlock",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "cosm",
+          "exportName": "IntoTheCosmos",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "agent-phil-coulson",
+      "name": "Agent Phil Coulson",
+      "team": "shield",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "shld",
+          "exportName": "Shield",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "agent-venom",
+      "name": "Agent Venom",
+      "team": "spider-friends",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw2",
+          "exportName": "SecretWars2",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "agent-x-13",
+      "name": "Agent X-13",
+      "team": "shield",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ca75",
+          "exportName": "CaptainAmerica",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "amadeus-cho",
+      "name": "Amadeus Cho",
+      "team": "champions",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "wwhk",
+          "exportName": "WorldWarHulk",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "ancient-one-the",
+      "name": "Ancient One, The",
+      "team": "unaffiliated",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dstr",
+          "exportName": "DoctorStrange",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "angel",
+      "name": "Angel",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dkcy",
+          "exportName": "DarkCity",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "angel-noir",
+      "name": "Angel Noir",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "noir",
+          "exportName": "Noir",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "ant-army",
+      "name": "Ant Army",
+      "team": "unaffiliated",
+      "cardCount": 6,
+      "sets": [
+        {
+          "abbr": "amwp",
+          "exportName": "MSAntManWasp",
+          "cardCountInSet": 6
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "ant-man",
+      "name": "Ant-Man",
+      "team": "avengers",
+      "cardCount": 10,
+      "sets": [
+        {
+          "abbr": "amwp",
+          "exportName": "MSAntManWasp",
+          "cardCountInSet": 6
+        },
+        {
+          "abbr": "antm",
+          "exportName": "AntMan",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "apocalyptic-black-widow",
+      "name": "Apocalyptic Black Widow",
+      "team": "guardians-of-the-multiverse",
+      "cardCount": 6,
+      "sets": [
+        {
+          "abbr": "wtif",
+          "exportName": "MSWhatIf",
+          "cardCountInSet": 6
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "apocalyptic-kitty-pryde",
+      "name": "Apocalyptic Kitty Pryde",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw1",
+          "exportName": "SecretWars1",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "arkon-the-magnificent",
+      "name": "Arkon the Magnificent",
+      "team": "unaffiliated",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw2",
+          "exportName": "SecretWars2",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "aurora-northstar",
+      "name": "Aurora & Northstar",
+      "team": "x-men",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "xmen",
+          "exportName": "XMen",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "banshee",
+      "name": "Banshee",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "xmen",
+          "exportName": "XMen",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "beast",
+      "name": "Beast",
+      "team": "illuminati",
+      "cardCount": 8,
+      "sets": [
+        {
+          "abbr": "ssw2",
+          "exportName": "SecretWars2",
+          "cardCountInSet": 4
+        },
+        {
+          "abbr": "xmen",
+          "exportName": "XMen",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "beta-ray-bill",
+      "name": "Beta Ray Bill",
+      "team": "heroes-of-asgard",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "asrd",
+          "exportName": "HeroesOfAsgard",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "bishop",
+      "name": "Bishop",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dkcy",
+          "exportName": "DarkCity",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "black-bolt",
+      "name": "Black Bolt",
+      "team": "inhumans",
+      "cardCount": 8,
+      "sets": [
+        {
+          "abbr": "rlmk",
+          "exportName": "RealmOfKings",
+          "cardCountInSet": 4
+        },
+        {
+          "abbr": "ssw1",
+          "exportName": "SecretWars1",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "black-cat",
+      "name": "Black Cat",
+      "team": "spider-friends",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "pttr",
+          "exportName": "PaintTheTownRed",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "black-knight",
+      "name": "Black Knight",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "antm",
+          "exportName": "AntMan",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "black-panther",
+      "name": "Black Panther",
+      "team": "avengers",
+      "cardCount": 10,
+      "sets": [
+        {
+          "abbr": "msis",
+          "exportName": "MSInfinitySaga",
+          "cardCountInSet": 6
+        },
+        {
+          "abbr": "ssw1",
+          "exportName": "SecretWars1",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "black-swan",
+      "name": "Black Swan",
+      "team": "cabal",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw2",
+          "exportName": "SecretWars2",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "black-widow",
+      "name": "Black Widow",
+      "team": "avengers",
+      "cardCount": 16,
+      "sets": [
+        {
+          "abbr": "3dtc",
+          "exportName": "ThreeDimension",
+          "cardCountInSet": 4
+        },
+        {
+          "abbr": "bkwd",
+          "exportName": "BlackWidow",
+          "cardCountInSet": 4
+        },
+        {
+          "abbr": "core",
+          "exportName": "CoreSet",
+          "cardCountInSet": 4
+        },
+        {
+          "abbr": "msp1",
+          "exportName": "MarvelStudios",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "blade",
+      "name": "Blade",
+      "team": "marvel-knights",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dkcy",
+          "exportName": "DarkCity",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "blade-daywalker",
+      "name": "Blade, Daywalker",
+      "team": "midnight-sons",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "mdns",
+          "exportName": "MidnightSuns",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "bob-agent-of-hydra",
+      "name": "Bob, Agent of HYDRA",
+      "team": "hydra",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dead",
+          "exportName": "Deadpool",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "brainstorm",
+      "name": "Brainstorm",
+      "team": "fantastic-four",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "anni",
+          "exportName": "Annihilation",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "bruce-banner",
+      "name": "Bruce Banner",
+      "team": "avengers",
+      "cardCount": 11,
+      "sets": [
+        {
+          "abbr": "msis",
+          "exportName": "MSInfinitySaga",
+          "cardCountInSet": 6
+        },
+        {
+          "abbr": "wwhk",
+          "exportName": "WorldWarHulk",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "bullseye",
+      "name": "Bullseye",
+      "team": "crime-syndicate",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "vill",
+          "exportName": "Villains",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "cable",
+      "name": "Cable",
+      "team": "x-force",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dkcy",
+          "exportName": "DarkCity",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "caiera",
+      "name": "Caiera",
+      "team": "warbound",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "wwhk",
+          "exportName": "WorldWarHulk",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "cannonball",
+      "name": "Cannonball",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "xmen",
+          "exportName": "XMen",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "captain-america",
+      "name": "Captain America",
+      "team": "avengers",
+      "cardCount": 8,
+      "sets": [
+        {
+          "abbr": "core",
+          "exportName": "CoreSet",
+          "cardCountInSet": 4
+        },
+        {
+          "abbr": "msp1",
+          "exportName": "MarvelStudios",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "captain-america-1941",
+      "name": "Captain America 1941",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ca75",
+          "exportName": "CaptainAmerica",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "captain-america-falcon",
+      "name": "Captain America (Falcon)",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ca75",
+          "exportName": "CaptainAmerica",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "captain-america-secret-avenger",
+      "name": "Captain America, Secret Avenger",
+      "team": "avengers",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "cvwr",
+          "exportName": "CivilWar",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "captain-and-the-devil-the",
+      "name": "Captain and the Devil, The",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw2",
+          "exportName": "SecretWars2",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "captain-britain",
+      "name": "Captain Britain",
+      "team": "illuminati",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw2",
+          "exportName": "SecretWars2",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "captain-carter",
+      "name": "Captain Carter",
+      "team": "guardians-of-the-multiverse",
+      "cardCount": 6,
+      "sets": [
+        {
+          "abbr": "wtif",
+          "exportName": "MSWhatIf",
+          "cardCountInSet": 6
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "captain-mar-vell",
+      "name": "Captain Mar-Vell",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "cosm",
+          "exportName": "IntoTheCosmos",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "captain-marvel",
+      "name": "Captain Marvel",
+      "team": "avengers",
+      "cardCount": 10,
+      "sets": [
+        {
+          "abbr": "msis",
+          "exportName": "MSInfinitySaga",
+          "cardCountInSet": 6
+        },
+        {
+          "abbr": "ssw1",
+          "exportName": "SecretWars1",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "captain-marvel-agent-of-shield",
+      "name": "Captain Marvel, Agent of S.H.I.E.L.D.",
+      "team": "shield",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "rvlt",
+          "exportName": "Revelations",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "carnage",
+      "name": "Carnage",
+      "team": "venomverse",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "vnom",
+          "exportName": "Venom",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "cassie-lang",
+      "name": "Cassie Lang",
+      "team": "avengers",
+      "cardCount": 6,
+      "sets": [
+        {
+          "abbr": "amwp",
+          "exportName": "MSAntManWasp",
+          "cardCountInSet": 6
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "clea",
+      "name": "Clea",
+      "team": "marvel-knights",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dstr",
+          "exportName": "DoctorStrange",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "cloak-dagger",
+      "name": "Cloak & Dagger",
+      "team": "avengers",
+      "cardCount": 7,
+      "sets": [
+        {
+          "abbr": "cvwr",
+          "exportName": "CivilWar",
+          "cardCountInSet": 7
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "colossus",
+      "name": "Colossus",
+      "team": "x-force",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dkcy",
+          "exportName": "DarkCity",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "colossus-wolverine",
+      "name": "Colossus & Wolverine",
+      "team": "x-men",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "xmen",
+          "exportName": "XMen",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "corvus-glaive",
+      "name": "Corvus Glaive",
+      "team": "cabal",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw2",
+          "exportName": "SecretWars2",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "crystal",
+      "name": "Crystal",
+      "team": "inhumans",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "rlmk",
+          "exportName": "RealmOfKings",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "cyclops",
+      "name": "Cyclops",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "core",
+          "exportName": "CoreSet",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "daredevil",
+      "name": "Daredevil",
+      "team": "avengers",
+      "cardCount": 9,
+      "sets": [
+        {
+          "abbr": "cvwr",
+          "exportName": "CivilWar",
+          "cardCountInSet": 5
+        },
+        {
+          "abbr": "dkcy",
+          "exportName": "DarkCity",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "daredevil-noir",
+      "name": "Daredevil Noir",
+      "team": "marvel-knights",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "noir",
+          "exportName": "Noir",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "darkhawk",
+      "name": "Darkhawk",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "rvlt",
+          "exportName": "Revelations",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "dazzler",
+      "name": "Dazzler",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "xmen",
+          "exportName": "XMen",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "deadpool",
+      "name": "Deadpool",
+      "team": "unaffiliated",
+      "cardCount": 12,
+      "sets": [
+        {
+          "abbr": "3dtc",
+          "exportName": "ThreeDimension",
+          "cardCountInSet": 4
+        },
+        {
+          "abbr": "core",
+          "exportName": "CoreSet",
+          "cardCountInSet": 4
+        },
+        {
+          "abbr": "dead",
+          "exportName": "Deadpool",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "deathlok",
+      "name": "Deathlok",
+      "team": "shield",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "shld",
+          "exportName": "Shield",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "doctor-doom-2099",
+      "name": "Doctor Doom 2099",
+      "team": "unaffiliated",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "2099",
+          "exportName": "Marvel2099",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "doctor-strange",
+      "name": "Doctor Strange",
+      "team": "avengers",
+      "cardCount": 10,
+      "sets": [
+        {
+          "abbr": "dstr",
+          "exportName": "DoctorStrange",
+          "cardCountInSet": 4
+        },
+        {
+          "abbr": "msis",
+          "exportName": "MSInfinitySaga",
+          "cardCountInSet": 6
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "doctor-strange-supreme",
+      "name": "Doctor Strange Supreme",
+      "team": "guardians-of-the-multiverse",
+      "cardCount": 6,
+      "sets": [
+        {
+          "abbr": "wtif",
+          "exportName": "MSWhatIf",
+          "cardCountInSet": 6
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "doctor-voodoo",
+      "name": "Doctor Voodoo",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dstr",
+          "exportName": "DoctorStrange",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "domino",
+      "name": "Domino",
+      "team": "x-force",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dkcy",
+          "exportName": "DarkCity",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "dr-octopus",
+      "name": "Dr. Octopus",
+      "team": "sinister-six",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "vill",
+          "exportName": "Villains",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "dr-punisher-soldier-supreme",
+      "name": "Dr. Punisher, Soldier Supreme",
+      "team": "marvel-knights",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw2",
+          "exportName": "SecretWars2",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "dr-strange",
+      "name": "Dr. Strange",
+      "team": "illuminati",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw1",
+          "exportName": "SecretWars1",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "drax",
+      "name": "Drax",
+      "team": "guardians-of-the-galaxy",
+      "cardCount": 8,
+      "sets": [
+        {
+          "abbr": "mgtg",
+          "exportName": "MSGuardiansOfTheGalaxy",
+          "cardCountInSet": 8
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "drax-the-destroyer",
+      "name": "Drax the Destroyer",
+      "team": "guardians-of-the-galaxy",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "gotg",
+          "exportName": "GuardiansOfTheGalaxy",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "dum-dum-dugan",
+      "name": "Dum Dum Dugan",
+      "team": "shield",
+      "cardCount": 1,
+      "sets": [
+        {
+          "abbr": "shld",
+          "exportName": "Shield",
+          "cardCountInSet": 1
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "electro",
+      "name": "Electro",
+      "team": "sinister-six",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "vill",
+          "exportName": "Villains",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "elektra",
+      "name": "Elektra",
+      "team": "marvel-knights",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dkcy",
+          "exportName": "DarkCity",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "elsa-bloodstone",
+      "name": "Elsa Bloodstone",
+      "team": "marvel-knights",
+      "cardCount": 8,
+      "sets": [
+        {
+          "abbr": "mdns",
+          "exportName": "MidnightSuns",
+          "cardCountInSet": 4
+        },
+        {
+          "abbr": "ssw2",
+          "exportName": "SecretWars2",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "emma-frost",
+      "name": "Emma Frost",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "core",
+          "exportName": "CoreSet",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "enchantress",
+      "name": "Enchantress",
+      "team": "foes-of-asgard",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "vill",
+          "exportName": "Villains",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "falcon",
+      "name": "Falcon",
+      "team": "avengers",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "cvwr",
+          "exportName": "CivilWar",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "falcon-winter-soldier",
+      "name": "Falcon & Winter Soldier",
+      "team": "avengers",
+      "cardCount": 7,
+      "sets": [
+        {
+          "abbr": "bkwd",
+          "exportName": "BlackWidow",
+          "cardCountInSet": 7
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "fantastic-four-united",
+      "name": "Fantastic Four United",
+      "team": "fantastic-four",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "anni",
+          "exportName": "Annihilation",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "fantomex",
+      "name": "Fantomex",
+      "team": "x-force",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "wpnx",
+          "exportName": "WeaponX",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "forge",
+      "name": "Forge",
+      "team": "x-force",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dkcy",
+          "exportName": "DarkCity",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "freedom-fighters",
+      "name": "Freedom Fighters",
+      "team": "unaffiliated",
+      "cardCount": 6,
+      "sets": [
+        {
+          "abbr": "amwp",
+          "exportName": "MSAntManWasp",
+          "cardCountInSet": 6
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "gambit",
+      "name": "Gambit",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "core",
+          "exportName": "CoreSet",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "gamora",
+      "name": "Gamora",
+      "team": "guardians-of-the-galaxy",
+      "cardCount": 11,
+      "sets": [
+        {
+          "abbr": "gotg",
+          "exportName": "GuardiansOfTheGalaxy",
+          "cardCountInSet": 4
+        },
+        {
+          "abbr": "mgtg",
+          "exportName": "MSGuardiansOfTheGalaxy",
+          "cardCountInSet": 7
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "gamora-destroyer-of-thanos",
+      "name": "Gamora, Destroyer of Thanos",
+      "team": "guardians-of-the-multiverse",
+      "cardCount": 6,
+      "sets": [
+        {
+          "abbr": "wtif",
+          "exportName": "MSWhatIf",
+          "cardCountInSet": 6
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "general-okoye",
+      "name": "General Okoye",
+      "team": "heroes-of-wakanda",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "bkpt",
+          "exportName": "BlackPanther",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "ghost-rider",
+      "name": "Ghost Rider",
+      "team": "marvel-knights",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dkcy",
+          "exportName": "DarkCity",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "ghost-rider-2099",
+      "name": "Ghost Rider 2099",
+      "team": "marvel-knights",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "2099",
+          "exportName": "Marvel2099",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "gladiator-hulk",
+      "name": "Gladiator Hulk",
+      "team": "warbound",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "wwhk",
+          "exportName": "WorldWarHulk",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "goliath",
+      "name": "Goliath",
+      "team": "avengers",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "cvwr",
+          "exportName": "CivilWar",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "gorgon",
+      "name": "Gorgon",
+      "team": "inhumans",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "rlmk",
+          "exportName": "RealmOfKings",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "grant-ward",
+      "name": "Grant Ward",
+      "team": "shield",
+      "cardCount": 1,
+      "sets": [
+        {
+          "abbr": "shld",
+          "exportName": "Shield",
+          "cardCountInSet": 1
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "green-goblin",
+      "name": "Green Goblin",
+      "team": "sinister-six",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "vill",
+          "exportName": "Villains",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "greithoth-breaker-of-wills",
+      "name": "Greithoth, Breaker of Wills",
+      "team": "foes-of-asgard",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "fear",
+          "exportName": "FearItself",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "groot",
+      "name": "Groot",
+      "team": "guardians-of-the-galaxy",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "gotg",
+          "exportName": "GuardiansOfTheGalaxy",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "gw-bridge",
+      "name": "G.W. Bridge",
+      "team": "shield",
+      "cardCount": 1,
+      "sets": [
+        {
+          "abbr": "shld",
+          "exportName": "Shield",
+          "cardCountInSet": 1
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "gwenpool",
+      "name": "Gwenpool",
+      "team": "champions",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "chmp",
+          "exportName": "Champions",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "happy-hogan",
+      "name": "Happy Hogan",
+      "team": "unaffiliated",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "smhc",
+          "exportName": "SpiderManHomecoming",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "havok",
+      "name": "Havok",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "xmen",
+          "exportName": "XMen",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "hawkeye",
+      "name": "Hawkeye",
+      "team": "avengers",
+      "cardCount": 8,
+      "sets": [
+        {
+          "abbr": "core",
+          "exportName": "CoreSet",
+          "cardCountInSet": 4
+        },
+        {
+          "abbr": "msp1",
+          "exportName": "MarvelStudios",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "hellcat",
+      "name": "Hellcat",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "rvlt",
+          "exportName": "Revelations",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "heralds-of-galactus",
+      "name": "Heralds of Galactus",
+      "team": "unaffiliated",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "anni",
+          "exportName": "Annihilation",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "hercules",
+      "name": "Hercules",
+      "team": "avengers",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "cvwr",
+          "exportName": "CivilWar",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "high-tech-spider-man",
+      "name": "High Tech Spider-Man",
+      "team": "spider-friends",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "smhc",
+          "exportName": "SpiderManHomecoming",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "hiroim",
+      "name": "Hiroim",
+      "team": "warbound",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "wwhk",
+          "exportName": "WorldWarHulk",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "howard-the-duck",
+      "name": "Howard the Duck",
+      "team": "unaffiliated",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "3dtc",
+          "exportName": "ThreeDimension",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "hulk",
+      "name": "Hulk",
+      "team": "avengers",
+      "cardCount": 12,
+      "sets": [
+        {
+          "abbr": "3dtc",
+          "exportName": "ThreeDimension",
+          "cardCountInSet": 4
+        },
+        {
+          "abbr": "core",
+          "exportName": "CoreSet",
+          "cardCountInSet": 4
+        },
+        {
+          "abbr": "msp1",
+          "exportName": "MarvelStudios",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "hulk-2099",
+      "name": "Hulk 2099",
+      "team": "marvel-knights",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "2099",
+          "exportName": "Marvel2099",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "hulkbuster-iron-man",
+      "name": "Hulkbuster Iron Man",
+      "team": "avengers",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "wwhk",
+          "exportName": "WorldWarHulk",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "hulkling",
+      "name": "Hulkling",
+      "team": "avengers",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "cvwr",
+          "exportName": "CivilWar",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "human-torch",
+      "name": "Human Torch",
+      "team": "fantastic-four",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ff04",
+          "exportName": "FantasticFour",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "iceman",
+      "name": "Iceman",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dkcy",
+          "exportName": "DarkCity",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "invisible-woman",
+      "name": "Invisible Woman",
+      "team": "fantastic-four",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ff04",
+          "exportName": "FantasticFour",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "iron-fist",
+      "name": "Iron Fist",
+      "team": "marvel-knights",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dkcy",
+          "exportName": "DarkCity",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "iron-man",
+      "name": "Iron Man",
+      "team": "avengers",
+      "cardCount": 8,
+      "sets": [
+        {
+          "abbr": "core",
+          "exportName": "CoreSet",
+          "cardCountInSet": 4
+        },
+        {
+          "abbr": "msp1",
+          "exportName": "MarvelStudios",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "iron-man-noir",
+      "name": "Iron Man Noir",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "noir",
+          "exportName": "Noir",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "janet-van-dyne",
+      "name": "Janet van Dyne",
+      "team": "unaffiliated",
+      "cardCount": 6,
+      "sets": [
+        {
+          "abbr": "amwp",
+          "exportName": "MSAntManWasp",
+          "cardCountInSet": 6
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "jean-grey",
+      "name": "Jean Grey",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dkcy",
+          "exportName": "DarkCity",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "jentorra",
+      "name": "Jentorra",
+      "team": "unaffiliated",
+      "cardCount": 6,
+      "sets": [
+        {
+          "abbr": "amwp",
+          "exportName": "MSAntManWasp",
+          "cardCountInSet": 6
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "jessica-jones",
+      "name": "Jessica Jones",
+      "team": "marvel-knights",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dims",
+          "exportName": "Dimensions",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "jocasta",
+      "name": "Jocasta",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "antm",
+          "exportName": "AntMan",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "joe-fixit-grey-hulk",
+      "name": "Joe Fixit, Grey Hulk",
+      "team": "crime-syndicate",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "wwhk",
+          "exportName": "WorldWarHulk",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "jubilee",
+      "name": "Jubilee",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "xmen",
+          "exportName": "XMen",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "juggernaut",
+      "name": "Juggernaut",
+      "team": "brotherhood",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "vill",
+          "exportName": "Villains",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "karma",
+      "name": "Karma",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "nmut",
+          "exportName": "NewMutants",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "karnak",
+      "name": "Karnak",
+      "team": "inhumans",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "rlmk",
+          "exportName": "RealmOfKings",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "killmonger-spec-ops",
+      "name": "Killmonger, Spec Ops",
+      "team": "guardians-of-the-multiverse",
+      "cardCount": 6,
+      "sets": [
+        {
+          "abbr": "wtif",
+          "exportName": "MSWhatIf",
+          "cardCountInSet": 6
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "king-black-panther",
+      "name": "King Black Panther",
+      "team": "heroes-of-wakanda",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "bkpt",
+          "exportName": "BlackPanther",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "kingpin",
+      "name": "Kingpin",
+      "team": "crime-syndicate",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "vill",
+          "exportName": "Villains",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "kitty-pryde",
+      "name": "Kitty Pryde",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "xmen",
+          "exportName": "XMen",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "korg",
+      "name": "Korg",
+      "team": "warbound",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "wwhk",
+          "exportName": "WorldWarHulk",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "kraven",
+      "name": "Kraven",
+      "team": "sinister-six",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "vill",
+          "exportName": "Villains",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "kuurth-breaker-of-stone",
+      "name": "Kuurth, Breaker of Stone",
+      "team": "foes-of-asgard",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "fear",
+          "exportName": "FearItself",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "lady-sif",
+      "name": "Lady Sif",
+      "team": "heroes-of-asgard",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "asrd",
+          "exportName": "HeroesOfAsgard",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "lady-thor",
+      "name": "Lady Thor",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw1",
+          "exportName": "SecretWars1",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "legion",
+      "name": "Legion",
+      "team": "x-men",
+      "cardCount": 7,
+      "sets": [
+        {
+          "abbr": "xmen",
+          "exportName": "XMen",
+          "cardCountInSet": 7
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "leo-fitz-and-jemma-simmons",
+      "name": "Leo Fitz and Jemma Simmons",
+      "team": "shield",
+      "cardCount": 1,
+      "sets": [
+        {
+          "abbr": "shld",
+          "exportName": "Shield",
+          "cardCountInSet": 1
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "loki",
+      "name": "Loki",
+      "team": "foes-of-asgard",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "vill",
+          "exportName": "Villains",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "longshot",
+      "name": "Longshot",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "xmen",
+          "exportName": "XMen",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "luke-cage",
+      "name": "Luke Cage",
+      "team": "avengers",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "cvwr",
+          "exportName": "CivilWar",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "luke-cage-noir",
+      "name": "Luke Cage Noir",
+      "team": "marvel-knights",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "noir",
+          "exportName": "Noir",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "m",
+      "name": "M",
+      "team": "x-factor-investigations",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "msmc",
+          "exportName": "MessiahComplex",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "magik",
+      "name": "Magik",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw1",
+          "exportName": "SecretWars1",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "magneto",
+      "name": "Magneto",
+      "team": "brotherhood",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "vill",
+          "exportName": "Villains",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "man-thing",
+      "name": "Man-Thing",
+      "team": "unaffiliated",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "3dtc",
+          "exportName": "ThreeDimension",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "mantis",
+      "name": "Mantis",
+      "team": "guardians-of-the-galaxy",
+      "cardCount": 7,
+      "sets": [
+        {
+          "abbr": "mgtg",
+          "exportName": "MSGuardiansOfTheGalaxy",
+          "cardCountInSet": 7
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "marrow",
+      "name": "Marrow",
+      "team": "x-force",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "wpnx",
+          "exportName": "WeaponX",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "maximus",
+      "name": "Maximus",
+      "team": "cabal",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw1",
+          "exportName": "SecretWars1",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "medusa",
+      "name": "Medusa",
+      "team": "inhumans",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "rlmk",
+          "exportName": "RealmOfKings",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "melinda-may",
+      "name": "Melinda May",
+      "team": "shield",
+      "cardCount": 1,
+      "sets": [
+        {
+          "abbr": "shld",
+          "exportName": "Shield",
+          "cardCountInSet": 1
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "miek-the-unhived",
+      "name": "Miek, The Unhived",
+      "team": "warbound",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "wwhk",
+          "exportName": "WorldWarHulk",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "mirage",
+      "name": "Mirage",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "nmut",
+          "exportName": "NewMutants",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "mockingbird",
+      "name": "Mockingbird",
+      "team": "shield",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "shld",
+          "exportName": "Shield",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "moon-knight",
+      "name": "Moon Knight",
+      "team": "marvel-knights",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "pttr",
+          "exportName": "PaintTheTownRed",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "moondragon",
+      "name": "Moondragon",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "cosm",
+          "exportName": "IntoTheCosmos",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "morbius",
+      "name": "Morbius",
+      "team": "midnight-sons",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "mdns",
+          "exportName": "MidnightSuns",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "mr-fantastic",
+      "name": "Mr. Fantastic",
+      "team": "fantastic-four",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ff04",
+          "exportName": "FantasticFour",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "ms-america",
+      "name": "Ms. America",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dims",
+          "exportName": "Dimensions",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "ms-marvel",
+      "name": "Ms. Marvel",
+      "team": "champions",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "chmp",
+          "exportName": "Champions",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "multiple-man",
+      "name": "Multiple Man",
+      "team": "x-factor-investigations",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "msmc",
+          "exportName": "MessiahComplex",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "mysterio",
+      "name": "Mysterio",
+      "team": "sinister-six",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "vill",
+          "exportName": "Villains",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "mystique",
+      "name": "Mystique",
+      "team": "brotherhood",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "vill",
+          "exportName": "Villains",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "namor-the-sub-mariner",
+      "name": "Namor, the Sub-Mariner",
+      "team": "cabal",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw1",
+          "exportName": "SecretWars1",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "namora",
+      "name": "Namora",
+      "team": "champions",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "wwhk",
+          "exportName": "WorldWarHulk",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "nebula",
+      "name": "Nebula",
+      "team": "guardians-of-the-galaxy",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "cosm",
+          "exportName": "IntoTheCosmos",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "nerkkod-breaker-of-oceans",
+      "name": "Nerkkod, Breaker of Oceans",
+      "team": "foes-of-asgard",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "fear",
+          "exportName": "FearItself",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "nick-fury",
+      "name": "Nick Fury",
+      "team": "shield",
+      "cardCount": 8,
+      "sets": [
+        {
+          "abbr": "core",
+          "exportName": "CoreSet",
+          "cardCountInSet": 4
+        },
+        {
+          "abbr": "msp1",
+          "exportName": "MarvelStudios",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "nightcrawler",
+      "name": "Nightcrawler",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dkcy",
+          "exportName": "DarkCity",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "no-name-brood-queen",
+      "name": "No-Name, Brood Queen",
+      "team": "warbound",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "wwhk",
+          "exportName": "WorldWarHulk",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "nova",
+      "name": "Nova",
+      "team": "champions",
+      "cardCount": 8,
+      "sets": [
+        {
+          "abbr": "chmp",
+          "exportName": "Champions",
+          "cardCountInSet": 4
+        },
+        {
+          "abbr": "cosm",
+          "exportName": "IntoTheCosmos",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "nul-breaker-of-worlds",
+      "name": "Nul, Breaker of Worlds",
+      "team": "foes-of-asgard",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "fear",
+          "exportName": "FearItself",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "old-man-logan",
+      "name": "Old Man Logan",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw1",
+          "exportName": "SecretWars1",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "party-thor",
+      "name": "Party Thor",
+      "team": "guardians-of-the-multiverse",
+      "cardCount": 6,
+      "sets": [
+        {
+          "abbr": "wtif",
+          "exportName": "MSWhatIf",
+          "cardCountInSet": 6
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "patriot",
+      "name": "Patriot",
+      "team": "avengers",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "cvwr",
+          "exportName": "CivilWar",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "peter-parker",
+      "name": "Peter Parker",
+      "team": "avengers",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "cvwr",
+          "exportName": "CivilWar",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "peter-parker-homecoming",
+      "name": "Peter Parker, Homecoming",
+      "team": "spider-friends",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "smhc",
+          "exportName": "SpiderManHomecoming",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "peters-allies",
+      "name": "Peter's Allies",
+      "team": "spider-friends",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "smhc",
+          "exportName": "SpiderManHomecoming",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "phoenix",
+      "name": "Phoenix",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "xmen",
+          "exportName": "XMen",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "phoenix-force-cyclops",
+      "name": "Phoenix Force Cyclops",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw2",
+          "exportName": "SecretWars2",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "photon",
+      "name": "Photon",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "rvlt",
+          "exportName": "Revelations",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "phyla-vell",
+      "name": "Phyla-Vell",
+      "team": "guardians-of-the-galaxy",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "cosm",
+          "exportName": "IntoTheCosmos",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "polaris",
+      "name": "Polaris",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "xmen",
+          "exportName": "XMen",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "princess-shuri",
+      "name": "Princess Shuri",
+      "team": "heroes-of-wakanda",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "bkpt",
+          "exportName": "BlackPanther",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "professor-x",
+      "name": "Professor X",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dkcy",
+          "exportName": "DarkCity",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "proxima-midnight",
+      "name": "Proxima Midnight",
+      "team": "cabal",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw1",
+          "exportName": "SecretWars1",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "psi-lord",
+      "name": "Psi-Lord",
+      "team": "fantastic-four",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "anni",
+          "exportName": "Annihilation",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "psylocke",
+      "name": "Psylocke",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "xmen",
+          "exportName": "XMen",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "punisher",
+      "name": "Punisher",
+      "team": "marvel-knights",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dkcy",
+          "exportName": "DarkCity",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "quake",
+      "name": "Quake",
+      "team": "shield",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "shld",
+          "exportName": "Shield",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "quasar",
+      "name": "Quasar",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "cosm",
+          "exportName": "IntoTheCosmos",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "queen-storm-of-wakanda",
+      "name": "Queen Storm of Wakanda",
+      "team": "heroes-of-wakanda",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "bkpt",
+          "exportName": "BlackPanther",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "quicksilver",
+      "name": "Quicksilver",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "rvlt",
+          "exportName": "Revelations",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "ravage-2099",
+      "name": "Ravage 2099",
+      "team": "marvel-knights",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "2099",
+          "exportName": "Marvel2099",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "red-guardian",
+      "name": "Red Guardian",
+      "team": "unaffiliated",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "bkwd",
+          "exportName": "BlackWidow",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "rick-jones",
+      "name": "Rick Jones",
+      "team": "shield",
+      "cardCount": 7,
+      "sets": [
+        {
+          "abbr": "wwhk",
+          "exportName": "WorldWarHulk",
+          "cardCountInSet": 7
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "rictor",
+      "name": "Rictor",
+      "team": "x-factor-investigations",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "msmc",
+          "exportName": "MessiahComplex",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "rocket-groot",
+      "name": "Rocket & Groot",
+      "team": "guardians-of-the-galaxy",
+      "cardCount": 9,
+      "sets": [
+        {
+          "abbr": "mgtg",
+          "exportName": "MSGuardiansOfTheGalaxy",
+          "cardCountInSet": 9
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "rocket-raccoon",
+      "name": "Rocket Raccoon",
+      "team": "guardians-of-the-galaxy",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "gotg",
+          "exportName": "GuardiansOfTheGalaxy",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "rogue",
+      "name": "Rogue",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "core",
+          "exportName": "CoreSet",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "ronan-the-accuser",
+      "name": "Ronan the Accuser",
+      "team": "unaffiliated",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "cosm",
+          "exportName": "IntoTheCosmos",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "ronin",
+      "name": "Ronin",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "rvlt",
+          "exportName": "Revelations",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "ruby-summers",
+      "name": "Ruby Summers",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw2",
+          "exportName": "SecretWars2",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "sabretooth",
+      "name": "Sabretooth",
+      "team": "brotherhood",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "vill",
+          "exportName": "Villains",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "scarlet-spider",
+      "name": "Scarlet Spider",
+      "team": "spider-friends",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "pttr",
+          "exportName": "PaintTheTownRed",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "scarlet-witch",
+      "name": "Scarlet Witch",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "rvlt",
+          "exportName": "Revelations",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "scott-lang-cat-burglar",
+      "name": "Scott Lang, Cat Burglar",
+      "team": "crime-syndicate",
+      "cardCount": 6,
+      "sets": [
+        {
+          "abbr": "amwp",
+          "exportName": "MSAntManWasp",
+          "cardCountInSet": 6
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "sentry",
+      "name": "Sentry",
+      "team": "avengers",
+      "cardCount": 6,
+      "sets": [
+        {
+          "abbr": "wwhk",
+          "exportName": "WorldWarHulk",
+          "cardCountInSet": 6
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "shang-chi",
+      "name": "Shang-Chi",
+      "team": "marvel-knights",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw2",
+          "exportName": "SecretWars2",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "sharon-carter",
+      "name": "Sharon Carter",
+      "team": "shield",
+      "cardCount": 1,
+      "sets": [
+        {
+          "abbr": "shld",
+          "exportName": "Shield",
+          "cardCountInSet": 1
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "shatterstar",
+      "name": "Shatterstar",
+      "team": "x-force",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "msmc",
+          "exportName": "MessiahComplex",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "she-hulk",
+      "name": "She-Hulk",
+      "team": "avengers",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "wwhk",
+          "exportName": "WorldWarHulk",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "silk",
+      "name": "Silk",
+      "team": "spider-friends",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw2",
+          "exportName": "SecretWars2",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "silver-surfer",
+      "name": "Silver Surfer",
+      "team": "unaffiliated",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ff04",
+          "exportName": "FantasticFour",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "siryn",
+      "name": "Siryn",
+      "team": "x-factor-investigations",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "msmc",
+          "exportName": "MessiahComplex",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "skaar-son-of-hulk",
+      "name": "Skaar, Son of Hulk",
+      "team": "avengers",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "wwhk",
+          "exportName": "WorldWarHulk",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "skadi",
+      "name": "Skadi",
+      "team": "hydra",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "fear",
+          "exportName": "FearItself",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "skirn-breaker-of-men",
+      "name": "Skirn, Breaker of Men",
+      "team": "foes-of-asgard",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "fear",
+          "exportName": "FearItself",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "slapstick",
+      "name": "Slapstick",
+      "team": "mercs-for-money",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dead",
+          "exportName": "Deadpool",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "solo",
+      "name": "Solo",
+      "team": "mercs-for-money",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dead",
+          "exportName": "Deadpool",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "soulsword-colossus",
+      "name": "Soulsword Colossus",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw2",
+          "exportName": "SecretWars2",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "speed",
+      "name": "Speed",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "rvlt",
+          "exportName": "Revelations",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "speedball",
+      "name": "Speedball",
+      "team": "new-warriors",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "cvwr",
+          "exportName": "CivilWar",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "spider-gwen",
+      "name": "Spider-Gwen",
+      "team": "spider-friends",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw2",
+          "exportName": "SecretWars2",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "spider-man",
+      "name": "Spider-Man",
+      "team": "spider-friends",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "core",
+          "exportName": "CoreSet",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "spider-man-2099",
+      "name": "Spider-Man 2099",
+      "team": "spider-friends",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "2099",
+          "exportName": "Marvel2099",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "spider-man-noir",
+      "name": "Spider-Man Noir",
+      "team": "spider-friends",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "noir",
+          "exportName": "Noir",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "spider-woman",
+      "name": "Spider-Woman",
+      "team": "spider-friends",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "pttr",
+          "exportName": "PaintTheTownRed",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "squirrel-girl",
+      "name": "Squirrel Girl",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dims",
+          "exportName": "Dimensions",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "star-lord",
+      "name": "Star-Lord",
+      "team": "guardians-of-the-galaxy",
+      "cardCount": 11,
+      "sets": [
+        {
+          "abbr": "gotg",
+          "exportName": "GuardiansOfTheGalaxy",
+          "cardCountInSet": 4
+        },
+        {
+          "abbr": "mgtg",
+          "exportName": "MSGuardiansOfTheGalaxy",
+          "cardCountInSet": 7
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "star-lord-tchalla",
+      "name": "Star-Lord T'Challa",
+      "team": "guardians-of-the-multiverse",
+      "cardCount": 6,
+      "sets": [
+        {
+          "abbr": "wtif",
+          "exportName": "MSWhatIf",
+          "cardCountInSet": 6
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "stature",
+      "name": "Stature",
+      "team": "avengers",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "cvwr",
+          "exportName": "CivilWar",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "stepford-cuckoos",
+      "name": "Stepford Cuckoos",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "msmc",
+          "exportName": "MessiahComplex",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "steve-rogers-director-of-shield",
+      "name": "Steve Rogers, Director of S.H.I.E.L.D.",
+      "team": "shield",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ca75",
+          "exportName": "CaptainAmerica",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "stingray",
+      "name": "Stingray",
+      "team": "mercs-for-money",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dead",
+          "exportName": "Deadpool",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "storm",
+      "name": "Storm",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "core",
+          "exportName": "CoreSet",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "storm-black-panther",
+      "name": "Storm & Black Panther",
+      "team": "x-men",
+      "cardCount": 7,
+      "sets": [
+        {
+          "abbr": "cvwr",
+          "exportName": "CivilWar",
+          "cardCountInSet": 7
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "strong-guy",
+      "name": "Strong Guy",
+      "team": "x-factor-investigations",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "msmc",
+          "exportName": "MessiahComplex",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "sunspot",
+      "name": "Sunspot",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "nmut",
+          "exportName": "NewMutants",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "super-skrull",
+      "name": "Super-Skrull",
+      "team": "unaffiliated",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "anni",
+          "exportName": "Annihilation",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "superior-iron-man",
+      "name": "Superior Iron Man",
+      "team": "illuminati",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw1",
+          "exportName": "SecretWars1",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "symbiote-spider-man",
+      "name": "Symbiote Spider-Man",
+      "team": "spider-friends",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "pttr",
+          "exportName": "PaintTheTownRed",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "thanos",
+      "name": "Thanos",
+      "team": "cabal",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw1",
+          "exportName": "SecretWars1",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "thing",
+      "name": "Thing",
+      "team": "fantastic-four",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ff04",
+          "exportName": "FantasticFour",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "thor",
+      "name": "Thor",
+      "team": "heroes-of-asgard",
+      "cardCount": 12,
+      "sets": [
+        {
+          "abbr": "asrd",
+          "exportName": "HeroesOfAsgard",
+          "cardCountInSet": 4
+        },
+        {
+          "abbr": "core",
+          "exportName": "CoreSet",
+          "cardCountInSet": 4
+        },
+        {
+          "abbr": "msp1",
+          "exportName": "MarvelStudios",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "tigra",
+      "name": "Tigra",
+      "team": "avengers",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "cvwr",
+          "exportName": "CivilWar",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "time-traveling-jean-grey",
+      "name": "Time-Traveling Jean Grey",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw2",
+          "exportName": "SecretWars2",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "tony-stark",
+      "name": "Tony Stark",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "smhc",
+          "exportName": "SpiderManHomecoming",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "totally-awesome-hulk",
+      "name": "Totally Awesome Hulk",
+      "team": "champions",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "chmp",
+          "exportName": "Champions",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "uatu-the-watcher",
+      "name": "Uatu, The Watcher",
+      "team": "guardians-of-the-multiverse",
+      "cardCount": 6,
+      "sets": [
+        {
+          "abbr": "wtif",
+          "exportName": "MSWhatIf",
+          "cardCountInSet": 6
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "ultimate-spider-man",
+      "name": "Ultimate Spider-Man",
+      "team": "spider-friends",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ssw1",
+          "exportName": "SecretWars1",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "ultron",
+      "name": "Ultron",
+      "team": "unaffiliated",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "vill",
+          "exportName": "Villains",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "valkyrie",
+      "name": "Valkyrie",
+      "team": "heroes-of-asgard",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "asrd",
+          "exportName": "HeroesOfAsgard",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "venom",
+      "name": "Venom",
+      "team": "sinister-six",
+      "cardCount": 8,
+      "sets": [
+        {
+          "abbr": "vill",
+          "exportName": "Villains",
+          "cardCountInSet": 4
+        },
+        {
+          "abbr": "vnom",
+          "exportName": "Venom",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "venom-rocket",
+      "name": "Venom Rocket",
+      "team": "venomverse",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "vnom",
+          "exportName": "Venom",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "venomized-dr-strange",
+      "name": "Venomized Dr. Strange",
+      "team": "venomverse",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "vnom",
+          "exportName": "Venom",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "venompool",
+      "name": "Venompool",
+      "team": "venomverse",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "vnom",
+          "exportName": "Venom",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "victoria-hand",
+      "name": "Victoria Hand",
+      "team": "shield",
+      "cardCount": 1,
+      "sets": [
+        {
+          "abbr": "shld",
+          "exportName": "Shield",
+          "cardCountInSet": 1
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "vishanti-the",
+      "name": "Vishanti, The",
+      "team": "unaffiliated",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "dstr",
+          "exportName": "DoctorStrange",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "vision",
+      "name": "Vision",
+      "team": "avengers",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "cvwr",
+          "exportName": "CivilWar",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "viv-vision",
+      "name": "Viv Vision",
+      "team": "champions",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "chmp",
+          "exportName": "Champions",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "wanda-vision",
+      "name": "Wanda & Vision",
+      "team": "avengers",
+      "cardCount": 9,
+      "sets": [
+        {
+          "abbr": "msis",
+          "exportName": "MSInfinitySaga",
+          "cardCountInSet": 9
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "war-machine",
+      "name": "War Machine",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "rvlt",
+          "exportName": "Revelations",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "warlock",
+      "name": "Warlock",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "nmut",
+          "exportName": "NewMutants",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "warpath",
+      "name": "Warpath",
+      "team": "x-force",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "msmc",
+          "exportName": "MessiahComplex",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "warriors-three-the",
+      "name": "Warriors Three, The",
+      "team": "heroes-of-asgard",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "asrd",
+          "exportName": "HeroesOfAsgard",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "wasp",
+      "name": "Wasp",
+      "team": "avengers",
+      "cardCount": 10,
+      "sets": [
+        {
+          "abbr": "amwp",
+          "exportName": "MSAntManWasp",
+          "cardCountInSet": 6
+        },
+        {
+          "abbr": "antm",
+          "exportName": "AntMan",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "weapon-h",
+      "name": "Weapon H",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "wpnx",
+          "exportName": "WeaponX",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "weapon-x-wolverine",
+      "name": "Weapon X (Wolverine)",
+      "team": "marvel-knights",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "wpnx",
+          "exportName": "WeaponX",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "werewolf-by-night",
+      "name": "Werewolf by Night",
+      "team": "marvel-knights",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "mdns",
+          "exportName": "MidnightSuns",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "white-tiger",
+      "name": "White Tiger",
+      "team": "marvel-knights",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "bkwd",
+          "exportName": "BlackWidow",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "white-wolf",
+      "name": "White Wolf",
+      "team": "heroes-of-wakanda",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "bkpt",
+          "exportName": "BlackPanther",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "wiccan",
+      "name": "Wiccan",
+      "team": "avengers",
+      "cardCount": 5,
+      "sets": [
+        {
+          "abbr": "cvwr",
+          "exportName": "CivilWar",
+          "cardCountInSet": 5
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "winter-soldier",
+      "name": "Winter Soldier",
+      "team": "unaffiliated",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "ca75",
+          "exportName": "CaptainAmerica",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "wolfsbane",
+      "name": "Wolfsbane",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "nmut",
+          "exportName": "NewMutants",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "wolverine",
+      "name": "Wolverine",
+      "team": "x-men",
+      "cardCount": 8,
+      "sets": [
+        {
+          "abbr": "core",
+          "exportName": "CoreSet",
+          "cardCountInSet": 4
+        },
+        {
+          "abbr": "dkcy",
+          "exportName": "DarkCity",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "wonder-man",
+      "name": "Wonder Man",
+      "team": "avengers",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "antm",
+          "exportName": "AntMan",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "wong-master-of-the-mystic-arts",
+      "name": "Wong, Master of the Mystic Arts",
+      "team": "marvel-knights",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "mdns",
+          "exportName": "MidnightSuns",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "x-23",
+      "name": "X-23",
+      "team": "x-men",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "xmen",
+          "exportName": "XMen",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "yelena-belova",
+      "name": "Yelena Belova",
+      "team": "shield",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "bkwd",
+          "exportName": "BlackWidow",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "yo-yo-rodriguez",
+      "name": "Yo-Yo Rodriguez",
+      "team": "shield",
+      "cardCount": 1,
+      "sets": [
+        {
+          "abbr": "shld",
+          "exportName": "Shield",
+          "cardCountInSet": 1
+        }
+      ],
+      "themeStatus": "not-started"
+    },
+    {
+      "slug": "yondu",
+      "name": "Yondu",
+      "team": "guardians-of-the-galaxy",
+      "cardCount": 4,
+      "sets": [
+        {
+          "abbr": "cosm",
+          "exportName": "IntoTheCosmos",
+          "cardCountInSet": 4
+        }
+      ],
+      "themeStatus": "not-started"
+    }
+  ]
+}

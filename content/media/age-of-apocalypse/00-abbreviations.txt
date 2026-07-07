@@ -1,0 +1,14 @@
+MT = Music Track (long-form)
+ES = Event Stings (short-form)
+
+Music tracks (long-form)
+previewIntro   3–6s
+matchStart     6–20s
+ambientLoop    90–240s ideal (≥60s min)
+mainTheme      45–120s
+
+Event stings (short-form)
+schemeTwist     ~1–3s
+masterStrike   ~1–3s
+villainAmbush  ~0.75–2s
+bystander      ~0.75–1.5s
