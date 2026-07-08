@@ -27326,4 +27326,61 @@ determinism-only (D-0205); boardgame.io stays out of the engine (D-2705).
 
 **Packet:** WP-334 + EC-364. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
 
+### D-24122 — Live-Match Capture: Durable Replay-Artifact Store in the `bgio` Schema; Capture Is Submittable-Only; `storeReplay` Superseded; Reaper Capture-Guard
+
+**Status:** Active (post-execution) 2026-07-08.
+
+**User-Visible Surface:** none — infrastructure.
+
+**Context.** WP-3a of the D-24119 arc captures a finished match so it becomes
+competitively submittable, and creates the `replayHash → matchId` mapping D-24121
+named as the missing link. Design research surfaced four decisions.
+
+**Decisions.**
+- **Durable artifact store in the `bgio` schema.** A finished match's replay artifact
+  (`{ initial_state, log }`) is copied — at capture, keyed by its canonical
+  `replayHash` — into a new `bgio.replay_artifacts` table (`replay_hash` PK,
+  `match_id`, `scenario_key`, `initial_state`, `log`, `captured_at`). This is required
+  because the WP-327 reaper deletes the live `bgio.matches` row after the 1h grace, but
+  the future verifier (WP-3b) must re-reduce the artifact at an arbitrarily later
+  submission. The table lives in the **`bgio` schema**, NOT `legendary.*`: it holds
+  framework-shaped replay data, and the D-24119/D-24095 carve-out already authorizes
+  the server replay pipeline to derive replay data from the bgio blob — keeping the
+  durable copy in `bgio` avoids persisting framework-serialized state into the
+  `legendary.*` domain schema, so **the D-24095 core invariant is preserved, not
+  amended.** It is a derived, server-replay-pipeline-only projection, distinct from the
+  framework's live match store. The `replayHash → matchId` mapping is a `match_id`
+  column on this table (the capture step is the sole owner of both, per D-24121); no
+  separate join table.
+- **Capture is submittable-only.** Capture stores the artifact + the mapping +
+  `assignReplayOwnership` per authenticated seat (from `match_seat_accounts`, D-24120;
+  bots/guests have no row and are skipped; per-seat failures are logged best-effort and
+  do not abort the batch or the artifact). It does NOT write `legendary.competitive_scores`
+  (scoring stays in the WP-332 submission pipeline — server-authoritative direct scoring
+  is the D-24119 fallback, not invoked), does NOT gate on PAR (the submission gates
+  `par_not_published`), and does NOT flip ownership visibility (`private` by default;
+  WP-5 flips before submit). The `replayHash` stored is the reducer's `stateHash`, never
+  a hash of the live `bgio.matches.state.G`. `scenarioKey` = `buildScenarioKey` over the
+  set-abbr-stripped (`<setAbbr>/` removed, D-10014) selection ids.
+- **`storeReplay`/`replay_blobs` superseded for the faithful path.** The D-24119 arc
+  text listed `storeReplay`, but it stores a `ReplayInput` (WP-103), not the bgio
+  artifact the reducer replays. `bgio.replay_artifacts` replaces it; capture does not
+  call `storeReplay`.
+- **Reaper capture-guard.** `reapStaleMatches`'s **gameover** branch is amended to
+  reap only once `captured_at IS NOT NULL` — else a capture outage past the 1h grace
+  would let the reaper delete a finished competitive match before it was captured,
+  silently losing it. The abandoned (never-gameover) branch is byte-unchanged (an
+  abandoned match is never captured, so guarding it would leak abandoned rows forever).
+  The trigger is a scan harvester (mirroring `startMatchReaper`), NOT a
+  `bgioPgStore.setState` interceptor (setState fires per-move; gameover is written via
+  `setMetadata`; and the bgio adapter must stay engine/legendary-free).
+
+**Not changed.** No engine edit; no `computeStateHash` change (WP-4 owns the
+messages/logMeta reconciliation — non-blocking here because capture + future verify both
+go through `reduceMatchToFinalState` over the same artifact, so their hashes agree by
+construction). The verifier repoint + the `moveCount`/rounds scoring-semantics is WP-3b.
+The client submit + a `listAccountReplays` HTTP surface is WP-5.
+
+**Packet:** WP-335 + EC-365. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
+
 Protect this file.
