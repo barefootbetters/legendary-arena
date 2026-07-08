@@ -26871,4 +26871,50 @@ is added (observability is the reaper's log line; a `/health/match-reaper` route
 hardening WP, the `/health/legends-publisher` precedent). `D-24026` live-verify
 operator-pending on deploy.
 
+---
+
+### D-24114 — Turn.Step.Action Numbering on Game-Log Lines (+ effectProvenance parse fix)
+
+**Status:** Drafted 2026-07-08; not yet landed (flips to Active on WP-328 execution).
+
+**User-Visible Surface:** play.legendary-arena.com (the Game Log panel + WP-322 export).
+
+**Context.** After WP-323/324/325 the log is readable line-by-line, but has no turn
+boundaries and no stable per-line address. The operator asked for `{turn}.{step}.{action}`
+numbering (e.g. `10.2.1` = turn 10, step 2, 1st action). The three steps already exist as the
+canonical turn stages (`TURN_STAGES = start/main/cleanup` in `G.currentStage`): start = the
+turn's villain-deck reveal, main = playing from hand, cleanup = discard+draw.
+
+**Decision.** Add a hash-excluded `G.logMeta = { turn, actionInStep }`, a central
+`pushLog(G, message)` helper (new `log/logPush.ts`) that prefixes
+`` `${turn}.${step}.${actionInStep} ` `` (with `step = TURN_STAGES.indexOf(G.currentStage)+1`)
+and increments the counter, and convert all ~39 `G.messages.push` sites to it. `logMeta.turn`
+is stamped from `ctx.turn` at `onBegin` (the turn number lives only in `ctx` today, and helper
+push sites have no `ctx`); `actionInStep` resets at `onBegin` and each `advanceTurnStage`.
+`logMeta` is optional — narrow unit fixtures omit it and `pushLog` falls back to an unprefixed
+push, so engine unit-test drift stays near zero.
+
+**Operator decisions (locked).** (1) **Step = the stage the action occurred in.** Scheme
+twists play extra villain-deck cards during `main`, so "step 1 = the villain card" is not a
+clean bucket — a mid-turn twist villain card correctly numbers as step 2. The
+tag-start-of-turn-reveals alternative was rejected. (2) **Step 3 stays silent** — the cleanup
+discard+draw is not logged; `.3.` appears only if a cleanup-stage action already logs, and the
+next turn's `{turn+1}.1.1` marks the boundary otherwise.
+
+**Coupled fix (folded in per operator).** The client `effectProvenance` (WP-314/D-24100)
+scrapes the `Player X played …` log line; since WP-323/324 enriched that line it captured the
+whole label as the `extId` (visible in the 2026-07-08 diagnostics), and the new prefix would
+compound it. This WP makes `effectProvenance` prefix-tolerant and extracts the real ext-id
+from the `(…)` in the label. Boundary-respecting: the client fix adds no engine import; the
+engine adds no client import. (B.3's structured log will retire the scrape entirely.)
+
+**Invariants preserved.** Engine side is message text only — no gameplay/move/RNG/turn-flow
+change and no message-body change. `G.logMeta` is excluded from `finalStateHash` (the D-24081
+`messages` precedent), and `turn`/`step`/`actionInStep` are deterministic, so replay is
+faithful; the replay message oracle is re-pinned by regeneration. The `{turn, step, action}`
+metadata `G.logMeta` tracks is deliberately reusable by the deferred **WP-B.3** structured
+log. `D-24026` live-verify operator-pending on deploy.
+
+**Packet:** WP-328 + EC-358. **Drafted:** 2026-07-08. **Executed:** —
+
 Protect this file.
