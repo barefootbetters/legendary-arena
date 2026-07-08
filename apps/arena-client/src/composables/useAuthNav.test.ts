@@ -1,13 +1,67 @@
 // why: jsdom globals must be installed before Vue's mount() is called.
 import '../testing/jsdom-setup';
 
-import { describe, test } from 'node:test';
+import { describe, test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { defineComponent, ref } from 'vue';
-import { mount } from '@vue/test-utils';
+import { mount, flushPromises } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
-import { useAuthNav, type AuthNavState } from './useAuthNav';
+import {
+  useAuthNav,
+  resolveDisplayLabel,
+  type AuthNavState,
+} from './useAuthNav';
 import { useAuthStore } from '../stores/auth';
+import type { OwnerProfileView } from '../lib/api/ownerProfileApi';
+
+// why: WP-330 wires useAuthNav to fetchOwnerProfile, which calls the global
+// fetch. The stub counts calls (to prove fetch-once) and returns the owner
+// profile the test wants; the default is a non-ok 401 so signed-in tests that
+// do not care about the label never hit the network and keep the fallback.
+const originalFetch = globalThis.fetch;
+let fetchCallCount = 0;
+
+function stubFetch(handler: () => Response): void {
+  globalThis.fetch = (async (): Promise<Response> => {
+    fetchCallCount += 1;
+    return handler();
+  }) as typeof fetch;
+}
+
+/**
+ * Build a 200 owner-profile Response with sensible defaults, overriding the
+ * identity fields the label depends on.
+ */
+function ownerProfileResponse(
+  overrides: Partial<OwnerProfileView>,
+): Response {
+  const view: OwnerProfileView = {
+    accountId: 'acc-1',
+    displayName: 'Nova',
+    handleCanonical: 'nova',
+    avatarUrl: null,
+    aboutMe: null,
+    avatarVisibility: 'private',
+    aboutMeVisibility: 'private',
+    linksVisibility: 'private',
+    links: [],
+    updatedAt: null,
+    ...overrides,
+  };
+  return new Response(JSON.stringify(view), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+beforeEach(() => {
+  fetchCallCount = 0;
+  stubFetch(() => new Response('{}', { status: 401 }));
+});
+
+afterEach(() => {
+  globalThis.fetch = originalFetch;
+});
 
 /**
  * Mount a minimal wrapper component that calls useAuthNav() in setup,
@@ -72,9 +126,34 @@ describe('useAuthNav (WP-175)', () => {
     assert.equal(state.isSignedIn.value, true);
   });
 
-  test('signed-in state: displayLabel is "My account" (Amendment 1 — fetch deferred)', () => {
+  test('signed-in state: displayLabel resolves to the fetched displayName', async () => {
+    stubFetch(() => ownerProfileResponse({ displayName: 'Nova' }));
     const { state } = mountAuthNav({ token: 'tok-abc' });
+    await flushPromises();
+    assert.equal(state.displayLabel.value, 'Nova');
+  });
+
+  test('signed-in state: empty displayName falls back to @handleCanonical', async () => {
+    stubFetch(() =>
+      ownerProfileResponse({ displayName: '   ', handleCanonical: 'nova' }),
+    );
+    const { state } = mountAuthNav({ token: 'tok-abc' });
+    await flushPromises();
+    assert.equal(state.displayLabel.value, '@nova');
+  });
+
+  test('signed-in state: a non-ok profile fetch leaves the "My account" fallback', async () => {
+    // beforeEach installs a 401 stub; the label must stay at the fallback.
+    const { state } = mountAuthNav({ token: 'tok-abc' });
+    await flushPromises();
     assert.equal(state.displayLabel.value, 'My account');
+  });
+
+  test('signed-in state: the owner profile is fetched at most once per session', async () => {
+    stubFetch(() => ownerProfileResponse({ displayName: 'Nova' }));
+    mountAuthNav({ token: 'tok-abc' });
+    await flushPromises();
+    assert.equal(fetchCallCount, 1);
   });
 
   test('isBootstrapping defaults to true when no provide is injected', () => {
@@ -101,5 +180,38 @@ describe('useAuthNav (WP-175)', () => {
   test('signOut is a function on the returned state', () => {
     const { state } = mountAuthNav({ token: 'tok-signout' });
     assert.equal(typeof state.signOut, 'function');
+  });
+});
+
+describe('resolveDisplayLabel (WP-330 / D-24116)', () => {
+  /** Build an OwnerProfileView with only the two identity fields that matter. */
+  function viewWith(
+    displayName: string,
+    handleCanonical: string | null,
+  ): OwnerProfileView {
+    return {
+      accountId: 'acc-1',
+      displayName,
+      handleCanonical,
+      avatarUrl: null,
+      aboutMe: null,
+      avatarVisibility: 'private',
+      aboutMeVisibility: 'private',
+      linksVisibility: 'private',
+      links: [],
+      updatedAt: null,
+    };
+  }
+
+  test('prefers the trimmed displayName when non-empty', () => {
+    assert.equal(resolveDisplayLabel(viewWith('  Nova  ', 'nova')), 'Nova');
+  });
+
+  test('falls back to @handleCanonical when displayName is blank', () => {
+    assert.equal(resolveDisplayLabel(viewWith('   ', 'nova')), '@nova');
+  });
+
+  test('falls back to "My account" when both are absent', () => {
+    assert.equal(resolveDisplayLabel(viewWith('', null)), 'My account');
   });
 });

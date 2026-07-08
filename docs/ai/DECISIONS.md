@@ -26960,3 +26960,36 @@ it removes the DUPLICATE browser ordinal that visually competed with it. The in-
 **Packet:** WP-329 + EC-359. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
 
 Protect this file.
+
+### D-24116 — Header Username Label Resolution (play)
+
+**Status:** Active (post-execution) 2026-07-08. `D-24026` live-verify operator-pending on deploy.
+
+**User-Visible Surface:** play.legendary-arena.com (the signed-in header auth label).
+
+**Context.** WP-175 built the auth-aware header nav with `displayLabel` hardcoded to
+"My account" (Amendment 1), deferring the real name until the server returned identity.
+WP-305 (D-24089) then added `displayName` + `handleCanonical` to `GET /api/me/profile`, and
+the client `fetchOwnerProfile` already parses them — so the only remaining gap was wiring that
+fetch into `useAuthNav`.
+
+**Decision.** On the signed-in-and-bootstrapped transition, `useAuthNav` fetches the owner
+profile once via the existing `fetchOwnerProfile` and resolves `displayLabel` through
+`resolveDisplayLabel`: trimmed `displayName` (when non-empty) → `@${handleCanonical}` (when a
+handle is claimed) → "My account". The fetch is non-blocking (the label renders "My account"
+until it resolves), silent-failing (any non-ok result leaves the fallback — `fetchOwnerProfile`
+never throws), fetched at most once per signed-in session (single in-flight + loaded guard),
+and reset to "My account" on sign-out so a later, different sign-in cannot show a stale name.
+
+**No email rung.** WP-175 Amendment 1 named a `displayName → handle → email local-part →
+"My account"` chain. The email rung is intentionally dropped: `OwnerProfileView` deliberately
+omits `email` (D-24089 — private account field), and `players.display_name` is NOT NULL, so
+`displayName` always wins; the handle and "My account" rungs are purely defensive.
+
+**Scope.** Client-only — no server, endpoint, contract, or api-catalog change (WP-305 shipped
+the fields). The `www` marketing site does NOT get the name here; surfacing it there reverses
+D-24084 and is separate work.
+
+**Packet:** WP-330 + EC-360. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
+
+Protect this file.

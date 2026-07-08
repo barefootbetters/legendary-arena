@@ -7,6 +7,34 @@
 
 ## Current State
 
+### WP-330 / EC-360 Executed — Header Username Label (play) (D-24116 Active) (2026-07-08)
+
+The signed-in play header showed a hardcoded "My account" instead of the player's name.
+WP-175 built the auth-aware nav with `displayLabel` stubbed to "My account" (Amendment 1),
+deferring the real name until `GET /api/me/profile` returned identity — which WP-305 / D-24089
+already shipped (`displayName` + `handleCanonical`), and the client `fetchOwnerProfile` already
+parses. So the only gap was wiring; this WP closes it.
+
+- **Fix (client-only):** `useAuthNav` fetches the owner profile **once** on the
+  signed-in-and-bootstrapped transition via the existing `fetchOwnerProfile` and resolves
+  `displayLabel` through a new pure `resolveDisplayLabel`: `displayName.trim()` →
+  `@handleCanonical` → "My account". Non-blocking (renders "My account" until the fetch
+  resolves), silent-failing (any non-ok result keeps the fallback; `fetchOwnerProfile` never
+  throws), single in-flight + loaded guard (fetch-once), and reset to "My account" on sign-out.
+- **No email rung:** WP-175 Amendment 1's `… → email local-part → "My account"` chain drops the
+  email rung — `OwnerProfileView` omits `email` (D-24089) and `display_name` is NOT NULL, so
+  `displayName` always wins; the handle + "My account" rungs are defensive.
+- **Numbering note:** drafted as WP-329/EC-359/D-24115, but #592 (the HUD `<ol>` ordinal fix)
+  merged those numbers to `main` mid-session (shared checkout), so this took the next free slots
+  WP-330 / EC-360 / D-24116.
+- **Gates:** arena-client `typecheck` 0 / `test` 748/748 (+3 net) / `build` 0; 2-file client
+  allowlist held (`useAuthNav.ts` + `.test.ts`); no server/engine/`api-endpoints.md` diff.
+- **User-Visible Surface = play.legendary-arena.com.** D-24026 live-verify **operator-pending on
+  deploy**: a signed-in header shows the player's name, not "My account" (jsdom stubs the fetch,
+  so the live label is a live-verify item, not a unit assertion).
+
+---
+
 ### WP-329 / EC-359 Executed — Remove the Redundant `<ol>` Ordinal from the HUD Game Log (D-24115 Active) (2026-07-08)
 
 The Game Log panel renders entries in an `<ol>`, so the browser prepended its own list ordinal
