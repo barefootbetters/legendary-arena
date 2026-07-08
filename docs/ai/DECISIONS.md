@@ -26875,7 +26875,7 @@ operator-pending on deploy.
 
 ### D-24114 — Turn.Step.Action Numbering on Game-Log Lines (+ effectProvenance parse fix)
 
-**Status:** Drafted 2026-07-08; not yet landed (flips to Active on WP-328 execution).
+**Status:** Active (post-execution) 2026-07-08. `D-24026` live-verify operator-pending on deploy.
 
 **User-Visible Surface:** play.legendary-arena.com (the Game Log panel + WP-322 export).
 
@@ -26915,6 +26915,21 @@ faithful; the replay message oracle is re-pinned by regeneration. The `{turn, st
 metadata `G.logMeta` tracks is deliberately reusable by the deferred **WP-B.3** structured
 log. `D-24026` live-verify operator-pending on deploy.
 
-**Packet:** WP-328 + EC-358. **Drafted:** 2026-07-08. **Executed:** —
+**Execution notes (2026-07-08).** The site map undercounted: ~70 sites across ~20 files (two
+receiver shapes, `G.` and `gameState.`). Per operator, the conversion expanded to **17
+player-facing files** — the original 12 plus `rules/schemeTwistResolvers` (19 sites),
+`rules/mastermindHandlers`, `rules/schemeHandlers`, `rules/ruleRuntime.effects`, and
+`replay/replay.execute` — skipping `simulation/*` (PAR/sim tooling). **Numbering is
+live-only:** the real boardgame.io `onBegin` sets `logMeta`, so live play is numbered; the
+observation harnesses (`runFixture` / `simulation` / replay reconstruction) use
+`applyOnBeginParity`, which does not set `logMeta` (numbering their turn-1-vs-transition setup
+consistently would need more plumbing), so their converted sites fall back to unprefixed.
+Consequently the `sentinel-core-doom-2p` fixture was **UNCHANGED** (no re-pin) and engine
+unit-test drift was **zero** (fixtures omit `logMeta` → fallback). Coverage instead comes from
+`logPush.test.ts` + a `coreMoves.integration` test that sets `logMeta` and asserts the `10.2.1`
+prefix through a real move. **Known limitation:** the replay-inspector reconstruction renders
+unprefixed (its path doesn't fire `onBegin`); numbering the harness/replay is a follow-up.
+
+**Packet:** WP-328 + EC-358. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
 
 Protect this file.
