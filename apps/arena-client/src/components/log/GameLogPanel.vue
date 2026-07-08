@@ -364,7 +364,12 @@ export default defineComponent({
 
 .entries {
   margin: 0;
-  padding-left: 1.5rem;
+  /* why: WP-329 — each log line now carries its own {turn}.{step}.{action} number
+     (WP-328), so suppress the browser <ol> ordinal (which prepended a redundant
+     "1. … 167." in front of it) and drop the now-unneeded marker indent. The <ol>
+     element stays (the log is semantically ordered); only its marker is hidden. */
+  list-style: none;
+  padding-left: 0;
   font-variant-numeric: tabular-nums;
 }
 
