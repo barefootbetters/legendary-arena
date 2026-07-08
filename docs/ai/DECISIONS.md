@@ -27144,12 +27144,12 @@ hardening WP, bounded for now by authentication + idempotency).
 
 ### D-24119 — Faithful Live-Match Replay Architecture (Server-Layer Reducer-Replay over the D-0203(A) Framework Artifact)
 
-**Status:** **Proposed — awaiting operator ratification** (2026-07-08). This entry
+**Status:** **Active** — ratified 2026-07-08 (PR #604 merged). This entry
 is the umbrella reconciliation for making a finished LIVE match yield a
 faithfully-reproducible replay + a correct competitive score. It resolves D-0203,
 amends D-0205 and D-24095, and dispositions D-0204 (all edited in place above).
-No code ships under this entry — it authorizes the WP arc below. Flip to `Active`
-on ratification.
+No code ships under this entry — it authorizes the WP arc below. WP-1 of the arc
+(seat→account identity, WP-333/EC-363) is drafted.
 
 **Context.** WP-332 wired `POST /api/competition/scores`, but the whole
 competitive-submission chain is inert for live matches: (1) the match gate
