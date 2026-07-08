@@ -5,20 +5,31 @@
  * section: sign-in/sign-out state, bootstrapping detection, display
  * label, and the sign-out action.
  *
- * Amendment 1 (2026-05-25): the display label is always "My account"
- * because GET /api/me/profile does not return handle, displayName, or
- * email. A follow-up WP will add those fields to the server response
- * and wire the fallback chain (displayName → handle → email local-part
- * → "My account").
+ * Amendment 2 (WP-330): the display label now shows the signed-in
+ * player's own name. On the signed-in transition the composable fetches
+ * the owner profile once via `fetchOwnerProfile` (the `displayName` /
+ * `handleCanonical` fields were added to `GET /api/me/profile` by
+ * WP-305 / D-24089) and resolves the label through `resolveDisplayLabel`:
+ * `displayName` → `@handleCanonical` → "My account". The fetch is
+ * non-blocking (the label renders "My account" until it resolves) and
+ * silent-failing (any non-ok result leaves the fallback in place). The
+ * email local-part rung named in the original Amendment 1 is
+ * intentionally dropped — the owner profile omits `email` (D-24089) and
+ * `display_name` is NOT NULL, so `displayName` always wins. Contract
+ * locked by D-24116.
  */
 
-import { computed, inject, ref, type ComputedRef, type Ref } from 'vue';
+import { computed, inject, ref, watch, type ComputedRef, type Ref } from 'vue';
 
 import {
   initializeHankoClient,
   signOutCurrentSession,
   type HankoClientHandle,
 } from '../auth/hankoClient';
+import {
+  fetchOwnerProfile,
+  type OwnerProfileView,
+} from '../lib/api/ownerProfileApi';
 import { useAuthStore } from '../stores/auth';
 
 /** Reactive return shape of the auth-nav composable. */
@@ -27,6 +38,32 @@ export interface AuthNavState {
   readonly isBootstrapping: Ref<boolean>;
   readonly displayLabel: Ref<string>;
   readonly signOut: () => Promise<void>;
+}
+
+/**
+ * Resolve the header label from an owner profile via the locked fallback
+ * chain (D-24116): the trimmed `displayName` when non-empty, else
+ * `@handleCanonical` when a handle has been claimed, else "My account".
+ *
+ * @param view The owner profile returned by `GET /api/me/profile`.
+ * @returns The label to show in the signed-in header.
+ */
+export function resolveDisplayLabel(view: OwnerProfileView): string {
+  const trimmedDisplayName = view.displayName.trim();
+  if (trimmedDisplayName.length > 0) {
+    return trimmedDisplayName;
+  }
+  // why: no email rung — the owner profile deliberately omits `email`
+  // (D-24089) and `display_name` is NOT NULL, so the handle and the
+  // "My account" fallback below are purely defensive for a would-be
+  // empty display name.
+  if (view.handleCanonical !== null) {
+    const trimmedHandle = view.handleCanonical.trim();
+    if (trimmedHandle.length > 0) {
+      return `@${trimmedHandle}`;
+    }
+  }
+  return 'My account';
 }
 
 // why: module-scoped lazy initializer mirrors MyProfilePage.vue's
@@ -67,11 +104,55 @@ export function useAuthNav(): AuthNavState {
   // rather than flashing the signed-out state.
   const isBootstrapping = inject('isAuthBootstrapping', ref(true));
 
-  // why: always "My account" until a follow-up WP adds handle/displayName
-  // to the /api/me/profile server response. The fetch and fallback chain
-  // (displayName → handle → email local-part → "My account") are deferred.
-  // See WP-175 Amendment 1.
+  // why: starts at the fallback and is updated only when the owner-profile
+  // fetch resolves ok — the header never blocks on the network (WP-330).
   const displayLabel: Ref<string> = ref('My account');
+
+  // why: a per-composable single-in-flight + loaded guard. useAuthNav is
+  // called once per Header mount; these locals fetch the owner profile at
+  // most once per signed-in session and allow a re-fetch after a
+  // sign-out → sign-in cycle (the loaded flag is cleared on sign-out below).
+  let isProfileRequestInFlight = false;
+  let hasLoadedForCurrentSession = false;
+
+  /**
+   * Fetch the owner profile once and set `displayLabel` from it. Silent on
+   * failure: `fetchOwnerProfile` never throws, and any non-ok result leaves
+   * the "My account" fallback in place (no console error, no error surface).
+   */
+  async function loadDisplayLabelFromProfile(): Promise<void> {
+    if (isProfileRequestInFlight || hasLoadedForCurrentSession) {
+      return;
+    }
+    isProfileRequestInFlight = true;
+    try {
+      const result = await fetchOwnerProfile(authStore.token);
+      if (result.ok) {
+        displayLabel.value = resolveDisplayLabel(result.value);
+        hasLoadedForCurrentSession = true;
+      }
+    } finally {
+      isProfileRequestInFlight = false;
+    }
+  }
+
+  // why: fetch the label on the signed-in-and-bootstrapped transition, and
+  // reset to the fallback on sign-out so a later, different sign-in cannot
+  // show a stale name. immediate:true covers a page reload that mounts
+  // already-signed-in from a cached broker session. The fetch is fire-and-
+  // forget (void) — the header renders "My account" until it resolves.
+  watch(
+    () => isSignedIn.value && !isBootstrapping.value,
+    (isReadyAndSignedIn) => {
+      if (isReadyAndSignedIn) {
+        void loadDisplayLabelFromProfile();
+      } else if (!isSignedIn.value) {
+        displayLabel.value = 'My account';
+        hasLoadedForCurrentSession = false;
+      }
+    },
+    { immediate: true },
+  );
 
   /**
    * Sign out the current user. Mirrors the MyProfilePage.vue sign-out

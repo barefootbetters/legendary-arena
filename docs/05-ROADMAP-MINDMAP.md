@@ -414,6 +414,7 @@ mindmap
         ["WP-325 ✅ Reveal / What If…? test-result logging — revealed {card} (cost N) — {predicate} matched: {action}; the last silent effect path; new pure hero/revealLog.ts; EC-355; D-24111"]
         ["WP-328 ✅ Turn.step.action log numbering (+ effectProvenance parse fix) — {turn}.{step}.{action} prefix (step = start/main/cleanup) via hash-excluded G.logMeta + central pushLog over 17 player-facing push files; live-only (real onBegin); folds the WP-323/324 effectProvenance ext-id regression; EC-358; D-24114"]
         ["WP-329 ✅ Remove the redundant <ol> ordinal from the HUD game log — GameLogPanel .entries list-style:none so the browser ordinal (167.) stops double-numbering the in-text {turn}.{step}.{action}; pure client CSS; EC-359; D-24115"]
+        ["WP-330 ✅ Header username label (play) — useAuthNav fetches the owner profile once on sign-in via existing fetchOwnerProfile and resolves displayLabel: displayName → @handleCanonical → My account (non-blocking, silent-fallback, fetch-once); completes WP-175 Amendment 1 now that WP-305/D-24089 ship the fields; client-only; EC-360; D-24116"]
         ["📦 Effect-outcome fill-in (WP-B.2) — reveal-action realized results + move-card/sequence no-ops; deferred per D-24111"]
         ["📝 Structured log-outcome contract + colour-coding (WP-B.3) — G.messages string array → records with a machine-readable outcome field (green/red/yellow); own design review before packets; deferred per D-24111"]
 
@@ -497,11 +498,11 @@ mindmap
 | Cross-App Infrastructure | 1/1 | — |
 | Multiplayer Play & Match Durability (2026-07) | 8/8 | — |
 | Hero/Villain Effects & Diagnostics (2026-07) | 5/5 | — |
-| Live-Play HUD & Pending-Choice UX (2026-07) | 10/10 | — |
+| Live-Play HUD & Pending-Choice UX (2026-07) | 11/11 | — |
 | Next Horizons | 0/3 | 3 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **322/323 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
+| **Total** | **323/324 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
 
 **Open / blocked WPs (derived from WORK_INDEX, 1):** WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
