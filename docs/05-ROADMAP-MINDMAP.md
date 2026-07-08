@@ -393,6 +393,8 @@ mindmap
         ["WP-309 ✅ Durable boardgame.io match storage — custom StorageAPI.Async over the WP-115 pg.Pool, blob→jsonb in a dedicated bgio schema; survives deploy/restart (root-cause fix for the mid-match freeze); EC-339; D-24095"]
         ["WP-311 ✅ Client reconnect & desync auto-resync — connection store + non-blocking banner + resync() (stop/start re-anchors _stateID); EC-340; D-24096"]
         ["WP-312 ✅ Client move-ack watchdog — arm on submitMove, resync when _stateID doesn't advance within the timeout (storm-guarded); closes the connected-desync freeze; EC-341; D-24097"]
+        ["WP-326 ✅ Lobby join list shows only joinable matches — filter stale/finished bgio matches out of the join list (client half of stale-match hygiene); EC-356; D-24112"]
+        ["WP-327 ✅ Server-side reaper for stale bgio matches — in-process reaper DELETEs finished (1 h grace) / non-gameover (24 h) rows from the bgio schema; 15 min setInterval, SIGTERM stop; EC-357; D-24113"]
 
       Hero/Villain Effects & Diagnostics (2026-07)
         ["WP-310 ✅ Empowered multi-class form (by [hc:X] and [hc:Y]) — per-class composition sum on the WP-256 substrate; clears the 8th-wonder empowered hollow; EC-342; D-24098"]
@@ -492,15 +494,15 @@ mindmap
 | Architecture & API Governance | 4/4 | — |
 | Complete-Game Testing | 1/1 | — |
 | Cross-App Infrastructure | 1/1 | — |
-| Multiplayer Play & Match Durability (2026-07) | 6/6 | — |
+| Multiplayer Play & Match Durability (2026-07) | 8/8 | — |
 | Hero/Villain Effects & Diagnostics (2026-07) | 5/5 | — |
-| Live-Play HUD & Pending-Choice UX (2026-07) | 8/8 | — |
+| Live-Play HUD & Pending-Choice UX (2026-07) | 8/9 | 1 open |
 | Next Horizons | 0/3 | 3 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **318/319 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
+| **Total** | **320/322 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 1 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 1):** WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 2):** WP-042.1 ⏸ blocked; WP-328 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
