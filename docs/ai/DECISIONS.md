@@ -26803,4 +26803,72 @@ after the loop (the early `return` became `break`; reveal behavior byte-identica
 **zero** existing tests (no reveal test asserted `G.messages`) — two integration assertions
 were **added** to the WP-253 reveal-collapse suite instead.
 
+### D-24112 — Lobby Join List Shows Only Joinable Matches (Client Filter)
+
+**Status:** Active (post-execution) 2026-07-07. `D-24026` live-verify operator-pending on deploy.
+
+**User-Visible Surface:** play.legendary-arena.com (the "Join existing match" list).
+
+**Context.** WP-309 (D-24095) made the boardgame.io match store durable in Postgres so an
+in-progress match survives a deploy. Before that, every Render deploy wiped the in-memory
+store, which masked two always-true facts: nothing removes an abandoned match, and the lobby
+join list never filtered un-joinable rows (`LobbyView.vue` iterates the raw `listMatches()`
+result). With the store now durable, the lobby fills with dead rows — single-seat
+"Watch Bot Play" / solo creates that already have seat 0 filled (no open seat) and finished
+(gameover) matches (observed 2026-07-07: ~11 stale rows, all "1 seats, seat 0 filled").
+
+**Decision.** Filter the join list to **joinable** matches only: `gameover === null` **AND** at
+least one open seat (`players.some((seat) => seat.name === undefined)`). A pure
+`filterJoinableMatches(matches)` (new `lobby/lobbyMatchFilter.ts`) drives a `joinableMatches`
+computed the `join-existing` `v-for` iterates; `listMatches()` additionally requests
+`?isGameover=false` so the WP-309 store drops finished matches server-side (a server that
+ignores the param degrades to the client filter, still correct). An empty list shows the
+verbatim empty-state line `No open matches right now — create one above.` This is the **client
+half**; the **server half** that actually removes the rows is WP-327 / D-24113 (co-release).
+
+**Invariants preserved.** Display filter only — the client mutates, ends, or deletes no match;
+match lifecycle stays the server's. The `matches` ref keeps the raw server result (filter is a
+computed) so a future spectate view can reach the full list without a re-fetch. No
+`MatchSetupConfig` / envelope / projection change; no `finalStateHash` surface (client
+display). Layer Boundary intact — arena-client filters a read-only server list, adds no
+engine/registry/server import.
+
+### D-24113 — Server-Side Reaper for Stale bgio Matches (TTL Policy + In-Process Interval)
+
+**Status:** Active (post-execution) 2026-07-07. `D-24026` live-verify operator-pending on deploy.
+
+**User-Visible Surface:** play.legendary-arena.com (indirectly — the lobby) + server logs.
+
+**Context.** The server half of the same cleanup D-24112 addresses on the client. WP-309 /
+D-24095 made `bgio.matches` durable but nothing removes rows, so abandoned and finished
+matches accumulate without bound — a growing storage cost and the source of the dead lobby
+rows the client now hides. The WP-309 store already exposes `wipe` (per-id) and a
+`listMatches` that filters on `metadata.gameover` / `updatedAt`, but nothing calls them for
+cleanup, and each write stamps an `updated_at timestamptz`.
+
+**Decision.** Add an in-process **match reaper** (`apps/server/src/db/matchReaper.js`) that
+periodically deletes stale rows with one atomic parameterized `DELETE FROM bgio.matches`:
+
+- a **finished** match (`jsonb_exists(metadata,'gameover')`) is wiped after
+  `GAMEOVER_GRACE_MS = 3_600_000` (1 h);
+- an **abandoned** match (no `gameover`) is wiped after `ABANDONED_TTL_MS = 86_400_000` (24 h)
+  of no updates;
+
+both measured server-side as `updated_at < now() - make_interval(secs => $n)` (params in
+seconds). `startMatchReaper` runs it on `MATCH_REAPER_INTERVAL_MS = 900_000` (15 min) via a
+`setInterval`, started in `index.mjs` after `startServer()` when `pool !== undefined` and
+stopped in the SIGTERM handler — mirroring the legends-publisher scheduler. A failed run is
+logged and swallowed; the timer is `unref()`'d.
+
+**Invariants preserved.** Persistence Boundary (D-24095): the reaper deletes ONLY from the
+`bgio` framework schema — never `legendary.*`, never interprets the match blob, and imports no
+engine / registry / preplan / boardgame.io code. It is a Server-layer operational artifact: it
+maintains storage, it decides no gameplay. The age decision runs in SQL `now()` — no
+application wall-clock (`Date.now()` / `new Date()`) enters it; `setInterval` scheduling is
+server-side wiring (the legends-publisher precedent), and determinism rules govern the engine,
+not server ops. `bgioPgStore.js` (the WP-309 contract module) is not edited; no HTTP endpoint
+is added (observability is the reaper's log line; a `/health/match-reaper` route is a deferred
+hardening WP, the `/health/legends-publisher` precedent). `D-24026` live-verify
+operator-pending on deploy.
+
 Protect this file.

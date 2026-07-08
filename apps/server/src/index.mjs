@@ -15,6 +15,12 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { startServer } from './server.mjs';
 import { closePool } from './db/database.js';
 import {
+  startMatchReaper,
+  MATCH_REAPER_INTERVAL_MS,
+  GAMEOVER_GRACE_MS,
+  ABANDONED_TTL_MS,
+} from './db/matchReaper.js';
+import {
   isLegendsPublisherEnabled,
   getLegendsPublisherIntervalMs,
   startLegendsPublisher,
@@ -27,6 +33,7 @@ async function main() {
   let httpServer;
   let pool;
   let legendsPublisherHandle;
+  let matchReaperHandle;
 
   try {
     const started = await startServer();
@@ -77,6 +84,25 @@ async function main() {
         '[legends-publisher] Disabled (set LEGENDS_PUBLISHER_ENABLED=true to enable).',
       );
     }
+
+    // why: WP-327 / D-24113 — start the bgio match reaper so abandoned and
+    // finished matches are periodically deleted from bgio.matches (durable since
+    // WP-309 / D-24095), keeping the framework store bounded and the lobby list
+    // clean. Mirrors the legends publisher: started here when the pool is
+    // available, stopped on SIGTERM. If the pool is unavailable the reaper does
+    // not start (fail closed) and stale rows simply are not cleaned up.
+    if (pool !== undefined) {
+      matchReaperHandle = startMatchReaper({
+        database: pool,
+        intervalMs: MATCH_REAPER_INTERVAL_MS,
+        gameoverGraceMs: GAMEOVER_GRACE_MS,
+        abandonedTtlMs: ABANDONED_TTL_MS,
+      });
+    } else {
+      console.warn(
+        '[match-reaper] pool is unavailable; reaper not started. Stale bgio.matches rows will not be cleaned up.',
+      );
+    }
   } catch (error) {
     // why: startServer() may throw non-Error values (e.g. from boardgame.io
     // or pg internals). Coercing to String avoids logging "undefined".
@@ -102,6 +128,11 @@ async function main() {
     console.log('[server] SIGTERM received -- shutting down gracefully.');
     if (legendsPublisherHandle !== undefined) {
       legendsPublisherHandle.stop();
+    }
+    // why: WP-327 — stop the match reaper's interval before the pool closes so
+    // no reap query fires against a closing pool during shutdown.
+    if (matchReaperHandle !== undefined) {
+      matchReaperHandle.stop();
     }
     httpServer.close(async () => {
       console.log('[server] HTTP server closed. Closing pg.Pool.');
