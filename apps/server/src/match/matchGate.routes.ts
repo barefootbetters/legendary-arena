@@ -43,6 +43,8 @@ import type {
   SessionVerifier,
 } from '../auth/sessionToken.types.js';
 import { INTERNAL_DELEGATION_HEADER } from './nativeLobbyGuard.js';
+import { recordSeatAccount } from './seatAccount.logic.js';
+import type { AccountId } from '../identity/identity.types.js';
 import koaBody from 'koa-body';
 
 /**
@@ -131,28 +133,33 @@ function statusForSessionValidationCode(code: SessionValidationCode): number {
 
 /**
  * Run the authenticated-session check and, on failure, set the response
- * status and a full-sentence error body. Returns `true` when the caller
- * holds a valid session, `false` otherwise (the response is already
- * populated). This is the FIRST business-logic step of every guarded
- * handler — the D-24092 gate.
+ * status and a full-sentence error body. Returns the resolved server-verified
+ * `AccountId` when the caller holds a valid session, or `null` otherwise (the
+ * response is already populated). This is the FIRST business-logic step of
+ * every guarded handler — the D-24092 gate. The join handler uses the returned
+ * `AccountId` to record the seat→account mapping (WP-333); the create handler
+ * only needs the non-`null` check.
  *
  * @param koaContext The request context.
  * @param database The pg pool the orchestrator uses to resolve the account.
  * @param deps The caller-injected dependency bundle.
- * @returns `true` if authenticated; `false` if the request was rejected.
+ * @returns The server-verified `AccountId` if authenticated; `null` if rejected.
  */
-async function isRequestAuthenticated(
+async function resolveAuthenticatedAccountId(
   koaContext: KoaMatchGateContext,
   database: DatabaseClient,
   deps: MatchGateDependencies,
-): Promise<boolean> {
+): Promise<AccountId | null> {
   const sessionResult = await deps.requireAuthenticatedSession(koaContext.req, {
     verifier: deps.verifier,
     accountResolver: deps.accountResolver,
     database,
   });
   if (sessionResult.ok === true) {
-    return true;
+    // why: the orchestrator's `value` is the branded AccountId (= the account's
+    // ext_id, D-5201); it is typed loosely as `string` on the local result
+    // re-statement, so the brand is reapplied here at the single trust boundary.
+    return sessionResult.value as AccountId;
   }
   koaContext.status = statusForSessionValidationCode(sessionResult.code);
   koaContext.body = {
@@ -161,7 +168,7 @@ async function isRequestAuthenticated(
       `the session could not be validated (reason code: ${sessionResult.code}). ` +
       'Sign in and try again.',
   };
-  return false;
+  return null;
 }
 
 // why: boardgame.io installs koa-body ONLY on its own /games/* routes — there
@@ -216,7 +223,10 @@ export function registerMatchGateRoutes(
   // decides.
   router.post('/api/match/create', async (koaContext) => {
     koaContext.set('Cache-Control', 'no-store');
-    if (!(await isRequestAuthenticated(koaContext, database, deps))) {
+    // why: create only needs the authenticated/rejected verdict; it opens no
+    // seat, so the resolved accountId is not used here (seat→account mapping is
+    // recorded at join time — WP-333).
+    if ((await resolveAuthenticatedAccountId(koaContext, database, deps)) === null) {
       return;
     }
     await ensureJsonBodyParsed(koaContext);
@@ -273,7 +283,15 @@ export function registerMatchGateRoutes(
   // the guarded endpoint keeps a single body-only contract for the client.
   router.post('/api/match/join', async (koaContext) => {
     koaContext.set('Cache-Control', 'no-store');
-    if (!(await isRequestAuthenticated(koaContext, database, deps))) {
+    // why: capture the server-verified accountId — the join records the
+    // seat→account mapping (WP-333) using this session value, never a
+    // client-supplied field.
+    const accountId = await resolveAuthenticatedAccountId(
+      koaContext,
+      database,
+      deps,
+    );
+    if (accountId === null) {
       return;
     }
     await ensureJsonBodyParsed(koaContext);
@@ -328,6 +346,36 @@ export function registerMatchGateRoutes(
       };
       koaContext.status = 200;
       koaContext.body = { playerCredentials: joinResult.playerCredentials };
+
+      // why: WP-333 / D-24120 — record the server-verified accountId behind this
+      // seat so the D-24119 capture step can attribute the finished match. This
+      // runs only after the native join succeeded (the player is seated), and is
+      // best-effort: a record failure is logged and swallowed (mirroring the
+      // fire-and-forget issueTier1BadgesForSubmission precedent) so a bookkeeping
+      // fault never turns a successful join into an error response. The playerID
+      // is taken from the request body (the seat the client joined); when it is
+      // absent the seat cannot be attributed, so the mapping is skipped with a
+      // warning rather than guessed.
+      const playerId =
+        typeof requestBody.playerID === 'string' ? requestBody.playerID : '';
+      if (playerId !== '') {
+        try {
+          await recordSeatAccount(matchId, playerId, accountId, database);
+        } catch (seatRecordError) {
+          console.error(
+            `Failed to record the seat-to-account mapping for match ${matchId} ` +
+              `seat ${playerId}; this seat's future competitive result may not be ` +
+              'attributable. The join itself succeeded and the player is seated.',
+            seatRecordError,
+          );
+        }
+      } else {
+        console.warn(
+          `Join for match ${matchId} supplied no playerID, so the ` +
+            'seat-to-account mapping was not recorded and this seat cannot be ' +
+            'attributed to an account.',
+        );
+      }
     } catch (networkError) {
       koaContext.status = 502;
       koaContext.body = {

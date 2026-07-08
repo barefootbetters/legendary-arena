@@ -13,9 +13,39 @@ import assert from 'node:assert/strict';
 import { registerMatchGateRoutes } from './matchGate.routes.js';
 import type { MatchGateDependencies } from './matchGate.routes.js';
 
-// why: the injected auth fake never reads the database, so a placeholder
-// satisfies the positional argument without a real pg pool.
-const fakeDatabase = {} as never;
+// why: the auth fake never reads the database, but the WP-333 join path calls
+// recordSeatAccount(database), so tests inject a fake pg pool. `noopDatabase`
+// satisfies the tests that do not inspect the seat-recording write; the
+// per-test spy / failing fakes below exercise the WP-333 assertions.
+const noopDatabase = {
+  query: async () => ({ rows: [], rowCount: 1 }),
+} as unknown as never;
+
+interface RecordedQuery {
+  sql: string;
+  params: unknown[];
+}
+
+/** A fake pg pool whose `query` records every call (for asserting the UPSERT). */
+function makeSpyDatabase(): { database: never; queries: RecordedQuery[] } {
+  const queries: RecordedQuery[] = [];
+  const database = {
+    query: async (sql: string, params: unknown[]) => {
+      queries.push({ sql, params });
+      return { rows: [], rowCount: 1 };
+    },
+  } as unknown as never;
+  return { database, queries };
+}
+
+/** A fake pg pool whose `query` throws — exercises the best-effort record path. */
+function makeFailingDatabase(): never {
+  return {
+    query: async () => {
+      throw new Error('Simulated database failure recording the seat account.');
+    },
+  } as unknown as never;
+}
 
 type Handler = (koaContext: FakeContext) => Promise<void> | void;
 
@@ -53,14 +83,17 @@ const unauthenticatedDeps: MatchGateDependencies = {
  * Registers the routes with a capturing fake router and returns the
  * handler map keyed by path.
  */
-function collectRoutes(deps: MatchGateDependencies): Map<string, Handler> {
+function collectRoutes(
+  deps: MatchGateDependencies,
+  database: never = noopDatabase,
+): Map<string, Handler> {
   const handlers = new Map<string, Handler>();
   const router = {
     post(path: string, handler: Handler): void {
       handlers.set(path, handler);
     },
   };
-  registerMatchGateRoutes(router as never, fakeDatabase, deps);
+  registerMatchGateRoutes(router as never, database, deps);
   return handlers;
 }
 
@@ -195,6 +228,63 @@ describe('matchGate.routes (WP-307)', () => {
     };
     assert.equal(sentBody.playerID, '0');
     assert.equal(sentBody.playerName, 'Alice');
+  });
+
+  test('POST /api/match/join records the seat→account mapping with the SESSION accountId', async () => {
+    installFetchStub(200, { playerCredentials: 'secret-1' });
+    const { database, queries } = makeSpyDatabase();
+    const handlers = collectRoutes(authenticatedDeps, database);
+    const koaContext = makeContext({
+      matchID: 'match-99',
+      playerID: '0',
+      playerName: 'Alice',
+    });
+
+    await handlers.get('/api/match/join')!(koaContext);
+
+    assert.equal(koaContext.status, 200);
+    // why: exactly one DB write — the seat UPSERT — with the session accountId
+    // ('acct-1' from authenticatedDeps), the body playerID, and the matchID.
+    assert.equal(queries.length, 1);
+    assert.match(queries[0]!.sql, /INSERT INTO legendary\.match_seat_accounts/);
+    assert.deepEqual(queries[0]!.params, ['match-99', '0', 'acct-1']);
+  });
+
+  test('POST /api/match/join uses the session accountId, ignoring any client-supplied accountId (anti-spoof)', async () => {
+    installFetchStub(200, { playerCredentials: 'secret-1' });
+    const { database, queries } = makeSpyDatabase();
+    const handlers = collectRoutes(authenticatedDeps, database);
+    const koaContext = makeContext({
+      matchID: 'match-99',
+      playerID: '0',
+      playerName: 'Alice',
+      // A malicious client attempts to attribute the seat to another account.
+      accountId: 'attacker-account',
+    });
+
+    await handlers.get('/api/match/join')!(koaContext);
+
+    assert.equal(koaContext.status, 200);
+    assert.equal(queries.length, 1);
+    // The recorded account is the server-verified session value, not the body.
+    assert.equal(queries[0]!.params[2], 'acct-1');
+  });
+
+  test('POST /api/match/join still returns 200 when recording the seat fails (best-effort)', async () => {
+    installFetchStub(200, { playerCredentials: 'secret-1' });
+    const handlers = collectRoutes(authenticatedDeps, makeFailingDatabase());
+    const koaContext = makeContext({
+      matchID: 'match-99',
+      playerID: '0',
+      playerName: 'Alice',
+    });
+
+    await handlers.get('/api/match/join')!(koaContext);
+
+    // why: the player is already seated on the native side; a seat-record
+    // failure is logged and swallowed, never converted into a join error.
+    assert.equal(koaContext.status, 200);
+    assert.deepEqual(koaContext.body, { playerCredentials: 'secret-1' });
   });
 
   test('POST /api/match/join with a valid session but no matchID returns 400 and never delegates', async () => {
