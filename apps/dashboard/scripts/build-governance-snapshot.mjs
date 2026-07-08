@@ -65,8 +65,24 @@ const DECISIONS_REL = 'docs/ai/DECISIONS.md';
 const OUTPUT_PATH = join(DASHBOARD_DIR, 'src/data/governance-snapshot.json');
 
 // why: WP-198 §D — anchored to start-of-line; status union is closed; trailing
-// date is optional so newly-drafted rows with no date still match.
-const WORK_INDEX_ROW_PATTERN = /^- \[(x| )\] WP-(\d{3}) — (.+?)\. \*\*(Draft|Done|Ready|Blocked)\*\* (\d{4}-\d{2}-\d{2})?/;
+// date is optional so newly-drafted rows with no date still match. The
+// title→status connector and the date position both drifted after WP-198
+// locked the original pattern: rows now use `. **Done**`, ` — **Done**`, or
+// ` — ✅ **Done**` as the connector, and the date sits EITHER outside the bold
+// (`**Done** 2026-07-08`, the original form) OR inside it
+// (`**Done 2026-07-08**`, the form ~94 of the current rows use). The generator
+// silently dropped every drifted row, freezing every WORK_INDEX-derived KPI
+// (`daysSinceLastDoneFlip`, `wpsDoneThisWeek`, `openDrafts`, the now/in-flight/
+// blocked lists) at the last outside-bold row. To stay robust against future
+// connector decorations, the connector is now `(.+?)\s+\*\*` (title, then any
+// whitespace, then the bold status) and the date separator accepts both
+// placements via `(?:\*\* | )`. The captured title keeps a trailing connector
+// fragment (`)`, `.`, `—`, `✅`); `parseWorkIndexRow` trims it. The five capture
+// groups (checkbox, number, title, status, date) keep their positions so the
+// downstream `match[2..5]` reads are unchanged. Covered by the
+// `workIndexRowPattern.test.ts` drift test (asserts every real WORK_INDEX row
+// still parses).
+const WORK_INDEX_ROW_PATTERN = /^- \[(x| )\] WP-(\d{3}) — (.+?)\s+\*\*(Draft|Done|Ready|Blocked)(?:\*\* | )(\d{4}-\d{2}-\d{2})?/;
 const DECISIONS_HEADING_PATTERN = /^### D-(\d{5}) — (.+?)$/;
 // why: WP-199 §Locked Contract Values — anchored to start-of-line; closed
 // match shape for the STATUS heading per D-19901. ecNumber captures the
@@ -195,7 +211,12 @@ function parseWorkIndexRow(line) {
     return null;
   }
   const numberStr = match[2];
-  const title = match[3];
+  // why: the widened connector (`(.+?)\s+\*\*`) leaves the row's title→status
+  // separator fragment on the end of the title capture — a trailing `)`, `.`,
+  // em-dash, or ✅ from connectors like `). `, ` — `, or ` — ✅ `. Trim that
+  // trailing run so the title reads as the human wrote it (`Foo Surface`, not
+  // `Foo Surface —`). The `u` flag is required because ✅ is astral.
+  const title = match[3].replace(/[\s.—✅]+$/u, '');
   const status = match[4];
   const dateStr = match[5] ?? '';
   const number = Number.parseInt(numberStr, 10);
