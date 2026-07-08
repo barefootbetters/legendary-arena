@@ -38,8 +38,8 @@ const { relativeTime, sourceLabel } = useDataFreshness(updatedAt, source);
       :loading="loading"
       :paginator="true"
       :rows="20"
-      dataKey="id"
-      filterDisplay="row"
+      data-key="id"
+      filter-display="row"
       class="match-table"
     >
       <Column field="startedAt" header="Started" :sortable="true">

@@ -6,7 +6,6 @@ import {
   laneItemCount,
   type PipelineLane,
   type PipelineItem,
-  type PriorityRecommendation,
   type PipelineSweepData,
 } from '../../composables/useAgentPipeline.js';
 import {

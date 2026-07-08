@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { useInfraCostWatchdog } from './useInfraCostWatchdog.js';
 import { mockInfraCostEntries } from '../services/opsHealthMocks.js';
-import { INFRA_COST_BUDGETS, type InfraCostBudget } from '../config/infraCostBudgets.js';
+import { type InfraCostBudget } from '../config/infraCostBudgets.js';
 import {
   INFRA_COST_VENDORS,
   type InfraCostEntry,

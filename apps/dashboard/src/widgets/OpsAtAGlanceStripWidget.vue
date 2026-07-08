@@ -9,7 +9,6 @@
 // §16.1).
 
 import { computed, type Ref } from 'vue';
-import { useRouter } from 'vue-router';
 import { useDateRange } from '../composables/useDateRange.js';
 import { usePublicSurfaceHealth } from '../composables/usePublicSurfaceHealth.js';
 import { useErrorRateMonitor } from '../composables/useErrorRateMonitor.js';
@@ -42,14 +41,6 @@ const watchdog = useInfraCostWatchdog(() => costResponse.value, INFRA_COST_BUDGE
 const updatedAtRef: Ref<number | null> = computed(() => health.updatedAt.value);
 const sourceFreshnessRef: Ref<DataFreshnessSource | null> = computed(() => health.source.value);
 const { relativeTime, sourceLabel } = useDataFreshness(updatedAtRef, sourceFreshnessRef);
-
-const router = useRouter();
-function navigateToSystem(): void {
-  // why: depth-on-demand UX — the strip is a glance surface on
-  // Overview; the full ops widgets live on `/system`. A single click
-  // takes the operator to the full surface.
-  router.push('/system');
-}
 
 // why: D-19608 Widget State Gate Pattern — single `state` computed
 // gates the entire render via the 4-arm v-if chain. WP-204 §Widget

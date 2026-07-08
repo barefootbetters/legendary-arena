@@ -6,11 +6,7 @@ import { useDataFreshness, type DataFreshnessSource } from '../composables/useDa
 import { fetchTrafficSources } from '../services/mocks.js';
 import BaseChart from '../components/charts/BaseChart.vue';
 import type { EChartsOption } from 'echarts';
-import {
-  ACQUISITION_CHANNELS,
-  type AcquisitionChannel,
-  type TrafficSource,
-} from '../types/index.js';
+import { ACQUISITION_CHANNELS, type AcquisitionChannel } from '../types/index.js';
 
 /**
  * Resolve a PrimeVue design-token value from the document root. ECharts

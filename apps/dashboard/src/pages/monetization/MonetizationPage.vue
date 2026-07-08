@@ -55,8 +55,8 @@ const { relativeTime, sourceLabel } = useDataFreshness(updatedAt, source);
       :loading="loading"
       :paginator="true"
       :rows="20"
-      dataKey="id"
-      filterDisplay="row"
+      data-key="id"
+      filter-display="row"
       class="revenue-table"
     >
       <Column field="date" header="Date" :sortable="true" filter />
