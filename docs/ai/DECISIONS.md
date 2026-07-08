@@ -26991,5 +26991,37 @@ the fields). The `www` marketing site does NOT get the name here; surfacing it t
 D-24084 and is separate work.
 
 **Packet:** WP-330 + EC-360. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
+### D-24117 — HUD Turn Header Reads `G.logMeta.turn`, Not Live `ctx.turn`
+
+**Status:** Active (post-execution) 2026-07-08. `D-24026` live-verify operator-pending on deploy.
+
+**User-Visible Surface:** play.legendary-arena.com (the HUD turn header + the Game Log panel).
+
+**Context.** The operator reported that on a completed match the HUD header showed `Turn 20`
+while the game log's last line read `19.2.13` — an off-by-one. Root cause: the match ends by
+transitioning the `play` phase to the `end` phase (`play.next: 'end'`). In boardgame.io a phase
+change starts a fresh framework turn, so `ctx.turn` bumps one past the last real play turn
+(19 → 20) on entering `end`. The `end` phase is `end: {}` — no `onBegin` — so `G.logMeta.turn`
+(stamped only in the **play**-phase `onBegin`, WP-328/D-24114, and the value the log numbers its
+lines by) stays frozen at the last play turn. The HUD header read live `ctx.turn` (20); the log
+read `logMeta.turn` (19).
+
+**Decision.** Project the HUD turn header from the same source the log numbers by:
+`uiState.build.ts` `game.turn` changes from `ctx.turn` to
+`gameState.logMeta?.turn ?? ctx.turn`. During live play the two are identical
+(`logMeta.turn === ctx.turn` for the active turn), so this only corrects the game-over display;
+at game-over the header now holds at the last play turn and matches the log. The `?? ctx.turn`
+fallback preserves a turn value before the first play `onBegin` (lobby/setup) and in observation
+harnesses that skip `onBegin` (which never set `logMeta`). Read-only projection change —
+`game.turn` stays a `number`, the UIState shape is unchanged (no arena-client impact), and
+`logMeta` is already hash-excluded (D-24081-style) so there is no `finalStateHash`/persistence/
+determinism surface.
+
+**Not changed.** The WP-328 numbering and `logMeta` shape (this reads it), the `game.ts` phase/
+turn config (boardgame.io owns turn advancement — we fix the display source, not the framework
+counter), and the lobby turn-base offset (the log opening at `2.2.1` because the lobby is
+boardgame.io turn 1 is a separate, heavier change — explicitly out of scope).
+
+**Packet:** WP-331 + EC-361. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
 
 Protect this file.
