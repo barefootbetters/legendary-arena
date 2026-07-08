@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **38 / 50** entity pages.
-> Last regenerated: 2026-07-07.
+> **40 / 50** entity pages.
+> Last regenerated: 2026-07-08.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority.
 
@@ -36,6 +36,12 @@ Coordinated subsystems spanning multiple files / phases.
 - [Scoring](scoring.md) — Two-layer measurement: scenario `ParBaseline`
   (Layer A) + per-match `FinalScore` (Layer B); version-pinned,
   replay-verified, JSON-serializable.
+- [Leaderboard](leaderboard.md) — The public Legends Attract Board
+  ("Hall of Legends", `apps/legends-board` → `legends.legendary-arena.com`,
+  domain not yet live); R2-snapshot-driven, zero-auth; keyed on the
+  engine's `ScenarioKey`. Includes the proposed annual-championship tier
+  structure (overall / per-mastermind set-gauntlet / skill tiers) as open
+  questions.
 - [PAR Simulation Calibration](par-simulation-calibration.md) — The
   Monte-Carlo pipeline that *devises* a scenario's PAR: the T2 competent
   heuristic plays 500+ complete games, each scored with the live Raw Score
