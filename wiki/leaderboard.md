@@ -21,6 +21,8 @@ source:
   - ../docs/ai/work-packets/WP-142-legends-snapshot-publisher.md
   - ../docs/ai/work-packets/WP-143-legends-attract-board.md
   - ../docs/ai/execution-checklists/EC-164-legends-attract-board.checklist.md
+  - ../docs/ops/domains.json
+  - ../render.yaml
   - ../docs/02-ARCHITECTURE.md
   - ../docs/12-SCORING-REFERENCE.md
   - ../docs/01-VISION.md
@@ -39,8 +41,10 @@ render at **`https://legends.legendary-arena.com`** (Cloudflare Pages). It
 displays scenario rankings computed by the engine's two-layer PAR
 [Scoring](scoring.md) system, reading pre-computed JSON snapshots from R2
 with zero server API calls and zero authentication. The board app is built
-and merged (WP-143, 2026-05-15) but its custom domain is **not yet
-provisioned** — see [Edge Cases](#edge-cases). The multi-tier *annual
+and merged (WP-143, 2026-05-15); as of **2026-07-08 it is live** at that URL
+— the Cloudflare Pages project, custom domain, and WP-142 snapshot publisher
+were all provisioned that day (details under [Edge Cases](#edge-cases)). The
+multi-tier *annual
 championship* structure (overall champion, per-mastermind championships,
 skill tiers, yearly archive) is a **proposal**, not a landed design — it
 lives in [Open Questions](#open-questions) until ratified.
@@ -52,8 +56,9 @@ lives in [Open Questions](#open-questions) until ratified.
 | Concern | Location |
 |---|---|
 | Public leaderboard app | [`apps/legends-board`](../apps/legends-board/package.json) — Vue 3 + Vite SPA |
-| Intended public URL | `https://legends.legendary-arena.com` (Cloudflare Pages) |
-| Snapshot publisher | WP-142 — writes ranking JSON to R2 under `legends/v1/*` |
+| Public URL (live 2026-07-08) | `https://legends.legendary-arena.com` — Cloudflare Pages project `legendary-arena-legends` |
+| Snapshot publisher | WP-142 — writes ranking JSON to R2 under `legends/v1/*` (enabled in production 2026-07-08) |
+| R2 snapshot host | `https://images.legendary-arena.com/legends/v1/*` (the `legendary-images` bucket; the board's `VITE_LEGENDS_R2_BASE_URL`) |
 | Scoring math (the numbers shown) | [`docs/12-SCORING-REFERENCE.md`](../docs/12-SCORING-REFERENCE.md) + [Scoring](scoring.md) |
 | PAR calibration (how a scenario's baseline is set) | [PAR Simulation Calibration](par-simulation-calibration.md) |
 
@@ -136,17 +141,36 @@ invented.
 
 ## Edge Cases
 
-- **The public URL is not live yet.** `legends.legendary-arena.com` is
-  documented as `state=planned` with DNS unprovisioned; an operational
-  health check against it returns `ENOTFOUND`. The board *app* is built and
-  merged (WP-143), and [`docs/02-ARCHITECTURE.md`](../docs/02-ARCHITECTURE.md)
-  lists the domain as "planned." Treat the URL as the intended address, not
-  a browsable page, until the Cloudflare Pages custom domain and DNS are
-  attached.
-- **The board only shows what the publisher wrote.** With no live
-  submission volume feeding WP-142's snapshot publisher, the board renders
-  empty/placeholder panels. A blank board is a data-supply state, not a
-  board bug.
+- **The public URL is live (since 2026-07-08).** The deploy/domain
+  provisioning that WP-143's app merge left open was finished this date. A
+  Cloudflare Pages project `legendary-arena-legends` (build
+  `pnpm --filter @legendary-arena/legends-board build`, output
+  `apps/legends-board/dist`, env
+  `VITE_LEGENDS_R2_BASE_URL=https://images.legendary-arena.com`) serves
+  `https://legends.legendary-arena.com` (HTTP 200, SSL). The zero-API
+  guarantee was verified against the **deployed bundle** — it contains no
+  `api.legendary-arena.com` / `*.onrender.com` references and reads only
+  `images.legendary-arena.com/legends/v1/*`; R2 CORS needed no change (the
+  bucket already serves `Access-Control-Allow-Origin: *`).
+  [`docs/ops/domains.json`](../docs/ops/domains.json) `legends.` is now
+  `state=live` and `scripts/check-subdomains.mjs` reports it OK (PR #598).
+  No app code changed — this was deploy/domain only. (Note:
+  [`docs/02-ARCHITECTURE.md`](../docs/02-ARCHITECTURE.md)'s domain table may
+  still read *planned*; `domains.json` is the operational status of record.)
+- **The board only shows what the publisher wrote.** WP-142's snapshot
+  publisher was enabled in production on 2026-07-08
+  (`LEGENDS_PUBLISHER_ENABLED=true`, made durable in `render.yaml` by
+  PR #599); `GET /health/legends-publisher` reports `status: "ok"` with a
+  fresh `lastSuccessAt` and no errors. At enable time the live manifest
+  (`legends/v1/manifest.json`) exposed a **single board, `global-top`, with
+  `rowCount: 0`** — no qualifying completed matches to rank yet. The board
+  therefore renders its empty "Overall Rankings" state (with a working
+  "Updated N min ago" freshness badge), not an error, and fills on the next
+  ~5-minute publish cycle as real games finish. A blank board is a
+  data-supply state, not a board bug. Note the SPA ships five panel
+  components (overall, weekly, by-scheme, recent-achievements, now-playing),
+  but only the boards the publisher actually emits are rendered — at cutover
+  that is just `global-top`.
 - **Cross-version comparison is never silent.** Rows carry a
   `scoringConfigVersion`; any PAR or weight change increments it, and rows
   under different versions are not directly comparable (VISION §22). Any
