@@ -18,6 +18,7 @@ import type { RevealContext } from '../villainDeck/villainDeck.reveal.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { SCHEME_TWIST_RESOLVERS } from './schemeTwistResolvers.js';
 import { SCHEME_TWIST_CONFIGS } from './schemeTwistConfigs.js';
+import { pushLog } from '../log/logPush.js';
 
 // why: MVP uses a fixed threshold. Most standard Legendary schemes trigger
 // loss at 7 twists. Per-scheme overrides come from SchemeTwistConfig.lossThreshold.
@@ -132,7 +133,7 @@ export function schemeTwistHandler(
         twistCardId,
       );
     } else {
-      gameState.messages.push(
+      pushLog(gameState, 
         `[Scheme Twist] Resolver "${config.resolverId}" not found in registry for scheme "${schemeId}".`,
       );
     }
@@ -140,7 +141,7 @@ export function schemeTwistHandler(
     // why: config-not-found is safe because the generic counter-increment
     // and loss-check still run below. Unconfigured schemes simply get the
     // counter-only behavior — no card-specific effects.
-    gameState.messages.push(
+    pushLog(gameState, 
       `[Scheme Twist] No resolver configured for scheme "${schemeId}" — counter increment only.`,
     );
   }

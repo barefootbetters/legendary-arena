@@ -43,6 +43,7 @@ import {
   composeAmbushNarrative,
   composeEffectResultLogLine,
 } from '../events/notableEvents.compose.js';
+import { pushLog } from '../log/logPush.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -130,7 +131,7 @@ export function performVillainReveal(
 
   // Step 1: Handle empty deck
   if (deck.length === 0 && discard.length === 0) {
-    G.messages.push(
+    pushLog(G, 
       'Villain deck reveal skipped: both deck and discard are empty.',
     );
     return;
@@ -149,7 +150,7 @@ export function performVillainReveal(
   const cardId = G.villainDeck.deck[0];
 
   if (!cardId) {
-    G.messages.push(
+    pushLog(G, 
       'Villain deck reveal skipped: deck is empty after reshuffle attempt.',
     );
     return;
@@ -159,7 +160,7 @@ export function performVillainReveal(
   const cardType = G.villainDeckCardTypes[cardId];
 
   if (!cardType) {
-    G.messages.push(
+    pushLog(G, 
       `Villain deck reveal failed: card "${cardId}" has no entry in villainDeckCardTypes. No removal or trigger occurred.`,
     );
     return;
@@ -175,7 +176,7 @@ export function performVillainReveal(
   if (cardType === 'villain' || cardType === 'henchman') {
     const cityValidation = validateCityShape(G.city);
     if (!cityValidation.ok) {
-      G.messages.push(
+      pushLog(G, 
         `Villain city placement skipped: G.city is malformed. Card "${cardId}" remains in deck.`,
       );
       return;
@@ -199,7 +200,7 @@ export function performVillainReveal(
       // counter tracks escape events, the pile tracks card identity.
       G.escapedPile = [...G.escapedPile, pushResult.escapedCard];
 
-      G.messages.push(
+      pushLog(G, 
         `Villain ${formatCardRef(G.cardDisplayData, pushResult.escapedCard)} escaped from the city.`,
       );
 
@@ -215,7 +216,7 @@ export function performVillainReveal(
       if (woundPileBefore > 0) {
         // why: track current player wound for UI economy projection
         G.turnEconomy.woundsDrawn += 1;
-        G.messages.push(
+        pushLog(G, 
           `Player ${ctx.currentPlayer} gained a wound from villain escape.`,
         );
       }
@@ -231,7 +232,7 @@ export function performVillainReveal(
       G.attachedBystanders = escapeBystanderResult.attachedBystanders;
       G.piles.bystanders = escapeBystanderResult.bystandersPile;
       if (escapeBystanderResult.bystandersPile.length > bystanderPileBefore) {
-        G.messages.push(
+        pushLog(G, 
           `Bystanders from escaped villain ${formatCardRef(G.cardDisplayData, pushResult.escapedCard)} returned to supply.`,
         );
       }
@@ -263,7 +264,7 @@ export function performVillainReveal(
       // fire site via G.cardDisplayData (the composer stays pure).
       if (appliedEscapeResults.length > 0) {
         const resolvedEscapeResults = resolveEffectResultNames(G, appliedEscapeResults);
-        G.messages.push(
+        pushLog(G, 
           `Escape effect: ${composeEffectResultLogLine(resolvedEscapeResults)}.`,
         );
       }
@@ -317,7 +318,7 @@ export function performVillainReveal(
       // effect applied. The unconditional city-entry bystander attach below is
       // NOT an Ambush effect and never appears here.
       if (appliedAmbushResults.length > 0) {
-        G.messages.push(
+        pushLog(G, 
           `Ambush effect: ${composeEffectResultLogLine(resolvedAmbushResults)}.`,
         );
       }
@@ -439,7 +440,7 @@ export function performVillainReveal(
         attachedBystanders: [...existing, cardId],
       };
     }
-    G.messages.push(
+    pushLog(G, 
       `${formatCardRef(G.cardDisplayData, cardId)} revealed and captured by ${formatCardRef(G.cardDisplayData, captorCardId)}.`,
     );
   } else if (cardType === 'scheme-twist') {

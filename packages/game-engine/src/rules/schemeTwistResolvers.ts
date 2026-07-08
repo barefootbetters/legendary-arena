@@ -22,6 +22,7 @@ import { koCard } from '../board/ko.logic.js';
 import { refillHqSlot } from '../board/city.logic.js';
 import { attachBystanderToVillain } from '../board/bystanders.logic.js';
 import { composeSchemeTwistNarrative } from '../events/notableEvents.compose.js';
+import { pushLog } from '../log/logPush.js';
 
 // ---------------------------------------------------------------------------
 // Internal — narrative name lookup
@@ -105,7 +106,7 @@ function revealOrPunish(
     typeof condition.value !== 'string' ||
     typeof penalty !== 'string'
   ) {
-    gameState.messages.push(
+    pushLog(gameState, 
       '[Scheme Twist] reveal-or-punish resolver received invalid params — expected condition { field, value } and penalty string.',
     );
   } else {
@@ -122,7 +123,7 @@ function revealOrPunish(
         const traitValue = condition.field === 'heroClass' ? traits.heroClass : traits.team;
         if (traitValue === condition.value) {
           matchFound = true;
-          gameState.messages.push(
+          pushLog(gameState, 
             `[Scheme Twist] Player ${playerId} reveals "${cardId}" — ${condition.field} "${condition.value}" condition met.`,
           );
           break;
@@ -132,7 +133,7 @@ function revealOrPunish(
       if (!matchFound) {
         if (penalty === 'gainWound') {
           if (gameState.piles.wounds.length === 0) {
-            gameState.messages.push(
+            pushLog(gameState, 
               `[Scheme Twist] Player ${playerId} has no matching hero — wound supply empty, no wound gained.`,
             );
           } else {
@@ -142,7 +143,7 @@ function revealOrPunish(
             );
             gameState.piles.wounds = woundResult.woundsPile;
             gameState.playerZones[playerId]!.discard = woundResult.playerDiscard;
-            gameState.messages.push(
+            pushLog(gameState, 
               `[Scheme Twist] Player ${playerId} has no matching ${condition.field} "${condition.value}" hero — gained a wound.`,
             );
           }
@@ -153,7 +154,7 @@ function revealOrPunish(
           );
           gameState.playerZones[playerId]!.hand = moveResult.from;
           gameState.playerZones[playerId]!.discard = moveResult.to;
-          gameState.messages.push(
+          pushLog(gameState, 
             `[Scheme Twist] Player ${playerId} has no matching ${condition.field} "${condition.value}" hero — discarded entire hand.`,
           );
         }
@@ -209,11 +210,11 @@ function chainedReveals(
   // why: branch-then-emit; the terminal emission below fires once whether
   // we run the chained reveals or short-circuit on invalid params.
   if (typeof revealCount !== 'number' || revealCount < 1) {
-    gameState.messages.push(
+    pushLog(gameState, 
       '[Scheme Twist] chained-reveals resolver received invalid params — expected revealCount as a positive integer.',
     );
   } else {
-    gameState.messages.push(
+    pushLog(gameState, 
       `[Scheme Twist] Twist: revealing ${revealCount} card(s) from the villain deck.`,
     );
 
@@ -222,7 +223,7 @@ function chainedReveals(
         gameState.villainDeck.deck.length === 0 &&
         gameState.villainDeck.discard.length === 0
       ) {
-        gameState.messages.push(
+        pushLog(gameState, 
           `[Scheme Twist] Villain deck exhausted after ${revealIndex} of ${revealCount} reveals.`,
         );
         break;
@@ -276,7 +277,7 @@ function woundAll(
   // why: branch-then-emit; single terminal push so the EC grep counts
   // exactly 5 event-emission calls across the file.
   if (typeof woundCount !== 'number' || woundCount < 1) {
-    gameState.messages.push(
+    pushLog(gameState, 
       '[Scheme Twist] wound-all resolver received invalid params — expected woundCount as a positive integer.',
     );
   } else {
@@ -286,7 +287,7 @@ function woundAll(
       let woundsGained = 0;
       for (let woundIndex = 0; woundIndex < woundCount; woundIndex++) {
         if (gameState.piles.wounds.length === 0) {
-          gameState.messages.push(
+          pushLog(gameState, 
             `[Scheme Twist] Wound supply exhausted — player ${playerId} gained ${woundsGained} of ${woundCount} wounds.`,
           );
           break;
@@ -301,7 +302,7 @@ function woundAll(
       }
 
       if (woundsGained > 0 && woundsGained === woundCount) {
-        gameState.messages.push(
+        pushLog(gameState, 
           `[Scheme Twist] Player ${playerId} gained ${woundsGained} wound(s).`,
         );
       }
@@ -351,7 +352,7 @@ function koFromHq(
   // why: branch-then-emit; single terminal push at the end so the EC grep
   // counts exactly 5 event-emission calls across the file.
   if (typeof koCount !== 'number' || koCount < 1) {
-    gameState.messages.push(
+    pushLog(gameState, 
       '[Scheme Twist] ko-from-hq resolver received invalid params — expected koCount as a positive integer.',
     );
   } else {
@@ -379,14 +380,14 @@ function koFromHq(
     });
 
     if (eligible.length === 0) {
-      gameState.messages.push(
+      pushLog(gameState, 
         '[Scheme Twist] No eligible heroes in the HQ to KO.',
       );
     } else {
       const actualKoCount = Math.min(koCount, eligible.length);
 
       if (eligible.length < koCount) {
-        gameState.messages.push(
+        pushLog(gameState, 
           `[Scheme Twist] Only ${eligible.length} eligible hero(es) in HQ — KO'ing all of them instead of ${koCount}.`,
         );
       }
@@ -397,7 +398,7 @@ function koFromHq(
         gameState.ko = koCard(gameState.ko, target.cardId);
         gameState.hq[target.slotIndex] = null;
 
-        gameState.messages.push(
+        pushLog(gameState, 
           `[Scheme Twist] KO'd "${target.cardId}" (cost ${target.cost}) from HQ slot ${target.slotIndex}.`,
         );
 
@@ -455,7 +456,7 @@ function midtownBankRobbery(
   const bankOccupant = gameState.city[BANK_CITY_INDEX];
 
   if (bankOccupant === null || bankOccupant === undefined) {
-    gameState.messages.push(
+    pushLog(gameState, 
       '[Midtown Bank Robbery] Twist: Bank is empty — no bystander capture.',
     );
   } else {
@@ -475,17 +476,17 @@ function midtownBankRobbery(
     }
 
     if (captured === 0) {
-      gameState.messages.push(
+      pushLog(gameState, 
         `[Midtown Bank Robbery] Twist: villain "${bankOccupant}" in Bank found no bystanders to capture (supply empty).`,
       );
     } else {
-      gameState.messages.push(
+      pushLog(gameState, 
         `[Midtown Bank Robbery] Twist: villain "${bankOccupant}" in Bank captured ${captured} bystander(s).`,
       );
     }
   }
 
-  gameState.messages.push(
+  pushLog(gameState, 
     '[Midtown Bank Robbery] Twist: playing the next villain-deck card.',
   );
   performVillainReveal(gameState, context, implementationMap);

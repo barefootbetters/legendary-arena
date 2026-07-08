@@ -19,6 +19,7 @@
 import type { LegendaryGameState } from '../types.js';
 import type { HollowEffectRecord } from './hollowEffect.types.js';
 import { HOLLOW_EFFECTS_CAP } from './hollowEffect.types.js';
+import { pushLog } from '../log/logPush.js';
 
 // ---------------------------------------------------------------------------
 // recordHollowEffect — the single write seam (WP-257)
@@ -73,7 +74,7 @@ export function recordHollowEffect(
   // is a silent no-op rather than a throw: moves never throw, and detection
   // must never crash the effect path.
   if (Array.isArray(G.messages)) {
-    G.messages.push(
+    pushLog(G, 
       `Unhandled effect observed: card "${record.cardId}" declared a "${record.mechanic}" mechanic at ${record.timing}, but no executable handler was reached (${record.reason}).`,
     );
   }

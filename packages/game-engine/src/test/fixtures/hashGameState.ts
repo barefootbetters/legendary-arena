@@ -76,7 +76,11 @@ export function hashGameState(state: LegendaryGameState): string {
   // (which has no dedicated oracle layer) deliberately STAYS in the hash. The
   // exclusion is a rest-destructure of a fresh shallow copy — `state` is never
   // mutated, and no nested `messages` key is affected (only the top-level field).
-  const { messages: _excludedMessageLog, ...stateWithoutMessageLog } = state;
+  // why: WP-328 / D-24114 — also exclude G.logMeta (the {turn}.{step}.{action} numbering
+  // counter). Like messages, it is hash-safe: deterministic but not part of the state the
+  // placement-hash oracle guards, and including it would force a sentinel re-pin on every
+  // action. The messages oracle already covers the prefixed lines.
+  const { messages: _excludedMessageLog, logMeta: _excludedLogMeta, ...stateWithoutMessageLog } = state;
   const canonicalJson = JSON.stringify(stateWithoutMessageLog, sortKeysReplacer);
   const hasher = createHash('sha256');
   hasher.update(canonicalJson);

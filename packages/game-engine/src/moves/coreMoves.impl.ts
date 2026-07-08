@@ -23,6 +23,7 @@ import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { formatPlayedCardLabel } from '../log/logDisplay.js';
+import { pushLog } from '../log/logPush.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -153,7 +154,7 @@ export function applyCardPlay(
   // (already in scope). Emitted in the shared core so playFromUndercover is
   // covered identically. Cheap: WP-294 excluded G.messages from the
   // finalStateHash oracle (D-24081).
-  G.messages.push(
+  pushLog(G, 
     `Player ${playerID} played ${formatPlayedCardLabel(G.cardDisplayData, cardId)}.`,
   );
 

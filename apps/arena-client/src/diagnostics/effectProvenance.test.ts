@@ -79,6 +79,30 @@ describe('buildEffectProvenance — recentlyPlayedCards', () => {
     );
   });
 
+  test('WP-328: extracts the ext_id from a prefixed, enriched "played" line', () => {
+    // why: WP-323/324 render the label "{Name} ({ext-id}) — {effect}" and WP-328 prefixes
+    // the line "{turn}.{step}.{action} " — the parser must strip the prefix and pull the
+    // real ext-id from the parens, not capture the whole label (the diagnostics regression).
+    const provenance = buildEffectProvenance(
+      snapshotWith({
+        log: [
+          '10.2.1 Player 0 played Interstellar Adventures (wtif/star-lord-tchalla/interstellar-adventures#2) — What If...?: You get +3 recruit.',
+          '10.2.2 Player 0 played S.H.I.E.L.D. Agent (starting-shield-agent).',
+          'Player 0 played antm/black-knight/the-ebony-blade#0.',
+        ],
+      }),
+    );
+    assert.deepEqual(
+      provenance.recentlyPlayedCards.map((card) => card.extId),
+      [
+        'wtif/star-lord-tchalla/interstellar-adventures#2',
+        'starting-shield-agent',
+        // why: a legacy raw-id line (no parens) still classifies via the fallback.
+        'antm/black-knight/the-ebony-blade#0',
+      ],
+    );
+  });
+
   test('caps the list at RECENTLY_PLAYED_CARDS_CAP, keeping the last N', () => {
     const log: string[] = [];
     for (let index = 0; index < RECENTLY_PLAYED_CARDS_CAP + 2; index += 1) {

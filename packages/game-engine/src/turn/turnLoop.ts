@@ -33,6 +33,10 @@ export interface TurnLoopContext {
  */
 export interface TurnLoopState {
   currentStage: TurnStage;
+  // why: WP-328 — advanceTurnStage resets the per-step action counter when the stage
+  // advances. Optional + narrow (only the field this file writes) to stay decoupled from
+  // the full LegendaryGameState / logMeta shape.
+  logMeta?: { actionInStep: number };
 }
 
 /**
@@ -56,6 +60,11 @@ export function advanceTurnStage(gameState: TurnLoopState, context: TurnLoopCont
 
   if (nextStage !== null) {
     gameState.currentStage = nextStage;
+    // why: WP-328 — restart the per-step action counter when the stage advances so the
+    // {turn}.{step}.{action} numbering resets per step.
+    if (gameState.logMeta !== undefined) {
+      gameState.logMeta.actionInStep = 0;
+    }
     return;
   }
 

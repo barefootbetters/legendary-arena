@@ -16,6 +16,7 @@ import type { ImplementationMap } from './ruleRuntime.execute.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { composeMastermindStrikeNarrative } from '../events/notableEvents.compose.js';
+import { pushLog } from '../log/logPush.js';
 
 // why: mastermind ext_id constants — matching against
 // G.selection.mastermindId for per-mastermind dispatch. Strings come from
@@ -96,7 +97,7 @@ function resolveMagnetoStrike(gameState: LegendaryGameState): void {
     const startingHandSize = playerZones.hand.length;
 
     if (startingHandSize <= MAGNETO_HAND_SIZE_LIMIT) {
-      gameState.messages.push(
+      pushLog(gameState, 
         `[Magneto Master Strike] Player ${playerId} already has ${startingHandSize} card(s) in hand — no discard.`,
       );
       continue;
@@ -111,7 +112,7 @@ function resolveMagnetoStrike(gameState: LegendaryGameState): void {
     playerZones.hand = kept;
     playerZones.discard = [...playerZones.discard, ...discarded];
 
-    gameState.messages.push(
+    pushLog(gameState, 
       `[Magneto Master Strike] Player ${playerId} discarded ${discardCount} card(s) down to ${MAGNETO_HAND_SIZE_LIMIT}.`,
     );
   }

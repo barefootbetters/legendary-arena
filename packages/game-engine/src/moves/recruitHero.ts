@@ -22,6 +22,7 @@ import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { getHooksForCard, filterHooksByTiming } from '../rules/heroAbility.types.js';
 import { formatCardRef } from '../log/logDisplay.js';
+import { pushLog } from '../log/logPush.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -141,7 +142,7 @@ export function recruitHero(
   // why: D-24049 — append a Wall-Crawl placement note ONLY on the deck-top branch;
   // the discard branch's line is byte-identical to the pre-WP-273 WP-135 format.
   const placementNote = placeOnDeckTop ? ' (Wall-Crawl: placed on top of deck)' : '';
-  G.messages.push(
+  pushLog(G, 
     `Player ${ctx.currentPlayer} recruited ${formatCardRef(G.cardDisplayData, cardId)}; HQ slot ${String(hqIndex)} refilled from heroDeck ${refillSuffix}${placementNote}`,
   );
 }

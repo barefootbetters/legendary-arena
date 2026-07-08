@@ -688,6 +688,14 @@ export interface LegendaryGameState {
   /** Deterministic event log populated by rule effects. */
   messages: string[];
 
+  // why: WP-328 — the numbering data for the `{turn}.{step}.{action}` game-log prefix.
+  // `turn` is stamped from `ctx.turn` at onBegin (the turn number lives only in ctx, and
+  // helper push sites have no ctx); `actionInStep` resets at onBegin and each stage
+  // advance. Optional so narrow unit fixtures omit it (pushLog falls back to unprefixed).
+  // Excluded from finalStateHash (D-24081-style), so it is replay-safe.
+  /** Game-log numbering metadata (WP-328); hash-excluded. */
+  logMeta?: { turn: number; actionInStep: number };
+
   // why: counters tracks named numeric values used by endgame conditions and
   // scheme/mastermind rules. Counters are modified by modifyCounter effects
   // and read by evaluateEndgame.

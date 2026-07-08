@@ -24,6 +24,7 @@ import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { formatCardRef } from '../log/logDisplay.js';
+import { pushLog } from '../log/logPush.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -165,7 +166,7 @@ export function resolveVictoryPileCardPick(
 
   // Step 6: Grant attack — the ONLY G mutation on the success path.
   G.turnEconomy.attack += attack;
-  G.messages.push(
+  pushLog(G, 
     `Player ${playerID} claimed +${attack} attack from ${formatCardRef(G.cardDisplayData, typedCardId)} in their victory pile (Ebony Blade).`,
   );
 
