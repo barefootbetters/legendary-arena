@@ -89,6 +89,47 @@ describe('buildUIState', () => {
     assert.equal(result.game.activePlayerId, '0');
   });
 
+  it('game.turn reads G.logMeta.turn when set, not the bumped ctx.turn (WP-331)', () => {
+    // why: WP-331 — at game-over boardgame.io transitions play -> end, and a
+    // phase change starts a fresh framework turn, bumping ctx.turn one past the
+    // last real play turn. G.logMeta.turn (which the game log numbers its lines
+    // by) stays frozen at the last play turn because the end phase has no
+    // onBegin. The HUD header must follow the log, so game.turn resolves from
+    // logMeta.turn — otherwise the header reads "Turn 20" while the log's last
+    // line is "19.2.13".
+    const gameState = createTestGameState();
+    gameState.logMeta = { turn: 19, actionInStep: 13 };
+    const endCtx = { phase: 'end' as string | null, turn: 20, currentPlayer: '0' };
+
+    const result = buildUIState(gameState, endCtx);
+
+    assert.equal(
+      result.game.turn,
+      19,
+      'game.turn must match the frozen logMeta.turn (last play turn), not the bumped ctx.turn',
+    );
+  });
+
+  it('game.turn falls back to ctx.turn when G.logMeta is absent (WP-331)', () => {
+    // why: WP-331 — before the first play-phase onBegin stamps logMeta
+    // (lobby/setup, or observation harnesses that skip onBegin), there is no
+    // frozen turn, so the header falls back to live ctx.turn.
+    const gameState = createTestGameState();
+    assert.equal(gameState.logMeta, undefined, 'fresh setup state has no logMeta');
+
+    const result = buildUIState(gameState, {
+      phase: 'lobby' as string | null,
+      turn: 1,
+      currentPlayer: '0',
+    });
+
+    assert.equal(
+      result.game.turn,
+      1,
+      'game.turn falls back to ctx.turn when logMeta is unset',
+    );
+  });
+
   it('UIState is JSON-serializable (roundtrip)', () => {
     const gameState = createTestGameState();
     const result = buildUIState(gameState, mockCtx);
