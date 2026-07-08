@@ -26835,7 +26835,7 @@ engine/registry/server import.
 
 ### D-24113 — Server-Side Reaper for Stale bgio Matches (TTL Policy + In-Process Interval)
 
-**Status:** Drafted 2026-07-07; not yet landed. Flips to Active (post-execution) when WP-327 executes. `D-24026` live-verify operator-pending on deploy.
+**Status:** Active (post-execution) 2026-07-07. `D-24026` live-verify operator-pending on deploy.
 
 **User-Visible Surface:** play.legendary-arena.com (indirectly — the lobby) + server logs.
 

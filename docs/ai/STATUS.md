@@ -7,6 +7,33 @@
 
 ## Current State
 
+### WP-327 / EC-357 Executed — Server-Side Reaper for Stale bgio Matches (D-24113 Active) (2026-07-07)
+
+Server half of the same cleanup. WP-309 (D-24095) made `bgio.matches` durable but nothing
+removed rows, so abandoned and finished matches accumulated without bound. A new in-process
+reaper now deletes stale rows periodically.
+
+- **New `db/matchReaper.js`:** `reapStaleMatches(database, options)` runs one atomic
+  `DELETE FROM bgio.matches` — a finished match (`jsonb_exists(metadata,'gameover')`) past a
+  1 h grace, a non-gameover match past a 24 h no-update TTL, both measured server-side as
+  `updated_at < now() - make_interval(secs => $n)`. `startMatchReaper` runs it immediately and
+  on a 15 min `setInterval`; a failed run is logged and swallowed; the timer is `unref()`'d.
+- **`index.mjs` wiring (01.5):** the reaper starts after `startServer()` when `pool !==
+  undefined` and stops in the SIGTERM handler beside `legendsPublisherHandle.stop()`, mirroring
+  the legends-publisher scheduler.
+- **Persistence Boundary (D-24095):** deletes ONLY from the `bgio` framework schema — never
+  `legendary.*`, never interprets the blob, no engine/registry/preplan/boardgame.io import. No
+  application wall-clock — the age decision runs in SQL `now()`. `bgioPgStore.js` (WP-309
+  contract module) unchanged; no HTTP endpoint added.
+- **Gates:** reaper suite **4/4** (query shape + params `[3600, 86400]` + `rowCount` +
+  full-sentence error + mock-timer immediate/interval/stop, and a `legendary.` absence guard);
+  `pnpm -r build` 0; server suite unchanged aside from the 4 new tests.
+- **User-Visible Surface = play.legendary-arena.com + server logs.** D-24026 live-verify
+  **operator-pending on deploy**: the reaper start line appears in the logs, and abandoned /
+  finished matches drop out of `bgio.matches` (and the lobby) within the cadence. The ~11 stale
+  rows already present clear on the first post-deploy runs (the immediate startup reap removes
+  those already past TTL).
+
 ### WP-326 / EC-356 Executed — Lobby Join List Shows Only Joinable Matches (D-24112 Active) (2026-07-07)
 
 Client half of the stale-lobby cleanup WP-309 (D-24095) exposed. Once the boardgame.io match
