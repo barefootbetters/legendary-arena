@@ -7,6 +7,38 @@
 
 ## Current State
 
+### WP-331 / EC-361 Executed — HUD Turn Header Reads the Same Turn the Game Log Numbers By (D-24117 Active) (2026-07-08)
+
+On a completed match the HUD turn header showed `Turn 20` while the game log's last line read
+`19.2.13` — an off-by-one the operator reported. The two must agree.
+
+- **Root cause:** the match ends by transitioning the `play` phase to the `end` phase
+  (`play.next: 'end'`). In boardgame.io a phase change starts a fresh framework turn, so
+  `ctx.turn` bumps one past the last real play turn (19 → 20) on entering `end`. The `end` phase
+  is `end: {}` — no `onBegin` — so `G.logMeta.turn` (stamped only in the **play**-phase
+  `onBegin`, WP-328/D-24114, and the value the log numbers its lines by) stays frozen at the
+  last play turn. The header read live `ctx.turn` (20); the log read `logMeta.turn` (19).
+- **Fix (read-only projection):** `uiState.build.ts` `game.turn` reads
+  `gameState.logMeta?.turn ?? ctx.turn` (was `ctx.turn`). During live play the two are identical
+  (`logMeta.turn === ctx.turn` for the active turn), so only the game-over display is corrected —
+  the header now holds at the last play turn and matches the log. The `?? ctx.turn` fallback
+  preserves a turn value before the first play `onBegin` (lobby/setup) and in observation
+  harnesses that skip `onBegin` (which never set `logMeta`).
+- **No contract/determinism surface:** `game.turn` stays a `number` (UIState shape unchanged, no
+  arena-client re-export/type impact); `logMeta` is already hash-excluded (D-24081-style), so
+  reading it adds no `finalStateHash`/persistence surface. `game.ts` phase/turn config untouched
+  (boardgame.io owns turn advancement — we fix the display source, not the framework counter).
+- **Out of scope:** the lobby turn-base offset — the log opens at `2.2.1` because the lobby is
+  boardgame.io turn 1, so the first play turn is `ctx.turn === 2`. Rebasing to "play turn 1 = 1"
+  is a separate, heavier change (re-pins fixtures, shifts every line) and was not folded in.
+- **Gates:** engine `ui/*` suite **151/151** (2 new tests — game-over case + fallback);
+  `pnpm -r build` 0; 2-file engine allowlist held.
+- **User-Visible Surface = play.legendary-arena.com.** D-24026 live-verify **operator-pending on
+  deploy:** on a completed match the header matches the log's last line (e.g. header `Turn 19`
+  with the log ending `19.2.13`), no off-by-one.
+
+---
+
 ### WP-330 / EC-360 Executed — Header Username Label (play) (D-24116 Active) (2026-07-08)
 
 The signed-in play header showed a hardcoded "My account" instead of the player's name.
