@@ -26932,4 +26932,31 @@ unprefixed (its path doesn't fire `onBegin`); numbering the harness/replay is a 
 
 **Packet:** WP-328 + EC-358. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
 
+---
+
+### D-24115 — Remove the Redundant `<ol>` Ordinal from the HUD Game Log
+
+**Status:** Active (post-execution) 2026-07-08. `D-24026` live-verify operator-pending on deploy.
+
+**User-Visible Surface:** play.legendary-arena.com (the Game Log panel + WP-322 export).
+
+**Context.** WP-328 (D-24114) gave every game-log line its own in-text
+`{turn}.{step}.{action}` number. But the Game Log panel renders entries in an `<ol>`, so the
+browser ALSO prepended its own list ordinal (`1.` … `167.`) in front of each line — a
+redundant double-number (`167. 16.2.8 …`). The operator wants only the in-text number.
+
+**Decision.** Suppress the browser `<ol>` marker in `GameLogPanel.vue`: `.entries` gains
+`list-style: none` + `padding-left: 0` (was `1.5rem` for the marker indent). The shared
+`.entries` rule covers both the compact panel and the WP-322 expand overlay. The `<ol>`
+element is retained (the log is semantically ordered; the render tests assert `<ol>`), so this
+is a pure display change with no markup/structure change. The WP-328 in-text number stays; the
+raw `G.messages` log and the Save/export text never carried the browser ordinal (it was only
+the panel's `<ol>` rendering), so they are unaffected.
+
+**Relationship to D-24114.** This does NOT withdraw the WP-328 numbering (D-24114 stays Active);
+it removes the DUPLICATE browser ordinal that visually competed with it. The in-text
+`{turn}.{step}.{action}` number is what the operator wanted to keep.
+
+**Packet:** WP-329 + EC-359. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
+
 Protect this file.
