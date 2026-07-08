@@ -176,6 +176,7 @@ function debugLogFetchFailure(url: string, kind: string, detail: string): void {
   // dev-tier output; the always-on one-shot missing-URL `console.warn` above is
   // separate so a LIVE deploy misconfiguration stays loud in production.
   if (readEnv().DEV) {
+    // eslint-disable-next-line no-console -- intentional DEV-only diagnostic per EC-269 fail-silent policy; stripped from production builds by the DEV gate above
     console.debug(`[triage] LIVE fetch ${url} ${kind}: ${detail}; preserving prior cache state.`);
   }
 }

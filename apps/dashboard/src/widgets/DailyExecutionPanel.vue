@@ -143,10 +143,10 @@ function handleReset(): void {
     >
       <button
         v-for="tab in HORIZON_TABS"
+        :id="`horizon-tab-${tab.id}`"
         :key="tab.id"
         type="button"
         role="tab"
-        :id="`horizon-tab-${tab.id}`"
         :aria-selected="activeHorizonId === tab.id"
         :aria-controls="`horizon-panel-${tab.id}`"
         :tabindex="activeHorizonId === tab.id ? 0 : -1"
@@ -177,9 +177,9 @@ function handleReset(): void {
 
     <div
       v-else
+      :id="`horizon-panel-${activeHorizon.id}`"
       class="widget-body"
       role="tabpanel"
-      :id="`horizon-panel-${activeHorizon.id}`"
       :aria-labelledby="`horizon-tab-${activeHorizon.id}`"
     >
       <p v-if="!horizonHasItems" class="horizon-empty">

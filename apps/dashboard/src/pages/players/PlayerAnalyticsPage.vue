@@ -53,12 +53,12 @@ const { relativeTime, sourceLabel } = useDataFreshness(updatedAt, source);
       :loading="loading"
       :paginator="true"
       :rows="20"
-      dataKey="id"
-      filterDisplay="row"
-      :globalFilterFields="['name', 'email', 'status']"
-      :stripedRows="true"
+      data-key="id"
+      filter-display="row"
+      :global-filter-fields="['name', 'email', 'status']"
+      :striped-rows="true"
       scrollable
-      scrollHeight="60vh"
+      scroll-height="60vh"
       class="player-table"
     >
       <Column field="name" header="Name" :sortable="true" filter />

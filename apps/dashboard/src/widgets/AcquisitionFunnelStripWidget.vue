@@ -10,7 +10,7 @@
 // and `useRetentionCohorts` (day-1 return rate as the supplementary
 // stickiness indicator below the 3 cards).
 
-import { computed, ref, type Ref } from 'vue';
+import { computed, type Ref } from 'vue';
 import { useTrafficSources } from '../composables/useTrafficSources.js';
 import { useActivationFunnel } from '../composables/useActivationFunnel.js';
 import { useRetentionCohorts } from '../composables/useRetentionCohorts.js';

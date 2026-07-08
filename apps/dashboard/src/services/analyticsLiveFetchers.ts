@@ -279,6 +279,7 @@ function debugLogFetchFailure(url: string, kind: string, detail: string): void {
   // browser devtools when needed; structured error display is deferred
   // to a future error-UX hardening WP.
   if (readEnv().DEV) {
+    // eslint-disable-next-line no-console -- intentional DEV-only diagnostic per EC-269 fail-silent policy; stripped from production builds by the DEV gate above
     console.debug(`[analytics] LIVE fetch ${url} ${kind}: ${detail}; preserving empty sentinel.`);
   }
 }
