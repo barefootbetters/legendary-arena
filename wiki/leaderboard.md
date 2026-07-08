@@ -27,6 +27,14 @@ source:
   - ../docs/12-SCORING-REFERENCE.md
   - ../docs/01-VISION.md
   - ../packages/game-engine/src/scoring/parScoring.keys.ts
+  - ../packages/game-engine/src/scoring/parScoring.logic.ts
+  - ../apps/server/src/competition/competition.logic.ts
+  - ../apps/server/src/leaderboards/leaderboard.logic.ts
+  - ../apps/server/src/legends/legends.publisher.ts
+  - ../apps/server/src/profile/profile.routes.ts
+  - ../apps/server/src/profile/ownerProfile.routes.ts
+  - ../data/migrations/007_create_competitive_scores_table.sql
+  - ../docs/ai/DESIGN-RANKING.md
 last-reviewed: 2026-07-08
 ---
 
@@ -118,6 +126,89 @@ championship (per-mastermind, overall, annual) is a **derived aggregation
 over existing `ScenarioKey` rows** — no new engine identity needs to be
 invented.
 
+### From a finished match to a ranked row (the write path)
+
+The board is the *last* stage of a longer pipeline. The **read** direction
+(snapshot → board) is fully shipped and wired; the **write** direction (a
+played match → a stored score) is only partially wired — the gap is called
+out at the end of this section, and it is the real reason the live board is
+currently empty.
+
+The intended end-to-end chain, in order:
+
+1. **The engine scores the match — the client never does.** During play the
+   engine computes the PAR score deterministically
+   ([`parScoring.logic.ts`](../packages/game-engine/src/scoring/parScoring.logic.ts):
+   `deriveScoringInputs` → `computeRawScore` → `computeFinalScore` →
+   `buildScoreBreakdown`), and the completed match yields a replay whose
+   `computeStateHash` is its canonical fingerprint. Lower `finalScore` is
+   better (negative = under PAR).
+
+2. **Submission carries only a replay hash.** The submission contract is
+   `CompetitiveSubmissionRequest = { replayHash: string }`
+   (`apps/server/src/competition/competition.types.ts`) — no score is ever
+   sent by the client. The server (`submitCompetitiveScore` →
+   `submitCompetitiveScoreImpl`,
+   `apps/server/src/competition/competition.logic.ts`) resolves replay
+   ownership, loads the canonical replay, **re-executes it** (`replayGame`),
+   and rejects the submission unless the recomputed `computeStateHash`
+   equals the submitted `replayHash` (`replay_verification_failed`). Only
+   then does it recompute the score server-side — it never trusts a
+   client-supplied number (D-5301). Guests are rejected
+   (`guest_not_eligible`); a scenario whose PAR is unpublished is rejected
+   (`par_not_published`).
+
+3. **The row is written to `legendary.competitive_scores`.** One immutable,
+   write-once row per `(player_id, replay_hash)` (migration
+   `007_create_competitive_scores_table.sql`; immutability per D-5302).
+   Columns: `player_id` (bigint FK → `legendary.players`), `replay_hash`,
+   `scenario_key`, `raw_score`, `final_score`, `score_breakdown` (jsonb),
+   `par_version`, `scoring_config_version`, `state_hash`, `created_at`.
+   **There is no handle or team column** — the stored identity is the
+   internal `player_id`; a display name is attached later by JOIN. The
+   `UNIQUE (player_id, replay_hash)` constraint gives per-replay idempotency
+   (a resubmit is a no-op), but there is **no best-score-per-player
+   collapsing** — every distinct eligible replay is its own row.
+
+4. **The read layer projects rows to a safe public shape.**
+   [`leaderboard.logic.ts`](../apps/server/src/leaderboards/leaderboard.logic.ts)
+   (WP-054 / WP-115 / WP-150) SELECTs from `competitive_scores`,
+   `INNER JOIN legendary.players` for `display_name`, orders
+   `final_score ASC, created_at ASC`, and filters to `link` / `public`
+   visibility. It returns `PublicLeaderboardEntry` — a locked 9-field
+   projection (`rank`, `replayHash`, `playerDisplayName`, `scenarioKey`,
+   `finalScore`, `rawScore`, `parVersion`, `scoringConfigVersion`,
+   `createdAt`) with seven sensitive fields stripped at the type boundary
+   (D-5201). Shipped, wired endpoints — all public, anonymous, read-only,
+   `Cache-Control: no-store`: `GET /api/leaderboards/scenarios`,
+   `/scenarios/:scenarioKey`, `/scores/:replayHash`, `/themes/:themeId`,
+   `/top`.
+
+5. **The publisher freezes reads into R2 snapshots.** WP-142's publisher
+   ([`legends.publisher.ts`](../apps/server/src/legends/legends.publisher.ts))
+   calls the *same* read-layer functions (`getGlobalTopLeaderboard`,
+   `getScenarioLeaderboard`, `listScenarioKeys`) inside one read-only
+   transaction and writes JSON to `legends/v1/*`: a `global-top` board
+   (top 500) plus one `scenario-<scenarioKey>` board (top 100) for each
+   scenario that has public scores. `manifest.json` is written **last**
+   (D-14204) so a reader never sees a manifest pointing at half-written
+   boards. The board SPA then fetches those files — see
+   [Data flow](#data-flow-zero-api-snapshot-driven).
+
+**What is NOT wired yet — the gap that matters.** There is **no HTTP
+endpoint** that accepts a score submission. `submitCompetitiveScore` is a
+complete, tested *library* surface, but nothing in
+[`apps/server/src/server.mjs`](../apps/server/src/server.mjs) registers a
+submit route — the transport is explicitly deferred
+(`competition.types.ts` scopes the packet to "the library surface, not the
+transport"). So `legendary.competitive_scores` receives no rows from
+`play.legendary-arena.com` today; it is written only by test fixtures. This —
+not merely low match volume — is why the live board shows `global-top` with
+`rowCount: 0` and no per-scenario boards: with an empty table
+`listScenarioKeys` returns nothing, so only the (empty) `global-top` board is
+emitted. Wiring the submission endpoint is the missing link between "match
+finished" and "row on the board."
+
 ## Interactions
 
 - **[Scoring](scoring.md).** Produces the `ScoreBreakdown` /
@@ -131,13 +222,69 @@ invented.
   Villain Groups.** These form the scenario identity that keys every board.
   The championship proposal hinges on how these combine across the game's
   ~40 sets (see [Open Questions](#open-questions)).
-- **[Profile Login](profile-login.md).** Score *submission* happens in the
-  authenticated arena client (`play.legendary-arena.com`); the public board
-  is read-only and anonymous. Player identity on a row comes from the
-  submission path, not the board.
+- **[Profile Login](profile-login.md).** Score *submission* is designed to
+  run from the authenticated arena client (`play.legendary-arena.com`) — the
+  public board is always read-only and anonymous. Player identity on a row
+  comes from the authenticated submission path, not the board. See
+  [The profile page and the leaderboard](#the-profile-page-and-the-leaderboard)
+  for how (and how little) the two are wired together today.
 - **Persistence.** The board consumes R2 snapshots — derived, published
   records. `G` is never persisted or read by the board (per the
   runtime-only boundary in [Scoring](scoring.md)).
+
+### The profile page and the leaderboard
+
+**They share one identity record — and, today, nothing else.** The link
+between a player's profile and their rankings is the single
+`legendary.players` row, keyed internally on the bigint `player_id`
+(external alias `ext_id` = `AccountId`; handle columns added in migration
+`008_add_handle_to_players.sql`). There are two profile surfaces:
+
+- **Public profile** — `GET /api/players/:handle/profile`
+  ([`profile.routes.ts`](../apps/server/src/profile/profile.routes.ts)),
+  rendered by
+  [`PlayerProfilePage.vue`](../apps/arena-client/src/pages/PlayerProfilePage.vue).
+  Resolves a player by `handle_canonical`; exposes `handleCanonical`,
+  `displayHandle`, `displayName`, `publicReplays[]`, `teamAffiliations[]`,
+  `badges[]`. `accountId` and `email` are deliberately withheld.
+- **Owner ("my") profile** — `GET /api/me/profile`
+  ([`ownerProfile.routes.ts`](../apps/server/src/profile/ownerProfile.routes.ts)),
+  rendered by
+  [`MyProfilePage.vue`](../apps/arena-client/src/pages/MyProfilePage.vue).
+  Resolves by `ext_id` / `AccountId`; adds owner-only fields (avatar, about,
+  visibility toggles, links, saved loadouts, billing). `email` is absent
+  here too.
+
+**No profile view displays any ranking data.** Nothing on either profile
+fetches or renders a leaderboard standing, rank, personal best, or scenario
+history. The public profile carries an inert **"Rank — coming soon
+(WP-054 / WP-055)"** tab that makes zero network requests, and the server
+wiring notes that the profile surface intentionally carries "no leaderboard /
+competitive-score surface" (Vision §19b). There is no `/api/me/scores`
+endpoint — a `listPlayerCompetitiveScores` library function exists but has no
+route and no client caller.
+
+**A deliberate identity rule governs how they may ever connect.** Ranking
+keys on the stable internal `player_id` / `AccountId`, **never on the
+handle** ([`DESIGN-RANKING.md`](../docs/ai/DESIGN-RANKING.md) — "player
+identity for all ranking purposes is the stable player ID, never display
+name, account alias, handle, or session identifier"). The handle is a
+presentation alias only. Consequences:
+
+- A **leaderboard row shows `display_name`** (via the read-layer JOIN), not
+  the handle, and `PublicLeaderboardEntry` omits both the handle and
+  `accountId`.
+- A **score submission** takes its owner from the authenticated session
+  (`account.accountId`, resolved to `player_id`), never from a
+  client-supplied handle.
+- The future rank tab's own comment warns it **must not fetch by handle**
+  even once WP-054 / WP-055 land — it must resolve the player by `AccountId`
+  first, then look up rankings by `player_id`.
+
+So the profile → leaderboard integration is currently **latent**: the shared
+`legendary.players` row is the join point a future "my rankings" panel would
+use, but no such panel is built, and by design it will key on the internal
+player ID, not the public handle.
 
 ## Edge Cases
 
@@ -163,14 +310,18 @@ invented.
   PR #599); `GET /health/legends-publisher` reports `status: "ok"` with a
   fresh `lastSuccessAt` and no errors. At enable time the live manifest
   (`legends/v1/manifest.json`) exposed a **single board, `global-top`, with
-  `rowCount: 0`** — no qualifying completed matches to rank yet. The board
-  therefore renders its empty "Overall Rankings" state (with a working
-  "Updated N min ago" freshness badge), not an error, and fills on the next
-  ~5-minute publish cycle as real games finish. A blank board is a
-  data-supply state, not a board bug. Note the SPA ships five panel
-  components (overall, weekly, by-scheme, recent-achievements, now-playing),
-  but only the boards the publisher actually emits are rendered — at cutover
-  that is just `global-top`.
+  `rowCount: 0`**. The deeper cause is upstream, not the board: the
+  `legendary.competitive_scores` table is empty because the score-submission
+  transport is **not yet wired** (see
+  [From a finished match to a ranked row](#from-a-finished-match-to-a-ranked-row-the-write-path))
+  — not merely low match volume. The board therefore renders its empty
+  "Overall Rankings" state (with a working "Updated N min ago" freshness
+  badge), not an error, and will fill on the next ~5-minute publish cycle
+  once submissions start writing rows. A blank board is a data-supply state,
+  not a board bug. Note the SPA ships five panel components (overall, weekly,
+  by-scheme, recent-achievements, now-playing), but only the boards the
+  publisher actually emits are rendered — at cutover that is just
+  `global-top`.
 - **Cross-version comparison is never silent.** Rows carry a
   `scoringConfigVersion`; any PAR or weight change increments it, and rows
   under different versions are not directly comparable (VISION §22). Any
