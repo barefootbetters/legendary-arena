@@ -7,6 +7,41 @@
 
 ## Current State
 
+### WP-334 / EC-364 Executed — Server-Layer Faithful Reducer-Replay Mechanism (D-24121 Active) (2026-07-08)
+
+**No user-observable change — infrastructure only.** WP-2 of the D-24119
+faithful-replay arc, MECHANISM ONLY. The payoff: a faithful replay mechanism the
+WP-3 capture step will use to reconstruct a finished match's final state + score.
+
+`apps/server/src/replay/matchReplay.logic.ts`:
+- **`reduceMatchToFinalState({ initialState, log })`** re-executes a completed
+  match's persisted `bgio.matches` `initialState + log` through boardgame.io's OWN
+  reducer (`CreateGameReducer`, `isClient: false`), starting from the persisted
+  `initial_state` (NOT a fresh `InitializeGame` — no seed param), reproducing the
+  exact live final `G` + its canonical `computeStateHash`. Faithful by construction
+  (framework re-runs the seeded PRNG + phase/turn hooks).
+- **`readMatchForReplay(matchId, database)`** — fail-closed `bgio.matches` read
+  (null `initial_state` = not replayable), the D-24095 read carve-out.
+
+- **Two execution-time findings (fold-inline, recorded in D-24121):** (1) the
+  reducer must be imported from `boardgame.io/dist/cjs/internal.js` — the bare
+  `boardgame.io/internal` subpath does not resolve under tsx (legacy proxy dir, no
+  `exports`) and the root pulls in `react`. (2) the replay MUST **skip AUTOMATIC log
+  entries** — a move that calls `ctx.events.setPhase`/`endTurn` triggers transitions
+  the reducer re-runs inline on re-dispatch, so re-dispatching the automatic entries
+  would double-apply and diverge. Both discovered by running the faithfulness test.
+- **Scope:** MECHANISM ONLY. The WP-053 verifier repoint is DEFERRED (D-24121): no
+  `replayHash → matchId` mapping exists until the WP-3 capture step creates it.
+- **Gates:** `pnpm -r build` 0; matchReplay tests **5 pass / 0 fail** — the
+  faithfulness golden manufactures a real lobby→play match (seeded draw hook fires)
+  and asserts the reduced final `G` **equals** the live final `G`; the DB-gated
+  `readMatchForReplay` verified against local Postgres (absent/null/real cases); full
+  `apps/server` suite green. Engine untouched (`git diff packages/` empty) — no
+  `computeStateHash` change, no determinism fixture re-pin. §21 Library-only rows added.
+- **Out of scope (next arc WPs):** WP-3 capture harvester (uses this mechanism +
+  creates the `replayHash → matchId` mapping + does the verifier repoint); WP-4
+  `computeStateHash` `messages`/`logMeta` reconciliation.
+
 ### WP-333 / EC-363 Executed — Seat → Account Identity Persistence (Match Join) (D-24120 Active) (2026-07-08)
 
 **No user-observable change — infrastructure only.** WP-1 of the D-24119

@@ -27273,4 +27273,57 @@ matches. The capture reader + `assignReplayOwnership` call is WP-3 of the arc.
 
 **Packet:** WP-333 + EC-363. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
 
+### D-24121 — Faithful Reducer-Replay Is Mechanism-Only in WP-2; Verifier Repoint Deferred; Import + Automatic-Entry Details
+
+**Status:** Active (post-execution) 2026-07-08.
+
+**User-Visible Surface:** none — infrastructure.
+
+**Context.** D-24119's arc text scoped WP-2 as "server reducer-replay **+ repoint
+the WP-053 verifier**." Design research found the repoint is not executable in WP-2:
+the submission endpoint (WP-332) takes only `{ replayHash }`, and no
+`replayHash → matchId` mapping exists in any table (`bgio.matches`,
+`replay_blobs`, `replay_ownership`, `competitive_scores`, `match_seat_accounts`).
+That mapping is created by the WP-3 capture step (which reconstructs the final `G`,
+computes the hash, and records it against the `match_id`).
+
+**Decision.** WP-334 (WP-2) ships the reducer-replay **mechanism only**
+(`apps/server/src/replay/matchReplay.logic.ts`: `reduceMatchToFinalState` +
+`readMatchForReplay`). The WP-053 verifier repoint moves to WP-3 (or a dedicated
+post-capture WP), once the `replayHash → matchId` mapping exists. Two execution-time
+findings are locked here (fold-inline refinements of D-24119):
+
+- **Import path.** `CreateGameReducer` / `InitializeGame` are imported from
+  `boardgame.io/dist/cjs/internal.js` — the concrete published dist entry. The bare
+  `boardgame.io/internal` subpath does NOT resolve under the tsx / Node ESM
+  toolchain (boardgame.io 0.50.2 ships legacy proxy directories with no `exports`
+  map / index module), and the root `boardgame.io` bundle pulls in `react` (client
+  code) and fails server-side. Pinned to the locked `^0.50.0`; a major bump must
+  re-verify this path.
+- **Automatic-entry skip.** The replay re-dispatches only the EXTERNAL inputs
+  (player MAKE_MOVEs + player-initiated GAME_EVENTs) and **skips AUTOMATIC log
+  entries** (`entry.automatic === true`). A move that calls `ctx.events.setPhase`/
+  `endTurn` triggers phase/turn transitions the reducer re-runs INLINE when the move
+  is re-dispatched; the log records those consequences as separate automatic
+  entries, and re-dispatching them would double-apply the transition (a phase set
+  twice, a turn hook fired twice) and diverge from the live state. Discovered by the
+  faithfulness test (reduced ≠ live until automatic entries were filtered).
+- **Start-from-initialState, not InitializeGame.** The replay starts from the
+  persisted `initial_state` blob (seed at `plugins.random.data`); `InitializeGame`
+  has no seed parameter and would mint a fresh `Date`-based seed → divergence.
+- **`isClient: false`** is mandatory (a client reducer skips GAME_EVENT + move
+  triggers → the phase/turn hooks that drive the start-of-turn draw would not fire).
+- **Canonical hash unchanged.** WP-334 pins the faithful hash as `computeStateHash`
+  over the reduced `G` and does NOT change `computeStateHash`'s field set
+  (`messages`/`logMeta` reconciliation is WP-4, shared with `desync.detect`). Its
+  test asserts the faithfulness invariant (reduced final `G` === live final `G`)
+  rather than a brittle pinned literal (which would inherit the PRE_WP080_HASH
+  re-pin cascade).
+
+**Not changed.** No engine edit, no `computeStateHash` change, no determinism fixture
+re-pin, no verifier repoint, no live capture. The engine `replayGame` harness stays
+determinism-only (D-0205); boardgame.io stays out of the engine (D-2705).
+
+**Packet:** WP-334 + EC-364. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
+
 Protect this file.
