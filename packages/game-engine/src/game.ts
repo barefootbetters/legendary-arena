@@ -427,6 +427,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // least one element (enforced by drift-detection tests in WP-007A).
           G.currentStage = TURN_STAGES[0]!;
 
+          // why: WP-328 — stamp the turn number into G (ctx.turn lives only in ctx, and
+          // helper push sites have no ctx) and reset the per-step action counter, so
+          // pushLog can number every log line {turn}.{step}.{action}. logMeta is
+          // hash-excluded (D-24081-style), so this adds no replay/hash surface.
+          G.logMeta = { turn: ctx.turn, actionInStep: 0 };
+
           // why: economy resets at start of each player turn — accumulated
           // and spent values from previous turn are cleared
           G.turnEconomy = resetTurnEconomy();

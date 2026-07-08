@@ -35,6 +35,7 @@ import { recruitHero } from '../moves/recruitHero.js';
 import { fightMastermind } from '../moves/fightMastermind.js';
 import { setPlayerReady, startMatchIfReady } from '../lobby/lobby.moves.js';
 import { advanceTurnStage } from '../turn/turnLoop.js';
+import { pushLog } from '../log/logPush.js';
 
 // why: move functions expect FnContext<LegendaryGameState> & { playerID }.
 // We cannot import boardgame.io types, so we define a local structural
@@ -160,7 +161,7 @@ export function applyReplayStep(
 ): LegendaryGameState {
   const moveFn = MOVE_MAP[move.moveName];
   if (!moveFn) {
-    gameState.messages.push(
+    pushLog(gameState, 
       `Replay warning: unknown move name "${move.moveName}" — skipped.`,
     );
     return gameState;

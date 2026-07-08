@@ -130,7 +130,9 @@ label, a WP-323/324 regression that this WP resolves in the same change.
 | `packages/game-engine/src/hero/heroEffects.execute.ts` | **Modified** — `push → pushLog` |
 | `packages/game-engine/src/hero/effectPrimitive.interpret.ts` | **Modified** — `push → pushLog` |
 | `packages/game-engine/src/diagnostics/hollowEffect.record.ts` | **Modified** — `push → pushLog` |
-| `packages/game-engine/src/test/fixtures/games/sentinel-core-doom-2p.replay.json` | **Modified** — re-pin (regeneration) |
+| ~~`sentinel-core-doom-2p.replay.json`~~ | **Unchanged** — the fixture harness (`runFixture`/`applyOnBeginParity`) does NOT set `logMeta`, so its converted sites fall back to unprefixed; numbering is live-only (real `onBegin`), so no re-pin |
+| **Added (allowlist amendment, per operator):** `rules/schemeTwistResolvers.ts` (19), `rules/mastermindHandlers.ts`, `rules/schemeHandlers.ts`, `rules/ruleRuntime.effects.ts`, `replay/replay.execute.ts` | **Modified** — `push → pushLog` (the map undercounted; these carry the `[Midtown] Twist` / master-strike / effect-narration lines) |
+| `packages/game-engine/src/moves/coreMoves.integration.test.ts` | **Modified** — integration test: `logMeta` set → asserts the `10.2.1` prefix through `playCard` |
 | `apps/arena-client/src/diagnostics/effectProvenance.ts` | **Modified** — prefix-tolerant + ext-id extraction |
 | `apps/arena-client/src/diagnostics/effectProvenance.test.ts` | **Modified** — updated parse assertions |
 | `docs/ai/DECISIONS.md` | **Modified** — D-24114 |

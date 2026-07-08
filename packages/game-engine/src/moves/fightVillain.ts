@@ -36,6 +36,7 @@ import {
   composeFightNarrative,
   composeEffectResultLogLine,
 } from '../events/notableEvents.compose.js';
+import { pushLog } from '../log/logPush.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -161,12 +162,12 @@ export function fightVillain(
   // per-target widening, so finalStateHash is unchanged.
   const appliedFightEffects = appliedFightResults.map((result) => result.keyword);
 
-  G.messages.push(
+  pushLog(G, 
     `Player ${ctx.currentPlayer} fought ${formatCardRef(G.cardDisplayData, cardId)} at city space ${cityIndex}.`,
   );
   const bystandersRescued = awardResult.playerVictory.length - victoryBefore;
   if (awardResult.playerVictory.length > victoryBefore) {
-    G.messages.push(
+    pushLog(G, 
       `Player ${ctx.currentPlayer} rescued ${bystandersRescued} bystander(s) from ${formatCardRef(G.cardDisplayData, cardId)}.`,
     );
   }
@@ -181,7 +182,7 @@ export function fightVillain(
   // before the fightResolved event push. Length-guarded: no line when no effect
   // applied (an effectless fight pushes no effect line).
   if (appliedFightResults.length > 0) {
-    G.messages.push(
+    pushLog(G, 
       `Fight effect: ${composeEffectResultLogLine(resolvedFightResults)}.`,
     );
   }

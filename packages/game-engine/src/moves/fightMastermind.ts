@@ -25,6 +25,7 @@ import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { resolveCardName } from '../log/logDisplay.js';
+import { pushLog } from '../log/logPush.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -96,7 +97,7 @@ export function fightMastermind(
     G.mastermind.baseCardId,
   );
   const defeatedTacticName = resolveCardName(G.cardDisplayData, defeatedTacticId);
-  G.messages.push(
+  pushLog(G, 
     `Player ${ctx.currentPlayer} fought ${mastermindDisplayName} and defeated the tactic "${defeatedTacticName}".`,
   );
 
@@ -135,7 +136,7 @@ export function fightMastermind(
   }
 
   if (rescuedBystanders.length > 0) {
-    G.messages.push(
+    pushLog(G, 
       `Player ${ctx.currentPlayer} rescued ${rescuedBystanders.length} bystander(s) from the mastermind into their victory pile.`,
     );
   }
@@ -145,7 +146,7 @@ export function fightMastermind(
     // evaluator from WP-010 — use constant, never string literal
     G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED] = 1;
     // why: WP-323 — reuse the mastermind display name resolved above.
-    G.messages.push(
+    pushLog(G, 
       `All tactics defeated — mastermind ${mastermindDisplayName} is vanquished!`,
     );
 

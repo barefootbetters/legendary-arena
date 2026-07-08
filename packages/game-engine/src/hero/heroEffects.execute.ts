@@ -41,6 +41,7 @@ import {
   describeRevealActions,
   formatRevealOutcomeLine,
 } from './revealLog.js';
+import { pushLog } from '../log/logPush.js';
 
 // ---------------------------------------------------------------------------
 // MVP keyword set
@@ -309,7 +310,7 @@ export function executeHeroEffects(
       // class/team-synergy gate that suppressed the ability is observable in the
       // game log (G.messages -> UIState.log) instead of a silent skip — the
       // exact "the effect did nothing" confusion from the live diagnostic.
-      G.messages.push(
+      pushLog(G, 
         `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ability did not activate — a play condition (such as Hero class or team synergy) was not met.`,
       );
       continue;
@@ -615,7 +616,7 @@ function heroEffectRescue(
     // silent skip reads as "the hero card did nothing" (player confusion,
     // per the live diagnostic). Log it so the reason is observable in the
     // game log (UIState.log), mirroring how fight rescues are logged.
-    G.messages.push(
+    pushLog(G, 
       `Player ${playerID} could not rescue a Bystander via a hero ability — the Bystander supply is empty.`,
     );
     return;
@@ -636,7 +637,7 @@ function heroEffectRescue(
   // why: D-24017 — surface the hero-ability rescue in the game log the same
   // way fight rescues are (fightVillain/fightMastermind), so a successful
   // rescue is observable to the player rather than a silent zone move.
-  G.messages.push(
+  pushLog(G, 
     `Player ${playerID} rescued ${rescuedCount} bystander(s) via a hero ability.`,
   );
 }
@@ -779,7 +780,7 @@ function applyRevealRules(
             predicateText: matchedPredicateText,
             actionsText: matchedActionPhrases.join(', '),
           };
-    G.messages.push(
+    pushLog(G, 
       formatRevealOutcomeLine(G.cardDisplayData, playerID, topCardId, cost, outcome),
     );
   }
@@ -811,21 +812,21 @@ function revealPredicateMatches(
     // why: a threshold of 0 is legitimate (reveal M=0 → cost-lte 0), so test for
     // undefined explicitly rather than a falsy `?? default`.
     if (predicate.threshold === undefined) {
-      G.messages.push('A reveal rule used a cost-lte predicate with no threshold and was skipped. Check the reveal rule markup.');
+      pushLog(G, 'A reveal rule used a cost-lte predicate with no threshold and was skipped. Check the reveal rule markup.');
       return false;
     }
     return cost <= predicate.threshold;
   }
   if (predicate.kind === 'cost-gte') {
     if (predicate.threshold === undefined) {
-      G.messages.push('A reveal rule used a cost-gte predicate with no threshold and was skipped. Check the reveal rule markup.');
+      pushLog(G, 'A reveal rule used a cost-gte predicate with no threshold and was skipped. Check the reveal rule markup.');
       return false;
     }
     return cost >= predicate.threshold;
   }
   // why: unknown predicate kind → warn to G.messages and do not match, never throw
   // (the rule-execution-pipeline unknown-effect posture). (D-24024)
-  G.messages.push(`A reveal rule used an unknown predicate kind "${String(predicate.kind)}" and was skipped. Check the reveal rule markup.`);
+  pushLog(G, `A reveal rule used an unknown predicate kind "${String(predicate.kind)}" and was skipped. Check the reveal rule markup.`);
   return false;
 }
 
@@ -900,7 +901,7 @@ function applyRevealAction(
   }
   // why: unknown action kind → warn to G.messages and skip, never throw. Treated as
   // a no-op that is NOT a deck-mutation failure, so it does not break the rule. (D-24024)
-  G.messages.push(`A reveal rule used an unknown action kind "${String(action.kind)}" and was skipped. Check the reveal rule markup.`);
+  pushLog(G, `A reveal rule used an unknown action kind "${String(action.kind)}" and was skipped. Check the reveal rule markup.`);
   return true;
 }
 
@@ -1058,7 +1059,7 @@ function heroEffectAttackPerCount(
   G.turnEconomy = addResources(G.turnEconomy, grant, 0);
   // why: record the source, count, and grant so the count-scaled attack is
   // observable in replay inspection (no implicit side effects).
-  G.messages.push(`Count-scaled attack: +${grant} (${effect.magnitude as number} per ${effect.countSource}, count ${count}).`);
+  pushLog(G, `Count-scaled attack: +${grant} (${effect.magnitude as number} per ${effect.countSource}, count ${count}).`);
 }
 
 function heroEffectOptionalKoReward(
@@ -1081,7 +1082,7 @@ function heroEffectOptionalKoReward(
   // ability did nothing.
   const eligibleCount = playerZones.discard.length + playerZones.hand.length;
   if (eligibleCount === 0) {
-    G.messages.push(
+    pushLog(G, 
       `Player ${playerID} could not KO a card for a hero ability — both hand and discard pile are empty, so no reward was granted.`,
     );
     return;
@@ -1091,7 +1092,7 @@ function heroEffectOptionalKoReward(
   // (no reward executor exists for it).
   const rewardType = effect.rewardType;
   if (rewardType === undefined || !OPTIONAL_KO_REWARD_SEEDED_REWARDS.has(rewardType)) {
-    G.messages.push(
+    pushLog(G, 
       `Player ${playerID} played a hero ability whose optional-KO reward is not yet supported, so the choice was skipped.`,
     );
     return;
@@ -1132,7 +1133,7 @@ function heroEffectVictoryVillainAttack(
   const eligibleVillains = getEligibleVictoryVillains(G, playerID);
   if (eligibleVillains.length === 0) {
     // why: no eligible villains in victory pile at play time — no pending pick parked, logged as no-op (D-24067)
-    G.messages.push(
+    pushLog(G, 
       `Player ${playerID} played a victory-villain-attack hero ability but had no eligible villains in their victory pile — no pick was queued.`,
     );
     return;
@@ -1165,7 +1166,7 @@ function heroEffectDrawOrEmpowered(
     // why: defensive — the parser always emits draw-or-empowered with a parsed empoweredClass; a
     // missing class here is a logged no-op that parks nothing (mirrors the optional-ko-reward
     // unseeded-reward guard). Unreachable post-parse, but never throw and never park a broken entry.
-    G.messages.push(
+    pushLog(G, 
       `Player ${playerID} played a draw-or-empowered hero ability with no empowered class, so the choice was skipped.`,
     );
     return;

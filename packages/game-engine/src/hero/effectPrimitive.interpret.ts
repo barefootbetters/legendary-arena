@@ -37,6 +37,7 @@ import type {
 import { moveCardFromZone } from '../moves/zoneOps.js';
 import { addResources } from '../economy/economy.logic.js';
 import { formatCardRef } from '../log/logDisplay.js';
+import { pushLog } from '../log/logPush.js';
 
 // ---------------------------------------------------------------------------
 // Best-effort warning (non-throwing)
@@ -54,7 +55,7 @@ function pushPrimitiveWarning(G: LegendaryGameState, message: string): void {
   // why: best-effort — a missing/non-array G.messages (a narrow unit fixture) must not
   // turn a safe default into a thrown execution error (D-24029 §9 / EC §Warning).
   if (Array.isArray(G.messages)) {
-    G.messages.push(message);
+    pushLog(G, message);
   }
 }
 
@@ -541,7 +542,7 @@ function pushGainResourceLog(
       ? `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, sourceCardId)} gained +${amount} ${resource}.`
       : `Player ${playerID} gained +${amount} ${resource}.`;
   if (Array.isArray(G.messages)) {
-    G.messages.push(message);
+    pushLog(G, message);
   }
 }
 

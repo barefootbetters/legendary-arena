@@ -167,10 +167,26 @@ function buildSnapshotAbilityTextResolver(
 }
 
 // why: the log lines this parses are the engine's `G.messages` prose (D-24017), projected
-// to UIState.log. "Player 0 played <extId>." and the paired
-// "Player 0's <extId> ability did not activate — …" are the two shapes read here.
-const PLAYED_LINE = /^Player \d+ played (.+?)\.$/;
+// to UIState.log. WP-328 prefixes every line with "{turn}.{step}.{action} " and WP-323/324
+// enriched the played label to "{Name} ({ext-id}) — {effect}", so the parse must tolerate an
+// optional numeric prefix and capture the whole label, then extract the real ext-id below.
+const PLAYED_LINE = /^(?:\d+\.\d+\.\d+ )?Player \d+ played (.+?)\.$/;
 const DID_NOT_ACTIVATE_LINE = / ability did not activate/;
+
+// why: WP-323/324 render the played label as "{Name} ({ext-id})" (optionally " — {effect}").
+// Pull the real ext-id from the FIRST parenthesized group (card ext-ids contain no ')', and
+// any effect clause follows the " — " after it); fall back to the whole label for a legacy
+// raw-id line with no parens, so pre-enrichment logs still classify.
+const PLAYED_LABEL_EXTID = /^.+? \(([^)]+)\)(?: — .*)?$/;
+
+/**
+ * Extracts the card ext-id from an enriched `played` label, or returns the label unchanged
+ * when it carries no `({ext-id})` group (a legacy raw-id line).
+ */
+function extractPlayedExtId(label: string): string {
+  const match = PLAYED_LABEL_EXTID.exec(label);
+  return match !== null ? match[1]! : label;
+}
 
 /**
  * Classifies a played card's outcome from the signals already in the snapshot.
@@ -240,7 +256,7 @@ export function buildEffectProvenance(
   for (let index = 0; index < logLines.length; index += 1) {
     const match = PLAYED_LINE.exec(logLines[index]!);
     if (match !== null) {
-      playedEntries.push({ extId: match[1]!, lineIndex: index });
+      playedEntries.push({ extId: extractPlayedExtId(match[1]!), lineIndex: index });
     }
   }
   const recentEntries = playedEntries.slice(-RECENTLY_PLAYED_CARDS_CAP);

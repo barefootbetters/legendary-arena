@@ -12,6 +12,7 @@ import type { RuleEffect } from './ruleHooks.types.js';
 import type { LegendaryGameState } from '../types.js';
 import { moveAllCards } from '../moves/zoneOps.js';
 import { drawCardsIntoHand } from '../moves/drawCards.logic.js';
+import { pushLog } from '../log/logPush.js';
 
 /**
  * Minimal interface for the context needed by drawCards effect.
@@ -33,7 +34,7 @@ function applyQueueMessage(
   gameState: LegendaryGameState,
   effect: { type: 'queueMessage'; message: string },
 ): void {
-  gameState.messages.push(effect.message);
+  pushLog(gameState, effect.message);
 }
 
 /**
@@ -72,7 +73,7 @@ function applyDrawCards(
 ): void {
   const playerZones = gameState.playerZones[effect.playerId];
   if (!playerZones) {
-    gameState.messages.push(
+    pushLog(gameState, 
       `Draw effect skipped: player "${effect.playerId}" not found in playerZones.`,
     );
     return;
@@ -93,7 +94,7 @@ function applyDiscardHand(
 ): void {
   const playerZones = gameState.playerZones[effect.playerId];
   if (!playerZones) {
-    gameState.messages.push(
+    pushLog(gameState, 
       `Discard hand effect skipped: player "${effect.playerId}" not found in playerZones.`,
     );
     return;
@@ -135,7 +136,7 @@ export function applyRuleEffects(
       // New effect types added in later packets should fail gracefully in
       // older runtime versions rather than crashing the game.
       const unknownType = (effect as { type: string }).type;
-      gameState.messages.push(
+      pushLog(gameState, 
         `Unknown rule effect type "${unknownType}" was skipped.`,
       );
     }

@@ -22,6 +22,7 @@ import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { formatPlayedCardLabel } from '../log/logDisplay.js';
+import { pushLog } from '../log/logPush.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -122,7 +123,7 @@ export function playFromUndercover(
   // why: WP-323 — enrich the raw ext-id to "{Name} ({ext-id}) — {printed effect}"
   // (formatPlayedCardLabel, names from G.cardDisplayData). This is the "from
   // face-down" annotation line; applyCardPlay already logged the play above.
-  G.messages.push(
+  pushLog(G, 
     `Player ${playerID} played ${formatPlayedCardLabel(G.cardDisplayData, faceDownCard.cardId)} from face-down`,
   );
 }

@@ -25,6 +25,7 @@ import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { getHooksForCard } from '../rules/heroAbility.types.js';
 import { formatCardRef } from '../log/logDisplay.js';
+import { pushLog } from '../log/logPush.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -111,7 +112,7 @@ export function dodgeCard({ G, ctx, ...context }: MoveContext, { cardId }: Dodge
   // why: D-24051 — the log line is replay-visible and snapshotted; the format is
   // locked at this site to byte-equality (the recruitHero precedent). One push per
   // successful dodge. Never add timestamps or non-deterministic context.
-  G.messages.push(
+  pushLog(G, 
     `Player ${ctx.currentPlayer} dodged ${formatCardRef(G.cardDisplayData, cardId)} (discarded from hand, drew 1 replacement)`,
   );
 }

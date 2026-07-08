@@ -7,6 +7,41 @@
 
 ## Current State
 
+### WP-328 / EC-358 Executed — Turn.Step.Action Log Numbering (+ effectProvenance parse fix) (D-24114 Active) (2026-07-08)
+
+Prefixes every **live** game-log line with `{turn}.{step}.{action}` — `10.2.1 Player 0 played
+Interstellar Adventures (…) — What If…?: You get +3 recruit.` — where step = the turn stage
+(`start`/`main`/`cleanup` → 1/2/3 via `G.currentStage`) and action = a per-step counter.
+
+- **New hash-excluded `G.logMeta = { turn, actionInStep }`** (`types.ts`; excluded in
+  `hashGameState.ts` alongside `messages`, D-24081-style). New central `pushLog(G, msg)`
+  (`log/logPush.ts`) prefixes + increments, falling back to a bare push when `logMeta` is
+  absent. `onBegin` stamps `logMeta.turn` from `ctx.turn` + resets the counter (`game.ts`);
+  `advanceTurnStage` resets it per stage (`turnLoop.ts`).
+- **Converted all player-facing push sites → `pushLog` (17 files).** The site map undercounted
+  (~70 sites / ~20 files, two receiver shapes); per operator the scope expanded to include
+  `rules/schemeTwistResolvers` (19), `mastermindHandlers`, `schemeHandlers`,
+  `ruleRuntime.effects` (the `[Midtown] Twist` / master-strike / effect-narration lines) and
+  `replay.execute`, **skipping `simulation/*`** tooling. Message bodies unchanged.
+- **Numbering is LIVE-ONLY.** The real `onBegin` sets `logMeta`; the observation harnesses
+  (`runFixture` / `simulation` / replay reconstruction) use `applyOnBeginParity`, which does
+  not set it, so their converted sites fall back to unprefixed. Hence the `sentinel-core-doom-2p`
+  fixture was **UNCHANGED** and engine unit-test drift was **zero**. Coverage:
+  `logPush.test.ts` (prefix / step-map / fallback / hash-exclusion) + a `coreMoves.integration`
+  test that sets `logMeta` and asserts the `10.2.1` prefix through a real move.
+- **Coupled fix (arena-client):** `effectProvenance` now tolerates the numeric prefix AND
+  extracts the real ext-id from the `(…)` in the enriched `played` label — it had captured the
+  whole label (the 2026-07-08 diagnostics regression), which also broke its hollow-detection +
+  `abilityText`; all three restored. Boundary-respecting (no engine import); test added.
+- **Determinism:** `logMeta` hash-excluded; `turn`/`step`/`action` deterministic. `G.logMeta`'s
+  metadata is reusable by the deferred **WP-B.3** structured log.
+- **Gates:** engine **1783/1783**, arena-client **741/741**, `pnpm -r build` 0, grep-guard clean.
+- **Known limitation:** the replay-inspector reconstruction renders unprefixed (its path
+  doesn't fire `onBegin`); numbering the harness/replay is a follow-up.
+- **User-Visible Surface = play.legendary-arena.com.** D-24026 live-verify **operator-pending on
+  deploy**: live-match log lines read `{turn}.{step}.{action} …`, numbers roll at turn/stage
+  boundaries, and the exported diagnostics show clean `recentlyPlayedCards` ext-ids.
+
 ### WP-327 / EC-357 Executed — Server-Side Reaper for Stale bgio Matches (D-24113 Active) (2026-07-07)
 
 Server half of the same cleanup. WP-309 (D-24095) made `bgio.matches` durable but nothing

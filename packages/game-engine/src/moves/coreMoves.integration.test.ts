@@ -299,6 +299,26 @@ describe('playCard', () => {
       'playCard must append an enriched "played" line to the game log.');
   });
 
+  it('WP-328: prefixes the played line {turn}.{step}.{action} when logMeta is set', () => {
+    const gameState = makeTestGameState({
+      hand: ['card-x', 'card-y'],
+      inPlay: [],
+    });
+    // why: WP-328 — set the numbering metadata the way the live onBegin does (unit/
+    // fixture harnesses omit it → pushLog falls back to unprefixed), to prove the
+    // move → pushLog → {turn}.{step}.{action} prefix wiring end-to-end.
+    gameState.currentStage = 'main';
+    gameState.logMeta = { turn: 10, actionInStep: 0 };
+    const { context } = makeMoveContext(gameState);
+
+    playCard(context, { cardId: 'card-x' });
+
+    assert.ok(
+      gameState.messages.includes('10.2.1 Player 0 played card-x (card-x).'),
+      'the played line is prefixed 10.2.1 (turn 10, step 2 = main, 1st action).',
+    );
+  });
+
   it('does not mutate G when cardId is not in hand', () => {
     const gameState = makeTestGameState({
       hand: ['card-x', 'card-y'],

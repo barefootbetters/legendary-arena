@@ -18,6 +18,7 @@ import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
 import { moveCardFromZone } from './zoneOps.js';
 import type { FaceDownCard } from '../state/zones.types.js';
+import { pushLog } from '../log/logPush.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -101,7 +102,7 @@ export function sendUndercover({ G, ctx }: MoveContext, args: SendUndercoverArgs
   playerZones.faceDownCards = [...playerZones.faceDownCards, faceDownCard];
 
   // Step 9: Log the move (deterministic, replay-visible)
-  G.messages.push(
+  pushLog(G, 
     `Player ${pid} sent ${args.instanceId} face-down from ${args.sourceZone}`,
   );
 }
