@@ -34,6 +34,7 @@ import {
   findCompetitiveScore,
   listPlayerCompetitiveScores,
   submitCompetitiveScore,
+  submitCompetitiveScoreForRequest,
   submitCompetitiveScoreImpl,
 } from './competition.logic.js';
 
@@ -364,6 +365,55 @@ describe('competition logic (WP-053)', () => {
     );
     assert.deepEqual(result, { ok: false, reason: 'guest_not_eligible' });
     assert.strictEqual(queryWasCalled, false);
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 2b — logic-pure: submitCompetitiveScoreForRequest (WP-332) delegates
+  // to the impl and forwards the injected PAR gate, but the guest guard
+  // short-circuits before any DB or gate access.
+  // -------------------------------------------------------------------------
+
+  test('submitCompetitiveScoreForRequest delegates to the impl (guest fail-fast, injected gate unreached, no DB hits)', async () => {
+    let queryWasCalled = false;
+    const stubDatabase = {
+      query: async () => {
+        queryWasCalled = true;
+        throw new Error(
+          'Test failure: stub query was invoked despite the guest fail-fast contract.',
+        );
+      },
+    } as unknown as DatabaseClient;
+
+    // why: a spy PAR gate proves the request wrapper forwards its
+    // injected checkParPublished into the impl deps — and that the
+    // guest guard (impl step 1) short-circuits before the gate is
+    // consulted, so this remains a logic-pure, no-DB assertion. The
+    // full accept path (a real gate hit producing an accepted record)
+    // is exercised by the DB-dependent impl tests below.
+    let gateWasCalled = false;
+    const spyRegistry: CardRegistryReader = { listCards: () => [] };
+
+    const guest: GuestIdentity = {
+      guestSessionId: 'wp332-test-guest-session',
+      createdAt: '2026-07-08T00:00:00.000Z',
+      isGuest: true,
+    };
+
+    const result = await submitCompetitiveScoreForRequest(
+      guest,
+      'sha256:wp332-test-guest-replay-hash',
+      stubDatabase,
+      {
+        checkParPublished: () => {
+          gateWasCalled = true;
+          return null;
+        },
+        registry: spyRegistry,
+      },
+    );
+    assert.deepEqual(result, { ok: false, reason: 'guest_not_eligible' });
+    assert.strictEqual(queryWasCalled, false);
+    assert.strictEqual(gateWasCalled, false);
   });
 
   // -------------------------------------------------------------------------

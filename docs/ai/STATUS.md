@@ -7,6 +7,39 @@
 
 ## Current State
 
+### WP-332 / EC-362 Executed — Competitive Score Submission HTTP Endpoint (D-24118 Active) (2026-07-08)
+
+**No user-observable change — infrastructure only.** This wires the server endpoint;
+no client posts to it yet and no rendered surface changes. The payoff is that the
+leaderboard write path now exists end-to-end (once a client integration lands, a
+finished match can become a ranked row that feeds `legends.legendary-arena.com`).
+
+WP-053 shipped the competitive score submission + verification *library*
+(`submitCompetitiveScore`) but no WP ever gave it an HTTP route, so
+`legendary.competitive_scores` received no rows from `play.legendary-arena.com` and the
+public leaderboard stayed empty regardless of play volume. This WP is the write-side
+mirror of WP-115 (which wired the WP-054 read library to GET routes).
+
+- **Endpoint:** `POST /api/competition/scores`, `authenticated-session-required`.
+  Request `{ replayHash }`; success `200 { record, wasExisting }`; uniform
+  `{ error: <code> }` envelope over the locked status map `{200,400,401,403,404,422,500}`.
+- **Real-deps injection (the load-bearing fix):** the route calls a new additive
+  `submitCompetitiveScoreForRequest`, which injects the real bound
+  `parGate.checkParPublished` + startup registry. The inert 3-arg `submitCompetitiveScore`
+  wrapper fail-closes every submission to `par_not_published` and is NOT used.
+  `competition.logic.ts` is additive-only (existing exports byte-unchanged).
+- **Auth chain:** WP-112 `requireAuthenticatedSession` → WP-107 `requireUnsuspendedAccount`
+  (its designated first caller) → `findPlayerByAccountId` → non-guest `PlayerAccount`
+  (so `guest_not_eligible` is structurally unreachable). Server re-executes the replay
+  and verifies `computeStateHash === replayHash` (D-5301). Idempotent 200 + `wasExisting`.
+- **Gates:** `pnpm -r build` 0; targeted competition suite **16 pass / 0 fail / 6 DB-skips**
+  (12 new route tests + the wrapper delegation test); full `apps/server` suite green (no
+  regression). `docs/ai/REFERENCE/api-endpoints.md` `submitCompetitiveScore` row flipped
+  `Library-only → Wired` (whole-row, §21/D-11804), correcting its stale signature.
+- **Out of scope (explicit follow-ups):** arena-client POST-after-match integration
+  (layer split); `GET /api/me/scores` (`listPlayerCompetitiveScores` stays `Library-only`);
+  per-account rate limiting.
+
 ### INFRA — Public scoreboard live at legends.legendary-arena.com (WP-143 deploy finished) (2026-07-08)
 
 The Legends Attract Board (`apps/legends-board`, WP-143/EC-164 — app code merged

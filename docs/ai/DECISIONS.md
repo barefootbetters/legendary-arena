@@ -27024,4 +27024,60 @@ boardgame.io turn 1 is a separate, heavier change — explicitly out of scope).
 
 **Packet:** WP-331 + EC-361. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
 
+### D-24118 — Competitive Score Submission HTTP Endpoint (`POST /api/competition/scores`)
+
+**Status:** Active (post-execution) 2026-07-08.
+
+**User-Visible Surface:** none — infrastructure. The endpoint exposes the write path;
+the arena-client POST-after-match integration and `GET /api/me/scores` are separate
+layer-split follow-ups, so no user observes a change from this WP alone.
+
+**Context.** WP-053 shipped `submitCompetitiveScore` — the competitive score
+submission + verification library — but no WP ever wired it to an HTTP route. The
+`legendary.competitive_scores` table therefore received no rows from
+`play.legendary-arena.com`, so the public leaderboard (and the WP-142 R2 snapshots
+that feed `legends.legendary-arena.com`) stayed empty regardless of play volume. This
+is the write-side mirror of WP-115, which wired the WP-054 read library to GET routes.
+
+**Decision.** Register one authenticated endpoint `POST /api/competition/scores`
+(`authenticated-session-required`) via `registerCompetitionRoutes` in `server.mjs`.
+Locked contract:
+
+- **Real-deps injection (the load-bearing choice).** The route calls a new additive
+  `submitCompetitiveScoreForRequest(identity, replayHash, database, { checkParPublished,
+  registry })` in `competition.logic.ts`, which forwards the real bound
+  `parGate.checkParPublished` + startup registry into `submitCompetitiveScoreImpl`. It
+  must NOT call the inert 3-arg `submitCompetitiveScore` wrapper, whose
+  `PRODUCTION_DEPENDENCIES.checkParPublished` returns `null` and fail-closes every
+  submission to `par_not_published`. `competition.logic.ts` is additive-only (existing
+  exports byte-unchanged; `ParGateHit` exported for the injected-binding type).
+- **Auth chain:** WP-112 `requireAuthenticatedSession` (session → `AccountId`) → WP-107
+  `requireUnsuspendedAccount` (this WP is its designated first caller) →
+  `findPlayerByAccountId` (load the full `PlayerAccount`). An authenticated, unsuspended
+  session is never a guest, so the library's `guest_not_eligible` branch is structurally
+  unreachable on this route.
+- **Request:** `{ replayHash: string }` (non-empty); replay referenced by hash only,
+  re-executed and state-hash-verified server-side (D-5301 — server enforces, never
+  trusts a client score).
+- **Uniform `{ error: <code> }` envelope; locked status map** `{200,400,401,403,404,422,500}`:
+  200 `{ record, wasExisting }`; 400 `invalid_request`; 401 `<SessionValidationCode>`
+  (`unknown_account` → 401, not 403, per the account-existence-probe defense); 403
+  `forbidden` (suspended) / `not_owner` / `visibility_not_eligible`; 404
+  `replay_not_found`; 422 `par_not_published` / `replay_verification_failed`; 500
+  `internal_error`. The WP-107 helper is envelope-agnostic; the handler owns the HTTP
+  mapping (normalizing WP-107's illustrative `{ code, reason }` into this endpoint's
+  uniform `{ error }`).
+- **Idempotent:** a re-POST of the same `(player_id, replay_hash)` returns `200` with
+  `wasExisting: true` and the canonical record — never a duplicate row (`UNIQUE
+  (player_id, replay_hash)`, migration 007; D-5304).
+- **`Cache-Control: no-store`** is the first statement of every response path (D-11504).
+
+**Not changed.** WP-053's verification flow, `competition.types.ts`, and migration 007
+(the wrapper is purely additive). No client integration and no `GET /api/me/scores`
+(`listPlayerCompetitiveScores` stays `Library-only`) — both are explicit follow-ups. No
+rate limiting (replay re-execution is CPU-bearing; a per-account limit is a follow-up
+hardening WP, bounded for now by authentication + idempotency).
+
+**Packet:** WP-332 + EC-362. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
+
 Protect this file.

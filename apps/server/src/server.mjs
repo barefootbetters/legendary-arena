@@ -23,6 +23,7 @@ import { createParGate } from './par/parGate.mjs';
 import { createPool } from './db/database.js';
 import { createBgioPgStore } from './db/bgioPgStore.js';
 import { registerLeaderboardRoutes } from './leaderboards/leaderboard.routes.js';
+import { registerCompetitionRoutes } from './competition/competition.routes.js';
 import { registerOwnerProfileRoutes } from './profile/ownerProfile.routes.js';
 import { registerAvatarUploadRoutes } from './profile/avatarUpload.routes.js';
 import { registerLoadoutLibraryRoutes } from './profile/loadoutLibrary.routes.js';
@@ -47,6 +48,7 @@ import { loadBillingConfig, createStripeClient } from './billing/billing.config.
 import { registerLegendsPublisherRoutes } from './legends/legends.routes.js';
 import { registerAutoplayRoutes } from './autoplay/autoplay.mjs';
 import { requireAuthenticatedSession } from './auth/sessionToken.logic.js';
+import { requireUnsuspendedAccount } from './auth/requireUnsuspendedAccount.js';
 import { createHankoSessionVerifier } from './auth/hanko/hankoVerifier.logic.js';
 import { createProductionAccountResolver } from './auth/accountResolver.logic.js';
 import {
@@ -688,6 +690,26 @@ export async function startServer() {
     requireAuthenticatedSession,
     verifier,
     accountResolver: verifier === undefined ? undefined : accountResolver,
+  });
+
+  // why: WP-332 / D-24118 — register the competitive score submission
+  // route (POST /api/competition/scores) on the same long-lived pool.
+  // The write-side mirror of registerLeaderboardRoutes: it wires
+  // WP-053's submitCompetitiveScore library (route-less until now) via
+  // submitCompetitiveScoreForRequest, injecting the real bound PAR gate
+  // (parGate.checkParPublished) + the startup-loaded registry so
+  // submissions are actually accepted — the inert library wrapper
+  // fail-closes every submission to par_not_published. Same
+  // caller-injected auth deps as registerOwnerProfileRoutes;
+  // requireUnsuspendedAccount (WP-107) is the suspension guard, this
+  // route being its first caller.
+  registerCompetitionRoutes(server.router, pool, {
+    requireAuthenticatedSession,
+    verifier,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
+    requireUnsuspendedAccount,
+    checkParPublished: parGate.checkParPublished,
+    registry,
   });
 
   // why: WP-106 / D-10602 — register the avatar upload route
