@@ -7,6 +7,25 @@
 
 ## Current State
 
+### WP-329 / EC-359 Executed — Remove the Redundant `<ol>` Ordinal from the HUD Game Log (D-24115 Active) (2026-07-08)
+
+The Game Log panel renders entries in an `<ol>`, so the browser prepended its own list ordinal
+(`1.` … `167.`) in front of each line. Since WP-328 gave every line its own in-text
+`{turn}.{step}.{action}` number, that was a redundant double-number (`167. 16.2.8 …`).
+
+- **Fix (pure client CSS):** `.entries` in `GameLogPanel.vue` gains `list-style: none` +
+  `padding-left: 0` (was `1.5rem`). The shared `.entries` rule covers both the compact panel
+  and the WP-322 expand overlay, so both drop the browser ordinal. The `<ol>` element stays
+  (the log is semantically ordered; render tests unchanged) — only its marker is hidden.
+- **Kept:** the WP-328 in-text `{turn}.{step}.{action}` number (D-24114 stays Active) — that is
+  what the operator wanted; only the duplicate browser ordinal is removed. The raw `G.messages`
+  log and the Save/export text never carried the ordinal (it was only the `<ol>` rendering).
+- **Gates:** arena-client suite green; `pnpm -r build` 0; 1-file client allowlist held.
+- **User-Visible Surface = play.legendary-arena.com.** D-24026 live-verify **operator-pending on
+  deploy**: the HUD log shows only the in-text number (`16.2.8 All tactics defeated — mastermind
+  Magneto is vanquished!`), no leading `167.` (jsdom renders no list markers, so this is
+  eyes-on-deploy).
+
 ### WP-328 / EC-358 Executed — Turn.Step.Action Log Numbering (+ effectProvenance parse fix) (D-24114 Active) (2026-07-08)
 
 Prefixes every **live** game-log line with `{turn}.{step}.{action}` — `10.2.1 Player 0 played
