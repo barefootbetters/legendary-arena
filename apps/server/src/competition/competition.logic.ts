@@ -102,7 +102,10 @@ import type {
 // keeps the deps interface strongly typed without crossing into the
 // untyped module. Field order matches the JSDoc typedef in
 // apps/server/src/par/parGate.mjs:32-47 verbatim.
-interface ParGateHit {
+// why: exported (additive, WP-332) so the request-handler layer can
+// type the injected `checkParPublished` binding without re-stating
+// the shape; every pre-existing export is byte-unchanged.
+export interface ParGateHit {
   readonly parValue: number;
   readonly parVersion: string;
   readonly source: 'simulation' | 'seed';
@@ -286,6 +289,49 @@ export async function submitCompetitiveScore(
   database: DatabaseClient,
 ): Promise<SubmissionResult> {
   return submitCompetitiveScoreImpl(identity, replayHash, database);
+}
+
+/**
+ * Production request-path dependencies for a competitive submission:
+ * the bound PAR-gate check and the startup-loaded card registry. The
+ * request-handler layer (WP-332) constructs these once at server
+ * startup and passes them per request. Kept separate from the
+ * internal `SubmissionDependencies` seam so route code never needs to
+ * name the module-internal `loadReplay` / `replayGame` defaults.
+ */
+export interface CompetitiveSubmissionProductionDependencies {
+  readonly checkParPublished: (scenarioKey: ScenarioKey) => ParGateHit | null;
+  readonly registry: CardRegistryReader;
+}
+
+/**
+ * Production request-path entry for competitive score submission
+ * (WP-332). Delegates to `submitCompetitiveScoreImpl`, supplying the
+ * real module-internal `loadReplay` / `replayGame` plus the
+ * caller-injected `checkParPublished` + `registry`. This is the entry
+ * an HTTP route must call — NOT the `submitCompetitiveScore` wrapper
+ * above.
+ */
+// why: the `submitCompetitiveScore` wrapper above uses
+// PRODUCTION_DEPENDENCIES, whose `checkParPublished` returns null
+// (fail-closed per the WP-053 lifecycle prohibition), so it rejects
+// EVERY submission with par_not_published before any replay load. A
+// working request path MUST inject the live bound PAR-gate check plus
+// the startup-loaded registry; this wrapper is that injection seam
+// (WP-332 §Scope B). loadReplay/replayGame stay the module defaults so
+// route code never imports the replay/engine surfaces directly.
+export async function submitCompetitiveScoreForRequest(
+  identity: PlayerIdentity,
+  replayHash: string,
+  database: DatabaseClient,
+  productionDeps: CompetitiveSubmissionProductionDependencies,
+): Promise<SubmissionResult> {
+  return submitCompetitiveScoreImpl(identity, replayHash, database, {
+    loadReplay: loadReplayDefault,
+    replayGame: replayGameDefault,
+    checkParPublished: productionDeps.checkParPublished,
+    registry: productionDeps.registry,
+  });
 }
 
 /**
