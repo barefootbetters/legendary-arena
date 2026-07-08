@@ -72,9 +72,17 @@ export async function reapStaleMatches(database, options) {
     // undefined`; the function form (not the `?` operator) avoids any
     // placeholder-parsing ambiguity in node-pg. The cutoff is `now() -
     // make_interval(...)` — evaluated by PostgreSQL, never in application code.
+    // why: WP-335 / D-24122 capture guard — a gameover row is reaped only once
+    // `captured_at IS NOT NULL` (the capture harvester has durably stored its
+    // replay artifact + ownership). Without this, a capture outage lasting past
+    // the 1-hour grace would let the reaper delete a finished competitive match
+    // before it was captured, silently losing it. The abandoned branch is
+    // unchanged (an abandoned, never-gameover match is never captured, so guarding
+    // it would leak abandoned rows forever).
     const result = await database.query(
       `DELETE FROM bgio.matches
         WHERE (metadata IS NOT NULL AND jsonb_exists(metadata, 'gameover')
+               AND captured_at IS NOT NULL
                AND updated_at < now() - make_interval(secs => $1))
            OR ((metadata IS NULL OR NOT jsonb_exists(metadata, 'gameover'))
                AND updated_at < now() - make_interval(secs => $2))`,

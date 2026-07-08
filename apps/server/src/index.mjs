@@ -21,6 +21,10 @@ import {
   ABANDONED_TTL_MS,
 } from './db/matchReaper.js';
 import {
+  startCaptureHarvester,
+  CAPTURE_HARVESTER_INTERVAL_MS,
+} from './replay/captureHarvester.js';
+import {
   isLegendsPublisherEnabled,
   getLegendsPublisherIntervalMs,
   startLegendsPublisher,
@@ -34,6 +38,7 @@ async function main() {
   let pool;
   let legendsPublisherHandle;
   let matchReaperHandle;
+  let captureHarvesterHandle;
 
   try {
     const started = await startServer();
@@ -98,6 +103,16 @@ async function main() {
         gameoverGraceMs: GAMEOVER_GRACE_MS,
         abandonedTtlMs: ABANDONED_TTL_MS,
       });
+      // why: WP-335 / D-24122 — start the capture harvester so finished matches
+      // are reconstructed, stored as durable replay artifacts, and made
+      // competitively submittable (ownership assigned per authenticated seat)
+      // before the reaper's captured_at guard would ever let them be deleted.
+      // Same pool, same start-when-available / stop-on-SIGTERM lifecycle as the
+      // reaper. Its 5-min cadence sits well inside the reaper's 1-hr gameover grace.
+      captureHarvesterHandle = startCaptureHarvester({
+        database: pool,
+        intervalMs: CAPTURE_HARVESTER_INTERVAL_MS,
+      });
     } else {
       console.warn(
         '[match-reaper] pool is unavailable; reaper not started. Stale bgio.matches rows will not be cleaned up.',
@@ -133,6 +148,11 @@ async function main() {
     // no reap query fires against a closing pool during shutdown.
     if (matchReaperHandle !== undefined) {
       matchReaperHandle.stop();
+    }
+    // why: WP-335 — stop the capture harvester's interval before the pool closes
+    // so no capture query fires against a closing pool during shutdown.
+    if (captureHarvesterHandle !== undefined) {
+      captureHarvesterHandle.stop();
     }
     httpServer.close(async () => {
       console.log('[server] HTTP server closed. Closing pg.Pool.');

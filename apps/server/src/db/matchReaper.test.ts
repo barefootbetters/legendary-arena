@@ -64,6 +64,10 @@ describe('matchReaper — reapStaleMatches (no database)', () => {
     const { text, params } = pool.calls[0]!;
     assert.match(text, /DELETE FROM bgio\.matches/);
     assert.match(text, /jsonb_exists\(metadata, 'gameover'\)/);
+    // why: WP-335 / D-24122 — the gameover branch is guarded on captured_at so a
+    // finished match is reaped only after the capture harvester stored its replay
+    // artifact + ownership (else a capture outage past the grace would lose it).
+    assert.match(text, /captured_at IS NOT NULL/);
     assert.match(text, /make_interval\(secs => \$1\)/);
     assert.match(text, /make_interval\(secs => \$2\)/);
     // why: the query takes seconds; 3_600_000ms -> 3600s, 86_400_000ms -> 86400s.

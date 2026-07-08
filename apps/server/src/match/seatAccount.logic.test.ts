@@ -13,7 +13,7 @@
 import { describe, test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { recordSeatAccount } from './seatAccount.logic.js';
+import { recordSeatAccount, readSeatAccounts } from './seatAccount.logic.js';
 import type {
   AccountId,
   DatabaseClient,
@@ -147,6 +147,23 @@ describe('recordSeatAccount (WP-333)', () => {
           database,
         ),
       );
+    },
+  );
+
+  test(
+    'readSeatAccounts returns the recorded (playerId, accountId) seats for a match (WP-335)',
+    { skip: hasTestDatabase ? false : 'requires test database' },
+    async () => {
+      const database = pool as unknown as DatabaseClient;
+      await recordSeatAccount(TEST_MATCH_ID, '0', TEST_EXT_ID_A as AccountId, database);
+      await recordSeatAccount(TEST_MATCH_ID, '1', TEST_EXT_ID_B as AccountId, database);
+
+      const seats = await readSeatAccounts(TEST_MATCH_ID, database);
+      const byPlayer = new Map(seats.map((seat) => [seat.playerId, seat.accountId]));
+      assert.equal(byPlayer.get('0'), TEST_EXT_ID_A);
+      assert.equal(byPlayer.get('1'), TEST_EXT_ID_B);
+      // An unknown match has no seats.
+      assert.deepEqual(await readSeatAccounts('wp335-no-such-match', database), []);
     },
   );
 });
