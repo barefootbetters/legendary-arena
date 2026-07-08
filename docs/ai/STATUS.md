@@ -7,6 +7,40 @@
 
 ## Current State
 
+### WP-335 / EC-365 Executed — Live-Match Capture Harvester (D-24122 Active) (2026-07-08)
+
+**No user-observable change — infrastructure only.** WP-3a of the D-24119
+faithful-replay arc. The payoff: a finished multiplayer match is now automatically
+**captured** and made competitively **submittable** — and the `replayHash → matchId`
+mapping D-24121 named as the missing link now exists.
+
+On gameover, a background harvester (`startCaptureHarvester`, mirroring the WP-327
+reaper, running before reap) captures each finished match via `captureMatch`:
+`readMatchForReplay` → `reduceMatchToFinalState` (WP-334) → derive `scenarioKey`
+(set-abbr stripped → `buildScenarioKey`) → durably store the `{ initialState, log }`
+artifact keyed by `replayHash` in a new **`bgio.replay_artifacts`** table (migration
+025; also the `replayHash → matchId` mapping + `scenario_key`) → `assignReplayOwnership`
+per authenticated seat (from `match_seat_accounts`, best-effort) → stamp `captured_at`.
+
+- **Submittable-only:** capture does NOT score (the WP-332 submission pipeline does),
+  no PAR gate, no visibility flip, no `storeReplay` (D-24122).
+- **Durability + reaper coordination:** the artifact survives the reaper deleting the
+  live `bgio.matches` row; `reapStaleMatches`'s gameover branch is amended to reap only
+  once `captured_at IS NOT NULL` — so a capture outage past the 1h grace never silently
+  loses a competitive match. The abandoned branch is unchanged.
+- **Persistence:** `bgio.replay_artifacts` lives in the `bgio` schema (a derived
+  server-pipeline projection per the D-24119 carve-out) — no `legendary.*` blob, no
+  D-24095 invariant amendment (D-24122 clarifies).
+- **Gates:** `pnpm -r build` 0; new tests **9 pass / 0 fail (no-DB)** + **7/7 DB-gated
+  verified against local Postgres** (migration 025 `psql`-applied) — the full capture
+  end-to-end (artifact + mapping + scenarioKey + ownership per seat + `captured_at` +
+  idempotency + not-replayable skip) and `readSeatAccounts`; full `apps/server` suite
+  green. Engine untouched. §21 Library-only rows added.
+- **Out of scope (next arc WPs):** WP-3b verifier repoint (`competition.logic` reads
+  `bgio.replay_artifacts` + `reduceMatchToFinalState`; resolves the `moveCount`/rounds
+  scoring-semantics); WP-4 `computeStateHash` reconcile; WP-5 arena-client submit +
+  `listAccountReplays` HTTP.
+
 ### WP-334 / EC-364 Executed — Server-Layer Faithful Reducer-Replay Mechanism (D-24121 Active) (2026-07-08)
 
 **No user-observable change — infrastructure only.** WP-2 of the D-24119

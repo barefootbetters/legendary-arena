@@ -58,3 +58,30 @@ export async function recordSeatAccount(
     [matchId, playerId, accountId],
   );
 }
+
+/**
+ * Read the authenticated seats recorded for a match — the `(playerId, accountId)`
+ * pairs written by `recordSeatAccount` at join time. Used by the WP-335 capture
+ * step to `assignReplayOwnership` per authenticated seat (bots/guests have no row,
+ * D-24120, so they are simply absent from the result).
+ *
+ * @param matchId The boardgame.io match id.
+ * @param database The caller-injected `pg` pool.
+ * @returns The recorded seats (empty when the match has no authenticated seats).
+ */
+export async function readSeatAccounts(
+  matchId: string,
+  database: DatabaseClient,
+): Promise<{ playerId: string; accountId: AccountId }[]> {
+  const result = await database.query(
+    'SELECT player_id, account_id FROM legendary.match_seat_accounts ' +
+      'WHERE match_id = $1',
+    [matchId],
+  );
+  return result.rows.map(
+    (row: { player_id: string; account_id: string }) => ({
+      playerId: row.player_id,
+      accountId: row.account_id as AccountId,
+    }),
+  );
+}
