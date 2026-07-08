@@ -184,11 +184,16 @@ services:
         sync: false
       - key: BREVO_LIST_ID
         sync: false
-      # why: kill switch per D-14202 — default "false" so test/dev/staging
-      # runs do not write to prod R2. Set to "true" in the production
-      # Render dashboard to enable the publisher.
+      # why: kill switch per D-14202 — default was "false" so test/dev/staging
+      # runs do not write to prod R2. Enabled ("true") 2026-07-08 to feed the
+      # live public scoreboard at legends.legendary-arena.com (WP-142 publisher
+      # → WP-143 board). Requires the three R2_* creds above to be provisioned
+      # (they are — publisher /health reports status "ok"). This makes
+      # config-as-code match the production Render dashboard value so a
+      # Blueprint re-sync cannot silently revert the enable. Verify via
+      # GET /health/legends-publisher.
       - key: LEGENDS_PUBLISHER_ENABLED
-        value: "false"
+        value: "true"
       # why: cadence override per D-14201. Default 300000 (5 min).
       # Override only for debugging or burst-catch-up scenarios.
       - key: LEGENDS_PUBLISHER_INTERVAL_MS
