@@ -5482,7 +5482,21 @@ corresponding entry's status is `Open`.
 
 ### D-0203 — Canonical Persisted Artifact for Move Log / Replay
 
-**Decision:** *TBD.*
+**Decision:** **Option (A) — boardgame.io-native.** The canonical persisted
+artifact is boardgame.io's own `initialState + LogEntry[]`, already durably
+stored by WP-309 / D-24095 in the dedicated `bgio` schema (`bgio.matches`:
+`initial_state`, `log`, `metadata`, `state`). No parallel engine-native writer
+is introduced — the framework store IS the source of truth for match
+reconstruction. Faithful replay is a **server-layer** pipeline that re-executes
+that artifact through boardgame.io's own reducer (`CreateGameReducer` /
+`InitializeGame` from `boardgame.io/internal`), which re-runs phase/turn hooks
+and the seeded `alea` PRNG, so reconstruction is faithful **by construction**.
+The engine's `replayGame` / `verifyDeterminism` harness is unchanged and stays
+determinism-only (D-0205 Option C preserved) — the faithful replayer is a NEW,
+separate server-layer path, not a modification of the engine harness (which may
+not import boardgame.io per D-2705). Resolves under the umbrella decision
+**D-24119**, which also amends D-24095's persistence carve-out and records the
+implementing WP split. See D-24119 for the full reconciliation.
 
 **Scope:** Determines which artifact the server persists for every match
 so that a match can be reconstructed after the process restarts and so
@@ -5533,7 +5547,16 @@ WP-063 (Replay Snapshot Producer) producing artifacts with a
 committed shape. Non-binding target — adjustable via a follow-up
 DECISIONS.md entry if Phase 6 re-sequences.
 
-**Status:** Open — Awaiting decision
+**Options rejected:**
+- **(B) engine-native.** Rejected — a second, server-derived `ReplayInput`
+  writer duplicates the framework's per-move record and (per D-0205) can only be
+  faithful if the engine maintains a second RNG source in lockstep with live
+  play, the exact silent-divergence failure mode D-0002 forbids. The existing
+  engine `ReplayInput` / `replayGame` stays scoped to determinism-only tooling.
+- **(C) both.** Rejected — largest maintenance surface (two shapes, two writers,
+  a projection) for no benefit once (A)'s artifact already exists via WP-309.
+
+**Status:** **Active** (Option A) — resolved 2026-07-08 under D-24119.
 **Raised:** `MOVE_LOG_FORMAT.md` Decision Point 1, 2026-04-18
 
 ---
@@ -5591,7 +5614,17 @@ Inspector), which must know which audiences can read which fields.
 Reinforced again in Phase 7 by WP-053 (Competitive Score Submission
 & Verification). Non-binding target.
 
-**Status:** Open — Awaiting decision
+**2026-07-08 disposition (D-24119):** does NOT block the server-internal faithful
+replay pipeline (D-0203 Option A). That pipeline reads `bgio.matches` and
+re-executes it **server-side only** — the server is already the authority for the
+match and holds the full state, so replay-for-scoring adds no new read audience
+and no new exposure of hidden information (it mirrors WP-053's existing server-side
+replay re-execution). D-0204 remains **Open** and MUST be resolved before any
+**user-facing** replay/spectator viewer exposes persisted log contents to
+non-authoritative audiences (option A/B/C selection is that feature's gate, not
+this pipeline's).
+
+**Status:** Open — Awaiting decision (user-facing exposure only; server-internal replay unblocked per D-24119)
 **Raised:** `MOVE_LOG_FORMAT.md` Decision Point 2, 2026-04-18
 
 ---
@@ -5604,6 +5637,17 @@ It is not, and does not claim to be, a live-match replayer. Any future
 "replay a specific match" feature builds on a separate pipeline that
 rehydrates boardgame.io's seeded `ctx.random.*` — most likely via
 D-0203 option (A), but that choice remains open.
+
+**2026-07-08 amendment (D-24119):** D-0203 is now resolved to Option (A), so the
+"separate pipeline" anticipated above is authorized: a **server-layer** faithful
+replayer re-executes the persisted `bgio.matches` `initialState + log` through
+boardgame.io's own reducer (framework-seeded `alea` RNG + phase/turn hooks). This
+does NOT change this decision's disposition for the ENGINE harness — `replayGame` /
+`verifyDeterminism` stay determinism-only / debug-only (Option C stands; the
+reverse-shuffle + ignored-seed behavior is deliberately preserved so the
+determinism proof and the offline replay-producer goldens are unaffected). The
+faithful path is additive and lives in the server layer (D-2705 keeps boardgame.io
+out of the engine's `replay/`). See D-24119.
 
 **Decision rationale:** The repo currently lacks a canonical persisted
 RNG truth source. `replayGame` hardcodes a reverse-shuffle and ignores
@@ -26272,6 +26316,24 @@ Protect this file.
 
 **Consequence.** An in-progress match survives a deploy/restart: after the process restarts, the match state is reloaded from Postgres and the client can keep submitting moves (the direct fix for the mid-match freezes). The engine, moves, zone ops, and snapshot code are **unchanged**; `G` remains JSON-serializable and is never read by application code from the store. No new npm dependency. **Rejected alternative — Option B** (`bgio-postgres` community adapter): pulls in **Sequelize** (a heavy ORM) and manages its own tables/migrations outside the repo's `pg` + migration conventions, with less control over the schema-boundary point — rejected in favour of the dependency-free, convention-aligned Option A. **Executed deviations from the WP/EC allowlist (fold-inline):** (a) the migration landed at `data/migrations/023_create_bgio_match_store.sql` (the repo's actual, established migration convention) rather than the WP's stated `apps/server/migrations/<NNN>-...` path, which no existing migration uses — the WP §Context itself instructs "follow the existing migration naming/location convention"; (b) `pnpm --filter @legendary-arena/server build` is a no-op (apps/server has no `build` script / tsconfig), so the workspace `pnpm -r build` + the DB-gated `bgioPgStore` suite are the effective build/verify gates.
 
+**2026-07-08 amendment (D-24119) — replay/verification carve-out.** D-24095's
+amended invariant said the framework blob is *"never read or interpreted by
+application code ... and never a source of derived features."* That clause is
+narrowed: a **server-layer replay/verification pipeline MAY read the framework
+store's `initialState + log` and re-execute them through boardgame.io's OWN
+reducer** (`CreateGameReducer` / `InitializeGame`) to reconstruct a **completed**
+match's final state, for (a) faithful replay reconstruction and (b) competitive-
+score verification. Guardrails that keep the invariant's intent intact: the
+re-execution is performed by the **framework reducer**, not by application code
+reinterpreting `G` field-by-field; the reconstructed state is a **derived,
+read-only projection** — never written back to the `bgio` store, never written to
+`legendary.*` (only the derived domain records it produces — e.g.
+`legendary.competitive_scores` — are persisted), never fed back as live
+authoritative state, and only for matches already at gameover. All other reads of
+the `bgio` blob by application code remain forbidden. The one-line wording in
+ARCHITECTURE.md §Persistence Boundary and `.claude/rules/architecture.md` is
+amended identically to reflect this carve-out.
+
 **Packet:** WP-309 + EC-339. **Drafted:** 2026-07-05.
 
 ### D-24096 — Client Reconnect & Desync Auto-Resync: `stop()`+`start()` Re-Anchor Primitive + Non-Blocking Banner; Server-Side WP-116 Cells Deferred
@@ -27079,5 +27141,88 @@ rate limiting (replay re-execution is CPU-bearing; a per-account limit is a foll
 hardening WP, bounded for now by authentication + idempotency).
 
 **Packet:** WP-332 + EC-362. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
+
+### D-24119 — Faithful Live-Match Replay Architecture (Server-Layer Reducer-Replay over the D-0203(A) Framework Artifact)
+
+**Status:** **Proposed — awaiting operator ratification** (2026-07-08). This entry
+is the umbrella reconciliation for making a finished LIVE match yield a
+faithfully-reproducible replay + a correct competitive score. It resolves D-0203,
+amends D-0205 and D-24095, and dispositions D-0204 (all edited in place above).
+No code ships under this entry — it authorizes the WP arc below. Flip to `Active`
+on ratification.
+
+**Context.** WP-332 wired `POST /api/competition/scores`, but the whole
+competitive-submission chain is inert for live matches: (1) the match gate
+validates the authenticated `accountId` then discards it — nothing account-
+identifying is persisted into the match, so ownership can't be assigned; and
+(2) the engine's `replayGame` is a **determinism-only** harness (ignores the
+seed, skips phase/turn hooks — `replay.execute.ts`), so re-executing a captured
+live move-log does NOT reproduce the live final state; scores derived from it
+would be garbage. The competitive/replay system (WP-048/053/054) was built for
+authored/simulated `ReplayInput`s faithful under that harness, never for live
+capture — which is why none of it was ever wired.
+
+**Decision (the reconciliation).**
+- **D-0203 → Option (A)** (above): the canonical persisted replay artifact is
+  boardgame.io's `initialState + LogEntry[]`, already durable via WP-309 /
+  D-24095 (`bgio.matches`). No engine-native writer.
+- **Faithful replay is a server-layer reducer-replay** (not an engine change):
+  re-execute the persisted artifact through boardgame.io's own reducer
+  (`CreateGameReducer` / `InitializeGame`, `boardgame.io/internal`), seeded from
+  `initial_state.plugins.random.data.seed` — the framework re-runs phase/turn
+  hooks + the seeded `alea` PRNG, so reconstruction is faithful by construction.
+- **D-0205 amended** (above): the engine harness stays determinism-only; the
+  faithful path is a separate, additive server-layer pipeline. Engine `replay/`
+  keeps its no-`boardgame.io` boundary (D-2705).
+- **D-24095 amended** (above): server-layer replay/verification MAY read the
+  `bgio` blob's `initialState + log` and re-execute via the framework reducer —
+  a derived, read-only projection; all other application reads of the blob stay
+  forbidden.
+- **D-0204 dispositioned** (above): server-internal replay adds no new read
+  audience; D-0204 stays open only for a future user-facing replay viewer.
+
+**Implementing WP arc (each its own WP, in order; none scoped until this entry is Active):**
+1. **Seat→account identity persistence (prerequisite).** Stamp the gate-verified
+   `accountId` (and guest/bot flag) per seat into the match `setupData` /
+   `players[].data` at create/join (`apps/server/src/match/**`, arena-client
+   `lobbyApi.ts`). Without this, `assignReplayOwnership` cannot name each
+   authenticated seat. Independent of the replay engine.
+2. **Server-layer faithful reducer-replay + repoint the verifier.** New
+   `apps/server/src/replay/**` reducer-replay over `bgio.matches`; repoint the
+   WP-053 competitive verifier (`competition.logic.ts` step 8) from the
+   self-referential `replay_blobs` / engine-`replayGame` path to the reducer
+   replay.
+3. **Live-match capture harvester.** On gameover (a scan mirroring the WP-327
+   reaper, ordered BEFORE reap, with a `captured_at` dedupe marker on
+   `bgio.matches`): reconstruct → hash → `storeReplay` → `assignReplayOwnership`
+   per authenticated seat, with `scenarioKey = buildScenarioKey(strip-set-abbr(...))`.
+4. **Cleanup / re-pin.** Re-pin the determinism-only goldens that legitimately
+   change scope (`PRE_WP080_HASH`, replay-producer snapshot goldens) and reconcile
+   the `computeStateHash` field-set landmine (see below).
+5. **Arena-client submit-after-match** (or direct server-authoritative write) —
+   the original client WP, trivial once 1–3 land.
+
+**Implementation landmines the WPs MUST handle (recorded so they aren't rediscovered):**
+- Seed lives in `state.plugins.random.data.seed` (boardgame.io 0.50.2), NOT
+  `ctx._random`.
+- `computeStateHash` (`replay.hash.ts`) hashes the WHOLE `G` including
+  `messages` + `logMeta`, despite `game.ts` claiming `logMeta` is hash-excluded —
+  the claim is unenforced. Live-vs-replay hashes must agree byte-for-byte on those
+  fields; reconcile before comparing.
+- Reconstruct from raw `state`, not the `playerView`/`UIState` projection.
+- Reducer-replay hard-couples to boardgame.io 0.50.x reducer/plugin internals
+  (the `^0.50.0 LOCKED` invariant).
+- `desync.detect.ts` shares `computeStateHash`; a field-set change there affects
+  live desync detection.
+
+**Alternative not taken (recorded for the record).** *Server-authoritative direct
+scoring* — score the live authoritative final `G` at capture without any replay
+re-execution — would reach correct scores far more cheaply and sidestep D-0203
+entirely, but yields no faithful/watchable replay and abandons the replay-verify
+audit model. Operator chose faithful replay for the replay-viewer payoff +
+verification integrity; this alternative is the fallback if the arc's cost proves
+unjustified.
+
+**Packet:** decision-only (no WP). **Drafted:** 2026-07-08. **Ratified:** _pending_.
 
 Protect this file.
