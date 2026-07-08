@@ -8,6 +8,7 @@ import {
   serverUrl,
 } from './lobbyApi';
 import type { LobbyMatchSummary } from './lobbyApi';
+import { filterJoinableMatches } from './lobbyMatchFilter';
 import { parseLoadoutJson } from './parseLoadoutJson';
 import type { ParsedLoadout } from './parseLoadoutJson';
 import { convertLagnUpload } from './lagnLoadout';
@@ -74,6 +75,13 @@ export default defineComponent({
     const playerName = ref('');
 
     const matches = ref<LobbyMatchSummary[]>([]);
+    // why: WP-326 — the "Join existing match" list shows only joinable matches
+    // (at least one open seat AND not gameover). `matches` keeps the raw server
+    // result so a future spectate view can reach the full list without a
+    // re-fetch; the template iterates this filtered computed instead. Filtering a
+    // read-only server list is a display concern — the client deletes no match
+    // (the server-side reaper that removes stale rows is WP-327).
+    const joinableMatches = computed(() => filterJoinableMatches(matches.value));
     const errorMessage = ref<string | null>(null);
     const isSubmitting = ref(false);
 
@@ -472,6 +480,7 @@ export default defineComponent({
       numPlayers,
       playerName,
       matches,
+      joinableMatches,
       errorMessage,
       isSubmitting,
       pasteText,
@@ -779,9 +788,17 @@ export default defineComponent({
         Refresh
       </button>
 
+      <p
+        v-if="joinableMatches.length === 0"
+        class="match-list-empty"
+        data-testid="lobby-match-list-empty"
+      >
+        No open matches right now — create one above.
+      </p>
+
       <ul class="match-list" data-testid="lobby-match-list">
         <li
-          v-for="match in matches"
+          v-for="match in joinableMatches"
           :key="match.matchID"
           class="match-row"
         >
@@ -902,5 +919,10 @@ export default defineComponent({
   display: flex;
   gap: 0.5rem;
   align-items: center;
+}
+
+.match-list-empty {
+  padding: 0.5rem 0;
+  opacity: 0.75;
 }
 </style>

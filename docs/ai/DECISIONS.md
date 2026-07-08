@@ -26805,7 +26805,7 @@ were **added** to the WP-253 reveal-collapse suite instead.
 
 ### D-24112 — Lobby Join List Shows Only Joinable Matches (Client Filter)
 
-**Status:** Drafted 2026-07-07; not yet landed. Flips to Active (post-execution) when WP-326 executes. `D-24026` live-verify operator-pending on deploy.
+**Status:** Active (post-execution) 2026-07-07. `D-24026` live-verify operator-pending on deploy.
 
 **User-Visible Surface:** play.legendary-arena.com (the "Join existing match" list).
 

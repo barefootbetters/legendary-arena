@@ -85,7 +85,14 @@ export async function createMatch(
  * @throws Error with a full-sentence message on non-2xx responses.
  */
 export async function listMatches(): Promise<LobbyMatchSummary[]> {
-  const endpoint = `${serverUrl}/games/legendary-arena`;
+  // why: `?isGameover=false` asks the boardgame.io lobby route to drop finished
+  // matches server-side — it passes `where: { isGameover: false }` to the WP-309
+  // store's `listMatches`, which returns only rows whose `metadata.gameover` is
+  // absent. A server that ignores the param is harmless: the client-side
+  // `filterJoinableMatches` still drops gameover rows via the normalized
+  // `gameover` field. This is a bandwidth optimization; the client filter is the
+  // guaranteed mechanism (WP-326 / D-24112).
+  const endpoint = `${serverUrl}/games/legendary-arena?isGameover=false`;
   const response = await fetch(endpoint);
 
   if (!response.ok) {

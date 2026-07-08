@@ -128,7 +128,13 @@ describe('lobbyApi (WP-090)', () => {
 
     const summaries: LobbyMatchSummary[] = await listMatches();
 
-    assert.equal(calls[0]!.url, `${serverUrl}/games/legendary-arena`);
+    // why: WP-326 — the list request carries `?isGameover=false` so the server
+    // drops finished matches before they reach the client (the client filter is
+    // the guaranteed backstop). Assert the exact URL including the query param.
+    assert.equal(
+      calls[0]!.url,
+      `${serverUrl}/games/legendary-arena?isGameover=false`,
+    );
     assert.equal(summaries.length, 2);
 
     assert.equal(summaries[0]!.matchID, 'match-1');

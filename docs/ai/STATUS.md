@@ -7,6 +7,29 @@
 
 ## Current State
 
+### WP-326 / EC-356 Executed — Lobby Join List Shows Only Joinable Matches (D-24112 Active) (2026-07-07)
+
+Client half of the stale-lobby cleanup WP-309 (D-24095) exposed. Once the boardgame.io match
+store became durable in Postgres, nothing wiped abandoned matches and the lobby join list never
+filtered un-joinable rows, so play.legendary-arena.com filled with dead single-seat ("Watch Bot
+Play" / solo, seat 0 already filled) and finished (gameover) matches (~11 observed 2026-07-07).
+
+- **New pure `lobby/lobbyMatchFilter.ts`:** `filterJoinableMatches(matches)` keeps a match only
+  when `gameover === null` AND at least one seat is open (`name === undefined`); `isSeatOpen`
+  helper. No Vue reactivity — unit-testable without a mount (WP-321/322 precedent).
+- **`LobbyView.vue`:** `matches` ref keeps the raw server result; a `joinableMatches` computed
+  drives the `join-existing` `v-for`; an empty list shows `No open matches right now — create
+  one above.` Display filter only — the client deletes no match (the reaper is WP-327).
+- **`lobbyApi.listMatches()`** now requests `?isGameover=false` so the WP-309 store drops
+  finished matches server-side; a server that ignores it degrades to the client filter.
+- **Message/display only** — no `MatchSetupConfig` / projection change, no `finalStateHash`
+  surface (client display).
+- **Gates:** arena-client `vue-tsc` clean, suite **741/741** (7 new `lobbyMatchFilter` tests),
+  `vite build` 0. 5-file client allowlist held.
+- **User-Visible Surface = play.legendary-arena.com.** D-24026 live-verify **operator-pending on
+  deploy**: the "Join existing match" list shows only joinable, non-gameover matches; an empty
+  list shows the empty-state line.
+
 ### WP-325 / EC-355 Executed — Reveal / "What If…?" Test-Result Logging (D-24111 Active) (2026-07-07)
 
 Closes the last silent effect path (WP-B.1). The reveal / "What If…?" pipeline
