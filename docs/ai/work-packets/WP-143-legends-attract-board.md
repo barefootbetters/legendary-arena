@@ -442,18 +442,33 @@ single packets with the same justification.
 
 ## Definition of Done
 
-- [ ] All acceptance criteria pass
-- [ ] `pnpm --filter @legendary-arena/legends-board build` exits 0
-- [ ] `pnpm --filter @legendary-arena/legends-board test` exits 0
-- [ ] Cloudflare Pages project created and connected to GitHub
-- [ ] Custom domain `legends.legendary-arena.com` attached to the Pages project
-- [ ] Manual smoke: open `https://legends.legendary-arena.com` in a fresh
+- [x] All acceptance criteria pass
+- [x] `pnpm --filter @legendary-arena/legends-board build` exits 0
+- [x] `pnpm --filter @legendary-arena/legends-board test` exits 0
+- [x] Cloudflare Pages project created and connected to GitHub
+- [x] Custom domain `legends.legendary-arena.com` attached to the Pages project
+- [x] Manual smoke: open `https://legends.legendary-arena.com` in a fresh
       browser, confirm DevTools shows zero requests to any `api.` or
       `*.onrender.com` host, only R2 public-read URLs
-- [ ] `node scripts/check-subdomains.mjs --include-planned` shows `legends.`
+- [x] `node scripts/check-subdomains.mjs --include-planned` shows `legends.`
       OK after the deploy lands, then a follow-up commit flips its `state`
       to `"live"` in `docs/ops/domains.json`
-- [ ] `docs/ai/STATUS.md` updated — public scoreboard now exists
-- [ ] `docs/ai/DECISIONS.md` updated — D-14301..D-14306
-- [ ] `docs/ai/work-packets/WORK_INDEX.md` has WP-143 checked off with date
-- [ ] 01.5 NOT INVOKED (zero engine touch)
+- [x] `docs/ai/STATUS.md` updated — public scoreboard now exists
+- [x] `docs/ai/DECISIONS.md` updated — D-14301..D-14306
+- [x] `docs/ai/work-packets/WORK_INDEX.md` has WP-143 checked off with date
+- [x] 01.5 NOT INVOKED (zero engine touch)
+
+**Deploy completion note (2026-07-08).** App code shipped 2026-05-15; the
+deploy/domain provisioning was finished this date. Cloudflare Pages project
+`legendary-arena-legends` created (build `pnpm --filter @legendary-arena/legends-board build`,
+output `apps/legends-board/dist`, env `VITE_LEGENDS_R2_BASE_URL=https://images.legendary-arena.com`,
+`NODE_VERSION=22`); custom domain `legends.legendary-arena.com` attached (Active,
+SSL). Zero-API acceptance was verified against the **deployed bundle** (stronger
+than a DevTools glance): the live JS contains no `api.legendary-arena.com` /
+`*.onrender.com` references and reads only `images.legendary-arena.com/legends/v1/*`.
+R2 CORS required no change (bucket already serves `Access-Control-Allow-Origin: *`).
+`docs/ops/domains.json` `legends.` flipped `planned → live` (the `cards.` entry was
+folded into the same commit — its cutover had already completed). **Open data-supply
+item (separate from this WP):** the WP-142 publisher is still idle
+(`LEGENDS_PUBLISHER_ENABLED` unset on Render), so the board renders its no-data
+state until enabled — a publisher concern, not a board defect.

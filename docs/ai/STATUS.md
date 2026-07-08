@@ -7,6 +7,35 @@
 
 ## Current State
 
+### INFRA — Public scoreboard live at legends.legendary-arena.com (WP-143 deploy finished) (2026-07-08)
+
+The Legends Attract Board (`apps/legends-board`, WP-143/EC-164 — app code merged
+2026-05-15) is now deployed and reachable. This finished the deploy/domain
+provisioning that WP-143's Definition of Done left open; no app code changed.
+
+- **Cloudflare Pages project** `legendary-arena-legends` created, connected to
+  `barefootbetters/legendary-arena` (branch `main`, build
+  `pnpm --filter @legendary-arena/legends-board build`, output
+  `apps/legends-board/dist`). Build env: `VITE_LEGENDS_R2_BASE_URL=https://images.legendary-arena.com`,
+  `NODE_VERSION=22`.
+- **Custom domain** `legends.legendary-arena.com` attached (Active, SSL enabled);
+  resolves to Cloudflare and serves HTTP 200 with the JS-free static fallback.
+- **Zero-API verified against the deployed bundle** (not just source): the live
+  JS contains no `api.legendary-arena.com` / `*.onrender.com` references and reads
+  snapshots only from `images.legendary-arena.com/legends/v1/*`. Acceptance
+  criterion (zero-auth, zero-API, R2-only) holds.
+- **R2 CORS** needed no change — the `legendary-images` bucket already serves
+  `Access-Control-Allow-Origin: *`.
+- **`docs/ops/domains.json`** `legends.` flipped `planned → live`. The `cards.`
+  entry was also flipped `planned → live` in the same commit (its Cloudflare Pages
+  custom-domain cutover had already completed; probe returns HTTP 200).
+- **Data-supply caveat (separate concern, not a board defect):** the WP-142
+  snapshot publisher is still **idle** — `GET /health/legends-publisher` reports
+  `{"status":"idle","lastSuccessAt":null}` and `legends/v1/manifest.json` 404s, so
+  the board renders its no-data/error state until an operator sets
+  `LEGENDS_PUBLISHER_ENABLED=true` on the `legendary-arena-server` Render service.
+  The board itself is correct and live.
+
 ### WP-331 / EC-361 Executed — HUD Turn Header Reads the Same Turn the Game Log Numbers By (D-24117 Active) (2026-07-08)
 
 On a completed match the HUD turn header showed `Turn 20` while the game log's last line read
