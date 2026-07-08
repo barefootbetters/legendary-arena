@@ -320,7 +320,13 @@ Forbidden examples:
 > internal serialization of `G`/`ctx`) to a dedicated non-domain store (the
 > `bgio` schema) as an operational durability concern; that blob is never read
 > or interpreted by application code, never a save-game, and never a source of
-> derived features. Snapshots remain counts-only.
+> derived features — **except** the D-24119 replay/verification carve-out: a
+> server-layer pipeline MAY read the blob's `initialState + log` and re-execute
+> them through boardgame.io's own reducer to reconstruct a **completed** match's
+> final state (a derived, read-only projection, for faithful replay reconstruction
+> and competitive-score verification; never written back or treated as live
+> authoritative state). All other application reads of the blob remain forbidden.
+> Snapshots remain counts-only.
 
 This applies across **all layers**.
 
