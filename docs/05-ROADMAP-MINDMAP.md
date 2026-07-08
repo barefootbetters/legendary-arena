@@ -410,6 +410,7 @@ mindmap
         ["WP-323 ✅ Game log name enrichment: card plays + mastermind tactics — played {Name} ({ext-id}) — {printed effect}; fought {Mastermind} and defeated the tactic {Tactic}; new pure logDisplay.ts; EC-353; D-24109"]
         ["WP-324 ✅ Game log name enrichment: remaining log sites — fights/recruits/dodges/escapes/captures/claims/grants → {Name} ({ext-id}) via formatCardRef; EC-354; D-24110"]
         ["WP-325 ✅ Reveal / What If…? test-result logging — revealed {card} (cost N) — {predicate} matched: {action}; the last silent effect path; new pure hero/revealLog.ts; EC-355; D-24111"]
+        ["WP-328 📝 Turn.step.action log numbering (+ effectProvenance parse fix) — {turn}.{step}.{action} prefix (step = start/main/cleanup) via hash-excluded G.logMeta + central pushLog over all ~39 push sites; folds the WP-323/324 effectProvenance ext-id regression; EC-358; D-24114"]
         ["📦 Effect-outcome fill-in (WP-B.2) — reveal-action realized results + move-card/sequence no-ops; deferred per D-24111"]
         ["📝 Structured log-outcome contract + colour-coding (WP-B.3) — G.messages string array → records with a machine-readable outcome field (green/red/yellow); own design review before packets; deferred per D-24111"]
 
