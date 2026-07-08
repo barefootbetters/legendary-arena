@@ -27223,6 +27223,54 @@ audit model. Operator chose faithful replay for the replay-viewer payoff +
 verification integrity; this alternative is the fallback if the arc's cost proves
 unjustified.
 
-**Packet:** decision-only (no WP). **Drafted:** 2026-07-08. **Ratified:** _pending_.
+**Packet:** decision-only (no WP). **Drafted:** 2026-07-08. **Ratified:** 2026-07-08 (PR #604).
+
+### D-24120 — Seat → Account Identity Persisted Server-Side (`legendary.match_seat_accounts`), Not in bgio Player Metadata
+
+**Status:** Active (post-execution) 2026-07-08.
+
+**User-Visible Surface:** none — infrastructure.
+
+**Context.** WP-1 of the D-24119 faithful-replay arc needs the account behind each
+authenticated seat to be durable, so the capture step can call
+`assignReplayOwnership(accountId, …)` per seat. The match gate
+(`matchGate.routes.ts`) validated the authenticated `accountId` at
+`POST /api/match/join` then discarded it — nothing account-identifying was
+persisted into the match. The obvious fix — stamp the `accountId` into
+boardgame.io's join `data` (which lands in `metadata.players[playerID].data`) —
+**leaks it**: `createClientMatchData` (`server.js:2114`) strips only `credentials`
+and returns `player.data` to clients via `GET /games/:name/:id` + `listMatches`.
+The project deliberately withholds `accountId` from clients (WP-102
+`PublicProfileView` omits it), so exposing it via match metadata would contradict
+that stance.
+
+**Decision.** Persist the seat→account mapping in a new **server-only** table
+`legendary.match_seat_accounts` (`(match_id, player_id)` PK → `account_id` =
+`ext_id`; migration `024`), written by the join handler after a successful native
+join. Locked properties:
+- **Server-verified identity only:** the recorded `account_id` is the session
+  `AccountId` resolved by `requireAuthenticatedSession`, never a client-supplied
+  body field (anti-spoof; tested).
+- **Never in bgio metadata:** the `accountId` is NOT stamped into `player.data` /
+  `setupData` (client-exposed). The native-join delegation body stays
+  `{ playerID, playerName }`.
+- **`account_id` stores `ext_id` directly** — the downstream
+  `assignReplayOwnership` resolves ownership by `ext_id`, so no internal
+  `player_id` bridging is stored.
+- **Best-effort write:** idempotent `ON CONFLICT (match_id, player_id) DO UPDATE`;
+  because the player is already seated, a record failure is logged (full-sentence)
+  and swallowed — it never turns a successful join into an error (mirrors the
+  fire-and-forget `issueTier1BadgesForSubmission` precedent). A join with no
+  `playerID` skips the record with a warning (the seat can't be attributed).
+- **`POST /api/match/join` contract unchanged** (request `{ matchID, playerID,
+  playerName }` → `{ playerCredentials }`, same status codes). The recording is a
+  server-side side-effect only.
+
+**Not changed.** No engine / `G` / `ctx` / determinism / move / snapshot surface.
+The autoplay/bot join path is untouched (bot seats get no row; the capture step
+treats a missing row as "not an authenticated seat"). No backfill of in-flight
+matches. The capture reader + `assignReplayOwnership` call is WP-3 of the arc.
+
+**Packet:** WP-333 + EC-363. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
 
 Protect this file.

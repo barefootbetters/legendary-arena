@@ -7,6 +7,36 @@
 
 ## Current State
 
+### WP-333 / EC-363 Executed — Seat → Account Identity Persistence (Match Join) (D-24120 Active) (2026-07-08)
+
+**No user-observable change — infrastructure only.** WP-1 of the D-24119
+faithful-replay arc. The payoff: the seat→account mapping is now durable, so the
+arc's later capture step can attribute a finished match to the right account.
+
+`POST /api/match/join` previously validated the authenticated `accountId` and
+discarded it. Now, after a successful native join, the server records the
+**server-verified** session `accountId` against `(matchID, playerID)` in a new
+server-only table `legendary.match_seat_accounts` (migration `024`).
+
+- **Privacy-critical:** the mapping is stored server-side ONLY, never in
+  boardgame.io `player.data`/`setupData` — verified that `createClientMatchData`
+  (`server.js:2114`) strips only `credentials` and returns `player.data` to
+  clients, so stamping the accountId there would leak account identity to
+  opponents (the project already withholds `accountId` from clients per WP-102).
+- **Anti-spoof:** the recorded `accountId` is the session value, never a
+  client-supplied field (tested).
+- **Best-effort:** the write is idempotent (`ON CONFLICT DO UPDATE`) and, since
+  the player is already seated, a record failure is logged and does NOT fail the
+  join (mirrors `issueTier1BadgesForSubmission`). `/api/match/join`
+  request/response/status are unchanged.
+- **Gates:** `pnpm -r build` 0; match tests **10 pass / 0 fail** + the 3
+  seat-account DB-backed tests **verified against local Postgres** (UPSERT
+  re-stamp idempotency + FK rejection — migration `024` applied via `psql`); full
+  `apps/server` suite green. `api-endpoints.md` `/api/match/join` row updated
+  (§21). Server + persistence only; no engine/`G`/determinism surface.
+- **Out of scope (next arc WPs):** the capture harvester that reads this table +
+  `assignReplayOwnership` (WP-3); the server reducer-replay (WP-2).
+
 ### WP-332 / EC-362 Executed — Competitive Score Submission HTTP Endpoint (D-24118 Active) (2026-07-08)
 
 **No user-observable change — infrastructure only.** This wires the server endpoint;
