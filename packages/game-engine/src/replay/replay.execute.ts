@@ -196,7 +196,7 @@ export function applyReplayStep(
  *                The `seed` field is stored but ignored by this harness;
  *                see D-0205.
  * @param registry - Card registry reader for setup-time resolution.
- * @returns The replay result with final state, hash, and move count.
+ * @returns The replay result with final state, hash, and completed play-turn count.
  */
 export function replayGame(
   input: ReplayInput,
@@ -228,9 +228,24 @@ export function replayGame(
   // Step 3: Compute canonical state hash
   const stateHash = computeStateHash(gameState);
 
+  // why: turnCount is the completed play-turn count — the competitive `rounds`
+  // input (deriveScoringInputs reads it, D-24123), NOT the player move count. Each
+  // completed turn ends with an `endTurn` move in a captured/sim move list, so the
+  // count of `endTurn` moves is the completed-turn count; floored at 1 to match
+  // reduceMatchToFinalState + par.aggregator's `turnsElapsed === 0 ? 1 : turnsElapsed`.
+  // This offline determinism harness feeds no live scorer (only replay.verify's
+  // self-check consumes its result), but the field must carry an honest turn count.
+  let endTurnMoveCount = 0;
+  for (const move of input.moves) {
+    if (move.moveName === 'endTurn') {
+      endTurnMoveCount = endTurnMoveCount + 1;
+    }
+  }
+  const turnCount = endTurnMoveCount < 1 ? 1 : endTurnMoveCount;
+
   return {
     finalState: gameState,
     stateHash,
-    moveCount: input.moves.length,
+    turnCount,
   };
 }

@@ -178,7 +178,7 @@ export interface ScenarioScoringConfig {
  * mid-match.
  */
 export interface ScoringInputs {
-  /** Rounds played (MVP: replayResult.moveCount). */
+  /** Completed play-turn count (`replayResult.turnCount`; D-24123, resolves D-4801). */
   readonly rounds: number;
   /** Team-aggregate victory points (D-4803: sum across players). */
   readonly victoryPoints: number;

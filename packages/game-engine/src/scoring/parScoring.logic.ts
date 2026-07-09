@@ -52,10 +52,11 @@ export function deriveScoringInputs(
   replayResult: ReplayResult,
   gameState: LegendaryGameState,
 ): ScoringInputs {
-  // why: MVP uses replayResult.moveCount as a round proxy. Per-turn
-  // counting requires a new G.counters['turns'] (or similar) and is
-  // deferred to a follow-up WP. D-4801.
-  const rounds = replayResult.moveCount;
+  // why: rounds = the completed play-turn count (replayResult.turnCount), matching
+  // how the PAR baselines were calibrated (par.aggregator's turnsElapsed, D-24123).
+  // This resolves the D-4801 MVP proxy that used the player move count as the round
+  // count — the producers (reduceMatchToFinalState, replayGame) now supply a turn count.
+  const rounds = replayResult.turnCount;
 
   // why: reuses WP-020's computeFinalScores so VP counting stays in
   // exactly one place. Summing across players is the D-4803 team-

@@ -44,5 +44,12 @@ export interface ReplayInput {
 export interface ReplayResult {
   readonly finalState: LegendaryGameState;
   readonly stateHash: string;
-  readonly moveCount: number;
+  /**
+   * The completed play-turn count — the competitive `rounds` input
+   * (`deriveScoringInputs` reads it). Floored at 1, consistent with
+   * `reduceMatchToFinalState` (WP-336) and `par.aggregator`'s `turnsElapsed`, the
+   * quantity the PAR baselines were calibrated with (D-24123). This retires the
+   * D-4801 MVP proxy that used the player move count as the round count.
+   */
+  readonly turnCount: number;
 }

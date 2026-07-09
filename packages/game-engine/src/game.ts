@@ -429,8 +429,13 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
 
           // why: WP-328 — stamp the turn number into G (ctx.turn lives only in ctx, and
           // helper push sites have no ctx) and reset the per-step action counter, so
-          // pushLog can number every log line {turn}.{step}.{action}. logMeta is
-          // hash-excluded (D-24081-style), so this adds no replay/hash surface.
+          // pushLog can number every log line {turn}.{step}.{action}. NOTE (WP-337):
+          // `computeStateHash` (replay.hash.ts) INTENTIONALLY hashes the full G, so
+          // logMeta IS part of the competitive/determinism hash — that is correct and
+          // harmless (logMeta is deterministic, and the faithful reduction reproduces it
+          // exactly, D-24124). It is the SEPARATE fixture-golden hash (hashGameState) that
+          // excludes messages + logMeta for golden-churn reasons (D-24081 / D-24114), not
+          // this one. logMeta is deterministic (ctx.turn), so it adds no non-determinism.
           G.logMeta = { turn: ctx.turn, actionInStep: 0 };
 
           // why: economy resets at start of each player turn — accumulated

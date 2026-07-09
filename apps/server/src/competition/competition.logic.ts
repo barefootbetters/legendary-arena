@@ -495,18 +495,16 @@ export async function submitCompetitiveScoreImpl(
     return { ok: false, reason: 'replay_verification_failed' };
   }
 
-  // why: step 10 — derived scoring inputs. Per D-4801, the second argument is
-  // the final game state (reduced.finalState) — the engine reads the terminal
-  // state directly, with no event log dependency. The first argument is a
-  // ReplayResult-shaped view whose `moveCount` slot carries the completed
-  // play-TURN count (reduced.turnCount), because deriveScoringInputs reads
-  // `.moveCount` as `rounds` and the PAR baselines were calibrated with
-  // rounds = turn count (D-24123). The engine is NOT edited; retiring the
-  // `moveCount` field name in favor of a turns-native input is deferred to WP-4.
+  // why: step 10 — derived scoring inputs. The second argument is the final game
+  // state (reduced.finalState) — the engine reads the terminal state directly, with
+  // no event log dependency. The first argument is a ReplayResult-shaped view carrying
+  // the completed play-turn count as `rounds` (deriveScoringInputs reads
+  // `replayResult.turnCount`; the PAR baselines were calibrated on turns, D-24123 /
+  // D-24125 — WP-337 retired the old `moveCount` proxy engine-side).
   const scoringView: ReplayResult = {
     finalState: reduced.finalState,
     stateHash: reduced.stateHash,
-    moveCount: reduced.turnCount,
+    turnCount: reduced.turnCount,
   };
   const scoringInputs = deriveScoringInputs(scoringView, reduced.finalState);
 
