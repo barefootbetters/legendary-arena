@@ -47,9 +47,15 @@ import {
   computeParScore,
   computeRawScore,
   deriveScoringInputs,
+  // why: WP-342 / D-24131 §3 — the pure endgame evaluation over the reduced
+  // final G is the outcome source for the stored `outcome` column. It is the
+  // same function the live engine's endIf delegates to, so evaluating it over
+  // the faithfully-reduced G reproduces the live gameover verdict.
+  evaluateEndgame,
 } from '@legendary-arena/game-engine';
 
 import type {
+  LegendaryGameState,
   ReplayResult,
   ScenarioScoringConfig,
   ScenarioKey,
@@ -102,6 +108,7 @@ import type {
 } from '../identity/identity.types.js';
 
 import type {
+  CompetitiveOutcome,
   CompetitiveScoreRecord,
   DatabaseClient,
   SubmissionResult,
@@ -193,6 +200,7 @@ interface CompetitiveScoreRow {
   scoring_config_version: number;
   state_hash: string;
   created_at: Date | string;
+  outcome: CompetitiveOutcome | null;
 }
 
 /**
@@ -228,6 +236,7 @@ function mapCompetitiveScoreRow(row: CompetitiveScoreRow): CompetitiveScoreRecor
       row.created_at instanceof Date
         ? row.created_at.toISOString()
         : row.created_at,
+    outcome: row.outcome,
   };
 }
 
@@ -250,7 +259,7 @@ async function findExistingByAccountAndHash(
     'SELECT cs.submission_id, p.ext_id AS account_id, cs.replay_hash, ' +
       'cs.scenario_key, cs.raw_score, cs.final_score, cs.score_breakdown, ' +
       'cs.par_version, cs.scoring_config_version, cs.state_hash, ' +
-      'cs.created_at ' +
+      'cs.created_at, cs.outcome ' +
       'FROM legendary.competitive_scores cs ' +
       'JOIN legendary.players p ON cs.player_id = p.player_id ' +
       'WHERE p.ext_id = $1 AND cs.replay_hash = $2 LIMIT 1',
@@ -463,7 +472,7 @@ export async function listPlayerCompetitiveScores(
     'SELECT cs.submission_id, p.ext_id AS account_id, cs.replay_hash, ' +
       'cs.scenario_key, cs.raw_score, cs.final_score, cs.score_breakdown, ' +
       'cs.par_version, cs.scoring_config_version, cs.state_hash, ' +
-      'cs.created_at ' +
+      'cs.created_at, cs.outcome ' +
       'FROM legendary.competitive_scores cs ' +
       'JOIN legendary.players p ON cs.player_id = p.player_id ' +
       'WHERE p.ext_id = $1 ' +
@@ -642,6 +651,17 @@ export async function submitCompetitiveScoreImpl(
   // step 14 — full breakdown for audit transparency
   const scoreBreakdown = buildScoreBreakdown(scoringInputs, hit.scoringConfig);
 
+  // why: step 14b (WP-342 / D-24131 §3) — derive the match outcome from the
+  // reduced final G via the engine's pure endgame evaluation: the live endIf
+  // delegates to the same function, and the reduction is faithful (D-24124),
+  // so this reproduces the live gameover verdict at near-zero cost. A null
+  // evaluation (defensive; an accepted submission's match reached gameover)
+  // stores SQL NULL rather than rejecting — outcome is supplementary
+  // provenance for the gauntlet boards, never a verification gate.
+  const endgameResult = evaluateEndgame(reduced.finalState as LegendaryGameState);
+  const outcome: CompetitiveOutcome | null =
+    endgameResult === null ? null : endgameResult.outcome;
+
   // why: step 15 — locked CTE INSERT with the
   // ON CONFLICT (player_id, replay_hash) DO UPDATE SET player_id =
   // legendary.competitive_scores.player_id no-op self-assignment +
@@ -667,20 +687,21 @@ export async function submitCompetitiveScoreImpl(
       'inserted AS ( ' +
       'INSERT INTO legendary.competitive_scores ' +
       '(player_id, replay_hash, scenario_key, raw_score, final_score, ' +
-      'score_breakdown, par_version, scoring_config_version, state_hash) ' +
-      'SELECT player_id, $2, $3, $4, $5, $6, $7, $8, $9 ' +
+      'score_breakdown, par_version, scoring_config_version, state_hash, ' +
+      'outcome) ' +
+      'SELECT player_id, $2, $3, $4, $5, $6, $7, $8, $9, $10 ' +
       'FROM resolved_player ' +
       'ON CONFLICT (player_id, replay_hash) ' +
       'DO UPDATE SET player_id = legendary.competitive_scores.player_id ' +
       'RETURNING submission_id, player_id, replay_hash, scenario_key, ' +
       'raw_score, final_score, score_breakdown, ' +
       'par_version, scoring_config_version, state_hash, created_at, ' +
-      '(xmax = 0) AS was_inserted ' +
+      'outcome, (xmax = 0) AS was_inserted ' +
       ') ' +
       'SELECT i.submission_id, p.ext_id AS account_id, i.replay_hash, ' +
       'i.scenario_key, i.raw_score, i.final_score, i.score_breakdown, ' +
       'i.par_version, i.scoring_config_version, i.state_hash, ' +
-      'i.created_at, i.was_inserted, i.player_id ' +
+      'i.created_at, i.outcome, i.was_inserted, i.player_id ' +
       'FROM inserted i ' +
       'JOIN legendary.players p ON i.player_id = p.player_id',
     [
@@ -696,6 +717,7 @@ export async function submitCompetitiveScoreImpl(
       // which step 9 has just confirmed equals replayHash for every accepted
       // submission (the anti-tamper anchor).
       reduced.stateHash,
+      outcome,
     ],
   );
 

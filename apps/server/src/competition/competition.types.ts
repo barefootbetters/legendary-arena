@@ -113,16 +113,45 @@ export const SUBMISSION_REJECTION_REASONS: readonly SubmissionRejectionReason[] 
 ] as const;
 
 /**
+ * Which side won the match a competitive score records, mirroring the
+ * engine's `EndgameOutcome` two-value closed set. Stored on
+ * `legendary.competitive_scores.outcome` (migration 026); `null` marks
+ * a row inserted before the column existed (or a defensive
+ * null-evaluation), which never qualifies as a gauntlet leg.
+ */
+// why: D-24131 §3 — the gauntlet boards qualify legs on "the mastermind
+// was defeated", a fact the score columns alone cannot express. The
+// union mirrors the engine's EndgameOutcome values verbatim; the
+// assignment site in competition.logic.ts is typed against this union
+// so an engine-side value change fails compilation here.
+export type CompetitiveOutcome = 'heroes-win' | 'scheme-wins';
+
+/**
+ * Canonical readonly array mirroring the `CompetitiveOutcome` union.
+ * The drift-detection test in `competition.logic.test.ts` asserts
+ * forward and backward inclusion between this array and the union,
+ * mirroring the `SUBMISSION_REJECTION_REASONS` pattern above.
+ */
+// why: canonical runtime list — TypeScript unions are not enumerable
+// at runtime; the drift test uses this array to assert exhaustiveness
+// against the union via a `never` check (code-style §Drift Detection).
+export const COMPETITIVE_OUTCOMES: readonly CompetitiveOutcome[] = [
+  'heroes-win',
+  'scheme-wins',
+] as const;
+
+/**
  * Competitive score record. One row per (player_id, replay_hash) pair
  * in `legendary.competitive_scores`; the underlying table enforces
  * this via `UNIQUE (player_id, replay_hash)`. Records are write-once
  * per D-5302 — no UPDATE function exists in the application layer.
  *
  * `Object.keys(record).sort()` MUST equal:
- *   ['accountId','createdAt','finalScore','parVersion','rawScore',
- *    'replayHash','scenarioKey','scoreBreakdown','scoringConfigVersion',
- *    'stateHash','submissionId']
- * — exactly 11 keys; drift-detection test #9 enforces this.
+ *   ['accountId','createdAt','finalScore','outcome','parVersion',
+ *    'rawScore','replayHash','scenarioKey','scoreBreakdown',
+ *    'scoringConfigVersion','stateHash','submissionId']
+ * — exactly 12 keys; drift-detection test #9 enforces this. (Amended
+ * from the WP-053 11-key lock by D-24131, which adds `outcome`.)
  */
 // why: immutable snapshot of verified execution. The two version
 // fields (parVersion text + scoringConfigVersion integer) pin the
@@ -154,6 +183,10 @@ export interface CompetitiveScoreRecord {
   readonly scoringConfigVersion: number;
   readonly stateHash: string;
   readonly createdAt: string;
+  // why: nullable — see CompetitiveOutcome; a NULL row predates
+  // migration 026 (or hit the defensive null-evaluation path) and
+  // never qualifies as a gauntlet leg per D-24131 §3.
+  readonly outcome: CompetitiveOutcome | null;
 }
 
 /**

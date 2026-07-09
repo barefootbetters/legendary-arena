@@ -17,10 +17,17 @@ import { randomBytes } from 'node:crypto';
 import type { DatabaseClient } from '../leaderboards/leaderboard.types.js';
 import type {
   BoardPublishOutcome,
+  GauntletIndexEntry,
   LegendsManifest,
   LegendsR2Client,
   PublishResult,
 } from './legends.types.js';
+
+import type { GauntletDefinition } from './gauntlet.logic.js';
+import {
+  buildGauntletBoardName,
+  getGauntletStandings,
+} from './gauntlet.logic.js';
 
 import {
   buildBoardList,
@@ -88,6 +95,11 @@ export async function publishAllBoards(
   r2Client: LegendsR2Client,
   bucket: string,
   leaderboardDeps: LeaderboardDependencies,
+  // why: optional (WP-342 / D-24131) — when absent the publisher behaves
+  // byte-identically to WP-142 (no gauntlet queries, no gauntlet files, no
+  // manifest additions). The wiring layer builds the catalog from the startup
+  // registry; this module keeps its no-registry-import lock.
+  gauntletCatalog?: readonly GauntletDefinition[],
 ): Promise<PublishResult> {
   // why: runId format is <ISO-timestamp>-<4-char-hex> per EC-157
   // §Locked Values. crypto.randomBytes(2) yields 4 hex chars.
@@ -205,6 +217,106 @@ export async function publishAllBoards(
     }
   }
 
+  // --- Build and write gauntlet boards + index (WP-342 / D-24131) ---
+  // why: standings queries run inside the same READ ONLY transaction as the
+  // leaderboard queries so all boards in one publish run see one consistent
+  // point-in-time snapshot.
+  const writtenGauntletBoardNames: string[] = [];
+  if (gauntletCatalog !== undefined) {
+    const gauntletIndexEntries: GauntletIndexEntry[] = [];
+    let indexBuildFailed = false;
+
+    for (const gauntletDefinition of gauntletCatalog) {
+      const boardName = buildGauntletBoardName(gauntletDefinition);
+      try {
+        const standings = await getGauntletStandings(
+          gauntletDefinition,
+          database,
+          leaderboardDeps,
+        );
+
+        gauntletIndexEntries.push({
+          setAbbr: gauntletDefinition.setAbbr,
+          setName: gauntletDefinition.setName,
+          mastermindSlug: gauntletDefinition.mastermindSlug,
+          mastermindName: gauntletDefinition.mastermindName,
+          legCount: gauntletDefinition.legSchemeSlugs.length,
+          entryCount: standings.length,
+          board: boardName,
+        });
+
+        // why: zero-entry gauntlets appear in the index but get NO board file
+        // (D-24131 §7) — the index carries "unclaimed" boards without writing
+        // 100+ empty JSON files every publish cycle.
+        if (standings.length === 0) {
+          continue;
+        }
+
+        const gauntletJson = JSON.stringify({
+          board: boardName,
+          entries: standings,
+          rowCount: standings.length,
+          schemaVersion: 1,
+        });
+
+        boardPayloads.push({
+          boardName,
+          jsonPayload: gauntletJson,
+          rowCount: standings.length,
+        });
+
+        const outcome = await writeBoardToR2(
+          r2Client, bucket, boardName, gauntletJson, standings.length, runId,
+        );
+        boardOutcomes.push(outcome);
+        if (!outcome.success) {
+          anyBoardFailed = true;
+        } else {
+          writtenGauntletBoardNames.push(boardName);
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        anyBoardFailed = true;
+        indexBuildFailed = true;
+        boardOutcomes.push({
+          board: boardName,
+          byteCount: 0,
+          errorMessage,
+          putLatencyMs: 0,
+          rowCount: 0,
+          success: false,
+        });
+        logBoardOutcome(runId, boardName, 0, 0, 0, false, errorMessage);
+      }
+    }
+
+    // why: the index is only written when every gauntlet computed — a partial
+    // index would silently drop boards; the stale prior index stays consistent
+    // (same posture as the manifest-last rule).
+    if (!indexBuildFailed) {
+      const gauntletIndexJson = JSON.stringify({
+        gauntlets: gauntletIndexEntries,
+        generatedAt: new Date().toISOString(),
+        schemaVersion: 1,
+      });
+
+      boardPayloads.push({
+        boardName: 'gauntlet-index',
+        jsonPayload: gauntletIndexJson,
+        rowCount: gauntletIndexEntries.length,
+      });
+
+      const indexOutcome = await writeBoardToR2(
+        r2Client, bucket, 'gauntlet-index', gauntletIndexJson,
+        gauntletIndexEntries.length, runId,
+      );
+      boardOutcomes.push(indexOutcome);
+      if (!indexOutcome.success) {
+        anyBoardFailed = true;
+      }
+    }
+  }
+
   await database.query('COMMIT');
 
   // --- Write archive (once per UTC day) ---
@@ -241,11 +353,25 @@ export async function publishAllBoards(
   if (!anyBoardFailed) {
     try {
       const generatedAt = new Date().toISOString();
-      const manifest: LegendsManifest = {
-        boards: boardNames,
-        generatedAt,
-        schemaVersion: 1,
-      };
+      // why: the gauntlet fields are additive and appear ONLY when a catalog
+      // was provided (WP-342 / D-24131 §7) — the no-catalog manifest is
+      // byte-compatible with WP-142 consumers.
+      let manifest: LegendsManifest;
+      if (gauntletCatalog === undefined) {
+        manifest = {
+          boards: boardNames,
+          generatedAt,
+          schemaVersion: 1,
+        };
+      } else {
+        manifest = {
+          boards: boardNames,
+          generatedAt,
+          schemaVersion: 1,
+          gauntletBoards: [...writtenGauntletBoardNames].sort(),
+          gauntletIndex: 'gauntlet-index',
+        };
+      }
       const manifestJson = JSON.stringify(manifest);
 
       await r2Client.putObject({

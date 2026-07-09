@@ -27786,7 +27786,9 @@ Protect this file.
 
 ### D-24131 — Mastermind set-gauntlet leaderboards (per-set, wins-only, average-of-best legs; derived aggregation only)
 
-**Status:** Active (design-locked) 2026-07-09. Execution pending WP-342 (server) + backlogged client/profile follow-ups.
+**Status:** Active 2026-07-09; **WP-342 executed 2026-07-09** (EC-372). Migration 026 PROD apply is operator-pending (024/025 pattern). Client index/panel + profile progress/badges follow-ups remain backlogged.
+
+> **Execution note (2026-07-09).** Landed as designed with three EC-draft reconciliations recorded in the WP addendum: the catalog threads server.mjs → index.mjs → scheduler (12 files, not 10); the VISION §22 version filter reuses the injected `checkParPublished` (its `ParGateHit.scoringConfig` already carries the published version — no separate PAR-store lookup); the WP-053 `CompetitiveScoreRecord` 11-key lock is amended to 12 keys (adds `outcome`) under this decision's authority. Outcome derives from `evaluateEndgame(reduced.finalState)` at step 14b (pure; faithful per D-24124); a null evaluation stores SQL NULL, never a rejection. Live catalog smoke: 40 sets → 105 gauntlets, `dims` excluded, core = 4 boards × 8 legs.
 
 **User-Visible Surface:** none at this entry (design lock). The eventual surfaces are legends.legendary-arena.com (board index + gauntlet boards) and play.legendary-arena.com (owner-profile progress, public-profile badges).
 

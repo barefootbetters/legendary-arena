@@ -439,7 +439,8 @@ player ID, not the public handle.
 > set-gauntlet below was ratified and expanded to **all sets** by
 > **D-24131** ([DECISIONS.md](../docs/ai/DECISIONS.md)), with
 > [WP-342](../docs/ai/work-packets/WP-342-mastermind-gauntlet-boards-server.md)
-> drafted as the server packet. Locked parameters: one gauntlet per
+> **executed 2026-07-09** as the server packet (outcome column + gauntlet
+> read-layer + publisher emission; migration 026 PROD apply pending). Locked parameters: one gauntlet per
 > (set × mastermind) for every set with ≥1 scheme (105 boards at current
 > data; `dims`/`3dtc` excluded); legs = the set's schemes; **wins only**
 > (a new `outcome` column on `competitive_scores`, written at submission);
@@ -614,6 +615,6 @@ instead of a bare table. Hand-authored mockup:
   — `buildScenarioKey` / `buildTeamKey` (the canonical board keys)
 - [WP-342](../docs/ai/work-packets/WP-342-mastermind-gauntlet-boards-server.md)
   + DECISIONS.md **D-24131** — the ratified set-gauntlet design and its
-  server packet (drafted 2026-07-09)
+  server packet (executed 2026-07-09)
 - [Scoring](scoring.md), [PAR Simulation Calibration](par-simulation-calibration.md)
   — companion wiki pages for the scoring internals

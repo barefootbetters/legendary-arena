@@ -12,6 +12,7 @@ import { describe, test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { publishAllBoards, resetArchiveTracking } from './legends.publisher.js';
+import type { GauntletDefinition } from './gauntlet.logic.js';
 import type { LegendsR2Client } from './legends.types.js';
 import type {
   DatabaseClient,
@@ -264,5 +265,202 @@ describe('legends publisher (WP-142)', () => {
     for (const put of putCalls) {
       assert.equal(put.bucket, 'my-legends-bucket');
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-342 — gauntlet boards + index + additive manifest
+// ---------------------------------------------------------------------------
+
+
+const GAUNTLET_WITH_ENTRIES: GauntletDefinition = {
+  setAbbr: 'core',
+  setName: 'Core Set',
+  mastermindSlug: 'mm-full',
+  mastermindName: 'Full Mastermind',
+  legSchemeSlugs: ['scheme-a'],
+};
+
+const GAUNTLET_EMPTY: GauntletDefinition = {
+  setAbbr: 'core',
+  setName: 'Core Set',
+  mastermindSlug: 'mm-empty',
+  mastermindName: 'Empty Mastermind',
+  legSchemeSlugs: ['scheme-a'],
+};
+
+const TEST_GAUNTLET_CATALOG: readonly GauntletDefinition[] = [
+  GAUNTLET_WITH_ENTRIES,
+  GAUNTLET_EMPTY,
+];
+
+/**
+ * Stub database extending the WP-142 pattern with a gauntlet branch:
+ * the standings query (identified by its outcome predicate) returns one
+ * complete-player row for `mm-full` and nothing for `mm-empty`.
+ */
+function createGauntletStubDatabase(): DatabaseClient {
+  return {
+    async query(text: string, params?: unknown[]) {
+      if (
+        text === 'BEGIN' ||
+        text === 'SET TRANSACTION READ ONLY' ||
+        text === 'COMMIT' ||
+        text === 'ROLLBACK'
+      ) {
+        return { rows: [], rowCount: 0 };
+      }
+
+      if (text.includes('DISTINCT cs.scenario_key')) {
+        return { rows: [], rowCount: 0 };
+      }
+
+      // Gauntlet standings query — keyed on its outcome predicate.
+      if (text.includes("cs.outcome = 'heroes-win'")) {
+        if (params !== undefined && params[0] === 'mm-full') {
+          const rows = [
+            {
+              player_id: 7,
+              display_name: 'Alice',
+              scenario_key: 'scheme-a::mm-full::villains-x',
+              final_score: -3,
+              scoring_config_version: 1,
+            },
+          ];
+          return { rows, rowCount: rows.length };
+        }
+        return { rows: [], rowCount: 0 };
+      }
+
+      if (text.includes('COUNT(*)')) {
+        return { rows: [{ total: '0' }], rowCount: 1 };
+      }
+
+      return { rows: [], rowCount: 0 };
+    },
+  } as DatabaseClient;
+}
+
+/**
+ * Deps whose published scoringConfigVersion matches the stub rows (1),
+ * so gauntlet rows qualify under the VISION §22 version filter.
+ */
+function createGauntletStubDeps(): LeaderboardDependencies {
+  return {
+    checkParPublished: () => ({
+      parValue: 0,
+      parVersion: 'v1',
+      source: 'simulation' as const,
+      scoringConfig: { scoringConfigVersion: 1 } as never,
+    }),
+    getScenarioKeysForTheme: () => null,
+  };
+}
+
+describe('legends publisher gauntlet boards (WP-342)', () => {
+  beforeEach(() => {
+    resetArchiveTracking();
+  });
+
+  test('no catalog: no gauntlet files and a byte-compatible WP-142 manifest', async () => {
+    const database = createGauntletStubDatabase();
+    const { client, putCalls } = createStubR2Client();
+
+    const result = await publishAllBoards(
+      database, client, 'test-bucket', createGauntletStubDeps(),
+    );
+
+    assert.equal(result.manifestWritten, true);
+    const gauntletPuts = putCalls.filter((put) => put.key.includes('gauntlet'));
+    assert.deepEqual(gauntletPuts, []);
+
+    const manifestPut = putCalls.find((put) => put.key.includes('manifest.json'));
+    assert.ok(manifestPut !== undefined);
+    const manifest = JSON.parse(manifestPut.body);
+    assert.equal('gauntletBoards' in manifest, false);
+    assert.equal('gauntletIndex' in manifest, false);
+  });
+
+  test('with catalog: board file only for populated gauntlets, index always, additive manifest, manifest last', async () => {
+    const database = createGauntletStubDatabase();
+    const { client, putCalls } = createStubR2Client();
+
+    const result = await publishAllBoards(
+      database, client, 'test-bucket', createGauntletStubDeps(),
+      TEST_GAUNTLET_CATALOG,
+    );
+
+    assert.equal(result.manifestWritten, true);
+
+    const putKeys = putCalls.map((put) => put.key);
+    assert.ok(putKeys.includes('legends/v1/gauntlet-core-mm-full.json'));
+    assert.equal(
+      putKeys.includes('legends/v1/gauntlet-core-mm-empty.json'),
+      false,
+      'A zero-entry gauntlet must not get a board file (D-24131 §7).',
+    );
+    assert.ok(putKeys.includes('legends/v1/gauntlet-index.json'));
+
+    // Manifest is written LAST (D-14204) with the additive fields.
+    const lastPut = putCalls[putCalls.length - 1];
+    assert.ok(lastPut !== undefined);
+    assert.equal(lastPut.key, 'legends/v1/manifest.json');
+    const manifest = JSON.parse(lastPut.body);
+    assert.deepEqual(manifest.gauntletBoards, ['gauntlet-core-mm-full']);
+    assert.equal(manifest.gauntletIndex, 'gauntlet-index');
+    assert.equal(manifest.schemaVersion, 1);
+    assert.ok(Array.isArray(manifest.boards));
+
+    // The index lists EVERY catalog gauntlet with its entryCount.
+    const indexPut = putCalls.find((put) =>
+      put.key.includes('gauntlet-index.json'),
+    );
+    assert.ok(indexPut !== undefined);
+    const index = JSON.parse(indexPut.body);
+    assert.equal(index.schemaVersion, 1);
+    assert.equal(index.gauntlets.length, 2);
+    const fullEntry = index.gauntlets.find(
+      (entry: { board: string }) => entry.board === 'gauntlet-core-mm-full',
+    );
+    const emptyEntry = index.gauntlets.find(
+      (entry: { board: string }) => entry.board === 'gauntlet-core-mm-empty',
+    );
+    assert.equal(fullEntry.entryCount, 1);
+    assert.equal(fullEntry.legCount, 1);
+    assert.equal(emptyEntry.entryCount, 0);
+
+    // The board file carries the ranked standings entry.
+    const boardPut = putCalls.find((put) =>
+      put.key.includes('gauntlet-core-mm-full.json'),
+    );
+    assert.ok(boardPut !== undefined);
+    const board = JSON.parse(boardPut.body);
+    assert.equal(board.board, 'gauntlet-core-mm-full');
+    assert.equal(board.rowCount, 1);
+    assert.deepEqual(board.entries, [
+      {
+        handle: 'Alice',
+        rank: 1,
+        totalScore: -3,
+        legCount: 1,
+        averageScoreCentis: -300,
+      },
+    ]);
+  });
+
+  test('a gauntlet board PUT failure blocks the manifest (stale-consistent snapshot)', async () => {
+    const database = createGauntletStubDatabase();
+    const { client, putCalls } = createStubR2Client({
+      failOnKey: 'gauntlet-core-mm-full',
+    });
+
+    const result = await publishAllBoards(
+      database, client, 'test-bucket', createGauntletStubDeps(),
+      TEST_GAUNTLET_CATALOG,
+    );
+
+    assert.equal(result.manifestWritten, false);
+    const hasManifest = putCalls.some((put) => put.key.includes('manifest.json'));
+    assert.equal(hasManifest, false);
   });
 });

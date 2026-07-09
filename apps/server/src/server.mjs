@@ -23,6 +23,7 @@ import { createParGate } from './par/parGate.mjs';
 import { createPool } from './db/database.js';
 import { createBgioPgStore } from './db/bgioPgStore.js';
 import { registerLeaderboardRoutes } from './leaderboards/leaderboard.routes.js';
+import { buildGauntletCatalog } from './legends/gauntlet.logic.js';
 import { registerCompetitionRoutes } from './competition/competition.routes.js';
 import { registerOwnerProfileRoutes } from './profile/ownerProfile.routes.js';
 import { registerAvatarUploadRoutes } from './profile/avatarUpload.routes.js';
@@ -478,7 +479,7 @@ export function tryConstructHankoVerifier() {
  * from PostgreSQL. Both startup tasks must succeed before the server accepts
  * requests. On failure, logs a full-sentence error and exits.
  *
- * @returns {Promise<{ appServer: import('http').Server, leaderboardDeps: import('./leaderboards/leaderboard.types.js').LeaderboardDependencies, pool: import('pg').Pool }>}
+ * @returns {Promise<{ appServer: import('http').Server, gauntletCatalog: import('./legends/gauntlet.logic.js').GauntletDefinition[], leaderboardDeps: import('./leaderboards/leaderboard.types.js').LeaderboardDependencies, pool: import('pg').Pool }>}
  *   The running HTTP server instance, the leaderboard deps bundle (for
  *   the legends publisher), and the long-lived `pg.Pool`. The caller
  *   (`apps/server/src/index.mjs`) closes the pool from the SIGTERM
@@ -505,6 +506,39 @@ export async function startServer() {
   // skipped via the `if (gameRegistry)` guard at game.ts:201-210
   // and every match was structurally empty.
   setRegistryForSetup(registry);
+
+  // why: WP-342 / D-24131 — build the gauntlet catalog ONCE at startup from
+  // plain per-set registry slices (mirrors the WP-150 themeId-map precedent:
+  // the legends module never imports the registry; it consumes data only).
+  // Slugs are the registry's canonical `slug` fields verbatim. A set that
+  // fails to resolve is skipped — the catalog degrades to fewer gauntlets,
+  // never a startup crash.
+  const gauntletSetSummaries = [];
+  for (const setEntry of registry.listSets()) {
+    const setData = registry.getSet(setEntry.abbr);
+    if (setData === undefined) {
+      continue;
+    }
+    const schemeSlugs = [];
+    for (const scheme of setData.schemes) {
+      schemeSlugs.push(scheme.slug);
+    }
+    const mastermindSummaries = [];
+    for (const mastermind of setData.masterminds) {
+      mastermindSummaries.push({ slug: mastermind.slug, name: mastermind.name });
+    }
+    gauntletSetSummaries.push({
+      setAbbr: setEntry.abbr,
+      setName: setEntry.name,
+      schemeSlugs,
+      masterminds: mastermindSummaries,
+    });
+  }
+  const gauntletCatalog = buildGauntletCatalog(gauntletSetSummaries);
+  console.log(
+    `[server] gauntlet catalog built: ${gauntletCatalog.length} gauntlets ` +
+    `across ${gauntletSetSummaries.length} sets (WP-342)`
+  );
 
   const rules = getRules();
   const rulesCount = Object.keys(rules.rules).length;
@@ -1010,6 +1044,10 @@ export async function startServer() {
 
   return {
     appServer,
+    // why: WP-342 — index.mjs threads this into startLegendsPublisher; the
+    // legends module receives plain data only (no registry handle leaves
+    // this wiring layer).
+    gauntletCatalog,
     leaderboardDeps: {
       checkParPublished: parGate.checkParPublished,
       getScenarioKeysForTheme,

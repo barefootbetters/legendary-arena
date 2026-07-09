@@ -36,6 +36,47 @@ export interface ScenarioSnapshotEntry {
   readonly score: number;
 }
 
+/**
+ * A single row in a gauntlet snapshot board (WP-342 / D-24131). Property
+ * order is fixed for deterministic JSON.stringify output. Scores are on
+ * the PAR golf scale (lower is better); `averageScoreCentis` is the
+ * integer centesimal average of the best-per-leg scores (display layers
+ * divide by 100).
+ */
+export interface GauntletSnapshotEntry {
+  readonly handle: string;
+  readonly rank: number;
+  readonly totalScore: number;
+  readonly legCount: number;
+  readonly averageScoreCentis: number;
+}
+
+/**
+ * One row of the gauntlet index artifact — every catalog gauntlet appears
+ * here (including `entryCount: 0` "unclaimed" boards, which get NO board
+ * file per D-24131 §7). `board` is the snapshot stem, e.g.
+ * `gauntlet-core-dr-doom`.
+ */
+export interface GauntletIndexEntry {
+  readonly setAbbr: string;
+  readonly setName: string;
+  readonly mastermindSlug: string;
+  readonly mastermindName: string;
+  readonly legCount: number;
+  readonly entryCount: number;
+  readonly board: string;
+}
+
+/**
+ * The gauntlet index artifact written to `legends/v1/gauntlet-index.json`
+ * whenever a gauntlet catalog is provided to the publisher.
+ */
+export interface GauntletIndexSnapshot {
+  readonly gauntlets: readonly GauntletIndexEntry[];
+  readonly generatedAt: string;
+  readonly schemaVersion: 1;
+}
+
 // ---------------------------------------------------------------------------
 // Board snapshot envelope
 // ---------------------------------------------------------------------------
@@ -66,6 +107,12 @@ export interface LegendsManifest {
   readonly boards: readonly string[];
   readonly generatedAt: string;
   readonly schemaVersion: 1;
+  // why: additive optional fields (WP-342 / D-24131 §7) — present only when
+  // the publisher runs with a gauntlet catalog. `boards[]` and
+  // `schemaVersion` are byte-compatible with pre-WP-342 consumers; the
+  // deployed SPA ignores unknown fields until its gauntlet WP lands.
+  readonly gauntletBoards?: readonly string[];
+  readonly gauntletIndex?: string;
 }
 
 // ---------------------------------------------------------------------------
