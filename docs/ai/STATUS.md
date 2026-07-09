@@ -7,6 +7,42 @@
 
 ## Current State
 
+### WP-342 / EC-372 Executed — Mastermind Set-Gauntlet Boards: Outcome Persistence + Read-Layer + Publisher (D-24131 executed) (2026-07-09)
+
+**No user-observable change — infrastructure only.** Executes the D-24131 set-gauntlet design at the
+server: a finished match's verified score row now records which side won, and the legends publisher
+derives + publishes per-mastermind gauntlet standings from those rows. The payoff surfaces are the two
+backlogged consumer WPs — the legends-board set-grouped index + gauntlet panel (public boards at
+`legends.legendary-arena.com`) and the profile progress checklist + completed-gauntlet badges
+(`play.legendary-arena.com`).
+
+- **Migration 026** adds nullable `outcome text CHECK ('heroes-win'|'scheme-wins')` to
+  `legendary.competitive_scores`; written once at submission (step 14b) from
+  `evaluateEndgame(reduced.finalState)` — pure, faithful per D-24124; a null evaluation stores NULL,
+  never a rejection. Legacy NULL rows never qualify as gauntlet legs. `CompetitiveScoreRecord` 11→12-key
+  amendment under D-24131.
+- **New `legends/gauntlet.logic.ts`**: `buildGauntletCatalog` (one gauntlet per set×mastermind for sets
+  with ≥1 scheme; slugs from registry data) + `getGauntletStandings` (wins-only legs, link/public
+  visibility, currently-published `scoringConfigVersion` only via the injected `checkParPublished`,
+  best-per-leg, complete-gauntlets-only, `totalScore ASC, handle ASC`).
+- **Publisher** emits `gauntlet-<setAbbr>-<mastermindSlug>.json` (≥1 complete entry only) +
+  `gauntlet-index.json` (every gauntlet incl. `entryCount: 0`) + additive manifest fields
+  `gauntletBoards`/`gauntletIndex`; manifest-last (D-14204) preserved; no-catalog path byte-identical
+  to WP-142 (deployed SPA unaffected).
+- **Wiring**: catalog built once at startup in `server.mjs` from the registry (plain data; the legends
+  module keeps its no-registry-import lock), threaded `index.mjs` → scheduler → publisher.
+- **Gates:** `pnpm -r build` 0; WP-342 suites green vs local Postgres with migration 026 applied
+  (competition 19/19 incl. outcome persistence + drift; gauntlet 9/9; publisher 19/19 with existing
+  WP-142 assertion values unmodified); full serialized DB-gated suite **765/776** — the 11 fails are
+  **pre-existing stale DB-gated tests in untouched files** (7 × leaderboard WP-054 `seedScore` stale
+  contract, known since WP-336; 4 × profile tests asserting the pre-badges 5-key public-profile
+  shape), invisible in CI (no `TEST_DATABASE_URL` there); the competition after-hook now leaves the
+  shared test DB clean (a submission's Tier-1 badge row otherwise FK-blocks later files' players
+  wipe — a 36-fail serialized cascade, fixed in-file); engine untouched; live catalog smoke: 40 sets
+  → **105 gauntlets**, `dims` excluded, core = 4 × 8-leg boards.
+- **Operator-pending:** apply migration 026 to PROD (024/025 pattern); rows begin carrying `outcome`
+  from the next deploy — pre-deploy submissions stay NULL and never qualify.
+
 ### Bug fix — Ionic Energy optional-put-bottom-hq: complete the UX + correct the move (D-24130 Active) (2026-07-09)
 
 **User-Visible change (post-deploy): `play.legendary-arena.com`.** Completes PR #619, which shipped
