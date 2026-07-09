@@ -17,17 +17,8 @@ import {
   updateLoadout,
   type SavedLoadoutView,
 } from '../lib/api/loadoutLibraryApi';
-import {
-  fetchMyScores,
-  type MyCompetitiveScore,
-} from '../lib/api/competitionApi';
 import { summarizeLoadout } from '../lib/loadoutSummary';
 import BillingSection from '../components/BillingSection.vue';
-import {
-  initializeHankoClient,
-  signOutCurrentSession,
-  type HankoClientHandle,
-} from '../auth/hankoClient';
 import { useAuthStore } from '../stores/auth';
 
 // why: defineComponent({ setup() { return {...} } }) is required (NOT
@@ -99,24 +90,6 @@ function formatJoinedDate(raw: string): string {
     month: 'short',
     day: 'numeric',
   }).format(parsed);
-}
-
-// why: WP-160 — module-scoped lazy initializer for the broker SDK
-// handle used by this page's sign-out flow. The Hanko SDK initialization
-// is expensive and idempotent; memoizing per page-instance keeps the
-// handle stable across multiple sign-out clicks (none expected in
-// practice, but defensive) and avoids racing with App.vue's bootstrap
-// which may have already initialized a separate handle. This is the
-// only acceptable in-app memoization in this WP — the wrapper itself
-// is stateless beyond the handle it returns.
-let cachedHankoHandle: Promise<HankoClientHandle> | null = null;
-function ensureHankoHandle(): Promise<HankoClientHandle> {
-  if (cachedHankoHandle === null) {
-    const tenantBaseUrl =
-      (import.meta.env?.VITE_HANKO_TENANT_BASE_URL ?? '') as string;
-    cachedHankoHandle = initializeHankoClient({ tenantBaseUrl });
-  }
-  return cachedHankoHandle;
 }
 
 function bannerCopyForCode(code: string | null): string {
@@ -269,13 +242,6 @@ export default defineComponent({
     const rowError = ref<string>('');
     const copyMessage = ref<string>('');
 
-    // why: WP-339 — the owner's submitted competitive scores (the "My Scores"
-    // read). Loaded on mount from GET /api/me/scores; independent loading/error
-    // refs so this surface never clobbers the profile/loadout feedback.
-    const competitiveScores = ref<MyCompetitiveScore[]>([]);
-    const scoresLoading = ref<boolean>(true);
-    const scoresError = ref<string>('');
-
     // why: re-arm the avatar preview whenever the URL changes. Once `@error`
     // hides a broken URL, the <img> leaves the DOM, so `@load` can never fire
     // to clear the flag — without this reset a single bad URL would suppress
@@ -306,26 +272,6 @@ export default defineComponent({
       // a token-specific code), which the banner copy above
       // translates into user-friendly text.
       return useAuthStore().token;
-    }
-
-    async function signOut(): Promise<void> {
-      try {
-        const handle = await ensureHankoHandle();
-        await signOutCurrentSession(handle);
-      } catch {
-        // why: if the broker logout call fails (network down, broker
-        // unreachable, SDK initialization failure), clear the local
-        // store and navigate to lobby anyway. A stuck sign-in state is
-        // worse than a stale-cookie state: the cookie may persist on
-        // the client, but the next page load will re-detect it via
-        // App.vue's guarded-route bootstrap and re-route through
-        // sign-in if the session has actually been invalidated
-        // server-side. This is the fail-safe path (D-16004).
-      }
-      useAuthStore().clearSession();
-      if (typeof window !== 'undefined') {
-        window.location.assign('?route=');
-      }
     }
 
     function applyView(loaded: OwnerProfileView): void {
@@ -472,26 +418,6 @@ export default defineComponent({
     }
 
     /**
-     * Load the owner's submitted competitive scores (WP-339). Newest first,
-     * from the server. On any non-200 (or network failure), surfaces a generic
-     * error and leaves the list empty — never throws.
-     */
-    async function loadScores(): Promise<void> {
-      scoresLoading.value = true;
-      scoresError.value = '';
-      const result = await fetchMyScores(readAuthToken());
-      scoresLoading.value = false;
-      if (result.status === 200 && result.scores !== null) {
-        competitiveScores.value = result.scores;
-        return;
-      }
-      // why: a personalized read failure is non-fatal to the rest of the page;
-      // show a one-line notice and keep the section empty.
-      scoresError.value =
-        'We couldn’t load your competitive scores right now. Please try again later.';
-    }
-
-    /**
      * Replace one row in place with an updated server view, reseeding
      * its rename draft. Leaves every other row untouched.
      */
@@ -619,7 +545,6 @@ export default defineComponent({
     onMounted(() => {
       void load();
       void loadLoadouts();
-      void loadScores();
     });
 
     return {
@@ -647,9 +572,6 @@ export default defineComponent({
       saveLinks,
       addDraftLink,
       removeDraftLink,
-      competitiveScores,
-      scoresLoading,
-      scoresError,
       loadoutRows,
       loadoutsError,
       createName,
@@ -669,7 +591,6 @@ export default defineComponent({
       formatRoleLabel,
       formatJoinedDate,
       readAuthToken,
-      signOut,
     };
   },
 });
@@ -691,20 +612,6 @@ export default defineComponent({
       </p>
 
       <header class="profile-header" data-testid="my-profile-header">
-        <div class="profile-header-row">
-          <h1 data-testid="my-profile-heading">
-            {{ formDisplayName === '' ? 'Your profile' : formDisplayName }}
-          </h1>
-          <button
-            type="button"
-            class="profile-sign-out"
-            data-testid="my-profile-sign-out"
-            @click="signOut"
-          >
-            Sign out
-          </button>
-        </div>
-
         <!-- why: WP-305 / D-24089 — the owner's own identity. `@handle`
              renders from the immutable handleCanonical (display-only, absent
              until the handle is claimed); the account-ID line is always
