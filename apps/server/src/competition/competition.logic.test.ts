@@ -34,17 +34,22 @@ import {
   findCompetitiveScore,
   listPlayerCompetitiveScores,
   submitCompetitiveScore,
+  submitCompetitiveScoreByMatchIdForRequest,
   submitCompetitiveScoreForRequest,
   submitCompetitiveScoreImpl,
 } from './competition.logic.js';
 
+import * as boardgameInternal from 'boardgame.io/dist/cjs/internal.js';
+
 import {
+  buildScenarioKey,
   buildScoreBreakdown,
   computeFinalScore,
   computeParScore,
   computeRawScore,
   computeStateHash,
   deriveScoringInputs,
+  LegendaryGame,
 } from '@legendary-arena/game-engine';
 
 import type {
@@ -746,6 +751,7 @@ describe('competition logic (WP-053)', () => {
         case 'visibility_not_eligible':
         case 'par_not_published':
         case 'replay_verification_failed':
+        case 'match_not_finished':
           break;
         default:
           assertNever(reason);
@@ -760,6 +766,7 @@ describe('competition logic (WP-053)', () => {
       'visibility_not_eligible',
       'par_not_published',
       'replay_verification_failed',
+      'match_not_finished',
     ];
     for (const reason of expectedReasons) {
       assert.ok(
@@ -782,5 +789,294 @@ describe('competition logic (WP-053)', () => {
     // remains compile-checked.
     const _recordReference: CompetitiveScoreRecord | null = null;
     assert.strictEqual(_recordReference, null);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-338 — submit-by-matchId (on-demand capture + auto-publish + gameover gate)
+// ---------------------------------------------------------------------------
+
+const { InitializeGame, CreateGameReducer } = boardgameInternal as unknown as {
+  InitializeGame(config: { game: unknown; numPlayers: number; setupData: unknown }): {
+    G: unknown;
+  };
+  CreateGameReducer(config: { game: unknown; isClient: boolean }): (
+    state: unknown,
+    action: { type: string; payload: unknown },
+  ) => { G: unknown; deltalog?: unknown[] };
+};
+
+// A real match's { initialState, log } (lobby → play), mirroring the WP-335 capture
+// test's manufacture — enough to be reduced + scored. `test/` ids resolve without a
+// registry (same as game.test.ts).
+const WP338_SETUP_DATA = {
+  schemeId: 'test/test-scheme-001',
+  mastermindId: 'test/test-mastermind-001',
+  villainGroupIds: ['test/test-villain-group-001', 'test/test-villain-group-002'],
+  henchmanGroupIds: ['test/test-henchman-group-001'],
+  heroDeckIds: [
+    'test/test-hero-deck-001',
+    'test/test-hero-deck-002',
+    'test/test-hero-deck-003',
+  ],
+  bystandersCount: 30,
+  woundsCount: 30,
+  officersCount: 30,
+  sidekicksCount: 0,
+};
+
+function manufactureWp338Artifact(): { initialState: unknown; log: unknown[] } {
+  const initialState = InitializeGame({
+    game: LegendaryGame,
+    numPlayers: 2,
+    setupData: WP338_SETUP_DATA,
+  });
+  const reducer = CreateGameReducer({ game: LegendaryGame, isClient: false });
+  const log: unknown[] = [];
+  let state: { G: unknown; deltalog?: unknown[] } = initialState;
+  const dispatch = (moveName: string, args: unknown[], playerID: string) => {
+    const next = reducer(state, {
+      type: 'MAKE_MOVE',
+      payload: { type: moveName, args, playerID },
+    });
+    if (Array.isArray(next.deltalog)) {
+      log.push(...next.deltalog);
+    }
+    state = next;
+  };
+  dispatch('setPlayerReady', [{ ready: true }], '0');
+  dispatch('setPlayerReady', [{ ready: true }], '1');
+  dispatch('startMatchIfReady', [], '0');
+  return { initialState, log };
+}
+
+describe('submitCompetitiveScoreByMatchIdForRequest (WP-338)', () => {
+  const hasTestDatabase = process.env.TEST_DATABASE_URL !== undefined;
+  const OWNER_EXT_ID = 'wp338-owner';
+  const STRANGER_EXT_ID = 'wp338-stranger';
+
+  // why: the manufactured match's scenarioKey — buildScenarioKey over the
+  // set-abbr-stripped selection ids (capture derives the same). The PAR stub
+  // publishes a config for exactly this key.
+  const WP338_SCENARIO_KEY = buildScenarioKey(
+    'test-scheme-001',
+    'test-mastermind-001',
+    ['test-villain-group-001', 'test-villain-group-002'],
+  ) as ScenarioKey;
+  const WP338_SCORING_CONFIG: ScenarioScoringConfig = {
+    ...TEST_SCORING_CONFIG,
+    scenarioKey: WP338_SCENARIO_KEY,
+  };
+  const WP338_PROD_DEPS = {
+    checkParPublished: (scenarioKey: ScenarioKey) =>
+      scenarioKey === WP338_SCENARIO_KEY
+        ? {
+            parValue: computeParScore(WP338_SCORING_CONFIG),
+            parVersion: 'v1-wp338-test',
+            source: 'simulation' as const,
+            scoringConfig: WP338_SCORING_CONFIG,
+          }
+        : null,
+  };
+
+  let pool: pg.Pool | undefined;
+  let artifact: { initialState: unknown; log: unknown[] };
+
+  before(async () => {
+    artifact = manufactureWp338Artifact();
+    if (!hasTestDatabase) {
+      return;
+    }
+    pool = new Pool({ connectionString: process.env.TEST_DATABASE_URL });
+  });
+
+  after(async () => {
+    if (pool !== undefined) {
+      await pool.end();
+    }
+  });
+
+  /** Seed a match: two accounts, a bgio.matches row, and a seat for the owner. */
+  async function seedMatch(
+    testPool: pg.Pool,
+    matchId: string,
+    finished: boolean,
+  ): Promise<{ owner: PlayerAccount; expectedHash: string }> {
+    const owner = (
+      await createPlayerAccount(
+        { email: `${OWNER_EXT_ID}-${matchId}@example.test`, displayName: 'WP338 Owner', authProvider: 'email', authProviderId: `${OWNER_EXT_ID}-${matchId}` },
+        testPool,
+      )
+    );
+    assert.ok(owner.ok === true);
+    // Independent expected hash via the reducer (the capture step must match it).
+    const { reduceMatchToFinalState } = await import('../replay/matchReplay.logic.js');
+    const expectedHash = reduceMatchToFinalState(artifact).stateHash;
+
+    await testPool.query('DELETE FROM legendary.replay_ownership WHERE replay_hash = $1', [expectedHash]);
+    await testPool.query('DELETE FROM legendary.competitive_scores WHERE replay_hash = $1', [expectedHash]);
+    await testPool.query('DELETE FROM bgio.replay_artifacts WHERE match_id = $1', [matchId]);
+    await testPool.query('DELETE FROM legendary.match_seat_accounts WHERE match_id = $1', [matchId]);
+    await testPool.query('DELETE FROM bgio.matches WHERE match_id = $1', [matchId]);
+    // The owner sits at seat '0'.
+    await testPool.query(
+      'INSERT INTO legendary.match_seat_accounts (match_id, player_id, account_id) VALUES ($1, $2, $3)',
+      [matchId, '0', owner.value.accountId],
+    );
+    const metadata = finished ? '{"gameover":{"winner":"0"}}' : '{}';
+    await testPool.query(
+      'INSERT INTO bgio.matches (match_id, state, initial_state, metadata, log) ' +
+        "VALUES ($1, '{}'::jsonb, $2::jsonb, $3::jsonb, $4::jsonb)",
+      [matchId, JSON.stringify(artifact.initialState), metadata, JSON.stringify(artifact.log)],
+    );
+    return { owner: owner.value, expectedHash };
+  }
+
+  test(
+    'rejects an unfinished match with match_not_finished (no capture)',
+    { skip: hasTestDatabase ? false : 'requires test database' },
+    async () => {
+      const testPool = pool as pg.Pool;
+      const matchId = 'wp338-unfinished';
+      const { owner, expectedHash } = await seedMatch(testPool, matchId, false);
+
+      const result = await submitCompetitiveScoreByMatchIdForRequest(
+        owner,
+        matchId,
+        testPool as unknown as DatabaseClient,
+        WP338_PROD_DEPS,
+      );
+      assert.deepEqual(result, { ok: false, reason: 'match_not_finished' });
+      // No artifact was captured for an unfinished match.
+      const artifactRows = await testPool.query(
+        'SELECT 1 FROM bgio.replay_artifacts WHERE replay_hash = $1',
+        [expectedHash],
+      );
+      assert.equal(artifactRows.rows.length, 0);
+
+      await testPool.query('DELETE FROM legendary.match_seat_accounts WHERE match_id = $1', [matchId]);
+      await testPool.query('DELETE FROM bgio.matches WHERE match_id = $1', [matchId]);
+      await testPool.query('DELETE FROM legendary.players WHERE ext_id = $1', [owner.accountId]);
+    },
+  );
+
+  test(
+    'captures on-demand, auto-publishes, and scores a finished match from matchId',
+    { skip: hasTestDatabase ? false : 'requires test database' },
+    async () => {
+      const testPool = pool as pg.Pool;
+      const matchId = 'wp338-finished';
+      const { owner, expectedHash } = await seedMatch(testPool, matchId, true);
+
+      // No pre-capture: the artifact does not exist yet.
+      const before = await testPool.query(
+        'SELECT 1 FROM bgio.replay_artifacts WHERE replay_hash = $1',
+        [expectedHash],
+      );
+      assert.equal(before.rows.length, 0);
+
+      const result = await submitCompetitiveScoreByMatchIdForRequest(
+        owner,
+        matchId,
+        testPool as unknown as DatabaseClient,
+        WP338_PROD_DEPS,
+      );
+      assert.ok(result.ok === true, `expected ok, got ${JSON.stringify(result)}`);
+      assert.strictEqual(result.wasExisting, false);
+      assert.strictEqual(result.record.replayHash, expectedHash);
+      assert.strictEqual(result.record.scenarioKey, WP338_SCENARIO_KEY);
+
+      // On-demand capture created the durable artifact.
+      const artifactRows = await testPool.query(
+        'SELECT 1 FROM bgio.replay_artifacts WHERE replay_hash = $1',
+        [expectedHash],
+      );
+      assert.equal(artifactRows.rows.length, 1);
+
+      // Auto-publish: the owner's ownership is now public.
+      const ownership = await testPool.query(
+        'SELECT ro.visibility FROM legendary.replay_ownership ro ' +
+          'JOIN legendary.players p ON ro.player_id = p.player_id ' +
+          'WHERE p.ext_id = $1 AND ro.replay_hash = $2',
+        [owner.accountId, expectedHash],
+      );
+      assert.equal(ownership.rows[0]?.visibility, 'public');
+
+      // Idempotent re-submit returns the same record with wasExisting: true.
+      const again = await submitCompetitiveScoreByMatchIdForRequest(
+        owner,
+        matchId,
+        testPool as unknown as DatabaseClient,
+        WP338_PROD_DEPS,
+      );
+      assert.ok(again.ok === true);
+      assert.strictEqual(again.wasExisting, true);
+
+      await testPool.query('DELETE FROM legendary.competitive_scores WHERE replay_hash = $1', [expectedHash]);
+      await testPool.query('DELETE FROM legendary.replay_ownership WHERE replay_hash = $1', [expectedHash]);
+      await testPool.query('DELETE FROM bgio.replay_artifacts WHERE match_id = $1', [matchId]);
+      await testPool.query('DELETE FROM legendary.match_seat_accounts WHERE match_id = $1', [matchId]);
+      await testPool.query('DELETE FROM bgio.matches WHERE match_id = $1', [matchId]);
+      // why: a successful submission issues a Tier-1 badge (player_badges FK-references
+      // players), so clear the caller's badges before the players wipe.
+      await testPool.query(
+        'DELETE FROM legendary.player_badges pb USING legendary.players p ' +
+          'WHERE pb.player_id = p.player_id AND p.ext_id = $1',
+        [owner.accountId],
+      );
+      await testPool.query('DELETE FROM legendary.players WHERE ext_id = $1', [owner.accountId]);
+    },
+  );
+
+  test(
+    'rejects a caller who was not an authenticated seat with not_owner',
+    { skip: hasTestDatabase ? false : 'requires test database' },
+    async () => {
+      const testPool = pool as pg.Pool;
+      const matchId = 'wp338-stranger';
+      const { owner, expectedHash } = await seedMatch(testPool, matchId, true);
+      // A second account that did NOT play the match (no seat).
+      const strangerResult = await createPlayerAccount(
+        { email: `${STRANGER_EXT_ID}-${matchId}@example.test`, displayName: 'WP338 Stranger', authProvider: 'email', authProviderId: `${STRANGER_EXT_ID}-${matchId}` },
+        testPool,
+      );
+      assert.ok(strangerResult.ok === true);
+
+      const result = await submitCompetitiveScoreByMatchIdForRequest(
+        strangerResult.value,
+        matchId,
+        testPool as unknown as DatabaseClient,
+        WP338_PROD_DEPS,
+      );
+      // The match captures on-demand (the owner's seat gets ownership), but the
+      // stranger owns nothing → not_owner.
+      assert.deepEqual(result, { ok: false, reason: 'not_owner' });
+
+      await testPool.query('DELETE FROM legendary.replay_ownership WHERE replay_hash = $1', [expectedHash]);
+      await testPool.query('DELETE FROM bgio.replay_artifacts WHERE match_id = $1', [matchId]);
+      await testPool.query('DELETE FROM legendary.match_seat_accounts WHERE match_id = $1', [matchId]);
+      await testPool.query('DELETE FROM bgio.matches WHERE match_id = $1', [matchId]);
+      await testPool.query('DELETE FROM legendary.players WHERE ext_id = ANY($1)', [[owner.accountId, strangerResult.value.accountId]]);
+    },
+  );
+
+  test('rejects a guest before any DB access', async () => {
+    const guest: GuestIdentity = {
+      guestSessionId: 'wp338-guest',
+      createdAt: '2026-07-08T00:00:00.000Z',
+      isGuest: true,
+    };
+    const throwingDb = {
+      query: async () => {
+        throw new Error('Test failure: DB touched despite the guest fail-fast.');
+      },
+    } as unknown as DatabaseClient;
+    const result = await submitCompetitiveScoreByMatchIdForRequest(
+      guest,
+      'wp338-any',
+      throwingDb,
+      WP338_PROD_DEPS,
+    );
+    assert.deepEqual(result, { ok: false, reason: 'guest_not_eligible' });
   });
 });

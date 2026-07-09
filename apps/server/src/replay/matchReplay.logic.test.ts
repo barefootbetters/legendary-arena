@@ -28,6 +28,8 @@ import {
   reduceMatchToFinalState,
   readMatchForReplay,
   readReplayArtifactByHash,
+  readReplayHashByMatchId,
+  isMatchFinished,
   reduceReplayByHash,
 } from './matchReplay.logic.js';
 import type { DatabaseClient } from '../identity/identity.types.js';
@@ -404,6 +406,70 @@ describe('readReplayArtifactByHash / reduceReplayByHash (WP-336)', () => {
       assert.notEqual(reduced, null);
       assert.equal(reduced!.stateHash, expectedHash);
       assert.equal(reduced!.turnCount, 3);
+    },
+  );
+});
+
+describe('readReplayHashByMatchId / isMatchFinished (WP-338)', () => {
+  const hasTestDatabase = process.env.TEST_DATABASE_URL !== undefined;
+  const MATCH_ID = 'wp338-helper-match';
+  const HASH = 'wp338-helper-hash';
+
+  let pool: InstanceType<typeof Pool> | undefined;
+
+  before(async () => {
+    if (!hasTestDatabase) {
+      return;
+    }
+    pool = new Pool({ connectionString: process.env.TEST_DATABASE_URL });
+    await pool.query('DELETE FROM bgio.replay_artifacts WHERE match_id = $1', [MATCH_ID]);
+    await pool.query('DELETE FROM bgio.matches WHERE match_id = $1', [MATCH_ID]);
+  });
+
+  after(async () => {
+    if (pool === undefined) {
+      return;
+    }
+    await pool.query('DELETE FROM bgio.replay_artifacts WHERE match_id = $1', [MATCH_ID]);
+    await pool.query('DELETE FROM bgio.matches WHERE match_id = $1', [MATCH_ID]);
+    await pool.end();
+  });
+
+  test(
+    'readReplayHashByMatchId returns the captured hash; null for an uncaptured match',
+    { skip: hasTestDatabase ? false : 'requires test database' },
+    async () => {
+      const database = pool as unknown as DatabaseClient;
+      assert.equal(await readReplayHashByMatchId(MATCH_ID, database), null);
+      await pool!.query(
+        'INSERT INTO bgio.replay_artifacts (replay_hash, match_id, scenario_key, initial_state, log) ' +
+          "VALUES ($1, $2, 'k', '{}'::jsonb, '[]'::jsonb)",
+        [HASH, MATCH_ID],
+      );
+      assert.equal(await readReplayHashByMatchId(MATCH_ID, database), HASH);
+    },
+  );
+
+  test(
+    'isMatchFinished is true only when the match metadata carries a gameover',
+    { skip: hasTestDatabase ? false : 'requires test database' },
+    async () => {
+      const database = pool as unknown as DatabaseClient;
+      // Absent match → false.
+      assert.equal(await isMatchFinished('wp338-absent', database), false);
+      // In-progress (no gameover) → false.
+      await pool!.query(
+        "INSERT INTO bgio.matches (match_id, state, initial_state, metadata, log) " +
+          "VALUES ($1, '{}'::jsonb, '{}'::jsonb, '{}'::jsonb, '[]'::jsonb)",
+        [MATCH_ID],
+      );
+      assert.equal(await isMatchFinished(MATCH_ID, database), false);
+      // Gameover present → true.
+      await pool!.query(
+        "UPDATE bgio.matches SET metadata = '{\"gameover\":{\"winner\":\"0\"}}'::jsonb WHERE match_id = $1",
+        [MATCH_ID],
+      );
+      assert.equal(await isMatchFinished(MATCH_ID, database), true);
     },
   );
 });

@@ -37,6 +37,7 @@ import type { SessionTokenRequest } from '../auth/sessionToken.types.js';
 type RegisteredHandler = (koaContext: MockKoaContext) => Promise<void> | void;
 
 interface RegisteredRoute {
+  readonly method: 'post' | 'get';
   readonly path: string;
   readonly handler: RegisteredHandler;
 }
@@ -51,22 +52,28 @@ interface MockKoaContext {
   readonly callOrder: string[];
 }
 
-/** Minimal mock Koa router capturing `(path, handler)` POST pairs. */
+/** Minimal mock Koa router capturing `(method, path, handler)` triples. */
 function makeMockRouter(): {
-  router: { post: (path: string, handler: RegisteredHandler) => void };
+  router: {
+    post: (path: string, handler: RegisteredHandler) => void;
+    get: (path: string, handler: RegisteredHandler) => void;
+  };
   routes: RegisteredRoute[];
 } {
   const routes: RegisteredRoute[] = [];
   const router = {
     post(path: string, handler: RegisteredHandler): void {
-      routes.push({ path, handler });
+      routes.push({ method: 'post', path, handler });
+    },
+    get(path: string, handler: RegisteredHandler): void {
+      routes.push({ method: 'get', path, handler });
     },
   };
   return { router, routes };
 }
 
 /** Builds a fresh mock context; records `set()`/status/body ordering. */
-function makeMockContext(body: unknown = { replayHash: 'hash-abc' }): MockKoaContext {
+function makeMockContext(body: unknown = { matchId: 'match-abc' }): MockKoaContext {
   const headerCalls: { field: string; value: string }[] = [];
   const callOrder: string[] = [];
   let statusValue = 0;
@@ -148,32 +155,40 @@ function makeDeps(
 /** Logic seam returning a fresh accepted submission by default. */
 function makeLogic(overrides: Partial<CompetitionLogic> = {}): {
   logic: CompetitionLogic;
-  calls: { submit: number; findAccount: number };
+  calls: { submit: number; findAccount: number; listScores: number };
 } {
-  const calls = { submit: 0, findAccount: 0 };
+  const calls = { submit: 0, findAccount: 0, listScores: 0 };
   const logic: CompetitionLogic = {
     findPlayerByAccountId: async () => {
       calls.findAccount += 1;
       return SAMPLE_ACCOUNT;
     },
-    submitCompetitiveScoreForRequest: async (): Promise<SubmissionResult> => {
+    submitCompetitiveScoreByMatchIdForRequest: async (): Promise<SubmissionResult> => {
       calls.submit += 1;
       return { ok: true, record: SAMPLE_RECORD, wasExisting: false };
+    },
+    listPlayerCompetitiveScores: async () => {
+      calls.listScores += 1;
+      return [SAMPLE_RECORD];
     },
     ...overrides,
   };
   return { logic, calls };
 }
 
-/** Register the single route and return its handler for invocation. */
+/** Register the routes and return the handler for the given method (default POST). */
 function buildHandler(
   deps: CompetitionRouteDependencies,
   logic: CompetitionLogic,
+  method: 'post' | 'get' = 'post',
 ): RegisteredHandler {
   const { router, routes } = makeMockRouter();
   registerCompetitionRoutes(router, SENTINEL_DATABASE, deps, logic);
-  assert.equal(routes.length, 1);
-  return routes[0].handler;
+  // why: registerCompetitionRoutes now registers two routes (POST scores + GET
+  // /api/me/scores); pick the one under test by method.
+  const route = routes.find((candidate) => candidate.method === method);
+  assert.ok(route !== undefined, `no ${method} route was registered`);
+  return route.handler;
 }
 
 // ---------------------------------------------------------------------------
@@ -181,12 +196,15 @@ function buildHandler(
 // ---------------------------------------------------------------------------
 
 describe('competition routes (WP-332)', () => {
-  test('1 — registers exactly one POST handler at the locked path', () => {
+  test('1 — registers the POST scores + GET my-scores handlers at the locked paths', () => {
     const { router, routes } = makeMockRouter();
     const { logic } = makeLogic();
     registerCompetitionRoutes(router, SENTINEL_DATABASE, makeDeps(), logic);
-    assert.equal(routes.length, 1);
-    assert.equal(routes[0].path, '/api/competition/scores');
+    assert.equal(routes.length, 2);
+    const post = routes.find((route) => route.method === 'post');
+    const get = routes.find((route) => route.method === 'get');
+    assert.equal(post?.path, '/api/competition/scores');
+    assert.equal(get?.path, '/api/me/scores');
   });
 
   test('2 — Cache-Control: no-store is set before any status/body write', async () => {
@@ -269,10 +287,10 @@ describe('competition routes (WP-332)', () => {
     assert.deepEqual(context.body, { error: 'internal_error' });
   });
 
-  test('7 — 400 on a missing or empty replayHash', async () => {
+  test('7 — 400 on a missing or empty matchId', async () => {
     const { logic, calls } = makeLogic();
     const handler = buildHandler(makeDeps(), logic);
-    for (const badBody of [{}, { replayHash: '' }, { replayHash: 42 }, null, 'x']) {
+    for (const badBody of [{}, { matchId: '' }, { matchId: 42 }, null, 'x']) {
       const context = makeMockContext(badBody);
       await handler(context);
       assert.equal(context.status, 400);
@@ -295,7 +313,7 @@ describe('competition routes (WP-332)', () => {
 
   test('9 — 200 with wasExisting:true on an idempotent retry', async () => {
     const { logic } = makeLogic({
-      submitCompetitiveScoreForRequest: async () => ({
+      submitCompetitiveScoreByMatchIdForRequest: async () => ({
         ok: true,
         record: SAMPLE_RECORD,
         wasExisting: true,
@@ -311,6 +329,7 @@ describe('competition routes (WP-332)', () => {
   test('10 — each rejection reason maps to its locked status', async () => {
     const expected: Array<[SubmissionResult, number]> = [
       [{ ok: false, reason: 'replay_not_found' }, 404],
+      [{ ok: false, reason: 'match_not_finished' }, 409],
       [{ ok: false, reason: 'not_owner' }, 403],
       [{ ok: false, reason: 'visibility_not_eligible' }, 403],
       [{ ok: false, reason: 'par_not_published' }, 422],
@@ -318,7 +337,7 @@ describe('competition routes (WP-332)', () => {
     ];
     for (const [rejection, status] of expected) {
       const { logic } = makeLogic({
-        submitCompetitiveScoreForRequest: async () => rejection,
+        submitCompetitiveScoreByMatchIdForRequest: async () => rejection,
       });
       const handler = buildHandler(makeDeps(), logic);
       const context = makeMockContext();
@@ -343,7 +362,7 @@ describe('competition routes (WP-332)', () => {
 
   test('12 — 500 when the submission throws (no re-throw, locked envelope)', async () => {
     const { logic } = makeLogic({
-      submitCompetitiveScoreForRequest: async () => {
+      submitCompetitiveScoreByMatchIdForRequest: async () => {
         throw new Error('Simulated infrastructure failure during submission.');
       },
     });
@@ -356,5 +375,55 @@ describe('competition routes (WP-332)', () => {
     assert.deepEqual(context.headerCalls, [
       { field: 'Cache-Control', value: 'no-store' },
     ]);
+  });
+
+  // -------------------------------------------------------------------------
+  // GET /api/me/scores (WP-338)
+  // -------------------------------------------------------------------------
+
+  test('13 — GET /api/me/scores returns { scores } for the authenticated account', async () => {
+    const { logic, calls } = makeLogic();
+    const handler = buildHandler(makeDeps(), logic, 'get');
+    const context = makeMockContext();
+    await handler(context);
+    assert.equal(context.status, 200);
+    assert.deepEqual(context.body, { scores: [SAMPLE_RECORD] });
+    assert.equal(calls.listScores, 1);
+    // Cache-Control: no-store is the first statement (personalized authed read).
+    assert.equal(context.callOrder[0], 'set:Cache-Control');
+  });
+
+  test('14 — GET /api/me/scores 401 on a failed session; scores never listed', async () => {
+    const { logic, calls } = makeLogic();
+    const deps = makeDeps({
+      requireAuthenticatedSession: async () => ({
+        ok: false,
+        reason: 'No bearer token was supplied.',
+        code: 'missing_token',
+      }),
+    });
+    const handler = buildHandler(deps, logic, 'get');
+    const context = makeMockContext();
+    await handler(context);
+    assert.equal(context.status, 401);
+    assert.deepEqual(context.body, { error: 'missing_token' });
+    assert.equal(calls.listScores, 0);
+  });
+
+  test('15 — GET /api/me/scores 403 forbidden on a suspended account', async () => {
+    const { logic, calls } = makeLogic();
+    const deps = makeDeps({
+      requireUnsuspendedAccount: async () => ({
+        ok: false,
+        code: 'suspended',
+        reason: 'Account is suspended.',
+      }),
+    });
+    const handler = buildHandler(deps, logic, 'get');
+    const context = makeMockContext();
+    await handler(context);
+    assert.equal(context.status, 403);
+    assert.deepEqual(context.body, { error: 'forbidden' });
+    assert.equal(calls.listScores, 0);
   });
 });

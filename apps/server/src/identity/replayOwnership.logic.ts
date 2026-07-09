@@ -249,6 +249,43 @@ export async function findReplayOwnership(
 }
 
 /**
+ * Look up a specific account's ownership record for a replay, by
+ * `(accountId, replayHash)`. Returns the mapped record if that account owns the
+ * replay, `null` otherwise.
+ *
+ * // why: a finished 2-player match assigns ownership to BOTH authenticated
+ * seats, so `legendary.replay_ownership` can hold two rows for one `replay_hash`.
+ * `findReplayOwnership` (LIMIT 1) returns an ARBITRARY one of them; the
+ * submit-by-matchId flow (WP-338) must resolve the SUBMITTING account's own row —
+ * to flip its visibility and to confirm it is that account's — so it filters by
+ * `ext_id` as well. Not enforcing visibility here (like `findReplayOwnership`, this
+ * is a metadata lookup; visibility is the caller's decision).
+ *
+ * @param accountId The submitting account's branded id (`ext_id`).
+ * @param replayHash The replay's canonical hash.
+ * @param database The caller-injected `pg` pool.
+ * @returns That account's ownership record, or `null` when it does not own the replay.
+ */
+export async function findReplayOwnershipForAccount(
+  accountId: AccountId,
+  replayHash: string,
+  database: DatabaseClient,
+): Promise<ReplayOwnershipRecord | null> {
+  const result = await database.query(
+    'SELECT ro.ownership_id, p.ext_id, ro.replay_hash, ro.scenario_key, ' +
+      'ro.visibility, ro.created_at, ro.expires_at ' +
+      'FROM legendary.replay_ownership ro ' +
+      'JOIN legendary.players p ON ro.player_id = p.player_id ' +
+      'WHERE p.ext_id = $1 AND ro.replay_hash = $2 LIMIT 1',
+    [accountId, replayHash],
+  );
+  if (result.rows.length === 0) {
+    return null;
+  }
+  return mapOwnershipRow(result.rows[0]);
+}
+
+/**
  * Delete every persistent record for an account, in a single
  * PostgreSQL transaction. Returns audit counts: how many ownership
  * rows were removed and whether the account row itself existed and

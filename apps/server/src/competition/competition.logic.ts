@@ -69,11 +69,25 @@ import { issueTier1BadgesForSubmission } from '../badges/badge.issuance.js';
 import { reduceReplayByHash } from '../replay/matchReplay.logic.js';
 import type { MatchReplayResult } from '../replay/matchReplay.logic.js';
 
+// why: WP-338 submit-by-matchId resolves the replayHash the client cannot compute.
+// `readReplayHashByMatchId` looks it up in bgio.replay_artifacts by match_id;
+// `isMatchFinished` gates on gameover (end-of-match-only scoring, D-4804); and
+// `captureMatch` captures on-demand when the 5-min harvester scan has not run yet.
+import {
+  isMatchFinished,
+  readReplayHashByMatchId,
+} from '../replay/matchReplay.logic.js';
+import { captureMatch } from '../replay/matchCapture.logic.js';
+
 // why: WP-052's findReplayOwnership returns the (accountId, scenarioKey,
 // visibility) metadata flow steps 2-4 require. The locked
 // ReplayOwnershipRecord shape pre-dates D-5201 rename — owner field
 // is `accountId: AccountId`, not the engine-layer identifier.
-import { findReplayOwnership } from '../identity/replayOwnership.logic.js';
+import {
+  findReplayOwnership,
+  findReplayOwnershipForAccount,
+  updateReplayVisibility,
+} from '../identity/replayOwnership.logic.js';
 
 // why: WP-052's isGuest type guard is the fail-fast step 1. Calling
 // it before any DB query is the contractual no-DB-hits-for-guests
@@ -322,6 +336,91 @@ export async function submitCompetitiveScoreForRequest(
     reduceReplay: reduceReplayByHash,
     checkParPublished: productionDeps.checkParPublished,
   });
+}
+
+/**
+ * Production request-path entry for submit-BY-MATCHID competitive submission
+ * (WP-338 / WP-5a). The arena-client submits a `matchId` (it never obtains a
+ * `replayHash` — it cannot run `computeStateHash`); this orchestrator resolves the
+ * replay itself, then delegates the actual verify+score to
+ * `submitCompetitiveScoreForRequest` (the unchanged WP-053/336 pipeline).
+ *
+ * Flow: guest guard → gameover gate (unfinished → `match_not_finished`; scoring is
+ * end-of-match only, D-4804) → resolve `replayHash` by `match_id` (capturing
+ * on-demand if the harvester scan has not run) → confirm the caller's ownership
+ * (by-account) → auto-publish that ownership (submission = consent-to-publish,
+ * D-24126) → delegate.
+ *
+ * @param identity The authenticated (or guest) player identity.
+ * @param matchId The finished match's boardgame.io id.
+ * @param database The caller-injected `pg` pool.
+ * @param productionDeps The bound PAR-gate check (same as the by-hash entry).
+ * @returns The submission result (never throws for an expected failure).
+ */
+export async function submitCompetitiveScoreByMatchIdForRequest(
+  identity: PlayerIdentity,
+  matchId: string,
+  database: DatabaseClient,
+  productionDeps: CompetitiveSubmissionProductionDependencies,
+): Promise<SubmissionResult> {
+  // step 1 — guest fail-fast before any DB access (the no-DB-hits-for-guests
+  // guarantee), mirroring submitCompetitiveScoreImpl step 1.
+  if (isGuest(identity)) {
+    return { ok: false, reason: 'guest_not_eligible' };
+  }
+  const account: PlayerAccount = identity;
+
+  // why: step 2 — gameover gate. Scoring is end-of-match only (D-4804); an
+  // unfinished match is rejected and NEVER captured, so on-demand capture below
+  // only ever runs against a terminal state.
+  const finished = await isMatchFinished(matchId, database);
+  if (!finished) {
+    return { ok: false, reason: 'match_not_finished' };
+  }
+
+  // step 3 — resolve the replayHash by match_id, capturing on-demand when absent.
+  let replayHash = await readReplayHashByMatchId(matchId, database);
+  if (replayHash === null) {
+    // why: on-demand capture — the harvester's 5-min scan may not have run yet at
+    // gameover; the WP-335 reaper capture-guard keeps the finished match's
+    // bgio.matches row alive so this capture can read it. Capture also assigns
+    // ownership per authenticated seat, establishing the caller's ownership below.
+    const captured = await captureMatch(matchId, database);
+    if (captured.replayHash === null) {
+      // A non-replayable match (null initial_state) — verification failure, not a throw.
+      return { ok: false, reason: 'replay_verification_failed' };
+    }
+    replayHash = captured.replayHash;
+  }
+
+  // why: step 4 — the CALLER's ownership, looked up by (accountId, replayHash) — NOT
+  // findReplayOwnership's LIMIT-1 arbitrary-owner row, which for a 2-authenticated-seat
+  // match could return the other player's row. None → the caller did not play this
+  // match as an authenticated seat.
+  const ownership = await findReplayOwnershipForAccount(
+    account.accountId,
+    replayHash,
+    database,
+  );
+  if (ownership === null) {
+    return { ok: false, reason: 'not_owner' };
+  }
+
+  // why: step 5 — auto-publish. Submitting a score to the public competitive
+  // leaderboard is consent-by-action to publish the replay (D-24126); promote the
+  // caller's ownership private → public so the downstream visibility gate passes.
+  if (ownership.visibility === 'private') {
+    await updateReplayVisibility(ownership.ownershipId, 'public', database);
+  }
+
+  // step 6 — delegate to the unchanged verify+score pipeline (ownership / visibility
+  // (now public) / idempotency / PAR / reduce / hash-verify / score).
+  return submitCompetitiveScoreForRequest(
+    identity,
+    replayHash,
+    database,
+    productionDeps,
+  );
 }
 
 /**
