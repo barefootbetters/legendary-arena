@@ -27,6 +27,8 @@ import { computeStateHash, LegendaryGame } from '@legendary-arena/game-engine';
 import {
   reduceMatchToFinalState,
   readMatchForReplay,
+  readReplayArtifactByHash,
+  reduceReplayByHash,
 } from './matchReplay.logic.js';
 import type { DatabaseClient } from '../identity/identity.types.js';
 
@@ -120,6 +122,61 @@ function manufactureMatch(): {
   return { initialState, log, liveFinal: state };
 }
 
+/**
+ * Manufacture a real match with a chosen number of COMPLETED play turns, ending
+ * mid-turn (a logged move in the final turn, no trailing endTurn) — the shape a
+ * real match has when `endIf` fires on a move. Each completed turn is three
+ * `advanceStage` moves (start → main → cleanup → the third fires endTurn), then
+ * one more `advanceStage` opens the in-progress final turn. Drives the SAME
+ * reducer, accumulating the emitted log; the per-entry live `turn` stamps are
+ * what `reduceMatchToFinalState` counts as `turnCount` (WP-336 / D-24123).
+ *
+ * @param completedTurns The number of play turns to fully complete before the
+ *   in-progress final turn.
+ * @returns The initial state and the accumulated log.
+ */
+function manufactureMatchWithTurns(completedTurns: number): {
+  initialState: { G: unknown; ctx: unknown };
+  log: unknown[];
+  liveFinal: { G: unknown };
+} {
+  const initialState = InitializeGame({
+    game: LegendaryGame,
+    numPlayers: 2,
+    setupData: MOCK_SETUP_DATA,
+  });
+  const reducer = CreateGameReducer({ game: LegendaryGame, isClient: false });
+  const log: unknown[] = [];
+
+  let state: { G: unknown; ctx: unknown; deltalog?: unknown[] } = initialState;
+  const dispatch = (moveName: string, args: unknown[], playerID: string): void => {
+    const next = reducer(state, {
+      type: MAKE_MOVE,
+      payload: { type: moveName, args, playerID },
+    });
+    if (Array.isArray(next.deltalog)) {
+      log.push(...next.deltalog);
+    }
+    state = next;
+  };
+  // why: read the CURRENT current-player fresh each dispatch — startMatchIfReady
+  // begins play with boardgame.io's own turn order, and each endTurn rotates it;
+  // an advanceStage must come from whoever holds the active 'playTurn' stage.
+  const currentPlayer = (): string => String((state.ctx as { currentPlayer: unknown }).currentPlayer);
+
+  dispatch('setPlayerReady', [{ ready: true }], '0');
+  dispatch('setPlayerReady', [{ ready: true }], '1');
+  dispatch('startMatchIfReady', [], '0');
+  for (let turn = 0; turn < completedTurns; turn += 1) {
+    dispatch('advanceStage', [], currentPlayer()); // start → main
+    dispatch('advanceStage', [], currentPlayer()); // main → cleanup
+    dispatch('advanceStage', [], currentPlayer()); // cleanup → endTurn (turn++)
+  }
+  dispatch('advanceStage', [], currentPlayer()); // open the in-progress final turn
+
+  return { initialState, log, liveFinal: state };
+}
+
 describe('reduceMatchToFinalState (WP-334)', () => {
   test('faithfully reproduces the live final G from initialState + log', () => {
     const { initialState, log, liveFinal } = manufactureMatch();
@@ -141,6 +198,52 @@ describe('reduceMatchToFinalState (WP-334)', () => {
       liveFinal.G,
       'reduced final G must deep-equal the live final G',
     );
+  });
+
+  test('faithfully reproduces the live final G for a MULTI-TURN match (WP-336 / D-24124)', () => {
+    // why: WP-334's only faithfulness golden was a 0-turn lobby game. Play-phase
+    // endTurn GAME_EVENTs are logged `automatic: false`, so the original
+    // skip-`automatic` reduction double-advanced every turn past the first and
+    // diverged for real multi-turn matches (the score would have been computed
+    // off a wrong final G). The reduction now re-dispatches only player MAKE_MOVEs;
+    // this asserts the reduced final G equals the live final G across turn counts.
+    for (const completedTurns of [1, 3, 7]) {
+      const { initialState, log, liveFinal } = manufactureMatchWithTurns(completedTurns);
+      const result = reduceMatchToFinalState({ initialState, log });
+      assert.equal(
+        result.stateHash,
+        computeStateHash(liveFinal.G as never),
+        `reduced final G hash must equal the live final G hash for ${completedTurns} completed turns`,
+      );
+      assert.deepEqual(result.finalState, liveFinal.G);
+    }
+  });
+
+  test('turnCount reconciles to the completed play-turn count (WP-336 / D-24123)', () => {
+    // why: the competitive `rounds` input must be on the PAR-calibrated TURN
+    // scale (par.aggregator's `turnsElapsed`), not the move scale. A match that
+    // completes N play turns and ends mid-next-turn has `turnCount === N` (floored
+    // at 1) — scaffold-verified across 0/1/2/5/12 against the reducer's own turn
+    // stamps. The count is read from the log's live per-entry `turn`, not the
+    // reduced `ctx.turn` (which drifts once AUTOMATIC entries are skipped).
+    for (const completedTurns of [0, 1, 2, 5, 12]) {
+      const { initialState, log } = manufactureMatchWithTurns(completedTurns);
+      const result = reduceMatchToFinalState({ initialState, log });
+      const expected = completedTurns < 1 ? 1 : completedTurns;
+      assert.equal(
+        result.turnCount,
+        expected,
+        `a match with ${completedTurns} completed play turns must have turnCount ${expected}`,
+      );
+    }
+  });
+
+  test('turnCount floors at 1 for a match that never left the lobby-entry turn', () => {
+    // The plain lobby→play manufacture completes zero play turns; the floor keeps
+    // `rounds` >= 1 (mirrors par.aggregator's `turnsElapsed === 0 ? 1 : turnsElapsed`).
+    const { initialState, log } = manufactureMatch();
+    const result = reduceMatchToFinalState({ initialState, log });
+    assert.equal(result.turnCount, 1);
   });
 
   test('an empty log returns the initial state unchanged (fold identity)', () => {
@@ -234,6 +337,73 @@ describe('readMatchForReplay (WP-334)', () => {
       assert.notEqual(artifact, null);
       assert.deepEqual(artifact!.initialState, { G: { x: 1 } });
       assert.equal(artifact!.log.length, 1);
+    },
+  );
+});
+
+describe('readReplayArtifactByHash / reduceReplayByHash (WP-336)', () => {
+  const hasTestDatabase = process.env.TEST_DATABASE_URL !== undefined;
+  const TEST_HASH = 'wp336-test-replay-hash';
+
+  let pool: InstanceType<typeof Pool> | undefined;
+  let artifact: { initialState: unknown; log: unknown[] };
+  let expectedHash: string;
+
+  before(async () => {
+    // A real short match's { initialState, log } — the durable artifact shape.
+    const manufactured = manufactureMatchWithTurns(3);
+    artifact = { initialState: manufactured.initialState, log: manufactured.log };
+    expectedHash = reduceMatchToFinalState(artifact).stateHash;
+
+    if (!hasTestDatabase) {
+      return;
+    }
+    pool = new Pool({ connectionString: process.env.TEST_DATABASE_URL });
+    await pool.query('DELETE FROM bgio.replay_artifacts WHERE replay_hash = $1', [TEST_HASH]);
+    await pool.query(
+      'INSERT INTO bgio.replay_artifacts (replay_hash, match_id, scenario_key, initial_state, log) ' +
+        'VALUES ($1, $2, $3, $4::jsonb, $5::jsonb)',
+      [
+        TEST_HASH,
+        'wp336-test-match',
+        'test-scenario-key',
+        JSON.stringify(artifact.initialState),
+        JSON.stringify(artifact.log),
+      ],
+    );
+  });
+
+  after(async () => {
+    if (pool === undefined) {
+      return;
+    }
+    await pool.query('DELETE FROM bgio.replay_artifacts WHERE replay_hash = $1', [TEST_HASH]);
+    await pool.end();
+  });
+
+  test(
+    'reads the durable artifact by replayHash and reduces it faithfully; null for an unknown hash',
+    { skip: hasTestDatabase ? false : 'requires test database' },
+    async () => {
+      const database = pool as unknown as DatabaseClient;
+
+      // Unknown hash → null (verifier maps this to a verification failure, no throw).
+      assert.equal(await readReplayArtifactByHash('wp336-absent', database), null);
+      assert.equal(await reduceReplayByHash('wp336-absent', database), null);
+
+      // Known hash → the stored { initialState, log }.
+      const read = await readReplayArtifactByHash(TEST_HASH, database);
+      assert.notEqual(read, null);
+      assert.deepEqual(read!.initialState, artifact.initialState);
+      assert.equal(read!.log.length, artifact.log.length);
+
+      // reduceReplayByHash composes read + reduce → the same hash + turnCount the
+      // capture step stored (3 completed play turns), proving the verifier reduces
+      // the SAME state the capture step hashed (the step-9 anti-tamper invariant).
+      const reduced = await reduceReplayByHash(TEST_HASH, database);
+      assert.notEqual(reduced, null);
+      assert.equal(reduced!.stateHash, expectedHash);
+      assert.equal(reduced!.turnCount, 3);
     },
   );
 });

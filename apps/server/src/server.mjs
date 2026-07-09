@@ -697,19 +697,20 @@ export async function startServer() {
   // The write-side mirror of registerLeaderboardRoutes: it wires
   // WP-053's submitCompetitiveScore library (route-less until now) via
   // submitCompetitiveScoreForRequest, injecting the real bound PAR gate
-  // (parGate.checkParPublished) + the startup-loaded registry so
-  // submissions are actually accepted — the inert library wrapper
-  // fail-closes every submission to par_not_published. Same
-  // caller-injected auth deps as registerOwnerProfileRoutes;
-  // requireUnsuspendedAccount (WP-107) is the suspension guard, this
-  // route being its first caller.
+  // (parGate.checkParPublished) so submissions are actually accepted —
+  // the inert library wrapper fail-closes every submission to
+  // par_not_published. Same caller-injected auth deps as
+  // registerOwnerProfileRoutes; requireUnsuspendedAccount (WP-107) is the
+  // suspension guard, this route being its first caller. WP-336 dropped
+  // the `registry` dependency — the faithful reducer path
+  // (reduceReplayByHash) resolves cards from the persisted initial state,
+  // so the verifier needs no CardRegistryReader.
   registerCompetitionRoutes(server.router, pool, {
     requireAuthenticatedSession,
     verifier,
     accountResolver: verifier === undefined ? undefined : accountResolver,
     requireUnsuspendedAccount,
     checkParPublished: parGate.checkParPublished,
-    registry,
   });
 
   // why: WP-106 / D-10602 — register the avatar upload route
