@@ -46,6 +46,7 @@ source:
   - ../data/migrations/025_create_bgio_replay_artifacts.sql
   - ../docs/ai/work-packets/WP-338-submit-by-matchid-server.md
   - ../docs/ai/work-packets/WP-339-arena-submit-my-scores.md
+  - ../docs/ai/work-packets/WP-342-mastermind-gauntlet-boards-server.md
   - ../docs/ai/DESIGN-RANKING.md
 last-reviewed: 2026-07-09
 ---
@@ -434,6 +435,24 @@ player ID, not the public handle.
 > [DECISIONS.md](../docs/ai/DECISIONS.md) entry and Work Packets. It is
 > recorded here so the reasoning isn't lost, not as a spec to build from.
 
+> **Update 2026-07-09 — tier 2 is now DECIDED.** The per-mastermind
+> set-gauntlet below was ratified and expanded to **all sets** by
+> **D-24131** ([DECISIONS.md](../docs/ai/DECISIONS.md)), with
+> [WP-342](../docs/ai/work-packets/WP-342-mastermind-gauntlet-boards-server.md)
+> drafted as the server packet. Locked parameters: one gauntlet per
+> (set × mastermind) for every set with ≥1 scheme (105 boards at current
+> data; `dims`/`3dtc` excluded); legs = the set's schemes; **wins only**
+> (a new `outcome` column on `competitive_scores`, written at submission);
+> best score per leg, any villain groups; entry = complete gauntlets only,
+> ranked by total (= average) of best legs; rows must carry the
+> currently-published `scoringConfigVersion` (VISION §22); **no submission
+> step** — standings are a publisher-derived aggregation; snapshots
+> `gauntlet-<setAbbr>-<mastermindSlug>.json` + a `gauntlet-index.json`
+> catalog + additive manifest fields. Follow-up WPs (backlogged): the
+> legends-board set-grouped index + gauntlet panel, and profile surfaces
+> (owner-profile progress checklist, public-profile completed-gauntlet
+> badges). Tiers 1, 3, 4 and the annual reset below remain **proposals**.
+
 **The combinatorial problem.** The game has ~40 sets; each set packages
 multiple masterminds and multiple schemes (with scheme twists). Ranking
 every (mastermind × scheme × villain-group) combination separately yields
@@ -452,8 +471,9 @@ meaningful, findable competition without that fragmentation.
 **The recommended consolidation — the "set-gauntlet."** The cleanest way
 to collapse the mastermind × scheme explosion (and the approach the
 brainstorm converged on): to hold *"2026 Thanos Champion,"* a player must
-post a verified score against Thanos across **every scheme twist packaged
-in Thanos's set**, and the championship score is the aggregate of those
+post a verified score against Thanos across **every scheme packaged in
+Thanos's set** (the scheme is the scenario component; its twists are cards
+inside it), and the championship score is the aggregate of those
 runs (average or sum). A set with five schemes means five required
 scenarios. This yields **one board per mastermind** instead of one per
 mastermind×scheme, rewards breadth (master all flavors, not just farm the
@@ -473,18 +493,23 @@ open fresh boards for the new year. Archived boards stay browsable as past
 championships. VISION §22's immutability of declared PAR baselines already
 supports comparing a full year's runs on a stable footing.
 
-**Still open before any of this can be built:**
+**Resolved for tier 2 by D-24131 (2026-07-09):** the aggregate is the
+average of best-per-leg winning scores (complete gauntlets only); "set"
+membership is the registry's set grouping (slugs from card data, never
+re-slugified); partial gauntlets never appear on the public board —
+progress displays only on the authenticated owner profile (follow-up WP).
 
-- Aggregate function per tier — sum vs average vs best-N — and how partial
-  gauntlets (some but not all schemes posted) display (provisional? hidden?).
-- Whether "set" membership for the gauntlet is defined by the registry's
-  set grouping or an explicit championship manifest.
+**Still open (tiers 1 / 3 / 4 and lifecycle):**
+
 - Category-tier definitions (tier 3) — which masterminds count as "Villain
   masterminds" vs "Mastermind masterminds," and whether tier 3 ships at all.
 - Skill-tier banding method (fixed percentiles vs dynamic) and how it
   interacts with low-population boards.
 - Data model for active vs archived boards, and the reset job that performs
-  the Dec 31 → Jan 1 rollover.
+  the Dec 31 → Jan 1 rollover (a `scoringConfigVersion` bump is handled as
+  an archival rollover per D-24131 §5, which constrains this design).
+- Tier-1 (annual overall champion) aggregate — sum vs average vs best-N
+  across scenarios.
 
 ### Engagement & presentation proposal (2026-07-09 board review)
 
@@ -587,5 +612,8 @@ instead of a bare table. Hand-authored mockup:
   baselines
 - [`parScoring.keys.ts`](../packages/game-engine/src/scoring/parScoring.keys.ts)
   — `buildScenarioKey` / `buildTeamKey` (the canonical board keys)
+- [WP-342](../docs/ai/work-packets/WP-342-mastermind-gauntlet-boards-server.md)
+  + DECISIONS.md **D-24131** — the ratified set-gauntlet design and its
+  server packet (drafted 2026-07-09)
 - [Scoring](scoring.md), [PAR Simulation Calibration](par-simulation-calibration.md)
   — companion wiki pages for the scoring internals
