@@ -27385,6 +27385,38 @@ The client submit + a `listAccountReplays` HTTP surface is WP-5.
 
 Protect this file.
 
+### D-24118 — Player identity + sign-out live only in the global BrandHeader (My Profile page de-dupe)
+
+**Status:** Active (post-execution) 2026-07-08. `D-24026` live-verify operator-pending on deploy.
+
+**User-Visible Surface:** play.legendary-arena.com (the `?route=me` My Profile page).
+
+**Context.** The global `BrandHeader` (WP-175) renders the player's identity, a
+"My profile" link, and a "Sign out" button on every authenticated route. WP-330
+(D-24116) made its label show the player's actual name. `MyProfilePage.vue`
+(WP-104 / WP-305) had ALSO always rendered its own `<header class="profile-header">`
+with an `<h1>` of the display name + its own "Sign out" button. While the global
+label read "My account" the duplication was latent; once WP-330 made both read the
+name, `?route=me` visibly showed the name twice and two "Sign out" buttons — the
+operator reported it.
+
+**Decision.** The player's identity heading and sign-out control live **only** in the
+global `BrandHeader`. `MyProfilePage.vue` renders a plain page title
+("Your profile") plus the `@handle` / Account-ID / help lines and the editable
+form — no page-level name heading and no page-level sign-out button. The
+page's now-dead broker sign-out machinery (`signOut`, `ensureHankoHandle`,
+`cachedHankoHandle`, and the Hanko imports) is removed; `useAuthStore` /
+`readAuthToken` stay because the page still needs the bearer token for its own
+API calls.
+
+**Guardrail for future work.** Do not re-add an identity heading or a sign-out
+button to `MyProfilePage.vue` (or any other authenticated page) — those belong to
+the global header. A page may show a plain title and its own content.
+
+**Packet:** WP-332 + EC-362. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
+
+Protect this file.
+
 ### D-24123 — Competitive `rounds` = Play-Turn Count (Not Move Count), Fed Engine-Clean via the Reduced Log
 
 **Status:** Active (post-execution) 2026-07-08.
