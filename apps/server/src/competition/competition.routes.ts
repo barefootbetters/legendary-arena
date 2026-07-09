@@ -51,6 +51,12 @@ import {
 
 import { findPlayerByAccountId } from '../identity/identity.logic.js';
 
+// why: WP-344 — GET /api/me/gauntlets projects the caller's per-gauntlet
+// progress via the WP-342 read layer; the catalog arrives in the route
+// deps from server.mjs (plain data, no registry import here).
+import { getPlayerGauntletProgress } from '../legends/gauntlet.logic.js';
+import type { GauntletDefinition } from '../legends/gauntlet.logic.js';
+
 import { requireUnsuspendedAccount as requireUnsuspendedAccountDefault } from '../auth/requireUnsuspendedAccount.js';
 
 import type { SubmissionRejectionReason } from './competition.types.js';
@@ -108,6 +114,8 @@ export interface CompetitionRouteDependencies {
     accountId: AccountId,
   ) => Promise<RequireUnsuspendedAccountResult>;
   readonly checkParPublished: (scenarioKey: string) => ParGateHit | null;
+  // why: WP-344 — the startup-built gauntlet catalog for /api/me/gauntlets.
+  readonly gauntletCatalog: readonly GauntletDefinition[];
 }
 
 /**
@@ -120,12 +128,14 @@ export interface CompetitionLogic {
   readonly submitCompetitiveScoreByMatchIdForRequest: typeof submitCompetitiveScoreByMatchIdForRequest;
   readonly listPlayerCompetitiveScores: typeof listPlayerCompetitiveScores;
   readonly findPlayerByAccountId: typeof findPlayerByAccountId;
+  readonly getPlayerGauntletProgress: typeof getPlayerGauntletProgress;
 }
 
 const PRODUCTION_COMPETITION_LOGIC: CompetitionLogic = {
   submitCompetitiveScoreByMatchIdForRequest,
   listPlayerCompetitiveScores,
   findPlayerByAccountId,
+  getPlayerGauntletProgress,
 };
 
 /**
@@ -375,6 +385,58 @@ export function registerCompetitionRoutes(
       );
       koaContext.status = 200;
       koaContext.body = { scores };
+    } catch (caughtError) {
+      void caughtError;
+      koaContext.status = 500;
+      koaContext.body = { error: 'internal_error' };
+    }
+  });
+
+  // why: GET /api/me/gauntlets (WP-344 / D-24133) — the authenticated
+  // player's per-gauntlet progress under the EXACT board predicate, so the
+  // numbers always agree with the public gauntlet boards. Same auth chain
+  // as /api/me/scores; personalized read, never cacheable. Returns only
+  // gauntlets with at least one winning leg — the client owns the
+  // no-progress state.
+  router.get('/api/me/gauntlets', async (koaContext) => {
+    koaContext.set('Cache-Control', 'no-store');
+
+    const sessionResult = await deps.requireAuthenticatedSession(koaContext.req, {
+      verifier: deps.verifier,
+      accountResolver: deps.accountResolver,
+      database,
+    });
+    if (sessionResult.ok !== true) {
+      koaContext.status = statusForSessionValidationCode(sessionResult.code);
+      koaContext.body = { error: sessionResult.code };
+      return;
+    }
+    const accountId = sessionResult.value;
+
+    const suspensionResult = await deps.requireUnsuspendedAccount(
+      database,
+      accountId,
+    );
+    if (suspensionResult.ok !== true) {
+      if (suspensionResult.code === 'suspended') {
+        koaContext.status = 403;
+        koaContext.body = { error: 'forbidden' };
+      } else {
+        koaContext.status = 500;
+        koaContext.body = { error: 'internal_error' };
+      }
+      return;
+    }
+
+    try {
+      const gauntlets = await competitionLogic.getPlayerGauntletProgress(
+        accountId,
+        deps.gauntletCatalog,
+        database,
+        { checkParPublished: deps.checkParPublished },
+      );
+      koaContext.status = 200;
+      koaContext.body = { gauntlets };
     } catch (caughtError) {
       void caughtError;
       koaContext.status = 500;

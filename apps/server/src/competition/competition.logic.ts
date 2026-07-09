@@ -63,6 +63,10 @@ import type {
 } from '@legendary-arena/game-engine';
 
 import { issueTier1BadgesForSubmission } from '../badges/badge.issuance.js';
+// why: WP-344 — gauntlet champion badges evaluate on the same submission
+// hook; the catalog reaches the issuer via startup registration, so the
+// locked SubmissionDependencies seam is untouched (D-24133).
+import { issueGauntletBadgesForSubmission } from '../badges/badge.gauntlet.js';
 
 // why: WP-336 repoints the verifier onto the faithful reducer path. The single
 // `reduceReplayByHash` (WP-334/WP-335/WP-336) reads the durable
@@ -751,6 +755,14 @@ export async function submitCompetitiveScoreImpl(
       record.submissionId,
       record.scoreBreakdown,
       record.scenarioKey,
+      record.scoringConfigVersion,
+      database,
+    );
+    await issueGauntletBadgesForSubmission(
+      resolvedPlayerId,
+      account.accountId,
+      record.scenarioKey,
+      record.outcome,
       record.scoringConfigVersion,
       database,
     );

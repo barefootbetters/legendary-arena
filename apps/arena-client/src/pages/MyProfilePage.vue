@@ -18,8 +18,10 @@ import {
   type SavedLoadoutView,
 } from '../lib/api/loadoutLibraryApi';
 import {
+  fetchMyGauntlets,
   fetchMyScores,
   type MyCompetitiveScore,
+  type MyGauntletProgress,
 } from '../lib/api/competitionApi';
 import { summarizeLoadout } from '../lib/loadoutSummary';
 import BillingSection from '../components/BillingSection.vue';
@@ -255,6 +257,13 @@ export default defineComponent({
     const scoresLoading = ref<boolean>(true);
     const scoresError = ref<string>('');
 
+    // why: WP-344 gauntlet progress ("5/8 schemes defeated") — independent
+    // loading/error refs, same posture as the scores section: a failure
+    // here never clobbers the rest of the page.
+    const gauntletProgress = ref<MyGauntletProgress[]>([]);
+    const gauntletsLoading = ref<boolean>(true);
+    const gauntletsError = ref<string>('');
+
     // why: re-arm the avatar preview whenever the URL changes. Once `@error`
     // hides a broken URL, the <img> leaves the DOM, so `@load` can never fire
     // to clear the flag — without this reset a single bad URL would suppress
@@ -451,6 +460,25 @@ export default defineComponent({
     }
 
     /**
+     * Load the owner's per-gauntlet progress (WP-344). The server returns
+     * only gauntlets with at least one winning leg, computed under the
+     * exact public-board predicate — the numbers here always agree with
+     * the public gauntlet boards. Never throws.
+     */
+    async function loadGauntlets(): Promise<void> {
+      gauntletsLoading.value = true;
+      gauntletsError.value = '';
+      const result = await fetchMyGauntlets(readAuthToken());
+      gauntletsLoading.value = false;
+      if (result.status === 200 && result.gauntlets !== null) {
+        gauntletProgress.value = result.gauntlets;
+        return;
+      }
+      gauntletsError.value =
+        'We couldn’t load your gauntlet progress right now. Please try again later.';
+    }
+
+    /**
      * Replace one row in place with an updated server view, reseeding
      * its rename draft. Leaves every other row untouched.
      */
@@ -579,6 +607,7 @@ export default defineComponent({
       void load();
       void loadLoadouts();
       void loadScores();
+      void loadGauntlets();
     });
 
     return {
@@ -609,6 +638,9 @@ export default defineComponent({
       competitiveScores,
       scoresLoading,
       scoresError,
+      gauntletProgress,
+      gauntletsLoading,
+      gauntletsError,
       loadoutRows,
       loadoutsError,
       createName,
@@ -1096,6 +1128,40 @@ export default defineComponent({
             <span class="profile-scores__final">{{ score.finalScore }}</span>
             <span class="profile-scores__scenario">{{ score.scenarioKey }}</span>
             <span class="profile-scores__date">{{ score.createdAt }}</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="profile-gauntlets" data-testid="my-profile-gauntlets">
+        <h2>Gauntlet Progress</h2>
+        <p class="profile-gauntlets__intro">
+          Defeat a mastermind under every scheme in its set to claim a spot on
+          its public gauntlet board.
+        </p>
+        <p v-if="gauntletsLoading" class="profile-gauntlets__status">Loading your gauntlets…</p>
+        <p v-else-if="gauntletsError !== ''" class="profile-gauntlets__status profile-gauntlets__status--error">
+          {{ gauntletsError }}
+        </p>
+        <p v-else-if="gauntletProgress.length === 0" class="profile-gauntlets__status">
+          No gauntlet progress yet. Win a match against any mastermind while
+          signed in and your first leg will appear here.
+        </p>
+        <ul v-else class="profile-gauntlets__list">
+          <li
+            v-for="gauntlet in gauntletProgress"
+            :key="gauntlet.board"
+            class="profile-gauntlets__row"
+          >
+            <span class="profile-gauntlets__name">
+              {{ gauntlet.mastermindName }} — {{ gauntlet.setName }}
+            </span>
+            <span
+              class="profile-gauntlets__count"
+              :class="{ 'profile-gauntlets__count--complete': gauntlet.isComplete }"
+            >
+              {{ gauntlet.completedLegCount }}/{{ gauntlet.legCount }} schemes
+              {{ gauntlet.isComplete ? '✓ Champion' : '' }}
+            </span>
           </li>
         </ul>
       </section>

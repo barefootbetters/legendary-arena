@@ -262,3 +262,132 @@ export async function getGauntletStandings(
 
   return entries;
 }
+
+// ---------------------------------------------------------------------------
+// Per-player progress (WP-344 / D-24131 §8b)
+// ---------------------------------------------------------------------------
+
+/** One leg's progress: the player's best winning score, or null if the
+ * leg is not yet won. */
+export interface GauntletLegProgress {
+  readonly schemeSlug: string;
+  readonly bestFinalScore: number | null;
+}
+
+/** One gauntlet's progress for one player ("5/8 schemes defeated"). */
+export interface GauntletProgress {
+  readonly setAbbr: string;
+  readonly setName: string;
+  readonly mastermindSlug: string;
+  readonly mastermindName: string;
+  readonly board: string;
+  readonly legCount: number;
+  readonly completedLegCount: number;
+  readonly isComplete: boolean;
+  readonly legs: readonly GauntletLegProgress[];
+}
+
+/**
+ * Internal row shape returned by the player-progress query.
+ */
+interface PlayerWinningRow {
+  scenario_key: string;
+  final_score: number;
+  scoring_config_version: number;
+}
+
+/**
+ * Computes one player's progress across the supplied gauntlets.
+ *
+ * why: the qualification predicate is the WP-342 BOARD predicate verbatim
+ * (`outcome = 'heroes-win'`, link/public visibility, currently-published
+ * `scoringConfigVersion`) — personal progress numbers must never disagree
+ * with the public board (D-24131 §3/§5).
+ *
+ * Returns only gauntlets where the player has at least one winning leg —
+ * a full catalog of zero-progress rows is noise; the consumer renders its
+ * own no-progress state.
+ *
+ * @param accountId The caller's server AccountId (resolved to `player_id`
+ *   via the `ext_id` join — ranking identity never keys on handle, per
+ *   DESIGN-RANKING).
+ * @param catalog The gauntlets to evaluate (the full startup catalog, or
+ *   a filtered slice for badge-issuance checks).
+ * @param database The pg pool (read-only queries).
+ * @param leaderboardDeps The injected PAR gate bundle (version filter).
+ * @returns Progress entries in catalog order.
+ */
+export async function getPlayerGauntletProgress(
+  accountId: string,
+  catalog: readonly GauntletDefinition[],
+  database: DatabaseClient,
+  leaderboardDeps: LeaderboardDependencies,
+): Promise<GauntletProgress[]> {
+  if (catalog.length === 0) {
+    return [];
+  }
+
+  const result = await database.query(
+    'SELECT cs.scenario_key, cs.final_score, cs.scoring_config_version ' +
+      'FROM legendary.competitive_scores cs ' +
+      'INNER JOIN legendary.players p ON cs.player_id = p.player_id ' +
+      'INNER JOIN legendary.replay_ownership ro ' +
+      '  ON ro.player_id = cs.player_id AND ro.replay_hash = cs.replay_hash ' +
+      "WHERE p.ext_id = $1 AND cs.outcome = 'heroes-win' " +
+      "  AND ro.visibility IN ('link', 'public')",
+    [accountId],
+  );
+
+  // Fold qualifying rows into best-per-(scheme, mastermind) slots.
+  const bestByLegKey = new Map<string, number>();
+  for (const row of result.rows as PlayerWinningRow[]) {
+    const parGateHit = leaderboardDeps.checkParPublished(row.scenario_key);
+    if (parGateHit === null) {
+      continue;
+    }
+    if (
+      row.scoring_config_version !==
+      parGateHit.scoringConfig.scoringConfigVersion
+    ) {
+      continue;
+    }
+    const keyParts = row.scenario_key.split('::');
+    const legKey = `${keyParts[0]}::${keyParts[1]}`;
+    const currentBest = bestByLegKey.get(legKey);
+    if (currentBest === undefined || row.final_score < currentBest) {
+      bestByLegKey.set(legKey, row.final_score);
+    }
+  }
+
+  const progressEntries: GauntletProgress[] = [];
+  for (const definition of catalog) {
+    const legs: GauntletLegProgress[] = [];
+    let completedLegCount = 0;
+    for (const schemeSlug of definition.legSchemeSlugs) {
+      const bestFinalScore =
+        bestByLegKey.get(`${schemeSlug}::${definition.mastermindSlug}`) ?? null;
+      if (bestFinalScore !== null) {
+        completedLegCount = completedLegCount + 1;
+      }
+      legs.push({ schemeSlug, bestFinalScore });
+    }
+    // why: zero-progress gauntlets are omitted — the endpoint contract
+    // (EC-374 §Locked Values) leaves the no-progress state to the client.
+    if (completedLegCount === 0) {
+      continue;
+    }
+    progressEntries.push({
+      setAbbr: definition.setAbbr,
+      setName: definition.setName,
+      mastermindSlug: definition.mastermindSlug,
+      mastermindName: definition.mastermindName,
+      board: buildGauntletBoardName(definition),
+      legCount: definition.legSchemeSlugs.length,
+      completedLegCount,
+      isComplete: completedLegCount === definition.legSchemeSlugs.length,
+      legs,
+    });
+  }
+
+  return progressEntries;
+}

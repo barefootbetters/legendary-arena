@@ -77,12 +77,17 @@ function uniqueLabel(suffix: string): string {
   return `${SUITE_RUN_ID}-${testCounter}-${suffix}`;
 }
 
+// why: the sequence is MODULE-level, not per-provider — the old per-call
+// counter reset to 1 on every makeIdProvider() call, so two back-to-back
+// provisions inside the same millisecond (the cross-account test creates
+// accounts A and B consecutively) produced identical ext_ids and a UNIQUE
+// violation — a timing flake that only bit on fast full-suite runs.
+let idSequence = 0;
 function makeIdProvider(): () => string {
-  const counter = { value: 0 };
   return () => {
-    counter.value += 1;
-    return `00000000-0000-4000-8000-${String(Date.now() % 1_000_000_000_000)
-      .padStart(9, '0')}${String(counter.value).padStart(3, '0')}`;
+    idSequence += 1;
+    return `00000000-0000-4000-8000-${String(Date.now() % 1_000_000)
+      .padStart(6, '0')}${String(idSequence).padStart(6, '0')}`;
   };
 }
 

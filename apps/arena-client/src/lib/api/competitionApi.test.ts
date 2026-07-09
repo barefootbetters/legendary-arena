@@ -13,6 +13,7 @@ import assert from 'node:assert/strict';
 
 import {
   submitCompetitiveScore,
+  fetchMyGauntlets,
   fetchMyScores,
   type MyCompetitiveScore,
 } from './competitionApi';
@@ -163,6 +164,60 @@ test('fetchMyScores returns status 0 on a network failure (never throws)', async
     const result = await fetchMyScores('token-abc');
     assert.equal(result.status, 0);
     assert.equal(result.scores, null);
+  } finally {
+    stub.restore();
+  }
+});
+
+const SAMPLE_GAUNTLET = {
+  setAbbr: 'core',
+  setName: 'Core Set',
+  mastermindSlug: 'dr-doom',
+  mastermindName: 'Dr. Doom',
+  board: 'gauntlet-core-dr-doom',
+  legCount: 8,
+  completedLegCount: 5,
+  isComplete: false,
+  legs: [{ schemeSlug: 'midtown-bank-robbery', bestFinalScore: -3 }],
+};
+
+test('fetchMyGauntlets returns the gauntlets array on 200 with Authorization', async () => {
+  const stub = installFetchStub(200, { gauntlets: [SAMPLE_GAUNTLET] });
+  try {
+    const result = await fetchMyGauntlets('token-abc');
+    assert.equal(result.status, 200);
+    assert.deepEqual(result.gauntlets, [SAMPLE_GAUNTLET]);
+    assert.equal(result.error, null);
+    const call = stub.calls[0];
+    assert.ok(call !== undefined);
+    assert.ok(call.url.endsWith('/api/me/gauntlets'));
+    assert.equal(call.init.method, 'GET');
+    const headers = call.init.headers as Record<string, string>;
+    assert.equal(headers['Authorization'], 'Bearer token-abc');
+  } finally {
+    stub.restore();
+  }
+});
+
+test('fetchMyGauntlets surfaces the error code on a non-200', async () => {
+  const stub = installFetchStub(401, { error: 'missing_token' });
+  try {
+    const result = await fetchMyGauntlets(null);
+    assert.equal(result.status, 401);
+    assert.equal(result.error, 'missing_token');
+    assert.equal(result.gauntlets, null);
+  } finally {
+    stub.restore();
+  }
+});
+
+test('fetchMyGauntlets returns status 0 on a network failure (never throws)', async () => {
+  const stub = installThrowingFetchStub();
+  try {
+    const result = await fetchMyGauntlets('token-abc');
+    assert.equal(result.status, 0);
+    assert.equal(result.gauntlets, null);
+    assert.equal(result.error, null);
   } finally {
     stub.restore();
   }

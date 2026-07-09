@@ -162,3 +162,73 @@ export async function fetchMyScores(
     error: await readErrorCode(response),
   };
 }
+
+/**
+ * One leg of a gauntlet's progress. Hand-mirrored from the server's
+ * `GauntletLegProgress` (apps/server/src/legends/gauntlet.logic.ts) —
+ * the client must not import server-layer types.
+ */
+export interface MyGauntletLegProgress {
+  readonly schemeSlug: string;
+  readonly bestFinalScore: number | null;
+}
+
+/**
+ * One gauntlet's progress for the authenticated player ("5/8 schemes
+ * defeated"). Hand-mirrored from the server's `GauntletProgress`
+ * (apps/server/src/legends/gauntlet.logic.ts). The endpoint returns only
+ * gauntlets with at least one winning leg.
+ */
+export interface MyGauntletProgress {
+  readonly setAbbr: string;
+  readonly setName: string;
+  readonly mastermindSlug: string;
+  readonly mastermindName: string;
+  readonly board: string;
+  readonly legCount: number;
+  readonly completedLegCount: number;
+  readonly isComplete: boolean;
+  readonly legs: readonly MyGauntletLegProgress[];
+}
+
+/**
+ * Result of a my-gauntlets fetch. Never throws (`status: 0` on network
+ * failure). `gauntlets` is present only on HTTP 200.
+ */
+export interface MyGauntletsResult {
+  readonly status: number;
+  readonly gauntlets: MyGauntletProgress[] | null;
+  readonly error: string | null;
+}
+
+/**
+ * Fetch the authenticated player's per-gauntlet progress (WP-344 /
+ * D-24131 §8b). Progress uses the exact public-board predicate, so the
+ * numbers always agree with legends.legendary-arena.com.
+ *
+ * @param authToken The bearer token, or `null` for an unauthenticated caller.
+ * @returns The my-gauntlets result (never throws; `status: 0` on network failure).
+ */
+export async function fetchMyGauntlets(
+  authToken: string | null,
+): Promise<MyGauntletsResult> {
+  let response: Response;
+  try {
+    response = await fetch(buildApiUrl('/api/me/gauntlets'), {
+      method: 'GET',
+      headers:
+        authToken === null ? {} : { Authorization: `Bearer ${authToken}` },
+    });
+  } catch {
+    return { status: 0, gauntlets: null, error: null };
+  }
+  if (response.status === 200) {
+    const body = (await response.json()) as { gauntlets: MyGauntletProgress[] };
+    return { status: 200, gauntlets: body.gauntlets, error: null };
+  }
+  return {
+    status: response.status,
+    gauntlets: null,
+    error: await readErrorCode(response),
+  };
+}

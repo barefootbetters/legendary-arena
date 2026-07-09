@@ -24,6 +24,11 @@ import { createPool } from './db/database.js';
 import { createBgioPgStore } from './db/bgioPgStore.js';
 import { registerLeaderboardRoutes } from './leaderboards/leaderboard.routes.js';
 import { buildGauntletCatalog } from './legends/gauntlet.logic.js';
+import {
+  buildGauntletBadgeDefinitions,
+  registerGauntletBadgeContext,
+} from './badges/badge.gauntlet.js';
+import { registerDynamicBadgeDefinitions } from './badges/badge.types.js';
 import { registerCompetitionRoutes } from './competition/competition.routes.js';
 import { registerOwnerProfileRoutes } from './profile/ownerProfile.routes.js';
 import { registerAvatarUploadRoutes } from './profile/avatarUpload.routes.js';
@@ -540,6 +545,17 @@ export async function startServer() {
     `across ${gauntletSetSummaries.length} sets (WP-342)`
   );
 
+  // why: WP-344 / D-24133 — register the gauntlet badge surface ONCE at
+  // startup (the setRegistryForSetup precedent): the dynamic champion-badge
+  // definitions feed profile badge resolution, and the issuance context
+  // (catalog + bound PAR gate) lets the submission hook evaluate gauntlet
+  // completion without threading the locked WP-053 submission deps.
+  registerDynamicBadgeDefinitions(buildGauntletBadgeDefinitions(gauntletCatalog));
+  registerGauntletBadgeContext({
+    catalog: gauntletCatalog,
+    leaderboardDeps: { checkParPublished: parGate.checkParPublished },
+  });
+
   const rules = getRules();
   const rulesCount = Object.keys(rules.rules).length;
 
@@ -745,6 +761,7 @@ export async function startServer() {
     accountResolver: verifier === undefined ? undefined : accountResolver,
     requireUnsuspendedAccount,
     checkParPublished: parGate.checkParPublished,
+    gauntletCatalog,
   });
 
   // why: WP-106 / D-10602 — register the avatar upload route

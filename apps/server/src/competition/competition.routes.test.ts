@@ -127,6 +127,18 @@ const SAMPLE_RECORD: CompetitiveScoreRecord = {
   createdAt: '2026-07-08T00:00:00.000Z',
 };
 
+const SAMPLE_GAUNTLET_PROGRESS = {
+  setAbbr: 'core',
+  setName: 'Core Set',
+  mastermindSlug: 'dr-doom',
+  mastermindName: 'Dr. Doom',
+  board: 'gauntlet-core-dr-doom',
+  legCount: 8,
+  completedLegCount: 5,
+  isComplete: false,
+  legs: [],
+};
+
 const SAMPLE_ACCOUNT: PlayerAccount = {
   accountId: SENTINEL_ACCOUNT_ID,
   email: 'player@example.com',
@@ -148,6 +160,7 @@ function makeDeps(
     }),
     requireUnsuspendedAccount: async () => ({ ok: true }),
     checkParPublished: () => null,
+    gauntletCatalog: [],
     ...overrides,
   };
 }
@@ -157,7 +170,7 @@ function makeLogic(overrides: Partial<CompetitionLogic> = {}): {
   logic: CompetitionLogic;
   calls: { submit: number; findAccount: number; listScores: number };
 } {
-  const calls = { submit: 0, findAccount: 0, listScores: 0 };
+  const calls = { submit: 0, findAccount: 0, listScores: 0, listGauntlets: 0 };
   const logic: CompetitionLogic = {
     findPlayerByAccountId: async () => {
       calls.findAccount += 1;
@@ -171,6 +184,10 @@ function makeLogic(overrides: Partial<CompetitionLogic> = {}): {
       calls.listScores += 1;
       return [SAMPLE_RECORD];
     },
+    getPlayerGauntletProgress: async () => {
+      calls.listGauntlets += 1;
+      return [SAMPLE_GAUNTLET_PROGRESS];
+    },
     ...overrides,
   };
   return { logic, calls };
@@ -181,13 +198,19 @@ function buildHandler(
   deps: CompetitionRouteDependencies,
   logic: CompetitionLogic,
   method: 'post' | 'get' = 'post',
+  path?: string,
 ): RegisteredHandler {
   const { router, routes } = makeMockRouter();
   registerCompetitionRoutes(router, SENTINEL_DATABASE, deps, logic);
-  // why: registerCompetitionRoutes now registers two routes (POST scores + GET
-  // /api/me/scores); pick the one under test by method.
-  const route = routes.find((candidate) => candidate.method === method);
-  assert.ok(route !== undefined, `no ${method} route was registered`);
+  // why: registerCompetitionRoutes registers three routes (POST scores +
+  // GET /api/me/scores + GET /api/me/gauntlets, WP-344); pick the one under
+  // test by method, and by path when two share a method.
+  const route = routes.find(
+    (candidate) =>
+      candidate.method === method &&
+      (path === undefined || candidate.path === path),
+  );
+  assert.ok(route !== undefined, `no ${method} ${path ?? ''} route was registered`);
   return route.handler;
 }
 
@@ -200,11 +223,13 @@ describe('competition routes (WP-332)', () => {
     const { router, routes } = makeMockRouter();
     const { logic } = makeLogic();
     registerCompetitionRoutes(router, SENTINEL_DATABASE, makeDeps(), logic);
-    assert.equal(routes.length, 2);
+    assert.equal(routes.length, 3);
     const post = routes.find((route) => route.method === 'post');
-    const get = routes.find((route) => route.method === 'get');
+    const getPaths = routes
+      .filter((route) => route.method === 'get')
+      .map((route) => route.path);
     assert.equal(post?.path, '/api/competition/scores');
-    assert.equal(get?.path, '/api/me/scores');
+    assert.deepEqual(getPaths, ['/api/me/scores', '/api/me/gauntlets']);
   });
 
   test('2 — Cache-Control: no-store is set before any status/body write', async () => {
@@ -425,5 +450,65 @@ describe('competition routes (WP-332)', () => {
     assert.equal(context.status, 403);
     assert.deepEqual(context.body, { error: 'forbidden' });
     assert.equal(calls.listScores, 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/me/gauntlets (WP-344)
+// ---------------------------------------------------------------------------
+
+describe('GET /api/me/gauntlets (WP-344)', () => {
+  test('401 on a failed session; progress logic never runs', async () => {
+    const { logic, calls } = makeLogic();
+    const deps = makeDeps({
+      requireAuthenticatedSession: async () => ({
+        ok: false,
+        reason: 'No bearer token was supplied.',
+        code: 'missing_token',
+      }),
+    });
+    const handler = buildHandler(deps, logic, 'get', '/api/me/gauntlets');
+    const context = makeMockContext();
+    await handler(context);
+    assert.equal(context.status, 401);
+    assert.deepEqual(context.body, { error: 'missing_token' });
+    assert.equal(calls.listGauntlets, 0);
+  });
+
+  test('403 for a suspended account; progress logic never runs', async () => {
+    const { logic, calls } = makeLogic();
+    const deps = makeDeps({
+      requireUnsuspendedAccount: async () => ({ ok: false, code: 'suspended' }),
+    });
+    const handler = buildHandler(deps, logic, 'get', '/api/me/gauntlets');
+    const context = makeMockContext();
+    await handler(context);
+    assert.equal(context.status, 403);
+    assert.deepEqual(context.body, { error: 'forbidden' });
+    assert.equal(calls.listGauntlets, 0);
+  });
+
+  test('200 { gauntlets } with Cache-Control: no-store set first', async () => {
+    const { logic, calls } = makeLogic();
+    const handler = buildHandler(makeDeps(), logic, 'get', '/api/me/gauntlets');
+    const context = makeMockContext();
+    await handler(context);
+    assert.equal(context.status, 200);
+    assert.deepEqual(context.body, { gauntlets: [SAMPLE_GAUNTLET_PROGRESS] });
+    assert.equal(calls.listGauntlets, 1);
+    assert.equal(context.callOrder[0], 'set:Cache-Control');
+  });
+
+  test('500 { error: internal_error } when the progress read throws', async () => {
+    const { logic } = makeLogic({
+      getPlayerGauntletProgress: async () => {
+        throw new Error('The progress query failed for this test on purpose.');
+      },
+    });
+    const handler = buildHandler(makeDeps(), logic, 'get', '/api/me/gauntlets');
+    const context = makeMockContext();
+    await handler(context);
+    assert.equal(context.status, 500);
+    assert.deepEqual(context.body, { error: 'internal_error' });
   });
 });

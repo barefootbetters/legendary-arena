@@ -147,3 +147,38 @@ export const BADGE_DEFINITIONS: ReadonlyMap<string, BadgeDefinition> = new Map<s
     },
   ],
 ]);
+
+// ---------------------------------------------------------------------------
+// Dynamic badge definitions (WP-344 / D-24133)
+// ---------------------------------------------------------------------------
+
+// why: gauntlet champion badges are one key PER catalog gauntlet
+// (`gauntlet.<setAbbr>.<mastermindSlug>`, ~105 keys) — a shape the static
+// BADGE_DEFINITIONS Map cannot enumerate at authoring time. The wiring
+// layer registers catalog-derived definitions once at startup (the
+// setRegistryForSetup precedent); resolution falls back to this registry
+// AFTER the static map. Unregistered (tests, tools) means unknown keys
+// keep dropping — the pre-WP-344 behavior, byte-compatible.
+let dynamicBadgeDefinitions: ReadonlyMap<string, BadgeDefinition> = new Map();
+
+/**
+ * Registers runtime-derived badge definitions (called once at server
+ * startup with the gauntlet catalog's definitions). Replaces the whole
+ * map — never merges — so a restart is the only mutation model.
+ */
+export function registerDynamicBadgeDefinitions(
+  definitions: ReadonlyMap<string, BadgeDefinition>,
+): void {
+  dynamicBadgeDefinitions = definitions;
+}
+
+/**
+ * Resolves a badge key to its definition: the static Tier 1 map first,
+ * then the startup-registered dynamic definitions. Returns `undefined`
+ * for unknown keys (callers drop those, per the WP-105 posture).
+ */
+export function resolveBadgeDefinition(
+  badgeKey: string,
+): BadgeDefinition | undefined {
+  return BADGE_DEFINITIONS.get(badgeKey) ?? dynamicBadgeDefinitions.get(badgeKey);
+}

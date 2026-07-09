@@ -54,7 +54,7 @@ import type {
   PublicReplaySummary,
 } from './profile.types.js';
 import { getPlayerBadges } from '../badges/badge.read.js';
-import { BADGE_DEFINITIONS } from '../badges/badge.types.js';
+import { resolveBadgeDefinition } from '../badges/badge.types.js';
 import { composeTeamAffiliationsForProfile } from '../teams/team.logic.js';
 
 /**
@@ -69,7 +69,10 @@ export function composeBadgeSummaries(
 ): PlayerBadgeSummary[] {
   const summaries: PlayerBadgeSummary[] = [];
   for (const badge of badges) {
-    const definition = BADGE_DEFINITIONS.get(badge.badgeKey);
+    // why: WP-344 — resolution consults the static Tier 1 map first, then
+    // the startup-registered dynamic definitions (gauntlet champion keys);
+    // unknown keys still drop, the WP-105 posture.
+    const definition = resolveBadgeDefinition(badge.badgeKey);
     if (definition === undefined) {
       continue;
     }

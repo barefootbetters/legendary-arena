@@ -335,3 +335,137 @@ describe('gauntlet standings (WP-342)', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// Per-player progress (WP-344)
+// ---------------------------------------------------------------------------
+
+import { getPlayerGauntletProgress } from './gauntlet.logic.js';
+
+interface ProgressStubRow {
+  scenario_key: string;
+  final_score: number;
+  scoring_config_version: number;
+}
+
+function createProgressStubDatabase(rows: ProgressStubRow[]): {
+  database: DatabaseClient;
+  receivedParams: unknown[][];
+} {
+  const receivedParams: unknown[][] = [];
+  const database = {
+    async query(_text: string, params?: unknown[]) {
+      receivedParams.push(params ?? []);
+      return { rows, rowCount: rows.length };
+    },
+  } as DatabaseClient;
+  return { database, receivedParams };
+}
+
+describe('gauntlet player progress (WP-344)', () => {
+  test('winning legs fold to best-per-leg with completion counts; zero-progress gauntlets are omitted', async () => {
+    const otherDefinition: GauntletDefinition = {
+      setAbbr: 'dkpr',
+      setName: 'Dark City',
+      mastermindSlug: 'mm-elsewhere',
+      mastermindName: 'Elsewhere',
+      legSchemeSlugs: ['scheme-z'],
+    };
+    const { database, receivedParams } = createProgressStubDatabase([
+      {
+        scenario_key: scenarioKeyFor('scheme-a', 'mm-one'),
+        final_score: 4,
+        scoring_config_version: 1,
+      },
+      {
+        scenario_key: scenarioKeyFor('scheme-a', 'mm-one'),
+        final_score: -6,
+        scoring_config_version: 1,
+      },
+    ]);
+
+    const progress = await getPlayerGauntletProgress(
+      'account-1',
+      [TEST_DEFINITION, otherDefinition],
+      database,
+      createStubDeps(),
+    );
+
+    assert.equal(progress.length, 1);
+    assert.deepEqual(progress[0], {
+      setAbbr: 'core',
+      setName: 'Core Set',
+      mastermindSlug: 'mm-one',
+      mastermindName: 'Mastermind One',
+      board: 'gauntlet-core-mm-one',
+      legCount: 2,
+      completedLegCount: 1,
+      isComplete: false,
+      legs: [
+        { schemeSlug: 'scheme-a', bestFinalScore: -6 },
+        { schemeSlug: 'scheme-b', bestFinalScore: null },
+      ],
+    });
+    assert.deepEqual(receivedParams[0], ['account-1']);
+  });
+
+  test('a winning best on every leg marks the gauntlet complete', async () => {
+    const { database } = createProgressStubDatabase([
+      {
+        scenario_key: scenarioKeyFor('scheme-a', 'mm-one'),
+        final_score: -1,
+        scoring_config_version: 1,
+      },
+      {
+        scenario_key: scenarioKeyFor('scheme-b', 'mm-one'),
+        final_score: 2,
+        scoring_config_version: 1,
+      },
+    ]);
+
+    const progress = await getPlayerGauntletProgress(
+      'account-1',
+      [TEST_DEFINITION],
+      database,
+      createStubDeps(),
+    );
+    assert.equal(progress.length, 1);
+    assert.equal(progress[0]?.isComplete, true);
+    assert.equal(progress[0]?.completedLegCount, 2);
+  });
+
+  test('stale-version and unpublished-scenario rows never count (VISION section 22)', async () => {
+    const { database } = createProgressStubDatabase([
+      {
+        scenario_key: scenarioKeyFor('scheme-a', 'mm-one'),
+        final_score: -5,
+        scoring_config_version: 2,
+      },
+      {
+        scenario_key: 'scheme-b::mm-one::unpublished-villains',
+        final_score: -2,
+        scoring_config_version: 1,
+      },
+    ]);
+
+    const progress = await getPlayerGauntletProgress(
+      'account-1',
+      [TEST_DEFINITION],
+      database,
+      createStubDeps(),
+    );
+    assert.deepEqual(progress, []);
+  });
+
+  test('an empty catalog short-circuits without touching the database', async () => {
+    const { database, receivedParams } = createProgressStubDatabase([]);
+    const progress = await getPlayerGauntletProgress(
+      'account-1',
+      [],
+      database,
+      createStubDeps(),
+    );
+    assert.deepEqual(progress, []);
+    assert.equal(receivedParams.length, 0);
+  });
+});
