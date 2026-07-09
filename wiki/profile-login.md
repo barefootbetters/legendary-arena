@@ -25,9 +25,12 @@ source:
   - ../docs/ai/work-packets/WP-296-avatar-cdn-host-unification.md
   - ../docs/ai/work-packets/WP-298-owner-profile-avatar-upload-ui.md
   - ../docs/ai/work-packets/WP-299-owner-profile-edit-ux-polish.md
+  - ../docs/ai/work-packets/WP-305-owner-profile-identity-fields.md
   - ../docs/ai/work-packets/WP-338-submit-by-matchid-server.md
   - ../docs/ai/work-packets/WP-339-arena-submit-my-scores.md
+  - ../apps/server/src/profile/ownerProfile.types.ts
   - ../apps/arena-client/src/pages/MyProfilePage.vue
+  - ../apps/arena-client/src/composables/useAuthNav.ts
   - ../apps/arena-client/src/composables/useCompetitiveSubmitOnGameover.ts
   - ../docs/ai/work-packets/WORK_INDEX.md
 last-reviewed: 2026-07-09
@@ -252,56 +255,56 @@ enterprise-search artifacts (Copilot / SharePoint) are intentionally
 **not** linked here — the founded facts they surfaced are the WP rows
 above.
 
-### Owner-page identity fields — `accountId`, `displayName`, `handle` (2026-06-30)
+### Owner-page identity fields — `accountId`, `displayName`, `handleCanonical`
 
-> **Status (2026-07-03 review): proposed — not scheduled.** No Work Packet is
-> drafted or registered in `WORK_INDEX.md` for this change; it remains a design
-> note pending architecture review + a `DECISIONS.md` entry. It touches the
-> locked `OwnerProfileView` `.types.ts` contract, so it is **not**
-> lightweight-lane (D-24028).
+> **Status: SHIPPED.** Landed by **[WP-305](../docs/ai/work-packets/WP-305-owner-profile-identity-fields.md) / EC-335 (2026-07-04)** under two decisions —
+> **[D-24089](../docs/ai/DECISIONS.md)** (read: surface the three fields) +
+> **D-24090** (write: editable `displayName`) — and is **deployed** (the server is
+> live at `gitSha b20b97a`, 2026-07-09). This replaces the earlier "proposed — not
+> scheduled" design note; both gating decisions below were ratified and built.
 
 Three identity fields live on `legendary.players`: **`ext_id`** (the
 `accountId` — an opaque UUID, mapped to `AccountId` per D-5201),
-**`display_name`** (the human profile name, WP-101), and **`handle`**
+**`display_name`** (the human profile name, WP-101), and **`display_handle`**
 (immutable, globally unique, URL-safe; migration `008_add_handle_to_players.sql`,
-WP-101). They are already surfaced on the **public** profile
+WP-101). They were already surfaced on the **public** profile
 (`PublicProfileView` → `displayName` + `handleCanonical`, rendered by
-`PlayerProfilePage.vue`).
+`PlayerProfilePage.vue`), and the **owner** profile now surfaces them too.
 
-The **owner** edit response omits all three by design. `OwnerProfileView`
-(`GET /api/me/profile`, [WP-104](../docs/ai/work-packets/WP-104-owner-profile-data-model-and-me-edit.md))
-carries only `avatarUrl`, `aboutMe`, the three visibility flags, `links`,
-`updatedAt`, `teamAffiliations`, and `badges` — **no `accountId`,
-`displayName`, or `handle`.** So `MyProfilePage.vue` (`?route=me`) has no
-access to them today and shows a generic "Your profile" heading rather than
-the player's name/handle.
+**Read — the owner response carries the player's own identity (D-24089).**
+`OwnerProfileView` (`GET /api/me/profile`,
+[WP-104](../docs/ai/work-packets/WP-104-owner-profile-data-model-and-me-edit.md))
+went from 9 → **12 keys**, adding `accountId: AccountId`, `displayName: string`,
+and `handleCanonical: string | null` (composed on every return path, including
+the synthesized-default branch). `MyProfilePage.vue` (`?route=me`) now renders
+them: **the page heading is the player's `displayName`** (falling back to "Your
+profile" only when it is empty), **`@{handleCanonical}`** beneath (shown only
+when a handle is claimed), and a muted **"Account ID: `{accountId}`"** support
+line. The client mirrors the three read fields structurally in
+`ownerProfileApi.ts` (no cross-layer type import). Locked choices from D-24089:
 
-Displaying them on the owner page is a **server-contract change, not a
-display tweak** (so it is **not** lightweight-lane per D-24028):
+- **`accountId` is always shown** (operator decision) — a muted, always-visible
+  support line ("give support this id"), not hidden behind a copy control and
+  not omitted. Opaque UUID; display-only, never editable.
+- **`handleCanonical` is display-only** — immutable by design (migration 008;
+  `claimHandle` is its sole writer), and surfaced under the **same wire name +
+  form** the public view uses (one concept, one name). Nullable pre-claim.
 
-- `ownerProfile.types.ts` — add `accountId` / `displayName` / `handle` to
-  `OwnerProfileView`. This is a **locked WP-104 `.types.ts` contract**;
-  the change needs architecture review + a `DECISIONS.md` entry.
-- `ownerProfileApi.ts` (arena-client) — mirror the three fields on the
-  client's structural `OwnerProfileView` copy (also a locked contract file).
-- `ownerProfile.logic.ts` — the view-builder already joins the `players`
-  row, so it only needs to `SELECT ext_id, display_name, handle` and place
-  them on the composed view.
-- `api-endpoints.md` — the `GET /api/me/profile` response schema changes →
-  same-commit row update per **D-11804**.
-- `MyProfilePage.vue` — render them (e.g. `displayName` as the page heading,
-  `@handle` beneath, `accountId` as a muted/copyable support line).
+**Write — `displayName` is editable here (D-24090).** `OwnerProfilePatch` gained
+`displayName?: string` (never `| null` — `display_name` is NOT NULL and cannot be
+cleared), so the owner page is now the **rename** surface (previously the name was
+set once at provisioning, WP-174, with no edit path). A local `validateDisplayName`
+in `ownerProfile.logic.ts` re-derives the identity rules verbatim (trim; reject
+empty-after-trim, `> 64` chars, any control char) — failure returns the closed-set
+code `invalid_display_name` (HTTP 400). The rename is **transactional with the
+profile upsert**: when the PATCH carries `displayName`, `upsertOwnerProfile` runs
+`UPDATE legendary.players SET display_name = …` inside one `BEGIN/COMMIT` with the
+`player_profiles` upsert — both land or neither. **`handle` and `accountId` remain
+non-editable** (handle immutable; `accountId` a system identifier).
 
-Two decisions gate the packet:
-
-- **Show vs edit `display_name`.** `OwnerProfilePatch` has no `display_name`
-  field, so it is set at provisioning (WP-174) and is **read-only** from the
-  profile today. Surfacing it is additive; making it editable here is extra
-  scope (extend the patch contract + validation). `handle` is immutable by
-  design (migration 008) → always display-only.
-- **Raw `accountId` visibility.** It is a UUID — useful as a "give support
-  this ID" affordance, not human identity. Options: always show, place it
-  behind a "copy account ID" control, or omit it and show only name + handle.
+Both `GET /api/me/profile` (12-key read) and `PATCH /api/me/profile` (recognized
+fields gain `displayName`; error set gains `invalid_display_name`) rows in
+`api-endpoints.md` were updated whole-row per D-11804.
 
 ## Interactions
 
@@ -341,10 +344,15 @@ Two decisions gate the packet:
 - **Broker name leakage.** The string `'hanko'` must never surface as
   an `auth_provider` value; the federated-IdP mapping outputs only the
   WP-052 enum verbatim. Grep gates assert zero leakage on every commit.
-- **Display label placeholder.** Per WP-175, the signed-in label was
-  `"My account"` until the server `/api/me/profile` response was
-  extended with identity fields; verify the current response shape
-  before relying on the displayed name.
+- **Display label — now resolves the real name (WP-305 + WP-330).** Per
+  WP-175 the signed-in header label was originally the placeholder
+  `"My account"`. **WP-305 / D-24089** added `displayName` +
+  `handleCanonical` to `GET /api/me/profile`, and **WP-330 / D-24116** then
+  wired `useAuthNav` to fetch the owner profile once and resolve the label
+  through the locked fallback chain **`displayName` → `@handleCanonical` →
+  `"My account"`** (the last as a non-blocking placeholder shown only until
+  the fetch resolves). Because `display_name` is NOT NULL, the real name
+  normally wins.
 - **Avatar upload has two non-obvious contract catches** (WP-298). First,
   the upload `fetch` must **not** set a `Content-Type` header — the browser
   sets `multipart/form-data; boundary=…` itself, and a manual `Content-Type`
