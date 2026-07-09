@@ -1,12 +1,25 @@
 # WP-336 — Competitive Verifier Repoint onto the Faithful Reducer Path (WP-3b)
 
-**Status:** Draft — Ready to execute (pending operator review)
+**Status:** Done (executed 2026-07-08)
 **Primary Layer:** Server (`apps/server/**`)
 **Dependencies:** D-24119 (arc), D-24121 (WP-3 owns the mapping + the deferred repoint), D-24122 (capture + `bgio.replay_artifacts`), WP-334 (`reduceMatchToFinalState`), WP-335 (`bgio.replay_artifacts` + capture), WP-332 (the submission endpoint), WP-053 (the verifier being repointed)
 **EC:** EC-366
-**Baseline:** `origin/main` at `ab9a3ed8` (2026-07-08)
+**Baseline:** `origin/main` at `02e2a802` (2026-07-08)
 **User-Visible Surface:** none — infrastructure
-**Reserves:** D-24123
+**Reserves:** D-24123 (rounds = turn count, engine-clean) + **D-24124** (discovered in execution: `reduceMatchToFinalState` re-dispatches `MAKE_MOVE` only — fixes a WP-334 multi-turn faithfulness bug)
+
+> **Execution addendum (2026-07-08).** The mandatory turnCount↔`turnsElapsed`
+> scaffold-verify (driving real turns through the reducer) surfaced two findings
+> beyond the drafted scope, both folded in per the EC bug-handling clause:
+> (1) `turnCount` is derived from the log's live-recorded per-entry `turn`, NOT the
+> reduced `ctx.turn` — because (2) `reduceMatchToFinalState` diverged for multi-turn
+> games: play-phase `endTurn` `GAME_EVENT`s are logged `automatic: false`, so WP-334's
+> skip-`automatic` reduction double-advanced every turn past the first (faithful only
+> for its 0-turn lobby golden). Fixed by re-dispatching only `MAKE_MOVE` entries
+> (D-24124); a multi-turn faithfulness assertion is locked in. Two consequential test
+> edits were added to the allowlist below: `competition.routes.test.ts` (the route deps
+> dropped `registry`) and a `player_badges` cleanup line in `competition.logic.test.ts`'s
+> `beforeEach` (a pre-existing FK-cleanup gap that blocked local DB verification).
 
 ---
 
@@ -219,7 +232,8 @@ If any of the above is false, this packet is **BLOCKED**.
 - `apps/server/src/replay/matchReplay.logic.ts` — **modified** — `turnCount` + `readReplayArtifactByHash` + `reduceReplayByHash`
 - `apps/server/src/replay/matchReplay.logic.test.ts` — **modified**
 - `apps/server/src/competition/competition.logic.ts` — **modified** — seam swap + steps 7-10 repoint
-- `apps/server/src/competition/competition.logic.test.ts` — **modified**
+- `apps/server/src/competition/competition.logic.test.ts` — **modified** — seam migration + incidental `player_badges` `beforeEach` cleanup fix
+- `apps/server/src/competition/competition.routes.test.ts` — **modified** (execution-added) — `makeDeps` drops the `registry` field
 - `apps/server/src/leaderboards/leaderboard.logic.test.ts` — **modified**
 - `apps/server/src/competition/competition.routes.ts` — **modified** — deps (drop `registry`, add `reduceReplay`)
 - `apps/server/src/server.mjs` — **modified** — `registerCompetitionRoutes` wiring (01.5)

@@ -11,8 +11,8 @@
  * which wired the read library to GET routes). It wires WP-053's
  * `submitCompetitiveScore` library — shipped but route-less until now
  * — via `submitCompetitiveScoreForRequest`, which injects the real
- * bound PAR gate + startup registry (the inert `submitCompetitiveScore`
- * wrapper fail-closes every submission and MUST NOT be called here).
+ * bound PAR gate (the inert `submitCompetitiveScore` wrapper
+ * fail-closes every submission and MUST NOT be called here).
  *
  * Mirrors the WP-104 `ownerProfile.routes.ts` authenticated-write
  * pattern: local structural `KoaRouter` / `KoaCompetitionContext`
@@ -36,7 +36,6 @@
  * first-statement lock); D-9905 (Auth closed set); reserves D-24118.
  */
 
-import type { CardRegistryReader } from '@legendary-arena/game-engine';
 
 import type {
   CompetitiveSubmissionProductionDependencies,
@@ -89,9 +88,9 @@ type RequireAuthenticatedSessionResult =
  * implementations passed through at request time (both `undefined`
  * fail-closes to a 500 per the WP-112 posture).
  * `requireUnsuspendedAccount` is the WP-107 guard.
- * `checkParPublished` is the bound PAR gate and `registry` the
- * startup-loaded card registry — both forwarded to
- * `submitCompetitiveScoreForRequest`.
+ * `checkParPublished` is the bound PAR gate forwarded to
+ * `submitCompetitiveScoreForRequest`. WP-336 dropped the `registry`
+ * dependency — the faithful reducer needs no `CardRegistryReader`.
  */
 export interface CompetitionRouteDependencies {
   readonly requireAuthenticatedSession: (
@@ -105,7 +104,6 @@ export interface CompetitionRouteDependencies {
     accountId: AccountId,
   ) => Promise<RequireUnsuspendedAccountResult>;
   readonly checkParPublished: (scenarioKey: string) => ParGateHit | null;
-  readonly registry: CardRegistryReader;
 }
 
 /**
@@ -291,7 +289,6 @@ export function registerCompetitionRoutes(
         database,
         {
           checkParPublished: deps.checkParPublished,
-          registry: deps.registry,
         } satisfies CompetitiveSubmissionProductionDependencies,
       );
 

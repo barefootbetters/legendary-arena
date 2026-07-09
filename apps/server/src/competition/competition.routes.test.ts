@@ -141,7 +141,6 @@ function makeDeps(
     }),
     requireUnsuspendedAccount: async () => ({ ok: true }),
     checkParPublished: () => null,
-    registry: { listCards: () => [] },
     ...overrides,
   };
 }

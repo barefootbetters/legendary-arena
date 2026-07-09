@@ -7,9 +7,16 @@
  * `G` — seed- and phase/turn-hook-faithful by construction — and computes the
  * canonical `computeStateHash` over it.
  *
- * MECHANISM ONLY: this module does not repoint the WP-053 submission verifier
- * (deferred, D-24121 — no `replayHash → matchId` mapping exists until the WP-3
- * capture step creates it) and does not capture live matches.
+ * WP-336 additions: `readReplayArtifactByHash` + `reduceReplayByHash` (the
+ * competitive verifier's faithful-path lookup, reading the WP-335
+ * `bgio.replay_artifacts` store by `replayHash`), and `turnCount` on the result
+ * (the PAR-calibrated `rounds` input, D-24123). WP-336 also FIXED a multi-turn
+ * faithfulness bug in the reduction: play-phase `endTurn` GAME_EVENTs are logged
+ * `automatic: false`, so WP-334's skip-`automatic` reduction re-dispatched them
+ * on top of the move that triggered them and double-advanced every turn past the
+ * first — divergent for every multi-turn match (WP-334's only golden was a 0-turn
+ * lobby game). The reduction now re-dispatches only player `MAKE_MOVE` inputs and
+ * lets the reducer regenerate all move-triggered transitions (D-24124).
  *
  * Layer-boundary: the reducer-replay imports boardgame.io — permitted in the
  * SERVER layer only, per D-24119 + the D-24095 replay/verification carve-out
@@ -17,9 +24,10 @@
  * imports the engine's `computeStateHash` + `LegendaryGame` read-only and
  * changes nothing in the engine.
  *
- * Authority: WP-334 / EC-364; D-24119 (arc + landmines); D-24095 (read
- * carve-out); D-0205 / D-2705 (engine harness stays determinism-only, no
- * boardgame.io in the engine); D-5201 (AccountId). Reserves D-24121.
+ * Authority: WP-334 / EC-364; WP-336 / EC-366; D-24119 (arc + landmines);
+ * D-24095 (read carve-out); D-0205 / D-2705 (engine harness stays
+ * determinism-only, no boardgame.io in the engine); D-5201 (AccountId). Reserves
+ * D-24121 (WP-334), D-24123 + D-24124 (WP-336).
  */
 
 // why: WP-334 imports boardgame.io's reducer from the package's built internal
@@ -78,12 +86,80 @@ export interface MatchReplayArtifact {
 }
 
 /**
- * The faithful reconstruction result: the reproduced final `G` and its
- * canonical hash (the same `computeStateHash` the competitive pipeline uses).
+ * The faithful reconstruction result: the reproduced final `G`, its canonical
+ * hash (the same `computeStateHash` the competitive pipeline uses), and the
+ * completed play-turn count used as the competitive `rounds` input.
  */
 export interface MatchReplayResult {
   readonly finalState: LegendaryGameState;
   readonly stateHash: string;
+  /**
+   * The number of completed play-phase turns, reconciled to the `turnsElapsed`
+   * quantity the PAR baselines were calibrated with (WP-336 / D-24123). The
+   * competitive verifier feeds this into `deriveScoringInputs` as `rounds`.
+   */
+  readonly turnCount: number;
+}
+
+/**
+ * The boardgame.io `ctx.turn` value of the first PLAY-phase turn. The lobby is
+ * turn 1; `startMatchIfReady`'s `setPhase('play')` begins a fresh turn, so the
+ * first play turn is turn 2.
+ *
+ * // why: this is the offset subtracted from the highest play-phase turn in the
+ * log to count completed play turns (see computeTurnCount). Verified empirically
+ * for WP-336 by driving N real turns through the reducer (the final play move is
+ * stamped turn === 2 + N) and locked by the multi-turn assertions in
+ * matchReplay.logic.test.ts — if the pre-play phase structure ever changes, that
+ * test fails loudly rather than the competitive score silently drifting.
+ */
+const FIRST_PLAY_TURN = 2;
+
+/**
+ * Read the `{ turn, phase }` a persisted `LogEntry` was stamped with LIVE. A
+ * log entry is `{ action, _stateID, turn, phase, automatic? }`; `turn` is the
+ * boardgame.io `ctx.turn` and `phase` the `ctx.phase` at the moment the entry
+ * was created during the real match.
+ *
+ * @param entry One persisted log entry (jsonb).
+ * @returns The entry's live `turn` (or `0` when absent/non-numeric) and `phase`.
+ */
+function readEntryTurnPhase(entry: unknown): { turn: number; phase: string | null } {
+  if (typeof entry !== 'object' || entry === null) {
+    return { turn: 0, phase: null };
+  }
+  const record = entry as { turn?: unknown; phase?: unknown };
+  const turn = typeof record.turn === 'number' ? record.turn : 0;
+  const phase =
+    typeof record.phase === 'string' || record.phase === null
+      ? (record.phase as string | null)
+      : null;
+  return { turn, phase };
+}
+
+/**
+ * Compute the competitive `rounds` input — the number of completed play-phase
+ * turns — from the highest play-phase turn number recorded in the match log.
+ *
+ * @param maxPlayTurn The largest `turn` stamped on any `phase === 'play'` log
+ *   entry (or `0` when the match never reached play).
+ * @returns The completed play-turn count, floored at `1`.
+ */
+function computeTurnCount(maxPlayTurn: number): number {
+  // why: rounds = completed play turns, reconciled to par.aggregator.ts's
+  // `turnsElapsed` (the quantity the PAR baselines were calibrated with, D-24123).
+  // The count is derived from the LOG's live-recorded per-entry `turn`, NOT the
+  // reduced `ctx.turn`: re-executing the log through the reducer while skipping
+  // AUTOMATIC entries reproduces the final `G` faithfully (WP-334) but does NOT
+  // reproduce `ctx` — the reduced `ctx.turn`/`ctx.phase` drift from live (and `ctx`
+  // is hash-excluded, so WP-334's golden never covered it). Each log entry, by
+  // contrast, carries the live `ctx.turn` it was stamped with. boardgame.io numbers
+  // the first play turn `FIRST_PLAY_TURN` and increments by exactly 1 per turn, so
+  // the highest play-phase `turn` in the log is FIRST_PLAY_TURN + (completed play
+  // turns). `maxPlayTurn - FIRST_PLAY_TURN` therefore equals `turnsElapsed`; floored
+  // at 1 to mirror its `turnsElapsed === 0 ? 1 : turnsElapsed`.
+  const completedTurns = maxPlayTurn - FIRST_PLAY_TURN;
+  return completedTurns < 1 ? 1 : completedTurns;
 }
 
 /**
@@ -111,20 +187,19 @@ function extractAction(entry: unknown): BgioAction {
 }
 
 /**
- * Whether a persisted log entry is an AUTOMATIC event — a phase/turn transition
- * (setPhase, endTurn, endPhase, onBegin/onEnd effects) that the framework
- * generated as a *consequence* of a move (e.g. a move calling
- * `ctx.events.setPhase`), rather than an external input the client dispatched.
+ * Whether a persisted log entry is a player `MAKE_MOVE` input — the only kind of
+ * entry that must be re-dispatched to reproduce the match. Every `GAME_EVENT`
+ * entry (phase/turn transitions: `setPhase`, `endTurn`, `endPhase`, plus their
+ * `onBegin`/`onEnd` effects) is a *consequence* the engine's moves trigger via
+ * `ctx.events.*`, and the reducer regenerates it inline when the triggering move
+ * is re-dispatched — and re-evaluates `endIf` after every move — so `GAME_EVENT`
+ * entries must be SKIPPED.
  *
- * @param entry One persisted log entry (jsonb).
- * @returns `true` when the entry is framework-automatic and must NOT be re-dispatched.
+ * @param action The action extracted from a persisted log entry.
+ * @returns `true` when the action is a player `MAKE_MOVE`.
  */
-function isAutomaticEntry(entry: unknown): boolean {
-  return (
-    typeof entry === 'object' &&
-    entry !== null &&
-    (entry as { automatic?: unknown }).automatic === true
-  );
+function isPlayerMove(action: BgioAction): boolean {
+  return action.type === 'MAKE_MOVE';
 }
 
 /**
@@ -133,15 +208,17 @@ function isAutomaticEntry(entry: unknown): boolean {
  * persisted initial state (NOT a fresh `InitializeGame` — that mints a new
  * seed and would diverge), and compute the canonical `computeStateHash`.
  *
- * Faithful by construction: the framework reducer re-runs the phase/turn hooks
- * and the seeded `alea` PRNG (rehydrated from `initialState.plugins.random.data`),
- * so the reproduced final `G` equals the live final `G`.
+ * Faithful by construction: only player `MAKE_MOVE` inputs are re-dispatched, and
+ * the framework reducer re-runs every move-triggered phase/turn transition (via
+ * `ctx.events.*`), re-evaluates `endIf` after each move, and re-runs the seeded
+ * `alea` PRNG (rehydrated from `initialState.plugins.random.data`) — so the
+ * reproduced final `G` equals the live final `G`.
  *
  * Pure: no I/O. Throws (fails closed) on a null initial state or a malformed
  * log entry — never returns a partial or guessed state.
  *
  * @param artifact The persisted `{ initialState, log }` (from `readMatchForReplay`).
- * @returns `{ finalState, stateHash }`.
+ * @returns `{ finalState, stateHash, turnCount }`.
  */
 export function reduceMatchToFinalState(
   artifact: MatchReplayArtifact,
@@ -153,26 +230,40 @@ export function reduceMatchToFinalState(
         'not replayable.',
     );
   }
-  // why: isClient: false — server-authoritative reduction; GAME_EVENT + move
-  // triggers (phase/turn hooks) must fire for the reproduced state to match live.
+  // why: isClient: false — server-authoritative reduction; move-triggered
+  // GAME_EVENTs (phase/turn hooks) + endIf must fire for the reproduced state to
+  // match live.
   const reducer = CreateGameReducer({ game: LegendaryGame, isClient: false });
   let state = artifact.initialState as BgioReducerState;
+  // why: track the highest play-phase turn number the log was stamped with LIVE —
+  // the faithful source for the competitive rounds count (see computeTurnCount).
+  let maxPlayTurn = 0;
   for (const entry of artifact.log) {
-    // why: skip AUTOMATIC entries. A move that calls `ctx.events.setPhase` /
-    // `endTurn` triggers phase/turn transitions the reducer re-runs INLINE when
-    // the move is re-dispatched — the log records those consequences as separate
-    // automatic entries, and re-dispatching them would double-apply the
-    // transition (a phase set twice, a turn hook fired twice) and diverge from
-    // the live state. Re-dispatch only the external inputs (player MAKE_MOVEs and
-    // player-initiated GAME_EVENTs); the reducer regenerates every automatic
-    // consequence faithfully.
-    if (isAutomaticEntry(entry)) {
+    const { turn, phase } = readEntryTurnPhase(entry);
+    if (phase === 'play' && turn > maxPlayTurn) {
+      maxPlayTurn = turn;
+    }
+    const action = extractAction(entry);
+    // why: re-dispatch ONLY player MAKE_MOVE inputs; skip every GAME_EVENT entry.
+    // In this engine, players submit moves — never raw framework events; every
+    // phase/turn transition is a move consequence the engine triggers via
+    // `ctx.events.*`. When the triggering move is re-dispatched, the reducer
+    // regenerates those transitions inline (and re-evaluates `endIf`), so a
+    // GAME_EVENT entry in the log is a duplicate: re-dispatching it double-applies
+    // the transition (a turn ended twice, a phase set twice) and diverges from the
+    // live state. WP-334 originally skipped only `automatic === true` entries, but
+    // play-phase `endTurn` GAME_EVENTs are logged `automatic: false`, so that skip
+    // double-advanced every turn beyond the first — faithful for a 0-turn lobby
+    // game (WP-334's only golden) but divergent for every multi-turn match
+    // (WP-336 finding; D-24124). Skipping all GAME_EVENTs is faithful for 0..N turns.
+    if (!isPlayerMove(action)) {
       continue;
     }
-    state = reducer(state, extractAction(entry));
+    state = reducer(state, action);
   }
   const finalState = state.G;
-  return { finalState, stateHash: computeStateHash(finalState) };
+  const turnCount = computeTurnCount(maxPlayTurn);
+  return { finalState, stateHash: computeStateHash(finalState), turnCount };
 }
 
 /**
@@ -210,4 +301,65 @@ export async function readMatchForReplay(
     log: Array.isArray(row.log) ? row.log : [],
     metadata: row.metadata,
   };
+}
+
+/**
+ * Read a submitted replay's durable artifact from the WP-335
+ * `bgio.replay_artifacts` store by its canonical `replayHash`. This is the
+ * lookup the competitive verifier uses (WP-336): the harvester copies each
+ * finished match's `{ initialState, log }` here keyed by `replayHash`, so the
+ * artifact survives the WP-327 reaper deleting the live `bgio.matches` row.
+ *
+ * @param replayHash The canonical `computeStateHash` a client submitted.
+ * @param database The caller-injected `pg` pool.
+ * @returns The `{ initialState, log }` to reduce, or `null` when no artifact
+ *   with that hash exists (an unknown / uncaptured replay).
+ */
+export async function readReplayArtifactByHash(
+  replayHash: string,
+  database: DatabaseClient,
+): Promise<{ initialState: unknown; log: readonly unknown[] } | null> {
+  // why: a direct read-only SELECT against the durable artifact store (the
+  // `bgio` schema, D-24122 — a derived replay projection, NOT the legendary.*
+  // domain), scoped to the submitted hash. jsonb columns arrive already parsed.
+  const result = await database.query(
+    'SELECT initial_state, log FROM bgio.replay_artifacts WHERE replay_hash = $1',
+    [replayHash],
+  );
+  if (result.rows.length === 0) {
+    return null;
+  }
+  const row = result.rows[0];
+  if (row.initial_state === null || row.initial_state === undefined) {
+    return null;
+  }
+  return {
+    initialState: row.initial_state,
+    log: Array.isArray(row.log) ? row.log : [],
+  };
+}
+
+/**
+ * Look up a submitted replay's durable artifact by `replayHash` and reduce it
+ * to its final state. This is the faithful-path replacement for the WP-053
+ * verifier's old `loadReplay` + `replayGame` pair (WP-336): a single call that
+ * reads `bgio.replay_artifacts` and re-executes it through boardgame.io's own
+ * reducer, returning the reproduced final `G`, its canonical hash (for the
+ * anti-tamper compare), and the completed play-turn count (the `rounds` input).
+ *
+ * @param replayHash The canonical `computeStateHash` a client submitted.
+ * @param database The caller-injected `pg` pool.
+ * @returns The `MatchReplayResult`, or `null` when no artifact with that hash
+ *   exists (the verifier maps `null` to a replay-verification failure — it does
+ *   NOT throw for an unknown replay).
+ */
+export async function reduceReplayByHash(
+  replayHash: string,
+  database: DatabaseClient,
+): Promise<MatchReplayResult | null> {
+  const artifact = await readReplayArtifactByHash(replayHash, database);
+  if (artifact === null) {
+    return null;
+  }
+  return reduceMatchToFinalState(artifact);
 }

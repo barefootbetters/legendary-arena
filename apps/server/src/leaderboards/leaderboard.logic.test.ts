@@ -41,12 +41,11 @@ import type {
 
 // why: WP-053's submitCompetitiveScoreImpl is the canonical fixture
 // source for legendary.competitive_scores rows. Tests use it to
-// seed records with stubbed dependencies (so PAR / replay /
-// registry I/O is bypassed), then read via the WP-054 helpers.
-// This proves the read path against real WP-053 writes (per
-// EC-054 §Files to Produce) — synthetic write-side fixtures would
-// drift from the WP-053 shape over time and silently mask
-// regressions.
+// seed records with stubbed dependencies (so PAR / replay-reduction
+// I/O is bypassed), then read via the WP-054 helpers. This proves
+// the read path against real WP-053 writes (per EC-054 §Files to
+// Produce) — synthetic write-side fixtures would drift from the
+// WP-053 shape over time and silently mask regressions.
 import { submitCompetitiveScoreImpl } from '../competition/competition.logic.js';
 
 import { createPlayerAccount } from '../identity/identity.logic.js';
@@ -61,13 +60,12 @@ import {
 } from '@legendary-arena/game-engine';
 
 import type {
-  CardRegistryReader,
   LegendaryGameState,
-  ReplayInput,
-  ReplayResult,
   ScenarioKey,
   ScenarioScoringConfig,
 } from '@legendary-arena/game-engine';
+
+import type { MatchReplayResult } from '../replay/matchReplay.logic.js';
 
 import type {
   PlayerAccount,
@@ -134,8 +132,6 @@ const TEST_PAR_VALUE = computeParScore(TEST_SCORING_CONFIG);
 // produces a distinct cryptographic hash)
 // ---------------------------------------------------------------------------
 
-const STUB_REGISTRY: CardRegistryReader = { listCards: () => [] };
-
 // why: one minimal LegendaryGameState shape shared across every
 // fixture; per-record variation comes from the `escapes` counter
 // (which both shifts the state hash AND the engine-derived final
@@ -189,56 +185,29 @@ function buildState(escapes: number): LegendaryGameState {
   } as unknown as LegendaryGameState;
 }
 
-function buildReplayInput(seed: string): ReplayInput {
-  return {
-    seed,
-    setupConfig: {
-      schemeId: 'core-test-scheme',
-      mastermindId: 'core-test-mm',
-      villainGroupIds: ['core-test-vg'],
-      henchmanGroupIds: [],
-      heroDeckIds: [
-        'core-test-hero',
-        'core-test-hero-2',
-        'core-test-hero-3',
-        'core-test-hero-4',
-        'core-test-hero-5',
-      ],
-      bystandersCount: 0,
-      woundsCount: 30,
-      officersCount: 5,
-      sidekicksCount: 12,
-    },
-    playerOrder: ['0'],
-    moves: [],
-  };
-}
-
 // why: HAPPY_PATH dependency builder — captures a single
 // (state, hash, scenarioKey) tuple in a closure so each per-record
-// seed call routes its own stubbed loadReplay / replayGame /
-// checkParPublished correctly. The registry stub satisfies the
-// CardRegistryReader interface only — replayGame is stubbed so
-// the engine setup pipeline is never invoked.
+// seed call routes its own stubbed reduceReplay / checkParPublished
+// correctly. reduceReplay stands in for the faithful reducer (WP-336):
+// it returns the pre-built final state + hash so the engine reducer is
+// never invoked. turnCount is a fixed 1 (the play-TURN rounds input).
 function buildSubmissionDeps(
   state: LegendaryGameState,
   hash: string,
   scenarioKey: ScenarioKey,
 ): unknown {
-  const replayInput = buildReplayInput(hash);
-  const replayResult: ReplayResult = {
+  const reducedResult: MatchReplayResult = {
     finalState: state,
     stateHash: hash,
-    moveCount: 1,
+    turnCount: 1,
   };
   return {
-    loadReplay: async (h: string): Promise<ReplayInput | null> => {
+    reduceReplay: async (h: string): Promise<MatchReplayResult | null> => {
       if (h === hash) {
-        return replayInput;
+        return reducedResult;
       }
       return null;
     },
-    replayGame: () => replayResult,
     checkParPublished: (sk: ScenarioKey) => {
       if (sk === scenarioKey) {
         return {
@@ -250,7 +219,6 @@ function buildSubmissionDeps(
       }
       return null;
     },
-    registry: STUB_REGISTRY,
   };
 }
 

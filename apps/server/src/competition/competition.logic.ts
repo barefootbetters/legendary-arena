@@ -46,14 +46,10 @@ import {
   computeFinalScore,
   computeParScore,
   computeRawScore,
-  computeStateHash,
   deriveScoringInputs,
-  replayGame as replayGameDefault,
 } from '@legendary-arena/game-engine';
 
 import type {
-  CardRegistryReader,
-  ReplayInput,
   ReplayResult,
   ScenarioScoringConfig,
   ScenarioKey,
@@ -62,12 +58,16 @@ import type {
 
 import { issueTier1BadgesForSubmission } from '../badges/badge.issuance.js';
 
-// why: WP-103's loadReplay is the only sanctioned replay-by-hash
-// entry point. Imported at runtime (not type-only) because the
-// production submission flow calls it during step 7. The deps seam
-// re-imports it under a default-symbol alias so test #7 can swap in
-// a spy without redeclaring the module.
-import { loadReplay as loadReplayDefault } from '../replay/replay.logic.js';
+// why: WP-336 repoints the verifier onto the faithful reducer path. The single
+// `reduceReplayByHash` (WP-334/WP-335/WP-336) reads the durable
+// `bgio.replay_artifacts` row by `replayHash` and re-executes it through
+// boardgame.io's own reducer, returning the reproduced final `G`, its canonical
+// hash, and the completed play-turn count — replacing the old
+// `loadReplay`(`replay_blobs`) + `replayGame`(determinism harness) pair, which
+// live-captured matches never populated. Imported at runtime (the deps seam
+// re-exposes it so tests can swap a stub).
+import { reduceReplayByHash } from '../replay/matchReplay.logic.js';
+import type { MatchReplayResult } from '../replay/matchReplay.logic.js';
 
 // why: WP-052's findReplayOwnership returns the (accountId, scenarioKey,
 // visibility) metadata flow steps 2-4 require. The locked
@@ -118,9 +118,9 @@ export interface ParGateHit {
 
 /**
  * Internal seam used by `submitCompetitiveScoreImpl` so test #7 can
- * verify via spies that `loadReplay` and `replayGame` are NOT called
- * on the idempotent-retry path (the D-5304 contract). Production
- * callers receive the defaults below; tests swap in stubs or spies.
+ * verify via a spy that `reduceReplay` is NOT called on the
+ * idempotent-retry path (the D-5304 contract). Production callers
+ * receive the defaults below; tests swap in stubs or spies.
  *
  * `checkParPublished` is included in this seam (rather than as a
  * separate parameter) because the locked public signature for
@@ -131,38 +131,30 @@ export interface ParGateHit {
  * production wiring will import `submitCompetitiveScoreImpl` directly
  * and supply the bound `parGate.checkParPublished` from server
  * startup.
+ *
+ * WP-336: `reduceReplay` replaces the old `loadReplay` + `replayGame`
+ * pair (and the `registry` field the engine harness needed) — the
+ * reducer needs no `CardRegistryReader`, since card resolution is baked
+ * into the persisted `initialState`.
  */
 interface SubmissionDependencies {
-  readonly loadReplay: typeof loadReplayDefault;
-  readonly replayGame: typeof replayGameDefault;
+  readonly reduceReplay: typeof reduceReplayByHash;
   readonly checkParPublished: (scenarioKey: ScenarioKey) => ParGateHit | null;
-  // why: replayGame requires a CardRegistryReader for setup-time card
-  // resolution per the engine's two-arg signature. The registry is
-  // loaded once at server startup by future request-handler wiring;
-  // it enters the submission flow as a deps field so tests can inject
-  // a narrow mock and production callers can pass the real instance.
-  readonly registry: CardRegistryReader;
 }
 
-// why: production defaults wire the real engine functions for replay
-// load and re-execution. The default checkParPublished returns null
-// (fail-closed) because the lifecycle prohibition forbids WP-053
-// from wiring the real PAR gate at server startup — the public
-// submitCompetitiveScore exists as a library surface today, not as
-// a request-path consumer. Future production wiring (a request
-// handler WP) will call submitCompetitiveScoreImpl directly with a
-// real bound parGate.checkParPublished AND the startup-loaded
-// registry. Until then, the public wrapper rejects every submission
-// with par_not_published before reaching the replayGame call, so the
-// empty-registry stub is unreachable in the production wrapper's
-// path. The empty stub matches the EMPTY_REGISTRY pattern in
-// packages/game-engine/src/game.ts:56 used by engine tests that
-// bypass setup validation.
+// why: production defaults wire the real faithful-reducer lookup. The
+// default checkParPublished returns null (fail-closed) because the
+// lifecycle prohibition forbids WP-053 from wiring the real PAR gate at
+// server startup — the public submitCompetitiveScore exists as a
+// library surface today, not as a request-path consumer. Future
+// production wiring (the WP-332 request handler) calls
+// submitCompetitiveScoreImpl via submitCompetitiveScoreForRequest with a
+// real bound parGate.checkParPublished. Until then the public wrapper
+// rejects every submission with par_not_published before reaching the
+// reduceReplay call.
 const PRODUCTION_DEPENDENCIES: SubmissionDependencies = {
-  loadReplay: loadReplayDefault,
-  replayGame: replayGameDefault,
+  reduceReplay: reduceReplayByHash,
   checkParPublished: () => null,
-  registry: { listCards: () => [] },
 };
 
 // ---------------------------------------------------------------------------
@@ -293,33 +285,33 @@ export async function submitCompetitiveScore(
 
 /**
  * Production request-path dependencies for a competitive submission:
- * the bound PAR-gate check and the startup-loaded card registry. The
- * request-handler layer (WP-332) constructs these once at server
- * startup and passes them per request. Kept separate from the
- * internal `SubmissionDependencies` seam so route code never needs to
- * name the module-internal `loadReplay` / `replayGame` defaults.
+ * the bound PAR-gate check. The request-handler layer (WP-332)
+ * constructs this once at server startup and passes it per request.
+ * Kept separate from the internal `SubmissionDependencies` seam so
+ * route code never needs to name the module-internal `reduceReplay`
+ * default. WP-336 dropped the `registry` field — the faithful reducer
+ * needs no `CardRegistryReader` (card resolution is baked into the
+ * persisted `initialState`).
  */
 export interface CompetitiveSubmissionProductionDependencies {
   readonly checkParPublished: (scenarioKey: ScenarioKey) => ParGateHit | null;
-  readonly registry: CardRegistryReader;
 }
 
 /**
  * Production request-path entry for competitive score submission
  * (WP-332). Delegates to `submitCompetitiveScoreImpl`, supplying the
- * real module-internal `loadReplay` / `replayGame` plus the
- * caller-injected `checkParPublished` + `registry`. This is the entry
- * an HTTP route must call — NOT the `submitCompetitiveScore` wrapper
- * above.
+ * real module-internal `reduceReplay` plus the caller-injected
+ * `checkParPublished`. This is the entry an HTTP route must call — NOT
+ * the `submitCompetitiveScore` wrapper above.
  */
 // why: the `submitCompetitiveScore` wrapper above uses
 // PRODUCTION_DEPENDENCIES, whose `checkParPublished` returns null
 // (fail-closed per the WP-053 lifecycle prohibition), so it rejects
-// EVERY submission with par_not_published before any replay load. A
-// working request path MUST inject the live bound PAR-gate check plus
-// the startup-loaded registry; this wrapper is that injection seam
-// (WP-332 §Scope B). loadReplay/replayGame stay the module defaults so
-// route code never imports the replay/engine surfaces directly.
+// EVERY submission with par_not_published before any replay reduction. A
+// working request path MUST inject the live bound PAR-gate check; this
+// wrapper is that injection seam (WP-332 §Scope B). reduceReplay stays
+// the module default so route code never imports the replay surface
+// directly.
 export async function submitCompetitiveScoreForRequest(
   identity: PlayerIdentity,
   replayHash: string,
@@ -327,10 +319,8 @@ export async function submitCompetitiveScoreForRequest(
   productionDeps: CompetitiveSubmissionProductionDependencies,
 ): Promise<SubmissionResult> {
   return submitCompetitiveScoreImpl(identity, replayHash, database, {
-    loadReplay: loadReplayDefault,
-    replayGame: replayGameDefault,
+    reduceReplay: reduceReplayByHash,
     checkParPublished: productionDeps.checkParPublished,
-    registry: productionDeps.registry,
   });
 }
 
@@ -394,7 +384,7 @@ export async function listPlayerCompetitiveScores(
  * Internal implementation of the WP-053 §B 16-step submission flow.
  * Exposed (not via the package barrel — direct test-only import) so
  * tests can verify the dependency-injection contract for test #7
- * (D-5304 — idempotent retry MUST NOT call loadReplay or replayGame).
+ * (D-5304 — idempotent retry MUST NOT call reduceReplay).
  *
  * Production callers should prefer `submitCompetitiveScore`, which
  * is the locked 3-arg public entry. Direct callers of Impl supply
@@ -471,52 +461,54 @@ export async function submitCompetitiveScoreImpl(
     return { ok: false, reason: 'par_not_published' };
   }
 
-  // step 7 — replay load via WP-103's loadReplay
-  const replayInput = await deps.loadReplay(replayHash, database);
-  if (replayInput === null) {
-    // ownership exists but the blob is missing — verification
-    // failure rather than a silent 404 per WP-053 §B.
-    return { ok: false, reason: 'replay_verification_failed' };
-  }
-
-  // step 8 — replay re-execution; single-attempt and terminal per
-  // WP-053 §Guardrails. Any thrown error fails closed. The engine's
-  // replayGame requires the startup-loaded registry as a second arg
-  // for setup-time card resolution.
-  let replayResult: ReplayResult;
+  // why: step 7+8 — faithful replay reduction (WP-336). reduceReplay reads the
+  // durable bgio.replay_artifacts row by replayHash (WP-335) and re-executes it
+  // through boardgame.io's own reducer (WP-334), returning the reproduced final
+  // G, its canonical hash, and the completed play-turn count. This replaces the
+  // old loadReplay(replay_blobs) + replayGame(determinism harness) pair, which
+  // live-captured matches never populated. A null result means no captured
+  // artifact exists for the submitted hash — a verification failure rather than a
+  // silent 404, and returned (not thrown) per WP-053 §B's "never throw for
+  // expected failures" guarantee. The reduction itself is deterministic and
+  // fails closed on a malformed artifact.
+  let reduced: MatchReplayResult;
   try {
-    replayResult = deps.replayGame(replayInput satisfies ReplayInput, deps.registry);
+    const reducedOrNull = await deps.reduceReplay(replayHash, database);
+    if (reducedOrNull === null) {
+      return { ok: false, reason: 'replay_verification_failed' };
+    }
+    reduced = reducedOrNull;
   } catch {
-    // why: catch swallows the engine error deliberately — replay
-    // execution failure is an expected rejection mode, not an
-    // infrastructure error. The structured SubmissionResult is the
-    // contract; re-throwing would violate WP-053 §B's "never throw
-    // for expected failures" guarantee. Diagnostic surfacing of
-    // replay-execution failures is a future operator-tooling WP.
+    // why: catch swallows a malformed-artifact error deliberately — a corrupt
+    // artifact is an expected rejection mode, not an infrastructure error. The
+    // structured SubmissionResult is the contract.
     return { ok: false, reason: 'replay_verification_failed' };
   }
 
-  // why: step 9 — state-hash anchor. Recomputing computeStateHash
-  // from the engine-produced finalState and comparing to the
-  // submitted replayHash is the trust foundation of the entire
-  // pipeline. Mismatch means the submitted hash didn't actually
-  // come from a deterministic execution of the loaded replay; fail
-  // closed. The accepted record's stateHash will equal replayHash
-  // for every accepted submission.
-  const recomputedStateHash = computeStateHash(replayResult.finalState);
-  if (recomputedStateHash !== replayHash) {
+  // why: step 9 — state-hash anchor (anti-tamper). reduced.stateHash is the
+  // canonical computeStateHash of the reduced final G; comparing it to the
+  // submitted replayHash confirms the submission names a captured artifact whose
+  // reduction actually yields that hash. Mismatch means the submitted hash does
+  // not correspond to the reduced state; fail closed. The accepted record's
+  // stateHash equals replayHash for every accepted submission.
+  if (reduced.stateHash !== replayHash) {
     return { ok: false, reason: 'replay_verification_failed' };
   }
 
-  // why: step 10 — derived scoring inputs. Per D-4801, the second
-  // argument is the final game state (replayResult.finalState) — the
-  // engine reads the terminal state directly, with no event log
-  // dependency. Any second-argument shape other than the final state
-  // is a contract violation.
-  const scoringInputs = deriveScoringInputs(
-    replayResult,
-    replayResult.finalState,
-  );
+  // why: step 10 — derived scoring inputs. Per D-4801, the second argument is
+  // the final game state (reduced.finalState) — the engine reads the terminal
+  // state directly, with no event log dependency. The first argument is a
+  // ReplayResult-shaped view whose `moveCount` slot carries the completed
+  // play-TURN count (reduced.turnCount), because deriveScoringInputs reads
+  // `.moveCount` as `rounds` and the PAR baselines were calibrated with
+  // rounds = turn count (D-24123). The engine is NOT edited; retiring the
+  // `moveCount` field name in favor of a turns-native input is deferred to WP-4.
+  const scoringView: ReplayResult = {
+    finalState: reduced.finalState,
+    stateHash: reduced.stateHash,
+    moveCount: reduced.turnCount,
+  };
+  const scoringInputs = deriveScoringInputs(scoringView, reduced.finalState);
 
   // step 11 — raw score; engine computes, server stores
   const rawScore = computeRawScore(scoringInputs, hit.scoringConfig);
@@ -590,7 +582,10 @@ export async function submitCompetitiveScoreImpl(
       scoreBreakdown,
       hit.parVersion,
       hit.scoringConfig.scoringConfigVersion,
-      recomputedStateHash,
+      // why: the stored state_hash is the reduced final G's canonical hash,
+      // which step 9 has just confirmed equals replayHash for every accepted
+      // submission (the anti-tamper anchor).
+      reduced.stateHash,
     ],
   );
 

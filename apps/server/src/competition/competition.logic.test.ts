@@ -48,13 +48,13 @@ import {
 } from '@legendary-arena/game-engine';
 
 import type {
-  CardRegistryReader,
   LegendaryGameState,
-  ReplayInput,
   ReplayResult,
   ScenarioKey,
   ScenarioScoringConfig,
 } from '@legendary-arena/game-engine';
+
+import type { MatchReplayResult } from '../replay/matchReplay.logic.js';
 
 import { createPlayerAccount } from '../identity/identity.logic.js';
 import {
@@ -180,53 +180,38 @@ const TEST_PAR_VERSION = 'v1-wp053-test';
 
 const TEST_SCENARIO_KEY = 'wp-053-test-scenario' as ScenarioKey;
 
-const TEST_REPLAY_INPUT: ReplayInput = {
-  seed: 'wp-053-test-seed',
-  setupConfig: {
-    schemeId: 'core-test-scheme',
-    mastermindId: 'core-test-mm',
-    villainGroupIds: ['core-test-vg'],
-    henchmanGroupIds: [],
-    heroDeckIds: [
-      'core-test-hero',
-      'core-test-hero-2',
-      'core-test-hero-3',
-      'core-test-hero-4',
-      'core-test-hero-5',
-    ],
-    bystandersCount: 0,
-    woundsCount: 30,
-    officersCount: 5,
-    sidekicksCount: 12,
-  },
-  playerOrder: ['0'],
-  moves: [],
-};
+// why: the completed play-turn count the faithful reducer reports for the
+// canonical test replay. Non-zero so the score assertions (test 6) actually
+// prove `turnCount` flows into deriveScoringInputs as `rounds` (WP-336 / D-24123)
+// — a zero would be indistinguishable from the field being ignored.
+const TEST_TURN_COUNT = 5;
 
+// why: the ReplayResult-shaped view the impl builds from the reduced result and
+// feeds to deriveScoringInputs — its `moveCount` slot carries the play-TURN
+// count (D-24123). Test 6 recomputes the expected score from this same view, so
+// the assertion is exact for whatever rounds the impl uses.
 const TEST_REPLAY_RESULT: ReplayResult = {
   finalState: TEST_FINAL_STATE,
   stateHash: TEST_REPLAY_HASH,
-  moveCount: 0,
+  moveCount: TEST_TURN_COUNT,
 };
 
-// why: stub registry — replayGame is stubbed in deps so the actual
-// engine setup pipeline is never invoked; the registry stub only
-// needs to satisfy the CardRegistryReader interface shape.
-const STUB_REGISTRY: CardRegistryReader = { listCards: () => [] };
+// why: stub reduceReplay returns the canonical faithful-reduction result for the
+// canonical TEST_REPLAY_HASH and null otherwise (an unknown / uncaptured
+// replay). Its stateHash equals TEST_REPLAY_HASH so the step-9 anti-tamper
+// compare passes; tests needing a verification failure pass a stub that returns
+// null or a mismatched-hash result.
+const TEST_REDUCED_RESULT: MatchReplayResult = {
+  finalState: TEST_FINAL_STATE,
+  stateHash: TEST_REPLAY_HASH,
+  turnCount: TEST_TURN_COUNT,
+};
 
-// why: stub replayGame returns the canonical TEST_REPLAY_RESULT
-// regardless of input; tests that need verification-failure
-// behavior pass an alternative stub that throws or returns a
-// mismatched-hash result.
-function stubReplayGame(): ReplayResult {
-  return TEST_REPLAY_RESULT;
-}
-
-// why: stub loadReplay returns the canonical TEST_REPLAY_INPUT for
-// the canonical TEST_REPLAY_HASH and null otherwise.
-async function stubLoadReplay(replayHash: string): Promise<ReplayInput | null> {
+async function stubReduceReplay(
+  replayHash: string,
+): Promise<MatchReplayResult | null> {
   if (replayHash === TEST_REPLAY_HASH) {
-    return TEST_REPLAY_INPUT;
+    return TEST_REDUCED_RESULT;
   }
   return null;
 }
@@ -247,10 +232,8 @@ function stubCheckParPublished(scenarioKey: ScenarioKey) {
 }
 
 const HAPPY_PATH_DEPS = {
-  loadReplay: stubLoadReplay,
-  replayGame: stubReplayGame as unknown as typeof import('@legendary-arena/game-engine').replayGame,
+  reduceReplay: stubReduceReplay,
   checkParPublished: stubCheckParPublished,
-  registry: STUB_REGISTRY,
 };
 
 // ---------------------------------------------------------------------------
@@ -278,6 +261,11 @@ describe('competition logic (WP-053)', () => {
       await testPool.query('DELETE FROM legendary.competitive_scores');
       await testPool.query('DELETE FROM legendary.replay_ownership');
       await testPool.query('DELETE FROM legendary.replay_blobs');
+      // why: a successful submission issues Tier-1 badges (issueTier1BadgesForSubmission),
+      // and legendary.player_badges FK-references legendary.players — so the players
+      // wipe below fails once any badge row exists (the first happy-path test seeds
+      // one). Clearing badges first keeps the per-test reset from FK-faulting on rerun.
+      await testPool.query('DELETE FROM legendary.player_badges');
       await testPool.query('DELETE FROM legendary.players');
     }
   });
@@ -391,7 +379,6 @@ describe('competition logic (WP-053)', () => {
     // full accept path (a real gate hit producing an accepted record)
     // is exercised by the DB-dependent impl tests below.
     let gateWasCalled = false;
-    const spyRegistry: CardRegistryReader = { listCards: () => [] };
 
     const guest: GuestIdentity = {
       guestSessionId: 'wp332-test-guest-session',
@@ -408,7 +395,6 @@ describe('competition logic (WP-053)', () => {
           gateWasCalled = true;
           return null;
         },
-        registry: spyRegistry,
       },
     );
     assert.deepEqual(result, { ok: false, reason: 'guest_not_eligible' });
@@ -689,23 +675,16 @@ describe('competition logic (WP-053)', () => {
       assert.strictEqual(firstResult.wasExisting, false);
 
       // Second call — spy deps that throw if invoked. The fast-path
-      // at flow step 4b must short-circuit before any replay I/O,
-      // PAR gate I/O, or replay re-execution. Per D-5304, neither
-      // loadReplay nor replayGame may run on the retry path.
-      let loadReplayCalled = false;
-      let replayGameCalled = false;
+      // at flow step 4b must short-circuit before any replay reduction
+      // or PAR gate I/O. Per D-5304, neither reduceReplay nor
+      // checkParPublished may run on the retry path.
+      let reduceReplayCalled = false;
       let checkParPublishedCalled = false;
       const spyDeps = {
-        loadReplay: async () => {
-          loadReplayCalled = true;
+        reduceReplay: async () => {
+          reduceReplayCalled = true;
           throw new Error(
-            'Test failure: loadReplay must not be invoked on the retry path per D-5304.',
-          );
-        },
-        replayGame: () => {
-          replayGameCalled = true;
-          throw new Error(
-            'Test failure: replayGame must not be invoked on the retry path per D-5304.',
+            'Test failure: reduceReplay must not be invoked on the retry path per D-5304.',
           );
         },
         checkParPublished: () => {
@@ -714,7 +693,6 @@ describe('competition logic (WP-053)', () => {
             'Test failure: checkParPublished must not be invoked on the retry path per D-5304.',
           );
         },
-        registry: STUB_REGISTRY,
       } as unknown as Parameters<typeof submitCompetitiveScoreImpl>[3];
 
       const secondResult = await submitCompetitiveScoreImpl(
@@ -729,8 +707,7 @@ describe('competition logic (WP-053)', () => {
         secondResult.record.submissionId,
         firstResult.record.submissionId,
       );
-      assert.strictEqual(loadReplayCalled, false);
-      assert.strictEqual(replayGameCalled, false);
+      assert.strictEqual(reduceReplayCalled, false);
       assert.strictEqual(checkParPublishedCalled, false);
     },
   );
