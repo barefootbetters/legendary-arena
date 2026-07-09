@@ -213,6 +213,15 @@ const OPTIONAL_PUT_BOTTOM_HQ_PATTERN = /\[keyword:optional-put-bottom-hq:(\d+)\]
 /** Regex for [keyword:put-any-number-bottom-hq:<n>] put-any-number-bottom-HQ markup. */
 const PUT_ANY_NUMBER_BOTTOM_HQ_PATTERN = /\[keyword:put-any-number-bottom-hq:(\d+)\]/g;
 
+// why: D-24133 — the MANDATORY single-card "Put a card from the HQ on the bottom of the
+// Hero Deck. If that card had a recruit/attack icon, you get +N" form (Wonder Man's Absorb
+// Ambient Power) is marked `[keyword:put-bottom-hq-icon-reward:<n>]`. It needs NO dedicated
+// extraction step: the generic KEYWORD_PATTERN loop (Step 2) already matches the 2-segment
+// token, records the keyword, and captures the magnitude N (the icon-reward amount); the
+// effect builder's fallback emits `{ type, magnitude }`, and the park handler reads the
+// magnitude. (The sibling optional-/put-any-number- dedicated steps are belt-and-suspenders;
+// deduplicateKeywords collapses the double-push.)
+
 // why: D-24132 — a put-any-number-bottom-hq line MAY carry a trailing "Then you get
 // [keyword:Empowered] by [hc:X] (and [hc:Y]…)" grant on the SAME line (Wonder Man's 8th
 // Wonder of the World). This detection pattern finds the `[keyword:Empowered]` token so the

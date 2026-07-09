@@ -1357,6 +1357,20 @@ describe('buildUIState — pendingOptionalPutBottomHQ projection (Ionic Energy f
     assert.equal(ui.pendingOptionalPutBottomHQ!.playerID, '0', 'front entry projected, not the second');
   });
 
+  it('omits mandatory for the optional form (Ionic Energy)', () => {
+    const ui = buildUIState(withPutBottomHQ(), mockCtx);
+    assert.equal(ui.pendingOptionalPutBottomHQ!.mandatory, undefined, 'optional form projects no mandatory flag');
+  });
+
+  it('projects mandatory: true for the mandatory form (Absorb Ambient Power, D-24133)', () => {
+    const gameState = withPutBottomHQ();
+    gameState.pendingOptionalPutBottomHQ = [
+      { playerID: '0', sourceCardId: 'src' as CardExtId, mandatory: true, iconRewardMagnitude: 3 },
+    ];
+    const ui = buildUIState(gameState, mockCtx);
+    assert.equal(ui.pendingOptionalPutBottomHQ!.mandatory, true, 'mandatory flag surfaced to the client');
+  });
+
   it('buildUIState does not mutate G (purity)', () => {
     const gameState = withPutBottomHQ();
     const before = JSON.stringify(gameState);

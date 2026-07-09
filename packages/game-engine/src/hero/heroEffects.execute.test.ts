@@ -52,11 +52,12 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     );
   });
 
-  it('has exactly 12 handlers and none for the deferred keywords', () => {
+  it('has exactly 13 handlers and none for the deferred keywords', () => {
     // why: WP-286 / D-24069 added the draw-or-empowered park handler (9 → 10); the
     // Ionic Energy optional-put-bottom-hq fix added its park handler (10 → 11); D-24132
-    // added the put-any-number-bottom-hq park handler (11 → 12).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 12);
+    // added the put-any-number-bottom-hq park handler (11 → 12); D-24133 added the
+    // put-bottom-hq-icon-reward park handler (12 → 13).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 13);
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
     assert.equal(HERO_EFFECT_HANDLERS['conditional'], undefined);
   });
@@ -3411,6 +3412,64 @@ describe('executeHeroEffects put-any-number-bottom-hq park (D-24132)', () => {
     assert.ok(
       gameState.messages.some((line) => line.includes('the HQ is empty')),
       'an empty-HQ put-any-number effect appends a game-log line explaining the no-op',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// D-24133 — put-bottom-hq-icon-reward park case (Absorb Ambient Power)
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects put-bottom-hq-icon-reward park (D-24133)', () => {
+  const mockCtx = makeMockCtx();
+
+  it('with ≥1 card in the HQ parks a MANDATORY choice carrying the icon-reward magnitude', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['put-bottom-hq-icon-reward'],
+          effects: [{ type: 'put-bottom-hq-icon-reward', magnitude: 3 }],
+        },
+      ],
+    });
+    gameState.hq = ['hq-a', null, null, null, null] as unknown as LegendaryGameState['hq'];
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.pendingOptionalPutBottomHQ?.length, 1, 'exactly one choice parked on the shared queue');
+    assert.deepStrictEqual(
+      gameState.pendingOptionalPutBottomHQ![0],
+      { playerID: '0', sourceCardId: 'hero-x', mandatory: true, iconRewardMagnitude: 3 },
+      'parked entry is mandatory and carries the icon-reward magnitude',
+    );
+    // The move happens at RESOLVE time — HQ untouched at play time; the park is SILENT.
+    assert.deepStrictEqual(gameState.hq, ['hq-a', null, null, null, null], 'HQ untouched at play time');
+    assert.equal(gameState.messages.length, 0, 'the park appends no game-log line');
+  });
+
+  it('with an empty HQ it is a no-op plus a game-log line (nothing parked)', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['put-bottom-hq-icon-reward'],
+          effects: [{ type: 'put-bottom-hq-icon-reward', magnitude: 3 }],
+        },
+      ],
+    });
+    // makeTestState defaults hq to all-null (empty HQ).
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.pendingOptionalPutBottomHQ?.length ?? 0, 0, 'nothing parked when the HQ is empty');
+    assert.ok(
+      gameState.messages.some((line) => line.includes('the HQ is empty')),
+      'an empty-HQ effect appends a game-log line explaining the no-op',
     );
   });
 });

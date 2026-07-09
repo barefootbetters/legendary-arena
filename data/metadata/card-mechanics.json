@@ -1108,6 +1108,18 @@
       "hidden": true
     },
     {
+      "slug": "put-bottom-hq-icon-reward",
+      "label": "Put Bottom Hq Icon Reward",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 2,
+      "cardIds": [
+        "antm/wonder-man",
+        "xmen/kitty-pryde"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "rescue",
       "label": "Rescue",
       "scope": "hero",
@@ -2192,6 +2204,7 @@
         "empowered",
         "optional-put-bottom-hq",
         "put-any-number-bottom-hq",
+        "put-bottom-hq-icon-reward",
         "size-changing"
       ]
     },
@@ -3838,6 +3851,7 @@
     },
     "xmen/kitty-pryde": {
       "mechanics": [
+        "put-bottom-hq-icon-reward",
         "soaring-flight",
         "x-gene"
       ]

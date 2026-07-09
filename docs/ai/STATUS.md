@@ -27,6 +27,34 @@ wins accumulate.
 - **Live-verify (D-24026), deploy-dependent:** after the CF Pages build on merge, confirm on the
   deployed site: the index slide, a `#/gauntlet/...` deep link, and the unclaimed CTA.
 
+### Bug fix — Absorb Ambient Power: mandatory put-bottom-HQ + icon reward (D-24133 Active) (2026-07-09)
+
+**User-Visible change (post-deploy): `play.legendary-arena.com`.** The third and last member of the
+HQ→bottom hero family. Absorb Ambient Power ("Put a card from the HQ on the bottom of the Hero Deck.
+If that card had a recruit icon, +3 recruit; if an attack icon, +3 attack") was a HOLLOW no-op —
+played 8× in one operator game (gitSha `60b4ec7`), never moving a card or granting the reward. Its
+siblings `optional-put-bottom-hq` (Ionic Energy, #626) and `put-any-number-bottom-hq` (multi-select,
+#629) were already done; this mandatory single-card + icon-reward form was not.
+
+New keyword `put-bottom-hq-icon-reward` **extends** the single-card `optional-put-bottom-hq`
+infrastructure (same queue, move, projection, prompt, End-Turn gate) rather than duplicating it. The
+park handler adds two optional fields to the pending entry: `mandatory: true` (Decline is rejected by
+the move and hidden by the prompt) and `iconRewardMagnitude`. On resolve, after the chosen card moves
+to the shared Hero Deck bottom and the HQ refills, the player gets +N recruit if the moved card had a
+recruit icon and +N attack if it had an attack icon (both if both). Marked on 2 cards: Absorb Ambient
+Power (N=3) and Kitty Pryde's Intangible Qualities (N=2).
+
+- **Engine + arena-client + card data; no new move (move-set unchanged), no migration, no
+  server/`functions/` change; no `computeStateHash`/replay-hash change (fixture-unreachable, no golden
+  shifts); `G.messages` hash-excluded (D-24081).**
+- **Gates:** `pnpm -r build` 0; engine test **1843/1843** (26 keywords / 13 handlers; new move
+  mandatory/reward + park + projection tests); arena-client typecheck 0; arena-client test **793/793**
+  (prompt Decline-hidden tests); all Hero-Effect-Coverage gates green (`ledger:heroes` +
+  `mechanics:metadata` regenerated).
+- **Live-verify (D-24026), deploy-dependent:** play Absorb Ambient Power — it prompts to pick an HQ
+  card (no Decline); the card goes to the Hero Deck bottom, the HQ refills, and +recruit/+attack is
+  granted per the moved card's icons.
+
 ### WP-342 / EC-372 Executed — Mastermind Set-Gauntlet Boards: Outcome Persistence + Read-Layer + Publisher (D-24131 executed) (2026-07-09)
 
 **No user-observable change — infrastructure only.** Executes the D-24131 set-gauntlet design at the

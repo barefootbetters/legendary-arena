@@ -62,11 +62,11 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 25 entries after the put-any-number-bottom-hq addition', () => {
+  it('HERO_KEYWORDS array has exactly 26 entries after the put-bottom-hq-icon-reward addition', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      25,
-      'HERO_KEYWORDS must have exactly 25 entries (24 post-Ionic-Energy + put-any-number-bottom-hq)',
+      26,
+      'HERO_KEYWORDS must have exactly 26 entries (25 post-put-any-number + put-bottom-hq-icon-reward)',
     );
   });
 });
@@ -85,6 +85,15 @@ describe('put-any-number-bottom-hq keyword (D-24132)', () => {
     assert.ok(
       HERO_KEYWORDS.includes('put-any-number-bottom-hq'),
       'put-any-number-bottom-hq must be in HERO_KEYWORDS array',
+    );
+  });
+});
+
+describe('put-bottom-hq-icon-reward keyword (D-24133 — Absorb Ambient Power)', () => {
+  it('is registered in HERO_KEYWORDS', () => {
+    assert.ok(
+      HERO_KEYWORDS.includes('put-bottom-hq-icon-reward'),
+      'put-bottom-hq-icon-reward must be in HERO_KEYWORDS array',
     );
   });
 });

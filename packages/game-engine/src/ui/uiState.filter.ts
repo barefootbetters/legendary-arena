@@ -594,6 +594,9 @@ export function filterUIStateForAudience(
     result.pendingOptionalPutBottomHQ = {
       playerID: uiState.pendingOptionalPutBottomHQ.playerID,
       eligibleHqCards: eligibleHqCardsCopy,
+      // why: D-24133 — carry the mandatory flag through redaction so the chooser's
+      // client hides Decline (omit-when-false preserves the optional form's shape).
+      ...(uiState.pendingOptionalPutBottomHQ.mandatory === true ? { mandatory: true } : {}),
     };
   }
 

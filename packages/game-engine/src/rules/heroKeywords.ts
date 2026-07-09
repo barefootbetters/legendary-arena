@@ -48,7 +48,8 @@ export type HeroKeyword =
   | 'draw-or-empowered' // why: D-24069 / WP-286 — "Choose one: Draw a card, or you get Empowered by [class]"; parks a PendingDrawOrEmpowered resolved by resolveDrawOrEmpowered
   | 'size-changing' // why: D-24074 / WP-290 — printed "Size-Changing: [Class]" ("when you play this card, it has the [Class] class"); a class-grant realized at class-read time, no onPlay handler (the wall-crawl class)
   | 'optional-put-bottom-hq' // why: "You may put a card from the HQ on the bottom of the Hero Deck"; parks a PendingOptionalPutBottomHQ resolved by resolveOptionalPutBottomHQ
-  | 'put-any-number-bottom-hq'; // why: D-24132 — "Choose any number of cards/Heroes from the HQ. Put them on the bottom of the Hero Deck" (multi-select variant); parks a PendingPutAnyNumberBottomHQ resolved by resolvePutAnyNumberBottomHQ, then applies any trailing "Empowered by [classes]"
+  | 'put-any-number-bottom-hq' // why: D-24132 — "Choose any number of cards/Heroes from the HQ. Put them on the bottom of the Hero Deck" (multi-select variant); parks a PendingPutAnyNumberBottomHQ resolved by resolvePutAnyNumberBottomHQ, then applies any trailing "Empowered by [classes]"
+  | 'put-bottom-hq-icon-reward'; // why: D-24133 — mandatory "Put a card from the HQ on the bottom of the Hero Deck. If that card had a recruit/attack icon, you get +N" (Absorb Ambient Power); parks a mandatory PendingOptionalPutBottomHQ with iconRewardMagnitude, resolved by resolveOptionalPutBottomHQ
 
 // why: canonical array for drift-detection. Must match HeroKeyword
 // union exactly. Drift-detection test in heroAbility.setup.test.ts
@@ -83,6 +84,7 @@ export const HERO_KEYWORDS: readonly HeroKeyword[] = [
   'size-changing', // why: D-24074 / WP-290 — printed "Size-Changing: [Class]"; a class-grant realized at class-read time, no onPlay handler (the wall-crawl class)
   'optional-put-bottom-hq', // why: "You may put a card from the HQ on the bottom of the Hero Deck"; parks a pending choice resolved by resolveOptionalPutBottomHQ
   'put-any-number-bottom-hq', // why: D-24132 — "Choose any number of cards/Heroes from the HQ. Put them on the bottom of the Hero Deck" (multi-select); parks a pending choice resolved by resolvePutAnyNumberBottomHQ
+  'put-bottom-hq-icon-reward', // why: D-24133 — mandatory single-card "Put a card from the HQ on the bottom of the Hero Deck. If that card had a recruit/attack icon, +N" (Absorb Ambient Power); parks a mandatory PendingOptionalPutBottomHQ resolved by resolveOptionalPutBottomHQ
 ] as const;
 
 // ---------------------------------------------------------------------------

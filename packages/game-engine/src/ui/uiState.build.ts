@@ -941,6 +941,10 @@ export function buildUIState(
     pendingOptionalPutBottomHQ = {
       playerID: frontChoice.playerID,
       eligibleHqCards,
+      // why: D-24133 — surface the mandatory flag so the client hides Decline for the
+      // "Put a card…" form (Absorb Ambient Power). Omit-when-false keeps the optional
+      // form's projection byte-identical (no fixture churn).
+      ...(frontChoice.mandatory === true ? { mandatory: true } : {}),
     };
   }
 

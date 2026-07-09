@@ -65,7 +65,7 @@ import { pushLog } from '../log/logPush.js';
 // the 7 legacy reveal-* keywords lost their dedicated handlers (folded into the one
 // 'reveal' handler) but stay executable via revealRulesForLegacyKeyword translation.
 export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
-  'draw', 'attack', 'recruit', 'ko', 'rescue', 'reveal', 'attack-per-count', 'optional-ko-reward', 'optional-put-bottom-hq', 'put-any-number-bottom-hq', 'victory-villain-attack', 'draw-or-empowered',
+  'draw', 'attack', 'recruit', 'ko', 'rescue', 'reveal', 'attack-per-count', 'optional-ko-reward', 'optional-put-bottom-hq', 'put-any-number-bottom-hq', 'put-bottom-hq-icon-reward', 'victory-villain-attack', 'draw-or-empowered',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -1147,6 +1147,45 @@ function heroEffectOptionalPutBottomHq(
 }
 
 /**
+ * Park handler for the `put-bottom-hq-icon-reward` hero keyword (D-24133).
+ *
+ * The MANDATORY, icon-reward sibling of `heroEffectOptionalPutBottomHq`. The printed
+ * "Put a card from the HQ on the bottom of the Hero Deck. If that card had a recruit
+ * icon, you get +N recruit. If that card had an attack icon, you get +N attack."
+ * (Wonder Man's Absorb Ambient Power). Parks onto the SAME single-card queue
+ * (`G.pendingOptionalPutBottomHQ`) with `mandatory: true` (no Decline) and the reward
+ * magnitude, so resolveOptionalPutBottomHQ applies the icon reward after the move.
+ *
+ * If the HQ is empty the mandatory choice cannot be made — logged no-op, parks nothing.
+ */
+function heroEffectPutBottomHqIconReward(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  const hqZone = G.hq;
+  const eligibleCards = hqZone.filter(slot => slot !== null).length;
+  if (eligibleCards === 0) {
+    pushLog(G,
+      `Player ${playerID} could not move a card from the HQ — the HQ is empty, so no card was moved.`,
+    );
+    return;
+  }
+  // why: the reward magnitude rides on the descriptor magnitude ([keyword:put-bottom-hq-icon-reward:N]);
+  // default to 3 (Absorb Ambient Power's printed value) if a magnitude somehow did not parse.
+  const iconRewardMagnitude = effect.magnitude !== undefined && effect.magnitude > 0 ? effect.magnitude : 3;
+  if (!G.pendingOptionalPutBottomHQ) { G.pendingOptionalPutBottomHQ = []; }
+  G.pendingOptionalPutBottomHQ.push({
+    playerID,
+    sourceCardId: cardId,
+    mandatory: true,
+    iconRewardMagnitude,
+  });
+}
+
+/**
  * Park handler for the `put-any-number-bottom-hq` hero keyword (D-24132).
  *
  * The MULTI-select sibling of `heroEffectOptionalPutBottomHq`. Checks whether there are any
@@ -1276,6 +1315,7 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   'optional-ko-reward': heroEffectOptionalKoReward,
   'optional-put-bottom-hq': heroEffectOptionalPutBottomHq,
   'put-any-number-bottom-hq': heroEffectPutAnyNumberBottomHq,
+  'put-bottom-hq-icon-reward': heroEffectPutBottomHqIconReward,
   'victory-villain-attack': heroEffectVictoryVillainAttack,
   'draw-or-empowered': heroEffectDrawOrEmpowered,
 };

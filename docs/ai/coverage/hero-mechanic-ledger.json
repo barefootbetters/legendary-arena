@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "cardType": "hero",
   "summary": {
-    "totalRows": 632,
+    "totalRows": 634,
     "byStatus": {
-      "executable": 191,
+      "executable": 193,
       "deferred": 0,
       "condition": 5,
       "unsupported": 389,
       "unmarked": 47
     },
-    "distinctMechanics": 138
+    "distinctMechanics": 139
   },
   "rows": [
     {
@@ -662,6 +662,16 @@
       "wp": "",
       "decision": "",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#put-any-number-bottom-hq"
+    },
+    {
+      "extId": "antm/wonder-man",
+      "heroName": "Wonder Man",
+      "set": "antm",
+      "mechanic": "put-bottom-hq-icon-reward",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#put-bottom-hq-icon-reward"
     },
     {
       "extId": "antm/wonder-man",
@@ -6122,6 +6132,16 @@
       "wp": "",
       "decision": "",
       "handler": ""
+    },
+    {
+      "extId": "xmen/kitty-pryde",
+      "heroName": "Kitty Pryde",
+      "set": "xmen",
+      "mechanic": "put-bottom-hq-icon-reward",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#put-bottom-hq-icon-reward"
     },
     {
       "extId": "xmen/kitty-pryde",
