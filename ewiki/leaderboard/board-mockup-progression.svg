@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 520" font-family="system-ui, 'Segoe UI', sans-serif">
+  <!-- Hand-authored mockup: envisioned personal-standing card + level ladder (proposal, not shipped UI).
+       All numbers and level names are illustrative placeholders. -->
+  <defs>
+    <linearGradient id="titleGoldP" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffd700"/>
+      <stop offset="1" stop-color="#ff8c00"/>
+    </linearGradient>
+    <g id="flameP">
+      <path d="M7 0 C7 5 12 7 12 12 A6 6 0 0 1 0 12 C0 8 4 7 4 3 C5 5 7 4 7 0 Z" fill="#ff8c00"/>
+      <path d="M6.5 6 C6.5 8.5 9 9.5 9 11.5 A3 3 0 0 1 3 11.5 C3 9.5 5.5 9 5.5 7 C6 8 6.5 7.5 6.5 6 Z" fill="#ffd700"/>
+    </g>
+  </defs>
+
+  <rect width="920" height="520" fill="#0a0a0f"/>
+
+  <!-- Left card: Your Standing -->
+  <rect x="30" y="30" width="420" height="460" rx="12" fill="#11111a" stroke="#1a1a2e"/>
+  <text x="60" y="72" font-size="18" font-weight="700" fill="url(#titleGoldP)">YOUR STANDING</text>
+
+  <circle cx="90" cy="130" r="26" fill="#00897b"/>
+  <text x="90" y="137" font-size="20" font-weight="700" fill="#e0e0e0" text-anchor="middle">N</text>
+  <text x="130" y="124" font-size="18" font-weight="600" fill="#e0e0e0">NightOwl</text>
+  <text x="130" y="146" font-size="13" fill="#888">Rank #14 of 210 this week</text>
+  <text x="360" y="124" font-size="14" fill="#4caf50">▲ 3</text>
+  <text x="360" y="146" font-size="11" fill="#555">vs last week</text>
+
+  <!-- Level progress -->
+  <text x="60" y="212" font-size="13" fill="#aaa">LEVEL 4 — VETERAN</text>
+  <text x="420" y="212" font-size="13" fill="#ffd700" text-anchor="end">38 pts to Level 5</text>
+  <rect x="60" y="224" width="360" height="12" rx="6" fill="#1a1a2e"/>
+  <rect x="60" y="224" width="238" height="12" rx="6" fill="url(#titleGoldP)"/>
+
+  <!-- Streak -->
+  <rect x="60" y="266" width="360" height="64" rx="10" fill="rgba(255,140,0,0.08)" stroke="rgba(255,140,0,0.25)"/>
+  <use href="#flameP" transform="translate(78 282) scale(1.4)"/>
+  <text x="112" y="292" font-size="15" font-weight="600" fill="#e0e0e0">6-day streak</text>
+  <text x="112" y="312" font-size="12" fill="#888">Finish a match today to keep it alive.</text>
+
+  <!-- Personal bests -->
+  <text x="60" y="372" font-size="13" fill="#aaa">PERSONAL BESTS</text>
+  <line x1="60" y1="382" x2="420" y2="382" stroke="#1a1a2e"/>
+  <text x="60" y="408" font-size="13" fill="#e0e0e0">midtown-mayhem :: dr-doom</text>
+  <text x="420" y="408" font-size="14" font-weight="600" fill="#ffd700" text-anchor="end">−7</text>
+  <text x="60" y="436" font-size="13" fill="#e0e0e0">legacy-virus :: mr-sinister</text>
+  <text x="420" y="436" font-size="14" font-weight="600" fill="#ffd700" text-anchor="end">−4</text>
+  <text x="60" y="464" font-size="13" fill="#e0e0e0">secret-invasion :: loki</text>
+  <text x="420" y="464" font-size="14" font-weight="600" fill="#e0e0e0" text-anchor="end">+2</text>
+
+  <!-- Right card: Level Ladder -->
+  <rect x="470" y="30" width="420" height="460" rx="12" fill="#11111a" stroke="#1a1a2e"/>
+  <text x="500" y="72" font-size="18" font-weight="700" fill="url(#titleGoldP)">LEVEL LADDER</text>
+  <text x="500" y="94" font-size="12" fill="#555">Share of players at each level</text>
+
+  <!-- LV6 -->
+  <rect x="500" y="116" width="46" height="22" rx="11" fill="rgba(255,215,0,0.12)" stroke="rgba(255,215,0,0.3)"/>
+  <text x="523" y="131" font-size="10" font-weight="600" fill="#ffd700" text-anchor="middle">LV 6</text>
+  <text x="556" y="131" font-size="13" fill="#e0e0e0">Legend</text>
+  <rect x="660" y="120" width="150" height="12" rx="6" fill="#1a1a2e"/>
+  <rect x="660" y="120" width="4" height="12" rx="2" fill="#ffd700"/>
+  <text x="860" y="131" font-size="12" fill="#888" text-anchor="end">1%</text>
+
+  <!-- LV5 -->
+  <rect x="500" y="164" width="46" height="22" rx="11" fill="rgba(255,215,0,0.12)" stroke="rgba(255,215,0,0.3)"/>
+  <text x="523" y="179" font-size="10" font-weight="600" fill="#ffd700" text-anchor="middle">LV 5</text>
+  <text x="556" y="179" font-size="13" fill="#e0e0e0">Champion</text>
+  <rect x="660" y="168" width="150" height="12" rx="6" fill="#1a1a2e"/>
+  <rect x="660" y="168" width="6" height="12" rx="2" fill="#ffd700"/>
+  <text x="860" y="179" font-size="12" fill="#888" text-anchor="end">2%</text>
+
+  <!-- LV4 -->
+  <rect x="500" y="212" width="46" height="22" rx="11" fill="rgba(255,215,0,0.12)" stroke="rgba(255,215,0,0.3)"/>
+  <text x="523" y="227" font-size="10" font-weight="600" fill="#ffd700" text-anchor="middle">LV 4</text>
+  <text x="556" y="227" font-size="13" fill="#e0e0e0">Veteran</text>
+  <rect x="660" y="216" width="150" height="12" rx="6" fill="#1a1a2e"/>
+  <rect x="660" y="216" width="10" height="12" rx="2" fill="#ffd700"/>
+  <text x="860" y="227" font-size="12" fill="#888" text-anchor="end">5%</text>
+
+  <!-- LV3 -->
+  <rect x="500" y="260" width="46" height="22" rx="11" fill="rgba(255,215,0,0.12)" stroke="rgba(255,215,0,0.3)"/>
+  <text x="523" y="275" font-size="10" font-weight="600" fill="#ffd700" text-anchor="middle">LV 3</text>
+  <text x="556" y="275" font-size="13" fill="#e0e0e0">Operative</text>
+  <rect x="660" y="264" width="150" height="12" rx="6" fill="#1a1a2e"/>
+  <rect x="660" y="264" width="20" height="12" rx="2" fill="#ffd700"/>
+  <text x="860" y="275" font-size="12" fill="#888" text-anchor="end">12%</text>
+
+  <!-- LV2 -->
+  <rect x="500" y="308" width="46" height="22" rx="11" fill="rgba(255,215,0,0.12)" stroke="rgba(255,215,0,0.3)"/>
+  <text x="523" y="323" font-size="10" font-weight="600" fill="#ffd700" text-anchor="middle">LV 2</text>
+  <text x="556" y="323" font-size="13" fill="#e0e0e0">Agent</text>
+  <rect x="660" y="312" width="150" height="12" rx="6" fill="#1a1a2e"/>
+  <rect x="660" y="312" width="51" height="12" rx="2" fill="#ffd700"/>
+  <text x="860" y="323" font-size="12" fill="#888" text-anchor="end">34%</text>
+
+  <!-- LV1 -->
+  <rect x="500" y="356" width="46" height="22" rx="11" fill="rgba(255,215,0,0.12)" stroke="rgba(255,215,0,0.3)"/>
+  <text x="523" y="371" font-size="10" font-weight="600" fill="#ffd700" text-anchor="middle">LV 1</text>
+  <text x="556" y="371" font-size="13" fill="#e0e0e0">Recruit</text>
+  <rect x="660" y="360" width="150" height="12" rx="6" fill="#1a1a2e"/>
+  <rect x="660" y="360" width="69" height="12" rx="2" fill="#ffd700"/>
+  <text x="860" y="371" font-size="12" fill="#888" text-anchor="end">46%</text>
+
+  <line x1="500" y1="408" x2="860" y2="408" stroke="#1a1a2e"/>
+  <text x="500" y="436" font-size="12" fill="#888">Levels unlock cosmetics, titles, and avatar frames —</text>
+  <text x="500" y="454" font-size="12" fill="#888">never gameplay power (VISION NG-1: no pay-to-win,</text>
+  <text x="500" y="472" font-size="12" fill="#888">no grind-to-win).</text>
+</svg>

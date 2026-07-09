@@ -18,6 +18,8 @@ related:
 status: draft
 source:
   - ../apps/legends-board/package.json
+  - ../apps/legends-board/src/App.vue
+  - ../apps/legends-board/src/snapshots/snapshotClient.ts
   - ../docs/ai/work-packets/WP-142-legends-snapshot-publisher.md
   - ../docs/ai/work-packets/WP-143-legends-attract-board.md
   - ../docs/ai/execution-checklists/EC-164-legends-attract-board.checklist.md
@@ -384,6 +386,37 @@ player ID, not the public handle.
   ships five panel components (overall, weekly, by-scheme, recent-achievements,
   now-playing), but only the boards the publisher actually emits are rendered
   — until per-scenario scores accumulate, that is just `global-top`.
+- **Three of the five panels render a header-only table when empty (board
+  review, 2026-07-09).** Only `NowPlayingPanel` has an explicit
+  zero-entries state ("No active games right now"); `OverallPanel`,
+  `WeeklyPanel`, and `BySchemePanel` render column headers with no rows
+  when a board's `entries` is empty
+  ([`apps/legends-board/src/panels/`](../apps/legends-board/src/App.vue)).
+  Until real scores accumulate, that header-only table *is* the default
+  public view. A designed empty state is proposed under
+  [Open Questions](#open-questions).
+- **Publisher board names do not match the SPA's panel keys.** The
+  publisher emits `global-top` plus `scenario-<key>` boards, but the SPA's
+  panel resolver keys are `overall` / `weekly` / `by-scheme` /
+  `recent-achievements` / `now-playing`
+  ([`App.vue`](../apps/legends-board/src/App.vue) `panelComponents`), so
+  every board the publisher actually writes falls through to the
+  `OverallPanel` fallback. Harmless for `global-top` today, but a future
+  `scenario-*` board would render under the hardcoded "Overall Rankings"
+  title with a permanently blank Scenario column (`ScenarioSnapshotEntry`
+  has no `scenarioKey` field). Kiosk mode meanwhile titles the same view
+  from the board slug ("Global Top") — two names for one panel.
+- **A failed board fetch sticks until the next publisher write.** The
+  60-second poll re-fetches board JSON only when `manifest.generatedAt`
+  changes ([`App.vue`](../apps/legends-board/src/App.vue) `handlePoll`), so
+  a transient per-board fetch failure displays "Data unavailable" until the
+  publisher's next ~5-minute cycle bumps the manifest — not until the next
+  poll.
+- **Manifest polling is not edge-stale.** Verified live 2026-07-09:
+  `legends/v1/manifest.json` serves `Cf-Cache-Status: DYNAMIC`, so the
+  SPA's fresh-manifest polling assumption
+  ([`snapshotClient.ts`](../apps/legends-board/src/snapshots/snapshotClient.ts))
+  holds — the CDN does not serve the board a stale manifest.
 - **Cross-version comparison is never silent.** Rows carry a
   `scoringConfigVersion`; any PAR or weight change increments it, and rows
   under different versions are not directly comparable (VISION §22). Any
@@ -452,6 +485,86 @@ supports comparing a full year's runs on a stable footing.
   interacts with low-population boards.
 - Data model for active vs archived boards, and the reset job that performs
   the Dec 31 → Jan 1 rollover.
+
+### Engagement & presentation proposal (2026-07-09 board review)
+
+> **Proposal, not decided** — same rule as the championship section above.
+> This records a 2026-07-09 review of the live board against
+> community-platform leaderboards (the Skool pattern: windowed boards,
+> streaks, levels with unlock perks, social proof). Ratifying any of it
+> requires a [DECISIONS.md](../docs/ai/DECISIONS.md) entry and Work
+> Packets. The mockups below are hand-authored illustrations of the
+> direction, not shipped designs.
+
+**Boundary first: none of this touches engine scoring.** Every mechanic
+below is a **server-side derived aggregation over existing
+`legendary.competitive_scores` rows** — the same posture as the
+championship proposal. The only point source remains the replay-verified
+`finalScore` (D-5301); engagement metrics are presentation, not a second
+scoring system. Social-style engagement points (likes, posts — the Skool
+point source) are explicitly **not** proposed: they are trivially gameable
+and alien to a competitive game.
+
+**The envisioned board:**
+
+![Mockup of the envisioned Hall of Legends board. A dark gold-on-black leaderboard with three window tabs (7-Day active, 30-Day, All-Time), a freshness badge reading Updated 3 min ago, and six ranked rows. Each row shows a rank-movement arrow, rank number, avatar, player handle, best scenario key, a level chip, a play-streak flame with day count, a run count, and a best-score-versus-PAR value where negative golf-style scores render in gold. A footer notes every score is replay-verified.](/leaderboard/board-mockup-main.svg "width=92%")
+
+*Envisioned populated board — windowed tabs, streak flames, level chips,
+rank movement, and PAR-relative scores (lower is better). Hand-authored
+mockup: [board-mockup-main.svg](../ewiki/leaderboard/board-mockup-main.svg).*
+
+The four mechanics worth adopting, ranked by value-per-effort:
+
+1. **Windowed boards — 7-day / 30-day / all-time.** The highest-leverage
+   item. An all-time board locks up behind veterans within months; a
+   weekly window gives every new player a winnable race. Cheapest of the
+   four: the SPA already ships a `WeeklyPanel`, and the publisher already
+   has the board-list plumbing — the work is a `created_at`-windowed
+   variant of the existing read-layer queries plus new snapshot names.
+   Windowed boards should rank by the window's *best verified score*
+   (staying golf-scale), with the row also showing runs posted in the
+   window.
+2. **Play streaks.** Consecutive-day play streaks (the flame), computable
+   from `competitive_scores.created_at` (or match history) per player. A
+   proven daily-return mechanic, publishable as one extra field on
+   existing snapshot entries.
+3. **Levels / progression with unlock perks.** The Skool pattern that
+   converts a scoreboard into a retention system: levels earned from
+   verified play, a "N points to level up" nudge, and "1% of players"
+   social proof per tier. Unlocks must be **cosmetic only** — titles,
+   avatar frames, board flair — never gameplay power (VISION NG-1). Level
+   names want Legendary-arena flavor, generic enough to stay clear of
+   licensed character names (e.g. Recruit → Agent → Operative → Veteran →
+   Champion → Legend). This is a real product arc (progression WPs), not a
+   board tweak — recorded here so the board design leaves room for it.
+4. **Avatars + a personal standing surface.** Avatar upload already
+   shipped (owner profile); snapshot entries carry only a handle today.
+   Adding avatars turns the kiosk from a spreadsheet into a hall of fame.
+   The *personal* half — "you are #14 of 210, ▲3 this week, 38 pts to
+   Level 5" — **cannot live on the legends board**, which is zero-auth by
+   design; it belongs on the authenticated arena-client (the WP-339
+   My-Scores surface is the natural host). The public board stays
+   anonymous and read-only.
+
+![Mockup of a personal standing card next to a level ladder. The left card shows player NightOwl at rank 14 of 210 this week, up three places, a Level 4 Veteran progress bar with 38 points to Level 5, a six-day streak flame with the caption Finish a match today to keep it alive, and three personal-best scenario scores. The right card lists six levels from Recruit to Legend with the share of players at each level shrinking from 46 percent to 1 percent, and a note that levels unlock cosmetics, titles, and avatar frames, never gameplay power.](/leaderboard/board-mockup-progression.svg "width=92%")
+
+*Envisioned personal-standing card (arena-client side) and level ladder
+with per-tier social proof. All numbers and level names are illustrative.
+Hand-authored mockup:
+[board-mockup-progression.svg](../ewiki/leaderboard/board-mockup-progression.svg).*
+
+**Near-term, independent of all the above: a designed empty state.** As
+noted under [Edge Cases](#edge-cases), three of five panels currently
+render a header-only table when a board is empty — which is the live
+default view until scores accumulate. The empty board is a wasted
+conversion surface: "rank #1 is unclaimed" is the strongest call-to-action
+this product will ever have, and it costs one panel component.
+
+![Mockup of the envisioned empty-state view. The Hall of Legends header and window tabs sit above a centered gold trophy outline, the heading No Legends yet, the line The Hall opens with the first replay-verified score — rank number one is unclaimed, a gold call-to-action button reading Play now — be the first, and a footnote that signing in at play.legendary-arena.com and finishing a match submits the score automatically.](/leaderboard/board-mockup-empty.svg "width=92%")
+
+*Envisioned empty state — the unclaimed board as an acquisition hook
+instead of a bare table. Hand-authored mockup:
+[board-mockup-empty.svg](../ewiki/leaderboard/board-mockup-empty.svg).*
 
 ## References
 
