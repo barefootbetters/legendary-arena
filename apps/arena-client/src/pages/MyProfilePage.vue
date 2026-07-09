@@ -17,6 +17,10 @@ import {
   updateLoadout,
   type SavedLoadoutView,
 } from '../lib/api/loadoutLibraryApi';
+import {
+  fetchMyScores,
+  type MyCompetitiveScore,
+} from '../lib/api/competitionApi';
 import { summarizeLoadout } from '../lib/loadoutSummary';
 import BillingSection from '../components/BillingSection.vue';
 import { useAuthStore } from '../stores/auth';
@@ -242,6 +246,15 @@ export default defineComponent({
     const rowError = ref<string>('');
     const copyMessage = ref<string>('');
 
+    // why: WP-339 — the owner's submitted competitive scores (the "My Scores"
+    // read). Loaded on mount from GET /api/me/scores; independent loading/error
+    // refs so this surface never clobbers the profile/loadout feedback.
+    // (Restored under WP-341 — a #597 per-block merge conflict had kept this
+    // section's template but reverted its script, breaking vue-tsc + the view.)
+    const competitiveScores = ref<MyCompetitiveScore[]>([]);
+    const scoresLoading = ref<boolean>(true);
+    const scoresError = ref<string>('');
+
     // why: re-arm the avatar preview whenever the URL changes. Once `@error`
     // hides a broken URL, the <img> leaves the DOM, so `@load` can never fire
     // to clear the flag — without this reset a single bad URL would suppress
@@ -418,6 +431,26 @@ export default defineComponent({
     }
 
     /**
+     * Load the owner's submitted competitive scores (WP-339). Newest first,
+     * from the server. On any non-200 (or network failure), surfaces a generic
+     * error and leaves the list empty — never throws.
+     */
+    async function loadScores(): Promise<void> {
+      scoresLoading.value = true;
+      scoresError.value = '';
+      const result = await fetchMyScores(readAuthToken());
+      scoresLoading.value = false;
+      if (result.status === 200 && result.scores !== null) {
+        competitiveScores.value = result.scores;
+        return;
+      }
+      // why: a personalized read failure is non-fatal to the rest of the page;
+      // show a one-line notice and keep the section empty.
+      scoresError.value =
+        'We couldn’t load your competitive scores right now. Please try again later.';
+    }
+
+    /**
      * Replace one row in place with an updated server view, reseeding
      * its rename draft. Leaves every other row untouched.
      */
@@ -545,6 +578,7 @@ export default defineComponent({
     onMounted(() => {
       void load();
       void loadLoadouts();
+      void loadScores();
     });
 
     return {
@@ -572,6 +606,9 @@ export default defineComponent({
       saveLinks,
       addDraftLink,
       removeDraftLink,
+      competitiveScores,
+      scoresLoading,
+      scoresError,
       loadoutRows,
       loadoutsError,
       createName,

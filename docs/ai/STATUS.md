@@ -7,6 +7,35 @@
 
 ## Current State
 
+### WP-341 / EC-371 Executed — Play-Route Session Hydration (On-Gameover Submit Fix) + Restore My-Scores (D-24129 Active) (2026-07-09)
+
+**User-Visible change (post-deploy): `play.legendary-arena.com`.** Fixes the FIRST live-test
+defect of the D-24119 loop: on gameover a *signed-in* player saw the banner *"sign in to submit
+your score to the leaderboard"* and no score was submitted.
+
+Root cause — `shouldHydrateSession` (App.vue's mount-time predicate in `routeAuthPolicy.ts`)
+hydrated the cached broker session only on `me`/`admin-billing`/`lobby`, **not `live`** — the
+play route where a match reaches gameover. So WP-339's `useCompetitiveSubmitOnGameover` read
+`useAuthStore().token` as `null` for everyone on the play page and never submitted, even for an
+authenticated player. This is the same class of bug PR #547 fixed for the lobby. The fix adds
+`|| route === 'live'` to `shouldHydrateSession`; `isGuardedRoute('live')` stays **`false`**, so a
+guest still plays/spectates with no render-block and no login redirect, and the guest prompt stays
+correct for actual guests.
+
+Discovered while fixing it: **`MyProfilePage.vue` was red on `main`.** #597 (EC-362), merged 2h
+after WP-339 (#617), kept WP-339's "Competitive Scores" `<template>` but reverted its `<script>`
+in a per-block merge conflict — the template bound to undefined refs and `vue-tsc` failed. The
+lost script (the `fetchMyScores` import, the `competitiveScores`/`scoresLoading`/`scoresError`
+refs, `loadScores`, its `onMounted` call, and the return entries) is restored byte-identically.
+
+- **Client-only; no server/engine change, no migration, no `functions/`; §21 not triggered.**
+- **Gates:** `arena-client` typecheck (vue-tsc) PASS (**cleared main's pre-existing red**);
+  `arena-client` test **762/762** (+2 `routeAuthPolicy` asserts — `live` hydrates + is not
+  guarded); `pnpm -r build` 0.
+- **Live-verify (D-24026, deploy-dependent):** sign in on `play.legendary-arena.com`, finish a
+  match, confirm the on-gameover status shows "Submitting…" → "Score submitted" (not the guest
+  prompt) and the score appears under "My Scores".
+
 ### WP-340 / EC-370 Executed — Competitive Verifier Co-Owner Hardening (D-24128 Active) (2026-07-08)
 
 **No user-observable change — infrastructure only.** The D-24126-flagged follow-up, closing
