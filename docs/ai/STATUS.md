@@ -7,6 +7,34 @@
 
 ## Current State
 
+### WP-337 / EC-367 Executed — Turns-Native Competitive Scoring (Retire the `moveCount` Proxy) (D-24125 Active) (2026-07-08)
+
+**No user-observable change — infrastructure only.** WP-4 of the D-24119 arc — the
+scoring-contract cleanup that closes out the faithful-replay scoring path.
+
+Retires the D-4801 MVP proxy in which `deriveScoringInputs` read
+`ReplayResult.moveCount` (a player move count) as the competitive `rounds`. The field is
+renamed `ReplayResult.moveCount` → **`turnCount`** (it was used only as the rounds proxy —
+one producer, one consumer) and both producers now supply a completed play-turn count,
+floored at 1: the server verifier passes `reduceMatchToFinalState`'s `turnCount` (WP-336,
+dropping the "moveCount slot carries turns" wart), and the offline `replayGame` computes
+`max(1, count of 'endTurn' moves)`. `rounds` is now turns-native on **every** path, matching
+how the PAR baselines were calibrated.
+
+- **`computeStateHash` intentionally unchanged (operator Option A).** The chartered
+  `messages`/`logMeta` field-set "reconcile" is resolved as an intentional-design
+  clarification, not a code change: the competitive/determinism hash covers the full `G` (a
+  stronger, tamper-evident ownership PK), and D-24124 already made live == replay agree
+  byte-for-byte. No field-set change, **no golden re-pin**. Only the stale `game.ts` comment
+  claiming `logMeta` is hash-excluded is corrected (the fixture-golden `hashGameState` is the
+  hash that excludes it, D-24081/24114).
+- **Gates:** `pnpm -r build` 0; engine suite **1785 pass / 0 fail** (incl. the `PRE_WP080_HASH`
+  determinism guard — proof `computeStateHash` is byte-unchanged); server no-DB green;
+  competition DB **10/10** (the rawScore recompute proves `turnCount` flows as `rounds`
+  end-to-end). `replay.hash.ts` byte-unchanged.
+- **Out of scope:** any `computeStateHash` field-set change (declined); the pre-existing WP-054
+  leaderboard DB-test contract drift (separate fix).
+
 ### WP-336 / EC-366 Executed — Competitive Verifier Repoint onto the Faithful Reducer Path (D-24123 + D-24124 Active) (2026-07-08)
 
 **No user-observable change — infrastructure only.** WP-3b of the D-24119

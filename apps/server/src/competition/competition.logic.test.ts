@@ -187,13 +187,13 @@ const TEST_SCENARIO_KEY = 'wp-053-test-scenario' as ScenarioKey;
 const TEST_TURN_COUNT = 5;
 
 // why: the ReplayResult-shaped view the impl builds from the reduced result and
-// feeds to deriveScoringInputs — its `moveCount` slot carries the play-TURN
-// count (D-24123). Test 6 recomputes the expected score from this same view, so
-// the assertion is exact for whatever rounds the impl uses.
+// feeds to deriveScoringInputs — its `turnCount` is the completed play-turn count
+// used as `rounds` (D-24123; WP-337 retired the old `moveCount` slot). Test 6
+// recomputes the expected score from this same view, so the assertion is exact.
 const TEST_REPLAY_RESULT: ReplayResult = {
   finalState: TEST_FINAL_STATE,
   stateHash: TEST_REPLAY_HASH,
-  moveCount: TEST_TURN_COUNT,
+  turnCount: TEST_TURN_COUNT,
 };
 
 // why: stub reduceReplay returns the canonical faithful-reduction result for the

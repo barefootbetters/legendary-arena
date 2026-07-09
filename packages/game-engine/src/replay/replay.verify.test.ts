@@ -51,7 +51,9 @@ describe('replayGame', () => {
     assert.ok(result.finalState, 'ReplayResult must have a finalState');
     assert.equal(typeof result.stateHash, 'string', 'stateHash must be a string');
     assert.ok(result.stateHash.length > 0, 'stateHash must not be empty');
-    assert.equal(result.moveCount, 0, 'moveCount must match input moves length');
+    // why: turnCount is the completed play-turn count (endTurn moves), floored at 1.
+    // standardInput has no moves → 0 endTurns → turnCount 1 (WP-337 / D-24123).
+    assert.equal(result.turnCount, 1, 'turnCount must be the completed play-turn count (floored at 1)');
   });
 
   it('with same input twice produces identical stateHash', () => {
