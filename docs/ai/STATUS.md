@@ -7,6 +7,28 @@
 
 ## Current State
 
+### WP-344 / EC-374 Executed — Gauntlet Progress on Profiles + Champion Badges (D-24133 Active) (2026-07-09)
+
+**User-Visible change (post-deploy): `play.legendary-arena.com`.** Closes the D-24131 arc: My Profile
+gains a **Gauntlet Progress** section ("Dr. Doom — Core Set: 5/8 schemes ✓") fed by the new
+`GET /api/me/gauntlets` (authenticated-session-required; §21 row landed in-commit), computed under
+the EXACT public-board predicate so personal numbers always agree with legends.legendary-arena.com.
+Completing a gauntlet's last leg now issues a champion badge
+(`gauntlet.<setAbbr>.<mastermindSlug>`, "Dr. Doom Champion — Core Set") through the WP-105 pipeline;
+the public profile renders it with zero client change.
+
+- Server: progress read-layer + route; badge issuance inside the existing submission badge
+  try/catch; catalog + dynamic badge definitions reach the modules by STARTUP REGISTRATION
+  (setRegistryForSetup precedent) — the locked 16-step submission deps and the static 7-entry badge
+  set are byte-untouched. No migration.
+- Client: `fetchMyGauntlets` + the MyProfilePage section (WP-339 loading/empty/error pattern).
+- **Gates:** `pnpm -r build` 0; server targeted suites green (progress 13/13, badges 25/25, routes
+  19/19) ; full serialized DB-gated suite **791/791, 0 skipped** (after fixing a pre-existing ms-collision flake in loadoutLibrary's makeIdProvider — module-level sequence, 16th file per the WP addendum); arena-client 793/793; arena-client typecheck = the pre-existing
+  6-error PutAnyNumberBottomHQ drift on main (baseline-identical; zero in WP-344 files; follow-up
+  task flagged).
+- **Live-verify (D-24026), deploy-dependent:** sign in on play.legendary-arena.com → My Profile
+  renders the Gauntlet Progress section (no-progress state until wins accumulate).
+
 ### WP-343 / EC-373 Executed — Legends-Board Gauntlet Index + Board Panel (D-24132 Active) (2026-07-09)
 
 **User-Visible change (post-deploy): `legends.legendary-arena.com`.** The Hall of Legends gains the

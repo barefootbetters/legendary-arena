@@ -27966,3 +27966,40 @@ baseline-reproduced as pre-existing.
 **Packet:** WP-343 + EC-373. **Drafted:** 2026-07-09. **Executed:** 2026-07-09.
 
 Protect this file.
+
+### D-24133 — Gauntlet progress + champion badges: board-predicate parity, dynamic badge definitions, startup-registered issuance context
+
+**Status:** Active 2026-07-09 (WP-344 / EC-374 execution).
+
+**User-Visible Surface:** play.legendary-arena.com (My Profile progress section; public-profile champion badges).
+
+**Context.** D-24131 §8b reserved the personal gauntlet surface: the owner's progress checklist and
+public completed-gauntlet badges. Champion badges are one key PER gauntlet (~105 at current data) —
+a shape the WP-105 static `BADGE_DEFINITIONS` map cannot enumerate; the submission pipeline's
+`SubmissionDependencies` seam is locked (WP-053/EC-053) and must not grow a catalog parameter.
+
+**Decision.**
+1. **Board-predicate parity.** `GET /api/me/gauntlets` (authenticated-session-required) computes
+   progress under the EXACT WP-342 board predicate — `outcome='heroes-win'`, link/public visibility,
+   currently-published `scoringConfigVersion` — so personal numbers can never disagree with the
+   public boards. Only gauntlets with ≥1 winning leg return; the client owns the no-progress state.
+2. **Badge key grammar** `gauntlet.<setAbbr>.<mastermindSlug>`, tier 1, `source_kind
+   'competitive_history'`, **`source_ref NULL`** — the WP-105 partial unique index
+   `(player_id, badge_key) WHERE source_ref IS NULL` is the idempotency mechanism (pinning the
+   completing submission id would issue a fresh row per later win under the composite constraint).
+   Label `"<MastermindName> Champion — <SetName>"`.
+3. **Startup registration, not deps-threading** (the `setRegistryForSetup` precedent):
+   `registerGauntletBadgeContext` (catalog + bound PAR gate) and `registerDynamicBadgeDefinitions`
+   are called once from `server.mjs`; issuance no-ops unregistered and `composeBadgeSummaries`
+   resolves static-first-then-dynamic, so every pre-WP-344 path is byte-compatible. The locked
+   16-step submission flow gains exactly one call inside the existing fire-and-forget badge
+   try/catch. `TIER_1_BADGE_KEYS` (7) and the static definitions are untouched.
+4. **No retroactive backfill.** A player already complete before deploy earns the badge on their
+   next winning submission in that gauntlet.
+
+**Not changed.** No migration; no engine change; no legends-board change; the public profile renders
+champion badges through the existing WP-105 pipeline with zero client change.
+
+**Packet:** WP-344 + EC-374. **Drafted:** 2026-07-09. **Executed:** 2026-07-09.
+
+Protect this file.

@@ -8,6 +8,22 @@
 **User-Visible Surface:** play.legendary-arena.com (My Profile gauntlet progress; public-profile champion badges)
 **Reserves:** D-24133
 
+> **Execution addendum (2026-07-09).** One reconciliation and one
+> out-of-list fix, both discovered at the gates:
+> (1) `buildGauntletBadgeDefinitions` lives in `badge.gauntlet.ts` (not
+> `gauntlet.logic.ts` as listed) to keep the import edge one-directional
+> badges → legends.
+> (2) 16th file: `apps/server/src/profile/loadoutLibrary.logic.test.ts` —
+> a pre-existing timing flake surfaced in the full serialized run: its
+> `makeIdProvider` seeded ext_ids from `Date.now()` with a counter that
+> reset per provider, so two back-to-back provisions in the same
+> millisecond (the cross-account test) collided on the UNIQUE ext_id.
+> Fixed with a module-level sequence; isolated + full-suite verified.
+> (3) arena-client typecheck reports 6 errors on this baseline — the
+> pre-existing `PutAnyNumberBottomHQ` client/engine UIState drift on
+> `main` (baseline-identical, zero errors in WP-344 files; flagged as a
+> follow-up task chip).
+
 ---
 
 ## Goal
