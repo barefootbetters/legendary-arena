@@ -44,6 +44,17 @@ describe('public profile logic (WP-102)', () => {
 
   after(async () => {
     if (testPool !== null) {
+      // why: WP-342 precedent (competition.logic.test.ts) — leave the
+      // shared test database CLEAN when this file's last test
+      // finishes. The per-test beforeEach only cleans BEFORE each
+      // test, so rows seeded by the final test would otherwise leak
+      // into later test files in a serialized full-suite run. The
+      // players delete cascades team / team-membership fixture rows
+      // via their ON DELETE CASCADE foreign keys.
+      await testPool.query('DELETE FROM legendary.competitive_scores');
+      await testPool.query('DELETE FROM legendary.replay_ownership');
+      await testPool.query('DELETE FROM legendary.replay_blobs');
+      await testPool.query('DELETE FROM legendary.players');
       await testPool.end();
       testPool = null;
     }
@@ -82,16 +93,18 @@ describe('public profile logic (WP-102)', () => {
     }
   });
 
-  test('PublicProfileView shape contains exactly the five locked fields and no others', () => {
+  test('PublicProfileView shape contains exactly the six locked fields and no others', () => {
     const fixture: PublicProfileView = {
       handleCanonical: 'alice',
       displayHandle: 'Alice',
       displayName: 'Alice Example',
       publicReplays: [],
       teamAffiliations: [],
+      badges: [],
     };
     const keys = Object.keys(fixture).sort();
     assert.deepEqual(keys, [
+      'badges',
       'displayHandle',
       'displayName',
       'handleCanonical',
@@ -134,7 +147,7 @@ describe('public profile logic (WP-102)', () => {
   );
 
   test(
-    'getPublicProfileByHandle returns four-field view with empty publicReplays for a claimed handle that has no replay rows',
+    'getPublicProfileByHandle returns the full view with empty publicReplays for a claimed handle that has no replay rows',
     hasTestDatabase ? {} : { skip: 'requires test database' },
     async () => {
       assert.ok(testPool !== null);
@@ -171,7 +184,11 @@ describe('public profile logic (WP-102)', () => {
         // keys with teamAffiliations[]. Empty for a player with no
         // memberships.
         assert.deepEqual(result.value.teamAffiliations, []);
+        // why: WP-105 extends the view to 6 keys with badges[].
+        // Empty for a player with no awarded badges.
+        assert.deepEqual(result.value.badges, []);
         assert.deepEqual(Object.keys(result.value).sort(), [
+          'badges',
           'displayHandle',
           'displayName',
           'handleCanonical',
@@ -290,18 +307,23 @@ describe('public profile logic (WP-102)', () => {
       // test independent of the team module's roster validator —
       // these fixtures are about the visibility filter on the read
       // composer.)
+      // why: the private team sits in the size-4 bracket because
+      // uq_team_member_events_active_size allows at most one ACTIVE
+      // membership per (player_id, team_size) — the subject holds an
+      // active membership in BOTH teams, so the two teams must
+      // occupy different size brackets for the fixture to insert.
       await testPool.query(
         "INSERT INTO legendary.teams (team_id, name, cohort_label, team_size, start_date, end_date, status, captain_player_id, visibility) " +
           "VALUES ('00000000-0000-4000-8000-aaaaaaaaaaaa', 'Pub', '2026', 3, '2026-01-01', '2026-12-31', 'active', $1, 'public'), " +
-          "       ('00000000-0000-4000-8000-bbbbbbbbbbbb', 'Priv', '2026', 3, '2026-01-01', '2026-12-31', 'active', $1, 'private')",
+          "       ('00000000-0000-4000-8000-bbbbbbbbbbbb', 'Priv', '2026', 4, '2026-01-01', '2026-12-31', 'active', $1, 'private')",
         [subjectPlayerId],
       );
       await testPool.query(
         'INSERT INTO legendary.team_member_events (team_id, player_id, team_size, role, joined_at, actor_id) ' +
           "VALUES ('00000000-0000-4000-8000-aaaaaaaaaaaa', $1, 3, 'member', now(), $1), " +
           "       ('00000000-0000-4000-8000-aaaaaaaaaaaa', $2, 3, 'member', now(), $1), " +
-          "       ('00000000-0000-4000-8000-bbbbbbbbbbbb', $1, 3, 'member', now(), $1), " +
-          "       ('00000000-0000-4000-8000-bbbbbbbbbbbb', $3, 3, 'member', now(), $1)",
+          "       ('00000000-0000-4000-8000-bbbbbbbbbbbb', $1, 4, 'member', now(), $1), " +
+          "       ('00000000-0000-4000-8000-bbbbbbbbbbbb', $3, 4, 'member', now(), $1)",
         [subjectPlayerId, f1PlayerId, f2PlayerId],
       );
 

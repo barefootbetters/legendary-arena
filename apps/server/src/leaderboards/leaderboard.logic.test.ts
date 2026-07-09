@@ -247,9 +247,16 @@ async function createTestAccount(
 // why: full WP-053 happy-path seeding for a single
 // (account, state) pair. Order of operations mirrors the
 // production submission flow: ownership row first (defaults to
-// 'private'), then visibility update if a non-private value was
-// requested, then the WP-053 submission via stubbed deps. The
-// returned hash is what every WP-054 read path will key on.
+// 'private'), then a visibility update to an eligible value, then
+// the WP-053 submission via stubbed deps. Submission-time
+// visibility must be non-private (submitCompetitiveScoreImpl
+// rejects 'private' with visibility_not_eligible per D-5302), so a
+// 'private' fixture submits under 'public' and retracts to
+// 'private' AFTER the record is accepted. Post-acceptance
+// retraction is exactly the production path the visibility
+// exclusion tests exercise: the accepted record is immutable, and
+// the WP-054 read layer filters on CURRENT ownership visibility.
+// The returned hash is what every WP-054 read path will key on.
 async function seedScore(args: {
   account: PlayerAccount;
   state: LegendaryGameState;
@@ -268,17 +275,17 @@ async function seedScore(args: {
     ownership.ok === true,
     `assignReplayOwnership failed: ${JSON.stringify(ownership)}`,
   );
-  if (args.visibility !== 'private') {
-    const visibilityUpdate = await updateReplayVisibility(
-      ownership.value.ownershipId,
-      args.visibility,
-      args.pool,
-    );
-    assert.ok(
-      visibilityUpdate.ok === true,
-      `updateReplayVisibility failed: ${JSON.stringify(visibilityUpdate)}`,
-    );
-  }
+  const submissionVisibility: ReplayVisibility =
+    args.visibility === 'private' ? 'public' : args.visibility;
+  const visibilityUpdate = await updateReplayVisibility(
+    ownership.value.ownershipId,
+    submissionVisibility,
+    args.pool,
+  );
+  assert.ok(
+    visibilityUpdate !== null,
+    `updateReplayVisibility returned null: no ownership row matched ownershipId ${ownership.value.ownershipId}`,
+  );
   const deps = buildSubmissionDeps(args.state, hash, args.scenarioKey);
   const submissionResult = await submitCompetitiveScoreImpl(
     args.account,
@@ -290,6 +297,17 @@ async function seedScore(args: {
     submissionResult.ok === true,
     `submitCompetitiveScoreImpl failed: ${JSON.stringify(submissionResult)}`,
   );
+  if (args.visibility === 'private') {
+    const retraction = await updateReplayVisibility(
+      ownership.value.ownershipId,
+      'private',
+      args.pool,
+    );
+    assert.ok(
+      retraction !== null,
+      `post-submission visibility retraction returned null: no ownership row matched ownershipId ${ownership.value.ownershipId}`,
+    );
+  }
   return hash;
 }
 
@@ -310,6 +328,20 @@ describe('leaderboard logic (WP-054)', () => {
 
   after(async () => {
     if (testPool !== null) {
+      // why: WP-342 precedent (competition.logic.test.ts) — leave the
+      // shared test database CLEAN when this file's last test
+      // finishes. The per-test beforeEach only cleans BEFORE each
+      // test, so rows seeded by the final test (including the Tier-1
+      // badge a successful submission issues) would otherwise leak
+      // into later test files, whose own `DELETE FROM
+      // legendary.players` then FK-faults on legendary.player_badges
+      // in a serialized full-suite run. The TRUNCATE ... CASCADE
+      // also clears badge rows via the players FK.
+      await testPool.query(
+        'TRUNCATE TABLE legendary.competitive_scores, ' +
+          'legendary.replay_ownership, legendary.replay_blobs, ' +
+          'legendary.players RESTART IDENTITY CASCADE',
+      );
       await testPool.end();
       testPool = null;
     }
