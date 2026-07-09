@@ -27696,4 +27696,43 @@ item of the D-24119 arc** — the remainder is operational (Render deploy + appl
 
 **Packet:** WP-340 + EC-370. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
 
+### D-24129 — Play Route Hydrates the Broker Session (Non-Guarded); My-Scores View Restored After the #597 Revert
+
+**Status:** Active (post-execution) 2026-07-09.
+
+**User-Visible Surface:** `play.legendary-arena.com` (D-24026 live-verify post-deploy).
+
+**Context.** Jeff's first live test of the D-24119 loop (2026-07-09) showed the on-gameover
+banner reading *"sign in to submit your score to the leaderboard"* — for a signed-in player.
+Root cause: `shouldHydrateSession` (App.vue's mount-time predicate, `routeAuthPolicy.ts`) hydrated
+the cached broker session only on `me`, `admin-billing`, and `lobby` — **not `live`**, the
+play/match route. But `live` is exactly where a match reaches gameover, and WP-339's
+`useCompetitiveSubmitOnGameover` reads `useAuthStore().token` to decide whether to submit. With no
+hydration on `live`, the token was `null` for everyone on the play page, so every finished match
+showed the guest prompt and never submitted — even for an authenticated player. This is the same
+class of bug PR #547 fixed for the lobby (guarded create/join with no token hydration → login
+bounce). Discovered while fixing it: `MyProfilePage.vue` was **red on `main`** — #597 (EC-362),
+merged 2 hours after WP-339 (#617), took WP-339's "Competitive Scores" `<template>` but reverted
+its `<script>` in a per-block merge conflict, leaving the template bound to undefined refs
+(`vue-tsc` fail).
+
+**Decision.** (1) `shouldHydrateSession` gains `|| route === 'live'`: the play route hydrates the
+cached broker session in the background so an authenticated player's token is present by gameover.
+`isGuardedRoute('live')` stays **`false`** — `live` is NOT guarded, so a guest still plays/spectates
+with no render-block and no login redirect (only `me` + `admin-billing` guard). A guest's token
+stays `null`, so the guest prompt remains correct for guests. (2) `MyProfilePage.vue`'s WP-339
+My-Scores script is restored byte-identically (the `fetchMyScores` import, the
+`competitiveScores`/`scoresLoading`/`scoresError` refs, `loadScores`, its `onMounted` call, and the
+`setup()` return entries) so the already-present template resolves.
+
+**Not changed.** Client-only — no `apps/server`, `packages/**`, migration, or `functions/` change.
+No new route, no guard change (guest play/spectate is unaffected). §21 not triggered.
+
+**Gates.** `arena-client` typecheck (vue-tsc) PASS (cleared main's red); `arena-client` test
+**762/762** (+2 `routeAuthPolicy` asserts — `live` hydrates + is not guarded); `pnpm -r build` 0.
+Live-verify (D-24026) deploy-dependent: sign in on `play.legendary-arena.com`, finish a match,
+confirm the score submits (not the guest prompt) and appears under "My Scores".
+
+**Packet:** WP-341 + EC-371. **Drafted:** 2026-07-09. **Executed:** 2026-07-09.
+
 Protect this file.
