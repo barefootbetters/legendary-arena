@@ -13,6 +13,7 @@ related:
   - hugo-web-system.md
   - data-file-locations.md
   - r2-image-naming-convention.md
+  - leaderboard.md
 status: draft
 source:
   - ../docs/ai/work-packets/WP-102-public-profile-page.md
@@ -24,8 +25,12 @@ source:
   - ../docs/ai/work-packets/WP-296-avatar-cdn-host-unification.md
   - ../docs/ai/work-packets/WP-298-owner-profile-avatar-upload-ui.md
   - ../docs/ai/work-packets/WP-299-owner-profile-edit-ux-polish.md
+  - ../docs/ai/work-packets/WP-338-submit-by-matchid-server.md
+  - ../docs/ai/work-packets/WP-339-arena-submit-my-scores.md
+  - ../apps/arena-client/src/pages/MyProfilePage.vue
+  - ../apps/arena-client/src/composables/useCompetitiveSubmitOnGameover.ts
   - ../docs/ai/work-packets/WORK_INDEX.md
-last-reviewed: 2026-07-03
+last-reviewed: 2026-07-09
 ---
 
 # Profile Login
@@ -157,6 +162,7 @@ Like the login screen, none of it lives in the marketing repo:
 | Saved loadouts (library + public share) | **[WP-301](../docs/ai/work-packets/WP-301-profile-loadout-library-server.md)** (server) + **[WP-302](../docs/ai/work-packets/WP-302-profile-loadout-library-client.md)** (client) — both Done 2026-07-01 | `?route=me` "Saved Loadouts" section + `?loadout=<shareSlug>` public page | Vision **§19b** loadout library: a signed-in player saves LAGN loadouts to their account (create by pasting LAGN JSON, list / rename / public-private toggle / delete / copy-share-link) and shares a public one via an opaque slug. **Server (WP-301):** migration `022_create_player_loadouts.sql` (`legendary.player_loadouts`), `POST/GET /api/me/loadouts` + `PATCH/DELETE /api/me/loadouts/:id` (authenticated-session) + guest `GET /api/loadouts/:shareSlug` (**public-only** — 404 on private/missing, never leaks `accountId`); server-side LAGN `validate` on every write; per-account cap **50** (**D-24086**). **Client (WP-302):** the owner section plus a net-new **unguarded** `SharedLoadoutPage.vue` at `?loadout=<shareSlug>` (name + `displayHandle` + composition summary), treating LAGN as opaque JSON (no validator import). **Decorative-not-merit (§19b / §19a)** — never a competitive-submission path (**D-24087**). Lobby "Save this loadout" / "Load into lobby" integration deferred to **WP-303**. |
 | Team affiliation | WP-109 | both profile views | Profile-level cooperative cohorts; extends `PublicProfileView` (4→5 keys) and `OwnerProfileView` (7→8 keys). |
 | Badges | WP-105 | both profile views | Tier-1 gameplay badges (migration 013); fire-and-forget issuance in the competition pipeline. |
+| Competitive scores ("My Scores") + on-gameover submission | **[WP-338](../docs/ai/work-packets/WP-338-submit-by-matchid-server.md)** (server) + **[WP-339](../docs/ai/work-packets/WP-339-arena-submit-my-scores.md)** (client) — both Done 2026-07-08, deployed 2026-07-09 | `?route=me` "Competitive Scores" section + a fire-once submit watcher at `PlayViewport` | The player-facing end of the **D-24119 faithful-replay arc**. On gameover, an *authenticated* player's arena-client submits the match's competitive score **by `matchId`** (the client never computes a `replayHash`; the server resolves + captures on-demand + verifies + auto-publishes + scores — see [Leaderboard → the write path](leaderboard.md#from-a-finished-match-to-a-ranked-row-the-write-path)). A **guest is never submitted** — the on-gameover status line instead prompts a sign-in. The owner profile then reads **`GET /api/me/scores`** (`authenticated-session-required`) to list the player's own submitted scores. **Auth-gated end to end:** submission requires the WP-112 session → WP-107 unsuspended → non-guest `PlayerAccount` chain (a guest hits `guest_not_eligible`); the `MyProfilePage` list attaches the bearer token like every other `/api/me/*` call. Reserves **D-24126** (submit-by-matchId + auto-publish) + **D-24127** (client fire-once, authed-only). |
 | Avatar | WP-106 (pipeline) + **[WP-298](../docs/ai/work-packets/WP-298-owner-profile-avatar-upload-ui.md)** (upload UI) — host unified by **[WP-296](../docs/ai/work-packets/WP-296-avatar-cdn-host-unification.md)** | owner profile | `POST /api/me/avatar` upload pipeline. Avatars are served from `https://images.legendary-arena.com/avatars/{accountId}.webp` — the **same** Cloudflare custom domain + `legendary-images` R2 bucket as card images, unified under **D-24083** (WP-296, 2026-06-30). The legacy `images.barefootbetters.com` avatar host is retired; `AVATAR_CDN_BASE`, the closed-origin `validateAvatarUrl` allowlist, and existing `avatar_url` rows (migration 021) all moved. **WP-298 (2026-06-30)** wires the pipeline into the client: `MyProfilePage.vue` (`?route=me`) gained a `<input type="file">` + "Upload avatar" control that calls a new `uploadOwnerAvatar(authToken, file)` wrapper in `ownerProfileApi.ts` (multipart field `avatar`) and updates the displayed avatar on success. Before WP-298 the page exposed **only** a free-text avatar-URL field that was effectively unusable, because the closed-origin allowlist accepts only the `images.legendary-arena.com/avatars/` URLs this endpoint produces — a player had no way to generate one. The free-text field is retained alongside the uploader; the server still owns resize → `{accountId}.webp` (D-10601). See [R2 Image Naming Convention](r2-image-naming-convention.md). |
 | Billing & funding history | WP-108 | `BillingSection` in `MyProfilePage.vue` | Benefits / purchase history / community funding panels; `GET /api/me/billing/history`. |
 | Integrity / anti-cheat | WP-107 | admin-only | `/api/admin/players/:handle/` suspend / integrity / unsuspend endpoints over profiles. |

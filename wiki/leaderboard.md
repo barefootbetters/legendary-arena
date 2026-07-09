@@ -29,13 +29,23 @@ source:
   - ../packages/game-engine/src/scoring/parScoring.keys.ts
   - ../packages/game-engine/src/scoring/parScoring.logic.ts
   - ../apps/server/src/competition/competition.logic.ts
+  - ../apps/server/src/competition/competition.types.ts
+  - ../apps/server/src/competition/competition.routes.ts
+  - ../apps/server/src/replay/matchReplay.logic.ts
+  - ../apps/server/src/replay/matchCapture.logic.ts
   - ../apps/server/src/leaderboards/leaderboard.logic.ts
   - ../apps/server/src/legends/legends.publisher.ts
   - ../apps/server/src/profile/profile.routes.ts
   - ../apps/server/src/profile/ownerProfile.routes.ts
+  - ../apps/arena-client/src/lib/api/competitionApi.ts
+  - ../apps/arena-client/src/composables/useCompetitiveSubmitOnGameover.ts
   - ../data/migrations/007_create_competitive_scores_table.sql
+  - ../data/migrations/024_create_match_seat_accounts.sql
+  - ../data/migrations/025_create_bgio_replay_artifacts.sql
+  - ../docs/ai/work-packets/WP-338-submit-by-matchid-server.md
+  - ../docs/ai/work-packets/WP-339-arena-submit-my-scores.md
   - ../docs/ai/DESIGN-RANKING.md
-last-reviewed: 2026-07-08
+last-reviewed: 2026-07-09
 ---
 
 # Leaderboard
@@ -56,6 +66,18 @@ multi-tier *annual
 championship* structure (overall champion, per-mastermind championships,
 skill tiers, yearly archive) is a **proposal**, not a landed design — it
 lives in [Open Questions](#open-questions) until ratified.
+
+As of **2026-07-09** the **write path is also complete and deployed**: the
+**D-24119 faithful-replay arc (WP-333 → WP-340)** wired the full
+capture → submit → verify → score → leaderboard loop, and the server is live
+on that code (verified `GET /api/version` → `gitSha: b20b97a`). A finished
+match on `play.legendary-arena.com` now becomes a stored competitive score by
+`matchId` alone — the server captures the match, re-executes it through the
+faithful reducer, hash-verifies it, and scores it on the PAR-calibrated turn
+scale. See [From a finished match to a ranked row](#from-a-finished-match-to-a-ranked-row-the-write-path).
+The board will fill on its ~5-minute publish cycle once authenticated players
+finish real matches (the remaining precondition is match volume + the
+arena-client's own Cloudflare Pages deploy, not any missing code).
 
 ## Mechanics
 
@@ -128,37 +150,75 @@ invented.
 
 ### From a finished match to a ranked row (the write path)
 
-The board is the *last* stage of a longer pipeline. The **read** direction
-(snapshot → board) is fully shipped and wired; the **write** direction (a
-played match → a stored score) is only partially wired — the gap is called
-out at the end of this section, and it is the real reason the live board is
-currently empty.
+The board is the *last* stage of a longer pipeline. Both directions are now
+**built and deployed**: the **read** direction (snapshot → board) shipped
+earlier, and the **write** direction (a played match → a stored score) was
+completed by the **D-24119 faithful-replay arc (WP-333 → WP-340)** and went
+live on the server on **2026-07-09** (verified: `GET /api/version` →
+`gitSha: b20b97a`, the WP-340 merge; `GET /api/me/scores` → `401`, i.e. the
+route is wired and its auth gate runs). The earlier "no submission endpoint"
+gap is closed. The one remaining precondition for rows to *appear* is simply
+authenticated players finishing real matches on `play.legendary-arena.com`
+(and the arena-client, a separate Cloudflare Pages deploy, carrying the WP-339
+client — see [Edge Cases](#edge-cases)).
 
-The intended end-to-end chain, in order:
+The end-to-end chain, in order:
 
-1. **The engine scores the match — the client never does.** During play the
-   engine computes the PAR score deterministically
-   ([`parScoring.logic.ts`](../packages/game-engine/src/scoring/parScoring.logic.ts):
-   `deriveScoringInputs` → `computeRawScore` → `computeFinalScore` →
-   `buildScoreBreakdown`), and the completed match yields a replay whose
-   `computeStateHash` is its canonical fingerprint. Lower `finalScore` is
-   better (negative = under PAR).
+1. **Seat → account identity is recorded at match join.** When an
+   authenticated player joins, the server writes their server-verified
+   `AccountId` to `legendary.match_seat_accounts` (`(match_id, player_id) →
+   account_id`; migration `024_create_match_seat_accounts.sql`, WP-333 /
+   D-24120). This is stored **server-side only** — never in boardgame.io
+   `player.data`/`setupData` (which is visible to opponents). It is the link
+   that lets a finished match's replay be attributed to the right accounts.
 
-2. **Submission carries only a replay hash.** The submission contract is
-   `CompetitiveSubmissionRequest = { replayHash: string }`
-   (`apps/server/src/competition/competition.types.ts`) — no score is ever
-   sent by the client. The server (`submitCompetitiveScore` →
-   `submitCompetitiveScoreImpl`,
-   `apps/server/src/competition/competition.logic.ts`) resolves replay
-   ownership, loads the canonical replay, **re-executes it** (`replayGame`),
-   and rejects the submission unless the recomputed `computeStateHash`
-   equals the submitted `replayHash` (`replay_verification_failed`). Only
-   then does it recompute the score server-side — it never trusts a
-   client-supplied number (D-5301). Guests are rejected
-   (`guest_not_eligible`); a scenario whose PAR is unpublished is rejected
-   (`par_not_published`).
+2. **On gameover, the match is captured into a durable, replayable
+   artifact.** A background scan harvester (WP-335 / D-24122) reconstructs
+   each finished match via the **faithful reducer**
+   (`reduceMatchToFinalState`,
+   [`matchReplay.logic.ts`](../apps/server/src/replay/matchReplay.logic.ts),
+   WP-334 / D-24121): it re-executes the match's *persisted* boardgame.io
+   `initialState + log` (from the WP-309 `bgio.matches` store) through
+   boardgame.io's **own** reducer — seed- and turn-hook-faithful by
+   construction — to reproduce the exact live final `G`, then hashes it with
+   `computeStateHash`. It stores `{ initialState, log }` in
+   `bgio.replay_artifacts` (migration `025_create_bgio_replay_artifacts.sql`)
+   keyed by that `replayHash`, and calls `assignReplayOwnership` for each
+   authenticated seat (from `match_seat_accounts`). The artifact is durable
+   so it survives the WP-327 reaper deleting the live match row. *(Reduction
+   faithfulness for multi-turn matches was a real subtlety: play-phase
+   `endTurn` events are logged `automatic: false`, so the reducer must
+   re-dispatch **only** player `MAKE_MOVE` entries and let the framework
+   regenerate every move-triggered transition — D-24124.)*
 
-3. **The row is written to `legendary.competitive_scores`.** One immutable,
+3. **The client submits by `matchId`; the server does everything else.**
+   The submission contract is `CompetitiveSubmissionRequest = { matchId:
+   string }` (`apps/server/src/competition/competition.types.ts`, WP-338 /
+   D-24126) — the client **cannot** compute `computeStateHash`, so it never
+   sends a `replayHash` and never a score. `POST /api/competition/scores`
+   (`authenticated-session-required`) runs
+   `submitCompetitiveScoreByMatchIdForRequest`
+   ([`competition.logic.ts`](../apps/server/src/competition/competition.logic.ts)):
+   guest guard → **gameover gate** (unfinished → `409 match_not_finished`) →
+   **resolve `replayHash` by `match_id`** (capturing **on-demand** if the
+   5-minute harvester scan has not run yet) → confirm the caller's ownership
+   (a **by-account** lookup, so a co-owner of a two-authenticated-seat match
+   is not mis-rejected — WP-340 / D-24128) → **auto-publish** that ownership
+   `private → public` (submitting is consent-to-publish) → delegate to the
+   verify+score core. The core re-reduces the artifact and rejects the
+   submission unless the recomputed `computeStateHash` equals the stored
+   `replayHash` (`replay_verification_failed`); it never trusts a
+   client-supplied number (D-5301). Then it scores server-side with
+   `deriveScoringInputs → computeRawScore → computeFinalScore →
+   buildScoreBreakdown`
+   ([`parScoring.logic.ts`](../packages/game-engine/src/scoring/parScoring.logic.ts)).
+   **`rounds` is the completed play-turn count** (`ReplayResult.turnCount`),
+   matching how the PAR baselines were calibrated — *not* the move count that
+   an earlier MVP proxy used (D-24123 / D-24125). Guests are rejected
+   (`guest_not_eligible`); an unpublished-PAR scenario is rejected
+   (`par_not_published`). Lower `finalScore` is better (negative = under PAR).
+
+4. **The row is written to `legendary.competitive_scores`.** One immutable,
    write-once row per `(player_id, replay_hash)` (migration
    `007_create_competitive_scores_table.sql`; immutability per D-5302).
    Columns: `player_id` (bigint FK → `legendary.players`), `replay_hash`,
@@ -167,10 +227,11 @@ The intended end-to-end chain, in order:
    **There is no handle or team column** — the stored identity is the
    internal `player_id`; a display name is attached later by JOIN. The
    `UNIQUE (player_id, replay_hash)` constraint gives per-replay idempotency
-   (a resubmit is a no-op), but there is **no best-score-per-player
-   collapsing** — every distinct eligible replay is its own row.
+   (a resubmit returns the existing record with `wasExisting: true`), but
+   there is **no best-score-per-player collapsing** — every distinct eligible
+   replay is its own row.
 
-4. **The read layer projects rows to a safe public shape.**
+5. **The read layer projects rows to a safe public shape.**
    [`leaderboard.logic.ts`](../apps/server/src/leaderboards/leaderboard.logic.ts)
    (WP-054 / WP-115 / WP-150) SELECTs from `competitive_scores`,
    `INNER JOIN legendary.players` for `display_name`, orders
@@ -184,7 +245,7 @@ The intended end-to-end chain, in order:
    `/scenarios/:scenarioKey`, `/scores/:replayHash`, `/themes/:themeId`,
    `/top`.
 
-5. **The publisher freezes reads into R2 snapshots.** WP-142's publisher
+6. **The publisher freezes reads into R2 snapshots.** WP-142's publisher
    ([`legends.publisher.ts`](../apps/server/src/legends/legends.publisher.ts))
    calls the *same* read-layer functions (`getGlobalTopLeaderboard`,
    `getScenarioLeaderboard`, `listScenarioKeys`) inside one read-only
@@ -194,20 +255,6 @@ The intended end-to-end chain, in order:
    (D-14204) so a reader never sees a manifest pointing at half-written
    boards. The board SPA then fetches those files — see
    [Data flow](#data-flow-zero-api-snapshot-driven).
-
-**What is NOT wired yet — the gap that matters.** There is **no HTTP
-endpoint** that accepts a score submission. `submitCompetitiveScore` is a
-complete, tested *library* surface, but nothing in
-[`apps/server/src/server.mjs`](../apps/server/src/server.mjs) registers a
-submit route — the transport is explicitly deferred
-(`competition.types.ts` scopes the packet to "the library surface, not the
-transport"). So `legendary.competitive_scores` receives no rows from
-`play.legendary-arena.com` today; it is written only by test fixtures. This —
-not merely low match volume — is why the live board shows `global-top` with
-`rowCount: 0` and no per-scenario boards: with an empty table
-`listScenarioKeys` returns nothing, so only the (empty) `global-top` board is
-emitted. Wiring the submission endpoint is the missing link between "match
-finished" and "row on the board."
 
 ## Interactions
 
@@ -255,14 +302,24 @@ between a player's profile and their rankings is the single
   visibility toggles, links, saved loadouts, billing). `email` is absent
   here too.
 
-**No profile view displays any ranking data.** Nothing on either profile
-fetches or renders a leaderboard standing, rank, personal best, or scenario
-history. The public profile carries an inert **"Rank — coming soon
-(WP-054 / WP-055)"** tab that makes zero network requests, and the server
-wiring notes that the profile surface intentionally carries "no leaderboard /
-competitive-score surface" (Vision §19b). There is no `/api/me/scores`
-endpoint — a `listPlayerCompetitiveScores` library function exists but has no
-route and no client caller.
+**The OWNER profile now shows the player's own submitted scores (WP-339);
+the PUBLIC profile still shows no ranking.** As of the D-24119 arc:
+
+- **Owner ("my") profile — has a "Competitive Scores" section.**
+  `MyProfilePage.vue` (`?route=me`) now fetches **`GET /api/me/scores`**
+  (WP-338 / D-24126 — backed by `listPlayerCompetitiveScores`, which finally
+  has a route) on mount and lists the signed-in player's submitted scores
+  (final score, scenario, date; with loading/empty/error states). This is the
+  player's *own* history, gated to their authenticated session — not a public
+  ranking. Submission itself fires automatically from the arena-client **on
+  gameover** for an authenticated player (a fire-once watcher at
+  `PlayViewport`; a guest is never submitted and instead sees a "sign in to
+  submit" prompt — WP-339 / D-24127).
+- **Public profile — still no ranking data.** `PlayerProfilePage.vue` carries
+  the same inert **"Rank — coming soon (WP-054 / WP-055)"** tab that makes
+  zero network requests. Surfacing a *public* rank / standing on the public
+  profile is still deferred (and, per the identity rule below, must resolve by
+  `AccountId`, never by handle).
 
 **A deliberate identity rule governs how they may ever connect.** Ranking
 keys on the stable internal `player_id` / `AccountId`, **never on the
@@ -308,20 +365,25 @@ player ID, not the public handle.
   publisher was enabled in production on 2026-07-08
   (`LEGENDS_PUBLISHER_ENABLED=true`, made durable in `render.yaml` by
   PR #599); `GET /health/legends-publisher` reports `status: "ok"` with a
-  fresh `lastSuccessAt` and no errors. At enable time the live manifest
-  (`legends/v1/manifest.json`) exposed a **single board, `global-top`, with
-  `rowCount: 0`**. The deeper cause is upstream, not the board: the
-  `legendary.competitive_scores` table is empty because the score-submission
-  transport is **not yet wired** (see
-  [From a finished match to a ranked row](#from-a-finished-match-to-a-ranked-row-the-write-path))
-  — not merely low match volume. The board therefore renders its empty
-  "Overall Rankings" state (with a working "Updated N min ago" freshness
-  badge), not an error, and will fill on the next ~5-minute publish cycle
-  once submissions start writing rows. A blank board is a data-supply state,
-  not a board bug. Note the SPA ships five panel components (overall, weekly,
-  by-scheme, recent-achievements, now-playing), but only the boards the
-  publisher actually emits are rendered — at cutover that is just
-  `global-top`.
+  fresh `lastSuccessAt` and no errors. At publisher-enable time (2026-07-08)
+  the live manifest (`legends/v1/manifest.json`) exposed a **single board,
+  `global-top`, with `rowCount: 0`** — because the score-submission transport
+  was not yet wired and `legendary.competitive_scores` was empty. **That gap
+  is now closed:** the D-24119 arc (WP-333 → WP-340) wired the full write path
+  and the server is deployed on it (2026-07-09; see
+  [From a finished match to a ranked row](#from-a-finished-match-to-a-ranked-row-the-write-path)).
+  So an empty (or sparse) board is now genuinely a **data-supply** state —
+  authenticated players simply need to finish real matches — not a missing
+  endpoint. Two operational preconditions still gate rows actually appearing:
+  (a) enough authenticated matches get played and submitted, and (b) the
+  **arena-client** (`play.legendary-arena.com`, a separate Cloudflare Pages
+  deploy — *not* the Render server) has shipped the WP-339 client that fires
+  the on-gameover submission. The board renders its empty "Overall Rankings"
+  state (with a working "Updated N min ago" freshness badge), not an error,
+  and fills on the next ~5-minute publish cycle once rows exist. Note the SPA
+  ships five panel components (overall, weekly, by-scheme, recent-achievements,
+  now-playing), but only the boards the publisher actually emits are rendered
+  — until per-scenario scores accumulate, that is just `global-top`.
 - **Cross-version comparison is never silent.** Rows carry a
   `scoringConfigVersion`; any PAR or weight change increments it, and rows
   under different versions are not directly comparable (VISION §22). Any
