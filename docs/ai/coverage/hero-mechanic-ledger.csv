@@ -64,6 +64,7 @@ antm/wasp,Wasp,antm,size-changing,executable,,,packages/game-engine/src/hero/her
 antm/wonder-man,Wonder Man,antm,empowered,executable,WP-267,D-24044,packages/game-engine/src/hero/effectPrimitive.interpret.ts
 antm/wonder-man,Wonder Man,antm,optional-put-bottom-hq,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-put-bottom-hq
 antm/wonder-man,Wonder Man,antm,put-any-number-bottom-hq,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#put-any-number-bottom-hq
+antm/wonder-man,Wonder Man,antm,put-bottom-hq-icon-reward,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#put-bottom-hq-icon-reward
 antm/wonder-man,Wonder Man,antm,size-changing,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing
 asrd/beta-ray-bill,Beta Ray Bill,asrd,thrown-artifact,unsupported,,,
 asrd/beta-ray-bill,Beta Ray Bill,asrd,worthy,unsupported,,,
@@ -610,6 +611,7 @@ xmen/havok,Havok,xmen,lightshow,unsupported,,,
 xmen/havok,Havok,xmen,x-gene,unsupported,,,
 xmen/jubilee,Jubilee,xmen,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 xmen/jubilee,Jubilee,xmen,lightshow,unsupported,,,
+xmen/kitty-pryde,Kitty Pryde,xmen,put-bottom-hq-icon-reward,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#put-bottom-hq-icon-reward
 xmen/kitty-pryde,Kitty Pryde,xmen,soaring-flight,unsupported,,,
 xmen/kitty-pryde,Kitty Pryde,xmen,x-gene,unsupported,,,
 xmen/legion,Legion,xmen,berserk,executable,WP-256,D-24031,packages/game-engine/src/hero/effectPrimitive.interpret.ts

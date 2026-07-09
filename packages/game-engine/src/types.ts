@@ -556,6 +556,19 @@ export interface PendingOptionalPutBottomHQ {
   playerID: string;
   /** The hero card whose ability parked this choice (for provenance logging). */
   sourceCardId: CardExtId;
+  /**
+   * When true, the player MUST choose an HQ card — Decline is not offered (the
+   * printed "Put a card from the HQ…" mandatory form, e.g. Absorb Ambient Power).
+   * Absent/false is the optional "You may put a card…" form (Ionic Energy).
+   */
+  mandatory?: boolean | undefined;
+  /**
+   * When set, after the chosen card moves to the Hero Deck bottom the player gets
+   * this many +recruit if that card had a recruit icon AND this many +attack if it
+   * had an attack icon (both if both). The icon-conditional reward on Absorb Ambient
+   * Power ("+3 recruit / +3 attack"). Absent = no reward (Ionic Energy).
+   */
+  iconRewardMagnitude?: number | undefined;
 }
 
 /**

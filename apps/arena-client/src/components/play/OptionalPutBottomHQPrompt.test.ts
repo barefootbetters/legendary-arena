@@ -149,3 +149,42 @@ describe('OptionalPutBottomHQPrompt (Ionic Energy fix)', () => {
     assert.deepEqual(calls[1]!.args, { cardId: 'hq-card-3' });
   });
 });
+
+describe('OptionalPutBottomHQPrompt — mandatory form (Absorb Ambient Power, D-24133)', () => {
+  const mandatoryPending: UIPendingOptionalPutBottomHQ = {
+    playerID: 'player-0',
+    mandatory: true,
+    eligibleHqCards: [
+      { cardId: 'hq-card-1', display: { extId: 'hq-card-1', name: 'HQ Card 1', imageUrl: 'https://example.com/1.jpg', cost: 3 } },
+    ],
+  };
+
+  test('hides the Decline button when mandatory', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(OptionalPutBottomHQPrompt, {
+      props: { pendingOptionalPutBottomHQ: mandatoryPending, viewerPlayerId: 'player-0', submitMove },
+    });
+    assert.ok(!wrapper.find('[data-testid="put-bottom-hq-decline"]').exists(), 'no Decline for a mandatory choice');
+    // the card buttons are still present so the player can satisfy the required choice
+    assert.ok(wrapper.find('[data-testid="put-bottom-hq-card-hq-card-1"]').exists());
+  });
+
+  test('shows the Decline button for the optional form', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(OptionalPutBottomHQPrompt, {
+      props: { pendingOptionalPutBottomHQ: mockPending, viewerPlayerId: 'player-0', submitMove },
+    });
+    assert.ok(wrapper.find('[data-testid="put-bottom-hq-decline"]').exists(), 'optional form keeps Decline');
+  });
+
+  test('picking a card still fires resolveOptionalPutBottomHQ with { cardId } in the mandatory form', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(OptionalPutBottomHQPrompt, {
+      props: { pendingOptionalPutBottomHQ: mandatoryPending, viewerPlayerId: 'player-0', submitMove },
+    });
+    await wrapper.find('[data-testid="put-bottom-hq-card-hq-card-1"]').trigger('click');
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]!.name, 'resolveOptionalPutBottomHQ');
+    assert.deepEqual(calls[0]!.args, { cardId: 'hq-card-1' });
+  });
+});

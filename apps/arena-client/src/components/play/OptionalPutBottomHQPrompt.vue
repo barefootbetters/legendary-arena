@@ -119,7 +119,12 @@ export default defineComponent({
         />
       </button>
     </div>
+    <!-- why: D-24133 — Decline is offered only for the OPTIONAL form ("You may put
+         a card…", Ionic Energy). The MANDATORY form (Absorb Ambient Power) hides it
+         so the player cannot no-op a required choice (the engine also rejects a
+         decline while front.mandatory is set). -->
     <button
+      v-if="!pendingOptionalPutBottomHQ!.mandatory"
       type="button"
       class="put-bottom-hq-prompt__decline-btn"
       data-testid="put-bottom-hq-decline"

@@ -646,14 +646,19 @@ export interface UIHqCardChoice {
  * player; redacted for opponents and spectators. `eligibleHqCards` is recomputed
  * fresh from `G.hq` at projection time (the non-null HQ slots, in slot order), so
  * the client's `{ cardId }` selection always maps to a card the engine resolve
- * accepts (the round-trip rule). The choice is optional — the client also offers a
- * first-class Decline (`{ decline: true }`).
+ * accepts (the round-trip rule). The optional form (Ionic Energy) also offers a
+ * first-class Decline (`{ decline: true }`); the MANDATORY form (Absorb Ambient
+ * Power, `mandatory: true`) does not — the player must pick a card.
  */
 export interface UIPendingOptionalPutBottomHQ {
   // why: the redaction key; the chooser-only filter compares audience.playerId
   // against this, mirroring UIPendingVictoryPileCardPick.playerID.
   playerID: string;
   eligibleHqCards: UIHqCardChoice[];
+  // why: D-24133 — true for the mandatory "Put a card…" form (Absorb Ambient Power);
+  // the client hides the Decline control so the player cannot no-op a required choice.
+  // Absent/false is the optional "You may put a card…" form (Ionic Energy).
+  mandatory?: boolean;
 }
 
 /**

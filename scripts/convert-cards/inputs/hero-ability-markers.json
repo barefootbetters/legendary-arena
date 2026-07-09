@@ -136,7 +136,8 @@
     { "heroSlug": "jocasta", "cardSlug": "holographic-image-inducer", "abilityIndex": 1, "markupToken": "[keyword:draw:2]" },
     { "heroSlug": "wasp", "cardSlug": "tiny-winged-justice", "abilityIndex": 1, "markupToken": "[keyword:draw:1]" },
     { "heroSlug": "wonder-man", "cardSlug": "ionic-energy", "abilityIndex": 0, "markupToken": "[keyword:optional-put-bottom-hq:1]" },
-    { "heroSlug": "wonder-man", "cardSlug": "8th-wonder-of-the-world", "abilityIndex": 1, "markupToken": "[keyword:put-any-number-bottom-hq:1]" }
+    { "heroSlug": "wonder-man", "cardSlug": "8th-wonder-of-the-world", "abilityIndex": 1, "markupToken": "[keyword:put-any-number-bottom-hq:1]" },
+    { "heroSlug": "wonder-man", "cardSlug": "absorb-ambient-power", "abilityIndex": 0, "markupToken": "[keyword:put-bottom-hq-icon-reward:3]" }
   ],
   "asrd": [
     { "heroSlug": "warriors-three-the", "cardSlug": "fandral-the-dashing", "abilityIndex": 1, "markupToken": "[keyword:draw:1]" }
@@ -206,7 +207,8 @@
     { "heroSlug": "legion", "cardSlug": "channel-time", "abilityIndex": 0, "markupToken": "[keyword:draw:2]" },
     { "heroSlug": "phoenix", "cardSlug": "reincarnating-phoenix", "abilityIndex": 0, "markupToken": "[keyword:draw:2]" },
     { "heroSlug": "polaris", "cardSlug": "electromagnetic-pulse", "abilityIndex": 1, "markupToken": "[keyword:draw:1]" },
-    { "heroSlug": "psylocke", "cardSlug": "psychic-knife", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" }
+    { "heroSlug": "psylocke", "cardSlug": "psychic-knife", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" },
+    { "heroSlug": "kitty-pryde", "cardSlug": "intangible-qualities", "abilityIndex": 0, "markupToken": "[keyword:put-bottom-hq-icon-reward:2]" }
   ],
   "_deferred": [
     {

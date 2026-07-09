@@ -233,7 +233,7 @@ describe('buildHeroAbilityHooks', () => {
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 25 canonical keyword values', () => {
+  it('contains exactly the 26 canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -260,12 +260,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'size-changing', // why: D-24074 / WP-290 — class-grant-on-play keyword
       'optional-put-bottom-hq', // why: Ionic Energy — optional put-a-HQ-card-on-bottom-of-Hero-Deck mechanic
       'put-any-number-bottom-hq', // why: D-24132 — multi-select put-any-number-of-HQ-cards-on-bottom-of-Hero-Deck mechanic
+      'put-bottom-hq-icon-reward', // why: D-24133 — mandatory single-card put-bottom + recruit/attack icon reward (Absorb Ambient Power)
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      25,
-      'HERO_KEYWORDS must have exactly 25 entries',
+      26,
+      'HERO_KEYWORDS must have exactly 26 entries',
     );
 
     assert.deepStrictEqual(

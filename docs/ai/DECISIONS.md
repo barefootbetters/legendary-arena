@@ -27966,3 +27966,48 @@ baseline-reproduced as pre-existing.
 **Packet:** WP-343 + EC-373. **Drafted:** 2026-07-09. **Executed:** 2026-07-09.
 
 Protect this file.
+
+### D-24133 — Absorb Ambient Power: mandatory single-card put-bottom-HQ + recruit/attack icon reward
+
+**Status:** Active (post-execution) 2026-07-09. `D-24026` live-verify operator-pending on deploy.
+
+**User-Visible Surface:** play.legendary-arena.com (any match with Wonder Man's Absorb Ambient
+Power or Kitty Pryde's Intangible Qualities in the hero deck).
+
+**Context.** Operator play-testing on gitSha `60b4ec7` found Absorb Ambient Power ("Put a card from
+the HQ on the bottom of the Hero Deck. If that card had a recruit icon, you get +3 recruit. If that
+card had an attack icon, you get +3 attack. (if both, get both.)") was a HOLLOW no-op — played 8× in
+one game, never moving a card or granting the reward. It is the third member of the HQ→bottom family:
+`optional-put-bottom-hq` (D-24118, Ionic Energy — optional single, no reward) and
+`put-any-number-bottom-hq` (D-24132 — multi-select + Empowered) were already implemented; this
+mandatory single-card + icon-reward form was not.
+
+**Decision.** A new keyword `put-bottom-hq-icon-reward` EXTENDS the single-card `optional-put-bottom-hq`
+infrastructure rather than duplicating it: the same `G.pendingOptionalPutBottomHQ` queue, the same
+`resolveOptionalPutBottomHQ` move, the same `UIPendingOptionalPutBottomHQ` projection + chooser
+redaction, the same `OptionalPutBottomHQPrompt.vue`, and the same End-Turn gate
+(`hasPendingOptionalPutBottomHQ`) all carry it. The park handler parks a `PendingOptionalPutBottomHQ`
+with two new optional fields: `mandatory: true` (Decline is rejected by the move and hidden by the
+prompt — the player MUST pick a card) and `iconRewardMagnitude` (the reward amount, from the marker
+magnitude). On resolve, after the chosen card moves to the BOTTOM of the shared Hero Deck and the HQ
+slot refills (the recruitHero path, per D-24118), the player gets +N recruit if the moved card had a
+recruit icon (`cardStats.recruit > 0`) and +N attack if it had an attack icon (`cardStats.attack > 0`),
+both if both. No new move (move-set unchanged), no new pending queue, no new End-Turn param.
+
+**Parser.** The marker `[keyword:put-bottom-hq-icon-reward:N]` needs no dedicated extraction step — the
+generic `KEYWORD_PATTERN` loop already records the keyword and captures N, and the effect builder's
+fallback emits `{ type, magnitude: N }`; the park handler reads the magnitude. Marked on 2 cards across
+2 sets: `antm/wonder-man/absorb-ambient-power` (N=3) and `xmen/kitty-pryde/intangible-qualities` (N=2).
+
+**Not changed.** No migration; no `computeStateHash`/replay-hash change (the move + reward were
+fixture-unreachable, so no golden shifts); `G.messages` lines added on resolve are hash-excluded
+(D-24081); no server/`functions/` change.
+
+**Gates.** `pnpm -r build` 0; engine test **1843/1843** (new move mandatory/reward tests, park test,
+projection test + the two bumped drift tests — 26 keywords / 13 handlers); arena-client typecheck
+(vue-tsc) 0; arena-client test **793/793** (prompt mandatory/Decline-hidden tests); all Hero-Effect-
+Coverage gates green (`ledger:heroes`, `mechanics:metadata` regenerated).
+
+**Packet:** Bug fix (Absorb Ambient Power hollow effect). **Drafted:** 2026-07-09. **Executed:** 2026-07-09.
+
+Protect this file.

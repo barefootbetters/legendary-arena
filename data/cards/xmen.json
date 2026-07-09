@@ -947,7 +947,7 @@
           "attack": "0+",
           "recruit": "0+",
           "abilities": [
-            "Put a card from the HQ on the bottom of the Hero deck. If that card had a [icon:recruit], get +2[icon:recruit]. If that card had an [icon:attack], you get +2[icon:attack]. (If both, get both.)"
+            "Put a card from the HQ on the bottom of the Hero deck. If that card had a [icon:recruit], get +2[icon:recruit]. If that card had an [icon:attack], you get +2[icon:attack]. (If both, get both.) [keyword:put-bottom-hq-icon-reward:2]"
           ]
         },
         {

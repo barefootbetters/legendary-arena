@@ -35,6 +35,7 @@ function makeTestGameState(
     heroDeck?: CardExtId[];
     deck?: CardExtId[];
     pendingOptionalPutBottomHQ?: PendingOptionalPutBottomHQ[];
+    cardStats?: Record<string, { attack: number; recruit: number; cost: number; fightCost: number }>;
   } = {},
 ): LegendaryGameState {
   const state: LegendaryGameState = {
@@ -84,7 +85,7 @@ function makeTestGameState(
       piercing: 0,
       woundsDrawn: 0,
     },
-    cardStats: {},
+    cardStats: (overrides.cardStats ?? {}) as Record<string, { attack: number; recruit: number; cost: number; fightCost: number }>,
     cardKeywords: {},
     heroDeck: overrides.heroDeck ?? [],
     escapedPile: [],
@@ -300,5 +301,115 @@ describe('resolveOptionalPutBottomHQ — no-op guards', () => {
 
     assert.deepEqual(state.hq, ['hq-a', null, null, null, null]);
     assert.deepEqual(state.heroDeck, ['top']);
+  });
+});
+
+describe('resolveOptionalPutBottomHQ — mandatory form (Absorb Ambient Power)', () => {
+  it('a mandatory choice cannot be declined (no-op, queue intact)', () => {
+    const state = makeTestGameState({
+      hq: ['hq-a' as CardExtId, null, null, null, null],
+      heroDeck: ['top' as CardExtId],
+      pendingOptionalPutBottomHQ: [
+        { playerID: '0', sourceCardId: 'src' as CardExtId, mandatory: true, iconRewardMagnitude: 3 },
+      ],
+    });
+    const context = makeMoveContext(state);
+
+    resolveOptionalPutBottomHQ(context, { decline: true });
+
+    // decline rejected — nothing moved, choice still pending
+    assert.deepEqual(state.hq, ['hq-a', null, null, null, null]);
+    assert.deepEqual(state.heroDeck, ['top']);
+    assert.equal(state.pendingOptionalPutBottomHQ!.length, 1);
+  });
+});
+
+describe('resolveOptionalPutBottomHQ — icon reward', () => {
+  it('grants +N recruit when the moved card has a recruit icon (recruit>0)', () => {
+    const state = makeTestGameState({
+      hq: ['recruit-card' as CardExtId, null, null, null, null],
+      heroDeck: ['top' as CardExtId],
+      cardStats: { 'recruit-card': { attack: 0, recruit: 2, cost: 3, fightCost: 0 } },
+      pendingOptionalPutBottomHQ: [
+        { playerID: '0', sourceCardId: 'src' as CardExtId, mandatory: true, iconRewardMagnitude: 3 },
+      ],
+    });
+    const context = makeMoveContext(state);
+
+    resolveOptionalPutBottomHQ(context, { cardId: 'recruit-card' as CardExtId });
+
+    assert.equal(state.turnEconomy.recruit, 3, '+3 recruit granted');
+    assert.equal(state.turnEconomy.attack, 0, 'no attack (card has no attack icon)');
+    // heroDeck ['top'] → push recruit-card → ['top','recruit-card'] → refill pops 'top' → ['recruit-card']
+    assert.deepEqual(state.heroDeck, ['recruit-card']);
+    assert.equal(state.pendingOptionalPutBottomHQ!.length, 0);
+  });
+
+  it('grants +N attack when the moved card has an attack icon (attack>0)', () => {
+    const state = makeTestGameState({
+      hq: ['attack-card' as CardExtId, null, null, null, null],
+      heroDeck: ['top' as CardExtId],
+      cardStats: { 'attack-card': { attack: 1, recruit: 0, cost: 3, fightCost: 0 } },
+      pendingOptionalPutBottomHQ: [
+        { playerID: '0', sourceCardId: 'src' as CardExtId, mandatory: true, iconRewardMagnitude: 3 },
+      ],
+    });
+    const context = makeMoveContext(state);
+
+    resolveOptionalPutBottomHQ(context, { cardId: 'attack-card' as CardExtId });
+
+    assert.equal(state.turnEconomy.attack, 3, '+3 attack granted');
+    assert.equal(state.turnEconomy.recruit, 0, 'no recruit (card has no recruit icon)');
+  });
+
+  it('grants BOTH +N recruit and +N attack when the moved card has both icons', () => {
+    const state = makeTestGameState({
+      hq: ['both-card' as CardExtId, null, null, null, null],
+      heroDeck: ['top' as CardExtId],
+      cardStats: { 'both-card': { attack: 2, recruit: 2, cost: 5, fightCost: 0 } },
+      pendingOptionalPutBottomHQ: [
+        { playerID: '0', sourceCardId: 'src' as CardExtId, mandatory: true, iconRewardMagnitude: 3 },
+      ],
+    });
+    const context = makeMoveContext(state);
+
+    resolveOptionalPutBottomHQ(context, { cardId: 'both-card' as CardExtId });
+
+    assert.equal(state.turnEconomy.recruit, 3);
+    assert.equal(state.turnEconomy.attack, 3);
+  });
+
+  it('grants NOTHING when the moved card has neither icon', () => {
+    const state = makeTestGameState({
+      hq: ['blank-card' as CardExtId, null, null, null, null],
+      heroDeck: ['top' as CardExtId],
+      cardStats: { 'blank-card': { attack: 0, recruit: 0, cost: 3, fightCost: 0 } },
+      pendingOptionalPutBottomHQ: [
+        { playerID: '0', sourceCardId: 'src' as CardExtId, mandatory: true, iconRewardMagnitude: 3 },
+      ],
+    });
+    const context = makeMoveContext(state);
+
+    resolveOptionalPutBottomHQ(context, { cardId: 'blank-card' as CardExtId });
+
+    assert.equal(state.turnEconomy.recruit, 0);
+    assert.equal(state.turnEconomy.attack, 0);
+    assert.deepEqual(state.heroDeck, ['blank-card'], 'card still moved (mandatory), just no reward');
+    assert.equal(state.pendingOptionalPutBottomHQ!.length, 0);
+  });
+
+  it('the optional form (no iconRewardMagnitude) grants no reward', () => {
+    const state = makeTestGameState({
+      hq: ['recruit-card' as CardExtId, null, null, null, null],
+      heroDeck: ['top' as CardExtId],
+      cardStats: { 'recruit-card': { attack: 0, recruit: 2, cost: 3, fightCost: 0 } },
+      pendingOptionalPutBottomHQ: [{ playerID: '0', sourceCardId: 'src' as CardExtId }],
+    });
+    const context = makeMoveContext(state);
+
+    resolveOptionalPutBottomHQ(context, { cardId: 'recruit-card' as CardExtId });
+
+    assert.equal(state.turnEconomy.recruit, 0, 'Ionic Energy form grants no icon reward');
+    assert.equal(state.turnEconomy.attack, 0);
   });
 });
