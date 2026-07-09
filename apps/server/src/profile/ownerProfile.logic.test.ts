@@ -353,11 +353,15 @@ describe('owner profile logic (WP-104)', () => {
     async () => {
       assert.ok(testPool !== null);
       const accountId = await provisionAccount(testPool, 'getrow');
+      // why: the D-10601 closed-origin allowlist accepts exactly one
+      // avatarUrl per account — the canonical per-user R2 object —
+      // so the fixture derives it from the provisioned accountId.
+      const canonicalAvatarUrl = `https://images.legendary-arena.com/avatars/${accountId}.webp`;
       // first PATCH creates the row
       const patched = await upsertOwnerProfile(
         accountId,
         {
-          avatarUrl: 'https://example.com/avatar.png',
+          avatarUrl: canonicalAvatarUrl,
           aboutMe: 'I love this game.',
           avatarVisibility: 'public',
         },
@@ -368,7 +372,7 @@ describe('owner profile logic (WP-104)', () => {
       // GET returns the row
       const fetched = await getOwnerProfile(accountId, testPool);
       assert.ok(fetched.ok === true);
-      assert.equal(fetched.value.avatarUrl, 'https://example.com/avatar.png');
+      assert.equal(fetched.value.avatarUrl, canonicalAvatarUrl);
       assert.equal(fetched.value.aboutMe, 'I love this game.');
       assert.equal(fetched.value.avatarVisibility, 'public');
       assert.equal(fetched.value.aboutMeVisibility, 'private');
@@ -382,18 +386,22 @@ describe('owner profile logic (WP-104)', () => {
     async () => {
       assert.ok(testPool !== null);
       const accountId = await provisionAccount(testPool, 'sparse');
+      // why: the D-10601 closed-origin allowlist accepts exactly one
+      // avatarUrl per account — the canonical per-user R2 object —
+      // so the fixture derives it from the provisioned accountId.
+      const canonicalAvatarUrl = `https://images.legendary-arena.com/avatars/${accountId}.webp`;
 
       // first PATCH sets two fields
       const first = await upsertOwnerProfile(
         accountId,
         {
-          avatarUrl: 'https://example.com/initial.png',
+          avatarUrl: canonicalAvatarUrl,
           aboutMe: 'Initial about-me.',
         },
         testPool,
       );
       assert.ok(first.ok === true);
-      assert.equal(first.value.avatarUrl, 'https://example.com/initial.png');
+      assert.equal(first.value.avatarUrl, canonicalAvatarUrl);
       assert.equal(first.value.aboutMe, 'Initial about-me.');
 
       // second PATCH leaves both unchanged via empty body
@@ -401,7 +409,7 @@ describe('owner profile logic (WP-104)', () => {
       assert.ok(second.ok === true);
       assert.equal(
         second.value.avatarUrl,
-        'https://example.com/initial.png',
+        canonicalAvatarUrl,
         'empty PATCH body must leave avatarUrl unchanged',
       );
       assert.equal(
@@ -428,14 +436,19 @@ describe('owner profile logic (WP-104)', () => {
         'aboutMe key absent from PATCH body must leave the field unchanged',
       );
 
-      // fourth PATCH sets avatarUrl to the literal four-character string "null"
+      // why: fourth PATCH re-sets a string value after the explicit
+      // null clear, proving the cleared column is not sticky and a
+      // string is never confused with SQL NULL. The closed-origin
+      // allowlist leaves exactly one valid string per account, so
+      // the canonical URL stands in for the historical
+      // arbitrary-string fixture.
       const fourth = await upsertOwnerProfile(
         accountId,
-        { avatarUrl: 'https://example.com/null' },
+        { avatarUrl: canonicalAvatarUrl },
         testPool,
       );
       assert.ok(fourth.ok === true);
-      assert.equal(fourth.value.avatarUrl, 'https://example.com/null');
+      assert.equal(fourth.value.avatarUrl, canonicalAvatarUrl);
     },
   );
 
