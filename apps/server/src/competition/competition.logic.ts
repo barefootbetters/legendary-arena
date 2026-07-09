@@ -505,16 +505,29 @@ export async function submitCompetitiveScoreImpl(
   }
   const account: PlayerAccount = identity;
 
-  // step 2 — ownership lookup
-  const ownership = await findReplayOwnership(replayHash, database);
+  // why: step 2 — the CALLER's ownership row, by (accountId, replayHash). A
+  // finished match with two authenticated seats assigns ownership to BOTH
+  // accounts, so `findReplayOwnership`'s LIMIT-1 (no ORDER BY) could return the
+  // OTHER seat's row and mis-reject a legitimate co-owner (D-24128, resolving the
+  // D-24126 follow-up). Resolving the caller's own row makes the owner check exact.
+  const ownership = await findReplayOwnershipForAccount(
+    account.accountId,
+    replayHash,
+    database,
+  );
   if (ownership === null) {
-    return { ok: false, reason: 'replay_not_found' };
+    // why: the caller owns nothing for this replay. Distinguish "no account owns
+    // it at all" (replay_not_found — not captured / no owner) from "owned, but not
+    // by the caller" (not_owner) via a secondary existence probe, preserving the
+    // exact reason contract.
+    const anyOwnership = await findReplayOwnership(replayHash, database);
+    return {
+      ok: false,
+      reason: anyOwnership === null ? 'replay_not_found' : 'not_owner',
+    };
   }
 
-  // step 3 — owner check
-  if (ownership.accountId !== account.accountId) {
-    return { ok: false, reason: 'not_owner' };
-  }
+  // step 3 — owner check is implicit: `ownership` is the caller's own row.
 
   // why: step 4 — visibility checked at submission time only per
   // D-5302. Once accepted, a competitive record is immutable; a

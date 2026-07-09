@@ -1,6 +1,6 @@
 # WP-340 — Competitive Verifier Co-Owner Hardening (By-Account Ownership Lookup)
 
-**Status:** Draft — Ready to execute (pending operator review)
+**Status:** Done (executed 2026-07-08)
 **Primary Layer:** Server (`apps/server/**`)
 **Dependencies:** WP-053 (`submitCompetitiveScoreImpl`, the flow being hardened), WP-052 (`findReplayOwnership`, `assignReplayOwnership`), WP-338/D-24126 (added `findReplayOwnershipForAccount` and flagged this follow-up)
 **EC:** EC-370

@@ -331,6 +331,85 @@ describe('competition logic (WP-053)', () => {
   );
 
   // -------------------------------------------------------------------------
+  // Test 1b — DB-dependent: a co-owner (2 authenticated seats) is accepted (WP-340)
+  // -------------------------------------------------------------------------
+
+  test(
+    'accepts a co-owner of a 2-authenticated-seat match (submitting as the non-first owner)',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      // Two accounts BOTH own the same replay (a 2-authenticated-seat match).
+      const accountAResult = await createPlayerAccount(
+        { email: 'wp340-a@example.test', displayName: 'A', authProvider: 'email', authProviderId: 'wp340-a' },
+        testPool,
+      );
+      const accountBResult = await createPlayerAccount(
+        { email: 'wp340-b@example.test', displayName: 'B', authProvider: 'email', authProviderId: 'wp340-b' },
+        testPool,
+      );
+      assert.ok(accountAResult.ok === true && accountBResult.ok === true);
+
+      // A is assigned FIRST — findReplayOwnership's LIMIT-1 (no ORDER BY) returns
+      // it, so the old code mis-rejected B as not_owner.
+      const ownershipA = await assignReplayOwnership(
+        accountAResult.value.accountId,
+        TEST_REPLAY_HASH,
+        TEST_SCENARIO_KEY,
+        testPool,
+      );
+      const ownershipB = await assignReplayOwnership(
+        accountBResult.value.accountId,
+        TEST_REPLAY_HASH,
+        TEST_SCENARIO_KEY,
+        testPool,
+      );
+      assert.ok(ownershipA.ok === true && ownershipB.ok === true);
+      // B (the caller) makes their own replay public so the visibility gate passes.
+      await updateReplayVisibility(ownershipB.value.ownershipId, 'public', testPool);
+
+      // Submit as B — the second owner. The by-account lookup resolves B's own row.
+      const result = await submitCompetitiveScoreImpl(
+        accountBResult.value,
+        TEST_REPLAY_HASH,
+        testPool,
+        HAPPY_PATH_DEPS,
+      );
+      assert.ok(
+        result.ok === true,
+        `a co-owner must be accepted, got ${JSON.stringify(result)}`,
+      );
+      assert.strictEqual(result.wasExisting, false);
+      assert.strictEqual(result.record.replayHash, TEST_REPLAY_HASH);
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // Test 1c — DB-dependent: an unowned replay is replay_not_found (WP-340)
+  // -------------------------------------------------------------------------
+
+  test(
+    'returns replay_not_found for a replay no account owns',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const accountResult = await createPlayerAccount(
+        { email: 'wp340-none@example.test', displayName: 'None', authProvider: 'email', authProviderId: 'wp340-none' },
+        testPool,
+      );
+      assert.ok(accountResult.ok === true);
+      // No ownership row exists for this hash → the secondary existence probe is
+      // also null → replay_not_found (distinct from not_owner).
+      const result = await submitCompetitiveScore(
+        accountResult.value,
+        'wp340-unowned-hash',
+        testPool,
+      );
+      assert.deepEqual(result, { ok: false, reason: 'replay_not_found' });
+    },
+  );
+
+  // -------------------------------------------------------------------------
   // Test 2 — logic-pure: guest fail-fast (no DB hits)
   // -------------------------------------------------------------------------
 

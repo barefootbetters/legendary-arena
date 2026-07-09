@@ -7,6 +7,29 @@
 
 ## Current State
 
+### WP-340 / EC-370 Executed — Competitive Verifier Co-Owner Hardening (D-24128 Active) (2026-07-08)
+
+**No user-observable change — infrastructure only.** The D-24126-flagged follow-up, closing
+the last open *code* item of the D-24119 arc.
+
+`submitCompetitiveScoreImpl`'s owner check resolved ownership with `findReplayOwnership` (a
+`LIMIT 1` query returning an arbitrary owner), so a match with **two authenticated seats** (both
+own the replay) could mis-reject a legitimate co-owner as `not_owner`. Step 2 now resolves the
+**caller's own** row via `findReplayOwnershipForAccount` (added by WP-338), with a secondary
+`findReplayOwnership` existence probe to keep `replay_not_found` (no owner) distinct from
+`not_owner` (owned, not caller); the separate `accountId` compare is removed; step 4 reads the
+caller's visibility. Everything from the idempotency fast-path onward is byte-unchanged;
+`findReplayOwnership` itself is untouched.
+
+- **Server-only; no engine change, no migration; §21 light Notes touch (no contract change).**
+- **Gates:** `pnpm -r build` 0; server no-DB suite green; DB-gated vs local Postgres — a
+  co-owner-accepted test (submitting as the second-inserted owner, which the LIMIT-1 lookup would
+  mis-reject) + a `replay_not_found` test; the existing stranger-`not_owner` / happy / rawScore /
+  idempotency + WP-338 by-matchId tests unchanged in outcome.
+- **Arc status:** with WP-340 the D-24119 faithful-replay arc has **zero open code items**. The
+  remainder is operational only — deploy server WP-333..338 on Render + PROD-apply migrations
+  024/025 to light the live loop.
+
 ### WP-339 / EC-369 Executed — Arena-Client Submit-After-Match + "My Scores" (D-24127 Active) — ARC CODE-COMPLETE (2026-07-08)
 
 **User-Visible change (post-deploy): `play.legendary-arena.com`.** WP-5b — the LAST piece of

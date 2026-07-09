@@ -27627,3 +27627,41 @@ submit-by-matchId + on-demand capture (WP-338) → faithful reduce + verify + tu
 **Packet:** WP-339 + EC-369. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
 
 Protect this file.
+
+### D-24128 — Competitive Verifier Owner Check Is By-Account (Co-Owner Correctness)
+
+**Status:** Active (post-execution) 2026-07-08.
+
+**User-Visible Surface:** none — infrastructure.
+
+**Context.** `submitCompetitiveScoreImpl` (WP-053) resolved ownership with
+`findReplayOwnership(replayHash)` — a `LIMIT 1` query with no `ORDER BY`, returning an
+ARBITRARY owner row. A finished match with two authenticated seats assigns ownership to BOTH
+accounts (WP-335 capture), so for such a match step 3's `ownership.accountId !== account.accountId`
+could mis-reject a legitimate co-owner as `not_owner`, and step 4 could read the wrong account's
+visibility. WP-338's `submitCompetitiveScoreByMatchIdForRequest` already routed its own flow
+through `findReplayOwnershipForAccount`, but the shared impl it delegates to did not — flagged as
+the D-24126 follow-up.
+
+**Decision.** `submitCompetitiveScoreImpl` step 2 resolves the CALLER's ownership row via
+`findReplayOwnershipForAccount(account.accountId, replayHash)`. On `null`, a secondary
+`findReplayOwnership(replayHash)` existence probe distinguishes `replay_not_found` (no account owns
+it) from `not_owner` (owned, but not by the caller) — preserving the exact reason contract. The
+separate `accountId` compare (old step 3) is removed (the resolved row IS the caller's); step 4
+reads the caller's own visibility; step 5 the caller's `scenarioKey`. Everything from the step-4b
+idempotency fast-path onward is byte-unchanged. `findReplayOwnership` itself is unchanged (other
+callers — leaderboard reads, etc. — depend on it).
+
+**Not changed.** No engine edit; no migration; no `computeStateHash`/reduction/scoring change; the
+endpoint request/response/status/auth are unchanged (only owner *eligibility semantics* improve —
+a co-owner is now accepted). §21 is a light Notes touch on the `POST /api/competition/scores` row.
+
+**Gates.** `pnpm -r build` 0; `apps/server` no-DB suite green; DB-gated vs local Postgres — a
+co-owner-accepted test (submitting as the second-inserted owner, which the LIMIT-1 lookup would
+mis-reject) + a `replay_not_found` test; the existing stranger-`not_owner` / happy / rawScore /
+idempotency + the WP-338 by-matchId tests unchanged in outcome. **This closes the last open code
+item of the D-24119 arc** — the remainder is operational (Render deploy + apply migrations 024/025).
+
+**Packet:** WP-340 + EC-370. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
+
+Protect this file.
