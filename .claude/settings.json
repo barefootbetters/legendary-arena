@@ -11,5 +11,37 @@
         ]
       }
     ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(git fetch *)",
+      "Bash(git remote prune origin)",
+      "Bash(node scripts/prune-empty-claude-branch.mjs --report *)",
+      "Bash(node scripts/prune-empty-claude-branch.mjs --verify-current *)",
+      "Bash(node scripts/roadmap-counts.mjs --check *)",
+      "Bash(curl -sI *)",
+      "Bash(pnpm -r build *)",
+      "Bash(pnpm test *)",
+      "Bash(pnpm typecheck *)",
+      "Bash(pnpm format:check *)",
+      "Bash(pnpm wiki-viewer:check-links *)",
+      "Bash(pnpm mechanics:metadata:check *)",
+      "Bash(pnpm --filter @legendary-arena/arena-client test *)",
+      "Bash(pnpm --filter @legendary-arena/arena-client typecheck *)",
+      "Bash(pnpm --filter @legendary-arena/arena-client build *)",
+      "Bash(pnpm --filter @legendary-arena/game-engine test *)",
+      "Bash(pnpm --filter @legendary-arena/game-engine build *)",
+      "Bash(pnpm --filter @legendary-arena/server test *)",
+      "Bash(pnpm --filter @legendary-arena/registry test *)",
+      "Bash(pnpm --filter @legendary-arena/registry build *)",
+      "mcp__figma__get_screenshot",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push)",
+      "Bash(git push -u origin claude/*)",
+      "Bash(git push origin claude/*)",
+      "Bash(gh pr create *)",
+      "Bash(gh pr merge *)"
+    ]
   }
 }
