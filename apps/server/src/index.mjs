@@ -76,6 +76,10 @@ async function main() {
       legendsPublisherHandle = startLegendsPublisher({
         bucket: process.env.R2_LEGENDS_BUCKET ?? '',
         database: pool,
+        // why: WP-342 / D-24131 — the startup-built gauntlet catalog; the
+        // publisher emits gauntlet boards + gauntlet-index alongside the
+        // WP-142 boards when this is present.
+        gauntletCatalog: started.gauntletCatalog,
         intervalMs: getLegendsPublisherIntervalMs(),
         leaderboardDeps: started.leaderboardDeps,
         r2Client,

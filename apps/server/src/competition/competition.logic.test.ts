@@ -23,9 +23,11 @@ import { describe, test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  COMPETITIVE_OUTCOMES,
   SUBMISSION_REJECTION_REASONS,
 } from './competition.types.js';
 import type {
+  CompetitiveOutcome,
   CompetitiveScoreRecord,
   SubmissionRejectionReason,
 } from './competition.types.js';
@@ -49,6 +51,10 @@ import {
   computeRawScore,
   computeStateHash,
   deriveScoringInputs,
+  // why: WP-342 — the outcome tests hardcode no counter strings; the
+  // win/loss fixture counters use the canonical constants (code-style
+  // §Patterns to Avoid).
+  ENDGAME_CONDITIONS,
   LegendaryGame,
 } from '@legendary-arena/game-engine';
 
@@ -134,6 +140,22 @@ const TEST_FINAL_STATE = {
 } as unknown as LegendaryGameState;
 
 const TEST_REPLAY_HASH = computeStateHash(TEST_FINAL_STATE);
+
+// why: WP-342 outcome fixtures — identical to TEST_FINAL_STATE except the
+// counters, which the engine's pure endgame evaluation reads: a defeated
+// mastermind evaluates to 'heroes-win'; a completed scheme evaluates to
+// 'scheme-wins'. Distinct counters produce distinct canonical hashes, so
+// each fixture is its own submittable replay identity. Counter keys come
+// from the canonical ENDGAME_CONDITIONS constants (never string literals).
+const WIN_FINAL_STATE = {
+  ...(TEST_FINAL_STATE as unknown as Record<string, unknown>),
+  counters: { [ENDGAME_CONDITIONS.MASTERMIND_DEFEATED]: 1 },
+} as unknown as LegendaryGameState;
+
+const LOSS_FINAL_STATE = {
+  ...(TEST_FINAL_STATE as unknown as Record<string, unknown>),
+  counters: { [ENDGAME_CONDITIONS.SCHEME_LOSS]: 1 },
+} as unknown as LegendaryGameState;
 
 // why: minimal ScenarioScoringConfig satisfying validateScoringConfig's
 // engine-side monotonicity invariants (per parScoring.logic.ts §config
@@ -256,6 +278,17 @@ describe('competition logic (WP-053)', () => {
 
   after(async () => {
     if (testPool !== null) {
+      // why: WP-342 — leave the shared test database CLEAN when this file's
+      // last test finishes. The per-test beforeEach only cleans BEFORE each
+      // test, so rows seeded by the final test (including the Tier-1 badge a
+      // successful submission issues) would otherwise leak into later test
+      // files, whose own `DELETE FROM legendary.players` then FK-faults on
+      // legendary.player_badges — a serialized-full-suite cascade.
+      await testPool.query('DELETE FROM legendary.competitive_scores');
+      await testPool.query('DELETE FROM legendary.replay_ownership');
+      await testPool.query('DELETE FROM legendary.replay_blobs');
+      await testPool.query('DELETE FROM legendary.player_badges');
+      await testPool.query('DELETE FROM legendary.players');
       await testPool.end();
       testPool = null;
     }
@@ -626,6 +659,10 @@ describe('competition logic (WP-053)', () => {
         computeStateHash(TEST_FINAL_STATE),
       );
       assert.strictEqual(result.record.replayHash, TEST_REPLAY_HASH);
+      // why: WP-342 defensive-null path — TEST_FINAL_STATE has empty
+      // counters, so the endgame evaluation is null and the stored
+      // outcome is NULL (never a rejection).
+      assert.strictEqual(result.record.outcome, null);
 
       // Round-trip: findCompetitiveScore returns the same record.
       const lookup = await findCompetitiveScore(TEST_REPLAY_HASH, testPool);
@@ -869,6 +906,152 @@ describe('competition logic (WP-053)', () => {
     const _recordReference: CompetitiveScoreRecord | null = null;
     assert.strictEqual(_recordReference, null);
   });
+
+  // -------------------------------------------------------------------------
+  // WP-342 — outcome persistence (D-24131 §3)
+  // -------------------------------------------------------------------------
+
+  test('COMPETITIVE_OUTCOMES array matches CompetitiveOutcome union', () => {
+    function assertNever(value: never): never {
+      throw new Error(
+        `COMPETITIVE_OUTCOMES contains a value not present in the CompetitiveOutcome union: ${String(value)}.`,
+      );
+    }
+    for (const outcome of COMPETITIVE_OUTCOMES) {
+      switch (outcome) {
+        case 'heroes-win':
+        case 'scheme-wins':
+          break;
+        default:
+          assertNever(outcome);
+      }
+    }
+    const expectedOutcomes: readonly CompetitiveOutcome[] = [
+      'heroes-win',
+      'scheme-wins',
+    ];
+    for (const outcome of expectedOutcomes) {
+      assert.ok(
+        COMPETITIVE_OUTCOMES.includes(outcome),
+        `COMPETITIVE_OUTCOMES missing union member: ${outcome}`,
+      );
+    }
+    assert.strictEqual(
+      COMPETITIVE_OUTCOMES.length,
+      expectedOutcomes.length,
+      'COMPETITIVE_OUTCOMES length mismatch — drift between union and canonical array.',
+    );
+  });
+
+  test(
+    'winning submission persists outcome heroes-win',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const accountResult = await createPlayerAccount(
+        {
+          email: 'wp342-win@example.test',
+          displayName: 'Win Owner',
+          authProvider: 'email',
+          authProviderId: 'wp342-win',
+        },
+        testPool,
+      );
+      assert.ok(accountResult.ok === true);
+      const account = accountResult.value;
+
+      const winHash = computeStateHash(WIN_FINAL_STATE);
+      const ownershipResult = await assignReplayOwnership(
+        account.accountId,
+        winHash,
+        TEST_SCENARIO_KEY,
+        testPool,
+      );
+      assert.ok(ownershipResult.ok === true);
+      await updateReplayVisibility(
+        ownershipResult.value.ownershipId,
+        'public',
+        testPool,
+      );
+
+      const winDeps = {
+        reduceReplay: async () => ({
+          finalState: WIN_FINAL_STATE,
+          stateHash: winHash,
+          turnCount: TEST_TURN_COUNT,
+        }),
+        checkParPublished: stubCheckParPublished,
+      } as unknown as Parameters<typeof submitCompetitiveScoreImpl>[3];
+
+      const result = await submitCompetitiveScoreImpl(
+        account,
+        winHash,
+        testPool,
+        winDeps,
+      );
+      assert.ok(result.ok === true);
+      assert.strictEqual(result.record.outcome, 'heroes-win');
+
+      // Round-trip: the listed record carries the same outcome.
+      const listed = await listPlayerCompetitiveScores(
+        account.accountId,
+        testPool,
+      );
+      assert.strictEqual(listed.length, 1);
+      assert.strictEqual(listed[0].outcome, 'heroes-win');
+    },
+  );
+
+  test(
+    'losing submission persists outcome scheme-wins',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const accountResult = await createPlayerAccount(
+        {
+          email: 'wp342-loss@example.test',
+          displayName: 'Loss Owner',
+          authProvider: 'email',
+          authProviderId: 'wp342-loss',
+        },
+        testPool,
+      );
+      assert.ok(accountResult.ok === true);
+      const account = accountResult.value;
+
+      const lossHash = computeStateHash(LOSS_FINAL_STATE);
+      const ownershipResult = await assignReplayOwnership(
+        account.accountId,
+        lossHash,
+        TEST_SCENARIO_KEY,
+        testPool,
+      );
+      assert.ok(ownershipResult.ok === true);
+      await updateReplayVisibility(
+        ownershipResult.value.ownershipId,
+        'public',
+        testPool,
+      );
+
+      const lossDeps = {
+        reduceReplay: async () => ({
+          finalState: LOSS_FINAL_STATE,
+          stateHash: lossHash,
+          turnCount: TEST_TURN_COUNT,
+        }),
+        checkParPublished: stubCheckParPublished,
+      } as unknown as Parameters<typeof submitCompetitiveScoreImpl>[3];
+
+      const result = await submitCompetitiveScoreImpl(
+        account,
+        lossHash,
+        testPool,
+        lossDeps,
+      );
+      assert.ok(result.ok === true);
+      assert.strictEqual(result.record.outcome, 'scheme-wins');
+    },
+  );
 });
 
 // ---------------------------------------------------------------------------

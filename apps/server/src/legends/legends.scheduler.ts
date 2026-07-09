@@ -15,6 +15,7 @@
  */
 
 import type { DatabaseClient, LeaderboardDependencies } from '../leaderboards/leaderboard.types.js';
+import type { GauntletDefinition } from './gauntlet.logic.js';
 import type {
   LegendsPublisherHealthState,
   LegendsR2Client,
@@ -63,6 +64,9 @@ export function getLegendsPublisherHealth(): LegendsPublisherHealthState {
 export function startLegendsPublisher(options: {
   readonly bucket: string;
   readonly database: DatabaseClient;
+  // why: optional (WP-342 / D-24131) — forwarded verbatim to publishAllBoards;
+  // absent means no gauntlet boards, byte-identical WP-142 behavior.
+  readonly gauntletCatalog?: readonly GauntletDefinition[];
   readonly intervalMs?: number;
   readonly leaderboardDeps: LeaderboardDependencies;
   readonly r2Client: LegendsR2Client;
@@ -103,6 +107,7 @@ export function startLegendsPublisher(options: {
         options.r2Client,
         options.bucket,
         options.leaderboardDeps,
+        options.gauntletCatalog,
       );
 
       const anyFailed = result.boards.some(
