@@ -557,6 +557,114 @@ async function checkPostgresConnection() {
   }
 }
 
+// why: migrations are applied via psql -f (the 024/025/026 operator
+// pattern), which writes no runner ledger — so currency is proven by each
+// migration's observable schema effect, not by a bookkeeping row. This map
+// carries a signature probe for the LATEST migration only; earlier ones
+// are all idempotent CREATE/ALTER IF NOT EXISTS and are re-runnable. When
+// a new data/migrations/NNN_*.sql lands, add its row here — the check
+// fails loudly on a missing entry, so the map cannot silently go stale.
+const MIGRATION_SIGNATURES = {
+  '026_add_outcome_to_competitive_scores.sql':
+    "SELECT 1 FROM information_schema.columns " +
+    "WHERE table_schema = 'legendary' AND table_name = 'competitive_scores' " +
+    "AND column_name = 'outcome'",
+};
+
+/**
+ * Verifies the connected database has the latest data/migrations/*.sql
+ * applied, and reminds the operator how DB-gated tests must be run.
+ *
+ * Surfaced during the WP-342 execution session (2026-07-09): eleven
+ * DB-gated server tests had silently rotted on main because CI never
+ * sets TEST_DATABASE_URL (all DB tests skip there) and no local check
+ * verified the database was migration-current before a DB-gated run.
+ * This check closes the operational half of that gap so "my DB-gated
+ * run failed because migration NNN was never applied" is caught here
+ * instead of mid-suite.
+ *
+ * DB-gated test runs must also be SERIALIZED (--test-concurrency=1):
+ * node:test runs test files concurrently by default and the DB-gated
+ * files share one database, so parallel runs race each other's table
+ * cleanup. The remediation string carries the canonical invocation.
+ */
+async function checkDatabaseMigrationsCurrent() {
+  const databaseUrl = env.TEST_DATABASE_URL || env.DATABASE_URL;
+
+  if (!databaseUrl) {
+    recordWarning('CONNECTIONS', 'DB migrations current',
+      'Neither TEST_DATABASE_URL nor DATABASE_URL is set; cannot verify migration currency.',
+      'Add DATABASE_URL to .env. See .env.example.');
+    return;
+  }
+
+  let repoMigrationFiles;
+  try {
+    const { readdirSync } = await import('node:fs');
+    repoMigrationFiles = readdirSync('data/migrations')
+      .filter((fileName) => /^\d{3}_.+\.sql$/.test(fileName))
+      .sort();
+  } catch (readError) {
+    recordWarning('CONNECTIONS', 'DB migrations current',
+      `Could not read data/migrations/: ${readError.message}`,
+      'Run this check from the repository root.');
+    return;
+  }
+
+  if (repoMigrationFiles.length === 0) {
+    recordWarning('CONNECTIONS', 'DB migrations current',
+      'No NNN_*.sql files found under data/migrations/.',
+      'Run this check from the repository root.');
+    return;
+  }
+
+  const latestRepoMigration = repoMigrationFiles[repoMigrationFiles.length - 1];
+  const signatureQuery = MIGRATION_SIGNATURES[latestRepoMigration];
+
+  // why: fail loudly when the newest migration has no signature entry —
+  // otherwise this check would keep reporting the PREVIOUS migration's
+  // currency and silently stop catching the very drift it exists for.
+  if (signatureQuery === undefined) {
+    recordResult('CONNECTIONS', 'DB migrations current', false,
+      `The latest migration (${latestRepoMigration}) has no signature entry in MIGRATION_SIGNATURES — this check cannot verify it and is effectively stale.`,
+      'Add a schema-effect probe for the new migration to MIGRATION_SIGNATURES in scripts/check-connections.mjs (one SELECT that returns a row only when the migration has been applied).');
+    return;
+  }
+
+  try {
+    const pgPackagePath = findPackageJson('pg');
+    let pgModule;
+    if (pgPackagePath) {
+      const workspaceRequire = createRequire(pgPackagePath);
+      pgModule = workspaceRequire('pg');
+    } else {
+      pgModule = await import('pg');
+    }
+    const Pool = pgModule.default?.Pool || pgModule.Pool;
+    const pool = new Pool({
+      connectionString: databaseUrl,
+      connectionTimeoutMillis: CONNECTION_TIMEOUT_MS,
+    });
+
+    const signatureResult = await pool.query(signatureQuery);
+    await pool.end();
+
+    if (signatureResult.rows.length === 0) {
+      recordResult('CONNECTIONS', 'DB migrations current', false,
+        `The connected database is missing the schema effect of the latest migration (${latestRepoMigration}); DB-gated test runs will fail against the missing surface.`,
+        `Apply pending migrations with psql (all are idempotent): psql "$env:DATABASE_URL" -f data/migrations/${latestRepoMigration} — repeat for any earlier unapplied files. Then run DB-gated tests SERIALIZED: set TEST_DATABASE_URL and use --test-concurrency=1 (parallel test files race each other's cleanup on the shared database).`);
+      return;
+    }
+
+    recordResult('CONNECTIONS', 'DB migrations current', true,
+      `latest repo migration ${latestRepoMigration} is applied (${repoMigrationFiles.length} migration files). Reminder: DB-gated test runs require --test-concurrency=1.`);
+  } catch (connectionError) {
+    recordWarning('CONNECTIONS', 'DB migrations current',
+      `Could not verify migrations: ${connectionError.message}`,
+      'Check DATABASE_URL / TEST_DATABASE_URL and that PostgreSQL is running.');
+  }
+}
+
 /**
  * Checks the boardgame.io game server health endpoint.
  */
@@ -1348,6 +1456,7 @@ async function main() {
   console.log('CONNECTIONS (concurrent)');
   await Promise.allSettled([
     checkPostgresConnection(),
+    checkDatabaseMigrationsCurrent(),
     checkBoardgameioServer(),
     checkCloudflareR2(),
     checkCloudflareR2Cors(),
