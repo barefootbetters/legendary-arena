@@ -1,7 +1,15 @@
 # WP-338 — Submit-by-MatchId Competitive Submission + On-Demand Capture + `GET /api/me/scores` (WP-5a, Server)
 
-**Status:** Draft — Ready to execute (pending operator review)
+**Status:** Done (executed 2026-07-08)
 **Primary Layer:** Server (`apps/server/**`)
+
+> **Execution addendum (2026-07-08).** `apps/server/src/server.mjs` was **not** modified —
+> the orchestration self-wires the real helpers (`captureMatch`, `isMatchFinished`, etc.)
+> internally and `CompetitionRouteDependencies` is unchanged (only `checkParPublished` is
+> injected, already passed), so the `registerCompetitionRoutes` call needed no change. A
+> `player_badges` cleanup line was added to the DB-gated happy-path test's teardown (a
+> successful submission issues a Tier-1 badge that FK-blocks the `players` delete) — this is
+> within the `competition.logic.test.ts` allowlist entry.
 **Dependencies:** D-24119 (arc), D-24122 (capture + `bgio.replay_artifacts` + reaper capture-guard), D-24123/24124/24125 (faithful verifier + turns-native scoring), WP-332 (the submission endpoint being changed), WP-335 (`captureMatch` + artifact store), WP-336 (`reduceReplayByHash`), WP-052/053 (ownership + verifier)
 **EC:** EC-368
 **Baseline:** `origin/main` at `58a979f8` (2026-07-08)

@@ -7,6 +7,38 @@
 
 ## Current State
 
+### WP-338 / EC-368 Executed — Submit-by-MatchId + On-Demand Capture + `GET /api/me/scores` (D-24126 Active) (2026-07-08)
+
+**No user-observable change — infrastructure only** (the arena-client consumer is WP-339).
+WP-5a of the D-24119 arc — the server surface that makes a finished match submittable **from
+the `matchId` alone** (the client never obtains a `replayHash`).
+
+`POST /api/competition/scores`'s body changes `{ replayHash }` → **`{ matchId }`**. The new
+`submitCompetitiveScoreByMatchIdForRequest`: guest guard → **gameover gate** (`isMatchFinished`;
+unfinished → `409 match_not_finished`, never captured) → **resolve `replayHash` by `match_id`**
+(`readReplayHashByMatchId`, capturing **on-demand** via `captureMatch` when the 5-min scan
+hasn't run — the WP-335 reaper capture-guard keeps the row alive) → confirm the caller's
+ownership (`findReplayOwnershipForAccount`, by-account so a co-owner isn't mis-rejected) →
+**auto-publish** that ownership `private → public` (submission = consent-to-publish) → delegate
+to the **unchanged** `submitCompetitiveScoreForRequest`. Adds **`GET /api/me/scores`** →
+`listPlayerCompetitiveScores` (the "my scores" read WP-339 renders) and the `match_not_finished`
+rejection reason (canonical array + union + drift test, → 409).
+
+- **`submitCompetitiveScoreImpl` byte-unchanged; no engine edit; no migration.** The
+  verify+score pipeline (WP-053/336) is reused verbatim.
+- **`server.mjs` needed no change** — the orchestration self-wires the real helpers and
+  `CompetitionRouteDependencies` is unchanged (only `checkParPublished` is injected).
+- **Gates:** `pnpm -r build` 0; server no-DB suite green (route 15/15, drift, guest);
+  DB-gated vs local Postgres — the by-matchId flow (match_not_finished / on-demand-capture +
+  auto-publish + score + idempotent / not_owner), `readReplayHashByMatchId`, `isMatchFinished`,
+  `findReplayOwnershipForAccount` (co-owner disambiguation). §21 both endpoint rows +
+  Library-only rows.
+- **Flagged (WP-053 follow-up):** `findReplayOwnership`'s LIMIT-1 row could still mis-reject a
+  co-owner inside the shared impl; this packet routes its own flow through the by-account lookup.
+- **Out of scope:** the arena-client consumer (**WP-339**, WP-5b: gameover-submit watcher +
+  `competitionApi` + "my scores" UI). Standing operator item: migrations 024 + 025 still need
+  PROD-apply on Render for the live path.
+
 ### WP-337 / EC-367 Executed — Turns-Native Competitive Scoring (Retire the `moveCount` Proxy) (D-24125 Active) (2026-07-08)
 
 **No user-observable change — infrastructure only.** WP-4 of the D-24119 arc — the

@@ -340,6 +340,60 @@ export async function readReplayArtifactByHash(
 }
 
 /**
+ * Whether a match has reached gameover, read from its `bgio.matches` metadata.
+ * The submit-by-matchId flow (WP-338) gates on this BEFORE any capture: scoring is
+ * end-of-match only (D-4804), so an unfinished match must be rejected, never
+ * captured/scored on a non-terminal state. Mirrors the capture harvester's own
+ * gameover predicate (`jsonb_exists(metadata,'gameover')`).
+ *
+ * @param matchId The boardgame.io match id.
+ * @param database The caller-injected `pg` pool.
+ * @returns `true` when the match's metadata carries a `gameover`; `false` when the
+ *   match is absent or still in progress.
+ */
+export async function isMatchFinished(
+  matchId: string,
+  database: DatabaseClient,
+): Promise<boolean> {
+  const result = await database.query(
+    "SELECT (metadata ? 'gameover') AS finished FROM bgio.matches WHERE match_id = $1",
+    [matchId],
+  );
+  if (result.rows.length === 0) {
+    return false;
+  }
+  return result.rows[0].finished === true;
+}
+
+/**
+ * Resolve a finished match's canonical `replayHash` from the durable WP-335
+ * `bgio.replay_artifacts` store by its `match_id`. This is the lookup the
+ * submit-by-matchId flow (WP-338) uses: the arena-client submits a `matchId`, and
+ * the server needs the `replayHash` the capture step stored for it. Returns `null`
+ * when the match has not been captured yet (the caller then captures on-demand).
+ *
+ * @param matchId The boardgame.io match id.
+ * @param database The caller-injected `pg` pool.
+ * @returns The stored `replayHash`, or `null` when no artifact for the match exists.
+ */
+export async function readReplayHashByMatchId(
+  matchId: string,
+  database: DatabaseClient,
+): Promise<string | null> {
+  // why: LIMIT 1 — the capture step writes exactly one artifact per finished match
+  // (keyed by replay_hash, carrying the match_id), so at most one row matches; the
+  // limit documents that one-row expectation and guards a defensive extra row.
+  const result = await database.query(
+    'SELECT replay_hash FROM bgio.replay_artifacts WHERE match_id = $1 LIMIT 1',
+    [matchId],
+  );
+  if (result.rows.length === 0) {
+    return null;
+  }
+  return result.rows[0].replay_hash as string;
+}
+
+/**
  * Look up a submitted replay's durable artifact by `replayHash` and reduce it
  * to its final state. This is the faithful-path replacement for the WP-053
  * verifier's old `loadReplay` + `replayGame` pair (WP-336): a single call that

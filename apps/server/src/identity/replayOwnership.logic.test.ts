@@ -20,6 +20,7 @@ import type { ReplayVisibility } from './replayOwnership.types.js';
 import { createPlayerAccount } from './identity.logic.js';
 import {
   assignReplayOwnership,
+  findReplayOwnershipForAccount,
   listAccountReplays,
   updateReplayVisibility,
 } from './replayOwnership.logic.js';
@@ -240,6 +241,47 @@ describe('replay ownership logic (WP-052)', () => {
       const listed = await listAccountReplays(accountId, testPool);
       assert.equal(listed.length, 1);
       assert.equal(listed[0]?.replayHash, liveHash);
+    },
+  );
+
+  test(
+    'findReplayOwnershipForAccount returns the CALLER\'s row for a co-owned replay; null for a non-owner (WP-338)',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const hash = 'wp338-coowned-hash';
+      const scenarioKey = 'wp338-scenario';
+
+      const accountA = await createPlayerAccount(
+        { email: 'wp338-a@example.test', displayName: 'A', authProvider: 'email', authProviderId: 'wp338-a' },
+        testPool,
+      );
+      const accountB = await createPlayerAccount(
+        { email: 'wp338-b@example.test', displayName: 'B', authProvider: 'email', authProviderId: 'wp338-b' },
+        testPool,
+      );
+      const stranger = await createPlayerAccount(
+        { email: 'wp338-c@example.test', displayName: 'C', authProvider: 'email', authProviderId: 'wp338-c' },
+        testPool,
+      );
+      assert.ok(accountA.ok === true && accountB.ok === true && stranger.ok === true);
+
+      // Both A and B own the SAME replay (a 2-authenticated-seat match).
+      await assignReplayOwnership(accountA.value.accountId, hash, scenarioKey, testPool);
+      await assignReplayOwnership(accountB.value.accountId, hash, scenarioKey, testPool);
+
+      const forA = await findReplayOwnershipForAccount(accountA.value.accountId, hash, testPool);
+      const forB = await findReplayOwnershipForAccount(accountB.value.accountId, hash, testPool);
+      assert.equal(forA?.accountId, accountA.value.accountId);
+      assert.equal(forB?.accountId, accountB.value.accountId);
+      // Distinct ownership rows — not the LIMIT-1 arbitrary row findReplayOwnership returns.
+      assert.notEqual(forA?.ownershipId, forB?.ownershipId);
+
+      // A non-owner gets null.
+      assert.equal(
+        await findReplayOwnershipForAccount(stranger.value.accountId, hash, testPool),
+        null,
+      );
     },
   );
 });

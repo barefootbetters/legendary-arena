@@ -41,22 +41,21 @@ export type { DatabaseClient } from '../identity/identity.types.js';
 
 /**
  * The single payload field a client submits to request a competitive
- * scoring of one of its replays. The replay itself is referenced by
- * its cryptographic `replayHash` — never re-sent as content. The
- * server fetches the corresponding `ReplayInput` blob from
- * `legendary.replay_blobs` (WP-103) and re-executes it via the engine
- * before any score is stored.
- *
- * Future HTTP request handlers (out of scope for WP-053) deserialize
- * this shape from the wire; the current packet introduces only the
- * library surface, not the transport.
+ * scoring of a finished match it played. The match is referenced by its
+ * `matchId` — the arena-client never obtains a `replayHash` (it cannot
+ * run `computeStateHash`), so the server resolves the replay itself:
+ * it looks the durable `bgio.replay_artifacts` row up by `match_id`
+ * (capturing on-demand if the harvester scan has not run yet),
+ * re-reduces it, and re-verifies the hash before any score is stored
+ * (WP-338 / D-24126).
  */
-// why: replay referenced by hash only; content is not resent by the
-// client. The server has the canonical blob; trusting client-provided
-// content would break the trust surface the entire submission flow
-// exists to enforce. EC-053 §Required `// why:` Comments.
+// why: the match is referenced by matchId, not replayHash — the client
+// has the matchId at gameover but cannot compute the hash. The server
+// resolves + re-reduces + hash-verifies the replay authoritatively;
+// trusting a client-provided score would break the trust surface the
+// whole submission flow exists to enforce (D-5301).
 export interface CompetitiveSubmissionRequest {
-  readonly replayHash: string;
+  readonly matchId: string;
 }
 
 /**
@@ -82,7 +81,12 @@ export type SubmissionRejectionReason =
   | 'guest_not_eligible'
   | 'visibility_not_eligible'
   | 'par_not_published'
-  | 'replay_verification_failed';
+  | 'replay_verification_failed'
+  // why: match_not_finished — a submit-by-matchId request (WP-338) for a match
+  // that has not reached gameover. Scoring is end-of-match only (D-4804), so the
+  // server rejects (and does NOT capture) an unfinished match rather than scoring
+  // a non-terminal state. Maps to HTTP 409 (a conflict with match state).
+  | 'match_not_finished';
 
 /**
  * Canonical readonly array mirroring the `SubmissionRejectionReason`
@@ -105,6 +109,7 @@ export const SUBMISSION_REJECTION_REASONS: readonly SubmissionRejectionReason[] 
   'visibility_not_eligible',
   'par_not_published',
   'replay_verification_failed',
+  'match_not_finished',
 ] as const;
 
 /**

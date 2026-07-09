@@ -1,11 +1,14 @@
 /**
  * Competitive Score Submission HTTP Route — Server Layer (WP-332)
  *
- * Registers one authenticated write endpoint on the existing Koa
- * router returned by boardgame.io's `Server({...})` instance:
+ * Registers two authenticated endpoints on the existing Koa router
+ * returned by boardgame.io's `Server({...})` instance:
  *
- *   * `POST /api/competition/scores` — submit a competitive score for
- *     a replay the caller owns, identified by `replayHash`.
+ *   * `POST /api/competition/scores` — submit a competitive score for a
+ *     finished match the caller played, identified by `matchId` (the
+ *     server resolves + captures + verifies the replay; WP-338 / WP-5a).
+ *   * `GET /api/me/scores` — the authenticated player's submitted
+ *     competitive scores (the "my scores" read; WP-338 / WP-5a).
  *
  * This is the write-side mirror of WP-115 (`leaderboard.routes.ts`,
  * which wired the read library to GET routes). It wires WP-053's
@@ -42,7 +45,8 @@ import type {
   ParGateHit,
 } from './competition.logic.js';
 import {
-  submitCompetitiveScoreForRequest,
+  submitCompetitiveScoreByMatchIdForRequest,
+  listPlayerCompetitiveScores,
 } from './competition.logic.js';
 
 import { findPlayerByAccountId } from '../identity/identity.logic.js';
@@ -113,12 +117,14 @@ export interface CompetitionRouteDependencies {
  * methods return canned results, so no real database is touched.
  */
 export interface CompetitionLogic {
-  readonly submitCompetitiveScoreForRequest: typeof submitCompetitiveScoreForRequest;
+  readonly submitCompetitiveScoreByMatchIdForRequest: typeof submitCompetitiveScoreByMatchIdForRequest;
+  readonly listPlayerCompetitiveScores: typeof listPlayerCompetitiveScores;
   readonly findPlayerByAccountId: typeof findPlayerByAccountId;
 }
 
 const PRODUCTION_COMPETITION_LOGIC: CompetitionLogic = {
-  submitCompetitiveScoreForRequest,
+  submitCompetitiveScoreByMatchIdForRequest,
+  listPlayerCompetitiveScores,
   findPlayerByAccountId,
 };
 
@@ -142,6 +148,10 @@ interface KoaCompetitionContext {
  */
 interface KoaRouter {
   post(
+    path: string,
+    handler: (koaContext: KoaCompetitionContext) => Promise<void> | void,
+  ): unknown;
+  get(
     path: string,
     handler: (koaContext: KoaCompetitionContext) => Promise<void> | void,
   ): unknown;
@@ -175,6 +185,12 @@ function statusForRejectionReason(reason: SubmissionRejectionReason): number {
   if (reason === 'replay_not_found') {
     return 404;
   }
+  // why: match_not_finished → 409 Conflict — the request conflicts with the match's
+  // current state (not finished), distinct from a malformed request (400) or an
+  // eligibility/verification failure (403/422). WP-338.
+  if (reason === 'match_not_finished') {
+    return 409;
+  }
   if (
     reason === 'not_owner' ||
     reason === 'visibility_not_eligible' ||
@@ -187,15 +203,15 @@ function statusForRejectionReason(reason: SubmissionRejectionReason): number {
 }
 
 /**
- * Extract a non-empty `replayHash` string from a parsed request body.
- * Returns the trimmed-non-empty hash, or `null` when the body is not
- * an object, the field is absent, not a string, or empty.
+ * Extract a non-empty `matchId` string from a parsed request body.
+ * Returns the non-empty id, or `null` when the body is not an object,
+ * the field is absent, not a string, or empty.
  */
-function extractReplayHash(body: unknown): string | null {
+function extractMatchId(body: unknown): string | null {
   if (typeof body !== 'object' || body === null) {
     return null;
   }
-  const candidate = (body as { replayHash?: unknown }).replayHash;
+  const candidate = (body as { matchId?: unknown }).matchId;
   if (typeof candidate !== 'string' || candidate === '') {
     return null;
   }
@@ -260,8 +276,8 @@ export function registerCompetitionRoutes(
     }
 
     // Gate 3 — request body shape.
-    const replayHash = extractReplayHash(koaContext.request.body);
-    if (replayHash === null) {
+    const matchId = extractMatchId(koaContext.request.body);
+    if (matchId === null) {
       koaContext.status = 400;
       koaContext.body = { error: 'invalid_request' };
       return;
@@ -283,14 +299,15 @@ export function registerCompetitionRoutes(
         return;
       }
 
-      const result = await competitionLogic.submitCompetitiveScoreForRequest(
-        account,
-        replayHash,
-        database,
-        {
-          checkParPublished: deps.checkParPublished,
-        } satisfies CompetitiveSubmissionProductionDependencies,
-      );
+      const result =
+        await competitionLogic.submitCompetitiveScoreByMatchIdForRequest(
+          account,
+          matchId,
+          database,
+          {
+            checkParPublished: deps.checkParPublished,
+          } satisfies CompetitiveSubmissionProductionDependencies,
+        );
 
       if (result.ok === true) {
         koaContext.status = 200;
@@ -309,6 +326,56 @@ export function registerCompetitionRoutes(
       // would surface as a bodyless 500. The caught value is discarded
       // because the 500 envelope is locked at { error: 'internal_error' }
       // (no stack trace, no SQL state, no exception text leaked).
+      void caughtError;
+      koaContext.status = 500;
+      koaContext.body = { error: 'internal_error' };
+    }
+  });
+
+  // why: GET /api/me/scores — the authenticated player's submitted competitive
+  // scores (the "my scores" read WP-339 renders). Same auth chain as the POST
+  // (WP-112 session → WP-107 unsuspended); read-only, so no body gate. The 200
+  // envelope is `{ scores }`; listPlayerCompetitiveScores returns `[]` for an
+  // account with no submissions (never null). Cache-Control: no-store first,
+  // matching the POST (a personalized authenticated read is not cacheable).
+  router.get('/api/me/scores', async (koaContext) => {
+    koaContext.set('Cache-Control', 'no-store');
+
+    const sessionResult = await deps.requireAuthenticatedSession(koaContext.req, {
+      verifier: deps.verifier,
+      accountResolver: deps.accountResolver,
+      database,
+    });
+    if (sessionResult.ok !== true) {
+      koaContext.status = statusForSessionValidationCode(sessionResult.code);
+      koaContext.body = { error: sessionResult.code };
+      return;
+    }
+    const accountId = sessionResult.value;
+
+    const suspensionResult = await deps.requireUnsuspendedAccount(
+      database,
+      accountId,
+    );
+    if (suspensionResult.ok !== true) {
+      if (suspensionResult.code === 'suspended') {
+        koaContext.status = 403;
+        koaContext.body = { error: 'forbidden' };
+      } else {
+        koaContext.status = 500;
+        koaContext.body = { error: 'internal_error' };
+      }
+      return;
+    }
+
+    try {
+      const scores = await competitionLogic.listPlayerCompetitiveScores(
+        accountId,
+        database,
+      );
+      koaContext.status = 200;
+      koaContext.body = { scores };
+    } catch (caughtError) {
       void caughtError;
       koaContext.status = 500;
       koaContext.body = { error: 'internal_error' };
