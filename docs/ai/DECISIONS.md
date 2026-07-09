@@ -27468,3 +27468,53 @@ through a submit path that rejects them → left for a separate WP-054 test fix)
 **Packet:** WP-336 + EC-366. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
 
 Protect this file.
+
+### D-24125 — Competitive `rounds` Is Turns-Native (`ReplayResult.turnCount`); `computeStateHash` Intentionally Hashes the Full `G` (No Field-Set Change); D-4801 Resolved
+
+**Status:** Active (post-execution) 2026-07-08.
+
+**User-Visible Surface:** none — infrastructure.
+
+**Context.** WP-4 of the D-24119 arc, chartered as "retire the `moveCount`-as-rounds
+proxy (D-4801) + reconcile the `computeStateHash` `messages`/`logMeta` field-set landmine."
+D-24123 (WP-336) already fed the verifier a turn count, but through a `ReplayResult` slot
+named `moveCount` (a deliberate wart), and the engine's `deriveScoringInputs` still read
+`replayResult.moveCount` — so the OFFLINE `replayGame` path still produced a move count as
+`rounds`. Separately, `computeStateHash` (`replay.hash.ts`) hashes the whole `G` including
+`messages` + `logMeta`, contradicting a stale `game.ts` comment claiming `logMeta` is
+hash-excluded.
+
+**Decisions.**
+- **`rounds` is turns-native on every path.** `ReplayResult.moveCount` is renamed to
+  `ReplayResult.turnCount` (the field was used only as the rounds proxy — one producer, one
+  consumer), and `deriveScoringInputs` reads `replayResult.turnCount` as `rounds`. Both
+  producers supply a completed play-turn count, floored at 1 (matching `par.aggregator`'s
+  `turnsElapsed`): the server verifier passes `reduceMatchToFinalState`'s `turnCount`
+  (WP-336), and the offline `replayGame` computes `max(1, count of 'endTurn' moves in
+  input.moves)`. This **resolves D-4801** (no longer an MVP proxy). The offline harness feeds
+  no live scorer (only `replay.verify`'s determinism self-check consumes its result), but the
+  field now carries an honest turn count.
+- **`computeStateHash` intentionally hashes the full `G` — NO field-set change (Option A).**
+  The chartered "reconcile the field-set landmine" is resolved as an intentional-design
+  clarification, not a code change: `computeStateHash` is the competitive/determinism hash and
+  covering the full `G` (incl. `messages`/`logMeta`) makes it a stronger, tamper-evident
+  ownership PK. D-24124 already made the faithful reduction reproduce live `G` exactly, so
+  live-vs-replay hashes agree byte-for-byte **including** those fields — the landmine's
+  "reconcile before comparing" concern is already resolved, so excluding them is unnecessary
+  and would (a) cost a `PRE_WP080_HASH` + replay-producer golden re-pin, (b) weaken the PK. The
+  SEPARATE fixture-golden hash (`hashGameState`) still excludes `messages`/`logMeta` for
+  golden-churn reasons (D-24081/D-24114) — a different hash for a different purpose. Only the
+  stale `game.ts` comment is corrected to say so; `replay.hash.ts` is byte-unchanged.
+
+**Not changed.** `computeStateHash` / `replay.hash.ts` byte-unchanged; `PRE_WP080_HASH` and
+replay-producer snapshot goldens NOT re-pinned (their staying green is the proof); PAR
+baselines unchanged (they were already calibrated on turns); the `sweep.*` `moveCount`
+manifest fields (unrelated real move counts) untouched.
+
+**Gates.** `pnpm -r build` 0; engine suite **1785/1785** (incl. the `PRE_WP080_HASH`
+determinism guard); server no-DB green; competition DB **10/10** (rawScore recompute proves
+`turnCount` flows as `rounds` end-to-end).
+
+**Packet:** WP-337 + EC-367. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
+
+Protect this file.
