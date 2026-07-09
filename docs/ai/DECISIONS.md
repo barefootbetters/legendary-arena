@@ -27783,3 +27783,75 @@ new prompt + gating tests); `pnpm ledger:heroes:check` green.
 **Packet:** Bug fix (completes PR #619). **Drafted:** 2026-07-09. **Executed:** 2026-07-09.
 
 Protect this file.
+
+### D-24131 — Mastermind set-gauntlet leaderboards (per-set, wins-only, average-of-best legs; derived aggregation only)
+
+**Status:** Active (design-locked) 2026-07-09. Execution pending WP-342 (server) + backlogged client/profile follow-ups.
+
+**User-Visible Surface:** none at this entry (design lock). The eventual surfaces are legends.legendary-arena.com (board index + gauntlet boards) and play.legendary-arena.com (owner-profile progress, public-profile badges).
+
+**Context.** The live Hall of Legends board ranks raw per-scenario rows; the ~40-set catalog
+(106 masterminds, 191 schemes at current `data/cards`) makes one board per
+(scheme × mastermind × villains) unusable — thousands of near-empty boards. The wiki's
+championship brainstorm (leaderboard.md §Open Questions) converged on a "set-gauntlet"
+consolidation; operator direction (2026-07-09) made it concrete and expanded it to all sets:
+per-mastermind boards where qualifying requires defeating that mastermind under **every scheme
+in its home set**, ranked by the average score. `scenario_key` already carries set-stripped
+`schemeSlug::mastermindSlug::villains`, and the D-24119 write path persists verified rows —
+but no row records win vs loss (`ScoringInputs` has no outcome; `EndgameResult.outcome` exists
+only in the reduced final state), so "defeat" is not yet queryable.
+
+**Decision.**
+1. **Gauntlet identity = (set `abbr` × mastermind `slug`), one board each**, for every set
+   packaging ≥1 scheme; legs = that set's schemes (3–8 at current data). A schemeless set
+   hosts no gauntlets (today: `dims` masterminds excluded; `3dtc` has neither). Slugs come
+   from registry data (D-10014), never re-slugified names.
+2. **Both-sides-same-set rule.** A row qualifies as a leg only when its `schemeSlug` AND
+   `mastermindSlug` both belong to the gauntlet's set. Scenario keys are slug-space (set
+   prefixes stripped), so cross-set reprints sharing a slug (loki / red-skull / two schemes
+   in core+msp1; thanos in gotg+msis) are one identity in score-space — accepted v1
+   semantics: identical slugs are identical competitive identities; PAR-relative scores keep
+   them comparable.
+3. **Wins only.** A leg requires `outcome = 'heroes-win'`. `legendary.competitive_scores`
+   gains a nullable `outcome text CHECK (outcome IN ('heroes-win','scheme-wins'))` column
+   (migration 026), written once at submission from the verifier's already-reduced final
+   state (near-zero cost; D-5302 write-once preserved). Legacy `NULL` rows never qualify.
+4. **Best-per-leg, average aggregate, complete gauntlets only.** Leg slot = the player's
+   lowest `final_score` among qualifying rows (any villain groups). Board entry requires a
+   winning best on every leg; `totalScore` = integer sum, `averageScoreCentis` =
+   `round(totalScore·100/legCount)`; rank `totalScore ASC, handle ASC`. Retrying a weak leg
+   is always meaningful (best-per-leg), which is the intended replay loop.
+5. **Version discipline (VISION §22).** A qualifying row's `scoring_config_version` must
+   equal the currently-published version for its `scenario_key`. A PAR recalibration
+   therefore resets affected gauntlet progress — recalibrate rarely once boards are live;
+   a version bump is handled like an archival rollover, never a silent mixed-version board.
+6. **No submission step.** Standings are a server-side derived aggregation over existing
+   rows, recomputed by the WP-142 publisher each cycle; a player's 8th (or 4th/3rd) leg
+   landing simply surfaces them next publish. Nothing new for the client to send.
+7. **Publishing shape.** Per-gauntlet snapshot `gauntlet-<setAbbr>-<mastermindSlug>.json`
+   (only when ≥1 complete entry) + a `gauntlet-index.json` catalog artifact listing every
+   gauntlet with `legCount`/`entryCount` (zero-entry boards render as "unclaimed" in the
+   future index UI). The manifest gains **additive** `gauntletBoards` + `gauntletIndex`
+   fields; `boards[]`/`schemaVersion` unchanged so the deployed SPA is unaffected until the
+   client WP lands.
+8. **Surface split (follow-up WPs, backlogged).** (a) Legends-board client: set-grouped
+   index page + routing + gauntlet panel + per-board empty states; kiosk cycles a featured
+   subset only. (b) Profile: owner-profile gauntlet progress checklist ("5/8 defeated",
+   per-leg bests; extends the WP-339 My-Scores surface) and public-profile completed-gauntlet
+   badges via the existing `badges[]` field — identity resolved by `AccountId`, never handle
+   (DESIGN-RANKING). The zero-auth legends board never shows personal progress.
+9. **Pacing constraint (named, not solved here).** Boards only admit rows where the
+   scenario's PAR is published (`par_not_published` rejection). Rollout is phased by set:
+   core first, sets light up on the index as PARs are calibrated.
+
+**Not decided here.** Tier-1 (annual overall champion), tier-3 (category champions), tier-4
+(skill tiers), the annual archival reset, and the engagement mechanics (windowed boards,
+streaks, levels) — all remain open questions on the wiki.
+
+**Consequence.** Zero engine change (the gauntlet is read-side); one migration + one
+write-site line in the submit pipeline; the combinatorial board explosion collapses to 105
+findable, thematic boards (106 masterminds minus the schemeless-set exclusion) with a built-in quest structure.
+
+**Packet:** WP-342 (server: outcome persistence + gauntlet read-layer + publisher) — Drafted 2026-07-09. Client index/panel WP + profile progress/badges WP backlogged in WORK_INDEX.
+
+Protect this file.
