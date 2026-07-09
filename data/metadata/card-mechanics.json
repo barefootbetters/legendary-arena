@@ -903,6 +903,17 @@
       "hidden": true
     },
     {
+      "slug": "optional-put-bottom-hq",
+      "label": "Optional Put Bottom Hq",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "antm/wonder-man"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "outwit",
       "label": "Outwit",
       "scope": "hero",
@@ -2166,6 +2177,7 @@
     "antm/wonder-man": {
       "mechanics": [
         "empowered",
+        "optional-put-bottom-hq",
         "size-changing"
       ]
     },

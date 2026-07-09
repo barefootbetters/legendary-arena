@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "cardType": "hero",
   "summary": {
-    "totalRows": 628,
+    "totalRows": 629,
     "byStatus": {
-      "executable": 187,
+      "executable": 188,
       "deferred": 0,
       "condition": 5,
       "unsupported": 389,
       "unmarked": 47
     },
-    "distinctMechanics": 136
+    "distinctMechanics": 137
   },
   "rows": [
     {
@@ -642,6 +642,16 @@
       "wp": "WP-267",
       "decision": "D-24044",
       "handler": "packages/game-engine/src/hero/effectPrimitive.interpret.ts"
+    },
+    {
+      "extId": "antm/wonder-man",
+      "heroName": "Wonder Man",
+      "set": "antm",
+      "mechanic": "optional-put-bottom-hq",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-put-bottom-hq"
     },
     {
       "extId": "antm/wonder-man",

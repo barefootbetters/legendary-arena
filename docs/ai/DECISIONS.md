@@ -27736,3 +27736,50 @@ confirm the score submits (not the guest prompt) and appears under "My Scores".
 **Packet:** WP-341 + EC-371. **Drafted:** 2026-07-09. **Executed:** 2026-07-09.
 
 Protect this file.
+
+### D-24130 — Ionic Energy optional-put-bottom-hq: complete the interactive UX + correct the move destination
+
+**Status:** Active (post-execution) 2026-07-09. `D-24026` live-verify operator-pending on deploy.
+
+**User-Visible Surface:** play.legendary-arena.com (any match with Wonder Man's Ionic Energy in the hero deck).
+
+**Context.** PR #619 added the `optional-put-bottom-hq` hero keyword (Wonder Man's Ionic Energy —
+"You may put a card from the HQ on the bottom of the Hero Deck") as an interactive pending choice:
+it parks `G.pendingOptionalPutBottomHQ`, registers the `resolveOptionalPutBottomHQ` move, and guards
+`advanceStage` (block-all) until the choice resolves. But it shipped **none of the UX half** — no
+UIState projection, no client prompt, no End-Turn gate. A human therefore had no way to resolve the
+choice, and the block-all guard froze End Turn / Pass Priority — a hard freeze (bots resolve the move
+directly and are unaffected; humans freeze). This is the WP-313/314 pending-choice-no-UX freeze class
+repeated. #619 also (a) left FOUR engine drift tests red on main (the exact move-set in `game.test.ts`,
+the HERO_EFFECT_HANDLERS count, and the two HERO_KEYWORDS count/enumeration drift tests) because it
+added the keyword/handler/move without updating them, and (b) implemented the move destination wrong:
+it pushed the chosen card to the **player's personal deck** and left the vacated HQ slot `null`.
+
+**Decision.** (1) **Projection + prompt + gate.** Project the FRONT `pendingOptionalPutBottomHQ` entry
+as `UIPendingOptionalPutBottomHQ { playerID, eligibleHqCards[] }` (the non-null HQ slots, recomputed
+fresh from `G.hq` in slot order — the round-trip set the resolve matches), chooser-only redacted in
+`uiState.filter.ts` (mirroring `pendingVictoryPileCardPick`), re-exported from the engine barrel. A new
+`OptionalPutBottomHQPrompt.vue` lists the HQ cards + a first-class **Decline**, mounted on both
+PlayDesktop/PlayMobile; `useTurnActions` gains an 8th `hasPendingOptionalPutBottomHQ` param that blocks
+End Turn / Pass Priority at every stage with a tooltip. (2) **Move mechanic corrected.** The chosen card
+goes to the **bottom of the shared Hero Deck** (`G.heroDeck` end) and the vacated HQ slot refills from
+the top via `refillHqSlot` (exactly the recruitHero path) — never the player's personal deck, never a
+permanent null HQ gap. (3) The four #619-staled drift tests are corrected (17 moves, 11 handlers, 24
+keywords) and the hero mechanic ledger regenerated; the keyword add (a closed-union member added
+without a DECISIONS entry under #619) is ratified here.
+
+**Guardrail.** Any future interactive `pending*` choice MUST ship the projection + client prompt +
+End-Turn gate together with the engine park/guard/move — an engine-only half is a guaranteed human
+freeze (see [[project_pending_choice_no_ux_freeze]]).
+
+**Not changed.** No migration; no `computeStateHash`/replay-hash change (the move was previously
+unreachable by any fixture, so no golden shifts); `G.messages` lines added on resolve are hash-excluded
+(D-24081); `apps/server` and `functions/` untouched.
+
+**Gates.** `pnpm -r build` 0; engine test **1805/1805** (incl. new move + projection + filter tests and
+the four repaired drift tests); arena-client typecheck (vue-tsc) 0; arena-client test **775/775** (incl.
+new prompt + gating tests); `pnpm ledger:heroes:check` green.
+
+**Packet:** Bug fix (completes PR #619). **Drafted:** 2026-07-09. **Executed:** 2026-07-09.
+
+Protect this file.

@@ -100,6 +100,17 @@ const NOT_YOUR_TURN: GatingResult = {
  *   (WP-286's block-all guard freezes the board, mirroring `hasPendingOptionalKoReward`).
  *   Defaults to false. WP-286's block-all guard guarantees at most one pending-choice
  *   type is active at a time.
+ * @param hasPendingVictoryPileCardPick Whether the viewer has an unresolved
+ *   victory-pile villain-pick choice (derived from
+ *   `UIState.pendingVictoryPileCardPick !== undefined`). When true, blocks
+ *   `canEndTurn` and `canPassPriority` at ANY stage. Defaults to false.
+ * @param hasPendingOptionalPutBottomHQ Whether the viewer has an unresolved
+ *   optional-put-bottom-hq choice (derived from
+ *   `UIState.pendingOptionalPutBottomHQ !== undefined` at the call site). When true,
+ *   blocks `canEndTurn` and `canPassPriority` at ANY stage (the engine's advanceStage
+ *   block-all guard freezes the board, mirroring `hasPendingVictoryPileCardPick`).
+ *   Defaults to false. The block-all guard guarantees at most one pending-choice type
+ *   is active at a time.
  */
 export function useTurnActions(
   currentStage: string,
@@ -109,6 +120,7 @@ export function useTurnActions(
   hasPendingOptionalKoReward: boolean = false,
   hasPendingDrawOrEmpowered: boolean = false,
   hasPendingVictoryPileCardPick: boolean = false,
+  hasPendingOptionalPutBottomHQ: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -199,6 +211,16 @@ export function useTurnActions(
           reason: 'Pick a Villain from your Victory Pile before taking another action.',
         };
       }
+      // why: End Turn / Pass Priority blocked at any stage while an optional-put-bottom-hq
+      // choice is pending (the engine's advanceStage block-all guard freezes the board,
+      // mirroring hasPendingVictoryPileCardPick). Decline is a first-class exit, so the
+      // reason names it.
+      if (hasPendingOptionalPutBottomHQ) {
+        return {
+          allowed: false,
+          reason: 'Put a card from the HQ on the bottom of the Hero Deck, or Decline, before taking another action.',
+        };
+      }
       if (currentStage === 'cleanup' && hasPendingChoice) {
         return {
           allowed: false,
@@ -244,6 +266,15 @@ export function useTurnActions(
         return {
           allowed: false,
           reason: 'Pick a Villain from your Victory Pile before taking another action.',
+        };
+      }
+      if (hasPendingOptionalPutBottomHQ) {
+        // why: the engine's advanceStage block-all guard blocks endTurn while
+        // pendingOptionalPutBottomHQ is non-empty; this client-side gate surfaces the
+        // reason so the player sees a tooltip instead of a silent rejection.
+        return {
+          allowed: false,
+          reason: 'Put a card from the HQ on the bottom of the Hero Deck, or Decline, before taking another action.',
         };
       }
       if (currentStage === 'cleanup' && hasPendingChoice) {

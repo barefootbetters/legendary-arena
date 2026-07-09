@@ -7,6 +7,41 @@
 
 ## Current State
 
+### Bug fix — Ionic Energy optional-put-bottom-hq: complete the UX + correct the move (D-24130 Active) (2026-07-09)
+
+**User-Visible change (post-deploy): `play.legendary-arena.com`.** Completes PR #619, which shipped
+Wonder Man's Ionic Energy "You may put a card from the HQ on the bottom of the Hero Deck" as an
+engine-only interactive choice — parking `pendingOptionalPutBottomHQ` + a block-all `advanceStage`
+guard, but **no UIState projection, no client prompt, no End-Turn gate**. A human hit the guard with no
+way to resolve the choice → hard freeze on End Turn / Pass Priority (operator-reported, gitSha
+`437782b`). Bots resolved the move directly and were unaffected — the WP-313/314 pending-choice-no-UX
+freeze class, repeated.
+
+This fix ships the missing UX half and corrects two further #619 defects:
+- **Projection + prompt + gate:** `UIPendingOptionalPutBottomHQ` projection (chooser-only redacted,
+  barrel re-exported) → new `OptionalPutBottomHQPrompt.vue` (HQ-card buttons + first-class **Decline**)
+  mounted on PlayDesktop/PlayMobile → `useTurnActions` 8th `hasPendingOptionalPutBottomHQ` param blocks
+  End Turn / Pass Priority at every stage with a tooltip.
+- **Move mechanic corrected:** the chosen card now goes to the **bottom of the shared Hero Deck** and the
+  vacated HQ slot refills from the top (the recruitHero path) — #619 wrongly pushed it to the player's
+  personal deck and left the HQ slot permanently `null`.
+- **Four #619-staled engine drift tests repaired** (exact move-set, handler count, and the two
+  HERO_KEYWORDS drift tests — 17 moves / 11 handlers / 24 keywords) and the hero mechanic ledger
+  regenerated. These were red on `main` since #619 merged.
+
+**Recovery:** a match already frozen in this state is recoverable — the pending choice lives in `G`
+(persisted) and the projection is recomputed every frame, so reloading the match post-deploy surfaces
+the prompt.
+
+- **Engine + arena-client; no migration, no server/`functions/` change; no `computeStateHash`/replay-hash
+  change (the move was fixture-unreachable, so no golden shifts); `G.messages` hash-excluded (D-24081).**
+- **Gates:** `pnpm -r build` 0; engine test **1805/1805** (new move + projection + filter tests + the four
+  repaired drift tests); arena-client typecheck (vue-tsc) 0; arena-client test **775/775** (new prompt +
+  gating tests); `pnpm ledger:heroes:check` green.
+- **Live-verify (D-24026), deploy-dependent:** on `play.legendary-arena.com`, play Ionic Energy — the
+  prompt shows the HQ cards + Decline; picking one moves it to the Hero Deck bottom and refills the HQ;
+  End Turn is gated until the choice resolves.
+
 ### WP-341 / EC-371 Executed — Play-Route Session Hydration (On-Gameover Submit Fix) + Restore My-Scores (D-24129 Active) (2026-07-09)
 
 **User-Visible change (post-deploy): `play.legendary-arena.com`.** Fixes the FIRST live-test

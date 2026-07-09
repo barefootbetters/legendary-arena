@@ -37,6 +37,8 @@ import type {
   UIPendingDrawOrEmpowered,
   UIPendingVictoryPileCardPick,
   UIVictoryPileVillainChoice,
+  UIPendingOptionalPutBottomHQ,
+  UIHqCardChoice,
   UIEligibleKoHeroCard,
 } from './uiState.types.js';
 // why: WP-313 — reuse the engine's authoritative victory-pile eligibility helper
@@ -912,6 +914,35 @@ export function buildUIState(
     };
   }
 
+  // --- 13c.4 Project pending optional-put-bottom-hq choice (front of queue) ---
+  // why: project the FRONT entry of G.pendingOptionalPutBottomHQ with the eligible
+  // HQ cards recomputed fresh from current G.hq (the non-null slots, in slot order)
+  // — the same set the resolve move matches against, so the client's { cardId }
+  // selection always round-trips. Each display is spread fresh so the projection
+  // holds no reference into G.cardDisplayData (aliasing defense, WP-111 D-11105).
+  // Redaction to the chooser-only audience is enforced by filterUIStateForAudience
+  // (keyed on .playerID), mirroring pendingVictoryPileCardPick.
+  let pendingOptionalPutBottomHQ: UIPendingOptionalPutBottomHQ | undefined;
+  if (
+    gameState.pendingOptionalPutBottomHQ !== undefined &&
+    gameState.pendingOptionalPutBottomHQ.length > 0
+  ) {
+    const frontChoice = gameState.pendingOptionalPutBottomHQ[0]!;
+    const eligibleHqCards: UIHqCardChoice[] = [];
+    for (const slot of gameState.hq) {
+      if (slot !== null) {
+        eligibleHqCards.push({
+          cardId: slot,
+          display: { ...resolveDisplay(slot, gameState) },
+        });
+      }
+    }
+    pendingOptionalPutBottomHQ = {
+      playerID: frontChoice.playerID,
+      eligibleHqCards,
+    };
+  }
+
   // --- 13d. Project hollow-effect diagnostics (read-only) ---
   // why: WP-258 — surface the WP-257 runtime channel G.diagnostics.hollowEffects
   // onto UIState. Read-only over G (buildUIState NEVER mutates G); per-record
@@ -993,6 +1024,9 @@ export function buildUIState(
     // why: WP-313 — conditional spread so an absent pick omits the field (no
     // `pendingVictoryPileCardPick: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingVictoryPileCardPick !== undefined ? { pendingVictoryPileCardPick } : {}),
+    // why: conditional spread so an absent choice omits the field (no
+    // `pendingOptionalPutBottomHQ: undefined` literal under exactOptionalPropertyTypes).
+    ...(pendingOptionalPutBottomHQ !== undefined ? { pendingOptionalPutBottomHQ } : {}),
     // why: WP-258 — conditional spread so an absent channel omits the field
     // (no `hollowEffects: undefined` literal under exactOptionalPropertyTypes,
     // and no empty-array injection that would dirty optional-field fixtures).

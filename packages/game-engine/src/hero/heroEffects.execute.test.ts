@@ -52,9 +52,10 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     );
   });
 
-  it('has exactly 10 handlers and none for the deferred keywords', () => {
-    // why: WP-286 / D-24069 added the draw-or-empowered park handler (9 → 10).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 10);
+  it('has exactly 11 handlers and none for the deferred keywords', () => {
+    // why: WP-286 / D-24069 added the draw-or-empowered park handler (9 → 10); the
+    // Ionic Energy optional-put-bottom-hq fix added its park handler (10 → 11).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 11);
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
     assert.equal(HERO_EFFECT_HANDLERS['conditional'], undefined);
   });
