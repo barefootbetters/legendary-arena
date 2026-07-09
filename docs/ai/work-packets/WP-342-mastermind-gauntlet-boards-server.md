@@ -8,6 +8,22 @@
 **User-Visible Surface:** none — infrastructure (the payoff surface is the follow-up legends-board index/panel WP and the profile-progress WP, both backlogged; the snapshots this packet publishes are inert until a client renders them)
 **Reserves:** D-24131 (already written at draft time; this packet executes it)
 
+> **Execution addendum (2026-07-09, EC-372 draft).** Three reconciliations
+> against code reality, discovered while drafting the EC:
+> (1) **Two wiring files join the list** — the publisher's start site is
+> `apps/server/src/index.mjs` (not `server.mjs`), so the gauntlet catalog
+> threads `server.mjs` (build from registry, return from `startServer()`) →
+> `index.mjs` (pass to `startLegendsPublisher`) →
+> `legends.scheduler.ts` (forward to `publishAllBoards`). 12 files total.
+> (2) **No new dependency seam for the version filter** — the injected
+> `LeaderboardDependencies.checkParPublished` already returns
+> `scoringConfig.scoringConfigVersion` per scenario, so the gauntlet
+> read-layer reuses it for both PAR-eligibility and the VISION §22 version
+> filter (the WP's Assumes named a separate PAR-store lookup; not needed).
+> (3) **`CompetitiveScoreRecord` carries an 11-key drift lock** (EC-053
+> test #9); adding `outcome` amends it to 12 keys under D-24131 authority —
+> the drift test updates in the same change.
+
 ---
 
 ## Goal
