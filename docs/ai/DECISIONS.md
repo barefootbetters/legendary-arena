@@ -27926,3 +27926,43 @@ green (138 mechanics; the 3 cards classify `executable`).
 **Packet:** Bug fix (production game-review gap; INFRA lane). **Drafted:** 2026-07-09. **Executed:** 2026-07-09.
 
 Protect this file.
+
+### D-24132 — Legends-board hash routing + gauntlet display-format locks
+
+**Status:** Active 2026-07-09 (WP-343 / EC-373 execution).
+
+**User-Visible Surface:** legends.legendary-arena.com.
+
+**Context.** WP-343 gives the Hall of Legends SPA its first navigation (the D-24131 §8a gauntlet
+index → board click-through). The SPA had no router and its sole runtime dependency is `vue`
+(WP-143); the gauntlet snapshots carry integer centesimal averages needing a display convention.
+
+**Decision.**
+1. **Hand-rolled hash routing, no new dependency.** Two routes: `''`/`'#/'` → attract view;
+   `#/gauntlet/<board>` (grammar `^gauntlet-[a-z0-9-]+$`) → gauntlet board view; every malformed
+   hash falls back to attract (a public display never renders a broken route). Plain `<a href>`
+   navigation — no History API, no `_redirects` change, so deep links work on the static CF Pages
+   host. `vue-router` was declined: two routes do not justify a dependency on the zero-API surface.
+2. **Golf-scale display format.** Average = `averageScoreCentis / 100` rendered signed one-decimal
+   (`+1.3` / `-3.5`) with the exact string `E` at zero (even with PAR — VISION §20's convention);
+   under-PAR values style gold.
+3. **One index slide in the attract cycle.** When the manifest carries `gauntletIndex`, the cycle
+   gains exactly one `gauntlet-index` slide; per-gauntlet boards never cycle (105 boards would
+   starve the classic slides). Composition is the pure `buildAttractBoardList` helper.
+4. **Zero-entry gauntlets render an inline unclaimed CTA, never a link** — WP-342 writes no board
+   file below one entry, so a link would 404. The shared `EmptyBoardCta` also replaces the
+   header-only empty tables on the three classic panels (the 2026-07-09 board-review gap).
+
+**Not changed.** No server/publisher change; no engine change; `package.json` untouched; the
+existing panels' populated-state markup byte-compatible; kiosk interaction and
+`prefers-reduced-motion` behavior unchanged.
+
+**Consequence.** The board is now navigable; the launch state (all `entryCount: 0`) reads as 105
+unclaimed championships with play CTAs rather than empty tables. Also cleared in this execution:
+the legends-board `typecheck` script had been red since WP-143 (22 errors — test files in the
+tsconfig with no node types and no `allowImportingTsExtensions`); fixed via two tsconfig lines,
+baseline-reproduced as pre-existing.
+
+**Packet:** WP-343 + EC-373. **Drafted:** 2026-07-09. **Executed:** 2026-07-09.
+
+Protect this file.

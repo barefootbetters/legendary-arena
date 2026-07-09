@@ -37,4 +37,9 @@ describe("boardDisplayName", () => {
     const { boardDisplayName } = await import("./snapshotClient.ts");
     assert.equal(boardDisplayName("now-playing"), "Now Playing");
   });
+
+  it("titles the WP-343 gauntlet-index attract slide", async () => {
+    const { boardDisplayName } = await import("./snapshotClient.ts");
+    assert.equal(boardDisplayName("gauntlet-index"), "Gauntlet Index");
+  });
 });

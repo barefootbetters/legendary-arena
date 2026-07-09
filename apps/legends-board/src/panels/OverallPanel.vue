@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { LegendsSnapshotBoard } from "../snapshots/snapshotClient";
+import EmptyBoardCta from "../components/EmptyBoardCta.vue";
 
 const props = defineProps<{
   board: LegendsSnapshotBoard | null;
@@ -19,6 +20,8 @@ const props = defineProps<{
     <div v-else-if="!board" class="panel-loading">
       <p>Loading rankings...</p>
     </div>
+
+    <EmptyBoardCta v-else-if="board.entries.length === 0" />
 
     <table v-else class="leaderboard-table">
       <thead>

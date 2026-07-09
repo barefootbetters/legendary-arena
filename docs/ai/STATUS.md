@@ -7,6 +7,26 @@
 
 ## Current State
 
+### WP-343 / EC-373 Executed — Legends-Board Gauntlet Index + Board Panel (D-24132 Active) (2026-07-09)
+
+**User-Visible change (post-deploy): `legends.legendary-arena.com`.** The Hall of Legends gains the
+D-24131 gauntlet surface: a set-grouped **Mastermind Gauntlets** index rendered from the live
+`gauntlet-index.json` (105 gauntlets), the SPA's first navigation (hand-rolled hash routes,
+`#/gauntlet/<board>`, no new dependency), a gauntlet board panel (signed one-decimal PAR average,
+`E` at even, under-PAR gold), and a shared "No Legends yet — be the first" CTA that replaces the
+header-only empty tables on the classic panels. Kiosk/attract cycles exactly one extra index slide.
+Launch state by design: every gauntlet reads "Unclaimed — be the first" with a play link until PROD
+wins accumulate.
+
+- Client-only (`apps/legends-board`); no server/engine change; `vue` stays the sole runtime dep;
+  zero-API posture re-verified against the built bundle.
+- Also cleared: the legends-board `typecheck` script had been red since WP-143 (22 pre-existing
+  errors, baseline-reproduced) — two tsconfig lines fix it.
+- **Gates:** build 0; test 40/40; typecheck 0; zero-API grep clean; dev smoke against the LIVE
+  manifest verified index render + deep link + unclaimed CTAs + classic-panel empty state.
+- **Live-verify (D-24026), deploy-dependent:** after the CF Pages build on merge, confirm on the
+  deployed site: the index slide, a `#/gauntlet/...` deep link, and the unclaimed CTA.
+
 ### WP-342 / EC-372 Executed — Mastermind Set-Gauntlet Boards: Outcome Persistence + Read-Layer + Publisher (D-24131 executed) (2026-07-09)
 
 **No user-observable change — infrastructure only.** Executes the D-24131 set-gauntlet design at the
