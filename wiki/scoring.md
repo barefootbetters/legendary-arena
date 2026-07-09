@@ -334,6 +334,7 @@ future WPs per the source `// why:` comment.
 - WP-051: PAR publication server gate — server-side admission rule for new config versions
 - WP-053a: `ScenarioScoringConfig` extension landed; PAR config authoring origin moved to `data/scoring-configs/` (D-5306a)
 - WP-332 + D-24119 arc (WP-333 → WP-340): score-submission transport went live (submit-by-`matchId`, faithful-replay verification, server-side scoring); `rounds` re-based from move count to completed play-turn count (D-24123 / D-24125)
+- INFRA PR #630 (2026-07-09): DB-gated server test baseline repaired — 11 pre-existing failures (invisible to CI, which never sets `TEST_DATABASE_URL`) fixed across the leaderboard read-layer and profile suites; the full DB-wired `apps/server` suite is 848/848 green serialized, so scoring/leaderboard test failures against a live test DB are regressions from here on
 
 ## References
 
