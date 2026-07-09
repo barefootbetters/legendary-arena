@@ -12,6 +12,7 @@ tags:
   - vision
 related:
   - par-simulation-calibration.md
+  - leaderboard.md
   - villain-deck.md
   - master-strike.md
   - scheme-twist.md
@@ -42,7 +43,7 @@ source:
   - ../docs/ai/work-packets/WP-051-par-publication-server-gate.md
   - ../docs/ai/work-packets/WP-053a-par-artifact-scoring-config.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-05-07
+last-reviewed: 2026-07-09
 ---
 
 # Scoring
@@ -170,8 +171,12 @@ severe than `villainEscaped`).
   derivation mid-match; partial state produces invalid scoring.
 - **Team-aggregate VP (D-4803).** `victoryPoints` is summed across
   all players, not stored per-player.
-- **Replay-driven.** `rounds` reads from `replayResult.moveCount`
-  in MVP. Future WPs may refine the rounds metric.
+- **Replay-driven, turns-native.** `rounds` is the completed
+  play-turn count (`replayResult.turnCount`), matching how the PAR
+  baselines were calibrated. An earlier MVP used `moveCount` as a
+  proxy; D-24123 / D-24125 re-based the metric to turns when the
+  live submission path shipped (see
+  [Leaderboard](leaderboard.md) for that pipeline).
 
 The derivation step is the single boundary between match runtime
 and the scoring system. Once `ScoringInputs` exists, the rest of
@@ -249,7 +254,12 @@ future WPs per the source `// why:` comment.
 - **Replay verification.** `replayHash` (WP-027) is the proof that a
   `LeaderboardEntry` is reproducible by re-running the replay
   through the engine. VISION §24 requires every leaderboard entry
-  be replay-verified; this hash is the structural enforcement.
+  be replay-verified; this hash is the structural enforcement. As of
+  2026-07-09 this is live end-to-end: the server's submission route
+  re-executes the captured match, recomputes the hash, and scores
+  server-side — it never trusts a client number (D-5301). The full
+  match → row → snapshot pipeline is documented on
+  [Leaderboard](leaderboard.md).
 
 ## Edge Cases
 
@@ -323,6 +333,7 @@ future WPs per the source `// why:` comment.
 - WP-050: PAR artifact storage — server-side persistence of versioned configs
 - WP-051: PAR publication server gate — server-side admission rule for new config versions
 - WP-053a: `ScenarioScoringConfig` extension landed; PAR config authoring origin moved to `data/scoring-configs/` (D-5306a)
+- WP-332 + D-24119 arc (WP-333 → WP-340): score-submission transport went live (submit-by-`matchId`, faithful-replay verification, server-side scoring); `rounds` re-based from move count to completed play-turn count (D-24123 / D-24125)
 
 ## References
 

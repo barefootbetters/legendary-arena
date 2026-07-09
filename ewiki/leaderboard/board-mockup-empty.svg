@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 460" font-family="system-ui, 'Segoe UI', sans-serif">
+  <!-- Hand-authored mockup: envisioned empty-state CTA for the Hall of Legends board (proposal, not shipped UI). -->
+  <defs>
+    <linearGradient id="titleGoldE" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffd700"/>
+      <stop offset="1" stop-color="#ff8c00"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="920" height="460" fill="#0a0a0f"/>
+
+  <!-- Header -->
+  <text x="40" y="52" font-size="30" font-weight="700" fill="url(#titleGoldE)" letter-spacing="1">HALL OF LEGENDS</text>
+  <rect x="700" y="30" width="180" height="28" rx="14" fill="none" stroke="#1a1a2e"/>
+  <circle cx="718" cy="44" r="4" fill="#4caf50"/>
+  <text x="730" y="49" font-size="12" fill="#888">Updated 2 min ago</text>
+
+  <!-- Window tabs -->
+  <rect x="40" y="76" width="86" height="30" rx="15" fill="rgba(255,215,0,0.15)" stroke="#ffd700"/>
+  <text x="83" y="96" font-size="13" font-weight="600" fill="#ffd700" text-anchor="middle">7-Day</text>
+  <rect x="134" y="76" width="86" height="30" rx="15" fill="none" stroke="#1a1a2e"/>
+  <text x="177" y="96" font-size="13" fill="#888" text-anchor="middle">30-Day</text>
+  <rect x="228" y="76" width="86" height="30" rx="15" fill="none" stroke="#1a1a2e"/>
+  <text x="271" y="96" font-size="13" fill="#888" text-anchor="middle">All-Time</text>
+
+  <!-- Trophy -->
+  <g transform="translate(460 150)">
+    <path d="M-34 0 h68 v10 c0 26 -14 44 -34 48 c-20 -4 -34 -22 -34 -48 Z" fill="none" stroke="#ffd700" stroke-width="3"/>
+    <path d="M-34 6 h-16 c-2 20 8 32 22 34" fill="none" stroke="#ffd700" stroke-width="3"/>
+    <path d="M34 6 h16 c2 20 -8 32 -22 34" fill="none" stroke="#ffd700" stroke-width="3"/>
+    <rect x="-7" y="58" width="14" height="16" fill="none" stroke="#ffd700" stroke-width="3"/>
+    <rect x="-24" y="74" width="48" height="10" rx="3" fill="none" stroke="#ffd700" stroke-width="3"/>
+  </g>
+
+  <!-- Copy -->
+  <text x="460" y="286" font-size="26" font-weight="700" fill="#e0e0e0" text-anchor="middle">No Legends yet</text>
+  <text x="460" y="314" font-size="14" fill="#888" text-anchor="middle">The Hall opens with the first replay-verified score. Rank #1 is unclaimed.</text>
+
+  <!-- CTA button -->
+  <rect x="340" y="338" width="240" height="44" rx="22" fill="rgba(255,215,0,0.15)" stroke="#ffd700" stroke-width="1.5"/>
+  <text x="460" y="366" font-size="16" font-weight="700" fill="#ffd700" text-anchor="middle">Play now — be the first</text>
+
+  <text x="460" y="412" font-size="12" fill="#555" text-anchor="middle">Sign in at play.legendary-arena.com and finish a match — your score submits automatically.</text>
+</svg>
