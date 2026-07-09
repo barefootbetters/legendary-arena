@@ -27575,3 +27575,55 @@ Library-only rows.
 **Packet:** WP-338 + EC-368. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
 
 Protect this file.
+
+### D-24127 — Arena-Client Submits On Gameover (Fire-Once, Authed-Only, at `PlayViewport`) + "My Scores" Profile View
+
+**Status:** Active (post-execution) 2026-07-08.
+
+**User-Visible Surface:** `play.legendary-arena.com` (D-24026 live-verify is deploy-dependent — see below).
+
+**Context.** WP-5b (WP-339) is the LAST piece of the D-24119 arc — the arena-client consumer of
+the WP-338 server surfaces, closing the capture→submit→score→leaderboard loop for the player.
+
+**Decisions.**
+- **Submit on gameover, fire-once, authenticated players only.** A composable
+  (`useCompetitiveSubmitOnGameover`) watches the live UIState snapshot; on the first transition
+  where `snapshot.gameOver` is defined, it POSTs the score ONCE (a `hasSubmitted` guard — the
+  gameover snapshot recurs per frame; the server is idempotent, but the client fires once and
+  re-arms on a `matchId` change). A guest (null bearer token) is never submitted — the status
+  becomes `'guest'` so the UI prompts a sign-in. Each authenticated seat's client submits its own
+  score (the server scores per-account, idempotent); no client-side "am I player 0" gate.
+- **The client submits `matchId`, never `replayHash`.** It cannot run `computeStateHash`; the
+  server resolves the hash from the `matchId` (WP-338 / D-24126).
+- **Mounted at `PlayViewport`.** `matchId` is prop-drilled to `PlayViewport` (D-16501), which
+  reads the shared uiState store — so a single composable instance covers both the `<PlayDesktop>`
+  and `<PlayMobile>` surfaces (`PlayMobile` has no `matchId`). A small, non-blocking submission
+  status line renders at the viewport root (submitting / submitted / already / guest / failed) —
+  it never covers the endgame summary and appears only once a submission is in flight or resolved.
+- **"My Scores" in `MyProfilePage`.** A "Competitive Scores" section fetches `GET /api/me/scores`
+  on mount and lists the player's submitted scores (final score, scenario, date; loading + empty
+  + error states). `competitionApi` (`submitCompetitiveScore` / `fetchMyScores`) mirrors the
+  WP-104 `ownerProfileApi` never-throw Bearer-fetch (`status: 0` on network failure).
+- **`MyCompetitiveScore` is a client-local type** mirroring the server `CompetitiveScoreRecord`
+  display fields — the client must not import `apps/server` types (layer boundary).
+
+**Not changed.** No server/engine change; no migration; no `functions/` edge change; §21 not
+triggered (the client consumes the endpoints WP-338 catalogued).
+
+**Live-verify (deploy-dependent).** The end-to-end loop only functions once the server (WP-333..338)
+is deployed on Render AND migrations 024 (WP-333) + 025 (WP-335) are PROD-applied. Until then the
+client degrades gracefully (submission status `'failed'`) and never breaks. D-24026 live-verify:
+finish an authenticated match on `play.legendary-arena.com`, confirm the "submitted" status + the
+score under "My Scores" + on `legends.legendary-arena.com`.
+
+**Gates.** `pnpm -r build` 0; `arena-client` `typecheck` (vue-tsc) 0; `arena-client` `test` **760/760**
+(incl. the new `competitionApi` + `useCompetitiveSubmitOnGameover` tests); no server/engine change.
+
+**Arc status.** With WP-339, the D-24119 faithful-replay arc is CODE-COMPLETE: capture (WP-335) →
+submit-by-matchId + on-demand capture (WP-338) → faithful reduce + verify + turns-native score
+(WP-334/336/337) → leaderboard (WP-141..143 / legends board). The remaining items are operational
+(the Render deploy + migration apply) and one server follow-up (the WP-053 co-owner LIMIT-1 hardening).
+
+**Packet:** WP-339 + EC-369. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
+
+Protect this file.

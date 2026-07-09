@@ -7,6 +7,34 @@
 
 ## Current State
 
+### WP-339 / EC-369 Executed — Arena-Client Submit-After-Match + "My Scores" (D-24127 Active) — ARC CODE-COMPLETE (2026-07-08)
+
+**User-Visible change (post-deploy): `play.legendary-arena.com`.** WP-5b — the LAST piece of
+the D-24119 arc. The arena-client now closes the capture→submit→score→leaderboard loop for the
+player.
+
+On gameover, an authenticated player's client submits the match's competitive score **by
+`matchId`** (a fire-once composable, `useCompetitiveSubmitOnGameover`, mounted at `PlayViewport`
+so it covers both desktop + mobile; the server resolves + captures + verifies + auto-publishes +
+scores, WP-338). A guest is never submitted — a small non-blocking status line prompts a sign-in.
+A "Competitive Scores" section in `MyProfilePage` lists the player's submitted scores (from
+`GET /api/me/scores`). New `lib/api/competitionApi.ts` mirrors `ownerProfileApi`'s never-throw
+Bearer-fetch; `MyCompetitiveScore` is a client-local type (no server import).
+
+- **Client-only; no server/engine change, no migration, no `functions/` change; §21 not triggered.**
+- **Gates:** `pnpm -r build` 0; `arena-client` `typecheck` (vue-tsc) 0; `arena-client` `test`
+  **760/760** (incl. the new api + composable tests, mocked fetch + Pinia).
+- **Live-verify is deploy-dependent (D-24026):** the end-to-end loop needs the server (WP-333..338)
+  deployed on Render + migrations 024/025 PROD-applied. Until then the client degrades gracefully
+  (status `'failed'`), never breaking.
+
+**Arc status — the D-24119 faithful-replay arc is CODE-COMPLETE.** A finished match on
+`play.legendary-arena.com` now flows: seat→account identity (WP-333) → capture + durable artifact
+(WP-335) → submit-by-matchId + on-demand capture (WP-338) → faithful reduce + hash-verify +
+turns-native score (WP-334/336/337) → `GET /api/me/scores` + the legends leaderboard. **Remaining:
+operational (Render deploy + apply migrations 024/025) + one server follow-up (the WP-053 co-owner
+LIMIT-1 hardening).**
+
 ### WP-338 / EC-368 Executed — Submit-by-MatchId + On-Demand Capture + `GET /api/me/scores` (D-24126 Active) (2026-07-08)
 
 **No user-observable change — infrastructure only** (the arena-client consumer is WP-339).
