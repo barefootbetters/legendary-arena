@@ -1,7 +1,13 @@
 # WP-339 — Arena-Client Submit-After-Match + "My Scores" Profile View (WP-5b)
 
-**Status:** Draft — Ready to execute (pending operator review)
+**Status:** Done (executed 2026-07-08)
 **Primary Layer:** Client (`apps/arena-client/**`)
+
+> **Execution addendum (2026-07-08).** `MyProfilePage.test.ts` does not exist, so no page
+> test was added (the section is covered by vue-tsc + the api/composable unit tests). The
+> `matchId` prop is passed to the composable via `toRef(props, 'matchId')` so it stays
+> reactive. Gates: `pnpm -r build` 0; `arena-client` `typecheck` 0; `arena-client` `test`
+> **760/760**. Live-verify is the deploy-dependent D-24026 pass (see Verification Steps).
 **Dependencies:** D-24119 (arc), D-24126 (the WP-338 server surfaces this consumes), WP-338 (`POST /api/competition/scores { matchId }` + `GET /api/me/scores`), WP-160/D-16003 (Pinia auth token), WP-104 (`ownerProfileApi` HTTP pattern), D-16501 (matchId prop-drill to `PlayViewport`)
 **EC:** EC-369
 **Baseline:** `origin/main` at `46cd3bd3` (2026-07-08)

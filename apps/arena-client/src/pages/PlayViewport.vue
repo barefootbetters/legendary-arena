@@ -1,5 +1,5 @@
 <script lang="ts">
-import { defineComponent, ref, type PropType } from 'vue';
+import { computed, defineComponent, ref, toRef, type PropType } from 'vue';
 
 import PlayDesktop from './PlayDesktop.vue';
 import PlayMobile from './PlayMobile.vue';
@@ -7,7 +7,19 @@ import DiagnosticExportButton from '../components/DiagnosticExportButton.vue';
 import HollowEffectsPanel from '../components/play/HollowEffectsPanel.vue';
 import { useViewport } from '../composables/useViewport';
 import { useSkinApplier } from '../composables/useSkinApplier';
+import { useCompetitiveSubmitOnGameover } from '../composables/useCompetitiveSubmitOnGameover';
 import type { SubmitMove } from '../components/play/uiMoveName.types';
+
+// why: WP-339 — the user-facing message for each post-match submission status.
+// Mounted once here at the shared viewport root (which holds matchId, D-16501), so
+// a single submit covers both the <PlayDesktop> and <PlayMobile> surfaces.
+const SUBMISSION_MESSAGES: Record<string, string> = {
+  submitting: 'Submitting your score…',
+  submitted: 'Score submitted to the leaderboard.',
+  already: 'Your score for this match was already submitted.',
+  guest: 'Sign in to submit your score to the leaderboard.',
+  failed: 'Couldn’t submit your score. It may still be counted shortly.',
+};
 
 /**
  * Viewport discriminator. Renders `<PlayDesktop>` when the viewport is
@@ -66,6 +78,17 @@ export default defineComponent({
     const { isMobile } = useViewport();
     const viewportRoot = ref<HTMLElement | null>(null);
     useSkinApplier(viewportRoot);
+
+    // why: WP-339 — on gameover, submit this match's competitive score once (for
+    // an authenticated player). toRef keeps matchId reactive so the composable
+    // re-arms if a new live match reuses this viewport instance.
+    const { submissionStatus } = useCompetitiveSubmitOnGameover(
+      toRef(props, 'matchId'),
+    );
+    const submissionMessage = computed<string>(
+      () => SUBMISSION_MESSAGES[submissionStatus.value] ?? '',
+    );
+
     return {
       isMobile,
       viewportRoot,
@@ -73,6 +96,8 @@ export default defineComponent({
       villainGroupIds: props.villainGroupIds,
       henchmanGroupIds: props.henchmanGroupIds,
       heroDeckIds: props.heroDeckIds,
+      submissionStatus,
+      submissionMessage,
     };
   },
 });
@@ -105,11 +130,55 @@ export default defineComponent({
       // match.
     -->
     <HollowEffectsPanel />
+    <!--
+      // why: WP-339 — a small, non-blocking post-match submission status. Shown
+      // only once a submission is in flight or resolved (submissionStatus !== 'idle'),
+      // so it never appears during play and never covers the endgame summary. A
+      // guest sees the sign-in prompt; a signed-in player sees submitted/already/failed.
+    -->
+    <div
+      v-if="submissionStatus !== 'idle'"
+      class="score-submission-status"
+      :class="`score-submission-status--${submissionStatus}`"
+      role="status"
+      data-testid="score-submission-status"
+    >
+      {{ submissionMessage }}
+    </div>
   </div>
 </template>
 
 <style scoped>
 .play-viewport {
   display: contents;
+}
+
+.score-submission-status {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  max-width: min(90vw, 32rem);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  background: rgba(20, 20, 28, 0.92);
+  color: #f4f4f5;
+  font-size: 0.875rem;
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+.score-submission-status--submitted {
+  background: rgba(21, 94, 61, 0.94);
+}
+
+.score-submission-status--failed {
+  background: rgba(120, 40, 40, 0.94);
+}
+
+.score-submission-status--guest {
+  background: rgba(60, 52, 20, 0.94);
 }
 </style>

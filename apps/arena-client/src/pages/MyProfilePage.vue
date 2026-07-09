@@ -17,6 +17,10 @@ import {
   updateLoadout,
   type SavedLoadoutView,
 } from '../lib/api/loadoutLibraryApi';
+import {
+  fetchMyScores,
+  type MyCompetitiveScore,
+} from '../lib/api/competitionApi';
 import { summarizeLoadout } from '../lib/loadoutSummary';
 import BillingSection from '../components/BillingSection.vue';
 import {
@@ -265,6 +269,13 @@ export default defineComponent({
     const rowError = ref<string>('');
     const copyMessage = ref<string>('');
 
+    // why: WP-339 — the owner's submitted competitive scores (the "My Scores"
+    // read). Loaded on mount from GET /api/me/scores; independent loading/error
+    // refs so this surface never clobbers the profile/loadout feedback.
+    const competitiveScores = ref<MyCompetitiveScore[]>([]);
+    const scoresLoading = ref<boolean>(true);
+    const scoresError = ref<string>('');
+
     // why: re-arm the avatar preview whenever the URL changes. Once `@error`
     // hides a broken URL, the <img> leaves the DOM, so `@load` can never fire
     // to clear the flag — without this reset a single bad URL would suppress
@@ -461,6 +472,26 @@ export default defineComponent({
     }
 
     /**
+     * Load the owner's submitted competitive scores (WP-339). Newest first,
+     * from the server. On any non-200 (or network failure), surfaces a generic
+     * error and leaves the list empty — never throws.
+     */
+    async function loadScores(): Promise<void> {
+      scoresLoading.value = true;
+      scoresError.value = '';
+      const result = await fetchMyScores(readAuthToken());
+      scoresLoading.value = false;
+      if (result.status === 200 && result.scores !== null) {
+        competitiveScores.value = result.scores;
+        return;
+      }
+      // why: a personalized read failure is non-fatal to the rest of the page;
+      // show a one-line notice and keep the section empty.
+      scoresError.value =
+        'We couldn’t load your competitive scores right now. Please try again later.';
+    }
+
+    /**
      * Replace one row in place with an updated server view, reseeding
      * its rename draft. Leaves every other row untouched.
      */
@@ -588,6 +619,7 @@ export default defineComponent({
     onMounted(() => {
       void load();
       void loadLoadouts();
+      void loadScores();
     });
 
     return {
@@ -615,6 +647,9 @@ export default defineComponent({
       saveLinks,
       addDraftLink,
       removeDraftLink,
+      competitiveScores,
+      scoresLoading,
+      scoresError,
       loadoutRows,
       loadoutsError,
       createName,
@@ -1092,6 +1127,33 @@ export default defineComponent({
         >
           {{ copyMessage }}
         </p>
+      </section>
+
+      <section class="profile-scores" data-testid="my-profile-scores">
+        <h2>Competitive Scores</h2>
+        <p class="profile-scores__intro">
+          Your submitted competitive scores. A finished match is submitted
+          automatically when it ends; lower final scores are better.
+        </p>
+        <p v-if="scoresLoading" class="profile-scores__status">Loading your scores…</p>
+        <p v-else-if="scoresError !== ''" class="profile-scores__status profile-scores__status--error">
+          {{ scoresError }}
+        </p>
+        <p v-else-if="competitiveScores.length === 0" class="profile-scores__status">
+          You haven’t submitted any competitive scores yet. Finish a match while
+          signed in and it’ll appear here.
+        </p>
+        <ul v-else class="profile-scores__list">
+          <li
+            v-for="score in competitiveScores"
+            :key="score.submissionId"
+            class="profile-scores__row"
+          >
+            <span class="profile-scores__final">{{ score.finalScore }}</span>
+            <span class="profile-scores__scenario">{{ score.scenarioKey }}</span>
+            <span class="profile-scores__date">{{ score.createdAt }}</span>
+          </li>
+        </ul>
       </section>
 
       <section class="profile-billing">
