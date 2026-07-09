@@ -62,11 +62,20 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 23 entries after WP-290', () => {
+  it('HERO_KEYWORDS array has exactly 24 entries after the Ionic Energy fix', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      23,
-      'HERO_KEYWORDS must have exactly 23 entries (22 post-WP-286 + size-changing)',
+      24,
+      'HERO_KEYWORDS must have exactly 24 entries (23 post-WP-290 + optional-put-bottom-hq)',
+    );
+  });
+});
+
+describe('optional-put-bottom-hq keyword (Ionic Energy fix)', () => {
+  it('is registered in HERO_KEYWORDS', () => {
+    assert.ok(
+      HERO_KEYWORDS.includes('optional-put-bottom-hq'),
+      'optional-put-bottom-hq must be in HERO_KEYWORDS array',
     );
   });
 });

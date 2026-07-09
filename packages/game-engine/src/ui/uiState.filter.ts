@@ -572,6 +572,31 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: the pending optional-put-bottom-hq choice is scoped to the chooser (only they
+  // may resolve it). Redacted for EVERY audience except the choosing player; present
+  // only when the audience is a player whose playerId equals the chooser's playerID;
+  // omitted (conditional assignment, never an `undefined` literal) for opponents AND
+  // spectators — mirroring the pendingVictoryPileCardPick posture. The eligibleHqCards
+  // list is HQ (public) data, but the pending-choice state itself is chooser-scoped;
+  // per-entry display spread prevents aliasing with the input.
+  if (
+    uiState.pendingOptionalPutBottomHQ !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingOptionalPutBottomHQ.playerID
+  ) {
+    const eligibleHqCardsCopy = [];
+    for (const entry of uiState.pendingOptionalPutBottomHQ.eligibleHqCards) {
+      eligibleHqCardsCopy.push({
+        cardId: entry.cardId,
+        display: { ...entry.display },
+      });
+    }
+    result.pendingOptionalPutBottomHQ = {
+      playerID: uiState.pendingOptionalPutBottomHQ.playerID,
+      eligibleHqCards: eligibleHqCardsCopy,
+    };
+  }
+
   // why: WP-258 / D-12803 — hollowEffects is PUBLIC card/mechanic data, not
   // hidden info. The filter passes it through value-unchanged for EVERY
   // audience (own-player AND other-player AND spectator) — it redacts /

@@ -62,6 +62,7 @@ antm/wasp,Wasp,antm,draw,executable,,,packages/game-engine/src/hero/heroEffects.
 antm/wasp,Wasp,antm,microscopic-size-changing,unsupported,,,
 antm/wasp,Wasp,antm,size-changing,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing
 antm/wonder-man,Wonder Man,antm,empowered,executable,WP-267,D-24044,packages/game-engine/src/hero/effectPrimitive.interpret.ts
+antm/wonder-man,Wonder Man,antm,optional-put-bottom-hq,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-put-bottom-hq
 antm/wonder-man,Wonder Man,antm,size-changing,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing
 asrd/beta-ray-bill,Beta Ray Bill,asrd,thrown-artifact,unsupported,,,
 asrd/beta-ray-bill,Beta Ray Bill,asrd,worthy,unsupported,,,

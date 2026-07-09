@@ -233,7 +233,7 @@ describe('buildHeroAbilityHooks', () => {
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 23 canonical keyword values', () => {
+  it('contains exactly the 24 canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -258,12 +258,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'victory-villain-attack', // why: D-24068 / WP-285 — victory-pile villain-pick mechanic
       'draw-or-empowered', // why: D-24069 / WP-286 — draw-or-empowered choose-one mechanic
       'size-changing', // why: D-24074 / WP-290 — class-grant-on-play keyword
+      'optional-put-bottom-hq', // why: Ionic Energy — optional put-a-HQ-card-on-bottom-of-Hero-Deck mechanic
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      23,
-      'HERO_KEYWORDS must have exactly 23 entries',
+      24,
+      'HERO_KEYWORDS must have exactly 24 entries',
     );
 
     assert.deepStrictEqual(

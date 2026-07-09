@@ -103,14 +103,15 @@ describe('LegendaryGame', () => {
     );
   });
 
-  it('defines moves: advanceStage, dodgeCard, drawCards, endTurn, fightMastermind, fightVillain, playCard, playFromUndercover, recruitHero, resolveDrawOrEmpowered, resolveHeroChoice, resolveKoHeroChoice, resolveOptionalKoReward, resolveVictoryPileCardPick, revealVillainCard, and sendUndercover', () => {
+  it('defines moves: advanceStage, dodgeCard, drawCards, endTurn, fightMastermind, fightVillain, playCard, playFromUndercover, recruitHero, resolveDrawOrEmpowered, resolveHeroChoice, resolveKoHeroChoice, resolveOptionalKoReward, resolveOptionalPutBottomHQ, resolveVictoryPileCardPick, revealVillainCard, and sendUndercover', () => {
     const moveNames = Object.keys(LegendaryGame.moves ?? {});
     assert.deepStrictEqual(
       moveNames.sort(),
       // why: WP-285 / EC-317 added resolveVictoryPileCardPick (14 → 15); WP-286 / EC-318 added
-      // resolveDrawOrEmpowered (15 → 16).
-      ['advanceStage', 'dodgeCard', 'drawCards', 'endTurn', 'fightMastermind', 'fightVillain', 'playCard', 'playFromUndercover', 'recruitHero', 'resolveDrawOrEmpowered', 'resolveHeroChoice', 'resolveKoHeroChoice', 'resolveOptionalKoReward', 'resolveVictoryPileCardPick', 'revealVillainCard', 'sendUndercover'],
-      'LegendaryGame must define exactly 16 moves',
+      // resolveDrawOrEmpowered (15 → 16); the Ionic Energy optional-put-bottom-hq fix added
+      // resolveOptionalPutBottomHQ (16 → 17).
+      ['advanceStage', 'dodgeCard', 'drawCards', 'endTurn', 'fightMastermind', 'fightVillain', 'playCard', 'playFromUndercover', 'recruitHero', 'resolveDrawOrEmpowered', 'resolveHeroChoice', 'resolveKoHeroChoice', 'resolveOptionalKoReward', 'resolveOptionalPutBottomHQ', 'resolveVictoryPileCardPick', 'revealVillainCard', 'sendUndercover'],
+      'LegendaryGame must define exactly 17 moves',
     );
   });
 

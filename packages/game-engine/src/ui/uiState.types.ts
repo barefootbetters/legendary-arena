@@ -105,6 +105,13 @@ export interface UIState {
   // (keyed on .playerID), mirroring pendingDrawOrEmpowered. Absent (undefined) means no
   // pending victory-pile pick; the client must not render the prompt in that case.
   pendingVictoryPileCardPick?: UIPendingVictoryPileCardPick;
+  // why: projects the FRONT entry of G.pendingOptionalPutBottomHQ with the eligible
+  // HQ cards (each carrying its instance cardId + display) so the chooser can render
+  // the "put a card from the HQ on the bottom of the Hero Deck" prompt (optional —
+  // Decline is a first-class exit). Redacted (omitted) for every audience except the
+  // chooser (keyed on .playerID), mirroring pendingVictoryPileCardPick. Absent
+  // (undefined) means no pending choice; the client must not render the prompt then.
+  pendingOptionalPutBottomHQ?: UIPendingOptionalPutBottomHQ;
   // why: WP-258 — projects the WP-257 runtime hollow-effect channel
   // (G.diagnostics.hollowEffects) so the client can render a structured debug
   // panel + carry the records on the Download-diagnostics export. OPTIONAL on
@@ -613,6 +620,34 @@ export interface UIPendingVictoryPileCardPick {
   // audience.playerId against this, mirroring UIPendingDrawOrEmpowered.playerID.
   playerID: string;
   eligibleVillains: UIVictoryPileVillainChoice[];
+}
+
+/**
+ * One eligible HQ card the player may put on the bottom of the Hero Deck for an
+ * optional-put-bottom-hq resolution (Wonder Man's `Ionic Energy`). The client
+ * renders each entry and submits `resolveOptionalPutBottomHQ({ cardId })` for the
+ * chosen card. `cardId` is the HQ instance id the engine resolve matches (NOT
+ * `display.extId`) — the round-trip rule.
+ */
+export interface UIHqCardChoice {
+  cardId: string;
+  display: UICardDisplay;
+}
+
+/**
+ * UI contract for resolving a pending optional-put-bottom-hq choice ("You may put
+ * a card from the HQ on the bottom of the Hero Deck"). Only visible to the choosing
+ * player; redacted for opponents and spectators. `eligibleHqCards` is recomputed
+ * fresh from `G.hq` at projection time (the non-null HQ slots, in slot order), so
+ * the client's `{ cardId }` selection always maps to a card the engine resolve
+ * accepts (the round-trip rule). The choice is optional — the client also offers a
+ * first-class Decline (`{ decline: true }`).
+ */
+export interface UIPendingOptionalPutBottomHQ {
+  // why: the redaction key; the chooser-only filter compares audience.playerId
+  // against this, mirroring UIPendingVictoryPileCardPick.playerID.
+  playerID: string;
+  eligibleHqCards: UIHqCardChoice[];
 }
 
 export type { UIAudience } from "./uiAudience.types.js";

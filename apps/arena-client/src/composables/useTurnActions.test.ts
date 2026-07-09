@@ -215,3 +215,30 @@ describe('useTurnActions — hasPendingVictoryPileCardPick gating (WP-313 / EC-3
     assert.equal(actions.canPassPriority().allowed, true);
   });
 });
+
+describe('useTurnActions — hasPendingOptionalPutBottomHQ gating (Ionic Energy fix)', () => {
+  const PUT_BOTTOM_REASON =
+    'Put a card from the HQ on the bottom of the Hero Deck, or Decline, before taking another action.';
+
+  test('canEndTurn blocked at EVERY stage when hasPendingOptionalPutBottomHQ is true', () => {
+    for (const stage of ['start', 'main', 'cleanup'] as const) {
+      const result = useTurnActions(stage, true, false, false, false, false, false, true).canEndTurn();
+      assert.equal(result.allowed, false, `endTurn blocked at ${stage}`);
+      assert.equal(result.reason, PUT_BOTTOM_REASON, 'put-bottom-hq gate reason matches the locked value');
+    }
+  });
+
+  test('canPassPriority blocked at EVERY stage when hasPendingOptionalPutBottomHQ is true (board frozen)', () => {
+    for (const stage of ['start', 'main', 'cleanup'] as const) {
+      const result = useTurnActions(stage, true, false, false, false, false, false, true).canPassPriority();
+      assert.equal(result.allowed, false, `passPriority blocked at ${stage}`);
+      assert.equal(result.reason, PUT_BOTTOM_REASON);
+    }
+  });
+
+  test('defaults false — both allowed at cleanup when no put-bottom-hq choice pending', () => {
+    const actions = useTurnActions('cleanup', true, false, false, false, false, false, false);
+    assert.equal(actions.canEndTurn().allowed, true);
+    assert.equal(actions.canPassPriority().allowed, true);
+  });
+});

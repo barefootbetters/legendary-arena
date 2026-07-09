@@ -5,7 +5,12 @@
  * Called by the active player after an optional-put-bottom-hq hero ability parked a
  * PendingOptionalPutBottomHQ on G.pendingOptionalPutBottomHQ (FIFO). The player
  * either declines (no change to zones) or selects a card from the HQ (if present),
- * in which case it is moved to the bottom of their deck.
+ * in which case it is moved to the bottom of the shared Hero Deck and the vacated
+ * HQ slot is refilled from the top of the Hero Deck (exactly as recruitHero does).
+ *
+ * why: the printed ability is "put a card from the HQ on the bottom of the Hero
+ * Deck" — the shared central supply (G.heroDeck), NOT the player's personal deck,
+ * and the HQ must never be left with a permanent null gap.
  *
  * Atomicity is exact: the card move executes ONLY after it is confirmed present
  * in the HQ. Decline pops the queue with no change. A stale/absent target is a
@@ -17,6 +22,9 @@
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
+import { refillHqSlot } from '../board/city.logic.js';
+import { formatCardRef } from '../log/logDisplay.js';
+import { pushLog } from '../log/logPush.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -52,11 +60,11 @@ export function hasPendingOptionalPutBottomHQ(G: LegendaryGameState): boolean {
  *   1. Validate args — exactly { decline: true } XOR { cardId };
  *      invalid shape is a silent no-op (queue intact).
  *   2. Validate the front pending entry — non-empty queue, front.playerID match.
- *   3. { decline } → front-pop ONLY, no zone change (silent).
+ *   3. { decline } → front-pop ONLY, no zone change.
  *   4. { cardId } → the card must be present in the HQ NOW (recomputed fresh,
  *      no snapshot). Absent/stale → silent no-op, queue intact (resubmit).
- *   5. Remove the card from HQ → add it to the bottom of the player's deck.
- *   6. Front-pop (queue.shift()) LAST.
+ *   5. Push the card to the BOTTOM of G.heroDeck → refill the vacated HQ slot
+ *      from the TOP of G.heroDeck (refillHqSlot), then front-pop LAST.
  *
  * Any failure before step 5 ABORTS the move (no zone change). Moves never throw.
  *
@@ -86,9 +94,10 @@ export function resolveOptionalPutBottomHQ(
     return;
   }
 
-  // Step 3: Decline → front-pop only, no zone change (silent).
+  // Step 3: Decline → front-pop only, no zone change.
   if (isDecline) {
     queue.shift();
+    pushLog(G, `Player ${playerID} declined to put a card from the HQ on the bottom of the Hero Deck.`);
     return;
   }
 
@@ -108,17 +117,19 @@ export function resolveOptionalPutBottomHQ(
     return;
   }
 
-  // Step 5: Mutate — clear the HQ slot and add card to bottom of player's deck.
-  const newHq: (CardExtId | null)[] = [];
-  for (let i = 0; i < hqZone.length; i++) {
-    const slotValue = hqZone[i]!;  // HqZone tuple always has all slots defined
-    newHq.push(i === foundIndex ? null : slotValue);
-  }
-  G.hq = newHq as any; // HqZone tuple type
-  const playerZones = G.playerZones[playerID];
-  if (playerZones) {
-    playerZones.deck.push(targetCardId);
-  }
+  // Step 5: Move the chosen card to the BOTTOM of the shared Hero Deck, then
+  // refill the vacated HQ slot from the TOP of the Hero Deck — exactly the
+  // recruitHero refill path (refillHqSlot pops heroDeck[0]). heroDeck[0] is the
+  // top (drawn first), so the bottom is the END of the array (push).
+  // why: the card leaves the HQ for the shared central supply (G.heroDeck), NOT
+  // the player's personal deck; the HQ is kept full (never a permanent null gap).
+  G.heroDeck.push(targetCardId);
+  const refillResult = refillHqSlot(G.hq, foundIndex, G.heroDeck);
+  G.hq = refillResult.hq;
+  G.heroDeck = refillResult.heroDeck;
+  pushLog(G,
+    `Player ${playerID} put ${formatCardRef(G.cardDisplayData, targetCardId)} from the HQ on the bottom of the Hero Deck; HQ slot ${String(foundIndex)} refilled.`,
+  );
 
   // Step 6: Front-pop LAST.
   queue.shift();

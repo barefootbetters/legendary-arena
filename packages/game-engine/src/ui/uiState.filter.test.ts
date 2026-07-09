@@ -576,6 +576,49 @@ describe('filterUIStateForAudience — pendingVictoryPileCardPick redaction (D-2
 });
 
 // ---------------------------------------------------------------------------
+// Ionic Energy fix — pendingOptionalPutBottomHQ redaction (chooser-scoped)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where player '0' owes an optional-put-bottom-hq choice. The
+ * pending choice is chooser-scoped (only they may resolve it) — it must not appear
+ * in a non-chooser's UIState. The HQ from setup has cards, so the field projects a
+ * non-empty eligibleHqCards list.
+ */
+function createPutBottomHQUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+  gameState.pendingOptionalPutBottomHQ = [{ playerID: '0', sourceCardId: 'src' as CardExtId }];
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingOptionalPutBottomHQ redaction', () => {
+  it('the chooser sees pendingOptionalPutBottomHQ', () => {
+    const result = filterUIStateForAudience(createPutBottomHQUIState(), PLAYER_0);
+    assert.ok(result.pendingOptionalPutBottomHQ !== undefined, 'chooser sees the put-bottom-hq choice');
+    assert.equal(result.pendingOptionalPutBottomHQ!.playerID, '0');
+  });
+
+  it('an opponent does NOT see pendingOptionalPutBottomHQ', () => {
+    const result = filterUIStateForAudience(createPutBottomHQUIState(), PLAYER_1);
+    assert.equal(result.pendingOptionalPutBottomHQ, undefined, 'opponent must not see the choice');
+  });
+
+  it('a spectator does NOT see pendingOptionalPutBottomHQ', () => {
+    const result = filterUIStateForAudience(createPutBottomHQUIState(), SPECTATOR);
+    assert.equal(result.pendingOptionalPutBottomHQ, undefined, 'spectator must not see the choice');
+  });
+
+  it('does not mutate the input UIState', () => {
+    const uiState = createPutBottomHQUIState();
+    filterUIStateForAudience(uiState, PLAYER_1);
+    assert.ok(uiState.pendingOptionalPutBottomHQ !== undefined, 'source UIState unchanged');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-258 / EC-289 — hollowEffects public value-preserving pass-through (D-12803)
 // ---------------------------------------------------------------------------
 

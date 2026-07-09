@@ -42,6 +42,7 @@ import PendingKoHeroChoicePrompt from '../components/play/PendingKoHeroChoicePro
 import OptionalKoRewardPrompt from '../components/play/OptionalKoRewardPrompt.vue';
 import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue';
 import VictoryPileCardPickPrompt from '../components/play/VictoryPileCardPickPrompt.vue';
+import OptionalPutBottomHQPrompt from '../components/play/OptionalPutBottomHQPrompt.vue';
 import type { SubmitMove } from '../components/play/uiMoveName.types';
 
 interface ActivePile {
@@ -95,6 +96,7 @@ export default defineComponent({
     OptionalKoRewardPrompt,
     DrawOrEmpoweredPrompt,
     VictoryPileCardPickPrompt,
+    OptionalPutBottomHQPrompt,
   },
   props: {
     submitMove: {
@@ -350,6 +352,14 @@ export default defineComponent({
       () => snapshot.value?.pendingVictoryPileCardPick !== undefined,
     );
 
+    // why: derived from UIState.pendingOptionalPutBottomHQ !== undefined. Passed to
+    // TurnActionBar to block end-turn and pass-priority at EVERY stage while an
+    // optional-put-bottom-hq choice is pending (board frozen, mirrors
+    // hasPendingVictoryPileCardPick).
+    const hasPendingOptionalPutBottomHQ = computed<boolean>(
+      () => snapshot.value?.pendingOptionalPutBottomHQ !== undefined,
+    );
+
     return {
       snapshot,
       viewer,
@@ -372,6 +382,7 @@ export default defineComponent({
       hasPendingOptionalKoReward,
       hasPendingDrawOrEmpowered,
       hasPendingVictoryPileCardPick,
+      hasPendingOptionalPutBottomHQ,
     };
   },
 });
@@ -544,6 +555,14 @@ export default defineComponent({
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
+          <!-- why: the optional-put-bottom-hq prompt (Wonder Man's Ionic Energy)
+               renders above TurnActionBar in DOM order; appears only for the choosing
+               player when pendingOptionalPutBottomHQ is set. Normal document flow. -->
+          <OptionalPutBottomHQPrompt
+            :pending-optional-put-bottom-h-q="snapshot.pendingOptionalPutBottomHQ"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
           <!-- why: D-22201 + WP-222 — prompt renders above TurnActionBar in DOM
                order; appears only for the choosing player when pendingHeroChoice
                is set. NOT a modal; NOT position:fixed. Normal document flow. -->
@@ -560,6 +579,7 @@ export default defineComponent({
             :has-pending-optional-ko-reward="hasPendingOptionalKoReward"
             :has-pending-draw-or-empowered="hasPendingDrawOrEmpowered"
             :has-pending-victory-pile-card-pick="hasPendingVictoryPileCardPick"
+            :has-pending-optional-put-bottom-h-q="hasPendingOptionalPutBottomHQ"
             :submit-move="submitMove"
           />
         </template>
