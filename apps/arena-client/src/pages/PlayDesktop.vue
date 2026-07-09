@@ -43,6 +43,7 @@ import OptionalKoRewardPrompt from '../components/play/OptionalKoRewardPrompt.vu
 import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue';
 import VictoryPileCardPickPrompt from '../components/play/VictoryPileCardPickPrompt.vue';
 import OptionalPutBottomHQPrompt from '../components/play/OptionalPutBottomHQPrompt.vue';
+import PutAnyNumberBottomHQPrompt from '../components/play/PutAnyNumberBottomHQPrompt.vue';
 import type { SubmitMove } from '../components/play/uiMoveName.types';
 
 interface ActivePile {
@@ -97,6 +98,7 @@ export default defineComponent({
     DrawOrEmpoweredPrompt,
     VictoryPileCardPickPrompt,
     OptionalPutBottomHQPrompt,
+    PutAnyNumberBottomHQPrompt,
   },
   props: {
     submitMove: {
@@ -360,6 +362,13 @@ export default defineComponent({
       () => snapshot.value?.pendingOptionalPutBottomHQ !== undefined,
     );
 
+    // why: D-24132 — derived from UIState.pendingPutAnyNumberBottomHQ !== undefined. Passed to
+    // TurnActionBar to block end-turn and pass-priority at EVERY stage while a put-any-number-
+    // bottom-hq multi-select choice is pending (board frozen, mirrors hasPendingOptionalPutBottomHQ).
+    const hasPendingPutAnyNumberBottomHQ = computed<boolean>(
+      () => snapshot.value?.pendingPutAnyNumberBottomHQ !== undefined,
+    );
+
     return {
       snapshot,
       viewer,
@@ -383,6 +392,7 @@ export default defineComponent({
       hasPendingDrawOrEmpowered,
       hasPendingVictoryPileCardPick,
       hasPendingOptionalPutBottomHQ,
+      hasPendingPutAnyNumberBottomHQ,
     };
   },
 });
@@ -563,6 +573,14 @@ export default defineComponent({
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
+          <!-- why: D-24132 — the put-any-number-bottom-hq multi-select prompt (Wonder Man's 8th
+               Wonder of the World et al.) renders above TurnActionBar in DOM order; appears only
+               for the choosing player when pendingPutAnyNumberBottomHQ is set. Normal doc flow. -->
+          <PutAnyNumberBottomHQPrompt
+            :pending-put-any-number-bottom-h-q="snapshot.pendingPutAnyNumberBottomHQ"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
           <!-- why: D-22201 + WP-222 — prompt renders above TurnActionBar in DOM
                order; appears only for the choosing player when pendingHeroChoice
                is set. NOT a modal; NOT position:fixed. Normal document flow. -->
@@ -580,6 +598,7 @@ export default defineComponent({
             :has-pending-draw-or-empowered="hasPendingDrawOrEmpowered"
             :has-pending-victory-pile-card-pick="hasPendingVictoryPileCardPick"
             :has-pending-optional-put-bottom-h-q="hasPendingOptionalPutBottomHQ"
+            :has-pending-put-any-number-bottom-h-q="hasPendingPutAnyNumberBottomHQ"
             :submit-move="submitMove"
           />
         </template>

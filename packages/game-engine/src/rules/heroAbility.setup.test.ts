@@ -233,7 +233,7 @@ describe('buildHeroAbilityHooks', () => {
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 24 canonical keyword values', () => {
+  it('contains exactly the 25 canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -259,12 +259,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'draw-or-empowered', // why: D-24069 / WP-286 — draw-or-empowered choose-one mechanic
       'size-changing', // why: D-24074 / WP-290 — class-grant-on-play keyword
       'optional-put-bottom-hq', // why: Ionic Energy — optional put-a-HQ-card-on-bottom-of-Hero-Deck mechanic
+      'put-any-number-bottom-hq', // why: D-24132 — multi-select put-any-number-of-HQ-cards-on-bottom-of-Hero-Deck mechanic
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      24,
-      'HERO_KEYWORDS must have exactly 24 entries',
+      25,
+      'HERO_KEYWORDS must have exactly 25 entries',
     );
 
     assert.deepStrictEqual(
@@ -340,6 +341,69 @@ describe('buildHeroAbilityHooks [keyword:X:N] magnitude extraction (WP-215)', ()
     const rescueEffect = hook.effects!.find(e => e.type === 'rescue');
     assert.ok(rescueEffect !== undefined, 'rescue effect must be present');
     assert.equal(rescueEffect!.magnitude, undefined, 'rescue effect must have no magnitude');
+  });
+
+  it('[keyword:put-any-number-bottom-hq:1] with a trailing multi-class Empowered captures the classes onto the effect and suppresses the standalone primitive (D-24132)', () => {
+    // why: the real, marker-applied antm/wonder-man/8th-wonder-of-the-world line. The Empowered
+    // classes must ride the put-any-number effect (applied AFTER the moves at resolve time), NOT
+    // a standalone play-time primitiveEffect, and the [hc:] tokens must not add a 'conditional'
+    // gate (they are the Empowered count parameters, not play conditions).
+    const registry = makeHeroRegistry('antm', 'wonder-man', [
+      {
+        slug: '8th-wonder-of-the-world',
+        rarityLabel: 'Rare',
+        abilities: [
+          'Choose any number of cards from the HQ. Put them on the bottom of the Hero Deck. Then you get [keyword:Empowered] by [hc:ranged] and [hc:strength]. [keyword:put-any-number-bottom-hq:1]',
+        ],
+      },
+    ]);
+    const config: MatchSetupConfig = { ...createTestConfig(), heroDeckIds: ['antm/wonder-man'] };
+
+    const hooks = buildHeroAbilityHooks(registry, config);
+    const hook = hooks[0];
+    assert.ok(hook !== undefined, 'hook must be built');
+    const effect = hook.effects!.find(e => e.type === 'put-any-number-bottom-hq');
+    assert.ok(effect !== undefined, 'put-any-number-bottom-hq effect must be present');
+    assert.equal(effect!.magnitude, 1, 'magnitude must be 1');
+    assert.deepStrictEqual(
+      effect!.empoweredClasses,
+      ['ranged', 'strength'],
+      'the trailing Empowered classes must ride the effect in printed order',
+    );
+    assert.ok(
+      !(hook.keywords ?? []).includes('conditional'),
+      'the Empowered count params must NOT add a conditional gate',
+    );
+    assert.equal(
+      (hook.primitiveEffects ?? []).length,
+      0,
+      'the standalone play-time Empowered primitive must be suppressed (grant applies at resolve time)',
+    );
+  });
+
+  it('[keyword:put-any-number-bottom-hq:1] with no Empowered tail emits the bare effect (Empyreal Force / Colliding Dreams) (D-24132)', () => {
+    const registry = makeHeroRegistry('nmut', 'sunspot', [
+      {
+        slug: 'empyreal-force',
+        rarityLabel: 'Rare',
+        abilities: [
+          'Choose any number of Heroes in the HQ. Put them on the bottom of the Hero Deck. [keyword:put-any-number-bottom-hq:1]',
+        ],
+      },
+    ]);
+    const config: MatchSetupConfig = { ...createTestConfig(), heroDeckIds: ['nmut/sunspot'] };
+
+    const hooks = buildHeroAbilityHooks(registry, config);
+    const hook = hooks[0];
+    assert.ok(hook !== undefined, 'hook must be built');
+    const effect = hook.effects!.find(e => e.type === 'put-any-number-bottom-hq');
+    assert.ok(effect !== undefined, 'put-any-number-bottom-hq effect must be present');
+    assert.equal(effect!.magnitude, 1, 'magnitude must be 1');
+    assert.equal(effect!.empoweredClasses, undefined, 'no empoweredClasses when the line has no Empowered tail');
+    assert.ok(
+      !(hook.keywords ?? []).includes('conditional'),
+      'a bare put-any-number line adds no conditional gate',
+    );
   });
 
   it('[keyword:reveal] with VP-cost pattern translates to a cost-lte branch-list (AC-11)', () => {

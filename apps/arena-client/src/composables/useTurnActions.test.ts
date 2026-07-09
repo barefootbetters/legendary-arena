@@ -242,3 +242,30 @@ describe('useTurnActions — hasPendingOptionalPutBottomHQ gating (Ionic Energy 
     assert.equal(actions.canPassPriority().allowed, true);
   });
 });
+
+describe('useTurnActions — hasPendingPutAnyNumberBottomHQ gating (D-24132)', () => {
+  const PUT_ANY_NUMBER_REASON =
+    'Choose any number of cards from the HQ to put on the bottom, or Put None, before taking another action.';
+
+  test('canEndTurn blocked at EVERY stage when hasPendingPutAnyNumberBottomHQ is true', () => {
+    for (const stage of ['start', 'main', 'cleanup'] as const) {
+      const result = useTurnActions(stage, true, false, false, false, false, false, false, true).canEndTurn();
+      assert.equal(result.allowed, false, `endTurn blocked at ${stage}`);
+      assert.equal(result.reason, PUT_ANY_NUMBER_REASON, 'put-any-number-hq gate reason matches the locked value');
+    }
+  });
+
+  test('canPassPriority blocked at EVERY stage when hasPendingPutAnyNumberBottomHQ is true (board frozen)', () => {
+    for (const stage of ['start', 'main', 'cleanup'] as const) {
+      const result = useTurnActions(stage, true, false, false, false, false, false, false, true).canPassPriority();
+      assert.equal(result.allowed, false, `passPriority blocked at ${stage}`);
+      assert.equal(result.reason, PUT_ANY_NUMBER_REASON);
+    }
+  });
+
+  test('defaults false — both allowed at cleanup when no put-any-number-hq choice pending', () => {
+    const actions = useTurnActions('cleanup', true, false, false, false, false, false, false, false);
+    assert.equal(actions.canEndTurn().allowed, true);
+    assert.equal(actions.canPassPriority().allowed, true);
+  });
+});

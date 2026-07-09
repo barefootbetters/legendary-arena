@@ -52,10 +52,11 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     );
   });
 
-  it('has exactly 11 handlers and none for the deferred keywords', () => {
+  it('has exactly 12 handlers and none for the deferred keywords', () => {
     // why: WP-286 / D-24069 added the draw-or-empowered park handler (9 → 10); the
-    // Ionic Energy optional-put-bottom-hq fix added its park handler (10 → 11).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 11);
+    // Ionic Energy optional-put-bottom-hq fix added its park handler (10 → 11); D-24132
+    // added the put-any-number-bottom-hq park handler (11 → 12).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 12);
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
     assert.equal(HERO_EFFECT_HANDLERS['conditional'], undefined);
   });
@@ -3327,6 +3328,89 @@ describe('executeHeroEffects draw-or-empowered park (WP-286 / D-24069)', () => {
     assert.ok(
       gameState.messages.some((line) => line.includes('no empowered class')),
       'a missing empoweredClass appends a skip log line (should never happen post-parse)',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// D-24132 — put-any-number-bottom-hq park case
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects put-any-number-bottom-hq park (D-24132)', () => {
+  const mockCtx = makeMockCtx();
+
+  it('with ≥1 card in the HQ parks a choice (no moves at play time); records empoweredClasses when present', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['put-any-number-bottom-hq'],
+          effects: [{ type: 'put-any-number-bottom-hq', magnitude: 1, empoweredClasses: ['ranged', 'strength'] }],
+        },
+      ],
+    });
+    gameState.hq = ['hq-a', 'hq-b', null, null, null] as unknown as LegendaryGameState['hq'];
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.pendingPutAnyNumberBottomHQ?.length, 1, 'exactly one choice parked');
+    assert.deepStrictEqual(
+      gameState.pendingPutAnyNumberBottomHQ![0],
+      { playerID: '0', sourceCardId: 'hero-x', empoweredClasses: ['ranged', 'strength'] },
+      'parked entry records player, source card, and the trailing Empowered classes',
+    );
+    // The moves happen at RESOLVE time, not at play time — HQ and hero deck are untouched here.
+    assert.deepStrictEqual(gameState.hq, ['hq-a', 'hq-b', null, null, null], 'HQ untouched at play time');
+    // The park is SILENT (mirrors the optional-put-bottom-hq park).
+    assert.equal(gameState.messages.length, 0, 'the park appends no game-log line');
+  });
+
+  it('omits empoweredClasses when the effect carries none (Empyreal Force / Colliding Dreams)', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['put-any-number-bottom-hq'],
+          effects: [{ type: 'put-any-number-bottom-hq', magnitude: 1 }],
+        },
+      ],
+    });
+    gameState.hq = ['hq-a', null, null, null, null] as unknown as LegendaryGameState['hq'];
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.pendingPutAnyNumberBottomHQ?.length, 1, 'exactly one choice parked');
+    assert.equal(
+      gameState.pendingPutAnyNumberBottomHQ![0]!.empoweredClasses,
+      undefined,
+      'no empoweredClasses field when the effect carries none (omit-when-empty)',
+    );
+  });
+
+  it('with an empty HQ it is a no-op plus a game-log line (nothing parked)', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['put-any-number-bottom-hq'],
+          effects: [{ type: 'put-any-number-bottom-hq', magnitude: 1 }],
+        },
+      ],
+    });
+    // makeTestState defaults hq to all-null (empty HQ).
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.pendingPutAnyNumberBottomHQ?.length ?? 0, 0, 'nothing parked when the HQ is empty');
+    assert.ok(
+      gameState.messages.some((line) => line.includes('the HQ is empty')),
+      'an empty-HQ put-any-number effect appends a game-log line explaining the no-op',
     );
   });
 });

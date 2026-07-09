@@ -10,6 +10,7 @@ import { resolveHeroChoice } from './moves/heroChoice.resolve.js';
 import { resolveKoHeroChoice, hasPendingKoHeroChoice } from './moves/koHeroChoice.resolve.js';
 import { resolveOptionalKoReward, hasPendingOptionalKoReward } from './moves/optionalKoReward.resolve.js';
 import { resolveOptionalPutBottomHQ, hasPendingOptionalPutBottomHQ } from './moves/resolveOptionalPutBottomHQ.js';
+import { resolvePutAnyNumberBottomHQ, hasPendingPutAnyNumberBottomHQ } from './moves/resolvePutAnyNumberBottomHQ.js';
 import { resolveVictoryPileCardPick, hasPendingVictoryPileCardPick } from './moves/resolveVictoryPileCardPick.js';
 import { resolveDrawOrEmpowered, hasPendingDrawOrEmpowered } from './moves/drawOrEmpowered.resolve.js';
 import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
@@ -101,6 +102,8 @@ function advanceStage({ G, events }: MoveContext): void {
   if (hasPendingDrawOrEmpowered(G)) { return; }
   // why: block-all — pendingOptionalPutBottomHQ must be resolved before any other action
   if (hasPendingOptionalPutBottomHQ(G)) { return; }
+  // why: D-24132 — block-all — pendingPutAnyNumberBottomHQ (multi-select HQ→bottom) must be resolved before any other action
+  if (hasPendingPutAnyNumberBottomHQ(G)) { return; }
   // why: turn cannot end while a player-choice reveal is pending; at cleanup,
   // advanceTurnStage would otherwise call events.endTurn() and bypass the
   // endTurn-move guard (D-22002). The KO turn-end block is already covered by
@@ -332,6 +335,10 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     resolveKoHeroChoice: { move: resolveKoHeroChoice, client: false },
     resolveOptionalKoReward: { move: resolveOptionalKoReward, client: false },
     resolveOptionalPutBottomHQ: { move: resolveOptionalPutBottomHQ, client: false },
+    // why: D-24132 — resolvePutAnyNumberBottomHQ resolves the multi-select HQ→bottom choice
+    // (Wonder Man's 8th Wonder of the World et al.). Server-only (client: false) per D-10008 —
+    // it mutates real G (G.hq / G.heroDeck / G.turnEconomy), absent on UIState.
+    resolvePutAnyNumberBottomHQ: { move: resolvePutAnyNumberBottomHQ, client: false },
     resolveVictoryPileCardPick: { move: resolveVictoryPileCardPick, client: false },
     resolveDrawOrEmpowered: { move: resolveDrawOrEmpowered, client: false },
   },

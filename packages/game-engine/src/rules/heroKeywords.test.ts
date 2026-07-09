@@ -62,11 +62,11 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 24 entries after the Ionic Energy fix', () => {
+  it('HERO_KEYWORDS array has exactly 25 entries after the put-any-number-bottom-hq addition', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      24,
-      'HERO_KEYWORDS must have exactly 24 entries (23 post-WP-290 + optional-put-bottom-hq)',
+      25,
+      'HERO_KEYWORDS must have exactly 25 entries (24 post-Ionic-Energy + put-any-number-bottom-hq)',
     );
   });
 });
@@ -76,6 +76,15 @@ describe('optional-put-bottom-hq keyword (Ionic Energy fix)', () => {
     assert.ok(
       HERO_KEYWORDS.includes('optional-put-bottom-hq'),
       'optional-put-bottom-hq must be in HERO_KEYWORDS array',
+    );
+  });
+});
+
+describe('put-any-number-bottom-hq keyword (D-24132)', () => {
+  it('is registered in HERO_KEYWORDS', () => {
+    assert.ok(
+      HERO_KEYWORDS.includes('put-any-number-bottom-hq'),
+      'put-any-number-bottom-hq must be in HERO_KEYWORDS array',
     );
   });
 });

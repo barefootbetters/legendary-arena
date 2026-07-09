@@ -1366,6 +1366,59 @@ describe('buildUIState — pendingOptionalPutBottomHQ projection (Ionic Energy f
 });
 
 // ---------------------------------------------------------------------------
+// D-24132 — pendingPutAnyNumberBottomHQ projection (multi-select sibling)
+// ---------------------------------------------------------------------------
+
+describe('buildUIState — pendingPutAnyNumberBottomHQ projection (D-24132)', () => {
+  const hqHero = 'core/black-widow/strike#0' as CardExtId;
+
+  /**
+   * Builds a game state with the display-data hero in HQ slot 1 (slots 0/2 empty)
+   * and a pending put-any-number-bottom-hq choice for player 0.
+   */
+  function withPutAnyNumberBottomHQ(): LegendaryGameState {
+    const gameState = makeGameStateWithDisplayData();
+    gameState.hq = [null, hqHero, null, null, null] as LegendaryGameState['hq'];
+    gameState.pendingPutAnyNumberBottomHQ = [{ playerID: '0', sourceCardId: 'src' as CardExtId }];
+    return gameState;
+  }
+
+  it('is undefined when the engine queue is empty', () => {
+    const gameState = createTestGameState();
+    assert.equal(gameState.pendingPutAnyNumberBottomHQ, undefined);
+    const ui = buildUIState(gameState, mockCtx);
+    assert.equal(ui.pendingPutAnyNumberBottomHQ, undefined, 'absent when no pending choice');
+  });
+
+  it('projects the FRONT entry with playerID + the non-null HQ cards in slot order', () => {
+    const ui = buildUIState(withPutAnyNumberBottomHQ(), mockCtx);
+    assert.ok(ui.pendingPutAnyNumberBottomHQ !== undefined, 'present when queue non-empty');
+    assert.equal(ui.pendingPutAnyNumberBottomHQ!.playerID, '0');
+    const eligible = ui.pendingPutAnyNumberBottomHQ!.eligibleHqCards;
+    assert.equal(eligible.length, 1, 'only the one non-null HQ slot is eligible');
+    assert.equal(eligible[0]!.cardId, hqHero);
+    assert.equal(eligible[0]!.display.name, 'Mission Accomplished');
+  });
+
+  it('projects only the FRONT entry when the queue holds more than one', () => {
+    const gameState = withPutAnyNumberBottomHQ();
+    gameState.pendingPutAnyNumberBottomHQ = [
+      { playerID: '0', sourceCardId: 'a' as CardExtId },
+      { playerID: '1', sourceCardId: 'b' as CardExtId },
+    ];
+    const ui = buildUIState(gameState, mockCtx);
+    assert.equal(ui.pendingPutAnyNumberBottomHQ!.playerID, '0', 'front entry projected, not the second');
+  });
+
+  it('buildUIState does not mutate G (purity)', () => {
+    const gameState = withPutAnyNumberBottomHQ();
+    const before = JSON.stringify(gameState);
+    buildUIState(gameState, mockCtx);
+    assert.equal(JSON.stringify(gameState), before, 'G byte-identical after projection');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-258 / EC-289 — hollowEffects projection (WP-257 G.diagnostics channel)
 // ---------------------------------------------------------------------------
 

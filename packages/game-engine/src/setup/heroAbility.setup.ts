@@ -206,6 +206,22 @@ const OPTIONAL_KO_REWARD_PATTERN = /\[keyword:optional-ko-reward:([a-z][a-z-]*):
 /** Regex for [keyword:optional-put-bottom-hq:<n>] optional-put-bottom-HQ markup. */
 const OPTIONAL_PUT_BOTTOM_HQ_PATTERN = /\[keyword:optional-put-bottom-hq:(\d+)\]/g;
 
+// why: D-24132 — [keyword:put-any-number-bottom-hq:<n>] token for "Choose any number of
+// cards/Heroes from the HQ. Put them on the bottom of the Hero Deck" (the MULTI-select
+// sibling of optional-put-bottom-hq). Simple 2-segment token carrying just the magnitude
+// (always 1 for this MVP form). Follows the OPTIONAL_PUT_BOTTOM_HQ_PATTERN precedent.
+/** Regex for [keyword:put-any-number-bottom-hq:<n>] put-any-number-bottom-HQ markup. */
+const PUT_ANY_NUMBER_BOTTOM_HQ_PATTERN = /\[keyword:put-any-number-bottom-hq:(\d+)\]/g;
+
+// why: D-24132 — a put-any-number-bottom-hq line MAY carry a trailing "Then you get
+// [keyword:Empowered] by [hc:X] (and [hc:Y]…)" grant on the SAME line (Wonder Man's 8th
+// Wonder of the World). This detection pattern finds the `[keyword:Empowered]` token so the
+// pre-pass can slice the anchored `by [hc:…]` tail after it and route the classes onto the
+// put-any-number effect (applied AFTER the moves at resolve time) instead of a play-time
+// standalone Empowered primitive. Non-global source; a fresh RegExp is created per use.
+/** Regex for the `[keyword:Empowered]` token (case-insensitive), for the put-any-number tail. */
+const EMPOWERED_MARKER_TOKEN_PATTERN = /\[keyword:empowered\]/i;
+
 // why: D-24024 — the forward-compat parameterized reveal token has 3+
 // colon-separated segments ([keyword:reveal:<predicate>:<actions>(:continue)?]).
 // KEYWORD_PATTERN stops at the second colon and cannot match it; the legacy
@@ -446,6 +462,41 @@ function parseAbilityText(abilityText: string): {
     }
   }
 
+  // Pre-pass: capture a put-any-number-bottom-hq line's trailing Empowered grant before the
+  // KEYWORD_PATTERN loop (D-24132). When the line carries the put-any-number marker AND a
+  // same-line "[keyword:Empowered] by [hc:…]" tail (Wonder Man's 8th Wonder of the World), the
+  // Empowered classes are the count PARAMETERS of a grant that must apply AFTER the moves
+  // resolve — so capture them onto the put-any-number effect and suppress the per-token
+  // Empowered dispatch (which would otherwise emit a standalone play-time primitive that fires
+  // BEFORE the choice resolves, counting the pre-move HQ). Runs AFTER the choose-one / draw-or-
+  // empowered pre-passes (which returned undefined for this shape) and BEFORE the per-token loop.
+  let processedAsPutAnyNumberEmpowered = false;
+  let putAnyNumberEmpoweredClasses: string[] = [];
+  if (
+    !processedAsChooseOne
+    && !processedAsDrawOrEmpowered
+    && PUT_ANY_NUMBER_BOTTOM_HQ_PATTERN.test(abilityText)
+  ) {
+    // why: PUT_ANY_NUMBER_BOTTOM_HQ_PATTERN is global; .test advances lastIndex on the shared
+    // const, so reset it after the presence check to keep the module-level const stateless.
+    PUT_ANY_NUMBER_BOTTOM_HQ_PATTERN.lastIndex = 0;
+    const tailClasses = extractPutAnyNumberEmpoweredTailClasses(abilityText);
+    if (tailClasses.length > 0) {
+      putAnyNumberEmpoweredClasses = tailClasses;
+      processedAsPutAnyNumberEmpowered = true;
+      // why: the Empowered tail's [hc:…] tokens parsed as heroClassMatch conditions in Step 1a
+      // are the grant's count PARAMETERS, not gate conditions — remove the matching ones so they
+      // neither gate the put-any-number effect nor add a 'conditional' keyword. Removes ONLY the
+      // consumed params (not a blanket clear) so any unrelated gate on the line survives.
+      for (const empoweredClass of putAnyNumberEmpoweredClasses) {
+        const paramIndex = findFirstHeroClassMatchIndex(conditions, empoweredClass);
+        if (paramIndex !== -1) {
+          conditions.splice(paramIndex, 1);
+        }
+      }
+    }
+  }
+
   // Step 2: Extract [keyword:X] or [keyword:X:N] markup
   // Collect magnitudes keyed by keyword — explicit markup wins over icon-derived.
   const magnitudes: Map<string, number> = new Map();
@@ -470,11 +521,13 @@ function parseAbilityText(abilityText: string): {
       // flags it — the Honest-Partial Invariant. Checked BEFORE isHeroCompositionMarker since
       // `empowered` is in HERO_COMPOSITION_MARKER_NAMES (the deduped union) too.
       //
-      // why: D-24063 / D-24069 — processedAsChooseOne (the two-empowered choose-one) and
-      // processedAsDrawOrEmpowered (draw + single empowered) each suppress per-token empowered
-      // handling when their whole-line pre-pass already claimed the line. Skipping here prevents
-      // double-composition / a stray standalone empowered composition on a line a pre-pass owns.
-      if (!processedAsChooseOne && !processedAsDrawOrEmpowered) {
+      // why: D-24063 / D-24069 / D-24132 — processedAsChooseOne (the two-empowered choose-one),
+      // processedAsDrawOrEmpowered (draw + single empowered), and processedAsPutAnyNumberEmpowered
+      // (put-any-number + trailing empowered) each suppress per-token empowered handling when their
+      // whole-line pre-pass already claimed the line. Skipping here prevents double-composition / a
+      // stray standalone play-time empowered composition on a line a pre-pass owns (for put-any-
+      // number, the grant is applied AFTER the moves at resolve time instead).
+      if (!processedAsChooseOne && !processedAsDrawOrEmpowered && !processedAsPutAnyNumberEmpowered) {
         const textAfterMarker = abilityText.slice(keywordMatch.index + keywordMatch[0]!.length);
         // why: D-24047 — resolve-order: try the unchanged sole-condition core FIRST, then the
         // conditional-prefix class-gated form, then the free-choice fallback, then the
@@ -678,6 +731,21 @@ function parseAbilityText(abilityText: string): {
     }
   }
 
+  // Step 2f-bis: Extract [keyword:put-any-number-bottom-hq:<n>] markup (D-24132). Simple
+  // 2-segment token for "Choose any number of cards/Heroes from the HQ. Put them on the bottom
+  // of the Hero Deck" (the MULTI-select sibling of optional-put-bottom-hq). The magnitude is
+  // always 1 for this MVP form. Only one occurrence per line. Any trailing Empowered classes
+  // were captured by the pre-pass into putAnyNumberEmpoweredClasses and attach in the builder.
+  const putAnyNumberBottomHqRegex = new RegExp(PUT_ANY_NUMBER_BOTTOM_HQ_PATTERN.source, 'g');
+  const putAnyNumberBottomHqMatch = putAnyNumberBottomHqRegex.exec(abilityText);
+  if (putAnyNumberBottomHqMatch !== null) {
+    const magnitude = parseInt(putAnyNumberBottomHqMatch[1]!, 10);
+    if (magnitude >= 1) {
+      keywords.push('put-any-number-bottom-hq');
+      magnitudes.set('put-any-number-bottom-hq', magnitude);
+    }
+  }
+
   // Step 2g: Extract [keyword:reveal:<predicate>:<actions>(:continue)?] parameterized
   // reveal tokens (forward-compat — no card uses this grammar this WP). Each token is
   // ONE RevealRule, accumulated in source order. When at least one rule parses, the
@@ -805,6 +873,18 @@ function parseAbilityText(abilityText: string): {
         if (drawOrEmpoweredClass !== undefined) {
           effects.push({ type: keyword, empoweredClass: drawOrEmpoweredClass });
         }
+      } else if (keyword === 'put-any-number-bottom-hq') {
+        // why: D-24132 — the put-any-number-bottom-hq effect carries any trailing Empowered
+        // classes captured by the pre-pass so the park site records them on the pending entry;
+        // the resolve move applies each via buildEmpoweredComposition AFTER the moves resolve.
+        // Omit-when-empty: no empoweredClasses field when the line has no Empowered tail.
+        effects.push({
+          type: keyword,
+          ...(magnitude !== undefined ? { magnitude } : {}),
+          ...(putAnyNumberEmpoweredClasses.length > 0
+            ? { empoweredClasses: putAnyNumberEmpoweredClasses }
+            : {}),
+        });
       } else if (REVEAL_KEYWORD_SET.has(keyword)) {
         // why: D-24024 — the dual-grammar seam. A legacy reveal-* keyword translates
         // through revealRulesForLegacyKeyword into the collapsed `reveal` descriptor;
@@ -943,6 +1023,43 @@ function tryResolveEmpoweredCore(
     return undefined;
   }
   return buildEmpoweredComposition(heroClass);
+}
+
+/**
+ * Extracts the trailing "Empowered by [classes]" hero classes from a put-any-number-bottom-hq
+ * line, or an empty array when the line has no Empowered tail (D-24132). Finds the
+ * `[keyword:Empowered]` token, then reads the anchored `by [hc:X] (and [hc:Y]…)` tail
+ * immediately after it — the same multi-class / single-class grammar the standalone Empowered
+ * resolvers accept. Returns the normalized classes in printed order. Pure; mutates nothing.
+ *
+ * @param abilityText - The full ability text line (already carrying the put-any-number marker).
+ * @returns The normalized Empowered classes in printed order (empty when there is no tail).
+ */
+function extractPutAnyNumberEmpoweredTailClasses(abilityText: string): string[] {
+  const markerMatch = EMPOWERED_MARKER_TOKEN_PATTERN.exec(abilityText);
+  if (markerMatch === null) {
+    return [];
+  }
+  const textAfterMarker = abilityText.slice(markerMatch.index + markerMatch[0]!.length);
+  const classes: string[] = [];
+  // why: try the multi-class tail first (`by [hc:X] and [hc:Y]…`); its `(?:and [hc:…])+`
+  // requirement means it never matches the single-class form, so the single-class fallback
+  // below owns `by [hc:X]`. Extract every [hc:…] token from whichever tail matched.
+  const multiClassTail = EMPOWERED_MULTICLASS_FULL_TAIL_PATTERN.exec(textAfterMarker);
+  if (multiClassTail !== null) {
+    const classTokenRegex = /\[hc:([a-z0-9-]+)\]/gi;
+    let classMatch = classTokenRegex.exec(multiClassTail[0]!);
+    while (classMatch !== null) {
+      classes.push(normalizeTraitSlug(classMatch[1]!));
+      classMatch = classTokenRegex.exec(multiClassTail[0]!);
+    }
+    return classes;
+  }
+  const singleClassTail = EMPOWERED_PARAM_TAIL_PATTERN.exec(textAfterMarker);
+  if (singleClassTail !== null) {
+    classes.push(normalizeTraitSlug(singleClassTail[1]!));
+  }
+  return classes;
 }
 
 /**

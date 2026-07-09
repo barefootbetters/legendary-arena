@@ -111,6 +111,12 @@ const NOT_YOUR_TURN: GatingResult = {
  *   block-all guard freezes the board, mirroring `hasPendingVictoryPileCardPick`).
  *   Defaults to false. The block-all guard guarantees at most one pending-choice type
  *   is active at a time.
+ * @param hasPendingPutAnyNumberBottomHQ Whether the viewer has an unresolved
+ *   put-any-number-bottom-hq choice (derived from
+ *   `UIState.pendingPutAnyNumberBottomHQ !== undefined` at the call site). When true,
+ *   blocks `canEndTurn` and `canPassPriority` at ANY stage (D-24132 — the engine's advanceStage
+ *   block-all guard freezes the board, mirroring `hasPendingOptionalPutBottomHQ`). Defaults to
+ *   false. The block-all guard guarantees at most one pending-choice type is active at a time.
  */
 export function useTurnActions(
   currentStage: string,
@@ -121,6 +127,7 @@ export function useTurnActions(
   hasPendingDrawOrEmpowered: boolean = false,
   hasPendingVictoryPileCardPick: boolean = false,
   hasPendingOptionalPutBottomHQ: boolean = false,
+  hasPendingPutAnyNumberBottomHQ: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -221,6 +228,16 @@ export function useTurnActions(
           reason: 'Put a card from the HQ on the bottom of the Hero Deck, or Decline, before taking another action.',
         };
       }
+      // why: D-24132 — End Turn / Pass Priority blocked at any stage while a put-any-number-
+      // bottom-hq multi-select choice is pending (the engine's advanceStage block-all guard
+      // freezes the board, mirroring hasPendingOptionalPutBottomHQ). Put None is a first-class
+      // exit, so the reason names it.
+      if (hasPendingPutAnyNumberBottomHQ) {
+        return {
+          allowed: false,
+          reason: 'Choose any number of cards from the HQ to put on the bottom, or Put None, before taking another action.',
+        };
+      }
       if (currentStage === 'cleanup' && hasPendingChoice) {
         return {
           allowed: false,
@@ -275,6 +292,15 @@ export function useTurnActions(
         return {
           allowed: false,
           reason: 'Put a card from the HQ on the bottom of the Hero Deck, or Decline, before taking another action.',
+        };
+      }
+      if (hasPendingPutAnyNumberBottomHQ) {
+        // why: D-24132 — the engine's advanceStage block-all guard blocks endTurn while
+        // pendingPutAnyNumberBottomHQ is non-empty; this client-side gate surfaces the reason
+        // so the player sees a tooltip instead of a silent rejection.
+        return {
+          allowed: false,
+          reason: 'Choose any number of cards from the HQ to put on the bottom, or Put None, before taking another action.',
         };
       }
       if (currentStage === 'cleanup' && hasPendingChoice) {

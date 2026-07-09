@@ -1095,6 +1095,19 @@
       "hidden": true
     },
     {
+      "slug": "put-any-number-bottom-hq",
+      "label": "Put Any Number Bottom Hq",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 3,
+      "cardIds": [
+        "antm/wonder-man",
+        "nmut/sunspot",
+        "wtif/star-lord-tchalla"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "rescue",
       "label": "Rescue",
       "scope": "hero",
@@ -2178,6 +2191,7 @@
       "mechanics": [
         "empowered",
         "optional-put-bottom-hq",
+        "put-any-number-bottom-hq",
         "size-changing"
       ]
     },
@@ -3044,6 +3058,7 @@
     "nmut/sunspot": {
       "mechanics": [
         "moonlight",
+        "put-any-number-bottom-hq",
         "sunlight"
       ]
     },
@@ -3650,6 +3665,7 @@
     "wtif/star-lord-tchalla": {
       "mechanics": [
         "empowered",
+        "put-any-number-bottom-hq",
         "what-if"
       ]
     },

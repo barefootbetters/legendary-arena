@@ -515,7 +515,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Size-Changing] [hc:strength]",
-            "Choose any number of cards from the HQ. Put them on the bottom of the Hero Deck. Then you get [keyword:Empowered] by [hc:ranged] and [hc:strength]."
+            "Choose any number of cards from the HQ. Put them on the bottom of the Hero Deck. Then you get [keyword:Empowered] by [hc:ranged] and [hc:strength]. [keyword:put-any-number-bottom-hq:1]"
           ]
         }
       ],

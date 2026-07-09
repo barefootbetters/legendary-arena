@@ -43,6 +43,50 @@ backlogged consumer WPs — the legends-board set-grouped index + gauntlet panel
 - **Operator-pending:** apply migration 026 to PROD (024/025 pattern); rows begin carrying `outcome`
   from the next deploy — pre-deploy submissions stay NULL and never qualify.
 
+---
+
+### Bug fix — put-any-number-bottom-hq: the multi-select HQ→bottom hero keyword (D-24132 Active) (2026-07-09)
+
+**User-Visible change (post-deploy): `play.legendary-arena.com`.** A production game review (match
+`shPw3NqlnKe`, gitSha `9d2e811`) surfaced that several hero cards use a MULTI-select variant of the
+single-card `optional-put-bottom-hq` mechanic (D-24130) — "Choose any number of cards/Heroes from the
+HQ. Put them on the bottom of the Hero Deck" — with no keyword marker or handler, so the ability played
+as a **silent hollow no-op** (it did NOT freeze — no `pending*` queue was parked without a keyword).
+
+This ships a new `put-any-number-bottom-hq` hero keyword end-to-end, mirroring the `optional-put-bottom-hq`
+family:
+
+- **Engine:** park a `PendingPutAnyNumberBottomHQ` (with any trailing Empowered classes) →
+  `resolvePutAnyNumberBottomHQ({ cardIds })` moves each selected HQ card to the bottom of the shared
+  `G.heroDeck` and refills each vacated slot via `refillHqSlot`; an empty selection is a valid "put none".
+  Block-all `advanceStage` guard. Move registered (17 → 18 moves).
+- **Trailing Empowered applied AFTER the moves** (8th Wonder of the World): a parser pre-pass captures
+  the same-line `Empowered by [ranged] and [strength]` onto the effect and suppresses the standalone
+  play-time primitive; the resolve move applies it via `buildEmpoweredComposition` after the HQ is
+  reshaped (printed "Then you get Empowered" order).
+- **UX:** `UIPendingPutAnyNumberBottomHQ` projection (chooser-redacted, barrel re-export) → new
+  `PutAnyNumberBottomHQPrompt.vue` (multi-select toggles + Confirm + Put None) mounted on
+  PlayDesktop/PlayMobile; `useTurnActions` 9th `hasPendingPutAnyNumberBottomHQ` param blocks End Turn /
+  Pass Priority with a tooltip.
+- **Data/feeds:** `[keyword:put-any-number-bottom-hq:1]` marker on the 3 cards
+  (antm/wonder-man/8th-wonder-of-the-world, nmut/sunspot/empyreal-force,
+  wtif/star-lord-tchalla/colliding-dreams); card data + hero mechanic ledger + card-mechanics metadata
+  regenerated (138 mechanics; the 3 cards classify `executable`).
+- **Drift:** `HERO_KEYWORDS` 24 → 25, `HERO_EFFECT_HANDLERS` 11 → 12, move-set 17 → 18 — all four drift
+  tests updated.
+
+**Deferred (noted, out of scope):** ssw2/imperial-edict (mastermind tactic, Fight trigger, "in random
+order" — a different subsystem); wtif/colliding-dreams's second line "Empowered by multicolored cards"
+(a distinct empowered-by-multicolored mechanic, still hollow independently; line 1 is fully handled).
+
+**Gates:** `pnpm -r build` 0; engine test **1832/1832**; arena-client typecheck 0 + test **790/790**;
+`pnpm ledger:heroes:check` + `pnpm mechanics:metadata:check` green. No migration; no replay-hash change
+(omit-when-empty G fields; `G.messages` hash-excluded per D-24081). `D-24026` live-verify operator-pending.
+
+See `DECISIONS.md` D-24132.
+
+---
+
 ### Bug fix — Ionic Energy optional-put-bottom-hq: complete the UX + correct the move (D-24130 Active) (2026-07-09)
 
 **User-Visible change (post-deploy): `play.legendary-arena.com`.** Completes PR #619, which shipped
