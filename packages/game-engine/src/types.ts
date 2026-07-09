@@ -538,6 +538,27 @@ export interface PendingDrawOrEmpowered {
 }
 
 /**
+ * Pending optional-put-bottom-HQ player choice state (optional zone manipulation).
+ *
+ * Created when an optional-put-bottom-hq hero effect fires (`onPlay`) — the printed
+ * "You may put a card from the HQ on the bottom of the Hero Deck" form (Ionic Energy).
+ * Appended to G.pendingOptionalPutBottomHQ[] (FIFO queue). Removed (front-popped) by
+ * resolveOptionalPutBottomHQ after the player (or bot) declines or chooses a card. Must
+ * be undefined or empty at every turn-end (enforced by the block-all guards).
+ *
+ * // why: the choice is "decline, or select one card from the HQ and move it to the
+ * bottom of the deck". The pending entry records the choosing player and the source card
+ * whose ability parked this choice (for logging/provenance). HQ contents are read fresh
+ * at resolve time (the HQ may change between park and resolve).
+ */
+export interface PendingOptionalPutBottomHQ {
+  /** The player who must decline or choose an HQ card. */
+  playerID: string;
+  /** The hero card whose ability parked this choice (for provenance logging). */
+  sourceCardId: CardExtId;
+}
+
+/**
  * Minimal setup-time context interface for deterministic operations.
  *
  * Captures what buildInitialGameState needs from the boardgame.io setup
@@ -669,6 +690,17 @@ export interface LegendaryGameState {
   // Absent (undefined) or empty [] both mean "no pending choice" (guards test `.length`).
   /** FIFO queue of pending draw-or-empowered choices awaiting resolution (WP-286). */
   pendingDrawOrEmpowered?: PendingDrawOrEmpowered[] | undefined;
+
+  // why: FIFO queue of pending optional-put-bottom-hq choices (one per played
+  // optional-put-bottom-hq hero ability — the "You may put a card from the HQ on
+  // the bottom of the Hero Deck" form). Entries are appended by the executor park
+  // case; front-popped by resolveOptionalPutBottomHQ after the player declines or
+  // chooses a card. Must be undefined or empty at every turn-end. Optional so
+  // existing test state literals do not need updating; **lazily initialized at the
+  // park site, never in Game.setup**. Absent (undefined) or empty [] both mean
+  // "no pending choice" (guards test `.length`).
+  /** FIFO queue of pending optional-put-bottom-hq choices awaiting resolution. */
+  pendingOptionalPutBottomHQ?: PendingOptionalPutBottomHQ[] | undefined;
 
   // why: playerZones is keyed by player ID string (boardgame.io uses "0", "1",
   // etc.). Each player has exactly 5 zone arrays. Only deck is non-empty after
