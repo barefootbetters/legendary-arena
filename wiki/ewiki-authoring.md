@@ -225,6 +225,51 @@ wants. Implementation lives in
 `apps/wiki-viewer/layouts/shortcodes/audio.html`, styled by the
 `.wiki-audio` rule in the theme stylesheet.
 
+### Embedding diagrams {#embedding-diagrams}
+
+Mermaid (flowcharts, pie charts, sequence diagrams) normally renders
+**client-side in the browser** — which needs JavaScript and therefore
+cannot run on the wiki (the zero-`<script>` JS-free gate, WP-139). The
+sanctioned pattern here is to author the diagram in Mermaid but publish a
+**rendered static SVG**: the Mermaid stays the source of truth, the SVG is
+the deployed artifact, and the output is JS-free and byte-identical across
+builds. No shortcode and no CI change are involved — it is a plain Markdown
+image pointing at a committed SVG.
+
+The moving parts:
+
+1. **Author the diagram** in a `.mmd` file and **render it to an SVG.**
+   `mmdc -i diagram.mmd -o diagram.svg` produces a reference render;
+   re-flatten it to a static, ID-stable SVG before committing (mermaid-cli
+   emits randomized element ids, which would churn the byte-identical
+   determinism check). Hand-authored SVGs (see
+   `ewiki/profile-login/auth-stack.svg`) are deterministic by construction.
+2. **Commit both files** under `ewiki/<page-slug>/` — the `.mmd` (editable
+   source) and the `.svg` (published artifact). The build's projection step
+   copies `ewiki/<slug>/` → `apps/wiki-viewer/static/<slug>/`, so Hugo
+   serves the SVG at `/<slug>/<name>.svg`. (`static/*/` is a projected,
+   git-ignored copy — never commit there; commit under `ewiki/`.)
+3. **Embed it** as a Markdown image, using the `width=` render hook for
+   display sizing, and add a caption that links back to the `.mmd` source:
+
+```
+![Descriptive alt text — say what the diagram shows.](/your-slug/your-diagram.svg "width=82%")
+
+*Caption. Diagram source: [your-diagram.mmd](../ewiki/your-slug/your-diagram.mmd) — regenerate the render with `mmdc`.*
+```
+
+Live examples: the auth-stack flowchart in
+[Profile Login](profile-login.md), the revenue pie in
+[Monetization Model](monetization-model.md), and the example pie in the
+*Diagrams* section of [Hugo Web System](hugo-web-system.md).
+
+> **Why not client-side Mermaid?** It would mean shipping a `<script>` on
+> the wiki, tripping the CI zero-`<script>` gate — the same lock that keeps
+> search and syntax-highlight copy-buttons off the wiki. The marketing site
+> (`www`) *does* ship JS and can use the standard render-hook Mermaid
+> pattern; the ewiki cannot. See
+> [Hugo Web System → Diagrams](hugo-web-system.md#diagrams-mermaid).
+
 ### Showing shortcode or template syntax
 
 To document a Hugo shortcode in a wiki page you have to stop Hugo from

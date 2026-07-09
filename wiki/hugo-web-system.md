@@ -681,6 +681,36 @@ section uses for its `youtube` examples.
 (full parameter list) and [Configure privacy](https://gohugo.io/configuration/privacy/)
 (`[privacy.youtube] privacyEnhanced`).
 
+### Diagrams (Mermaid) {#diagrams-mermaid}
+
+Hugo has no built-in Mermaid shortcode; the standard approach is a
+[code-block render hook](https://gohugo.io/content-management/diagrams/)
+that hands ` ```mermaid ` fences to the browser-side Mermaid script, which
+renders the SVG client-side. That client-side render is the key fact — it
+**needs JavaScript** — and it decides where each of our two sites can use it:
+
+- **Marketing site (`www`, this page's subject).** It already ships JS
+  (`unsafe = true`, PaperMod), so the standard render-hook pattern works
+  cleanly: add `layouts/_default/_markup/render-codeblock-mermaid.html`,
+  load a pinned Mermaid build, author diagrams as ` ```mermaid ` fences in
+  Markdown. This is the right choice here **when** a Mermaid diagram is
+  wanted on `www` — it is not wired today (no diagrams shipped yet), so
+  treat it as the documented approach, not an existing feature.
+- **Engineering wiki (ewiki).** The wiki enforces a **zero-`<script>`
+  JS-free gate** (WP-139), so client-side Mermaid is off-limits — the same
+  lock that keeps `highlight` and copy-buttons out. Instead, a diagram is
+  authored in Mermaid and committed as a **rendered static SVG**, embedded
+  as a plain Markdown image. JS-free, deterministic, no CI change. The full
+  how-to is in [Ewiki Authoring](ewiki-authoring.md#embedding-diagrams);
+  the live example below is that pattern rendering on this very page:
+
+![Example pie chart — an illustrative breakdown of wiki content by type (Guide/Reference 40%, Brand/Marketing 26%, Process/Workflow 20%, Data/Schema 14%), demonstrating that Mermaid pie charts render on the JS-free wiki as committed SVG.](/hugo-web-system/diagram-example.svg "width=82%")
+
+*Example only — illustrative data, present to show a Mermaid pie rendering on
+the ewiki. Diagram source:
+[diagram-example.mmd](../ewiki/hugo-web-system/diagram-example.mmd) —
+regenerate the render with `mmdc`.*
+
 ### Content structure
 
 ```

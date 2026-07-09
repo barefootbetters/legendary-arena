@@ -1,0 +1,15 @@
+%% Source-of-truth for ewiki/hugo-web-system/diagram-example.svg
+%% The committed SVG is hand-rendered from this graph (deterministic, no mmdc
+%% pass) so it survives the WP-139 two-build byte-identical lock and the
+%% JS-free (zero-script) production gate. Regenerate the reference render with:
+%%   mmdc -i diagram-example.mmd -o diagram-example.svg
+%% then re-flatten to a static, ID-stable SVG before committing.
+%%
+%% EXAMPLE data only — this diagram exists to demonstrate that Mermaid pie
+%% charts render on the JS-free wiki (as committed SVG). The category counts
+%% are illustrative, not a live census of wiki/*.md.
+pie showData title Example — wiki content by type (illustrative)
+    "Guide / Reference" : 14
+    "Brand / Marketing" : 9
+    "Process / Workflow" : 7
+    "Data / Schema" : 5
