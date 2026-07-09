@@ -418,6 +418,21 @@ player ID, not the public handle.
   SPA's fresh-manifest polling assumption
   ([`snapshotClient.ts`](../apps/legends-board/src/snapshots/snapshotClient.ts))
   holds — the CDN does not serve the board a stale manifest.
+- **The DB-gated server test baseline is green (since 2026-07-09,
+  PR #630).** CI never sets `TEST_DATABASE_URL`, so the DB-backed
+  `apps/server` tests only run locally — and 11 pre-existing failures had
+  rotted invisibly, 7 of them in the WP-054 leaderboard read-layer tests
+  ([`leaderboard.logic.test.ts`](../apps/server/src/leaderboards/leaderboard.logic.test.ts)).
+  The failures were fixture drift, not read-layer bugs: the WP-054-era
+  `seedScore` helper predated the D-24119-arc submission contract
+  (`updateReplayVisibility` no longer returns an `{ ok, value }` envelope,
+  and submission now rejects `'private'` visibility outright per D-5302 —
+  a private fixture must submit as `'public'` and retract afterwards,
+  which is also the production path the visibility-exclusion tests
+  actually exercise, since the read layer filters on *current* ownership
+  visibility). With the repair the full DB-wired suite runs serialized at
+  848/848 pass / 0 skipped, so any future DB-gated failure is a
+  regression, not carried-forward baseline rot.
 - **Cross-version comparison is never silent.** Rows carry a
   `scoringConfigVersion`; any PAR or weight change increments it, and rows
   under different versions are not directly comparable (VISION §22). Any
