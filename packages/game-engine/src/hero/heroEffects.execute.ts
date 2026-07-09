@@ -65,7 +65,7 @@ import { pushLog } from '../log/logPush.js';
 // the 7 legacy reveal-* keywords lost their dedicated handlers (folded into the one
 // 'reveal' handler) but stay executable via revealRulesForLegacyKeyword translation.
 export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
-  'draw', 'attack', 'recruit', 'ko', 'rescue', 'reveal', 'attack-per-count', 'optional-ko-reward', 'optional-put-bottom-hq', 'victory-villain-attack', 'draw-or-empowered',
+  'draw', 'attack', 'recruit', 'ko', 'rescue', 'reveal', 'attack-per-count', 'optional-ko-reward', 'optional-put-bottom-hq', 'put-any-number-bottom-hq', 'victory-villain-attack', 'draw-or-empowered',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -1147,6 +1147,49 @@ function heroEffectOptionalPutBottomHq(
 }
 
 /**
+ * Park handler for the `put-any-number-bottom-hq` hero keyword (D-24132).
+ *
+ * The MULTI-select sibling of `heroEffectOptionalPutBottomHq`. Checks whether there are any
+ * cards in the HQ. If yes, parks a `PendingPutAnyNumberBottomHQ` on
+ * `G.pendingPutAnyNumberBottomHQ[]` (lazy-init), recording any trailing "Then you get
+ * Empowered by [classes]" grant parsed onto the effect (applied AFTER the moves at resolve
+ * time). If the HQ is empty, logs a no-op message and returns without touching the queue.
+ *
+ * The card moves and the Empowered grant both happen at resolve time
+ * (resolvePutAnyNumberBottomHQ), NOT here — the player must first choose which HQ cards (if
+ * any) to move to the deck bottom.
+ */
+function heroEffectPutAnyNumberBottomHq(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  // why: check if there are any cards in the HQ to move. HQ is the shared board zone
+  // (not per-player). If empty, the ability has no valid targets.
+  const hqZone = G.hq;
+  const eligibleCards = hqZone.filter(slot => slot !== null).length;
+  if (eligibleCards === 0) {
+    pushLog(G,
+      `Player ${playerID} could not move cards from the HQ — the HQ is empty, so no cards were moved.`,
+    );
+    return;
+  }
+  // why: lazy-init at the park site (mirrors optional-put-bottom-hq) — NEVER in Game.setup.
+  // The park itself is SILENT (no G.messages line); the moves + Empowered grant are logged at
+  // resolve time. empoweredClasses is recorded only when the parsed effect carries a non-empty
+  // tail (omit-when-empty keeps Empyreal Force / Colliding-Dreams-line-1 entries minimal).
+  if (!G.pendingPutAnyNumberBottomHQ) { G.pendingPutAnyNumberBottomHQ = []; }
+  const empoweredClasses = effect.empoweredClasses;
+  G.pendingPutAnyNumberBottomHQ.push({
+    playerID,
+    sourceCardId: cardId,
+    ...(empoweredClasses !== undefined && empoweredClasses.length > 0 ? { empoweredClasses } : {}),
+  });
+}
+
+/**
  * Park handler for the `victory-villain-attack` hero keyword (WP-285 / D-24067).
  *
  * Checks whether the player has at least one eligible villain in their victory pile
@@ -1232,6 +1275,7 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   'attack-per-count': heroEffectAttackPerCount,
   'optional-ko-reward': heroEffectOptionalKoReward,
   'optional-put-bottom-hq': heroEffectOptionalPutBottomHq,
+  'put-any-number-bottom-hq': heroEffectPutAnyNumberBottomHq,
   'victory-villain-attack': heroEffectVictoryVillainAttack,
   'draw-or-empowered': heroEffectDrawOrEmpowered,
 };

@@ -124,6 +124,13 @@ export interface HeroEffectDescriptor {
   // move's 'empowered' branch can reuse buildEmpoweredComposition(empoweredClass). Other
   // keywords ignore it.
   empoweredClass?: string;
+  // why: D-24132 — for a 'put-any-number-bottom-hq' effect, empoweredClasses carries the
+  // normalized hero classes parsed from a trailing "Then you get Empowered by [classes]"
+  // tail (one or more). Carried from parse time to the park site, which records them on the
+  // PendingPutAnyNumberBottomHQ entry so the resolve move applies each via
+  // buildEmpoweredComposition AFTER the moves resolve (printed order). Absent when the line
+  // has no Empowered tail. Other keywords ignore it.
+  empoweredClasses?: string[];
   // why: D-24024 — for a collapsed 'reveal' effect, revealCount is the number of
   // deck-top cards peeked (default 1; every legacy reveal peeks one) and revealRules
   // is the ordered branch-list the single reveal handler evaluates. Other keywords

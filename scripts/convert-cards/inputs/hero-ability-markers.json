@@ -135,7 +135,8 @@
     { "heroSlug": "ant-man", "cardSlug": "ride-the-ants", "abilityIndex": 1, "markupToken": "[keyword:draw:1]" },
     { "heroSlug": "jocasta", "cardSlug": "holographic-image-inducer", "abilityIndex": 1, "markupToken": "[keyword:draw:2]" },
     { "heroSlug": "wasp", "cardSlug": "tiny-winged-justice", "abilityIndex": 1, "markupToken": "[keyword:draw:1]" },
-    { "heroSlug": "wonder-man", "cardSlug": "ionic-energy", "abilityIndex": 0, "markupToken": "[keyword:optional-put-bottom-hq:1]" }
+    { "heroSlug": "wonder-man", "cardSlug": "ionic-energy", "abilityIndex": 0, "markupToken": "[keyword:optional-put-bottom-hq:1]" },
+    { "heroSlug": "wonder-man", "cardSlug": "8th-wonder-of-the-world", "abilityIndex": 1, "markupToken": "[keyword:put-any-number-bottom-hq:1]" }
   ],
   "asrd": [
     { "heroSlug": "warriors-three-the", "cardSlug": "fandral-the-dashing", "abilityIndex": 1, "markupToken": "[keyword:draw:1]" }
@@ -168,6 +169,9 @@
     { "heroSlug": "m", "cardSlug": "three-sisters-combined", "abilityIndex": 2, "markupToken": "[keyword:draw:1]" },
     { "heroSlug": "shatterstar", "cardSlug": "gladiators-blades", "abilityIndex": 2, "markupToken": "[keyword:draw:1]" }
   ],
+  "nmut": [
+    { "heroSlug": "sunspot", "cardSlug": "empyreal-force", "abilityIndex": 0, "markupToken": "[keyword:put-any-number-bottom-hq:1]" }
+  ],
   "pttr": [
     { "heroSlug": "scarlet-spider", "cardSlug": "flip-out", "abilityIndex": 1, "markupToken": "[keyword:draw:1]" },
     { "heroSlug": "scarlet-spider", "cardSlug": "perfect-hunter", "abilityIndex": 1, "markupToken": "[keyword:draw:1]" }
@@ -192,7 +196,8 @@
     { "heroSlug": "apocalyptic-black-widow", "cardSlug": "plant-hidden-asset", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" },
     { "heroSlug": "apocalyptic-black-widow", "cardSlug": "relentless", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" },
     { "heroSlug": "doctor-strange-supreme", "cardSlug": "to-save-christine", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" },
-    { "heroSlug": "gamora-destroyer-of-thanos", "cardSlug": "assassins-stealth", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" }
+    { "heroSlug": "gamora-destroyer-of-thanos", "cardSlug": "assassins-stealth", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" },
+    { "heroSlug": "star-lord-tchalla", "cardSlug": "colliding-dreams", "abilityIndex": 0, "markupToken": "[keyword:put-any-number-bottom-hq:1]" }
   ],
   "xmen": [
     { "heroSlug": "banshee", "cardSlug": "sonar-detection", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" },

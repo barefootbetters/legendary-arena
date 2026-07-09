@@ -112,6 +112,12 @@ export interface UIState {
   // chooser (keyed on .playerID), mirroring pendingVictoryPileCardPick. Absent
   // (undefined) means no pending choice; the client must not render the prompt then.
   pendingOptionalPutBottomHQ?: UIPendingOptionalPutBottomHQ;
+  // why: D-24132 — projects the FRONT entry of G.pendingPutAnyNumberBottomHQ with the eligible
+  // HQ cards (each carrying its instance cardId + display) so the chooser can render the multi-
+  // select "Choose any number of cards/Heroes from the HQ" prompt. Redacted (omitted) for every
+  // audience except the chooser (keyed on .playerID), mirroring pendingOptionalPutBottomHQ.
+  // Absent (undefined) means no pending choice; the client must not render the prompt then.
+  pendingPutAnyNumberBottomHQ?: UIPendingPutAnyNumberBottomHQ;
   // why: WP-258 — projects the WP-257 runtime hollow-effect channel
   // (G.diagnostics.hollowEffects) so the client can render a structured debug
   // panel + carry the records on the Download-diagnostics export. OPTIONAL on
@@ -646,6 +652,23 @@ export interface UIHqCardChoice {
 export interface UIPendingOptionalPutBottomHQ {
   // why: the redaction key; the chooser-only filter compares audience.playerId
   // against this, mirroring UIPendingVictoryPileCardPick.playerID.
+  playerID: string;
+  eligibleHqCards: UIHqCardChoice[];
+}
+
+/**
+ * UI contract for resolving a pending put-any-number-bottom-hq choice ("Choose any number of
+ * cards/Heroes from the HQ. Put them on the bottom of the Hero Deck" — D-24132). The MULTI-
+ * select sibling of UIPendingOptionalPutBottomHQ: the client renders a checkbox/toggle per
+ * eligible HQ card and submits `resolvePutAnyNumberBottomHQ({ cardIds })` for all selected
+ * cards (possibly an empty array — "any number" includes zero). Only visible to the choosing
+ * player; redacted for opponents and spectators. `eligibleHqCards` is recomputed fresh from
+ * `G.hq` at projection time (the non-null HQ slots, in slot order), so each `{ cardId }` in the
+ * submitted selection always maps to a card the engine resolve accepts (the round-trip rule).
+ */
+export interface UIPendingPutAnyNumberBottomHQ {
+  // why: the redaction key; the chooser-only filter compares audience.playerId
+  // against this, mirroring UIPendingOptionalPutBottomHQ.playerID.
   playerID: string;
   eligibleHqCards: UIHqCardChoice[];
 }

@@ -559,6 +559,37 @@ export interface PendingOptionalPutBottomHQ {
 }
 
 /**
+ * Pending put-any-number-bottom-HQ player choice state (D-24132).
+ *
+ * Created when a put-any-number-bottom-hq hero effect fires (`onPlay`) — the printed
+ * "Choose any number of cards/Heroes from the HQ. Put them on the bottom of the Hero
+ * Deck" form (Wonder Man's 8th Wonder of the World, Sunspot's Empyreal Force, Star-Lord
+ * (T'Challa)'s Colliding Dreams). The MULTI-select sibling of PendingOptionalPutBottomHQ.
+ * Appended to G.pendingPutAnyNumberBottomHQ[] (FIFO queue). Removed (front-popped) by
+ * resolvePutAnyNumberBottomHQ after the player (or bot) submits a selection (possibly
+ * empty). Must be undefined or empty at every turn-end (enforced by the block-all guards).
+ *
+ * // why: D-24132 — the choice is "select any number of HQ cards (zero is valid) and move
+ * each to the bottom of the shared Hero Deck". The pending entry records the choosing
+ * player, the source card whose ability parked it (provenance logging), and any trailing
+ * "Then you get Empowered by [classes]" grant to apply AFTER the moves resolve (printed
+ * order — the HQ is reshaped first, then counted). HQ contents are read fresh at resolve
+ * time (the HQ may change between park and resolve).
+ */
+export interface PendingPutAnyNumberBottomHQ {
+  /** The player who must submit a selection of HQ cards (possibly empty). */
+  playerID: string;
+  /** The hero card whose ability parked this choice (for provenance logging). */
+  sourceCardId: CardExtId;
+  // why: D-24132 — the trailing "Then you get Empowered by [classes]" grant, applied
+  // AFTER the moves resolve (each class reuses buildEmpoweredComposition, mirroring the
+  // draw-or-empowered resolve path). Omitted entirely when the printed text has no
+  // Empowered tail (Empyreal Force / Colliding Dreams line 1), so absent and present-but-
+  // empty are both "no Empowered" and the field is omit-when-empty for determinism.
+  empoweredClasses?: string[];
+}
+
+/**
  * Minimal setup-time context interface for deterministic operations.
  *
  * Captures what buildInitialGameState needs from the boardgame.io setup
@@ -701,6 +732,13 @@ export interface LegendaryGameState {
   // "no pending choice" (guards test `.length`).
   /** FIFO queue of pending optional-put-bottom-hq choices awaiting resolution. */
   pendingOptionalPutBottomHQ?: PendingOptionalPutBottomHQ[] | undefined;
+
+  // why: D-24132 — FIFO queue of pending put-any-number-bottom-hq choices (one per
+  // played put-any-number-bottom-hq hero card). Lazy-init at the park site (never in
+  // Game.setup); absent (undefined) or empty [] both mean "no pending choice" (guards
+  // test `.length`). The MULTI-select sibling of pendingOptionalPutBottomHQ.
+  /** FIFO queue of pending put-any-number-bottom-hq choices awaiting resolution (D-24132). */
+  pendingPutAnyNumberBottomHQ?: PendingPutAnyNumberBottomHQ[] | undefined;
 
   // why: playerZones is keyed by player ID string (boardgame.io uses "0", "1",
   // etc.). Each player has exactly 5 zone arrays. Only deck is non-empty after

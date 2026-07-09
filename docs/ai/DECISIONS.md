@@ -27857,3 +27857,72 @@ findable, thematic boards (106 masterminds minus the schemeless-set exclusion) w
 **Packet:** WP-342 (server: outcome persistence + gauntlet read-layer + publisher) — Drafted 2026-07-09. Client index/panel WP + profile progress/badges WP backlogged in WORK_INDEX.
 
 Protect this file.
+
+### D-24132 — put-any-number-bottom-hq: the multi-select HQ→bottom hero keyword (+ trailing Empowered applied after the moves)
+
+**Status:** Active (post-execution) 2026-07-09. `D-24026` live-verify operator-pending on deploy.
+
+**User-Visible Surface:** play.legendary-arena.com (any match whose hero deck contains Wonder Man's
+8th Wonder of the World, Sunspot's Empyreal Force, or Star-Lord (T'Challa)'s Colliding Dreams).
+
+**Context.** A production game review (match `shPw3NqlnKe`, gitSha `9d2e811`) surfaced that several
+hero cards use a MULTI-select variant of the just-shipped single-card `optional-put-bottom-hq`
+mechanic (D-24130): "Choose any number of cards/Heroes from the HQ. Put them on the bottom of the
+Hero Deck." These carried no keyword marker or handler, so the ability played as a **hollow no-op**
+(silently did nothing). Unlike the D-24130/WP-313 freeze class it did **not** freeze — no `pending*`
+queue was parked without a keyword, so no block-all guard was installed — the effect simply never
+happened. Three hero cards use the printed form on an on-play line (antm/wonder-man/8th-wonder-of-the-world,
+nmut/sunspot/empyreal-force, wtif/star-lord-tchalla/colliding-dreams); the first also has a trailing
+"Then you get Empowered by [ranged] and [strength]" on the same line.
+
+**Decision.** Add a new hero keyword `put-any-number-bottom-hq` mirroring the `optional-put-bottom-hq`
+family end-to-end. (1) **Keyword + marker.** Added to the `HeroKeyword` union + `HERO_KEYWORDS` array
+(24 → 25) and the four keyword/handler/move drift tests; a `[keyword:put-any-number-bottom-hq:1]`
+marker token (validated in `apply-hero-ability-markers.mjs`, curated in `hero-ability-markers.json`)
+appended to the three cards' lines; card data regenerated (marker-apply step only, not the full
+pipeline). (2) **Engine.** A `heroEffectPutAnyNumberBottomHq` park handler parks a
+`PendingPutAnyNumberBottomHQ { playerID, sourceCardId, empoweredClasses? }` on
+`G.pendingPutAnyNumberBottomHQ[]` (lazy-init; empty HQ → logged no-op, nothing parked). A new
+`resolvePutAnyNumberBottomHQ({ cardIds })` move (registered `client:false`; 17 → 18 moves) moves each
+selected card that is present in the HQ **now** to the bottom of the shared `G.heroDeck` and refills
+each vacated slot from the top via `refillHqSlot` (the recruitHero path — never the personal deck,
+never a permanent null gap); an empty `cardIds` is a valid "put none" (any number includes zero). A
+block-all `advanceStage` guard freezes the board until it resolves. (3) **Trailing Empowered applied
+AFTER the moves.** A parser pre-pass captures a same-line `[keyword:Empowered] by [hc:…]` tail onto the
+effect's `empoweredClasses` (recorded on the pending entry) and suppresses the standalone play-time
+Empowered primitive; the resolve move applies each class via `buildEmpoweredComposition` **after** the
+moves, so the class count reflects the reshaped HQ (the printed "Then you get Empowered" order — the
+strategic point of putting cards away first). (4) **UX (mandatory).** `UIPendingPutAnyNumberBottomHQ
+{ playerID, eligibleHqCards[] }` projected chooser-only-redacted (mirroring `pendingOptionalPutBottomHQ`),
+re-exported from the engine barrel; a new `PutAnyNumberBottomHQPrompt.vue` (multi-select toggles +
+**Confirm** + **Put None**) mounted on PlayDesktop/PlayMobile; `useTurnActions` gains a 9th
+`hasPendingPutAnyNumberBottomHQ` param that blocks End Turn / Pass Priority at every stage with a tooltip.
+
+**Scope (explicit).** In scope: the three hero on-play cards' HQ→bottom mechanic, and 8th Wonder's
+trailing Empowered. **Deferred (separate concerns, noted not fixed):** (a) ssw2/immortal-emperor-zheng-zhu/imperial-edict
+— "Fight: Choose any number of Heroes from the HQ. Put them on the bottom … **in random order**" — is a
+**mastermind tactic** on a Fight trigger (a different subsystem from hero on-play effects) with a
+random-order shuffle; not this keyword's path. (b) wtif/colliding-dreams's **second** ability line
+"You get Empowered by multicolored cards" is a distinct empowered-by-multicolored mechanic (no `[hc:]`
+token) that remains hollow independently; line 1 (the put-any-number line) is fully handled.
+
+**Guardrail.** Consistent with [[project_pending_choice_no_ux_freeze]]: the engine park/guard/move
+shipped together with the projection + client prompt + End-Turn gate (an engine-only half would be a
+guaranteed human freeze — this one would have frozen once a `pending*` queue existed, unlike the
+pre-fix hollow no-op).
+
+**Not changed.** No migration; no `computeStateHash`/replay-hash change (the cards were previously
+fixture-unreachable for this line, so no golden shifts; `pendingPutAnyNumberBottomHQ` and
+`empoweredClasses` are omit-when-empty G fields); `G.messages` lines added on resolve are hash-excluded
+(D-24081); `apps/server` and `functions/` untouched. The coverage probe's informational
+`EXECUTED_KEYWORDS` gained the new keyword (the sibling `optional-put-bottom-hq` was already omitted
+there pre-existing — a papercut, not this decision's regression).
+
+**Gates.** `pnpm -r build` 0; engine test **1832/1832** (incl. new move + park + parser + projection +
+filter tests and the four updated drift tests); arena-client typecheck (vue-tsc) 0; arena-client test
+**790/790** (incl. new prompt + gating tests); `pnpm ledger:heroes:check` + `pnpm mechanics:metadata:check`
+green (138 mechanics; the 3 cards classify `executable`).
+
+**Packet:** Bug fix (production game-review gap; INFRA lane). **Drafted:** 2026-07-09. **Executed:** 2026-07-09.
+
+Protect this file.

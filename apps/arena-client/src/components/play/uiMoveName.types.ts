@@ -58,7 +58,10 @@ export type UiMoveName =
   // why: WP-313 / D-24099 — unblocks the victory-pile villain-pick prompt (The Ebony Blade).
   | 'resolveVictoryPileCardPick'
   // why: unblocks the optional-put-bottom-hq prompt (Wonder Man's Ionic Energy).
-  | 'resolveOptionalPutBottomHQ';
+  | 'resolveOptionalPutBottomHQ'
+  // why: D-24132 — unblocks the put-any-number-bottom-hq multi-select prompt (Wonder Man's 8th
+  // Wonder of the World, Sunspot's Empyreal Force, Star-Lord (T'Challa)'s Colliding Dreams).
+  | 'resolvePutAnyNumberBottomHQ';
 
 /**
  * Function signature shared by every prop-drilled `submitMove` in the

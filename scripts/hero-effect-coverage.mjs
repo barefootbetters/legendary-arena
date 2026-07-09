@@ -76,6 +76,11 @@ const EXECUTED_KEYWORDS = new Set([
   'draw', 'attack', 'recruit', 'ko', 'rescue', 'reveal', 'reveal-ko',
   'reveal-min', 'reveal-ko-or-draw', 'reveal-cost-attack', 'reveal-odd-draw',
   'reveal-attack-choose', 'reveal-ko-attack', 'attack-per-count',
+  // why: D-24132 — the put-any-number-bottom-hq park keyword is executable (parks a pending
+  // multi-select choice resolved by resolvePutAnyNumberBottomHQ). Informational only — this
+  // list drives the human report's EXECUTABLE split, never the exit-code gate (keyed on
+  // `noEffect`). (The sibling optional-put-bottom-hq is a pre-existing omission here.)
+  'put-any-number-bottom-hq',
 ]);
 
 /** Error type signalling a probe failure (exit code 2). */

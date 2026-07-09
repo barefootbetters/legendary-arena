@@ -619,6 +619,48 @@ describe('filterUIStateForAudience — pendingOptionalPutBottomHQ redaction', ()
 });
 
 // ---------------------------------------------------------------------------
+// D-24132 — pendingPutAnyNumberBottomHQ redaction (chooser-scoped, multi-select sibling)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where player '0' owes a put-any-number-bottom-hq choice. The pending
+ * choice is chooser-scoped (only they may resolve it) — it must not appear in a non-chooser's
+ * UIState. The HQ from setup has cards, so the field projects a non-empty eligibleHqCards list.
+ */
+function createPutAnyNumberBottomHQUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+  gameState.pendingPutAnyNumberBottomHQ = [{ playerID: '0', sourceCardId: 'src' as CardExtId }];
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingPutAnyNumberBottomHQ redaction', () => {
+  it('the chooser sees pendingPutAnyNumberBottomHQ', () => {
+    const result = filterUIStateForAudience(createPutAnyNumberBottomHQUIState(), PLAYER_0);
+    assert.ok(result.pendingPutAnyNumberBottomHQ !== undefined, 'chooser sees the put-any-number choice');
+    assert.equal(result.pendingPutAnyNumberBottomHQ!.playerID, '0');
+  });
+
+  it('an opponent does NOT see pendingPutAnyNumberBottomHQ', () => {
+    const result = filterUIStateForAudience(createPutAnyNumberBottomHQUIState(), PLAYER_1);
+    assert.equal(result.pendingPutAnyNumberBottomHQ, undefined, 'opponent must not see the choice');
+  });
+
+  it('a spectator does NOT see pendingPutAnyNumberBottomHQ', () => {
+    const result = filterUIStateForAudience(createPutAnyNumberBottomHQUIState(), SPECTATOR);
+    assert.equal(result.pendingPutAnyNumberBottomHQ, undefined, 'spectator must not see the choice');
+  });
+
+  it('does not mutate the input UIState', () => {
+    const uiState = createPutAnyNumberBottomHQUIState();
+    filterUIStateForAudience(uiState, PLAYER_1);
+    assert.ok(uiState.pendingPutAnyNumberBottomHQ !== undefined, 'source UIState unchanged');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-258 / EC-289 — hollowEffects public value-preserving pass-through (D-12803)
 // ---------------------------------------------------------------------------
 

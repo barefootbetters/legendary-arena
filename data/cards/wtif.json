@@ -265,7 +265,7 @@
           "attack": "4+",
           "recruit": null,
           "abilities": [
-            "Choose any number of Heroes in the HQ. Put them on the bottom of the Hero Deck.",
+            "Choose any number of Heroes in the HQ. Put them on the bottom of the Hero Deck. [keyword:put-any-number-bottom-hq:1]",
             "You get [keyword:Empowered] by multicolored cards."
           ]
         }

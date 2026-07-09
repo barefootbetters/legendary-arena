@@ -63,6 +63,7 @@ antm/wasp,Wasp,antm,microscopic-size-changing,unsupported,,,
 antm/wasp,Wasp,antm,size-changing,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing
 antm/wonder-man,Wonder Man,antm,empowered,executable,WP-267,D-24044,packages/game-engine/src/hero/effectPrimitive.interpret.ts
 antm/wonder-man,Wonder Man,antm,optional-put-bottom-hq,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-put-bottom-hq
+antm/wonder-man,Wonder Man,antm,put-any-number-bottom-hq,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#put-any-number-bottom-hq
 antm/wonder-man,Wonder Man,antm,size-changing,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing
 asrd/beta-ray-bill,Beta Ray Bill,asrd,thrown-artifact,unsupported,,,
 asrd/beta-ray-bill,Beta Ray Bill,asrd,worthy,unsupported,,,
@@ -345,6 +346,7 @@ nmut/karma,Karma,nmut,(unmarked),unmarked,,,
 nmut/mirage,Mirage,nmut,moonlight,unsupported,,,
 nmut/mirage,Mirage,nmut,waking-nightmare,unsupported,,,
 nmut/sunspot,Sunspot,nmut,moonlight,unsupported,,,
+nmut/sunspot,Sunspot,nmut,put-any-number-bottom-hq,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#put-any-number-bottom-hq
 nmut/sunspot,Sunspot,nmut,sunlight,unsupported,,,
 nmut/warlock,Warlock,nmut,moonlight,unsupported,,,
 nmut/warlock,Warlock,nmut,sunlight,unsupported,,,
@@ -535,6 +537,7 @@ wtif/killmonger-spec-ops,"Killmonger, Spec Ops",wtif,what-if...?,unsupported,,,
 wtif/party-thor,Party Thor,wtif,cross-dimensional-party-rampage,unsupported,,,
 wtif/party-thor,Party Thor,wtif,what-if...?,unsupported,,,
 wtif/star-lord-tchalla,Star-Lord T'Challa,wtif,empowered,executable,WP-267,D-24044,packages/game-engine/src/hero/effectPrimitive.interpret.ts
+wtif/star-lord-tchalla,Star-Lord T'Challa,wtif,put-any-number-bottom-hq,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#put-any-number-bottom-hq
 wtif/star-lord-tchalla,Star-Lord T'Challa,wtif,what-if...?,unsupported,,,
 wtif/uatu-the-watcher,"Uatu, The Watcher",wtif,empowered,unsupported,WP-267,D-24044,
 wtif/uatu-the-watcher,"Uatu, The Watcher",wtif,soulbind,unsupported,,,

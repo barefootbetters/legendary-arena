@@ -38,6 +38,7 @@ import type {
   UIPendingVictoryPileCardPick,
   UIVictoryPileVillainChoice,
   UIPendingOptionalPutBottomHQ,
+  UIPendingPutAnyNumberBottomHQ,
   UIHqCardChoice,
   UIEligibleKoHeroCard,
 } from './uiState.types.js';
@@ -943,6 +944,35 @@ export function buildUIState(
     };
   }
 
+  // --- 13c.5 Project pending put-any-number-bottom-hq choice (front of queue) ---
+  // why: D-24132 — the MULTI-select sibling of 13c.4. Project the FRONT entry of
+  // G.pendingPutAnyNumberBottomHQ with the eligible HQ cards recomputed fresh from current
+  // G.hq (the non-null slots, in slot order) — the same set the resolve move matches against,
+  // so each { cardId } in the client's selection always round-trips. Each display is spread
+  // fresh so the projection holds no reference into G.cardDisplayData (aliasing defense, WP-111
+  // D-11105). Redaction to the chooser-only audience is enforced by filterUIStateForAudience
+  // (keyed on .playerID), mirroring pendingOptionalPutBottomHQ.
+  let pendingPutAnyNumberBottomHQ: UIPendingPutAnyNumberBottomHQ | undefined;
+  if (
+    gameState.pendingPutAnyNumberBottomHQ !== undefined &&
+    gameState.pendingPutAnyNumberBottomHQ.length > 0
+  ) {
+    const frontChoice = gameState.pendingPutAnyNumberBottomHQ[0]!;
+    const eligibleHqCards: UIHqCardChoice[] = [];
+    for (const slot of gameState.hq) {
+      if (slot !== null) {
+        eligibleHqCards.push({
+          cardId: slot,
+          display: { ...resolveDisplay(slot, gameState) },
+        });
+      }
+    }
+    pendingPutAnyNumberBottomHQ = {
+      playerID: frontChoice.playerID,
+      eligibleHqCards,
+    };
+  }
+
   // --- 13d. Project hollow-effect diagnostics (read-only) ---
   // why: WP-258 — surface the WP-257 runtime channel G.diagnostics.hollowEffects
   // onto UIState. Read-only over G (buildUIState NEVER mutates G); per-record
@@ -1027,6 +1057,9 @@ export function buildUIState(
     // why: conditional spread so an absent choice omits the field (no
     // `pendingOptionalPutBottomHQ: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingOptionalPutBottomHQ !== undefined ? { pendingOptionalPutBottomHQ } : {}),
+    // why: D-24132 — conditional spread so an absent choice omits the field (no
+    // `pendingPutAnyNumberBottomHQ: undefined` literal under exactOptionalPropertyTypes).
+    ...(pendingPutAnyNumberBottomHQ !== undefined ? { pendingPutAnyNumberBottomHQ } : {}),
     // why: WP-258 — conditional spread so an absent channel omits the field
     // (no `hollowEffects: undefined` literal under exactOptionalPropertyTypes,
     // and no empty-array injection that would dirty optional-field fixtures).
