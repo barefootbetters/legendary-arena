@@ -27518,3 +27518,60 @@ determinism guard); server no-DB green; competition DB **10/10** (rawScore recom
 **Packet:** WP-337 + EC-367. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
 
 Protect this file.
+
+### D-24126 — Competitive Submission Is Submit-by-MatchId (On-Demand Capture) + Auto-Publish; `GET /api/me/scores`; `match_not_finished`→409
+
+**Status:** Active (post-execution) 2026-07-08.
+
+**User-Visible Surface:** none — infrastructure (the arena-client consumer is WP-339).
+
+**Context.** WP-5a (WP-338) is the server surface the arena-client needs so a finished
+match becomes a competitive score. The client has the `matchId` at gameover but never a
+`replayHash` (it cannot run `computeStateHash`), and the capture harvester runs on a 5-min
+scan — so `POST /api/competition/scores` (WP-332, body `{ replayHash }`) was unusable by a
+client. Two design decisions were operator-ratified.
+
+**Decisions.**
+- **Submit by matchId + on-demand capture.** `POST /api/competition/scores`'s request body
+  changes `{ replayHash }` → `{ matchId }` (the endpoint had no client consumer yet, so the
+  contract change is safe). `submitCompetitiveScoreByMatchIdForRequest` resolves the
+  `replayHash` server-side: `readReplayHashByMatchId` (a `bgio.replay_artifacts` lookup by
+  `match_id`), and when the harvester scan has not captured the match yet, it captures
+  **on-demand** via `captureMatch(matchId)`. This works because the WP-335 reaper
+  capture-guard keeps a finished match's `bgio.matches` row alive until `captured_at` is set.
+  A **gameover gate** (`isMatchFinished`) precedes capture — an unfinished match is rejected
+  `match_not_finished` (→ HTTP **409**) and never captured (scoring is end-of-match only,
+  D-4804). The actual verify+score is the **unchanged** `submitCompetitiveScoreImpl`
+  (WP-053/336) — this packet only adds a resolving front-end.
+- **Submitting auto-publishes.** Submitting a score to the public competitive leaderboard is
+  consent-by-action to publish the replay: the flow promotes the caller's ownership
+  `private → public` (`updateReplayVisibility`) before delegating, so the existing
+  visibility gate passes on a first-time submit. The private default is preserved for
+  un-submitted replays.
+- **`GET /api/me/scores`** (`authenticated-session-required`) exposes the authenticated
+  player's submitted scores (`listPlayerCompetitiveScores`) — the "my scores" read WP-339
+  renders. `Cache-Control: no-store`; same WP-112→WP-107 auth chain.
+- **By-account ownership lookup.** The flow uses a new `findReplayOwnershipForAccount(accountId,
+  replayHash)` (not `findReplayOwnership`'s LIMIT-1 arbitrary-owner row) to resolve + publish
+  the SUBMITTING account's own row, so a 2-authenticated-seat co-owner is not mis-attributed.
+- **New rejection reason `match_not_finished`** added to both `SUBMISSION_REJECTION_REASONS`
+  and the `SubmissionRejectionReason` union (drift test updated), mapped to 409.
+
+**Not changed.** `submitCompetitiveScoreImpl` (the 16-step verify+score) is byte-unchanged; no
+engine edit; no migration; `computeStateHash`/capture/reduction reused verbatim.
+
+**Flagged (out of scope).** `findReplayOwnership`'s LIMIT-1 arbitrary-owner row could still
+mis-reject a legitimate co-owner inside `submitCompetitiveScoreImpl` steps 2-3 for a
+2-authenticated-seat match; this packet routes its OWN flow through the by-account lookup and
+leaves hardening the shared impl as a WP-053 follow-up. `server.mjs` needed no change (the
+orchestration self-wires the real helpers; `CompetitionRouteDependencies` is unchanged).
+
+**Gates.** `pnpm -r build` 0; `apps/server` no-DB suite green (route + drift + guest); DB-gated
+verified vs local Postgres — the by-matchId flow (match_not_finished / on-demand-capture +
+auto-publish + score / not_owner / idempotent), `readReplayHashByMatchId`, `isMatchFinished`,
+and `findReplayOwnershipForAccount` (co-owner disambiguation). §21 both endpoint rows +
+Library-only rows.
+
+**Packet:** WP-338 + EC-368. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
+
+Protect this file.
