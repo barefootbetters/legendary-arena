@@ -7,6 +7,53 @@
 
 ## Current State
 
+### WP-336 / EC-366 Executed — Competitive Verifier Repoint onto the Faithful Reducer Path (D-24123 + D-24124 Active) (2026-07-08)
+
+**No user-observable change — infrastructure only.** WP-3b of the D-24119
+faithful-replay arc — the packet that makes the competitive **capture → submit → score**
+chain functional end-to-end at the server.
+
+The WP-053 verifier (`submitCompetitiveScoreImpl`) is repointed off the inert
+`loadReplay`(`replay_blobs`) → `replayGame`(determinism harness) path — which live-captured
+matches never populated — onto the **faithful reducer path**: a single `reduceReplay`
+dependency (`reduceReplayByHash` → reads the durable `bgio.replay_artifacts` row by
+`replayHash` (WP-335) + `reduceMatchToFinalState` (WP-334)), then the step-9 anti-tamper
+`reduced.stateHash === replayHash` compare (D-5301), then scoring off the reduced final `G`.
+`SubmissionDependencies` becomes `{ reduceReplay, checkParPublished }` — `loadReplay`,
+`replayGame`, and the `registry` dependency are gone (the reducer resolves cards from the
+persisted `initialState`). Steps 1–6 (ownership / visibility / idempotency / PAR gate) and
+the endpoint contract are byte-unchanged.
+
+- **`rounds` = play-turn count, engine-clean (D-24123).** The PAR baselines were calibrated
+  with `rounds = turnCount`, so `reduceMatchToFinalState` now returns `turnCount` (= max
+  play-phase turn in the log − `FIRST_PLAY_TURN`, floored at 1; read from the log's
+  live-recorded `turn`, scaffold-verified to equal `par.aggregator`'s `turnsElapsed` across
+  0/1/2/5/12 turns) and the verifier feeds it into `deriveScoringInputs`'s rounds slot. The
+  engine is NOT edited; the honest `moveCount`-proxy rename is deferred to WP-4.
+- **Fixed a WP-334 multi-turn faithfulness bug (D-24124).** Play-phase `endTurn` `GAME_EVENT`s
+  are logged `automatic: false`, so WP-334's skip-`automatic` reduction re-dispatched them on
+  top of the triggering move and double-advanced every turn past the first — faithful for a
+  0-turn lobby game (its only golden), divergent for every real multi-turn match. Reduction
+  now re-dispatches only player `MAKE_MOVE` entries; a multi-turn faithfulness assertion
+  (reduced G === live G for 1/3/7 turns) is locked in.
+- **Gates:** `pnpm -r build` 0; `apps/server` no-DB suite green (new `turnCount` +
+  multi-turn-faithfulness + `readReplayArtifactByHash`/`reduceReplayByHash` tests); DB-gated
+  verified vs local Postgres — competition **10/10** (fully exercises the `reduceReplay` seam
+  through `submitCompetitiveScoreImpl`) + the new `matchReplay` artifact-read round-trip.
+  Engine untouched (`git diff packages/` empty); no `computeStateHash` change. §21 endpoint
+  row + Library-only rows updated.
+- **Baseline note:** 7 leaderboard DB tests fail on the shared local Postgres — **pre-existing**
+  (reproduce identically on `origin/main` with this change stashed), from WP-054 `seedScore`
+  asserting a stale `Result` contract on `updateReplayVisibility` (returns `record | null`) and
+  seeding private-visibility scores through a submit path that rejects them. Untouched by
+  WP-336; flagged for a separate WP-054 test fix (D-24124 follow-up). A competition
+  `beforeEach` `player_badges` FK cleanup gap was fixed incidentally so the competition DB
+  suite runs clean locally.
+- **Out of scope (next arc WPs):** WP-4 (`computeStateHash` messages/logMeta reconcile +
+  retire the engine `moveCount`-proxy); WP-5 (arena-client submit-after-match +
+  `listAccountReplays` HTTP surface). Standing operator item: migrations 024 (WP-333) + 025
+  (WP-335) still need PROD-apply on the Render deploy for the live path to run.
+
 ### WP-335 / EC-365 Executed — Live-Match Capture Harvester (D-24122 Active) (2026-07-08)
 
 **No user-observable change — infrastructure only.** WP-3a of the D-24119

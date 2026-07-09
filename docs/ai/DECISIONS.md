@@ -27384,3 +27384,87 @@ The client submit + a `listAccountReplays` HTTP surface is WP-5.
 **Packet:** WP-335 + EC-365. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
 
 Protect this file.
+
+### D-24123 — Competitive `rounds` = Play-Turn Count (Not Move Count), Fed Engine-Clean via the Reduced Log
+
+**Status:** Active (post-execution) 2026-07-08.
+
+**User-Visible Surface:** none — infrastructure (sets the scale of every future competitive score).
+
+**Context.** WP-3b (WP-336) repoints the WP-053 competitive verifier onto the faithful
+reducer path and, in doing so, is the first packet to make the competitive
+capture→submit→score chain functional end-to-end at the server. The scoring pipeline's
+`rounds` input was therefore load-bearing and unresolved. Research found a genuine
+calibration fork: the PAR baselines every `finalScore` is measured against were calibrated
+by `par.aggregator.ts` with **`rounds = turnCount`** (its `turnsElapsed`, incremented per
+`endTurn`), but the runtime verifier's `deriveScoringInputs` (`parScoring.logic.ts`, D-4801
+MVP proxy) reads `replayResult.moveCount` — player moves, typically 5–15× the turn count.
+Feeding move count (or the reducer's non-automatic-entry count) would silently inflate every
+score by a large, miscalibrated margin. No live competitive score had ever been persisted
+(the path was inert), so nothing shifted — but WP-336 defines the scale of every future score.
+
+**Decision (operator-ratified, Option B1: turn count, engine-clean).**
+- **`rounds` = completed play-turn count**, reconciled to `par.aggregator`'s `turnsElapsed`.
+  `reduceMatchToFinalState` returns `turnCount`; the verifier passes it into
+  `deriveScoringInputs`'s existing `rounds` slot (the `ReplayResult.moveCount` field) by
+  building a `ReplayResult`-shaped view `{ finalState, stateHash, moveCount: turnCount }`.
+- **Engine-clean.** `packages/game-engine/**` is NOT edited — `deriveScoringInputs` keeps
+  reading `.moveCount`, now fed turn count, with a `// why:` documenting the overload. The
+  honest retirement of the `moveCount`-as-rounds proxy (renaming it turns-native, D-4801) is
+  deferred to WP-4.
+- **`turnCount` is derived from the log's live-recorded per-entry `turn`**, NOT the reduced
+  `ctx.turn`. `turnCount = maxPlayTurn − FIRST_PLAY_TURN`, floored at 1, where `maxPlayTurn`
+  is the highest `turn` on any `phase === 'play'` log entry and `FIRST_PLAY_TURN = 2` (the
+  lobby is turn 1; `startMatchIfReady`'s `setPhase('play')` begins a fresh turn). This equals
+  `par.aggregator`'s `turnsElapsed === 0 ? 1 : turnsElapsed` — scaffold-verified by driving
+  0/1/2/5/12 real turns through the reducer and confirming equality. The log's `turn` stamps
+  are used (not `ctx.turn`) because `ctx` is not reproduced faithfully by reduction (and is
+  hash-excluded); see D-24124.
+
+**Packet:** WP-336 + EC-366. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
+
+Protect this file.
+
+### D-24124 — `reduceMatchToFinalState` Re-Dispatches Only `MAKE_MOVE` Entries (Multi-Turn Faithfulness Fix)
+
+**Status:** Active (post-execution) 2026-07-08.
+
+**User-Visible Surface:** none — infrastructure (corrects competitive-score correctness for every multi-turn match).
+
+**Context.** WP-334's `reduceMatchToFinalState` skipped only log entries flagged
+`automatic === true` and re-dispatched everything else, on the assumption that all
+move-triggered phase/turn transitions carry that flag. WP-336 execution disproved it: driving
+real multi-turn games through the reducer showed play-phase `endTurn` `GAME_EVENT`s are logged
+**`automatic: false`**. The `automatic`-only skip therefore re-dispatched each such `endTurn`
+*on top of* re-running the `advanceStage`/`endTurn` move that triggered it, double-advancing
+every turn past the first — the reduced final `G` (and `ctx`) diverged from the live final
+state for every multi-turn match. WP-334's single faithfulness golden was a **0-turn lobby
+game**, which has no play `endTurn`s, so the bug was never exercised. Because WP-335 capture and
+the WP-336 verifier both reduce the *same* artifact identically, the step-9 hash-compare still
+passed — but the score was being computed off a divergent state.
+
+**Decision.** `reduceMatchToFinalState` re-dispatches **only player `MAKE_MOVE` entries** and
+skips every `GAME_EVENT`. In this engine players submit moves, never raw framework events; all
+phase/turn transitions are move consequences the engine triggers via `ctx.events.*`, which the
+reducer regenerates inline (and it re-evaluates `endIf` after each move). Scaffold-verified:
+the reduced final `G` hash equals the live final `G` hash across 0/1/2/5/12 completed turns
+(previously faithful only at 0). A multi-turn faithfulness assertion is now locked in
+`matchReplay.logic.test.ts` so a regression fails loudly. This supersedes the
+"re-dispatch MAKE_MOVEs and player-initiated GAME_EVENTs; skip automatic" description in
+D-24121 (there are no player-initiated `GAME_EVENT`s in this engine).
+
+**Not changed.** No engine edit; no `computeStateHash` change; the `bgio.replay_artifacts`
+store and the capture/verify hash-compare are unaffected (both sides reduce identically, and
+now identically *and* faithfully).
+
+**Follow-up flagged (out of scope).** WP-334's golden only covered a 0-turn game; a broader
+real-multi-turn faithfulness fixture (ideally from a captured production match) is worth a
+dedicated verification pass. Two pre-existing local DB-test-hygiene gaps were also observed and
+noted (competition `beforeEach` did not clear `legendary.player_badges` before the `players`
+wipe → fixed incidentally; leaderboard `seedScore` asserts a stale `Result`-shaped contract on
+`updateReplayVisibility` which returns `record | null`, and seeds private-visibility scores
+through a submit path that rejects them → left for a separate WP-054 test fix).
+
+**Packet:** WP-336 + EC-366. **Drafted:** 2026-07-08. **Executed:** 2026-07-08.
+
+Protect this file.

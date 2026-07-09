@@ -25,8 +25,8 @@
 - Reserves D-24123
 
 ## turnCount ↔ turnsElapsed Reconciliation (mandatory scaffold-verify)
-- [ ] Derive `turnCount` in `reduceMatchToFinalState` from the reduced boardgame.io state (`ctx.turn`), reconciled to `par.aggregator.ts` `turnsElapsed` (play turns only — account for the lobby-is-bgio-turn-1 offset)
-- [ ] BEFORE finalizing: reduce a match AND simulate the same setup; confirm the reduced `turnCount` == the sim's `turnsElapsed` (or document the exact formula, e.g. `ctx.turn − lobbyTurnOffset`, and why it matches). Do NOT ship an unverified formula.
+- [x] Derive `turnCount` in `reduceMatchToFinalState` reconciled to `par.aggregator.ts` `turnsElapsed`. **Execution result:** derived from the LOG's live-recorded per-entry `turn` (`maxPlayTurn − FIRST_PLAY_TURN`, floored 1), NOT the reduced `ctx.turn` — the scaffold-verify showed reduction did not reproduce `ctx` faithfully for multi-turn games (D-24124).
+- [x] Scaffold-verified: drove 0/1/2/5/12 real turns through the reducer; reduced `turnCount` == the sim's `turnsElapsed` floor at every count, AND (post-D-24124 fix) reduced final G hash == live final G hash at every count. Formula + `FIRST_PLAY_TURN = 2` documented in code.
 
 ## Guardrails
 - Steps 1-6 (guest / ownership / owner / visibility / idempotency fast-path / PAR gate) BYTE-UNCHANGED — they read `legendary.replay_ownership` (WP-335 populates it) + `checkParPublished`
@@ -47,7 +47,8 @@
 - `apps/server/src/replay/matchReplay.logic.ts` — **modified** — `turnCount` + `readReplayArtifactByHash` + `reduceReplayByHash`
 - `apps/server/src/replay/matchReplay.logic.test.ts` — **modified** — turnCount assert (scaffold-verified) + DB-gated read round-trip
 - `apps/server/src/competition/competition.logic.ts` — **modified** — seam swap + steps 7-10 repoint + import cleanup
-- `apps/server/src/competition/competition.logic.test.ts` — **modified** — migrate fixtures + retry spies to `{ reduceReplay, checkParPublished }`; assert rounds == turnCount
+- `apps/server/src/competition/competition.logic.test.ts` — **modified** — migrate fixtures + retry spies to `{ reduceReplay, checkParPublished }`; assert rounds == turnCount; + incidental `player_badges` `beforeEach` cleanup fix
+- `apps/server/src/competition/competition.routes.test.ts` — **modified** (execution-added) — `makeDeps` drops `registry`
 - `apps/server/src/leaderboards/leaderboard.logic.test.ts` — **modified** — migrate fixture-seed deps
 - `apps/server/src/competition/competition.routes.ts` — **modified** — deps (drop `registry`, add `reduceReplay`)
 - `apps/server/src/server.mjs` — **modified** — `registerCompetitionRoutes` wiring (01.5)
