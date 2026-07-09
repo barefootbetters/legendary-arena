@@ -200,6 +200,12 @@ const COUNT_SCALED_PATTERN = /\[keyword:attack-per-count:([a-z][a-z-]*):(\d+)\]/
 /** Regex for [keyword:optional-ko-reward:<reward>:<n>] optional-KO-reward markup. */
 const OPTIONAL_KO_REWARD_PATTERN = /\[keyword:optional-ko-reward:([a-z][a-z-]*):(\d+)\]/g;
 
+// why: [keyword:optional-put-bottom-hq:<n>] token for "You may put a card from the
+// HQ on the bottom of the Hero Deck". Simple 2-segment token carrying just the
+// magnitude (always 1 for this MVP form). Follows the COUNT_SCALED_PATTERN precedent.
+/** Regex for [keyword:optional-put-bottom-hq:<n>] optional-put-bottom-HQ markup. */
+const OPTIONAL_PUT_BOTTOM_HQ_PATTERN = /\[keyword:optional-put-bottom-hq:(\d+)\]/g;
+
 // why: D-24024 — the forward-compat parameterized reveal token has 3+
 // colon-separated segments ([keyword:reveal:<predicate>:<actions>(:continue)?]).
 // KEYWORD_PATTERN stops at the second colon and cannot match it; the legacy
@@ -659,7 +665,20 @@ function parseAbilityText(abilityText: string): {
     optionalKoRewardMatch = optionalKoRewardRegex.exec(abilityText);
   }
 
-  // Step 2f: Extract [keyword:reveal:<predicate>:<actions>(:continue)?] parameterized
+  // Step 2f: Extract [keyword:optional-put-bottom-hq:<n>] markup. Simple 2-segment token
+  // for "You may put a card from the HQ on the bottom of the Hero Deck". The magnitude
+  // is always 1 for this MVP form (how many cards to move). Only one occurrence per line.
+  const optionalPutBottomHqRegex = new RegExp(OPTIONAL_PUT_BOTTOM_HQ_PATTERN.source, 'g');
+  let optionalPutBottomHqMatch: RegExpExecArray | null = optionalPutBottomHqRegex.exec(abilityText);
+  if (optionalPutBottomHqMatch !== null) {
+    const magnitude = parseInt(optionalPutBottomHqMatch[1]!, 10);
+    if (magnitude >= 1) {
+      keywords.push('optional-put-bottom-hq');
+      magnitudes.set('optional-put-bottom-hq', magnitude);
+    }
+  }
+
+  // Step 2g: Extract [keyword:reveal:<predicate>:<actions>(:continue)?] parameterized
   // reveal tokens (forward-compat — no card uses this grammar this WP). Each token is
   // ONE RevealRule, accumulated in source order. When at least one rule parses, the
   // base 'reveal' keyword is recorded so the effect builder emits a single collapsed
@@ -681,7 +700,7 @@ function parseAbilityText(abilityText: string): {
     keywords.push('reveal');
   }
 
-  // Step 2g: Extract the [keyword:reveal-count:<n>] modifier — how many deck-top
+  // Step 2h: Extract the [keyword:reveal-count:<n>] modifier — how many deck-top
   // cards the reveal descriptor peeks. Absent ⇒ the WP-253 default of 1. Only the
   // first occurrence is read (one reveal descriptor per ability line).
   // why: D-24027 — the count is DESCRIPTOR-level (the reveal handler's peek-loop

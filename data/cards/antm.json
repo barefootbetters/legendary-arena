@@ -483,7 +483,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "You may put a card from the HQ on the bottom of the Hero Deck.",
+            "You may put a card from the HQ on the bottom of the Hero Deck. [keyword:optional-put-bottom-hq:1]",
             "[hc:ranged]: You get [keyword:Empowered] by [hc:ranged]."
           ]
         },

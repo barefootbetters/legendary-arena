@@ -65,7 +65,7 @@ import { pushLog } from '../log/logPush.js';
 // the 7 legacy reveal-* keywords lost their dedicated handlers (folded into the one
 // 'reveal' handler) but stay executable via revealRulesForLegacyKeyword translation.
 export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
-  'draw', 'attack', 'recruit', 'ko', 'rescue', 'reveal', 'attack-per-count', 'optional-ko-reward', 'victory-villain-attack', 'draw-or-empowered',
+  'draw', 'attack', 'recruit', 'ko', 'rescue', 'reveal', 'attack-per-count', 'optional-ko-reward', 'optional-put-bottom-hq', 'victory-villain-attack', 'draw-or-empowered',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -1111,6 +1111,42 @@ function heroEffectOptionalKoReward(
 }
 
 /**
+ * Park handler for the `optional-put-bottom-hq` hero keyword.
+ *
+ * Checks whether there are any cards in the HQ. If yes, parks a
+ * `PendingOptionalPutBottomHQ` on `G.pendingOptionalPutBottomHQ[]` (lazy-init).
+ * If the HQ is empty, logs a no-op message and returns without touching the queue.
+ *
+ * The card move itself happens at resolve time (resolveOptionalPutBottomHQ), NOT
+ * here — the player must first choose which HQ card (if any) to move to the deck bottom.
+ */
+function heroEffectOptionalPutBottomHq(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  // why: check if there are any cards in the HQ to move. HQ is the shared board zone
+  // (not per-player). If empty, the ability has no valid targets.
+  const hqZone = G.hq;
+  const eligibleCards = hqZone.filter(slot => slot !== null).length;
+  if (eligibleCards === 0) {
+    pushLog(G,
+      `Player ${playerID} could not move a card from the HQ — the HQ is empty, so no card was moved.`,
+    );
+    return;
+  }
+  // why: lazy-init at the park site (mirrors optional-ko-reward pattern) — NEVER in
+  // Game.setup. The park itself is SILENT (no G.messages line); the move is silent too.
+  if (!G.pendingOptionalPutBottomHQ) { G.pendingOptionalPutBottomHQ = []; }
+  G.pendingOptionalPutBottomHQ.push({
+    playerID,
+    sourceCardId: cardId,
+  });
+}
+
+/**
  * Park handler for the `victory-villain-attack` hero keyword (WP-285 / D-24067).
  *
  * Checks whether the player has at least one eligible villain in their victory pile
@@ -1195,6 +1231,7 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   reveal: heroEffectReveal,
   'attack-per-count': heroEffectAttackPerCount,
   'optional-ko-reward': heroEffectOptionalKoReward,
+  'optional-put-bottom-hq': heroEffectOptionalPutBottomHq,
   'victory-villain-attack': heroEffectVictoryVillainAttack,
   'draw-or-empowered': heroEffectDrawOrEmpowered,
 };

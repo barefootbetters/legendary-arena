@@ -134,7 +134,8 @@
   "antm": [
     { "heroSlug": "ant-man", "cardSlug": "ride-the-ants", "abilityIndex": 1, "markupToken": "[keyword:draw:1]" },
     { "heroSlug": "jocasta", "cardSlug": "holographic-image-inducer", "abilityIndex": 1, "markupToken": "[keyword:draw:2]" },
-    { "heroSlug": "wasp", "cardSlug": "tiny-winged-justice", "abilityIndex": 1, "markupToken": "[keyword:draw:1]" }
+    { "heroSlug": "wasp", "cardSlug": "tiny-winged-justice", "abilityIndex": 1, "markupToken": "[keyword:draw:1]" },
+    { "heroSlug": "wonder-man", "cardSlug": "ionic-energy", "abilityIndex": 0, "markupToken": "[keyword:optional-put-bottom-hq:1]" }
   ],
   "asrd": [
     { "heroSlug": "warriors-three-the", "cardSlug": "fandral-the-dashing", "abilityIndex": 1, "markupToken": "[keyword:draw:1]" }

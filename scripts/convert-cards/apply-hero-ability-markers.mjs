@@ -51,8 +51,9 @@ const MAP_PATH = join(__dirname, 'inputs', 'hero-ability-markers.json');
 // why: D-22501 — draw uses [1-9]\d* to reject the zero-magnitude form; appended additively, the existing rescue/reveal branches are kept byte-for-byte intact
 // why: D-24016 — count-scaled attack token has three segments ([keyword:attack-per-count:<source>:<perUnit>]); <source> is a lowercase-hyphen slug, <perUnit> uses [1-9]\d* to reject the zero-magnitude form
 // why: D-24019 — optional-ko-reward token has three segments ([keyword:optional-ko-reward:<reward>:<n>]); <reward> is a lowercase-hyphen reward slug, <n> uses [1-9]\d* to reject the zero-magnitude form (the strict build gate; the engine parser captures (\d+) and enforces n ≥ 1 downstream)
+// why: optional-put-bottom-hq token has two segments ([keyword:optional-put-bottom-hq:<n>]); <n> uses [1-9]\d* to reject the zero-magnitude form
 const VALID_TOKEN_PATTERN =
-  /^\[keyword:rescue:\d+\]$|^\[keyword:reveal\]$|^\[keyword:reveal:\d+\]$|^\[keyword:reveal-ko\]$|^\[keyword:reveal-min:\d+\]$|^\[keyword:reveal-ko-or-draw:\d+\]$|^\[keyword:reveal-cost-attack\]$|^\[keyword:reveal-odd-draw\]$|^\[keyword:reveal-attack-choose:[1-9]\d*\]$|^\[keyword:reveal-ko-attack:[1-9]\d*\]$|^\[keyword:draw:[1-9]\d*\]$|^\[keyword:attack-per-count:[a-z][a-z-]*:[1-9]\d*\]$|^\[keyword:optional-ko-reward:[a-z][a-z-]*:[1-9]\d*\]$/;
+  /^\[keyword:rescue:\d+\]$|^\[keyword:reveal\]$|^\[keyword:reveal:\d+\]$|^\[keyword:reveal-ko\]$|^\[keyword:reveal-min:\d+\]$|^\[keyword:reveal-ko-or-draw:\d+\]$|^\[keyword:reveal-cost-attack\]$|^\[keyword:reveal-odd-draw\]$|^\[keyword:reveal-attack-choose:[1-9]\d*\]$|^\[keyword:reveal-ko-attack:[1-9]\d*\]$|^\[keyword:draw:[1-9]\d*\]$|^\[keyword:attack-per-count:[a-z][a-z-]*:[1-9]\d*\]$|^\[keyword:optional-ko-reward:[a-z][a-z-]*:[1-9]\d*\]$|^\[keyword:optional-put-bottom-hq:[1-9]\d*\]$/;
 
 // ─── Shared helpers ──────────────────────────────────────────────────────────
 
