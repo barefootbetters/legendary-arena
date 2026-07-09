@@ -8,6 +8,19 @@
 **User-Visible Surface:** legends.legendary-arena.com
 **Reserves:** D-24132 (hash-routing introduction + display-format locks; written at execution)
 
+> **Execution addendum (2026-07-09, EC-373 draft).** Test-posture
+> reconciliation against the SPA's established reality: the fetch functions
+> read Vite's `import.meta.env` and cannot run under node:test (the
+> existing `snapshotClient.test.ts` documents this posture), and the app
+> has no Vue mount harness. Unit tests therefore cover the pure surface
+> (`parseHashRoute`, `formatAverageScore`, set grouping,
+> `buildAttractBoardList`, URL/key helpers); component rendering and fetch
+> behavior are verified by `vue-tsc`, the local dev smoke (Verification
+> Step 4), and the D-24026 live-on-surface DoD item. ACs 2 / 4 / 5 / 6 are
+> satisfied through that split. The cycle-list composition is extracted to
+> the pure `buildAttractBoardList` helper in `gauntletDisplay.ts` so AC-7
+> stays unit-testable.
+
 ---
 
 ## Goal

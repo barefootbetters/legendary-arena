@@ -37,6 +37,55 @@ export interface LegendsManifest {
   readonly boards: readonly string[];
   readonly generatedAt: string;
   readonly schemaVersion: 1;
+  // why: additive WP-342 fields — present only when the publisher runs with
+  // a gauntlet catalog; absent on a pre-WP-342 manifest. Mirrored from
+  // apps/server/src/legends/legends.types.ts (never imported cross-package).
+  readonly gauntletBoards?: readonly string[];
+  readonly gauntletIndex?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Gauntlet snapshot types (WP-342 / WP-343 / D-24131)
+// Mirrored from apps/server/src/legends/legends.types.ts — DO NOT import.
+// ---------------------------------------------------------------------------
+
+/** A single row in a gauntlet snapshot board. Scores are PAR-relative
+ * (lower is better); `averageScoreCentis` is an integer ×100 average —
+ * display layers divide by 100. */
+export interface GauntletSnapshotEntry {
+  readonly handle: string;
+  readonly rank: number;
+  readonly totalScore: number;
+  readonly legCount: number;
+  readonly averageScoreCentis: number;
+}
+
+/** A gauntlet board snapshot at `legends/v1/<board>.json` — written only
+ * for gauntlets with at least one complete entry. */
+export interface GauntletSnapshotBoard {
+  readonly board: string;
+  readonly entries: readonly GauntletSnapshotEntry[];
+  readonly rowCount: number;
+  readonly schemaVersion: 1;
+}
+
+/** One row of the gauntlet index — every catalog gauntlet appears,
+ * including `entryCount: 0` "unclaimed" boards (which have NO board file). */
+export interface GauntletIndexEntry {
+  readonly setAbbr: string;
+  readonly setName: string;
+  readonly mastermindSlug: string;
+  readonly mastermindName: string;
+  readonly legCount: number;
+  readonly entryCount: number;
+  readonly board: string;
+}
+
+/** The gauntlet index artifact at `legends/v1/gauntlet-index.json`. */
+export interface GauntletIndexSnapshot {
+  readonly gauntlets: readonly GauntletIndexEntry[];
+  readonly generatedAt: string;
+  readonly schemaVersion: 1;
 }
 
 // ---------------------------------------------------------------------------
@@ -75,6 +124,8 @@ export function getPollIntervalMs(): number {
 
 let cachedManifest: LegendsManifest | null = null;
 const boardCache = new Map<string, LegendsSnapshotBoard>();
+let cachedGauntletIndex: GauntletIndexSnapshot | null = null;
+const gauntletBoardCache = new Map<string, GauntletSnapshotBoard>();
 
 // ---------------------------------------------------------------------------
 // Fetch helpers
@@ -165,11 +216,55 @@ export async function fetchAllBoards(
 }
 
 /**
+ * Fetches the gauntlet index from R2, returning a cached copy until the
+ * manifest changes. The index exists whenever the manifest carries the
+ * `gauntletIndex` field (WP-342).
+ */
+export async function fetchGauntletIndex(): Promise<GauntletIndexSnapshot> {
+  if (cachedGauntletIndex !== null) {
+    return cachedGauntletIndex;
+  }
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}legends/v1/gauntlet-index.json`;
+  const index = await fetchJson<GauntletIndexSnapshot>(url);
+  cachedGauntletIndex = index;
+  console.log(
+    `[legends] Gauntlet index cached (${index.gauntlets.length} gauntlets)`,
+  );
+  return index;
+}
+
+/**
+ * Fetches a single gauntlet board snapshot from R2, returning a cached
+ * copy until the manifest changes. Callers must only request boards the
+ * index reports with `entryCount >= 1` — zero-entry gauntlets have no
+ * board file by design (D-24131 §7).
+ */
+export async function fetchGauntletBoard(
+  boardName: string,
+): Promise<GauntletSnapshotBoard> {
+  const cached = gauntletBoardCache.get(boardName);
+  if (cached) {
+    return cached;
+  }
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}legends/v1/${boardName}.json`;
+  const board = await fetchJson<GauntletSnapshotBoard>(url);
+  gauntletBoardCache.set(boardName, board);
+  console.log(
+    `[legends] Gauntlet board "${boardName}" cached (${board.rowCount} rows)`,
+  );
+  return board;
+}
+
+/**
  * Invalidates all cached board data. Called when `manifest.generatedAt`
  * changes, indicating the publisher wrote fresh snapshots.
  */
 export function invalidateBoardCache(): void {
   boardCache.clear();
+  cachedGauntletIndex = null;
+  gauntletBoardCache.clear();
   console.log("[legends] Board cache invalidated");
 }
 

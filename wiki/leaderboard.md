@@ -387,15 +387,13 @@ player ID, not the public handle.
   ships five panel components (overall, weekly, by-scheme, recent-achievements,
   now-playing), but only the boards the publisher actually emits are rendered
   — until per-scenario scores accumulate, that is just `global-top`.
-- **Three of the five panels render a header-only table when empty (board
-  review, 2026-07-09).** Only `NowPlayingPanel` has an explicit
-  zero-entries state ("No active games right now"); `OverallPanel`,
-  `WeeklyPanel`, and `BySchemePanel` render column headers with no rows
-  when a board's `entries` is empty
-  ([`apps/legends-board/src/panels/`](../apps/legends-board/src/App.vue)).
-  Until real scores accumulate, that header-only table *is* the default
-  public view. A designed empty state is proposed under
-  [Open Questions](#open-questions).
+- **~~Three of the five panels render a header-only table when empty~~
+  (board review, 2026-07-09 — FIXED by WP-343 / D-24132 the same day).**
+  `OverallPanel`, `WeeklyPanel`, and `BySchemePanel` now render the shared
+  "No Legends yet — be the first" call-to-action when a board's `entries`
+  is empty, and the WP-343 gauntlet index renders zero-entry gauntlets as
+  inline "unclaimed" CTAs — the empty board is an acquisition surface,
+  not a bare table.
 - **Publisher board names do not match the SPA's panel keys.** The
   publisher emits `global-top` plus `scenario-<key>` boards, but the SPA's
   panel resolver keys are `overall` / `weekly` / `by-scheme` /

@@ -1,15 +1,22 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from "vue";
+import { ref, onMounted, onUnmounted, computed, watch } from "vue";
 import {
   fetchManifest,
   fetchAllBoards,
+  fetchGauntletBoard,
+  fetchGauntletIndex,
   pollManifest,
   getPollIntervalMs,
   boardDisplayName,
+  type GauntletIndexEntry,
+  type GauntletIndexSnapshot,
+  type GauntletSnapshotBoard,
   type LegendsManifest,
   type LegendsSnapshotBoard,
 } from "./snapshots/snapshotClient";
 import { getKioskConfig, type KioskConfig } from "./attract/kioskMode";
+import { createHashRouteRef } from "./router/hashRoute";
+import { buildAttractBoardList } from "./panels/gauntletDisplay";
 import AttractCycler from "./attract/AttractCycler.vue";
 import FreshnessBadge from "./freshness/FreshnessBadge.vue";
 import OverallPanel from "./panels/OverallPanel.vue";
@@ -17,6 +24,8 @@ import WeeklyPanel from "./panels/WeeklyPanel.vue";
 import BySchemePanel from "./panels/BySchemePanel.vue";
 import RecentAchievementsPanel from "./panels/RecentAchievementsPanel.vue";
 import NowPlayingPanel from "./panels/NowPlayingPanel.vue";
+import GauntletIndexPanel from "./panels/GauntletIndexPanel.vue";
+import GauntletBoardPanel from "./panels/GauntletBoardPanel.vue";
 import VersionBadge from "./components/VersionBadge.vue";
 
 // ---------------------------------------------------------------------------
@@ -25,10 +34,19 @@ import VersionBadge from "./components/VersionBadge.vue";
 
 const kioskConfig: KioskConfig = getKioskConfig();
 
+// why: read synchronously at setup so a #/gauntlet/<board> deep link
+// renders its target view on first paint (no attract flash).
+const currentRoute = createHashRouteRef(window);
+
 const manifest = ref<LegendsManifest | null>(null);
 const boards = ref<Map<string, LegendsSnapshotBoard>>(new Map());
 const boardErrors = ref<Map<string, string>>(new Map());
 const activeBoardName = ref<string | null>(null);
+
+const gauntletIndex = ref<GauntletIndexSnapshot | null>(null);
+const gauntletIndexError = ref<string | null>(null);
+const routedGauntletBoard = ref<GauntletSnapshotBoard | null>(null);
+const routedGauntletError = ref<string | null>(null);
 
 const loadError = ref<string | null>(null);
 const isLoading = ref(true);
@@ -41,7 +59,25 @@ let pollTimer: ReturnType<typeof setInterval> | null = null;
 // ---------------------------------------------------------------------------
 
 const boardNames = computed((): readonly string[] => {
-  return manifest.value?.boards ?? [];
+  // why: the attract cycle gains exactly ONE gauntlet-index slide when the
+  // manifest advertises it — never the per-gauntlet boards (D-24131 §8a).
+  return buildAttractBoardList(
+    manifest.value?.boards ?? [],
+    manifest.value?.gauntletIndex !== undefined,
+  );
+});
+
+const routedGauntletIndexEntry = computed((): GauntletIndexEntry | null => {
+  if (currentRoute.value.view !== "gauntlet" || gauntletIndex.value === null) {
+    return null;
+  }
+  const routedBoardName = currentRoute.value.boardName;
+  for (const entry of gauntletIndex.value.gauntlets) {
+    if (entry.board === routedBoardName) {
+      return entry;
+    }
+  }
+  return null;
 });
 
 const activeBoard = computed((): LegendsSnapshotBoard | null => {
@@ -93,6 +129,42 @@ function getPanelComponent(boardName: string | null): unknown {
 // Data loading
 // ---------------------------------------------------------------------------
 
+/** Loads the gauntlet index when the manifest advertises one. */
+async function loadGauntletIndex(loadedManifest: LegendsManifest): Promise<void> {
+  if (loadedManifest.gauntletIndex === undefined) {
+    gauntletIndex.value = null;
+    gauntletIndexError.value = null;
+    return;
+  }
+  try {
+    gauntletIndex.value = await fetchGauntletIndex();
+    gauntletIndexError.value = null;
+  } catch (error) {
+    gauntletIndexError.value =
+      error instanceof Error ? error.message : "Failed to load gauntlet index";
+    console.error("[legends] Gauntlet index load failed:", error);
+  }
+}
+
+/** Loads the gauntlet board the current route points at (if any). */
+async function loadRoutedGauntletBoard(): Promise<void> {
+  if (currentRoute.value.view !== "gauntlet") {
+    routedGauntletBoard.value = null;
+    routedGauntletError.value = null;
+    return;
+  }
+  const boardName = currentRoute.value.boardName;
+  routedGauntletBoard.value = null;
+  routedGauntletError.value = null;
+  try {
+    routedGauntletBoard.value = await fetchGauntletBoard(boardName);
+  } catch (error) {
+    routedGauntletError.value =
+      error instanceof Error ? error.message : "Failed to load gauntlet board";
+    console.error(`[legends] Gauntlet board "${boardName}" load failed:`, error);
+  }
+}
+
 /** Initial load: fetch manifest, then all boards. */
 async function loadData(): Promise<void> {
   isLoading.value = true;
@@ -102,6 +174,8 @@ async function loadData(): Promise<void> {
   try {
     const loadedManifest = await fetchManifest();
     manifest.value = loadedManifest;
+
+    await loadGauntletIndex(loadedManifest);
 
     if (loadedManifest.boards.length === 0) {
       isLoading.value = false;
@@ -148,6 +222,11 @@ async function handlePoll(): Promise<void> {
           boardErrors.value.set(boardName, "Failed to load board data");
         }
       }
+
+      // why: pollManifest invalidated the gauntlet caches too — refresh the
+      // index and, if a gauntlet board view is open, its standings.
+      await loadGauntletIndex(newManifest);
+      await loadRoutedGauntletBoard();
     }
   } catch (error) {
     console.error("[legends] Poll failed:", error);
@@ -175,6 +254,10 @@ async function handleForceRefresh(): Promise<void> {
 // ---------------------------------------------------------------------------
 // Lifecycle
 // ---------------------------------------------------------------------------
+
+// why: immediate — a deep link must start loading its board on first
+// paint, not wait for the first hashchange event.
+watch(currentRoute, loadRoutedGauntletBoard, { immediate: true });
 
 onMounted(async () => {
   await loadData();
@@ -205,8 +288,19 @@ onUnmounted(() => {
       />
     </header>
 
+    <!-- Gauntlet board view (#/gauntlet/<board>) -->
+    <main v-if="currentRoute.view === 'gauntlet'" class="board-content">
+      <div class="active-panel">
+        <GauntletBoardPanel
+          :board="routedGauntletBoard"
+          :index-entry="routedGauntletIndexEntry"
+          :error="routedGauntletError"
+        />
+      </div>
+    </main>
+
     <!-- Full-page error -->
-    <div v-if="loadError && !isLoading" class="full-page-error">
+    <div v-else-if="loadError && !isLoading" class="full-page-error">
       <div class="error-content">
         <h2>Unable to load scoreboard data</h2>
         <p class="error-message">{{ loadError }}</p>
@@ -249,8 +343,17 @@ onUnmounted(() => {
               />
             </div>
 
+            <!-- why: the gauntlet-index slide renders its own panel with the
+                 index snapshot — it is not a LegendsSnapshotBoard, so it never
+                 goes through the generic board-panel resolver. -->
+            <GauntletIndexPanel
+              v-if="currentBoardName === 'gauntlet-index'"
+              :index="gauntletIndex"
+              :error="gauntletIndexError"
+            />
             <component
               :is="getPanelComponent(currentBoardName)"
+              v-else
               :board="activeBoard"
               :error="activeBoardError"
             />

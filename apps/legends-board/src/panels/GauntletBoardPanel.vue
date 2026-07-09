@@ -1,16 +1,32 @@
 <script setup lang="ts">
-import type { LegendsSnapshotBoard } from "../snapshots/snapshotClient";
-import EmptyBoardCta from "../components/EmptyBoardCta.vue";
+/**
+ * Gauntlet board panel (WP-343 / D-24131 §8a) — the standings for one
+ * mastermind set-gauntlet. Average is the PAR-relative golf-scale score
+ * (lower is better; negative = under PAR renders gold).
+ */
+import type {
+  GauntletIndexEntry,
+  GauntletSnapshotBoard,
+} from "../snapshots/snapshotClient";
+import { formatAverageScore } from "./gauntletDisplay";
 
 const props = defineProps<{
-  board: LegendsSnapshotBoard | null;
+  board: GauntletSnapshotBoard | null;
+  indexEntry: GauntletIndexEntry | null;
   error: string | null;
 }>();
 </script>
 
 <template>
-  <div class="panel weekly-panel">
-    <h2 class="panel-title">Weekly Leaders</h2>
+  <div class="panel gauntlet-board-panel">
+    <a class="back-link" href="#/">← All gauntlets</a>
+    <h2 class="panel-title">
+      {{ indexEntry ? `${indexEntry.mastermindName} — ${indexEntry.setName}` : "Gauntlet" }}
+    </h2>
+    <p v-if="indexEntry" class="panel-subtitle">
+      Best winning score across all {{ indexEntry.legCount }} schemes,
+      averaged vs PAR (lower is better).
+    </p>
 
     <div v-if="error" class="panel-error">
       <p>Data unavailable</p>
@@ -18,17 +34,16 @@ const props = defineProps<{
     </div>
 
     <div v-else-if="!board" class="panel-loading">
-      <p>Loading weekly rankings...</p>
+      <p>Loading standings...</p>
     </div>
-
-    <EmptyBoardCta v-else-if="board.entries.length === 0" />
 
     <table v-else class="leaderboard-table">
       <thead>
         <tr>
           <th class="col-rank">#</th>
           <th class="col-handle">Player</th>
-          <th class="col-score">Score</th>
+          <th class="col-legs">Schemes</th>
+          <th class="col-score">Avg vs PAR</th>
         </tr>
       </thead>
       <tbody>
@@ -39,7 +54,13 @@ const props = defineProps<{
         >
           <td class="col-rank">{{ entry.rank }}</td>
           <td class="col-handle">{{ entry.handle }}</td>
-          <td class="col-score">{{ entry.score.toLocaleString() }}</td>
+          <td class="col-legs">{{ entry.legCount }}</td>
+          <td
+            class="col-score"
+            :class="{ 'under-par': entry.averageScoreCentis < 0 }"
+          >
+            {{ formatAverageScore(entry.averageScoreCentis) }}
+          </td>
         </tr>
       </tbody>
     </table>
@@ -51,10 +72,26 @@ const props = defineProps<{
   padding: 1.5rem;
 }
 
+.back-link {
+  color: #888;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.back-link:hover {
+  color: #ffd700;
+}
+
 .panel-title {
   font-size: 1.5rem;
-  margin: 0 0 1rem;
+  margin: 0.5rem 0 0.25rem;
   color: #ffd700;
+}
+
+.panel-subtitle {
+  color: #888;
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
 }
 
 .panel-error {
@@ -107,9 +144,18 @@ const props = defineProps<{
   color: #888;
 }
 
+.col-legs {
+  text-align: center;
+  color: #aaa;
+}
+
 .col-score {
   text-align: right;
   font-variant-numeric: tabular-nums;
+  color: #e0e0e0;
+}
+
+.col-score.under-par {
   color: #ffd700;
 }
 </style>

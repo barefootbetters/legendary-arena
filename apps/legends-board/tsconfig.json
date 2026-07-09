@@ -9,6 +9,8 @@
     "isolatedModules": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "types": ["node"],
+    "allowImportingTsExtensions": true,
     "paths": {
       "@/*": ["./src/*"]
     }
