@@ -63,6 +63,15 @@ Four streams, all fairness-safe:
 A non-negotiable portion of every dollar flows as royalties to **Upper Deck
 Entertainment and Marvel**. See VISION for the full covenant.
 
+![Pie chart of the four Legendary Arena revenue streams — Legendary Supporter Subscriptions (45%), One-Time Cosmetic & Presentation Purchases (25%), Enterprise & Organized-Play Licensing (18%), and Premium Recognition Tiers (12%). Proportions are illustrative, not a forecast.](/monetization-model/revenue-streams.svg "width=88%")
+
+*Illustrative revenue mix — **not a forecast, target, or policy figure**. The
+canonical model is the four streams themselves (VISION §Financial
+Sustainability), not any dollar split; these proportions are placeholders
+pending real figures. Diagram source:
+[revenue-streams.mmd](../ewiki/monetization-model/revenue-streams.mmd) —
+regenerate the render with `mmdc`.*
+
 Related governance: tournament-level community funding is separate and
 organizer-side (no organizer margin) — see
 [`docs/TOURNAMENT-FUNDING.md`](../docs/TOURNAMENT-FUNDING.md). Note the deliberate
