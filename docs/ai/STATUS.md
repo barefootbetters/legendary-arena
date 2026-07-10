@@ -7,6 +7,33 @@
 
 ## Current State
 
+### WP-346 / EC-375 Executed — The header username is the profile link (D-24136 Active) (2026-07-09)
+
+Operator-reported: the signed-in global header showed the player's name **and** a separate
+"My profile" link (`Home · Cards · jeff · My profile · Sign out`) — two profile affordances both
+pointing at `?route=me`.
+
+- **Fix (2 files, `Header.vue` + `Header.test.ts`):** in the signed-in branch the `auth-nav-display`
+  `<span>` (the name) and the `auth-nav-profile-link` `<a>` ("My profile") merge into a single
+  `<a class="brand-nav-link auth-nav-display" href="?route=me" data-testid="auth-nav-display"
+  title="Your profile">{{ displayLabel }}</a>` — the name itself links to the profile; the
+  standalone "My profile" link is removed. Header now reads `Home · Cards · <name> · Sign out`.
+- **Styling:** `.auth-nav-display` CSS unchanged — it wins the shared props over `.brand-nav-link`
+  (name keeps primary color + weight 500) while inheriting the link hover/focus + no-underline.
+- **Untouched:** `useAuthNav` / `displayLabel` (WP-330 fallback chain), the signed-out (`Sign in`)
+  + bootstrapping branches, and the "Sign out" button. `MyProfilePage.vue` already defers identity
+  to the header (D-24118).
+- **Decision (D-24136):** the header name is the single profile affordance; no standalone
+  "My profile" link. Guards against re-adding it.
+- **Numbering:** originally drafted WP-344/D-24134; both claimed on `main` by concurrent sessions
+  while the PR was open, so renumbered to WP-346/D-24136 (EC-375 uncontested).
+- **Gates:** arena-client `typecheck` 0 / `test` 793/793 / `build` 0; 2-file client allowlist held.
+- **User-Visible Surface = play.legendary-arena.com.** D-24026 live-verify **operator-pending on
+  deploy**: the header reads `… <name> · Sign out`, the name links to `?route=me`, and there is no
+  separate "My profile" link.
+
+---
+
 ### WP-343 / EC-373 Executed — Legends-Board Gauntlet Index + Board Panel (D-24135 Active) (2026-07-09)
 
 **User-Visible change (post-deploy): `legends.legendary-arena.com`.** The Hall of Legends gains the

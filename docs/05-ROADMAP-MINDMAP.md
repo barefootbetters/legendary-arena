@@ -416,6 +416,7 @@ mindmap
         ["WP-329 ✅ Remove the redundant <ol> ordinal from the HUD game log — GameLogPanel .entries list-style:none so the browser ordinal (167.) stops double-numbering the in-text {turn}.{step}.{action}; pure client CSS; EC-359; D-24115"]
         ["WP-330 ✅ Header username label (play) — useAuthNav fetches the owner profile once on sign-in via existing fetchOwnerProfile and resolves displayLabel: displayName → @handleCanonical → My account (non-blocking, silent-fallback, fetch-once); completes WP-175 Amendment 1 now that WP-305/D-24089 ship the fields; client-only; EC-360; D-24116"]
         ["WP-331 ✅ HUD turn header reads the same turn the log numbers by — uiState.build game.turn = G.logMeta.turn ?? ctx.turn so the header stops showing Turn 20 while the log ends 19.2.13 (play→end phase change bumps ctx.turn; end phase has no onBegin); read-only projection; EC-361; D-24117"]
+        ["WP-346 ✅ Header username is the profile link — Header.vue merges the auth-nav-display name + the separate 'My profile' link into one <a href=?route=me> so the header reads Home · Cards · name · Sign out (name is the link); useAuthNav/displayLabel untouched; EC-375; D-24136"]
         ["📦 Effect-outcome fill-in (WP-B.2) — reveal-action realized results + move-card/sequence no-ops; deferred per D-24111"]
         ["📝 Structured log-outcome contract + colour-coding (WP-B.3) — G.messages string array → records with a machine-readable outcome field (green/red/yellow); own design review before packets; deferred per D-24111"]
 
