@@ -438,7 +438,7 @@ mindmap
         ["WP-342 ✅ Mastermind set-gauntlet boards (server) — outcome persistence + gauntlet read-layer + legends publisher emitting per-gauntlet board snapshots; EC-372; D-24131"]
         ["WP-343 ✅ Legends-board gauntlet index + board panel (client) — SPA renders the gauntlet index + per-board standings; hash-route grammar locked; cleared the pre-existing legends-board vue-tsc red; EC-373; D-24131/D-24135"]
         ["WP-344 ✅ Player-count gauntlet boards (server) — migration 027 player_count column; roster-keyed standings per count from one query; publisher adds lazy per-count boards + index entryCounts/legs; EC-376; D-24134 server half"]
-        ["WP-345 📝 Player-count gauntlet boards + challenge links (legends-board client) — player-count selector, full-roster display, 'Challenge this leg' links into the WP-114 registry-viewer preview; drafted, execution-prep next; D-24134 client half"]
+        ["WP-345 📝 Player-count gauntlet boards + challenge links (legends-board client) — player-count selector, full-roster display, 'Challenge this leg' links into the WP-114 registry-viewer preview; execution-ready (EC-379 drafted 2026-07-10); D-24134 client half"]
 
       Next Horizons
         ["📦 Core set keyword & ability coverage — get the core set fully playable first, then add sets incrementally (in progress via the effect-authoring grind — e.g. WP-310/316/317)"]
@@ -519,13 +519,13 @@ mindmap
 | Cross-App Infrastructure | 1/1 | — |
 | Multiplayer Play & Match Durability (2026-07) | 8/8 | — |
 | Hero/Villain Effects & Diagnostics (2026-07) | 5/5 | — |
-| Live-Play HUD & Pending-Choice UX (2026-07) | 14/14 | — |
+| Live-Play HUD & Pending-Choice UX (2026-07) | 15/15 | — |
 | Competitive Score Submission & Verification (2026-07) | 10/10 | — |
 | Gauntlet Leaderboards (Legends) (2026-07) | 3/4 | 1 open |
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **339/341 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 1 open |
+| **Total** | **340/342 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 1 open |
 
 **Open / blocked WPs (derived from WORK_INDEX, 2):** WP-042.1 ⏸ blocked; WP-345 open.
 <!-- ROADMAP-COUNTS:END -->
@@ -561,7 +561,7 @@ mindmap
 
 ## Next Unblocked (ordered)
 
-1. **WP-345 — Player-count gauntlet boards + challenge links (legends-board client)** — drafted 2026-07-09; its hard-dep WP-344 (the D-24134 server half) executed the same day, so WP-345 is now unblocked. Execution-prep (EC + session prompt) is the next step; it renders the `entryCounts` / `legs` / `players[]` data WP-344 already publishes, plus the per-leg "Challenge this leg" links into the WP-114 registry-viewer preview.
+1. **WP-345 — Player-count gauntlet boards + challenge links (legends-board client)** — drafted 2026-07-09; its hard-dep WP-344 (the D-24134 server half) executed the same day. Execution-prep landed 2026-07-10 (EC-379 + session prompt) — **the next step is the execution session itself.** It renders the `entryCounts` / `legs` / `players[]` data WP-344 already publishes, plus the per-leg "Challenge this leg" links into the WP-114 registry-viewer preview.
 2. **Finish core-set ability coverage** — in progress via the `/coverage`-driven effect-authoring grind on the composable-primitive substrate (D-24029): new mechanics land as data rows, not engine edits (recent examples: WP-310 / WP-316 / WP-317). Goal unchanged — the `core` set fully playable on play.legendary-arena.com, additional sets incrementally.
 3. **Live PvP matchmaking & match-discovery UX** — the resilience half has shipped (WP-116 reconnect policy, WP-309 durable bgio match storage, WP-311 client reconnect/desync auto-resync, WP-312 move-ack watchdog, WP-326/327 stale-match hygiene); what remains is matchmaking plus a match-discovery/join UX.
 4. **Gauntlet progress on profiles + champion badges** — backlog, to be drafted and numbered (the non-checkbox backlog bullet in `WORK_INDEX.md`; source D-24131 §8b): owner-profile per-gauntlet checklist + public-profile completed-gauntlet badges via the existing `badges[]` field.

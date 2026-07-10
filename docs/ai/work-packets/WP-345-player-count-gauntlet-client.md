@@ -1,9 +1,9 @@
 # WP-345 — Player-Count Gauntlet Boards + Challenge Links (Legends-Board Client)
 
-**Status:** Drafted 2026-07-09 (design per D-24134 §2–§6; EC pending — execution-prep is the next step)
+**Status:** Drafted 2026-07-09; **execution-ready 2026-07-10** (EC-379 drafted at execution-prep; the WP-344 hard dep executed 2026-07-09 via PR #643)
 **Primary Layer:** Client (`apps/legends-board/**` only)
-**Dependencies:** WP-344 (per-count snapshots + `entryCounts` + `legs` on the index — hard dep, must execute first), WP-343 ✅ (gauntlet index/panel + hash routing), WP-342 ✅, D-24134 (design lock), D-24135 (routing + display-format locks), WP-114 ✅ (the registry-viewer URL-parameterized preview the challenge links target)
-**EC:** pending (drafted at execution-prep)
+**Dependencies:** WP-344 ✅ (per-count snapshots + `entryCounts` + `legs` on the index — executed 2026-07-09), WP-343 ✅ (gauntlet index/panel + hash routing), WP-342 ✅, D-24134 (design lock), D-24135 (routing + display-format locks), WP-114 ✅ (the registry-viewer URL-parameterized preview the challenge links target)
+**EC:** [EC-379](../execution-checklists/EC-379-player-count-gauntlet-client.checklist.md) (drafted 2026-07-10; locks §Files item 8 to `gauntletDisplay.ts` + its test — 7-file set)
 **Baseline:** `origin/main` at `321e4f05` (2026-07-09)
 **User-Visible Surface:** legends.legendary-arena.com (per-count boards, team rosters, challenge links; the links land on cards.legendary-arena.com)
 
