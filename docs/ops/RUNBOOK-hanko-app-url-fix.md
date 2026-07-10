@@ -135,15 +135,21 @@ Don't guess which — the JWT `aud` decode tells you.
   `aud` value.** Also record the current Render `HANKO_EXPECTED_AUDIENCE`. They
   must be consistent — that's your "known-good" reference.
 
-### Phase 1 — Change the App URL
+### Phase 1 — Change the App URL (and the redirect URL)
 
 - **1. Hanko Cloud dashboard → project Settings → App URL:**
-  set to `https://play.legendary-arena.com`.
-  - If you want the `pages.dev` preview to keep working for staging AND Hanko
-    supports multiple allowed origins on this project, add
-    `https://legendary-arena-play.pages.dev` as an additional allowed origin.
-    (Hanko's multi-origin support per project is not clearly documented — if it's
-    single-origin, accept that preview-URL passkeys break; email still works.)
+  set to `https://play.legendary-arena.com`. The App URL host is auto-added to the
+  **Allowed origins** list. Hanko Cloud **does** support multiple allowed origins
+  per project (the live project already lists `play`, `dashboard`, `www`, and
+  `localhost:5173`); add `https://legendary-arena-play.pages.dev` back to Allowed
+  origins only if you want preview-URL login to keep working — not required for the
+  fix.
+- **1b. Same page → 3rd-party redirect URLs → `Default redirect URL`:** this field
+  is a *separate* instance of the same misconfiguration and governs **social
+  sign-in** (Google / Discord federation per D-9901 / D-12604) — it's where Hanko
+  returns the user after a third-party flow. Change it from
+  `https://legendary-arena-play.pages.dev` → `https://play.legendary-arena.com`.
+  Ensure `https://play.legendary-arena.com` is also in **Allowed redirect URLs**.
 - **2. Capture the new `aud`.** Sign in again on `play.legendary-arena.com` (email
   passcode still works — it isn't rpID-bound), decode a **fresh** JWT, record the
   new `aud`.
@@ -157,6 +163,14 @@ Don't guess which — the JWT `aud` decode tells you.
     server automatically). The server is fail-closed on Hanko config, so it will
     come back up validating against the new audience.
   - **Unchanged** (custom audience): no Render change.
+
+> **Observed on the 2026-07-09 execution:** Render's `HANKO_EXPECTED_AUDIENCE` was
+> **already** `play.legendary-arena.com` before the App URL was touched, and session
+> auth was working — which means this tenant's `aud` was pinned to
+> `play.legendary-arena.com` **independently** of the App URL host (that's why only
+> passkeys were broken, not email/session auth). So Step 3 was a **no-op**: no Render
+> change, no server redeploy. Confirm with the JWT decode rather than assuming Hanko's
+> default host-derived `aud` behavior applies to this project.
 - **4. No tenant re-point.** `HANKO_TENANT_BASE_URL` (Render) and
   `VITE_HANKO_TENANT_BASE_URL` (CF Pages — arena-client **and** dashboard) stay as
   they are: the tenant id is unchanged, so the base URL and JWKS endpoint are
