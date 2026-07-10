@@ -220,8 +220,12 @@ publisher emission) and WP-343 (client: set-grouped index, hash routing,
 board panel, designed empty states) — both executed 2026-07-09. Drafted:
 WP-344 (server: player-count persistence + roster-keyed per-count
 standings) and WP-345 (client: count selector, rosters, challenge links).
-Migration 026 (and 027 once WP-344 executes) must be PROD-applied before
-live boards can fill.
+Migrations apply to production automatically — `render.yaml`'s server
+buildCommand runs `scripts/migrate.mjs` on every deploy (a failure blocks
+the deploy), so 026 is live (verified 2026-07-09 via the published
+gauntlet index) and 027 will follow when WP-344 merges. The remaining
+precondition for boards filling is data supply: authenticated players
+finishing winning matches.
 
 ### From a finished match to a ranked row (the write path)
 

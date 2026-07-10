@@ -398,7 +398,8 @@ change — infrastructure only."
       the standard close summary.
 - [ ] No files outside `## Files Expected to Change` (plus the governance
       files above) were modified.
-- [ ] Migration 027 applied to the production database is recorded as an
-      operator-pending step (deploy note), mirroring the 026 pattern —
-      and noted alongside the still-pending 026 apply if that has not
-      happened by execution time.
+- [ ] Migration 027 reaches production automatically via `render.yaml`'s
+      server buildCommand (`scripts/migrate.mjs` runs on every deploy; a
+      failure blocks the deploy — verified for migration 026 on
+      2026-07-09). The close notes confirm the post-merge deploy succeeded
+      rather than recording a manual apply step.
