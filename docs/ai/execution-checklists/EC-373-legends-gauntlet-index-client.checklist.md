@@ -78,7 +78,7 @@ Per WP-343 §Files Expected to Change — 13 files (8 new incl. 3 tests +
 - [ ] `pnpm --filter @legendary-arena/legends-board build` + `typecheck` +
       `test` all exit 0; zero-API bundle grep clean.
 - [ ] Local dev smoke against the live manifest (WP Verification Step 4).
-- [ ] Governance close: D-24132 written; WORK_INDEX check-off; STATUS
+- [ ] Governance close: D-24135 written; WORK_INDEX check-off; STATUS
       (user-visible change); EC_INDEX row; wiki §Edge Cases header-only-table
       finding annotated as fixed.
 - [ ] D-24026 live-on-surface verification recorded as deploy-dependent

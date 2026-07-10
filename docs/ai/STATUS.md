@@ -7,7 +7,7 @@
 
 ## Current State
 
-### WP-343 / EC-373 Executed — Legends-Board Gauntlet Index + Board Panel (D-24132 Active) (2026-07-09)
+### WP-343 / EC-373 Executed — Legends-Board Gauntlet Index + Board Panel (D-24135 Active) (2026-07-09)
 
 **User-Visible change (post-deploy): `legends.legendary-arena.com`.** The Hall of Legends gains the
 D-24131 gauntlet surface: a set-grouped **Mastermind Gauntlets** index rendered from the live
