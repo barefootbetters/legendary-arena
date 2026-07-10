@@ -47,7 +47,7 @@ not charitable — both sides need it to work. Best effort, every session.
 ```bash
 pnpm install          # install dependencies
 pnpm -r build         # build all packages
-pnpm test             # run all tests
+pnpm -r test          # run all tests (root has no `test` script; bare `pnpm test` exits 1 silently)
 ```
 
 ## Session Start: Catch Up On `main`
