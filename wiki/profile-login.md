@@ -46,8 +46,11 @@ first-sign-in provisioning, the client login UI, and the profile
 pages — ships into the **arena-client** app, which deploys to
 `play.legendary-arena.com`. The marketing site at
 `www.legendary-arena.com` is a separate Hugo project
-([Hugo Web System](hugo-web-system.md)) and currently has no sign-in
-surface of its own.
+([Hugo Web System](hugo-web-system.md)) and does not **own** a sign-in
+surface — but as of 2026-07 it is auth-**aware**: it reads the
+cross-subdomain session to greet a signed-in visitor by name in its header
+(WP-033 / D-24138, on the WP-347 shared cookie). Sign-in and profile
+editing still live entirely on `play`.
 
 ## Mechanics
 
@@ -73,7 +76,7 @@ client UI:
 | Auto-provisioning | WP-174 | Read-or-create account on first sign-in from Hanko JWT claims. |
 | Client sign-in UI | WP-160 | The actual login page on arena-client. |
 | API base URL | WP-161 | Makes client fetches target the API host, not the SPA origin. |
-| Auth-aware nav | WP-175 | "Sign in" / "My profile" / "Sign out" element in the header. |
+| Auth-aware nav | WP-175 (evolved by WP-330 / WP-332 / WP-346) | Header auth element. Signed-out: "Sign in". Signed-in: the player's **name** (WP-330 — the label, once "My account", now shows the real `displayName`), which is **itself the link** to `?route=me` (WP-346 dropped the separate "My profile" link), + "Sign out". The header reads `Home · Cards · <name> · Sign out`. |
 
 ### Identity provider options (Google, Discord, Facebook)
 
@@ -147,9 +150,28 @@ The production sign-in surface is **WP-160**. It ships entirely inside
 - `MyProfilePage.vue` — cut over from a `localStorage` placeholder to
   reading the auth store token.
 
-WP-175 then added the auth-aware navigation element to
-`BrandHeader.vue`: signed-out shows a "Sign in" link, signed-in shows a
-display label plus "My profile" and "Sign out".
+WP-175 added the auth-aware navigation element to `BrandHeader.vue`:
+signed-out shows a "Sign in" link; signed-in shows a display label +
+"Sign out". A run of 2026-07 refinements gave the signed-in state its
+current shape:
+
+- **WP-330 (D-24116)** — the label shows the player's actual **name**
+  instead of the static "My account". `useAuthNav` fetches the owner
+  profile once on the signed-in transition (via the existing
+  `fetchOwnerProfile`, now that WP-305 returns the fields) and resolves
+  `displayName.trim()` → `@handleCanonical` → "My account" (non-blocking,
+  silent-fallback, fetched once, reset on sign-out).
+- **WP-346 (D-24136)** — the **name itself is the link** to `?route=me`;
+  the standalone "My profile" link is removed as redundant (both pointed
+  at the same route). The header now reads `Home · Cards · <name> · Sign out`.
+- **WP-332 (D-24118)** — removed a *second* copy of the name + a *second*
+  "Sign out" button that `MyProfilePage.vue` rendered on top of the global
+  header; identity + sign-out now live **only** in the header, and
+  `?route=me` shows a plain "Your profile" title.
+- **WP-347 (D-24137, amends D-16002)** — scopes the `hanko` session cookie
+  to `.legendary-arena.com` on production hosts, so a sign-in is shared
+  across `play` / `dashboard` / `www` (**single sign-on**; existing users
+  re-sign-in once). This is what lets `www` read a `play.` login (below).
 
 ### Profile surface
 
@@ -170,7 +192,7 @@ Like the login screen, none of it lives in the marketing repo:
 | Billing & funding history | WP-108 | `BillingSection` in `MyProfilePage.vue` | Benefits / purchase history / community funding panels; `GET /api/me/billing/history`. |
 | Integrity / anti-cheat | WP-107 | admin-only | `/api/admin/players/:handle/` suspend / integrity / unsuspend endpoints over profiles. |
 
-The header's "My profile" link (WP-175) points at `?route=me`; the
+The header's player-name link (WP-330 / WP-346) points at `?route=me`; the
 public profile is reached by handle. The `www.legendary-arena.com` Hugo
 content tree (`content/`: `about`, `brand`, `shop`, `tournaments`,
 `leaderboard`, `posts`, `emails`, `diorama`) contains **no profile or
@@ -276,12 +298,16 @@ WP-101). They were already surfaced on the **public** profile
 [WP-104](../docs/ai/work-packets/WP-104-owner-profile-data-model-and-me-edit.md))
 went from 9 → **12 keys**, adding `accountId: AccountId`, `displayName: string`,
 and `handleCanonical: string | null` (composed on every return path, including
-the synthesized-default branch). `MyProfilePage.vue` (`?route=me`) now renders
-them: **the page heading is the player's `displayName`** (falling back to "Your
-profile" only when it is empty), **`@{handleCanonical}`** beneath (shown only
-when a handle is claimed), and a muted **"Account ID: `{accountId}`"** support
-line. The client mirrors the three read fields structurally in
-`ownerProfileApi.ts` (no cross-layer type import). Locked choices from D-24089:
+the synthesized-default branch). `MyProfilePage.vue` (`?route=me`) renders
+**`@{handleCanonical}`** (shown only when a handle is claimed) and a muted
+**"Account ID: `{accountId}`"** support line, with `displayName` editable in the
+form below. **Refinement (WP-332 / D-24118, 2026-07-08):** the page no longer
+shows the `displayName` as a *heading* nor a page-level "Sign out" button — those
+duplicated the global header (which shows the name as of WP-330 and owns
+sign-out on every route), so they were removed; the page header is now a plain
+"Your profile" title. The three read fields are still returned by
+`/api/me/profile` and mirrored structurally in `ownerProfileApi.ts` (no
+cross-layer type import). Locked choices from D-24089:
 
 - **`accountId` is always shown** (operator decision) — a muted, always-visible
   support line ("give support this id"), not hidden behind a copy control and
@@ -310,10 +336,15 @@ fields gain `displayName`; error set gains `invalid_display_name`) rows in
 
 - **[Hugo Web System](hugo-web-system.md)** — the marketing site
   (`www.legendary-arena.com`) is a separate Hugo project in a separate
-  repo. None of the *engine* auth Work Packets touch it; the marketing
-  repo's own **WP-031** added "Sign in" / "My account" header links
-  pointing at `play` (per **D-24084**), but the sign-in surface itself
-  never appears on `www` — it carries no broker wiring.
+  repo. None of the *engine* auth Work Packets touch it. Its header links
+  to `play`'s auth: marketing **WP-031** added "Sign in" / "My account"
+  links (per **D-24084**); **WP-032** collapsed them to a single
+  **"Account"** → `?route=me` (the guarded route bounces a signed-out
+  visitor to login); and **WP-033** (per **D-24138**, amending D-24084)
+  made the header **auth-aware** — a deferred script reads the
+  cross-subdomain `hanko` cookie (WP-347) and swaps in the player's name.
+  Still no broker wiring and no auth *surface* on `www` — it only READS
+  the session.
 - **[Operational Health Checks](operational-health-checks.md)** —
   `pnpm check` probes Hanko JWKS / CORS connectivity, which the
   server-side verifier (WP-126 / WP-131) depends on.
@@ -324,17 +355,20 @@ fields gain `displayName`; error set gains `invalid_display_name`) rows in
 
 ## Edge Cases
 
-- **`www` versus `play` — linked, not duplicated.** The sign-in
-  **surface** is present on `play.legendary-arena.com` and absent on
-  `www.legendary-arena.com` — by decision, not accident (**D-24084**,
-  2026-06-30): `www` stays a static marketing site and **links** to
-  `play`'s sign-in rather than owning its own. The marketing repo's
-  **WP-031** added "Sign in" / "My account" header links
-  (→ `?route=login` / `?route=me`); no Work Packet has added a sign-in
-  *surface* (form / broker / session) to the marketing repo, and per
-  D-24084 none will. Commerce is split the same way: the `www` shop
-  checks out via Snipcart (its own flow, WP-019), in-game purchases via
-  Stripe over the `play` Hanko session — neither needs a `www` login.
+- **`www` versus `play` — linked + auth-aware, not auth-owning.** The
+  sign-in **surface** is present on `play.legendary-arena.com` and absent
+  on `www.legendary-arena.com` — by decision (**D-24084**, 2026-06-30, as
+  amended by **D-24138**, 2026-07-09): `www` stays a static marketing site
+  and **links** to `play`'s auth rather than owning its own. Header
+  evolution: **WP-031** added "Sign in" / "My account" links → **WP-032**
+  collapsed them to one **"Account"** (`?route=me`; the guarded route
+  redirects a signed-out visitor to login) → **WP-033** made the header
+  **auth-aware**, reading the cross-subdomain `hanko` cookie (WP-347 /
+  D-24137) to greet a signed-in visitor by name. `www` still has no sign-in
+  *surface* (form / broker / session mutation) — it only READS an existing
+  session (D-24138). Commerce is split the same way: the `www` shop checks
+  out via Snipcart (WP-019), in-game purchases via Stripe over the `play`
+  Hanko session — neither needs a `www` login.
 - **Relative API URLs broke once.** Before WP-161, the SPA issued
   relative `fetch('/api/me/profile', …)` calls that resolved to the
   Pages origin and returned HTML, hanging `MyProfilePage` on
@@ -367,19 +401,24 @@ fields gain `displayName`; error set gains `invalid_display_name`) rows in
 
 ## Open Questions
 
-- **Login on `www` — RESOLVED by [D-24084](../docs/ai/DECISIONS.md) (2026-06-30).**
-  The marketing site does **not** gain its own sign-in surface; it stays
-  a static Hugo bundle and **links** to the existing Hanko sign-in on
-  `play` (`?route=login`) and profile (`?route=me`). Commerce needs no
-  `www`-owned login either (the shop checks out via Snipcart, WP-019; in-game
-  purchases via Stripe-on-Hanko). The link affordance is executed by the
-  **marketing repo's WP-031** (`C:\www\legendary-arena-com`) — two
-  `[[menu.main]]` entries in its `hugo.toml` — which completes the "Log In"
-  entry the marketing repo's WP-027 deferred. (The marketing site is
-  independently governed and uses no EC layer, so the execution is its WP-031,
-  not an engine-repo WP; the engine repo holds only the decision.) Product
-  guidance: account copy stays passwordless ("Manage sign-in methods", not
-  "change password"). No open auth-surface questions remain for `www`.
+- **Login on `www` — RESOLVED by [D-24084](../docs/ai/DECISIONS.md)
+  (2026-06-30), extended by [D-24138](../docs/ai/DECISIONS.md) (2026-07-09).**
+  The marketing site does **not** gain its own sign-in surface; it stays a
+  static Hugo bundle and **links** to the existing Hanko sign-in on `play`.
+  It is now, however, auth-**aware**: **D-24138** amended D-24084 so `www`
+  may *read* the (cross-subdomain, WP-347) `hanko` session to personalize
+  the header — executed by marketing **WP-033** (a deferred cookie-read
+  script; no Hanko SDK on `www`, so the Lighthouse baseline is untouched).
+  Header lineage on `www`: WP-031 (two links) → **WP-032** (one "Account"
+  link) → **WP-033** (greets by name when signed in). Commerce needs no
+  `www`-owned login either (shop via Snipcart WP-019; in-game via
+  Stripe-on-Hanko). The marketing site is independently governed and uses no
+  EC layer, so its execution is WP-031/WP-032/WP-033, not engine-repo WPs;
+  the engine repo holds only the decisions (D-24084 / D-24138) + the
+  cross-subdomain-cookie enabler (WP-347 / D-24137). Product guidance:
+  account copy stays passwordless. **Open:** the Hanko App URL / passkey
+  rpID is being corrected separately (operator runbook, INFRA #644) — it is
+  independent of the session-read above.
 
 ## References
 
