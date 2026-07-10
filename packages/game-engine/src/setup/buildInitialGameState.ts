@@ -406,6 +406,19 @@ export function buildInitialGameState(
   cardStats[SHIELD_AGENT_EXT_ID] = { attack: 0, recruit: 1, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 };
   cardStats[SHIELD_TROOPER_EXT_ID] = { attack: 1, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 };
 
+  // why: supply-pile tokens (Officer, Sidekick) are likewise well-known
+  // components absent from the registry walk. Per the tabletop rulebook,
+  // a S.H.I.E.L.D. Officer recruits for 3 and plays for +2 recruit; a
+  // Sidekick recruits for 2 (once per turn) and its printed value is a
+  // draw-two ability rather than face stats, so attack/recruit stay 0.
+  // No engine path moves these out of G.piles yet, but every cost read
+  // falls back to 0 on a missing entry (the `?? 0` convention shared by
+  // recruitHero and the 0-cost eligibility predicates), which would make
+  // both tokens free recruits and false 0-cost matches the moment a
+  // gain/recruit-from-pile effect ships.
+  cardStats[SHIELD_OFFICER_EXT_ID] = { attack: 0, recruit: 2, cost: 3, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 };
+  cardStats[SIDEKICK_EXT_ID] = { attack: 0, recruit: 0, cost: 2, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 };
+
   // why: WP-135 — build the per-match hero deck reservoir from
   // MatchSetupConfig.heroDeckIds via the locked rarity → copy-count map
   // (D-13501; 5/3/3/3 = 14 cards per hero across the four-label set).

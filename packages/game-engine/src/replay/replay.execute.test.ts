@@ -110,7 +110,14 @@ import { makeMockCtx } from '../test/mockCtx.js';
 // card face-down). Same dependency-driven class as the WP-236 hasDrawnThisTurn
 // re-pin above — the sentinel INCLUDES the new zone (Option B; D-24062), so a
 // face-down divergence would be caught. Pre-WP-282: '85deb41a'. Post-WP-282: '379f7e46'.
-const PRE_WP080_HASH = '379f7e46';
+// why: supply-token cardStats re-baseline — well-known G.cardStats entries for
+// the Officer and Sidekick pile tokens (recruit costs 3 and 2 per the tabletop
+// rulebook) added in buildInitialGameState serialize into this empty replay's
+// final state, shifting the hash with NO behaviour change in this moves:[]
+// replay (nothing is recruited or classified by cost here). Same
+// dependency-driven class as the WP-282 faceDownCards re-pin above.
+// Pre-change: '379f7e46'. Post-change: 'be266d02'.
+const PRE_WP080_HASH = 'be266d02';
 
 /**
  * Minimal mock registry for replay tests. Mirrors replay.verify.test.ts.
