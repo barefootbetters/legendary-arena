@@ -28,6 +28,11 @@ export default defineComponent({
       Legendary Arena
     </a>
     <nav class="brand-nav" aria-label="Site navigation">
+      <!-- why: "/" is this app's own root. App.vue's selectRoute() has no
+           explicit route param at the root, so it falls back to the lobby —
+           the play entry point. This is the primary in-app destination (Home
+           and Cards leave to other sites), so it leads the nav. -->
+      <a class="brand-nav-link" href="/" data-testid="brand-nav-play">Play</a>
       <a class="brand-nav-link" href="https://www.legendary-arena.com">Home</a>
       <a class="brand-nav-link" href="https://cards.barefootbetters.com">
         Cards
