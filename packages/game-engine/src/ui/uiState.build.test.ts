@@ -1064,6 +1064,110 @@ describe('buildUIState — pendingKoHeroChoice projection (WP-243 / D-24010)', (
     buildUIState(gameState, mockCtx);
     assert.equal(JSON.stringify(gameState), before, 'G byte-identical after projection');
   });
+
+  it('reproduces frozen match: 4 in-play heroes + empty hand/discard + pending choice (diagnostics yDLC8FWx2an)', () => {
+    // why: reproduces the exact scenario from a reported frozen match. The player
+    // has 4 in-play heroes, no hand, no discard, and a pending KO choice after
+    // Sentinel's koHeroCurrentPlayer effect fires. If buildUIState drops this
+    // projection the client has no prompt to render and the match hard-freezes.
+    const gameState = makeGameStateWithDisplayData();
+
+    // Set up zones exactly as in the frozen match diagnostics:
+    // - Hand: 0 cards
+    // - Discard: 0 cards
+    // - InPlay: 4 heroes (S.H.I.E.L.D. Agent, Creation of Ultron #4, Creation of Ultron #3, Ionic Energy #3)
+    gameState.playerZones['0']!.hand = [];
+    gameState.playerZones['0']!.discard = [];
+    gameState.playerZones['0']!.inPlay = [
+      'starting-shield-agent' as CardExtId,
+      'antm/jocasta/creation-of-ultron#4' as CardExtId,
+      'antm/jocasta/creation-of-ultron#3' as CardExtId,
+      'antm/wonder-man/ionic-energy#3' as CardExtId,
+    ];
+
+    // The Sentinel fight effect (koHeroCurrentPlayer) should create a pending choice
+    // because there are ≥2 eligible targets (4 in this case)
+    gameState.pendingKoHeroChoices = [{ choiceType: 'ko-hero', playerID: '0' }];
+
+    const ui = buildUIState(gameState, mockCtx);
+
+    // The pending choice MUST be projected into UIState
+    assert.ok(
+      ui.pendingKoHeroChoice !== undefined,
+      'pendingKoHeroChoice MUST be present in UIState when G.pendingKoHeroChoices is non-empty'
+    );
+    assert.equal(ui.pendingKoHeroChoice!.choiceType, 'ko-hero');
+    assert.equal(ui.pendingKoHeroChoice!.playerID, '0');
+
+    // All 4 in-play heroes should be eligible (no wounds, no hand/discard filtering)
+    assert.equal(
+      ui.pendingKoHeroChoice!.eligible.length,
+      4,
+      'all 4 in-play heroes should be eligible (wounds excluded, no hand/discard)'
+    );
+
+    // Eligible should span only inPlay zone (hand and discard are empty)
+    assert.deepStrictEqual(
+      ui.pendingKoHeroChoice!.eligible.map((e) => e.zone),
+      ['inPlay', 'inPlay', 'inPlay', 'inPlay'],
+      'all 4 eligible heroes should come from inPlay zone'
+    );
+  });
+
+  it('projects the pending choice with minimal zones (inPlay only, empty hand/discard)', () => {
+    // why: the projection guards on G.playerZones[chooserPlayerID]; a silent
+    // failure of that guard would drop the pending choice from UIState and
+    // hard-freeze the client. This pins the minimal-zones path.
+    const gameState = makeGameStateWithDisplayData();
+
+    assert.ok(
+      gameState.playerZones['0'] !== undefined,
+      'playerZones["0"] must exist for the chooser guard to pass'
+    );
+
+    // Minimal zone setup: only inPlay, no hand/discard
+    gameState.playerZones['0']!.hand = [];
+    gameState.playerZones['0']!.discard = [];
+    gameState.playerZones['0']!.inPlay = ['hero1' as CardExtId];
+
+    // With 1 eligible target, the effect would auto-KO (not create pending choice)
+    // So let's manually add a pending choice to test the projection path
+    gameState.pendingKoHeroChoices = [{ choiceType: 'ko-hero', playerID: '0' }];
+
+    const ui = buildUIState(gameState, mockCtx);
+
+    assert.ok(
+      ui.pendingKoHeroChoice !== undefined,
+      'pending choice projection must succeed even when hand and discard are empty'
+    );
+  });
+
+  it('projects no pending choice when the auto-KO path ran (1 eligible target)', () => {
+    // why: with exactly 1 eligible hero the effect auto-KOs instead of creating
+    // a pending choice, so G.pendingKoHeroChoices stays undefined and UIState
+    // must not invent a phantom choice for the client to render.
+    const gameState = makeGameStateWithDisplayData();
+
+    // Set up with only 1 eligible hero (auto-KO scenario)
+    gameState.playerZones['0']!.hand = [];
+    gameState.playerZones['0']!.discard = [];
+    gameState.playerZones['0']!.inPlay = ['only-one-hero' as CardExtId];
+
+    assert.equal(
+      gameState.pendingKoHeroChoices,
+      undefined,
+      'auto-KO path does not create G.pendingKoHeroChoices'
+    );
+
+    const ui = buildUIState(gameState, mockCtx);
+
+    // With no pending choice in G, UIState.pendingKoHeroChoice should be absent
+    assert.equal(
+      ui.pendingKoHeroChoice,
+      undefined,
+      'no pending choice when the effect auto-KOed (1 eligible target)'
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
