@@ -1,0 +1,17 @@
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+
+# why: index.html (and every route path, which Cloudflare Pages serves from
+# index.html via the SPA fallback) intentionally has NO explicit Cache-Control
+# rule here. Cloudflare Pages' platform default for HTML is already
+# `public, max-age=0, must-revalidate`, so the browser revalidates the entry
+# document on every navigation and always sees the current chunk hashes after a
+# redeploy. Adding a `no-cache` rule would be redundant with that default. This
+# is the deeper prevention behind PR #660's client-side router.onError recovery:
+# a fresh navigation can't load a stale index.html, so it can't reference chunk
+# hashes that no longer exist. The safety net stays for tabs already open across
+# a deploy, where no cache header can help.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
