@@ -7,6 +7,33 @@
 
 ## Current State
 
+### WP-348 / EC-378 Executed — Sign-out clears the Domain-scoped session cookie (D-24140 Active, fixes WP-347) (2026-07-09)
+
+Operator-reported: **"When I press Sign out nothing happens, the header still says I'm logged in."**
+A regression from WP-347 (cross-subdomain cookie): WP-347 set
+`cookieDomain: '.legendary-arena.com'`, but `@teamhanko/hanko-frontend-sdk@2.6.0`'s
+`removeAuthCookie(){ O.remove(this.authCookieName) }` deletes the cookie by **name only, no
+`Domain`** (while `setAuthCookie` uses the domain). A browser needs the matching `Domain` to delete
+a cookie, so `hanko.logout()` could not remove the parent-domain `hanko` cookie — the session
+survived and sign-out did nothing.
+
+- **Fix (shared wrapper, both `hankoClient.ts` identically):** a new `clearHankoSessionCookie()`
+  expires the `hanko` cookie (`max-age=0`) `WITH domain=` from `resolveSessionCookieDomain` (the
+  WP-347 rule) on production hosts, plus a bare host-scoped clear; `signOutCurrentSession` calls it in
+  a **`finally`** after `logout()` — so a broker-down logout still completes the local sign-out, and
+  the rejection still propagates unchanged. Guarded `typeof document/window === 'undefined'`.
+- **Decision (D-24140):** the explicit cookie clear is load-bearing for WP-347 — do not remove it as
+  "redundant with `logout()`" until the SDK's `removeAuthCookie` honors `cookieDomain`.
+- **Gates:** arena-client typecheck 0 / test 811/811 (+2: clears-cookie + clears-on-logout-reject);
+  dashboard typecheck 0 / test 409/409 (byte-identical code; no jsdom, passes via the no-`document`
+  guard); `pnpm -r build` 0.
+- **User-Visible Surface = play + dashboard.** D-24026 live-verify **operator-pending on deploy**:
+  click Sign out → the header returns to "Sign in", the `hanko` cookie is gone (DevTools → Cookies),
+  and a reload does not re-authenticate. (Because the cookie is parent-scoped, sign-out ends the
+  session on every subdomain — the flip side of WP-347 SSO.)
+
+---
+
 ### Bug fix — Defend the Weak: mandatory 0-cost discard-to-hand return (D-24139 Active) (2026-07-09)
 
 **User-Visible change (post-deploy): `play.legendary-arena.com`.** Black Knight's Defend the Weak
