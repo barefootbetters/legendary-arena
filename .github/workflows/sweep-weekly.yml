@@ -45,6 +45,16 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+          # why: setup-node v5 auto-enables package-manager caching when it
+          # detects a lockfile (pnpm-lock.yaml here), which shells out to `pnpm`
+          # to resolve the cache directory. This `plan` job installs no packages —
+          # it runs only git, date, and `node scripts/sweep-weekly-plan.mjs` (a
+          # pure node-builtin script) and deliberately has no `pnpm/action-setup`
+          # step — so the auto-cache aborts the job with "Unable to locate
+          # executable file: pnpm". Disable the cache for this job only; the sweep
+          # and combine jobs keep it because they install pnpm and run
+          # `pnpm install`.
+          package-manager-cache: false
 
       # why (D-23401): `windowIndex = isoWeek mod 10` is computed ONCE here (the
       # sole `date -u +%V` read) — NOT engine logic. The run-id base is derived
