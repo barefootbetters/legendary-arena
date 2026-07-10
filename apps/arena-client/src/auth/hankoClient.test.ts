@@ -1,3 +1,8 @@
+// why: jsdom globals must be installed before the sign-out tests touch
+// `document.cookie`; jsdom-setup uses url: 'http://localhost/' (non-opaque
+// origin) so cookies are settable/clearable.
+import '../testing/jsdom-setup';
+
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -140,6 +145,37 @@ test('signOutCurrentSession invokes hanko.logout() exactly once', async () => {
   });
   await signOutCurrentSession(handle);
   assert.equal(logoutCalls, 1);
+});
+
+test('signOutCurrentSession clears the hanko session cookie', async () => {
+  // why: the SDK's logout() removes the cookie by name without a Domain, so a
+  // Domain-scoped cookie (WP-347) survives; the wrapper must clear it itself.
+  document.cookie = 'hanko=jwt-to-clear';
+  assert.match(document.cookie, /hanko=jwt-to-clear/);
+  const fake = makeFakeHanko({ logout: async () => {} });
+  const handle = await initializeHankoClient({
+    tenantBaseUrl: 'https://example.test',
+    __hankoFactory: async () => fake,
+  });
+  await signOutCurrentSession(handle);
+  assert.doesNotMatch(document.cookie, /hanko=/);
+});
+
+test('signOutCurrentSession clears the cookie even when hanko.logout() rejects', async () => {
+  // why: the cookie clear is in `finally`, so a broker-down logout still
+  // completes the local sign-out.
+  document.cookie = 'hanko=jwt-reject';
+  const fake = makeFakeHanko({
+    logout: async () => {
+      throw new Error('broker unreachable');
+    },
+  });
+  const handle = await initializeHankoClient({
+    tenantBaseUrl: 'https://example.test',
+    __hankoFactory: async () => fake,
+  });
+  await assert.rejects(signOutCurrentSession(handle), /broker unreachable/);
+  assert.doesNotMatch(document.cookie, /hanko=/);
 });
 
 test('signOutCurrentSession propagates the SDK rejection to the caller', async () => {

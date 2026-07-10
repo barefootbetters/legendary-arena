@@ -117,6 +117,28 @@ export function resolveSessionCookieDomain(hostname: string): string | undefined
   return undefined;
 }
 
+/**
+ * Expire the broker's `hanko` session cookie on sign-out.
+ *
+ * why: WP-348 — `@teamhanko/hanko-frontend-sdk@2.6.0`'s `removeAuthCookie()`
+ * deletes the cookie by NAME only, with no `Domain` attribute, so it never
+ * removes a cookie SET with `Domain=.legendary-arena.com` (WP-347
+ * cross-subdomain SSO) — the session survives sign-out. Expire it ourselves
+ * with the matching parent domain plus a bare host-scoped clear (legacy host
+ * cookie / dev/preview). `'hanko'` is the broker's default storage key (D-16002).
+ */
+function clearHankoSessionCookie(): void {
+  if (typeof document === 'undefined' || typeof window === 'undefined') {
+    return;
+  }
+  const expiry = 'hanko=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+  const cookieDomain = resolveSessionCookieDomain(window.location.hostname);
+  if (cookieDomain !== undefined) {
+    document.cookie = `${expiry}; domain=${cookieDomain}; samesite=lax; secure`;
+  }
+  document.cookie = `${expiry}; samesite=lax`;
+}
+
 async function defaultProductionFactory(
   tenantBaseUrl: string,
   options: { readonly sessionCheckInterval?: number },
@@ -212,7 +234,15 @@ export async function signOutCurrentSession(handle: HankoClientHandle): Promise<
   // why: in `@teamhanko/hanko-elements` ^2.4.0 the public sign-out method is
   // `hanko.logout()` directly (the `user` property is `private readonly`).
   // Mirrors the arena-client wrapper's execution-time API correction (WP-160).
-  await handle.hanko.logout();
+  try {
+    await handle.hanko.logout();
+  } finally {
+    // why: WP-348 — clear our own `hanko` cookie regardless of the broker
+    // call's outcome; the SDK's `logout()` cannot delete a `Domain`-scoped
+    // cookie (see clearHankoSessionCookie), and the `finally` guarantees a
+    // local sign-out even if `logout()` rejects.
+    clearHankoSessionCookie();
+  }
 }
 
 /**

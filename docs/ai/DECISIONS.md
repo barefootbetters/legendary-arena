@@ -28290,3 +28290,41 @@ the www-auth-aware SPEC, so renumbered to D-24139). **Drafted:** 2026-07-09. **E
 
 
 Protect this file.
+
+### D-24140 — Sign-out explicitly expires the Domain-scoped session cookie (SDK `removeAuthCookie` ignores `cookieDomain`)
+
+**Status:** Active (post-execution) 2026-07-09. `D-24026` live-verify operator-pending on deploy.
+
+**User-Visible Surface:** play.legendary-arena.com + dashboard.legendary-arena.com (sign-out).
+
+**Context.** WP-347 / D-24137 set `cookieDomain: '.legendary-arena.com'` on the
+Hanko SDK `register()` for cross-subdomain SSO. This broke sign-out (operator
+report: "Sign out does nothing, header still shows I'm logged in"). Root cause: in
+`@teamhanko/hanko-frontend-sdk@2.6.0`, `setAuthCookie` writes the cookie WITH the
+configured `Domain`, but `removeAuthCookie(){ O.remove(this.authCookieName) }`
+deletes it by **name only, with no `Domain`**. A browser requires the same
+`Domain` to delete a cookie, so `hanko.logout()` cannot remove the
+parent-domain `hanko` cookie — the session survives and sign-out is a no-op.
+
+**Decision.** The shared broker-confined `signOutCurrentSession` wrapper (both
+`apps/arena-client` and `apps/dashboard` `hankoClient.ts`) explicitly expires the
+`hanko` cookie after `logout()`, in a `finally`:
+`clearHankoSessionCookie()` writes a `max-age=0` / past-`expires` clear for the
+`hanko` cookie name (D-16002) `WITH domain=` from `resolveSessionCookieDomain`
+(the WP-347 rule) on production hosts, plus a bare host-scoped clear (legacy host
+cookie / dev-preview). The `finally` also guarantees a local sign-out even if the
+broker `logout()` call rejects. No public-signature / cookie-name / SameSite /
+server change.
+
+**Guardrail for future work.** `clearHankoSessionCookie` is **load-bearing** for
+WP-347 — do NOT remove it as "redundant with `hanko.logout()`" until the SDK's
+`removeAuthCookie` honors `cookieDomain`. Re-verify on any `@teamhanko/*` bump; if
+a future SDK deletes with the domain, this workaround can retire.
+
+**Consequence.** Sign-out works again across `*.legendary-arena.com`; because the
+cookie is parent-scoped (WP-347), a sign-out ends the shared session on every
+subdomain — the intended flip side of SSO.
+
+**Packet:** WP-348 + EC-378. **Drafted:** 2026-07-09. **Executed:** 2026-07-09.
+
+Protect this file.

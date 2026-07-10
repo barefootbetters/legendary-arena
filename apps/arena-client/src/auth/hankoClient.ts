@@ -120,6 +120,31 @@ export function resolveSessionCookieDomain(
   return undefined;
 }
 
+/**
+ * Expire the broker's `hanko` session cookie on sign-out.
+ *
+ * why: WP-348 — `@teamhanko/hanko-frontend-sdk@2.6.0`'s `removeAuthCookie()`
+ * deletes the cookie by NAME only, with no `Domain` attribute. A cookie SET
+ * with `Domain=.legendary-arena.com` (WP-347 cross-subdomain SSO) is therefore
+ * NOT removed by `hanko.logout()` — a browser requires the same `Domain` to
+ * delete a cookie — so the session survived and sign-out appeared to do
+ * nothing. We expire it ourselves with the matching parent domain, plus a
+ * bare host-scoped clear as a belt-and-suspenders for any legacy host cookie
+ * (and the dev/preview case where no parent domain applies). Named-cookie
+ * constant `'hanko'` is the broker's default storage key (D-16002).
+ */
+function clearHankoSessionCookie(): void {
+  if (typeof document === 'undefined' || typeof window === 'undefined') {
+    return;
+  }
+  const expiry = 'hanko=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+  const cookieDomain = resolveSessionCookieDomain(window.location.hostname);
+  if (cookieDomain !== undefined) {
+    document.cookie = `${expiry}; domain=${cookieDomain}; samesite=lax; secure`;
+  }
+  document.cookie = `${expiry}; samesite=lax`;
+}
+
 async function defaultProductionFactory(
   tenantBaseUrl: string,
   options: { readonly sessionCheckInterval?: number },
@@ -229,7 +254,16 @@ export async function signOutCurrentSession(
   // deviations` (single-correction drift, well under the ~5-amendment
   // budget). The wrapper's external surface is unchanged — only the
   // internal SDK call differs from the WP body.
-  await handle.hanko.logout();
+  try {
+    await handle.hanko.logout();
+  } finally {
+    // why: WP-348 — clear our own `hanko` cookie regardless of the broker
+    // call's outcome. The SDK's `logout()` cannot delete a `Domain`-scoped
+    // cookie (see clearHankoSessionCookie), so without this the session
+    // survives sign-out; the `finally` also guarantees a local sign-out even
+    // if `logout()` rejects (network / broker down).
+    clearHankoSessionCookie();
+  }
 }
 
 /**
