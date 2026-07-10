@@ -280,6 +280,46 @@ jobs:
           fi
           echo "LAGN schema is in sync with generator output."
 
+  # ── 3f. Workspace unit tests ─────────────────────────────────────────────────
+  # why: no other job runs the package/app unit-test suites, so a red suite can
+  # merge silently — PR #619 landed a 24th HERO_KEYWORDS entry without updating
+  # the drift-detection count assertion in heroKeywords.test.ts and went to main
+  # red; the mismatch was only reconciled by later keyword PRs. This job makes
+  # `pnpm -r test` a blocking PR gate. Builds the workspace first because apps
+  # and cross-package suites import their dependencies' built dist (registry,
+  # game-engine, lagn, vue-sfc-loader); tests themselves run via tsx on src.
+  # DB-gated server tests self-skip when TEST_DATABASE_URL is unset, so the
+  # default runner environment is sufficient.
+  unit-tests:
+    name: Workspace Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with: { node-version: 22, cache: pnpm }
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build workspace
+        run: pnpm -r build
+
+      # why: the dashboard suite is excluded here because the Dashboard Gates
+      # job already runs it with stricter coverage thresholds (test:coverage)
+      # on a fetch-depth-0 checkout its governance-snapshot generator prefers;
+      # re-running it here would only duplicate runtime on a shallow clone.
+      - name: Run workspace test suites
+        run: pnpm -r --filter '!@legendary-arena/dashboard' test
+
+      # why: the workspace root is excluded from `pnpm -r` and has no plain
+      # `test` script, so the roadmap-counts generator suite is otherwise
+      # uncovered — the roadmap-counts cron workflow runs only the generator,
+      # never its tests.
+      - name: Run root roadmap-counts suite
+        run: pnpm roadmap:counts:test
+
   # ── 4. Upload to R2 (tags only) ────────────────────────────────────────────
   upload-r2:
     name: Upload to Cloudflare R2
