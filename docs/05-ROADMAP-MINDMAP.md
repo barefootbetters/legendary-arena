@@ -421,10 +421,27 @@ mindmap
         ["📦 Effect-outcome fill-in (WP-B.2) — reveal-action realized results + move-card/sequence no-ops; deferred per D-24111"]
         ["📝 Structured log-outcome contract + colour-coding (WP-B.3) — G.messages string array → records with a machine-readable outcome field (green/red/yellow); own design review before packets; deferred per D-24111"]
 
+      Competitive Score Submission & Verification (2026-07)
+        ["WP-332 ✅ Competitive score submission HTTP endpoint — the score-submission route lands in apps/server (12 route tests + wrapper delegation; competition.logic.ts additive-only); opens the play-to-leaderboard loop; EC-362; D-24118"]
+        ["WP-333 ✅ Seat → account identity persistence at match join — migration 024 stamps which account held which seat (UPSERT re-stamp idempotent, FK-guarded); identity substrate for replay ownership; EC-363; D-24120"]
+        ["WP-334 ✅ Server-layer faithful reducer-replay — reads a completed match's bgio initialState + log and re-executes through boardgame.io's own reducer (D-24119 carve-out); golden test proves reduced final G equals live final G; EC-364; D-24121"]
+        ["WP-335 ✅ Live-match capture harvester — migration 025; captures finished matches' replay artifacts + replayHash→matchId mapping + scenarioKey + owners; EC-365; D-24122"]
+        ["WP-336 ✅ Competitive verifier repointed onto the faithful reducer path — reduceReplayByHash / readReplayArtifactByHash; competition DB suite proves the full pipeline; EC-366; D-24123"]
+        ["WP-337 ✅ Turns-native competitive scoring — retires the moveCount-as-rounds proxy; turnCount flows engine→server and the rawScore recompute proves it end-to-end; EC-367; D-24125"]
+        ["WP-338 ✅ Submit-by-matchId submission + on-demand capture + GET /api/me/scores — a finished match submits by matchId (capture-on-demand + auto-publish + idempotent re-submit); EC-368; D-24126"]
+        ["WP-339 ✅ Arena-client submit-after-match + 'My Scores' profile view — competitionApi + useCompetitiveSubmitOnGameover; client-only; EC-369; D-24127"]
+        ["WP-340 ✅ Competitive verifier co-owner hardening — by-account ownership lookup so a non-first co-owner's submit verifies; EC-370; D-24128"]
+        ["WP-341 ✅ Play-route session hydration (on-gameover submit fix) + restored My-Scores view — client-only; cleared a pre-existing vue-tsc red on main; EC-371; D-24129"]
+
+      Gauntlet Leaderboards (Legends) (2026-07)
+        ["WP-342 ✅ Mastermind set-gauntlet boards (server) — outcome persistence + gauntlet read-layer + legends publisher emitting per-gauntlet board snapshots; EC-372; D-24131"]
+        ["WP-343 ✅ Legends-board gauntlet index + board panel (client) — SPA renders the gauntlet index + per-board standings; hash-route grammar locked; cleared the pre-existing legends-board vue-tsc red; EC-373; D-24131/D-24135"]
+        ["WP-344 ✅ Player-count gauntlet boards (server) — migration 027 player_count column; roster-keyed standings per count from one query; publisher adds lazy per-count boards + index entryCounts/legs; EC-376; D-24134 server half"]
+        ["WP-345 📝 Player-count gauntlet boards + challenge links (legends-board client) — player-count selector, full-roster display, 'Challenge this leg' links into the WP-114 registry-viewer preview; drafted, execution-prep next; D-24134 client half"]
+
       Next Horizons
         ["📦 Core set keyword & ability coverage — get the core set fully playable first, then add sets incrementally (in progress via the effect-authoring grind — e.g. WP-310/316/317)"]
         ["📦 Live PvP matchmaking & match-discovery UX — reconnect/desync resilience now SHIPPED (WP-116 policy + WP-311 reconnect + WP-312 move-ack watchdog); what remains is matchmaking + a match-discovery/join UX"]
-        ["📦 Score submission HTTP wiring — close the play-to-leaderboard loop (server submission + verification shipped WP-053, public leaderboards WP-054; remaining: client game-end submission wiring)"]
 
       Phase 10 — Debugging, Testing & Troubleshooting
         ["Future-WP-A 📝 Placeholder — replay diff tool"]
@@ -501,18 +518,20 @@ mindmap
 | Cross-App Infrastructure | 1/1 | — |
 | Multiplayer Play & Match Durability (2026-07) | 8/8 | — |
 | Hero/Villain Effects & Diagnostics (2026-07) | 5/5 | — |
-| Live-Play HUD & Pending-Choice UX (2026-07) | 12/12 | — |
-| Next Horizons | 0/3 | 3 📦 queued |
+| Live-Play HUD & Pending-Choice UX (2026-07) | 14/14 | — |
+| Competitive Score Submission & Verification (2026-07) | 10/10 | — |
+| Gauntlet Leaderboards (Legends) (2026-07) | 3/4 | 1 open |
+| Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **324/325 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
+| **Total** | **339/341 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 1 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 1):** WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 2):** WP-042.1 ⏸ blocked; WP-345 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
 >
-> **Counting convention (encoded by the generator, not redefined):** each row counts the distinct `WORK_INDEX.md` work-packets homed in that cluster (combined lines like `WP-005A/B` count their members; range lines like `WP-043..047` expand to each member; the Phase-6 `WP-048..051` line is a cross-reference — any node containing `(see ` — counted once under Scoring & PAR). Foundation = 4 Foundation Prompts (not WPs), reported as a separate `+N/N` addend. `Next Horizons` (3 📦) and `Phase 10` (8 📝) are forward-looking nav placeholders rendered `0/N`, not WPs; the `Reference (one-line pointers)` cluster is navigation and is excluded from the table. The only open WP is the blocked **WP-042.1** (deferred PostgreSQL seeding, awaiting Foundation Prompt 03 revival).
+> **Counting convention (encoded by the generator, not redefined):** each row counts the distinct `WORK_INDEX.md` work-packets homed in that cluster (combined lines like `WP-005A/B` count their members; range lines like `WP-043..047` expand to each member; the Phase-6 `WP-048..051` line is a cross-reference — any node containing `(see ` — counted once under Scoring & PAR). Foundation = 4 Foundation Prompts (not WPs), reported as a separate `+N/N` addend. `Next Horizons` (3 📦) and `Phase 10` (8 📝) are forward-looking nav placeholders rendered `0/N`, not WPs; the `Reference (one-line pointers)` cluster is navigation and is excluded from the table. Open and blocked WPs are enumerated on the generated summary line inside the markers above (single source; not restated here).
 
 ---
 
@@ -593,7 +612,9 @@ mindmap
 
 ---
 
-*Last updated: 2026-06-20 (node-icon hygiene — flipped the **WP-270 📝 → ✅** node to match its WORK_INDEX state: the consumer-half registry-viewer mechanic filter surface shipped via #415, but its EC's locked file set omitted the mindmap so the node stayed Drafted. Pure navigation hygiene; the count table is derived from WORK_INDEX and was already current, so `roadmap:counts --write` produced no table change and `roadmap:counts:check` is green. Prior update: the WP-268/269/270/271 mindmap orphan backfill — see git history.)*
+*Last updated: 2026-07-09 (14-WP mindmap orphan backfill — `roadmap:counts:check` failed on `main` naming **WP-332..345** (none had been noded since 2026-06-20; the executing ECs' locked file sets omitted the mindmap). Added two new clusters: **Competitive Score Submission & Verification (2026-07)** (WP-332..341, all ✅) and **Gauntlet Leaderboards (Legends) (2026-07)** (WP-342/343/344 ✅ + WP-345 📝 drafted). Removed the now-shipped "Score submission HTTP wiring" 📦 Next-Horizons placeholder (WP-332/338/339/341 closed that loop). Also fixed a WORK_INDEX parser mis-key: the D-24131 §8b backlog bullet ("Gauntlet progress on profiles") was a checkbox row with no own WP id, so the generator keyed it by its first prose WP mention and falsely flipped **WP-339 → open**; the bullet is now a plain (non-checkbox) list item until drafted and numbered. Generated table: Total **339/341 WP ✅**; open = WP-345, blocked = WP-042.1.)*
+
+*Prior: 2026-06-20 (node-icon hygiene — flipped the **WP-270 📝 → ✅** node to match its WORK_INDEX state: the consumer-half registry-viewer mechanic filter surface shipped via #415, but its EC's locked file set omitted the mindmap so the node stayed Drafted. Pure navigation hygiene; the count table is derived from WORK_INDEX and was already current, so `roadmap:counts --write` produced no table change and `roadmap:counts:check` is green. Prior update: the WP-268/269/270/271 mindmap orphan backfill — see git history.)*
 
 *Prior: 2026-06-12 (WP-241 ✅ done — Dashboard Operator Auth + Bearer Cutover. The dashboard's mock login is replaced with real Hanko auth (mirroring `apps/arena-client`: local-copy `auth/hankoClient.ts` + the WP-160 token store + `<hanko-auth>`), and the three LIVE fetchers attach `Authorization: Bearer` via the shared `services/authToken.ts` seam instead of `credentials:'include'` — superseding D-20601's cookie posture so the client complies with the bearer-only server (D-11202). Added the **WP-241** node to Dashboard & Operator Analytics; the generated count table moved **13 → 14/14**, Total **237/238 WP ✅** (WP-241 was a latent orphan — drafted after WP-240's generator shipped — now noded). D-24003/D-24004/D-24005 Active. Operator cutover (post-merge): set `VITE_HANKO_TENANT_BASE_URL` + `VITE_API_BASE_URL=https://api.legendary-arena.com` + `VITE_USE_MOCKS=false` in CF Pages + redeploy.)*
 
