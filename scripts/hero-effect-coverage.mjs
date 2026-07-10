@@ -81,6 +81,10 @@ const EXECUTED_KEYWORDS = new Set([
   // list drives the human report's EXECUTABLE split, never the exit-code gate (keyed on
   // `noEffect`). (The sibling optional-put-bottom-hq is a pre-existing omission here.)
   'put-any-number-bottom-hq',
+  // why: D-24139 — the return-zero-cost-discard park keyword is executable (parks a pending
+  // mandatory discard-to-hand return resolved by resolveReturnZeroCostDiscard). Informational
+  // only, same as the D-24132 entry above.
+  'return-zero-cost-discard',
 ]);
 
 /** Error type signalling a probe failure (exit code 2). */

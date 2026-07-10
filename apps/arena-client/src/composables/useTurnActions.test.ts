@@ -269,3 +269,30 @@ describe('useTurnActions — hasPendingPutAnyNumberBottomHQ gating (D-24132)', (
     assert.equal(actions.canPassPriority().allowed, true);
   });
 });
+
+describe('useTurnActions — hasPendingReturnZeroCostDiscard gating (D-24139)', () => {
+  const RETURN_ZERO_COST_REASON =
+    'Return a 0-cost card from your discard pile to your hand before taking another action.';
+
+  test('canEndTurn blocked at EVERY stage when hasPendingReturnZeroCostDiscard is true', () => {
+    for (const stage of ['start', 'main', 'cleanup'] as const) {
+      const result = useTurnActions(stage, true, false, false, false, false, false, false, false, true).canEndTurn();
+      assert.equal(result.allowed, false, `endTurn blocked at ${stage}`);
+      assert.equal(result.reason, RETURN_ZERO_COST_REASON, 'return-zero-cost gate reason matches the locked value');
+    }
+  });
+
+  test('canPassPriority blocked at EVERY stage when hasPendingReturnZeroCostDiscard is true (board frozen)', () => {
+    for (const stage of ['start', 'main', 'cleanup'] as const) {
+      const result = useTurnActions(stage, true, false, false, false, false, false, false, false, true).canPassPriority();
+      assert.equal(result.allowed, false, `passPriority blocked at ${stage}`);
+      assert.equal(result.reason, RETURN_ZERO_COST_REASON);
+    }
+  });
+
+  test('defaults false — both allowed at cleanup when no return-zero-cost choice pending', () => {
+    const actions = useTurnActions('cleanup', true, false, false, false, false, false, false, false, false);
+    assert.equal(actions.canEndTurn().allowed, true);
+    assert.equal(actions.canPassPriority().allowed, true);
+  });
+});

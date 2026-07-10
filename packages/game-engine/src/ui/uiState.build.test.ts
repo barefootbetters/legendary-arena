@@ -1561,3 +1561,73 @@ describe('buildUIState — hollowEffects projection (WP-258 / EC-289)', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// D-24139 — pendingReturnZeroCostDiscard projection (Defend the Weak)
+// ---------------------------------------------------------------------------
+
+describe('buildUIState — pendingReturnZeroCostDiscard projection (D-24139)', () => {
+  const zeroHero = 'core/black-widow/strike#0' as CardExtId;
+
+  /**
+   * Builds a game state whose player-0 discard holds one 0-cost display-data
+   * hero, one positive-cost card, and one missing-stats card (the Wound case),
+   * with a pending return-zero-cost-discard choice for player 0.
+   */
+  function withReturnZeroCost(): LegendaryGameState {
+    const gameState = makeGameStateWithDisplayData();
+    gameState.playerZones['0']!.discard = [zeroHero, 'costly-x' as CardExtId, 'pile-wound' as CardExtId];
+    gameState.cardStats = {
+      [zeroHero]: { attack: 0, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      ['costly-x' as CardExtId]: { attack: 0, recruit: 0, cost: 4, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+    } as LegendaryGameState['cardStats'];
+    gameState.pendingReturnZeroCostDiscard = [{ playerID: '0', sourceCardId: 'src' as CardExtId }];
+    return gameState;
+  }
+
+  it('is undefined when the engine queue is empty', () => {
+    const gameState = createTestGameState();
+    assert.equal(gameState.pendingReturnZeroCostDiscard, undefined);
+    const ui = buildUIState(gameState, mockCtx);
+    assert.equal(ui.pendingReturnZeroCostDiscard, undefined, 'absent when no pending choice');
+  });
+
+  it('projects the FRONT entry with playerID + ONLY the 0-cost discard cards in discard order', () => {
+    const ui = buildUIState(withReturnZeroCost(), mockCtx);
+    assert.ok(ui.pendingReturnZeroCostDiscard !== undefined, 'present when queue non-empty');
+    assert.equal(ui.pendingReturnZeroCostDiscard!.playerID, '0');
+    const eligible = ui.pendingReturnZeroCostDiscard!.eligibleDiscardCards;
+    assert.deepStrictEqual(
+      eligible.map((entry) => entry.cardId),
+      [zeroHero, 'pile-wound'],
+      'positive-cost card filtered out; missing-stats card (Wound) counts as 0-cost',
+    );
+    assert.deepStrictEqual(eligible.map((entry) => entry.zone), ['discard', 'discard']);
+    assert.equal(eligible[0]!.display.name, 'Mission Accomplished');
+  });
+
+  it('projects only the FRONT entry when the queue holds more than one', () => {
+    const gameState = withReturnZeroCost();
+    gameState.pendingReturnZeroCostDiscard = [
+      { playerID: '0', sourceCardId: 'a' as CardExtId },
+      { playerID: '1', sourceCardId: 'b' as CardExtId },
+    ];
+    const ui = buildUIState(gameState, mockCtx);
+    assert.equal(ui.pendingReturnZeroCostDiscard!.playerID, '0', 'front entry projected, not the second');
+  });
+
+  it('buildUIState does not mutate G (purity)', () => {
+    const gameState = withReturnZeroCost();
+    const before = JSON.stringify(gameState);
+    buildUIState(gameState, mockCtx);
+    assert.equal(JSON.stringify(gameState), before, 'G byte-identical after projection');
+  });
+
+  it('mutating the projection does not touch G.cardDisplayData (aliasing defense)', () => {
+    const gameState = withReturnZeroCost();
+    const ui = buildUIState(gameState, mockCtx);
+    ui.pendingReturnZeroCostDiscard!.eligibleDiscardCards[0]!.display.name = 'mutated';
+    assert.equal(gameState.cardDisplayData[zeroHero]!.name, 'Mission Accomplished',
+      'projection entries are fresh copies, never references into G');
+  });
+});

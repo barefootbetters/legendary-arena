@@ -11,6 +11,7 @@ import { resolveKoHeroChoice, hasPendingKoHeroChoice } from './moves/koHeroChoic
 import { resolveOptionalKoReward, hasPendingOptionalKoReward } from './moves/optionalKoReward.resolve.js';
 import { resolveOptionalPutBottomHQ, hasPendingOptionalPutBottomHQ } from './moves/resolveOptionalPutBottomHQ.js';
 import { resolvePutAnyNumberBottomHQ, hasPendingPutAnyNumberBottomHQ } from './moves/resolvePutAnyNumberBottomHQ.js';
+import { resolveReturnZeroCostDiscard, hasPendingReturnZeroCostDiscard } from './moves/resolveReturnZeroCostDiscard.js';
 import { resolveVictoryPileCardPick, hasPendingVictoryPileCardPick } from './moves/resolveVictoryPileCardPick.js';
 import { resolveDrawOrEmpowered, hasPendingDrawOrEmpowered } from './moves/drawOrEmpowered.resolve.js';
 import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
@@ -104,6 +105,8 @@ function advanceStage({ G, events }: MoveContext): void {
   if (hasPendingOptionalPutBottomHQ(G)) { return; }
   // why: D-24132 — block-all — pendingPutAnyNumberBottomHQ (multi-select HQ→bottom) must be resolved before any other action
   if (hasPendingPutAnyNumberBottomHQ(G)) { return; }
+  // why: block-all — pendingReturnZeroCostDiscard must be resolved before any other action (D-24139)
+  if (hasPendingReturnZeroCostDiscard(G)) { return; }
   // why: turn cannot end while a player-choice reveal is pending; at cleanup,
   // advanceTurnStage would otherwise call events.endTurn() and bypass the
   // endTurn-move guard (D-22002). The KO turn-end block is already covered by
@@ -341,6 +344,10 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     resolvePutAnyNumberBottomHQ: { move: resolvePutAnyNumberBottomHQ, client: false },
     resolveVictoryPileCardPick: { move: resolveVictoryPileCardPick, client: false },
     resolveDrawOrEmpowered: { move: resolveDrawOrEmpowered, client: false },
+    // why: D-24139 — resolveReturnZeroCostDiscard resolves the mandatory 0-cost
+    // discard-to-hand return (Black Knight's Defend the Weak). Server-only
+    // (client: false) per D-10008 — it mutates playerZones fields.
+    resolveReturnZeroCostDiscard: { move: resolveReturnZeroCostDiscard, client: false },
   },
 
   // why: phase `next` fields declare the intended linear progression

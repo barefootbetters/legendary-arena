@@ -786,3 +786,50 @@ describe('filterUIStateForAudience — hollowEffects public pass-through (D-1280
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// D-24139 — pendingReturnZeroCostDiscard redaction (chooser-scoped)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where player '0' owes a return-zero-cost-discard choice with one
+ * eligible 0-cost card in their discard pile. The pending choice is chooser-scoped
+ * (only they may resolve it) — it must not appear in a non-chooser's UIState.
+ */
+function createReturnZeroCostDiscardUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+  // why: starting-shield-agent carries an explicit cost-0 cardStats entry from setup,
+  // so the projection's 0-cost filter keeps it eligible.
+  gameState.playerZones['0']!.discard = ['starting-shield-agent' as CardExtId];
+  gameState.pendingReturnZeroCostDiscard = [{ playerID: '0', sourceCardId: 'src' as CardExtId }];
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingReturnZeroCostDiscard redaction (D-24139)', () => {
+  it('the chooser sees pendingReturnZeroCostDiscard with the eligible discard cards', () => {
+    const result = filterUIStateForAudience(createReturnZeroCostDiscardUIState(), PLAYER_0);
+    assert.ok(result.pendingReturnZeroCostDiscard !== undefined, 'chooser sees the return choice');
+    assert.equal(result.pendingReturnZeroCostDiscard!.playerID, '0');
+    assert.equal(result.pendingReturnZeroCostDiscard!.eligibleDiscardCards.length, 1,
+      'eligibleDiscardCards projected for the chooser');
+  });
+
+  it('an opponent does NOT see pendingReturnZeroCostDiscard', () => {
+    const result = filterUIStateForAudience(createReturnZeroCostDiscardUIState(), PLAYER_1);
+    assert.equal(result.pendingReturnZeroCostDiscard, undefined, 'opponent must not see the choice');
+  });
+
+  it('a spectator does NOT see pendingReturnZeroCostDiscard', () => {
+    const result = filterUIStateForAudience(createReturnZeroCostDiscardUIState(), SPECTATOR);
+    assert.equal(result.pendingReturnZeroCostDiscard, undefined, 'spectator must not see the choice');
+  });
+
+  it('does not mutate the input UIState', () => {
+    const uiState = createReturnZeroCostDiscardUIState();
+    filterUIStateForAudience(uiState, PLAYER_1);
+    assert.ok(uiState.pendingReturnZeroCostDiscard !== undefined, 'source UIState unchanged');
+  });
+});

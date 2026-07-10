@@ -117,6 +117,12 @@ const NOT_YOUR_TURN: GatingResult = {
  *   blocks `canEndTurn` and `canPassPriority` at ANY stage (D-24132 — the engine's advanceStage
  *   block-all guard freezes the board, mirroring `hasPendingOptionalPutBottomHQ`). Defaults to
  *   false. The block-all guard guarantees at most one pending-choice type is active at a time.
+ * @param hasPendingReturnZeroCostDiscard Whether the viewer has an unresolved
+ *   return-zero-cost-discard choice (derived from
+ *   `UIState.pendingReturnZeroCostDiscard !== undefined` at the call site). When true,
+ *   blocks `canEndTurn` and `canPassPriority` at ANY stage (D-24139 — the engine's full
+ *   block-all guard set freezes the board, mirroring `hasPendingKoChoice`). Defaults to
+ *   false. The choice is mandatory, so the reason names no decline exit.
  */
 export function useTurnActions(
   currentStage: string,
@@ -128,6 +134,7 @@ export function useTurnActions(
   hasPendingVictoryPileCardPick: boolean = false,
   hasPendingOptionalPutBottomHQ: boolean = false,
   hasPendingPutAnyNumberBottomHQ: boolean = false,
+  hasPendingReturnZeroCostDiscard: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -238,6 +245,15 @@ export function useTurnActions(
           reason: 'Choose any number of cards from the HQ to put on the bottom, or Put None, before taking another action.',
         };
       }
+      // why: D-24139 — End Turn / Pass Priority blocked at any stage while a
+      // return-zero-cost-discard choice is pending (the engine's full block-all guard
+      // set freezes the board). The choice is mandatory — no decline exit to name.
+      if (hasPendingReturnZeroCostDiscard) {
+        return {
+          allowed: false,
+          reason: 'Return a 0-cost card from your discard pile to your hand before taking another action.',
+        };
+      }
       if (currentStage === 'cleanup' && hasPendingChoice) {
         return {
           allowed: false,
@@ -301,6 +317,15 @@ export function useTurnActions(
         return {
           allowed: false,
           reason: 'Choose any number of cards from the HQ to put on the bottom, or Put None, before taking another action.',
+        };
+      }
+      if (hasPendingReturnZeroCostDiscard) {
+        // why: D-24139 — the engine's block-all guards block endTurn while
+        // pendingReturnZeroCostDiscard is non-empty; this client-side gate surfaces the
+        // reason so the player sees a tooltip instead of a silent rejection.
+        return {
+          allowed: false,
+          reason: 'Return a 0-cost card from your discard pile to your hand before taking another action.',
         };
       }
       if (currentStage === 'cleanup' && hasPendingChoice) {

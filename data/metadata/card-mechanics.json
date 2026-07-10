@@ -1142,6 +1142,17 @@
       "hidden": false
     },
     {
+      "slug": "return-zero-cost-discard",
+      "label": "Return Zero Cost Discard",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "antm/black-knight"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "reveal",
       "label": "Reveal",
       "scope": "hero",
@@ -2182,6 +2193,7 @@
     "antm/black-knight": {
       "mechanics": [
         "empowered",
+        "return-zero-cost-discard",
         "victory-villain-attack"
       ]
     },

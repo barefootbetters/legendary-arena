@@ -538,6 +538,29 @@ export interface PendingDrawOrEmpowered {
 }
 
 /**
+ * Pending mandatory return-zero-cost-discard player choice state (D-24139).
+ *
+ * Created when a return-zero-cost-discard hero effect fires (`onPlay`) — the
+ * printed "Return a 0-cost card from your discard pile to your hand" form
+ * (Black Knight's Defend the Weak) — and the chooser's discard pile holds at
+ * least one 0-cost card. Appended to G.pendingReturnZeroCostDiscard[] (FIFO
+ * queue). Removed (front-popped) by resolveReturnZeroCostDiscard after the
+ * player (or bot) picks a card. Must be undefined or empty at every turn-end
+ * (enforced by the block-all guards).
+ *
+ * // why: the choice is mandatory — the printed text has no "you may", so no
+ * decline shape exists. Discard contents are read fresh at resolve time via
+ * the shared isZeroCostCard predicate (the full block-all guard set freezes
+ * the board between park and resolve, so the discard cannot drift).
+ */
+export interface PendingReturnZeroCostDiscard {
+  /** The player who must pick a 0-cost discard-pile card to return to hand. */
+  playerID: string;
+  /** The hero card whose ability parked this choice (for provenance logging). */
+  sourceCardId: CardExtId;
+}
+
+/**
  * Pending optional-put-bottom-HQ player choice state (optional zone manipulation).
  *
  * Created when an optional-put-bottom-hq hero effect fires (`onPlay`) — the printed
@@ -752,6 +775,17 @@ export interface LegendaryGameState {
   // test `.length`). The MULTI-select sibling of pendingOptionalPutBottomHQ.
   /** FIFO queue of pending put-any-number-bottom-hq choices awaiting resolution (D-24132). */
   pendingPutAnyNumberBottomHQ?: PendingPutAnyNumberBottomHQ[] | undefined;
+
+  // why: D-24139 — FIFO queue of pending return-zero-cost-discard choices (one
+  // per played return-zero-cost-discard hero ability with ≥1 eligible 0-cost
+  // discard card). Entries are appended by the executor park case; front-popped
+  // by resolveReturnZeroCostDiscard after the player picks a card. Must be
+  // undefined or empty at every turn-end. Optional so existing test state
+  // literals do not need updating; **lazily initialized at the park site, never
+  // in Game.setup**. Absent (undefined) or empty [] both mean "no pending
+  // choice" (guards test `.length`).
+  /** FIFO queue of pending return-zero-cost-discard choices awaiting resolution (D-24139). */
+  pendingReturnZeroCostDiscard?: PendingReturnZeroCostDiscard[] | undefined;
 
   // why: playerZones is keyed by player ID string (boardgame.io uses "0", "1",
   // etc.). Each player has exactly 5 zone arrays. Only deck is non-empty after

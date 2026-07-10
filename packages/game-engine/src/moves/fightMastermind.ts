@@ -24,6 +24,7 @@ import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
+import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
 import { resolveCardName } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
 
@@ -77,6 +78,8 @@ export function fightMastermind(
   if (hasPendingVictoryPileCardPick(G)) return;
   // why: block-all — pendingDrawOrEmpowered must be resolved before any other action (D-24069)
   if (hasPendingDrawOrEmpowered(G)) return;
+  // why: block-all — pendingReturnZeroCostDiscard must be resolved before any other action (D-24139)
+  if (hasPendingReturnZeroCostDiscard(G)) return;
 
   // Step 3: Mutate G
   // why: capture the tactic card ID before defeatTopTactic moves it from

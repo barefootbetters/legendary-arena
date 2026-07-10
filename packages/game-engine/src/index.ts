@@ -327,6 +327,7 @@ export type {
   UIVictoryPileVillainChoice,
   UIPendingOptionalPutBottomHQ,
   UIPendingPutAnyNumberBottomHQ,
+  UIPendingReturnZeroCostDiscard,
   UIHqCardChoice,
   UIEligibleKoHeroCard,
 } from "./ui/uiState.types.js";

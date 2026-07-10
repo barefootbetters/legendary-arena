@@ -35,6 +35,7 @@ import { koCard } from '../board/ko.logic.js';
 import { resolveCountSource } from './heroCountSource.resolve.js';
 import { interpretHeroPrimitiveEffect } from './effectPrimitive.interpret.js';
 import { getEligibleVictoryVillains } from '../moves/resolveVictoryPileCardPick.js';
+import { getEligibleZeroCostDiscardCards } from '../moves/resolveReturnZeroCostDiscard.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import {
   describeRevealPredicate,
@@ -65,7 +66,7 @@ import { pushLog } from '../log/logPush.js';
 // the 7 legacy reveal-* keywords lost their dedicated handlers (folded into the one
 // 'reveal' handler) but stay executable via revealRulesForLegacyKeyword translation.
 export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
-  'draw', 'attack', 'recruit', 'ko', 'rescue', 'reveal', 'attack-per-count', 'optional-ko-reward', 'optional-put-bottom-hq', 'put-any-number-bottom-hq', 'put-bottom-hq-icon-reward', 'victory-villain-attack', 'draw-or-empowered',
+  'draw', 'attack', 'recruit', 'ko', 'rescue', 'reveal', 'attack-per-count', 'optional-ko-reward', 'optional-put-bottom-hq', 'put-any-number-bottom-hq', 'put-bottom-hq-icon-reward', 'victory-villain-attack', 'draw-or-empowered', 'return-zero-cost-discard',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -1229,6 +1230,46 @@ function heroEffectPutAnyNumberBottomHq(
 }
 
 /**
+ * Park handler for the `return-zero-cost-discard` hero keyword (D-24139).
+ *
+ * The printed "Return a 0-cost card from your discard pile to your hand"
+ * (Black Knight's Defend the Weak). Checks whether the chooser's discard pile
+ * holds at least one 0-cost card (the shared isZeroCostCard predicate via
+ * getEligibleZeroCostDiscardCards). If yes, parks a PendingReturnZeroCostDiscard
+ * on `G.pendingReturnZeroCostDiscard[]` (lazy-init). If no eligible card exists,
+ * logs a no-op message and returns without touching the queue.
+ *
+ * The card move itself happens at resolve time (resolveReturnZeroCostDiscard),
+ * NOT here — the player must first choose which eligible card to take back.
+ * The choice is mandatory (no decline): the printed text has no "you may".
+ */
+function heroEffectReturnZeroCostDiscard(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) { return; }
+  const eligibleCards = getEligibleZeroCostDiscardCards(G, playerID);
+  if (eligibleCards.length === 0) {
+    pushLog(G,
+      `Player ${playerID} could not return a 0-cost card from their discard pile — it holds no 0-cost card, so nothing was returned.`,
+    );
+    return;
+  }
+  // why: lazy-init at the park site (mirrors optional-put-bottom-hq) — NEVER in
+  // Game.setup. The park itself is SILENT (no G.messages line); the return is
+  // logged at resolve time.
+  if (!G.pendingReturnZeroCostDiscard) { G.pendingReturnZeroCostDiscard = []; }
+  G.pendingReturnZeroCostDiscard.push({
+    playerID,
+    sourceCardId: cardId,
+  });
+}
+
+/**
  * Park handler for the `victory-villain-attack` hero keyword (WP-285 / D-24067).
  *
  * Checks whether the player has at least one eligible villain in their victory pile
@@ -1318,6 +1359,7 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   'put-bottom-hq-icon-reward': heroEffectPutBottomHqIconReward,
   'victory-villain-attack': heroEffectVictoryVillainAttack,
   'draw-or-empowered': heroEffectDrawOrEmpowered,
+  'return-zero-cost-discard': heroEffectReturnZeroCostDiscard,
 };
 
 // ---------------------------------------------------------------------------

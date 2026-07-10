@@ -261,12 +261,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'optional-put-bottom-hq', // why: Ionic Energy — optional put-a-HQ-card-on-bottom-of-Hero-Deck mechanic
       'put-any-number-bottom-hq', // why: D-24132 — multi-select put-any-number-of-HQ-cards-on-bottom-of-Hero-Deck mechanic
       'put-bottom-hq-icon-reward', // why: D-24133 — mandatory single-card put-bottom + recruit/attack icon reward (Absorb Ambient Power)
+      'return-zero-cost-discard', // why: D-24139 — mandatory return-a-0-cost-discard-card-to-hand mechanic (Defend the Weak)
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      26,
-      'HERO_KEYWORDS must have exactly 26 entries',
+      27,
+      'HERO_KEYWORDS must have exactly 27 entries',
     );
 
     assert.deepStrictEqual(
