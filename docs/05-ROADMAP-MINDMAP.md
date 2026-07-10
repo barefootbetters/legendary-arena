@@ -554,40 +554,21 @@ mindmap
 
 ## Next Unblocked (ordered)
 
-1. **Finish core-set ability coverage** — the hero reveal/rescue/draw executors (WP-215..225) and villain fight/ambush/escape/KO effects (WP-185..214) have largely landed; what remains is the deferred predicate machinery for filtered/targeted villain effects (per WP-188 / WP-202) and reveal player-choice breadth beyond WP-220 / WP-222, so the `core` set is fully playable on play.legendary-arena.com. Additional sets follow incrementally.
-2. **Live PvP matchmaking & reconnect** — WP-116 defined the disconnect/reconnect architecture; no implementation WP exists yet. Match discovery UX and reconnect handling are prerequisites for real multiplayer sessions.
-3. **Score submission HTTP wiring** — the PAR/competition/leaderboard pipeline is fully built, and WP-107 shipped `requireUnsuspendedAccount` as the locked caller-contract, but the score-submission request-handler route still doesn't exist at HEAD. Wiring it closes the loop from "play a game" to "see yourself on the leaderboard."
-4. **Agent triage pipeline — complete (WP-231..235 landed).** Scheduled triage sessions → handoff chain → closed-loop re-sweep verification, the parallel-safe full-corpus weekly sweep expansion, and now WP-235 — the Pipeline page sweep health-rate trend view, which also repaired the degenerate health-rate KPI + Architect-lane trigger via the single `computeSweepHealthRate` source of truth — have all shipped. No remaining step.
+1. **WP-345 — Player-count gauntlet boards + challenge links (legends-board client)** — drafted 2026-07-09; its hard-dep WP-344 (the D-24134 server half) executed the same day, so WP-345 is now unblocked. Execution-prep (EC + session prompt) is the next step; it renders the `entryCounts` / `legs` / `players[]` data WP-344 already publishes, plus the per-leg "Challenge this leg" links into the WP-114 registry-viewer preview.
+2. **Finish core-set ability coverage** — in progress via the `/coverage`-driven effect-authoring grind on the composable-primitive substrate (D-24029): new mechanics land as data rows, not engine edits (recent examples: WP-310 / WP-316 / WP-317). Goal unchanged — the `core` set fully playable on play.legendary-arena.com, additional sets incrementally.
+3. **Live PvP matchmaking & match-discovery UX** — the resilience half has shipped (WP-116 reconnect policy, WP-309 durable bgio match storage, WP-311 client reconnect/desync auto-resync, WP-312 move-ack watchdog, WP-326/327 stale-match hygiene); what remains is matchmaking plus a match-discovery/join UX.
+4. **Gauntlet progress on profiles + champion badges** — backlog, to be drafted and numbered (the non-checkbox backlog bullet in `WORK_INDEX.md`; source D-24131 §8b): owner-profile per-gauntlet checklist + public-profile completed-gauntlet badges via the existing `badges[]` field.
 5. **Phase 10 placeholders** — promote a candidate to a real WP only when a concrete production-debugging need motivates it.
 6. **WP-042.1** — unblocks when Foundation Prompt 03 is revived.
 
-**Recently completed (2026-06-10):**
-- ✅ WP-234 — Full-corpus sweep expansion (weekly rotating window beyond the 2×2 smoke)
-- ✅ WP-233 — Closed-loop sweep verification (Builder fix → re-sweep → Inspector verify)
-- ✅ WP-232 — Agent handoff chain (Inspector → Builder → Architect)
-- ✅ WP-231 — Scheduled agent triage sessions (Inspector reads sweep → files findings)
-
-**Recently completed (2026-06-09):**
-- ✅ WP-230 — Pipeline page sweep integration (agent lanes consume nightly sweep findings)
-- ✅ WP-229 — Dashboard Agent Pipeline page (Architect/Builder/Inspector/Evaluator lanes)
-
-**Recently completed (2026-06-08):**
-- ✅ WP-228 — Arena-client diagnostic capture + export (shareable freeze log)
-- ✅ WP-227 — Arena-client vue-tsc green (UIState/UICityCard fixture + prop backfill; 3rd typecheck-drift recurrence after WP-166 / WP-207)
-- ✅ WP-226 — Dashboard global mock-mode banner
-- ✅ WP-225 — Hero draw markup corpus sweep
-- ✅ WP-224 — Hero ability markup corpus sweep (all 40 sets)
-
-**Recently completed (2026-06-07):**
-- ✅ WP-223 — Hero reveal KO-attack compound executor
-- ✅ WP-222 — Pending hero choice UX (engine projection + client prompt)
-- ✅ WP-221 — Theme supplemental setup fields + tips display
+**Recently completed (2026-07-08..09):** the competitive score-submission arc **WP-332..341** (submission endpoint → seat→account identity → faithful reducer-replay → verifier repoint → turns-native scoring → submit-by-matchId + `GET /api/me/scores` → client submit-after-match + My-Scores → co-owner hardening → session-hydration fix) and the gauntlet leaderboard arc **WP-342/343/344** (set-gauntlet boards server + client, player-count server half), plus **WP-346** (header username is the profile link) and **WP-347** (cross-subdomain Hanko SSO cookie). Per-WP detail lives in the two 2026-07 mindmap clusters above and `WORK_INDEX.md` — not restated here (the dated per-WP ladders this block used to carry drifted a month stale; cluster granularity + a pointer is the durable form).
 
 **Blocked (cannot start):**
 - ⏸ WP-042.1 — Deferred PostgreSQL seeding checklists; unblocks when Foundation Prompt 03 (seed runner + migrations) is revived.
 
 **Pending (WP files not yet authored):**
-- (none — all Agent Triage Pipeline WPs are authored)
+- Gauntlet progress on profiles + champion badges (backlog bullet in `WORK_INDEX.md`; D-24131 §8b)
+- Direct-into-lobby challenge prefill (named future WP in WP-345 §Out of scope)
 
 ---
 
@@ -612,7 +593,9 @@ mindmap
 
 ---
 
-*Last updated: 2026-07-09 (14-WP mindmap orphan backfill — `roadmap:counts:check` failed on `main` naming **WP-332..345** (none had been noded since 2026-06-20; the executing ECs' locked file sets omitted the mindmap). Added two new clusters: **Competitive Score Submission & Verification (2026-07)** (WP-332..341, all ✅) and **Gauntlet Leaderboards (Legends) (2026-07)** (WP-342/343/344 ✅ + WP-345 📝 drafted). Removed the now-shipped "Score submission HTTP wiring" 📦 Next-Horizons placeholder (WP-332/338/339/341 closed that loop). Also fixed a WORK_INDEX parser mis-key: the D-24131 §8b backlog bullet ("Gauntlet progress on profiles") was a checkbox row with no own WP id, so the generator keyed it by its first prose WP mention and falsely flipped **WP-339 → open**; the bullet is now a plain (non-checkbox) list item until drafted and numbered. Generated table: Total **339/341 WP ✅**; open = WP-345, blocked = WP-042.1.)*
+*Last updated: 2026-07-09 (Next Unblocked refresh — the section had drifted a month stale: the "Score submission HTTP wiring" item was shipped in full by WP-332..341, "Live PvP matchmaking & reconnect" had its resilience half shipped (WP-116/309/311/312/326/327), and the agent-triage "complete" note plus the 2026-06-07..10 dated per-WP ladders were history duplicating the mindmap/WORK_INDEX. Rewritten: WP-345 (now unblocked — WP-344 executed) leads the ordered list; core-set coverage reframed onto the D-24029 grind; matchmaking item narrowed to what actually remains; the D-24131 §8b profiles/badges backlog item added; Recently-completed collapsed to cluster granularity with a pointer instead of dated ladders; Pending block now names the two known unauthored WPs. Prose-only — no mermaid node or generated-table change; `roadmap:counts:check` green.)*
+
+*Prior: 2026-07-09 (14-WP mindmap orphan backfill — `roadmap:counts:check` failed on `main` naming **WP-332..345** (none had been noded since 2026-06-20; the executing ECs' locked file sets omitted the mindmap). Added two new clusters: **Competitive Score Submission & Verification (2026-07)** (WP-332..341, all ✅) and **Gauntlet Leaderboards (Legends) (2026-07)** (WP-342/343/344 ✅ + WP-345 📝 drafted). Removed the now-shipped "Score submission HTTP wiring" 📦 Next-Horizons placeholder (WP-332/338/339/341 closed that loop). Also fixed a WORK_INDEX parser mis-key: the D-24131 §8b backlog bullet ("Gauntlet progress on profiles") was a checkbox row with no own WP id, so the generator keyed it by its first prose WP mention and falsely flipped **WP-339 → open**; the bullet is now a plain (non-checkbox) list item until drafted and numbered. Generated table: Total **339/341 WP ✅**; open = WP-345, blocked = WP-042.1.)*
 
 *Prior: 2026-06-20 (node-icon hygiene — flipped the **WP-270 📝 → ✅** node to match its WORK_INDEX state: the consumer-half registry-viewer mechanic filter surface shipped via #415, but its EC's locked file set omitted the mindmap so the node stayed Drafted. Pure navigation hygiene; the count table is derived from WORK_INDEX and was already current, so `roadmap:counts --write` produced no table change and `roadmap:counts:check` is green. Prior update: the WP-268/269/270/271 mindmap orphan backfill — see git history.)*
 
