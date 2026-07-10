@@ -34,6 +34,29 @@ function mountHeader(options?: {
 }
 
 describe('BrandHeader auth nav (WP-175)', () => {
+  describe('site navigation', () => {
+    test('renders a "Play" link targeting the app root (the lobby entry)', () => {
+      const wrapper = mountHeader({ isBootstrapping: false });
+      const play = wrapper.find('[data-testid="brand-nav-play"]');
+      assert.equal(play.exists(), true);
+      assert.equal(play.text(), 'Play');
+      assert.equal(play.attributes('href'), '/');
+    });
+
+    test('the "Play" link is present whether signed in or out', () => {
+      const signedOut = mountHeader({ isBootstrapping: false });
+      const signedIn = mountHeader({ token: 'tok-abc' });
+      assert.equal(
+        signedOut.find('[data-testid="brand-nav-play"]').exists(),
+        true,
+      );
+      assert.equal(
+        signedIn.find('[data-testid="brand-nav-play"]').exists(),
+        true,
+      );
+    });
+  });
+
   describe('bootstrapping state', () => {
     test('renders the "..." placeholder with data-testid auth-nav-bootstrapping', () => {
       const wrapper = mountHeader({ isBootstrapping: true });
