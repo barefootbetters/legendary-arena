@@ -209,4 +209,47 @@ describe('LegendaryGame', () => {
     );
     assert.equal(gameState.hasDrawnThisTurn, true);
   });
+
+  it('play-phase onBegin numbers the first play turn as 1, not the framework ctx.turn (lobby offset)', () => {
+    // why: the lobby phase consumes framework turn 1 (startMatchIfReady exits via
+    // setPhase('play')), so the play phase's first turn arrives as ctx.turn === 2.
+    // The player-facing turn (G.logMeta.turn, read by both the game-log prefix and
+    // the HUD header) must be play-relative: first play turn = 1. This guards the
+    // off-by-one that opened the log at "2.1.1".
+    const gameState = LegendaryGame.setup!(
+      makeMockCtx({ numPlayers: 2 }) as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
+      createMockMatchConfiguration(),
+    );
+    const playPhase = (
+      LegendaryGame.phases as Record<
+        string,
+        { turn?: { onBegin?: (context: unknown) => void } }
+      >
+    ).play;
+    const onBegin = playPhase!.turn!.onBegin!;
+    const makeContext = (turn: number): unknown => ({
+      G: gameState,
+      ctx: { currentPlayer: '0', numPlayers: 2, phase: 'play', turn },
+      random: { Shuffle: <T>(deck: T[]): T[] => [...deck].reverse() },
+      events: { setPhase: (): void => {}, endTurn: (): void => {} },
+    });
+
+    // First play turn: framework ctx.turn === 2 (lobby was turn 1) must render as 1.
+    onBegin(makeContext(2));
+    assert.equal(
+      gameState.logMeta!.turn,
+      1,
+      'first play turn must be play-relative 1, not the framework ctx.turn (2)',
+    );
+    assert.equal(gameState.logMeta!.firstPlayTurn, 2, 'firstPlayTurn captures the first play framework turn');
+
+    // Second play turn: framework ctx.turn === 3 must render as 2 (offset preserved).
+    onBegin(makeContext(3));
+    assert.equal(
+      gameState.logMeta!.turn,
+      2,
+      'second play turn must be play-relative 2 (firstPlayTurn offset carried forward)',
+    );
+    assert.equal(gameState.logMeta!.firstPlayTurn, 2, 'firstPlayTurn is stable across turns');
+  });
 });

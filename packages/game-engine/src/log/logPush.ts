@@ -4,9 +4,11 @@ import { TURN_STAGES } from '../turn/turnPhases.types.js';
 /**
  * Central game-log push helper (WP-328). Appends `message` to `G.messages` with a
  * `{turn}.{step}.{action}` prefix so every log line carries a stable address —
- * `turn` = the player turn, `step` = the 1-based turn stage (`start`=1, `main`=2,
- * `cleanup`=3), `action` = a per-step counter. The numbering data lives in
- * `G.logMeta`, stamped at `onBegin` (from `ctx.turn`) and reset per stage.
+ * `turn` = the play-relative player turn (first play turn = 1; the play-phase
+ * onBegin offsets the raw framework `ctx.turn` so the lobby turn is not counted),
+ * `step` = the 1-based turn stage (`start`=1, `main`=2, `cleanup`=3), `action` = a
+ * per-step counter. The numbering data lives in `G.logMeta`, stamped at the
+ * play-phase `onBegin` and reset per stage.
  *
  * `G.messages` is excluded from `finalStateHash` (D-24081); so is `G.logMeta`, so
  * the prefix and the counter are replay-safe (turn/stage/order are all deterministic).

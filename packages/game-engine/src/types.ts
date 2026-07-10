@@ -806,12 +806,15 @@ export interface LegendaryGameState {
   messages: string[];
 
   // why: WP-328 — the numbering data for the `{turn}.{step}.{action}` game-log prefix.
-  // `turn` is stamped from `ctx.turn` at onBegin (the turn number lives only in ctx, and
-  // helper push sites have no ctx); `actionInStep` resets at onBegin and each stage
-  // advance. Optional so narrow unit fixtures omit it (pushLog falls back to unprefixed).
-  // Excluded from finalStateHash (D-24081-style), so it is replay-safe.
+  // `turn` is the PLAYER-FACING, play-relative turn number (first play turn = 1), not the
+  // raw framework `ctx.turn`: the lobby phase consumes framework turn 1, so the play phase's
+  // first turn arrives as `ctx.turn === 2`. `firstPlayTurn` captures the framework turn of
+  // the first play turn once (at play-phase onBegin) so `turn = ctx.turn - firstPlayTurn + 1`
+  // renders play-relative regardless of how many framework turns preceded play. `actionInStep`
+  // resets at onBegin and each stage advance. Optional so narrow unit fixtures omit it (pushLog
+  // falls back to unprefixed). Excluded from finalStateHash (D-24081-style), so it is replay-safe.
   /** Game-log numbering metadata (WP-328); hash-excluded. */
-  logMeta?: { turn: number; actionInStep: number };
+  logMeta?: { turn: number; actionInStep: number; firstPlayTurn?: number };
 
   // why: counters tracks named numeric values used by endgame conditions and
   // scheme/mastermind rules. Counters are modified by modifyCounter effects

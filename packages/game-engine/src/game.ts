@@ -454,7 +454,21 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // exactly, D-24124). It is the SEPARATE fixture-golden hash (hashGameState) that
           // excludes messages + logMeta for golden-churn reasons (D-24081 / D-24114), not
           // this one. logMeta is deterministic (ctx.turn), so it adds no non-determinism.
-          G.logMeta = { turn: ctx.turn, actionInStep: 0 };
+          //
+          // why: the displayed turn number must be PLAY-RELATIVE (first play turn = 1).
+          // The lobby phase consumes framework turn 1 (startMatchIfReady exits via
+          // setPhase('play')), so the play phase's first turn arrives as ctx.turn === 2.
+          // Without this offset the game log opened at "2.1.1" and the HUD header read
+          // "Turn 2" on the very first turn. Capture the framework turn of the first play
+          // turn once (firstPlayTurn) and offset every turn by it, so the numbering is
+          // correct regardless of how many framework turns preceded play. firstPlayTurn is
+          // carried across the per-turn logMeta reassignment.
+          const firstPlayTurn = G.logMeta?.firstPlayTurn ?? ctx.turn;
+          G.logMeta = {
+            turn: ctx.turn - firstPlayTurn + 1,
+            actionInStep: 0,
+            firstPlayTurn,
+          };
 
           // why: economy resets at start of each player turn — accumulated
           // and spent values from previous turn are cleared

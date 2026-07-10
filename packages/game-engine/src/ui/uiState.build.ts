@@ -432,15 +432,16 @@ export function buildUIState(
   const game = {
     phase: ctx.phase ?? 'unknown',
     // why: WP-331 — the HUD turn header must read the same source the game log
-    // numbers its lines by (G.logMeta.turn, stamped in the play-phase onBegin),
-    // NOT live ctx.turn. When the match ends, boardgame.io transitions play ->
-    // end, and a phase change starts a fresh framework turn, so ctx.turn bumps
-    // one past the last real play turn (e.g. header "Turn 20" while the log's
-    // last line is "19.2.13"). The end phase has no onBegin, so logMeta.turn
-    // stays frozen at the last play turn and matches the log. During live play
-    // the two are identical (logMeta.turn === ctx.turn), so this only corrects
-    // the game-over display. Fall back to ctx.turn before the first play-phase
-    // onBegin has stamped logMeta (lobby/setup).
+    // numbers its lines by (G.logMeta.turn, the PLAY-RELATIVE turn stamped in the
+    // play-phase onBegin), NOT live ctx.turn. logMeta.turn is offset so the first
+    // play turn reads 1 (the lobby phase consumes framework turn 1, so ctx.turn is
+    // one ahead throughout play); reading it here keeps the header and the log in
+    // lock-step. It also fixes the game-over display: when the match ends,
+    // boardgame.io transitions play -> end and a phase change bumps ctx.turn one
+    // further past the last play turn, but the end phase has no onBegin, so
+    // logMeta.turn stays frozen at the last play-relative turn and matches the log.
+    // Fall back to ctx.turn before the first play-phase onBegin has stamped logMeta
+    // (lobby/setup), where the framework turn is the only number available.
     turn: gameState.logMeta?.turn ?? ctx.turn,
     activePlayerId: ctx.currentPlayer,
     currentStage: gameState.currentStage,
