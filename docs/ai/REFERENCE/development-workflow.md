@@ -73,6 +73,7 @@ flowchart LR
    - Branch → PR → CI
    - CI includes:
      - Build/Deploy checks
+     - Workspace unit tests (`pnpm -r test`, PR #663)
      - Commit hygiene
      - Registry validation
      - Nightly sweep + inspection workflows

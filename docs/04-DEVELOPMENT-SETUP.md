@@ -231,7 +231,7 @@ that block seeding.
 |---|---|---|
 | `pnpm install` | Install all dependencies | After clone or lockfile change |
 | `pnpm -r build` | Build all packages | Before running tests or server |
-| `pnpm test` | Run all tests (all packages) | After any code change |
+| `pnpm -r test` | Run all tests (all packages; root has no bare `test` script) | After any code change |
 | `pnpm --filter @legendary-arena/game-engine test` | Run engine tests only (314 tests) | During engine development |
 | `pnpm --filter @legendary-arena/game-engine build` | Build engine only | Quick compile check |
 | `pnpm check:env` | Local tooling check (no network) | First thing on a new machine |
