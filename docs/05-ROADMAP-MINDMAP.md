@@ -539,16 +539,22 @@ mindmap
 
 - **Phase 3 Gate:** Closed (D-1320)
 - **Phase 6 Gate:** Closed 2026-04-19 — tag `phase-6-complete` at `c376467`
-- **Engine test baseline:** `1177 / 0 / 0` (post-WP-223; 260 suites)
-- **Registry test baseline:** `115 / 0 / 0` (12 suites)
-- **Registry-viewer test baseline:** `39 / 0 / 0` (10 suites; unchanged since WP-170)
-- **Server test baseline:** `477 / 0 / 66` (post-WP-209; 543 total; 83 suites)
-- **arena-client test baseline:** `517 / 0 / 0` (post-WP-228; 82 suites)
-- **Dashboard test baseline:** `191 / 0 / 0` (post-WP-226)
-- **DECISIONS.md range:** `D-4801..D-22801` (extends through WP-228)
-- **EC range:** `EC-001..EC-260` (extends through WP-228)
+- **Engine test baseline:** `1872 / 0 / 0` (438 suites)
+- **Registry test baseline:** `130 / 0 / 0` (14 suites)
+- **Server test baseline (no-DB):** `753 / 0 / 103` (856 total; 151 suites — the 103 are DB-gated non-silent skips; with `TEST_DATABASE_URL` + migrations the full serialized suite is `856 / 0 / 0`, last run 2026-07-09 under EC-376)
+- **arena-client test baseline:** `809 / 0 / 0` (115 suites)
+- **Dashboard test baseline:** `409 / 0 / 0` (15 suites)
+- **Registry-viewer test baseline:** `110 / 0 / 0` (23 suites)
+- **legends-board test baseline:** `40 / 0 / 0` (8 suites)
+- **Preplan test baseline:** `52 / 0 / 0` (7 suites)
+- **lagn test baseline:** `21 / 0 / 0` (8 suites)
+- **vue-sfc-loader test baseline:** `11 / 0 / 0`
+- **engine-runner test baseline:** `19 / 0 / 0` (2 suites)
+- **replay-producer test baseline:** `4 / 0 / 0` (2 suites)
+- **DECISIONS.md range:** `D-0203..D-24139` (870 entries; extends through the 2026-07-09 gauntlet/SSO arcs)
+- **EC range:** `EC-001..EC-377` (extends through WP-347)
 
-> All six `pass / fail / skipped` figures above are a live test-run at HEAD (`2e99369`) on 2026-06-09 (`pnpm --filter <pkg> test`), not STATUS-derived. `post-WP-NNN` marks the latest work-packet known to touch that package's suite.
+> All twelve `pass / fail / skipped` figures above are a live test-run at HEAD (`5843b7dd`) on 2026-07-10 (`pnpm --filter <pkg> test`, fresh worktree, `pnpm -r build` first), not STATUS-derived. Per-row `post-WP-NNN` attributions are gone on purpose: suites grow between doc passes, so the HEAD sha + date above is the provenance. The D/EC ranges are derived from `DECISIONS.md` entry headings and `docs/ai/execution-checklists/` filenames at the same HEAD.
 
 ---
 
@@ -593,7 +599,9 @@ mindmap
 
 ---
 
-*Last updated: 2026-07-09 (Next Unblocked refresh — the section had drifted a month stale: the "Score submission HTTP wiring" item was shipped in full by WP-332..341, "Live PvP matchmaking & reconnect" had its resilience half shipped (WP-116/309/311/312/326/327), and the agent-triage "complete" note plus the 2026-06-07..10 dated per-WP ladders were history duplicating the mindmap/WORK_INDEX. Rewritten: WP-345 (now unblocked — WP-344 executed) leads the ordered list; core-set coverage reframed onto the D-24029 grind; matchmaking item narrowed to what actually remains; the D-24131 §8b profiles/badges backlog item added; Recently-completed collapsed to cluster granularity with a pointer instead of dated ladders; Pending block now names the two known unauthored WPs. Prose-only — no mermaid node or generated-table change; `roadmap:counts:check` green.)*
+*Last updated: 2026-07-10 (Project Baselines refresh — the block carried a 2026-06-09 live-run (`2e99369`): six packages, engine `1177`, server `477/0/66`, DECISIONS through D-22801, ECs through EC-260. Re-run at HEAD `5843b7dd` on a fresh worktree (`pnpm install` + `pnpm -r build` + `pnpm --filter <pkg> test`): **all twelve** test-bearing packages now listed (adds legends-board, preplan, lagn, vue-sfc-loader, engine-runner, replay-producer), all green — engine `1872/0/0`, server no-DB `753/0/103` (856 total; full DB-gated `856/0/0` per EC-376), arena-client `809/0/0`, dashboard `409/0/0`, registry-viewer `110/0/0`. Ranges re-derived: `D-0203..D-24139` (870 entries), `EC-001..EC-377`. Dropped the per-row `post-WP-NNN` attributions — suites grow between passes, so HEAD sha + date is the provenance now. Prose-only; `roadmap:counts:check` green.)*
+
+*Prior: 2026-07-09 (Next Unblocked refresh — the section had drifted a month stale: the "Score submission HTTP wiring" item was shipped in full by WP-332..341, "Live PvP matchmaking & reconnect" had its resilience half shipped (WP-116/309/311/312/326/327), and the agent-triage "complete" note plus the 2026-06-07..10 dated per-WP ladders were history duplicating the mindmap/WORK_INDEX. Rewritten: WP-345 (now unblocked — WP-344 executed) leads the ordered list; core-set coverage reframed onto the D-24029 grind; matchmaking item narrowed to what actually remains; the D-24131 §8b profiles/badges backlog item added; Recently-completed collapsed to cluster granularity with a pointer instead of dated ladders; Pending block now names the two known unauthored WPs. Prose-only — no mermaid node or generated-table change; `roadmap:counts:check` green.)*
 
 *Prior: 2026-07-09 (14-WP mindmap orphan backfill — `roadmap:counts:check` failed on `main` naming **WP-332..345** (none had been noded since 2026-06-20; the executing ECs' locked file sets omitted the mindmap). Added two new clusters: **Competitive Score Submission & Verification (2026-07)** (WP-332..341, all ✅) and **Gauntlet Leaderboards (Legends) (2026-07)** (WP-342/343/344 ✅ + WP-345 📝 drafted). Removed the now-shipped "Score submission HTTP wiring" 📦 Next-Horizons placeholder (WP-332/338/339/341 closed that loop). Also fixed a WORK_INDEX parser mis-key: the D-24131 §8b backlog bullet ("Gauntlet progress on profiles") was a checkbox row with no own WP id, so the generator keyed it by its first prose WP mention and falsely flipped **WP-339 → open**; the bullet is now a plain (non-checkbox) list item until drafted and numbered. Generated table: Total **339/341 WP ✅**; open = WP-345, blocked = WP-042.1.)*
 
