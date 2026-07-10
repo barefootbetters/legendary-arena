@@ -154,7 +154,7 @@ overrides and additions in `C:\www\legendary-arena-com\layouts\`:
 | Header | `layouts\_partials\header.html` | Global nav + Snipcart cart button + Pagefind search stub |
 | Footer | `layouts\_partials\footer.html` | Footer nav + newsletter signup + upstream PaperMod content |
 | Head extensions | `layouts\_partials\extend_head.html` | Brand tokens, fonts, Pagefind lazy-load, Schema.org, Snipcart CSS |
-| Footer extensions | `layouts\_partials\extend_footer.html` | Newsletter JS + Snipcart SDK/mount |
+| Footer extensions | `layouts\_partials\extend_footer.html` | Newsletter JS + header auth JS (WP-033) + Snipcart SDK/mount |
 | Newsletter form | `layouts\_partials\newsletter-form.html` | Reusable email-capture form (parameterized) |
 | SEO / Schema | `layouts\_partials\seo\schema.html` + `layouts\_partials\templates\schema_json.html` | Organization + WebSite JSON-LD (WP-008) |
 | CTA block | `layouts\_partials\cta-block.html` | Reusable call-to-action partial |
@@ -292,7 +292,15 @@ Loaded at the end of `<body>` by `footer.html`:
 1. **Newsletter JS** — `assets/js/newsletter.js`, minified +
    fingerprinted + deferred. Progressive enhancement over the
    `newsletter-form.html` POST (see below).
-2. **Snipcart SDK + mount** (WP-019) — a hidden `<div id="snipcart"
+2. **Header auth JS** (WP-033) — `assets/js/header-auth.js`, minified +
+   fingerprinted + deferred. Reads the JS-accessible, cross-subdomain
+   `hanko` session cookie (engine WP-347) and, when a session exists,
+   fetches `GET /api/me/profile` and swaps the header "Account" link's text
+   for the signed-in player's name. **No Hanko SDK** — a direct cookie read,
+   so no bundle is added and the Lighthouse baseline is untouched. Silent
+   fallback: any failure leaves the static "Account". `www` stays
+   auth-*aware*, not auth-*owning* (D-24138).
+3. **Snipcart SDK + mount** (WP-019) — a hidden `<div id="snipcart"
    data-api-key="...">` (the **public** key from
    `site.Params.snipcartApiKey`) plus the async Snipcart `snipcart.js`
    from the CDN.
@@ -496,14 +504,24 @@ header and footer partials:
 | Brand | `/brand/` | 30 |
 | Play | `https://play.legendary-arena.com/` | 40 |
 | Cards | `https://cards.barefootbetters.com/` | 50 |
+| Account | `https://play.legendary-arena.com/?route=me` | 60 |
 
 Play and Cards are the **primary conversion / external destinations**,
 surfaced in the header (not just the footer) so account access and the
 app aren't buried. The home hero also carries the principal CTA button
 (`layouts/index.html`), defaulting to `https://play.legendary-arena.com/`
-("Play now"). There is currently **no "Log In" menu item** — the app's
-login lives on `play.legendary-arena.com`, and no marketing-site login
-URL is defined; add a `[[menu.main]]` entry once a destination exists.
+("Play now").
+
+The **Account** entry links to the app's auth on `play` — the login surface
+itself stays on `play` (marketing repo **WP-032**, per engine **D-24084**).
+Header lineage: WP-027 deferred a "Log In" item (no URL existed) → **WP-031**
+added "Sign in" + "My account" → **WP-032** collapsed them to the single
+state-neutral **"Account"** → `?route=me` (the app's guarded route redirects a
+signed-out visitor to sign-in) → **WP-033** made the header **auth-aware**: a
+deferred script (`assets/js/header-auth.js`) reads the cross-subdomain `hanko`
+session cookie (engine WP-347) and swaps "Account" for the signed-in player's
+name — per **D-24138** (amends D-24084), `www` stays auth-*aware* (reads the
+session) but never auth-*owning* (no login form / broker / session mutation).
 
 **Footer menu (`menu.footer`):**
 
