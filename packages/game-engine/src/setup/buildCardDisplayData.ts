@@ -832,9 +832,9 @@ export function buildCardDisplayData(
   // why: `cost: null` for SHIELD Officer — printed-cost surface only;
   // gameplay cost resolved elsewhere. `UICardDisplay.cost` is the
   // printed card cost, and the SHIELD Officer pile token has no printed
-  // cost on its physical face. Officer's recruit-cost-3 lives in
-  // `G.cardStats[SHIELD_OFFICER_EXT_ID]` (`buildInitialGameState.ts:293`),
-  // a separate sibling-snapshot surface read by the supply-pile UI.
+  // cost on its physical face. Officer's recruit-cost-3 lives in the
+  // well-known `G.cardStats[SHIELD_OFFICER_EXT_ID]` entry assigned in
+  // `buildInitialGameState.ts` beside the Agent/Trooper entries.
   let wellKnownOfficerName = 'S.H.I.E.L.D. Officer';
   let wellKnownOfficerImageUrl = '';
   const wellKnownOfficerEntry = findHeroByExactSlug(coreSetData, 'officer');

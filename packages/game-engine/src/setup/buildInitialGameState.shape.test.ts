@@ -15,6 +15,8 @@ import {
   buildInitialGameState,
   SHIELD_AGENT_EXT_ID,
   SHIELD_TROOPER_EXT_ID,
+  SHIELD_OFFICER_EXT_ID,
+  SIDEKICK_EXT_ID,
 } from './buildInitialGameState.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
@@ -342,6 +344,39 @@ describe('buildInitialGameState — shape', () => {
         `Player ${playerId} starting deck must contain exactly 4 S.H.I.E.L.D. Troopers`,
       );
     }
+  });
+
+  it('well-known cardStats entries carry tabletop values (Agent, Trooper, Officer, Sidekick)', () => {
+    // why: these four components never appear in the registry walk, so a
+    // missing entry silently resolves to cost 0 under the engine-wide
+    // `?? 0` convention. This pins each entry exactly — an Officer or
+    // Sidekick entry disappearing (or reverting to cost 0) must fail loudly.
+    const config = createTestConfig();
+    const context = makeMockCtx({ numPlayers: 2 });
+    const registry = createMockRegistry();
+
+    const gameState = buildInitialGameState(config, registry, context);
+
+    assert.deepStrictEqual(
+      gameState.cardStats[SHIELD_AGENT_EXT_ID],
+      { attack: 0, recruit: 1, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      'S.H.I.E.L.D. Agent entry must give 1 recruit at cost 0',
+    );
+    assert.deepStrictEqual(
+      gameState.cardStats[SHIELD_TROOPER_EXT_ID],
+      { attack: 1, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      'S.H.I.E.L.D. Trooper entry must give 1 attack at cost 0',
+    );
+    assert.deepStrictEqual(
+      gameState.cardStats[SHIELD_OFFICER_EXT_ID],
+      { attack: 0, recruit: 2, cost: 3, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      'S.H.I.E.L.D. Officer entry must give 2 recruit at recruit cost 3',
+    );
+    assert.deepStrictEqual(
+      gameState.cardStats[SIDEKICK_EXT_ID],
+      { attack: 0, recruit: 0, cost: 2, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      'Sidekick entry must carry recruit cost 2 with no face stats (its value is a printed draw-two ability)',
+    );
   });
 
   it('selection fields match matchConfiguration (invariant: never diverge)', () => {
