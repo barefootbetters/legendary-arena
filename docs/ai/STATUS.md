@@ -7,6 +7,31 @@
 
 ## Current State
 
+### WP-344 / EC-376 Executed — Player-Count Gauntlet Boards, Server (D-24134 server half) (2026-07-09)
+
+**No user-observable change — infrastructure only.** The D-24134 per-player-count,
+roster-keyed gauntlet standings now exist as published R2 snapshots; the consumer
+surface is WP-345 (legends-board count selector, team rosters, challenge links),
+execution pending.
+
+- `legendary.competitive_scores` gains `player_count` (migration 027, nullable
+  1-5 CHECK), written once at submission from the reduced final state's
+  per-player record — server-authoritative, never client-supplied; legacy NULL
+  rows never qualify on count-keyed boards. Auto-applies on deploy via the
+  Render migrate step.
+- Gauntlet standings are roster-keyed per player count: the competitor is the
+  exact team of authenticated accounts owning the qualifying replay (owner
+  count must equal player_count; every owner link/public; the same roster on
+  every leg; co-owner rows deduped at replay level); entries carry `players[]`.
+- Publisher: solo board keeps the existing file name; multiplayer boards are
+  lazy `gauntlet-<set>-<mm>-p<N>.json`; the index gains additive `entryCounts`
+  + `legs` (scheme slug + name — the WP-345 challenge-link data).
+- New `listReplayOwners` library surface (all owners of a replay hash).
+- Bonus fix: `findCompetitiveScore` had missed WP-342's `outcome` column
+  (records carried `outcome: undefined`); fixed in the same column sweep.
+- **Gates:** `pnpm -r build` 0; server no-DB 753 pass / 0 fail; full serialized
+  DB-gated suite 856/856 / 0 skipped (PR-#630 baseline 848, +8 new); engine
+  untouched; scope = EC-376's 12-file allowlist.
 ### WP-346 / EC-375 Executed — The header username is the profile link (D-24136 Active) (2026-07-09)
 
 Operator-reported: the signed-in global header showed the player's name **and** a separate

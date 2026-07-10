@@ -278,7 +278,7 @@ const GAUNTLET_WITH_ENTRIES: GauntletDefinition = {
   setName: 'Core Set',
   mastermindSlug: 'mm-full',
   mastermindName: 'Full Mastermind',
-  legSchemeSlugs: ['scheme-a'],
+  legs: [{ schemeSlug: 'scheme-a', schemeName: 'Scheme A' }],
 };
 
 const GAUNTLET_EMPTY: GauntletDefinition = {
@@ -286,7 +286,7 @@ const GAUNTLET_EMPTY: GauntletDefinition = {
   setName: 'Core Set',
   mastermindSlug: 'mm-empty',
   mastermindName: 'Empty Mastermind',
-  legSchemeSlugs: ['scheme-a'],
+  legs: [{ schemeSlug: 'scheme-a', schemeName: 'Scheme A' }],
 };
 
 const TEST_GAUNTLET_CATALOG: readonly GauntletDefinition[] = [
@@ -315,16 +315,21 @@ function createGauntletStubDatabase(): DatabaseClient {
         return { rows: [], rowCount: 0 };
       }
 
-      // Gauntlet standings query — keyed on its outcome predicate.
-      if (text.includes("cs.outcome = 'heroes-win'")) {
+      // Gauntlet standings query — keyed on its outcome predicate. Rows are
+      // the WP-344 (replay × owner) shape: a solo winning replay owned by
+      // one link/public account.
+      if (text.includes("outcome = 'heroes-win'")) {
         if (params !== undefined && params[0] === 'mm-full') {
           const rows = [
             {
-              player_id: 7,
-              display_name: 'Alice',
+              replay_hash: 'replay-alice-a',
               scenario_key: 'scheme-a::mm-full::villains-x',
               final_score: -3,
               scoring_config_version: 1,
+              player_count: 1,
+              player_id: 7,
+              display_name: 'Alice',
+              visibility: 'public',
             },
           ];
           return { rows, rowCount: rows.length };
@@ -429,6 +434,25 @@ describe('legends publisher gauntlet boards (WP-342)', () => {
     assert.equal(fullEntry.legCount, 1);
     assert.equal(emptyEntry.entryCount, 0);
 
+    // WP-344 / D-24134 §5 — additive per-count counts + the leg list.
+    assert.deepEqual(fullEntry.entryCounts, {
+      '1': 1,
+      '2': 0,
+      '3': 0,
+      '4': 0,
+      '5': 0,
+    });
+    assert.deepEqual(fullEntry.legs, [
+      { schemeSlug: 'scheme-a', schemeName: 'Scheme A' },
+    ]);
+    assert.deepEqual(emptyEntry.entryCounts, {
+      '1': 0,
+      '2': 0,
+      '3': 0,
+      '4': 0,
+      '5': 0,
+    });
+
     // The board file carries the ranked standings entry.
     const boardPut = putCalls.find((put) =>
       put.key.includes('gauntlet-core-mm-full.json'),
@@ -444,6 +468,7 @@ describe('legends publisher gauntlet boards (WP-342)', () => {
         totalScore: -3,
         legCount: 1,
         averageScoreCentis: -300,
+        players: ['Alice'],
       },
     ]);
   });

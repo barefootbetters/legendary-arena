@@ -286,6 +286,58 @@ export async function findReplayOwnershipForAccount(
 }
 
 /**
+ * One owner of a replay, as listed by `listReplayOwners`. Carries the
+ * internal `player_id` (stringified — the roster identity key for the
+ * D-24134 gauntlet aggregation), the public display name, and the
+ * ownership visibility so callers can enforce their own publication
+ * rules.
+ */
+export interface ReplayOwnerSummary {
+  readonly playerId: string;
+  readonly displayName: string;
+  readonly visibility: ReplayVisibility;
+}
+
+/**
+ * List EVERY owner of a replay hash — one row per authenticated seat
+ * of the finished match (WP-333 capture assigns ownership per seat).
+ * Returns an empty array for an unknown hash. Like the single-row
+ * lookups above, this is a metadata listing only — it does not
+ * enforce visibility; publication rules (e.g. the D-24134
+ * every-owner-link/public gate) are the caller's responsibility.
+ *
+ * @param replayHash The replay's canonical hash.
+ * @param database The caller-injected `pg` pool.
+ * @returns All owners, ordered by internal player id for determinism.
+ */
+export async function listReplayOwners(
+  replayHash: string,
+  database: DatabaseClient,
+): Promise<ReplayOwnerSummary[]> {
+  const result = await database.query(
+    'SELECT ro.player_id, p.display_name, ro.visibility ' +
+      'FROM legendary.replay_ownership ro ' +
+      'JOIN legendary.players p ON ro.player_id = p.player_id ' +
+      'WHERE ro.replay_hash = $1 ' +
+      'ORDER BY ro.player_id ASC',
+    [replayHash],
+  );
+  const owners: ReplayOwnerSummary[] = [];
+  for (const row of result.rows as {
+    player_id: number | string;
+    display_name: string;
+    visibility: ReplayVisibility;
+  }[]) {
+    owners.push({
+      playerId: String(row.player_id),
+      displayName: row.display_name,
+      visibility: row.visibility,
+    });
+  }
+  return owners;
+}
+
+/**
  * Delete every persistent record for an account, in a single
  * PostgreSQL transaction. Returns audit counts: how many ownership
  * rows were removed and whether the account row itself existed and

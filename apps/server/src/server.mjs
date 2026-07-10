@@ -519,9 +519,12 @@ export async function startServer() {
     if (setData === undefined) {
       continue;
     }
-    const schemeSlugs = [];
+    // why: WP-344 / D-24134 §5 — scheme display names ride along with the
+    // slugs so the publisher can emit the index `legs` list (the client's
+    // challenge links + leg display) without a registry import.
+    const schemeSummaries = [];
     for (const scheme of setData.schemes) {
-      schemeSlugs.push(scheme.slug);
+      schemeSummaries.push({ slug: scheme.slug, name: scheme.name });
     }
     const mastermindSummaries = [];
     for (const mastermind of setData.masterminds) {
@@ -530,7 +533,7 @@ export async function startServer() {
     gauntletSetSummaries.push({
       setAbbr: setEntry.abbr,
       setName: setEntry.name,
-      schemeSlugs,
+      schemes: schemeSummaries,
       masterminds: mastermindSummaries,
     });
   }

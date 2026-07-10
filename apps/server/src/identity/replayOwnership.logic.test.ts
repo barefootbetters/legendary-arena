@@ -22,6 +22,7 @@ import {
   assignReplayOwnership,
   findReplayOwnershipForAccount,
   listAccountReplays,
+  listReplayOwners,
   updateReplayVisibility,
 } from './replayOwnership.logic.js';
 
@@ -282,6 +283,32 @@ describe('replay ownership logic (WP-052)', () => {
         await findReplayOwnershipForAccount(stranger.value.accountId, hash, testPool),
         null,
       );
+
+      // WP-344: listReplayOwners returns EVERY owner (no LIMIT), with
+      // display names and visibilities, ordered by internal player id.
+      const owners = await listReplayOwners(hash, testPool);
+      assert.equal(owners.length, 2);
+      assert.deepEqual(
+        owners.map((owner) => owner.displayName).sort(),
+        ['A', 'B'],
+      );
+      for (const owner of owners) {
+        assert.equal(owner.visibility, 'private');
+        assert.equal(typeof owner.playerId, 'string');
+      }
+
+      // A solo replay lists exactly one owner; an unknown hash lists none.
+      const soloHash = `${hash}-solo`;
+      await assignReplayOwnership(
+        accountA.value.accountId,
+        soloHash,
+        scenarioKey,
+        testPool,
+      );
+      const soloOwners = await listReplayOwners(soloHash, testPool);
+      assert.equal(soloOwners.length, 1);
+      assert.equal(soloOwners[0]?.displayName, 'A');
+      assert.deepEqual(await listReplayOwners('no-such-hash', testPool), []);
     },
   );
 });

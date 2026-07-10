@@ -49,7 +49,32 @@ export interface GauntletSnapshotEntry {
   readonly totalScore: number;
   readonly legCount: number;
   readonly averageScoreCentis: number;
+  // why: additive (WP-344 / D-24134 §4) — the full team roster's display
+  // names, handle-ASC; `handle` equals `players[0]` so pre-WP-345 renderers
+  // degrade sanely. Solo boards carry a one-element roster.
+  readonly players: readonly string[];
 }
+
+/**
+ * One leg of a gauntlet as published on the index (WP-344 / D-24134 §5) —
+ * the data the client's per-leg challenge links and leg display need.
+ * `schemeName` is the registry's display name; `schemeSlug` combines with
+ * the gauntlet's `setAbbr` into the set-qualified id the challenge URL
+ * carries.
+ */
+export interface GauntletIndexLeg {
+  readonly schemeSlug: string;
+  readonly schemeName: string;
+}
+
+/**
+ * Complete-entry counts per player count for one gauntlet
+ * (WP-344 / D-24134 §5). Keys are the stringified player counts 1-5 in
+ * fixed order for deterministic JSON.
+ */
+export type GauntletEntryCounts = Readonly<
+  Record<'1' | '2' | '3' | '4' | '5', number>
+>;
 
 /**
  * One row of the gauntlet index artifact — every catalog gauntlet appears
@@ -63,8 +88,14 @@ export interface GauntletIndexEntry {
   readonly mastermindSlug: string;
   readonly mastermindName: string;
   readonly legCount: number;
+  // why: `entryCount` predates the player-count dimension and now reports
+  // the SOLO board's complete-entry count (WP-344 / D-24134 §5) — the
+  // deployed WP-343 index renders it unchanged; per-count detail lives in
+  // the additive `entryCounts`.
   readonly entryCount: number;
   readonly board: string;
+  readonly entryCounts: GauntletEntryCounts;
+  readonly legs: readonly GauntletIndexLeg[];
 }
 
 /**
