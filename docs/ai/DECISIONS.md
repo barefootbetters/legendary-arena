@@ -28017,7 +28017,20 @@ Protect this file.
 
 ### D-24134 — Player-count gauntlet boards (roster-keyed multiplayer entries) + gauntlet leg challenge links
 
-**Status:** Active 2026-07-09 (design lock; ratified at SPEC draft, the D-24131 pattern). **WP-344** (server) + **WP-345** (client) drafted 2026-07-09; execution pending.
+**Status:** Active 2026-07-09 (design lock; ratified at SPEC draft, the D-24131 pattern). **WP-344 executed 2026-07-09** (EC-376; migration 027 auto-applies via the Render migrate step on deploy). **WP-345** (client) execution pending.
+
+> **Execution note (2026-07-09, WP-344 / EC-376).** Landed as designed with
+> three EC-draft reconciliations recorded in the WP addendum: (1) the summary
+> shape carries scheme names (`GauntletSetSummary.schemes` /
+> `GauntletDefinition.legs`) so the index `legs` publish needs no registry
+> import — `server.mjs` joins the file list (the WP-342 wiring-addendum
+> class); (2) `getGauntletStandings` returns all five counts from ONE
+> roster-joined query per gauntlet (`ReadonlyMap<playerCount, entries[]>`,
+> 105 queries/cycle not 525) — qualification semantics exactly as locked;
+> (3) the record key lock is JSDoc + compile-time reference (no runtime keys
+> test), amended 12 → 13. Bonus fix in the same column sweep:
+> `findCompetitiveScore` had missed WP-342's `outcome` column (its mapped
+> records carried `outcome: undefined`) — both columns now selected.
 
 **User-Visible Surface:** none at this entry (design lock). Eventual surfaces: legends.legendary-arena.com (per-player-count gauntlet boards with full team rosters; per-leg challenge links) and cards.legendary-arena.com (the challenge link's landing surface — the existing WP-114 URL-parameterized loadout preview).
 
