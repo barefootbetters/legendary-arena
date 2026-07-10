@@ -137,7 +137,8 @@
     { "heroSlug": "wasp", "cardSlug": "tiny-winged-justice", "abilityIndex": 1, "markupToken": "[keyword:draw:1]" },
     { "heroSlug": "wonder-man", "cardSlug": "ionic-energy", "abilityIndex": 0, "markupToken": "[keyword:optional-put-bottom-hq:1]" },
     { "heroSlug": "wonder-man", "cardSlug": "8th-wonder-of-the-world", "abilityIndex": 1, "markupToken": "[keyword:put-any-number-bottom-hq:1]" },
-    { "heroSlug": "wonder-man", "cardSlug": "absorb-ambient-power", "abilityIndex": 0, "markupToken": "[keyword:put-bottom-hq-icon-reward:3]" }
+    { "heroSlug": "wonder-man", "cardSlug": "absorb-ambient-power", "abilityIndex": 0, "markupToken": "[keyword:put-bottom-hq-icon-reward:3]" },
+    { "heroSlug": "black-knight", "cardSlug": "defend-the-weak", "abilityIndex": 0, "markupToken": "[keyword:return-zero-cost-discard:1]" }
   ],
   "asrd": [
     { "heroSlug": "warriors-three-the", "cardSlug": "fandral-the-dashing", "abilityIndex": 1, "markupToken": "[keyword:draw:1]" }

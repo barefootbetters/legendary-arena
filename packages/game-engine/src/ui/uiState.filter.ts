@@ -625,6 +625,32 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: D-24139 — the pending return-zero-cost-discard choice is scoped to the chooser
+  // (only they may resolve it). Redacted for EVERY audience except the choosing player;
+  // present only when the audience is a player whose playerId equals the chooser's
+  // playerID; omitted (conditional assignment, never an `undefined` literal) for
+  // opponents AND spectators — mirroring the pendingOptionalPutBottomHQ posture. The
+  // eligibleDiscardCards list carries the chooser's own discard cards; per-entry display
+  // spread prevents aliasing with the input.
+  if (
+    uiState.pendingReturnZeroCostDiscard !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingReturnZeroCostDiscard.playerID
+  ) {
+    const eligibleDiscardCardsCopy = [];
+    for (const entry of uiState.pendingReturnZeroCostDiscard.eligibleDiscardCards) {
+      eligibleDiscardCardsCopy.push({
+        zone: entry.zone,
+        cardId: entry.cardId,
+        display: { ...entry.display },
+      });
+    }
+    result.pendingReturnZeroCostDiscard = {
+      playerID: uiState.pendingReturnZeroCostDiscard.playerID,
+      eligibleDiscardCards: eligibleDiscardCardsCopy,
+    };
+  }
+
   // why: WP-258 / D-12803 — hollowEffects is PUBLIC card/mechanic data, not
   // hidden info. The filter passes it through value-unchanged for EVERY
   // audience (own-player AND other-player AND spectator) — it redacts /

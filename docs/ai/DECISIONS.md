@@ -28221,4 +28221,72 @@ Executed by marketing-repo WP-033.
 
 **Packet:** marketing-repo WP-033 (engine-repo decision record only; no engine code). **Drafted:** 2026-07-09. **Executed:** 2026-07-09.
 
+### D-24139 — Defend the Weak: mandatory return-a-0-cost-card from discard to hand (new pending-choice mechanic)
+
+**Status:** Active (post-execution) 2026-07-09. `D-24026` live-verify operator-pending on deploy.
+
+**User-Visible Surface:** play.legendary-arena.com (any match with Black Knight in the hero deck).
+
+**Context.** Operator play-testing on gitSha `60b4ec7` reported Black Knight's Defend the Weak
+("[Strength]: Return a 0-cost card from your discard pile to your hand.") never firing. The game log
+showed the WP-295 `did not activate` line on all three plays — faithful in that game (no Strength-class
+card had been played earlier in any of those turns; Reprocess is Ranged and the S.H.I.E.L.D. starting
+cards are grey) — but the ability text carried NO effect marker, so even a passed gate executed
+nothing: a hollow effect, the same class as the D-24133 Absorb Ambient Power fix. No
+return-from-discard mechanic existed in the engine.
+
+**Decision.** A new keyword `return-zero-cost-discard` implements the mandatory "Return a 0-cost card
+from your discard pile to your hand" form end-to-end as a NEW pending-choice family (discard → hand):
+
+- **Eligibility (single predicate).** `isZeroCostCard` = `cardStats[id]?.cost ?? 0 === 0` — the
+  engine-wide cost convention (recruitHero, heroCapture, optional-KO default targeting). S.H.I.E.L.D.
+  Agents/Troopers carry explicit cost-0 entries; Wounds have no entry and resolve to 0 — both are
+  0-cost cards per the tabletop rulebook. `getEligibleZeroCostDiscardCards` (discard order preserved)
+  is shared by the park handler, the resolve move, the UIState projection, and the bot default (the
+  round-trip rule; both exported from `resolveReturnZeroCostDiscard.ts`).
+- **Park.** `heroEffectReturnZeroCostDiscard`: 0 eligible → logged no-op, nothing parked; ≥1 eligible →
+  parks `PendingReturnZeroCostDiscard { playerID, sourceCardId }` on `G.pendingReturnZeroCostDiscard`
+  (FIFO, lazy-init at the park site, never in `Game.setup`). The park is silent; the return is logged
+  at resolve time.
+- **Resolve.** New move `resolveReturnZeroCostDiscard({ cardId })` — MANDATORY, no decline shape (the
+  printed text has no "you may"). Validates front-entry ownership, presence in the chooser's discard,
+  and 0-cost eligibility; moves exactly one occurrence discard → hand, logs, front-pops LAST. Stale /
+  malformed / ineligible submissions are silent no-ops with the queue intact (resubmit).
+- **Block level: FULL block-all (the KO-hero posture), not the HQ→bottom advanceStage-only posture.**
+  The guard `hasPendingReturnZeroCostDiscard` is mirrored beside `hasPendingDrawOrEmpowered` in ALL
+  action moves (drawCards, playCard, endTurn, dodgeCard, fightMastermind, fightVillain,
+  playFromUndercover, recruitHero, revealVillainCard) plus advanceStage. Rationale: the choice targets
+  the discard pile, and an unfrozen board lets a mid-pending play (e.g. Reprocess shuffling the discard
+  into the deck) strand the mandatory choice with zero eligible targets — an unresolvable pending and a
+  hard-freeze at the turn-end gate.
+- **Bot / simulation.** `getLegalMoves` short-circuits to the resolve move (deterministic default:
+  FIRST eligible card in discard order); dispatch entries added to BOTH simulation MOVE_MAPs (runner +
+  PAR aggregator, pinned by the D-24073 drift guard) and to `SIMULATION_MOVE_NAMES`.
+- **Client.** `UIPendingReturnZeroCostDiscard { playerID, eligibleDiscardCards }` projection (front
+  entry, 0-cost-filtered via the shared helper) + chooser-only redaction; new
+  `ReturnZeroCostDiscardPrompt.vue` (no Decline control); `resolveReturnZeroCostDiscard` added to
+  `UiMoveName`; `hasPendingReturnZeroCostDiscard` End-Turn / Pass-Priority gate threaded through
+  `useTurnActions` → `TurnActionBar` → `PlayDesktop`/`PlayMobile`.
+
+**Parser.** The marker `[keyword:return-zero-cost-discard:1]` needs no dedicated extraction step — the
+generic `KEYWORD_PATTERN` loop records the keyword and the effect builder's fallback emits
+`{ type, magnitude }`. Marked on 1 card: `antm/black-knight/defend-the-weak` (the only unambiguous
+mandatory single-card 0-cost onPlay instance in the corpus; the sibling discard-return variants —
+Rescue-gated `amwp`, once-per-turn Artifact `asrd`, multi-cost X-Gene `xmen`, class/team-predicate
+returns — are timing- or predicate-varied and stay deferred per the WP-216 curation discipline).
+
+**Not changed.** No migration; no `computeStateHash`/replay-hash change (fixture-unreachable, no golden
+shifts); `G.messages` lines are hash-excluded (D-24081); no server/`functions/` change.
+
+**Gates.** `pnpm -r build` 0; engine test **1871/1871** (27 keywords / 14 handlers; new
+predicate/eligibility/move/park/projection/redaction tests; move-set drift 18 → 19); arena-client
+typecheck (vue-tsc) 0; arena-client test **805/805** (prompt render/round-trip/mandatory/no-double-
+submit tests + End-Turn gate tests); `mechanics:metadata` + `ledger:heroes` regenerated and their
+`:check` gates green.
+
+**Packet:** Bug fix (Defend the Weak hollow effect; originally drafted as D-24137 — that number was
+claimed on `main` by EC-377's cross-subdomain cookie decision while this PR was open, and D-24138 by
+the www-auth-aware SPEC, so renumbered to D-24139). **Drafted:** 2026-07-09. **Executed:** 2026-07-09.
+
+
 Protect this file.

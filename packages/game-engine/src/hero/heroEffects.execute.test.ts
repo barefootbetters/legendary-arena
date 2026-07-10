@@ -52,12 +52,13 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     );
   });
 
-  it('has exactly 13 handlers and none for the deferred keywords', () => {
+  it('has exactly 14 handlers and none for the deferred keywords', () => {
     // why: WP-286 / D-24069 added the draw-or-empowered park handler (9 → 10); the
     // Ionic Energy optional-put-bottom-hq fix added its park handler (10 → 11); D-24132
     // added the put-any-number-bottom-hq park handler (11 → 12); D-24133 added the
-    // put-bottom-hq-icon-reward park handler (12 → 13).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 13);
+    // put-bottom-hq-icon-reward park handler (12 → 13); D-24139 added the
+    // return-zero-cost-discard park handler (13 → 14).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 14);
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
     assert.equal(HERO_EFFECT_HANDLERS['conditional'], undefined);
   });
@@ -3471,5 +3472,90 @@ describe('executeHeroEffects put-bottom-hq-icon-reward park (D-24133)', () => {
       gameState.messages.some((line) => line.includes('the HQ is empty')),
       'an empty-HQ effect appends a game-log line explaining the no-op',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// D-24139 — return-zero-cost-discard park case (Defend the Weak)
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects return-zero-cost-discard park (D-24139)', () => {
+  const mockCtx = makeMockCtx();
+
+  it('with >=1 eligible 0-cost discard card parks a choice (silent; discard untouched at play time)', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      discard: ['costly-a', 'starting-shield-agent'],
+      cardStats: {
+        'costly-a': { attack: 0, recruit: 0, cost: 3, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+        'starting-shield-agent': { attack: 0, recruit: 1, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['return-zero-cost-discard'],
+          effects: [{ type: 'return-zero-cost-discard', magnitude: 1 }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.pendingReturnZeroCostDiscard?.length, 1, 'exactly one choice parked');
+    assert.deepStrictEqual(
+      gameState.pendingReturnZeroCostDiscard![0],
+      { playerID: '0', sourceCardId: 'hero-x' },
+      'parked entry records the chooser and the source card',
+    );
+    // The return happens at RESOLVE time — discard untouched at play time; the park is SILENT.
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['costly-a', 'starting-shield-agent'],
+      'discard untouched at play time');
+    assert.equal(gameState.messages.length, 0, 'the park appends no game-log line');
+  });
+
+  it('with NO eligible 0-cost card it is a no-op plus a game-log line (nothing parked)', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      discard: ['costly-a'],
+      cardStats: {
+        'costly-a': { attack: 0, recruit: 0, cost: 3, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['return-zero-cost-discard'],
+          effects: [{ type: 'return-zero-cost-discard', magnitude: 1 }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.pendingReturnZeroCostDiscard?.length ?? 0, 0, 'nothing parked without an eligible card');
+    assert.ok(
+      gameState.messages.some((line) => line.includes('holds no 0-cost card')),
+      'a no-eligible-card effect appends a game-log line explaining the no-op',
+    );
+  });
+
+  it('with an EMPTY discard pile it is a no-op plus a game-log line (nothing parked)', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['return-zero-cost-discard'],
+          effects: [{ type: 'return-zero-cost-discard', magnitude: 1 }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.pendingReturnZeroCostDiscard?.length ?? 0, 0, 'nothing parked on an empty discard');
+    assert.equal(gameState.messages.length, 1, 'exactly one explanatory log line');
   });
 });

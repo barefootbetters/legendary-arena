@@ -154,7 +154,7 @@
           "attack": null,
           "recruit": "2",
           "abilities": [
-            "[hc:strength]: Return a 0-cost card from your discard pile to your hand."
+            "[hc:strength]: Return a 0-cost card from your discard pile to your hand. [keyword:return-zero-cost-discard:1]"
           ]
         },
         {

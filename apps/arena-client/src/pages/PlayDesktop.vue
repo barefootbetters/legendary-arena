@@ -44,6 +44,7 @@ import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue'
 import VictoryPileCardPickPrompt from '../components/play/VictoryPileCardPickPrompt.vue';
 import OptionalPutBottomHQPrompt from '../components/play/OptionalPutBottomHQPrompt.vue';
 import PutAnyNumberBottomHQPrompt from '../components/play/PutAnyNumberBottomHQPrompt.vue';
+import ReturnZeroCostDiscardPrompt from '../components/play/ReturnZeroCostDiscardPrompt.vue';
 import type { SubmitMove } from '../components/play/uiMoveName.types';
 
 interface ActivePile {
@@ -99,6 +100,7 @@ export default defineComponent({
     VictoryPileCardPickPrompt,
     OptionalPutBottomHQPrompt,
     PutAnyNumberBottomHQPrompt,
+    ReturnZeroCostDiscardPrompt,
   },
   props: {
     submitMove: {
@@ -369,6 +371,13 @@ export default defineComponent({
       () => snapshot.value?.pendingPutAnyNumberBottomHQ !== undefined,
     );
 
+    // why: D-24139 — derived from UIState.pendingReturnZeroCostDiscard !== undefined. Passed
+    // to TurnActionBar to block end-turn and pass-priority at EVERY stage while a mandatory
+    // return-zero-cost-discard choice is pending (board frozen, mirrors hasPendingKoChoice).
+    const hasPendingReturnZeroCostDiscard = computed<boolean>(
+      () => snapshot.value?.pendingReturnZeroCostDiscard !== undefined,
+    );
+
     return {
       snapshot,
       viewer,
@@ -393,6 +402,7 @@ export default defineComponent({
       hasPendingVictoryPileCardPick,
       hasPendingOptionalPutBottomHQ,
       hasPendingPutAnyNumberBottomHQ,
+      hasPendingReturnZeroCostDiscard,
     };
   },
 });
@@ -581,6 +591,14 @@ export default defineComponent({
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
+          <!-- why: D-24139 — the return-zero-cost-discard prompt (Black Knight's Defend the
+               Weak) renders above TurnActionBar in DOM order; appears only for the choosing
+               player when pendingReturnZeroCostDiscard is set. Normal document flow. -->
+          <ReturnZeroCostDiscardPrompt
+            :pending-return-zero-cost-discard="snapshot.pendingReturnZeroCostDiscard"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
           <!-- why: D-22201 + WP-222 — prompt renders above TurnActionBar in DOM
                order; appears only for the choosing player when pendingHeroChoice
                is set. NOT a modal; NOT position:fixed. Normal document flow. -->
@@ -599,6 +617,7 @@ export default defineComponent({
             :has-pending-victory-pile-card-pick="hasPendingVictoryPileCardPick"
             :has-pending-optional-put-bottom-h-q="hasPendingOptionalPutBottomHQ"
             :has-pending-put-any-number-bottom-h-q="hasPendingPutAnyNumberBottomHQ"
+            :has-pending-return-zero-cost-discard="hasPendingReturnZeroCostDiscard"
             :submit-move="submitMove"
           />
         </template>

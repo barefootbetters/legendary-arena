@@ -118,6 +118,13 @@ export interface UIState {
   // audience except the chooser (keyed on .playerID), mirroring pendingOptionalPutBottomHQ.
   // Absent (undefined) means no pending choice; the client must not render the prompt then.
   pendingPutAnyNumberBottomHQ?: UIPendingPutAnyNumberBottomHQ;
+  // why: D-24139 — projects the FRONT entry of G.pendingReturnZeroCostDiscard with the
+  // eligible 0-cost discard cards (each carrying its instance cardId + display) so the
+  // chooser can render the mandatory "Return a 0-cost card from your discard pile to
+  // your hand" prompt. Redacted (omitted) for every audience except the chooser (keyed
+  // on .playerID), mirroring pendingOptionalPutBottomHQ. Absent (undefined) means no
+  // pending choice; the client must not render the prompt then.
+  pendingReturnZeroCostDiscard?: UIPendingReturnZeroCostDiscard;
   // why: WP-258 — projects the WP-257 runtime hollow-effect channel
   // (G.diagnostics.hollowEffects) so the client can render a structured debug
   // panel + carry the records on the Download-diagnostics export. OPTIONAL on
@@ -659,6 +666,24 @@ export interface UIPendingOptionalPutBottomHQ {
   // the client hides the Decline control so the player cannot no-op a required choice.
   // Absent/false is the optional "You may put a card…" form (Ionic Energy).
   mandatory?: boolean;
+}
+
+/**
+ * The chooser-facing projection of the front pending return-zero-cost-discard
+ * choice (D-24139) — the mandatory "Return a 0-cost card from your discard
+ * pile to your hand" form (Black Knight's Defend the Weak).
+ *
+ * `eligibleDiscardCards` REUSES `UIEligibleKoHeroCard` (zone is always
+ * 'discard' here) so each entry carries the instance cardId + display the
+ * prompt renders. The list holds ONLY the 0-cost cards, filtered by the same
+ * isZeroCostCard predicate the resolve move validates with (the round-trip
+ * rule), preserving discard order.
+ */
+export interface UIPendingReturnZeroCostDiscard {
+  // why: the redaction key; the chooser-only filter compares audience.playerId
+  // against this, mirroring UIPendingOptionalPutBottomHQ.playerID.
+  playerID: string;
+  eligibleDiscardCards: UIEligibleKoHeroCard[];
 }
 
 /**

@@ -24,6 +24,10 @@ import {
   getEligibleVictoryVillains,
 } from '../moves/resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
+import {
+  hasPendingReturnZeroCostDiscard,
+  getEligibleZeroCostDiscardCards,
+} from '../moves/resolveReturnZeroCostDiscard.js';
 
 // why: simulation covers the play-phase only; lobby moves (setPlayerReady,
 // startMatchIfReady) are excluded because runSimulation starts the per-game
@@ -46,6 +50,7 @@ export const SIMULATION_MOVE_NAMES = [
   'resolveOptionalKoReward',
   'resolveVictoryPileCardPick',
   'resolveDrawOrEmpowered',
+  'resolveReturnZeroCostDiscard',
 ] as const;
 
 // why: type is exported implicitly via the const array above; external
@@ -111,6 +116,21 @@ export function getLegalMoves(
     // why: fail-closed — active player has no zones (malformed state).
     // Return empty list; the runner's zero-legal-moves fallback handles
     // the degenerate case.
+    return legalMoves;
+  }
+
+  // why: pending return-zero-cost-discard short-circuit (D-24139) — while a mandatory
+  // 0-cost discard-to-hand return is pending the engine block-all guard freezes every
+  // other move, so the bot must resolve it first. Deterministic default target: the
+  // FIRST eligible card in discard order (lowest index). Returns a list of length
+  // EXACTLY 1. eligible is non-empty here because the park requires >=1 eligible card
+  // and the block-all guard freezes the discard pile between park and resolve.
+  if (hasPendingReturnZeroCostDiscard(gameState)) {
+    const eligibleReturns = getEligibleZeroCostDiscardCards(gameState, activePlayer);
+    if (eligibleReturns.length > 0) {
+      return [{ name: 'resolveReturnZeroCostDiscard', args: { cardId: eligibleReturns[0]! } }];
+    }
+    // why: defensive — if no eligible card (engine-invariant violation after park), fail closed.
     return legalMoves;
   }
 

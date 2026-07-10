@@ -39,6 +39,7 @@ import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
+import { hasPendingReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDiscard.js';
 import {
   composeAmbushNarrative,
   composeEffectResultLogLine,
@@ -87,6 +88,8 @@ export function revealVillainCard({ G, ctx, ...context }: MoveContext): void {
   if (hasPendingVictoryPileCardPick(G)) return;
   // why: block-all — pendingDrawOrEmpowered must be resolved before any other action (D-24069)
   if (hasPendingDrawOrEmpowered(G)) return;
+  // why: block-all — pendingReturnZeroCostDiscard must be resolved before any other action (D-24139)
+  if (hasPendingReturnZeroCostDiscard(G)) return;
 
   // why: the start-of-turn reveal is once per turn; scheme/card effects that
   // chain extra reveals call performVillainReveal directly and intentionally

@@ -7,6 +7,40 @@
 
 ## Current State
 
+### Bug fix — Defend the Weak: mandatory 0-cost discard-to-hand return (D-24139 Active) (2026-07-09)
+
+**User-Visible change (post-deploy): `play.legendary-arena.com`.** Black Knight's Defend the Weak
+("[Strength]: Return a 0-cost card from your discard pile to your hand.") was a HOLLOW effect — the
+ability text carried no marker, so even a passed Strength gate executed nothing (operator-reported;
+same class as the D-24133 Absorb Ambient Power fix). New keyword `return-zero-cost-discard`
+implements it end-to-end as a new pending-choice family (discard → hand):
+
+- **Engine:** park handler (0 eligible → logged no-op; ≥1 → parks `PendingReturnZeroCostDiscard`),
+  new MANDATORY move `resolveReturnZeroCostDiscard({ cardId })` (no decline — the printed text has
+  no "you may"), shared 0-cost eligibility predicate (`cardStats[id]?.cost ?? 0` — Wounds and
+  S.H.I.E.L.D. starting cards are 0-cost) reused by park, resolve, projection, and bot default.
+- **Block level:** FULL block-all (the KO-hero posture, guards in all 10 action-move sites) — an
+  unfrozen board would let Reprocess shuffle the discard away mid-pending and strand the mandatory
+  choice with zero eligible targets (hard-freeze class).
+- **Bot/simulation:** `getLegalMoves` short-circuit (first eligible in discard order) + dispatch
+  entries in both simulation MOVE_MAPs (drift-guard pinned).
+- **Client:** `UIPendingReturnZeroCostDiscard` projection + chooser-only redaction,
+  `ReturnZeroCostDiscardPrompt.vue` (no Decline control), End-Turn / Pass-Priority gate threaded
+  through `useTurnActions` → `TurnActionBar` → both Play pages.
+- **Data:** `[keyword:return-zero-cost-discard:1]` marked on `antm/black-knight/defend-the-weak`
+  (the corpus's only unambiguous instance; timing-/predicate-varied siblings deferred per WP-216
+  curation).
+- **Gates:** `pnpm -r build` 0; engine test 1871/1871 (27 keywords / 14 handlers; move-set 19);
+  arena-client typecheck 0 + test 805/805; `mechanics:metadata` + `ledger:heroes` regenerated.
+- **Numbering:** originally drafted D-24137; claimed on `main` by concurrent sessions while the PR
+  was open (EC-377 cookie decision took D-24137, the www-auth SPEC took D-24138), so renumbered to
+  D-24139.
+- **D-24026 live-verify (operator-pending on deploy):** play a Black Knight match, play a Strength
+  card then Defend the Weak with a S.H.I.E.L.D. card in the discard — the prompt appears, the picked
+  card returns to hand, and the log shows the return line.
+
+---
+
 ### WP-347 / EC-377 Executed — Cross-subdomain Hanko session cookie (D-24137 Active, amends D-16002) (2026-07-09)
 
 The enabler for the marketing-site username feature (WP-033). The JS-readable `hanko` session
