@@ -110,13 +110,8 @@ export class HankoInitializationFailed extends Error {
  * @param hostname `window.location.hostname` of the page loading the SDK.
  * @returns `.legendary-arena.com` on a production host, else `undefined`.
  */
-export function resolveSessionCookieDomain(
-  hostname: string,
-): string | undefined {
-  if (
-    hostname === 'legendary-arena.com' ||
-    hostname.endsWith('.legendary-arena.com')
-  ) {
+export function resolveSessionCookieDomain(hostname: string): string | undefined {
+  if (hostname === 'legendary-arena.com' || hostname.endsWith('.legendary-arena.com')) {
     return '.legendary-arena.com';
   }
   return undefined;

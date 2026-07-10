@@ -221,25 +221,13 @@ test('onSessionCreated reads getSessionToken at fire time, ignoring the event pa
 });
 
 test('resolveSessionCookieDomain returns the parent domain for production subdomains', () => {
-  assert.equal(
-    resolveSessionCookieDomain('dashboard.legendary-arena.com'),
-    '.legendary-arena.com',
-  );
-  assert.equal(
-    resolveSessionCookieDomain('play.legendary-arena.com'),
-    '.legendary-arena.com',
-  );
-  assert.equal(
-    resolveSessionCookieDomain('www.legendary-arena.com'),
-    '.legendary-arena.com',
-  );
+  assert.equal(resolveSessionCookieDomain('dashboard.legendary-arena.com'), '.legendary-arena.com');
+  assert.equal(resolveSessionCookieDomain('play.legendary-arena.com'), '.legendary-arena.com');
+  assert.equal(resolveSessionCookieDomain('www.legendary-arena.com'), '.legendary-arena.com');
 });
 
 test('resolveSessionCookieDomain returns the parent domain for the bare apex host', () => {
-  assert.equal(
-    resolveSessionCookieDomain('legendary-arena.com'),
-    '.legendary-arena.com',
-  );
+  assert.equal(resolveSessionCookieDomain('legendary-arena.com'), '.legendary-arena.com');
 });
 
 test('resolveSessionCookieDomain returns undefined for localhost and preview hosts', () => {
@@ -247,17 +235,11 @@ test('resolveSessionCookieDomain returns undefined for localhost and preview hos
   // the cookie; dev (localhost) and previews (*.pages.dev) keep the default
   // host-scoped cookie so sign-in still works there.
   assert.equal(resolveSessionCookieDomain('localhost'), undefined);
-  assert.equal(
-    resolveSessionCookieDomain('legendary-arena-dashboard.pages.dev'),
-    undefined,
-  );
+  assert.equal(resolveSessionCookieDomain('legendary-arena-dashboard.pages.dev'), undefined);
 });
 
 test('resolveSessionCookieDomain does not match a look-alike suffix domain', () => {
   // why: the leading dot in the `.legendary-arena.com` suffix check prevents a
   // host like `evil-legendary-arena.com` from being treated as our domain.
-  assert.equal(
-    resolveSessionCookieDomain('evil-legendary-arena.com'),
-    undefined,
-  );
+  assert.equal(resolveSessionCookieDomain('evil-legendary-arena.com'), undefined);
 });
