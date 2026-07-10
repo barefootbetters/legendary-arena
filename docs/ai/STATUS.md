@@ -7,6 +7,34 @@
 
 ## Current State
 
+### WP-347 / EC-377 Executed — Cross-subdomain Hanko session cookie (D-24137 Active, amends D-16002) (2026-07-09)
+
+The enabler for the marketing-site username feature (WP-033). The JS-readable `hanko` session
+cookie was host-scoped (WP-160/WP-241 call the Hanko SDK `register()` with no `cookieDomain`,
+adopting the SDK default per D-16002), so a sign-in on `play.` was invisible to `dashboard.` and
+`www.`.
+
+- **Fix (4 files, both `auth/hankoClient.ts` + tests):** each wrapper now passes
+  `cookieDomain: '.legendary-arena.com'` to `register()` **on production `*.legendary-arena.com`
+  hosts only**, via a new exported pure `resolveSessionCookieDomain(hostname)` (leading-dot suffix
+  guard so `evil-legendary-arena.com` doesn't match; apex + subdomains → `.legendary-arena.com`;
+  `localhost`/`*.pages.dev` → `undefined`). The `window.location.hostname` read happens only in the
+  production factory (tests inject `__hankoFactory`, never run it). No public-signature change;
+  `cookieSameSite`/`storageKey` unchanged; no server/engine change.
+- **Result:** single sign-on across `*.legendary-arena.com` (play + dashboard + www share one
+  login). Existing users re-sign-in once to replace the host-scoped cookie; dev/preview unaffected.
+- **Decision (D-24137, amends D-16002):** production session cookie is parent-domain-scoped for
+  cross-subdomain SSO; the token is still the `hanko` cookie read via `getSessionToken()`.
+- **Gates:** arena-client typecheck 0 / test 797/797 (+5); dashboard typecheck 0 / test 409/409
+  (+5); `pnpm -r build` 0; 4-file allowlist held.
+- **User-Visible Surface = play + dashboard.** D-24026 live-verify **operator-pending on deploy**:
+  after deploy + re-login, DevTools → Application → Cookies shows the `hanko` cookie Domain as
+  `.legendary-arena.com`, and `dashboard.legendary-arena.com` shows you signed-in without a fresh
+  login.
+- **Does NOT touch** the Hanko App URL / passkey rpID (that's the separately-spawned task).
+
+---
+
 ### WP-344 / EC-376 Executed — Player-Count Gauntlet Boards, Server (D-24134 server half) (2026-07-09)
 
 **No user-observable change — infrastructure only.** The D-24134 per-player-count,

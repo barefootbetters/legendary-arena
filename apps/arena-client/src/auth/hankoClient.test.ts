@@ -5,6 +5,7 @@ import {
   HankoInitializationFailed,
   getCurrentTokenFromHandle,
   initializeHankoClient,
+  resolveSessionCookieDomain,
   signOutCurrentSession,
   subscribeToSessionEvents,
   type HankoLike,
@@ -235,5 +236,47 @@ test('onSessionCreated reads getSessionToken at fire time, ignoring the event pa
   assert.ok(
     getterReads >= 1,
     'wrapper must call getSessionToken on every session-created fire',
+  );
+});
+
+test('resolveSessionCookieDomain returns the parent domain for production subdomains', () => {
+  assert.equal(
+    resolveSessionCookieDomain('play.legendary-arena.com'),
+    '.legendary-arena.com',
+  );
+  assert.equal(
+    resolveSessionCookieDomain('www.legendary-arena.com'),
+    '.legendary-arena.com',
+  );
+  assert.equal(
+    resolveSessionCookieDomain('dashboard.legendary-arena.com'),
+    '.legendary-arena.com',
+  );
+});
+
+test('resolveSessionCookieDomain returns the parent domain for the bare apex host', () => {
+  assert.equal(
+    resolveSessionCookieDomain('legendary-arena.com'),
+    '.legendary-arena.com',
+  );
+});
+
+test('resolveSessionCookieDomain returns undefined for localhost and preview hosts', () => {
+  // why: setting a cookie domain the page is not under makes the browser drop
+  // the cookie; dev (localhost) and the CF Pages preview (*.pages.dev) must
+  // keep the default host-scoped cookie so sign-in still works there.
+  assert.equal(resolveSessionCookieDomain('localhost'), undefined);
+  assert.equal(
+    resolveSessionCookieDomain('legendary-arena-play.pages.dev'),
+    undefined,
+  );
+});
+
+test('resolveSessionCookieDomain does not match a look-alike suffix domain', () => {
+  // why: the leading dot in the `.legendary-arena.com` suffix check prevents a
+  // host like `evil-legendary-arena.com` from being treated as our domain.
+  assert.equal(
+    resolveSessionCookieDomain('evil-legendary-arena.com'),
+    undefined,
   );
 });
