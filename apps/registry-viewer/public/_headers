@@ -1,0 +1,14 @@
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+
+# why: no explicit Cache-Control rule for the HTML entry document. Cloudflare
+# Pages' platform default for HTML is already `public, max-age=0,
+# must-revalidate`, so the browser revalidates index.html on every navigation
+# and always sees the current content-hashed chunk references after a redeploy.
+# A `no-cache` rule here would be redundant with that default. Root static files
+# like robots.txt and registry-config.json are not under /assets/, so they keep
+# that revalidating default too — only the hashed /assets/* chunks go immutable.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
