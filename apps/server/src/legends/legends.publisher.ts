@@ -25,7 +25,8 @@ import type {
 
 import type { GauntletDefinition } from './gauntlet.logic.js';
 import {
-  buildGauntletBoardName,
+  buildGauntletBoardNameForPlayerCount,
+  GAUNTLET_PLAYER_COUNTS,
   getGauntletStandings,
 } from './gauntlet.logic.js';
 
@@ -227,66 +228,90 @@ export async function publishAllBoards(
     let indexBuildFailed = false;
 
     for (const gauntletDefinition of gauntletCatalog) {
-      const boardName = buildGauntletBoardName(gauntletDefinition);
+      const soloBoardName = buildGauntletBoardNameForPlayerCount(
+        gauntletDefinition,
+        1,
+      );
       try {
-        const standings = await getGauntletStandings(
+        const standingsByPlayerCount = await getGauntletStandings(
           gauntletDefinition,
           database,
           leaderboardDeps,
         );
+
+        const entryCounts = {
+          '1': standingsByPlayerCount.get(1)?.length ?? 0,
+          '2': standingsByPlayerCount.get(2)?.length ?? 0,
+          '3': standingsByPlayerCount.get(3)?.length ?? 0,
+          '4': standingsByPlayerCount.get(4)?.length ?? 0,
+          '5': standingsByPlayerCount.get(5)?.length ?? 0,
+        };
 
         gauntletIndexEntries.push({
           setAbbr: gauntletDefinition.setAbbr,
           setName: gauntletDefinition.setName,
           mastermindSlug: gauntletDefinition.mastermindSlug,
           mastermindName: gauntletDefinition.mastermindName,
-          legCount: gauntletDefinition.legSchemeSlugs.length,
-          entryCount: standings.length,
-          board: boardName,
+          legCount: gauntletDefinition.legs.length,
+          // why: entryCount predates the player-count dimension and reports
+          // the SOLO board (D-24134 §5) — the deployed WP-343 index renders
+          // it unchanged; per-count detail is the additive entryCounts.
+          entryCount: entryCounts['1'],
+          board: soloBoardName,
+          entryCounts,
+          legs: gauntletDefinition.legs,
         });
 
-        // why: zero-entry gauntlets appear in the index but get NO board file
-        // (D-24131 §7) — the index carries "unclaimed" boards without writing
-        // 100+ empty JSON files every publish cycle.
-        if (standings.length === 0) {
-          continue;
-        }
+        for (const playerCount of GAUNTLET_PLAYER_COUNTS) {
+          const standings = standingsByPlayerCount.get(playerCount) ?? [];
+          // why: zero-entry boards (any count) appear via the index's
+          // entryCounts but get NO board file (D-24131 §7 / D-24134 §2) —
+          // the index carries "unclaimed" state without writing 500+ empty
+          // JSON files every publish cycle.
+          if (standings.length === 0) {
+            continue;
+          }
 
-        const gauntletJson = JSON.stringify({
-          board: boardName,
-          entries: standings,
-          rowCount: standings.length,
-          schemaVersion: 1,
-        });
+          const boardName = buildGauntletBoardNameForPlayerCount(
+            gauntletDefinition,
+            playerCount,
+          );
+          const gauntletJson = JSON.stringify({
+            board: boardName,
+            entries: standings,
+            rowCount: standings.length,
+            schemaVersion: 1,
+          });
 
-        boardPayloads.push({
-          boardName,
-          jsonPayload: gauntletJson,
-          rowCount: standings.length,
-        });
+          boardPayloads.push({
+            boardName,
+            jsonPayload: gauntletJson,
+            rowCount: standings.length,
+          });
 
-        const outcome = await writeBoardToR2(
-          r2Client, bucket, boardName, gauntletJson, standings.length, runId,
-        );
-        boardOutcomes.push(outcome);
-        if (!outcome.success) {
-          anyBoardFailed = true;
-        } else {
-          writtenGauntletBoardNames.push(boardName);
+          const outcome = await writeBoardToR2(
+            r2Client, bucket, boardName, gauntletJson, standings.length, runId,
+          );
+          boardOutcomes.push(outcome);
+          if (!outcome.success) {
+            anyBoardFailed = true;
+          } else {
+            writtenGauntletBoardNames.push(boardName);
+          }
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         anyBoardFailed = true;
         indexBuildFailed = true;
         boardOutcomes.push({
-          board: boardName,
+          board: soloBoardName,
           byteCount: 0,
           errorMessage,
           putLatencyMs: 0,
           rowCount: 0,
           success: false,
         });
-        logBoardOutcome(runId, boardName, 0, 0, 0, false, errorMessage);
+        logBoardOutcome(runId, soloBoardName, 0, 0, 0, false, errorMessage);
       }
     }
 

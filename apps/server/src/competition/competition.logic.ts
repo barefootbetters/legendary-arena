@@ -201,6 +201,7 @@ interface CompetitiveScoreRow {
   state_hash: string;
   created_at: Date | string;
   outcome: CompetitiveOutcome | null;
+  player_count: number | null;
 }
 
 /**
@@ -237,6 +238,7 @@ function mapCompetitiveScoreRow(row: CompetitiveScoreRow): CompetitiveScoreRecor
         ? row.created_at.toISOString()
         : row.created_at,
     outcome: row.outcome,
+    playerCount: row.player_count,
   };
 }
 
@@ -259,7 +261,7 @@ async function findExistingByAccountAndHash(
     'SELECT cs.submission_id, p.ext_id AS account_id, cs.replay_hash, ' +
       'cs.scenario_key, cs.raw_score, cs.final_score, cs.score_breakdown, ' +
       'cs.par_version, cs.scoring_config_version, cs.state_hash, ' +
-      'cs.created_at, cs.outcome ' +
+      'cs.created_at, cs.outcome, cs.player_count ' +
       'FROM legendary.competitive_scores cs ' +
       'JOIN legendary.players p ON cs.player_id = p.player_id ' +
       'WHERE p.ext_id = $1 AND cs.replay_hash = $2 LIMIT 1',
@@ -445,7 +447,11 @@ export async function findCompetitiveScore(
     'SELECT cs.submission_id, p.ext_id AS account_id, cs.replay_hash, ' +
       'cs.scenario_key, cs.raw_score, cs.final_score, cs.score_breakdown, ' +
       'cs.par_version, cs.scoring_config_version, cs.state_hash, ' +
-      'cs.created_at ' +
+      // why: cs.outcome joined this list at WP-344 time — WP-342 added the
+      // column to every other SELECT but missed this read surface, so its
+      // mapped records carried `outcome: undefined`; cs.player_count lands
+      // in the same sweep (EC-376).
+      'cs.created_at, cs.outcome, cs.player_count ' +
       'FROM legendary.competitive_scores cs ' +
       'JOIN legendary.players p ON cs.player_id = p.player_id ' +
       'WHERE cs.replay_hash = $1 LIMIT 1',
@@ -472,7 +478,7 @@ export async function listPlayerCompetitiveScores(
     'SELECT cs.submission_id, p.ext_id AS account_id, cs.replay_hash, ' +
       'cs.scenario_key, cs.raw_score, cs.final_score, cs.score_breakdown, ' +
       'cs.par_version, cs.scoring_config_version, cs.state_hash, ' +
-      'cs.created_at, cs.outcome ' +
+      'cs.created_at, cs.outcome, cs.player_count ' +
       'FROM legendary.competitive_scores cs ' +
       'JOIN legendary.players p ON cs.player_id = p.player_id ' +
       'WHERE p.ext_id = $1 ' +
@@ -662,6 +668,20 @@ export async function submitCompetitiveScoreImpl(
   const outcome: CompetitiveOutcome | null =
     endgameResult === null ? null : endgameResult.outcome;
 
+  // why: step 14c (WP-344 / D-24134 §1) — the seat count derives from the
+  // reduced final G's per-player zone record: playerZones carries exactly one
+  // entry per seat by construction (buildInitialGameState), and the reduction
+  // is faithful (D-24124), so the key count IS the match's player count —
+  // server-authoritative, never client-supplied. An out-of-range count
+  // (defensive; the engine caps matches at 5 seats) stores SQL NULL rather
+  // than rejecting — player_count is supplementary provenance for the
+  // count-keyed gauntlet boards, never a verification gate.
+  const seatCount = Object.keys(
+    (reduced.finalState as LegendaryGameState).playerZones ?? {},
+  ).length;
+  const playerCount: number | null =
+    seatCount >= 1 && seatCount <= 5 ? seatCount : null;
+
   // why: step 15 — locked CTE INSERT with the
   // ON CONFLICT (player_id, replay_hash) DO UPDATE SET player_id =
   // legendary.competitive_scores.player_id no-op self-assignment +
@@ -688,20 +708,20 @@ export async function submitCompetitiveScoreImpl(
       'INSERT INTO legendary.competitive_scores ' +
       '(player_id, replay_hash, scenario_key, raw_score, final_score, ' +
       'score_breakdown, par_version, scoring_config_version, state_hash, ' +
-      'outcome) ' +
-      'SELECT player_id, $2, $3, $4, $5, $6, $7, $8, $9, $10 ' +
+      'outcome, player_count) ' +
+      'SELECT player_id, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11 ' +
       'FROM resolved_player ' +
       'ON CONFLICT (player_id, replay_hash) ' +
       'DO UPDATE SET player_id = legendary.competitive_scores.player_id ' +
       'RETURNING submission_id, player_id, replay_hash, scenario_key, ' +
       'raw_score, final_score, score_breakdown, ' +
       'par_version, scoring_config_version, state_hash, created_at, ' +
-      'outcome, (xmax = 0) AS was_inserted ' +
+      'outcome, player_count, (xmax = 0) AS was_inserted ' +
       ') ' +
       'SELECT i.submission_id, p.ext_id AS account_id, i.replay_hash, ' +
       'i.scenario_key, i.raw_score, i.final_score, i.score_breakdown, ' +
       'i.par_version, i.scoring_config_version, i.state_hash, ' +
-      'i.created_at, i.outcome, i.was_inserted, i.player_id ' +
+      'i.created_at, i.outcome, i.player_count, i.was_inserted, i.player_id ' +
       'FROM inserted i ' +
       'JOIN legendary.players p ON i.player_id = p.player_id',
     [
@@ -718,6 +738,7 @@ export async function submitCompetitiveScoreImpl(
       // submission (the anti-tamper anchor).
       reduced.stateHash,
       outcome,
+      playerCount,
     ],
   );
 

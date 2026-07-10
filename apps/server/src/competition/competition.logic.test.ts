@@ -157,6 +157,19 @@ const LOSS_FINAL_STATE = {
   counters: { [ENDGAME_CONDITIONS.SCHEME_LOSS]: 1 },
 } as unknown as LegendaryGameState;
 
+// why: WP-344 player-count fixture — identical to WIN_FINAL_STATE except the
+// per-player zone record carries TWO seats, which is the seat-count source
+// step 14c reads (D-24134 §1). The extra seat changes the canonical hash, so
+// this fixture is its own submittable replay identity.
+const TWO_SEAT_FINAL_STATE = {
+  ...(TEST_FINAL_STATE as unknown as Record<string, unknown>),
+  counters: { [ENDGAME_CONDITIONS.MASTERMIND_DEFEATED]: 1 },
+  playerZones: {
+    '0': { hand: [], deck: [], discard: [], inPlay: [], victory: [] },
+    '1': { hand: [], deck: [], discard: [], inPlay: [], victory: [] },
+  },
+} as unknown as LegendaryGameState;
+
 // why: minimal ScenarioScoringConfig satisfying validateScoringConfig's
 // engine-side monotonicity invariants (per parScoring.logic.ts §config
 // validation). Numeric values chosen for invariant satisfaction only;
@@ -991,14 +1004,69 @@ describe('competition logic (WP-053)', () => {
       );
       assert.ok(result.ok === true);
       assert.strictEqual(result.record.outcome, 'heroes-win');
+      // WP-344: the solo fixture's per-player record has one seat.
+      assert.strictEqual(result.record.playerCount, 1);
 
-      // Round-trip: the listed record carries the same outcome.
+      // Round-trip: the listed record carries the same outcome + count.
       const listed = await listPlayerCompetitiveScores(
         account.accountId,
         testPool,
       );
       assert.strictEqual(listed.length, 1);
       assert.strictEqual(listed[0].outcome, 'heroes-win');
+      assert.strictEqual(listed[0].playerCount, 1);
+    },
+  );
+
+  test(
+    'two-seat submission persists player_count 2 (WP-344 / D-24134)',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const accountResult = await createPlayerAccount(
+        {
+          email: 'wp344-duo@example.test',
+          displayName: 'Duo Owner',
+          authProvider: 'email',
+          authProviderId: 'wp344-duo',
+        },
+        testPool,
+      );
+      assert.ok(accountResult.ok === true);
+      const account = accountResult.value;
+
+      const duoHash = computeStateHash(TWO_SEAT_FINAL_STATE);
+      const ownershipResult = await assignReplayOwnership(
+        account.accountId,
+        duoHash,
+        TEST_SCENARIO_KEY,
+        testPool,
+      );
+      assert.ok(ownershipResult.ok === true);
+      await updateReplayVisibility(
+        ownershipResult.value.ownershipId,
+        'public',
+        testPool,
+      );
+
+      const duoDeps = {
+        reduceReplay: async () => ({
+          finalState: TWO_SEAT_FINAL_STATE,
+          stateHash: duoHash,
+          turnCount: TEST_TURN_COUNT,
+        }),
+        checkParPublished: stubCheckParPublished,
+      } as unknown as Parameters<typeof submitCompetitiveScoreImpl>[3];
+
+      const result = await submitCompetitiveScoreImpl(
+        account,
+        duoHash,
+        testPool,
+        duoDeps,
+      );
+      assert.ok(result.ok === true);
+      assert.strictEqual(result.record.playerCount, 2);
+      assert.strictEqual(result.record.outcome, 'heroes-win');
     },
   );
 

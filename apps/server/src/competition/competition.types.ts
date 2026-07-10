@@ -148,10 +148,11 @@ export const COMPETITIVE_OUTCOMES: readonly CompetitiveOutcome[] = [
  *
  * `Object.keys(record).sort()` MUST equal:
  *   ['accountId','createdAt','finalScore','outcome','parVersion',
- *    'rawScore','replayHash','scenarioKey','scoreBreakdown',
- *    'scoringConfigVersion','stateHash','submissionId']
- * — exactly 12 keys; drift-detection test #9 enforces this. (Amended
- * from the WP-053 11-key lock by D-24131, which adds `outcome`.)
+ *    'playerCount','rawScore','replayHash','scenarioKey',
+ *    'scoreBreakdown','scoringConfigVersion','stateHash','submissionId']
+ * — exactly 13 keys; drift-detection test #9 enforces this. (Amended
+ * from the WP-053 11-key lock by D-24131, which adds `outcome`, then to
+ * 13 keys by D-24134, which adds `playerCount`.)
  */
 // why: immutable snapshot of verified execution. The two version
 // fields (parVersion text + scoringConfigVersion integer) pin the
@@ -187,6 +188,12 @@ export interface CompetitiveScoreRecord {
   // migration 026 (or hit the defensive null-evaluation path) and
   // never qualifies as a gauntlet leg per D-24131 §3.
   readonly outcome: CompetitiveOutcome | null;
+  // why: nullable — how many seats the scored match was played with
+  // (1-5), derived server-side from the reduced final state's
+  // per-player record (migration 027). A NULL row predates the
+  // column (or hit the defensive out-of-range path) and never
+  // qualifies on any count-keyed gauntlet board per D-24134 §1.
+  readonly playerCount: number | null;
 }
 
 /**

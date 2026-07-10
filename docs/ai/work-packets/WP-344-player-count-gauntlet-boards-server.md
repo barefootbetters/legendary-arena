@@ -8,6 +8,22 @@
 **User-Visible Surface:** none — infrastructure (the payoff surface is WP-345, which renders the per-count boards and rosters; the snapshots this packet publishes are inert until then)
 **Executes:** D-24134 §1–§5 (server half)
 
+> **Execution addendum (2026-07-09, EC-376 draft).** Three reconciliations
+> against code reality, discovered while drafting the EC:
+> (1) **One wiring file joins the list** — the index `legs` lock needs scheme
+> *names*, but `GauntletSetSummary` carried slugs only; the summary shape
+> becomes `schemes: { slug, name }[]` (and `GauntletDefinition.legSchemeSlugs`
+> becomes `legs: { schemeSlug, schemeName }[]`), whose producer is
+> `server.mjs` — 12 files total (the WP-342 wiring-addendum class;
+> `index.mjs`/scheduler pass the catalog through unchanged).
+> (2) **One query per gauntlet, not five** — `getGauntletStandings` returns
+> `ReadonlyMap<playerCount, entries[]>` from a single roster-joined query
+> instead of gaining a `playerCount` parameter (105 queries/cycle, not 525);
+> qualification semantics are exactly the WP Contract's.
+> (3) **The 12-key drift lock is JSDoc + a compile-time reference**, not a
+> runtime key-count test (verified against `competition.logic.test.ts`); the
+> amendment updates the JSDoc list to 13 keys and the record fixtures.
+
 ---
 
 ## Goal
