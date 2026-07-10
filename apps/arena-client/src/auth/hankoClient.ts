@@ -88,6 +88,38 @@ export class HankoInitializationFailed extends Error {
   }
 }
 
+/**
+ * Resolve the broker session-cookie domain for a given hostname.
+ *
+ * On a production `*.legendary-arena.com` host this returns
+ * `.legendary-arena.com` so the broker's JS-readable `hanko` session
+ * cookie is scoped to the parent domain and therefore SHARED across
+ * subdomains — a single sign-in on `play.` is visible to `dashboard.`
+ * and `www.` (cross-subdomain SSO; WP-347 amends D-16002's default-cookie
+ * stance for cross-subdomain read of the session).
+ *
+ * On any other host it returns `undefined` so the SDK keeps its default
+ * host-scoped cookie. This is deliberate: a browser silently DROPS a
+ * `Set-Cookie` whose `Domain` the current page is not under, so forcing
+ * `.legendary-arena.com` on `localhost` (dev) or `*.pages.dev` (the
+ * Cloudflare Pages preview URL, which is also the Hanko App URL today)
+ * would break sign-in there entirely.
+ *
+ * @param hostname `window.location.hostname` of the page loading the SDK.
+ * @returns `.legendary-arena.com` on a production host, else `undefined`.
+ */
+export function resolveSessionCookieDomain(
+  hostname: string,
+): string | undefined {
+  if (
+    hostname === 'legendary-arena.com' ||
+    hostname.endsWith('.legendary-arena.com')
+  ) {
+    return '.legendary-arena.com';
+  }
+  return undefined;
+}
+
 async function defaultProductionFactory(
   tenantBaseUrl: string,
   options: { readonly sessionCheckInterval?: number },
@@ -99,7 +131,24 @@ async function defaultProductionFactory(
   // pay the import once on the first sign-in attempt; tests inject
   // `__hankoFactory` and skip this code path entirely.
   const { register } = await import('@teamhanko/hanko-elements');
-  const result = await register(tenantBaseUrl, options);
+  const registerOptions: {
+    sessionCheckInterval?: number;
+    cookieDomain?: string;
+  } = { ...options };
+  // why: WP-347 — scope the session cookie to `.legendary-arena.com` on
+  // production hosts so play / dashboard / www share one sign-in; omit it
+  // on localhost / *.pages.dev (setting a domain the page is not under
+  // makes the browser drop the cookie and breaks sign-in). This branch is
+  // production-only (tests inject `__hankoFactory` and never run it), so
+  // reading `window.location.hostname` here is safe.
+  const cookieDomain =
+    typeof window === 'undefined'
+      ? undefined
+      : resolveSessionCookieDomain(window.location.hostname);
+  if (cookieDomain !== undefined) {
+    registerOptions.cookieDomain = cookieDomain;
+  }
+  const result = await register(tenantBaseUrl, registerOptions);
   // The real SDK instance structurally satisfies HankoLike — getSessionToken,
   // logout, and the three on*() listener methods are all part of the public
   // SDK surface.

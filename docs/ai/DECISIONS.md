@@ -28141,3 +28141,44 @@ claimed on `main` by concurrent sessions while the PR was open, so renumbered to
 WP-346 / D-24136 — EC-375 was uncontested). **Drafted:** 2026-07-09. **Executed:** 2026-07-09.
 
 Protect this file.
+
+### D-24137 — Cross-subdomain broker session cookie on production hosts (amends D-16002)
+
+**Status:** Active (post-execution) 2026-07-09. `D-24026` live-verify operator-pending on deploy.
+
+**User-Visible Surface:** play.legendary-arena.com + dashboard.legendary-arena.com (auth behavior).
+
+**Amends:** D-16002 (Token Storage: Hanko Default Cookie, JS-Accessible). D-16002
+stands except for the cookie **domain**: it said "the broker owns cookie attribute
+decisions … `cookieDomain` … we adopt defaults." The default is host-scoped, so a
+sign-in on one subdomain is invisible to the others. This decision sets the domain
+explicitly on production hosts.
+
+**Context.** WP-160 (arena-client) and WP-241 (dashboard) both call the Hanko SDK
+`register()` with no `cookieDomain`, so the JS-readable `hanko` session cookie is
+host-scoped — `play.` / `dashboard.` / `www.` each have separate sessions, and
+`www.` cannot read a `play.` login (the blocker for the marketing username feature,
+marketing WP-033).
+
+**Decision.** On a production `*.legendary-arena.com` host (or the bare apex), both
+Hanko wrappers pass `cookieDomain: '.legendary-arena.com'` to `register()`, so the
+session cookie is scoped to the parent domain and **shared across subdomains
+(single sign-on)**. On any other host (`localhost` dev, `*.pages.dev` preview) the
+wrappers OMIT `cookieDomain` and keep the SDK default — a browser drops a
+`Set-Cookie` for a domain the page is not under, so forcing the parent domain there
+would break sign-in. A pure `resolveSessionCookieDomain(hostname)` (leading-dot
+suffix guard so `evil-legendary-arena.com` does not match) makes the host rule
+testable; the `window.location.hostname` read happens only in the production
+factory (never under test). The token is still the `hanko` cookie read via
+`getSessionToken()` — D-16002 otherwise intact; `cookieSameSite` / `storageKey`
+unchanged.
+
+**Consequence.** Single sign-on across `*.legendary-arena.com`. Existing users
+re-sign-in once to replace the host-scoped cookie with the parent-scoped one; dev
+and preview are unaffected. This is the enabler that lets marketing WP-033 read the
+session on `www.` (and amends nothing about the passkey rpID / App URL, tracked
+separately).
+
+**Packet:** WP-347 + EC-377. **Drafted:** 2026-07-09. **Executed:** 2026-07-09.
+
+Protect this file.
