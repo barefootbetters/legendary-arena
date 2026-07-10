@@ -28099,3 +28099,32 @@ standings + publisher emission) and WP-345 (client: legends-board per-count boar
 challenge links) — both Drafted 2026-07-09.
 
 Protect this file.
+
+### D-24136 — The header username is the single profile affordance (drop the standalone "My profile" link)
+
+**Status:** Active (post-execution) 2026-07-09. `D-24026` live-verify operator-pending on deploy.
+
+**User-Visible Surface:** play.legendary-arena.com (the global signed-in header).
+
+**Context.** WP-175 built the global `BrandHeader` auth nav; WP-330 (D-24116) made
+its `auth-nav-display` element show the player's actual name. Beside it sat a
+separate `auth-nav-profile-link` reading "My profile" → `?route=me`. With the name
+now shown, the header carried two profile affordances (`<name>` + "My profile")
+that both targeted `?route=me` — redundant. The operator asked to merge them.
+
+**Decision.** The signed-in header shows the player's name as the single profile
+affordance: the name element is an `<a href="?route=me">` (`data-testid
+="auth-nav-display"`, classes `brand-nav-link auth-nav-display`, `title="Your
+profile"`), and there is NO separate "My profile" link. The header reads
+`Home · Cards · <name> · Sign out`. `useAuthNav` / `displayLabel` are unchanged
+(template + CSS-class only); the signed-out (`Sign in`) and bootstrapping branches
+and the "Sign out" button are unchanged.
+
+**Guardrail for future work.** Do not re-add a standalone "My profile" link beside
+the name in the global header — the name itself is the profile link.
+
+**Packet:** WP-346 + EC-375 (originally drafted as WP-344 / D-24134; both were
+claimed on `main` by concurrent sessions while the PR was open, so renumbered to
+WP-346 / D-24136 — EC-375 was uncontested). **Drafted:** 2026-07-09. **Executed:** 2026-07-09.
+
+Protect this file.

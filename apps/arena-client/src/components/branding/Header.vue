@@ -47,15 +47,17 @@ export default defineComponent({
         >Sign in</a>
       </template>
       <template v-else>
-        <span
-          class="auth-nav-display"
-          data-testid="auth-nav-display"
-        >{{ displayLabel }}</span>
+        <!-- why: WP-346 — the username IS the link to the player's profile.
+             A separate "My profile" link beside the name was redundant (both
+             targeted ?route=me), so the two are merged: the name itself links
+             to the profile, de-cluttering the header to Home · Cards · <name>
+             · Sign out. `title` gives the name-link an accessible purpose. -->
         <a
-          class="brand-nav-link"
+          class="brand-nav-link auth-nav-display"
           href="?route=me"
-          data-testid="auth-nav-profile-link"
-        >My profile</a>
+          data-testid="auth-nav-display"
+          title="Your profile"
+        >{{ displayLabel }}</a>
         <button
           type="button"
           class="auth-nav-sign-out"

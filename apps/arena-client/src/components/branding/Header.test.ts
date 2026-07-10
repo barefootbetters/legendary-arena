@@ -93,12 +93,17 @@ describe('BrandHeader auth nav (WP-175)', () => {
       assert.equal(display.text(), 'My account');
     });
 
-    test('renders a "My profile" link targeting ?route=me', () => {
+    test('the display label itself links to ?route=me, with no separate "My profile" link', () => {
       const wrapper = mountHeader({ token: 'tok-abc' });
-      const profileLink = wrapper.find('[data-testid="auth-nav-profile-link"]');
-      assert.equal(profileLink.exists(), true);
-      assert.equal(profileLink.text(), 'My profile');
-      assert.equal(profileLink.attributes('href'), '?route=me');
+      const display = wrapper.find('[data-testid="auth-nav-display"]');
+      // why: WP-346 — the username is the profile link; the standalone
+      // "My profile" link was removed as redundant (both went to ?route=me).
+      assert.equal(display.element.tagName, 'A');
+      assert.equal(display.attributes('href'), '?route=me');
+      assert.equal(
+        wrapper.find('[data-testid="auth-nav-profile-link"]').exists(),
+        false,
+      );
     });
 
     test('renders a "Sign out" button', () => {
