@@ -47,6 +47,9 @@ source:
   - ../docs/ai/work-packets/WP-338-submit-by-matchid-server.md
   - ../docs/ai/work-packets/WP-339-arena-submit-my-scores.md
   - ../docs/ai/work-packets/WP-342-mastermind-gauntlet-boards-server.md
+  - ../docs/ai/work-packets/WP-344-player-count-gauntlet-boards-server.md
+  - ../docs/ai/work-packets/WP-345-player-count-gauntlet-client.md
+  - ../apps/server/src/legends/gauntlet.logic.ts
   - ../docs/ai/DESIGN-RANKING.md
 last-reviewed: 2026-07-09
 ---
@@ -64,11 +67,13 @@ displays scenario rankings computed by the engine's two-layer PAR
 with zero server API calls and zero authentication. The board app is built
 and merged (WP-143, 2026-05-15); as of **2026-07-08 it is live** at that URL
 — the Cloudflare Pages project, custom domain, and WP-142 snapshot publisher
-were all provisioned that day (details under [Edge Cases](#edge-cases)). The
-multi-tier *annual
-championship* structure (overall champion, per-mastermind championships,
-skill tiers, yearly archive) is a **proposal**, not a landed design — it
-lives in [Open Questions](#open-questions) until ratified.
+were all provisioned that day (details under [Edge Cases](#edge-cases)). Of the
+multi-tier *annual championship* structure, the **per-mastermind
+set-gauntlets are decided and shipped** (D-24131 / D-24134 — see
+[Gauntlets](#gauntlets--the-per-mastermind-set-championships-d-24131--d-24134));
+the remaining tiers (overall champion, category champions, skill tiers,
+yearly archive) are **proposals** living in
+[Open Questions](#open-questions) until ratified.
 
 As of **2026-07-09** the **write path is also complete and deployed**: the
 **D-24119 faithful-replay arc (WP-333 → WP-340)** wired the full
@@ -150,6 +155,73 @@ This matters for the championship proposal below: any higher-tier
 championship (per-mastermind, overall, annual) is a **derived aggregation
 over existing `ScenarioKey` rows** — no new engine identity needs to be
 invented.
+
+### Gauntlets — the per-mastermind set championships (D-24131 / D-24134)
+
+> This section documents the **decided and shipped** gauntlet system. It
+> graduated out of [Open Questions](#open-questions) when D-24131 ratified
+> tier 2 of the championship proposal (2026-07-09) and WP-342 / WP-343
+> executed the same day. D-24134 (also 2026-07-09) extends it with the
+> player-count dimension; its packets WP-344 / WP-345 are **drafted, not
+> yet executed** — rows below marked *(D-24134, pending execution)*
+> describe contracted behavior that is not live yet.
+
+The gauntlet collapses the mastermind × scheme board explosion into one
+findable championship per mastermind. **Identity:** one gauntlet per
+(set `abbr` × mastermind `slug`) for every set packaging ≥1 scheme — 105
+gauntlets at current data (`dims`/`3dtc` excluded); **legs** = that set's
+schemes (3–8). A row qualifies as a leg only when:
+
+- its `schemeSlug` **and** `mastermindSlug` both belong to the gauntlet's
+  set (both-sides-same-set rule; slug-space collisions across sets are one
+  competitive identity, accepted v1 semantics),
+- `outcome = 'heroes-win'` (migration 026; legacy `NULL` rows never
+  qualify) — wins only,
+- its `scoring_config_version` equals the currently-published version for
+  its `scenario_key` (VISION §22),
+- *(D-24134, pending execution)* its `player_count` matches the board's
+  player count (migration 027; legacy `NULL` rows never qualify on any
+  count-keyed board).
+
+**Aggregation:** best (lowest) `final_score` per leg, any villain groups;
+a board entry requires a winning best on **every** leg (complete gauntlets
+only); `totalScore` = sum of best-per-leg, `averageScoreCentis` =
+`round(totalScore·100/legCount)`; rank `totalScore ASC`. There is **no
+submission step** — standings are a publisher-derived aggregation
+recomputed each ~5-minute cycle.
+
+**Player-count boards** *(D-24134, pending execution)*: one board per
+(set × mastermind × playerCount 1..5). The existing
+`gauntlet-<setAbbr>-<mastermindSlug>.json` file becomes the solo board;
+multiplayer boards are additive `…-p<N>.json` files (N = 2..5), written
+lazily. A multiplayer entry is **roster-keyed**: the competitor is the
+exact team of authenticated accounts owning the qualifying replay (owner
+count must equal `player_count` — a guest seat voids team eligibility;
+every member's ownership visibility must be link/public before any handle
+is published), and the **same roster** must clear every leg. Entries carry
+`players[]` — every member's handle — which is the "2-player core Dr. Doom
+champions: both names on the board" surface. Scores never compare across
+player counts (see the PAR note under [Edge Cases](#edge-cases)).
+
+**Publishing:** per-gauntlet snapshots (only when ≥1 complete entry) + a
+`gauntlet-index.json` catalog listing every gauntlet with `legCount` /
+`entryCount` (zero-entry boards render as "unclaimed" CTAs on the index);
+additive manifest fields `gauntletBoards` / `gauntletIndex`. *(D-24134,
+pending execution)*: index entries gain per-count `entryCounts` and the
+per-gauntlet `legs` list, and the board panel gains a player-count
+selector plus **"Challenge this leg" links** — each leg links to the
+Registry Viewer's URL-parameterized loadout preview
+(`?schemeId=…&mastermindId=…`, WP-114) with the leg's scheme and
+mastermind pinned, so a player lands one "Edit this loadout" click away
+from picking heroes for a correctly-keyed run.
+
+Shipped surfaces: WP-342 (server: outcome column + gauntlet read-layer +
+publisher emission) and WP-343 (client: set-grouped index, hash routing,
+board panel, designed empty states) — both executed 2026-07-09. Drafted:
+WP-344 (server: player-count persistence + roster-keyed per-count
+standings) and WP-345 (client: count selector, rosters, challenge links).
+Migration 026 (and 027 once WP-344 executes) must be PROD-applied before
+live boards can fill.
 
 ### From a finished match to a ranked row (the write path)
 
@@ -435,6 +507,16 @@ player ID, not the public handle.
   `scoringConfigVersion`; any PAR or weight change increments it, and rows
   under different versions are not directly comparable (VISION §22). Any
   championship aggregation must filter by version.
+- **Published PAR baselines are player-count-blind (known gap).** The
+  scoring spec ([`docs/12-SCORING-REFERENCE.md`](../docs/12-SCORING-REFERENCE.md)
+  §Player Count Adjustment) defines a per-count PAR term, but the
+  implemented `parScoring` pipeline does not apply it — a solo run and a
+  5-player run are scored against the same baseline today, so their
+  scores are not comparable. D-24134 makes the comparison structurally
+  impossible on the boards (one board per player count) rather than
+  pretending the numbers are commensurate; per-count PAR calibration
+  remains future work, and landing it is a `scoringConfigVersion` bump
+  handled as an archival rollover (D-24131 §5).
 - **Scenario keys are slug-sorted before join.** Hand-built keys that skip
   the sort fragment a single scenario into multiple identities. The
   championship aggregation must group over canonical keys only — see
@@ -462,10 +544,15 @@ player ID, not the public handle.
 > currently-published `scoringConfigVersion` (VISION §22); **no submission
 > step** — standings are a publisher-derived aggregation; snapshots
 > `gauntlet-<setAbbr>-<mastermindSlug>.json` + a `gauntlet-index.json`
-> catalog + additive manifest fields. Follow-up WPs (backlogged): the
-> legends-board set-grouped index + gauntlet panel, and profile surfaces
-> (owner-profile progress checklist, public-profile completed-gauntlet
-> badges). Tiers 1, 3, 4 and the annual reset below remain **proposals**.
+> catalog + additive manifest fields. The full decided behavior now lives
+> under [Gauntlets](#gauntlets--the-per-mastermind-set-championships-d-24131--d-24134)
+> in Mechanics — this callout is the historical pointer, not the spec.
+> WP-343 (the legends-board index + gauntlet panel) executed 2026-07-09;
+> the profile-progress surfaces remain backlogged. **D-24134**
+> (2026-07-09) extended the decided design with player-count boards
+> (1–5), roster-keyed multiplayer entries naming every teammate's handle,
+> and per-leg challenge links — WP-344 / WP-345 drafted, pending
+> execution. Tiers 1, 3, 4 and the annual reset below remain **proposals**.
 
 **The combinatorial problem.** The game has ~40 sets; each set packages
 multiple masterminds and multiple schemes (with scheme twists). Ranking
@@ -629,5 +716,10 @@ instead of a bare table. Hand-authored mockup:
 - [WP-342](../docs/ai/work-packets/WP-342-mastermind-gauntlet-boards-server.md)
   + DECISIONS.md **D-24131** — the ratified set-gauntlet design and its
   server packet (executed 2026-07-09)
+- [WP-344](../docs/ai/work-packets/WP-344-player-count-gauntlet-boards-server.md)
+  + [WP-345](../docs/ai/work-packets/WP-345-player-count-gauntlet-client.md)
+  + DECISIONS.md **D-24134** — the player-count extension (per-count
+  boards, roster-keyed multiplayer entries, challenge links); drafted
+  2026-07-09, pending execution
 - [Scoring](scoring.md), [PAR Simulation Calibration](par-simulation-calibration.md)
   — companion wiki pages for the scoring internals

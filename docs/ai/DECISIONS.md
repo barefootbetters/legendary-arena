@@ -28011,3 +28011,88 @@ Coverage gates green (`ledger:heroes`, `mechanics:metadata` regenerated).
 **Packet:** Bug fix (Absorb Ambient Power hollow effect). **Drafted:** 2026-07-09. **Executed:** 2026-07-09.
 
 Protect this file.
+
+### D-24134 — Player-count gauntlet boards (roster-keyed multiplayer entries) + gauntlet leg challenge links
+
+**Status:** Active 2026-07-09 (design lock; ratified at SPEC draft, the D-24131 pattern). **WP-344** (server) + **WP-345** (client) drafted 2026-07-09; execution pending.
+
+**User-Visible Surface:** none at this entry (design lock). Eventual surfaces: legends.legendary-arena.com (per-player-count gauntlet boards with full team rosters; per-leg challenge links) and cards.legendary-arena.com (the challenge link's landing surface — the existing WP-114 URL-parameterized loadout preview).
+
+**Context.** D-24131 shipped the set-gauntlet boards but the aggregation is count-blind: a solo
+run and a 5-player run compete on one board even though the scoring spec's PAR model defines a
+`PlayerCountAdjustment` term (`docs/12-SCORING-REFERENCE.md` §Phase 1 seed formula) that the
+implemented `parScoring` pipeline does not yet apply — cross-count scores are not comparable
+today. Operator direction (2026-07-09): each mastermind needs an entry per player count, 1
+through 5, and a multiplayer entry must name every participating account's handle. Separately,
+the gauntlet index renders "unclaimed" boards with no path from seeing a leg to playing it —
+the operator's "pre-load the loadout, the player just adds heroes" ask. The plumbing for both
+already exists: `legendary.replay_ownership` records one row per authenticated seat (WP-333/
+WP-335), co-owned replays are attributable to every seat (WP-340 by-account ownership), and
+the Registry Viewer's WP-114 preview accepts `?schemeId=/&mastermindId=` set-qualified ids
+with the full hero/villain picker one "Edit this loadout" click away.
+
+**Decision.**
+1. **`player_count` column (migration 027).** `legendary.competitive_scores` gains a nullable
+   `player_count smallint CHECK (player_count BETWEEN 1 AND 5)`, written once at submission
+   (D-5302 write-once preserved), derived **server-side** from the verifier's already-reduced
+   final state — the per-player record key count (`reduced.finalState.playerZones`) — never
+   client-supplied. `MatchReplayResult` is unchanged. Legacy `NULL` rows never qualify on any
+   count-keyed board (the migration-026 outcome-NULL pattern; boards are effectively empty at
+   this date, so nothing real is reset).
+2. **Board identity gains player count.** One board per (set `abbr` × mastermind `slug` ×
+   `playerCount` 1..5). The existing file name `gauntlet-<setAbbr>-<mastermindSlug>.json` is
+   redefined as the **solo (1-player) board** — the deployed WP-343 panel keeps rendering it
+   unchanged; multiplayer boards are additive files
+   `gauntlet-<setAbbr>-<mastermindSlug>-p<N>.json` (N = 2..5), written only when ≥1 complete
+   entry exists (the D-24131 §7 lazy-emission rule; the index carries claim state). The
+   WP-343 route grammar `^gauntlet-[a-z0-9-]+$` already admits the `-p<N>` suffix.
+3. **Roster-keyed entries.** The competitor on a multiplayer board is the exact **team**: the
+   sorted tuple of `player_id`s owning the qualifying replay. A replay qualifies only when its
+   `replay_ownership` owner count **equals** its `player_count` — every seat authenticated; a
+   guest at the table voids team eligibility (accounts are how a table gets on the board) —
+   AND every owner's ownership visibility is `link`/`public` (no handle is ever published
+   without that member's consent-to-publish; practical consequence: a team entry exists only
+   once every member has submitted or otherwise published). Wins-only, current
+   `scoringConfigVersion`, and both-sides-same-set rules carry over from D-24131 unchanged.
+   The **same roster** must clear every leg of the set at that player count. Co-owner
+   duplicate score rows (same `replay_hash`, identical `final_score`) are deduplicated by
+   aggregating at replay level. The solo board is the degenerate case (roster of one) and its
+   semantics equal the current per-account standings restricted to `player_count = 1`.
+4. **Entry shape.** `GauntletSnapshotEntry` gains additive `players: readonly string[]`
+   (roster handles, handle ASC); `handle` remains and equals `players[0]` so existing
+   rendering degrades sanely. Ranking within a board: `totalScore ASC`, then `players`
+   joined-ASC as the tiebreaker (solo boards thereby keep `handle ASC`).
+5. **Index shape.** `GauntletIndexEntry` gains additive `entryCounts` (complete-entry count
+   per player count 1..5; existing `entryCount` remains and now reports the solo board) and
+   `legs: readonly { schemeSlug, schemeName }[]` — the leg list the challenge links and the
+   board panel's leg display need.
+6. **Challenge links ("pre-load the loadout, add heroes").** Each leg on the gauntlet board
+   panel (and each unclaimed gauntlet on the index) links to the Registry Viewer's existing
+   WP-114 URL-parameterized preview: `https://cards.legendary-arena.com/?schemeId=<setAbbr>/
+   <schemeSlug>&mastermindId=<setAbbr>/<mastermindSlug>` (URL-encoded; both-sides-same-set
+   makes `<setAbbr>/<slug>` the correct qualified id for both). The player lands on a
+   preview with the leg's scheme + mastermind pinned and picks heroes (and villains) in the
+   existing builder — villain groups are deliberately NOT prefilled (D-24131 §4 any-villains
+   freedom is strategy space, not friction). No new picker, no server generator, no arena-
+   client change. A future direct-into-lobby shortcut (`?challenge=` prefill or publisher-
+   emitted preset compositions) is named as a possible follow-up, not built here.
+7. **PAR count-awareness (named, not solved here).** The published PAR baselines are
+   count-blind while `12-SCORING-REFERENCE.md` specifies a `PlayerCountAdjustment`; this
+   decision's segmentation makes cross-count comparison structurally impossible on the
+   boards, which is the honest presentation until per-count PAR calibration lands. When it
+   does, it is a `scoringConfigVersion` bump handled as an archival rollover per D-24131 §5.
+
+**Not decided here.** Player-count segmentation of the classic per-scenario boards; per-count
+profile progress surfaces (the D-24131 §8b follow-up inherits `entryCounts` when drafted);
+publisher-emitted preset compositions / direct lobby prefill; tiers 1/3/4 and the annual reset.
+
+**Consequence.** Zero engine change; one migration + one write-site line + a roster-level
+re-aggregation in the gauntlet read layer; the multiplayer social surface Jeff asked for
+("2-player core Dr. Doom champions: both names on the entry") becomes a publishable fact, and
+every unclaimed board gains a one-click path into a correctly-keyed loadout.
+
+**Packets:** WP-344 (server: migration 027 + player-count persistence + roster-keyed per-count
+standings + publisher emission) and WP-345 (client: legends-board per-count boards, rosters,
+challenge links) — both Drafted 2026-07-09.
+
+Protect this file.
