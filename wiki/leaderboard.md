@@ -460,7 +460,7 @@ player ID, not the public handle.
   now-playing), but only the boards the publisher actually emits are rendered
   — until per-scenario scores accumulate, that is just `global-top`.
 - **~~Three of the five panels render a header-only table when empty~~
-  (board review, 2026-07-09 — FIXED by WP-343 / D-24132 the same day).**
+  (board review, 2026-07-09 — FIXED by WP-343 / D-24135 the same day).**
   `OverallPanel`, `WeeklyPanel`, and `BySchemePanel` now render the shared
   "No Legends yet — be the first" call-to-action when a board's `entries`
   is empty, and the WP-343 gauntlet index renders zero-entry gauntlets as
