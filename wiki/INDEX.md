@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **40 / 50** entity pages.
-> Last regenerated: 2026-07-08.
+> **41 / 50** entity pages.
+> Last regenerated: 2026-07-09.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority.
 
@@ -181,6 +181,13 @@ Step-by-step walkthroughs for completing specific tasks.
 
 Software tools and services used in development or operations.
 
+- [Dashboard](dashboard.md) — Internal admin / operations SPA
+  (`@legendary-arena/dashboard`, Vue 3 + PrimeVue 4 + Vite) at
+  `dashboard.legendary-arena.com`; a mock-mode-first "morning operating
+  system" (Audience → Revenue Engine → Retention) behind a Hanko login +
+  Cloudflare Access gate. Self-contained (no `@legendary-arena/*` runtime
+  imports); its **Dashboard Gates** CI job runs lint / typecheck /
+  coverage-tested / format-check / build as blocking gates.
 - [LAGN v1.0 Specification](lagn-v1.md) — Legendary Arena Game
   Notation: the published npm spec (`@legendary-arena/lagn`) with Zod
   validator, generated JSON Schema, TypeScript types, and a `lagn`
@@ -264,6 +271,7 @@ following are useful entry points:
   [R2 Image Naming Convention](r2-image-naming-convention.md).
 - **`auth`** — Player sign-in and identity:
   [Profile Login](profile-login.md),
+  [Dashboard](dashboard.md) (Hanko login + Cloudflare Access gate),
   [Operational Health Checks](operational-health-checks.md)
   (Hanko JWKS / CORS probes).
 - **`data-pipeline` / storage** — Where data and files live:
