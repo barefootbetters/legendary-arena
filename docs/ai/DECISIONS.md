@@ -27927,9 +27927,12 @@ green (138 mechanics; the 3 cards classify `executable`).
 
 Protect this file.
 
-### D-24132 — Legends-board hash routing + gauntlet display-format locks
+### D-24135 — Legends-board hash routing + gauntlet display-format locks
 
-**Status:** Active 2026-07-09 (WP-343 / EC-373 execution).
+**Status:** Active 2026-07-09 (WP-343 / EC-373 execution). Renumbered from D-24132 on 2026-07-09:
+two same-day sessions allocated D-24132 (this entry, PR #634, vs the put-any-number-bottom-hq entry,
+PR #629, which landed first and keeps the number). D-24134 was already reserved by the WP-344/345
+draft (PR #638), so this entry took the next free number.
 
 **User-Visible Surface:** legends.legendary-arena.com.
 

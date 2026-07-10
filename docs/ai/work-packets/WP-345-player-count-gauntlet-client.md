@@ -2,7 +2,7 @@
 
 **Status:** Drafted 2026-07-09 (design per D-24134 §2–§6; EC pending — execution-prep is the next step)
 **Primary Layer:** Client (`apps/legends-board/**` only)
-**Dependencies:** WP-344 (per-count snapshots + `entryCounts` + `legs` on the index — hard dep, must execute first), WP-343 ✅ (gauntlet index/panel + hash routing), WP-342 ✅, D-24134 (design lock), D-24132 (routing + display-format locks), WP-114 ✅ (the registry-viewer URL-parameterized preview the challenge links target)
+**Dependencies:** WP-344 (per-count snapshots + `entryCounts` + `legs` on the index — hard dep, must execute first), WP-343 ✅ (gauntlet index/panel + hash routing), WP-342 ✅, D-24134 (design lock), D-24135 (routing + display-format locks), WP-114 ✅ (the registry-viewer URL-parameterized preview the challenge links target)
 **EC:** pending (drafted at execution-prep)
 **Baseline:** `origin/main` at `321e4f05` (2026-07-09)
 **User-Visible Surface:** legends.legendary-arena.com (per-count boards, team rosters, challenge links; the links land on cards.legendary-arena.com)
@@ -53,7 +53,7 @@ If any of the above is false, this packet is **BLOCKED**.
 ## Context (Read First)
 
 - `docs/ai/DECISIONS.md` — **D-24134** (§2 board identity, §4 entry shape,
-  §5 index shape, §6 challenge links; read in full), D-24132 (routing +
+  §5 index shape, §6 challenge links; read in full), D-24135 (routing +
   display locks this packet must not break), D-24131.
 - `docs/ai/ARCHITECTURE.md` §Layer Boundary (Authoritative) — the board is
   a UI app; no engine / registry / server imports; zero server API calls.
@@ -104,7 +104,7 @@ If any of the above is false, this packet is **BLOCKED**.
 - **vue-router or any new dependency** — the WP-343 hand-rolled router
   stands; `parseHashRoute` is not modified.
 - **Kiosk/attract changes** — the cycle keeps exactly ONE gauntlet-index
-  slide (D-24132); per-count boards never cycle.
+  slide (D-24135); per-count boards never cycle.
 - **Personal progress surfaces** — the D-24131 §8b profile follow-up.
 - **Windowed boards, streaks, levels** — separate proposals, not decided.
 
@@ -142,7 +142,7 @@ updated at close per the Definition of Done.
 
 ## Contract
 
-- **Route grammar unchanged (D-24132):** `-p<N>` board names ride the
+- **Route grammar unchanged (D-24135):** `-p<N>` board names ride the
   existing `^gauntlet-[a-z0-9-]+$` rule; `#/gauntlet/gauntlet-core-
   dr-doom-p2` is a valid route today and simply fetches that board file.
   `parseHashRoute` is byte-identical after this packet.
@@ -168,7 +168,7 @@ updated at close per the Definition of Done.
   hero/villain choice is the player's; counts and envelope are the
   builder's defaults). Links open in a new tab (`target="_blank"
   rel="noopener"`).
-- **Display format:** the D-24132 signed one-decimal average format and
+- **Display format:** the D-24135 signed one-decimal average format and
   gold-under-PAR styling apply unchanged on every count's board.
 - **Zero-API invariant:** the deployed bundle contains no reference to
   `api.legendary-arena.com` or `*.onrender.com`; all fetches remain

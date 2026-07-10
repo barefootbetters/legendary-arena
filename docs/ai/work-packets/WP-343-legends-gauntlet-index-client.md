@@ -6,7 +6,7 @@
 **EC:** pending (drafted at execution-prep)
 **Baseline:** `origin/main` at `15e6572b` (2026-07-09)
 **User-Visible Surface:** legends.legendary-arena.com
-**Reserves:** D-24132 (hash-routing introduction + display-format locks; written at execution)
+**Reserves:** D-24135 (hash-routing introduction + display-format locks; written at execution; originally reserved as D-24132 — renumbered 2026-07-09 after a same-day numbering collision with the put-any-number-bottom-hq entry)
 
 > **Execution addendum (2026-07-09, EC-373 draft).** Test-posture
 > reconciliation against the SPA's established reality: the fetch functions
@@ -153,7 +153,7 @@ If any of the above is false, this packet is **BLOCKED**.
     index fetch + cycle slide (13th file; counted here explicitly rather
     than hidden).
 
-Governance files (`DECISIONS.md` D-24132, `WORK_INDEX.md`, `STATUS.md`,
+Governance files (`DECISIONS.md` D-24135, `WORK_INDEX.md`, `STATUS.md`,
 EC_INDEX) are updated at close per the Definition of Done.
 
 ---
@@ -327,7 +327,7 @@ acquisition surface, not a failure state.
       the unclaimed CTA shows for a zero-entry gauntlet — observed and
       recorded (screenshot or fetch evidence), not inferred from green
       tests.
-- [ ] `docs/ai/DECISIONS.md` — D-24132 written (hash routing + display
+- [ ] `docs/ai/DECISIONS.md` — D-24135 written (hash routing + display
       format locks).
 - [ ] `docs/ai/STATUS.md` updated with the user-visible change.
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` — this packet checked off.
