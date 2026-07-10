@@ -28182,3 +28182,43 @@ separately).
 **Packet:** WP-347 + EC-377. **Drafted:** 2026-07-09. **Executed:** 2026-07-09.
 
 Protect this file.
+
+### D-24138 — www may be auth-AWARE (read the session to personalize) but still not auth-OWNING (amends D-24084)
+
+**Status:** Active 2026-07-09. Marketing-repo `legendary-arena-website` WP-033 executes against this.
+
+**User-Visible Surface:** www.legendary-arena.com (the header greets a signed-in visitor by name).
+
+**Amends:** D-24084 (2026-06-30, "www stays a static marketing surface and does NOT
+own an auth surface; it links to play"). D-24084 stands in full **except** that its
+"static / cannot know auth state" framing is relaxed to permit read-only session
+awareness.
+
+**Context.** D-24084 kept `www` a static marketing site that links to `play` for
+sign-in (WP-031/WP-032 header links). The operator asked for the signed-in
+player's name to appear in the `www` header. That requires `www` to *know* auth
+state — which D-24084's "the static site cannot know auth state" framing
+forbade. Engine WP-347 / D-24137 made this newly possible by sharing the `hanko`
+session cookie across `*.legendary-arena.com`.
+
+**Decision.** `www` MAY become auth-**AWARE**: a small deferred client script may
+READ the existing (now cross-subdomain) `hanko` session cookie and call
+`GET /api/me/profile` purely to personalize the header label (show the player's
+name instead of "Account"). `www` still does NOT **OWN** an auth surface — no
+login form, no passkey UI, no sign-up, no sign-out, no Hanko SDK, no session
+mutation. Sign-in and profile editing remain entirely on `play`; the header entry
+still links to `play.legendary-arena.com/?route=me`. Reflecting an existing
+session read-only is not owning one. Progressive enhancement only — the static
+"Account" render is unchanged and every failure path is silent.
+
+**Boundary that still holds.** No auth writes on `www`; no credentials-CORS
+surface (the token is read from the JS-accessible cookie and sent as a Bearer
+header, not a cross-origin cookie); the marketing site adds no auth bundle.
+
+**Consequence.** The `www` header greets signed-in players by name while the
+static-site / auth-lives-on-play posture of D-24084 is otherwise preserved.
+Executed by marketing-repo WP-033.
+
+**Packet:** marketing-repo WP-033 (engine-repo decision record only; no engine code). **Drafted:** 2026-07-09. **Executed:** 2026-07-09.
+
+Protect this file.
