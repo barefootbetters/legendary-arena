@@ -90,8 +90,8 @@ pnpm install
 
 # 5. Validate everything
 pnpm check           # probes all 11 env vars + external services
-pnpm test            # run all tests
-pnpm -r build        # build all packages
+pnpm -r build        # build all packages (apps' tests import built dists)
+pnpm -r test         # run all tests (root has no bare `test` script)
 
 # 6. Open Tailscale, sign in, verify devices visible
 # 7. Enable Remote Desktop: Settings → System → Remote Desktop → ON
@@ -118,7 +118,7 @@ If `pnpm check` passes and tests are green, the machine is ready.
 
 1. **Start it** — on the laptop, home workstation (local or via Tailscale), or phone.
 2. **Claude Code builds it** — builds to the WP/EC contract, runs local gates, commits with two-commit topology (`EC-NNN:` implementation + `SPEC:` governance close).
-3. **GitHub takes it** — branch → PR → CI (build/deploy, commit hygiene, registry validation, nightly sweep + inspection workflows).
+3. **GitHub takes it** — branch → PR → CI (build/deploy, workspace unit tests, commit hygiene, registry validation, nightly sweep + inspection workflows).
 4. **Approve from the phone** — merge PR via GitHub UI (phone-friendly).
 5. **It ships automatically** — `main` → Render rebuild + migrations; Cloudflare rebuilds front-ends + R2 serves assets. Live across `*.legendary-arena.com`.
 6. **It feeds itself** — nightly Claude CI Inspector triage; WP auto-verification loop (WP-231/233); new findings generate new WPs → re-enter at step 1.
@@ -306,7 +306,7 @@ workflows triggered by short phrases.
 | Capability | Trigger | What it does |
 |---|---|---|
 | WP/EC execution | Claude Code session + EC checklist | Full work packet implementation with governance close |
-| Local gates | `pnpm test` / `typecheck` / `build` | Pre-push quality enforcement |
+| Local gates | `pnpm -r test` / `typecheck` / `build` | Pre-push quality enforcement |
 | Health checks | `pnpm check` / `pnpm check:domains` | Probe all external dependencies + subdomains |
 | Card data pipeline | `scripts/convert-cards/` | Convert raw card data to engine-ready JSON |
 | Architecture inventory | `pnpm wiki-viewer:inventory` | Generate architecture snapshot for ewiki |
@@ -376,7 +376,7 @@ in Phase 7. These are illustrative first candidates, not a committed
 backlog:
 
 - **Daily dev-health agent** — pull a clean `main`, run `pnpm check` /
-  `pnpm test` / `pnpm -r build`, and write a dated log under a gitignored
+  `pnpm -r build` / `pnpm -r test`, and write a dated log under a gitignored
   `health/` path. Surfaces red (a broken `main`, a failing probe) before
   the operator sits down, instead of mid-session.
 - **Repo drift detector** — flag files churned without WP linkage and the
@@ -510,8 +510,8 @@ claude auth login
 git clone https://github.com/barefootbetters/legendary-arena.git
 cd legendary-arena
 pnpm install
-pnpm test
 pnpm -r build
+pnpm -r test
 ```
 
 **Pass condition:** Claude Code runs, repo builds, tests pass.
@@ -537,7 +537,7 @@ is tracked in the repo.
 
 | Layer | Secret source | Used by |
 |---|---|---|
-| Local execution | `.env` in the repo checkout | Claude Code, `pnpm test`, dev servers |
+| Local execution | `.env` in the repo checkout | Claude Code, `pnpm -r test`, dev servers |
 | CI / GitHub | GitHub Actions secrets | CI workflows, nightly triage agent |
 | Deploy (Render / Cloudflare) | Platform-managed env vars | Production server, Pages builds |
 
@@ -982,7 +982,7 @@ run to confirm.
 
 | Tool | Minimum | Pinned where | Upgrade path |
 |---|---|---|---|
-| Node.js | v22+ | `pnpm check` validates major version | `winget upgrade OpenJS.NodeJS`; run `pnpm test` after |
+| Node.js | v22+ | `pnpm check` validates major version | `winget upgrade OpenJS.NodeJS`; run `pnpm -r test` after |
 | pnpm | v8+ | `pnpm check` validates major version | `npm install -g pnpm@latest`; run `pnpm install --frozen-lockfile` to verify lockfile compatibility |
 | boardgame.io | `0.50.x` (locked) | `package.json` + `pnpm check` verifies exact range | Do NOT upgrade without a DECISIONS.md entry — API surface changes are breaking |
 | Hugo | `0.135.0 Extended` | `apps/wiki-viewer/.hugo-version` | Update `.hugo-version` + test with `pnpm wiki-viewer:build`; needs DECISIONS entry |
@@ -1046,7 +1046,7 @@ a clean redeploy), never via Render/Cloudflare dashboard rollback buttons
 | `pnpm check` fails on Hanko JWKS | `HANKO_TENANT_BASE_URL` wrong or Hanko down | `curl $HANKO_TENANT_BASE_URL/.well-known/jwks.json` | Returns JSON with keys |
 | `pnpm check` fails on R2 | Cloudflare bot rules blocking or `R2_PUBLIC_URL` wrong | Check Cloudflare Security → Bots dashboard | `pnpm check` R2 row green |
 | `pnpm check` fails on game server | Server not running or `GAME_SERVER_URL` wrong | `curl $GAME_SERVER_URL/health` | HTTP 200, JSON body |
-| `pnpm test` fails | Code issue or missing `node_modules` | `pnpm install && pnpm test` | Exit 0, all tests pass |
+| `pnpm -r test` fails | Code issue, stale dists, or missing `node_modules` | `pnpm install && pnpm -r build && pnpm -r test` | Exit 0, all tests pass |
 | `pnpm -r build` fails | TypeScript errors or missing deps | `pnpm install && pnpm -r build` | Exit 0, no errors |
 | Claude Code won't authenticate | API key expired or missing | `claude auth login` | Auth success message |
 | Git push rejected | Branch behind `main` or hook failure | Read hook error; `git pull --rebase origin main` | Push succeeds |

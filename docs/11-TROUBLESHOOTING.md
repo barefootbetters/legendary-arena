@@ -21,8 +21,8 @@ pnpm check:env
 # 2. Build all packages
 pnpm -r build
 
-# 3. Run all tests (314 engine + 6 server + 3 registry)
-pnpm test
+# 3. Run all tests (root has no bare `test` script)
+pnpm -r test
 
 # 4. R2 card data integrity
 pnpm validate

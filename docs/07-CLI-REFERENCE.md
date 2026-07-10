@@ -17,7 +17,7 @@ Run these from the repository root.
 |---|---|---|
 | `pnpm install` | — | Install all monorepo dependencies |
 | `pnpm -r build` | all packages | Build all packages |
-| `pnpm test` | all packages | Run all tests across all packages |
+| `pnpm -r test` | all packages | Run all tests across all packages (root has no bare `test` script) |
 | `pnpm --filter @legendary-arena/game-engine build` | game-engine tsc | Build engine only |
 | `pnpm --filter @legendary-arena/game-engine test` | game-engine node:test | Run engine tests only (314 tests) |
 | `pnpm check` | `scripts/check-connections.mjs` | External service connections (needs `.env`) |
