@@ -1131,25 +1131,6 @@ export default defineComponent({
   font-size: 0.9rem;
 }
 
-.profile-header h1 {
-  font-size: 1.5rem;
-  margin: 0 0 0.25rem 0;
-}
-
-.profile-header-row {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 1rem;
-}
-
-.profile-sign-out {
-  padding: 0.4rem 0.75rem;
-  font-size: 0.875rem;
-  cursor: pointer;
-}
-
 .profile-help {
   font-size: 0.875rem;
   opacity: 0.75;
