@@ -17,6 +17,7 @@ related:
   - development-workflow.md
   - monetization-model.md
   - leaderboard.md
+  - wiki-viewer.md
 status: draft
 source:
   - ../apps/dashboard/package.json
@@ -283,5 +284,5 @@ threshold enforcement activates as real data sources are wired.
   dashboard's broker pattern mirrors.
 - [Operational Health Checks](operational-health-checks.md) — the sibling
   operator-probe scripts.
-</content>
-</invoke>
+- [Wiki Viewer](wiki-viewer.md) — how to author, preview, and publish ewiki
+  pages like this one.
