@@ -58,6 +58,11 @@ import {
   listOutgoingRequests,
 } from './friendships.logic.js';
 import { findAccountByHandle, getHandleForAccount } from '../identity/handle.logic.js';
+import {
+  notifyFriendRequestReceived,
+  notifyFriendRequestAccepted,
+  type FriendshipNotificationConfig,
+} from './friendshipNotifications.logic.js';
 
 /**
  * Closed-set re-statement of the auth orchestrator's `Result<AccountId>`
@@ -92,6 +97,12 @@ export interface FriendshipRouteDependencies {
   ) => Promise<RequireAuthenticatedSessionResult>;
   readonly verifier?: SessionVerifier;
   readonly accountResolver?: AccountResolver;
+  // why: WP-353 — OPTIONAL fire-and-forget friend-request email config.
+  // Optional so WP-351's friendships.routes.test.ts (outside this
+  // packet's allowlist) compiles unchanged; `server.mjs` always injects a
+  // config (whose fields may themselves be undefined when Brevo is
+  // unconfigured, in which case the notify functions no-op).
+  readonly notificationConfig?: FriendshipNotificationConfig;
 }
 
 /**
@@ -373,6 +384,16 @@ export function registerFriendshipRoutes(
         const summaries = await enrichFriendshipViews(database, [result.value]);
         koaContext.status = 201;
         koaContext.body = summaries[0];
+        // why: WP-353 — fire-and-forget the "request received" email to
+        // the addressee. `void` (not awaited) so the notification never
+        // gates the 201 response; the notify boundary is fail-open, so a
+        // Brevo outage cannot fail the request.
+        if (deps.notificationConfig !== undefined) {
+          void notifyFriendRequestReceived(database, deps.notificationConfig, {
+            actorAccountId: accountId,
+            recipientAccountId: targetAccount.accountId,
+          });
+        }
         return;
       }
       koaContext.status = statusForFriendApiErrorCode(result.code);
@@ -475,6 +496,16 @@ export function registerFriendshipRoutes(
         const summaries = await enrichFriendshipViews(database, [result.value]);
         koaContext.status = 200;
         koaContext.body = summaries[0];
+        // why: WP-353 — fire-and-forget the "request accepted" email to
+        // the ORIGINAL requester (the actor here is the accepting
+        // addressee). `void` + fail-open so the 200 is never delayed or
+        // failed by the notification.
+        if (deps.notificationConfig !== undefined) {
+          void notifyFriendRequestAccepted(database, deps.notificationConfig, {
+            actorAccountId: accountId,
+            recipientAccountId: requesterAccount.accountId,
+          });
+        }
         return;
       }
       koaContext.status = statusForFriendApiErrorCode(result.code);

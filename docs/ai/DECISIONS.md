@@ -28396,7 +28396,7 @@ Protect this file.
 
 ### D-24145 — Friend-request email notifications (Brevo transactional) (Friends & Ranked Trust, packet #4)
 
-**Status:** Drafted 2026-07-10; not yet landed. **BLOCKED on WP-351** (the send/accept handlers are the trigger). Flips to Active (post-execution) when WP-353 executes.
+**Status:** Active — executed 2026-07-11 via WP-353 / EC-383 (`brevoTransactional.logic.ts` + `friendshipNotifications.logic.ts` + `friendships.routes.ts` fire-and-forget hooks + `server.mjs` wiring). WP-351 (packet #2) is Wired on `main`.
 
 **User-Visible Surface:** email inboxes (a friend-request / request-accepted transactional email). D-24026 live-verify = a real Brevo send, deferred to deploy.
 
@@ -28413,7 +28413,7 @@ Protect this file.
 
 Rate limiting + a per-account notification opt-out are explicitly **packet #6** (the per-request email is a surfaced spam-vector Risk).
 
-**Packet:** WP-353 (+ EC-383 at execution-prep). **Drafted:** 2026-07-10. **Executed:** — (blocked on WP-351)
+**Packet:** WP-353 (+ EC-383). **Drafted:** 2026-07-10. **Executed:** 2026-07-11 (injected-`fetch` + fake-pool suites 8/8; WP-293 + WP-351 contracts byte-identical; fail-open proven four ways; real Brevo send operator-pending on deploy). **Note:** the WP §Verification-Step-4 `accountId` grep is over-broad — §Scope B mandates the `actorAccountId`/`recipientAccountId` param names, so the token appears as function-input identifiers; the real invariant (no accountId in the email `params` object) is satisfied by `buildParams` (`{actorHandle, actorDisplayName}` only) and asserted by the test.
 
 Protect this file.
 

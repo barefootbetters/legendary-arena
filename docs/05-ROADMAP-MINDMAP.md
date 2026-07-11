@@ -444,7 +444,9 @@ mindmap
         ["WP-350 ✅ Friendships data model + status machine + mutual-clique helper (server) — new legendary.friendships table (migration 028; player_id FK CASCADE, closed status pending/accepted/declined, normalized-pair LEAST/GREATEST unique index, addressee_id/status lookup index); AccountId-keyed send/accept/decline/remove state machine + list helpers + getFriendshipStatus + areAllMutualFriends clique predicate (accepted-pair count == C(n,2); n≤1 vacuous; order/dup-independent); declined→pending is an UPDATE, removeFriend DELETEs; library-only (no endpoint/UI); EC-380; D-24142"]
         ["WP-351 ✅ Friend-request API (/api/me/friends*) — six authenticated-session-required routes over WP-350's logic (send/list-friends/list-requests/accept/decline/remove); resolves @handle→AccountId inbound (findAccountByHandle) and enriches to FriendSummary (handle+displayName, never accountId — FR-2) via one ext_id=ANY($1) round-trip; acting account needs a claimed handle (handle_required); auth-first, session-resolved actor; WP-350 contract untouched; 6 api-endpoints rows; EC-381; D-24143"]
         ["WP-352 ✅ Friends tab on the owner profile (arena client) — a Friends section on ?route=me: add-by-@handle, incoming requests (accept/decline), outgoing pending (display-only), friends list (remove) over WP-351's API; new friendsApi.ts + useFriends composable + FriendsSection.vue mounted in MyProfilePage.vue; handle-only identity on screen (never accountId — FR-2); client error-code mirror + drift test; mutate→refetch; EC-382; D-24144"]
-        ["WP-353 📝 Friend-request email notifications (Brevo transactional, server) — fire-and-forget request/accept emails; drafted 2026-07-10, blocked on WP-351; EC-383 at execution-prep; D-24145"]
+        ["WP-353 ✅ Friend-request email notifications (Brevo transactional, server) — fire-and-forget, fail-open emails on request-received + request-accepted; adds the missing transactional path (POST /v3/smtp/email, createBrevoTransactionalSender, injectable fetch) without touching WP-293's brevoClient.types.ts; notifyFriendRequest{Received,Accepted} = single fail-open boundary (never throws; unconfigured/failed → console.warn no-op); wired void into WP-351's send/accept handlers with no endpoint-contract change; template-driven copy, no accountId in params; EC-383; D-24145"]
+        ["WP-354 📝 Ranked eligibility gate: friendship-clique check at score submission (server) — consumes WP-350's areAllMutualFriends clique predicate to gate ranked eligibility; drafted 2026-07-11, READY (all hard-deps Done); EC-384 at execution-prep; D-24146"]
+        ["WP-355 📝 Friend abuse controls: block list + request rate limit + re-request cooldown (server) — the packet-#6 guardrails (owns the WP-353 spam-vector risk + notification opt-out); drafted 2026-07-11, READY; EC-385 at execution-prep; D-24147"]
 
       Next Horizons
         ["📦 Core set keyword & ability coverage — get the core set fully playable first, then add sets incrementally (in progress via the effect-authoring grind — e.g. WP-310/316/317)"]
@@ -528,13 +530,13 @@ mindmap
 | Live-Play HUD & Pending-Choice UX (2026-07) | 15/15 | — |
 | Competitive Score Submission & Verification (2026-07) | 10/10 | — |
 | Gauntlet Leaderboards (Legends) (2026-07) | 3/4 | 1 open |
-| Friends & Ranked Trust (2026-07) | 3/4 | 1 open |
+| Friends & Ranked Trust (2026-07) | 4/6 | 2 open |
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **343/346 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 2 open |
+| **Total** | **344/348 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 3 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 3):** WP-042.1 ⏸ blocked; WP-345 open; WP-353 open.
+**Open / blocked WPs (derived from WORK_INDEX, 4):** WP-042.1 ⏸ blocked; WP-345 open; WP-354 open; WP-355 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

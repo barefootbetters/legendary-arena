@@ -57,6 +57,7 @@ import {
   createBrevoClient,
   enqueuePlayerToMarketingList,
 } from './marketing/brevoEnqueue.logic.js';
+import { createBrevoTransactionalSender } from './marketing/brevoTransactional.logic.js';
 import { LegendaryGame, setRegistryForSetup } from '@legendary-arena/game-engine';
 import { getVersionInfo } from './version.mjs';
 
@@ -243,6 +244,23 @@ function loadBrevoConfig() {
     return undefined;
   }
   return { apiKey, listId };
+}
+
+/**
+ * Parse a friend-notification Brevo template id from the environment.
+ * Returns the positive integer, or `undefined` when the env var is unset,
+ * empty, or not a positive integer. An `undefined` template id disables
+ * that friend notification (fail-open no-op per D-24080) — this is
+ * best-effort mail, never a startup failure.
+ *
+ * @param {string | undefined} rawValue
+ * @returns {number | undefined}
+ */
+function parseFriendTemplateId(rawValue) {
+  // why: WP-353 / D-24080 — unset or malformed template id ⇒ undefined ⇒
+  // that notification no-ops; never throws, never blocks startup.
+  const parsed = Number.parseInt(rawValue ?? '', 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 // why (D-23101 / WP-231): loud-fail-on-production guard for the
@@ -715,6 +733,26 @@ export async function startServer() {
           );
   const accountResolver = createProductionAccountResolver({ marketingEnqueue });
 
+  // why: WP-353 / D-24145 — build the friend-request email notification
+  // config. The transactional sender reuses the resolved BREVO_API_KEY
+  // (undefined when Brevo is unconfigured); the two template ids come
+  // from their own env vars. Any undefined field disables that
+  // notification — the notify boundary is fail-open, so an unconfigured
+  // Brevo (local/dev) sends nothing and never fails a friend request
+  // (D-24077 / D-24080).
+  const friendNotificationConfig = {
+    sender:
+      brevoConfig === undefined
+        ? undefined
+        : createBrevoTransactionalSender(brevoConfig.apiKey),
+    requestTemplateId: parseFriendTemplateId(
+      process.env.BREVO_FRIEND_REQUEST_TEMPLATE_ID,
+    ),
+    acceptedTemplateId: parseFriendTemplateId(
+      process.env.BREVO_FRIEND_ACCEPTED_TEMPLATE_ID,
+    ),
+  };
+
   // why: WP-104 / D-10408 — register the three owner-only routes
   // (/api/me/profile GET + PATCH, /api/me/links PUT) on the same
   // long-lived pool. requireAuthenticatedSession is the WP-112
@@ -809,10 +847,14 @@ export async function startServer() {
   // same long-lived pool. The HTTP surface over WP-350's friendship logic
   // (packet #2 of Friends & Ranked Trust); same caller-injected auth deps
   // as registerOwnerProfileRoutes / registerLoadoutLibraryRoutes.
+  // why: WP-353 / D-24145 — thread the friend-request email notification
+  // config (fire-and-forget, fail-open) so the send/accept handlers can
+  // notify the addressee / original requester without gating the response.
   registerFriendshipRoutes(server.router, pool, {
     requireAuthenticatedSession,
     verifier,
     accountResolver: verifier === undefined ? undefined : accountResolver,
+    notificationConfig: friendNotificationConfig,
   });
 
   // why: WP-152 / D-10202 / D-11505 — wire the public profile route.
