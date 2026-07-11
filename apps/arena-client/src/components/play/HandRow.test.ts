@@ -30,6 +30,21 @@ function display(extId: string, name: string, cost: number | null = null): UICar
 }
 
 describe('HandRow (WP-129 — extends WP-100)', () => {
+  test('renders the visible zone heading with the unplayed-card count', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(HandRow, {
+      props: {
+        handCards: ['cap-rogers', 'iron-man-stark'],
+        currentStage: 'main',
+        submitMove,
+      },
+    });
+    const heading = wrapper.find('[data-testid="play-hand-heading"]');
+    assert.equal(heading.exists(), true);
+    assert.match(heading.text(), /Your Hand/);
+    assert.match(heading.text(), /2 unplayed/);
+  });
+
   test('renders one button per CardExtId in the hand', () => {
     const { submitMove } = recorder();
     const wrapper = mount(HandRow, {

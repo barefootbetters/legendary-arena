@@ -7,6 +7,18 @@
 
 ## Current State
 
+### WP-355 / EC-385 Executed — Friend abuse controls: block list + rate limit + re-request cooldown (D-24147 Active) (2026-07-11)
+
+Packet #6 (abuse controls) of the **Friends & Ranked Trust** subsystem — the anti-abuse guardrails the friend graph needs. **This completes the subsystem's currently-drafted arc (packets #1–#6).**
+
+**What landed:**
+- **Migration `030`** — `legendary.player_blocks` (a **separate** model — blocking is never a friendship `status`, D-24142; a block can exist with no prior request): `block_id bigserial` PK; `blocker_id`/`blocked_id bigint` FKs to `legendary.players(player_id) ON DELETE CASCADE`; `UNIQUE (blocker_id, blocked_id)`; `CHECK (blocker_id <> blocked_id)`; `blocker_id` index.
+- **`playerBlocks.logic.ts`** — `blockPlayer` (INSERTs the block **and** severs any existing friendship in one `BEGIN/COMMIT` — a scoped normalized-pair delete in this new module, so WP-350's files stay byte-identical), `unblockPlayer`, `listBlocks` (`handle`+`displayName` only, no `accountId`), `isEitherBlocked` (symmetric — either direction), plus the two send-guard helpers `countOutgoingPendingSince` + `mostRecentDeclineAgainst`. `BlockApiErrorCode` closed union + `BLOCK_ERROR_CODES` array + drift test.
+- **`friendships.routes.ts`** — three abuse-control guards on `POST /api/me/friends/requests` in the locked order **block → cooldown → rate limit** BEFORE `sendFriendRequest`: `blocked` (403, symmetric), `request_cooldown` (429, re-send within `REREQUEST_COOLDOWN_HOURS = 24` of a decline), `rate_limited` (429, ≥ `MAX_OUTGOING_PENDING_PER_DAY = 20` outgoing pending in the trailing 24h). `FriendApiErrorCode` extended **additively** with those three (union + array + drift test updated together). Three new `authenticated-session-required` block endpoints (`POST`/`DELETE`/`GET /api/me/blocks`), mounted **inside `registerFriendshipRoutes`** so `server.mjs` is untouched.
+- **`api-endpoints.md`** — 3 new block rows + the updated send row (D-11804).
+
+**Verification:** `pnpm -r build` 0; the `playerBlocks` + `friendships.routes` suites pass with the new cases (block-and-sever transaction, unblock, list, symmetric `isEitherBlocked`, self/duplicate guards, the rate-limit + cooldown helpers, and the route-level `blocked`/`request_cooldown`/`rate_limited` + block-endpoint cases with no `accountId` on the wire). Full serialized DB-wired server suite **914/914 / 0 skipped**. Migration `030` applied to a real Postgres. **WP-350's `friendships.{types,logic}.ts` byte-identical** (contract lock; the sever reuses a scoped pair-delete). **D-24147 Active.** **D-24026 operator-pending on deploy** (block → can't be friend-requested + friendship gone; over-cap → `rate_limited`; re-send after decline → `request_cooldown`). The notification opt-out (the WP-353 spam-vector) remains a separate WP-353-dependent follow-up. **The Friends & Ranked Trust subsystem's drafted packets #1–#6 are all shipped; the remaining charter item is the lobby-invite-flow half of packet #5 (split to a future WP pending multiplayer-lobby UX).**
+
 ### WP-354 / EC-384 Executed — Ranked eligibility gate: friendship-clique check at score submission (D-24146 Active) (2026-07-11)
 
 Packet #5 (ranked-gate half) of the **Friends & Ranked Trust** subsystem — the trust boundary the whole subsystem exists to protect: a multiplayer competitive run counts for the public leaderboard **only if its human players were a mutual-friend clique** at submission.

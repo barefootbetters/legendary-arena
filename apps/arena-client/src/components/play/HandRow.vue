@@ -139,6 +139,9 @@ export default defineComponent({
     data-testid="play-hand-row"
     aria-label="Hand"
   >
+    <header class="hand-row__heading" data-testid="play-hand-heading">
+      Your Hand — {{ handCards.length }} unplayed
+    </header>
     <p
       v-if="handCards.length === 0"
       class="hand-empty"
@@ -182,6 +185,14 @@ export default defineComponent({
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+}
+
+.hand-row__heading {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
 }
 
 .hand-cards {
