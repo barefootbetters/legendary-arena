@@ -28331,7 +28331,7 @@ Protect this file.
 
 ### D-24142 — Friendships data model + friend-request state machine + mutual-clique helper (Friends & Ranked Trust, packet #1)
 
-**Status:** Drafted 2026-07-10; not yet landed. Flips to Active (post-execution) when WP-350 executes.
+**Status:** Active — executed 2026-07-11 via WP-350 / EC-380 (migration `028` + `apps/server/src/friendships/{types,logic,logic.test}.ts`).
 
 **User-Visible Surface:** none (library-only). Payoff at packets #2 (API) / #3 (UI) / #5 (ranked gate) — see the charter at `wiki/profile-login.md §Friends & Ranked Trust Layer`.
 
@@ -28346,7 +28346,7 @@ Protect this file.
 5. **Clique algorithm.** A set of accounts is a clique **iff** the count of `accepted` rows whose both endpoints are in the de-duplicated set equals `n*(n-1)/2`; `n ≤ 1` is vacuously `true`. Pure predicate — the packet-#5 ranked gate consumes it; this packet decides nothing about scoring.
 6. **Library-only scope.** No HTTP endpoint (`api-endpoints.md` untouched), no `'friends'` profile-visibility value (deferred until a consumer exists per migration 009's `// why:` note).
 
-**Packet:** WP-350 (+ EC-380 at execution-prep). **Drafted:** 2026-07-10. **Executed:** —
+**Packet:** WP-350 (+ EC-380). **Drafted:** 2026-07-10. **Executed:** 2026-07-11 (full server suite 876/876 against a real Postgres; migration `028` applied; `psql` reverse-duplicate smoke confirms the normalized-pair index).
 
 Protect this file.
 

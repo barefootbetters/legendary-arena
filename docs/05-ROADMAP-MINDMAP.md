@@ -440,6 +440,10 @@ mindmap
         ["WP-344 ✅ Player-count gauntlet boards (server) — migration 027 player_count column; roster-keyed standings per count from one query; publisher adds lazy per-count boards + index entryCounts/legs; EC-376; D-24134 server half"]
         ["WP-345 📝 Player-count gauntlet boards + challenge links (legends-board client) — player-count selector, full-roster display, 'Challenge this leg' links into the WP-114 registry-viewer preview; execution-ready (EC-379 drafted 2026-07-10); D-24134 client half"]
 
+      Friends & Ranked Trust (2026-07)
+        ["WP-350 ✅ Friendships data model + status machine + mutual-clique helper (server) — new legendary.friendships table (migration 028; player_id FK CASCADE, closed status pending/accepted/declined, normalized-pair LEAST/GREATEST unique index, addressee_id/status lookup index); AccountId-keyed send/accept/decline/remove state machine + list helpers + getFriendshipStatus + areAllMutualFriends clique predicate (accepted-pair count == C(n,2); n≤1 vacuous; order/dup-independent); declined→pending is an UPDATE, removeFriend DELETEs; library-only (no endpoint/UI); EC-380; D-24142"]
+        ["WP-351 📝 Friend-request API (/api/me/friends*) — six authenticated-session-required routes over WP-350's logic; resolves @handle→AccountId inbound and enriches to FriendSummary (handle+displayName, never accountId — FR-2); drafted 2026-07-10, blocked on WP-350; EC-381 at execution-prep; D-24143"]
+
       Next Horizons
         ["📦 Core set keyword & ability coverage — get the core set fully playable first, then add sets incrementally (in progress via the effect-authoring grind — e.g. WP-310/316/317)"]
         ["📦 Live PvP matchmaking & match-discovery UX — reconnect/desync resilience now SHIPPED (WP-116 policy + WP-311 reconnect + WP-312 move-ack watchdog); what remains is matchmaking + a match-discovery/join UX"]
@@ -522,12 +526,13 @@ mindmap
 | Live-Play HUD & Pending-Choice UX (2026-07) | 15/15 | — |
 | Competitive Score Submission & Verification (2026-07) | 10/10 | — |
 | Gauntlet Leaderboards (Legends) (2026-07) | 3/4 | 1 open |
+| Friends & Ranked Trust (2026-07) | 1/2 | 1 open |
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **340/342 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 1 open |
+| **Total** | **341/344 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 2 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 2):** WP-042.1 ⏸ blocked; WP-345 open.
+**Open / blocked WPs (derived from WORK_INDEX, 3):** WP-042.1 ⏸ blocked; WP-345 open; WP-351 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
