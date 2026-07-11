@@ -359,6 +359,7 @@ mindmap
         ["WP-233 ✅ Done — Closed-loop sweep verification (Builder fix → re-sweep → Inspector verify)"]
         ["WP-234 ✅ Done — Full-corpus sweep expansion (weekly rotating window beyond 2×2 smoke)"]
         ["WP-235 ✅ Done — Pipeline page sweep health trend view (cadence-aware health-rate trends + healthy-class constant)"]
+        ["WP-349 📝 Draft — Sweep health rate = anomaly-free rate (fix the structural 0% from the D-23503 endgame-reached healthy-class; D-24141)"]
         ["WP-239 ✅ Done — Triage dashboard surfaces (inspection findings + handoff lifecycle on the Pipeline Inspector lane, read-only)"]
 
       Admin & Route Wiring
@@ -530,7 +531,7 @@ mindmap
 | Notable Events & Overlays | 4/4 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
 | Dashboard & Operator Analytics | 14/14 | — |
-| Agent Triage Pipeline | 7/7 | — |
+| Agent Triage Pipeline | 7/8 | 1 open |
 | Admin & Route Wiring | 4/4 | — |
 | Phase 9 — Profile Surface Follow-ups | 11/11 | — |
 | Architecture & API Governance | 4/4 | — |
@@ -545,9 +546,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **355/359 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 3 open |
+| **Total** | **355/360 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 4 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 4):** WP-042.1 ⏸ blocked; WP-345 open; WP-366 open; WP-356 open.
+**Open / blocked WPs (derived from WORK_INDEX, 5):** WP-042.1 ⏸ blocked; WP-349 open; WP-345 open; WP-366 open; WP-356 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

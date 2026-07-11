@@ -24340,7 +24340,11 @@ import, so the ARCHITECTURE.md layer boundary is preserved.
 
 **Packet:** WP-235 (EC-268).
 **Drafted:** 2026-06-10 (reserved). **Landed:** 2026-06-11 (WP-235 execution close).
-**Status:** Active
+**Status:** Active — healthy-class *metric* superseded by **D-24141** (2026-07-10):
+`endgame-reached / cellCount` was structurally 0 on live data (no policy reaches a
+terminal endgame in the sweep matchups), replaced by the anomaly-free rate. The
+cadence/trend (D-23502) and single-source-of-truth-helper architecture remain in
+force.
 
 ---
 
@@ -28326,6 +28330,60 @@ cookie is parent-scoped (WP-347), a sign-out ends the shared session on every
 subdomain — the intended flip side of SSO.
 
 **Packet:** WP-348 + EC-378. **Drafted:** 2026-07-09. **Executed:** 2026-07-09.
+
+---
+
+### D-24141 — Sweep Health Rate Is the Anomaly-Free Rate (Supersedes the D-23503 `endgame-reached` Healthy-Class)
+
+**Decision:**
+The dashboard sweep **health rate** is redefined as the **anomaly-free rate** —
+the fraction of swept cells that ran **without a genuine anomaly**:
+`computeSweepHealthRate(run) = cellCount > 0 ? (cellCount − Σ genuine-anomaly-counts) / cellCount : null`,
+clamped to `[0, 1]`, where the genuine-anomaly classes are `'fatal'` (the engine
+threw) and `'escaped-villain-cap'` (villains escaped past the cap on a terminal
+game). This **supersedes** the D-23503 healthy-class definition
+(`SWEEP_HEALTHY_ANOMALY_KEY = 'endgame-reached'`, health = `endgame-reached / cellCount`).
+
+**Why D-23503's metric was also degenerate.** D-23503 replaced the original
+`(cellCount − Σ all keys) / cellCount ≡ 0` formula with `endgame-reached / cellCount`,
+but that is **also ≡ 0 on live data**: `endgame-reached` requires a game to reach
+a *terminal* endgame within the 200-turn cap, and empirically **no policy does** —
+the committed 4-cell nightly fixture run under `--policy heuristic` (the competent
+T2 AI, WP-049) yields `endgameReached=false` on all four cells with
+`moveCount ≈ 2000`, `winner=null`, identical to `--policy random`. So the
+"healthy class" was structurally unreachable and the live health chip read a hard
+0% on every nightly and weekly run (confirmed: the 2026-07-10 nightly + weekly-w8
+runs both classified all cells as `not-endgame`). The sweep is an **anomaly
+oracle** (D-19502); its genuine anomalies are `fatal` and `escaped-villain-cap`,
+while `not-endgame` (hit the turn cap) is the expected norm — so health is the
+fraction of cells free of a genuine anomaly, not the fraction that won.
+
+**Opacity posture (amends how D-23503 applied D-20703).** This keeps the same
+**narrow, documented exception** to D-20703 that D-23503 established, **inverted**:
+instead of naming the single healthy key, the helper names the two genuine-anomaly
+key literals (`SWEEP_ANOMALY_HEALTH_KEYS = ['fatal', 'escaped-villain-cap']`) and
+subtracts them. It still does **NOT** import `SweepAnomalyClass` or any engine
+symbol; `'endgame-reached'` and `'not-endgame'` stay unnamed/opaque; the opaque
+all-keys `totalAnomalySparkline` (D-20703) is unchanged. Engine-coupling drift
+note: if the engine renames or adds an anomaly class, this one array is the single
+edit point (same single-string-family coupling D-23503 documented). D-23503's
+cadence/trend decisions (D-23502) and its single-source-of-truth-helper
+architecture remain in force — only its healthy-class *definition* changes.
+
+**Alternative considered (B1):** health = `1 − fatal / cellCount` (crash-free
+only). Rejected in favor of counting `escaped-villain-cap` as unhealthy too — it
+is a deliberately-flagged anomaly (D-19502) and B1 is identical to this decision
+on all current data (escaped-villain-cap requires a terminal game, which never
+occurs), so the broader definition is strictly more correct if games ever start
+terminating. **Alternative considered (policy swap):** rejected empirically — no
+policy reaches endgame in these matchups, so no policy rescues the old metric.
+
+**Layer boundary:** App-layer display-semantics only; no engine code, no engine
+import, no server / registry / migration change. `GET /api/sweep/latest` (WP-209)
+is consumed byte-unchanged.
+
+**Packet:** WP-349.
+**Drafted:** 2026-07-10 (number reserved in WP-349 body). **Status:** Reserved — lands on WP-349 execution.
 
 Protect this file.
 
