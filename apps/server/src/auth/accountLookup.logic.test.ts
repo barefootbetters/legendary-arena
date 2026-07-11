@@ -27,6 +27,7 @@
 
 import { describe, test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 
 import { findAccountByAuthProviderSub } from './accountLookup.logic.js';
 import { createPlayerAccount } from '../identity/identity.logic.js';
@@ -116,12 +117,6 @@ describe('account lookup logic (WP-112)', () => {
     hasTestDatabase ? {} : { skip: 'requires test database' },
     async () => {
       assert.ok(testPool !== null);
-      const idCounter = { value: 0 };
-      const idProvider = () => {
-        idCounter.value += 1;
-        return `00000000-0000-4000-8000-${String(Date.now() % 1_000_000_000_000)
-          .padStart(9, '0')}${String(idCounter.value).padStart(3, '0')}`;
-      };
       const email = `${uniqueLabel('hit')}@example.com`;
       const authProviderId = `${uniqueLabel('hit')}-sub`;
 
@@ -133,7 +128,10 @@ describe('account lookup logic (WP-112)', () => {
           authProviderId,
         },
         testPool,
-        idProvider,
+        // why: randomUUID gives each account a globally unique ext_id. A
+        // Date.now()-derived id collides when two accounts are provisioned
+        // in the same millisecond, tripping the ext_id UNIQUE constraint.
+        randomUUID,
       );
       assert.ok(accountResult.ok === true);
 
@@ -170,12 +168,6 @@ describe('account lookup logic (WP-112)', () => {
     hasTestDatabase ? {} : { skip: 'requires test database' },
     async () => {
       assert.ok(testPool !== null);
-      const idCounter = { value: 0 };
-      const idProvider = () => {
-        idCounter.value += 1;
-        return `00000000-0000-4000-8000-${String(Date.now() % 1_000_000_000_000)
-          .padStart(9, '0')}${String(idCounter.value).padStart(3, '0')}`;
-      };
       const email = `${uniqueLabel('provider-mismatch')}@example.com`;
       const authProviderId = `${uniqueLabel('provider-mismatch')}-sub`;
 
@@ -187,7 +179,10 @@ describe('account lookup logic (WP-112)', () => {
           authProviderId,
         },
         testPool,
-        idProvider,
+        // why: randomUUID gives each account a globally unique ext_id. A
+        // Date.now()-derived id collides when two accounts are provisioned
+        // in the same millisecond, tripping the ext_id UNIQUE constraint.
+        randomUUID,
       );
       assert.ok(accountResult.ok === true);
 
@@ -206,12 +201,6 @@ describe('account lookup logic (WP-112)', () => {
     hasTestDatabase ? {} : { skip: 'requires test database' },
     async () => {
       assert.ok(testPool !== null);
-      const idCounter = { value: 0 };
-      const idProvider = () => {
-        idCounter.value += 1;
-        return `00000000-0000-4000-8000-${String(Date.now() % 1_000_000_000_000)
-          .padStart(9, '0')}${String(idCounter.value).padStart(3, '0')}`;
-      };
       const email = `${uniqueLabel('google-hit')}@example.com`;
       const authProviderId = `google-${uniqueLabel('google-hit')}-sub`;
 
@@ -223,7 +212,10 @@ describe('account lookup logic (WP-112)', () => {
           authProviderId,
         },
         testPool,
-        idProvider,
+        // why: randomUUID gives each account a globally unique ext_id. A
+        // Date.now()-derived id collides when two accounts are provisioned
+        // in the same millisecond, tripping the ext_id UNIQUE constraint.
+        randomUUID,
       );
       assert.ok(accountResult.ok === true);
 
