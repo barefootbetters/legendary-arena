@@ -242,6 +242,27 @@ describe('revealVillainCard', () => {
     );
   });
 
+  it('logs a city-entry line when a villain enters the city (no silent reveal)', () => {
+    // why: every reveal must produce a start-stage log line. A villain/henchman
+    // entering an empty city (the common turn-1 outcome, no escape) previously
+    // emitted no base message, so the game log appeared to start at step 2.
+    const gameState = createMockGameState({
+      deck: ['card-a', 'card-b'],
+      discard: [],
+      cardTypes: { 'card-a': 'villain', 'card-b': 'villain' },
+    });
+
+    const moveContext = createMockMoveContext(gameState);
+    revealVillainCard(moveContext);
+
+    assert.ok(
+      moveContext.G.messages.some(
+        (message) => message.includes('card-a') && message.includes('entered the city'),
+      ),
+      'a villain reveal that fills the city must log an "entered the city" line',
+    );
+  });
+
   it('onCardRevealed trigger fires with correct cardId and cardTypeSlug', () => {
     const testHook = createTestHookDefinition(['onCardRevealed']);
     const gameState = createMockGameState({
