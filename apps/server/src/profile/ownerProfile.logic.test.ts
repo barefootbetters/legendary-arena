@@ -64,6 +64,22 @@ function uniqueLabel(suffix: string): string {
   return `${SUITE_RUN_ID}-${testCounter}-${suffix}`;
 }
 
+// why: per-suite-run UUID for team_id inserts. A hardcoded constant
+// collided on teams_pkey once a prior run's row survived — EC-128 §2
+// forbids cleanup SQL, so uniqueness must live in the inserted id, the
+// same way emails and authProviderIds derive theirs from SUITE_RUN_ID
+// plus the shared per-test counter. The SUITE_RUN_ID timestamp and the
+// counter are packed into the UUID's node field as decimal digits
+// (decimal digits are valid hex), yielding a valid v4-shape UUID.
+function uniqueTeamId(): string {
+  testCounter += 1;
+  const runTimestamp = SUITE_RUN_ID.split('-')[1];
+  const nodeField = `${runTimestamp.slice(-9).padStart(9, '0')}${String(
+    testCounter,
+  ).padStart(3, '0')}`;
+  return `00000000-0000-4000-8000-${nodeField}`;
+}
+
 async function provisionAccount(
   testPool: pg.Pool,
   labelSuffix: string,
@@ -704,15 +720,16 @@ describe('owner profile logic (WP-104)', () => {
       // roster validator — this fixture exercises the composer
       // wiring on the owner-side read path, not the team-creation
       // orchestrator.
+      const teamId = uniqueTeamId();
       await testPool.query(
         "INSERT INTO legendary.teams (team_id, name, cohort_label, team_size, start_date, end_date, status, captain_player_id, visibility) " +
-          "VALUES ('00000000-0000-4000-8000-cccccccccccc', 'Owner-Priv', '2026', 3, '2026-01-01', '2026-12-31', 'active', $1, 'private')",
-        [playerId],
+          "VALUES ($1, 'Owner-Priv', '2026', 3, '2026-01-01', '2026-12-31', 'active', $2, 'private')",
+        [teamId, playerId],
       );
       await testPool.query(
         'INSERT INTO legendary.team_member_events (team_id, player_id, team_size, role, joined_at, actor_id) ' +
-          "VALUES ('00000000-0000-4000-8000-cccccccccccc', $1, 3, 'member', now(), $1)",
-        [playerId],
+          "VALUES ($1, $2, 3, 'member', now(), $2)",
+        [teamId, playerId],
       );
 
       const owner = await getOwnerProfile(accountId, testPool);
@@ -725,10 +742,7 @@ describe('owner profile logic (WP-104)', () => {
         1,
         "owner must see their own 'private'-visibility team affiliation",
       );
-      assert.equal(
-        owner.value.teamAffiliations[0].teamId,
-        '00000000-0000-4000-8000-cccccccccccc',
-      );
+      assert.equal(owner.value.teamAffiliations[0].teamId, teamId);
       assert.equal(owner.value.teamAffiliations[0].teamSize, 3);
       assert.equal(owner.value.teamAffiliations[0].role, 'member');
     },
