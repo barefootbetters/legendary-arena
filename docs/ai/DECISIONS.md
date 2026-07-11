@@ -28461,3 +28461,22 @@ Notification opt-out (the WP-353 spam-vector risk) is a **separate WP-353-depend
 **Packet:** WP-355 (+ EC-385). **Drafted:** 2026-07-11. **Executed:** 2026-07-11 (migration `030` applied; full server suite 914/914 against a real Postgres — block+sever/unblock/list/symmetric + rate-limit/cooldown guards + block endpoints; WP-350 contract byte-identical; block routes mount inside `registerFriendshipRoutes` so `server.mjs` is untouched).
 
 Protect this file.
+
+### D-24148 — `shuffle-discard-empty-reward` hero keyword (Jocasta Reprocess + Electromagnetic Eyebeams)
+
+**Status:** Drafted 2026-07-11; not yet landed. **READY (not blocked — all hard-deps Done).** Flips to Active (post-execution) when WP-356 executes.
+
+**User-Visible Surface:** `play.legendary-arena.com` (Reprocess / Electromagnetic Eyebeams actually execute their printed ability instead of playing as vanilla stat cards).
+
+**Context.** A 2026-07-11 live-game diagnosis proved both antm Jocasta cards are hollow: their shared ability text carries no effect marker, so the engine has no hook. The log itself proves the shuffle never fires — at turn 13 Reprocess was played against an 8-card discard, and a card recruited that same turn (The Ebony Blade) was drawn from the deck mid-turn-14, which is only possible via the empty-deck cleanup reshuffle, i.e. the deck was empty because Reprocess never shuffled. Both flagged "could not return a 0-cost card" log lines in the same match were verified CORRECT (the discard genuinely was empty at both checks); the D-24139 Defend-the-Weak implementation is not at fault.
+
+**Decision.** Locks:
+
+1. **One parameterized keyword, two cards** — `shuffle-discard-empty-reward` covers the recruit variant (Reprocess) and the attack variant (Electromagnetic Eyebeams) via the D-24019 3-segment token grammar `[keyword:shuffle-discard-empty-reward:<reward>:<n>]`; the seeded-rewards gate accepts exactly `recruit` and `attack` (narrower than D-24019's set). The descriptor reuses the existing `magnitude` + `rewardType` fields — `heroAbility.types.ts` is not modified.
+2. **Mandatory immediate execution** — the printed text offers no choice, so there is no pending queue, no new move, no UIState projection, no client prompt (deliberately outside the pending-choice hard-freeze class).
+3. **Branch semantics** — empty discard (`playerZones.discard.length === 0`; played cards are in `inPlay` and never count) → `addResources` grant of `<n>` of the reward type on `G.turnEconomy`. Otherwise → the ENTIRE discard is shuffled INTO the deck as one combined deterministic shuffle (`moveAllCards` + `shuffleDeck` with `ctx` narrowed to `ShuffleProvider`; `ctx.random.Shuffle` is the only randomness source), discard ends `[]`. Both branches append one `G.messages` line (hash-excluded per D-24081).
+4. **Out of scope** — the optional-shuffle variants (`dead` Electroplasmic Insanity, `ssw2` Shuffling Footwork: "you may…" = player choice = pending-queue shape) and Flying Steed's master-strike reaction are separate future WPs.
+
+**Packet:** WP-356 (+ EC-386 at execution-prep). **Drafted:** 2026-07-11. **Executed:** —
+
+Protect this file.
