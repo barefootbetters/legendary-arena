@@ -53,8 +53,9 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 **Packet-specific (charter invariants):**
 - **Identity anchor (FR-2 / FR-3).** Every function is keyed on `AccountId` (`ext_id`); the table stores `player_id`; `display_name` never participates. A friendship survives renames because it is identified only by the two accounts.
 - **Symmetry (FR-4).** An accepted friendship is symmetric. Stored **once per unordered pair** — a normalized `UNIQUE (LEAST(requester_id,addressee_id), GREATEST(requester_id,addressee_id))` index forbids both `A→B` and `B→A` rows. `requester_id`/`addressee_id` record only *who initiated* (for pending-request display). "Is A a friend of B?" checks the single row regardless of direction. No one-way / follower semantics.
-- **Clique helper is a pure predicate (FR-6).** `areAllMutualFriends(pool, accountIds)` is a pure function of the accepted-friendship relation over the given account set — no judgement, no side effects. Locked algorithm below.
+- **Clique helper is a pure predicate (FR-6).** `areAllMutualFriends(pool, accountIds)` is a pure function of the accepted-friendship relation over the given account set — no judgement, no side effects. It reports **only** whether a friendship clique exists — never leaderboard eligibility, anti-cheat status, matchmaking, or moderation outcomes; those policies stay owned by their consuming subsystems (the ranked gate is packet #5). Locked algorithm below.
 - **Closed state set.** `status ∈ ('pending','accepted','declined')` — a DB `CHECK` + a TypeScript closed union + a canonical `readonly` array + a drift test. Adding a state requires a new WP + DECISIONS entry.
+- **Blocking boundary.** Friendship and blocking are **independent** concepts. `legendary.friendships` is not the source of truth for blocking and MUST NOT gain a `'blocked'` status value; any future block system uses a **separate** persistence model. (Forecloses the "just add another enum value" drift.)
 - **No self, duplicate, or reverse-duplicate rows.** `CHECK (requester_id <> addressee_id)` + the normalized-pair unique index; the logic layer maps a would-be duplicate to a typed error, never a second row.
 - **Re-request after decline is an UPDATE, not a second row.** `sendFriendRequest` on an existing `declined` pair transitions it `declined → pending` (UPDATE); a `pending` or `accepted` pair is rejected with a typed code.
 - **Zone/engine boundary untouched.** `G`, the engine, gameplay, replay, RNG, and hashes are not involved — this is profile-adjacent persistence. No determinism surface.
@@ -64,6 +65,17 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 - If the exact `ext_id → player_id` SQL or the `Result<T>` shape is unclear, stop and read `ownerProfile.logic.ts` / `identity.types.ts` — do not invent the resolution or the result contract.
 
 ---
+
+## Friendship Invariants
+
+The graph inherits the charter's canonical invariants ([`wiki/profile-login.md` §Friends & Ranked Trust Layer](../../../wiki/profile-login.md), `FR-#`). This packet is bound by — and packets #2–#6 inherit verbatim — the following. **Numbering matches the charter; do not renumber.**
+
+- **FR-2 (identity anchor).** Every relationship, request, and lookup is keyed on `AccountId`; `display_name` and `handle_canonical` are **never** friendship keys.
+- **FR-3 (durability).** A friendship survives display-name, avatar, profile, handle-display, and team-affiliation changes — it is identified solely by the two `AccountId`s.
+- **FR-4 (symmetry).** An accepted friendship is symmetric, and a pair has **at most one** stored relationship row.
+- **FR-6 (objectively computable).** The clique helper is a **pure predicate** over the accepted-friendship relation.
+- **FR-8 (trust signal, not security guarantee).** The graph raises the cost of collusion; it does not eliminate it.
+- **Binary relation (charter permanent non-goal).** Friendship carries **no** score, reputation, endorsement, follower, or trust-ranking concept.
 
 ## Scope (In)
 
@@ -99,7 +111,7 @@ All take the `pg` pool + `AccountId`s; each resolves `ext_id → player_id` inli
 - `areAllMutualFriends(pool, accountIds)` — **the clique helper.** Locked algorithm in Contract.
 
 ### D) Tests
-- `friendships.logic.test.ts` (`node:test`, DB-backed with the existing profile-suite skip-when-no-DB harness): send happy path; self-request → `self_friendship`; unknown account → `unknown_account`; duplicate pending (either direction) → `already_pending`; send when already accepted → `already_friends`; `declined → pending` re-request via `sendFriendRequest`; accept by non-addressee → `not_addressee`; accept/decline with no pending → `no_pending_request`; `removeFriend` deletes and is symmetric; `removeFriend` on a non-accepted pair → `not_friends`; list incoming/outgoing/friends correctness + `direction` field; **clique helper**: `n≤1` → `true` (vacuous), a full triangle → `true`, a missing edge → `false`, a `pending` (non-accepted) edge does **not** count → `false`, order-independence (same result regardless of `accountIds` order or which party sent each request); the `FriendshipStatus` + `FriendshipErrorCode` drift tests.
+- `friendships.logic.test.ts` (`node:test`, DB-backed with the existing profile-suite skip-when-no-DB harness): send happy path; self-request → `self_friendship`; unknown account → `unknown_account`; duplicate pending (either direction) → `already_pending`; send when already accepted → `already_friends`; `declined → pending` re-request via `sendFriendRequest`; accept by non-addressee → `not_addressee`; accept/decline with no pending → `no_pending_request`; `removeFriend` deletes and is symmetric; `removeFriend` on a non-accepted pair → `not_friends`; list incoming/outgoing/friends correctness + `direction` field; **clique helper**: `n≤1` → `true` (vacuous), a full triangle → `true`, a missing edge → `false`, a `pending` (non-accepted) edge does **not** count → `false`, order-independence (same result regardless of `accountIds` order or which party sent each request); the **full lifecycle** `accept → removeFriend → re-request → accept again` (proves `removeFriend` DELETEs cleanly and a removed pair can re-friend — guards against a future regression that replaces DELETE with a status field); the `FriendshipStatus` + `FriendshipErrorCode` drift tests.
 
 ---
 
@@ -145,6 +157,8 @@ All take the `pg` pool + `AccountId`s; each resolves `ext_id → player_id` inli
 ### Closed error union
 `FriendshipErrorCode = 'unknown_account' | 'self_friendship' | 'already_pending' | 'already_friends' | 'no_pending_request' | 'not_addressee' | 'not_friends'` — canonical `FRIENDSHIP_ERROR_CODES` `readonly` array + drift test.
 
+`unknown_account` is returned when **one or more** supplied `AccountId`s fail to resolve to a `player_id`; it deliberately does **not** reveal *which* account failed (no account-existence enumeration — consistent with the WP-102 `player_not_found` single-code posture).
+
 ### Locked Values (do not re-derive at execution)
 | Key | Value |
 |---|---|
@@ -152,14 +166,16 @@ All take the `pg` pool + `AccountId`s; each resolves `ext_id → player_id` inli
 | Pair uniqueness | one row per **unordered** pair: `UNIQUE (LEAST(requester_id,addressee_id), GREATEST(requester_id,addressee_id))` |
 | `sendFriendRequest` on `declined` pair | transition `declined → pending` via **UPDATE** (new `requester_id`, `requested_at = now()`, `responded_at = null`) — never a second row |
 | `removeFriend` | **DELETE** the row (symmetric); re-friending is a fresh request, not a status flip |
-| Clique algorithm | resolve the `n` `AccountId`s to `n` `player_id`s; the set is a clique **iff** the count of `accepted` rows with **both** endpoints in the set equals `n*(n-1)/2`. The normalized-pair unique index guarantees at most one row per pair, so counting `accepted` rows where both endpoints ∈ set counts each connected pair exactly once. `n ≤ 1` → `true` (vacuous). A duplicate `AccountId` in the input is de-duplicated before the count. |
+| Clique — business rule | A set of accounts forms a friendship clique **iff** for every account `A` in the set and every *distinct* account `B` in the set, `accepted_friendship(A,B) = true`. The count-comparison below is the approved **implementation** of this rule, not the rule itself. |
+| Clique — implementation | Resolve the (de-duplicated) `n` `AccountId`s to `n` `player_id`s; the set is a clique **iff** the count of `accepted` rows with **both** endpoints in the set equals `n*(n-1)/2`. The normalized-pair unique index guarantees at most one row per pair, so this counts each connected pair exactly once. `n ≤ 1` → `true` (vacuous). |
+| Clique — input normalization | Repeated `AccountId`s are removed before evaluation, so `[A,B,C]`, `[A,A,B,C]`, and `[B,C,A,A]` are equivalent and return the same result. |
 | `FriendshipView` fields | `otherAccountId`, `status`, `direction ('incoming'|'outgoing')`, `requestedAt`, `respondedAt` — never `player_id`, `friendship_id`, or `display_name` |
 
 ---
 
 ## Acceptance Criteria
 
-1. Migration `028` creates `legendary.friendships` with the Scope-A columns/constraints — `player_id` FKs `ON DELETE CASCADE`, the `status` CHECK, `CHECK (requester_id <> addressee_id)`, the normalized-pair unique index, and the `(addressee_id, status)` lookup index (**AC-1**).
+1. Migration `028` creates `legendary.friendships` with the Scope-A columns/constraints — `player_id` FKs `ON DELETE CASCADE`, the `status` CHECK, `CHECK (requester_id <> addressee_id)`, the normalized-pair unique index, and the `(addressee_id, status)` lookup index. **Data-integrity:** the normalized-pair index rejects storing both `A→B` and `B→A` as separate rows — **at most one** friendship row exists per unordered account pair (a second insert in either direction fails at the DB) (**AC-1**).
 2. `sendFriendRequest` inserts a `pending` row keyed on the two accounts' `player_id`s; rejects self (`self_friendship`), unknown account (`unknown_account`), an existing pending pair in either direction (`already_pending`), and an accepted pair (`already_friends`); and transitions an existing `declined` pair `→ pending` via UPDATE rather than a second row (**AC-2**).
 3. `acceptFriendRequest` / `declineFriendRequest` operate only on a `pending` row and only by its addressee (non-addressee → `not_addressee`; no pending → `no_pending_request`); accept → `accepted`, decline → `declined`, both set `responded_at`. `removeFriend` DELETEs an `accepted` row from either side (symmetric) and returns `not_friends` when no accepted row exists (**AC-3**).
 4. `listFriends` / `listIncomingRequests` / `listOutgoingRequests` return the correct rows as `FriendshipView` with the correct `direction`, exposing no `player_id` / `friendship_id` / `display_name`; `getFriendshipStatus` returns the pair's status or `'none'` (**AC-4**).
