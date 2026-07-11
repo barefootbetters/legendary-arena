@@ -551,12 +551,13 @@ during implementation.
    public ranked board filters it, the owner My-Scores read stays unfiltered.
    The charter's *lobby-invite-flow* half is **split into a separate future
    WP** (depends on multiplayer-lobby UX).
-6. Abuse controls — **drafted as
+6. Abuse controls — **executed as
    [WP-355](../docs/ai/work-packets/WP-355-friend-abuse-controls.md)**
-   (2026-07-11, reserves D-24147; **READY**): a separate `legendary.player_blocks`
+   (executed 2026-07-11, D-24147 Active): a separate `legendary.player_blocks`
    table (block severs friendship), symmetric block enforcement, a per-day
-   request cap + re-request cooldown at the send handler. Notification opt-out
-   (the WP-353 spam-vector risk) is a separate WP-353-dependent follow-up.
+   request cap + re-request cooldown at the send handler, and three
+   `/api/me/blocks` endpoints. Notification opt-out (the WP-353 spam-vector
+   risk) is a separate WP-353-dependent follow-up.
 
 ## Interactions
 
