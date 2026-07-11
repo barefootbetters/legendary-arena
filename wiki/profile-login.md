@@ -527,7 +527,10 @@ during implementation.
    [WP-350](../docs/ai/work-packets/WP-350-friendships-data-model.md)**
    (2026-07-10, reserves D-24142; library-only, no endpoint/UI).
 2. Friend-request API (send / accept / decline / remove / list;
-   `authenticated-session-required`, per D-9905).
+   `authenticated-session-required`, per D-9905) — **drafted as
+   [WP-351](../docs/ai/work-packets/WP-351-friend-request-api.md)**
+   (2026-07-10, reserves D-24143; **blocked on WP-350**; `FriendSummary`
+   exposes `@handle`, never `accountId`).
 3. Profile UI: Friends tab, incoming / sent / pending, add-by-`@handle`
    search, privacy controls + block list.
 4. Brevo transactional emails (request received, request accepted).

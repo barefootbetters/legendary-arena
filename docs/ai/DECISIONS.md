@@ -28349,3 +28349,26 @@ Protect this file.
 **Packet:** WP-350 (+ EC-380 at execution-prep). **Drafted:** 2026-07-10. **Executed:** —
 
 Protect this file.
+
+### D-24143 — Friend-request API (`/api/me/friends*`) (Friends & Ranked Trust, packet #2)
+
+**Status:** Drafted 2026-07-10; not yet landed. **BLOCKED on WP-350** (packet #1 — its `friendships.{logic,types}.ts` must be Done first). Flips to Active (post-execution) when WP-351 executes.
+
+**User-Visible Surface:** none directly (the HTTP surface the packet-#3 Friends-tab UI calls). See the charter at `wiki/profile-login.md §Friends & Ranked Trust Layer`.
+
+**Context.** WP-350 ships the `AccountId`-keyed friendship logic + clique helper as a library. Packet #2 exposes it over authenticated HTTP and bridges the public `@handle` identifier to the internal `AccountId` in both directions.
+
+**Decision.** Ship `friendships.routes.ts` — six `authenticated-session-required` `/api/me/friends*` endpoints over WP-350's logic. Locked:
+
+1. **Endpoints (6):** `POST /api/me/friends/requests` `{handle}` (201) · `GET /api/me/friends` · `GET /api/me/friends/requests` (`{incoming, outgoing}`) · `POST …/requests/:handle/accept` · `POST …/requests/:handle/decline` · `DELETE /api/me/friends/:handle` (204).
+2. **`FriendSummary` wire projection** — a friend is identified by `handle` + `displayName`, **never** `accountId`/`ext_id`/`player_id` (FR-2, mirroring `PublicProfileView`'s deliberate omission). Imports `FriendshipStatus` from WP-350; no redefinition.
+3. **Handle-addressable policy** — every action routes by `@handle`, so the acting account must have a claimed handle (`handle_required`, 409); the target must resolve via `findAccountByHandle` (`handle_not_found`, 404). Inbound handles are `trim().toLowerCase()`-canonicalized.
+4. **`FriendApiErrorCode`** = the surfacing WP-350 logic codes + `unauthorized`/`invalid_request`/`handle_required`/`handle_not_found`, with a canonical `readonly` array + drift test + a locked HTTP status-mapping table.
+5. **Enrichment** = one `WHERE ext_id = ANY($1)` round-trip per list route (no N+1).
+6. **Contract-file lock** — WP-350's `friendships.{types,logic}.ts` and `legendary.friendships` are byte-identical; **no new migration**. Auth-first on every route (session-resolved actor, never body-supplied).
+
+Email notification (packet #4), UI (packet #3), block/rate-limits (packet #6), and the ranked gate (packet #5) are explicitly out.
+
+**Packet:** WP-351 (+ EC-381 at execution-prep). **Drafted:** 2026-07-10. **Executed:** — (blocked on WP-350)
+
+Protect this file.
