@@ -191,6 +191,19 @@ export function performVillainReveal(
     const pushResult = pushVillainIntoCity(G.city, cardId);
     G.city = pushResult.city;
 
+    // why: every villain-deck reveal must produce a start-stage log line. The
+    // bystander branch logs "revealed and captured by X" and mastermind-strike
+    // logs via its rule hook, but a villain/henchman entering the city had no
+    // base log line — so the first turn (empty city → the reveal fills it, no
+    // escape) showed nothing at step 1 and the game log appeared to start at
+    // step 2. Log the city entry here, before the escape/wound/ambush detail
+    // lines below, so the reveal is always narrated. (G.messages is
+    // hash-excluded, D-24081, so this is replay-safe.)
+    pushLog(
+      G,
+      `${formatCardRef(G.cardDisplayData, cardId)} revealed and entered the city.`,
+    );
+
     if (pushResult.escapedCard !== null) {
       // why: ENDGAME_CONDITIONS.ESCAPED_VILLAINS is the canonical counter key
       // for escape tracking. evaluateEndgame reads this counter to determine
