@@ -63,6 +63,19 @@ import {
   notifyFriendRequestAccepted,
   type FriendshipNotificationConfig,
 } from './friendshipNotifications.logic.js';
+// why: WP-355 — the block model + the three send-guard primitives (block,
+// re-request cooldown, daily rate limit) enforced before sendFriendRequest,
+// plus the three block endpoints mounted below. Same-layer server module;
+// no new cross-layer import.
+import {
+  blockPlayer,
+  unblockPlayer,
+  listBlocks,
+  isEitherBlocked,
+  countOutgoingPendingSince,
+  mostRecentDeclineAgainst,
+  type BlockApiErrorCode,
+} from './playerBlocks.logic.js';
 
 /**
  * Closed-set re-statement of the auth orchestrator's `Result<AccountId>`
@@ -145,7 +158,13 @@ export type FriendApiErrorCode =
   | 'unauthorized'
   | 'invalid_request'
   | 'handle_required'
-  | 'handle_not_found';
+  | 'handle_not_found'
+  // why: WP-355 (D-24147) — the three abuse-control send-guard codes,
+  // added additively to WP-351's union (the six existing endpoint shapes
+  // are otherwise byte-identical).
+  | 'blocked'
+  | 'rate_limited'
+  | 'request_cooldown';
 
 /**
  * Canonical readonly array mirroring the `FriendApiErrorCode` union.
@@ -164,6 +183,9 @@ export const FRIEND_API_ERROR_CODES: readonly FriendApiErrorCode[] = [
   'invalid_request',
   'handle_required',
   'handle_not_found',
+  'blocked',
+  'rate_limited',
+  'request_cooldown',
 ] as const;
 
 /**
@@ -218,11 +240,38 @@ function statusForFriendApiErrorCode(code: FriendApiErrorCode): number {
   ) {
     return 404;
   }
-  if (code === 'not_addressee') {
+  // why: WP-355 — a blocked pair is a forbidden action (403); the rate
+  // limit and the re-request cooldown are both "too many requests" (429).
+  if (code === 'blocked' || code === 'not_addressee') {
     return 403;
+  }
+  if (code === 'rate_limited' || code === 'request_cooldown') {
+    return 429;
   }
   // why: handle_required, self_friendship, already_pending, already_friends,
   // and unknown_account are all request-vs-current-state conflicts → 409.
+  return 409;
+}
+
+// why: WP-355 (D-24147) — the daily outgoing-request cap. A sender at or
+// over this many `pending` requests in the trailing 24h is rate_limited.
+const MAX_OUTGOING_PENDING_PER_DAY = 20;
+
+// why: WP-355 (D-24147) — re-request cooldown. Re-sending to a player who
+// declined you within this many hours is refused (request_cooldown).
+const REREQUEST_COOLDOWN_HOURS = 24;
+
+/**
+ * Map a `BlockApiErrorCode` (block CRUD) to its HTTP status. The route
+ * also handles the structural codes `unauthorized` (401) /
+ * `invalid_request` (400) / `handle_not_found` (404) inline.
+ */
+function statusForBlockApiErrorCode(code: BlockApiErrorCode): number {
+  if (code === 'not_blocked') {
+    return 404;
+  }
+  // why: self_block, already_blocked, and unknown_account are all
+  // request-vs-current-state conflicts → 409.
   return 409;
 }
 
@@ -375,6 +424,49 @@ export function registerFriendshipRoutes(
         koaContext.body = { error: 'handle_not_found' };
         return;
       }
+
+      // why: WP-355 (D-24147) — the three abuse-control guards, in the
+      // locked order block → cooldown → rate limit, ALL before
+      // sendFriendRequest. A blocked pair (either direction) is forbidden;
+      // a re-send within the cooldown of a decline is refused; a sender
+      // over the daily cap is rate-limited.
+      if (await isEitherBlocked(database, accountId, targetAccount.accountId)) {
+        koaContext.status = statusForFriendApiErrorCode('blocked');
+        koaContext.body = { error: 'blocked' };
+        return;
+      }
+      const lastDeclineIso = await mostRecentDeclineAgainst(
+        database,
+        accountId,
+        targetAccount.accountId,
+      );
+      if (lastDeclineIso !== null) {
+        // why: server-layer clock read (NOT engine — determinism is an
+        // engine-only invariant). A decline whose age is under the cooldown
+        // window blocks a re-send.
+        const cooldownMs = REREQUEST_COOLDOWN_HOURS * 60 * 60 * 1000;
+        const declineAgeMs = Date.now() - new Date(lastDeclineIso).getTime();
+        if (declineAgeMs < cooldownMs) {
+          koaContext.status = statusForFriendApiErrorCode('request_cooldown');
+          koaContext.body = { error: 'request_cooldown' };
+          return;
+        }
+      }
+      // why: server-layer clock read — the trailing 24h window start.
+      const windowStartIso = new Date(
+        Date.now() - 24 * 60 * 60 * 1000,
+      ).toISOString();
+      const outgoingPending = await countOutgoingPendingSince(
+        database,
+        accountId,
+        windowStartIso,
+      );
+      if (outgoingPending >= MAX_OUTGOING_PENDING_PER_DAY) {
+        koaContext.status = statusForFriendApiErrorCode('rate_limited');
+        koaContext.body = { error: 'rate_limited' };
+        return;
+      }
+
       const result = await sendFriendRequest(
         database,
         accountId,
@@ -587,6 +679,109 @@ export function registerFriendshipRoutes(
         return;
       }
       koaContext.status = statusForFriendApiErrorCode(result.code);
+      koaContext.body = { error: result.code };
+    } catch (caughtError) {
+      void caughtError;
+      koaContext.status = 500;
+      koaContext.body = { error: 'internal_error' };
+    }
+  });
+
+  // --- WP-355 block endpoints (D-24147) ---
+
+  router.post('/api/me/blocks', async (koaContext) => {
+    koaContext.set('Cache-Control', 'no-store');
+    try {
+      const accountId = await authenticate(koaContext);
+      if (accountId === null) {
+        return;
+      }
+      const rawBody = koaContext.request.body;
+      const body =
+        rawBody !== null && typeof rawBody === 'object'
+          ? (rawBody as Record<string, unknown>)
+          : {};
+      const handleValue = body.handle;
+      if (typeof handleValue !== 'string' || handleValue.trim().length === 0) {
+        koaContext.status = 400;
+        koaContext.body = { error: 'invalid_request' };
+        return;
+      }
+      const targetAccount = await findAccountByHandle(handleValue, database);
+      if (targetAccount === null) {
+        koaContext.status = 404;
+        koaContext.body = { error: 'handle_not_found' };
+        return;
+      }
+      const result = await blockPlayer(
+        database,
+        accountId,
+        targetAccount.accountId,
+      );
+      if (result.ok === true) {
+        koaContext.status = 201;
+        koaContext.body = result.value;
+        return;
+      }
+      koaContext.status = statusForBlockApiErrorCode(result.code);
+      koaContext.body = { error: result.code };
+    } catch (caughtError) {
+      void caughtError;
+      koaContext.status = 500;
+      koaContext.body = { error: 'internal_error' };
+    }
+  });
+
+  router.delete('/api/me/blocks/:handle', async (koaContext) => {
+    koaContext.set('Cache-Control', 'no-store');
+    try {
+      const accountId = await authenticate(koaContext);
+      if (accountId === null) {
+        return;
+      }
+      const targetAccount = await findAccountByHandle(
+        koaContext.params.handle,
+        database,
+      );
+      if (targetAccount === null) {
+        koaContext.status = 404;
+        koaContext.body = { error: 'handle_not_found' };
+        return;
+      }
+      const result = await unblockPlayer(
+        database,
+        accountId,
+        targetAccount.accountId,
+      );
+      if (result.ok === true) {
+        // why: 204 No Content — a successful unblock returns no body.
+        koaContext.status = 204;
+        koaContext.body = null;
+        return;
+      }
+      koaContext.status = statusForBlockApiErrorCode(result.code);
+      koaContext.body = { error: result.code };
+    } catch (caughtError) {
+      void caughtError;
+      koaContext.status = 500;
+      koaContext.body = { error: 'internal_error' };
+    }
+  });
+
+  router.get('/api/me/blocks', async (koaContext) => {
+    koaContext.set('Cache-Control', 'no-store');
+    try {
+      const accountId = await authenticate(koaContext);
+      if (accountId === null) {
+        return;
+      }
+      const result = await listBlocks(database, accountId);
+      if (result.ok === true) {
+        koaContext.status = 200;
+        koaContext.body = { blocked: result.value };
+        return;
+      }
+      koaContext.status = statusForBlockApiErrorCode(result.code);
       koaContext.body = { error: result.code };
     } catch (caughtError) {
       void caughtError;

@@ -199,7 +199,7 @@ describe('friend-request routes (WP-351)', () => {
 
   // --- Pure tests (always run) ---
 
-  test('registers exactly the six locked routes', () => {
+  test('registers exactly the nine locked routes (6 friend + 3 block)', () => {
     const router = new FakeRouter();
     registerFriendshipRoutes(
       router,
@@ -208,9 +208,12 @@ describe('friend-request routes (WP-351)', () => {
     );
     const keys = [...router.handlers.keys()].sort();
     assert.deepEqual(keys, [
+      'DELETE /api/me/blocks/:handle',
       'DELETE /api/me/friends/:handle',
+      'GET /api/me/blocks',
       'GET /api/me/friends',
       'GET /api/me/friends/requests',
+      'POST /api/me/blocks',
       'POST /api/me/friends/requests',
       'POST /api/me/friends/requests/:handle/accept',
       'POST /api/me/friends/requests/:handle/decline',
@@ -246,6 +249,9 @@ describe('friend-request routes (WP-351)', () => {
       'invalid_request',
       'handle_required',
       'handle_not_found',
+      'blocked',
+      'rate_limited',
+      'request_cooldown',
     ]);
     assert.equal(FRIEND_API_ERROR_CODES.length, expected.size);
     for (const code of FRIEND_API_ERROR_CODES) {
@@ -530,6 +536,143 @@ describe('friend-request routes (WP-351)', () => {
       assert.equal(bobFriendsBody.friends.length, 1);
       assert.equal(bobFriendsBody.friends[0].handle, alice.handle);
       assert.equal(bobFriendsBody.friends[0].direction, 'incoming');
+    },
+  );
+
+  // --- WP-355 abuse controls: block endpoints + send guards ---
+
+  test(
+    'block endpoints: create (201, no accountId) / list / delete; self → self_block; unblock-none → not_blocked',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const alice = await provisionAccountWithHandle(testPool, 'blk-a');
+      const bob = await provisionAccountWithHandle(testPool, 'blk-b');
+      const aliceHandlers = handlersForActor(alice.accountId);
+
+      // Create.
+      const create = makeContext({ body: { handle: bob.handle } });
+      await aliceHandlers.get('POST /api/me/blocks')!(create);
+      assert.equal(create.status, 201);
+      const created = create.body as Record<string, unknown>;
+      assert.deepEqual(Object.keys(created).sort(), ['displayName', 'handle']);
+      assert.equal(created.handle, bob.handle);
+      assert.equal('accountId' in created, false);
+
+      // List.
+      const list = makeContext({});
+      await aliceHandlers.get('GET /api/me/blocks')!(list);
+      assert.equal(list.status, 200);
+      const listBody = list.body as { blocked: Record<string, unknown>[] };
+      assert.equal(listBody.blocked.length, 1);
+      assert.equal(listBody.blocked[0].handle, bob.handle);
+      assert.equal('accountId' in listBody.blocked[0], false);
+
+      // Self-block.
+      const self = makeContext({ body: { handle: alice.handle } });
+      await aliceHandlers.get('POST /api/me/blocks')!(self);
+      assert.equal(self.status, 409);
+      assert.deepEqual(self.body, { error: 'self_block' });
+
+      // Delete.
+      const remove = makeContext({ params: { handle: bob.handle } });
+      await aliceHandlers.get('DELETE /api/me/blocks/:handle')!(remove);
+      assert.equal(remove.status, 204);
+
+      // Delete again → not_blocked.
+      const removeAgain = makeContext({ params: { handle: bob.handle } });
+      await aliceHandlers.get('DELETE /api/me/blocks/:handle')!(removeAgain);
+      assert.equal(removeAgain.status, 404);
+      assert.deepEqual(removeAgain.body, { error: 'not_blocked' });
+    },
+  );
+
+  test(
+    'send to a blocked pair → 403 blocked (symmetric)',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const alice = await provisionAccountWithHandle(testPool, 'sb-a');
+      const bob = await provisionAccountWithHandle(testPool, 'sb-b');
+      const aliceHandlers = handlersForActor(alice.accountId);
+      const bobHandlers = handlersForActor(bob.accountId);
+
+      // Alice blocks Bob.
+      const block = makeContext({ body: { handle: bob.handle } });
+      await aliceHandlers.get('POST /api/me/blocks')!(block);
+      assert.equal(block.status, 201);
+
+      // Alice cannot send to Bob.
+      const aliceSend = makeContext({ body: { handle: bob.handle } });
+      await aliceHandlers.get('POST /api/me/friends/requests')!(aliceSend);
+      assert.equal(aliceSend.status, 403);
+      assert.deepEqual(aliceSend.body, { error: 'blocked' });
+
+      // Symmetric: Bob cannot send to Alice either.
+      const bobSend = makeContext({ body: { handle: alice.handle } });
+      await bobHandlers.get('POST /api/me/friends/requests')!(bobSend);
+      assert.equal(bobSend.status, 403);
+      assert.deepEqual(bobSend.body, { error: 'blocked' });
+    },
+  );
+
+  test(
+    'send within the re-request cooldown of a decline → 429 request_cooldown',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const alice = await provisionAccountWithHandle(testPool, 'cd-a');
+      const bob = await provisionAccountWithHandle(testPool, 'cd-b');
+      const aliceHandlers = handlersForActor(alice.accountId);
+      const bobHandlers = handlersForActor(bob.accountId);
+
+      const send = makeContext({ body: { handle: bob.handle } });
+      await aliceHandlers.get('POST /api/me/friends/requests')!(send);
+      assert.equal(send.status, 201);
+      // Bob declines.
+      const decline = makeContext({ params: { handle: alice.handle } });
+      await bobHandlers.get('POST /api/me/friends/requests/:handle/decline')!(decline);
+      assert.equal(decline.status, 200);
+      // Alice re-sends immediately → within cooldown.
+      const resend = makeContext({ body: { handle: bob.handle } });
+      await aliceHandlers.get('POST /api/me/friends/requests')!(resend);
+      assert.equal(resend.status, 429);
+      assert.deepEqual(resend.body, { error: 'request_cooldown' });
+    },
+  );
+
+  test(
+    'send over the daily outgoing cap → 429 rate_limited',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const alice = await provisionAccountWithHandle(testPool, 'rl-a');
+      const target = await provisionAccountWithHandle(testPool, 'rl-t');
+      // why: seed exactly MAX_OUTGOING_PENDING_PER_DAY (20) pending outgoing
+      // rows for Alice via SQL (fast bulk), so the next real send hits the
+      // cap. requested_at defaults to now(), inside the trailing-24h window.
+      const aliceRow = await testPool.query(
+        'SELECT player_id FROM legendary.players WHERE ext_id = $1',
+        [alice.accountId],
+      );
+      const alicePlayerId = aliceRow.rows[0].player_id;
+      for (let i = 0; i < 20; i = i + 1) {
+        const dummyExt = randomUUID();
+        const dummy = await testPool.query(
+          'INSERT INTO legendary.players (ext_id, email, display_name, auth_provider, auth_provider_id) ' +
+            'VALUES ($1, $2, $3, $4, $5) RETURNING player_id',
+          [dummyExt, `${dummyExt}@example.com`, `RL Dummy ${i}`, 'email', `${dummyExt}-sub`],
+        );
+        await testPool.query(
+          "INSERT INTO legendary.friendships (requester_id, addressee_id, status) VALUES ($1, $2, 'pending')",
+          [alicePlayerId, dummy.rows[0].player_id],
+        );
+      }
+
+      const send = makeContext({ body: { handle: target.handle } });
+      await handlersForActor(alice.accountId).get('POST /api/me/friends/requests')!(send);
+      assert.equal(send.status, 429);
+      assert.deepEqual(send.body, { error: 'rate_limited' });
     },
   );
 });
