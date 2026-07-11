@@ -31,12 +31,23 @@ source:
   - ../docs/ai/work-packets/WP-305-owner-profile-identity-fields.md
   - ../docs/ai/work-packets/WP-338-submit-by-matchid-server.md
   - ../docs/ai/work-packets/WP-339-arena-submit-my-scores.md
+  - ../docs/ai/work-packets/WP-350-friendships-data-model.md
+  - ../docs/ai/work-packets/WP-351-friend-request-api.md
+  - ../docs/ai/work-packets/WP-352-friends-profile-ui.md
+  - ../docs/ai/work-packets/WP-353-friend-request-email-notifications.md
+  - ../docs/ai/work-packets/WP-354-ranked-eligibility-gate.md
+  - ../docs/ai/work-packets/WP-355-friend-abuse-controls.md
   - ../apps/server/src/profile/ownerProfile.types.ts
+  - ../apps/server/src/friendships/friendships.types.ts
+  - ../apps/server/src/friendships/friendships.routes.ts
+  - ../data/migrations/028_create_friendships.sql
+  - ../data/migrations/029_add_ranked_eligibility_to_competitive_scores.sql
+  - ../data/migrations/030_create_player_blocks.sql
   - ../apps/arena-client/src/pages/MyProfilePage.vue
   - ../apps/arena-client/src/composables/useAuthNav.ts
   - ../apps/arena-client/src/composables/useCompetitiveSubmitOnGameover.ts
   - ../docs/ai/work-packets/WORK_INDEX.md
-last-reviewed: 2026-07-10
+last-reviewed: 2026-07-11
 ---
 
 # Profile Login
@@ -335,14 +346,20 @@ Both `GET /api/me/profile` (12-key read) and `PATCH /api/me/profile` (recognized
 fields gain `displayName`; error set gains `invalid_display_name`) rows in
 `api-endpoints.md` were updated whole-row per D-11804.
 
-### Friends & Ranked Trust Layer (Proposed)
+### Friends & Ranked Trust Layer
 
-> **Status: PROPOSED — not yet scheduled.** No Work Packet is assigned; no
-> table, endpoint, or UI for friendships exists at HEAD. This subsection is a
-> design charter, recorded so the shape is settled once and decomposed through
-> the normal WP-drafting flow rather than re-litigated per packet. Field names
-> reuse the identity contract already shipped (above); the schema sketch is
-> **illustrative**, not locked.
+> **Status: SHIPPED — packets #1–#6 all Done 2026-07-11.** The subsystem landed
+> as a six-packet arc: **[WP-350](../docs/ai/work-packets/WP-350-friendships-data-model.md)**
+> (data model + clique helper, PR #672), **WP-351** (friend-request API, PR #674),
+> **WP-352** (owner-profile Friends section, PR #676), **WP-353** (Brevo
+> transactional emails, PR #680), **WP-354** (ranked eligibility gate, PR #684),
+> and **WP-355** (abuse controls — block list + rate limit + cooldown, PR #686),
+> under **[D-24142…D-24147](../docs/ai/DECISIONS.md)**. This charter is retained
+> for the invariants (`FR-1…FR-9`) and rationale that still govern the subsystem;
+> **the schema and flows below are updated to the as-built shapes**, and the
+> per-packet mapping is at the end of the section. Two charter items remain open:
+> the *lobby-invite-flow* half of packet #5 is split into a separate future WP
+> (multiplayer-lobby UX), and the WP-353 notification opt-out is a follow-up.
 
 **Purpose (why this earns 4–6 packets).** The primary purpose of the friendship
 graph is **player retention** — enabling intentional multiplayer, repeat play
@@ -411,32 +428,46 @@ Search (@handle) -> Send Request -> Pending -> Accepted | Declined
 2. Player submits a friend request (subject to the recipient's
    allow-requests preference and block list).
 3. Recipient sees the request in a **Pending Requests** list on `?route=me`
-   and receives an email via the existing **Brevo enqueue pipeline**
-   (`apps/server/src/marketing/brevoEnqueue.logic.ts`) — no new mailer.
+   and receives a **fail-open transactional email** (WP-353): a new
+   `marketing/brevoTransactional.logic.ts` added the `POST /v3/smtp/email` path
+   the contact-list-only Brevo module lacked; `notifyFriendRequest*` is a single
+   never-throw boundary, so an email hiccup never breaks the request.
 4. Recipient **accepts** or **declines**.
 5. Acceptance records a mutual, two-way friendship.
 6. Either side may **remove** the friendship at any time.
 
-**Illustrative schema — communicates concepts, not an approved design.** The
-sketch below exists solely to convey the shape (symmetric tie, pending state,
-immutable `ext_id` keys). Column names, indexes, normalization strategy, and
-physical implementation remain **WP-owned decisions** — do not treat this as
-ratified. It would land as the next migration, `028_*`, following repo
-conventions (`legendary.` schema, snake_case, `ext_id` foreign keys, idempotent
-`IF NOT EXISTS`):
+**As-built schema (migration 028, WP-350 / D-24142).** The shipped table differs
+from the original illustrative sketch in three load-bearing ways: FKs target the
+**internal `player_id` bigint** (the migration-009 profile-family convention),
+**not** the `ext_id` text column; symmetry is enforced by a **normalized-pair
+unique index** on `(LEAST, GREATEST)` — one row per unordered pair, so an A→B row
+makes B→A collide at the DB — rather than a directional `UNIQUE`; and the status
+set is the **closed** `pending | accepted | declined`, with `'blocked'`
+deliberately absent (blocking is a separate model — packet #6 / migration 030).
 
 ```
 CREATE TABLE IF NOT EXISTS legendary.friendships (
     friendship_id  bigserial   PRIMARY KEY,
-    requester_id   text        NOT NULL REFERENCES legendary.players(ext_id),
-    addressee_id   text        NOT NULL REFERENCES legendary.players(ext_id),
-    status         text        NOT NULL,  -- pending | accepted | declined | blocked
+    requester_id   bigint      NOT NULL REFERENCES legendary.players(player_id) ON DELETE CASCADE,
+    addressee_id   bigint      NOT NULL REFERENCES legendary.players(player_id) ON DELETE CASCADE,
+    status         text        NOT NULL DEFAULT 'pending'
+                               CHECK (status IN ('pending','accepted','declined')),
     requested_at   timestamptz NOT NULL DEFAULT now(),
     responded_at   timestamptz,
-    UNIQUE (requester_id, addressee_id),
-    CHECK (requester_id <> addressee_id)
+    CONSTRAINT friendships_no_self CHECK (requester_id <> addressee_id)
 );
+-- symmetry: one row per unordered pair (the FR-4 invariant, at the DB)
+CREATE UNIQUE INDEX friendships_pair_unique
+    ON legendary.friendships (LEAST(requester_id, addressee_id), GREATEST(requester_id, addressee_id));
 ```
+
+`requester_id` / `addressee_id` record only who *initiated* (for incoming-vs-
+outgoing pending display); once accepted the tie is symmetric and direction is
+display-only. `declined → pending` re-request is an UPDATE (never a second row);
+`removeFriend` DELETEs; `ON DELETE CASCADE` lets WP-052 account deletion drop the
+friendship rows. The wire shape (`FriendshipView`) carries `otherAccountId` +
+`status` + `direction` + timestamps — never `player_id`, `friendship_id`, or
+`display_name`.
 
 **Two-tier multiplayer model.** Friendship is the trust gate for ranked play,
 not a barrier to casual play:
@@ -463,9 +494,21 @@ and makes coordination visible to later analytics. It translates directly to a
 query with no interpretation layer. Cost is a non-issue: co-op crews are small,
 so the pairwise check is `O(n²)` over a handful of human seats.
 
-*Snapshot (FR-7).* Eligibility is evaluated **exactly once, at match start**,
-and stored as immutable run metadata. Subsequent friend / unfriend / block
-actions cannot change a completed run's leaderboard eligibility.
+*Snapshot (FR-7).* Eligibility is evaluated **exactly once** and stored as
+immutable run metadata. Subsequent friend / unfriend / block actions cannot
+change a completed run's leaderboard eligibility.
+
+> **As shipped (WP-354 / D-24146):** the clique is evaluated once at **score
+> submission** (the terminal event) — `computeRankedEligibility` runs
+> `areAllMutualFriends` over `readSeatAccounts(matchId)` and stores the result on
+> `competitive_scores.is_ranked_eligible` (migration 029, `NOT NULL DEFAULT true`;
+> solo / `n≤1` stays ranked; **fail-safe to Casual** if any friendship query
+> throws — scoring never breaks). This is *submission*-time, not a true
+> match-*start* snapshot; a start-time snapshot (so a mid-match unfriend cannot
+> flip a run) is a deliberate future refinement (D-24146 note 6). The public
+> ranked leaderboard SELECT **and** its parallel COUNT filter
+> `is_ranked_eligible = true`; the owner My-Scores read stays unfiltered
+> (ineligible shows as "Casual").
 
 *Lobby-mutation rule.* Any change to the human-player set **after** evaluation
 (a seat leaves, a new player joins) invalidates the snapshot: the run must be
@@ -482,26 +525,30 @@ leaderboard credit) rather than being blocked.
 > of disposable-account rings and makes coordination detectable after the fact.
 > Future WPs should design to that intent and not over-claim it as anti-cheat.
 
-**Reconciliation required at WP-design time** (do not assume during
-implementation):
+**Reconciliation (settled at WP-design time; recorded for provenance):**
 
 - **Co-op competition model (Vision §23/§24/§25).** Legendary is cooperative —
   players challenge the Mastermind together, never each other. The ranked gate
-  must fit that framing (shared victory conditions; how individual leaderboard
-  attribution works in a shared win), not import a PvP ladder.
-- **Multiplayer scoring (migration 027, `player_count`).** Orthogonal to
-  friendship. The clique check belongs in the match-start / scoring-eligibility
-  layer; do not conflate it with the scoring migration.
-- **Lobby dependency.** Friends-invite-to-game presupposes an N-seat human
-  co-op lobby / game-creation flow. Verify current state (match seat accounts,
-  migration 024; lobby intake WP-092) and treat it as a hard dependency if it
-  is not yet in place.
+  fits that framing (a binary eligibility flag orthogonal to the score, §25(a)),
+  not a PvP ladder.
+- **Multiplayer scoring (migration 027 `player_count`; ranked flag added by
+  migration 029).** Orthogonal to friendship. The clique check lives in the
+  scoring-eligibility layer (`competition.logic.ts`), not the scoring migration.
+- **Lobby dependency.** Friends-invite-to-game presupposes an N-seat human co-op
+  lobby / game-creation flow. WP-354 sidestepped it by gating at *submission*
+  over `readSeatAccounts` (migration 024 seat accounts); the *invite-flow* half
+  of packet #5 that needs the lobby UX is split to a separate future WP.
 
-**Privacy & abuse controls (in scope for the subsystem).** An
-allow-friend-requests preference (Everyone / No one, extensible), a block list
-(blocked users cannot request, be invited, or appear in the blocker's search),
-per-day outgoing-request rate limits, a re-request cooldown after a decline,
-and DB-level guards against self / duplicate / cross requests.
+**Privacy & abuse controls (shipped in packet #6 — WP-355 / D-24147).** A block
+list (`legendary.player_blocks`, migration 030 — a **separate** model; a block
+severs any existing friendship transactionally), symmetric block enforcement, a
+per-day outgoing-request cap (`MAX_OUTGOING_PENDING_PER_DAY = 20`) and a
+re-request cooldown (`REREQUEST_COOLDOWN_HOURS = 24`) enforced **block → cooldown
+→ rate-limit** before `sendFriendRequest`, plus the DB-level guards against self
+/ duplicate / cross requests carried by migration 028 (self-CHECK + normalized-
+pair index). Three `authenticated-session-required` `/api/me/blocks` endpoints
+(`handle` + `displayName` only, never `accountId`). An allow-friend-requests
+preference (Everyone / No one) and the notification opt-out remain follow-ups.
 
 **Non-goals (explicitly out of the first subsystem).** Real-time presence /
 online status, chat or direct messaging, and a social activity feed — later
