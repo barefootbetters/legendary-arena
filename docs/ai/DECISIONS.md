@@ -28442,7 +28442,7 @@ Protect this file.
 
 ### D-24147 — Friend abuse controls: block list + request rate limit + re-request cooldown (Friends & Ranked Trust, packet #6)
 
-**Status:** Drafted 2026-07-11; not yet landed. **READY (not blocked — all hard-deps Done).** Flips to Active (post-execution) when WP-355 executes.
+**Status:** Active — executed 2026-07-11 via WP-355 / EC-385 (migration `030` + `playerBlocks.logic.ts` + `friendships.routes.ts` guards/block-endpoints + extended `FriendApiErrorCode`).
 
 **User-Visible Surface:** `play.legendary-arena.com` (block/unblock; a blocked player cannot friend-request you).
 
@@ -28458,6 +28458,6 @@ Protect this file.
 
 Notification opt-out (the WP-353 spam-vector risk) is a **separate WP-353-dependent follow-up**, not in this packet.
 
-**Packet:** WP-355 (+ EC-385 at execution-prep). **Drafted:** 2026-07-11. **Executed:** —
+**Packet:** WP-355 (+ EC-385). **Drafted:** 2026-07-11. **Executed:** 2026-07-11 (migration `030` applied; full server suite 914/914 against a real Postgres — block+sever/unblock/list/symmetric + rate-limit/cooldown guards + block endpoints; WP-350 contract byte-identical; block routes mount inside `registerFriendshipRoutes` so `server.mjs` is untouched).
 
 Protect this file.
