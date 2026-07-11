@@ -46,7 +46,7 @@ gets there.
 
 ## The experience — one afternoon
 
-![Saturday build — stylized concept scene: a parent and child at a table in a warm evening room, the child placing a lit figure into the glowing diorama while another figure swings from a motion module; Smart Hub and phone on the table](/legendary-forge/saturday-build.png)
+![Saturday build — stylized concept scene: a parent and child at a table in a warm evening room, the child placing a lit figure into the glowing diorama while another figure swings from a motion module; Smart Hub and phone on the table](/legendary-forge/saturday-build.png "width=50%")
 
 The build is deliberately simple and repeatable:
 
@@ -79,7 +79,7 @@ explicit for the families who want that.
 4. **Bluetooth audio.** Pair a phone, play anything.
 5. **Backdrops.** A rear slot for a printed card or a slid-in tablet loop.
 
-![Core Display exploded view — grid layer stack (conductor face, steel backer, frame tray, backdrop slot), Smart Hub internals (controller board, BT audio, polyfuses, speaker, labeled ports), and motion-module dock mating](/legendary-forge/exploded-view.png)
+![Core Display exploded view — grid layer stack (conductor face, steel backer, frame tray, backdrop slot), Smart Hub internals (controller board, BT audio, polyfuses, speaker, labeled ports), and motion-module dock mating](/legendary-forge/exploded-view.png "width=50%")
 
 How the layers stack and mate: the grid is a frame tray + steel backer +
 conductor face; the Hub is a sealed, field-replaceable box; modules dock on
