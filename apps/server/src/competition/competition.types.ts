@@ -147,12 +147,12 @@ export const COMPETITIVE_OUTCOMES: readonly CompetitiveOutcome[] = [
  * per D-5302 — no UPDATE function exists in the application layer.
  *
  * `Object.keys(record).sort()` MUST equal:
- *   ['accountId','createdAt','finalScore','outcome','parVersion',
- *    'playerCount','rawScore','replayHash','scenarioKey',
+ *   ['accountId','createdAt','finalScore','isRankedEligible','outcome',
+ *    'parVersion','playerCount','rawScore','replayHash','scenarioKey',
  *    'scoreBreakdown','scoringConfigVersion','stateHash','submissionId']
- * — exactly 13 keys; drift-detection test #9 enforces this. (Amended
- * from the WP-053 11-key lock by D-24131, which adds `outcome`, then to
- * 13 keys by D-24134, which adds `playerCount`.)
+ * — exactly 14 keys. (Amended from the WP-053 11-key lock by D-24131,
+ * which adds `outcome`; to 13 keys by D-24134, which adds `playerCount`;
+ * to 14 keys by WP-354 / D-24146, which adds `isRankedEligible`.)
  */
 // why: immutable snapshot of verified execution. The two version
 // fields (parVersion text + scoringConfigVersion integer) pin the
@@ -194,6 +194,13 @@ export interface CompetitiveScoreRecord {
   // column (or hit the defensive out-of-range path) and never
   // qualifies on any count-keyed gauntlet board per D-24134 §1.
   readonly playerCount: number | null;
+  // why: WP-354 / D-24146 — whether this run's authenticated human
+  // roster formed a mutual-friend clique at submission (migration 029,
+  // default true). Evaluated ONCE at submission and never re-written
+  // (FR-7); solo / single-account runs are vacuously eligible. The
+  // public ranked leaderboard filters to `true`; the owner's own
+  // My-Scores read is unfiltered (they see their Casual runs).
+  readonly isRankedEligible: boolean;
 }
 
 /**

@@ -190,6 +190,11 @@ export async function getScenarioLeaderboard(
       '  ON ro.player_id = cs.player_id AND ro.replay_hash = cs.replay_hash ' +
       "WHERE cs.scenario_key = $1 " +
       "  AND ro.visibility IN ('link', 'public') " +
+      // why: WP-354 / D-24146 — the ranked board shows only runs whose
+      // human roster was a mutual-friend clique at submission. This clause
+      // is added to BOTH this SELECT and the parallel COUNT below (the
+      // module's same-WHERE invariant) so the total matches the page.
+      '  AND cs.is_ranked_eligible = true ' +
       'ORDER BY cs.final_score ASC, cs.created_at ASC ' +
       'LIMIT $2 OFFSET $3',
     [options.scenarioKey, options.limit, options.offset],
@@ -202,7 +207,11 @@ export async function getScenarioLeaderboard(
       'INNER JOIN legendary.replay_ownership ro ' +
       '  ON ro.player_id = cs.player_id AND ro.replay_hash = cs.replay_hash ' +
       "WHERE cs.scenario_key = $1 " +
-      "  AND ro.visibility IN ('link', 'public')",
+      "  AND ro.visibility IN ('link', 'public')" +
+      // why: WP-354 / D-24146 — same eligibility filter as the page SELECT
+      // above (the same-WHERE invariant); the COUNT must exclude the same
+      // ineligible rows or the total would over-count the visible page.
+      " AND cs.is_ranked_eligible = true",
     [options.scenarioKey],
   );
 

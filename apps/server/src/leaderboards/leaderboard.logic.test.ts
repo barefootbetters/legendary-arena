@@ -46,7 +46,12 @@ import type {
 // the read path against real WP-053 writes (per EC-054 §Files to
 // Produce) — synthetic write-side fixtures would drift from the
 // WP-053 shape over time and silently mask regressions.
-import { submitCompetitiveScoreImpl } from '../competition/competition.logic.js';
+import {
+  submitCompetitiveScoreImpl,
+  // why: WP-354 — the owner My-Scores read, asserted to stay UNFILTERED by
+  // ranked eligibility (the player sees their own Casual runs).
+  listPlayerCompetitiveScores,
+} from '../competition/competition.logic.js';
 
 import { createPlayerAccount } from '../identity/identity.logic.js';
 import {
@@ -263,6 +268,10 @@ async function seedScore(args: {
   scenarioKey: ScenarioKey;
   visibility: ReplayVisibility;
   pool: pg.Pool;
+  // why: WP-354 — seed a Casual (not-ranked-eligible) row by threading
+  // the flag into the submission deps; omitted ⇒ the INSERT defaults to
+  // `true` (ranked), matching the migration-029 column default.
+  isRankedEligible?: boolean;
 }): Promise<string> {
   const hash = computeStateHash(args.state);
   const ownership = await assignReplayOwnership(
@@ -287,11 +296,15 @@ async function seedScore(args: {
     `updateReplayVisibility returned null: no ownership row matched ownershipId ${ownership.value.ownershipId}`,
   );
   const deps = buildSubmissionDeps(args.state, hash, args.scenarioKey);
+  const depsWithEligibility =
+    args.isRankedEligible === undefined
+      ? deps
+      : { ...(deps as Record<string, unknown>), isRankedEligible: args.isRankedEligible };
   const submissionResult = await submitCompetitiveScoreImpl(
     args.account,
     hash,
     args.pool,
-    deps as Parameters<typeof submitCompetitiveScoreImpl>[3],
+    depsWithEligibility as Parameters<typeof submitCompetitiveScoreImpl>[3],
   );
   assert.ok(
     submissionResult.ok === true,
@@ -455,6 +468,66 @@ describe('leaderboard logic (WP-054)', () => {
       assert.strictEqual(leaderboard.totalEligibleEntries, 2);
       const displayNames = leaderboard.entries.map((entry) => entry.playerDisplayName).sort();
       assert.deepStrictEqual(displayNames, ['Link Player', 'Public Player']);
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // WP-354 — ranked-eligibility filter
+  // -------------------------------------------------------------------------
+
+  test(
+    'excludes is_ranked_eligible = false rows from the ranked board + COUNT; My-Scores still returns them',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const rankedAccount = await createTestAccount('wp354-ranked', 'Ranked Player', testPool);
+      const casualAccount = await createTestAccount('wp354-casual', 'Casual Player', testPool);
+
+      // A ranked-eligible public row (default true) and a Casual public row
+      // (isRankedEligible: false), both public, same scenario.
+      await seedScore({
+        account: rankedAccount,
+        state: buildState(0),
+        scenarioKey: TEST_SCENARIO_KEY,
+        visibility: 'public',
+        pool: testPool,
+      });
+      await seedScore({
+        account: casualAccount,
+        state: buildState(3),
+        scenarioKey: TEST_SCENARIO_KEY,
+        visibility: 'public',
+        pool: testPool,
+        isRankedEligible: false,
+      });
+
+      const stubDeps: LeaderboardDependencies = {
+        checkParPublished: () => ({
+          parValue: TEST_PAR_VALUE,
+          parVersion: TEST_PAR_VERSION,
+          source: 'simulation' as const,
+          scoringConfig: TEST_SCORING_CONFIG,
+        }),
+      };
+      const leaderboard = await getScenarioLeaderboard(
+        { scenarioKey: TEST_SCENARIO_KEY, limit: 50, offset: 0 },
+        testPool,
+        stubDeps,
+      );
+
+      // Only the ranked row appears; the COUNT matches the filtered page.
+      assert.strictEqual(leaderboard.entries.length, 1);
+      assert.strictEqual(leaderboard.totalEligibleEntries, 1);
+      assert.strictEqual(leaderboard.entries[0]?.playerDisplayName, 'Ranked Player');
+
+      // The owner My-Scores read is NOT filtered — the Casual player still
+      // sees their own ineligible run.
+      const casualScores = await listPlayerCompetitiveScores(
+        casualAccount.accountId,
+        testPool,
+      );
+      assert.strictEqual(casualScores.length, 1);
+      assert.strictEqual(casualScores[0]?.isRankedEligible, false);
     },
   );
 

@@ -28419,7 +28419,7 @@ Protect this file.
 
 ### D-24146 — Ranked eligibility gate: friendship-clique check at score submission (Friends & Ranked Trust, packet #5 ranked-gate half)
 
-**Status:** Drafted 2026-07-11; not yet landed. **READY (not blocked — all hard-deps Done).** Flips to Active (post-execution) when WP-354 executes.
+**Status:** Active — executed 2026-07-11 via WP-354 / EC-384 (migration `029` + `competition.{logic,types}.ts` eligibility gate + `leaderboard.logic.ts` filter).
 
 **User-Visible Surface:** the public ranked leaderboard (a non-clique multiplayer run is excluded) + owner My-Scores (shows "Casual"). D-24026 applies.
 
@@ -28436,7 +28436,7 @@ Protect this file.
 
 The charter's packet-#5 **lobby-invite-flow** half is **split into a separate future WP** (depends on multiplayer-lobby UX not touched here).
 
-**Packet:** WP-354 (+ EC-384 at execution-prep). **Drafted:** 2026-07-11. **Executed:** —
+**Packet:** WP-354 (+ EC-384). **Drafted:** 2026-07-11. **Executed:** 2026-07-11 (migration `029` applied; full server suite 903/903 against a real Postgres — clique/non-clique/solo/fail-safe + leaderboard-filter cases; scoring math byte-identical).
 
 Protect this file.
 

@@ -107,6 +107,14 @@ import type {
   PlayerIdentity,
 } from '../identity/identity.types.js';
 
+// why: WP-354 / D-24146 — the ranked-eligibility gate reads the match's
+// authenticated human roster (WP-333 readSeatAccounts; bots/guests are
+// absent) and runs WP-350's pure mutual-friend-clique predicate over it.
+// Both are same-layer server modules — no engine/registry/boardgame.io
+// import is introduced.
+import { readSeatAccounts } from '../match/seatAccount.logic.js';
+import { areAllMutualFriends } from '../friendships/friendships.logic.js';
+
 import type {
   CompetitiveOutcome,
   CompetitiveScoreRecord,
@@ -161,6 +169,12 @@ export interface ParGateHit {
 interface SubmissionDependencies {
   readonly reduceReplay: typeof reduceReplayByHash;
   readonly checkParPublished: (scenarioKey: ScenarioKey) => ParGateHit | null;
+  // why: WP-354 / D-24146 — the ranked-eligibility flag, computed once by
+  // the by-matchId caller (which has the matchId + roster) and threaded
+  // in. Optional: the by-hash path (no matchId) leaves it undefined, and
+  // the INSERT defaults it to `true` (vacuously ranked — matches the
+  // migration-029 column default + the solo `n <= 1` case).
+  readonly isRankedEligible?: boolean;
 }
 
 // why: production defaults wire the real faithful-reducer lookup. The
@@ -202,6 +216,7 @@ interface CompetitiveScoreRow {
   created_at: Date | string;
   outcome: CompetitiveOutcome | null;
   player_count: number | null;
+  is_ranked_eligible: boolean;
 }
 
 /**
@@ -239,6 +254,7 @@ function mapCompetitiveScoreRow(row: CompetitiveScoreRow): CompetitiveScoreRecor
         : row.created_at,
     outcome: row.outcome,
     playerCount: row.player_count,
+    isRankedEligible: row.is_ranked_eligible,
   };
 }
 
@@ -261,7 +277,7 @@ async function findExistingByAccountAndHash(
     'SELECT cs.submission_id, p.ext_id AS account_id, cs.replay_hash, ' +
       'cs.scenario_key, cs.raw_score, cs.final_score, cs.score_breakdown, ' +
       'cs.par_version, cs.scoring_config_version, cs.state_hash, ' +
-      'cs.created_at, cs.outcome, cs.player_count ' +
+      'cs.created_at, cs.outcome, cs.player_count, cs.is_ranked_eligible ' +
       'FROM legendary.competitive_scores cs ' +
       'JOIN legendary.players p ON cs.player_id = p.player_id ' +
       'WHERE p.ext_id = $1 AND cs.replay_hash = $2 LIMIT 1',
@@ -342,10 +358,17 @@ export async function submitCompetitiveScoreForRequest(
   replayHash: string,
   database: DatabaseClient,
   productionDeps: CompetitiveSubmissionProductionDependencies,
+  // why: WP-354 / D-24146 — the ranked-eligibility flag computed by the
+  // by-matchId caller (which has the matchId + roster). Defaulted to
+  // `true` so the by-hash path (and existing tests that call this
+  // without it) stay vacuously ranked; the INSERT applies the same
+  // `?? true` default independently.
+  isRankedEligible: boolean = true,
 ): Promise<SubmissionResult> {
   return submitCompetitiveScoreImpl(identity, replayHash, database, {
     reduceReplay: reduceReplayByHash,
     checkParPublished: productionDeps.checkParPublished,
+    isRankedEligible,
   });
 }
 
@@ -424,6 +447,15 @@ export async function submitCompetitiveScoreByMatchIdForRequest(
     await updateReplayVisibility(ownership.ownershipId, 'public', database);
   }
 
+  // why: step 5b (WP-354 / D-24146) — compute ranked eligibility over the
+  // match's authenticated human roster ONCE, before the terminal
+  // submission, and thread it into the INSERT. Evaluated here (not in the
+  // shared impl) because the roster is keyed by matchId, which only this
+  // by-matchId entry holds. On a resubmit the impl takes the idempotency
+  // fast-path and returns the original row's flag, so this recomputation
+  // never rewrites a stored decision (FR-7).
+  const isRankedEligible = await computeRankedEligibility(matchId, database);
+
   // step 6 — delegate to the unchanged verify+score pipeline (ownership / visibility
   // (now public) / idempotency / PAR / reduce / hash-verify / score).
   return submitCompetitiveScoreForRequest(
@@ -431,7 +463,47 @@ export async function submitCompetitiveScoreByMatchIdForRequest(
     replayHash,
     database,
     productionDeps,
+    isRankedEligible,
   );
+}
+
+/**
+ * Compute ranked eligibility for a finished match: the match's
+ * authenticated human roster (`readSeatAccounts`; bots/guests have no
+ * seat row, D-24120) must be a full mutual-friend clique
+ * (`areAllMutualFriends`). A solo / empty roster is vacuously eligible
+ * (`n <= 1` ⇒ `true`).
+ *
+ * Fail-safe: any roster-read or clique-query throw yields `false`
+ * (Casual). A friendship-infra hiccup must never break score submission;
+ * defaulting to Casual is the conservative, leaderboard-integrity-
+ * preserving direction (WP-354 §Non-Negotiable Constraints; D-24146).
+ */
+async function computeRankedEligibility(
+  matchId: string,
+  database: DatabaseClient,
+): Promise<boolean> {
+  try {
+    const roster = await readSeatAccounts(matchId, database);
+    return await areAllMutualFriends(
+      database,
+      roster.map((seat) => seat.accountId),
+    );
+  } catch (caughtError) {
+    // why: WP-354 fail-safe — record the run as Casual (not ranked) on any
+    // friendship-infra error and let the submission proceed. Breaking a
+    // score submission over a social-graph hiccup would be far worse than
+    // conservatively withholding the ranked flag.
+    console.warn(
+      '[ranked-gate] Ranked-eligibility check failed for match ' +
+        matchId +
+        '; recording the run as Casual (not ranked). The score submission is unaffected. Underlying error: ' +
+        (caughtError instanceof Error
+          ? caughtError.message
+          : String(caughtError)),
+    );
+    return false;
+  }
 }
 
 /**
@@ -451,7 +523,7 @@ export async function findCompetitiveScore(
       // column to every other SELECT but missed this read surface, so its
       // mapped records carried `outcome: undefined`; cs.player_count lands
       // in the same sweep (EC-376).
-      'cs.created_at, cs.outcome, cs.player_count ' +
+      'cs.created_at, cs.outcome, cs.player_count, cs.is_ranked_eligible ' +
       'FROM legendary.competitive_scores cs ' +
       'JOIN legendary.players p ON cs.player_id = p.player_id ' +
       'WHERE cs.replay_hash = $1 LIMIT 1',
@@ -478,7 +550,7 @@ export async function listPlayerCompetitiveScores(
     'SELECT cs.submission_id, p.ext_id AS account_id, cs.replay_hash, ' +
       'cs.scenario_key, cs.raw_score, cs.final_score, cs.score_breakdown, ' +
       'cs.par_version, cs.scoring_config_version, cs.state_hash, ' +
-      'cs.created_at, cs.outcome, cs.player_count ' +
+      'cs.created_at, cs.outcome, cs.player_count, cs.is_ranked_eligible ' +
       'FROM legendary.competitive_scores cs ' +
       'JOIN legendary.players p ON cs.player_id = p.player_id ' +
       'WHERE p.ext_id = $1 ' +
@@ -682,6 +754,14 @@ export async function submitCompetitiveScoreImpl(
   const playerCount: number | null =
     seatCount >= 1 && seatCount <= 5 ? seatCount : null;
 
+  // why: WP-354 / D-24146 — the ranked-eligibility flag, computed once by
+  // the by-matchId caller over the match roster and threaded in via deps.
+  // The by-hash path leaves it undefined → default `true` (vacuously
+  // ranked, matching the migration-029 column default + the solo case).
+  // Stored on THIS INSERT and never re-written (FR-7): a resubmit takes
+  // the idempotency fast-path above and returns the original row's flag.
+  const isRankedEligible = deps.isRankedEligible ?? true;
+
   // why: step 15 — locked CTE INSERT with the
   // ON CONFLICT (player_id, replay_hash) DO UPDATE SET player_id =
   // legendary.competitive_scores.player_id no-op self-assignment +
@@ -708,20 +788,21 @@ export async function submitCompetitiveScoreImpl(
       'INSERT INTO legendary.competitive_scores ' +
       '(player_id, replay_hash, scenario_key, raw_score, final_score, ' +
       'score_breakdown, par_version, scoring_config_version, state_hash, ' +
-      'outcome, player_count) ' +
-      'SELECT player_id, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11 ' +
+      'outcome, player_count, is_ranked_eligible) ' +
+      'SELECT player_id, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12 ' +
       'FROM resolved_player ' +
       'ON CONFLICT (player_id, replay_hash) ' +
       'DO UPDATE SET player_id = legendary.competitive_scores.player_id ' +
       'RETURNING submission_id, player_id, replay_hash, scenario_key, ' +
       'raw_score, final_score, score_breakdown, ' +
       'par_version, scoring_config_version, state_hash, created_at, ' +
-      'outcome, player_count, (xmax = 0) AS was_inserted ' +
+      'outcome, player_count, is_ranked_eligible, (xmax = 0) AS was_inserted ' +
       ') ' +
       'SELECT i.submission_id, p.ext_id AS account_id, i.replay_hash, ' +
       'i.scenario_key, i.raw_score, i.final_score, i.score_breakdown, ' +
       'i.par_version, i.scoring_config_version, i.state_hash, ' +
-      'i.created_at, i.outcome, i.player_count, i.was_inserted, i.player_id ' +
+      'i.created_at, i.outcome, i.player_count, i.is_ranked_eligible, ' +
+      'i.was_inserted, i.player_id ' +
       'FROM inserted i ' +
       'JOIN legendary.players p ON i.player_id = p.player_id',
     [
@@ -739,6 +820,7 @@ export async function submitCompetitiveScoreImpl(
       reduced.stateHash,
       outcome,
       playerCount,
+      isRankedEligible,
     ],
   );
 
