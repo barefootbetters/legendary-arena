@@ -523,9 +523,9 @@ during implementation.
 **Proposed WP breakdown (4–6 packets).**
 
 1. Friendships data model + status machine + mutual-clique query helper
-   (migration `028`) — **drafted as
+   (migration `028`) — **executed as
    [WP-350](../docs/ai/work-packets/WP-350-friendships-data-model.md)**
-   (2026-07-10, reserves D-24142; library-only, no endpoint/UI).
+   (executed 2026-07-11, D-24142 Active; library-only, no endpoint/UI).
 2. Friend-request API (send / accept / decline / remove / list;
    `authenticated-session-required`, per D-9905) — **drafted as
    [WP-351](../docs/ai/work-packets/WP-351-friend-request-api.md)**

@@ -7,6 +7,17 @@
 
 ## Current State
 
+### WP-350 / EC-380 Executed — Friendships data model + status machine + mutual-clique helper (D-24142 Active) (2026-07-11)
+
+Packet #1 of the **Friends & Ranked Trust** subsystem ([`wiki/profile-login.md` §Friends & Ranked Trust Layer](../../wiki/profile-login.md), FR-1…FR-9) ships as pure server data + logic — **library-only, no HTTP endpoint and no client**. The API (packet #2, WP-351) and Friends-tab UI (packet #3) consume this contract; the ranked-eligibility gate (packet #5) consumes the clique helper.
+
+**What landed:**
+- **Migration `028`** — `legendary.friendships`: `friendship_id bigserial` PK, `requester_id`/`addressee_id bigint` FKs to `legendary.players(player_id) ON DELETE CASCADE`, closed `status ('pending','accepted','declined')` CHECK, `CHECK (requester_id <> addressee_id)`, a **normalized-pair unique index** (`LEAST/GREATEST`) so a pair is stored once regardless of direction, and an `(addressee_id, status)` lookup index for the incoming-request read path.
+- **`friendships.types.ts`** — `FriendshipStatus` / `FriendshipErrorCode` closed unions + canonical `FRIENDSHIP_STATUSES` / `FRIENDSHIP_ERROR_CODES` arrays (drift-tested), `FriendshipView` wire shape (no `player_id` / `friendship_id` / `display_name`), and a locally-declared `FriendshipResult<T>` mirroring WP-052's `Result<T>`.
+- **`friendships.logic.ts`** — `AccountId`-keyed `sendFriendRequest` / `acceptFriendRequest` / `declineFriendRequest` / `removeFriend` state machine, `listFriends` / `listIncomingRequests` / `listOutgoingRequests` / `getFriendshipStatus`, and the `areAllMutualFriends` clique predicate. `declined→pending` re-request is an UPDATE (never a second row); `removeFriend` DELETEs (symmetric); the clique is `accepted`-pair-count == `C(n,2)` with `n≤1` vacuously true and order/duplicate-independent inputs. `ext_id → player_id` resolved inline; every DB failure → a typed result (no uncaught throw). No new cross-layer import.
+
+**Verification:** `pnpm -r build` 0; the full serialized DB-wired server suite is **876/876 / 0 skipped** (856 baseline + 20 new). Migration `028` applied to a real Postgres and a `psql` reverse-duplicate smoke confirms the normalized-pair index rejects `B→A` after `A→B` (AC-1). Determinism/`G`/replay surface untouched. **D-24142 Active.** D-24026 live-verify is **N/A** (library-only; deferred to packets #2/#3). Unblocks **WP-351** (friend-request API).
+
 ### WP-348 / EC-378 Executed — Sign-out clears the Domain-scoped session cookie (D-24140 Active, fixes WP-347) (2026-07-09)
 
 Operator-reported: **"When I press Sign out nothing happens, the header still says I'm logged in."**
