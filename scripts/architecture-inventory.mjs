@@ -530,6 +530,84 @@ const FIRST_PARTY_SUBSYSTEMS = [
       'NativeLobbyGuardDependencies',
     ],
   },
+  {
+    name: 'Friends & Ranked Trust Subsystem',
+    // why: the friendship graph, request API, and email notifications all
+    // live directly under this directory; collectExportedSymbols() is
+    // non-recursive, so the location points at the folder that holds the
+    // source files. The packet-#5 ranked-eligibility gate is a consumer
+    // living in apps/server/src/competition + leaderboards (out of this
+    // directory) and is described in prose below rather than listed as a
+    // contract symbol.
+    location: 'apps/server/src/friendships',
+    owningWp: 'WP-350',
+    owningWpPath: 'docs/ai/work-packets/WP-350-friendships-data-model.md',
+    description:
+      'The peer-to-peer social graph and the trust boundary it puts on ranked ' +
+      'play — the profile surface previously had authentication, public/owner ' +
+      'profiles, badges, and team cohorts but no symmetric friend relationship. ' +
+      'Shipped as a six-packet arc, all Done 2026-07-11. Packet #1 (WP-350, ' +
+      'D-24142): the `legendary.friendships` table (migration 028) — a bigserial ' +
+      'PK with requester_id/addressee_id FKs to the INTERNAL `player_id` bigint ' +
+      '(the migration-009 profile-family convention, NOT the ext_id text column), ' +
+      'a closed status set (`pending | accepted | declined`; `blocked` is ' +
+      'deliberately absent — blocking is orthogonal and lands in packet #6), and ' +
+      'symmetry stored ONCE per unordered pair via a normalized-pair unique ' +
+      'index on (LEAST, GREATEST) so an A→B row makes B→A collide at the DB. The ' +
+      'AccountId-keyed state machine (send/accept/decline/remove; declined→pending ' +
+      'is an UPDATE, removeFriend DELETEs) plus list helpers and the ' +
+      '`areAllMutualFriends` clique predicate (accepted-pair count === C(n,2); ' +
+      'n≤1 vacuously true). Packet #2 (WP-351, D-24143): six ' +
+      'authenticated-session-required `/api/me/friends*` routes resolving ' +
+      '`@handle → AccountId` inbound and enriching to a `FriendSummary` ' +
+      '(handle + displayName, NEVER accountId — the FR-2 identity-leak rule). ' +
+      'Packet #3 (WP-352, D-24144): the arena-client Friends section on ' +
+      '`?route=me`. Packet #4 (WP-353, D-24145): fail-open Brevo transactional ' +
+      'emails on request-received / request-accepted (`notifyFriendRequest*` is a ' +
+      'single never-throw boundary; a new `brevoTransactional.logic.ts` adds the ' +
+      '`POST /v3/smtp/email` path WP-293 lacked). Packet #5 ranked-gate half ' +
+      '(WP-354, D-24146): at score submission the authenticated match roster ' +
+      '(readSeatAccounts, WP-333) is run through `areAllMutualFriends` and the ' +
+      'result stored on `competitive_scores.is_ranked_eligible` (migration 029, ' +
+      'NOT NULL DEFAULT true — solo/n≤1 stays ranked; fail-safe to Casual on any ' +
+      'friendship-infra throw so scoring never breaks); the public ranked ' +
+      'leaderboard SELECT and its parallel COUNT both filter ' +
+      '`is_ranked_eligible = true`, evaluated once and immutable (FR-7). ' +
+      'Packet #6 (WP-355, D-24147): abuse controls — a SEPARATE ' +
+      '`legendary.player_blocks` table (migration 030; blocking is never a ' +
+      'friendship status per D-24142, so `blockPlayer` severs any existing ' +
+      'friendship transactionally), symmetric block enforcement, a per-day ' +
+      'outgoing-request cap (MAX_OUTGOING_PENDING_PER_DAY = 20) and a ' +
+      're-request cooldown (REREQUEST_COOLDOWN_HOURS = 24) enforced ' +
+      'block → cooldown → rate-limit before a send, plus three ' +
+      '`/api/me/blocks` endpoints. ' +
+      'Governing principle: friendship is a trust SIGNAL, not an anti-cheat ' +
+      'guarantee — it raises the cost of disposable-account rings, it does not ' +
+      'eliminate collusion.',
+    contractSymbols: [
+      'sendFriendRequest',
+      'acceptFriendRequest',
+      'declineFriendRequest',
+      'removeFriend',
+      'listFriends',
+      'listIncomingRequests',
+      'listOutgoingRequests',
+      'getFriendshipStatus',
+      'areAllMutualFriends',
+      'FRIENDSHIP_STATUSES',
+      'FRIENDSHIP_ERROR_CODES',
+      'FriendshipView',
+      'registerFriendshipRoutes',
+      'FriendSummary',
+      'FRIEND_API_ERROR_CODES',
+      'notifyFriendRequestReceived',
+      'notifyFriendRequestAccepted',
+      'blockPlayer',
+      'unblockPlayer',
+      'listBlocks',
+      'isEitherBlocked',
+    ],
+  },
 ];
 
 // ---------------------------------------------------------------------------
