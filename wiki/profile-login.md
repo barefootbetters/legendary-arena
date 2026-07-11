@@ -537,7 +537,12 @@ during implementation.
    (2026-07-10, reserves D-24144; **blocked on WP-351**; owner `?route=me`
    section, `@handle` only, never `accountId`). Privacy controls + block
    list ride on packet #6's models, deferred there.
-4. Brevo transactional emails (request received, request accepted).
+4. Brevo transactional emails (request received, request accepted) —
+   **drafted as
+   [WP-353](../docs/ai/work-packets/WP-353-friend-request-email-notifications.md)**
+   (2026-07-10, reserves D-24145; **blocked on WP-351**; fail-open,
+   fire-and-forget; adds the transactional `POST /v3/smtp/email` path the
+   contact-list-only Brevo module lacks).
 5. Lobby invite flow + ranked eligibility gate at match start (integrates with
    the `player_count` scoring path).
 6. *(optional)* Abuse controls + an admin review surface for anomalous friend

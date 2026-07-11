@@ -28393,3 +28393,26 @@ Protect this file.
 **Packet:** WP-352 (+ EC-382 at execution-prep). **Drafted:** 2026-07-10. **Executed:** — (blocked on WP-351)
 
 Protect this file.
+
+### D-24145 — Friend-request email notifications (Brevo transactional) (Friends & Ranked Trust, packet #4)
+
+**Status:** Drafted 2026-07-10; not yet landed. **BLOCKED on WP-351** (the send/accept handlers are the trigger). Flips to Active (post-execution) when WP-353 executes.
+
+**User-Visible Surface:** email inboxes (a friend-request / request-accepted transactional email). D-24026 live-verify = a real Brevo send, deferred to deploy.
+
+**Context.** The charter's lifecycle step 3 says the recipient "receives an email via the Brevo enqueue pipeline." That pipeline is **contact-list-only** today (`enqueuePlayerToMarketingList` → `POST /v3/contacts`); there is **no transactional-email send**. Packet #4 adds it and fires it on friend-request events.
+
+**Decision.** Locks:
+
+1. **New transactional adapter** — `createBrevoTransactionalSender(apiKey, fetchImpl?)` → `POST https://api.brevo.com/v3/smtp/email` with `{ to:[{email}], templateId, params }`; injectable `fetch` (D-5306). Declared in a **new** `brevoTransactional.logic.ts`; **WP-293's `brevoClient.types.ts` contact-client contract is NOT modified**.
+2. **Single fail-open boundary** — `notifyFriendRequestReceived` / `notifyFriendRequestAccepted` never throw/reject; an unconfigured sender, a missing template id, a Brevo failure, or an unresolvable recipient degrades to a `console.warn` no-op (D-24077 / D-24080).
+3. **Fire-and-forget** — WP-351's send/accept handlers call `void notify(...)` after the ok mutation; the notification never gates or fails the HTTP response, and the **endpoint contract is byte-identical** (side effect only, mirroring the WP-105 badge fire-and-forget precedent).
+4. **Template-driven copy** — Brevo dashboard `templateId` + `params`; `params` reference the actor's `@handle`/`displayName`, **never** an `accountId`; §23(b) no match/opponent/win framing.
+5. **Events** — *request received* (notify addressee) + *request accepted* (notify original requester) only; decline/remove silent; no in-app bell.
+6. **Config** — two new `BREVO_*_TEMPLATE_ID` envs reusing `BREVO_API_KEY`; unconfigured ⇒ no-op.
+
+Rate limiting + a per-account notification opt-out are explicitly **packet #6** (the per-request email is a surfaced spam-vector Risk).
+
+**Packet:** WP-353 (+ EC-383 at execution-prep). **Drafted:** 2026-07-10. **Executed:** — (blocked on WP-351)
+
+Protect this file.
