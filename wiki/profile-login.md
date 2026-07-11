@@ -8,6 +8,9 @@ tags:
   - arena-client
   - profile
   - governance
+  - friends
+  - social-graph
+  - ranked
 related:
   - operational-health-checks.md
   - hugo-web-system.md
@@ -33,7 +36,7 @@ source:
   - ../apps/arena-client/src/composables/useAuthNav.ts
   - ../apps/arena-client/src/composables/useCompetitiveSubmitOnGameover.ts
   - ../docs/ai/work-packets/WORK_INDEX.md
-last-reviewed: 2026-07-09
+last-reviewed: 2026-07-10
 ---
 
 # Profile Login
@@ -331,6 +334,134 @@ non-editable** (handle immutable; `accountId` a system identifier).
 Both `GET /api/me/profile` (12-key read) and `PATCH /api/me/profile` (recognized
 fields gain `displayName`; error set gains `invalid_display_name`) rows in
 `api-endpoints.md` were updated whole-row per D-11804.
+
+### Friends & Ranked Trust Layer (Proposed)
+
+> **Status: PROPOSED — not yet scheduled.** No Work Packet is assigned; no
+> table, endpoint, or UI for friendships exists at HEAD. This subsection is a
+> design charter, recorded so the shape is settled once and decomposed through
+> the normal WP-drafting flow rather than re-litigated per packet. Field names
+> reuse the identity contract already shipped (above); the schema sketch is
+> **illustrative**, not locked.
+
+**The gap.** The profile surface today has authentication (Hanko), a public
+profile, an owner profile, badges (WP-105), and **team affiliation**
+(WP-109 — cooperative cohorts, migration 010) — but **no peer-to-peer social
+graph**. A player cannot find a specific person by name, form a persistent
+connection, and reliably pull them into a game. Separately, the leaderboard
+cannot distinguish an organic co-op crew from an ad-hoc group of strangers
+assembled to farm ranked results. Both gaps trace to one missing primitive: a
+**friendship** relationship anchored to a stable identity. (Teams and
+friendships are distinct: a team is a named group cohort; a friendship is a
+symmetric one-to-one tie. The friend graph is the new primitive.)
+
+**Identity anchor (non-negotiable).** Friendship is *discovered* by `@handle`
+and *stored* against `AccountId` — never `display_name`. This is the same
+naming trap called out in the identity-fields section above: a graph keyed on
+the editable name silently corrupts on every rename.
+
+| Concern | Field | Why |
+|---|---|---|
+| Discovery / search | `@handle` (`handle_canonical`, `^[a-z][a-z0-9_]{2,23}$`, WP-101) | Immutable, globally unique, URL-safe. |
+| Storage / trust key | `AccountId` (`ext_id`, opaque UUID, D-5201) | Stable across renames; never re-used. |
+| Never a key | `display_name` (editable, non-unique) | A rename would break every relationship, invite, and trust check built on it. |
+
+**Request lifecycle.** Standard symmetric-friendship state machine:
+
+```
+Search (@handle) -> Send Request -> Pending -> Accepted | Declined
+```
+
+1. Player searches by `@handle` (exact / prefix).
+2. Player submits a friend request (subject to the recipient's
+   allow-requests preference and block list).
+3. Recipient sees the request in a **Pending Requests** list on `?route=me`
+   and receives an email via the existing **Brevo enqueue pipeline**
+   (`apps/server/src/marketing/brevoEnqueue.logic.ts`) — no new mailer.
+4. Recipient **accepts** or **declines**.
+5. Acceptance records a mutual, two-way friendship.
+6. Either side may **remove** the friendship at any time.
+
+**Illustrative schema** (actual shape locked by its WP; would land as the next
+migration, `028_*`, following repo conventions — `legendary.` schema,
+snake_case, `ext_id` foreign keys, idempotent `IF NOT EXISTS`):
+
+```
+CREATE TABLE IF NOT EXISTS legendary.friendships (
+    friendship_id  bigserial   PRIMARY KEY,
+    requester_id   text        NOT NULL REFERENCES legendary.players(ext_id),
+    addressee_id   text        NOT NULL REFERENCES legendary.players(ext_id),
+    status         text        NOT NULL,  -- pending | accepted | declined | blocked
+    requested_at   timestamptz NOT NULL DEFAULT now(),
+    responded_at   timestamptz,
+    UNIQUE (requester_id, addressee_id),
+    CHECK (requester_id <> addressee_id)
+);
+```
+
+**Two-tier multiplayer model.** Friendship is the trust gate for ranked play,
+not a barrier to casual play:
+
+| Tier | Invite rule | Playable? | Leaderboard credit |
+|---|---|---|---|
+| **Casual** | Anyone, by `@handle` or from the friends list — friendship not required | Fully | **No** |
+| **Ranked** | Every human player is a mutual friend of every other at match start | Fully | **Yes** |
+
+Casual preserves zero-friction pickup games; ranked adds the trust boundary.
+
+**Ranked eligibility = full clique, snapshotted.** A multiplayer run is
+leaderboard-eligible only when, **at match start, every pair of human players
+has an `accepted` friendship** — a full clique, not merely "friends of the
+lobby host." Full-clique (rather than host-centric) prevents loose collusion
+rings around a single ringleader and makes the coordination visible to later
+analytics. The eligibility result is **snapshotted into the run record**:
+unfriending someone afterward does not retroactively void a completed ranked
+run. If the clique test fails, the run falls back cleanly to Casual (no
+leaderboard credit), rather than being blocked.
+
+> **Governing principle: friendship is a trust signal, not a security
+> guarantee.** The clique gate does not eliminate collusion; it raises the cost
+> of disposable-account rings and makes coordination detectable after the fact.
+> Future WPs should design to that intent and not over-claim it as anti-cheat.
+
+**Reconciliation required at WP-design time** (do not assume during
+implementation):
+
+- **Co-op competition model (Vision §23/§24/§25).** Legendary is cooperative —
+  players challenge the Mastermind together, never each other. The ranked gate
+  must fit that framing (shared victory conditions; how individual leaderboard
+  attribution works in a shared win), not import a PvP ladder.
+- **Multiplayer scoring (migration 027, `player_count`).** Orthogonal to
+  friendship. The clique check belongs in the match-start / scoring-eligibility
+  layer; do not conflate it with the scoring migration.
+- **Lobby dependency.** Friends-invite-to-game presupposes an N-seat human
+  co-op lobby / game-creation flow. Verify current state (match seat accounts,
+  migration 024; lobby intake WP-092) and treat it as a hard dependency if it
+  is not yet in place.
+
+**Privacy & abuse controls (in scope for the subsystem).** An
+allow-friend-requests preference (Everyone / No one, extensible), a block list
+(blocked users cannot request, be invited, or appear in the blocker's search),
+per-day outgoing-request rate limits, a re-request cooldown after a decline,
+and DB-level guards against self / duplicate / cross requests.
+
+**Non-goals (explicitly out of the first subsystem).** Real-time presence /
+online status, chat or direct messaging, and a social activity feed. These are
+later capabilities the graph *enables*, not part of the initial build.
+
+**Proposed WP breakdown (4–6 packets).**
+
+1. Friendships data model + status machine + mutual-clique query helper
+   (migration `028_*`).
+2. Friend-request API (send / accept / decline / remove / list;
+   `authenticated-session-required`, per D-9905).
+3. Profile UI: Friends tab, incoming / sent / pending, add-by-`@handle`
+   search, privacy controls + block list.
+4. Brevo transactional emails (request received, request accepted).
+5. Lobby invite flow + ranked eligibility gate at match start (integrates with
+   the `player_count` scoring path).
+6. *(optional)* Abuse controls + an admin review surface for anomalous friend
+   clusters.
 
 ## Interactions
 
