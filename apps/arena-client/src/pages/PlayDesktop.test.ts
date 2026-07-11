@@ -145,6 +145,7 @@ describe('PlayDesktop (WP-129)', () => {
     assert.equal(wrapper.find('[data-testid="play-shared-decks"]').exists(), true);
     assert.equal(wrapper.find('[data-testid="play-ko-pile"]').exists(), true);
     assert.equal(wrapper.find('[data-testid="play-hand-row"]').exists(), true);
+    assert.equal(wrapper.find('[data-testid="play-played-row"]').exists(), true);
     assert.equal(wrapper.find('[data-testid="play-economy-bar"]').exists(), true);
     assert.equal(wrapper.find('[data-testid="play-your-deck-discard"]').exists(), true);
     assert.equal(wrapper.find('[data-testid="play-your-victory-pile"]').exists(), true);
