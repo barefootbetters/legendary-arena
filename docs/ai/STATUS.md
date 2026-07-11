@@ -7,6 +7,18 @@
 
 ## Current State
 
+### WP-353 / EC-383 Executed — Friend-request email notifications (Brevo transactional) (D-24145 Active) (2026-07-11)
+
+Packet #4 of the **Friends & Ranked Trust** subsystem: fire-and-forget, **fail-open** transactional emails on *request received* and *request accepted*. Never delays or fails the friend request; unconfigured Brevo is a clean no-op.
+
+**What landed:**
+- **`brevoTransactional.logic.ts`** — the transactional-mail path the marketing layer lacked (WP-293's `BrevoClient` only adds contacts to a list). `createBrevoTransactionalSender(apiKey, fetchImpl = globalThis.fetch)` → `POST https://api.brevo.com/v3/smtp/email` with `{ to: [{ email }], templateId, params }`; resolves on 2xx, throws a full-sentence error on non-2xx. **Separate** adapter — WP-293's `brevoClient.types.ts` is byte-identical.
+- **`friendshipNotifications.logic.ts`** — `notifyFriendRequestReceived` / `notifyFriendRequestAccepted`, the **single fail-open boundary**: resolve the recipient email + actor `@handle`/display name (one `ext_id = ANY($1)` read), send the template email, and **swallow every failure** with a `console.warn`. Always `Promise<void>`, never rejects. An unconfigured sender / unset template id / unresolvable recipient / Brevo outage all degrade to a no-op. Email `params` carry `{ actorHandle, actorDisplayName }` — **no `accountId`** (FR-2).
+- **`friendships.routes.ts`** (additive) — after the ok `sendFriendRequest` → `void notifyFriendRequestReceived(...)` (notify the addressee); after the ok `acceptFriendRequest` → `void notifyFriendRequestAccepted(...)` (notify the original requester). Fire-and-forget `void` so the notification never gates the HTTP response. One **optional** `notificationConfig` deps field (so WP-351's routes test compiles unchanged); WP-351's endpoint request/response/status/`FriendApiErrorCode` contract is byte-identical.
+- **`server.mjs`** — builds `createBrevoTransactionalSender(BREVO_API_KEY)` (undefined when Brevo unconfigured) + parses `BREVO_FRIEND_REQUEST_TEMPLATE_ID` / `BREVO_FRIEND_ACCEPTED_TEMPLATE_ID` (→ number or undefined), and injects the `FriendshipNotificationConfig` into `registerFriendshipRoutes`.
+
+**Verification:** `pnpm -r build` 0; the new `brevoTransactional` + `friendshipNotifications` suites are **8/8** (injected `fetch` + fake pool — no real DB/network); fail-open proven four ways; WP-293 + WP-351 contracts byte-identical (`git diff origin/main` empty). Full serialized DB-wired server suite 897/898 — the sole failure is a **pre-existing** intermittent `createPlayerAccount` Date.now-UUID collision in the untouched loadout suite (passes 16/16 in isolation ×3; my new suites provision no real accounts, so add no collision pressure). **D-24145 Active.** **D-24026:** the injected-`fetch` proof is in the suite; a real Brevo send is **operator-pending on deploy** (`BREVO_*` + template ids configured). **Risk (surfaced):** per-request email is a mild spam vector — rate-limit + opt-out are **packet #6** (WP-355). Completes the built-out chain packets #1–#4.
+
 ### WP-352 / EC-382 Executed — Friends tab on the owner profile (D-24144 Active) (2026-07-11)
 
 Packet #3 of the **Friends & Ranked Trust** subsystem and its **first user-visible surface**: a **Friends** section on the owner profile (`?route=me`), a thin arena-client over WP-351's `/api/me/friends*` API.

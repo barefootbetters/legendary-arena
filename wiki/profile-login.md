@@ -538,11 +538,11 @@ during implementation.
    `@handle` only, never `accountId`). Privacy controls + block
    list ride on packet #6's models, deferred there.
 4. Brevo transactional emails (request received, request accepted) —
-   **drafted as
+   **executed as
    [WP-353](../docs/ai/work-packets/WP-353-friend-request-email-notifications.md)**
-   (2026-07-10, reserves D-24145; **blocked on WP-351**; fail-open,
-   fire-and-forget; adds the transactional `POST /v3/smtp/email` path the
-   contact-list-only Brevo module lacks).
+   (executed 2026-07-11, D-24145 Active; fail-open,
+   fire-and-forget; added the transactional `POST /v3/smtp/email` path the
+   contact-list-only Brevo module lacked; real send operator-pending on deploy).
 5. Ranked eligibility gate — **drafted as
    [WP-354](../docs/ai/work-packets/WP-354-ranked-eligibility-gate.md)**
    (2026-07-11, reserves D-24146; **READY**): the clique check runs at score
