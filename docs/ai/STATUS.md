@@ -7,6 +7,19 @@
 
 ## Current State
 
+### WP-354 / EC-384 Executed — Ranked eligibility gate: friendship-clique check at score submission (D-24146 Active) (2026-07-11)
+
+Packet #5 (ranked-gate half) of the **Friends & Ranked Trust** subsystem — the trust boundary the whole subsystem exists to protect: a multiplayer competitive run counts for the public leaderboard **only if its human players were a mutual-friend clique** at submission.
+
+**What landed:**
+- **Migration `029`** — `competitive_scores.is_ranked_eligible boolean NOT NULL DEFAULT true` (additive + idempotent; default `true` keeps every pre-gate row and every solo run ranked).
+- **`competition.logic.ts`** — at `submitCompetitiveScoreByMatchIdForRequest`, a new `computeRankedEligibility(matchId, pool)` reads the match's authenticated roster (`readSeatAccounts`; bots/guests absent) and runs WP-350's `areAllMutualFriends` over it, then threads the flag through `submitCompetitiveScoreForRequest` → the INSERT. **Evaluate-once, immutable** (FR-7 — a resubmit takes the idempotency fast-path and returns the original flag). **Fail-safe to Casual:** any roster/clique throw ⇒ `false`, and the submission **still succeeds** (a friendship-infra hiccup never breaks scoring). `n ≤ 1` ⇒ vacuously eligible, so solo is unaffected.
+- **`competition.types.ts`** — `CompetitiveScoreRecord` gains `isRankedEligible: boolean` (additive; 14 keys).
+- **`leaderboard.logic.ts`** — `AND cs.is_ranked_eligible = true` on the ranked page SELECT **and** its parallel COUNT (same-WHERE invariant). The owner My-Scores read (`listPlayerCompetitiveScores`) is **unfiltered** — the player still sees their own Casual runs.
+- **`api-endpoints.md`** — the `GET /api/me/scores` row now documents the `isRankedEligible` field (D-11804).
+
+**Verification:** `pnpm -r build` 0; the competition + leaderboard suites pass with new cases (clique → `true`; non-clique multiplayer → `false`; solo → `true`; a thrown roster read → `false` with the submission still succeeding; the leaderboard excludes ineligible rows from the board + COUNT while My-Scores returns them). Full serialized DB-wired server suite **903/903 / 0 skipped**. Migration `029` applied to a real Postgres. **Scoring math (`raw_score`/`final_score`/PAR) is byte-identical** — eligibility is an orthogonal binary flag, never a score input (§25(a)). **D-24146 Active.** **D-24026 operator-pending on deploy** (non-clique run absent from the ranked board + Casual on My-Scores; clique run ranks). The charter's **lobby-invite-flow** half is split to a separate future WP (multiplayer-lobby dependency). **Next:** packet #6 = **WP-355** friend abuse controls (block list + rate limit + cooldown).
+
 ### WP-353 / EC-383 Executed — Friend-request email notifications (Brevo transactional) (D-24145 Active) (2026-07-11)
 
 Packet #4 of the **Friends & Ranked Trust** subsystem: fire-and-forget, **fail-open** transactional emails on *request received* and *request accepted*. Never delays or fails the friend request; unconfigured Brevo is a clean no-op.

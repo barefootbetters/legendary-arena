@@ -543,13 +543,14 @@ during implementation.
    (executed 2026-07-11, D-24145 Active; fail-open,
    fire-and-forget; added the transactional `POST /v3/smtp/email` path the
    contact-list-only Brevo module lacked; real send operator-pending on deploy).
-5. Ranked eligibility gate — **drafted as
+5. Ranked eligibility gate — **executed as
    [WP-354](../docs/ai/work-packets/WP-354-ranked-eligibility-gate.md)**
-   (2026-07-11, reserves D-24146; **READY**): the clique check runs at score
+   (executed 2026-07-11, D-24146 Active): the clique check runs at score
    submission over `readSeatAccounts`, storing `is_ranked_eligible` on
    `competitive_scores` (solo vacuously eligible; fail-safe to Casual); the
-   public ranked board filters it. The charter's *lobby-invite-flow* half is
-   **split into a separate future WP** (depends on multiplayer-lobby UX).
+   public ranked board filters it, the owner My-Scores read stays unfiltered.
+   The charter's *lobby-invite-flow* half is **split into a separate future
+   WP** (depends on multiplayer-lobby UX).
 6. Abuse controls — **drafted as
    [WP-355](../docs/ai/work-packets/WP-355-friend-abuse-controls.md)**
    (2026-07-11, reserves D-24147; **READY**): a separate `legendary.player_blocks`
