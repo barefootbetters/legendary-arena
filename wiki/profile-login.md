@@ -543,10 +543,19 @@ during implementation.
    (2026-07-10, reserves D-24145; **blocked on WP-351**; fail-open,
    fire-and-forget; adds the transactional `POST /v3/smtp/email` path the
    contact-list-only Brevo module lacks).
-5. Lobby invite flow + ranked eligibility gate at match start (integrates with
-   the `player_count` scoring path).
-6. *(optional)* Abuse controls + an admin review surface for anomalous friend
-   clusters.
+5. Ranked eligibility gate — **drafted as
+   [WP-354](../docs/ai/work-packets/WP-354-ranked-eligibility-gate.md)**
+   (2026-07-11, reserves D-24146; **READY**): the clique check runs at score
+   submission over `readSeatAccounts`, storing `is_ranked_eligible` on
+   `competitive_scores` (solo vacuously eligible; fail-safe to Casual); the
+   public ranked board filters it. The charter's *lobby-invite-flow* half is
+   **split into a separate future WP** (depends on multiplayer-lobby UX).
+6. Abuse controls — **drafted as
+   [WP-355](../docs/ai/work-packets/WP-355-friend-abuse-controls.md)**
+   (2026-07-11, reserves D-24147; **READY**): a separate `legendary.player_blocks`
+   table (block severs friendship), symmetric block enforcement, a per-day
+   request cap + re-request cooldown at the send handler. Notification opt-out
+   (the WP-353 spam-vector risk) is a separate WP-353-dependent follow-up.
 
 ## Interactions
 

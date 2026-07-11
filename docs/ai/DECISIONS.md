@@ -28416,3 +28416,48 @@ Rate limiting + a per-account notification opt-out are explicitly **packet #6** 
 **Packet:** WP-353 (+ EC-383 at execution-prep). **Drafted:** 2026-07-10. **Executed:** — (blocked on WP-351)
 
 Protect this file.
+
+### D-24146 — Ranked eligibility gate: friendship-clique check at score submission (Friends & Ranked Trust, packet #5 ranked-gate half)
+
+**Status:** Drafted 2026-07-11; not yet landed. **READY (not blocked — all hard-deps Done).** Flips to Active (post-execution) when WP-354 executes.
+
+**User-Visible Surface:** the public ranked leaderboard (a non-clique multiplayer run is excluded) + owner My-Scores (shows "Casual"). D-24026 applies.
+
+**Context.** The subsystem's whole point is a trust boundary on ranked play (FR-6/FR-7/FR-8). The submission path (`submitCompetitiveScoreByMatchIdForRequest`, WP-338) and the roster source (`readSeatAccounts`, WP-333) and the clique predicate (`areAllMutualFriends`, WP-350) all exist — this packet wires them together.
+
+**Decision.** Locks:
+
+1. **Eligibility** = `areAllMutualFriends(pool, readSeatAccounts(matchId).map(accountId))`, evaluated **once at submission** and stored on `competitive_scores.is_ranked_eligible` (migration 029, `NOT NULL DEFAULT true`). `n ≤ 1` vacuously eligible → **solo/single-account runs stay ranked**; existing rows default to ranked (back-compat).
+2. **Evaluate-once, immutable (FR-7)** — no re-evaluation / back-fill; a later unfriend never rewrites a submitted row.
+3. **Fail-safe to Casual** — any roster/clique query throw ⇒ `is_ranked_eligible = false` and the submission **still succeeds** (a friendship-infra hiccup never breaks scoring).
+4. **Leaderboard filter** — `AND cs.is_ranked_eligible = true` on the public ranked SELECT **and** its parallel COUNT (same-WHERE invariant); the owner My-Scores read is **unfiltered**.
+5. **Scoring math untouched** — eligibility is an orthogonal binary flag, never a score input (§25(a)); `CompetitiveScoreView.isRankedEligible` is additive.
+6. **Timing note** — evaluated at submission (terminal), not a true match-*start* snapshot; a start-snapshot (so a mid-match unfriend can't flip a run) is a deliberate future refinement.
+
+The charter's packet-#5 **lobby-invite-flow** half is **split into a separate future WP** (depends on multiplayer-lobby UX not touched here).
+
+**Packet:** WP-354 (+ EC-384 at execution-prep). **Drafted:** 2026-07-11. **Executed:** —
+
+Protect this file.
+
+### D-24147 — Friend abuse controls: block list + request rate limit + re-request cooldown (Friends & Ranked Trust, packet #6)
+
+**Status:** Drafted 2026-07-11; not yet landed. **READY (not blocked — all hard-deps Done).** Flips to Active (post-execution) when WP-355 executes.
+
+**User-Visible Surface:** `play.legendary-arena.com` (block/unblock; a blocked player cannot friend-request you).
+
+**Context.** WP-350 deferred blocking, rate limits, and cooldown to this packet (D-24142 point 3). WP-351's send handler is the enforcement site.
+
+**Decision.** Locks:
+
+1. **Separate block model** — a new `legendary.player_blocks` table (`player_id` FKs, unique pair, self-CHECK, CASCADE); blocking is **never** a friendship `status` (D-24142). `blockPlayer` inserts the block **and severs** any existing friendship in one `BEGIN/COMMIT`.
+2. **Symmetric enforcement** — `isEitherBlocked` rejects a send if A blocked B **or** B blocked A.
+3. **Locked guards** — `MAX_OUTGOING_PENDING_PER_DAY = 20` + `REREQUEST_COOLDOWN_HOURS = 24`, enforced **block → cooldown → rate limit** before `sendFriendRequest`.
+4. **New endpoints** — `POST/DELETE/GET /api/me/blocks` (`authenticated-session-required`), returning `handle`+`displayName`, **never** `accountId` (FR-2).
+5. **Additive contract extension** — WP-351's `FriendApiErrorCode` gains exactly `blocked`/`rate_limited`/`request_cooldown` (canonical array + drift test updated together); WP-350's `friendships.{types,logic}.ts` untouched (sever reuses `removeFriend`); the six existing endpoint shapes otherwise byte-identical.
+
+Notification opt-out (the WP-353 spam-vector risk) is a **separate WP-353-dependent follow-up**, not in this packet.
+
+**Packet:** WP-355 (+ EC-385 at execution-prep). **Drafted:** 2026-07-11. **Executed:** —
+
+Protect this file.
