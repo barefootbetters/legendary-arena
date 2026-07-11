@@ -527,10 +527,10 @@ during implementation.
    [WP-350](../docs/ai/work-packets/WP-350-friendships-data-model.md)**
    (executed 2026-07-11, D-24142 Active; library-only, no endpoint/UI).
 2. Friend-request API (send / accept / decline / remove / list;
-   `authenticated-session-required`, per D-9905) — **drafted as
+   `authenticated-session-required`, per D-9905) — **executed as
    [WP-351](../docs/ai/work-packets/WP-351-friend-request-api.md)**
-   (2026-07-10, reserves D-24143; **blocked on WP-350**; `FriendSummary`
-   exposes `@handle`, never `accountId`).
+   (executed 2026-07-11, D-24143 Active; six `/api/me/friends*` routes;
+   `FriendSummary` exposes `@handle`, never `accountId`).
 3. Profile UI: Friends tab, incoming / sent / pending, add-by-`@handle`
    search — **drafted as
    [WP-352](../docs/ai/work-packets/WP-352-friends-profile-ui.md)**

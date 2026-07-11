@@ -28352,7 +28352,7 @@ Protect this file.
 
 ### D-24143 — Friend-request API (`/api/me/friends*`) (Friends & Ranked Trust, packet #2)
 
-**Status:** Drafted 2026-07-10; not yet landed. **BLOCKED on WP-350** (packet #1 — its `friendships.{logic,types}.ts` must be Done first). Flips to Active (post-execution) when WP-351 executes.
+**Status:** Active — executed 2026-07-11 via WP-351 / EC-381 (`apps/server/src/friendships/friendships.routes.ts` + `server.mjs` wiring + 6 `api-endpoints.md` rows). WP-350 (packet #1) is Done on `main`.
 
 **User-Visible Surface:** none directly (the HTTP surface the packet-#3 Friends-tab UI calls). See the charter at `wiki/profile-login.md §Friends & Ranked Trust Layer`.
 
@@ -28369,7 +28369,7 @@ Protect this file.
 
 Email notification (packet #4), UI (packet #3), block/rate-limits (packet #6), and the ranked gate (packet #5) are explicitly out.
 
-**Packet:** WP-351 (+ EC-381 at execution-prep). **Drafted:** 2026-07-10. **Executed:** — (blocked on WP-350)
+**Packet:** WP-351 (+ EC-381). **Drafted:** 2026-07-10. **Executed:** 2026-07-11 (full server suite 890/890 against a real Postgres; WP-350 contract byte-identical; 6 catalog rows landed same-commit).
 
 Protect this file.
 
