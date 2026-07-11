@@ -28328,3 +28328,24 @@ subdomain — the intended flip side of SSO.
 **Packet:** WP-348 + EC-378. **Drafted:** 2026-07-09. **Executed:** 2026-07-09.
 
 Protect this file.
+
+### D-24142 — Friendships data model + friend-request state machine + mutual-clique helper (Friends & Ranked Trust, packet #1)
+
+**Status:** Drafted 2026-07-10; not yet landed. Flips to Active (post-execution) when WP-350 executes.
+
+**User-Visible Surface:** none (library-only). Payoff at packets #2 (API) / #3 (UI) / #5 (ranked gate) — see the charter at `wiki/profile-login.md §Friends & Ranked Trust Layer`.
+
+**Context.** The profile surface has auth, public/owner profiles, badges, and team affiliation, but no peer-to-peer social graph, and the leaderboard cannot tell an organic co-op crew from a collusion ring. The subsystem charter (FR-1…FR-9) specifies a friendship graph as both the retention primitive and the ranked-integrity signal. This decision covers **packet #1** — the server data + logic layer only.
+
+**Decision.** Ship `legendary.friendships` (migration `028`) + a typed `friendships.logic.ts` state machine + a mutual-clique helper, all keyed on `AccountId`. Specifically locked:
+
+1. **FK convention.** The table FKs `player_id bigint` to `legendary.players(player_id) ON DELETE CASCADE` and resolves `ext_id → player_id` inline — the profile-family convention (migrations 009/022), **refining** the charter's illustrative `ext_id text` sketch (which was explicitly not locked). The public logic API is `AccountId`-keyed.
+2. **Symmetry.** One row per **unordered** pair via a normalized `UNIQUE (LEAST(requester_id,addressee_id), GREATEST(requester_id,addressee_id))` index; `requester_id`/`addressee_id` record only *who initiated* (for pending display). No follower/one-way semantics (FR-4).
+3. **Closed status set** `('pending','accepted','declined')` — DB CHECK + TS union + canonical `readonly` array + drift test. **Blocking, rate limits, and re-request cooldown are deferred** to a later packet (blocking is orthogonal to friendship and gets its own model; no clock-dependent logic here).
+4. **Transitions.** `sendFriendRequest` transitions an existing `declined` pair `→ pending` via UPDATE (never a second row); `removeFriend` DELETEs the accepted row (symmetric; re-friending is a fresh request).
+5. **Clique algorithm.** A set of accounts is a clique **iff** the count of `accepted` rows whose both endpoints are in the de-duplicated set equals `n*(n-1)/2`; `n ≤ 1` is vacuously `true`. Pure predicate — the packet-#5 ranked gate consumes it; this packet decides nothing about scoring.
+6. **Library-only scope.** No HTTP endpoint (`api-endpoints.md` untouched), no `'friends'` profile-visibility value (deferred until a consumer exists per migration 009's `// why:` note).
+
+**Packet:** WP-350 (+ EC-380 at execution-prep). **Drafted:** 2026-07-10. **Executed:** —
+
+Protect this file.
