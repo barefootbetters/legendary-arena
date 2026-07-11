@@ -344,21 +344,56 @@ fields gain `displayName`; error set gains `invalid_display_name`) rows in
 > reuse the identity contract already shipped (above); the schema sketch is
 > **illustrative**, not locked.
 
-**The gap.** The profile surface today has authentication (Hanko), a public
+**Purpose (why this earns 4–6 packets).** The primary purpose of the friendship
+graph is **player retention** — enabling intentional multiplayer, repeat play
+groups, and durable social ties that bring players back. Its use as a
+leaderboard-integrity signal is a *reuse* of the same graph, not its reason for
+existing. The profile surface today has authentication (Hanko), a public
 profile, an owner profile, badges (WP-105), and **team affiliation**
 (WP-109 — cooperative cohorts, migration 010) — but **no peer-to-peer social
-graph**. A player cannot find a specific person by name, form a persistent
-connection, and reliably pull them into a game. Separately, the leaderboard
-cannot distinguish an organic co-op crew from an ad-hoc group of strangers
-assembled to farm ranked results. Both gaps trace to one missing primitive: a
-**friendship** relationship anchored to a stable identity. (Teams and
+graph**: a player cannot find a specific person by name, form a persistent
+connection, and reliably pull them into a game. The secondary benefit is that
+the same graph lets the leaderboard distinguish an organic co-op crew from an
+ad-hoc group of strangers assembled to farm ranked results. (Teams and
 friendships are distinct: a team is a named group cohort; a friendship is a
 symmetric one-to-one tie. The friend graph is the new primitive.)
 
-**Identity anchor (non-negotiable).** Friendship is *discovered* by `@handle`
-and *stored* against `AccountId` — never `display_name`. This is the same
-naming trap called out in the identity-fields section above: a graph keyed on
-the editable name silently corrupts on every rename.
+**Design invariants.** Numbered so future WPs can cite them (`FR-#` — distinct
+from the `F-1`/`F-2` broker-confinement gates elsewhere on this page):
+
+- **FR-1 — Purpose order.** Friendship is a durable social connection first;
+  its ranked-integrity role is a reuse of the same graph, never the driver of
+  its design.
+- **FR-2 — Identity anchor.** Friendships, friend requests, ranked-eligibility
+  calculations, invitation targets, notification routes, and audit records
+  depend **only** on `AccountId`; discovery uses `@handle`. `display_name` is
+  presentation-only and MUST NOT participate in friendship identity or trust
+  calculations.
+- **FR-3 — Durability.** A friendship survives display-name, avatar, profile,
+  handle-display, and team changes; it is identified solely by the two
+  `AccountId`s. No presentation-layer field is part of friendship identity.
+- **FR-4 — Symmetry.** An accepted friendship is symmetric: if A is a friend of
+  B then B is a friend of A. No one-way followers, subscriptions, or
+  unidirectional ties.
+- **FR-5 — Casual stays frictionless.** Casual play never requires a
+  friendship; the gate applies to ranked eligibility only.
+- **FR-6 — Objectively computable.** Ranked eligibility is a pure function of
+  the accepted-friendship relation over the human-player set at match start —
+  no human judgement, no moderation call.
+- **FR-7 — Immutable after match start.** Social-graph changes (friend,
+  unfriend, block) never retroactively alter a completed run's leaderboard
+  eligibility. (Admin/anti-cheat voiding is a separate policy — see *Open
+  question* below.)
+- **FR-8 — Trust signal, not security guarantee.** The gate raises the cost of
+  collusion; it does not eliminate it. No WP may present it as anti-cheat.
+- **FR-9 — Human players only.** "Player" in the ranked rule means a human
+  seat. AI companions, autoplay bots, replay ghosts, tutorial actors, and
+  system seats are excluded from the friendship requirement.
+
+**Identity anchor (FR-2 / FR-3).** Friendship is *discovered* by `@handle` and
+*stored* against `AccountId` — never `display_name`. This is the same naming
+trap called out in the identity-fields section above: a graph keyed on the
+editable name silently corrupts on every rename.
 
 | Concern | Field | Why |
 |---|---|---|
@@ -382,9 +417,13 @@ Search (@handle) -> Send Request -> Pending -> Accepted | Declined
 5. Acceptance records a mutual, two-way friendship.
 6. Either side may **remove** the friendship at any time.
 
-**Illustrative schema** (actual shape locked by its WP; would land as the next
-migration, `028_*`, following repo conventions — `legendary.` schema,
-snake_case, `ext_id` foreign keys, idempotent `IF NOT EXISTS`):
+**Illustrative schema — communicates concepts, not an approved design.** The
+sketch below exists solely to convey the shape (symmetric tie, pending state,
+immutable `ext_id` keys). Column names, indexes, normalization strategy, and
+physical implementation remain **WP-owned decisions** — do not treat this as
+ratified. It would land as the next migration, `028_*`, following repo
+conventions (`legendary.` schema, snake_case, `ext_id` foreign keys, idempotent
+`IF NOT EXISTS`):
 
 ```
 CREATE TABLE IF NOT EXISTS legendary.friendships (
@@ -409,15 +448,33 @@ not a barrier to casual play:
 
 Casual preserves zero-friction pickup games; ranked adds the trust boundary.
 
-**Ranked eligibility = full clique, snapshotted.** A multiplayer run is
-leaderboard-eligible only when, **at match start, every pair of human players
-has an `accepted` friendship** — a full clique, not merely "friends of the
-lobby host." Full-clique (rather than host-centric) prevents loose collusion
-rings around a single ringleader and makes the coordination visible to later
-analytics. The eligibility result is **snapshotted into the run record**:
-unfriending someone afterward does not retroactively void a completed ranked
-run. If the clique test fails, the run falls back cleanly to Casual (no
-leaderboard credit), rather than being blocked.
+**Ranked eligibility contract.**
+
+*Definition (full clique).* For the set `H` of **human** players in a run
+(FR-9), the run is ranked-eligible at match start **iff**:
+
+```
+for every pair (A, B) in H with A != B:  accepted_friendship(A, B) = true
+```
+
+i.e. `H` forms a complete friendship clique. Full-clique — not merely "friends
+of the lobby host" — prevents loose collusion rings around a single ringleader
+and makes coordination visible to later analytics. It translates directly to a
+query with no interpretation layer.
+
+*Snapshot (FR-7).* Eligibility is evaluated **exactly once, at match start**,
+and stored as immutable run metadata. Subsequent friend / unfriend / block
+actions cannot change a completed run's leaderboard eligibility.
+
+*Lobby-mutation rule.* Any change to the human-player set **after** evaluation
+(a seat leaves, a new player joins) invalidates the snapshot: the run must be
+re-evaluated or demoted to Casual. The exact behavior is a WP decision,
+dependent on the final multiplayer / lobby architecture — but a mutated lobby
+must never silently retain a stale "eligible" snapshot (this is the exploit the
+rule closes).
+
+*Fallback.* If the clique test fails, the run proceeds cleanly as Casual (no
+leaderboard credit) rather than being blocked.
 
 > **Governing principle: friendship is a trust signal, not a security
 > guarantee.** The clique gate does not eliminate collusion; it raises the cost
@@ -446,8 +503,20 @@ per-day outgoing-request rate limits, a re-request cooldown after a decline,
 and DB-level guards against self / duplicate / cross requests.
 
 **Non-goals (explicitly out of the first subsystem).** Real-time presence /
-online status, chat or direct messaging, and a social activity feed. These are
-later capabilities the graph *enables*, not part of the initial build.
+online status, chat or direct messaging, and a social activity feed — later
+capabilities the graph *enables*, not part of the initial build. Also a
+permanent non-goal: **social reputation** — no endorsements, likes, trust
+scores, karma, or reputation rankings. Friendship stays a **binary** relation
+(this also keeps the graph clear of the cumulative-count ranking inputs §25(a)
+forbids).
+
+**Open question (owned by the ranked-submission WP, not this charter).** FR-7
+freezes eligibility against *social-graph* changes, but does an admin integrity
+action — a WP-107 suspension or a confirmed-cheating finding — retroactively
+void a completed ranked run's leaderboard credit? WP-107's current posture
+keeps historical scores; whether friend-gated ranked runs need a stricter
+cheating-invalidation path is unresolved and must not be assumed either way
+during implementation.
 
 **Proposed WP breakdown (4–6 packets).**
 
