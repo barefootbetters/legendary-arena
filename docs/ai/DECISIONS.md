@@ -28480,3 +28480,25 @@ Protect this file.
 **Packet:** WP-356 (+ EC-386 at execution-prep). **Drafted:** 2026-07-11. **Executed:** —
 
 Protect this file.
+
+### D-24149 — Friend-request email opt-out preference (Friends & Ranked Trust, packet #6 follow-on)
+
+**Status:** Drafted 2026-07-11; not yet landed. **READY (not blocked — all hard-deps Done).** Flips to Active (post-execution) when WP-357 executes.
+
+**User-Visible Surface:** fewer inbox emails (opt out → no friend-request email fires). D-24026 applies.
+
+**Context.** WP-355 (packet #6) deferred the notification opt-out to a WP-353-dependent follow-up; WP-353 is now merged. This closes the spam-vector risk WP-353 flagged (an abuser spamming requests floods a victim's inbox).
+
+**Decision.** Locks:
+
+1. **Storage** — one boolean `friend_request_emails` on the existing `legendary.player_profiles` (migration 031, `NOT NULL DEFAULT true`); no new `notification_preferences` table (duplicate-first; a prefs table is a future refactor if more toggles arrive).
+2. **Recipient-scoped, governs both** WP-353 friend emails (received + accepted, both via `sendFriendNotification`).
+3. **Opted-out recipient → clean no-op** in `sendFriendNotification` (no send, **no** `console.warn` — an opt-out is a normal outcome). WP-353's D-24077 fail-open warns stay for real failures; the notify signatures (`notifyFriendRequest{Received,Accepted}`, `FriendshipNotificationConfig`) are byte-identical.
+4. **Read/written additively** via `OwnerProfileView`/`OwnerProfilePatch` (`friendRequestEmails`, never `| null`) through the existing transactional `upsertOwnerProfile` (`Object.keys` drift assertion updated).
+5. **Efficient read** — the preference is folded into WP-353's existing `resolveIdentities` round-trip via `LEFT JOIN legendary.player_profiles` + `COALESCE(..., true)` (default-on; an absent profile row/column never silences everyone).
+
+The client `?route=me` opt-out toggle is a separate small follow-on.
+
+**Packet:** WP-357 (+ EC-387 at execution-prep). **Drafted:** 2026-07-11. **Executed:** —
+
+Protect this file.
