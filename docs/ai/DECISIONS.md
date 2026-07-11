@@ -28372,3 +28372,24 @@ Email notification (packet #4), UI (packet #3), block/rate-limits (packet #6), a
 **Packet:** WP-351 (+ EC-381 at execution-prep). **Drafted:** 2026-07-10. **Executed:** — (blocked on WP-350)
 
 Protect this file.
+
+### D-24144 — Owner-profile Friends section (Friends & Ranked Trust, packet #3)
+
+**Status:** Drafted 2026-07-10; not yet landed. **BLOCKED on WP-351** (→ WP-350). Flips to Active (post-execution) when WP-352 executes.
+
+**User-Visible Surface:** `play.legendary-arena.com` (`?route=me` → a Friends section). D-24026 live-verify applies, deferred to deploy.
+
+**Context.** WP-351 exposes the `/api/me/friends*` API. Packet #3 is the arena-client UI that consumes it — the first user-visible surface of the subsystem.
+
+**Decision.** Add a Friends section to the owner profile (`MyProfilePage.vue`, `?route=me`). Locked:
+
+1. **Surface:** `friendsApi.ts` (six `fetch` wrappers mirroring `ownerProfileApi.ts` — `buildApiUrl`, bearer token, `{ok}|{ok:false,status,code}`, never throws) + a `useFriends` composable + `FriendsSection.vue`, mounted in `MyProfilePage.vue` like `BillingSection`.
+2. **Handle-only identity on screen (FR-2):** the UI shows/acts on `@handle` + `displayName`, **never** an `accountId` (the API sends none); asserted by a no-`accountId`-in-render test.
+3. **Mutate-then-refetch** state (authoritative, not optimistic).
+4. **Client `FRIEND_API_ERROR_CODES` mirror + set-equality drift test** against WP-351's server union (the `AVATAR_UPLOAD_ERROR_CODES` precedent); closed per-code error copy.
+5. **Outgoing pending is display-only** — WP-351 has no cancel-my-request route (surfaced Known gap, deferred).
+6. **Consumer-only** — no server/migration/engine touch; §23(b) no-PvP-framing copy. Block-list/privacy (packet #6) and email (packet #4) out.
+
+**Packet:** WP-352 (+ EC-382 at execution-prep). **Drafted:** 2026-07-10. **Executed:** — (blocked on WP-351)
+
+Protect this file.

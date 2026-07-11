@@ -532,7 +532,11 @@ during implementation.
    (2026-07-10, reserves D-24143; **blocked on WP-350**; `FriendSummary`
    exposes `@handle`, never `accountId`).
 3. Profile UI: Friends tab, incoming / sent / pending, add-by-`@handle`
-   search, privacy controls + block list.
+   search — **drafted as
+   [WP-352](../docs/ai/work-packets/WP-352-friends-profile-ui.md)**
+   (2026-07-10, reserves D-24144; **blocked on WP-351**; owner `?route=me`
+   section, `@handle` only, never `accountId`). Privacy controls + block
+   list ride on packet #6's models, deferred there.
 4. Brevo transactional emails (request received, request accepted).
 5. Lobby invite flow + ranked eligibility gate at match start (integrates with
    the `player_count` scoring path).
