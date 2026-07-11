@@ -132,6 +132,38 @@ micro-lip), and redundant power pins through a keyed cord.
 Launch is **platform-agnostic** — Street/Alley as the hero example, generic /
 affiliate-sourced figures at launch; licensed-character integration deferred.
 
+## Figures — the 1/12-scale (6-inch) standard
+
+The platform is designed around **standard 1/12-scale (6-inch) action
+figures** — the dominant modern collector size — with **1–4 figures** on the
+14 × 10 × 12 in Core Display.
+
+- **Compatible lines (examples):** Marvel Legends, Star Wars Black Series,
+  G.I. Joe Classified (mainline, ~$15–30); Mythic Legions, Mafex,
+  S.H. Figuarts (premium, ~$40–110). Stick to true 1/12 / 6-inch — most
+  McFarlane lines are 7-inch and oversized for the Core Display.
+- **Figures are sold separately** — the platform stays character-agnostic
+  (licensing separability, master plan §10); launch sourcing is generic /
+  affiliate. Licensed integration is a deliberate later decision, not a
+  launch dependency.
+- **Never modify the figure.** The Smart Base grips non-destructively — no
+  glue, screws, or drilling on a collector's figure. The production
+  attachment method is a tracked design decision; **P1 benches lock on
+  removable museum putty** so the prototype doesn't fork into attachment
+  variants.
+- **Weight envelope (working):** mainline figures ≈ 100–170 g; armored
+  premium lines (Mythic Legions class) run 200–300 g. **Design target
+  ≤ ~300 g per figure** — this number drives Smart Base magnet count, the
+  wall peel-torque margin, and motion-module sizing, and P1 tests at the
+  heavy end.
+- **Motion modules carry the full figure**, not an accessory — the Swinger
+  swings a mounted figure, the Spinner rotates one. Mechanisms and the
+  Interface B dock are sized to the same envelope.
+- **Prototype sourcing:** 4–6 figures across tiers (1–2 heavy premium +
+  2–4 mainline) is enough to test base attachment, balance, wall hold, and
+  how figures read under lighting and motion — the P1 build plan carries
+  the test-figure BOM.
+
 ## Regulatory headline
 
 Treat it as a **toy from day one**: at an 8+ age grade the mandatory U.S. toy
