@@ -20,6 +20,21 @@
         "sm-shield-trooper",
         "dp-belt-pouches",
         "sm-amazing-friend"
+      ],
+      "inPlayCards": ["sm-web-slinger", "dp-chimichangas"],
+      "inPlayDisplay": [
+        {
+          "extId": "sm-web-slinger",
+          "name": "Web Slinger",
+          "imageUrl": "https://images.barefootbetters.com/sm-web-slinger.png",
+          "cost": 2
+        },
+        {
+          "extId": "dp-chimichangas",
+          "name": "Chimichangas",
+          "imageUrl": "https://images.barefootbetters.com/dp-chimichangas.png",
+          "cost": 1
+        }
       ]
     },
     {

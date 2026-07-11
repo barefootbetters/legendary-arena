@@ -113,6 +113,7 @@ describe('PlayMobile (WP-129)', () => {
     assert.equal(wrapper.find('[data-testid="play-ko-pile"]').exists(), true);
     assert.equal(wrapper.find('[data-testid="play-economy-bar"]').exists(), true);
     assert.equal(wrapper.find('[data-testid="play-hand-row"]').exists(), true);
+    assert.equal(wrapper.find('[data-testid="play-played-row"]').exists(), true);
     // why: WP-318 — the persistent game log is mounted in the live mobile HUD.
     assert.equal(wrapper.find('[data-testid="play-mobile-log"]').exists(), true);
     assert.equal(wrapper.find('[data-testid="game-log-panel"]').exists(), true);

@@ -29,6 +29,7 @@ import HQRow from '../components/play/HQRow.vue';
 import SharedDecks from '../components/play/SharedDecks.vue';
 import KOPile from '../components/play/KOPile.vue';
 import HandRow from '../components/play/HandRow.vue';
+import PlayedCardsRow from '../components/play/PlayedCardsRow.vue';
 import EconomyBar from '../components/play/EconomyBar.vue';
 import YourDeckDiscardZone from '../components/play/YourDeckDiscardZone.vue';
 import YourVictoryPile from '../components/play/YourVictoryPile.vue';
@@ -85,6 +86,7 @@ export default defineComponent({
     SharedDecks,
     KOPile,
     HandRow,
+    PlayedCardsRow,
     EconomyBar,
     YourDeckDiscardZone,
     YourVictoryPile,
@@ -529,6 +531,13 @@ export default defineComponent({
              board above stays visible. -->
         <template v-if="viewer !== null">
           <section class="play-desktop__player-zone">
+            <!-- why: the mat labels the card lifecycle explicitly — played
+                 cards sit above the unplayed hand; endTurn sweeps both to
+                 the discard pile and next turn's onBegin draws back to 6. -->
+            <PlayedCardsRow
+              :in-play-cards="viewer.inPlayCards ?? []"
+              :in-play-display="viewer.inPlayDisplay"
+            />
             <HandRow
               :hand-cards="viewer.handCards ?? []"
               :hand-display="viewer.handDisplay"
