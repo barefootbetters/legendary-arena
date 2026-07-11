@@ -173,6 +173,36 @@ partial-engagement clean-fail, and the new **randomized-placement gate**: ≥100
 random position/rotation drops with zero dead placements and zero shorts). No
 tooling, PCB fab, or inventory until P1 passes and a demand signal appears.
 
+### P1 at a glance
+
+P1 is **not a product** — it's three benches, roughly **$150 in parts and 2–3
+evenings**, built in this order:
+
+1. **Bench A — grid + Smart Bases:** a ~6×6 in powered-surface panel (steel
+   backer, insulated face, alternating-polarity strips) plus three Smart Base
+   pucks (pin ring + rectifier + LED, encapsulated magnets). The novel,
+   highest-risk mechanic — built first.
+2. **Bench B — Smart Hub logic:** an Arduino-class dev board driving all five
+   port behaviors from labeled jacks — proves the zero-config UX.
+3. **Bench C — module mount:** one mocked motion module in a dock pocket,
+   keyed cord to a Hub port, run under real motor load.
+
+Everything runs at **5 V** from one bench supply.
+
+**Proving:** snap-anywhere lighting (a valid A8 drop = anywhere in the active
+area, any rotation, one motion, no nudging — lit within a second, every time),
+module docking that survives vibration and stall current, and the
+match-the-label plug-in experience with zero configuration.
+
+**Deliberately not proving:** enclosures and cosmetics, packaging, Bluetooth
+audio, licensing, tooling, production firmware.
+
+The **order-ready parts list** (specific part series, Amazon-searchable), the
+step-by-step build, geometry starting points, the power budget, and the
+measurement procedures all live in the private repo's
+[`p1-prototype-build-plan.md`](https://github.com/barefootbetters/legendary-forge/blob/main/docs/p1-prototype-build-plan.md)
+— a collaborator with repo access can start building this weekend.
+
 ## Open items (tracked in the master plan §13)
 
 The living tracker is the master plan's Open Questions section; highlights a
