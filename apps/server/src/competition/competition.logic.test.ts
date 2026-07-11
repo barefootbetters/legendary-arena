@@ -41,6 +41,14 @@ import {
   submitCompetitiveScoreImpl,
 } from './competition.logic.js';
 
+// why: WP-354 — the ranked-eligibility tests establish an accepted
+// friendship between two co-players via the WP-350 logic API (the same
+// path a real friend-request takes), then assert the clique gate.
+import {
+  sendFriendRequest,
+  acceptFriendRequest,
+} from '../friendships/friendships.logic.js';
+
 import * as boardgameInternal from 'boardgame.io/dist/cjs/internal.js';
 
 import {
@@ -1409,4 +1417,194 @@ describe('submitCompetitiveScoreByMatchIdForRequest (WP-338)', () => {
     );
     assert.deepEqual(result, { ok: false, reason: 'guest_not_eligible' });
   });
+
+  // --- WP-354 ranked-eligibility gate ---
+
+  /** Provision a co-player and seat them at seat '1' of the match. */
+  async function addSecondSeat(
+    testPool: pg.Pool,
+    matchId: string,
+    label: string,
+  ): Promise<PlayerAccount> {
+    const coplayer = await createPlayerAccount(
+      {
+        email: `wp354-${label}-${matchId}@example.test`,
+        displayName: `WP354 ${label}`,
+        authProvider: 'email',
+        authProviderId: `wp354-${label}-${matchId}`,
+      },
+      testPool,
+    );
+    assert.ok(coplayer.ok === true);
+    await testPool.query(
+      'INSERT INTO legendary.match_seat_accounts (match_id, player_id, account_id) VALUES ($1, $2, $3)',
+      [matchId, '1', coplayer.value.accountId],
+    );
+    return coplayer.value;
+  }
+
+  /** Establish an accepted friendship between two accounts via the WP-350 API. */
+  async function makeFriends(
+    testPool: pg.Pool,
+    a: PlayerAccount,
+    b: PlayerAccount,
+  ): Promise<void> {
+    const sent = await sendFriendRequest(
+      testPool as unknown as DatabaseClient,
+      a.accountId,
+      b.accountId,
+    );
+    assert.ok(sent.ok === true);
+    const accepted = await acceptFriendRequest(
+      testPool as unknown as DatabaseClient,
+      b.accountId,
+      a.accountId,
+    );
+    assert.ok(accepted.ok === true);
+  }
+
+  async function cleanupMatch(
+    testPool: pg.Pool,
+    matchId: string,
+    expectedHash: string,
+    accountIds: AccountId[],
+  ): Promise<void> {
+    await testPool.query('DELETE FROM legendary.competitive_scores WHERE replay_hash = $1', [expectedHash]);
+    await testPool.query('DELETE FROM legendary.replay_ownership WHERE replay_hash = $1', [expectedHash]);
+    await testPool.query('DELETE FROM bgio.replay_artifacts WHERE match_id = $1', [matchId]);
+    await testPool.query('DELETE FROM legendary.match_seat_accounts WHERE match_id = $1', [matchId]);
+    await testPool.query('DELETE FROM bgio.matches WHERE match_id = $1', [matchId]);
+    await testPool.query('DELETE FROM legendary.friendships WHERE requester_id IN (SELECT player_id FROM legendary.players WHERE ext_id = ANY($1)) OR addressee_id IN (SELECT player_id FROM legendary.players WHERE ext_id = ANY($1))', [accountIds]);
+    // why: a successful submission issues Tier-1 badges (player_badges rows)
+    // that FK-reference legendary.players; delete them before the players
+    // wipe or the DELETE FK-faults (the badge-FK-blocks-players-wipe issue).
+    await testPool.query('DELETE FROM legendary.player_badges WHERE player_id IN (SELECT player_id FROM legendary.players WHERE ext_id = ANY($1))', [accountIds]);
+    await testPool.query('DELETE FROM legendary.players WHERE ext_id = ANY($1)', [accountIds]);
+  }
+
+  test(
+    'a mutual-friend clique roster stores is_ranked_eligible = true',
+    { skip: hasTestDatabase ? false : 'requires test database' },
+    async () => {
+      const testPool = pool as pg.Pool;
+      const matchId = 'wp354-clique';
+      const { owner, expectedHash } = await seedMatch(testPool, matchId, true);
+      const friend = await addSecondSeat(testPool, matchId, 'friend');
+      await makeFriends(testPool, owner, friend);
+
+      const result = await submitCompetitiveScoreByMatchIdForRequest(
+        owner,
+        matchId,
+        testPool as unknown as DatabaseClient,
+        WP338_PROD_DEPS,
+      );
+      assert.ok(result.ok === true, `expected ok, got ${JSON.stringify(result)}`);
+      assert.strictEqual(result.record.isRankedEligible, true);
+
+      // Round-trips to the My-Scores view.
+      const listed = await listPlayerCompetitiveScores(
+        owner.accountId,
+        testPool as unknown as DatabaseClient,
+      );
+      assert.strictEqual(listed[0]?.isRankedEligible, true);
+
+      await cleanupMatch(testPool, matchId, expectedHash, [owner.accountId, friend.accountId]);
+    },
+  );
+
+  test(
+    'a non-clique multiplayer roster stores is_ranked_eligible = false (Casual)',
+    { skip: hasTestDatabase ? false : 'requires test database' },
+    async () => {
+      const testPool = pool as pg.Pool;
+      const matchId = 'wp354-strangers';
+      const { owner, expectedHash } = await seedMatch(testPool, matchId, true);
+      const stranger = await addSecondSeat(testPool, matchId, 'stranger');
+      // No friendship established between owner and stranger.
+
+      const result = await submitCompetitiveScoreByMatchIdForRequest(
+        owner,
+        matchId,
+        testPool as unknown as DatabaseClient,
+        WP338_PROD_DEPS,
+      );
+      assert.ok(result.ok === true, `expected ok, got ${JSON.stringify(result)}`);
+      assert.strictEqual(result.record.isRankedEligible, false);
+
+      await cleanupMatch(testPool, matchId, expectedHash, [owner.accountId, stranger.accountId]);
+    },
+  );
+
+  test(
+    'a solo roster (n = 1) is vacuously ranked-eligible',
+    { skip: hasTestDatabase ? false : 'requires test database' },
+    async () => {
+      const testPool = pool as pg.Pool;
+      const matchId = 'wp354-solo';
+      const { owner, expectedHash } = await seedMatch(testPool, matchId, true);
+      // Only the owner's seat exists — no addSecondSeat.
+
+      const result = await submitCompetitiveScoreByMatchIdForRequest(
+        owner,
+        matchId,
+        testPool as unknown as DatabaseClient,
+        WP338_PROD_DEPS,
+      );
+      assert.ok(result.ok === true, `expected ok, got ${JSON.stringify(result)}`);
+      assert.strictEqual(result.record.isRankedEligible, true);
+
+      await cleanupMatch(testPool, matchId, expectedHash, [owner.accountId]);
+    },
+  );
+
+  test(
+    'a thrown roster read fails safe to Casual and the submission still succeeds',
+    { skip: hasTestDatabase ? false : 'requires test database' },
+    async () => {
+      const testPool = pool as pg.Pool;
+      const matchId = 'wp354-failsafe';
+      const { owner, expectedHash } = await seedMatch(testPool, matchId, true);
+      const friend = await addSecondSeat(testPool, matchId, 'failsafe');
+      await makeFriends(testPool, owner, friend);
+
+      // First submit normally to establish the artifact + public ownership,
+      // then delete the score row so the next submit is a FRESH insert.
+      const first = await submitCompetitiveScoreByMatchIdForRequest(
+        owner,
+        matchId,
+        testPool as unknown as DatabaseClient,
+        WP338_PROD_DEPS,
+      );
+      assert.ok(first.ok === true);
+      assert.strictEqual(first.record.isRankedEligible, true);
+      await testPool.query('DELETE FROM legendary.competitive_scores WHERE replay_hash = $1', [expectedHash]);
+
+      // why: a pool that throws only on the match_seat_accounts read — the
+      // eligibility roster read (which runs AFTER capture, so capture is
+      // unaffected). Everything else delegates to the real pool.
+      const throwingSeatPool = {
+        query: async (sql: string, params?: unknown[]) => {
+          if (typeof sql === 'string' && sql.includes('match_seat_accounts')) {
+            throw new Error('injected roster-read failure for the fail-safe test');
+          }
+          return testPool.query(sql, params as never);
+        },
+        connect: (...args: unknown[]) =>
+          (testPool.connect as (...a: unknown[]) => unknown)(...args),
+      } as unknown as DatabaseClient;
+
+      const result = await submitCompetitiveScoreByMatchIdForRequest(
+        owner,
+        matchId,
+        throwingSeatPool,
+        WP338_PROD_DEPS,
+      );
+      assert.ok(result.ok === true, `expected ok despite the roster throw, got ${JSON.stringify(result)}`);
+      assert.strictEqual(result.wasExisting, false);
+      // Fail-safe direction: a friendship-infra throw records the run as Casual.
+      assert.strictEqual(result.record.isRankedEligible, false);
+
+      await cleanupMatch(testPool, matchId, expectedHash, [owner.accountId, friend.accountId]);
+    },
+  );
 });
