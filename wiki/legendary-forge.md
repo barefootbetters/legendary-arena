@@ -11,7 +11,7 @@ related:
 status: draft
 source:
   - https://github.com/barefootbetters/legendary-forge (private — canonical)
-last-reviewed: 2026-06-26
+last-reviewed: 2026-07-11
 ---
 
 > 📍 **Overview page.** The Legendary Forge diorama venture lives in its own
@@ -48,8 +48,8 @@ gets there.
 
 ![System architecture — the five plug-and-play systems and how they connect](/legendary-forge/system-architecture.png "width=50%")
 
-1. **Magnetic grid (Lite-Brite).** Conductive floor/wall plates; snap a magnetic
-   "Smart Boot" figure on anywhere and it lights up. No wiring.
+1. **Magnetic grid (Lite-Brite).** Steel-backed powered-surface panels; snap a
+   magnetic "Smart Base"-equipped figure on anywhere and it lights up. No wiring.
 2. **Smart Hub (the power strip).** A sealed box with labeled low-voltage ports —
    **Always On / Pulse / Flicker / Swing Motor / Spin Motor**. No Pi, no SD card,
    no code.
@@ -71,11 +71,19 @@ port — that's the whole manual.**
 The connector *is* the product; it's the make-or-break. There are **two** distinct
 contact problems, designed separately:
 
-**Interface A — Smart Boot ↔ grid (lighting).** Low-power, static,
+**Interface A — Smart Base ↔ grid (lighting, Rev B).** Low-power, static,
 magnetic-*anywhere* — a keyed dock would kill the "snap anywhere" mechanic, so
-reliability comes from contact geometry and materials (wiping pogo pin, plating).
+reliability is bought with contact geometry. **Rev B** (2026-07-11 design
+review): magnets are retention-only and fully encapsulated — they never carry
+current — and all conduction goes through a ring of gold pogo pins with an
+onboard rectifier, against alternating-polarity strips on an insulated PCB face
+over a plain steel backer. Pin tips narrower than the strip gaps make +/−
+shorts geometrically impossible; the pin ring makes placement and rotation
+irrelevant. (The original magnet-as-ground-conductor design shorted on
+arbitrary placement and fought the magnet-safety encapsulation rules — full
+rationale in the private repo's master plan §4.)
 
-![Smart Boot contact cross-section — ring magnet (GND + hold), recessed pogo pin (+5V), sealed LED+resistor, against the steel-plate/copper-strip grid](/legendary-forge/smart-boot-cross-section.png "width=50%")
+![Smart Base contact cross-section — encapsulated retention-only magnets, ring of gold pogo pins with bridge rectifier, sealed LED+resistor, against the steel-backed alternating-polarity PCB grid](/legendary-forge/smart-boot-cross-section.png "width=50%")
 
 **Interface B — module ↔ frame/Hub (motion).** Vibration + motor stall current →
 a **hybrid**: magnets to align, a mechanical anti-shear constraint (dock pocket +
@@ -96,20 +104,27 @@ affiliate-sourced figures at launch; licensed-character integration deferred.
 
 ## Regulatory headline
 
-Treat it as a **toy from day one**: the mandatory U.S. toy standard (ASTM F963 via
-the CPSIA) governs, with magnet-ingestion requirements front and centre. The Smart
-Boot magnet must be encapsulated to standard; age rating + CPSIA testing scope and
-FCC (for the Bluetooth module) are gating items before tooling. Full treatment in
-the master plan's regulatory section.
+Treat it as a **toy from day one**: at an 8+ age grade the mandatory U.S. toy
+standard (ASTM F963 via 16 CFR 1250) governs, with magnet requirements front and
+centre — and relabeling 14+ does *not* escape magnet regulation (16 CFR 1262
+scopes by purpose, court-upheld 2025). The compliant path is **non-separable,
+fully encapsulated magnets**, which the Rev B retention-only design satisfies by
+construction; the enclosure must still survive use-and-abuse testing without
+liberating a magnet. Age rating + CPSIA testing scope and FCC (pre-certified BT
+module, plus host-level Part 15B SDoC + composite spot-check) are gating items
+before tooling. Full treatment in the master plan's regulatory section.
 
 ## Status & next step
 
-Design is stabilized; the project is at the **prove-it-in-hardware** transition.
-The next step is the **P1 connector prototype** — one port end-to-end (LED → motor)
-plus the grid bench — gated on a binary **A1–A7** acceptance set (self-alignment
-±3 mm, no-disconnect side-bump, no-flicker vibration, 200+ cycles, full-load
-no-brownout, reverse-proof, partial-engagement clean-fail). No tooling, PCB fab,
-or inventory until P1 passes and a demand signal appears.
+Design is stabilized at **Rev B** (contact architecture revised by the
+2026-07-11 design review); the project is at the **prove-it-in-hardware**
+transition. The next step is the **P1 connector prototype** — one port
+end-to-end (LED → motor) plus the grid bench — gated on a binary **A1–A8**
+acceptance set (dock self-alignment ±3 mm, no-disconnect side-bump, no-flicker
+vibration, 200+ cycles, full-load no-brownout, reverse-proof,
+partial-engagement clean-fail, and the new **randomized-placement gate**: ≥100
+random position/rotation drops with zero dead placements and zero shorts). No
+tooling, PCB fab, or inventory until P1 passes and a demand signal appears.
 
 ## Sibling project — STEM Diorama Kit (SDK-1)
 
