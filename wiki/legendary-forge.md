@@ -44,6 +44,25 @@ The shelf-ready **Core Display**: external footprint **14 × 10 × 12 in**, size
 for a bookshelf and one to four 6-inch figures. The systems below are how it
 gets there.
 
+## The experience — one afternoon
+
+The build is deliberately simple and repeatable:
+
+1. **Frame assembly** — flat-pack; minutes, not hours.
+2. **Grid & figures** — snap Smart Base-equipped figures anywhere on the powered
+   grid; they light up automatically.
+3. **Motion & effects** — plug a sealed Swinger or Spinner module into the
+   matching labeled Hub port. Match the cord label — that's the entire
+   instruction.
+4. **Audio** — pair a phone over Bluetooth; play anything (narration,
+   soundtrack, ambient).
+5. **Scene change** — swap printed backdrop cards, or slide in a tablet loop.
+
+The result stays visible and playable daily — no dedicated hobby room required.
+The learning (magnets, circuits, motors, mechanisms) is experiential and
+optional: kids absorb it by building, and the opt-in STEM tier makes it
+explicit for the families who want that.
+
 ## Architecture — five plug-and-play systems
 
 ![System architecture — the five plug-and-play systems and how they connect](/legendary-forge/system-architecture.png "width=50%")
@@ -64,7 +83,10 @@ gets there.
 
 Fixed-firmware, Arduino-class controller. The whole interface is five labeled
 ports, a theme/speed knob, and an on/off switch. **Match the cord's label to the
-port — that's the whole manual.**
+port — that's the whole manual.** The knob scales intensity and animation tempo
+across the connected ports; ports and cords are color/icon-coded to make the
+match obvious at a glance. Fixed firmware generates every effect — the user
+never configures anything beyond physical connections.
 
 ## Connector strategy — two interfaces
 
@@ -94,9 +116,9 @@ micro-lip), and redundant power pins through a keyed cord.
 ## Business model — razor & blades
 
 - **Razor — Starter Kit (~$100):** grid frame, Smart Hub + Bluetooth audio,
-  starter Smart Boots, one launch theme (Street/Alley), certified 5V USB supply.
+  starter Smart Bases, one launch theme (Street/Alley), certified 5V USB supply.
 - **Blades — Expansion Packs:** sealed motion modules, theme packs, backdrop-card
-  multipacks, Smart Boot refills, and an optional STEM "See How It Works" pack.
+  multipacks, Smart Base refills, and an optional STEM "See How It Works" pack.
   The blades carry the margin; the Starter Kit gets a customer into the ecosystem.
 
 Launch is **platform-agnostic** — Street/Alley as the hero example, generic /
@@ -114,6 +136,23 @@ liberating a magnet. Age rating + CPSIA testing scope and FCC (pre-certified BT
 module, plus host-level Part 15B SDoC + composite spot-check) are gating items
 before tooling. Full treatment in the master plan's regulatory section.
 
+## Risks & mitigations (high-level)
+
+- **Connector reliability / user error** → the P1 randomized-placement gate
+  (Interface A) plus mechanical keying and labeled cords (Interface B); a flaky
+  contact on an "it just works" toy is a one-star review, so the connector
+  gates everything.
+- **Magnet regulation** → Rev B encapsulation-by-design (retention-only,
+  non-separable magnets under ASTM F963's routing) + use-and-abuse testing on
+  the Smart Base enclosure.
+- **Certification timeline & cost** → front-loaded in the master plan; no
+  tooling until the regulatory path is confirmed with a compliance consultant.
+- **NRE / supply chain** → phased build (hand-built → low-volume → tooled) per
+  the master plan's economics section; multiple manufacturing quotes early.
+- **Market adoption** → accessible razor pricing, the Saturday-project family
+  pitch, and cross-promotion to the Legendary Arena audience; demand signal
+  (waitlist / pre-orders) required before inventory spend.
+
 ## Status & next step
 
 Design is stabilized at **Rev B** (contact architecture revised by the
@@ -125,6 +164,22 @@ vibration, 200+ cycles, full-load no-brownout, reverse-proof,
 partial-engagement clean-fail, and the new **randomized-placement gate**: ≥100
 random position/rotation drops with zero dead placements and zero shorts). No
 tooling, PCB fab, or inventory until P1 passes and a demand signal appears.
+
+## Open items (tracked in the master plan §13)
+
+The living tracker is the master plan's Open Questions section; highlights a
+collaborator should know exist:
+
+- Final age rating + CPSIA testing scope (consultant engagement runs in
+  parallel with P1).
+- BOM cost model + real margins to replace the placeholder economics.
+- Manufacturing-partner shortlist and tooling quotes.
+- Family playtest protocol — assembly time, delight moments, pain points.
+- **Legendary Arena integration** — themed dioramas tied to game lore,
+  digital-physical linking — deliberately deferred, not forgotten.
+- Marketing visuals for the public page: exploded view of the grid layers and
+  module mating, an in-use parent-and-child render, packaging/unboxing
+  concepts, lifestyle shelf shots.
 
 ## Sibling project — STEM Diorama Kit (SDK-1)
 
