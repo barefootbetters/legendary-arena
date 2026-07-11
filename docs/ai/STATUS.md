@@ -7,6 +7,18 @@
 
 ## Current State
 
+### WP-352 / EC-382 Executed — Friends tab on the owner profile (D-24144 Active) (2026-07-11)
+
+Packet #3 of the **Friends & Ranked Trust** subsystem and its **first user-visible surface**: a **Friends** section on the owner profile (`?route=me`), a thin arena-client over WP-351's `/api/me/friends*` API.
+
+**What landed:**
+- **`friendsApi.ts`** — six `fetch` wrappers mirroring `ownerProfileApi.ts` (`buildApiUrl` + optional `Bearer`, never throw; network throw → `{status:0,code:null}`; parse `body.error`): `fetchFriends`, `fetchFriendRequests`, `sendFriendRequest`, `acceptFriendRequest`, `declineFriendRequest`, `removeFriend`. Inline `FriendSummary` (no server import) + client `FRIEND_API_ERROR_CODES` mirror with a set-equality drift test against the WP-351 server union.
+- **`useFriends.ts`** — a composable owning `friends` / `incoming` / `outgoing` / `isLoading` / `errorCode` with `load()` + `add`/`accept`/`decline`/`remove`. **Mutate-then-refetch** (authoritative, not optimistic); a failed action sets `errorCode` and leaves the lists intact.
+- **`FriendsSection.vue`** — `defineComponent` SFC (`authToken` prop): add-by-`@handle` input, incoming requests with Accept/Decline, outgoing pending **display-only** (WP-351 has no cancel route), friends list with Remove, loading/empty/error states, closed per-code error copy. **Handle-only identity on screen** — `@handle` + `displayName`, never an `accountId` (the API sends none; asserted by a no-`accountId`-in-render test). No PvP framing (§23(b)).
+- **`MyProfilePage.vue`** — mounts `<FriendsSection :auth-token="readAuthToken()" />` alongside the existing sections.
+
+**Verification:** arena-client `typecheck` (vue-tsc) 0; full arena-client suite **836/836 / 0 skipped** (+23 new: friendsApi / useFriends / FriendsSection); `pnpm -r build` 0. Layer-isolation grep clean (no engine/registry/server/boardgame-framework import); `FriendSummary` inline. Consumer-only — no server/migration/engine touch. **D-24144 Active.** **D-24026 live-verify APPLIES, operator-pending on deploy** (on `play.legendary-arena.com ?route=me`: add by @handle → outgoing; accept from the other account → both friends lists; remove → gone). Unblocks **WP-353** (friend-request emails).
+
 ### WP-351 / EC-381 Executed — Friend-request API (`/api/me/friends*`) (D-24143 Active) (2026-07-11)
 
 Packet #2 of the **Friends & Ranked Trust** subsystem: the authenticated HTTP surface over WP-350's friendship logic. Six `authenticated-session-required` routes, no UI (packet #3) and no email (packet #4).

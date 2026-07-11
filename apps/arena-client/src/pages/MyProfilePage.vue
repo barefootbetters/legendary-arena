@@ -23,6 +23,7 @@ import {
 } from '../lib/api/competitionApi';
 import { summarizeLoadout } from '../lib/loadoutSummary';
 import BillingSection from '../components/BillingSection.vue';
+import FriendsSection from '../components/FriendsSection.vue';
 import { useAuthStore } from '../stores/auth';
 
 // why: defineComponent({ setup() { return {...} } }) is required (NOT
@@ -188,7 +189,7 @@ function shareLinkForSlug(shareSlug: string): string {
 
 export default defineComponent({
   name: 'MyProfilePage',
-  components: { BillingSection },
+  components: { BillingSection, FriendsSection },
   setup() {
     const state = ref<LoadState>('loading');
     // why: cast to the locally-extended view type so the template can
@@ -1100,6 +1101,14 @@ export default defineComponent({
         </ul>
       </section>
 
+      <!-- why: WP-352 / D-24144 — the owner's Friends section (packet #3
+           of Friends & Ranked Trust). A thin client over WP-351's
+           /api/me/friends* API, threaded the owner authToken the same way
+           BillingSection is. Handle-only identity on screen (FR-2). -->
+      <section class="profile-friends">
+        <FriendsSection :auth-token="readAuthToken()" />
+      </section>
+
       <section class="profile-billing">
         <BillingSection :auth-token="readAuthToken()" />
       </section>
@@ -1168,6 +1177,7 @@ export default defineComponent({
 .profile-links,
 .profile-teams,
 .profile-loadouts,
+.profile-friends,
 .profile-billing {
   padding: 1.25rem;
   border: 1px solid rgba(0, 0, 0, 0.1);

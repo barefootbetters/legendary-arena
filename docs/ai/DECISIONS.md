@@ -28375,9 +28375,9 @@ Protect this file.
 
 ### D-24144 — Owner-profile Friends section (Friends & Ranked Trust, packet #3)
 
-**Status:** Drafted 2026-07-10; not yet landed. **BLOCKED on WP-351** (→ WP-350). Flips to Active (post-execution) when WP-352 executes.
+**Status:** Active — executed 2026-07-11 via WP-352 / EC-382 (`friendsApi.ts` + `useFriends.ts` + `FriendsSection.vue` + `MyProfilePage.vue` mount). WP-351 (packet #2) is Wired on `main`.
 
-**User-Visible Surface:** `play.legendary-arena.com` (`?route=me` → a Friends section). D-24026 live-verify applies, deferred to deploy.
+**User-Visible Surface:** `play.legendary-arena.com` (`?route=me` → a Friends section). D-24026 live-verify applies, **operator-pending on deploy** (add by @handle → outgoing; accept from the other account → both friends lists; remove → gone).
 
 **Context.** WP-351 exposes the `/api/me/friends*` API. Packet #3 is the arena-client UI that consumes it — the first user-visible surface of the subsystem.
 
@@ -28390,7 +28390,7 @@ Protect this file.
 5. **Outgoing pending is display-only** — WP-351 has no cancel-my-request route (surfaced Known gap, deferred).
 6. **Consumer-only** — no server/migration/engine touch; §23(b) no-PvP-framing copy. Block-list/privacy (packet #6) and email (packet #4) out.
 
-**Packet:** WP-352 (+ EC-382 at execution-prep). **Drafted:** 2026-07-10. **Executed:** — (blocked on WP-351)
+**Packet:** WP-352 (+ EC-382). **Drafted:** 2026-07-10. **Executed:** 2026-07-11 (arena-client vue-tsc 0; full suite 836/836; 23 new tests; no-`accountId`-in-render asserted; D-24026 live-verify operator-pending on deploy).
 
 Protect this file.
 

@@ -532,10 +532,10 @@ during implementation.
    (executed 2026-07-11, D-24143 Active; six `/api/me/friends*` routes;
    `FriendSummary` exposes `@handle`, never `accountId`).
 3. Profile UI: Friends tab, incoming / sent / pending, add-by-`@handle`
-   search — **drafted as
+   search — **executed as
    [WP-352](../docs/ai/work-packets/WP-352-friends-profile-ui.md)**
-   (2026-07-10, reserves D-24144; **blocked on WP-351**; owner `?route=me`
-   section, `@handle` only, never `accountId`). Privacy controls + block
+   (executed 2026-07-11, D-24144 Active; owner `?route=me` section,
+   `@handle` only, never `accountId`). Privacy controls + block
    list ride on packet #6's models, deferred there.
 4. Brevo transactional emails (request received, request accepted) —
    **drafted as
