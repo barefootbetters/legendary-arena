@@ -21,6 +21,7 @@
 
 import { describe, test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 
 import {
   TEAM_ERROR_CODES,
@@ -65,26 +66,15 @@ function uniqueLabel(suffix: string): string {
   return `${SUITE_RUN_ID}-${testCounter}-${suffix}`;
 }
 
-// why: ext_id uniqueness across rapid provisionPlayer calls — a
-// per-provider counter resets to 0 in every provisionPlayer call,
-// so two calls within the same millisecond generate identical
-// UUIDs. The shared globalIdCounter avoids the collision by
-// monotonically incrementing across the entire suite run.
-let globalIdCounter = 0;
-function makeIdProvider(): () => string {
-  return () => {
-    globalIdCounter += 1;
-    const seed = (Date.now() * 1000 + globalIdCounter) % 1_000_000_000_000;
-    return `00000000-0000-4000-8000-${String(seed).padStart(9, '0')}${String(globalIdCounter % 1000).padStart(3, '0')}`;
-  };
-}
-
 async function provisionPlayer(
   testPool: pg.Pool,
   labelSuffix: string,
 ): Promise<{ accountId: AccountId; playerId: string }> {
   const email = `${uniqueLabel(labelSuffix)}@example.com`;
   const authProviderId = `${uniqueLabel(labelSuffix)}-sub`;
+  // why: randomUUID gives each account a globally unique ext_id. A
+  // Date.now()-derived id collides when two accounts are provisioned in
+  // the same millisecond, tripping the ext_id UNIQUE constraint.
   const accountResult = await createPlayerAccount(
     {
       email,
@@ -93,7 +83,7 @@ async function provisionPlayer(
       authProviderId,
     },
     testPool,
-    makeIdProvider(),
+    randomUUID,
   );
   assert.ok(accountResult.ok === true, 'createPlayerAccount must succeed');
   const lookup = await testPool.query(

@@ -25,6 +25,7 @@
 
 import { describe, test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 
 import {
   getOwnerProfile,
@@ -63,21 +64,15 @@ function uniqueLabel(suffix: string): string {
   return `${SUITE_RUN_ID}-${testCounter}-${suffix}`;
 }
 
-function makeIdProvider(): () => string {
-  const counter = { value: 0 };
-  return () => {
-    counter.value += 1;
-    return `00000000-0000-4000-8000-${String(Date.now() % 1_000_000_000_000)
-      .padStart(9, '0')}${String(counter.value).padStart(3, '0')}`;
-  };
-}
-
 async function provisionAccount(
   testPool: pg.Pool,
   labelSuffix: string,
 ): Promise<AccountId> {
   const email = `${uniqueLabel(labelSuffix)}@example.com`;
   const authProviderId = `${uniqueLabel(labelSuffix)}-sub`;
+  // why: randomUUID gives each account a globally unique ext_id. A
+  // Date.now()-derived id collides when two accounts are provisioned in
+  // the same millisecond, tripping the ext_id UNIQUE constraint.
   const result = await createPlayerAccount(
     {
       email,
@@ -86,7 +81,7 @@ async function provisionAccount(
       authProviderId,
     },
     testPool,
-    makeIdProvider(),
+    randomUUID,
   );
   assert.ok(result.ok === true, 'createPlayerAccount must succeed');
   return result.value.accountId;
