@@ -460,7 +460,8 @@ for every pair (A, B) in H with A != B:  accepted_friendship(A, B) = true
 i.e. `H` forms a complete friendship clique. Full-clique — not merely "friends
 of the lobby host" — prevents loose collusion rings around a single ringleader
 and makes coordination visible to later analytics. It translates directly to a
-query with no interpretation layer.
+query with no interpretation layer. Cost is a non-issue: co-op crews are small,
+so the pairwise check is `O(n²)` over a handful of human seats.
 
 *Snapshot (FR-7).* Eligibility is evaluated **exactly once, at match start**,
 and stored as immutable run metadata. Subsequent friend / unfriend / block
@@ -504,11 +505,12 @@ and DB-level guards against self / duplicate / cross requests.
 
 **Non-goals (explicitly out of the first subsystem).** Real-time presence /
 online status, chat or direct messaging, and a social activity feed — later
-capabilities the graph *enables*, not part of the initial build. Also a
-permanent non-goal: **social reputation** — no endorsements, likes, trust
-scores, karma, or reputation rankings. Friendship stays a **binary** relation
-(this also keeps the graph clear of the cumulative-count ranking inputs §25(a)
-forbids).
+retention capabilities the graph *enables* (alongside looking-for-game,
+recently-played-with, and Discord community integration, per FR-1), not part of
+the initial build. Also a **permanent** non-goal: **social reputation** — no
+endorsements, likes, trust scores, karma, or reputation rankings. Friendship
+stays a **binary** relation (this also keeps the graph clear of the
+cumulative-count ranking inputs §25(a) forbids).
 
 **Open question (owned by the ranked-submission WP, not this charter).** FR-7
 freezes eligibility against *social-graph* changes, but does an admin integrity
