@@ -269,6 +269,31 @@ traceable by eye, and hand-serviceable. Treat it as the educational counterpart,
 
 Repo (private): <https://github.com/barefootbetters/stem-diorama-kit>
 
+## 3D printing — material standard
+
+Both projects print functional parts before any tooling exists, so the
+filament choice is standardized: **PETG, recommended across the board.** It
+prints reliably on school- and hobby-class machines without an enclosure, and
+it's tough where these parts actually get stressed — magnet press-fit pockets,
+snap-fit features, screw bosses, and servo mounts, where PLA is too brittle or
+creeps under sustained load. A translucent color suits SDK-1's
+everything-visible ethos.
+
+- **Forge P1 bench:** Smart Base pucks and dock-pocket mocks — PETG preferred
+  (magnet pockets, pin press-fits); PLA is acceptable for one-off bench parts.
+- **SDK-1 parts** (tile base, LED strip holder, Nano mount, servo bracket):
+  PETG recommended; PLA stays acceptable for the flat, low-stress parts —
+  never for the snap-fit LED tray or the servo bracket. TPU/flexible is never
+  appropriate; ABS only with an enclosure; PC and nylon are above a school
+  setting's skill ceiling.
+- **Baseline settings:** 0.2 mm layers, 20–25 % gyroid/cubic infill, 3–4
+  walls around pockets and holes, no supports at the intended orientations,
+  40–60 mm/s.
+
+Full per-part guidance (materials, settings, orientations, fastener posture)
+lives in the SDK-1 repo:
+[`docs/3d-printing.md`](https://github.com/barefootbetters/stem-diorama-kit/blob/main/docs/3d-printing.md).
+
 ## Canonical docs (private repo)
 
 <https://github.com/barefootbetters/legendary-forge>
