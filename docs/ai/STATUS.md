@@ -7,6 +7,19 @@
 
 ## Current State
 
+### WP-351 / EC-381 Executed — Friend-request API (`/api/me/friends*`) (D-24143 Active) (2026-07-11)
+
+Packet #2 of the **Friends & Ranked Trust** subsystem: the authenticated HTTP surface over WP-350's friendship logic. Six `authenticated-session-required` routes, no UI (packet #3) and no email (packet #4).
+
+**What landed:**
+- **`friendships.routes.ts`** — `registerFriendshipRoutes(router, pool, deps)` registering `POST /api/me/friends/requests`, `GET /api/me/friends`, `GET /api/me/friends/requests`, `POST …/requests/:handle/accept`, `POST …/requests/:handle/decline`, `DELETE /api/me/friends/:handle`. Each is **auth-first** (`requireAuthenticatedSession`; guest → `unauthorized` 401), sets `Cache-Control: no-store` as its first statement, and maps WP-350's `FriendshipResult` codes to HTTP via a locked table. The acting identity is always session-resolved, never body-supplied.
+- **Handle bridge** — resolves the public `@handle` → internal `AccountId` inbound (`findAccountByHandle`), and the acting account must have a claimed handle (`handle_required` 409); an unresolved target → `handle_not_found` 404.
+- **`FriendSummary` wire projection** — a friend is `{ handle, displayName, status, direction, requestedAt, respondedAt }` with **no** `accountId`/`ext_id`/`player_id` (FR-2). Enrichment is one `ext_id = ANY($1)` round-trip per list route (no N+1).
+- **`FriendApiErrorCode`** closed union (11) + canonical `readonly` array + drift test.
+- **Wiring** — one `registerFriendshipRoutes(server.router, pool, { requireAuthenticatedSession, verifier, accountResolver })` in `server.mjs`. **6 `api-endpoints.md` rows** added same-commit (D-11804).
+
+**Verification:** `pnpm -r build` 0; full serialized DB-wired server suite **890/890 / 0 skipped** (876 baseline + 14 new). WP-350's `friendships.{types,logic}.ts` + migration 028 are **byte-identical** (`git diff origin/main` empty — contract-file lock held). No new cross-layer import. **D-24143 Active.** D-24026 live-verify is **N/A** (no UI; deferred to packet #3). Unblocks **WP-352** (Friends tab UI) and **WP-353** (friend-request emails).
+
 ### WP-350 / EC-380 Executed — Friendships data model + status machine + mutual-clique helper (D-24142 Active) (2026-07-11)
 
 Packet #1 of the **Friends & Ranked Trust** subsystem ([`wiki/profile-login.md` §Friends & Ranked Trust Layer](../../wiki/profile-login.md), FR-1…FR-9) ships as pure server data + logic — **library-only, no HTTP endpoint and no client**. The API (packet #2, WP-351) and Friends-tab UI (packet #3) consume this contract; the ranked-eligibility gate (packet #5) consumes the clique helper.

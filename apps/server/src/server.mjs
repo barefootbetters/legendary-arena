@@ -28,6 +28,7 @@ import { registerCompetitionRoutes } from './competition/competition.routes.js';
 import { registerOwnerProfileRoutes } from './profile/ownerProfile.routes.js';
 import { registerAvatarUploadRoutes } from './profile/avatarUpload.routes.js';
 import { registerLoadoutLibraryRoutes } from './profile/loadoutLibrary.routes.js';
+import { registerFriendshipRoutes } from './friendships/friendships.routes.js';
 import { registerProfileRoutes } from './profile/profile.routes.js';
 import { registerTeamRoutes } from './teams/team.routes.js';
 import { registerMatchGateRoutes } from './match/matchGate.routes.js';
@@ -799,6 +800,16 @@ export async function startServer() {
   // the guest slug read takes no auth. Saved loadouts are decorative
   // (Vision §19b) — no leaderboard / competitive-score surface.
   registerLoadoutLibraryRoutes(server.router, pool, {
+    requireAuthenticatedSession,
+    verifier,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
+  });
+
+  // why: WP-351 / D-24143 — wire the six /api/me/friends* routes on the
+  // same long-lived pool. The HTTP surface over WP-350's friendship logic
+  // (packet #2 of Friends & Ranked Trust); same caller-injected auth deps
+  // as registerOwnerProfileRoutes / registerLoadoutLibraryRoutes.
+  registerFriendshipRoutes(server.router, pool, {
     requireAuthenticatedSession,
     verifier,
     accountResolver: verifier === undefined ? undefined : accountResolver,
