@@ -28540,7 +28540,7 @@ Protect this file.
 
 ### D-24152 — Match-invites client UI (Friends & Ranked Trust, WP-358 client follow-on)
 
-**Status:** Drafted 2026-07-11; not yet landed. **BLOCKED on WP-358** (the API). Flips to Active when WP-360 executes.
+**Status:** Active (post-execution) 2026-07-11 (WP-360 / EC-390). Executed as the **invitee-side core** (operator scope decision 2026-07-11); the inviter-side "Invite a friend" trigger + the full seat-selecting join-from-invite are a **deferred follow-on** (they need the in-match play-view context + the lobby seat/credentials flow). `D-24026` live-verify operator-pending on deploy.
 
 **User-Visible Surface:** `play.legendary-arena.com` (an "Invite a friend" control on the lobby + a "Pending game invites" panel on `?route=me`).
 

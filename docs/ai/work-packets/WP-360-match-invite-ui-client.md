@@ -1,5 +1,7 @@
 # WP-360 — Match Invites UI: Invite a Friend + Pending Invites (Arena Client)
 
+> **Execution scope note (D-24152, operator-confirmed 2026-07-11):** executed as the **invitee-side core** — `matchInvitesApi` + `useMatchInvites` + a `?route=me` `MatchInvitesSection` (list pending invites, Accept → hand off to the Lobby, Decline) + mount. The **inviter-side "Invite a friend" trigger** and the **full seat-selecting join-from-invite** are **deferred to a follow-on**: verification of the lobby/play code showed `LobbyView` creates→joins→navigates immediately (no persistent `matchId` to invite from — the natural site is the in-match play view), and joining needs the `joinMatch` seat + credentials flow, not a simple navigate. The §C/§D LobbyView control below is superseded by that decision.
+
 **Status:** Draft 2026-07-11 · **BLOCKED on WP-358** (the four `/api/match/invites` + `/api/me/match-invites` endpoints must be Wired; WP-358 is drafted, not executed). **Standard two-session lane** (new client contract wrapper + new component + a lobby-surface edit + a user-visible surface). Pairs with **EC-390** (execution-prep). Reserves **D-24152** (lands at execution).
 **Primary Layer:** App (`apps/arena-client`)
 **User-Visible Surface:** `play.legendary-arena.com` — an "Invite a friend" control on the match/lobby surface + a **Pending game invites** list on `?route=me` (Join / Decline). **D-24026 live-verify APPLIES.**
