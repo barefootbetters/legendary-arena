@@ -1,5 +1,5 @@
 <script lang="ts">
-import { defineComponent, type PropType } from 'vue';
+import { defineComponent, toRaw, type PropType } from 'vue';
 import type { UIDisplayEntry } from '@legendary-arena/game-engine';
 import { useVictoryPileComposition } from '../../composables/useVictoryPileComposition';
 
@@ -7,6 +7,14 @@ import { useVictoryPileComposition } from '../../composables/useVictoryPileCompo
  * Your victory pile — renders the active player's
  * `players[ownIndex].{victoryCards, victoryVP}` plus composition counters
  * derived via {@link useVictoryPileComposition} per D-12906.
+ *
+ * The full card list is NOT rendered inline: the pile grows one card per
+ * defeated villain / rescued bystander, so an inline list would push the
+ * mat taller every turn and force a page scroll late-game. Instead the
+ * always-visible summary is the count + VP + composition counters, and the
+ * full contents open on demand in the shared `PileBrowseModal` via the
+ * `open` emit — the same collapse pattern the KO pile and other shared
+ * piles already use.
  *
  * Per the EC-132 §2 SFC authoring whitelist: this is a tested non-leaf
  * composer that USES a composable, so it MUST use
@@ -19,6 +27,7 @@ import { useVictoryPileComposition } from '../../composables/useVictoryPileCompo
  */
 export default defineComponent({
   name: 'YourVictoryPile',
+  emits: ['open'],
   props: {
     victoryCards: {
       type: Array as PropType<readonly UIDisplayEntry[]>,
@@ -41,7 +50,7 @@ export default defineComponent({
       default: 0,
     },
   },
-  setup(props) {
+  setup(props, { emit }) {
     function buildComposition(): ReturnType<typeof useVictoryPileComposition> {
       // why: D-12906 — derive from card effects in the loaded scenario
       // via the prefix-heuristic in `useVictoryPileComposition`. The
@@ -50,7 +59,18 @@ export default defineComponent({
       return useVictoryPileComposition([...props.victoryCards]);
     }
 
-    return { buildComposition };
+    function onBrowse(): void {
+      // why: emit the source `victoryCards` array by JS reference via
+      // `toRaw()` (no clone), mirroring KOPile.onBrowse — Vue wraps props
+      // in a deep-readonly proxy, and `toRaw` reveals the underlying array
+      // the engine projection built, preserving order for the modal.
+      emit('open', {
+        pileLabel: 'Your Victory Pile',
+        cards: toRaw(props.victoryCards),
+      });
+    }
+
+    return { buildComposition, onBrowse };
   },
 });
 </script>
@@ -66,19 +86,19 @@ export default defineComponent({
       <span data-testid="play-your-victory-count">{{ victoryCards.length }} cards</span> /
       <span data-testid="play-your-victory-vp">{{ victoryVp }} VP</span>
     </header>
-    <ol
+    <!-- why: the full list is collapsed behind a browse affordance so the
+         pile does not grow the mat vertically as victory cards accumulate
+         (avoids a late-game page scroll). Clicking emits `open`; the page
+         feeds the cards to the shared PileBrowseModal, same as the KO pile. -->
+    <button
       v-if="victoryCards.length > 0"
-      class="your-victory-pile__list"
-      data-testid="play-your-victory-list"
+      type="button"
+      class="your-victory-pile__browse"
+      data-testid="play-your-victory-browse"
+      @click="onBrowse"
     >
-      <li
-        v-for="entry in victoryCards"
-        :key="entry.extId"
-        class="your-victory-pile__entry"
-      >
-        {{ entry.display.name }}
-      </li>
-    </ol>
+      View all ({{ victoryCards.length }}) ▼
+    </button>
     <p v-else class="your-victory-pile__empty" data-testid="play-your-victory-empty">
       No victories yet.
     </p>
@@ -116,13 +136,9 @@ export default defineComponent({
   border: 1px solid var(--color-foreground, #999);
 }
 
-.your-victory-pile__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+.your-victory-pile__browse {
+  align-self: flex-start;
+  padding: 0.25rem 0.5rem;
 }
 
 .your-victory-pile__composition {
