@@ -81,16 +81,23 @@ export default defineComponent({
     <div class="your-deck-discard__discard" data-testid="play-your-discard">
       <header>Your Discard</header>
       <p class="your-deck-discard__count">[{{ discardCount }} — face-up]</p>
-      <!-- why: the discard top card shows as a compact name line instead of an
-           inline card-tile image so the deck/discard box stays short; the full
-           face-up contents (with images) remain one click away via "View all". -->
-      <p
+      <!-- why: the discard top card is shown face-up as a thumbnail + name so
+           the player can see what will reshuffle; the full face-up contents
+           remain available via "View all". -->
+      <div
         v-if="discardTopCard !== null && discardTopCard !== undefined"
         class="your-deck-discard__top"
         data-testid="play-your-discard-top"
       >
-        Top: {{ discardTopCard.display.name }}
-      </p>
+        <CardTile
+          :display="discardTopCard.display"
+          size="sm"
+          :show-cost="false"
+        />
+        <span class="your-deck-discard__top-label">{{
+          discardTopCard.display.name
+        }}</span>
+      </div>
       <p
         v-else
         class="your-deck-discard__empty"
@@ -158,8 +165,13 @@ export default defineComponent({
 }
 
 .your-deck-discard__top {
-  margin: 0;
-  font-size: 0.8rem;
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.your-deck-discard__top-label {
+  font-size: 0.75rem;
   font-weight: 500;
 }
 

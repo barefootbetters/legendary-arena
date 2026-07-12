@@ -14,10 +14,7 @@ describe('YourDeckDiscardZone (WP-129)', () => {
     assert.match(deck.text(), /\[18 — face-down\]/);
   });
 
-  test('renders discard count + top card name as a compact line when present', () => {
-    // why: the top card is a compact "Top: <name>" text line (no inline
-    // card-tile image) so the deck/discard box stays short; the full face-up
-    // contents with images remain available via the "View all" expand.
+  test('renders discard count + top card thumbnail when present', () => {
     const wrapper = mount(YourDeckDiscardZone, {
       props: {
         deckCount: 18,
@@ -35,8 +32,9 @@ describe('YourDeckDiscardZone (WP-129)', () => {
     });
     const top = wrapper.find('[data-testid="play-your-discard-top"]');
     assert.equal(top.exists(), true);
-    assert.match(top.text(), /Top: S\.H\.I\.E\.L\.D\. Officer/);
-    assert.equal(top.find('[data-testid="card-tile"]').exists(), false);
+    const tile = top.find('[data-testid="card-tile"]');
+    assert.equal(tile.exists(), true);
+    assert.equal(tile.attributes('title'), 'S.H.I.E.L.D. Officer');
   });
 
   test('renders Empty placeholder when discardTopCard is null', () => {
