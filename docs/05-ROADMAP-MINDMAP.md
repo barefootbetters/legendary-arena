@@ -118,6 +118,7 @@ mindmap
         ["WP-049 ✅ PAR simulation engine"]
         ["WP-050 ✅ PAR artifact storage and indexing"]
         ["WP-051 ✅ PAR publication and server gate"]
+        ["WP-365 📝 final-score VP by printed card VP; flat table demoted to fallback (live capture matchId sGTM7LWSIHy 2026-07-12 — victory pile Super-Skrull vp2 + Skrull-Shapeshifters vp2 + Juggernaut vp4 = printed 8 reported as villainVP 3, total 45 vs correct 50; root cause: computeFinalScores WP-020 uses flat VP_VILLAIN=VP_HENCHMAN=1/VP_TACTIC=5 and never reads printed vp — G.cardStats carries attack/recruit/cost/fightCost but NOT vp, registry VillainCardSchema.vp/MastermindSchema.vp never plumbed into G; also feeds parScoring.logic → can crown the wrong multiplayer winner; adds immutable setup snapshot G.cardVictoryPoints sibling to cardStats built in buildInitialGameState via total/defensive normalizePrintedVictoryPoints nullable string|number null/NaN/non-int→omit, computeFinalScores reads G.cardVictoryPoints[cardId] ?? VP_<category> per villain/henchman + tacticVP = tacticsDefeated × (mastermind vp ?? VP_TACTIC), flat constants DEMOTED to fallbacks values unchanged so null-vp cards score sanely; bystander stays 1 wound stays −1, PlayerScoreBreakdown shape/field-names unchanged value-only no consumer break; determinism conditional-spread/omit-when-empty per WP-290 → EMPTY_REGISTRY fixtures byte-identical sentinel re-pin execution-measured expected none; out of scope: no retro-rescore of historical DB rows, no PAR-weight change, no registry-schema change; standard two-session lane §6 scoring/competitive exclusion; drafted 2026-07-11, READY; EC-392 at execution-prep; D-24157)"]
 
       Beta-Launch Pillar
         ["WP-052 ✅ Player identity and replay ownership"]
@@ -199,6 +200,9 @@ mindmap
         ["WP-279 ✅ Cards tab add-to-loadout (lifts useLoadoutDraft from LoadoutBuilder.vue to App.vue as ONE shared instance — lifted not singletonized, instantiated post-registry-load mirroring useSetupFromUrl; CardDetail.vue gains a contextual add/remove button for the 5 composition types only, hero→addHeroGroup(card.extId)/scheme/mastermind set-clear/villain/henchman add-remove, Always-Leads groups not removable; new floating LoadoutTray.vue pill; pure loadoutCardActions.ts helper carries the tested cardType→slot invariant; no engine/contract/MatchSetupConfig change, consumes existing UseLoadoutDraftApi + FlatCard.extId D-24018; D-24054)"]
         ["WP-288 ✅ Cards tab 'View loadout as cards' gallery (reverse of WP-279 — render the loaded loadout/LAGN as a gallery via a filter MODE over the Cards tab, not a dropdown/new tab/second grid; loadoutGalleryActive state + a final inert-when-off narrowing stage in applyFilters mirroring the WP-270 mechanic stage, navigateToLoadoutGallery mirroring navigateToCard, dismissible inline banner; '🖼 View as cards' on LoadoutBuilder (disabled when empty) + a secondary tray action, both emitting view-as-cards; pure loadoutGalleryCards.ts helper — compositionExtIdSet skips empty single slots + for...of, isCardInLoadoutComposition by card.extId D-24018 — carries the composition→member-card expansion as the unit-tested invariant; no engine/registry/server/contract/loader/card-data change, CardGrid untouched; D-24072)"]
         ["WP-291 ✅ Loadout tab 'Load LAGN' import (closes the LAGN export/import round-trip surfaced after WP-288 — the tab could Download LAGN but the only importer 'Load JSON' validates the MATCH-SETUP schema so a LAGN file lagn_version/setup was rejected; adds a SEPARATE 'Load LAGN (paste or file)' control beside Load JSON, operator chose two explicit controls over auto-detect; pure loadoutLagnImport.ts parseLagnLoadout → the published @legendary-arena/lagn validate → reverse WP-245 compositionToLagnSetup into the 5 composition ext_id fields + 4 counts + playerCount, shield_officers_count→officersCount the only rename, ids already set-qualified D-24018 no registry lookup; applyLagnImport REPLACES the draft via the existing setters resetDraft→set*/add*/setCount/setPlayerCount, a non-LAGN file shows validator errors and preserves the draft; no composable/contract/loadFromJson/App.vue/gallery/CardGrid change; Lightweight Lane D-24028; D-24075)"]
+        ["WP-361 📝 Current-match loadout as LAGN — GET /api/match/:matchId/lagn (server; read-only Tier-1 LAGN endpoint + blob-read carve-out extension so a live game's loadout is fetchable as a LAGN document; drafted 2026-07-11 via PR #695; EC-391 at execution-prep; D-24153)"]
+        ["WP-362 📝 Loadout tab: open a LAGN from the URL ?lagn= (registry viewer; deep-link ingest into the Loadout tab so a shared ?lagn= URL renders that loadout; drafted 2026-07-11 via PR #695; EC-392 at execution-prep; D-24154)"]
+        ["WP-363 📝 In-match 'View loadout in Registry Viewer' link (arena client; a link from a live match to the WP-362 ?lagn= deep-link; ⛔ BLOCKED on WP-361 + WP-362; drafted 2026-07-11 via PR #695; EC-393 at execution-prep; D-24155)"]
 
       Phase 8 — Interactive Board Layout
         ["WP-128 ✅ UIState board projections"]
@@ -506,13 +510,13 @@ mindmap
 | Pre-Planning System | 5/5 | — |
 | Post-Phase-6 Hygiene | 5/5 | — |
 | Phase 7 — Beta, Launch & PAR | 6/6 | — |
-| Scoring & PAR Pipeline | 4/4 | — |
+| Scoring & PAR Pipeline | 4/5 | 1 open |
 | Beta-Launch Pillar | 5/5 | — |
 | Engine Hardening | 2/2 | — |
 | Client Integration Cluster | 21/21 | — |
 | Auth Stack & Profile Surface | 15/15 | — |
 | Engine + Server Wiring & Leaderboard HTTP | 3/3 | — |
-| Registry Viewer Enhancements | 23/23 | — |
+| Registry Viewer Enhancements | 23/26 | 3 open |
 | Phase 8 — Interactive Board Layout | 3/3 | — |
 | G-State Extensions | 4/4 | — |
 | Monetization Stack | 3/3 | — |
@@ -543,9 +547,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **350/354 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 3 open |
+| **Total** | **350/358 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 7 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 4):** WP-042.1 ⏸ blocked; WP-345 open; WP-356 open; WP-364 open.
+**Open / blocked WPs (derived from WORK_INDEX, 8):** WP-042.1 ⏸ blocked; WP-345 open; WP-356 open; WP-361 open; WP-362 open; WP-363 open; WP-364 open; WP-365 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

@@ -28615,3 +28615,23 @@ Protect this file.
 **Packet:** WP-364 (+ EC-391 at execution-prep). **Drafted:** 2026-07-11. **Executed:** —
 
 Protect this file.
+
+### D-24157 — Final-score VP by printed card VP (villains / henchmen / masterminds); flat table demoted to fallback
+
+**Status:** Drafted 2026-07-11; not yet landed. Flips to Active when WP-365 executes.
+
+**User-Visible Surface:** `play.legendary-arena.com` (end-of-match victory summary) + legends leaderboard (via the PAR pipeline that consumes `computeFinalScores`).
+
+**Context.** `computeFinalScores` (WP-020) awards a flat VP per victory-pile card (`VP_VILLAIN = VP_HENCHMAN = VP_BYSTANDER = 1`, `VP_TACTIC = 5`, `VP_WOUND = −1`) and never reads each card's printed `vp`. `G.cardStats` carries attack/recruit/cost/fightCost but not `vp`, so the engine has no per-card VP at scoring time; the registry has `VillainCardSchema.vp` / `MastermindSchema.vp` (nullable, `string|number`) but never plumbs it into `G`. Live capture (`matchId sGTM7LWSIHy`, 2026-07-12): Super-Skrull (2) + Skrull Shapeshifters (2) + Juggernaut (4) = printed 8 reported as `villainVP 3`; total 45 vs correct 50. `computeFinalScores` also feeds `parScoring.logic.ts` → the understatement reaches the competitive/legends surface and can mis-rank a multiplayer winner.
+
+**Decision.** Plumb printed VP into `G` at setup and score by it. Locks:
+
+1. **New immutable setup snapshot** `G.cardVictoryPoints: Record<CardExtId, number>` (sibling to `cardStats`), built in `buildInitialGameState.ts` from the resolved registry records for VP-bearing cards (villain / henchman / mastermind) via a total/defensive `normalizePrintedVictoryPoints` (parse `string|number`; `null` / `NaN` / non-integer / negative → omit → fallback). Never mutated after setup.
+2. **Scoring reads printed VP with a fallback:** per villain/henchman card, `G.cardVictoryPoints[cardId] ?? VP_<category>`; `tacticVP = tacticsDefeated.length × (G.cardVictoryPoints[mastermindExtId] ?? VP_TACTIC)`. The flat constants are **demoted to documented fallbacks** (values unchanged) so a null-`vp` card (e.g. an `mgtg` MCU-Guardians mastermind) never scores 0 by accident. Bystander stays 1 (rule), wound stays −1 (penalty).
+3. **No consumer contract break:** `PlayerScoreBreakdown` field names + shape are unchanged — value-only fix.
+4. **Determinism:** scoring stays a derived view (no G write); the snapshot is conditional-spread/omit-when-empty (WP-290 pattern) so no-`vp` games/fixtures stay byte-identical. Sentinel re-pin execution-measured (expected none under `EMPTY_REGISTRY`).
+5. **Out of scope:** no retro-rescore of historical `competitive_scores` rows (new matches score correctly going forward); no PAR weight/formula change; no registry-schema change; no per-card VP-modifier-text ("worth +N VP") support.
+
+**Packet:** WP-365 (+ EC-392 at execution-prep). **Drafted:** 2026-07-11. **Executed:** —
+
+Protect this file.
