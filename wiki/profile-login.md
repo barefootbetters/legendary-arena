@@ -596,8 +596,13 @@ during implementation.
    submission over `readSeatAccounts`, storing `is_ranked_eligible` on
    `competitive_scores` (solo vacuously eligible; fail-safe to Casual); the
    public ranked board filters it, the owner My-Scores read stays unfiltered.
-   The charter's *lobby-invite-flow* half is **split into a separate future
-   WP** (depends on multiplayer-lobby UX).
+   The charter's *lobby-invite-flow* half is **drafted as
+   [WP-358](../docs/ai/work-packets/WP-358-match-friend-invite-server.md)**
+   (2026-07-11, reserves D-24150; **READY**): the create/join lobby exists,
+   so a seated player invites an **accepted friend** by `@handle` (a
+   `match_invites` record + a fail-open email); accept returns the `matchId`
+   and the client joins via the existing `POST /api/match/join`. Friends-only
+   (anti-spam by construction); client invite UI is a follow-on.
 6. Abuse controls — **executed as
    [WP-355](../docs/ai/work-packets/WP-355-friend-abuse-controls.md)**
    (executed 2026-07-11, D-24147 Active): a separate `legendary.player_blocks`

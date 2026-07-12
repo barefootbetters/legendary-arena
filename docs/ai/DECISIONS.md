@@ -28502,3 +28502,26 @@ The client `?route=me` opt-out toggle is a separate small follow-on.
 **Packet:** WP-357 (+ EC-387 at execution-prep). **Drafted:** 2026-07-11. **Executed:** —
 
 Protect this file.
+
+### D-24150 — Match friend-invites (Friends & Ranked Trust, packet #5 lobby-invite-flow half)
+
+**Status:** Drafted 2026-07-11; not yet landed. **READY (not blocked — all hard-deps Done).** Flips to Active (post-execution) when WP-358 executes.
+
+**User-Visible Surface:** email (an invite email) + the future client invite/pending-invites UI.
+
+**Context.** WP-354 split the charter's packet #5 into the ranked-gate (shipped) + the lobby-invite-flow. Verification found the create/join lobby (`POST /api/match/create`+`/join`) already exists, so the invite layer is buildable now.
+
+**Decision.** A player seated in a match invites an accepted friend by `@handle`; the friend gets a fail-open email + a persistent pending invite; accept hands the client back to the existing join. Locks:
+
+1. **New `legendary.match_invites` table** (migration 032; `player_id` FKs, unique `(match_id, invitee_id)`, closed status `('pending','accepted','declined')`; `declined→pending` re-invite is an UPDATE, WP-350 precedent).
+2. **Friends-only** — `createMatchInvite` requires `getFriendshipStatus === 'accepted'` (`not_friends` else). Anti-spam + block-respecting **by construction** (a block severs friendship; no separate rate limit). Non-friends use the out-of-band shareable link.
+3. **Inviter must be seated** in the match (`readSeatAccounts` contains the inviter).
+4. **Accept returns `{matchId}`** — the client joins via the existing `POST /api/match/join`; this packet performs **no** boardgame.io join and mints **no** credentials.
+5. **Four `authenticated-session-required` endpoints** (`POST /api/match/invites`, `GET /api/me/match-invites`, `POST …/:matchId/{accept,decline}`) returning a `MatchInviteView` (`matchId` + inviter `handle`/`displayName` + `status`, **never** `accountId`, FR-2).
+6. **Fail-open fire-and-forget email** `notifyMatchInvite` mirroring WP-353 (`BREVO_MATCH_INVITE_TEMPLATE_ID`, unconfigured ⇒ no-op; params carry handle/displayName, no `accountId`).
+
+The client invite/pending-invites UI + any invite rate-limit/opt-out are separate follow-ons.
+
+**Packet:** WP-358 (+ EC-388 at execution-prep). **Drafted:** 2026-07-11. **Executed:** —
+
+Protect this file.
