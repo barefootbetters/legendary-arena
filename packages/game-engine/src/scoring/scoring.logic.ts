@@ -7,7 +7,8 @@
  * state — results are never stored in G during MVP.
  *
  * No boardgame.io imports. No .reduce() with branching. No registry
- * access. No G.cardStats reads.
+ * access. Reads the G.cardVictoryPoints setup snapshot for printed VP
+ * (D-24157); still reads no G.cardStats.
  */
 
 import type { LegendaryGameState } from '../types.js';
@@ -42,7 +43,14 @@ export function computeFinalScores(
   // why: MVP awards tactic VP to every player because WP-019 does not
   // track which player defeated each tactic. Per-player attribution is
   // a future packet.
-  const tacticVP = gameState.mastermind.tacticsDefeated.length * VP_TACTIC;
+  // why: D-24157 — each defeated tactic scores the mastermind's PRINTED vp (read
+  // from the G.cardVictoryPoints setup snapshot by the mastermind's baseCardId),
+  // falling back to VP_TACTIC only when the mastermind has no printed vp (e.g. a
+  // null-vp mastermind). Magneto (vp 5) matches the old flat value; other
+  // masterminds no longer misreport.
+  const mastermindPrintedVp =
+    gameState.cardVictoryPoints?.[gameState.mastermind.baseCardId] ?? VP_TACTIC;
+  const tacticVP = gameState.mastermind.tacticsDefeated.length * mastermindPrintedVp;
 
   const players: PlayerScoreBreakdown[] = [];
 
@@ -50,27 +58,32 @@ export function computeFinalScores(
     const zones = gameState.playerZones[playerId];
     if (!zones) continue;
 
-    // --- Victory pile classification ---
-    let villainCount = 0;
-    let henchmanCount = 0;
+    // --- Victory pile scoring (printed VP per card; D-24157) ---
+    // why: D-24157 — villains and henchmen score their PRINTED vp from the
+    // G.cardVictoryPoints setup snapshot, falling back to the flat category
+    // constant only when a card carries no printed vp (a null-vp card must never
+    // score 0). Bystanders stay a flat count (1 VP each by rule; supply cards
+    // carry no per-card vp).
+    let villainVP = 0;
+    let henchmanVP = 0;
     let bystanderCount = 0;
 
     for (const cardId of zones.victory) {
       const cardType = gameState.villainDeckCardTypes[cardId];
 
       if (cardType === 'villain') {
-        villainCount++;
+        villainVP += gameState.cardVictoryPoints?.[cardId] ?? VP_VILLAIN;
       } else if (cardType === 'henchman') {
-        henchmanCount++;
+        henchmanVP += gameState.cardVictoryPoints?.[cardId] ?? VP_HENCHMAN;
       } else if (cardType === 'bystander' || cardId === BYSTANDER_EXT_ID) {
         // why: bystanders in victory come from two sources — villain-deck
         // bystanders (tracked in G.villainDeckCardTypes) and rescued
         // supply-pile bystanders (using BYSTANDER_EXT_ID from WP-017).
-        // Both contribute VP.
+        // Both contribute a flat VP_BYSTANDER.
         bystanderCount++;
       }
       // why: cards not in G.villainDeckCardTypes (undefined) or classified
-      // as scheme-twist / mastermind-strike contribute 0 VP in MVP.
+      // as scheme-twist / mastermind-strike contribute 0 VP.
       // Heroes, starting cards, and other non-deck cards score 0.
     }
 
@@ -102,8 +115,9 @@ export function computeFinalScores(
     }
 
     // --- Build breakdown ---
-    const villainVP = villainCount * VP_VILLAIN;
-    const henchmanVP = henchmanCount * VP_HENCHMAN;
+    // why: D-24157 — villainVP / henchmanVP are accumulated per-card in the
+    // victory-pile loop above (printed vp with a flat fallback); only bystanderVP
+    // stays a flat count × VP_BYSTANDER here.
     const bystanderVP = bystanderCount * VP_BYSTANDER;
     // why: 0 * -1 produces -0 in JavaScript; coerce to +0 for clean
     // JSON serialization and strict equality comparisons

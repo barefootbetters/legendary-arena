@@ -39,6 +39,7 @@ function createMockGameState(options: {
   villainDeckCardTypes?: Record<string, string>;
   tacticsDefeated?: string[];
   ko?: string[];
+  cardVictoryPoints?: Record<string, number>;
 }): LegendaryGameState {
   const config = {
     schemeId: 'test-scheme',
@@ -84,6 +85,11 @@ function createMockGameState(options: {
     },
     turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
     cardStats: {},
+    // why: D-24157 — omit-when-empty (absent ≡ fallback), matching the setup
+    // conditional-spread; existing tests pass no map and exercise the fallback path.
+    ...(options.cardVictoryPoints
+      ? { cardVictoryPoints: options.cardVictoryPoints as Record<CardExtId, number> }
+      : {}),
     city: initializeCity(),
     hq: initializeHq(),
     lobby: {
@@ -297,5 +303,117 @@ describe('computeFinalScores', () => {
       afterJson,
       'G must not be mutated by computeFinalScores',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Printed-VP scoring (WP-365 / D-24157)
+// ---------------------------------------------------------------------------
+
+describe('computeFinalScores — printed VP (D-24157)', () => {
+  it('scores villains by their printed vp (the sGTM7LWSIHy fix: 2+2+4 = 8, not 3)', () => {
+    const gameState = createMockGameState({
+      playerZones: {
+        '0': {
+          deck: [], hand: [], discard: [], inPlay: [],
+          victory: ['v-super-skrull', 'v-shapeshifters', 'v-juggernaut'],
+        },
+      },
+      villainDeckCardTypes: {
+        'v-super-skrull': 'villain',
+        'v-shapeshifters': 'villain',
+        'v-juggernaut': 'villain',
+      },
+      cardVictoryPoints: {
+        'v-super-skrull': 2,
+        'v-shapeshifters': 2,
+        'v-juggernaut': 4,
+      },
+    });
+
+    const result = computeFinalScores(gameState);
+    assert.equal(result.players[0]!.villainVP, 8);
+  });
+
+  it('falls back to VP_VILLAIN for a villain with no printed vp (never scores 0)', () => {
+    const gameState = createMockGameState({
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [], victory: ['v-known', 'v-null-vp'] },
+      },
+      villainDeckCardTypes: { 'v-known': 'villain', 'v-null-vp': 'villain' },
+      // v-null-vp is absent from the map → fallback 1; v-known → printed 4
+      cardVictoryPoints: { 'v-known': 4 },
+    });
+
+    const result = computeFinalScores(gameState);
+    assert.equal(result.players[0]!.villainVP, 5); // 4 (printed) + 1 (fallback)
+  });
+
+  it('scores henchmen by their printed vp with a fallback', () => {
+    const gameState = createMockGameState({
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [], victory: ['h-a', 'h-b'] },
+      },
+      villainDeckCardTypes: { 'h-a': 'henchman', 'h-b': 'henchman' },
+      cardVictoryPoints: { 'h-a': 3 }, // h-b absent → fallback 1
+    });
+
+    const result = computeFinalScores(gameState);
+    assert.equal(result.players[0]!.henchmanVP, 4); // 3 + 1
+  });
+
+  it('scores tactics by the mastermind printed vp, keyed by baseCardId', () => {
+    const gameState = createMockGameState({
+      playerZones: { '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] } },
+      tacticsDefeated: ['t1', 't2', 't3', 't4'],
+      // 'test-mastermind-base' is the mock's baseCardId
+      cardVictoryPoints: { 'test-mastermind-base': 5 },
+    });
+
+    const result = computeFinalScores(gameState);
+    assert.equal(result.players[0]!.tacticVP, 20); // 4 × 5
+  });
+
+  it('falls back to VP_TACTIC (5) when the mastermind has no printed vp', () => {
+    const gameState = createMockGameState({
+      playerZones: { '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] } },
+      tacticsDefeated: ['t1', 't2'],
+      // no cardVictoryPoints → mastermind fallback 5
+    });
+
+    const result = computeFinalScores(gameState);
+    assert.equal(result.players[0]!.tacticVP, 10); // 2 × 5
+  });
+
+  it('leaves bystander VP (1 each) and wound VP (−1 each) unaffected by printed vp', () => {
+    const gameState = createMockGameState({
+      playerZones: {
+        '0': {
+          deck: ['pile-wound'], hand: [], discard: [], inPlay: [],
+          victory: ['v-big', 'pile-bystander', 'pile-bystander'],
+        },
+      },
+      villainDeckCardTypes: { 'v-big': 'villain' },
+      cardVictoryPoints: { 'v-big': 4 },
+    });
+
+    const result = computeFinalScores(gameState);
+    const breakdown = result.players[0]!;
+    assert.equal(breakdown.villainVP, 4);
+    assert.equal(breakdown.bystanderVP, 2); // 2 × 1, unchanged
+    assert.equal(breakdown.woundVP, -1); // 1 × -1, unchanged
+  });
+
+  it('absent cardVictoryPoints reproduces the pre-WP-365 flat behavior (backward-compatible)', () => {
+    const gameState = createMockGameState({
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [], victory: ['v1', 'v2', 'v3'] },
+      },
+      villainDeckCardTypes: { v1: 'villain', v2: 'villain', v3: 'villain' },
+      // no cardVictoryPoints → each villain scores the flat fallback 1
+    });
+
+    const result = computeFinalScores(gameState);
+    assert.equal(result.players[0]!.villainVP, 3);
   });
 });
