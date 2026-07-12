@@ -57,20 +57,26 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 
 **Packet-specific:**
 - **No new dependency.** base64url decode uses the browser `atob` + a small normalize/UTF-8 step; no `Buffer`, no npm package.
-- **Reuse `parseLagnLoadout` verbatim — do not fork the validator.** The decoder only turns the URL param into the JSON **text** `parseLagnLoadout` already accepts; all validation stays in the one WP-291 module.
-- **Pure decoder.** `lagnUrlParam.ts` has no Vue, no DOM beyond `atob`, no network, no clock/RNG; deterministic (same param string → same text or same error). It never throws — a malformed param returns a typed error result.
+- **Validation ownership: decode-only, then `parseLagnLoadout` once.** `lagnUrlParam.ts` **only** turns the URL param into JSON **text** — it MUST NOT parse JSON, inspect LAGN fields, or validate. `parseLagnLoadout` (WP-291, unmodified) is the **sole** LAGN validator, called **exactly once** by `useLagnFromUrl`. No forked validator, no second validation anywhere.
+- **Pure decoder.** `lagnUrlParam.ts` has no Vue, no DOM beyond `atob`, no network, no clock/RNG; deterministic (same param string → same text or same error). It **never throws** — every malformed input returns a typed error result.
+- **Empty and oversized params are typed decode errors, not crashes.** A present-but-empty value (`?lagn=`) ⇒ `{ present:true, ok:false, error }`; a value longer than a locked max length ⇒ the same typed error (a paste/DoS guard). Neither throws, neither reaches `parseLagnLoadout`.
+- **`+`→space pitfall handled.** base64url uses `-`/`_` (never `+`/`/`), which sidesteps `URLSearchParams` decoding a literal `+` to a space; the decoder normalizes `-`/`_` → `+`/`/` before `atob` and must not receive `+`. Document with a `// why:`.
+- **Atomic apply — never partial.** `resetDraft()` runs **only** on the `ok:true` path, immediately before re-applying the composition. On a decode error OR an invalid LAGN, the draft is left **untouched** (no reset, no partial setters) — the tab shows the error over whatever the draft already held.
 - **One-shot auto-switch.** Reuse `hasAppliedUrlAutoSwitch`; the `?lagn=` read + apply + tab-switch happens once on mount, never re-fires on later reactive changes (mirrors WP-114).
-- **`?lagn=` wins over the 5-field setup params.** When both are present, the full LAGN composition is authoritative and the `?schemeId=…` setup-preview params are ignored — document with a `// why:`.
-- **Fail-visible, never silent.** A malformed base64 or an invalid LAGN still switches to the Loadout tab and shows the full-sentence error(s); it never leaves the builder blank with no explanation and never applies a partial composition.
-- **No server call, no auth.** The viewer decodes a self-contained payload; it never fetches from the game server, adds no CORS surface, and requires no session.
+- **`?lagn=` wins over — and suppresses — the 5-field setup params.** When both are present, the LAGN composition is authoritative: the `?schemeId=…` setup-preview is **not computed/rendered** (no split-brain tab showing a LAGN-applied builder beside a stale setup preview). Document with a `// why:`.
+- **Fail-visible, never silent, never white-screen.** A malformed base64 or an invalid LAGN still switches to the Loadout tab and shows the full-sentence error(s); it never leaves the builder blank with no explanation, never applies a partial composition, and never lets an exception escape to blank the SPA.
+- **No server call, no auth; payload is untrusted.** The viewer decodes a **self-contained, untrusted** payload; it never fetches from the game server, adds no CORS surface, requires no session, and never treats the payload as trusted beyond what `parseLagnLoadout` validates.
 
 **Session protocol:**
 - If the draft-setter names or the `parseLagnLoadout` result shape are unclear, stop and read `LoadoutBuilder.vue` / `loadoutLagnImport.ts` — do not invent setters.
 
 **Locked contract values:**
 - **URL param key:** `lagn` (value = base64url of the UTF-8 LAGN JSON text).
+- **Encoding contract (cross-WP):** `base64url(UTF-8 JSON)` — the alphabet is standard base64 with `+`→`-`, `/`→`_`, and no `=` padding. **WP-362 owns this decode contract; WP-363's encoder MUST be its exact inverse** (a round-trip is the shared test).
+- **Max payload length:** a locked cap (e.g. 8192 chars of the `lagn` value) above which the decoder returns the typed decode error without calling `atob`/`parseLagnLoadout`. (A Tier-1 LAGN is ~500–800 bytes; the cap is a generous paste/DoS guard, not a real limit.)
 - **Composition field names** (produced by `parseLagnLoadout`, unchanged): `schemeId`, `mastermindId`, `villainGroupIds`, `henchmanGroupIds`, `heroDeckIds`, `bystandersCount`, `woundsCount`, `officersCount`, `sidekicksCount` + `playerCount`.
-- **Precedence:** `?lagn=` present ⇒ ignore `?schemeId=`/`?mastermindId=`/`?villainGroupIds=`/`?henchmanGroupIds=`/`?heroDeckIds=`.
+- **Precedence:** `?lagn=` present ⇒ the WP-114 setup-preview (`?schemeId=`/`?mastermindId=`/`?villainGroupIds=`/`?henchmanGroupIds=`/`?heroDeckIds=`) is **not computed or rendered**.
+- **Presence:** `?lagn=` "present" means the key exists; a present-but-empty value is present-and-a-decode-error (not absent).
 
 ---
 
@@ -82,28 +88,30 @@ The decode + apply is deterministic: the same `?lagn=` string produces the same 
 
 ## Scope (In)
 
-### A) `lib/lagnUrlParam.ts` (new) — pure decoder
+### A) `lib/lagnUrlParam.ts` (new) — pure decoder (decode-only, no validation)
 - `parseLagnUrlParam(search): ParseLagnUrlParamResult` where the result is `{ present: false }` | `{ present: true; ok: true; text: string }` | `{ present: true; ok: false; error: string }`:
-  - `URLSearchParams(search).get('lagn')` — absent ⇒ `{ present: false }`.
-  - base64url → base64 (`-`→`+`, `_`→`/`, right-pad `=` to a multiple of 4), `atob`, then UTF-8-decode the resulting byte string to text. Add `// why:` — `atob` yields a Latin-1 byte string; the UTF-8 step recovers multi-byte card names.
-  - Any decode failure ⇒ `{ present: true, ok: false, error: 'The loadout link could not be decoded. It may be truncated or corrupted — ask for a fresh link from the game.' }` (full sentence). Never throws.
+  - `URLSearchParams(search).get('lagn')` — key absent ⇒ `{ present: false }`.
+  - Present-but-empty (`''`) OR longer than the locked max length ⇒ `{ present:true, ok:false, error }` **before** any `atob` (a paste/DoS guard).
+  - base64url → base64 (`-`→`+`, `_`→`/`, right-pad `=` to a multiple of 4), `atob`, then UTF-8-decode the resulting byte string to text. Add `// why:` — (a) `atob` yields a Latin-1 byte string, so the UTF-8 step recovers multi-byte card names; (b) base64url has no `+`, so it sidesteps `URLSearchParams` turning a literal `+` into a space.
+  - The decoder returns **text only** — it MUST NOT `JSON.parse`, inspect, or validate the LAGN (that is `parseLagnLoadout`'s sole job). Any decode failure ⇒ `{ present: true, ok: false, error: 'The loadout link could not be decoded. It may be truncated or corrupted — ask for a fresh link from the game.' }` (full sentence). **Never throws.**
 
 ### B) `composables/useLagnFromUrl.ts` (new) — read-once + apply
 - `useLagnFromUrl(draftApi: UseLoadoutDraftApi): { hasLagnParam: boolean; lagnUrlErrors: string[] }`:
   - Reads `window.location.search` **once** at instantiation (mirrors `useSetupFromUrl`).
   - `parseLagnUrlParam(...)` absent ⇒ `{ hasLagnParam: false, lagnUrlErrors: [] }`.
-  - Decode error ⇒ `{ hasLagnParam: true, lagnUrlErrors: [<decode error>] }` (tab still switches; nothing applied).
-  - Text ⇒ `parseLagnLoadout(text)`; `ok: false` ⇒ `{ hasLagnParam: true, lagnUrlErrors: result.errors }`; `ok: true` ⇒ apply the composition to `draftApi` via the WP-291 setter sequence (`resetDraft` → `setScheme`/`setMastermind`/`addVillainGroup`/`addHenchmanGroup`/`addHeroGroup`/`setCount`×4/`setPlayerCount`) and return `{ hasLagnParam: true, lagnUrlErrors: [] }`.
-  - Add `// why:` — the setter sequence duplicates `LoadoutBuilder.applyLagnImport`'s apply (second call site; still under the rule-of-three, so duplicated rather than abstracted).
+  - Decode error ⇒ `{ hasLagnParam: true, lagnUrlErrors: [<decode error>] }` (tab still switches; **`resetDraft` NOT called**; the draft is untouched).
+  - Text ⇒ `parseLagnLoadout(text)` (the single validation call); `ok: false` ⇒ `{ hasLagnParam: true, lagnUrlErrors: result.errors }` with **no `resetDraft` and no setters** (the draft is untouched); `ok: true` ⇒ **only now** `resetDraft()` then apply the composition via the WP-291 setter sequence (`setScheme`/`setMastermind`/`addVillainGroup`/`addHenchmanGroup`/`addHeroGroup`/`setCount`×4/`setPlayerCount`) and return `{ hasLagnParam: true, lagnUrlErrors: [] }`.
+  - The composable **never throws** — every path returns the result object.
+  - Add `// why:` — (a) `resetDraft` is deferred to the `ok:true` path so a bad link never wipes an in-progress draft (atomic apply); (b) the setter sequence duplicates `LoadoutBuilder.applyLagnImport`'s apply (second call site; still under the rule-of-three, so duplicated rather than abstracted).
 
 ### C) `App.vue` (modified) — wire + auto-switch + error surface
 - In the `onMounted` registry-load block, after `useSetupFromUrl`, call `useLagnFromUrl(loadoutDraftApi.value)` (guard for the null-until-loaded api).
-- Extend the one-shot auto-switch condition so `hasLagnParam` (like `setupHasUrlParams`) sets `activeView = 'loadout'` once (`hasAppliedUrlAutoSwitch`). `?lagn=` precedence: when `hasLagnParam` is true, skip applying the setup-preview params.
+- Extend the one-shot auto-switch condition so `hasLagnParam` (like `setupHasUrlParams`) sets `activeView = 'loadout'` once (`hasAppliedUrlAutoSwitch`). `?lagn=` precedence: when `hasLagnParam` is true, **do not instantiate/compute `useSetupFromUrl`'s preview** (or suppress its render) so the tab never shows a LAGN-applied builder beside a stale `?schemeId=` preview — one authoritative source per load.
 - Store `lagnUrlErrors` in a top-level ref and render it in the Loadout tab as a dismissible error banner (mirror the `lagnImportErrors` display idiom) so a bad link is explained on-screen.
 
 ### D) Tests
-- `lib/lagnUrlParam.test.ts` — absent param → `{ present: false }`; a valid base64url of a Tier-1 LAGN → `{ present:true, ok:true, text }` that round-trips to the same JSON; a UTF-8 card name survives the round-trip; a truncated/`!!!` param → `{ present:true, ok:false, error }` (full sentence); never throws.
-- `composables/useLagnFromUrl.test.ts` — with an injected fake `UseLoadoutDraftApi`: a valid `?lagn=` calls the setters with the decoded composition and returns no errors; an invalid LAGN returns `parseLagnLoadout`'s errors and calls no setters; an absent param returns `hasLagnParam:false`.
+- `lib/lagnUrlParam.test.ts` — absent key → `{ present: false }`; a valid base64url of a Tier-1 LAGN → `{ present:true, ok:true, text }` whose text round-trips to the same JSON; a UTF-8 card name survives the round-trip; a truncated/`!!!` param → `{ present:true, ok:false, error }` (full sentence); a present-but-empty value → `{ present:true, ok:false }`; an over-max-length value → `{ present:true, ok:false }` **without** calling `atob` on it; the decoder returns text only (never `JSON.parse`s); never throws on any input.
+- `composables/useLagnFromUrl.test.ts` — with an injected fake `UseLoadoutDraftApi`: a valid `?lagn=` calls `resetDraft` **then** the setters with the decoded composition and returns no errors; an invalid LAGN returns `parseLagnLoadout`'s errors and calls **neither `resetDraft` nor any setter** (atomic-apply assertion); a decode error likewise touches no setter; an absent param returns `hasLagnParam:false`; the composable never throws.
 
 ---
 
@@ -141,25 +149,28 @@ No other files may be modified.
 ### Locked Values
 | Key | Value |
 |---|---|
-| Param key | `lagn` (base64url of the UTF-8 LAGN JSON) |
-| Validator | reuse `parseLagnLoadout` (WP-291) verbatim — no fork |
-| Apply | WP-291 setter sequence on `UseLoadoutDraftApi` |
+| Param key | `lagn` (base64url of the UTF-8 LAGN JSON); present-but-empty = a decode error, not absent |
+| Encoding | `base64url(UTF-8 JSON)` — decode contract owned by WP-362; WP-363 encoder is its exact inverse |
+| Max length | locked cap (~8192 chars); over-cap ⇒ typed decode error before `atob` |
+| Validation | decoder decodes text only; `parseLagnLoadout` (WP-291) is the **sole** validator, called once — no fork, no double-validate |
+| Apply | atomic — `resetDraft` + WP-291 setters run **only** on `ok:true`; any failure leaves the draft untouched |
 | Auto-switch | one-shot via `hasAppliedUrlAutoSwitch` (WP-114 pattern) |
-| Precedence | `?lagn=` present ⇒ ignore `?schemeId=`/etc. |
-| Failure | switch to tab + show full-sentence error(s); never blank, never partial |
-| Network | none — self-contained payload, no server call, no auth |
+| Precedence | `?lagn=` present ⇒ the `?schemeId=…` setup-preview is not computed/rendered |
+| Failure | switch to tab + full-sentence error(s); never blank, never partial, never white-screen |
+| Network | none — self-contained **untrusted** payload; no server call, no auth, no CORS |
 
 ---
 
 ## Acceptance Criteria
 
-1. `parseLagnUrlParam` returns `{ present:false }` with no `lagn` key; `{ present:true, ok:true, text }` for a valid base64url payload that round-trips to the original JSON (incl. a UTF-8 card name); `{ present:true, ok:false, error }` (full sentence) for a corrupt payload; never throws (**AC-1**).
-2. `useLagnFromUrl` applies the decoded composition to the injected draft api via the WP-291 setters on a valid `?lagn=`, returns `parseLagnLoadout`'s errors (and applies nothing) on an invalid one, and returns `hasLagnParam:false` when the param is absent (**AC-2**).
-3. On mount with a valid `?lagn=`, `App.vue` switches `activeView` to `'loadout'` once and the builder shows the encoded composition; with a bad `?lagn=`, it switches and shows the error banner (**AC-3**).
-4. When both `?lagn=` and `?schemeId=` are present, the LAGN composition wins and the setup-preview params are not applied (**AC-4**).
-5. No new npm dependency; `lagnUrlParam.ts` imports no Vue/network and never throws (confirmed with `Select-String` + the never-throws test) (**AC-5**).
-6. `parseLagnLoadout` / `loadoutLagnImport.ts` and the WP-114 `setupUrlParams.ts` / `useSetupFromUrl.ts` are unmodified (confirmed with `git diff`) (**AC-6**).
-7. `pnpm --filter registry-viewer build` 0; `pnpm --filter registry-viewer typecheck` 0; `pnpm --filter registry-viewer test` green (**AC-7**).
+1. `parseLagnUrlParam` returns `{ present:false }` with no `lagn` key; `{ present:true, ok:true, text }` for a valid base64url payload that round-trips to the original JSON (incl. a UTF-8 card name); `{ present:true, ok:false, error }` (full sentence) for a corrupt, present-but-empty, or over-max-length payload; decodes text only (no `JSON.parse`); never throws on any input (**AC-1**).
+2. `useLagnFromUrl` on a valid `?lagn=` calls `resetDraft` then the WP-291 setters with the decoded composition; on an invalid LAGN **or** a decode error it calls neither `resetDraft` nor any setter (atomic apply — the draft is untouched) and returns the errors; absent → `hasLagnParam:false`; never throws (**AC-2**).
+3. On mount with a valid `?lagn=`, `App.vue` switches `activeView` to `'loadout'` once and the builder shows the encoded composition; with a bad `?lagn=`, it switches and shows the error banner (never a blank builder, never an uncaught exception) (**AC-3**).
+4. When both `?lagn=` and `?schemeId=` are present, the LAGN wins and the `?schemeId=` setup-preview is **not** computed/rendered (no split-brain tab) (**AC-4**).
+5. `parseLagnLoadout` is the only LAGN validator invoked (the decoder does not validate); no double-validation path exists (**AC-5**).
+6. No new npm dependency; `lagnUrlParam.ts` has no dependency edge to Vue or any network API (source inspection + build graph, `Select-String` supporting) and never throws (**AC-6**).
+7. `parseLagnLoadout` / `loadoutLagnImport.ts` and the WP-114 `setupUrlParams.ts` / `useSetupFromUrl.ts` are unmodified (confirmed with `git diff`) (**AC-7**).
+8. `pnpm --filter registry-viewer build` 0; `pnpm --filter registry-viewer typecheck` 0; `pnpm --filter registry-viewer test` green (**AC-8**).
 
 ---
 
@@ -179,9 +190,9 @@ git diff --name-only   # only the ## Files Expected to Change set; loadoutLagnIm
 ## Definition of Done
 
 - [ ] All acceptance criteria pass
-- [ ] `lagnUrlParam.ts` — pure base64url decoder → LAGN text or full-sentence error; never throws
-- [ ] `useLagnFromUrl.ts` — read-once, decode → `parseLagnLoadout` → apply via WP-291 setters; returns `hasLagnParam` + `lagnUrlErrors`
-- [ ] `App.vue` — one-shot auto-switch on `hasLagnParam`, `?lagn=` precedence over setup params, error banner in the Loadout tab
+- [ ] `lagnUrlParam.ts` — pure **decode-only** base64url decoder → LAGN text or full-sentence error (incl. empty + over-max-length + `+`-pitfall handling); no `JSON.parse`/validation; never throws
+- [ ] `useLagnFromUrl.ts` — read-once, decode → `parseLagnLoadout` (the single validate) → **atomic** apply (`resetDraft` + WP-291 setters only on `ok:true`; untouched on any failure); returns `hasLagnParam` + `lagnUrlErrors`; never throws
+- [ ] `App.vue` — one-shot auto-switch on `hasLagnParam`, `?lagn=` **suppresses** the `?schemeId=` setup-preview (no split-brain), error banner in the Loadout tab
 - [ ] `parseLagnLoadout`/`loadoutLagnImport.ts` + WP-114 setup-param files unmodified; no new dependency
 - [ ] `pnpm --filter registry-viewer build`/`typecheck`/`test` green
 - [ ] `DECISIONS.md` **D-24154** landed; `WORK_INDEX` (WP-362) + `STATUS.md` + `wiki/lagn-v1.md` updated
@@ -209,4 +220,4 @@ git diff --name-only   # only the ## Files Expected to Change set; loadoutLagnIm
 
 ## Decision (reserved, lands at execution)
 
-Reserves **D-24154**: the Registry Viewer `?lagn=` deep-link. Locks: (1) a `?lagn=<base64url(UTF-8 LAGN JSON)>` URL param; (2) on mount, decode → the **existing** `parseLagnLoadout` (no validator fork) → apply to the Loadout draft via the WP-291 setter sequence → one-shot auto-switch to the Loadout tab (WP-114 machinery); (3) **`?lagn=` takes precedence** over the WP-114 five-field setup params when both are present; (4) **fail-visible** — a malformed base64 or invalid LAGN still opens the tab and shows full-sentence errors, never a blank/partial builder; (5) **no server call, no auth, no CORS** — the viewer renders a self-contained payload (the arena client, not the viewer, holds the session and fetches the LAGN in WP-363). base64url decode uses the browser `atob` + a UTF-8 step; no new dependency. Drafted 2026-07-11; not yet landed.
+Reserves **D-24154**: the Registry Viewer `?lagn=` deep-link. Locks: (1) a `?lagn=<base64url(UTF-8 LAGN JSON)>` URL param — the decode contract (standard base64 alphabet with `+`→`-`/`/`→`_`, no `=` padding, capped length) is **owned by WP-362 and WP-363's encoder is its exact inverse**; (2) on mount, the **decode-only** decoder produces text (it never `JSON.parse`s or validates), then `parseLagnLoadout` (WP-291, **the sole validator, called once**, no fork) → **atomic** apply to the Loadout draft (`resetDraft` + the WP-291 setters run only on `ok:true`; any failure leaves the draft untouched) → one-shot auto-switch to the Loadout tab (WP-114 machinery); (3) **`?lagn=` takes precedence** over — and **suppresses** — the WP-114 five-field setup-preview when both are present (one authoritative source per load, no split-brain tab); (4) **fail-visible, never white-screen** — a malformed/empty/oversized base64 or an invalid LAGN still opens the tab and shows full-sentence errors, never a blank/partial builder, never an uncaught exception; (5) **no server call, no auth, no CORS; the payload is untrusted** — the viewer renders a self-contained payload validated only by `parseLagnLoadout` (the arena client, not the viewer, holds the session and fetches the LAGN in WP-363). base64url decode uses the browser `atob` + a UTF-8 step; no new dependency. Drafted 2026-07-11; not yet landed.

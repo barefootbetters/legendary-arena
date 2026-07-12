@@ -58,21 +58,24 @@ If WP-361 or WP-362 is not live, this packet is **BLOCKED** and must not proceed
 - Full file contents for every new/modified file — no diffs, no snippets.
 
 **Packet-specific:**
-- **Encoder is the exact inverse of WP-362's decoder (D-24154).** base64url of `JSON.stringify(lagn)` (UTF-8): `btoa` over UTF-8 bytes → `+`→`-`, `/`→`_`, strip `=`. A round-trip test asserts WP-363-encode → WP-362-decode reproduces the original document.
-- **No engine / `boardgame.io` / registry import.** The client never validates the LAGN (the server is the authority — it already `validate()`d in WP-361); the client only encodes an opaque document into a URL (same "opaque `lagn`" posture as `loadoutSummary.ts` / the loadout library, D-24085/WP-301).
-- **`fetchMatchLagn` never throws.** Mirror `loadoutLibraryApi`: non-200 → `{ ok:false, status }`; a thrown fetch → `{ ok:false, status: 0 }`. The button maps any failure to a short inline message; it never rejects, never blocks the match.
-- **Open in a new tab, safely.** `window.open(url, '_blank', 'noopener')` — `noopener` mandatory (no reverse `window.opener` handle to the viewer tab).
-- **Best-effort, non-blocking, self-hiding-friendly.** The affordance adds no DOM churn to the match; a click failure shows a brief message and clears; it never covers the endgame summary or a modal (mirror the `DiagnosticExportButton` unobtrusive posture).
-- **No session token in the URL.** Only the `?lagn=` payload (the loadout, non-secret — both players already see the board) goes in the opened URL; the Hanko bearer stays in the `Authorization` header of the fetch, never in the viewer link.
+- **Encoder is the exact inverse of WP-362's decoder (D-24154).** base64url of `JSON.stringify(lagn)` (UTF-8): `btoa` over UTF-8 bytes → `+`→`-`, `/`→`_`, strip `=`. Round-trip is by **parsed value**, not reference: `JSON.parse(WP-362-decode(encode(lagn)))` deep-equals `lagn`. The test imports WP-362's `parseLagnUrlParam` and asserts this.
+- **Opaque `lagn`, client is a relay not an authority.** The client never validates **or inspects** the LAGN (it never reads `.setup` or any field) — the server `validate()`d it in WP-361 and the viewer re-validates via `parseLagnLoadout` in WP-362; the client only stringify-encodes the opaque document into a URL (the "opaque `lagn`" posture, D-24085/WP-301). No engine / `boardgame.io` / registry import.
+- **`fetchMatchLagn` never throws — including a bad 200 body.** Mirror `loadoutLibraryApi`: non-200 → `{ ok:false, status }`; a thrown `fetch` → `{ ok:false, status: 0 }`. The `response.json()` parse runs **inside the guarded region** so a malformed 200 body maps to a failure (`{ ok:false, status: 0 }`), never an exception. The button maps any failure to a short inline message; it never rejects, never blocks the match.
+- **Null token / absent match short-circuit — no pointless round-trip.** No `?match=` in the URL ⇒ the control is **not rendered** (guest/lobby/non-live context). A null `authToken` ⇒ show the sign-in message **without** a fetch (don't fire an unauthenticated request just to get a `401`).
+- **In-flight guard.** A click while a fetch is already in flight is ignored (a single `isLoading` ref) so a double-click never opens two tabs or races two requests.
+- **Open in a new tab, safely; handle a blocked pop-up.** `window.open(url, '_blank', 'noopener')` — `noopener` mandatory (no reverse `window.opener` handle). If `window.open` returns `null` (pop-up blocker), show a full-sentence fallback message rather than silently doing nothing.
+- **Best-effort, non-blocking, unobtrusive.** The affordance adds no DOM churn to the match; a click failure shows a brief message and clears; it never covers the endgame summary or a modal (mirror the `DiagnosticExportButton` posture).
+- **No session token in the URL.** Only the `?lagn=` payload (the loadout, non-secret — both players already see the board) goes in the opened URL; the Hanko bearer stays in the `Authorization` header of the fetch, **never** in the viewer link (asserted by a test that scans the opened URL).
 
 **Session protocol:**
 - If the `authToken` accessor, the `?lagn=` encoding, or the endpoint shape is unclear, stop and read `loadoutLibraryApi.ts` / WP-362 §Contract / WP-361 §Contract — do not invent the token source or the encoding.
 
 **Locked contract values:**
 - **Endpoint:** `GET /api/match/:matchId/lagn` (WP-361), Bearer-authenticated, `{ lagn }` on 200.
-- **Viewer link:** `${viewerBaseUrl}/?lagn=<base64url(UTF-8 JSON.stringify(lagn))>` (D-24154).
-- **Viewer origin (`viewerBaseUrl`):** the deployed Registry Viewer origin — **confirm the live origin at execution** (`https://cards.barefootbetters.com` today per `apps/registry-viewer/CLAUDE.md`; both `cards.barefootbetters.com` and `cards.legendary-arena.com` are CORS-allowlisted server-side, but this link opens the viewer directly so it must match the served origin). A single module constant with a `// why:` — no new env var.
-- **matchId source:** `new URLSearchParams(window.location.search).get('match')`.
+- **Viewer link:** `${REGISTRY_VIEWER_ORIGIN}/?lagn=<base64url(UTF-8 JSON.stringify(lagn))>` (D-24154). `REGISTRY_VIEWER_ORIGIN` carries **no trailing slash**; the URL is built joining exactly one `/` before `?lagn=` (no `//?`).
+- **Viewer origin (`REGISTRY_VIEWER_ORIGIN`):** the deployed Registry Viewer origin — **confirm the live origin at execution** (`https://cards.barefootbetters.com` today per `apps/registry-viewer/CLAUDE.md`; both `cards.barefootbetters.com` and `cards.legendary-arena.com` are CORS-allowlisted server-side, but this link opens the viewer directly so it must match the served origin). A single module constant with a `// why:` — no new env var.
+- **matchId source:** `new URLSearchParams(window.location.search).get('match')`; absent ⇒ control not rendered.
+- **Round-trip equality:** by parsed value — `JSON.parse(WP-362-decode(encode(lagn)))` deep-equals `lagn` (not reference/byte equality on the object).
 
 ---
 
@@ -85,26 +88,33 @@ The click flow is three observable steps: read `matchId` (absent → the control
 ## Scope (In)
 
 ### A) `lib/lagnShareLink.ts` (new) — pure encoder
-- `encodeLagnToViewerUrl(lagn, viewerBaseUrl): string` — `JSON.stringify(lagn)` → UTF-8 bytes → `btoa` → base64url (`+`→`-`, `/`→`_`, strip trailing `=`) → `${viewerBaseUrl}/?lagn=<b64url>`. Pure, deterministic, no DOM/network. Add `// why:` — this is the exact inverse of WP-362's decoder (D-24154); a round-trip test guards the contract.
-- `REGISTRY_VIEWER_ORIGIN` — a module constant with a `// why:` naming the deployed viewer origin (confirm at execution per the locked value above).
+- `encodeLagnToViewerUrl(lagn, viewerBaseUrl): string` — `JSON.stringify(lagn)` → UTF-8 bytes → `btoa` → base64url (`+`→`-`, `/`→`_`, strip trailing `=`) → `${viewerBaseUrl}/?lagn=<b64url>`, joining exactly one `/` (the constant has no trailing slash, so no `//?`). Treats `lagn` **opaquely** — it stringifies the value as-received and never reads a field. Pure, deterministic, no DOM/network. Add `// why:` — this is the exact inverse of WP-362's decoder (D-24154); the round-trip test guards the contract by **parsed value**.
+- `REGISTRY_VIEWER_ORIGIN` — a module constant (no trailing slash) with a `// why:` naming the deployed viewer origin (confirm at execution per the locked value above).
 
 ### B) `lib/api/matchLagnApi.ts` (new) — authenticated fetch wrapper
 - `fetchMatchLagn(matchId, authToken): Promise<MatchLagnResult>` where `MatchLagnResult = { ok: true; lagn: unknown } | { ok: false; status: number }`:
   - `GET buildApiUrl(\`/api/match/${encodeURIComponent(matchId)}/lagn\`)` with `headers: authToken === null ? {} : { Authorization: \`Bearer ${authToken}\` }`.
-  - Non-200 → `{ ok:false, status }`; a thrown fetch → `{ ok:false, status: 0 }` (mirror `loadoutLibraryApi`, `// why:` on the status-0 mapping). Returns the `lagn` opaquely (`unknown`); no client-side LAGN validation.
+  - Non-200 → `{ ok:false, status }`; a thrown `fetch` **or** a `response.json()` parse failure on a 200 → `{ ok:false, status: 0 }`. The `json()` call is **inside** the guarded region (unlike `loadoutLibraryApi`, whose bodies are always well-formed) so a malformed 200 body never throws — `// why:` on both the status-0 mapping and the in-guard `json()`. Returns the `lagn` opaquely (`unknown`); no client-side LAGN validation.
 
 ### C) `components/ViewLoadoutButton.vue` (new) — fixed-position play-surface control
-- `defineComponent({ setup() { return {...} } })` (D-6512). A small fixed-position button "View loadout in Registry Viewer" + an inline status message ref.
-- `onViewLoadout()`: read `matchId` from `?match=` (absent → no-op / control hidden); read the current `authToken`; `await fetchMatchLagn(matchId, authToken)`; `ok` → `window.open(encodeLagnToViewerUrl(lagn, REGISTRY_VIEWER_ORIGIN), '_blank', 'noopener')`; `!ok` → set a full-sentence inline message keyed on `status` (`401` "Sign in to view this game's loadout." / `403` "Only players in this game can open its loadout." / `404` "This game's loadout isn't available yet." / else "The loadout couldn't be loaded — please try again."). Best-effort; never throws.
+- `defineComponent({ setup() { return {...} } })` (D-6512). A small fixed-position button "View loadout in Registry Viewer" + an inline status message ref + an `isLoading` ref.
+- **Render gate:** read `matchId` from `?match=` once; when absent, the control is **not rendered** (guest / lobby / non-live context).
+- `onViewLoadout()`:
+  - If `isLoading` is already true, return (in-flight guard — no double-open).
+  - Read the current `authToken`; if `null`, set the sign-in message and return **without** a fetch.
+  - Set `isLoading`; `await fetchMatchLagn(matchId, authToken)`; clear `isLoading` in a `finally`.
+  - `ok` → `const opened = window.open(encodeLagnToViewerUrl(lagn, REGISTRY_VIEWER_ORIGIN), '_blank', 'noopener')`; if `opened === null`, set a pop-up-blocked message ("Your browser blocked the loadout tab — allow pop-ups for this site and try again.").
+  - `!ok` → set a full-sentence inline message keyed on `status` (`401` "Sign in to view this game's loadout." / `403` "Only players in this game can open its loadout." / `404` "This game's loadout isn't available yet." / else "The loadout couldn't be loaded — please try again.").
+  - Best-effort; **never throws** (the whole body is guarded).
 - Placement idiom + scoped `position: fixed` CSS mirror `DiagnosticExportButton.vue` (a distinct corner so the two don't overlap).
 
 ### D) `pages/PlayViewport.vue` (modified) — mount once
 - Register + mount `<ViewLoadoutButton />` once at the shared viewport root, beside `<DiagnosticExportButton />`, with a `// why:` mount comment mirroring the existing sibling (covers both `PlayMobile` and `PlayDesktop`).
 
 ### E) Tests
-- `lib/lagnShareLink.test.ts` — `encodeLagnToViewerUrl` produces `${base}/?lagn=…`; the payload base64url-decodes back to the original JSON (round-trip, incl. a UTF-8 card name); the encoding is the inverse of WP-362's `parseLagnUrlParam` (import it and assert `decode(encode(lagn)) === lagn`).
-- `lib/api/matchLagnApi.test.ts` — stubbed `fetch`: 200 → `{ ok:true, lagn }`; 401/403/404 → `{ ok:false, status }`; a thrown fetch → `{ ok:false, status: 0 }`; the request carries `Authorization: Bearer` when a token is supplied and omits it when null (branch on the stub's received init).
-- `components/ViewLoadoutButton.test.ts` — renders the control; a stubbed `ok` fetch calls `window.open` with a `?lagn=` URL + `noopener`; a `403` sets the participant message and does not open a tab (mirror `Header.test.ts` mount idiom).
+- `lib/lagnShareLink.test.ts` — `encodeLagnToViewerUrl` produces `${base}/?lagn=…` with exactly one `/` before `?` (no `//?`, incl. when the constant is passed with/without a trailing slash); the cross-WP round-trip via WP-362's `parseLagnUrlParam` — `JSON.parse(parseLagnUrlParam(encode(lagn)).text)` **deep-equals** `lagn` (incl. a UTF-8 card name); the opened URL contains **no** bearer/token substring.
+- `lib/api/matchLagnApi.test.ts` — stubbed `fetch`: 200 → `{ ok:true, lagn }`; 401/403/404 → `{ ok:false, status }`; a thrown fetch → `{ ok:false, status: 0 }`; a **200 with an unparseable body** → `{ ok:false, status: 0 }` (never throws); the request carries `Authorization: Bearer` when a token is supplied and omits it when null (branch on the stub's received init).
+- `components/ViewLoadoutButton.test.ts` — not rendered when `?match=` is absent; a null `authToken` sets the sign-in message and calls `fetch` **zero** times; a stubbed `ok` fetch calls `window.open` with a `?lagn=` URL + `noopener`; `window.open` returning `null` sets the pop-up-blocked message; a `403` sets the participants-only message and opens no tab; a second click while in-flight is ignored (fetch called once) (mirror `Header.test.ts` mount idiom).
 
 ---
 
@@ -144,24 +154,27 @@ in-match click → read `?match=` → `GET /api/match/:matchId/lagn` (Bearer) �
 ### Locked Values
 | Key | Value |
 |---|---|
-| Source | `GET /api/match/:matchId/lagn` (WP-361), `Authorization: Bearer` |
-| Encoding | base64url(UTF-8 `JSON.stringify(lagn)`) — exact inverse of WP-362 decoder (D-24154) |
-| Link | `${REGISTRY_VIEWER_ORIGIN}/?lagn=<b64url>`; `window.open(..., '_blank', 'noopener')` |
-| Viewer origin | deployed viewer origin (confirm at execution; `cards.barefootbetters.com` today); module constant, no new env var |
-| matchId | `?match=` via `URLSearchParams` |
+| Source | `GET /api/match/:matchId/lagn` (WP-361), `Authorization: Bearer`; `json()` in-guard (bad 200 → failure) |
+| Encoding | base64url(UTF-8 `JSON.stringify(lagn)`) — exact inverse of WP-362 decoder (D-24154); round-trip by parsed value |
+| Link | `${REGISTRY_VIEWER_ORIGIN}/?lagn=<b64url>` (one `/`, no `//?`); `window.open(..., '_blank', 'noopener')`; `null` return → pop-up-blocked message |
+| Viewer origin | deployed viewer origin (confirm at execution; `cards.barefootbetters.com` today); module constant, **no trailing slash**, no new env var |
+| matchId | `?match=` via `URLSearchParams`; absent ⇒ control not rendered |
+| Auth short-circuit | null `authToken` ⇒ sign-in message, **no fetch** |
+| In-flight | single `isLoading` guard — a click while loading is ignored |
 | Failure map | `401`→sign-in, `403`→participants-only, `404`→not-available-yet, else→try-again (full sentences) |
-| Posture | opaque `lagn` (no client validation); never throws; no bearer in the URL |
+| Posture | opaque `lagn` — never validated **or inspected**; client is a relay, not an authority; never throws; no bearer in the URL |
 
 ---
 
 ## Acceptance Criteria
 
-1. `encodeLagnToViewerUrl` returns `${base}/?lagn=<base64url>` whose payload decodes (via WP-362's `parseLagnUrlParam`) back to the original document byte-for-byte, incl. a UTF-8 card name (**AC-1**).
-2. `fetchMatchLagn` GETs `/api/match/:matchId/lagn` with `Authorization: Bearer` when a token is supplied (omitted when null), returns `{ ok:true, lagn }` on 200, `{ ok:false, status }` on 401/403/404, and `{ ok:false, status:0 }` on a thrown fetch; never throws (**AC-2**).
-3. `ViewLoadoutButton` on a successful fetch calls `window.open` with a `?lagn=` URL and `noopener`; on `403` shows the participants-only message and opens no tab; reads `matchId` from `?match=` (**AC-3**).
+1. `encodeLagnToViewerUrl` returns `${base}/?lagn=<base64url>` with exactly one `/` before `?` (no `//?`), and the cross-WP round-trip holds: `JSON.parse(parseLagnUrlParam(encode(lagn)).text)` deep-equals `lagn` (incl. a UTF-8 card name); the client treats `lagn` opaquely (never reads a field) (**AC-1**).
+2. `fetchMatchLagn` GETs `/api/match/:matchId/lagn` with `Authorization: Bearer` when a token is supplied (omitted when null), returns `{ ok:true, lagn }` on 200, `{ ok:false, status }` on 401/403/404, and `{ ok:false, status:0 }` on a thrown fetch **or a 200 with an unparseable body**; never throws (**AC-2**).
+3. `ViewLoadoutButton` is not rendered when `?match=` is absent; a null `authToken` shows the sign-in message with zero fetches; a successful fetch calls `window.open` with a `?lagn=` URL and `noopener`; a `null` `window.open` return shows the pop-up-blocked message; a `403` shows the participants-only message and opens no tab; a second click while in-flight is ignored (**AC-3**).
 4. The control is mounted exactly once in `PlayViewport.vue` beside `DiagnosticExportButton` (confirmed with `Select-String`) and covers both play surfaces (**AC-4**).
-5. No `boardgame.io` / `@legendary-arena/game-engine` / `@legendary-arena/registry` import in any new file; no bgio credentials or bearer token appear in the opened URL (confirmed with `Select-String` + the round-trip test) (**AC-5**).
-6. `pnpm --filter @legendary-arena/arena-client typecheck` (vue-tsc) 0; `pnpm --filter @legendary-arena/arena-client test` green (new suites pass; prior count + new tests); `pnpm -r build` 0 (**AC-6**).
+5. Neither the opened URL nor any new file exposes the bearer/credentials — a test asserts the encoded URL contains no token substring; the bearer travels only in the `Authorization` header (**AC-5**).
+6. No dependency edge from any new file to `boardgame.io` / `@legendary-arena/game-engine` / `@legendary-arena/registry` — verified by source inspection (no import, direct or aliased) and the build/module graph; `Select-String` is a supporting check (**AC-6**).
+7. `pnpm --filter @legendary-arena/arena-client typecheck` (vue-tsc) 0; `pnpm --filter @legendary-arena/arena-client test` green (new suites pass; prior count + new tests); `pnpm -r build` 0 (**AC-7**).
 
 ---
 
@@ -181,10 +194,10 @@ git diff --name-only   # only the ## Files Expected to Change set
 ## Definition of Done
 
 - [ ] All acceptance criteria pass
-- [ ] `lagnShareLink.ts` — pure encoder, inverse of WP-362 (round-trip test); `REGISTRY_VIEWER_ORIGIN` confirmed against the live viewer origin
-- [ ] `matchLagnApi.ts` — Bearer GET, never-throws `{ ok, status }` (all branches tested)
-- [ ] `ViewLoadoutButton.vue` — fixed-position control, `window.open(..., 'noopener')`, full-sentence failure messages; mounted once in `PlayViewport.vue`
-- [ ] No engine/bgio/registry import; no bearer/credentials in the opened URL
+- [ ] `lagnShareLink.ts` — pure opaque encoder (one `/`, no `//?`), inverse of WP-362 by parsed-value round-trip; `REGISTRY_VIEWER_ORIGIN` (no trailing slash) confirmed against the live viewer origin
+- [ ] `matchLagnApi.ts` — Bearer GET, `json()` in-guard, never-throws `{ ok, status }` (non-200 / thrown / bad-200-body branches tested)
+- [ ] `ViewLoadoutButton.vue` — not rendered without `?match=`; null-token short-circuit (no fetch); in-flight guard; `window.open(..., 'noopener')` + pop-up-blocked fallback; full-sentence failure messages; mounted once in `PlayViewport.vue`
+- [ ] No engine/bgio/registry dependency edge (source + build graph); `lagn` opaque (never inspected); no bearer/credentials in the opened URL (asserted)
 - [ ] `pnpm -r build` 0; arena-client typecheck 0; arena-client test green
 - [ ] `DECISIONS.md` **D-24155** landed; `WORK_INDEX` (WP-363) + `STATUS.md` + `wiki/lagn-v1.md` updated
 - [ ] **User-visible verification (D-24026):** APPLIES. In a real match on play.legendary-arena.com, click "View loadout in Registry Viewer" → a new tab opens the viewer Loadout tab pre-filled with this game's composition; from a non-participant/spectator context the control shows the participants-only message. Screenshot the opened viewer tab. Operator-pending on deploy (requires WP-361 + WP-362 live).
@@ -211,4 +224,4 @@ git diff --name-only   # only the ## Files Expected to Change set
 
 ## Decision (reserved, lands at execution)
 
-Reserves **D-24155**: the in-match "View loadout in Registry Viewer" link. Locks: (1) a fixed-position play-surface control (mounted once in `PlayViewport.vue` beside `DiagnosticExportButton`, WP-228 idiom) that fetches the current match's Tier-1 LAGN from **WP-361** `GET /api/match/:matchId/lagn` with the player's existing Hanko **bearer**, then opens **WP-362**'s `?lagn=` deep-link (`window.open(..., '_blank', 'noopener')`); (2) the client-side encoder is the **exact inverse of WP-362's decoder** (base64url of UTF-8 `JSON.stringify(lagn)`, D-24154) — guarded by a round-trip test; (3) the `lagn` is treated **opaquely** (no client-side validation — WP-361 is the authority); (4) **never-throws** fetch + full-sentence inline failure messages (`401`/`403`/`404`/network), non-blocking; (5) **no bearer/credentials in the opened URL** (only the non-secret loadout payload); (6) the viewer origin is a locked module constant confirmed against the deployed origin at execution (no new env var). Depends on WP-361 + WP-362. Drafted 2026-07-11; not yet landed.
+Reserves **D-24155**: the in-match "View loadout in Registry Viewer" link. Locks: (1) a fixed-position play-surface control (mounted once in `PlayViewport.vue` beside `DiagnosticExportButton`, WP-228 idiom) — **not rendered without `?match=`** — that fetches the current match's Tier-1 LAGN from **WP-361** `GET /api/match/:matchId/lagn` with the player's existing Hanko **bearer** (a null token short-circuits to a sign-in message with **no** fetch; an in-flight guard blocks double-clicks), then opens **WP-362**'s `?lagn=` deep-link (`window.open(..., '_blank', 'noopener')`, with a pop-up-blocked fallback message on a `null` return); (2) the client-side encoder is the **exact inverse of WP-362's decoder** (base64url of UTF-8 `JSON.stringify(lagn)`, D-24154) — guarded by a **parsed-value** round-trip test that imports WP-362's decoder; the link is built with one `/` (no `//?`); (3) the `lagn` is treated **opaquely** — the client is a **relay, not an authority**: it never validates or **inspects** the payload (WP-361 validated it; WP-362 re-validates); (4) **never-throws** fetch (including a bad 200 body via an in-guard `json()`) + full-sentence inline failure messages (`401`/`403`/`404`/network/pop-up-blocked), non-blocking; (5) **no bearer/credentials in the opened URL** (only the non-secret loadout payload; asserted by test); (6) the viewer origin is a locked module constant (no trailing slash) confirmed against the deployed origin at execution (no new env var). Depends on WP-361 + WP-362. Drafted 2026-07-11; not yet landed.
