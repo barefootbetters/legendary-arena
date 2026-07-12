@@ -28594,3 +28594,24 @@ Protect this file.
 **Packet:** WP-363 (+ EC-393 at execution-prep). **Drafted:** 2026-07-11. **Executed:** — (blocked on WP-361 + WP-362)
 
 Protect this file.
+
+### D-24156 — Hero-side plain "gain a Wound" keywords (`gain-wound-self` / `gain-wound-each`)
+
+**Status:** Drafted 2026-07-11; not yet landed. Flips to Active when WP-364 executes.
+
+**User-Visible Surface:** `play.legendary-arena.com` (in-match).
+
+**Context.** A live diagnostics capture (`matchId sGTM7LWSIHy`, 2026-07-12) showed Hulk's **Crazed Rampage** ("Each player gains a Wound.") played twice with no effect — the Wound supply pile stayed at 30 and the player gained 0 wounds. Two stacked gaps: (1) the printed line is bare prose with no marker, so the parser emits nothing; (2) the generic hero `wound` keyword is in `DEFERRED_BY_DESIGN_MECHANICS` (deferred as "needs targeting UI"). But the plain "gain a Wound" form needs no targeting — the wound goes to the player's discard.
+
+**Decision.** Add two **narrow** hero keywords — `gain-wound-self` ("You gain a Wound." / "Gain a Wound.") and `gain-wound-each` ("Each player gains a Wound.") — that reuse the existing WP-017 `gainWound(woundsPile, discard)` helper via the WP-316 villain per-target loop (`self` = active player; `each` = sorted `Object.keys(G.playerZones)`; active-player `woundsDrawn` bump; empty-supply-per-target no-op logged, never thrown). Locks:
+
+1. **Honest-Partial (load-bearing).** The generic `wound` keyword stays in `DEFERRED_BY_DESIGN_MECHANICS`; every targeting/conditional wound form (Wound the Mastermind / a Villain / each Villain, Wounded Fury, reveal-a-Hero-**or**-gain-a-Wound, board-attached "Wound on X") stays a runtime hollow. The un-defer is two NEW keywords, never a loosening of the generic entry.
+2. **No descriptor field.** Each keyword name encodes its own target (`-self` / `-each`); the executor branches on the keyword. `heroAbility.types.ts` (contract file) is untouched — no new `HeroEffectDescriptor` field.
+3. **Determinism.** The wound draw is top-of-pile (`G.piles.wounds[0]`), RNG-free; the `each` loop iterates a sorted key order; replay is identical. `G.messages` additions are hash-excluded (D-24081).
+4. **No VP-scoring change.** The flat-VP table and the wound VP penalty are a separate concern, explicitly out of scope.
+
+**Corpus at draft (enumerated over `data/cards/**`):** 7 plain hero gain-wound ability lines resolve — `each`: `core`/`3dtc`/`msp1` Hulk `crazed-rampage`; `self`: `cvwr` Hulkling `half-kree`, `cvwr` Luke Cage `reckless`, `dkcy` Colossus `draw-their-fire`, `ff04` Human Torch `hothead`. 40 non-plain hero wound forms stay deferred.
+
+**Packet:** WP-364 (+ EC-391 at execution-prep). **Drafted:** 2026-07-11. **Executed:** —
+
+Protect this file.
