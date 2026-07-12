@@ -25,6 +25,10 @@ interface PlayerRow {
   email: string;
   display_handle: string | null;
   display_name: string;
+  // why: WP-357 / D-24149 — the COALESCE(pp.friend_request_emails, true)
+  // column the recipient opt-out gate reads. The fake pool returns canned
+  // rows, so the fixtures carry the resolved boolean directly.
+  friend_request_emails: boolean;
 }
 
 /**
@@ -71,12 +75,14 @@ const IDENTITY_ROWS: PlayerRow[] = [
     email: 'recipient@example.com',
     display_handle: 'recip',
     display_name: 'Recip',
+    friend_request_emails: true,
   },
   {
     ext_id: 'acc-actor',
     email: 'actor@example.com',
     display_handle: 'nova',
     display_name: 'Nova',
+    friend_request_emails: true,
   },
 ];
 
@@ -201,6 +207,7 @@ test('fail-open: an unresolvable recipient warns and resolves without sending', 
       email: 'actor@example.com',
       display_handle: 'nova',
       display_name: 'Nova',
+      friend_request_emails: true,
     },
   ];
   const warnCount = await withWarnCount(() =>
@@ -211,4 +218,39 @@ test('fail-open: an unresolvable recipient warns and resolves without sending', 
   );
   assert.equal(sends.length, 0);
   assert.equal(warnCount, 1);
+});
+
+test('opt-out (WP-357): a recipient with friend_request_emails=false gets no send and NO warn', async () => {
+  const { sender, sends } = makeFakeSender();
+  const config: FriendshipNotificationConfig = {
+    sender,
+    requestTemplateId: 42,
+    acceptedTemplateId: 99,
+  };
+  // Recipient opted out; actor is on. The gate skips the send as a clean
+  // no-op — distinct from the fail-open warn paths (warnCount must be 0).
+  const optedOutRows: PlayerRow[] = [
+    {
+      ext_id: 'acc-recipient',
+      email: 'recipient@example.com',
+      display_handle: 'recip',
+      display_name: 'Recip',
+      friend_request_emails: false,
+    },
+    {
+      ext_id: 'acc-actor',
+      email: 'actor@example.com',
+      display_handle: 'nova',
+      display_name: 'Nova',
+      friend_request_emails: true,
+    },
+  ];
+  const warnCount = await withWarnCount(() =>
+    notifyFriendRequestReceived(makeFakePool(optedOutRows), config, {
+      actorAccountId: ACTOR,
+      recipientAccountId: RECIPIENT,
+    }),
+  );
+  assert.equal(sends.length, 0);
+  assert.equal(warnCount, 0);
 });

@@ -109,8 +109,9 @@ export interface OwnerProfileLink {
  *
  * `Object.keys(view).sort()` MUST equal exactly:
  *   `['aboutMe','aboutMeVisibility','accountId','avatarUrl',
- *     'avatarVisibility','badges','displayName','handleCanonical',
- *     'links','linksVisibility','teamAffiliations','updatedAt']`
+ *     'avatarVisibility','badges','displayName','friendRequestEmails',
+ *     'handleCanonical','links','linksVisibility','teamAffiliations',
+ *     'updatedAt']`
  * — drift-detection test in `ownerProfile.logic.test.ts` enforces
  * this. WP-109 / D-10904 extended from 7 to 8 keys with
  * `teamAffiliations[]`; WP-105 / D-10501 extended from 8 to 9 keys
@@ -118,6 +119,7 @@ export interface OwnerProfileLink {
  * shared helper that powers the public profile per pre-flight
  * PS-3. WP-305 / D-24089 extended from 9 to 12 keys with the owner's
  * own identity (`accountId`, `displayName`, `handleCanonical`).
+ * WP-357 / D-24149 extended from 12 to 13 keys with `friendRequestEmails`.
  * `email`, `authProvider`, `authProviderId`, `createdAt`
  * from `legendary.players` are deliberately absent: they are
  * private fields of the account and have no business on the
@@ -156,6 +158,12 @@ export interface OwnerProfileView {
   readonly linksVisibility: 'private' | 'public';
   readonly links: OwnerProfileLink[];
   readonly updatedAt: string | null;
+  // why: WP-357 / D-24149 — the owner's friend-request email preference,
+  // stored on legendary.player_profiles.friend_request_emails (default
+  // TRUE). When FALSE, the WP-353 send boundary skips both friend emails
+  // (received + accepted) for this account as the recipient. Editable via
+  // OwnerProfilePatch.friendRequestEmails.
+  readonly friendRequestEmails: boolean;
   // why: WP-109 / D-10904 (PS-3 = YES user pre-lock 2026-05-03) —
   // read-only listing of the owner's team affiliations as the
   // owner sees them (viewer = subject, so 'private' teams are
@@ -256,6 +264,10 @@ export interface OwnerProfilePatch {
   readonly avatarVisibility?: 'private' | 'public';
   readonly aboutMeVisibility?: 'private' | 'public';
   readonly linksVisibility?: 'private' | 'public';
+  // why: WP-357 / D-24149 — the owner may opt out of friend-request emails.
+  // A boolean (never `| null`): the column is `NOT NULL DEFAULT true` and has
+  // no clear-to-null state; absence means "leave unchanged".
+  readonly friendRequestEmails?: boolean;
 }
 
 /**

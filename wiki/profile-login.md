@@ -611,9 +611,9 @@ during implementation.
    table (block severs friendship), symmetric block enforcement, a per-day
    request cap + re-request cooldown at the send handler, and three
    `/api/me/blocks` endpoints. The notification opt-out (the WP-353
-   spam-vector risk) is **drafted as
+   spam-vector risk) is **executed as
    [WP-357](../docs/ai/work-packets/WP-357-friend-email-opt-out.md)**
-   (2026-07-11, reserves D-24149; **READY**): a per-account
+   (executed 2026-07-11, D-24149 Active): a per-account
    `friend_request_emails` preference on `player_profiles`, checked in
    WP-353's send boundary (opted-out recipient → clean no-op). Its client
    `?route=me` toggle is **drafted as

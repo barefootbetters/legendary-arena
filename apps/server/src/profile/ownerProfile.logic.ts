@@ -439,6 +439,7 @@ interface PlayerProfileRow {
   avatar_visibility: string;
   about_me_visibility: string;
   links_visibility: string;
+  friend_request_emails: boolean;
   updated_at: Date | string;
 }
 
@@ -513,6 +514,11 @@ function synthesizeDefaultOwnerProfileView(
     avatarVisibility: 'private',
     aboutMeVisibility: 'private',
     linksVisibility: 'private',
+    // why: WP-357 / D-24149 — a never-edited account has no
+    // player_profiles row; the opt-out preference defaults to TRUE
+    // (friend emails on), matching the column DEFAULT + the
+    // COALESCE(..., true) in friendshipNotifications.logic.ts.
+    friendRequestEmails: true,
     links: [],
     updatedAt: null,
     teamAffiliations: [],
@@ -558,6 +564,7 @@ function composeOwnerProfileView(
       profileRow.about_me_visibility as OwnerProfileView['aboutMeVisibility'],
     linksVisibility:
       profileRow.links_visibility as OwnerProfileView['linksVisibility'],
+    friendRequestEmails: profileRow.friend_request_emails,
     links,
     updatedAt: updatedAtIso,
   };
@@ -594,7 +601,7 @@ export async function getOwnerProfile(
   const playerId = identity.playerId;
 
   const profileResult = await database.query(
-    'SELECT avatar_url, about_me, avatar_visibility, about_me_visibility, links_visibility, updated_at ' +
+    'SELECT avatar_url, about_me, avatar_visibility, about_me_visibility, links_visibility, friend_request_emails, updated_at ' +
       'FROM legendary.player_profiles ' +
       'WHERE player_id = $1 LIMIT 1',
     [playerId],
@@ -710,7 +717,7 @@ export async function upsertOwnerProfile(
   // input.
   type ValidatedFieldValue =
     | { kind: 'null' }
-    | { kind: 'value'; value: string };
+    | { kind: 'value'; value: string | boolean };
   const validatedFields = new Map<string, ValidatedFieldValue>();
 
   // why: WP-305 / D-24090 — `displayName` lives on `legendary.players`,
@@ -823,6 +830,22 @@ export async function upsertOwnerProfile(
     validatedFields.set('links_visibility', { kind: 'value', value: candidate });
   }
 
+  // why: WP-357 / D-24149 — the friend-request email opt-out. A plain
+  // boolean (no null-clear state; the column is NOT NULL DEFAULT true), so
+  // a non-boolean value is rejected as invalid_request rather than coerced.
+  if (Object.hasOwn(patch, 'friendRequestEmails')) {
+    const candidate = patch.friendRequestEmails;
+    if (typeof candidate !== 'boolean') {
+      return {
+        ok: false,
+        reason:
+          'friendRequestEmails must be a boolean (true to receive friend-request emails, false to opt out); received a non-boolean value.',
+        code: 'invalid_request',
+      };
+    }
+    validatedFields.set('friend_request_emails', { kind: 'value', value: candidate });
+  }
+
   // why: validation has already passed every field; only now do we burn a
   // DB round-trip to look up the player_id. A bogus accountId surfaces as
   // 'unknown_account'; the race between session validation and this PATCH
@@ -880,7 +903,7 @@ export async function upsertOwnerProfile(
     `INSERT INTO legendary.player_profiles (player_id${insertColumnList}) ` +
     `VALUES ($1${insertValueList}) ` +
     `ON CONFLICT (player_id) DO UPDATE SET ${setClauseParts.join(', ')} ` +
-    'RETURNING avatar_url, about_me, avatar_visibility, about_me_visibility, links_visibility, updated_at';
+    'RETURNING avatar_url, about_me, avatar_visibility, about_me_visibility, links_visibility, friend_request_emails, updated_at';
 
   // why: WP-305 / D-24090 — the profile upsert (legendary.player_profiles)
   // and the optional display-name write (legendary.players) span TWO

@@ -55,6 +55,11 @@ interface ResolvedIdentity {
   readonly email: string;
   readonly displayHandle: string | null;
   readonly displayName: string;
+  // why: WP-357 / D-24149 — the recipient's friend-request email opt-out.
+  // Resolved via LEFT JOIN legendary.player_profiles + COALESCE(..., true)
+  // so a never-edited account (no profiles row) defaults to TRUE (emails
+  // on). When FALSE, sendFriendNotification skips the send as a clean no-op.
+  readonly friendRequestEmails: boolean;
 }
 
 /**
@@ -67,9 +72,17 @@ async function resolveIdentities(
   pool: DatabaseClient,
   accountIds: readonly AccountId[],
 ): Promise<Map<string, ResolvedIdentity>> {
+  // why: WP-357 / D-24149 — the friend-request email opt-out is folded into
+  // this existing round-trip via LEFT JOIN legendary.player_profiles (a
+  // never-edited account has no profiles row) + COALESCE(..., true) so an
+  // absent row/value defaults to TRUE (emails on; never accidentally
+  // silences everyone). No second query, no N+1.
   const result = await pool.query(
-    'SELECT ext_id, email, display_handle, display_name FROM legendary.players ' +
-      'WHERE ext_id = ANY($1::text[])',
+    'SELECT p.ext_id, p.email, p.display_handle, p.display_name, ' +
+      'COALESCE(pp.friend_request_emails, true) AS friend_request_emails ' +
+      'FROM legendary.players p ' +
+      'LEFT JOIN legendary.player_profiles pp ON pp.player_id = p.player_id ' +
+      'WHERE p.ext_id = ANY($1::text[])',
     [[...accountIds]],
   );
   const byAccountId = new Map<string, ResolvedIdentity>();
@@ -78,6 +91,7 @@ async function resolveIdentities(
       email: row.email,
       displayHandle: row.display_handle,
       displayName: row.display_name,
+      friendRequestEmails: row.friend_request_emails,
     });
   }
   return byAccountId;
@@ -132,6 +146,14 @@ async function sendFriendNotification(
           eventLabel +
           ') was skipped because the recipient or actor account could not be resolved; the friend request itself is unaffected.',
       );
+      return;
+    }
+    if (recipient.friendRequestEmails === false) {
+      // why: WP-357 / D-24149 — the recipient opted out of friend-request
+      // emails. This is a normal outcome, NOT a failure, so it is a clean
+      // no-op with NO console.warn (distinct from the D-24077 fail-open
+      // warns above/below, which surface real send failures). The friend
+      // request itself is unaffected.
       return;
     }
     await sender.sendTemplateEmail({

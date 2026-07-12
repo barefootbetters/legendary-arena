@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-357 / EC-387 Executed — Friend-request email opt-out preference (D-24149 Active) (2026-07-11)
+
+Packet #6 **follow-on** of the **Friends & Ranked Trust** subsystem — the notification opt-out that closes the WP-353 spam-vector risk (an abuser spamming requests can no longer flood a victim's inbox once they opt out). A per-account `friend_request_emails` boolean on `legendary.player_profiles` (migration `031`, `DEFAULT true`), read/written additively via the owner profile (`OwnerProfileView`/`OwnerProfilePatch`, **12 → 13 keys**) through the existing transactional `upsertOwnerProfile`, and checked in WP-353's `sendFriendNotification` — an opted-out **recipient** gets a **clean no-op** (no send, **no** `console.warn`; distinct from the D-24077 fail-open warns), governing **both** friend emails. WP-353's fail-open posture + notify signatures are byte-identical; the preference read is folded into the existing `resolveIdentities` round-trip (`LEFT JOIN legendary.player_profiles` + `COALESCE(..., true)` → default-on, so an absent row never silences everyone).
+
+`pnpm -r build` 0; full serialized DB-wired server suite **917/917** / 0 skipped (914 baseline + 3 new: round-trip + non-boolean-reject + opt-out-no-warn); migration `031` applied to a real Postgres. `User-Visible Surface = fewer inbox emails` — **D-24026 operator-pending on deploy** (opt out via `?route=me`/PATCH → no email fires; the friend request still succeeds). The client `?route=me` toggle is **WP-359** (drafted; was blocked on this, now unblocked).
+
+---
+
 ### WP-355 / EC-385 Executed — Friend abuse controls: block list + rate limit + re-request cooldown (D-24147 Active) (2026-07-11)
 
 Packet #6 (abuse controls) of the **Friends & Ranked Trust** subsystem — the anti-abuse guardrails the friend graph needs. **This completes the subsystem's currently-drafted arc (packets #1–#6).**
