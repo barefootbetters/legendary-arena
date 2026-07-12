@@ -66,6 +66,10 @@ export interface OwnerProfileView {
   readonly avatarVisibility: 'private' | 'public';
   readonly aboutMeVisibility: 'private' | 'public';
   readonly linksVisibility: 'private' | 'public';
+  // why: WP-357 / D-24149 — the owner's friend-request email preference
+  // (server-stored on legendary.player_profiles, default true). Mirrored
+  // inline from the server OwnerProfileView; WP-359 renders the toggle.
+  readonly friendRequestEmails: boolean;
   readonly links: OwnerProfileLink[];
   readonly updatedAt: string | null;
 }
@@ -87,6 +91,9 @@ export interface OwnerProfilePatch {
   readonly avatarVisibility?: 'private' | 'public';
   readonly aboutMeVisibility?: 'private' | 'public';
   readonly linksVisibility?: 'private' | 'public';
+  // why: WP-357 / D-24149 — the owner may opt out of friend-request emails.
+  // A boolean (never `| null`; the server column is NOT NULL DEFAULT true).
+  readonly friendRequestEmails?: boolean;
 }
 
 /**

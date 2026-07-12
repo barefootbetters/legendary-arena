@@ -44,6 +44,7 @@ function ownerProfileResponse(
     avatarVisibility: 'private',
     aboutMeVisibility: 'private',
     linksVisibility: 'private',
+    friendRequestEmails: true,
     links: [],
     updatedAt: null,
     ...overrides,
@@ -198,6 +199,7 @@ describe('resolveDisplayLabel (WP-330 / D-24116)', () => {
       avatarVisibility: 'private',
       aboutMeVisibility: 'private',
       linksVisibility: 'private',
+      friendRequestEmails: true,
       links: [],
       updatedAt: null,
     };

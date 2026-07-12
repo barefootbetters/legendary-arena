@@ -149,6 +149,7 @@ test('OwnerProfileView client mirror carries the WP-305 identity fields (account
     avatarVisibility: 'private',
     aboutMeVisibility: 'private',
     linksVisibility: 'private',
+    friendRequestEmails: true,
     links: [],
     updatedAt: null,
   };
@@ -160,6 +161,7 @@ test('OwnerProfileView client mirror carries the WP-305 identity fields (account
     'avatarUrl',
     'avatarVisibility',
     'displayName',
+    'friendRequestEmails',
     'handleCanonical',
     'links',
     'linksVisibility',
@@ -168,6 +170,9 @@ test('OwnerProfileView client mirror carries the WP-305 identity fields (account
   assert.equal(view.accountId, '00000000-0000-4000-8000-000000000000');
   assert.equal(view.displayName, 'Owner Example');
   assert.equal(view.handleCanonical, null);
+  // why: WP-359 / D-24151 — the friend-email opt-out field is mirrored on
+  // the client OwnerProfileView (default true, sourced from the server).
+  assert.equal(view.friendRequestEmails, true);
 });
 
 test('OwnerProfilePatch client mirror accepts an optional displayName (WP-305 / D-24090)', () => {
