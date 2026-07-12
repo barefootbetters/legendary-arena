@@ -49,6 +49,7 @@ import { buildVillainAbilityHooks } from './villainAbility.setup.js';
 import { buildVillainDefeatRequirements } from './villainDefeatRequirement.setup.js';
 import { buildCardKeywords } from './buildCardKeywords.js';
 import { buildCardTraits } from './buildCardTraits.js';
+import { buildCardVictoryPoints } from './buildCardVictoryPoints.js';
 import {
   buildSchemeSetupInstructions,
   isSchemeRegistryReader,
@@ -367,6 +368,17 @@ export function buildInitialGameState(
     cardStats,
   );
 
+  // why: D-24157 — printed victory points for VP-bearing cards (villains,
+  // henchmen, the mastermind) resolved at setup so computeFinalScores awards
+  // printed VP without runtime registry access — sibling snapshot to cardStats.
+  // Placed after buildMastermindState because it keys the mastermind vp by the
+  // baseCardId that call just computed.
+  const cardVictoryPoints = buildCardVictoryPoints(
+    registry as unknown,
+    config,
+    mastermindState.baseCardId,
+  );
+
   // why: WP-111 / EC-118 — sibling-snapshot to G.cardStats / G.cardKeywords /
   // G.villainDeckCardTypes. Surfaces card display fields (name, imageUrl,
   // cost) into UIState so arena-client renders real cards instead of
@@ -558,6 +570,14 @@ export function buildInitialGameState(
     // grant-attributable class-condition change). Absent ≡ empty (getGrantedClasses returns
     // [] either way), so games without a Size-Changing card stay byte-identical.
     ...(Object.keys(cardSizeChangingClasses).length > 0 ? { cardSizeChangingClasses } : {}),
+    // why: D-24157 / WP-365 — conditional spread, same hash-stability discipline as
+    // cardSizeChangingClasses above: include cardVictoryPoints ONLY when some VP-bearing
+    // card carries a printed vp. hashGameState serializes the whole G, so an always-present
+    // empty `{}` would shift the finalStateHash of every game — including the EMPTY_REGISTRY
+    // replay fixtures (which resolve no vp), which would force a needless sentinel re-pin.
+    // Absent ≡ empty (scoring's `?? VP_<category>` fallback applies either way), so games
+    // with no printed vp stay byte-identical.
+    ...(Object.keys(cardVictoryPoints).length > 0 ? { cardVictoryPoints } : {}),
     // why: WP-292 / D-24076 — conditional spread, same hash-stability discipline as
     // cardSizeChangingClasses above: include villainDefeatRequirements ONLY when a
     // selected villain carries a [require-to-defeat:...] marker. Absent ≡ empty (the

@@ -933,6 +933,15 @@ export interface LegendaryGameState {
   /** Per-card Size-Changing granted Hero Classes. Built at setup, read-only at runtime. */
   cardSizeChangingClasses?: Record<CardExtId, string[]>;
 
+  // why: D-24157 / WP-365 — printed victory points for VP-bearing cards (villains,
+  // henchmen, the mastermind base card) resolved at setup from registry so
+  // computeFinalScores awards printed VP without runtime registry access. Sibling
+  // snapshot to G.cardStats, keyed by the same copy-suffixed zone ext_ids.
+  // Additive optional + omit-when-empty (like cardSizeChangingClasses): absent
+  // means no card carries a printed vp, and scoring applies the fallback constant.
+  /** Per-card printed victory points. Built at setup, read-only at runtime. */
+  cardVictoryPoints?: Record<CardExtId, number>;
+
   // why: board keyword data resolved at setup time from registry so moves
   // never query registry at runtime — same setup-time resolution pattern as
   // G.cardStats and G.villainDeckCardTypes. No runtime registry access.

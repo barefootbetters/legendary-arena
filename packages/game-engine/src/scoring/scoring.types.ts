@@ -10,20 +10,24 @@
 // MVP VP Table (named constants — never inline numbers)
 // ---------------------------------------------------------------------------
 
-// why: MVP VP values locked as named constants. Card-text-specific VP
-// modifiers (some cards grant extra VP) are future packets. Values
-// chosen for MVP simplicity, not balance.
+// why: D-24157 — VP_VILLAIN / VP_HENCHMAN / VP_TACTIC are now FALLBACKS. As of
+// WP-365, computeFinalScores awards each villain / henchman / mastermind-tactic
+// its PRINTED vp (from the G.cardVictoryPoints setup snapshot); these constants
+// apply only when a card has no printed vp (null-vp cards must never score 0).
+// VP_BYSTANDER and VP_WOUND remain the authoritative values (bystanders are 1 VP
+// by rule; wounds are a fixed penalty). Card-text-specific VP modifiers ("this
+// card is worth +N VP") remain a future packet.
 
-/** VP awarded per villain in a player's victory pile. */
+/** Fallback VP per villain when the card has no printed vp (D-24157). */
 export const VP_VILLAIN = 1;
 
-/** VP awarded per henchman in a player's victory pile. */
+/** Fallback VP per henchman when the group has no printed vp (D-24157). */
 export const VP_HENCHMAN = 1;
 
-/** VP awarded per bystander in a player's victory pile. */
+/** VP awarded per bystander in a player's victory pile (1 VP by rule). */
 export const VP_BYSTANDER = 1;
 
-/** VP awarded per defeated mastermind tactic (awarded to all players). */
+/** Fallback VP per defeated tactic when the mastermind has no printed vp (D-24157). */
 export const VP_TACTIC = 5;
 
 /** VP penalty per wound in a player's zones (negative value). */
