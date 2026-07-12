@@ -28573,13 +28573,13 @@ Protect this file.
 
 ### D-24154 — Registry Viewer `?lagn=` deep-link into the Loadout tab
 
-**Status:** Drafted 2026-07-11; not yet landed. **READY** (all hard-deps Done). Flips to Active when WP-362 executes.
+**Status:** Active (post-execution) 2026-07-12 (WP-362 / EC-392). `D-24026` operator-pending on deploy.
 
 **User-Visible Surface:** `cards.legendary-arena.com` (a `?lagn=…` link opens the Loadout tab pre-filled).
 
 **Decision.** A `?lagn=<base64url(UTF-8 LAGN JSON)>` URL parameter on the Registry Viewer. Locks: (1) a **decode-only** decoder produces text (it never `JSON.parse`s/validates, handles present-but-empty + an over-max-length cap + the `URLSearchParams` `+`→space pitfall, and **never throws**), then `parseLagnLoadout` (WP-291) is the **sole validator, called once, no fork** → **atomic** apply to the Loadout draft (`resetDraft` + the WP-291 setters run **only** on `ok:true`; a decode error or invalid LAGN leaves the draft untouched) → one-shot auto-switch to the Loadout tab (WP-114 `hasAppliedUrlAutoSwitch` machinery); (2) **`?lagn=` takes precedence over — and suppresses —** the WP-114 five-field setup-preview when both are present (one authoritative source per load, no split-brain tab); (3) **fail-visible, never white-screen** — a malformed/empty/oversized base64 or an invalid LAGN still opens the tab and shows full-sentence errors, never a blank/partial builder, never an uncaught exception; (4) **no server call, no auth, no CORS; the payload is untrusted** — the viewer renders a self-contained payload trusted only as far as `parseLagnLoadout` validates (the arena client, not the viewer, holds the session and fetches the LAGN in WP-363/D-24155); (5) base64url decode uses the browser `atob` + an explicit UTF-8 step (multi-byte card names survive) — **no new dependency**. The `base64url(UTF-8 JSON)` encoding is a cross-WP contract **owned by WP-362**; D-24155 (WP-363) produces the exact inverse (shared round-trip test).
 
-**Packet:** WP-362 (+ EC-392 at execution-prep). **Drafted:** 2026-07-11. **Executed:** —
+**Packet:** WP-362 (+ EC-392). **Drafted:** 2026-07-11. **Executed:** 2026-07-12 (EC-392; viewer test 123 pass / 0 fail, +13; typecheck 0; build 0).
 
 Protect this file.
 
