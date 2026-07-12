@@ -450,7 +450,7 @@ mindmap
         ["WP-355 ✅ Friend abuse controls: block list + request rate limit + re-request cooldown (server) — new legendary.player_blocks table (migration 030; separate model — blocking is never a friendship status, D-24142); blockPlayer INSERTs the block AND severs any existing friendship transactionally; symmetric isEitherBlocked + per-day cap (20) + re-request cooldown (24h) run block→cooldown→rate-limit before sendFriendRequest; 3 new POST/DELETE/GET /api/me/blocks endpoints (handle+displayName, no accountId); FriendApiErrorCode += blocked/rate_limited/request_cooldown; WP-350 contract untouched; block routes mount inside registerFriendshipRoutes (server.mjs untouched); EC-385; D-24147"]
         ["WP-357 ✅ Friend-request email opt-out preference (server) — per-account friend_request_emails boolean on legendary.player_profiles (migration 031, default true); read/written additively via OwnerProfileView/OwnerProfilePatch (12→13 keys) through the existing transactional upsertOwnerProfile; checked in WP-353's sendFriendNotification — opted-out recipient → clean no-op (no send, no warn), governing both friend emails; pref folded into resolveIdentities via LEFT JOIN + COALESCE(..., true); WP-353 signatures byte-identical; packet #6 follow-on; EC-387; D-24149"]
         ["WP-358 📝 Match friend-invite (server) — a seated player invites an accepted friend by @handle → legendary.match_invites record + fail-open notifyMatchInvite email; accept returns matchId and the client joins via the existing POST /api/match/join (no server-side bgio join); friends-only by design (getFriendshipStatus==='accepted') so anti-spam + block-respecting by construction; 4 authenticated endpoints, MatchInviteView never exposes accountId; lobby-invite half of packet #5; drafted 2026-07-11 READY; EC-388; D-24150"]
-        ["WP-359 📝 Friend-email opt-out toggle (arena client) — a ?route=me checkbox reading/writing WP-357's friendRequestEmails via the existing owner-profile fetch/save (one ref + one PATCH field + one checkbox); client OwnerProfileView/Patch mirror gains the field; no new endpoint/composable; client follow-on to WP-357; drafted 2026-07-11; EC-389; D-24151"]
+        ["WP-359 ✅ Friend-email opt-out toggle (arena client) — a ?route=me checkbox reading/writing WP-357's friendRequestEmails via the existing owner-profile fetch/save (one ref + one PATCH field + one checkbox); client OwnerProfileView/Patch mirror gains the field; no new endpoint/composable; arena-client typecheck 0 + test 845/845; client follow-on to WP-357; EC-389; D-24151"]
         ["WP-360 📝 Match-invite UI (arena client) — matchInvitesApi (mirrors friendsApi) + useMatchInvites + MatchInvitesSection (?route=me pending invites) + an Invite-a-friend control on LobbyView; Join reuses the existing lobby join+navigate with the accept-returned matchId; handle-only identity, never accountId; client follow-on to WP-358; drafted 2026-07-11 blocked on WP-358; EC-390; D-24152"]
 
       Next Horizons
@@ -535,13 +535,13 @@ mindmap
 | Live-Play HUD & Pending-Choice UX (2026-07) | 15/15 | — |
 | Competitive Score Submission & Verification (2026-07) | 10/10 | — |
 | Gauntlet Leaderboards (Legends) (2026-07) | 3/4 | 1 open |
-| Friends & Ranked Trust (2026-07) | 7/10 | 3 open |
+| Friends & Ranked Trust (2026-07) | 8/10 | 2 open |
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **347/353 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 5 open |
+| **Total** | **348/353 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 4 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 6):** WP-042.1 ⏸ blocked; WP-345 open; WP-358 open; WP-359 open; WP-360 open; WP-356 open.
+**Open / blocked WPs (derived from WORK_INDEX, 5):** WP-042.1 ⏸ blocked; WP-345 open; WP-358 open; WP-360 open; WP-356 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

@@ -28528,7 +28528,7 @@ Protect this file.
 
 ### D-24151 — Owner-profile friend-email opt-out toggle (Friends & Ranked Trust, WP-357 client follow-on)
 
-**Status:** Drafted 2026-07-11; not yet landed. **BLOCKED on WP-357** (the server field). Flips to Active when WP-359 executes.
+**Status:** Active (post-execution) 2026-07-11 (WP-359 / EC-389). `D-24026` live-verify operator-pending on deploy.
 
 **User-Visible Surface:** `play.legendary-arena.com` (`?route=me` checkbox).
 

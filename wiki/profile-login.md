@@ -616,9 +616,10 @@ during implementation.
    (executed 2026-07-11, D-24149 Active): a per-account
    `friend_request_emails` preference on `player_profiles`, checked in
    WP-353's send boundary (opted-out recipient → clean no-op). Its client
-   `?route=me` toggle is **drafted as
+   `?route=me` toggle is **executed as
    [WP-359](../docs/ai/work-packets/WP-359-friend-email-opt-out-toggle-client.md)**
-   (2026-07-11, D-24151; blocked on WP-357).
+   (executed 2026-07-11, D-24151 Active): a checkbox on the owner-profile
+   edit form, riding the existing fetch/save.
 
 ## Interactions
 

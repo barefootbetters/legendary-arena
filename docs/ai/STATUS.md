@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-359 / EC-389 Executed — Friend-email opt-out toggle on the owner profile (D-24151 Active) (2026-07-11)
+
+Client follow-on to WP-357 — the `?route=me` checkbox that lets a player turn off friend-request emails. Adds `friendRequestEmails` to the client `OwnerProfileView`/`OwnerProfilePatch` mirror (inline, no server import) and a checkbox in `MyProfilePage.vue` (`formFriendRequestEmails` ref, seeded from the loaded profile, included in the **existing** `updateOwnerProfile` PATCH) — no new endpoint or composable. The `useAuthNav.test.ts` fixture was backfilled with the new required field (the recurring arena-client required-field-add pattern; inline amendment).
+
+`arena-client` typecheck (vue-tsc) 0; `arena-client` test **845/845** / 0 skipped; `pnpm -r build` 0. `User-Visible Surface = play.legendary-arena.com` — **D-24026 operator-pending on deploy** (uncheck + save → reload shows unchecked → no email fires with WP-357 live). **With this, the WP-357 opt-out is complete end to end (server + client).**
+
+---
+
 ### WP-357 / EC-387 Executed — Friend-request email opt-out preference (D-24149 Active) (2026-07-11)
 
 Packet #6 **follow-on** of the **Friends & Ranked Trust** subsystem — the notification opt-out that closes the WP-353 spam-vector risk (an abuser spamming requests can no longer flood a victim's inbox once they opt out). A per-account `friend_request_emails` boolean on `legendary.player_profiles` (migration `031`, `DEFAULT true`), read/written additively via the owner profile (`OwnerProfileView`/`OwnerProfilePatch`, **12 → 13 keys**) through the existing transactional `upsertOwnerProfile`, and checked in WP-353's `sendFriendNotification` — an opted-out **recipient** gets a **clean no-op** (no send, **no** `console.warn`; distinct from the D-24077 fail-open warns), governing **both** friend emails. WP-353's fail-open posture + notify signatures are byte-identical; the preference read is folded into the existing `resolveIdentities` round-trip (`LEFT JOIN legendary.player_profiles` + `COALESCE(..., true)` → default-on, so an absent row never silences everyone).
