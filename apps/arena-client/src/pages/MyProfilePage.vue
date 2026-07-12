@@ -229,6 +229,9 @@ export default defineComponent({
     const formAvatarVisibility = ref<'private' | 'public'>('private');
     const formAboutMeVisibility = ref<'private' | 'public'>('private');
     const formLinksVisibility = ref<'private' | 'public'>('private');
+    // why: WP-359 / D-24151 — the friend-request email opt-out toggle.
+    // Defaults to true (emails on) until the loaded profile seeds it.
+    const formFriendRequestEmails = ref(true);
     const draftLinks = ref<DraftLink[]>([]);
 
     // why: WP-302 — the Saved Loadouts section owns its own state,
@@ -297,6 +300,7 @@ export default defineComponent({
       formAvatarVisibility.value = loaded.avatarVisibility;
       formAboutMeVisibility.value = loaded.aboutMeVisibility;
       formLinksVisibility.value = loaded.linksVisibility;
+      formFriendRequestEmails.value = loaded.friendRequestEmails;
       draftLinks.value = loaded.links.map((link) => ({
         provider: link.provider,
         url: link.url,
@@ -327,6 +331,7 @@ export default defineComponent({
         avatarVisibility: formAvatarVisibility.value,
         aboutMeVisibility: formAboutMeVisibility.value,
         linksVisibility: formLinksVisibility.value,
+        friendRequestEmails: formFriendRequestEmails.value,
       });
       if (result.ok === true) {
         applyView(result.value);
@@ -601,6 +606,7 @@ export default defineComponent({
       formAvatarVisibility,
       formAboutMeVisibility,
       formLinksVisibility,
+      formFriendRequestEmails,
       draftLinks,
       providerOptions: ALLOWED_PROVIDERS,
       saveProfile,
@@ -801,6 +807,15 @@ export default defineComponent({
             <option value="private">private</option>
             <option value="public">public</option>
           </select>
+        </label>
+
+        <label class="profile-field">
+          <span class="profile-field-label">Email me about friend requests</span>
+          <input
+            type="checkbox"
+            v-model="formFriendRequestEmails"
+            data-testid="my-profile-friend-request-emails"
+          />
         </label>
 
         <button
