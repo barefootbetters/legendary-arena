@@ -77,27 +77,20 @@ export default defineComponent({
     <div class="your-deck-discard__deck" data-testid="play-your-deck">
       <header>Your Deck</header>
       <p class="your-deck-discard__count">[{{ deckCount }} — face-down]</p>
-      <p class="your-deck-discard__note">
-        Top card NEVER visible to any audience.
-      </p>
     </div>
     <div class="your-deck-discard__discard" data-testid="play-your-discard">
       <header>Your Discard</header>
       <p class="your-deck-discard__count">[{{ discardCount }} — face-up]</p>
-      <div
+      <!-- why: the discard top card shows as a compact name line instead of an
+           inline card-tile image so the deck/discard box stays short; the full
+           face-up contents (with images) remain one click away via "View all". -->
+      <p
         v-if="discardTopCard !== null && discardTopCard !== undefined"
         class="your-deck-discard__top"
         data-testid="play-your-discard-top"
       >
-        <CardTile
-          :display="discardTopCard.display"
-          size="sm"
-          :show-cost="false"
-        />
-        <span class="your-deck-discard__top-label">{{
-          discardTopCard.display.name
-        }}</span>
-      </div>
+        Top: {{ discardTopCard.display.name }}
+      </p>
       <p
         v-else
         class="your-deck-discard__empty"
@@ -140,7 +133,7 @@ export default defineComponent({
 .your-deck-discard {
   display: flex;
   gap: 1rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.4rem 0.75rem;
   border: 1px solid var(--color-foreground, #999);
 }
 
@@ -157,7 +150,6 @@ export default defineComponent({
   font-variant-numeric: tabular-nums;
 }
 
-.your-deck-discard__note,
 .your-deck-discard__empty {
   margin: 0;
   font-style: italic;
@@ -166,13 +158,8 @@ export default defineComponent({
 }
 
 .your-deck-discard__top {
-  display: flex;
-  gap: 0.25rem;
-  align-items: center;
-}
-
-.your-deck-discard__top-label {
-  font-size: 0.75rem;
+  margin: 0;
+  font-size: 0.8rem;
   font-weight: 500;
 }
 
