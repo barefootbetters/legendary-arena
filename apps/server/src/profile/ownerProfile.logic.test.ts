@@ -145,7 +145,7 @@ describe('owner profile logic (WP-104)', () => {
     }
   });
 
-  test('OwnerProfileView shape contains exactly the twelve locked fields (WP-305 D-24089 identity extension) and excludes private account fields', () => {
+  test('OwnerProfileView shape contains exactly the thirteen locked fields (WP-357 D-24149 friend-email opt-out extension) and excludes private account fields', () => {
     const view: OwnerProfileView = {
       accountId: '00000000-0000-4000-8000-000000000000' as AccountId,
       displayName: 'Owner Example',
@@ -155,16 +155,17 @@ describe('owner profile logic (WP-104)', () => {
       avatarVisibility: 'private',
       aboutMeVisibility: 'private',
       linksVisibility: 'private',
+      friendRequestEmails: true,
       links: [],
       updatedAt: null,
       teamAffiliations: [],
       badges: [],
     };
     const keys = Object.keys(view).sort();
-    // why: WP-305 / D-24089 locked 12-key set — 9 prior keys plus the
-    // owner's own identity (accountId, displayName, handleCanonical).
-    // The drift test pins this exactly; adding a field requires
-    // updating this list AND the OwnerProfileView interface together.
+    // why: WP-357 / D-24149 locked 13-key set — the WP-305 12-key set plus
+    // `friendRequestEmails`. The drift test pins this exactly; adding a
+    // field requires updating this list AND the OwnerProfileView interface
+    // together.
     assert.deepEqual(keys, [
       'aboutMe',
       'aboutMeVisibility',
@@ -173,6 +174,7 @@ describe('owner profile logic (WP-104)', () => {
       'avatarVisibility',
       'badges',
       'displayName',
+      'friendRequestEmails',
       'handleCanonical',
       'links',
       'linksVisibility',
@@ -357,6 +359,65 @@ describe('owner profile logic (WP-104)', () => {
       );
     },
   );
+
+  test(
+    'friendRequestEmails defaults to true (no profile row) and round-trips through a PATCH (WP-357)',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const accountId = await provisionAccount(testPool, 'friendemail');
+      // default (never-edited account, no player_profiles row) is true
+      const initial = await getOwnerProfile(accountId, testPool);
+      assert.ok(initial.ok === true);
+      assert.equal(initial.value.friendRequestEmails, true);
+      // opt out — the PATCH response reflects the new value
+      const optedOut = await upsertOwnerProfile(
+        accountId,
+        { friendRequestEmails: false },
+        testPool,
+      );
+      assert.ok(optedOut.ok === true);
+      assert.equal(optedOut.value.friendRequestEmails, false);
+      // GET reads back the opted-out value
+      const refetched = await getOwnerProfile(accountId, testPool);
+      assert.ok(refetched.ok === true);
+      assert.equal(refetched.value.friendRequestEmails, false);
+      // opt back in
+      const optedIn = await upsertOwnerProfile(
+        accountId,
+        { friendRequestEmails: true },
+        testPool,
+      );
+      assert.ok(optedIn.ok === true);
+      assert.equal(optedIn.value.friendRequestEmails, true);
+    },
+  );
+
+  test('upsertOwnerProfile rejects a non-boolean friendRequestEmails before any DB access (WP-357)', async () => {
+    // why: validation runs before loadPlayerIdByAccountId, so a bad value is
+    // rejected without a DB round-trip — mirror the too_many_links precedent
+    // with a recording pool that throws on any access.
+    const recordingDatabase = {
+      query: async () => {
+        throw new Error(
+          'a non-boolean friendRequestEmails must be rejected before any database access',
+        );
+      },
+      connect: async () => {
+        throw new Error(
+          'a non-boolean friendRequestEmails must be rejected before any pool.connect()',
+        );
+      },
+    } as unknown as pg.Pool;
+    const accountId = '00000000-0000-4000-8000-000000000000' as AccountId;
+    const result = await upsertOwnerProfile(
+      accountId,
+      { friendRequestEmails: 'yes' as unknown as boolean },
+      recordingDatabase,
+    );
+    assert.ok(result.ok === false);
+    assert.equal((result as { code: string }).code, 'invalid_request');
+  });
 
   test(
     'getOwnerProfile returns the row when one exists',
