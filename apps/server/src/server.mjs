@@ -29,6 +29,7 @@ import { registerOwnerProfileRoutes } from './profile/ownerProfile.routes.js';
 import { registerAvatarUploadRoutes } from './profile/avatarUpload.routes.js';
 import { registerLoadoutLibraryRoutes } from './profile/loadoutLibrary.routes.js';
 import { registerFriendshipRoutes } from './friendships/friendships.routes.js';
+import { registerMatchInviteRoutes } from './match/matchInvites.routes.js';
 import { registerProfileRoutes } from './profile/profile.routes.js';
 import { registerTeamRoutes } from './teams/team.routes.js';
 import { registerMatchGateRoutes } from './match/matchGate.routes.js';
@@ -753,6 +754,19 @@ export async function startServer() {
     ),
   };
 
+  // why: WP-358 / D-24150 — the match-invite email config (fire-and-forget,
+  // fail-open). Reuses the same Brevo sender; its own template id env. An
+  // undefined sender or template id disables the email (no-op, D-24080).
+  const matchInviteNotificationConfig = {
+    sender:
+      brevoConfig === undefined
+        ? undefined
+        : createBrevoTransactionalSender(brevoConfig.apiKey),
+    templateId: parseFriendTemplateId(
+      process.env.BREVO_MATCH_INVITE_TEMPLATE_ID,
+    ),
+  };
+
   // why: WP-104 / D-10408 — register the three owner-only routes
   // (/api/me/profile GET + PATCH, /api/me/links PUT) on the same
   // long-lived pool. requireAuthenticatedSession is the WP-112
@@ -855,6 +869,17 @@ export async function startServer() {
     verifier,
     accountResolver: verifier === undefined ? undefined : accountResolver,
     notificationConfig: friendNotificationConfig,
+  });
+
+  // why: WP-358 / D-24150 — register the four match-invite routes (the
+  // lobby-invite half of packet #5). Same caller-injected auth deps + a
+  // fail-open invite-email config; accept returns the matchId and the client
+  // joins via the existing POST /api/match/join.
+  registerMatchInviteRoutes(server.router, pool, {
+    requireAuthenticatedSession,
+    verifier,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
+    notificationConfig: matchInviteNotificationConfig,
   });
 
   // why: WP-152 / D-10202 / D-11505 — wire the public profile route.

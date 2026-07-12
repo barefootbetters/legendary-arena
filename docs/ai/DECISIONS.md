@@ -28505,7 +28505,7 @@ Protect this file.
 
 ### D-24150 — Match friend-invites (Friends & Ranked Trust, packet #5 lobby-invite-flow half)
 
-**Status:** Drafted 2026-07-11; not yet landed. **READY (not blocked — all hard-deps Done).** Flips to Active (post-execution) when WP-358 executes.
+**Status:** Active (post-execution) 2026-07-11 (WP-358 / EC-388). `D-24026` live-verify operator-pending on deploy.
 
 **User-Visible Surface:** email (an invite email) + the future client invite/pending-invites UI.
 
