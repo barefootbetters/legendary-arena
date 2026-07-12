@@ -62,12 +62,13 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 - Full file contents for every new/modified file in the output — no diffs, no snippets.
 
 **Packet-specific:**
-- **Read-only, no mutation.** The endpoint never writes `bgio.*` or `legendary.*`; it never writes back to the blob. It is a derived projection (D-24153 carve-out) exactly like the D-24119 reducer read — never a save-game, never a source of competitive/derived features.
+- **Read-only, no mutation.** The endpoint never writes `bgio.*` or `legendary.*`; it never writes back to the blob. It also **never mutates the startup registry, caches derived names, or persists any LAGN artifact** — the projection is built fresh per request and discarded. It is a derived projection (D-24153 carve-out) exactly like the D-24119 reducer read — a **convenience representation, not a source of truth; the persisted match blob remains authoritative** — never a save-game, never a source of competitive/derived features, never round-tripped back into gameplay state.
 - **Blob read is minimal.** The new reader SELECTs `initial_state` only (not `log`); it maps **only** `initial_state.G.matchConfiguration` (the 9 fields) + `initial_state.ctx.numPlayers`. No `log` reduction, no `deltalog`, no engine import.
 - **No engine / `boardgame.io` / registry-runtime import.** The mapper is a pure function over the plain composition object + the registry name lookup passed in; the server does not import `@legendary-arena/game-engine` or `boardgame.io`. `@legendary-arena/lagn` (pure zod) and `@legendary-arena/registry` (for names) are the only new imports, both already in the server's allowed set.
 - **Fail closed.** Unknown match, `initial_state === null` (unreplayable), or a non-participant caller → the endpoint returns without leaking the composition (`404` unknown/unreplayable; `403` authenticated-but-not-a-participant). No 200 with a partial/empty document.
 - **Canonical names + the one rename.** Composition fields are the 00.2 §8.1 names verbatim; `officersCount` maps to LAGN `setup.shield_officers_count` (the only non-1:1 field). Never rename any other field.
-- **Validate before returning.** The built LAGN passes `validate()` from `@legendary-arena/lagn`; a validation failure is a `500` (server bug — the blob's stored composition should always be well-formed), never a silent partial return.
+- **Validation ownership is the route, exactly once.** `buildMatchLagn` MUST NOT validate — it only constructs the document. The route calls `validate()` from `@legendary-arena/lagn` exactly once, immediately before the `200`; a validation failure is a `500 { error: 'lagn_projection_failed' }` (server bug — the blob's stored composition should always be well-formed), never a silent partial return. No second validation anywhere.
+- **Corrupt `numPlayers` is a `500`.** `initial_state.ctx.numPlayers` should always be an integer in `1..5`. If it is missing, non-numeric, or otherwise fails LAGN validation (LAGN `player_count` requires an int 1–5), the built document fails `validate()` and the route returns `500 { error: 'lagn_projection_failed' }` — the same fail-closed path as any other blob-shape regression. The mapper does not silently coerce or default it.
 - **`Cache-Control: no-store`** set as the first statement of every response (200 and every error path), mirroring the competition/leaderboard handlers.
 
 **Session protocol:**
@@ -79,6 +80,8 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 - **LAGN Tier-1 rename:** `officersCount` → `setup.shield_officers_count` (only non-1:1 field; every other name is 1:1 snake_case).
 - **LAGN `variant` derivation:** `numPlayers === 1` → `'solo'`; else → `'cooperative'` (mirrors `useLoadoutLagnExport` classic→solo / custom→cooperative; the game is co-op vs the Mastermind — never `'competitive'`).
 - **LAGN `game_id`:** the `matchId` (a stable, unique per-match string).
+- **Registry name source:** the ext_id's **canonical registry display name**; when the registry has no entry for the ext_id, fall back to the ext_id string **unchanged**. The resolver MUST NOT synthesize names, localize, title-case, or derive labels from any other metadata (heroes-only vs all-catalog search, canonical vs localized name, etc. are not choices — it is the one canonical display name or the raw ext_id).
+- **Response envelope:** `{ lagn }` — a single top-level key. This envelope is **owned by WP-361**; WP-362/WP-363 read only `lagn` and MUST NOT depend on any additional top-level field.
 - **`bgio` schema is not the `legendary.*` domain** (D-24095) — this read is the D-24153 carve-out extension, not a domain read.
 
 ---
@@ -98,20 +101,20 @@ The endpoint is a pure read: given the same persisted blob + registry, it return
   - Add `// why:` — SELECTs `initial_state` only (not `log`) because the Tier-1 projection needs no move log; the D-24153 carve-out authorizes exactly this read.
 
 ### B) `match/matchLagn.logic.ts` — pure mapper `buildMatchLagn(...)`
-- `buildMatchLagn(matchId, matchConfiguration, numPlayers, resolveName): LAGN` — pure, deterministic, side-effect-free:
-  - Builds a Tier-1 `LAGN` (`lagn_version: '1.0.0'`, `game_id: matchId`, `variant` per the locked derivation, `player_count: numPlayers`, `setup`).
+- `buildMatchLagn(matchId, matchConfiguration, numPlayers, resolveName): LAGN` — pure, deterministic, side-effect-free, and **construction-only (it MUST NOT call `validate()`** — validation is the route's job, once):
+  - Builds a Tier-1 `LAGN` (`lagn_version: '1.0.0'`, `game_id: matchId`, `variant` per the locked derivation, `player_count: numPlayers` as-read — no coercion/defaulting; a bad value fails the route's `validate()`, `setup`).
   - `setup.mastermind = { id: matchConfiguration.mastermindId, name: resolveName(mastermindId) }`, same for `scheme`; `villain_groups`/`henchmen_groups`/`heroes` map each id → `{ id, name: resolveName(id) }`; the four counts map 1:1 except `officersCount` → `shield_officers_count`.
-  - `resolveName(extId)` falls back to the ext_id string when the registry has no display name (accepted LAGN pattern).
+  - The mapper reads **exactly** the 9 sanctioned `matchConfiguration` fields (the locked list) and no others — an extra field added to `MatchSetupConfig` later is ignored by construction and caught by the Scope F drift test.
   - No `card_catalog`, `replay`, or `result` (Tier-1 only).
-- `resolveNameFromRegistry(registry)` — a small factory returning the `resolveName` closure over the startup registry lookup (the ONE closure the framework-free mapper needs; registry lookup is the only non-pure dependency, injected).
+- `resolveNameFromRegistry(registry)` — a small factory returning the `resolveName` closure over the startup registry lookup (the ONE closure the framework-free mapper needs; registry lookup is the only non-pure dependency, injected). `resolveName(extId)` returns the ext_id's **canonical registry display name**, or the ext_id string unchanged when absent. It MUST NOT synthesize, localize, or title-case names (per the Locked Values registry-name-source rule).
 
 ### C) `match/matchLagn.routes.ts` (new) — `registerMatchLagnRoutes(router, pool, deps)`
 - `GET /api/match/:matchId/lagn`, `authenticated-session-required`:
   - `Cache-Control: no-store` first.
   - Resolve the caller's `AccountId` via `requireAuthenticatedSession` (auth-first; absent/invalid → `401` full-sentence `{ error }`).
-  - `readMatchConfigurationForLagn(matchId, pool)` → `null` ⇒ `404 { error: 'match_not_found' }`.
+  - `readMatchConfigurationForLagn(matchId, pool)` → `null` ⇒ `404 { error: 'match_not_found' }`. The endpoint **intentionally does not distinguish** a missing match row from an unreplayable row (`initial_state` null) — both return the same `404 { error: 'match_not_found' }` so the response never leaks whether a given matchId exists.
   - `readSeatAccounts(matchId, pool)` → caller's `AccountId` not present ⇒ `403 { error: 'not_a_participant' }`.
-  - `buildMatchLagn(...)` with `resolveNameFromRegistry(registry)`; `validate(lagn)` fails ⇒ `500 { error: 'lagn_projection_failed' }` (blob-shape regression).
+  - `buildMatchLagn(...)` with `resolveNameFromRegistry(registry)` (construction only). The route then calls `validate(lagn)` **exactly once**; failure ⇒ `500 { error: 'lagn_projection_failed' }` (blob-shape regression, incl. a corrupt `numPlayers`).
   - `200 { lagn }`.
   - Status domain locked to `{ 200, 401, 403, 404, 500 }`.
 - `deps`: `{ requireAuthenticatedSession, verifier, accountResolver, registry }`.
@@ -123,8 +126,10 @@ The endpoint is a pure read: given the same persisted blob + registry, it return
 - One new row: `Wired | GET | /api/match/:matchId/lagn | authenticated-session-required | :matchId path param | { lagn: LAGN (Tier-1) } | WP-361 | ...`. Canonical `matchId` spelling; status domain `{200,401,403,404,500}`.
 
 ### F) Tests
-- `matchLagn.logic.test.ts` — `buildMatchLagn` maps all 9 fields + player_count; the `officersCount → shield_officers_count` rename; `variant` = `'solo'` at numPlayers 1, `'cooperative'` at ≥2; `resolveName` falls back to id; the built document passes `validate()`; `readMatchConfigurationForLagn` returns null for an absent row / null `initial_state` (fixture-injected `DatabaseClient`).
-- `matchLagn.routes.test.ts` — auth-first (guest → `401`); unknown match → `404`; non-participant authenticated caller → `403`; participant → `200 { lagn }` (valid Tier-1); `Cache-Control: no-store` on every path; no `boardgame.io`/engine import in the new files.
+- `matchLagn.logic.test.ts` — `buildMatchLagn` maps all 9 fields + player_count; the `officersCount → shield_officers_count` rename; `variant` = `'solo'` at numPlayers 1, `'cooperative'` at ≥2; `resolveName` returns the registry display name when present and falls back to the ext_id **unchanged** when absent (a no-synthesis assertion: a known ext_id → its display name, an unknown ext_id → itself verbatim); the built document passes `validate()`; `readMatchConfigurationForLagn` returns null for an absent row / null `initial_state` (fixture-injected `DatabaseClient`).
+- **9-field composition drift test** — assert `buildMatchLagn` consumes **exactly** the sanctioned 9 `matchConfiguration` fields and no others: feed a `matchConfiguration` fixture carrying the 9 fields **plus** an extra unsanctioned field (e.g. a stray key) and assert (a) the built `setup` is byte-identical to the same fixture without the extra field, and (b) the extra field appears nowhere in the output. `// why:` — a field added to `MatchSetupConfig` later must not silently leak into the LAGN projection; this test fails loudly when the sanctioned set changes.
+- **Corrupt `numPlayers`** — `buildMatchLagn` with `numPlayers` of `0`, `8`, `null`, and non-numeric produces a document that **fails** `validate()` (proving the route's single `validate()` → `500` path); the mapper does not coerce or default it.
+- `matchLagn.routes.test.ts` — auth-first (guest → `401`); unknown match → `404 match_not_found`; **unreplayable row (null `initial_state`) → the same `404 match_not_found`** (indistinguishable from unknown); non-participant authenticated caller → `403 not_a_participant`; participant → `200 { lagn }` (a single `lagn` top-level key, valid Tier-1); a blob whose `numPlayers`/composition fails validation → `500 lagn_projection_failed`; `Cache-Control: no-store` on every path; no `boardgame.io`/engine import in the new files.
 
 ---
 
@@ -170,20 +175,24 @@ The endpoint is a pure read: given the same persisted blob + registry, it return
 | Field rename | `officersCount` → `setup.shield_officers_count` (only non-1:1) |
 | `variant` | `numPlayers === 1` → `'solo'`, else `'cooperative'` (co-op; never `'competitive'`) |
 | `game_id` | the `matchId` |
-| Names | `resolveName(extId)` via startup registry; fall back to the ext_id string |
-| Validation | `validate()` (published `@legendary-arena/lagn`) before `200`; failure ⇒ `500` |
+| Names | canonical registry display name for the ext_id; absent ⇒ ext_id string unchanged. No synthesis / localization / title-casing |
+| Bad `numPlayers` | missing / non-numeric / not 1–5 ⇒ fails `validate()` ⇒ `500 lagn_projection_failed` (no coercion/default) |
+| Validation ownership | route calls `validate()` (published `@legendary-arena/lagn`) **exactly once** before `200`; `buildMatchLagn` never validates; failure ⇒ `500` |
+| Response envelope | `{ lagn }` (single top-level key), owned by WP-361; consumers read only `lagn` |
+| Authority | projection is a convenience representation, **not** a source of truth; the blob stays authoritative (never round-tripped back into gameplay) |
 
 ---
 
 ## Acceptance Criteria
 
 1. `readMatchConfigurationForLagn` SELECTs `initial_state` only and returns `{ matchConfiguration, numPlayers }` for a valid row, `null` for an absent row or null `initial_state` (**AC-1**).
-2. `buildMatchLagn` returns a Tier-1 `LAGN` mapping all 9 composition fields (incl. `officersCount → shield_officers_count`) + `player_count`, with `variant` `'solo'` at 1 player and `'cooperative'` at ≥2, `game_id` = matchId, `resolveName` id-fallback, and the result passes `validate()` (**AC-2**).
-3. The route is auth-first (guest → `401`), `404 match_not_found` for unknown/unreplayable, `403 not_a_participant` when the caller's `AccountId` is not in `readSeatAccounts`, `200 { lagn }` for a participant; `Cache-Control: no-store` on every path; status domain `{200,401,403,404,500}` (**AC-3**).
-4. No `boardgame.io` / `@legendary-arena/game-engine` import in either new file (confirmed with `Select-String`); the only new imports are `@legendary-arena/lagn` (validate/type) and `@legendary-arena/registry` (names) (**AC-4**).
-5. `server.mjs` wires exactly one `registerMatchLagnRoutes`, threading the startup `registry` into deps; CORS unchanged (already allowlists `play.legendary-arena.com`) (**AC-5**).
-6. `docs/ai/ARCHITECTURE.md §Persistence Boundary` + `.claude/rules/architecture.md` both name the D-24153 read-only Tier-1 LAGN carve-out; `api-endpoints.md` gains the one row (D-11804); `00.3 §21` passes (**AC-6**).
-7. `pnpm -r build` 0; `pnpm --filter @legendary-arena/server test` — new suites green; DB-less skip parity; baseline otherwise unchanged (**AC-7**).
+2. `buildMatchLagn` returns a Tier-1 `LAGN` mapping all 9 composition fields (incl. `officersCount → shield_officers_count`) + `player_count`, with `variant` `'solo'` at 1 player and `'cooperative'` at ≥2, `game_id` = matchId, and `resolveName` returning the registry display name when present / the ext_id unchanged when absent (no synthesis); it does **not** call `validate()` itself; the result passes `validate()` when run by the caller (**AC-2**).
+3. The route is auth-first (guest → `401`), `404 match_not_found` for **both** an unknown match and an unreplayable (`initial_state` null) row indistinguishably, `403 not_a_participant` when the caller's `AccountId` is not in `readSeatAccounts`, `200 { lagn }` (single top-level `lagn` key) for a participant, and `500 lagn_projection_failed` when the built document fails validation; `validate()` is called exactly once, in the route; `Cache-Control: no-store` on every path; status domain `{200,401,403,404,500}` (**AC-3**).
+4. Neither new file has a dependency edge to `boardgame.io` or `@legendary-arena/game-engine` — verified by both source inspection (no import statement, direct or aliased) and the build/module graph; the only new imports are `@legendary-arena/lagn` (validate/type) and `@legendary-arena/registry` (names). The `Select-String` grep is a supporting check, not the sole proof (**AC-4**).
+5. The 9-field composition drift test passes: `buildMatchLagn` consumes exactly the sanctioned 9 `matchConfiguration` fields (an extra field on the fixture never appears in the output), and a corrupt `numPlayers` (`0`/`8`/`null`/non-numeric) produces a document that fails `validate()` (**AC-5**).
+6. `server.mjs` wires exactly one `registerMatchLagnRoutes`, threading the startup `registry` into deps; the endpoint never mutates the registry, caches names, or persists any LAGN artifact; CORS unchanged (already allowlists `play.legendary-arena.com`) (**AC-6**).
+7. `docs/ai/ARCHITECTURE.md §Persistence Boundary` + `.claude/rules/architecture.md` both name the D-24153 read-only Tier-1 LAGN carve-out (a convenience projection, blob stays authoritative); `api-endpoints.md` gains the one row (D-11804); `00.3 §21` passes (**AC-7**).
+8. `pnpm -r build` 0; `pnpm --filter @legendary-arena/server test` — new suites green; DB-less skip parity; baseline otherwise unchanged (**AC-8**).
 
 ---
 
@@ -204,9 +213,9 @@ git diff --name-only   # only the ## Files Expected to Change set
 ## Definition of Done
 
 - [ ] All acceptance criteria pass
-- [ ] `matchLagn.logic.ts` — thin `initial_state` reader (null fail-closed) + pure Tier-1 mapper (9 fields + rename + variant + id-fallback names) + `validate()`
-- [ ] `matchLagn.routes.ts` — one `GET` endpoint, auth-first, `403` participant gate, `404` unknown, `500` on projection failure, `no-store` always, status domain `{200,401,403,404,500}`
-- [ ] No `boardgame.io`/engine import; read-only (no `bgio.*`/`legendary.*` write)
+- [ ] `matchLagn.logic.ts` — thin `initial_state` reader (null fail-closed) + **construction-only** pure Tier-1 mapper (9 fields + rename + variant + canonical/id-fallback names, **no `validate()` inside the mapper**); the 9-field drift test + corrupt-`numPlayers` test pass
+- [ ] `matchLagn.routes.ts` — one `GET` endpoint, auth-first, `403` participant gate, `404` unknown **and** unreplayable (indistinguishable), `500` on the single-`validate()` projection failure, `no-store` always, `{ lagn }` single-key envelope, status domain `{200,401,403,404,500}`
+- [ ] No `boardgame.io`/engine dependency edge (source + build graph); read-only (no `bgio.*`/`legendary.*` write, no registry mutation, no name cache, no LAGN persistence)
 - [ ] `server.mjs` wires once (registry threaded); CORS unchanged
 - [ ] `ARCHITECTURE.md §Persistence Boundary` + `.claude/rules/architecture.md` mirror the **D-24153** Tier-1 LAGN carve-out; `api-endpoints.md` row (D-11804); `00.3 §21` passes
 - [ ] `pnpm -r build` 0; server test green (DB-less skip parity)
@@ -231,4 +240,4 @@ git diff --name-only   # only the ## Files Expected to Change set
 
 ## Decision (reserved, lands at execution)
 
-Reserves **D-24153**: current-match loadout as a read-only Tier-1 LAGN endpoint. Locks: (1) **`GET /api/match/:matchId/lagn`**, `authenticated-session-required` + a participant gate (`readSeatAccounts`); (2) the **persistence-boundary carve-out extension** — the server MAY read `bgio.matches.initial_state.G.matchConfiguration` (+ `ctx.numPlayers`) to project a match's **Tier-1 LAGN loadout**, a derived read-only projection (never written back, never a save-game, never a source of competitive/derived features), extending the D-24095/D-24119 blob-read carve-out; ARCHITECTURE.md §Persistence Boundary + the rules mirror gain the sentence; (3) **no new domain table and no match-create write** — the composition is already in the blob, so duplicating it (the rejected alternative) would add a migration, a hot-path write, and a backfill gap for no gain; (4) the locked field mapping (`officersCount → shield_officers_count`; `variant` `solo`/`cooperative` by seat count; `game_id` = matchId; id-fallback names via the startup registry) validated by the published `@legendary-arena/lagn` before return. The registry-viewer `?lagn=` ingest (WP-362) and the play-surface link (WP-363) are separate follow-ons. Drafted 2026-07-11; not yet landed.
+Reserves **D-24153**: current-match loadout as a read-only Tier-1 LAGN endpoint. Locks: (1) **`GET /api/match/:matchId/lagn`**, `authenticated-session-required` + a participant gate (`readSeatAccounts`); (2) the **persistence-boundary carve-out extension** — the server MAY read `bgio.matches.initial_state.G.matchConfiguration` (+ `ctx.numPlayers`) to project a match's **Tier-1 LAGN loadout**, a derived read-only projection (never written back, never a save-game, never a source of competitive/derived features), extending the D-24095/D-24119 blob-read carve-out; ARCHITECTURE.md §Persistence Boundary + the rules mirror gain the sentence; (3) **no new domain table and no match-create write** — the composition is already in the blob, so duplicating it (the rejected alternative) would add a migration, a hot-path write, and a backfill gap for no gain; (4) the locked field mapping (`officersCount → shield_officers_count`; `variant` `solo`/`cooperative` by seat count; `game_id` = matchId; canonical-registry-display-name-or-ext_id-unchanged names, no synthesis), built by a **construction-only** mapper and validated by the published `@legendary-arena/lagn` **exactly once in the route** before return (a corrupt `numPlayers` fails validation → `500`); (5) the projection is a **convenience representation, not a source of truth** — the persisted match blob remains authoritative, and the LAGN is never round-tripped back into gameplay state. The registry-viewer `?lagn=` ingest (WP-362) and the play-surface link (WP-363) are separate follow-ons. Drafted 2026-07-11; not yet landed.
