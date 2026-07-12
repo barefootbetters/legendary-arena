@@ -1,6 +1,6 @@
-# WP-361 — `gain-wound-self` / `gain-wound-each` Hero Keywords (Crazed Rampage family — "gain a Wound")
+# WP-364 — `gain-wound-self` / `gain-wound-each` Hero Keywords (Crazed Rampage family — "gain a Wound")
 
-**Status:** Draft 2026-07-11 · **READY (not blocked — all hard-deps Done)** · **Standard two-session lane** (D-24028 — NOT lightweight: two new members of the closed `HeroKeyword` union + a new executor that mutates the shared Wound supply pile; un-defers a `DEFERRED_BY_DESIGN_MECHANICS` slice). Pairs with **EC-391** (authored at execution-prep). Reserves **D-24153** (lands at execution).
+**Status:** Draft 2026-07-11 · **READY (not blocked — all hard-deps Done)** · **Standard two-session lane** (D-24028 — NOT lightweight: two new members of the closed `HeroKeyword` union + a new executor that mutates the shared Wound supply pile; un-defers a `DEFERRED_BY_DESIGN_MECHANICS` slice). Pairs with **EC-391** (authored at execution-prep). Reserves **D-24156** (lands at execution).
 **Primary Layer:** Game Engine / Implementation (+ card-data pipeline)
 **Dependencies:** WP-021, WP-022 (hero ability hook pipeline); WP-017 (`gainWound` helper + Wound supply pile); WP-316 (the villain `gainWoundEachPlayer` per-target loop this executor mirrors)
 **User-Visible Surface:** play.legendary-arena.com
@@ -39,7 +39,7 @@ A player who plays Crazed Rampage now sees every player gain a Wound (the Wound 
 - `DEFERRED_BY_DESIGN_MECHANICS` (`packages/game-engine/src/diagnostics/hollowEffect.types.ts`) contains `'wound'` and `'conditional'`; **neither is removed** — the new keywords are distinct tokens, so the generic `wound` deferral is untouched.
 - `scripts/convert-cards/apply-hero-ability-markers.mjs` + `scripts/convert-cards/inputs/hero-ability-markers.json` exist (WP-216 pipeline).
 - `pnpm --filter @legendary-arena/game-engine build` exits 0; `pnpm --filter @legendary-arena/game-engine test` exits 0. **Absolute test/suite baseline is captured at execution-prep** against `origin/main @ c3890370` (the WP-356 baseline of 1877/438 is stale post-WP-357/358); this WP asserts the **delta**, not an absolute.
-- `docs/ai/DECISIONS.md` exists; **D-24153** is reserved for this packet.
+- `docs/ai/DECISIONS.md` exists; **D-24156** is reserved for this packet.
 - Baseline: `origin/main @ c3890370` (2026-07-11).
 
 If any of the above is false, this packet is **BLOCKED** and must not proceed.
@@ -118,10 +118,10 @@ Before writing a single line:
 ## Scope (In)
 
 ### A) Keyword contract (`packages/game-engine/src/rules/heroKeywords.ts` — modified)
-- Add `'gain-wound-self'` and `'gain-wound-each'` to the `HeroKeyword` union AND to `HERO_KEYWORDS`, each with a `// why: D-24153` comment describing the mandatory immediate wound-to-discard semantics and the self-vs-each target.
+- Add `'gain-wound-self'` and `'gain-wound-each'` to the `HeroKeyword` union AND to `HERO_KEYWORDS`, each with a `// why: D-24156` comment describing the mandatory immediate wound-to-discard semantics and the self-vs-each target.
 
 ### B) Marker parser (`packages/game-engine/src/setup/heroAbility.setup.ts` — modified)
-- Extend the plain-keyword recognition so `[keyword:gain-wound-self]` and `[keyword:gain-wound-each]` each emit exactly one `{ type }` descriptor (they are single-segment keywords; no new pattern constant is needed beyond registering them as recognized keywords, mirroring how existing no-segment keywords parse). Add a `// why: D-24153` comment.
+- Extend the plain-keyword recognition so `[keyword:gain-wound-self]` and `[keyword:gain-wound-each]` each emit exactly one `{ type }` descriptor (they are single-segment keywords; no new pattern constant is needed beyond registering them as recognized keywords, mirroring how existing no-segment keywords parse). Add a `// why: D-24156` comment.
 
 ### C) Executor (`packages/game-engine/src/hero/heroEffects.execute.ts` — modified)
 - Add both keywords to `NO_MAGNITUDE_KEYWORDS`, `HANDLED_KEYWORDS`, and `MVP_KEYWORDS`.
@@ -133,7 +133,7 @@ Before writing a single line:
 
 ### D) Card-data pipeline
 - **`scripts/convert-cards/inputs/hero-ability-markers.json`** — modified: append the seven rows from Locked Values (exact `abilityIndex` verified against the source JSONs at execution).
-- **`scripts/convert-cards/apply-hero-ability-markers.mjs`** — modified: extend `VALID_TOKEN_PATTERN` with `^\[keyword:gain-wound-(self|each)\]$` plus a `// why: D-24153` line.
+- **`scripts/convert-cards/apply-hero-ability-markers.mjs`** — modified: extend `VALID_TOKEN_PATTERN` with `^\[keyword:gain-wound-(self|each)\]$` plus a `// why: D-24156` line.
 - **`data/cards/{3dtc,core,msp1,cvwr,dkcy,ff04}.json`** — modified by running the apply script (exactly 7 ability lines gain a trailing marker; idempotent re-run is a zero-diff — scaffold-verified at execution).
 - **`docs/ai/coverage/hero-mechanic-ledger.csv`** (+ `.json`) — regenerated via `pnpm ledger:heroes` (the marker change stales `ledger:heroes:check`).
 
@@ -172,8 +172,8 @@ Add `node:test` tests (each new group in exactly one `describe()` — suite coun
 - `data/cards/3dtc.json`, `data/cards/core.json`, `data/cards/msp1.json`, `data/cards/cvwr.json`, `data/cards/dkcy.json`, `data/cards/ff04.json` — **modified** — regenerated (7 ability lines gain markers)
 - `docs/ai/coverage/hero-mechanic-ledger.csv` + `.json` — **modified** — regenerated (`pnpm ledger:heroes`)
 - `docs/ai/STATUS.md` — **modified** — session close
-- `docs/ai/DECISIONS.md` — **modified** — D-24153 flips reserved → Active
-- `docs/ai/work-packets/WORK_INDEX.md` — **modified** — WP-361 checked off
+- `docs/ai/DECISIONS.md` — **modified** — D-24156 flips reserved → Active
+- `docs/ai/work-packets/WORK_INDEX.md` — **modified** — WP-364 checked off
 - `docs/ai/execution-checklists/EC_INDEX.md` — **modified** — EC-391 row (authored at execution-prep, per the live SPEC-draft convention)
 - `docs/05-ROADMAP-MINDMAP.md` + roadmap counts artifact — **modified** — node added, `pnpm roadmap:counts --write` (close ritual)
 
@@ -278,8 +278,8 @@ This packet is complete when ALL of the following are true:
 - [ ] `heroAbility.types.ts` not modified; `DEFERRED_BY_DESIGN_MECHANICS` retains `'wound'` + `'conditional'` (confirmed with `git diff`).
 - [ ] No files outside `## Files Expected to Change` were modified (`git diff --name-only`).
 - [ ] `docs/ai/STATUS.md` updated — the plain "gain a Wound" hero form now executes; hollow count reduced by the seven cleared lines.
-- [ ] `docs/ai/DECISIONS.md` updated — D-24153 flipped to Active (post-execution).
-- [ ] `docs/ai/work-packets/WORK_INDEX.md` has WP-361 checked off with the execution date.
+- [ ] `docs/ai/DECISIONS.md` updated — D-24156 flipped to Active (post-execution).
+- [ ] `docs/ai/work-packets/WORK_INDEX.md` has WP-364 checked off with the execution date.
 - [ ] `docs/05-ROADMAP-MINDMAP.md` node added + `pnpm roadmap:counts --write` regenerated in the close commit.
 
 ---
