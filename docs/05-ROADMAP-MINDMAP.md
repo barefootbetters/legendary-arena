@@ -118,7 +118,7 @@ mindmap
         ["WP-049 ✅ PAR simulation engine"]
         ["WP-050 ✅ PAR artifact storage and indexing"]
         ["WP-051 ✅ PAR publication and server gate"]
-        ["WP-365 📝 final-score VP by printed card VP; flat table demoted to fallback (live capture matchId sGTM7LWSIHy 2026-07-12 — victory pile Super-Skrull vp2 + Skrull-Shapeshifters vp2 + Juggernaut vp4 = printed 8 reported as villainVP 3, total 45 vs correct 50; root cause: computeFinalScores WP-020 uses flat VP_VILLAIN=VP_HENCHMAN=1/VP_TACTIC=5 and never reads printed vp — G.cardStats carries attack/recruit/cost/fightCost but NOT vp, registry VillainCardSchema.vp/MastermindSchema.vp never plumbed into G; also feeds parScoring.logic → can crown the wrong multiplayer winner; adds immutable setup snapshot G.cardVictoryPoints sibling to cardStats built in buildInitialGameState via total/defensive normalizePrintedVictoryPoints nullable string|number null/NaN/non-int→omit, computeFinalScores reads G.cardVictoryPoints[cardId] ?? VP_<category> per villain/henchman + tacticVP = tacticsDefeated × (mastermind vp ?? VP_TACTIC), flat constants DEMOTED to fallbacks values unchanged so null-vp cards score sanely; bystander stays 1 wound stays −1, PlayerScoreBreakdown shape/field-names unchanged value-only no consumer break; determinism conditional-spread/omit-when-empty per WP-290 → EMPTY_REGISTRY fixtures byte-identical sentinel re-pin execution-measured expected none; out of scope: no retro-rescore of historical DB rows, no PAR-weight change, no registry-schema change; standard two-session lane §6 scoring/competitive exclusion; drafted 2026-07-11, READY; EC-392 at execution-prep; D-24157)"]
+        ["WP-365 ✅ final-score VP by printed card VP; flat table demoted to fallback (live capture matchId sGTM7LWSIHy 2026-07-12 — victory pile Super-Skrull vp2 + Skrull-Shapeshifters vp2 + Juggernaut vp4 = printed 8 reported as villainVP 3, total 45 vs correct 50; root cause: computeFinalScores WP-020 uses flat VP_VILLAIN=VP_HENCHMAN=1/VP_TACTIC=5 and never reads printed vp — G.cardStats carries attack/recruit/cost/fightCost but NOT vp, registry VillainCardSchema.vp/MastermindSchema.vp never plumbed into G; also feeds parScoring.logic → can crown the wrong multiplayer winner; adds immutable setup snapshot G.cardVictoryPoints sibling to cardStats built in buildInitialGameState via total/defensive normalizePrintedVictoryPoints nullable string|number null/NaN/non-int→omit, computeFinalScores reads G.cardVictoryPoints[cardId] ?? VP_<category> per villain/henchman + tacticVP = tacticsDefeated × (mastermind vp ?? VP_TACTIC), flat constants DEMOTED to fallbacks values unchanged so null-vp cards score sanely; bystander stays 1 wound stays −1, PlayerScoreBreakdown shape/field-names unchanged value-only no consumer break; determinism conditional-spread/omit-when-empty per WP-290 → EMPTY_REGISTRY fixtures byte-identical sentinel re-pin execution-measured expected none; out of scope: no retro-rescore of historical DB rows, no PAR-weight change, no registry-schema change; standard two-session lane §6 scoring/competitive exclusion; executed 2026-07-12 via a dedicated setup/buildCardVictoryPoints.ts (economy/mastermind/CardStatEntry byte-unchanged — concurrency-safe amendment of the inline draft); engine 1893/441/0, sim:coverage sentinel unchanged; EC-392; D-24157 Active)"]
 
       Beta-Launch Pillar
         ["WP-052 ✅ Player identity and replay ownership"]
@@ -509,13 +509,13 @@ mindmap
 | Pre-Planning System | 5/5 | — |
 | Post-Phase-6 Hygiene | 5/5 | — |
 | Phase 7 — Beta, Launch & PAR | 6/6 | — |
-| Scoring & PAR Pipeline | 4/5 | 1 open |
+| Scoring & PAR Pipeline | 5/5 | — |
 | Beta-Launch Pillar | 5/5 | — |
 | Engine Hardening | 2/2 | — |
 | Client Integration Cluster | 21/21 | — |
 | Auth Stack & Profile Surface | 15/15 | — |
 | Engine + Server Wiring & Leaderboard HTTP | 3/3 | — |
-| Registry Viewer Enhancements | 23/26 | 3 open |
+| Registry Viewer Enhancements | 24/26 | 2 open |
 | Phase 8 — Interactive Board Layout | 3/3 | — |
 | G-State Extensions | 4/4 | — |
 | Monetization Stack | 3/3 | — |
@@ -545,9 +545,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **350/359 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 8 open |
+| **Total** | **352/359 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 6 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 9):** WP-042.1 ⏸ blocked; WP-345 open; WP-366 open; WP-356 open; WP-361 open; WP-362 open; WP-363 open; WP-364 open; WP-365 open.
+**Open / blocked WPs (derived from WORK_INDEX, 7):** WP-042.1 ⏸ blocked; WP-345 open; WP-366 open; WP-356 open; WP-362 open; WP-363 open; WP-364 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

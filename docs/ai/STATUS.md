@@ -7,11 +7,23 @@
 
 ## Current State
 
-### WP-362 / EC-392 Executed — Loadout tab opens a LAGN from the URL (`?lagn=`) (D-24154 Active) (2026-07-12)
+### WP-362 / EC-394 Executed — Loadout tab opens a LAGN from the URL (`?lagn=`) (D-24154 Active) (2026-07-12)
 
 The **viewer half** of the "open a live game's loadout in the Registry Viewer" arc. A `?lagn=<base64url(UTF-8 LAGN JSON)>` URL parameter on `cards.legendary-arena.com`: on mount a **pure, decode-only** `lagnUrlParam.ts` (browser `atob` + `TextDecoder`, an 8192-char cap, present-but-empty + `URLSearchParams` `+`→space handled, **never throws**) turns the param into JSON text, `useLagnFromUrl` runs it through the **existing** `parseLagnLoadout` (WP-291 — the sole validator, called once, no fork), and on success **atomically** applies the composition to the shared Loadout draft (`resetDraft` + the WP-291 setters run **only** on a valid LAGN — a bad link leaves the draft untouched) and one-shot auto-switches to the Loadout tab (WP-114 machinery). A `?lagn=` link **takes precedence over and suppresses** the WP-114 five-field setup preview (App.vue creates the draft first, applies `?lagn=`, then gates `useSetupFromUrl` on its absence); a decode-failed / invalid-LAGN link opens the tab and shows a dismissible full-sentence error banner rather than a blank builder.
 
 **No server call, no auth, no CORS** — the viewer renders a self-contained, untrusted payload (the arena client, not the viewer, holds the session and fetches the LAGN in WP-363). No new dependency; `parseLagnLoadout` / `setupUrlParams.ts` / `useSetupFromUrl.ts` unmodified. `pnpm --filter registry-viewer build`/`typecheck` 0; viewer test **123 pass / 0 fail** (110 baseline + 13 new). `User-Visible Surface = cards.legendary-arena.com` — **D-24026 operator-pending on deploy**. **With WP-361 (server) + WP-362 (viewer) both merged, only WP-363 (the in-match arena-client link) remains** — now unblocked (it needed 361 + 362).
+
+---
+
+### WP-365 / EC-392 Executed — Final-score VP by printed card VP (D-24157 Active) (2026-07-12)
+
+`computeFinalScores` now awards each **villain**, **henchman**, and defeated **mastermind tactic** its **printed** `vp` instead of the flat MVP table — fixing the understatement caught in a live capture (`matchId sGTM7LWSIHy`): a victory pile of Super-Skrull (`vp:2`) + Skrull Shapeshifters (`vp:2`) + Juggernaut (`vp:4`) — printed **8** — had reported **villainVP 3**, total **45** vs the correct **50**. Because the scorer also feeds `parScoring.logic.ts` (→ legends leaderboard), the understatement could crown the wrong multiplayer winner.
+
+A new immutable setup snapshot **`G.cardVictoryPoints?`** (sibling to `G.cardStats`, optional + omit-when-empty) is built by a new **`setup/buildCardVictoryPoints.ts`** (the `buildCard*.ts` pattern): villain per-card vp (via the exported `villainCardInstanceExtIds`), henchman group vp (10 copies), mastermind vp keyed by `MastermindState.baseCardId`; `normalizePrintedVictoryPoints` is total/defensive (nullable `string|number` → non-negative int or omit). Scoring reads `G.cardVictoryPoints[cardId] ?? VP_<category>`; the flat constants are **demoted to fallbacks** (values unchanged) so a null-`vp` card (e.g. an `mgtg` MCU-Guardians mastermind) never scores 0. **Bystander stays 1, wound stays −1; `PlayerScoreBreakdown` shape unchanged** (value-only, no consumer break).
+
+**Execution mechanism (amends the draft):** the vp enumeration is spread across `economy.logic.ts` + `mastermind.setup.ts` internal helpers, so a dedicated builder replaced the draft's inline `buildInitialGameState.ts` build — keeping `CardStatEntry` / `economy.logic.ts` / `mastermind.setup.ts` **byte-unchanged** (the WP non-negotiable **and** concurrency-safe against other live engine sessions).
+
+`pnpm --filter @legendary-arena/game-engine build` 0; engine suite **1893/441/0** (+~17 new: builder normalizer + scoring printed-VP/fallback/tactic); `pnpm sim:coverage --check` OK — sentinel `finalStateHash` **unchanged** (`EMPTY_REGISTRY` → empty vp map, conditional-spread → no re-pin). `User-Visible Surface = play.legendary-arena.com + legends board` — **D-24026 operator-pending on deploy** (a real match with a high-VP villain shows the correct `villainVP` in the end-of-match summary). Retro-rescoring historical DB rows + per-card VP-modifier text remain future packets.
 
 ---
 

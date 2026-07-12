@@ -1,7 +1,12 @@
-# EC-392 — Loadout Tab: Open a LAGN From the URL (`?lagn=`) (WP-362)
+# EC-394 — Loadout Tab: Open a LAGN From the URL (`?lagn=`) (WP-362)
 
 **Pairs with:** WP-362 · **Reserves:** D-24154 · **Lane:** standard two-session · **Status:** executed 2026-07-12
 **Layer:** Registry Viewer (`apps/registry-viewer`).
+
+> **EC number note:** WP-362 reserved `EC-392` at draft, but **WP-365 landed
+> `EC-392` first** (#702, final-score VP). Renumbered to **EC-394** here (the
+> next free slot — `EC-393` is reserved by WP-363/WP-366). WP-362's WP body may
+> still cite EC-392; this EC + the ledgers are authoritative at EC-394.
 
 ## Before Starting
 - [x] Baseline `origin/main` @ `48ac707f` (WP-361 merged). WP-291 (`parseLagnLoadout` + the `applyLagnImport` setter sequence), WP-114 (`useSetupFromUrl` + one-shot auto-switch) on `main`.

@@ -28573,13 +28573,13 @@ Protect this file.
 
 ### D-24154 — Registry Viewer `?lagn=` deep-link into the Loadout tab
 
-**Status:** Active (post-execution) 2026-07-12 (WP-362 / EC-392). `D-24026` operator-pending on deploy.
+**Status:** Active (post-execution) 2026-07-12 (WP-362 / EC-394 — renumbered from EC-392, which WP-365 landed first). `D-24026` operator-pending on deploy.
 
 **User-Visible Surface:** `cards.legendary-arena.com` (a `?lagn=…` link opens the Loadout tab pre-filled).
 
 **Decision.** A `?lagn=<base64url(UTF-8 LAGN JSON)>` URL parameter on the Registry Viewer. Locks: (1) a **decode-only** decoder produces text (it never `JSON.parse`s/validates, handles present-but-empty + an over-max-length cap + the `URLSearchParams` `+`→space pitfall, and **never throws**), then `parseLagnLoadout` (WP-291) is the **sole validator, called once, no fork** → **atomic** apply to the Loadout draft (`resetDraft` + the WP-291 setters run **only** on `ok:true`; a decode error or invalid LAGN leaves the draft untouched) → one-shot auto-switch to the Loadout tab (WP-114 `hasAppliedUrlAutoSwitch` machinery); (2) **`?lagn=` takes precedence over — and suppresses —** the WP-114 five-field setup-preview when both are present (one authoritative source per load, no split-brain tab); (3) **fail-visible, never white-screen** — a malformed/empty/oversized base64 or an invalid LAGN still opens the tab and shows full-sentence errors, never a blank/partial builder, never an uncaught exception; (4) **no server call, no auth, no CORS; the payload is untrusted** — the viewer renders a self-contained payload trusted only as far as `parseLagnLoadout` validates (the arena client, not the viewer, holds the session and fetches the LAGN in WP-363/D-24155); (5) base64url decode uses the browser `atob` + an explicit UTF-8 step (multi-byte card names survive) — **no new dependency**. The `base64url(UTF-8 JSON)` encoding is a cross-WP contract **owned by WP-362**; D-24155 (WP-363) produces the exact inverse (shared round-trip test).
 
-**Packet:** WP-362 (+ EC-392). **Drafted:** 2026-07-11. **Executed:** 2026-07-12 (EC-392; viewer test 123 pass / 0 fail, +13; typecheck 0; build 0).
+**Packet:** WP-362 (+ EC-394, renumbered from EC-392). **Drafted:** 2026-07-11. **Executed:** 2026-07-12 (EC-394; viewer test 123 pass / 0 fail, +13; typecheck 0; build 0).
 
 Protect this file.
 
@@ -28636,7 +28636,7 @@ Protect this file.
 
 ### D-24157 — Final-score VP by printed card VP (villains / henchmen / masterminds); flat table demoted to fallback
 
-**Status:** Drafted 2026-07-11; not yet landed. Flips to Active when WP-365 executes.
+**Status:** Active (post-execution) 2026-07-12 (WP-365 / EC-392). `D-24026` live-verify operator-pending on deploy (a real match with a high-VP villain shows the correct `villainVP` in the end-of-match summary).
 
 **User-Visible Surface:** `play.legendary-arena.com` (end-of-match victory summary) + legends leaderboard (via the PAR pipeline that consumes `computeFinalScores`).
 
@@ -28650,6 +28650,8 @@ Protect this file.
 4. **Determinism:** scoring stays a derived view (no G write); the snapshot is conditional-spread/omit-when-empty (WP-290 pattern) so no-`vp` games/fixtures stay byte-identical. Sentinel re-pin execution-measured (expected none under `EMPTY_REGISTRY`).
 5. **Out of scope:** no retro-rescore of historical `competitive_scores` rows (new matches score correctly going forward); no PAR weight/formula change; no registry-schema change; no per-card VP-modifier-text ("worth +N VP") support.
 
-**Packet:** WP-365 (+ EC-392 at execution-prep). **Drafted:** 2026-07-11. **Executed:** —
+**Execution mechanism (amends the draft's setup-plumbing shape).** The draft envisioned building the vp map inline in `buildInitialGameState.ts`. Execution found the villain/henchman/mastermind vp enumeration is spread across `economy.logic.ts` + `mastermind.setup.ts` internal helpers, so an inline build would duplicate it. Implemented instead as a dedicated `setup/buildCardVictoryPoints.ts` (the established `buildCard*.ts` sibling-builder pattern; reuses the exported `villainCardInstanceExtIds`; keys the mastermind vp by the `MastermindState.baseCardId` passed in). This keeps `CardStatEntry` / `economy.logic.ts` / `mastermind.setup.ts` **byte-unchanged** — honoring the draft's non-negotiable (vp is a scoring concern, not a hero-economy stat) AND avoiding conflicts with concurrent engine sessions. The design locks (separate optional `G.cardVictoryPoints` field, omit-when-empty, fallback constants, no `PlayerScoreBreakdown` shape change, no retro-rescore) are unchanged. Verified: engine `1893/441/0`, `sim:coverage --check` OK (sentinel `finalStateHash` unchanged — `EMPTY_REGISTRY` → empty vp map).
+
+**Packet:** WP-365 (+ EC-392). **Drafted:** 2026-07-11. **Executed:** 2026-07-12 (EC-392).
 
 Protect this file.
