@@ -28614,6 +28614,24 @@ Protect this file.
 
 **Packet:** WP-364 (+ EC-391 at execution-prep). **Drafted:** 2026-07-11. **Executed:** —
 
+### D-24158 — Match-invite inviter trigger + join-from-invite (the deferred WP-360 follow-on)
+
+**Status:** Drafted 2026-07-12; not yet landed. Flips to Active when WP-366 executes. (Renumbered from D-24157 → D-24158: WP-365/D-24157 landed first as the final-score-VP draft #699; this packet is WP-366/D-24158 per the first-keeps-the-number collision convention.)
+
+**User-Visible Surface:** `play.legendary-arena.com` — an in-match "Invite a friend" control + a one-click Join on the `?route=me` game-invites panel.
+
+**Context.** WP-360 shipped the **invitee core** of the match-invite UX (`matchInvitesApi` 3 wrappers + `useMatchInvites` + `MatchInvitesSection` on `?route=me`) but deferred two bits as a genuine scope fork (operator decision): (1) the **inviter-side** "Invite a friend" trigger — `LobbyView` creates→joins→navigates immediately and holds **no persistent `matchId`**, so the natural site is the in-match play view, not the lobby; and (2) the **full seat-selecting join-from-invite** — Accept only handed off to the Lobby because a real join needs the `joinMatch` seat/credentials flow, not a link. Both are now unblocked (WP-358 invite API + WP-360 invitee core both on `main`) and client-only.
+
+**Decision.** Complete the deferred half in `apps/arena-client`, reusing existing primitives — no server change, no new join mechanics. Locks:
+
+1. **Inviter trigger at the play-view root.** A new `InviteFriendControl.vue` (`@handle` input + Invite button + typed per-code copy) mounts in `PlayViewport` — the in-match root that already holds the live `matchId` (D-16501; shown only for a live match + an authenticated player). It reads `matchId` and posts an invite; it **never** reads or writes `G` / `UIState` / any gameplay state.
+2. **Additive API/composable surface.** `matchInvitesApi.ts` gains `inviteFriendToMatch(authToken, matchId, handle)` → `POST /api/match/invites { matchId, handle }`; `useMatchInvites` gains `invite(matchId, handle)`. The WP-360 invitee wrappers (`fetch`/`accept`/`decline`) + the client `MATCH_INVITE_API_ERROR_CODES` mirror are **byte-identical** — the mirror already carries every inviter code (`self_invite`/`not_in_match`/`not_friends`/`already_invited`/`handle_not_found`).
+3. **Join reuses the lobby path.** `MatchInvitesSection` Accept upgrades from the hand-off to a real join: `accept(matchId)` → `lobbyApi.listMatches()` (find by `matchID`, first open seat = `!seat.name`) → `lobbyApi.joinMatch(matchId, seatId, playerName, authToken)` → navigate `?match=<id>&player=<seatId>&credentials=<creds>` (the `LobbyView.joinExisting` pattern). No reimplemented join / bgio credential handling beyond forwarding `playerCredentials` into the navigate query. `playerName` = the player's owner-profile `displayName`, handle as fallback.
+4. **Join edge cases are handled, not swallowed.** A match absent from `listMatches` (ended/gameover) → "This match is no longer joinable."; a match with no open seat (full) → "This match is full."
+5. **Handle-only identity (FR-2).** The invite acts on `@handle` + shows `displayName`; no `accountId` is rendered or read (the API sends none). §23(b) copy is invite/join only — no PvP framing.
+
+**Packet:** WP-366 (+ EC-394 at execution-prep). **Drafted:** 2026-07-12. **Executed:** —
+
 Protect this file.
 
 ### D-24157 — Final-score VP by printed card VP (villains / henchmen / masterminds); flat table demoted to fallback

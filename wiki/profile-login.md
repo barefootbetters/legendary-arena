@@ -606,8 +606,12 @@ during implementation.
    **executed as [WP-360](../docs/ai/work-packets/WP-360-match-invite-ui-client.md)**
    (executed 2026-07-11, D-24152 Active): a `?route=me` "Game invites" panel
    (list, Accept → hand off to the Lobby, Decline). The inviter-side "Invite a
-   friend" trigger + the full seat-selecting join are a deferred follow-on
-   (they need the in-match play-view context + the lobby seat/credentials flow).
+   friend" trigger + the full seat-selecting join are the deferred follow-on,
+   **drafted as [WP-366](../docs/ai/work-packets/WP-366-match-invite-inviter-trigger-and-join.md)**
+   (D-24158, drafted 2026-07-12): an `InviteFriendControl` mounted in the
+   in-match play view (`PlayViewport`, which holds the live `matchId`) + a
+   `MatchInvitesSection` Accept upgraded to a real seat-selecting join reusing
+   the lobby `listMatches`/`joinMatch` flow — client-only, no server change.
 6. Abuse controls — **executed as
    [WP-355](../docs/ai/work-packets/WP-355-friend-abuse-controls.md)**
    (executed 2026-07-11, D-24147 Active): a separate `legendary.player_blocks`
