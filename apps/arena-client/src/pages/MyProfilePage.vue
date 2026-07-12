@@ -24,6 +24,7 @@ import {
 import { summarizeLoadout } from '../lib/loadoutSummary';
 import BillingSection from '../components/BillingSection.vue';
 import FriendsSection from '../components/FriendsSection.vue';
+import MatchInvitesSection from '../components/MatchInvitesSection.vue';
 import { useAuthStore } from '../stores/auth';
 
 // why: defineComponent({ setup() { return {...} } }) is required (NOT
@@ -189,7 +190,7 @@ function shareLinkForSlug(shareSlug: string): string {
 
 export default defineComponent({
   name: 'MyProfilePage',
-  components: { BillingSection, FriendsSection },
+  components: { BillingSection, FriendsSection, MatchInvitesSection },
   setup() {
     const state = ref<LoadState>('loading');
     // why: cast to the locally-extended view type so the template can
@@ -1122,6 +1123,8 @@ export default defineComponent({
            BillingSection is. Handle-only identity on screen (FR-2). -->
       <section class="profile-friends">
         <FriendsSection :auth-token="readAuthToken()" />
+
+        <MatchInvitesSection :auth-token="readAuthToken()" />
       </section>
 
       <section class="profile-billing">
