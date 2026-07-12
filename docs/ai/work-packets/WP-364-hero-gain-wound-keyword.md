@@ -1,6 +1,6 @@
 # WP-364 — `gain-wound-self` / `gain-wound-each` Hero Keywords (Crazed Rampage family — "gain a Wound")
 
-**Status:** Draft 2026-07-11 · **READY (not blocked — all hard-deps Done)** · **Standard two-session lane** (D-24028 — NOT lightweight: two new members of the closed `HeroKeyword` union + a new executor that mutates the shared Wound supply pile; un-defers a `DEFERRED_BY_DESIGN_MECHANICS` slice). Pairs with **EC-391** (authored at execution-prep). Reserves **D-24156** (lands at execution).
+**Status:** Draft 2026-07-11 · **READY (not blocked — all hard-deps Done)** · **Standard two-session lane** (D-24028 — NOT lightweight: two new members of the closed `HeroKeyword` union + a new executor that mutates the shared Wound supply pile; un-defers a `DEFERRED_BY_DESIGN_MECHANICS` slice). Pairs with **EC-395** (renumbered from EC-391 at execution — WP-361 landed EC-391 first). Reserves **D-24156** (lands at execution).
 **Primary Layer:** Game Engine / Implementation (+ card-data pipeline)
 **Dependencies:** WP-021, WP-022 (hero ability hook pipeline); WP-017 (`gainWound` helper + Wound supply pile); WP-316 (the villain `gainWoundEachPlayer` per-target loop this executor mirrors)
 **User-Visible Surface:** play.legendary-arena.com
@@ -174,7 +174,7 @@ Add `node:test` tests (each new group in exactly one `describe()` — suite coun
 - `docs/ai/STATUS.md` — **modified** — session close
 - `docs/ai/DECISIONS.md` — **modified** — D-24156 flips reserved → Active
 - `docs/ai/work-packets/WORK_INDEX.md` — **modified** — WP-364 checked off
-- `docs/ai/execution-checklists/EC_INDEX.md` — **modified** — EC-391 row (authored at execution-prep, per the live SPEC-draft convention)
+- `docs/ai/execution-checklists/EC_INDEX.md` — **modified** — EC-395 row (renumbered from EC-391 — WP-361 landed EC-391 first)
 - `docs/05-ROADMAP-MINDMAP.md` + roadmap counts artifact — **modified** — node added, `pnpm roadmap:counts --write` (close ritual)
 
 No other files may be modified. Run all four card-data-derived `:check` gates (`ledger:heroes`, `mechanics:metadata`, `sim:runtime-observed`, `roadmap:counts`) before pushing — regenerate any that report stale in the same commit.

@@ -1,11 +1,11 @@
-# EC-393 — `gain-wound-self` / `gain-wound-each` Hero Keywords (WP-364)
+# EC-395 — `gain-wound-self` / `gain-wound-each` Hero Keywords (WP-364)
 
 **Pairs with:** `docs/ai/work-packets/WP-364-hero-gain-wound-keyword.md`
 **Reserves/lands:** D-24156 (flips reserved → Active at close)
 **Baseline:** `origin/main @ 4756b3b4` (re-checked at commit)
 **Lane:** Standard two-session lane (two new closed-`HeroKeyword` members + an executor mutating the shared Wound supply)
 
-> **EC renumber:** WP-364 drafted citing **EC-391**, but WP-361 executed first (PR #701) and landed EC-391; WP-365 landed EC-392. WP-364 therefore renumbers to **EC-393** (next-free) at execution — the WP body / WORK_INDEX row / mindmap node / D-24156 references update to EC-393 in the SPEC close.
+> **EC renumber:** WP-364 drafted citing **EC-391**, but WP-361 executed first (PR #701) and landed EC-391; WP-365 landed EC-392. WP-364 therefore renumbers to **EC-395** (next-free) at execution — the WP body / WORK_INDEX row / mindmap node / D-24156 references update to EC-395 in the SPEC close.
 >
 > The WP is the authoritative design doc. If EC and WP conflict, the WP wins; if either conflicts with ARCHITECTURE.md / `.claude/rules/*`, those win.
 
@@ -58,7 +58,7 @@
 - `scripts/convert-cards/apply-hero-ability-markers.mjs` — `VALID_TOKEN_PATTERN` branch.
 - `data/cards/{3dtc,core,msp1,cvwr,dkcy,ff04}.json` — regenerated (7 lines marked).
 - `docs/ai/coverage/hero-mechanic-ledger.{csv,json}` — regenerated (`pnpm ledger:heroes`).
-- Governance at close: `STATUS.md`, `DECISIONS.md` (D-24156 → Active + EC renumber), `WORK_INDEX.md` (WP-364 ✅, EC-391→EC-393), `EC_INDEX.md` (EC-393 row), `05-ROADMAP-MINDMAP.md` (node 📝→✅ + EC-391→EC-393 + `roadmap:counts --write`), WP-364 body (EC-391→EC-393).
+- Governance at close: `STATUS.md`, `DECISIONS.md` (D-24156 → Active + EC renumber), `WORK_INDEX.md` (WP-364 ✅, EC-391→EC-395), `EC_INDEX.md` (EC-395 row), `05-ROADMAP-MINDMAP.md` (node 📝→✅ + EC-391→EC-395 + `roadmap:counts --write`), WP-364 body (EC-391→EC-395).
 
 **NOT modified:** `setup/heroAbility.setup.ts`, `hollowEffect.types.ts`, `heroAbility.types.ts`, `game.test.ts`, any `apps/**`.
 
@@ -68,7 +68,7 @@
 - [ ] `pnpm ledger:heroes:check` / `mechanics:metadata:check` / `sim:runtime-observed:check` / `sim:coverage --check` OK; `roadmap:counts:check` green.
 - [ ] `node scripts/convert-cards/apply-hero-ability-markers.mjs` = 7 updated, idempotent (0 on re-run).
 - [ ] `git diff origin/main -- packages/game-engine/src/setup/heroAbility.setup.ts packages/game-engine/src/diagnostics/hollowEffect.types.ts packages/game-engine/src/game.test.ts` **empty**.
-- [ ] Two-commit topology: `EC-393:` impl + `SPEC:` close.
+- [ ] Two-commit topology: `EC-395:` impl + `SPEC:` close.
 
 ## Common Failure Smells
 

@@ -28597,7 +28597,7 @@ Protect this file.
 
 ### D-24156 — Hero-side plain "gain a Wound" keywords (`gain-wound-self` / `gain-wound-each`)
 
-**Status:** Drafted 2026-07-11; not yet landed. Flips to Active when WP-364 executes.
+**Status:** Active (post-execution) 2026-07-12 (WP-364 / EC-395). `D-24026` live-verify operator-pending on deploy (a real match with Crazed Rampage shows every player gaining a Wound + a game-log line).
 
 **User-Visible Surface:** `play.legendary-arena.com` (in-match).
 
@@ -28612,7 +28612,9 @@ Protect this file.
 
 **Corpus at draft (enumerated over `data/cards/**`):** 7 plain hero gain-wound ability lines resolve — `each`: `core`/`3dtc`/`msp1` Hulk `crazed-rampage`; `self`: `cvwr` Hulkling `half-kree`, `cvwr` Luke Cage `reckless`, `dkcy` Colossus `draw-their-fire`, `ff04` Human Torch `hothead`. 40 non-plain hero wound forms stay deferred.
 
-**Packet:** WP-364 (+ EC-391 at execution-prep). **Drafted:** 2026-07-11. **Executed:** —
+**EC renumber:** drafted citing EC-391, but WP-361 executed first (PR #701) and kept EC-391, and WP-365 took EC-392 — so WP-364 landed as **EC-395** (next-free).
+
+**Packet:** WP-364 (+ EC-395). **Drafted:** 2026-07-11. **Executed:** 2026-07-12 (EC-395). Engine `1903/444/0`; the parser was unchanged (the generic plain-keyword builder emits `{ type }`); `hollowEffect.types.ts` / `heroAbility.types.ts` / `game.test.ts` byte-unchanged; sentinel `finalStateHash` unchanged (markers fire only in real games).
 
 ### D-24158 — Match-invite inviter trigger + join-from-invite (the deferred WP-360 follow-on)
 
