@@ -33,6 +33,7 @@ import FilterDropdown from "./components/FilterDropdown.vue";
 import type { FilterDropdownItem } from "./components/FilterDropdown.vue";
 import AppShell from "./components/branding/AppShell.vue";
 import { useSetupFromUrl } from "./composables/useSetupFromUrl";
+import { useLagnFromUrl } from "./composables/useLagnFromUrl";
 import { useLoadoutDraft } from "./composables/useLoadoutDraft";
 import type { UseLoadoutDraftApi } from "./composables/useLoadoutDraft";
 import { isCardInLoadout, toggleCardInLoadout } from "./lib/loadoutCardActions";
@@ -116,6 +117,16 @@ const setupParsedParams = ref<Partial<SetupCompositionInput>>({});
 // activeView to "loadout"; this ref then latches and the auto-switch never
 // re-fires, preserving the user's subsequent manual tab navigation.
 const hasAppliedUrlAutoSwitch = ref(false);
+
+// ── URL-driven LAGN deep-link (WP-362 / D-24154) ─────────────────────────────
+// why: the `?lagn=<base64url>` param carries a full match loadout (from the
+// arena client's in-match "View loadout" link, WP-363). When present it takes
+// precedence over — and suppresses — the WP-114 five-field setup preview above,
+// so the tab shows one authoritative source per load. Applied once on mount via
+// useLagnFromUrl; a bad/decode-failed link switches to the tab and surfaces
+// lagnUrlErrors rather than a blank builder.
+const hasLagnParam = ref(false);
+const lagnUrlErrors = ref<string[]>([]);
 
 // ── Shared loadout draft (WP-279 / D-24054) ──────────────────────────────────
 // why: ONE useLoadoutDraft instance per page, owned here and shared by both the
@@ -330,35 +341,51 @@ onMounted(async () => {
     filteredCards.value = allCards.value;
     healthReport.value  = reg.validate();
 
-    // WP-114: instantiate the URL-preview composable exactly once with the
-    // real registry, snapshot its outputs into top-level refs (the
-    // composable's inputs are stable for the page lifetime so a single read
-    // is sufficient), and apply the one-shot auto-switch.
-    const setupApi = useSetupFromUrl(reg);
-    setupHasUrlParams.value = setupApi.hasUrlParams.value;
-    setupPreviewDocument.value = setupApi.previewDocument.value;
-    setupValidationErrors.value = setupApi.validationErrors.value;
-    setupMatchedCount.value = setupApi.matchedCount.value;
-    setupParsedParams.value = setupApi.parsedParams.value;
+    // why: WP-279 / D-24054 — instantiate the single shared loadout draft here,
+    // AFTER registry.value is set, because useLoadoutDraft's validation computed
+    // calls validateMatchSetupDocument(draft, registry) and would dereference a
+    // null registry if built at setup() top level. App.vue holds the one
+    // instance; LoadoutBuilder consumes it as a prop. Created BEFORE the URL
+    // composables below because useLagnFromUrl applies a `?lagn=` deep-link to it.
+    loadoutDraftApi.value = useLoadoutDraft(reg);
 
+    // WP-362 / D-24154: apply a `?lagn=` deep-link (if present) to the shared
+    // draft. It takes precedence over the WP-114 setup preview, so when it is
+    // present the preview is not computed/rendered (one authoritative source per
+    // load). A decode-failed / invalid-LAGN link leaves the draft untouched and
+    // surfaces lagnUrlErrors.
+    const lagnFromUrl = useLagnFromUrl(loadoutDraftApi.value);
+    hasLagnParam.value = lagnFromUrl.hasLagnParam;
+    lagnUrlErrors.value = lagnFromUrl.lagnUrlErrors;
+
+    // WP-114: instantiate the URL-preview composable once with the real registry
+    // and snapshot its outputs — ONLY when no `?lagn=` deep-link is present (which
+    // supersedes it). The composable's inputs are stable for the page lifetime so
+    // a single read is sufficient.
+    if (!hasLagnParam.value) {
+      const setupApi = useSetupFromUrl(reg);
+      setupHasUrlParams.value = setupApi.hasUrlParams.value;
+      setupPreviewDocument.value = setupApi.previewDocument.value;
+      setupValidationErrors.value = setupApi.validationErrors.value;
+      setupMatchedCount.value = setupApi.matchedCount.value;
+      setupParsedParams.value = setupApi.parsedParams.value;
+    }
+
+    // why: one-shot auto-switch — either a `?lagn=` deep-link or the WP-114 setup
+    // params is a declarative "open the Loadout tab" arrival signal, not a sticky
+    // preference. The first render with either flips activeView once; the latch
+    // then never re-fires, preserving subsequent manual tab navigation.
+    const hasLoadoutUrlSignal = hasLagnParam.value || setupHasUrlParams.value;
     if (
-      setupHasUrlParams.value &&
+      hasLoadoutUrlSignal &&
       !hasAppliedUrlAutoSwitch.value &&
       activeView.value !== "loadout"
     ) {
       activeView.value = "loadout";
       hasAppliedUrlAutoSwitch.value = true;
-    } else if (setupHasUrlParams.value) {
+    } else if (hasLoadoutUrlSignal) {
       hasAppliedUrlAutoSwitch.value = true;
     }
-
-    // why: WP-279 / D-24054 — instantiate the single shared loadout draft here,
-    // AFTER registry.value is set, because useLoadoutDraft's validation computed
-    // calls validateMatchSetupDocument(draft, registry) and would dereference a
-    // null registry if built at setup() top level. Mirrors the useSetupFromUrl
-    // deferral above. App.vue holds the one instance; LoadoutBuilder consumes it
-    // as a prop rather than calling useLoadoutDraft itself.
-    loadoutDraftApi.value = useLoadoutDraft(reg);
 
     // Load themes in parallel (non-blocking — card view works even if themes fail)
     loadStatus.value = "Loading themes…";
@@ -1263,6 +1290,27 @@ const loadoutTraySummary = computed(() => {
         <!-- Loadout content -->
         <template v-if="activeView === 'loadout' && registry">
           <div class="loadout-tab-stack">
+            <!-- why: WP-362 — a bad/decode-failed `?lagn=` link still opens the
+                 Loadout tab and explains itself here (never a silent blank
+                 builder). Dismissible; absent when the link was valid or none. -->
+            <div
+              v-if="lagnUrlErrors.length > 0"
+              class="lagn-url-error"
+              role="alert"
+              data-testid="lagn-url-error"
+            >
+              <strong>This loadout link couldn't be opened.</strong>
+              <ul class="lagn-url-error-list">
+                <li v-for="(lagnError, index) in lagnUrlErrors" :key="index">{{ lagnError }}</li>
+              </ul>
+              <button
+                type="button"
+                class="lagn-url-error-dismiss"
+                @click="lagnUrlErrors = []"
+              >
+                Dismiss
+              </button>
+            </div>
             <LoadoutPreview
               :hasUrlParams="setupHasUrlParams"
               :previewDocument="setupPreviewDocument"
@@ -1458,6 +1506,28 @@ const loadoutTraySummary = computed(() => {
 
 /* WP-114: stack LoadoutPreview above LoadoutBuilder inside the Loadout tab */
 .loadout-tab-stack { display: flex; flex-direction: column; flex: 1; overflow: auto; }
+
+/* why: WP-362 — the `?lagn=` deep-link decode/validation error banner. */
+.lagn-url-error {
+  margin: 0 0 0.75rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid #b91c1c;
+  border-radius: 6px;
+  background: #2a1214;
+  color: #fca5a5;
+  font-size: 0.9rem;
+}
+.lagn-url-error-list { margin: 0.4rem 0 0.5rem 1.1rem; padding: 0; }
+.lagn-url-error-dismiss {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
+  color: #fca5a5;
+  background: transparent;
+  border: 1px solid #b91c1c;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.lagn-url-error-dismiss:hover { background: #3a1a1c; }
 
 /* ── Compact mode for short viewports ────────────────────────────────────── */
 @media (max-height: 800px) {
