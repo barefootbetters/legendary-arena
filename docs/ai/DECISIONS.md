@@ -28549,3 +28549,48 @@ Protect this file.
 **Packet:** WP-360 (+ EC-390 at execution-prep). **Drafted:** 2026-07-11. **Executed:** — (blocked on WP-358)
 
 Protect this file.
+
+### D-24153 — Current-match loadout as a read-only Tier-1 LAGN endpoint (`GET /api/match/:matchId/lagn`) + blob-read carve-out extension
+
+**Status:** Drafted 2026-07-11; not yet landed. **READY** (all hard-deps Done). Flips to Active when WP-361 executes.
+
+**User-Visible Surface:** none — infrastructure (the read API WP-363's play-surface link consumes; visible payoff lands in WP-362 + WP-363).
+
+**Context.** A player asked to open the loadout of the game they are playing in the Registry Viewer's Loadout tab. The full 9-field composition + player count is already persisted verbatim in the WP-309 `bgio.matches` blob at `initial_state.G.matchConfiguration` / `initial_state.ctx.numPlayers`; the server already reads that blob under the D-24119 replay carve-out and already imports `@legendary-arena/lagn`. The one architectural question was the read's sanction.
+
+**Decision.** A read-only endpoint `GET /api/match/:matchId/lagn` projects the current match's setup as a **Tier-1 LAGN**. Locks:
+
+1. **Blob-read carve-out extension.** The server MAY read `bgio.matches.initial_state.G.matchConfiguration` (+ `ctx.numPlayers`) to project a match's **Tier-1 LAGN loadout** — a derived, read-only projection (never written back, never a save-game, never a source of competitive/derived features), extending the D-24095/D-24119 carve-out. `ARCHITECTURE.md §Persistence Boundary` + `.claude/rules/architecture.md §Persistence Boundary (Cross-Layer)` gain the sentence (at WP-361 execution). A thin reader SELECTs `initial_state` only (not `log`); a null row / null `initial_state` fails closed.
+2. **Rejected alternative: a new `legendary.match_setups` domain table.** Considered (mirroring WP-333 `recordSeatAccount`) and rejected — it would add a migration, a write on the match-create hot path, and a backfill gap for in-flight matches, all to duplicate data already durably in the blob. The carve-out read is the conservative, no-duplication choice.
+3. **Access:** `authenticated-session-required` + a **participant gate** (session `AccountId` ∈ `readSeatAccounts(matchId)`, WP-333). Fail-closed: `404` unknown/unreplayable match, `403` authenticated-but-not-a-participant, `500` on a `validate()` failure of the built document. `Cache-Control: no-store`; status domain `{200,401,403,404,500}`.
+4. **Mapping:** the 9 composition fields (00.2 §8.1) with the one rename `officersCount → setup.shield_officers_count`; `variant` = `'solo'` at 1 player else `'cooperative'` (co-op, never `'competitive'`); `game_id` = matchId; ext_id → display name via the startup registry (id-fallback); the built LAGN passes the published `validate()` before `200`.
+
+The registry-viewer `?lagn=` ingest (D-24154 / WP-362) and the play-surface link (D-24155 / WP-363) are separate follow-ons.
+
+**Packet:** WP-361 (+ EC-391 at execution-prep). **Drafted:** 2026-07-11. **Executed:** —
+
+Protect this file.
+
+### D-24154 — Registry Viewer `?lagn=` deep-link into the Loadout tab
+
+**Status:** Drafted 2026-07-11; not yet landed. **READY** (all hard-deps Done). Flips to Active when WP-362 executes.
+
+**User-Visible Surface:** `cards.legendary-arena.com` (a `?lagn=…` link opens the Loadout tab pre-filled).
+
+**Decision.** A `?lagn=<base64url(UTF-8 LAGN JSON)>` URL parameter on the Registry Viewer. Locks: (1) on mount, decode → the **existing** `parseLagnLoadout` (WP-291, **no** validator fork) → apply the composition to the Loadout draft via the WP-291 setter sequence → one-shot auto-switch to the Loadout tab (WP-114 `hasAppliedUrlAutoSwitch` machinery); (2) **`?lagn=` takes precedence** over the WP-114 five-field setup params when both are present; (3) **fail-visible** — a malformed base64 or an invalid LAGN still opens the tab and shows full-sentence errors, never a blank/partial builder; (4) **no server call, no auth, no CORS** — the viewer renders a self-contained payload (the arena client, not the viewer, holds the session and fetches the LAGN in WP-363/D-24155); (5) base64url decode uses the browser `atob` + an explicit UTF-8 step (multi-byte card names survive) — **no new dependency**. The encoding is a cross-WP contract with D-24155 (WP-363 produces the exact inverse).
+
+**Packet:** WP-362 (+ EC-392 at execution-prep). **Drafted:** 2026-07-11. **Executed:** —
+
+Protect this file.
+
+### D-24155 — In-match "View loadout in Registry Viewer" link (arena client)
+
+**Status:** Drafted 2026-07-11; not yet landed. **BLOCKED on WP-361 + WP-362** (the endpoint + the ingest/encoding contract). Flips to Active when WP-363 executes.
+
+**User-Visible Surface:** `play.legendary-arena.com` (a small in-match "View loadout in Registry Viewer" control).
+
+**Decision.** A fixed-position play-surface control (mounted once in `PlayViewport.vue` beside `DiagnosticExportButton`, the WP-228 idiom). Locks: (1) on click, read `?match=` → `GET /api/match/:matchId/lagn` (WP-361/D-24153) with the player's existing Hanko **bearer** → base64url-encode the returned LAGN → `window.open('${viewer}/?lagn=…', '_blank', 'noopener')`; (2) the client-side encoder is the **exact inverse of WP-362's decoder** (base64url of UTF-8 `JSON.stringify(lagn)`, D-24154) — guarded by a round-trip test that imports WP-362's decoder; (3) the `lagn` is treated **opaquely** (no client-side validation — WP-361 is the authority, per the WP-301/D-24085 opaque-`lagn` posture); (4) **never-throws** fetch (`{ ok, status }`, network → `status:0`) + full-sentence inline failure messages (`401` sign-in / `403` participants-only / `404` not-available-yet / else try-again), non-blocking; (5) **no bearer/credentials in the opened URL** — only the non-secret loadout payload (both players already see the board); (6) the viewer origin is a locked module constant confirmed against the deployed origin at execution (no new env var). Works for **every** participant (server-sourced, survives reload/session-clear) — not the creator-only `matchSetupSession.ts` sessionStorage path.
+
+**Packet:** WP-363 (+ EC-393 at execution-prep). **Drafted:** 2026-07-11. **Executed:** — (blocked on WP-361 + WP-362)
+
+Protect this file.

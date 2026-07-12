@@ -228,6 +228,40 @@ Published as `@legendary-arena/lagn@1.0.0`:
 - [`packages/lagn-spec/scripts/generate-schema.mjs`](../packages/lagn-spec/scripts/generate-schema.mjs)
   — Generates `schemas/lagn-v1.json` at build time
 
+## Cross-Surface Loadout Sharing (drafted — WP-361 / WP-362 / WP-363)
+
+LAGN is the interchange format that lets a **live game on
+play.legendary-arena.com** open its loadout in the **Registry Viewer's
+Loadout tab** on cards.legendary-arena.com — for inspection, tweaking, or
+re-export. The drafted three-packet arc (2026-07-11; D-24153 / D-24154 /
+D-24155):
+
+1. **Server (WP-361 / D-24153).** `GET /api/match/:matchId/lagn` returns the
+   current match's setup as a **Tier-1 LAGN**, projected read-only from the
+   composition already persisted in the `bgio.matches` blob
+   (`initial_state.G.matchConfiguration` + `ctx.numPlayers`). Access is
+   `authenticated-session-required` + a participant gate; the projection
+   extends the D-24095/D-24119 blob-read carve-out (never written back, never
+   a save-game). `officersCount → shield_officers_count`; `variant`
+   `solo`/`cooperative` by seat count; ext_ids resolve to display names via
+   the registry (id-fallback); the document is `validate()`d before return.
+2. **Viewer (WP-362 / D-24154).** A `?lagn=<base64url(UTF-8 LAGN JSON)>` URL
+   param: on mount the viewer decodes it, runs the **existing**
+   `parseLagnLoadout` (no validator fork), applies the composition to the
+   Loadout draft, and auto-switches to the Loadout tab (WP-114 machinery). It
+   makes **no** server call — the payload is self-contained, so the viewer
+   needs no auth and no CORS. `?lagn=` wins over the WP-114 five-field setup
+   params; a malformed payload fails visible (tab + full-sentence errors).
+3. **Client (WP-363 / D-24155).** An in-match "View loadout in Registry
+   Viewer" control fetches the LAGN from WP-361 (Hanko bearer), base64url-
+   encodes it into WP-362's `?lagn=` link (the exact inverse of the viewer's
+   decoder), and opens it in a new tab (`noopener`). The bearer stays in the
+   `Authorization` header, never in the opened URL; the `lagn` is treated
+   opaquely (the server is the validation authority).
+
+This reuses the same LAGN Tier-1 setup block documented above end-to-end: the
+server emits it, the client relays it, the viewer ingests it.
+
 ## References
 
 - [WP-244 — LAGN Spec Publication](../docs/ai/work-packets/WP-244-lagn-spec-publication.md)
