@@ -816,7 +816,7 @@
           "recruit": "3",
           "abilities": [
             "[keyword:Size-Changing]: [hc:strength]",
-            "Gain a Wound."
+            "Gain a Wound. [keyword:gain-wound-self]"
           ]
         },
         {
@@ -957,7 +957,7 @@
           "attack": "3",
           "recruit": null,
           "abilities": [
-            "Gain a Wound."
+            "Gain a Wound. [keyword:gain-wound-self]"
           ]
         },
         {

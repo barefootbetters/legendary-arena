@@ -262,12 +262,14 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'put-any-number-bottom-hq', // why: D-24132 — multi-select put-any-number-of-HQ-cards-on-bottom-of-Hero-Deck mechanic
       'put-bottom-hq-icon-reward', // why: D-24133 — mandatory single-card put-bottom + recruit/attack icon reward (Absorb Ambient Power)
       'return-zero-cost-discard', // why: D-24139 — mandatory return-a-0-cost-discard-card-to-hand mechanic (Defend the Weak)
+      'gain-wound-self', // why: D-24156 / WP-364 — "You gain a Wound." (active player)
+      'gain-wound-each', // why: D-24156 / WP-364 — "Each player gains a Wound." (Crazed Rampage)
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      27,
-      'HERO_KEYWORDS must have exactly 27 entries',
+      29,
+      'HERO_KEYWORDS must have exactly 29 entries',
     );
 
     assert.deepStrictEqual(

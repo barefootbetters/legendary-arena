@@ -18,7 +18,7 @@ ext_id,hero_name,set,mechanic,status,wp,decision,handler
 3dtc/black-widow,Black Widow,3dtc,rescue,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#rescue
 3dtc/deadpool,Deadpool,3dtc,(unmarked),unmarked,,,
 3dtc/howard-the-duck,Howard the Duck,3dtc,(unmarked),unmarked,,,
-3dtc/hulk,Hulk,3dtc,(unmarked),unmarked,,,
+3dtc/hulk,Hulk,3dtc,gain-wound-each,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each
 3dtc/man-thing,Man-Thing,3dtc,(unmarked),unmarked,,,
 amwp/ant-army,Ant Army,amwp,antics,unsupported,,,
 amwp/ant-army,Ant Army,amwp,heist,unsupported,,,
@@ -155,7 +155,7 @@ core/deadpool,Deadpool,core,(unmarked),unmarked,,,
 core/emma-frost,Emma Frost,core,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 core/gambit,Gambit,core,reveal-cost-attack,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-cost-attack
 core/hawkeye,Hawkeye,core,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
-core/hulk,Hulk,core,(unmarked),unmarked,,,
+core/hulk,Hulk,core,gain-wound-each,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each
 core/iron-man,Iron Man,core,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 core/nick-fury,Nick Fury,core,(unmarked),unmarked,,,
 core/rogue,Rogue,core,(unmarked),unmarked,,,
@@ -193,8 +193,10 @@ cvwr/goliath,Goliath,cvwr,draw,executable,,,packages/game-engine/src/hero/heroEf
 cvwr/goliath,Goliath,cvwr,size-changing,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing
 cvwr/hercules,Hercules,cvwr,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 cvwr/hercules,Hercules,cvwr,reveal-ko,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-ko
+cvwr/hulkling,Hulkling,cvwr,gain-wound-self,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self
 cvwr/hulkling,Hulkling,cvwr,size-changing,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing
 cvwr/luke-cage,Luke Cage,cvwr,fortify,unsupported,,,
+cvwr/luke-cage,Luke Cage,cvwr,gain-wound-self,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self
 cvwr/patriot,Patriot,cvwr,(unmarked),unmarked,,,
 cvwr/peter-parker,Peter Parker,cvwr,rescue,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#rescue
 cvwr/peter-parker,Peter Parker,cvwr,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal
@@ -225,7 +227,7 @@ dkcy/angel,Angel,dkcy,(unmarked),unmarked,,,
 dkcy/bishop,Bishop,dkcy,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 dkcy/blade,Blade,dkcy,(unmarked),unmarked,,,
 dkcy/cable,Cable,dkcy,teleport,unsupported,,,
-dkcy/colossus,Colossus,dkcy,(unmarked),unmarked,,,
+dkcy/colossus,Colossus,dkcy,gain-wound-self,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self
 dkcy/daredevil,Daredevil,dkcy,(unmarked),unmarked,,,
 dkcy/domino,Domino,dkcy,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 dkcy/domino,Domino,dkcy,versatile,unsupported,,,
@@ -262,6 +264,7 @@ fear/nul-breaker-of-worlds,"Nul, Breaker of Worlds",fear,thrown-artifact,unsuppo
 fear/skadi,Skadi,fear,thrown-artifact,unsupported,,,
 fear/skirn-breaker-of-men,"Skirn, Breaker of Men",fear,thrown-artifact,unsupported,,,
 ff04/human-torch,Human Torch,ff04,focus,unsupported,,,
+ff04/human-torch,Human Torch,ff04,gain-wound-self,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self
 ff04/invisible-woman,Invisible Woman,ff04,focus,unsupported,,,
 ff04/mr-fantastic,Mr. Fantastic,ff04,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 ff04/mr-fantastic,Mr. Fantastic,ff04,focus,unsupported,,,
@@ -340,7 +343,7 @@ msp1/black-widow,Black Widow,msp1,draw,executable,,,packages/game-engine/src/her
 msp1/black-widow,Black Widow,msp1,rescue,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#rescue
 msp1/captain-america,Captain America,msp1,(unmarked),unmarked,,,
 msp1/hawkeye,Hawkeye,msp1,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
-msp1/hulk,Hulk,msp1,(unmarked),unmarked,,,
+msp1/hulk,Hulk,msp1,gain-wound-each,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each
 msp1/iron-man,Iron Man,msp1,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 msp1/nick-fury,Nick Fury,msp1,(unmarked),unmarked,,,
 msp1/thor,Thor,msp1,(unmarked),unmarked,,,

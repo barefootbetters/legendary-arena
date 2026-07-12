@@ -472,7 +472,7 @@
           "attack": "4",
           "recruit": null,
           "abilities": [
-            "Each player gains a Wound."
+            "Each player gains a Wound. [keyword:gain-wound-each]"
           ]
         },
         {

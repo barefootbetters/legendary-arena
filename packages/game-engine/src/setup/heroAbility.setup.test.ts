@@ -352,3 +352,37 @@ describe('buildHeroAbilityHooks — core Empowered form regression (D-24030 / AC
     assert.ok(!unresolvedMarkers.includes('empowered'), 'core form has no empowered unresolvedMarker');
   });
 });
+
+// ---------------------------------------------------------------------------
+// gain-wound-self / gain-wound-each — plain "gain a Wound" family (WP-364 / D-24156)
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — gain-wound-self / gain-wound-each (WP-364 / D-24156)', () => {
+  it('parses [keyword:gain-wound-each] to a { type: "gain-wound-each" } effect (no magnitude)', () => {
+    const registry = makeRegistry('core', 'hulk', [
+      { slug: 'crazed-rampage', abilities: ['Each player gains a Wound. [keyword:gain-wound-each]'] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('core/hulk'));
+    const effect = hooks.flatMap((hook) => hook.effects ?? []).find((entry) => entry.type === 'gain-wound-each');
+    assert.ok(effect !== undefined, 'a gain-wound-each effect is emitted');
+    assert.equal(effect!.magnitude, undefined, 'single-segment keyword carries no magnitude');
+  });
+
+  it('parses [keyword:gain-wound-self] to a { type: "gain-wound-self" } effect', () => {
+    const registry = makeRegistry('ff04', 'human-torch', [
+      { slug: 'hothead', abilities: ['You gain a Wound. [keyword:gain-wound-self]'] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('ff04/human-torch'));
+    const effect = hooks.flatMap((hook) => hook.effects ?? []).find((entry) => entry.type === 'gain-wound-self');
+    assert.ok(effect !== undefined, 'a gain-wound-self effect is emitted');
+  });
+
+  it('does not leak the gain-wound marker into unresolvedMarkers or other keywords', () => {
+    const registry = makeRegistry('core', 'hulk', [
+      { slug: 'crazed-rampage', abilities: ['Each player gains a Wound. [keyword:gain-wound-each]'] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('core/hulk'));
+    const allUnresolved = hooks.flatMap((hook) => hook.unresolvedMarkers ?? []);
+    assert.ok(!allUnresolved.includes('gain-wound-each'), 'gain-wound-each is resolved, not an unresolved marker');
+  });
+});

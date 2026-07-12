@@ -32,6 +32,7 @@ import { shuffleDeck } from '../setup/shuffle.js';
 import { moveCardFromZone, moveAllCards } from '../moves/zoneOps.js';
 import { addResources } from '../economy/economy.logic.js';
 import { koCard } from '../board/ko.logic.js';
+import { gainWound } from '../board/wounds.logic.js';
 import { resolveCountSource } from './heroCountSource.resolve.js';
 import { interpretHeroPrimitiveEffect } from './effectPrimitive.interpret.js';
 import { getEligibleVictoryVillains } from '../moves/resolveVictoryPileCardPick.js';
@@ -67,6 +68,8 @@ import { pushLog } from '../log/logPush.js';
 // 'reveal' handler) but stay executable via revealRulesForLegacyKeyword translation.
 export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   'draw', 'attack', 'recruit', 'ko', 'rescue', 'reveal', 'attack-per-count', 'optional-ko-reward', 'optional-put-bottom-hq', 'put-any-number-bottom-hq', 'put-bottom-hq-icon-reward', 'victory-villain-attack', 'draw-or-empowered', 'return-zero-cost-discard',
+  // why: D-24156 — the plain "gain a Wound" family; each has a HERO_EFFECT_HANDLERS entry (heroEffectGainWound), so it belongs in HANDLED_KEYWORDS (the bidirectional handler-completeness authority).
+  'gain-wound-self', 'gain-wound-each',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -176,6 +179,9 @@ const OPTIONAL_KO_REWARD_SEEDED_REWARDS: ReadonlySet<HeroKeyword> = new Set<Hero
 // (D-24024 / pre-flight PS-1)
 const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   'rescue', 'reveal',
+  // why: D-24156 — "gain a Wound" is exactly one Wound; the tokens carry no
+  // magnitude segment, so the magnitude pre-gate must not drop them.
+  'gain-wound-self', 'gain-wound-each',
   // why: victory-villain-attack parks a pending pick; the attack amount is read
   // from the chosen villain's fightCost at resolve time, not from a static magnitude
   'victory-villain-attack',
@@ -638,9 +644,72 @@ function heroEffectRescue(
   // why: D-24017 — surface the hero-ability rescue in the game log the same
   // way fight rescues are (fightVillain/fightMastermind), so a successful
   // rescue is observable to the player rather than a silent zone move.
-  pushLog(G, 
+  pushLog(G,
     `Player ${playerID} rescued ${rescuedCount} bystander(s) via a hero ability.`,
   );
+}
+
+/**
+ * Hero handler for the `gain-wound-self` / `gain-wound-each` keywords (D-24156).
+ *
+ * The active player (`gain-wound-self`) or every player (`gain-wound-each`)
+ * gains one Wound from the shared supply into their discard pile. Reuses the
+ * WP-017 `gainWound` helper and mirrors the WP-316 villain per-target loop
+ * (`villainEffectGainWound`): a missing zone or empty supply is a legitimate
+ * no-op per target, and the active player's `woundsDrawn` UI economy bumps when
+ * they gain. No targeting, no magnitude, no randomness — the Wound is drawn
+ * top-of-pile deterministically.
+ */
+function heroEffectGainWound(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  // why: D-24156 — `each` iterates a sorted key order (matching scoring.logic.ts)
+  // so the wound distribution replays identically; `self` targets the active
+  // player only.
+  const targetPlayerIds =
+    effect.type === 'gain-wound-each'
+      ? Object.keys(G.playerZones).sort()
+      : [playerID];
+
+  let anyWoundGained = false;
+  for (const targetPlayerId of targetPlayerIds) {
+    const targetZones = G.playerZones[targetPlayerId];
+    if (!targetZones) {
+      continue;
+    }
+    if (G.piles.wounds.length === 0) {
+      // why: D-24017 — an empty Wound supply is a legitimate no-op, but a silent
+      // skip reads as "the card did nothing"; log it so the reason is observable
+      // (mirrors the heroEffectRescue empty-supply logging).
+      pushLog(G,
+        `Player ${targetPlayerId} could not gain a Wound — the Wound supply is empty.`,
+      );
+      continue;
+    }
+    const result = gainWound(G.piles.wounds, targetZones.discard);
+    G.piles.wounds = result.woundsPile;
+    targetZones.discard = result.playerDiscard;
+    anyWoundGained = true;
+    if (targetPlayerId === playerID) {
+      // why: woundsDrawn projects the active player's wounds only (UI economy),
+      // matching the villain gain-wound path (villainEffectGainWound).
+      G.turnEconomy.woundsDrawn += 1;
+    }
+  }
+
+  // why: D-24017 — surface the wound gain in the game log so a printed penalty
+  // that actually landed is observable, not a silent zone move.
+  if (anyWoundGained) {
+    pushLog(G,
+      effect.type === 'gain-wound-each'
+        ? `Each player gained a Wound (${formatCardRef(G.cardDisplayData, cardId)}).`
+        : `Player ${playerID} gained a Wound (${formatCardRef(G.cardDisplayData, cardId)}).`,
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1360,6 +1429,10 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   'victory-villain-attack': heroEffectVictoryVillainAttack,
   'draw-or-empowered': heroEffectDrawOrEmpowered,
   'return-zero-cost-discard': heroEffectReturnZeroCostDiscard,
+  // why: D-24156 — one shared handler under both keys; it branches on effect.type
+  // (self = active player, each = every player).
+  'gain-wound-self': heroEffectGainWound,
+  'gain-wound-each': heroEffectGainWound,
 };
 
 // ---------------------------------------------------------------------------
