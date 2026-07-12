@@ -7,6 +7,16 @@
 
 ## Current State
 
+### WP-360 / EC-390 Executed — Match invites UI: invitee core (D-24152 Active) (2026-07-11)
+
+The **invitee-side** of the match-invite UI — the client half of WP-358, executed as the **invitee core** per an operator scope decision. A `?route=me` "Game invites" panel (`MatchInvitesSection.vue`, mounted in `MyProfilePage.vue`) lists pending invites (inviter `@handle` + displayName, **never** `accountId`), with **Accept** (→ surfaces the matchId to join from the Lobby) and **Decline**. Backed by `matchInvitesApi.ts` (3 wrappers mirroring `friendsApi`, inline `MatchInviteView`, client `MATCH_INVITE_API_ERROR_CODES` mirror + set-equality drift test) + a `useMatchInvites` composable (mutate → refetch).
+
+**Deferred follow-on** (unblocked, backlog): the inviter-side "Invite a friend" trigger + the full seat-selecting join-from-invite. Verified in the lobby/play code: `LobbyView` creates→joins→navigates immediately (no persistent `matchId` to invite from — the natural site is the **in-match play view**), and joining needs `joinMatch(matchID, seatId, playerName, authToken)` → credentials → navigate (not a simple link). On accept the invitee is handed off to the Lobby to join.
+
+`arena-client` typecheck (vue-tsc) 0; `arena-client` test **867/867** / 0 skipped; `pnpm -r build` 0. `User-Visible Surface = play.legendary-arena.com` — **D-24026 operator-pending on deploy**. **With this, the Friends & Ranked Trust subsystem — all six core packets + the opt-out (WP-357/359) + the match-invite server (WP-358) + invitee UI (WP-360) — is shipped; the only remaining piece is the deferred inviter-trigger/full-join follow-on.**
+
+---
+
 ### WP-358 / EC-388 Executed — Match friend-invite (server): invite a friend into your game (D-24150 Active) (2026-07-11)
 
 The **lobby-invite-flow half of packet #5** (the half WP-354 split out) — now buildable since the `POST /api/match/create` + `/join` lobby exists. A player seated in a match invites an **accepted friend** by `@handle` → a persistent `legendary.match_invites` record (migration `032`; unique `(match, invitee)`, `declined→pending` re-invite = UPDATE) + a **fail-open** `notifyMatchInvite` email. **Accept returns `{matchId}`** and the client joins via the existing `POST /api/match/join` — no server-side boardgame.io join or credential mint. Four `authenticated-session-required` endpoints (`POST /api/match/invites`, `GET /api/me/match-invites`, `POST …/:matchId/{accept,decline}`) return a `MatchInviteView` (`matchId` + inviter `handle`/`displayName`, **never** `accountId`, FR-2). **Friends-only by design** (`getFriendshipStatus === 'accepted'`) — anti-spam + block-respecting by construction (a block severs friendship). Inviter must be seated (`readSeatAccounts`, WP-333). WP-350/351 contracts byte-identical.

@@ -602,9 +602,12 @@ during implementation.
    so a seated player invites an **accepted friend** by `@handle` (a
    `match_invites` record + a fail-open email); accept returns the `matchId`
    and the client joins via the existing `POST /api/match/join`. Friends-only
-   (anti-spam by construction); the client invite/pending-invites UI is
-   **drafted as [WP-360](../docs/ai/work-packets/WP-360-match-invite-ui-client.md)**
-   (2026-07-11, D-24152; blocked on WP-358).
+   (anti-spam by construction); the invitee-side pending-invites UI is
+   **executed as [WP-360](../docs/ai/work-packets/WP-360-match-invite-ui-client.md)**
+   (executed 2026-07-11, D-24152 Active): a `?route=me` "Game invites" panel
+   (list, Accept → hand off to the Lobby, Decline). The inviter-side "Invite a
+   friend" trigger + the full seat-selecting join are a deferred follow-on
+   (they need the in-match play-view context + the lobby seat/credentials flow).
 6. Abuse controls — **executed as
    [WP-355](../docs/ai/work-packets/WP-355-friend-abuse-controls.md)**
    (executed 2026-07-11, D-24147 Active): a separate `legendary.player_blocks`
