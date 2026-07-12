@@ -28483,7 +28483,7 @@ Protect this file.
 
 ### D-24149 — Friend-request email opt-out preference (Friends & Ranked Trust, packet #6 follow-on)
 
-**Status:** Drafted 2026-07-11; not yet landed. **READY (not blocked — all hard-deps Done).** Flips to Active (post-execution) when WP-357 executes.
+**Status:** Active (post-execution) 2026-07-11 (WP-357 / EC-387). `D-24026` live-verify operator-pending on deploy.
 
 **User-Visible Surface:** fewer inbox emails (opt out → no friend-request email fires). D-24026 applies.
 
