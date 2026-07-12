@@ -102,25 +102,28 @@ export default defineComponent({
     <p v-else class="your-victory-pile__empty" data-testid="play-your-victory-empty">
       No victories yet.
     </p>
+    <!-- why: composition counters render as one compact wrapped line (labels
+         shortened) instead of a five-row grid, so the victory pile stops being
+         a tall block in the top row. The dd testids are unchanged. -->
     <dl class="your-victory-pile__composition" data-testid="play-your-victory-composition">
       <div>
-        <dt>Bystanders rescued</dt>
+        <dt>Bystanders</dt>
         <dd data-testid="play-victory-bystanders">{{ buildComposition().bystandersRescued }}</dd>
       </div>
       <div>
-        <dt>Villains defeated</dt>
+        <dt>Villains</dt>
         <dd data-testid="play-victory-villains">{{ buildComposition().villainsDefeated }}</dd>
       </div>
       <div>
-        <dt>Henchmen defeated</dt>
+        <dt>Henchmen</dt>
         <dd data-testid="play-victory-henchmen">{{ buildComposition().henchmenDefeated }}</dd>
       </div>
       <div>
-        <dt>Mastermind cards</dt>
+        <dt>Mastermind</dt>
         <dd data-testid="play-victory-mastermind">{{ buildComposition().mastermindCards }}</dd>
       </div>
       <div>
-        <dt>Wounds in pile</dt>
+        <dt>Wounds</dt>
         <dd data-testid="play-victory-wounds">{{ buildComposition().woundsInPile }}</dd>
       </div>
     </dl>
@@ -131,8 +134,8 @@ export default defineComponent({
 .your-victory-pile {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
+  gap: 0.25rem;
+  padding: 0.4rem 0.75rem;
   border: 1px solid var(--color-foreground, #999);
 }
 
@@ -142,21 +145,26 @@ export default defineComponent({
 }
 
 .your-victory-pile__composition {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.25rem 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.75rem;
   margin: 0;
+  font-size: 0.8rem;
   font-variant-numeric: tabular-nums;
 }
 
 .your-victory-pile__composition div {
   display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.3rem;
 }
 
-.your-victory-pile__composition dt,
+.your-victory-pile__composition dt {
+  margin: 0;
+  opacity: 0.75;
+}
+
 .your-victory-pile__composition dd {
   margin: 0;
+  font-weight: 600;
 }
 </style>

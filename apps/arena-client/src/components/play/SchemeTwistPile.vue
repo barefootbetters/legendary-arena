@@ -53,25 +53,13 @@ export default defineComponent({
     data-testid="play-scheme-twist-pile"
     aria-label="Scheme Twist Pile"
   >
-    <header class="scheme-twist-pile__header">Scheme Twist Pile</header>
-    <p class="scheme-twist-pile__count" data-testid="play-scheme-twist-count">
-      [{{ pile.length }}]
-    </p>
-    <p
-      v-if="pile.length > 0"
-      class="scheme-twist-pile__top"
-      data-testid="play-scheme-twist-top"
-    >
-      Top: {{ pile[pile.length - 1]!.display.name }}
-    </p>
-    <p v-else class="scheme-twist-pile__empty" data-testid="play-scheme-twist-empty">
-      No twists resolved.
-    </p>
-    <!-- why: WP-171 / EC-189 — browse button is rendered only when the pile
-         has at least one card (`pile.length > 0`); the affordance is
-         meaningless for an empty pile, so hiding it prevents a useless
-         click target. `type="button"` defends against future form-wrapping
-         that would otherwise convert the click into a submit. -->
+    <!-- why: collapsed to a single line — matches the Master Strike Pile so the
+         top row stops wasting vertical space on mostly-empty pile boxes. The
+         resolved-twist count stays visible; contents open in the shared
+         PileBrowseModal via the browse button (only shown when non-empty). -->
+    <span class="scheme-twist-pile__count" data-testid="play-scheme-twist-count">
+      Resolved twists: {{ pile.length }}
+    </span>
     <button
       v-if="pile.length > 0"
       type="button"
@@ -87,30 +75,22 @@ export default defineComponent({
 <style scoped>
 .scheme-twist-pile {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.5rem 0.75rem;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
   border: 1px solid var(--color-foreground, #999);
-  min-width: 6rem;
-}
-
-.scheme-twist-pile__header {
-  font-weight: 600;
+  /* why: pin to content height so the one-line box does not stretch to the
+     Scheme tile's height in the stretch flex row (see MasterStrikePile). */
+  align-self: flex-start;
 }
 
 .scheme-twist-pile__count {
-  margin: 0;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
-.scheme-twist-pile__empty {
-  margin: 0;
-  font-style: italic;
-  opacity: 0.7;
-}
-
 .scheme-twist-pile__browse {
-  align-self: flex-start;
-  padding: 0.25rem 0.5rem;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.8rem;
 }
 </style>

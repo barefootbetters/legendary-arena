@@ -136,7 +136,9 @@ describe('MastermindTile (WP-129 — extends WP-100)', () => {
     assert.match(tactics.text(), /Tactics remaining: 4/);
   });
 
-  test('renders empty placeholder when attachedBystanders is empty (SAFE-SKIP-WP128)', () => {
+  test('renders NO bystanders section when attachedBystanders is empty (SAFE-SKIP-WP128)', () => {
+    // why: the always-on "None captured." line was board noise; the section
+    // now renders only when the mastermind actually has captured bystanders.
     const { submitMove } = recorder();
     const wrapper = mount(MastermindTile, {
       props: {
@@ -147,9 +149,36 @@ describe('MastermindTile (WP-129 — extends WP-100)', () => {
       },
     });
     assert.equal(
-      wrapper.find('[data-testid="play-mastermind-bystanders-empty"]').exists(),
-      true,
+      wrapper.find('[data-testid="play-mastermind-bystanders"]').exists(),
+      false,
     );
+  });
+
+  test('Read card button emits read with the mastermind display and gameText', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({
+          gameText: ['Master Strike: each player reveals the top card of their deck.'],
+        }),
+        currentStage: 'main',
+        economy: economy({ availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    void wrapper.find('[data-testid="play-mastermind-read"]').trigger('click');
+    const emitted = wrapper.emitted('read');
+    assert.ok(emitted, 'expected a read event');
+    assert.equal(emitted!.length, 1);
+    const payload = emitted![0]![0] as {
+      title: string;
+      display: { name: string };
+      gameText: readonly string[];
+    };
+    assert.equal(payload.title, 'Doctor Doom');
+    assert.equal(payload.display.name, 'Doctor Doom');
+    assert.equal(payload.gameText.length, 1);
+    assert.match(payload.gameText[0]!, /Master Strike/);
   });
 
   test('renders attachedBystanders list when projected (forward-compat)', () => {

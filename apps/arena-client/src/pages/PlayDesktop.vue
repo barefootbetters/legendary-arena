@@ -38,6 +38,7 @@ import LobbyControls from '../components/play/LobbyControls.vue';
 import NotableEventOverlay from '../components/play/NotableEventOverlay.vue';
 import GameLogPanel from '../components/log/GameLogPanel.vue';
 import PileBrowseModal from '../components/play/PileBrowseModal.vue';
+import CardReaderModal from '../components/play/CardReaderModal.vue';
 import PendingHeroChoicePrompt from '../components/play/PendingHeroChoicePrompt.vue';
 import PendingKoHeroChoicePrompt from '../components/play/PendingKoHeroChoicePrompt.vue';
 import OptionalKoRewardPrompt from '../components/play/OptionalKoRewardPrompt.vue';
@@ -51,6 +52,12 @@ import type { SubmitMove } from '../components/play/uiMoveName.types';
 interface ActivePile {
   pileLabel: string;
   cards: readonly UIDisplayEntry[];
+}
+
+interface ActiveCard {
+  title: string;
+  display: UICardDisplay;
+  gameText: readonly string[];
 }
 
 /**
@@ -95,6 +102,7 @@ export default defineComponent({
     NotableEventOverlay,
     GameLogPanel,
     PileBrowseModal,
+    CardReaderModal,
     PendingHeroChoicePrompt,
     PendingKoHeroChoicePrompt,
     OptionalKoRewardPrompt,
@@ -232,6 +240,19 @@ export default defineComponent({
 
     function onPileClose(): void {
       activePile.value = null;
+    }
+
+    // why: the Mastermind / Scheme tiles emit `read` with the card + its
+    // gameText; the page holds the active card and feeds one CardReaderModal,
+    // mirroring the activePile/PileBrowseModal pattern.
+    const activeCard = ref<ActiveCard | null>(null);
+
+    function onCardRead(payload: ActiveCard): void {
+      activeCard.value = payload;
+    }
+
+    function onCardReadClose(): void {
+      activeCard.value = null;
     }
 
     // why: game-over is engine truth, read PASSIVELY from the live snapshot and
@@ -397,6 +418,9 @@ export default defineComponent({
       activePile,
       onPileOpen,
       onPileClose,
+      activeCard,
+      onCardRead,
+      onCardReadClose,
       hasPendingChoice,
       hasPendingKoChoice,
       hasPendingOptionalKoReward,
@@ -481,6 +505,7 @@ export default defineComponent({
               :is-viewer-turn="isViewerTurn"
               :economy="snapshot.economy"
               :submit-move="submitMove"
+              @read="onCardRead"
             />
             <MasterStrikePile
               :pile="snapshot.mastermind.strikePile"
@@ -488,7 +513,7 @@ export default defineComponent({
             />
           </div>
           <div class="play-desktop__scheme-zone">
-            <SchemeTile :scheme="snapshot.scheme" :twist-threshold="8" />
+            <SchemeTile :scheme="snapshot.scheme" :twist-threshold="8" @read="onCardRead" />
             <SchemeTwistPile
               :pile="snapshot.scheme.twistPile"
               @open="onPileOpen"
@@ -659,6 +684,16 @@ export default defineComponent({
       :cards="activePile?.cards ?? []"
       @close="onPileClose"
     />
+    <!-- why: one CardReaderModal per page; the Mastermind / Scheme tiles emit
+         `read` and the page-level `activeCard` ref discriminates which card is
+         open. Teleports under document.body like the pile modal. -->
+    <CardReaderModal
+      :is-open="activeCard !== null"
+      :title="activeCard?.title ?? ''"
+      :display="activeCard?.display ?? null"
+      :game-text="activeCard?.gameText ?? []"
+      @close="onCardReadClose"
+    />
   </div>
 </template>
 
@@ -703,12 +738,20 @@ export default defineComponent({
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+  /* why: size each zone to its own content instead of stretching every tile
+     to the tallest member of the row. Without this the compact Mastermind /
+     Scheme tiles stretch to match the (taller) victory/deck/discard stack,
+     re-inflating the exact vertical space this change is meant to reclaim. */
+  align-items: flex-start;
 }
 
 .play-desktop__mastermind-zone,
 .play-desktop__scheme-zone {
   display: flex;
   gap: 0.35rem;
+  /* why: keep each tile/pile at its own height rather than stretching the
+     Scheme tile to the taller victory/deck/discard stack beside it. */
+  align-items: flex-start;
 }
 
 .play-desktop__victory-deck-stack {

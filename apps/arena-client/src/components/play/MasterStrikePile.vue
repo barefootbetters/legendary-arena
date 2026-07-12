@@ -53,25 +53,14 @@ export default defineComponent({
     data-testid="play-master-strike-pile"
     aria-label="Master Strike Pile"
   >
-    <header class="master-strike-pile__header">Master Strike Pile</header>
-    <p class="master-strike-pile__count" data-testid="play-master-strike-count">
-      [{{ pile.length }}]
-    </p>
-    <p
-      v-if="pile.length > 0"
-      class="master-strike-pile__top"
-      data-testid="play-master-strike-top"
-    >
-      Top: {{ pile[pile.length - 1]!.display.name }}
-    </p>
-    <p v-else class="master-strike-pile__empty" data-testid="play-master-strike-empty">
-      No strikes yet.
-    </p>
-    <!-- why: WP-171 / EC-189 — browse button is rendered only when the pile
-         has at least one card (`pile.length > 0`); the affordance is
-         meaningless for an empty pile, so hiding it prevents a useless
-         click target. `type="button"` defends against future form-wrapping
-         that would otherwise convert the click into a submit. -->
+    <!-- why: collapsed to a single line — the pile is usually empty early game,
+         so the old header + count + top + empty stack was vertical noise that
+         "revealed nothing useful". The count stays visible; the full contents
+         open in the shared PileBrowseModal via the browse button (kept, and
+         still only shown when there is something to browse). -->
+    <span class="master-strike-pile__count" data-testid="play-master-strike-count">
+      Master Strikes: {{ pile.length }}
+    </span>
     <button
       v-if="pile.length > 0"
       type="button"
@@ -87,30 +76,23 @@ export default defineComponent({
 <style scoped>
 .master-strike-pile {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.5rem 0.75rem;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
   border: 1px solid var(--color-foreground, #999);
-  min-width: 6rem;
-}
-
-.master-strike-pile__header {
-  font-weight: 600;
+  /* why: the parent zone is a stretch flex row, so without this the one-line
+     box would stretch to the (taller) tile's height, leaving a one-liner
+     floating in a tall bordered box. Pin to content height. */
+  align-self: flex-start;
 }
 
 .master-strike-pile__count {
-  margin: 0;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
-.master-strike-pile__empty {
-  margin: 0;
-  font-style: italic;
-  opacity: 0.7;
-}
-
 .master-strike-pile__browse {
-  align-self: flex-start;
-  padding: 0.25rem 0.5rem;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.8rem;
 }
 </style>

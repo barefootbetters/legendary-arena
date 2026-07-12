@@ -12,10 +12,9 @@ describe('YourDeckDiscardZone (WP-129)', () => {
     });
     const deck = wrapper.find('[data-testid="play-your-deck"]');
     assert.match(deck.text(), /\[18 — face-down\]/);
-    assert.match(deck.text(), /Top card NEVER visible/);
   });
 
-  test('renders discard count + top card when present', () => {
+  test('renders discard count + top card thumbnail when present', () => {
     const wrapper = mount(YourDeckDiscardZone, {
       props: {
         deckCount: 18,

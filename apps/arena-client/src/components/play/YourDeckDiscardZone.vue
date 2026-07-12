@@ -77,13 +77,13 @@ export default defineComponent({
     <div class="your-deck-discard__deck" data-testid="play-your-deck">
       <header>Your Deck</header>
       <p class="your-deck-discard__count">[{{ deckCount }} — face-down]</p>
-      <p class="your-deck-discard__note">
-        Top card NEVER visible to any audience.
-      </p>
     </div>
     <div class="your-deck-discard__discard" data-testid="play-your-discard">
       <header>Your Discard</header>
       <p class="your-deck-discard__count">[{{ discardCount }} — face-up]</p>
+      <!-- why: the discard top card is shown face-up as a thumbnail + name so
+           the player can see what will reshuffle; the full face-up contents
+           remain available via "View all". -->
       <div
         v-if="discardTopCard !== null && discardTopCard !== undefined"
         class="your-deck-discard__top"
@@ -140,7 +140,7 @@ export default defineComponent({
 .your-deck-discard {
   display: flex;
   gap: 1rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.4rem 0.75rem;
   border: 1px solid var(--color-foreground, #999);
 }
 
@@ -157,7 +157,6 @@ export default defineComponent({
   font-variant-numeric: tabular-nums;
 }
 
-.your-deck-discard__note,
 .your-deck-discard__empty {
   margin: 0;
   font-style: italic;
