@@ -602,7 +602,9 @@ during implementation.
    so a seated player invites an **accepted friend** by `@handle` (a
    `match_invites` record + a fail-open email); accept returns the `matchId`
    and the client joins via the existing `POST /api/match/join`. Friends-only
-   (anti-spam by construction); client invite UI is a follow-on.
+   (anti-spam by construction); the client invite/pending-invites UI is
+   **drafted as [WP-360](../docs/ai/work-packets/WP-360-match-invite-ui-client.md)**
+   (2026-07-11, D-24152; blocked on WP-358).
 6. Abuse controls — **executed as
    [WP-355](../docs/ai/work-packets/WP-355-friend-abuse-controls.md)**
    (executed 2026-07-11, D-24147 Active): a separate `legendary.player_blocks`
@@ -613,7 +615,10 @@ during implementation.
    [WP-357](../docs/ai/work-packets/WP-357-friend-email-opt-out.md)**
    (2026-07-11, reserves D-24149; **READY**): a per-account
    `friend_request_emails` preference on `player_profiles`, checked in
-   WP-353's send boundary (opted-out recipient → clean no-op).
+   WP-353's send boundary (opted-out recipient → clean no-op). Its client
+   `?route=me` toggle is **drafted as
+   [WP-359](../docs/ai/work-packets/WP-359-friend-email-opt-out-toggle-client.md)**
+   (2026-07-11, D-24151; blocked on WP-357).
 
 ## Interactions
 

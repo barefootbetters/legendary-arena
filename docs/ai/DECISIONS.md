@@ -28525,3 +28525,27 @@ The client invite/pending-invites UI + any invite rate-limit/opt-out are separat
 **Packet:** WP-358 (+ EC-388 at execution-prep). **Drafted:** 2026-07-11. **Executed:** —
 
 Protect this file.
+
+### D-24151 — Owner-profile friend-email opt-out toggle (Friends & Ranked Trust, WP-357 client follow-on)
+
+**Status:** Drafted 2026-07-11; not yet landed. **BLOCKED on WP-357** (the server field). Flips to Active when WP-359 executes.
+
+**User-Visible Surface:** `play.legendary-arena.com` (`?route=me` checkbox).
+
+**Decision.** A checkbox on `MyProfilePage.vue` reading/writing WP-357's `friendRequestEmails` through the existing `fetchOwnerProfile`/`updateOwnerProfile` path — one form ref + one PATCH field + one checkbox, next to the visibility toggles; the client `OwnerProfileView`/`OwnerProfilePatch` mirror gains the field (inline, no server import). Default on; no new endpoint or composable; no `accountId`.
+
+**Packet:** WP-359 (+ EC-389 at execution-prep). **Drafted:** 2026-07-11. **Executed:** — (blocked on WP-357)
+
+Protect this file.
+
+### D-24152 — Match-invites client UI (Friends & Ranked Trust, WP-358 client follow-on)
+
+**Status:** Drafted 2026-07-11; not yet landed. **BLOCKED on WP-358** (the API). Flips to Active when WP-360 executes.
+
+**User-Visible Surface:** `play.legendary-arena.com` (an "Invite a friend" control on the lobby + a "Pending game invites" panel on `?route=me`).
+
+**Decision.** `matchInvitesApi.ts` (four wrappers mirroring `friendsApi.ts`) + `useMatchInvites` + `MatchInvitesSection.vue` (a `?route=me` pending-invites panel mirroring the WP-352 `FriendsSection`) + an "Invite a friend" control on `LobbyView.vue`. Locks: (1) **handle-only identity** on screen (never `accountId`; the API sends none); (2) **Join reuses the existing lobby join+navigate** with the accept-returned `matchId` — no join re-implementation, no bgio credential handling; (3) a client `MATCH_INVITE_ERROR_CODES` mirror + set-equality drift test; (4) mutate-then-refetch; (5) friends-only (no non-friend invite UI, no in-app push).
+
+**Packet:** WP-360 (+ EC-390 at execution-prep). **Drafted:** 2026-07-11. **Executed:** — (blocked on WP-358)
+
+Protect this file.
