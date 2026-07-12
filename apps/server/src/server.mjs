@@ -33,6 +33,7 @@ import { registerMatchInviteRoutes } from './match/matchInvites.routes.js';
 import { registerProfileRoutes } from './profile/profile.routes.js';
 import { registerTeamRoutes } from './teams/team.routes.js';
 import { registerMatchGateRoutes } from './match/matchGate.routes.js';
+import { registerMatchLagnRoutes } from './match/matchLagn.routes.js';
 import {
   createNativeLobbyGuard,
   generateInternalDelegationSecret,
@@ -801,6 +802,21 @@ export async function startServer() {
     accountResolver: verifier === undefined ? undefined : accountResolver,
     requireUnsuspendedAccount,
     checkParPublished: parGate.checkParPublished,
+  });
+
+  // why: WP-361 / D-24153 — register the read-only current-match LAGN endpoint
+  // (GET /api/match/:matchId/lagn) on the same long-lived pool. Same
+  // caller-injected auth deps as the routes above; the startup `registry`
+  // (loaded once at the top of startServer) is threaded in so the handler can
+  // resolve composition ext_ids to display names. The endpoint is
+  // authenticated + participant-gated and reads the match setup from the
+  // bgio.matches blob as a derived, read-only Tier-1 LAGN projection (the
+  // D-24153 carve-out extension); it never mutates or persists anything.
+  registerMatchLagnRoutes(server.router, pool, {
+    requireAuthenticatedSession,
+    verifier,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
+    registry,
   });
 
   // why: WP-106 / D-10602 — register the avatar upload route

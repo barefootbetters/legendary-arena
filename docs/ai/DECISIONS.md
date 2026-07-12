@@ -28552,7 +28552,7 @@ Protect this file.
 
 ### D-24153 — Current-match loadout as a read-only Tier-1 LAGN endpoint (`GET /api/match/:matchId/lagn`) + blob-read carve-out extension
 
-**Status:** Drafted 2026-07-11; not yet landed. **READY** (all hard-deps Done). Flips to Active when WP-361 executes.
+**Status:** Active (post-execution) 2026-07-12 (WP-361 / EC-391). `D-24026` N/A — infrastructure (the read API WP-363's play-surface link consumes; visible payoff lands in WP-362 + WP-363).
 
 **User-Visible Surface:** none — infrastructure (the read API WP-363's play-surface link consumes; visible payoff lands in WP-362 + WP-363).
 
@@ -28567,7 +28567,7 @@ Protect this file.
 
 The registry-viewer `?lagn=` ingest (D-24154 / WP-362) and the play-surface link (D-24155 / WP-363) are separate follow-ons.
 
-**Packet:** WP-361 (+ EC-391 at execution-prep). **Drafted:** 2026-07-11. **Executed:** —
+**Packet:** WP-361 (+ EC-391). **Drafted:** 2026-07-11. **Executed:** 2026-07-12 (EC-391; server suite 796 pass / 0 fail / 154 DB-skip; +16 tests).
 
 Protect this file.
 
