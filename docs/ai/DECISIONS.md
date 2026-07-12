@@ -28550,9 +28550,9 @@ Protect this file.
 
 Protect this file.
 
-### D-24153 — Hero-side plain "gain a Wound" keywords (`gain-wound-self` / `gain-wound-each`)
+### D-24156 — Hero-side plain "gain a Wound" keywords (`gain-wound-self` / `gain-wound-each`)
 
-**Status:** Drafted 2026-07-11; not yet landed. Flips to Active when WP-361 executes.
+**Status:** Drafted 2026-07-11; not yet landed. Flips to Active when WP-364 executes.
 
 **User-Visible Surface:** `play.legendary-arena.com` (in-match).
 
@@ -28567,6 +28567,6 @@ Protect this file.
 
 **Corpus at draft (enumerated over `data/cards/**`):** 7 plain hero gain-wound ability lines resolve — `each`: `core`/`3dtc`/`msp1` Hulk `crazed-rampage`; `self`: `cvwr` Hulkling `half-kree`, `cvwr` Luke Cage `reckless`, `dkcy` Colossus `draw-their-fire`, `ff04` Human Torch `hothead`. 40 non-plain hero wound forms stay deferred.
 
-**Packet:** WP-361 (+ EC-391 at execution-prep). **Drafted:** 2026-07-11. **Executed:** —
+**Packet:** WP-364 (+ EC-391 at execution-prep). **Drafted:** 2026-07-11. **Executed:** —
 
 Protect this file.
