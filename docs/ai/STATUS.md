@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-358 / EC-388 Executed — Match friend-invite (server): invite a friend into your game (D-24150 Active) (2026-07-11)
+
+The **lobby-invite-flow half of packet #5** (the half WP-354 split out) — now buildable since the `POST /api/match/create` + `/join` lobby exists. A player seated in a match invites an **accepted friend** by `@handle` → a persistent `legendary.match_invites` record (migration `032`; unique `(match, invitee)`, `declined→pending` re-invite = UPDATE) + a **fail-open** `notifyMatchInvite` email. **Accept returns `{matchId}`** and the client joins via the existing `POST /api/match/join` — no server-side boardgame.io join or credential mint. Four `authenticated-session-required` endpoints (`POST /api/match/invites`, `GET /api/me/match-invites`, `POST …/:matchId/{accept,decline}`) return a `MatchInviteView` (`matchId` + inviter `handle`/`displayName`, **never** `accountId`, FR-2). **Friends-only by design** (`getFriendshipStatus === 'accepted'`) — anti-spam + block-respecting by construction (a block severs friendship). Inviter must be seated (`readSeatAccounts`, WP-333). WP-350/351 contracts byte-identical.
+
+`pnpm -r build` 0; full serialized DB-wired server suite **934/934** / 0 skipped (917 baseline + 17 new). Migration `032` applied to a real Postgres. **Test-hygiene:** the seat-creating suites clean up their `match_seat_accounts` + `match_invites` rows in `after()` (the WP-333/354 convention) so other suites' broad `DELETE FROM legendary.players` does not FK-fault. `User-Visible Surface = email + future invite UI` — **D-24026 operator-pending on deploy**. The client invite/pending-invites UI is **WP-360** (drafted; was blocked on this, now unblocked).
+
+---
+
 ### WP-359 / EC-389 Executed — Friend-email opt-out toggle on the owner profile (D-24151 Active) (2026-07-11)
 
 Client follow-on to WP-357 — the `?route=me` checkbox that lets a player turn off friend-request emails. Adds `friendRequestEmails` to the client `OwnerProfileView`/`OwnerProfilePatch` mirror (inline, no server import) and a checkbox in `MyProfilePage.vue` (`formFriendRequestEmails` ref, seeded from the loaded profile, included in the **existing** `updateOwnerProfile` PATCH) — no new endpoint or composable. The `useAuthNav.test.ts` fixture was backfilled with the new required field (the recurring arena-client required-field-add pattern; inline amendment).
