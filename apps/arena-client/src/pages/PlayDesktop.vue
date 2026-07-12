@@ -498,6 +498,7 @@ export default defineComponent({
               <YourVictoryPile
                 :victory-cards="viewer.victoryCards ?? []"
                 :victory-vp="viewer.victoryVP ?? 0"
+                @open="onPileOpen"
               />
               <YourDeckDiscardZone
                 :deck-count="viewer.deckCount"

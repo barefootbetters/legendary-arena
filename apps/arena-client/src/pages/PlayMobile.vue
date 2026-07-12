@@ -335,6 +335,7 @@ export default defineComponent({
         <YourVictoryPile
           :victory-cards="viewer.victoryCards ?? []"
           :victory-vp="viewer.victoryVP ?? 0"
+          @open="onPileOpen"
         />
         <!-- why: the mat labels the card lifecycle explicitly — played
              cards sit above the unplayed hand; endTurn sweeps both to
