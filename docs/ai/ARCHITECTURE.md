@@ -350,8 +350,15 @@ Shared Tooling (orthogonal):
 > them through boardgame.io's own reducer to reconstruct a **completed** match's
 > final state (a derived, read-only projection, for faithful replay reconstruction
 > and competitive-score verification; never written back to the `bgio` store or to
-> `legendary.*`, never treated as live authoritative state). All other application
-> reads of the blob remain forbidden. Snapshots remain counts-only.
+> `legendary.*`, never treated as live authoritative state) — **and** the D-24153
+> loadout carve-out: a server-layer read MAY read the blob's
+> `initialState.G.matchConfiguration` (+ `initialState.ctx.numPlayers`) to project a
+> match's setup as a read-only **Tier-1 LAGN loadout** (a derived, read-only
+> projection for cross-surface loadout display — the Registry Viewer's Loadout tab;
+> a convenience representation, not a source of truth — the blob remains
+> authoritative — never written back, never a save-game, never a source of
+> competitive/derived features, never round-tripped into gameplay state). All other
+> application reads of the blob remain forbidden. Snapshots remain counts-only.
 
 #### Enforcement Rule
 

@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-361 / EC-391 Executed — Current-match loadout as a read-only LAGN endpoint (D-24153 Active) (2026-07-12)
+
+The **server half** of the "open a live game's loadout in the Registry Viewer" arc. A read-only `GET /api/match/:matchId/lagn` (`authenticated-session-required` + a **participant gate** — the session `accountId` must appear in `readSeatAccounts(matchId)`) returns the current match's setup as a **Tier-1 LAGN** (`@legendary-arena/lagn`). The 9-field composition + seat count are read straight from the WP-309 `bgio.matches` blob (`initial_state.G.matchConfiguration` + `ctx.numPlayers`) via a thin `SELECT initial_state`-only read — the **D-24153 blob-read carve-out**, which extends the D-24095/D-24119 replay carve-out to a read-only Tier-1-LAGN loadout projection (`ARCHITECTURE.md §Persistence Boundary` + `.claude/rules/architecture.md` both gained the sentence). A construction-only `buildMatchLagn` mapper (`officersCount → shield_officers_count`; `variant` `solo`/`cooperative` by seat count; ext_id → registry display name or the id verbatim, no synthesis) is `validate()`d **once** in the route before the `200 { lagn }`. Fail-closed: `404 match_not_found` (an unknown match and an unprojectable one — null `initial_state` — are indistinguishable, no existence oracle), `403 not_a_participant`, `500 lagn_projection_failed`; `Cache-Control: no-store` first.
+
+**No user-observable change — infrastructure only.** The endpoint is the read API the WP-363 in-match "View loadout in Registry Viewer" link will consume (→ the WP-362 viewer `?lagn=` ingest); the visible payoff lands with those two. `pnpm -r build` 0; server suite **796 pass / 0 fail / 154 DB-skipped** (16 new pure tests; DB-gated suites self-skip without `TEST_DATABASE_URL`). `EC-391` was double-booked by WP-364 (hero gain-wound) at draft; WP-361 executed first and kept it — WP-364 must renumber its EC when it executes.
+
+---
+
 ### WP-360 / EC-390 Executed — Match invites UI: invitee core (D-24152 Active) (2026-07-11)
 
 The **invitee-side** of the match-invite UI — the client half of WP-358, executed as the **invitee core** per an operator scope decision. A `?route=me` "Game invites" panel (`MatchInvitesSection.vue`, mounted in `MyProfilePage.vue`) lists pending invites (inviter `@handle` + displayName, **never** `accountId`), with **Accept** (→ surfaces the matchId to join from the Lobby) and **Decline**. Backed by `matchInvitesApi.ts` (3 wrappers mirroring `friendsApi`, inline `MatchInviteView`, client `MATCH_INVITE_API_ERROR_CODES` mirror + set-equality drift test) + a `useMatchInvites` composable (mutate → refetch).
