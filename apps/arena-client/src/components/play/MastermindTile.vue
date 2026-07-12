@@ -37,6 +37,7 @@ import type { SubmitMove } from './uiMoveName.types';
 export default defineComponent({
   name: 'MastermindTile',
   components: { CardTile },
+  emits: ['read'],
   props: {
     mastermind: {
       type: Object as PropType<UIMastermindState>,
@@ -60,7 +61,7 @@ export default defineComponent({
       required: true,
     },
   },
-  setup(props) {
+  setup(props, { emit }) {
     function gateForFight(): GatingResult {
       // why: disabled-state tooltip precedence per EC-132 §3 — stage →
       // resource → structural. Stage gate first; then cost gate (consumes
@@ -89,7 +90,18 @@ export default defineComponent({
       props.submitMove('fightMastermind', {});
     }
 
-    return { gateForFight, onFight };
+    function onRead(): void {
+      // why: surface the full card + Master-Strike / special rules in the
+      // shared CardReaderModal. `gameText` is already in the projection; the
+      // tile keeps it off-board to stay compact and emits it on demand.
+      emit('read', {
+        title: props.mastermind.display.name,
+        display: props.mastermind.display,
+        gameText: props.mastermind.gameText ?? [],
+      });
+    }
+
+    return { gateForFight, onFight, onRead };
   },
 });
 </script>
@@ -123,29 +135,28 @@ export default defineComponent({
         Tactics remaining: {{ mastermind.tacticsRemaining }}
       </span>
     </button>
-    <ul
-      v-if="mastermind.gameText && mastermind.gameText.length > 0"
-      class="mastermind-game-text"
-      data-testid="play-mastermind-game-text"
+    <!-- why: the full card + Master-Strike / special rules open in the shared
+         CardReaderModal instead of rendering inline, so the tile stays short
+         (Jeff: the top row wasted vertical space without being readable). -->
+    <button
+      type="button"
+      class="mastermind-read"
+      data-testid="play-mastermind-read"
+      @click="onRead"
     >
-      <li
-        v-for="(line, index) in mastermind.gameText"
-        :key="index"
-        class="mastermind-game-text__line"
-      >
-        {{ line }}
-      </li>
-    </ul>
+      Read card ▸
+    </button>
+    <!-- why: captured bystanders render only when the mastermind actually has
+         some (attachedBystanders ships [] today per SAFE-SKIP-WP128); the
+         always-on "None captured." line was pure noise on the board. -->
     <section
+      v-if="mastermind.attachedBystanders.length > 0"
       class="mastermind-bystanders"
       data-testid="play-mastermind-bystanders"
       aria-label="Mastermind captured bystanders"
     >
       <header>Captured bystanders</header>
-      <ul
-        v-if="mastermind.attachedBystanders.length > 0"
-        data-testid="play-mastermind-bystanders-list"
-      >
+      <ul data-testid="play-mastermind-bystanders-list">
         <li
           v-for="entry in mastermind.attachedBystanders"
           :key="entry.extId"
@@ -154,13 +165,6 @@ export default defineComponent({
           {{ entry.display.name }}
         </li>
       </ul>
-      <p
-        v-else
-        class="mastermind-bystanders__empty"
-        data-testid="play-mastermind-bystanders-empty"
-      >
-        None captured.
-      </p>
     </section>
   </section>
 </template>
@@ -203,16 +207,9 @@ export default defineComponent({
   opacity: 0.7;
 }
 
-.mastermind-game-text {
-  margin: 0.25rem 0 0;
-  padding-left: 0;
-  list-style: none;
+.mastermind-read {
+  align-self: flex-start;
+  padding: 0.2rem 0.5rem;
   font-size: 0.8rem;
-  line-height: 1.35;
-  opacity: 0.9;
-}
-
-.mastermind-game-text__line {
-  margin-bottom: 0.15rem;
 }
 </style>

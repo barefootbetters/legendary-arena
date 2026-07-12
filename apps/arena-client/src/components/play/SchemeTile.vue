@@ -17,6 +17,7 @@ import CardTile from './CardTile.vue';
 export default defineComponent({
   name: 'SchemeTile',
   components: { CardTile },
+  emits: ['read'],
   props: {
     scheme: {
       type: Object as PropType<UISchemeState>,
@@ -42,7 +43,7 @@ export default defineComponent({
       required: true,
     },
   },
-  setup(props) {
+  setup(props, { emit }) {
     function schemeCardDisplay(): UICardDisplay {
       if (props.scheme.display !== undefined && props.scheme.display !== null) {
         return props.scheme.display;
@@ -60,7 +61,19 @@ export default defineComponent({
       };
     }
 
-    return { schemeCardDisplay };
+    function onRead(): void {
+      // why: surface the full scheme card + its twist / win-condition rules in
+      // the shared CardReaderModal. `scheme.gameText` is already projected; the
+      // tile keeps it off-board to stay compact and emits it on demand.
+      const card = schemeCardDisplay();
+      emit('read', {
+        title: card.name,
+        display: card,
+        gameText: props.scheme.gameText ?? [],
+      });
+    }
+
+    return { schemeCardDisplay, onRead };
   },
 });
 </script>
@@ -75,19 +88,16 @@ export default defineComponent({
     <p class="scheme-tile__progress" data-testid="play-scheme-twist-progress">
       Twists: {{ scheme.twistCount }}/{{ twistThreshold }}
     </p>
-    <ul
-      v-if="scheme.gameText && scheme.gameText.length > 0"
-      class="scheme-tile__game-text"
-      data-testid="play-scheme-game-text"
+    <!-- why: the scheme's twist + win-condition rules open in the shared
+         CardReaderModal instead of rendering inline, keeping the tile short. -->
+    <button
+      type="button"
+      class="scheme-tile__read"
+      data-testid="play-scheme-read"
+      @click="onRead"
     >
-      <li
-        v-for="(line, index) in scheme.gameText"
-        :key="index"
-        class="scheme-tile__game-text-line"
-      >
-        {{ line }}
-      </li>
-    </ul>
+      Read card ▸
+    </button>
   </section>
 </template>
 
@@ -109,16 +119,9 @@ export default defineComponent({
   font-variant-numeric: tabular-nums;
 }
 
-.scheme-tile__game-text {
-  margin: 0.25rem 0 0;
-  padding-left: 0;
-  list-style: none;
+.scheme-tile__read {
+  align-self: flex-start;
+  padding: 0.2rem 0.5rem;
   font-size: 0.8rem;
-  line-height: 1.35;
-  opacity: 0.9;
-}
-
-.scheme-tile__game-text-line {
-  margin-bottom: 0.15rem;
 }
 </style>

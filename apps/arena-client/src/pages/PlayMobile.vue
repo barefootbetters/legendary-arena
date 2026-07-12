@@ -1,7 +1,11 @@
 <script lang="ts">
 import { computed, defineComponent, ref, type PropType } from 'vue';
 import { storeToRefs } from 'pinia';
-import type { UIDisplayEntry, UIPlayerState } from '@legendary-arena/game-engine';
+import type {
+  UICardDisplay,
+  UIDisplayEntry,
+  UIPlayerState,
+} from '@legendary-arena/game-engine';
 import { useUiStateStore } from '../stores/uiState';
 
 import EndgameSummary from '../components/hud/EndgameSummary.vue';
@@ -23,6 +27,7 @@ import YourVictoryPile from '../components/play/YourVictoryPile.vue';
 import TurnActionBar from '../components/play/TurnActionBar.vue';
 import LobbyControls from '../components/play/LobbyControls.vue';
 import PileBrowseModal from '../components/play/PileBrowseModal.vue';
+import CardReaderModal from '../components/play/CardReaderModal.vue';
 import PendingHeroChoicePrompt from '../components/play/PendingHeroChoicePrompt.vue';
 import PendingKoHeroChoicePrompt from '../components/play/PendingKoHeroChoicePrompt.vue';
 import OptionalKoRewardPrompt from '../components/play/OptionalKoRewardPrompt.vue';
@@ -37,6 +42,12 @@ import type { SubmitMove } from '../components/play/uiMoveName.types';
 interface ActivePile {
   pileLabel: string;
   cards: readonly UIDisplayEntry[];
+}
+
+interface ActiveCard {
+  title: string;
+  display: UICardDisplay;
+  gameText: readonly string[];
 }
 
 /**
@@ -77,6 +88,7 @@ export default defineComponent({
     TurnActionBar,
     LobbyControls,
     PileBrowseModal,
+    CardReaderModal,
     GameLogPanel,
     PendingHeroChoicePrompt,
     PendingKoHeroChoicePrompt,
@@ -121,6 +133,18 @@ export default defineComponent({
 
     function onPileClose(): void {
       activePile.value = null;
+    }
+
+    // why: mirrors PlayDesktop — the Mastermind / Scheme tiles emit `read`;
+    // the page holds the active card and feeds one CardReaderModal.
+    const activeCard = ref<ActiveCard | null>(null);
+
+    function onCardRead(payload: ActiveCard): void {
+      activeCard.value = payload;
+    }
+
+    function onCardReadClose(): void {
+      activeCard.value = null;
     }
 
     const viewer = computed<UIPlayerState | null>(() => {
@@ -233,6 +257,9 @@ export default defineComponent({
       activePile,
       onPileOpen,
       onPileClose,
+      activeCard,
+      onCardRead,
+      onCardReadClose,
       hasPendingChoice,
       hasPendingKoChoice,
       hasPendingOptionalKoReward,
@@ -279,6 +306,7 @@ export default defineComponent({
             :is-viewer-turn="isViewerTurn"
             :economy="snapshot.economy"
             :submit-move="submitMove"
+            @read="onCardRead"
           />
           <MasterStrikePile
             :pile="snapshot.mastermind.strikePile"
@@ -286,7 +314,7 @@ export default defineComponent({
           />
         </section>
         <section class="play-mobile__band">
-          <SchemeTile :scheme="snapshot.scheme" :twist-threshold="8" />
+          <SchemeTile :scheme="snapshot.scheme" :twist-threshold="8" @read="onCardRead" />
           <SchemeTwistPile
             :pile="snapshot.scheme.twistPile"
             @open="onPileOpen"
@@ -472,6 +500,13 @@ export default defineComponent({
       :pile-label="activePile?.pileLabel ?? ''"
       :cards="activePile?.cards ?? []"
       @close="onPileClose"
+    />
+    <CardReaderModal
+      :is-open="activeCard !== null"
+      :title="activeCard?.title ?? ''"
+      :display="activeCard?.display ?? null"
+      :game-text="activeCard?.gameText ?? []"
+      @close="onCardReadClose"
     />
   </div>
 </template>
