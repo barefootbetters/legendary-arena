@@ -1,9 +1,11 @@
 name: wiki-viewer
 
 # why: trigger on wiki/ or apps/wiki-viewer/ touches per WP-139 §Open
-# Decision G default. Render auto-deploys from the static_site service in
-# render.yaml on push to main; this workflow is the CI-side gate that runs
-# the link-integrity check + Hugo build BEFORE the deploy.
+# Decision G default, plus docs/09-CHANGELOG.md (D-24164 — the one docs/ file
+# project-wiki.mjs also projects into the ewiki). Render's static_site
+# (legendary-arena-wiki) has autoDeploy off; this workflow is the CI-side gate
+# (link-integrity + Hugo build) that fires the Render Deploy Hook on pass — so
+# any source this build consumes must appear in the paths filter above.
 
 on:
   push:
@@ -13,12 +15,22 @@ on:
       - 'ewiki/**'
       - 'apps/wiki-viewer/**'
       - '.github/workflows/wiki-viewer.yml'
+      # why: D-24164 — project-wiki.mjs also projects docs/09-CHANGELOG.md into
+      # the ewiki, so a changelog-only edit must trigger this gated build+deploy
+      # too (Render autoDeploy is off; this workflow's deploy hook is the sole
+      # trigger). Without this path, changelog edits would not reach the ewiki.
+      - 'docs/09-CHANGELOG.md'
   pull_request:
     paths:
       - 'wiki/**'
       - 'ewiki/**'
       - 'apps/wiki-viewer/**'
       - '.github/workflows/wiki-viewer.yml'
+      # why: D-24164 — project-wiki.mjs also projects docs/09-CHANGELOG.md into
+      # the ewiki, so a changelog-only edit must trigger this gated build+deploy
+      # too (Render autoDeploy is off; this workflow's deploy hook is the sole
+      # trigger). Without this path, changelog edits would not reach the ewiki.
+      - 'docs/09-CHANGELOG.md'
 
 jobs:
   build:
