@@ -66,9 +66,15 @@ export default defineComponent({
     const villainGroupIds = ref('');
     const henchmanGroupIds = ref('');
     const heroDeckIds = ref('');
-    const bystandersCount = ref('1');
+    // why: defaults must meet the engine's per-pile supply floors (D-24032:
+    // bystanders/wounds/officers each >= 30) so the advanced manual "Create
+    // match" path succeeds out of the box. The former 1 / 5 defaults were
+    // below the floor and made every default manual create fail validation —
+    // surfaced as an opaque HTTP 500 before the validateSetupData fix. These
+    // match the Registry Viewer loadout-builder defaults and loadout-test.json.
+    const bystandersCount = ref('30');
     const woundsCount = ref('30');
-    const officersCount = ref('5');
+    const officersCount = ref('30');
     const sidekicksCount = ref('12');
 
     const numPlayers = ref('2');

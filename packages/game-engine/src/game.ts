@@ -194,6 +194,23 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
    * from the lobby create endpoint -- returning a string triggers a 400
    * response with the string as the error message.
    *
+   * why: this hook is boardgame.io's ONLY create-time path to a clean,
+   * client-visible rejection. A string return becomes `ctx.throw(400, msg)`
+   * in boardgame.io's CreateMatch handler (dist/cjs/server.js), and Koa
+   * exposes 4xx bodies — so the caller sees the actual reason. If a bad
+   * config is instead left to fail inside setup() (which throws), Koa
+   * swallows the throw into a generic HTTP 500 "Internal Server Error" and
+   * the real reason (e.g. "bystandersCount must be at least 30 …") never
+   * reaches the player. So the full match-setup validation runs HERE, at the
+   * lobby boundary, and the setup() throw below remains only as a
+   * belt-and-suspenders net for direct/internal callers (tests, rematch).
+   *
+   * The registry is the module-level `gameRegistry` (set by the server via
+   * setRegistryForSetup at startup). When no registry is configured — unit
+   * tests that intentionally skip validation — this hook skips the
+   * existence/floor checks exactly like setup() does, returning only the
+   * missing-setupData error.
+   *
    * @param setupData - the setupData from the create request body
    * @param _numPlayers - player count (validated separately by boardgame.io)
    * @returns an error message string if invalid, undefined if valid
@@ -205,6 +222,20 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     if (!setupData) {
       return 'Missing setupData. The create request must include a setupData ' +
         'object with a valid MatchConfiguration (schemeId, mastermindId, etc.).';
+    }
+    // why: run the authoritative match-setup validation here so an invalid
+    // config (unknown ext_id, below-floor supply count, malformed field)
+    // returns a message-bearing HTTP 400 from the lobby create endpoint
+    // instead of an opaque HTTP 500 from a setup() throw. Guarded on
+    // gameRegistry for the no-registry test path (mirrors setup()).
+    if (gameRegistry) {
+      const result = validateMatchSetup(setupData, gameRegistry);
+      if (!result.ok) {
+        const firstError = result.errors[0];
+        return firstError
+          ? firstError.message
+          : 'Match setup validation failed with an unknown error.';
+      }
     }
     return undefined;
   },
