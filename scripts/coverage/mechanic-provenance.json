@@ -12,6 +12,7 @@
     "reveal-ko-attack": { "wp": "WP-253", "decision": "D-24024" },
     "attack-per-count": { "wp": "WP-247", "decision": "" },
     "optional-ko-reward": { "wp": "WP-248", "decision": "" },
+    "shuffle-discard-empty-reward": { "wp": "WP-356", "decision": "D-24148" },
     "wall-crawl": { "wp": "WP-273", "decision": "D-24049" },
     "dodge": { "wp": "WP-275", "decision": "D-24051" },
     "berserk": { "wp": "WP-256", "decision": "D-24031" },

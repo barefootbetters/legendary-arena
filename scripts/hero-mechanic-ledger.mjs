@@ -135,6 +135,46 @@ function normalizeMechanicToken(rawToken) {
 }
 
 /**
+ * Reduces a parameterized keyword mechanic to its bare keyword head.
+ *
+ * The 3-segment marker tokens — `[keyword:optional-ko-reward:rescue:1]`,
+ * `[keyword:attack-per-count:victory-bystanders:N]`,
+ * `[keyword:shuffle-discard-empty-reward:recruit:2]`, and the forward-compat
+ * `[keyword:reveal:<predicate>:<action>]` — carry a reward/source/predicate parameter that
+ * `normalizeMechanicToken` keeps after stripping the trailing magnitude, so the slug
+ * (`optional-ko-reward:rescue`) never matches the bare HeroKeyword the engine actually resolves
+ * and registers a handler under (`optional-ko-reward`). The engine's resolved effect `.type` is
+ * ALWAYS the bare keyword — verified by-hook: Black Widow's dangerous-rescue resolves
+ * `optional-ko-reward`, Spider-Man's the-amazing-spider-man resolves `reveal`, Jocasta's
+ * reprocess resolves `shuffle-discard-empty-reward` — so the parameter is a ledger-only slug
+ * detail, not a distinct implementation target. Fold it back to the head whenever the head is a
+ * recognized HeroKeyword.
+ *
+ * why: without this every parameterized-keyword card is mislabeled `unsupported` on the coverage
+ * control surface despite a live, tested handler (the pre-2026-07-13 artifact — Jocasta's
+ * shuffle-discard-empty-reward is the case that surfaced it). This reduction runs only in the
+ * ledger, NOT in the shared `normalizeMechanicToken` (kept byte-identical to the coverage gate's
+ * copy): the coverage gate's executable verdict is by-hook already, so it needs no vocabulary
+ * coupling. A token whose head is NOT a known keyword — a malformed or genuinely unknown mechanic
+ * such as the leading-colon `:-cross-dimensional-...-rampage.` (empty head) — is left intact so it
+ * stays visible as unsupported.
+ *
+ * @param {string} name - a normalized mechanic name (post magnitude-strip).
+ * @returns {string} the bare keyword when the head is a recognized keyword, else `name` unchanged.
+ */
+function reduceParameterizedKeyword(name) {
+  const colonIndex = name.indexOf(':');
+  if (colonIndex === -1) {
+    return name;
+  }
+  const head = name.slice(0, colonIndex);
+  if (KNOWN_KEYWORDS.has(head)) {
+    return head;
+  }
+  return name;
+}
+
+/**
  * Returns the distinct, normalized `[keyword:X]` mechanic tokens across a hero's
  * ability lines.
  *
@@ -147,7 +187,7 @@ function extractMechanics(abilities) {
     const markupPattern = /\[keyword:([^\]]+)\]/g;
     let match;
     while ((match = markupPattern.exec(ability)) !== null) {
-      const name = normalizeMechanicToken(match[1]);
+      const name = reduceParameterizedKeyword(normalizeMechanicToken(match[1]));
       if (name !== '') {
         found.add(name);
       }
