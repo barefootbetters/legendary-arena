@@ -778,30 +778,6 @@
       "hidden": true
     },
     {
-      "slug": "man-out-of-time",
-      "label": "Man Out Of Time",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 3,
-      "cardIds": [
-        "ca75/captain-america-1941",
-        "ca75/steve-rogers-director-of-shield",
-        "ca75/winter-soldier"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "man-woman-out-of-time",
-      "label": "Man Woman Out Of Time",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 1,
-      "cardIds": [
-        "anni/psi-lord"
-      ],
-      "hidden": true
-    },
-    {
       "slug": "microscopic-size-changing",
       "label": "Microscopic Size Changing",
       "scope": "hero",
@@ -852,6 +828,22 @@
       "cardCount": 1,
       "cardIds": [
         "antm/wonder-man"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "out-of-time",
+      "label": "Out Of Time",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 6,
+      "cardIds": [
+        "anni/brainstorm",
+        "anni/psi-lord",
+        "ca75/agent-x-13",
+        "ca75/captain-america-1941",
+        "ca75/steve-rogers-director-of-shield",
+        "ca75/winter-soldier"
       ],
       "hidden": true
     },
@@ -1754,18 +1746,6 @@
       "hidden": true
     },
     {
-      "slug": "woman-out-of-time",
-      "label": "Woman Out Of Time",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 2,
-      "cardIds": [
-        "anni/brainstorm",
-        "ca75/agent-x-13"
-      ],
-      "hidden": true
-    },
-    {
       "slug": "worthy",
       "label": "Worthy",
       "scope": "hero",
@@ -1955,7 +1935,7 @@
     },
     "anni/brainstorm": {
       "mechanics": [
-        "woman-out-of-time"
+        "out-of-time"
       ]
     },
     "anni/fantastic-four-united": {
@@ -1973,7 +1953,7 @@
     "anni/psi-lord": {
       "mechanics": [
         "focus",
-        "man-woman-out-of-time"
+        "out-of-time"
       ]
     },
     "anni/super-skrull": {
@@ -2128,14 +2108,14 @@
     },
     "ca75/agent-x-13": {
       "mechanics": [
-        "savior",
-        "woman-out-of-time"
+        "out-of-time",
+        "savior"
       ]
     },
     "ca75/captain-america-1941": {
       "mechanics": [
         "draw",
-        "man-out-of-time",
+        "out-of-time",
         "rescue",
         "savior"
       ]
@@ -2148,7 +2128,7 @@
     },
     "ca75/steve-rogers-director-of-shield": {
       "mechanics": [
-        "man-out-of-time",
+        "out-of-time",
         "rescue",
         "savior"
       ]
@@ -2156,7 +2136,7 @@
     "ca75/winter-soldier": {
       "mechanics": [
         "draw",
-        "man-out-of-time"
+        "out-of-time"
       ]
     },
     "chmp/gwenpool": {
