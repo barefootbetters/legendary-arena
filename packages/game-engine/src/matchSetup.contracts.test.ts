@@ -271,6 +271,97 @@ describe('validateMatchSetup — supply-pile minimums (D-24032)', () => {
   });
 });
 
+// why: WP-370 — an inline player-count table fixture (rows 1–2 only, the
+// counts these tests need) rather than importing the registry package, so
+// the engine test stays free of a cross-layer import. Structurally matches
+// the registry's PlayerCountSetupRow the reader consumes.
+const PLAYER_COUNT_SETUP_FIXTURE: Readonly<Record<number, {
+  villainGroupCount: number;
+  henchmenGroupCount: number;
+  villainDeckBystanderCount: number;
+  heroCount: number;
+}>> = {
+  1: { villainGroupCount: 1, henchmenGroupCount: 1, villainDeckBystanderCount: 1, heroCount: 3 },
+  2: { villainGroupCount: 2, henchmenGroupCount: 1, villainDeckBystanderCount: 2, heroCount: 5 },
+};
+
+/** The mock registry plus the WP-370 player-count table. */
+function createMockRegistryWithTable() {
+  return { ...createMockRegistry(), playerCountSetup: PLAYER_COUNT_SETUP_FIXTURE };
+}
+
+describe('validateMatchSetup — player-count composition gate (WP-370 / D-24165)', () => {
+  it('accepts a composition that matches the player count', () => {
+    const registry = createMockRegistryWithTable();
+    // why: 1 villain group / 1 henchman / 3 heroes matches table row 1.
+    const input = {
+      ...createValidInput(),
+      villainGroupIds: ['test/test-villain-group-001'],
+    };
+
+    const result = validateMatchSetup(input, registry, 1);
+
+    assert.equal(result.ok, true, 'A composition matching the player count must validate.');
+  });
+
+  it('rejects too many villain groups for the player count', () => {
+    const registry = createMockRegistryWithTable();
+    // why: createValidInput has 2 villain groups; a 1-player match requires 1.
+    const result = validateMatchSetup(createValidInput(), registry, 1);
+
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      const error = result.errors.find((each) => each.field === 'villainGroupIds');
+      assert.ok(error, 'Expected a villainGroupIds composition error.');
+      assert.ok(
+        error.message.includes('1-player') && error.message.includes('requires 1'),
+        'Message should name the player count and the required count.',
+      );
+    }
+  });
+
+  it('rejects the wrong hero count for the player count', () => {
+    const registry = createMockRegistryWithTable();
+    // why: createValidInput has 3 heroes; a 2-player match requires 5.
+    const result = validateMatchSetup(createValidInput(), registry, 2);
+
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      const error = result.errors.find((each) => each.field === 'heroDeckIds');
+      assert.ok(error, 'Expected a heroDeckIds composition error.');
+      assert.ok(
+        error.message.includes('requires 5') && error.message.includes('provides 3'),
+        'Message should name the required and actual hero counts.',
+      );
+    }
+  });
+
+  it('skips the composition gate when numPlayers is omitted', () => {
+    const registry = createMockRegistryWithTable();
+    // why: createValidInput (2 villain / 3 heroes) matches no player count, but
+    // a 2-argument call has no seat count to check against.
+    const result = validateMatchSetup(createValidInput(), registry);
+
+    assert.equal(result.ok, true, 'Omitting numPlayers must skip the composition gate.');
+  });
+
+  it('skips the composition gate when the registry carries no player-count table', () => {
+    const registry = createMockRegistry();
+    // why: a table-less registry (narrow mocks, legacy registries) must not
+    // trip the gate even with a mismatched composition + numPlayers.
+    const result = validateMatchSetup(createValidInput(), registry, 1);
+
+    assert.equal(result.ok, true, 'A table-less registry must skip the composition gate.');
+  });
+
+  it('skips the composition gate when the player count is out of range', () => {
+    const registry = createMockRegistryWithTable();
+    const result = validateMatchSetup(createValidInput(), registry, 9);
+
+    assert.equal(result.ok, true, 'An out-of-range player count has no table row to check.');
+  });
+});
+
 describe('validateMatchSetup — no-throw contract', () => {
   it('never throws, even with null input', () => {
     const registry = createMockRegistry();

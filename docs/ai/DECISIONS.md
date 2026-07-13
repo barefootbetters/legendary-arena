@@ -28759,7 +28759,7 @@ Protect this file.
 
 ### D-24165 — Player-count setup table (Registry source of truth) + engine block; warn-in-builder / block-at-engine enforcement model
 
-**Status:** Reserved 2026-07-13 (WP-370 draft; flips Active at execution).
+**Status:** Active 2026-07-13.
 
 **User-Visible Surface:** none directly (infrastructure) — observed via the WP-371 lobby rejection, the WP-372 loadout-builder warn/export-gate, and correct live villain decks.
 
@@ -28767,13 +28767,13 @@ Protect this file.
 
 **Decision.** A canonical `PLAYER_COUNT_SETUP` table (keyed 1–5) is the **single source of truth**, and it lives in `packages/registry` (it is game reference data — Registry's job). Placement is forced by the layer boundary: `game-engine` imports Node built-ins only (never `registry`); `registry-viewer` imports `registry` (never `game-engine`); `arena-client` imports neither at runtime. Every consumer reaches the one table legally — `registry-viewer` and `apps/server` import it directly; the **engine reads it via the registry object already passed into `Game.setup()`** (the sanctioned Registry → Engine setup-time data flow), exposed through the engine-defined `CardRegistryReader` interface using TypeScript **structural typing**, so no package imports the other. `validateMatchSetup` gains a `numPlayers` argument and **blocks** (`Game.setup()` throws) when the three composition lengths ≠ the table for the player count; the registry-side `setupContract` mirror gains the same coupling for browser consumers. **Enforcement model:** block at the **engine** (authoritative) and the **server** (a friendly early rejection — D-24167 / WP-371); **warn** in the loadout **builder** (WP-372 — authoring stays free, LAGN export is gated). **Standard table only** — the "What If…?" modified setup (4p→4 villain groups, 5p→5 / 16 bystanders) is deferred to a future mode-aware WP (no game-mode concept exists today). The supply-pile `bystandersCount` floor (D-24032) is a **different** concept and is unchanged. **Rejected alternative:** duplicating the table in both `registry` and `game-engine` behind a cross-package drift test — rejected because reading the registry value structurally at setup time gives one source of truth with zero duplication and no forbidden import.
 
-**Packet:** WP-370 (blocks WP-371 + WP-372). **Reserved:** 2026-07-13; flips Active at execution.
+**Packet:** WP-370 (blocks WP-371 + WP-372). **Decided + Executed:** 2026-07-13 (EC-399, registry `137/0` / engine `1927/0`, sentinel unchanged).
 
 Protect this file.
 
 ### D-24166 — Villain-deck in-deck bystander fallback reads the player-count table (fixes the `numPlayers` shortcut)
 
-**Status:** Reserved 2026-07-13 (WP-370 draft; flips Active at execution).
+**Status:** Active 2026-07-13.
 
 **User-Visible Surface:** play.legendary-arena.com — villain-deck composition at 3+ players.
 
@@ -28781,7 +28781,7 @@ Protect this file.
 
 **Decision.** When a scheme does not specify `villainDeckBystanderCount`, the fallback reads `PLAYER_COUNT_SETUP[numPlayers].villainDeckBystanderCount` (1/2/8/8/12) from the same registry table (D-24165), via the setup-time registry object. **Scheme-specified counts still override** (D-16803 / WP-169 curation is unaffected). This completes the **bystander half** of the WP-169 / D-16804 deferral; the conditional twist-count carve-out stays deferred. **Determinism:** behavior-affecting at 3p+ only; the committed 2-player sentinel is byte-identical (2 == old `numPlayers` == new table value), so no re-pin is expected — the decision is execution-measured and recorded. **Defensive:** an absent table row keeps `context.ctx.numPlayers` as the last-ditch fallback (setup never throws here).
 
-**Packet:** WP-370. **Reserved:** 2026-07-13; flips Active at execution.
+**Packet:** WP-370. **Decided + Executed:** 2026-07-13 (EC-399; the `villainDeck.setup.ts` null-scheme fallback now reads the table's `villainDeckBystanderCount`).
 
 Protect this file.
 
