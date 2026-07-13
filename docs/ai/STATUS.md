@@ -7,6 +7,14 @@
 
 ## Current State
 
+### EC-393 fix — pop-up blocker on the "View loadout" link (WP-363 follow-up) (2026-07-12)
+
+**D-24026 live-verify (in a real signed-in match) surfaced a real bug** in the WP-363 button: it always reported *"Your browser blocked the loadout tab"*, even on success. Two causes, both around `window.open`: (1) `window.open(url, '_blank', 'noopener')` returns `null` **by spec** when `noopener` is set — so the `opened === null` "blocked" check was a false positive on every click; and (2) the `window.open` ran **after** `await fetchMatchLagn`, outside the click's user-activation window, so the pop-up blocker genuinely blocked it. The unit test masked both by returning a truthy fake handle from `window.open`.
+
+**Fix (standard pattern for opening a tab from async data):** open a blank tab **synchronously on click, before the fetch** (`window.open('', '_blank')` — a genuine `null` now means a real block), then once the LAGN arrives **sever `opener` and navigate** the pre-opened tab to the viewer deep-link (`viewerTab.opener = null; viewerTab.location.href = …`), restoring the anti-tabnabbing posture that `noopener` provided. On a fetch failure the blank tab is closed. The component test now models a realistic `window.open` handle (settable `location.href` / `opener` / `close()`), so this class of bug is caught. arena-client `typecheck` 0; test **884 pass / 0 fail** (button suite realistic-`window.open` cases). `User-Visible Surface = play.legendary-arena.com` — closes the last D-24026 gap once re-clicked in a real match.
+
+---
+
 ### WP-363 / EC-393 Executed — In-match "View loadout in Registry Viewer" link (D-24155 Active) (2026-07-12) — arc complete
 
 The **client half** — and final packet — of the "open a live game's loadout in the Registry Viewer" arc. A small fixed-position control on the play surface (mounted once in `PlayViewport.vue` beside `DiagnosticExportButton`, covering both `PlayMobile` and `PlayDesktop`; **not rendered outside a live match** — no `?match=`). On click it fetches the current match's Tier-1 LAGN from **WP-361** `GET /api/match/:matchId/lagn` (authenticated with the player's `useAuthStore().token` bearer), base64url-encodes it into **WP-362**'s `?lagn=` deep-link (`lagnShareLink.ts` — `TextEncoder`→`btoa`→base64url, the **exact inverse** of the viewer's decoder), and opens it in a new tab (`window.open(..., 'noopener')`).
