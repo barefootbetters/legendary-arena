@@ -36,13 +36,13 @@ amwp/jentorra,Jentorra,amwp,conqueror,unsupported,,,
 amwp/jentorra,Jentorra,amwp,explore,unsupported,,,
 amwp/scott-lang-cat-burglar,"Scott Lang, Cat Burglar",amwp,(unmarked),unmarked,,,
 amwp/wasp,Wasp,amwp,(unmarked),unmarked,,,
-anni/brainstorm,Brainstorm,anni,woman-out-of-time,unsupported,,,
+anni/brainstorm,Brainstorm,anni,out-of-time,unsupported,,,
 anni/fantastic-four-united,Fantastic Four United,anni,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 anni/fantastic-four-united,Fantastic Four United,anni,focus,unsupported,,,
 anni/heralds-of-galactus,Heralds of Galactus,anni,conqueror,unsupported,,,
 anni/heralds-of-galactus,Heralds of Galactus,anni,focus,unsupported,,,
 anni/psi-lord,Psi-Lord,anni,focus,unsupported,,,
-anni/psi-lord,Psi-Lord,anni,man/woman-out-of-time,unsupported,,,
+anni/psi-lord,Psi-Lord,anni,out-of-time,unsupported,,,
 anni/super-skrull,Super-Skrull,anni,bridge,unsupported,,,
 anni/super-skrull,Super-Skrull,anni,conqueror,unsupported,,,
 anni/super-skrull,Super-Skrull,anni,focus,unsupported,,,
@@ -109,19 +109,19 @@ bkwd/white-tiger,White Tiger,bkwd,dodge,executable,WP-275,D-24051,packages/game-
 bkwd/yelena-belova,Yelena Belova,bkwd,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts
 bkwd/yelena-belova,Yelena Belova,bkwd,undercover,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#undercover
 bkwd/yelena-belova,Yelena Belova,bkwd,unleash,unsupported,,,
+ca75/agent-x-13,Agent X-13,ca75,out-of-time,unsupported,,,
 ca75/agent-x-13,Agent X-13,ca75,savior,unsupported,,,
-ca75/agent-x-13,Agent X-13,ca75,woman-out-of-time,unsupported,,,
 ca75/captain-america-falcon,Captain America (Falcon),ca75,rescue,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#rescue
 ca75/captain-america-falcon,Captain America (Falcon),ca75,savior,unsupported,,,
 ca75/captain-america-1941,Captain America 1941,ca75,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
-ca75/captain-america-1941,Captain America 1941,ca75,man-out-of-time,unsupported,,,
+ca75/captain-america-1941,Captain America 1941,ca75,out-of-time,unsupported,,,
 ca75/captain-america-1941,Captain America 1941,ca75,rescue,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#rescue
 ca75/captain-america-1941,Captain America 1941,ca75,savior,unsupported,,,
-ca75/steve-rogers-director-of-shield,"Steve Rogers, Director of S.H.I.E.L.D.",ca75,man-out-of-time,unsupported,,,
+ca75/steve-rogers-director-of-shield,"Steve Rogers, Director of S.H.I.E.L.D.",ca75,out-of-time,unsupported,,,
 ca75/steve-rogers-director-of-shield,"Steve Rogers, Director of S.H.I.E.L.D.",ca75,rescue,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#rescue
 ca75/steve-rogers-director-of-shield,"Steve Rogers, Director of S.H.I.E.L.D.",ca75,savior,unsupported,,,
 ca75/winter-soldier,Winter Soldier,ca75,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
-ca75/winter-soldier,Winter Soldier,ca75,man-out-of-time,unsupported,,,
+ca75/winter-soldier,Winter Soldier,ca75,out-of-time,unsupported,,,
 chmp/gwenpool,Gwenpool,chmp,cheering-crowds,unsupported,,,
 chmp/gwenpool,Gwenpool,chmp,demolish,unsupported,,,
 chmp/gwenpool,Gwenpool,chmp,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw

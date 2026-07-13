@@ -186,11 +186,21 @@ function reduceParameterizedKeyword(name) {
 // players via useRules.parseAbilityText, so it must NOT be rewritten). The families fold to
 // UNRECOGNIZED heads (there is no `patrol` HeroKeyword), so they correctly stay `unsupported`
 // — just as one row per family instead of one per phrase. Ordered, first-match-wins.
+//
+// why (out-of-time): "Man Out of Time" / "Woman Out of Time" / "Man/Woman Out of Time" /
+// "Man or Woman Out of Time" are the SAME keyword printed with the character-appropriate
+// gender — one mechanic, so they fold to `out-of-time`. Contrast the Artifact family
+// (`artifact` / `ritual-artifact` / `thrown-artifact` / `triggered-artifact`), which is
+// DELIBERATELY NOT folded: the printed text shows four genuinely distinct mechanics
+// (base once-per-turn passive vs reactive discard-for-effect vs a throw action vs a
+// triggered ability), so implementing one does NOT clear the others — they are four
+// separate worklist targets, not a parameterized family (verified 2026-07-13).
 const MECHANIC_FAMILY_RULES = [
   { pattern: /^patrol(-|$)/, canonical: 'patrol' },
   { pattern: /(^|-)conqueror$/, canonical: 'conqueror' },
   { pattern: /cross-dimensional.*rampage/, canonical: 'cross-dimensional-rampage' },
   { pattern: /^burn-.+-shards$/, canonical: 'burn-shards' },
+  { pattern: /out-of-time$/, canonical: 'out-of-time' },
 ];
 
 /**
