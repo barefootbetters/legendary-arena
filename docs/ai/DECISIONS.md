@@ -28585,13 +28585,13 @@ Protect this file.
 
 ### D-24155 — In-match "View loadout in Registry Viewer" link (arena client)
 
-**Status:** Drafted 2026-07-11; not yet landed. **BLOCKED on WP-361 + WP-362** (the endpoint + the ingest/encoding contract). Flips to Active when WP-363 executes.
+**Status:** Active (post-execution) 2026-07-12 (WP-363 / EC-393). `D-24026` operator-pending on deploy. **Completes the WP-361/362/363 loadout-in-viewer arc.**
 
 **User-Visible Surface:** `play.legendary-arena.com` (a small in-match "View loadout in Registry Viewer" control).
 
 **Decision.** A fixed-position play-surface control (mounted once in `PlayViewport.vue` beside `DiagnosticExportButton`, the WP-228 idiom), **not rendered without `?match=`**. Locks: (1) on click, `GET /api/match/:matchId/lagn` (WP-361/D-24153) with the player's existing Hanko **bearer** → base64url-encode the returned LAGN → `window.open('${viewer}/?lagn=…', '_blank', 'noopener')`; a null token short-circuits to a sign-in message with **no** fetch, an in-flight guard blocks double-clicks, and a `null` `window.open` return shows a pop-up-blocked message; (2) the client-side encoder is the **exact inverse of WP-362's decoder** (base64url of UTF-8 `JSON.stringify(lagn)`, D-24154) — guarded by a **parsed-value** round-trip test that imports WP-362's decoder; the URL is built with one `/` (no `//?`); (3) the `lagn` is treated **opaquely** — the client is a **relay, not an authority**: it never validates or **inspects** the payload (WP-361 validated it; WP-362 re-validates; WP-301/D-24085 opaque-`lagn` posture); (4) **never-throws** fetch — non-200 / thrown / **a bad 200 body (in-guard `json()`)** → `{ ok:false, status }` — with full-sentence inline messages (`401` sign-in / `403` participants-only / `404` not-available-yet / network / pop-up-blocked), non-blocking; (5) **no bearer/credentials in the opened URL** — only the non-secret loadout payload (both players already see the board), asserted by test; (6) the viewer origin is a locked module constant (no trailing slash) confirmed against the deployed origin at execution (no new env var). Works for **every** participant (server-sourced, survives reload/session-clear) — not the creator-only `matchSetupSession.ts` sessionStorage path.
 
-**Packet:** WP-363 (+ EC-393 at execution-prep). **Drafted:** 2026-07-11. **Executed:** — (blocked on WP-361 + WP-362)
+**Packet:** WP-363 (+ EC-393). **Drafted:** 2026-07-11. **Executed:** 2026-07-12 (EC-393; arena-client test 884 pass / 0 fail, +17; vue-tsc 0; build 0). WP-366 double-booked EC-393 at draft — WP-363 kept it; WP-366 renumbers when it executes.
 
 Protect this file.
 

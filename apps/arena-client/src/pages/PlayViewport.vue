@@ -4,6 +4,7 @@ import { computed, defineComponent, ref, toRef, type PropType } from 'vue';
 import PlayDesktop from './PlayDesktop.vue';
 import PlayMobile from './PlayMobile.vue';
 import DiagnosticExportButton from '../components/DiagnosticExportButton.vue';
+import ViewLoadoutButton from '../components/ViewLoadoutButton.vue';
 import HollowEffectsPanel from '../components/play/HollowEffectsPanel.vue';
 import { useViewport } from '../composables/useViewport';
 import { useSkinApplier } from '../composables/useSkinApplier';
@@ -47,7 +48,7 @@ const SUBMISSION_MESSAGES: Record<string, string> = {
  */
 export default defineComponent({
   name: 'PlayViewport',
-  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, HollowEffectsPanel },
+  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, ViewLoadoutButton, HollowEffectsPanel },
   props: {
     submitMove: {
       type: Function as PropType<SubmitMove>,
@@ -121,6 +122,14 @@ export default defineComponent({
       :hero-deck-ids="heroDeckIds"
     />
     <DiagnosticExportButton />
+    <!--
+      // why: WP-363 — mounted ONCE here at the shared viewport root (the same
+      // shared-child case as <DiagnosticExportButton>), so the in-match "View
+      // loadout in Registry Viewer" link covers BOTH the <PlayMobile> and
+      // <PlayDesktop> surfaces. Self-hides when there is no `?match=` (not a
+      // live match), so it adds no DOM outside real play.
+    -->
+    <ViewLoadoutButton />
     <!--
       // why: WP-258 — mounted ONCE here at the shared viewport root (the
       // Mounting Rule's shared-child case), alongside <DiagnosticExportButton>,
