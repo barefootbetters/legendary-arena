@@ -7,6 +7,16 @@
 
 ## Current State
 
+### WP-370 / EC-399 Executed — Player-count setup table + engine composition block + villain-deck bystander fix (D-24165 + D-24166 Active) (2026-07-13)
+
+The number of players now **drives** the required setup counts. A canonical `PLAYER_COUNT_SETUP` table (villain groups / henchmen groups / villain-deck bystanders / heroes = `1·1·1·3` / `2·1·2·5` / `3·1·8·5` / `3·2·8·5` / `4·2·12·6`) is the **single source of truth**, and it lives in `packages/registry` (game reference data) — the layer boundary forbids the engine from importing registry, so the engine reads the table off the `CardRegistry` object at setup via structural typing on its local `CardRegistryReader` (no cross-import). Foundation packet of the three-packet arc; **WP-371** (server create-gate + lobby surface) and **WP-372** (loadout-builder warn/export-gate) are now unblocked.
+
+**Engine enforcement (block at `Game.setup`):** `validateMatchSetup(input, registry, numPlayers?)` blocks a loadout whose villain-group / henchman / hero counts do not match the player count. `numPlayers` is **optional** so 2-argument callers and table-less test mocks skip the gate — the reason the change landed with **zero fixture breaks**. `game.ts` threads `ctx.numPlayers` into both the `validateSetupData` (lobby-boundary 400) and `setup()` (belt-and-suspenders) call sites.
+
+**Villain-deck bystander fix (D-24166):** the `null`-scheme in-deck bystander fallback in `villainDeck.setup.ts` now reads the table's `villainDeckBystanderCount` (1/2/8/8/12) instead of `ctx.numPlayers` — fixing the pre-existing under-seeding at 3/4/5 players (was 3/4/5). Scheme-specified counts still override; table-less registries fall back to `ctx.numPlayers` (byte-compatible). Distinct from the supply-pile `bystandersCount` floor (D-24032), which is unchanged.
+
+**Execution refinement (scope-neutral, EC-399):** the registry-side coupling shipped as a pure `checkPlayerCountComposition` helper in `playerCountSetup.ts` (not a `setupContract.*` change — those files stay byte-unchanged, no parse-path tightening); WP-372 consumes it. Registry test **137/0** (+7 drift-lock + helpers); engine test **1927/0** (+6 composition-gate + 2 table-path bystander); `pnpm sim:coverage --check` OK (2p sentinel byte-identical — the villain-deck change is behind the table, absent from sentinel mocks → **no re-pin**); `pnpm -r build` 0. `User-Visible Surface = none — infrastructure` (the payoff lands with WP-371/WP-372; D-24026 N/A for this packet).
+
 ### WP-369 / EC-398 Executed — Pre-match waiting-room seat-aware invite panel (D-24163 Active) (2026-07-13)
 
 Gives a host a **waiting-room experience inside the play view** (operator chose the play-view waiting state over a dedicated new room surface — there is no waiting-room route today; `LobbyView` navigates straight to `?match=` on create). **Client-only; no server/engine/transport change, no migration.**
