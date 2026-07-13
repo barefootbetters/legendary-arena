@@ -1,6 +1,6 @@
 # WP-356 — `shuffle-discard-empty-reward` Hero Keyword (Jocasta Reprocess + Electromagnetic Eyebeams)
 
-**Status:** Draft 2026-07-11 · **READY (not blocked — all hard-deps Done)** · **Standard two-session lane** (D-24028 — NOT lightweight: new engine keyword = new code in the closed `HeroKeyword` union + RNG-consuming executor). Pairs with **EC-386** (authored at execution-prep). Reserves **D-24148** (lands at execution).
+**Status:** Done 2026-07-12 (EC-386; D-24148 Active) · Standard two-session lane. **Baseline back-sync:** drafted against `origin/main @ 07099fd4` (engine 1877/438); executed against `e38f0314` after WP-364 landed two gain-wound keywords (engine 1903/444) — the locked +11/+3 delta held exactly (1914/447/0). See `## Amendments`.
 **Primary Layer:** Game Engine / Implementation (+ card-data pipeline)
 **Dependencies:** WP-021, WP-022 (hero ability hook pipeline); D-24019 (rewardType descriptor field); D-24139 (return-zero-cost-discard precedent shape)
 **User-Visible Surface:** play.legendary-arena.com
@@ -171,7 +171,8 @@ Add `node:test` tests (each new group wrapped in exactly one `describe()` block 
 - `scripts/convert-cards/inputs/hero-ability-markers.json` — **modified** — 2 antm rows
 - `scripts/convert-cards/apply-hero-ability-markers.mjs` — **modified** — VALID_TOKEN_PATTERN branch + `// why:`
 - `data/cards/antm.json` — **modified** — regenerated (2 ability lines gain markers)
-- `docs/ai/coverage/hero-mechanic-ledger.csv` — **modified** — regenerated (`pnpm ledger:heroes`)
+- `docs/ai/coverage/hero-mechanic-ledger.csv` + `hero-mechanic-ledger.json` — **modified** — regenerated (`pnpm ledger:heroes` writes both)
+- `data/metadata/card-mechanics.json` — **modified** — regenerated (`pnpm mechanics:metadata`; the new keyword adds mechanics rows)
 - `docs/ai/STATUS.md` — **modified** — session close
 - `docs/ai/DECISIONS.md` — **modified** — D-24148 flips from reserved to Active
 - `docs/ai/work-packets/WORK_INDEX.md` — **modified** — WP-356 checked off
@@ -222,7 +223,7 @@ N/A — no HTTP endpoints added, modified, removed, or re-statused; no `apps/ser
 - [ ] `pnpm ledger:heroes:check`, `pnpm mechanics:metadata:check`, `pnpm sim:runtime-observed:check`, `pnpm roadmap:counts:check` all exit 0 at close
 
 ### Tests
-- [ ] `pnpm --filter @legendary-arena/game-engine test` exits 0 — **1888 tests / 441 suites / 0 fail** (1877 + 11 new; 438 + 3 new describes)
+- [x] `pnpm --filter @legendary-arena/game-engine test` exits 0 — **1914 tests / 447 suites / 0 fail** (1903 + 11 new; 444 + 3 new describes; baseline refreshed by WP-364, delta unchanged)
 - [ ] New tests use `node:test` + `node:assert` only; no `boardgame.io` imports
 
 ### Scope Enforcement
@@ -239,7 +240,7 @@ pnpm --filter @legendary-arena/game-engine build
 
 # Step 2 — run all engine tests
 pnpm --filter @legendary-arena/game-engine test
-# Expected: 1888 tests, 441 suites, 0 fail
+# Expected: 1914 tests, 447 suites, 0 fail (WP-364-refreshed baseline + the locked +11/+3)
 
 # Step 3 — marker application is idempotent
 node scripts/convert-cards/apply-hero-ability-markers.mjs
@@ -272,7 +273,7 @@ This packet is complete when ALL of the following are true:
 - [ ] **User-visible verification (surface = play.legendary-arena.com):** after deploy, a real match with Jocasta in the loadout shows Reprocess played with a non-empty discard pile producing a game-log shuffle line and an observed discard→deck count change (diagnostics JSON or log capture as evidence). Green tests + merged PR alone do NOT satisfy this item. (D-24026)
 - [ ] All acceptance criteria above pass
 - [ ] `pnpm --filter @legendary-arena/game-engine build` exits 0
-- [ ] `pnpm --filter @legendary-arena/game-engine test` exits 0 at 1888/441/0
+- [x] `pnpm --filter @legendary-arena/game-engine test` exits 0 at 1914/447/0
 - [ ] All four card-data-derived `:check` gates exit 0
 - [ ] No `Math.random` in any new or modified file (confirmed with `Select-String`)
 - [ ] `heroAbility.types.ts` not modified (confirmed with `git diff`)
@@ -309,3 +310,13 @@ Recorded per `00.3-prompt-lint-checklist.md` (drafted 2026-07-11):
 - §19 Bridge staleness — N/A at draft (commit-time discipline; baseline SHA re-checked at commit)
 - §20 Funding — N/A with justification (see §Funding Surface Gate block)
 - §21 API catalog — N/A with justification (see §API Catalog block)
+
+---
+
+## Amendments (execution session, 2026-07-12 — scope-neutral)
+
+1. **Icon-suppression (load-bearing correctness fix).** The parser's icon step (Steps 2b/3) was already emitting a flat **unconditional** `+2` effect from the printed `+2[icon:X]` on both target lines — the cards were never fully hollow; they over-granted on every play, and this explains the +2-recruit anomaly observed in the diagnosis trace (turn 9). Without suppression, the new conditional effect would double-grant on the empty-discard branch and phantom-grant on the shuffle branch. Resolution: a suppression mirroring the D-24016 count-scaled precedent drops the plain icon keyword matching the seeded rewardType whenever a `shuffle-discard-empty-reward` effect is emitted. Test-pinned: both parser tests assert exactly one effect per line.
+2. **Executor-level magnitude floor.** `isValidMagnitude` deliberately admits 0 (reveal-family semantics), so the WP's "magnitude 0 → no-op" acceptance criterion is enforced by an explicit `magnitude >= 1` floor inside the executor, per the D-24019 downstream convention — not by the upstream pre-gate as drafted.
+3. **Regen-output allowlist additions (mechanical).** `pnpm ledger:heroes` writes a `.json` sibling next to the `.csv`, and the new keyword stales `data/metadata/card-mechanics.json` (144 mechanics) — both regenerated artifacts folded into `## Files Expected to Change`.
+
+Same keyword, token grammar, descriptor shape, executor semantics, file allowlist shape, and locked test delta as drafted. D-24148 records amendments 1–2.

@@ -7,6 +7,16 @@
 
 ## Current State
 
+### WP-356 / EC-386 Executed — `shuffle-discard-empty-reward` hero keyword (D-24148 Active) (2026-07-12)
+
+Jocasta's **Reprocess** and **Electromagnetic Eyebeams** now execute their printed two-branch ability ("If your discard pile is empty, you get +2[recruit|attack]. Otherwise, shuffle your discard pile into your deck."), closing the hollow diagnosed from a live game log on 2026-07-11. One mandatory immediate keyword on the D-24029 substrate: `HERO_KEYWORDS` 29→30, handler registry 16→17, D-24019-style 3-segment marker token with seeded rewards exactly `recruit`/`attack`, `heroAbility.types.ts` byte-identical, no pending choice / new move / projection. Empty-discard branch grants via `addResources`; the shuffle branch is one combined deterministic shuffle of discard into deck (`ctx.random.Shuffle` via `ShuffleProvider`); both branches log to `G.messages`.
+
+**Execution finding worth remembering:** these cards were never *fully* hollow — the parser's icon step had been granting a flat **unconditional** +2 from the printed "+2[icon:X]" on every play (it also explains the +2-recruit anomaly in the diagnosis trace). A new icon-suppression (D-24016 count-scaled precedent) subsumes the printed icon into the conditional effect, test-pinned on both cards. Also: `isValidMagnitude` admits 0 by design, so the executor owns its own `magnitude >= 1` floor (D-24019 downstream convention).
+
+Verification: `pnpm -r build` 0; engine suite **1914/447/0** (exactly the locked +11/+3 delta on the WP-364-refreshed 1903/444 baseline); registry 130/0; all four card-data gates OK (`ledger:heroes` / `mechanics:metadata` 144 / `sim:runtime-observed` / `roadmap:counts`); marker apply exactly 2 lines, idempotent. `User-Visible Surface = play.legendary-arena.com` — **D-24026 live-verify operator-pending on deploy** (a real match: Reprocess played with a non-empty discard shows the shuffle log line and the discard→deck count change). Deferred: optional-shuffle variants (`dead` Electroplasmic Insanity, `ssw2` Shuffling Footwork) + Flying Steed's master-strike reaction.
+
+---
+
 ### EC-393 fix — pop-up blocker on the "View loadout" link (WP-363 follow-up) (2026-07-12)
 
 **D-24026 live-verify (in a real signed-in match) surfaced a real bug** in the WP-363 button: it always reported *"Your browser blocked the loadout tab"*, even on success. Two causes, both around `window.open`: (1) `window.open(url, '_blank', 'noopener')` returns `null` **by spec** when `noopener` is set — so the `opened === null` "blocked" check was a false positive on every click; and (2) the `window.open` ran **after** `await fetchMatchLagn`, outside the click's user-activation window, so the pop-up blocker genuinely blocked it. The unit test masked both by returning a truthy fake handle from `window.open`.

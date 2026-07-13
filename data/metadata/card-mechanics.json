@@ -1426,6 +1426,28 @@
       "hidden": true
     },
     {
+      "slug": "shuffle-discard-empty-reward-attack",
+      "label": "Shuffle Discard Empty Reward Attack",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "antm/jocasta"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "shuffle-discard-empty-reward-recruit",
+      "label": "Shuffle Discard Empty Reward Recruit",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "antm/jocasta"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "size-changing",
       "label": "Size Changing",
       "scope": "hero",
@@ -2224,6 +2246,8 @@
       "mechanics": [
         "draw",
         "empowered",
+        "shuffle-discard-empty-reward-attack",
+        "shuffle-discard-empty-reward-recruit",
         "size-changing"
       ]
     },

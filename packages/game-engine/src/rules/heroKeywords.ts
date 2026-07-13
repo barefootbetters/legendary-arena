@@ -52,7 +52,8 @@ export type HeroKeyword =
   | 'put-bottom-hq-icon-reward' // why: D-24133 — mandatory "Put a card from the HQ on the bottom of the Hero Deck. If that card had a recruit/attack icon, you get +N" (Absorb Ambient Power); parks a mandatory PendingOptionalPutBottomHQ with iconRewardMagnitude, resolved by resolveOptionalPutBottomHQ
   | 'return-zero-cost-discard' // why: D-24139 — mandatory "Return a 0-cost card from your discard pile to your hand" (Black Knight's Defend the Weak); parks a mandatory PendingReturnZeroCostDiscard resolved by resolveReturnZeroCostDiscard
   | 'gain-wound-self' // why: D-24156 — printed "You gain a Wound." / "Gain a Wound."; the active player gains 1 Wound (to discard) via the WP-017 gainWound helper. Immediate, no magnitude. Distinct from the still-deferred generic 'wound'.
-  | 'gain-wound-each'; // why: D-24156 — printed "Each player gains a Wound." (Crazed Rampage); every player gains 1 Wound via the WP-316 villain per-target loop. Immediate, no magnitude.
+  | 'gain-wound-each' // why: D-24156 — printed "Each player gains a Wound." (Crazed Rampage); every player gains 1 Wound via the WP-316 villain per-target loop. Immediate, no magnitude.
+  | 'shuffle-discard-empty-reward'; // why: D-24148 — mandatory immediate "If your discard pile is empty, you get +N[recruit|attack]. Otherwise, shuffle your discard pile into your deck." (Jocasta's Reprocess / Electromagnetic Eyebeams); rewardType carries the empty-discard grant, the non-empty branch is a combined deterministic shuffle of discard into deck. No pending choice.
 
 // why: canonical array for drift-detection. Must match HeroKeyword
 // union exactly. Drift-detection test in heroAbility.setup.test.ts
@@ -91,6 +92,7 @@ export const HERO_KEYWORDS: readonly HeroKeyword[] = [
   'return-zero-cost-discard', // why: D-24139 — mandatory "Return a 0-cost card from your discard pile to your hand" (Defend the Weak); parks a mandatory PendingReturnZeroCostDiscard resolved by resolveReturnZeroCostDiscard
   'gain-wound-self', // why: D-24156 — "You gain a Wound."; active player gains 1 Wound (to discard) via the WP-017 gainWound helper
   'gain-wound-each', // why: D-24156 — "Each player gains a Wound." (Crazed Rampage); every player gains 1 Wound via the WP-316 villain per-target loop
+  'shuffle-discard-empty-reward', // why: D-24148 — mandatory immediate "empty discard → +N reward; otherwise shuffle discard into deck" (Jocasta's Reprocess / Electromagnetic Eyebeams); no pending choice
 ] as const;
 
 // ---------------------------------------------------------------------------

@@ -58,8 +58,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // added the put-any-number-bottom-hq park handler (11 → 12); D-24133 added the
     // put-bottom-hq-icon-reward park handler (12 → 13); D-24139 added the
     // return-zero-cost-discard park handler (13 → 14); D-24156 / WP-364 registered the
-    // one shared gain-wound handler under both gain-wound-self and gain-wound-each (14 → 16).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 16);
+    // one shared gain-wound handler under both gain-wound-self and gain-wound-each (14 → 16);
+    // D-24148 / WP-356 added the shuffle-discard-empty-reward immediate handler (16 → 17).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 17);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -3646,5 +3647,120 @@ describe('executeHeroEffects — gain-wound-self / gain-wound-each (WP-364 / D-2
     assert.equal(typeof HERO_EFFECT_HANDLERS['gain-wound-self'], 'function', 'gain-wound-self has a handler');
     assert.equal(typeof HERO_EFFECT_HANDLERS['gain-wound-each'], 'function', 'gain-wound-each has a handler');
     assert.ok(!HANDLED_KEYWORDS.has('wound'), 'the generic wound keyword remains unhandled (deferred)');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-356 / EC-386 — shuffle-discard-empty-reward executor (D-24148)
+// ---------------------------------------------------------------------------
+
+describe('heroEffectShuffleDiscardEmptyReward (WP-356)', () => {
+  const mockCtx = makeMockCtx();
+
+  function makeShuffleRewardState(overrides: {
+    deck?: string[];
+    discard?: string[];
+    rewardType?: string;
+    magnitude?: number;
+  }) {
+    return makeTestState({
+      deck: overrides.deck ?? [],
+      discard: overrides.discard ?? [],
+      inPlay: ['hero-reprocess'],
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-reprocess' as string,
+          timing: 'onPlay',
+          keywords: ['shuffle-discard-empty-reward'],
+          effects: [{
+            type: 'shuffle-discard-empty-reward',
+            magnitude: overrides.magnitude ?? 2,
+            rewardType: (overrides.rewardType ?? 'recruit') as 'recruit',
+          }],
+        },
+      ],
+    });
+  }
+
+  it('empty discard + recruit variant grants +2 recruit and leaves zones unchanged', () => {
+    const gameState = makeShuffleRewardState({ deck: ['deck-1'], discard: [], rewardType: 'recruit' });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-reprocess' as string);
+
+    assert.equal(gameState.turnEconomy.recruit, 2, 'recruit must rise by the magnitude');
+    assert.equal(gameState.turnEconomy.attack, 0, 'attack must be unchanged');
+    assert.deepStrictEqual(gameState.playerZones['0'].deck, ['deck-1'], 'deck must be unchanged');
+    assert.deepStrictEqual(gameState.playerZones['0'].discard, [], 'discard must stay empty');
+  });
+
+  it('empty discard + attack variant grants +2 attack', () => {
+    const gameState = makeShuffleRewardState({ deck: [], discard: [], rewardType: 'attack' });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-reprocess' as string);
+
+    assert.equal(gameState.turnEconomy.attack, 2, 'attack must rise by the magnitude');
+    assert.equal(gameState.turnEconomy.recruit, 0, 'recruit must be unchanged');
+  });
+
+  it('non-empty discard shuffles the whole discard into the deck (combined, mock-reversed) with no grant', () => {
+    const gameState = makeShuffleRewardState({
+      deck: ['deck-1', 'deck-2'],
+      discard: ['disc-1', 'disc-2', 'disc-3'],
+      rewardType: 'recruit',
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-reprocess' as string);
+
+    assert.deepStrictEqual(gameState.playerZones['0'].discard, [], 'discard must be emptied');
+    // why: makeMockCtx Shuffle reverses its input — the reversed combined
+    // (deck-then-discard) order proves the shuffle ran over BOTH zones as one
+    // pile, not just the discard.
+    assert.deepStrictEqual(
+      gameState.playerZones['0'].deck,
+      ['disc-3', 'disc-2', 'disc-1', 'deck-2', 'deck-1'],
+      'deck must be the reversed combined deck+discard pile',
+    );
+    assert.equal(gameState.turnEconomy.recruit, 0, 'no reward is granted on the shuffle branch');
+  });
+
+  it('both branches append one G.messages line', () => {
+    const emptyBranchState = makeShuffleRewardState({ discard: [], rewardType: 'recruit' });
+    executeHeroEffects(emptyBranchState, mockCtx, '0', 'hero-reprocess' as string);
+    const emptyBranchLine = emptyBranchState.messages.find(
+      (message) => message.includes('empty discard pile'),
+    );
+    assert.ok(emptyBranchLine !== undefined, 'the empty-discard branch must log a grant line');
+
+    const shuffleBranchState = makeShuffleRewardState({ deck: [], discard: ['disc-1'], rewardType: 'recruit' });
+    executeHeroEffects(shuffleBranchState, mockCtx, '0', 'hero-reprocess' as string);
+    const shuffleBranchLine = shuffleBranchState.messages.find(
+      (message) => message.includes('shuffled their'),
+    );
+    assert.ok(shuffleBranchLine !== undefined, 'the shuffle branch must log a shuffle line');
+  });
+
+  it('a zero magnitude is a silent no-op (upstream magnitude pre-gate)', () => {
+    const gameState = makeShuffleRewardState({
+      deck: ['deck-1'],
+      discard: ['disc-1'],
+      rewardType: 'recruit',
+      magnitude: 0,
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-reprocess' as string);
+
+    assert.deepStrictEqual(gameState.playerZones['0'].deck, ['deck-1'], 'deck must be unchanged');
+    assert.deepStrictEqual(gameState.playerZones['0'].discard, ['disc-1'], 'discard must be unchanged');
+    assert.equal(gameState.turnEconomy.recruit, 0, 'no reward is granted');
+  });
+
+  it('G remains JSON-serializable after each branch', () => {
+    const emptyBranchState = makeShuffleRewardState({ discard: [], rewardType: 'attack' });
+    executeHeroEffects(emptyBranchState, mockCtx, '0', 'hero-reprocess' as string);
+    assert.ok(JSON.stringify(emptyBranchState).length > 0, 'empty-discard branch state must serialize');
+
+    const shuffleBranchState = makeShuffleRewardState({ deck: ['deck-1'], discard: ['disc-1'], rewardType: 'attack' });
+    executeHeroEffects(shuffleBranchState, mockCtx, '0', 'hero-reprocess' as string);
+    assert.ok(JSON.stringify(shuffleBranchState).length > 0, 'shuffle branch state must serialize');
   });
 });

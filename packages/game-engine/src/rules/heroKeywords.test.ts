@@ -62,11 +62,11 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 29 entries after the gain-wound-self/each addition', () => {
+  it('HERO_KEYWORDS array has exactly 30 entries after the shuffle-discard-empty-reward addition', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      29,
-      'HERO_KEYWORDS must have exactly 29 entries (27 + gain-wound-self + gain-wound-each, D-24156)',
+      30,
+      'HERO_KEYWORDS must have exactly 30 entries (29 + shuffle-discard-empty-reward, D-24148)',
     );
   });
 });
@@ -105,6 +105,15 @@ describe('put-bottom-hq-icon-reward keyword (D-24133 — Absorb Ambient Power)',
     assert.ok(
       HERO_KEYWORDS.includes('put-bottom-hq-icon-reward'),
       'put-bottom-hq-icon-reward must be in HERO_KEYWORDS array',
+    );
+  });
+});
+
+describe('shuffle-discard-empty-reward keyword (WP-356 / EC-386 / D-24148)', () => {
+  it('is registered in HERO_KEYWORDS', () => {
+    assert.ok(
+      HERO_KEYWORDS.includes('shuffle-discard-empty-reward'),
+      'shuffle-discard-empty-reward must be in HERO_KEYWORDS array',
     );
   });
 });

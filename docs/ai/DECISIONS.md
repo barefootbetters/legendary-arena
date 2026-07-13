@@ -28522,7 +28522,7 @@ Protect this file.
 
 ### D-24148 — `shuffle-discard-empty-reward` hero keyword (Jocasta Reprocess + Electromagnetic Eyebeams)
 
-**Status:** Drafted 2026-07-11; not yet landed. **READY (not blocked — all hard-deps Done).** Flips to Active (post-execution) when WP-356 executes.
+**Status:** Active (post-execution 2026-07-12).
 
 **User-Visible Surface:** `play.legendary-arena.com` (Reprocess / Electromagnetic Eyebeams actually execute their printed ability instead of playing as vanilla stat cards).
 
@@ -28535,7 +28535,12 @@ Protect this file.
 3. **Branch semantics** — empty discard (`playerZones.discard.length === 0`; played cards are in `inPlay` and never count) → `addResources` grant of `<n>` of the reward type on `G.turnEconomy`. Otherwise → the ENTIRE discard is shuffled INTO the deck as one combined deterministic shuffle (`moveAllCards` + `shuffleDeck` with `ctx` narrowed to `ShuffleProvider`; `ctx.random.Shuffle` is the only randomness source), discard ends `[]`. Both branches append one `G.messages` line (hash-excluded per D-24081).
 4. **Out of scope** — the optional-shuffle variants (`dead` Electroplasmic Insanity, `ssw2` Shuffling Footwork: "you may…" = player choice = pending-queue shape) and Flying Steed's master-strike reaction are separate future WPs.
 
-**Packet:** WP-356 (+ EC-386 at execution-prep). **Drafted:** 2026-07-11. **Executed:** —
+**Execution amendments (2026-07-12, both scope-neutral — same allowlist shape, locked test delta preserved):**
+
+1. **Icon-suppression lock.** Execution discovered the parser's icon step was already emitting a flat UNCONDITIONAL +2 effect from the printed "+2[icon:X]" on both lines — the cards were never fully hollow; they over-granted on every play (this explains the +2-recruit anomaly in the diagnosis trace). A suppression mirroring the D-24016 count-scaled precedent now drops the plain icon keyword matching the seeded rewardType whenever a shuffle-discard-empty-reward effect is emitted, so exactly one (conditional) effect remains per line — test-pinned on both cards.
+2. **Executor-level magnitude floor.** `isValidMagnitude` deliberately admits 0 (reveal-family semantics), so the executor owns its own `magnitude >= 1` floor per the D-24019 downstream convention.
+
+**Packet:** WP-356 (+ EC-386). **Drafted:** 2026-07-11. **Executed:** 2026-07-12 (engine suite 1903/444 → 1914/447/0, exactly the locked +11/+3 delta on the WP-364-refreshed baseline; all four card-data gates OK; marker apply 2 lines, idempotent).
 
 Protect this file.
 
