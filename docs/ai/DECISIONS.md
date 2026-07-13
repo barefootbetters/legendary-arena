@@ -28756,3 +28756,45 @@ Protect this file.
 **Packet:** none (INFRA). **Decided + Executed:** 2026-07-13.
 
 Protect this file.
+
+### D-24165 — Player-count setup table (Registry source of truth) + engine block; warn-in-builder / block-at-engine enforcement model
+
+**Status:** Reserved 2026-07-13 (WP-370 draft; flips Active at execution).
+
+**User-Visible Surface:** none directly (infrastructure) — observed via the WP-371 lobby rejection, the WP-372 loadout-builder warn/export-gate, and correct live villain decks.
+
+**Context.** The Marvel Legendary rules fix each setup component by player count — villain groups / henchmen groups / villain-deck bystanders / heroes = `1·1·1·3` (1p) / `2·1·2·5` (2p) / `3·1·8·5` (3p) / `3·2·8·5` (4p) / `4·2·12·6` (5p). This table existed **nowhere** in the codebase: `playerCount` / `numPlayers` is captured at every layer but drives no composition count. `validateMatchSetup` (`matchSetup.validate.ts:449`, `(input, registry)`) checked shape, ext-id existence, and the D-24032 supply floors but never received `numPlayers` and never checked `villainGroupIds`/`henchmanGroupIds`/`heroDeckIds` lengths — so a mismatched loadout set up an illegal board silently.
+
+**Decision.** A canonical `PLAYER_COUNT_SETUP` table (keyed 1–5) is the **single source of truth**, and it lives in `packages/registry` (it is game reference data — Registry's job). Placement is forced by the layer boundary: `game-engine` imports Node built-ins only (never `registry`); `registry-viewer` imports `registry` (never `game-engine`); `arena-client` imports neither at runtime. Every consumer reaches the one table legally — `registry-viewer` and `apps/server` import it directly; the **engine reads it via the registry object already passed into `Game.setup()`** (the sanctioned Registry → Engine setup-time data flow), exposed through the engine-defined `CardRegistryReader` interface using TypeScript **structural typing**, so no package imports the other. `validateMatchSetup` gains a `numPlayers` argument and **blocks** (`Game.setup()` throws) when the three composition lengths ≠ the table for the player count; the registry-side `setupContract` mirror gains the same coupling for browser consumers. **Enforcement model:** block at the **engine** (authoritative) and the **server** (a friendly early rejection — D-24167 / WP-371); **warn** in the loadout **builder** (WP-372 — authoring stays free, LAGN export is gated). **Standard table only** — the "What If…?" modified setup (4p→4 villain groups, 5p→5 / 16 bystanders) is deferred to a future mode-aware WP (no game-mode concept exists today). The supply-pile `bystandersCount` floor (D-24032) is a **different** concept and is unchanged. **Rejected alternative:** duplicating the table in both `registry` and `game-engine` behind a cross-package drift test — rejected because reading the registry value structurally at setup time gives one source of truth with zero duplication and no forbidden import.
+
+**Packet:** WP-370 (blocks WP-371 + WP-372). **Reserved:** 2026-07-13; flips Active at execution.
+
+Protect this file.
+
+### D-24166 — Villain-deck in-deck bystander fallback reads the player-count table (fixes the `numPlayers` shortcut)
+
+**Status:** Reserved 2026-07-13 (WP-370 draft; flips Active at execution).
+
+**User-Visible Surface:** play.legendary-arena.com — villain-deck composition at 3+ players.
+
+**Context.** `villainDeck.setup.ts:265-267` sizes the bystanders shuffled **into the villain deck** as `bystanderFromScheme === null ? context.ctx.numPlayers : bystanderFromScheme`. The rules require `1/2/8/8/12` by player count, not `numPlayers` (`1/2/3/4/5`) — so at 3 players the deck seeded **3** bystanders where **8** are required. WP-169 / D-16804 flagged exactly this when it declined to hand-encode player-count-dependent counts, leaving the fallback at `numPlayers` "pending a future per-player-mapping."
+
+**Decision.** When a scheme does not specify `villainDeckBystanderCount`, the fallback reads `PLAYER_COUNT_SETUP[numPlayers].villainDeckBystanderCount` (1/2/8/8/12) from the same registry table (D-24165), via the setup-time registry object. **Scheme-specified counts still override** (D-16803 / WP-169 curation is unaffected). This completes the **bystander half** of the WP-169 / D-16804 deferral; the conditional twist-count carve-out stays deferred. **Determinism:** behavior-affecting at 3p+ only; the committed 2-player sentinel is byte-identical (2 == old `numPlayers` == new table value), so no re-pin is expected — the decision is execution-measured and recorded. **Defensive:** an absent table row keeps `context.ctx.numPlayers` as the last-ditch fallback (setup never throws here).
+
+**Packet:** WP-370. **Reserved:** 2026-07-13; flips Active at execution.
+
+Protect this file.
+
+### D-24167 — Server match-create composition gate; arena-client lobby surfaces the structured rejection
+
+**Status:** Reserved 2026-07-13 (WP-371 draft; flips Active at execution).
+
+**User-Visible Surface:** play.legendary-arena.com — the lobby create flow.
+
+**Context.** `POST /api/match/create` (`matchGate.routes.ts:224`) is a thin auth gate that forwards `{ numPlayers, setupData }` verbatim to the native boardgame.io lobby — no composition-vs-player-count check. Post-WP-370 the engine blocks a mismatch authoritatively at `Game.setup()`, but the failure surfaces as an opaque deep server error rather than a clean lobby message. `arena-client` cannot import the registry table (boundary: no `registry` runtime import).
+
+**Decision.** The server create-gate validates the composition's villain-group / henchman / hero lengths against `numPlayers` using the WP-370 `PLAYER_COUNT_SETUP` table (the server imports `@legendary-arena/registry`) **before** delegating to the native lobby, and returns `400 { errorCode: 'PLAYER_COUNT_COMPOSITION_MISMATCH', message }` with **no match created** on mismatch. It is framed as **input validation at the create boundary** (server wires; engine decides) — a fast, friendly pre-check reading the same registry data and rejecting **exactly** what the engine would reject (parity is drift-tested), never a second rules engine. The `arena-client` lobby surfaces the server's full-sentence message inline on both create paths (`submitCreate`, `submitFromJson`) and may disable the Create button on a local length pre-check (UX only — the server/engine remain the gate); the lobby imports **no** registry table. The `api-endpoints.md` create row is replaced whole (D-11804).
+
+**Packet:** WP-371 (blocked on WP-370). **Reserved:** 2026-07-13; flips Active at execution.
+
+Protect this file.
