@@ -21,7 +21,9 @@ let routeHandler: (url: string, init: RequestInit) => StubResponse;
 beforeEach(() => {
   globalThis.fetch = (async (url: string | URL, init?: RequestInit) => {
     const { status, body } = routeHandler(String(url), init ?? {});
-    return { status, json: async () => body } as Response;
+    // why: lobbyApi's listMatches/joinMatch branch on `response.ok`, not status,
+    // so the stub must set it (the match-invite wrappers use `status` directly).
+    return { status, ok: status >= 200 && status < 300, json: async () => body } as Response;
   }) as typeof globalThis.fetch;
 });
 
@@ -60,24 +62,51 @@ test('empty state shows when there are no invites', async () => {
   assert.ok(wrapper.find('[data-testid="match-invites-empty"]').exists());
 });
 
-test('Accept posts, refetches, and surfaces the hand-off matchId', async () => {
-  let listCalls = 0;
+test('Accept of a match no longer listed shows the "no longer available" line', async () => {
   routeHandler = (url, init) => {
     if (url.endsWith('/accept') && init.method === 'POST') {
       return { status: 200, body: { matchId: 'm1' } };
     }
-    listCalls += 1;
-    return { status: 200, body: { invites: listCalls >= 2 ? [] : [invite('m1')] } };
+    if (url.includes('/games/legendary-arena')) {
+      // the invited match is gone from the lobby list (ended / removed)
+      return { status: 200, body: { matches: [] } };
+    }
+    return { status: 200, body: { invites: [invite('m1')] } };
   };
-  const wrapper = mount(MatchInvitesSection, { props: { authToken: 'token' } });
+  const wrapper = mount(MatchInvitesSection, {
+    props: { authToken: 'token', playerName: 'Nova' },
+  });
   await flushPromises();
   await wrapper.find('[data-testid="match-invite-accept-m1"]').trigger('click');
   await flushPromises();
-  const accepted = wrapper.find('[data-testid="match-invites-accepted"]');
-  assert.ok(accepted.exists());
-  assert.ok(accepted.text().includes('m1'));
-  // the accepted invite is gone from the pending list after the refetch
-  assert.ok(wrapper.find('[data-testid="match-invites-empty"]').exists());
+  const status = wrapper.find('[data-testid="match-invites-join-status"]');
+  assert.ok(status.exists());
+  assert.ok(status.text().includes('no longer available'));
+});
+
+test('Accept of a full match shows the "already full" line', async () => {
+  routeHandler = (url, init) => {
+    if (url.endsWith('/accept') && init.method === 'POST') {
+      return { status: 200, body: { matchId: 'm1' } };
+    }
+    if (url.includes('/games/legendary-arena')) {
+      // the match is listed but every seat already has a name
+      return {
+        status: 200,
+        body: { matches: [{ matchID: 'm1', players: [{ id: 0, name: 'host' }] }] },
+      };
+    }
+    return { status: 200, body: { invites: [invite('m1')] } };
+  };
+  const wrapper = mount(MatchInvitesSection, {
+    props: { authToken: 'token', playerName: 'Nova' },
+  });
+  await flushPromises();
+  await wrapper.find('[data-testid="match-invite-accept-m1"]').trigger('click');
+  await flushPromises();
+  const status = wrapper.find('[data-testid="match-invites-join-status"]');
+  assert.ok(status.exists());
+  assert.ok(status.text().includes('already full'));
 });
 
 test('Decline failure surfaces the error line', async () => {

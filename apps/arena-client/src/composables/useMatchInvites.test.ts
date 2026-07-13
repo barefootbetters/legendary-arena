@@ -65,6 +65,35 @@ test('accept() posts then refetches the authoritative list', async () => {
   assert.equal(invites.value.length, 0, 'accept refetches; the accepted invite is gone');
 });
 
+test('invite() posts to /api/match/invites and returns true on 201', async () => {
+  let invitePosted = false;
+  routeHandler = (url, init) => {
+    if (url.endsWith('/api/match/invites') && init.method === 'POST') {
+      invitePosted = true;
+      return { status: 201, body: invite('m9') };
+    }
+    return { status: 200, body: { invites: [] } };
+  };
+  const { invite: sendInvite, errorCode } = useMatchInvites(() => 'token');
+  const ok = await sendInvite('m9', 'buddy');
+  assert.equal(ok, true);
+  assert.equal(invitePosted, true);
+  assert.equal(errorCode.value, null);
+});
+
+test('invite() sets errorCode and returns false on failure', async () => {
+  routeHandler = (url, init) => {
+    if (url.endsWith('/api/match/invites') && init.method === 'POST') {
+      return { status: 403, body: { error: 'not_friends' } };
+    }
+    return { status: 200, body: { invites: [] } };
+  };
+  const { invite: sendInvite, errorCode } = useMatchInvites(() => 'token');
+  const ok = await sendInvite('m9', 'stranger');
+  assert.equal(ok, false);
+  assert.equal(errorCode.value, 'not_friends');
+});
+
 test('decline() sets errorCode on failure and leaves the list intact', async () => {
   routeHandler = (url, init) => {
     if (url.endsWith('/decline') && init.method === 'POST') {

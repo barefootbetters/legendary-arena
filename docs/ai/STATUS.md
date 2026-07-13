@@ -16,6 +16,18 @@ Jocasta's **Reprocess** and **Electromagnetic Eyebeams** now execute their print
 Verification: `pnpm -r build` 0; engine suite **1914/447/0** (exactly the locked +11/+3 delta on the WP-364-refreshed 1903/444 baseline); registry 130/0; all four card-data gates OK (`ledger:heroes` / `mechanics:metadata` 144 / `sim:runtime-observed` / `roadmap:counts`); marker apply exactly 2 lines, idempotent. `User-Visible Surface = play.legendary-arena.com` — **D-24026 live-verify operator-pending on deploy** (a real match: Reprocess played with a non-empty discard shows the shuffle log line and the discard→deck count change). Deferred: optional-shuffle variants (`dead` Electroplasmic Insanity, `ssw2` Shuffling Footwork) + Flying Steed's master-strike reaction.
 
 ---
+### WP-366 / EC-396 Executed — Match invites UI: inviter trigger + join-from-invite (D-24158 Active) (2026-07-12) — match-invite UX complete
+
+Completes the **deferred WP-360 follow-on** — the last piece of the match-invite UX. **Client-only; no server change, no migration.** Two parts:
+
+- **(A) Inviter trigger** — a new `InviteFriendControl.vue` mounted once in `PlayViewport` (self-contained: reads `?match=` + `useAuthStore()`, the WP-363 `ViewLoadoutButton` idiom; render-gated `hasMatch && isAuthenticated`; reads `?match=` only, never `G`/`UIState`). A player types a friend's `@handle` (leading `@` stripped) and sends an invite via an additive `inviteFriendToMatch` wrapper (`POST /api/match/invites` — the WP-358 endpoint, 201→`MatchInviteView`, the only match-invite wrapper with a JSON body) + `useMatchInvites().invite`. The WP-360 invitee wrappers + `MATCH_INVITE_API_ERROR_CODES` mirror are **byte-identical**.
+- **(B) Full join-from-invite** — `MatchInvitesSection` Accept upgraded from the WP-360 Lobby hand-off to a real join, via a new **pure** `joinMatchFromInvite.ts` (injected `listMatches`/`joinMatch`/`navigate` deps → unit-testable without a live server or jsdom navigation): find the match by `matchID` (absent → "no longer available"), first open seat `!seat.name` (none → "already full"), `joinMatch` → navigate `?match&player&credentials` (the `LobbyView.joinExisting` pattern — **no reimplemented join**). `playerName` = the owner-profile `displayName` (handle fallback), passed by `MyProfilePage`.
+
+Handle-only identity (**never** `accountId`, FR-2, asserted); §23(b) invite/join copy. No engine/registry/server/boardgame.io import; §21 N/A (`POST /api/match/invites` shipped in WP-358 — no api-catalog change).
+
+`arena-client` typecheck (vue-tsc) 0; `arena-client` test **899/899** / 0 skipped; `pnpm -r build` 0. `User-Visible Surface = play.legendary-arena.com` — **D-24026 operator-pending on deploy** (in a live match, invite a friend by `@handle` → they see it on `?route=me` → Accept drops them into the match). **EC renumbered 394 → 396** (WP-362 took EC-394 during its parallel execution; EC-395 = WP-364; WP-366/D-24158 itself renumbered from WP-365/D-24157, which #699 took first). **With this, the match-invite UX — server (WP-358) + invitee UI (WP-360) + inviter trigger & join (WP-366) — is complete end-to-end, and the Friends & Ranked Trust subsystem is fully shipped.**
+
+---
 
 ### EC-393 fix — pop-up blocker on the "View loadout" link (WP-363 follow-up) (2026-07-12)
 

@@ -13,6 +13,7 @@ import {
   fetchMatchInvites,
   acceptMatchInvite,
   declineMatchInvite,
+  inviteFriendToMatch,
   MATCH_INVITE_API_ERROR_CODES,
   type MatchInviteView,
 } from './matchInvitesApi';
@@ -112,6 +113,38 @@ test('a 404 invite_not_found is parsed into the failure branch', async () => {
     assert.ok(result.ok === false);
     assert.equal(result.status, 404);
     assert.equal(result.code, 'invite_not_found');
+  } finally {
+    stub.restore();
+  }
+});
+
+test('inviteFriendToMatch POSTs { matchId, handle } and returns the invite on 201', async () => {
+  const created = sampleInvite({ matchId: 'm7', inviterHandle: 'me', inviterDisplayName: 'Me' });
+  const stub = installFetchStub(201, created);
+  try {
+    const result = await inviteFriendToMatch('token-xyz', 'm7', 'friendly');
+    assert.ok(result.ok === true);
+    assert.equal(result.value.matchId, 'm7');
+    const [call] = stub.calls;
+    assert.ok(call);
+    assert.ok(call.url.endsWith('/api/match/invites'));
+    assert.equal(call.init.method, 'POST');
+    const headers = (call.init.headers ?? {}) as Record<string, string>;
+    assert.equal(headers.Authorization, 'Bearer token-xyz');
+    assert.equal(headers['Content-Type'], 'application/json');
+    assert.deepEqual(JSON.parse(String(call.init.body)), { matchId: 'm7', handle: 'friendly' });
+  } finally {
+    stub.restore();
+  }
+});
+
+test('inviteFriendToMatch parses a 403 not_friends into the failure branch', async () => {
+  const stub = installFetchStub(403, { error: 'not_friends' });
+  try {
+    const result = await inviteFriendToMatch('token', 'm7', 'stranger');
+    assert.ok(result.ok === false);
+    assert.equal(result.status, 403);
+    assert.equal(result.code, 'not_friends');
   } finally {
     stub.restore();
   }

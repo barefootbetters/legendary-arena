@@ -1,23 +1,24 @@
 /**
- * Match Invites API Client — Arena Client (WP-360)
+ * Match Invites API Client — Arena Client (WP-360 + WP-366)
  *
- * Typed `fetch` wrappers for the invitee-side match-invite endpoints:
+ * Typed `fetch` wrappers for the match-invite endpoints:
  *
+ *   * POST /api/match/invites                     — invite a friend { matchId, handle } (WP-366)
  *   * GET  /api/me/match-invites                  — list pending invites
  *   * POST /api/me/match-invites/:matchId/accept  — accept (returns { matchId })
  *   * POST /api/me/match-invites/:matchId/decline — decline
  *
- * Consumed by `useMatchInvites` / `MatchInvitesSection.vue`. The `MatchInviteView`
- * shape is mirrored inline by structural compatibility with the server
- * `apps/server/src/match/matchInvites.types.ts#MatchInviteView` — the
+ * Consumed by `useMatchInvites` / `MatchInvitesSection.vue` / `InviteFriendControl.vue`.
+ * The `MatchInviteView` shape is mirrored inline by structural compatibility with
+ * the server `apps/server/src/match/matchInvites.types.ts#MatchInviteView` — the
  * engine/server-isolation rule forbids importing server-layer types (mirrors
  * the WP-352 `friendsApi.ts` precedent). NO `accountId` on the wire (FR-2).
  *
- * The inviter-side invite trigger + the full seat-selecting join-from-invite
- * are a deferred follow-on (they need the in-match play-view context); this
- * module ships the invitee-side reads/actions only.
+ * WP-360 shipped the invitee-side reads/actions; WP-366 adds the inviter-side
+ * `inviteFriendToMatch` wrapper (the in-match "Invite a friend" trigger).
  *
- * Authority: WP-360 §Scope; D-24152; WP-161 (`buildApiUrl`); WP-160 (bearer).
+ * Authority: WP-360 §Scope (D-24152); WP-366 §Scope (D-24158); WP-161
+ * (`buildApiUrl`); WP-160 (bearer).
  */
 
 import { buildApiUrl } from './apiBaseUrl';
@@ -111,6 +112,40 @@ async function parseMatchInviteFailure(
 /** Build headers, attaching the bearer token only when non-null. */
 function authHeaders(authToken: string | null): Record<string, string> {
   return authToken === null ? {} : { Authorization: `Bearer ${authToken}` };
+}
+
+/**
+ * Invite an accepted friend into the caller's current match
+ * (`POST /api/match/invites` with `{ matchId, handle }`). The caller must be
+ * seated in `matchId` and already friends with `handle` — the server enforces
+ * both (friends-only is anti-spam by construction, WP-358). Returns the created
+ * `MatchInviteView` on 201; a typed failure code otherwise
+ * (`not_friends` / `handle_not_found` / `not_in_match` / `already_invited` /
+ * `self_invite`). NO `accountId` is sent or returned (FR-2). (WP-366)
+ */
+export async function inviteFriendToMatch(
+  authToken: string | null,
+  matchId: string,
+  handle: string,
+): Promise<MatchInvitesApiResult<MatchInviteView>> {
+  let response: Response;
+  try {
+    response = await fetch(buildApiUrl('/api/match/invites'), {
+      method: 'POST',
+      // why: this is the only match-invite wrapper with a JSON request body, so
+      // it is the only one that sets Content-Type (the invitee POSTs carry the
+      // matchId in the URL path and send no body).
+      headers: { 'Content-Type': 'application/json', ...authHeaders(authToken) },
+      body: JSON.stringify({ matchId, handle }),
+    });
+  } catch {
+    return { ok: false, status: 0, code: null };
+  }
+  if (response.status !== 201) {
+    return await parseMatchInviteFailure(response);
+  }
+  const value = (await response.json()) as MatchInviteView;
+  return { ok: true, value };
 }
 
 /**
