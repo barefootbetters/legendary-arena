@@ -270,7 +270,7 @@ git diff --name-only origin/main
 
 This packet is complete when ALL of the following are true:
 
-- [ ] **User-visible verification (surface = play.legendary-arena.com):** after deploy, a real match with Hulk (Crazed Rampage) in the loadout shows every player gaining a Wound (Wound supply drops, discard gains a wound) with a game-log line — diagnostics JSON or log capture as evidence. Green tests + merged PR alone do NOT satisfy this item. (D-24026)
+- [x] **User-visible verification (surface = play.legendary-arena.com):** **live-verified 2026-07-13** (prod gitSha `17597cf`, match `ktYjYFuh5Nj`): Hulk's Crazed Rampage was played 5× (turns 7/9/12/14/15), each emitting `Each player gained a Wound (Crazed Rampage …)`, and the Wound supply dropped 30→25; `effectProvenance` shows `crazed-rampage#0` `outcome: resolved`. (D-24026)
 - [ ] All acceptance criteria above pass.
 - [ ] `pnpm --filter @legendary-arena/game-engine build` exits 0; engine test suite green at the captured baseline + new tests.
 - [ ] All four card-data-derived `:check` gates exit 0.

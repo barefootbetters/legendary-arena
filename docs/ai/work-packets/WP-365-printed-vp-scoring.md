@@ -225,7 +225,7 @@ git diff --name-only origin/main                            # only ## Files Expe
 
 ## Definition of Done
 
-- [ ] **User-visible verification (surface = play.legendary-arena.com + legends board):** after deploy, a real match whose victory pile holds a high-VP villain (e.g. Juggernaut vp 4) shows the correct `villainVP` in the end-of-match summary — diagnostics JSON or capture as evidence; green tests + merge alone do NOT satisfy this. (D-24026)
+- [x] **User-visible verification (surface = play.legendary-arena.com + legends board):** **live-verified 2026-07-13** (prod gitSha `17597cf`, match `ktYjYFuh5Nj`): the end-of-match score reported `villainVP 5` for a victory pile of Mystique (vp 3) + Super-Skrull (vp 2) — the printed sum, vs the old flat 2 — with `totalVP 41` (old flat table would give 38). (D-24026)
 - [ ] All acceptance criteria pass.
 - [ ] `pnpm --filter @legendary-arena/game-engine build` exits 0; engine suite green at baseline + new tests.
 - [ ] `pnpm sim:coverage --check` OK; sentinel re-pin decision recorded (expected: none).
