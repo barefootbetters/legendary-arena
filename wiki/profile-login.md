@@ -613,6 +613,13 @@ during implementation.
    `MatchInvitesSection` Accept upgraded to a real seat-selecting join reusing
    the lobby `listMatches`/`joinMatch` flow — client-only, no server change. This
    completes the match-invite UX end-to-end (invite → notify → accept → in-match).
+   The waiting-room refinement — a seat-aware "Waiting for players" panel that
+   surfaces the invite (and a copy-join-link) only while a match still has open
+   seats, superseding WP-366's always-on corner control — is
+   **drafted as [WP-369](../docs/ai/work-packets/WP-369-waiting-room-seat-aware-invite-panel.md)**
+   (D-24163, drafted 2026-07-12; play-view waiting state, chosen over a dedicated
+   new room surface). Seat-fill is polled from the public lobby `listMatches`
+   (boardgame.io `matchData` is deliberately not plumbed to the UI).
 6. Abuse controls — **executed as
    [WP-355](../docs/ai/work-packets/WP-355-friend-abuse-controls.md)**
    (executed 2026-07-11, D-24147 Active): a separate `legendary.player_blocks`
