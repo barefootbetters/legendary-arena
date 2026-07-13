@@ -3,8 +3,12 @@
 > High-level, human-readable record of significant changes to Legendary Arena.
 > Not a git log — focuses on architectural impact and milestone completions.
 >
-> **Last updated:** 2026-04-14
+> **Last updated:** 2026-07-13
 > **Format:** Newest first. Each entry tied to commits and Work Packets.
+>
+> **Note:** this changelog was not kept current between 2026-04-14 and
+> 2026-07-13 (the WP/EC throughput outran it); the 2026-07-13 entry below is the
+> first since. `WORK_INDEX.md` + `git log` remain the exhaustive record.
 > **Authoritative sources:** This file, `docs/ai/work-packets/WORK_INDEX.md`,
 > and `git log`.
 
@@ -16,6 +20,29 @@
 - Phase 6: WP-027 (Replay Determinism Proof) through WP-035/042 (Production)
 - WP-055: Theme Data Model
 - WP-060: Keyword & Rule Glossary data migration
+
+---
+
+## 2026-07-13 — Open a Live Game's Loadout in the Registry Viewer
+
+**Work Packets:** WP-361 / WP-362 / WP-363 · **Decisions:** D-24153 / D-24154 / D-24155 · **Verified live end-to-end.**
+
+From an in-progress match on play.legendary-arena.com, a player can open that game's exact loadout in the Registry Viewer's Loadout tab — to inspect, tweak, or re-export it — with **LAGN** (Legendary Arena Game Notation) as the interchange format the whole way.
+
+### WP-361 — Server: current-match loadout as LAGN (`48ac707f`)
+
+- New `GET /api/match/:matchId/lagn` returns a read-only **Tier-1 LAGN** of a match's setup; `authenticated-session-required` + participant-gated (`readSeatAccounts`).
+- Projected from the persisted match state (`initialState.G.matchConfiguration`); **extends the D-24095/D-24119 blob-read carve-out** (ARCHITECTURE.md §Persistence Boundary) with a read-only Tier-1-LAGN projection — never written back, never a save-game.
+
+### WP-362 — Registry Viewer: open a LAGN from the URL (`6f9a3475`)
+
+- New `?lagn=<base64url>` deep-link decodes → the existing `parseLagnLoadout` → auto-switches to the Loadout tab, pre-filled.
+- Self-contained payload: **no server call, no auth, no CORS**; a bad link fails visibly (the tab opens with a decode-error banner rather than blank).
+
+### WP-363 — Arena Client: in-match "View loadout in Registry Viewer" link (`b1d5c0d9`)
+
+- Fixed-position in-match control fetches the LAGN and opens the viewer deep-link in a new tab; the `lagn` is opaque (the client never inspects it) and the bearer never leaves the `Authorization` header.
+- Pop-up-blocker fix (`e38f0314`): the tab is opened synchronously on click (before the fetch) so the pop-up blocker allows it, then navigated once the LAGN arrives.
 
 ---
 

@@ -19,6 +19,7 @@ related:
   - card-type-taxonomy.md
   - board-keywords.md
   - scoring.md
+  - lagn-v1.md
 status: canonical
 source:
   - ../.claude/skills/legendary-game-engine/SKILL.md
@@ -153,6 +154,15 @@ the registry again. Per
   `CardExtId` — the same alias used for any other card identifier.
   The 9 locked `MatchSetupConfig` fields each carry one or more
   `CardExtId` values.
+- **[LAGN loadout interchange](lagn-v1.md).** The composition
+  `CardExtId` values a match was created with are exactly what surface
+  when a player opens that game's loadout in the Registry Viewer:
+  `GET /api/match/:matchId/lagn` (WP-361) projects them as a Tier-1
+  LAGN of `setAbbr/slug` ids, the in-match "View loadout in Registry
+  Viewer" link (WP-363) hands that LAGN to the viewer, and the viewer's
+  `?lagn=` ingest (WP-362) applies the ids to the Loadout tab. The ids
+  travel verbatim; display names are resolved from the registry
+  (id-fallback), so an unresolved name never blocks the round-trip.
 - **[Rule Execution Pipeline](rule-execution-pipeline.md).** Trigger
   payloads carry `CardExtId` (e.g., `OnCardRevealedPayload.cardId`,
   `OnSchemeTwistRevealedPayload.cardId`,
