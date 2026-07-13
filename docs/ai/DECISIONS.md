@@ -28740,3 +28740,17 @@ Protect this file.
 **Packet:** WP-365 (+ EC-392). **Drafted:** 2026-07-11. **Executed:** 2026-07-12 (EC-392).
 
 Protect this file.
+
+### D-24164 — Changelog projected to the ewiki (docs/09-CHANGELOG.md → wiki changelog page)
+
+**Status:** Active 2026-07-13.
+
+**User-Visible Surface:** `ewiki.legendary-arena.com/changelog/` (the engineering wiki, behind Cloudflare Access).
+
+**Context.** `docs/09-CHANGELOG.md` is the single high-level changelog (also read by git-facing readers and the dashboard). It did not render on the engineering wiki: the wiki projection (`apps/wiki-viewer/scripts/project-wiki.mjs`, WP-139 / D-13810) copies only `wiki/*.md`, and the changelog lives in `docs/`.
+
+**Decision.** `project-wiki.mjs` gains a build-time step that projects `docs/09-CHANGELOG.md` → `apps/wiki-viewer/content/changelog.md` — a **projection, not a duplicate**: the `docs/` file stays the single source of truth. The projection (1) injects ewiki frontmatter (`title: Changelog`, `type: Guide`) because the source is a plain doc with none; (2) drops the source's `# 09 — Changelog` H1 (the `09-` is a docs-ordering prefix; the frontmatter supplies the title); and (3) rewrites the changelog's **docs-relative** markdown links (e.g. `ai/work-packets/WORK_INDEX.md`, `05-ROADMAP-MINDMAP.md`) to absolute GitHub blob URLs so they resolve on the rendered ewiki AND pass the link-integrity check (which exempts `http(s)` links; `wiki/*.md` cross-links stay relative and are unaffected). `wiki/INDEX.md` gains a Changelog entry under Guide. This amends the WP-139/D-13810 wiki-only projection scope for **exactly this one `docs/` file**; no other `docs/` file is projected.
+
+**Packet:** none (INFRA). **Decided + Executed:** 2026-07-13.
+
+Protect this file.

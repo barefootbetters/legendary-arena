@@ -88,6 +88,9 @@ High-level card categorizations recognised by the engine.
 
 Cross-cutting governance, methodology, and readiness assessments.
 
+- [Changelog](changelog.md) — Milestone history of significant changes,
+  newest first (projected from `docs/09-CHANGELOG.md`; the exhaustive
+  per-packet record lives in WORK_INDEX + git log).
 - [Data & File Locations](data-file-locations.md) — Locator map for
   where data and files live: card JSON + the convert pipeline,
   metadata, the Postgres `legendary.*` tables, R2 key prefixes,
