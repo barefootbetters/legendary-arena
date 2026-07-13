@@ -616,10 +616,14 @@ during implementation.
    The waiting-room refinement — a seat-aware "Waiting for players" panel that
    surfaces the invite (and a copy-join-link) only while a match still has open
    seats, superseding WP-366's always-on corner control — is
-   **drafted as [WP-369](../docs/ai/work-packets/WP-369-waiting-room-seat-aware-invite-panel.md)**
-   (D-24163, drafted 2026-07-12; play-view waiting state, chosen over a dedicated
-   new room surface). Seat-fill is polled from the public lobby `listMatches`
-   (boardgame.io `matchData` is deliberately not plumbed to the UI).
+   **executed as [WP-369](../docs/ai/work-packets/WP-369-waiting-room-seat-aware-invite-panel.md)**
+   (D-24163 Active, executed 2026-07-13; play-view waiting state, chosen over a
+   dedicated new room surface): a `WaitingForPlayersPanel.vue` in `PlayViewport`
+   renders only while a seat is open, invites by `@handle` (reusing the WP-366
+   plumbing) + offers a copy-join-link, and auto-hides when full;
+   `InviteFriendControl.vue` was deleted (superseded). Seat-fill is polled from
+   the public lobby `listMatches` (boardgame.io `matchData` is deliberately not
+   plumbed to the UI). This closes the friends-invite lobby flow.
 6. Abuse controls — **executed as
    [WP-355](../docs/ai/work-packets/WP-355-friend-abuse-controls.md)**
    (executed 2026-07-11, D-24147 Active): a separate `legendary.player_blocks`
