@@ -28597,7 +28597,7 @@ Protect this file.
 
 ### D-24156 — Hero-side plain "gain a Wound" keywords (`gain-wound-self` / `gain-wound-each`)
 
-**Status:** Active (post-execution) 2026-07-12 (WP-364 / EC-395). `D-24026` live-verify operator-pending on deploy (a real match with Crazed Rampage shows every player gaining a Wound + a game-log line).
+**Status:** Active (post-execution) 2026-07-12 (WP-364 / EC-395). `D-24026` **live-verified 2026-07-13** (prod gitSha `17597cf`, match `ktYjYFuh5Nj` — Crazed Rampage played 5×, each producing `Each player gained a Wound`; the Wound supply dropped 30→25).
 
 **User-Visible Surface:** `play.legendary-arena.com` (in-match).
 
@@ -28638,7 +28638,7 @@ Protect this file.
 
 ### D-24157 — Final-score VP by printed card VP (villains / henchmen / masterminds); flat table demoted to fallback
 
-**Status:** Active (post-execution) 2026-07-12 (WP-365 / EC-392). `D-24026` live-verify operator-pending on deploy (a real match with a high-VP villain shows the correct `villainVP` in the end-of-match summary).
+**Status:** Active (post-execution) 2026-07-12 (WP-365 / EC-392). `D-24026` **live-verified 2026-07-13** (prod gitSha `17597cf`, match `ktYjYFuh5Nj` — `villainVP 5` = Mystique 3 + Super-Skrull 2, vs the old flat 2; `totalVP 41` vs the old flat 38).
 
 **User-Visible Surface:** `play.legendary-arena.com` (end-of-match victory summary) + legends leaderboard (via the PAR pipeline that consumes `computeFinalScores`).
 

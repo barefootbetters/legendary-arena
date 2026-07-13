@@ -25,7 +25,7 @@ Two **narrow** `HeroKeyword` members — `gain-wound-self` ("You gain a Wound.")
 
 **EC renumber:** drafted citing EC-391, but WP-361 executed first (#701) and kept EC-391, WP-365 took EC-392 — so this landed as **EC-395**.
 
-`pnpm --filter @legendary-arena/game-engine build` 0; engine suite **1903/444/0**; `ledger:heroes` / `mechanics:metadata` / `sim:runtime-observed` / `sim:coverage --check` all OK; apply-markers = exactly 7 lines (idempotent); `game.test.ts` unchanged (no move added); sentinel `finalStateHash` unchanged (markers fire only in real games). `User-Visible Surface = play.legendary-arena.com` — **D-24026 operator-pending on deploy** (Crazed Rampage → every player gains a Wound + a game-log line).
+`pnpm --filter @legendary-arena/game-engine build` 0; engine suite **1903/444/0**; `ledger:heroes` / `mechanics:metadata` / `sim:runtime-observed` / `sim:coverage --check` all OK; apply-markers = exactly 7 lines (idempotent); `game.test.ts` unchanged (no move added); sentinel `finalStateHash` unchanged (markers fire only in real games). `User-Visible Surface = play.legendary-arena.com` — **D-24026 live-verified 2026-07-13** (prod gitSha `17597cf`, match `ktYjYFuh5Nj`: Crazed Rampage played 5×, each `Each player gained a Wound`, Wound supply 30→25).
 
 ---
 
@@ -45,7 +45,7 @@ A new immutable setup snapshot **`G.cardVictoryPoints?`** (sibling to `G.cardSta
 
 **Execution mechanism (amends the draft):** the vp enumeration is spread across `economy.logic.ts` + `mastermind.setup.ts` internal helpers, so a dedicated builder replaced the draft's inline `buildInitialGameState.ts` build — keeping `CardStatEntry` / `economy.logic.ts` / `mastermind.setup.ts` **byte-unchanged** (the WP non-negotiable **and** concurrency-safe against other live engine sessions).
 
-`pnpm --filter @legendary-arena/game-engine build` 0; engine suite **1893/441/0** (+~17 new: builder normalizer + scoring printed-VP/fallback/tactic); `pnpm sim:coverage --check` OK — sentinel `finalStateHash` **unchanged** (`EMPTY_REGISTRY` → empty vp map, conditional-spread → no re-pin). `User-Visible Surface = play.legendary-arena.com + legends board` — **D-24026 operator-pending on deploy** (a real match with a high-VP villain shows the correct `villainVP` in the end-of-match summary). Retro-rescoring historical DB rows + per-card VP-modifier text remain future packets.
+`pnpm --filter @legendary-arena/game-engine build` 0; engine suite **1893/441/0** (+~17 new: builder normalizer + scoring printed-VP/fallback/tactic); `pnpm sim:coverage --check` OK — sentinel `finalStateHash` **unchanged** (`EMPTY_REGISTRY` → empty vp map, conditional-spread → no re-pin). `User-Visible Surface = play.legendary-arena.com + legends board` — **D-24026 live-verified 2026-07-13** (prod gitSha `17597cf`, match `ktYjYFuh5Nj`: `villainVP 5` = Mystique 3 + Super-Skrull 2 vs the old flat 2, `totalVP 41` vs the old flat 38). Retro-rescoring historical DB rows + per-card VP-modifier text remain future packets.
 
 ---
 
