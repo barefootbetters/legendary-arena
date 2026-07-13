@@ -7,6 +7,16 @@
 
 ## Current State
 
+### WP-372 / EC-401 Executed — Loadout builder player-count required-counts readout + warn/export-gate (consumes D-24165) (2026-07-13) — **arc complete**
+
+The cards.legendary-arena.com **Loadout tab** now guides the user to the correct composition for the chosen player count — closing the player-count setup-enforcement arc (WP-370 engine block + WP-371 lobby pre-check + WP-372 builder guidance).
+
+The builder gains two computeds off the **single-source-of-truth** registry table (`requiredPlayerCountSetup` + `playerCountCompositionMismatches` via `checkPlayerCountComposition` / `getPlayerCountSetup` — **no re-typed count literals**), a "For a N-player match: …" required-counts readout, a full-sentence **warning** per villain-group / henchman / hero mismatch (mirroring the existing `missingRequiredVillainGroupIds` pattern), and the mismatch added to **both** export handlers + **both** Download-button `:disabled` bindings — the "warn in builder, gate export" half of D-24165. Authoring stays free (heroes are chosen, never auto-filled).
+
+**Packaging refinement (scope-neutral):** WP-370 exported the table only from the **node-only root** barrel, which the viewer cannot import (Vite browser build breaks on the node-only re-exports). This WP re-exports `PLAYER_COUNT_SETUP` + `getPlayerCountSetup` + `checkPlayerCountComposition` from the **browser-safe `setupContract` barrel** (`playerCountSetup.ts` has zero node deps). Rebuild the registry dist so the viewer sees the new export (apps import the built `dist`).
+
+`registry-viewer` typecheck (vue-tsc) 0 + test **127/0** (+4); `pnpm -r build` 0. `User-Visible Surface = cards.legendary-arena.com` — **D-24026 live-verified** on the worktree dev server: the Loadout tab renders the required-counts readout + per-mismatch warnings + a disabled Download control, reactive to the player-count input (2→4 flips the readout to 3 villain groups / 2 henchmen / 5 heroes / 8 villain-deck bystanders). No new D-entry (consumes D-24165). **The three-packet player-count arc is complete.**
+
 ### WP-371 / EC-400 Executed — Lobby player-count pre-submit check: read-only setup-requirements endpoint + warn/disable (D-24167 Active) (2026-07-13)
 
 The lobby now warns and **disables Create before submit** when a loadout's composition does not match the chosen player count. **Operator-approved scope change ("expand it"):** the drafted server composition gate was **dropped as redundant** — WP-370's `validateSetupData` already blocks a mismatch and `POST /api/match/create` (`matchGate.routes.ts:257-266`) already propagates that as a 400 to the lobby. Building a second gate would duplicate enforcement and violate the route's "server wires, engine decides" contract.
