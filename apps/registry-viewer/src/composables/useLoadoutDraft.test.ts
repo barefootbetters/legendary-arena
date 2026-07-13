@@ -242,6 +242,78 @@ describe("useLoadoutDraft prefillFromTheme — ext_id resolution (D-24018)", () 
   });
 });
 
+describe("useLoadoutDraft — player-count setup requirements (WP-372 / D-24165)", () => {
+  it("requiredPlayerCountSetup returns the row for the draft's player count", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.setPlayerCount(3);
+    assert.equal(api.requiredPlayerCountSetup.value?.villainGroupCount, 3);
+    assert.equal(api.requiredPlayerCountSetup.value?.heroCount, 5);
+    api.setPlayerCount(5);
+    assert.equal(api.requiredPlayerCountSetup.value?.heroCount, 6);
+    assert.equal(api.requiredPlayerCountSetup.value?.villainDeckBystanderCount, 12);
+  });
+
+  it("requiredPlayerCountSetup is undefined for an out-of-range player count", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.setPlayerCount(9);
+    assert.equal(api.requiredPlayerCountSetup.value, undefined);
+  });
+
+  it("flags composition-count mismatches on a fresh draft and clears them when matched", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.setPlayerCount(1); // 1 villain / 1 henchman / 3 heroes
+    // a fresh draft has an empty composition → every count is short
+    assert.ok(
+      api.playerCountCompositionMismatches.value.length > 0,
+      "an empty composition must mismatch the player count",
+    );
+
+    api.prefillFromTheme(
+      makeTheme(
+        makeSetupIntent({
+          villainGroupIds: ["brotherhood"],
+          henchmanGroupIds: ["sentinel"],
+          heroDeckIds: ["spider-man", "wolverine", "storm"],
+        }),
+      ),
+    );
+
+    assert.deepEqual(api.playerCountCompositionMismatches.value, []);
+  });
+
+  it("reports required and actual counts and is reactive to the player count", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.prefillFromTheme(
+      makeTheme(
+        makeSetupIntent({
+          villainGroupIds: ["brotherhood"],
+          henchmanGroupIds: ["sentinel"],
+          heroDeckIds: ["spider-man", "wolverine", "storm"],
+        }),
+      ),
+    );
+    api.setPlayerCount(1);
+    assert.deepEqual(api.playerCountCompositionMismatches.value, []); // matches 1 player
+
+    api.setPlayerCount(2); // needs 2 villain / 1 henchman / 5 heroes
+    // why: annotate the row shape structurally — the composable's public
+    // ComputedRef type resolves correctly in the .vue consumer, but this .ts
+    // test's view of it narrows to never[] under the viewer's bundler module
+    // resolution; the annotation restores the field types without changing the
+    // (correct) runtime values.
+    const mismatches: ReadonlyArray<{ field: string; required: number; actual: number }> =
+      api.playerCountCompositionMismatches.value;
+    const villain = mismatches.find((mismatch) => mismatch.field === "villainGroupIds");
+    const hero = mismatches.find((mismatch) => mismatch.field === "heroDeckIds");
+    const henchman = mismatches.find((mismatch) => mismatch.field === "henchmanGroupIds");
+    assert.equal(villain?.required, 2);
+    assert.equal(villain?.actual, 1);
+    assert.equal(hero?.required, 5);
+    assert.equal(hero?.actual, 3);
+    assert.equal(henchman, undefined, "one henchman still satisfies 2 players");
+  });
+});
+
 // A registry whose core/magneto mastermind carries an Always-Leads clause
 // (Magneto Always Leads the Brotherhood), plus a cross-set case: an
 // xmen/magneto mastermind that also leads "brotherhood", with a same-set

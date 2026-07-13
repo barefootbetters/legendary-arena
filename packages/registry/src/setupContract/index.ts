@@ -32,3 +32,20 @@ export {
 
 export { MatchSetupDocumentSchema } from "./setupContract.schema.js";
 export { validateMatchSetupDocument } from "./setupContract.validate.js";
+
+// why: WP-372 / D-24165 — expose the per-player-count setup table + its pure
+// helpers on this browser-safe barrel so the registry-viewer loadout builder
+// can consume the single source of truth without importing the node-only root
+// barrel. `playerCountSetup.ts` has zero node-module dependencies, so the
+// viewer's Vite build stays browser-safe (same reason this subpath exists).
+export {
+  PLAYER_COUNT_SETUP,
+  getPlayerCountSetup,
+  checkPlayerCountComposition,
+} from "../playerCountSetup.js";
+export type {
+  PlayerCountSetupRow,
+  SupportedPlayerCount,
+  PlayerCountCompositionMismatch,
+  PlayerCountCompositionInput,
+} from "../playerCountSetup.js";

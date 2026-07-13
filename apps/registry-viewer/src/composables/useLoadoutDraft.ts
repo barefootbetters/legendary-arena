@@ -18,11 +18,15 @@ import { computed, ref, type ComputedRef, type Ref } from "vue";
 // themeClient.ts for `./schema` and `./theme.schema`.
 import {
   validateMatchSetupDocument,
+  getPlayerCountSetup,
+  checkPlayerCountComposition,
   type CardRegistryReader,
   type HeroSelectionMode,
   type MatchSetupDocument,
   type MatchSetupValidationError,
   type ValidateMatchSetupDocumentResult,
+  type PlayerCountSetupRow,
+  type PlayerCountCompositionMismatch,
 } from "@legendary-arena/registry/setupContract";
 
 import type { ThemeDefinition } from "../lib/themeClient";
@@ -300,6 +304,19 @@ export interface UseLoadoutDraftApi {
    * is non-empty.
    */
   missingRequiredVillainGroupIds: ComputedRef<string[]>;
+  /**
+   * The required setup counts for the draft's player count (WP-372 / D-24165) —
+   * villain groups / henchmen groups / villain-deck bystanders / heroes — or
+   * undefined when the count is out of the supported 1–5 range.
+   */
+  requiredPlayerCountSetup: ComputedRef<PlayerCountSetupRow | undefined>;
+  /**
+   * The composition-count mismatches against the player count: villain groups /
+   * henchmen groups / heroes whose count differs from what the player count
+   * requires. The builder warns and blocks export while this is non-empty
+   * (the "warn in builder" half of the D-24165 enforcement model).
+   */
+  playerCountCompositionMismatches: ComputedRef<PlayerCountCompositionMismatch[]>;
   setScheme: (schemeId: string) => void;
   setMastermind: (mastermindId: string) => void;
   addVillainGroup: (groupId: string) => void;
@@ -381,6 +398,23 @@ export function useLoadoutDraft(registry: LoadoutRegistryReader): UseLoadoutDraf
     const present = draft.value.composition.villainGroupIds;
     return requiredVillainGroupIds.value.filter((groupId) => !present.includes(groupId));
   });
+
+  // why: WP-372 / D-24165 — the required counts for the selected player count,
+  // and the composition-count mismatches against them, from the single-source-
+  // of-truth registry table (never re-typed here). Reactive to setPlayerCount
+  // and every composition edit.
+  const requiredPlayerCountSetup = computed<PlayerCountSetupRow | undefined>(() =>
+    getPlayerCountSetup(draft.value.playerCount),
+  );
+
+  const playerCountCompositionMismatches = computed<PlayerCountCompositionMismatch[]>(() =>
+    checkPlayerCountComposition({
+      playerCount: draft.value.playerCount,
+      villainGroupIds: draft.value.composition.villainGroupIds,
+      henchmanGroupIds: draft.value.composition.henchmanGroupIds,
+      heroDeckIds: draft.value.composition.heroDeckIds,
+    }),
+  );
 
   function setScheme(schemeId: string): void {
     draft.value.composition.schemeId = schemeId.trim();
@@ -596,6 +630,8 @@ export function useLoadoutDraft(registry: LoadoutRegistryReader): UseLoadoutDraf
     isValid,
     requiredVillainGroupIds,
     missingRequiredVillainGroupIds,
+    requiredPlayerCountSetup,
+    playerCountCompositionMismatches,
     setScheme,
     setMastermind,
     addVillainGroup,
