@@ -264,12 +264,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'return-zero-cost-discard', // why: D-24139 — mandatory return-a-0-cost-discard-card-to-hand mechanic (Defend the Weak)
       'gain-wound-self', // why: D-24156 / WP-364 — "You gain a Wound." (active player)
       'gain-wound-each', // why: D-24156 / WP-364 — "Each player gains a Wound." (Crazed Rampage)
+      'shuffle-discard-empty-reward', // why: D-24148 / WP-356 — mandatory empty-discard-reward-or-shuffle (Reprocess / Electromagnetic Eyebeams)
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      29,
-      'HERO_KEYWORDS must have exactly 29 entries',
+      30,
+      'HERO_KEYWORDS must have exactly 30 entries',
     );
 
     assert.deepStrictEqual(
@@ -1728,5 +1729,113 @@ describe('buildHeroAbilityHooks Spectrum conditional keyword (WP-280 / D-24055)'
       assert(!hook.unresolvedMarkers.includes('spectrum'),
         'Spectrum should not be in unresolvedMarkers');
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-356 — shuffle-discard-empty-reward parse (D-24148)
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks shuffle-discard-empty-reward (WP-356)', () => {
+  it('marked Reprocess line yields exactly one recruit-variant effect', () => {
+    // why: the parser must emit exactly { type:'shuffle-discard-empty-reward',
+    // magnitude:2, rewardType:'recruit' } from the three-segment token; the
+    // icon-adjacent "+2[icon:recruit]" fills the magnitudes map only and must
+    // not emit a bare recruit effect.
+    const registry = makeHeroRegistry('antm', 'jocasta', [
+      {
+        slug: 'reprocess',
+        rarityLabel: 'Common 2',
+        abilities: [
+          'If your discard pile is empty, you get +2[icon:recruit]. Otherwise, shuffle your discard pile into your deck. [keyword:shuffle-discard-empty-reward:recruit:2]',
+        ],
+      },
+    ]);
+    const config: MatchSetupConfig = { ...createTestConfig(), heroDeckIds: ['antm/jocasta'] };
+
+    const hooks = buildHeroAbilityHooks(registry, config);
+    const hook = hooks[0];
+    assert.ok(hook !== undefined, 'hook must be built');
+    assert.ok(
+      hook.keywords.includes('shuffle-discard-empty-reward'),
+      'the shuffle-discard-empty-reward keyword must be present',
+    );
+    assert.ok(Array.isArray(hook.effects), 'effects must be present');
+    assert.equal(hook.effects!.length, 1, 'exactly one effect must be emitted');
+    assert.deepStrictEqual(
+      hook.effects![0],
+      { type: 'shuffle-discard-empty-reward', magnitude: 2, rewardType: 'recruit' },
+      'the single effect must carry rewardType recruit and magnitude 2',
+    );
+  });
+
+  it('marked Electromagnetic Eyebeams line yields the attack variant', () => {
+    const registry = makeHeroRegistry('antm', 'jocasta', [
+      {
+        slug: 'electromagnetic-eyebeams',
+        rarityLabel: 'Common 2',
+        abilities: [
+          'If your discard pile is empty, you get +2[icon:attack]. Otherwise shuffle your discard pile into your deck. [keyword:shuffle-discard-empty-reward:attack:2]',
+        ],
+      },
+    ]);
+    const config: MatchSetupConfig = { ...createTestConfig(), heroDeckIds: ['antm/jocasta'] };
+
+    const hooks = buildHeroAbilityHooks(registry, config);
+    const hook = hooks[0];
+    assert.ok(hook !== undefined, 'hook must be built');
+    // why: the icon-suppression must subsume the printed "+2[icon:attack]" —
+    // exactly one (conditional) effect, never a flat unconditional grant.
+    assert.equal((hook.effects ?? []).length, 1, 'exactly one effect must be emitted');
+    const shuffleEffect = (hook.effects ?? []).find(
+      (effect) => effect.type === 'shuffle-discard-empty-reward',
+    );
+    assert.deepStrictEqual(
+      shuffleEffect,
+      { type: 'shuffle-discard-empty-reward', magnitude: 2, rewardType: 'attack' },
+      'the effect must carry rewardType attack and magnitude 2',
+    );
+  });
+
+  it('ignores a token with an unseeded reward (no keyword, no effect)', () => {
+    // why: only recruit and attack are seeded for this keyword (D-24148) —
+    // narrower than the optional-KO set; rescue must NOT pass the gate here.
+    const registry = makeHeroRegistry('antm', 'jocasta', [
+      {
+        slug: 'reprocess',
+        rarityLabel: 'Common 2',
+        abilities: ['Shuffle text. [keyword:shuffle-discard-empty-reward:rescue:2]'],
+      },
+    ]);
+    const config: MatchSetupConfig = { ...createTestConfig(), heroDeckIds: ['antm/jocasta'] };
+
+    const hooks = buildHeroAbilityHooks(registry, config);
+    const hook = hooks[0];
+    assert.ok(hook !== undefined, 'hook must be built');
+    assert.ok(
+      !hook.keywords.includes('shuffle-discard-empty-reward'),
+      'an unseeded reward must not emit the keyword',
+    );
+    assert.equal((hook.effects ?? []).length, 0, 'no effect is emitted for an unseeded reward');
+  });
+
+  it('ignores a token with a zero magnitude (no effect)', () => {
+    const registry = makeHeroRegistry('antm', 'jocasta', [
+      {
+        slug: 'reprocess',
+        rarityLabel: 'Common 2',
+        abilities: ['Shuffle text. [keyword:shuffle-discard-empty-reward:recruit:0]'],
+      },
+    ]);
+    const config: MatchSetupConfig = { ...createTestConfig(), heroDeckIds: ['antm/jocasta'] };
+
+    const hooks = buildHeroAbilityHooks(registry, config);
+    const hook = hooks[0];
+    assert.ok(hook !== undefined, 'hook must be built');
+    assert.equal(
+      (hook.effects ?? []).length,
+      0,
+      'a zero-magnitude token must not emit an effect',
+    );
   });
 });

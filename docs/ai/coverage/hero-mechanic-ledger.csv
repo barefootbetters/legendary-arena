@@ -58,6 +58,8 @@ antm/black-knight,Black Knight,antm,return-zero-cost-discard,executable,,,packag
 antm/black-knight,Black Knight,antm,victory-villain-attack,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#victory-villain-attack
 antm/jocasta,Jocasta,antm,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 antm/jocasta,Jocasta,antm,empowered,executable,WP-267,D-24044,packages/game-engine/src/hero/effectPrimitive.interpret.ts
+antm/jocasta,Jocasta,antm,shuffle-discard-empty-reward:attack,unsupported,,,
+antm/jocasta,Jocasta,antm,shuffle-discard-empty-reward:recruit,unsupported,,,
 antm/jocasta,Jocasta,antm,size-changing,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing
 antm/wasp,Wasp,antm,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 antm/wasp,Wasp,antm,microscopic-size-changing,unsupported,,,

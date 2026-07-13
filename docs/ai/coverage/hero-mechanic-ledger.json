@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "cardType": "hero",
   "summary": {
-    "totalRows": 638,
+    "totalRows": 640,
     "byStatus": {
       "executable": 201,
       "deferred": 0,
       "condition": 5,
-      "unsupported": 389,
+      "unsupported": 391,
       "unmarked": 43
     },
-    "distinctMechanics": 142
+    "distinctMechanics": 144
   },
   "rows": [
     {
@@ -602,6 +602,26 @@
       "wp": "WP-267",
       "decision": "D-24044",
       "handler": "packages/game-engine/src/hero/effectPrimitive.interpret.ts"
+    },
+    {
+      "extId": "antm/jocasta",
+      "heroName": "Jocasta",
+      "set": "antm",
+      "mechanic": "shuffle-discard-empty-reward:attack",
+      "status": "unsupported",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "antm/jocasta",
+      "heroName": "Jocasta",
+      "set": "antm",
+      "mechanic": "shuffle-discard-empty-reward:recruit",
+      "status": "unsupported",
+      "wp": "",
+      "decision": "",
+      "handler": ""
     },
     {
       "extId": "antm/jocasta",

@@ -70,6 +70,8 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   'draw', 'attack', 'recruit', 'ko', 'rescue', 'reveal', 'attack-per-count', 'optional-ko-reward', 'optional-put-bottom-hq', 'put-any-number-bottom-hq', 'put-bottom-hq-icon-reward', 'victory-villain-attack', 'draw-or-empowered', 'return-zero-cost-discard',
   // why: D-24156 — the plain "gain a Wound" family; each has a HERO_EFFECT_HANDLERS entry (heroEffectGainWound), so it belongs in HANDLED_KEYWORDS (the bidirectional handler-completeness authority).
   'gain-wound-self', 'gain-wound-each',
+  // why: D-24148 — mandatory immediate empty-discard-reward-or-shuffle (Jocasta's Reprocess / Electromagnetic Eyebeams); has a HERO_EFFECT_HANDLERS entry, so it belongs here.
+  'shuffle-discard-empty-reward',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -1405,6 +1407,78 @@ function heroEffectDrawOrEmpowered(
   G.pendingDrawOrEmpowered.push({ playerID, empoweredClass });
 }
 
+/**
+ * Executor for the `shuffle-discard-empty-reward` hero keyword (D-24148).
+ *
+ * The printed "If your discard pile is empty, you get +N[recruit|attack].
+ * Otherwise, shuffle your discard pile into your deck." (Jocasta's Reprocess is
+ * the recruit variant, Electromagnetic Eyebeams the attack variant). Mandatory
+ * and immediate — the printed text offers no choice, so nothing is parked and
+ * no move is blocked.
+ *
+ * Empty-discard branch: grants the descriptor's magnitude of the descriptor's
+ * rewardType via addResources on G.turnEconomy. Played cards live in inPlay
+ * until cleanup, so they never count toward the emptiness check (tabletop
+ * rule).
+ *
+ * Non-empty branch: the ENTIRE discard pile is shuffled INTO the deck as one
+ * combined deterministic shuffle — new deck = shuffle(deck + discard),
+ * discard = []. Both branches append one G.messages line.
+ *
+ * A rewardType outside the seeded pair (should never happen post-parse — the
+ * parser's seeded-set gate filters it) is a silent no-op. The upstream
+ * magnitude pre-gate in executeSingleEffect already drops zero/missing
+ * magnitudes.
+ */
+function heroEffectShuffleDiscardEmptyReward(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) { return; }
+  const rewardType = effect.rewardType;
+  if (rewardType !== 'attack' && rewardType !== 'recruit') {
+    // why: defensive mirror of the parser's seeded-set gate (D-24148) — an
+    // unseeded reward never grants or shuffles; unreachable post-parse.
+    return;
+  }
+  const magnitude = effect.magnitude as number;
+  if (magnitude < 1) {
+    // why: D-24148 — the build gate ([1-9]\d*) and the parser's n >= 1 check
+    // keep zero out of real data; this executor-level guard is the D-24019
+    // downstream convention (isValidMagnitude deliberately admits 0 for
+    // reveal-family semantics, so each executor owns its own n >= 1 floor).
+    return;
+  }
+
+  if (playerZones.discard.length === 0) {
+    if (rewardType === 'attack') {
+      G.turnEconomy = addResources(G.turnEconomy, magnitude, 0);
+    } else {
+      G.turnEconomy = addResources(G.turnEconomy, 0, magnitude);
+    }
+    pushLog(G,
+      `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} found an empty discard pile and granted +${magnitude} ${rewardType}.`,
+    );
+    return;
+  }
+
+  const shuffledInCount = playerZones.discard.length;
+  const combined = moveAllCards(playerZones.discard, playerZones.deck);
+  playerZones.discard = combined.from;
+  // why: ctx is narrowed to ShuffleProvider because the combined discard-into-
+  // deck shuffle needs ctx.random.Shuffle — the only permitted randomness
+  // source, so the result replays identically from the seed (D-24148; the
+  // established heroEffectDraw pattern).
+  playerZones.deck = shuffleDeck(combined.to, ctx as ShuffleProvider);
+  pushLog(G,
+    `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} shuffled their ${shuffledInCount}-card discard pile into their deck (deck is now ${playerZones.deck.length} cards).`,
+  );
+}
+
 // why: D-24022 — the hero-effect ImplementationMap (mirrors WP-009B's pattern).
 // Handlers are plain functions held OUTSIDE G; a new effect is a registry entry
 // + a drift-test entry, not a `switch` edit. Keyed by HeroKeyword and `Partial`
@@ -1433,6 +1507,7 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // (self = active player, each = every player).
   'gain-wound-self': heroEffectGainWound,
   'gain-wound-each': heroEffectGainWound,
+  'shuffle-discard-empty-reward': heroEffectShuffleDiscardEmptyReward,
 };
 
 // ---------------------------------------------------------------------------

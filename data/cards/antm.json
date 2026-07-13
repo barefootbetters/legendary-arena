@@ -262,7 +262,7 @@
           "attack": null,
           "recruit": "2+",
           "abilities": [
-            "If your discard pile is empty, you get +2[icon:recruit]. Otherwise, shuffle your discard pile into your deck."
+            "If your discard pile is empty, you get +2[icon:recruit]. Otherwise, shuffle your discard pile into your deck. [keyword:shuffle-discard-empty-reward:recruit:2]"
           ]
         },
         {
@@ -293,7 +293,7 @@
           "attack": "5+",
           "recruit": null,
           "abilities": [
-            "If your discard pile is empty, you get +2[icon:attack]. Otherwise shuffle your discard pile into your deck."
+            "If your discard pile is empty, you get +2[icon:attack]. Otherwise shuffle your discard pile into your deck. [keyword:shuffle-discard-empty-reward:attack:2]"
           ]
         }
       ],

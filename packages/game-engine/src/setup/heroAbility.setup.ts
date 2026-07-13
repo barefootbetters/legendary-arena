@@ -284,6 +284,25 @@ const OPTIONAL_KO_REWARD_SEEDED_REWARDS: ReadonlySet<HeroKeyword> = new Set<Hero
   'recruit',
 ]);
 
+// why: D-24148 — the shuffle-discard-empty-reward token has three segments
+// ([keyword:shuffle-discard-empty-reward:<reward>:<n>]); KEYWORD_PATTERN cannot
+// match it (it stops at the second colon), so it needs a dedicated pattern like
+// the D-24019 precedent above. The capture group is (\d+) — the strict [1-9]\d*
+// gate is the apply-script's job (build time); the n ≥ 1 check is enforced in
+// the extraction step below.
+/** Regex for [keyword:shuffle-discard-empty-reward:<reward>:<n>] markup. */
+const SHUFFLE_DISCARD_EMPTY_REWARD_PATTERN = /\[keyword:shuffle-discard-empty-reward:([a-z][a-z-]*):(\d+)\]/g;
+
+// why: D-24148 — the empty-discard grant dispatches to G.turnEconomy via
+// addResources; only the two printed variants are seeded (Reprocess = recruit,
+// Electromagnetic Eyebeams = attack). An unseeded reward segment emits no
+// descriptor, so the line stays a hollow-detectable no-op instead of silently
+// half-executing. Deliberately narrower than the D-24019 set.
+const SHUFFLE_DISCARD_EMPTY_REWARD_SEEDED_REWARDS: ReadonlySet<HeroKeyword> = new Set<HeroKeyword>([
+  'attack',
+  'recruit',
+]);
+
 // why: extract magnitude from icon-adjacent integers — avoids per-card manual markup (D-21505)
 /** Regex for attack/recruit icon-adjacent magnitude, e.g. "+2[icon:attack]". */
 const ICON_MAGNITUDE_PATTERN = /\+?(\d+)\s*\[icon:(attack|recruit)\]/g;
@@ -727,6 +746,26 @@ function parseAbilityText(abilityText: string): {
     optionalKoRewardMatch = optionalKoRewardRegex.exec(abilityText);
   }
 
+  // Step 2e-bis: Extract [keyword:shuffle-discard-empty-reward:<reward>:<n>]
+  // markup (D-24148). Mirrors Step 2e: the reward is stored in rewardTypes and
+  // the grant magnitude in magnitudes so the effect builder can attach both. A
+  // descriptor is emitted ONLY when the reward is in the seeded set AND n ≥ 1 —
+  // an unseeded reward or a zero magnitude emits no effect.
+  const shuffleDiscardRewardRegex = new RegExp(SHUFFLE_DISCARD_EMPTY_REWARD_PATTERN.source, 'g');
+  let shuffleDiscardRewardMatch: RegExpExecArray | null = shuffleDiscardRewardRegex.exec(abilityText);
+  while (shuffleDiscardRewardMatch !== null) {
+    const shuffleRewardCandidate = shuffleDiscardRewardMatch[1]!;
+    const shuffleRewardMagnitude = parseInt(shuffleDiscardRewardMatch[2]!, 10);
+    if (isValidHeroKeyword(shuffleRewardCandidate)
+      && SHUFFLE_DISCARD_EMPTY_REWARD_SEEDED_REWARDS.has(shuffleRewardCandidate)
+      && shuffleRewardMagnitude >= 1) {
+      keywords.push('shuffle-discard-empty-reward');
+      magnitudes.set('shuffle-discard-empty-reward', shuffleRewardMagnitude);
+      rewardTypes.set('shuffle-discard-empty-reward', shuffleRewardCandidate);
+    }
+    shuffleDiscardRewardMatch = shuffleDiscardRewardRegex.exec(abilityText);
+  }
+
   // Step 2f: Extract [keyword:optional-put-bottom-hq:<n>] markup. Simple 2-segment token
   // for "You may put a card from the HQ on the bottom of the Hero Deck". The magnitude
   // is always 1 for this MVP form (how many cards to move). Only one occurrence per line.
@@ -837,6 +876,28 @@ function parseAbilityText(abilityText: string): {
     magnitudes.delete('attack');
   }
 
+  // Icon-suppression (sibling): a shuffle-discard-empty-reward effect subsumes
+  // the printed reward icon on the same line. Without this, "If your discard
+  // pile is empty, you get +2[icon:recruit]..." would emit BOTH a flat
+  // 'recruit' effect (from the icon, Steps 2b/3 — granted UNCONDITIONALLY on
+  // every play) AND the conditional effect — a double-grant on the empty-discard
+  // branch and a phantom grant on the shuffle branch. Drop the plain keyword
+  // matching the seeded rewardType and its magnitude so only the conditional
+  // effect remains.
+  // why: D-24148 — the conditional keyword subsumes the printed reward icon
+  // (mirrors the D-24016 count-scaled suppression above).
+  const shuffleDiscardRewardType = rewardTypes.get('shuffle-discard-empty-reward');
+  if (shuffleDiscardRewardType !== undefined) {
+    const keywordsWithoutRewardIcon: HeroKeyword[] = [];
+    for (const keyword of uniqueKeywords) {
+      if (keyword !== shuffleDiscardRewardType) {
+        keywordsWithoutRewardIcon.push(keyword);
+      }
+    }
+    uniqueKeywords = keywordsWithoutRewardIcon;
+    magnitudes.delete(shuffleDiscardRewardType);
+  }
+
   // If conditions were found, add 'conditional' keyword
   if (conditions.length > 0) {
     let hasConditional = false;
@@ -873,6 +934,16 @@ function parseAbilityText(abilityText: string): {
         const rewardType = rewardTypes.get('optional-ko-reward');
         if (magnitude !== undefined && rewardType !== undefined) {
           effects.push({ type: keyword, magnitude, rewardType });
+        }
+      } else if (keyword === 'shuffle-discard-empty-reward') {
+        // why: D-24148 — the shuffle-discard-empty-reward effect carries its
+        // rewardType so the executor's empty-discard branch can grant the right
+        // resource; magnitude is the grant amount. Step 2e-bis records both
+        // together, so the guard both narrows the optional Map reads and is
+        // defensive.
+        const shuffleRewardType = rewardTypes.get('shuffle-discard-empty-reward');
+        if (magnitude !== undefined && shuffleRewardType !== undefined) {
+          effects.push({ type: keyword, magnitude, rewardType: shuffleRewardType });
         }
       } else if (keyword === 'draw-or-empowered') {
         // why: D-24069 — the draw-or-empowered effect carries the empowered hero class parsed by
