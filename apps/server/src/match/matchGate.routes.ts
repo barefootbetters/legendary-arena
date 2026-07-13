@@ -46,6 +46,7 @@ import { INTERNAL_DELEGATION_HEADER } from './nativeLobbyGuard.js';
 import { recordSeatAccount } from './seatAccount.logic.js';
 import type { AccountId } from '../identity/identity.types.js';
 import koaBody from 'koa-body';
+import { PLAYER_COUNT_SETUP } from '@legendary-arena/registry';
 
 /**
  * Closed-set re-statement of the orchestrator's session-validation result
@@ -217,6 +218,19 @@ export function registerMatchGateRoutes(
   database: DatabaseClient,
   deps: MatchGateDependencies,
 ): void {
+  // why: WP-371 / D-24167 — a read-only, guest-accessible projection of the
+  // canonical PLAYER_COUNT_SETUP table (@legendary-arena/registry) so the lobby
+  // can warn + disable Create BEFORE submit when a composition does not match
+  // the player count. This is guidance data only, NOT a gate: the AUTHORITATIVE
+  // composition block stays at the engine via the native lobby's
+  // validateSetupData (WP-370). Public reference data (the game's setup rules),
+  // so no auth and a cacheable response. No game logic here — server wires.
+  router.get('/api/match/setup-requirements', (koaContext) => {
+    koaContext.set('Cache-Control', 'public, max-age=3600');
+    koaContext.status = 200;
+    koaContext.body = { requirements: PLAYER_COUNT_SETUP };
+  });
+
   // why: playing a seat requires a free account (D-24092). Authenticate
   // first, then delegate match creation to the native lobby over loopback
   // (the autoplay precedent). No game logic here — server wires, engine

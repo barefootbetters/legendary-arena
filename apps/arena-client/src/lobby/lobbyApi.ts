@@ -10,6 +10,7 @@
  */
 
 import type { MatchSetupConfig } from '@legendary-arena/game-engine';
+import type { SetupRequirements } from './playerCountRequirements.js';
 
 // why: VITE_SERVER_URL is inlined at build time by Vite. The fallback is a
 // dev-only convenience that matches the Vite dev server's default. Production
@@ -70,6 +71,36 @@ export async function createMatch(
 
   const body = (await response.json()) as { matchID: string };
   return { matchID: body.matchID };
+}
+
+/**
+ * Fetches the read-only per-player-count setup requirements from the server
+ * (WP-371). Used by the lobby to warn + disable Create before submit when a
+ * composition does not match the player count. Guest endpoint (public rules
+ * data); the caller treats a failure as "pre-check unavailable" and falls back
+ * to the authoritative engine block.
+ *
+ * @returns the requirements table keyed by player count.
+ * @throws Error with a full-sentence message on a non-2xx response.
+ */
+export async function fetchSetupRequirements(): Promise<SetupRequirements> {
+  const endpoint = `${serverUrl}/api/match/setup-requirements`;
+  const response = await fetch(endpoint);
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch setup requirements at ${endpoint}: server returned HTTP ${response.status}.`,
+    );
+  }
+  const body = (await response.json()) as { requirements?: unknown };
+  // why: a response without a well-formed `requirements` object is treated as
+  // a failure so the caller falls back to null (pre-check unavailable) rather
+  // than storing `undefined` and tripping the length checks at runtime.
+  if (body === null || typeof body !== 'object' || typeof body.requirements !== 'object' || body.requirements === null) {
+    throw new Error(
+      `The setup-requirements response from ${endpoint} did not contain a requirements object.`,
+    );
+  }
+  return body.requirements as SetupRequirements;
 }
 
 /**

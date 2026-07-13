@@ -92,6 +92,9 @@ function collectRoutes(
     post(path: string, handler: Handler): void {
       handlers.set(path, handler);
     },
+    get(path: string, handler: Handler): void {
+      handlers.set(path, handler);
+    },
   };
   registerMatchGateRoutes(router as never, database, deps);
   return handlers;
@@ -139,12 +142,36 @@ describe('matchGate.routes (WP-307)', () => {
     restoreFetch();
   });
 
-  test('registers exactly the two guarded endpoints — autoplay/spectator paths are untouched', () => {
+  test('registers the two guarded endpoints plus the unguarded setup-requirements read — autoplay/spectator paths are untouched', () => {
     const handlers = collectRoutes(authenticatedDeps);
     assert.deepEqual(
       [...handlers.keys()].sort(),
-      ['/api/match/create', '/api/match/join'],
+      ['/api/match/create', '/api/match/join', '/api/match/setup-requirements'],
     );
+  });
+
+  test('GET /api/match/setup-requirements returns the full player-count table without auth (WP-371)', async () => {
+    // why: guest endpoint — no session is required to read the game's setup
+    // rules. The lobby uses it for the pre-submit warn; the engine remains the
+    // authoritative block.
+    const handlers = collectRoutes(unauthenticatedDeps);
+    const koaContext = makeContext(undefined);
+
+    await handlers.get('/api/match/setup-requirements')!(koaContext);
+
+    assert.equal(koaContext.status, 200);
+    const body = koaContext.body as {
+      requirements: Record<string, { villainGroupCount: number; henchmenGroupCount: number; villainDeckBystanderCount: number; heroCount: number }>;
+    };
+    assert.deepEqual(Object.keys(body.requirements).sort(), ['1', '2', '3', '4', '5']);
+    assert.deepEqual(body.requirements[3], {
+      villainGroupCount: 3,
+      henchmenGroupCount: 1,
+      villainDeckBystanderCount: 8,
+      heroCount: 5,
+    });
+    assert.equal(body.requirements[5]?.heroCount, 6);
+    assert.equal(koaContext.headers['Cache-Control'], 'public, max-age=3600');
   });
 
   test('POST /api/match/create without a valid session returns 401 and never delegates', async () => {
