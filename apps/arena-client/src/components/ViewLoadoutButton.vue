@@ -15,8 +15,10 @@ import { useAuthStore } from '../stores/auth';
  *
  * Not rendered outside a live match (no `?match=`). A guest (null token) is
  * short-circuited to a sign-in message with NO fetch; an in-flight guard blocks
- * double-open; a blocked pop-up (`window.open` → null) shows a fallback message.
- * The `lagn` is treated opaquely — the client never validates or inspects it.
+ * double-open. The tab is opened synchronously on click (before the fetch) so the
+ * pop-up blocker allows it, then navigated to the viewer once the LAGN arrives; a
+ * genuinely blocked pop-up shows a fallback message. The `lagn` is treated
+ * opaquely — the client never validates or inspects it.
  *
  * Per the vue-sfc-loader separate-compile pipeline (D-6512) this SFC uses
  * `defineComponent({ setup() { return {...} } })` so the template's non-prop
@@ -78,24 +80,42 @@ export default defineComponent({
         return;
       }
 
+      // why: open the tab SYNCHRONOUSLY, inside the click gesture, BEFORE the
+      // await — a browser only lets `window.open` bypass the pop-up blocker when
+      // it runs in direct response to the user gesture, and the `await` below
+      // consumes that user-activation. Opening `about:blank` first (then
+      // navigating it once the LAGN arrives) is the standard pattern for opening
+      // a tab whose URL depends on async data. `noopener` is NOT passed here — it
+      // both forces a null return (so we could never tell a real block from
+      // success) and denies us the handle we need to navigate the tab; we restore
+      // the anti-tabnabbing posture by nulling `opener` before navigating.
+      const viewerTab = window.open('', '_blank');
+      if (viewerTab === null) {
+        // why: no handle here genuinely means the pop-up was blocked (we passed no
+        // `noopener`), so this message is now accurate rather than a false positive.
+        statusMessage.value =
+          'Your browser blocked the loadout tab — allow pop-ups for this site and try again.';
+        return;
+      }
+
       isLoading.value = true;
       try {
         const result = await fetchMatchLagn(matchId, token);
         if (result.ok) {
-          // why: `noopener` is mandatory — the opened viewer tab gets no reverse
-          // `window.opener` handle to this play surface (anti reverse-tabnabbing).
-          // Only the non-secret loadout payload goes in the URL; the bearer stays
-          // in the fetch's Authorization header.
-          const opened = window.open(
-            encodeLagnToViewerUrl(result.lagn, REGISTRY_VIEWER_ORIGIN),
-            '_blank',
-            'noopener',
+          // why: sever the reverse-`window.opener` handle before navigating the
+          // pre-opened tab to the viewer — this restores the `noopener` security
+          // posture (the viewer tab cannot reach back into the play surface). Only
+          // the non-secret loadout payload goes in the URL; the bearer stayed in
+          // the fetch's Authorization header.
+          viewerTab.opener = null;
+          viewerTab.location.href = encodeLagnToViewerUrl(
+            result.lagn,
+            REGISTRY_VIEWER_ORIGIN,
           );
-          if (opened === null) {
-            statusMessage.value =
-              'Your browser blocked the loadout tab — allow pop-ups for this site and try again.';
-          }
         } else {
+          // why: the fetch failed, so close the blank tab we optimistically opened
+          // and surface the reason inline.
+          viewerTab.close();
           statusMessage.value = messageForStatus(result.status);
         }
       } finally {
