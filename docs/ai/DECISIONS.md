@@ -28573,7 +28573,7 @@ Protect this file.
 
 ### D-24154 — Registry Viewer `?lagn=` deep-link into the Loadout tab
 
-**Status:** Active (post-execution) 2026-07-12 (WP-362 / EC-394 — renumbered from EC-392, which WP-365 landed first). `D-24026` operator-pending on deploy.
+**Status:** Active (post-execution) 2026-07-12 (WP-362 / EC-394 — renumbered from EC-392, which WP-365 landed first). `D-24026` verified live 2026-07-13.
 
 **User-Visible Surface:** `cards.legendary-arena.com` (a `?lagn=…` link opens the Loadout tab pre-filled).
 
@@ -28585,7 +28585,7 @@ Protect this file.
 
 ### D-24155 — In-match "View loadout in Registry Viewer" link (arena client)
 
-**Status:** Active (post-execution) 2026-07-12 (WP-363 / EC-393). `D-24026` operator-pending on deploy. **Completes the WP-361/362/363 loadout-in-viewer arc.**
+**Status:** Active (post-execution) 2026-07-12 (WP-363 / EC-393). `D-24026` verified live 2026-07-13. **Completes the WP-361/362/363 loadout-in-viewer arc.**
 
 **User-Visible Surface:** `play.legendary-arena.com` (a small in-match "View loadout in Registry Viewer" control).
 

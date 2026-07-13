@@ -40,4 +40,4 @@
 ## After Completing
 - [x] `pnpm --filter registry-viewer build` 0; `typecheck` (vue-tsc) 0; `test` **123 pass / 0 fail** (110 baseline + 13 new).
 - [x] D-24154 → Active; WORK_INDEX WP-362 `[x]`; EC_INDEX + STATUS + `wiki/lagn-v1.md`.
-- [ ] **D-24026:** APPLIES — operator-pending on deploy: open `https://cards…/?lagn=<a real Tier-1 export>` → the Loadout tab opens pre-filled; a truncated `?lagn=` → the tab opens with the decode-error banner.
+- [x] **D-24026:** VERIFIED live 2026-07-13 — opened `https://cards.barefootbetters.com/?lagn=<a real Tier-1 export>` → the Loadout tab auto-switched and pre-filled with the full composition (scheme / mastermind / villain + henchman groups / heroes).
