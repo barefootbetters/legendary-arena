@@ -83,10 +83,10 @@
       "hidden": true
     },
     {
-      "slug": "attack-per-count-victory-bystanders",
-      "label": "Attack Per Count Victory Bystanders",
+      "slug": "attack-per-count",
+      "label": "Attack Per Count",
       "scope": "hero",
-      "source": "free-text",
+      "source": "keyword",
       "cardCount": 1,
       "cardIds": [
         "core/black-widow"
@@ -919,10 +919,10 @@
       "hidden": true
     },
     {
-      "slug": "optional-ko-reward-rescue",
-      "label": "Optional Ko Reward Rescue",
+      "slug": "optional-ko-reward",
+      "label": "Optional Ko Reward",
       "scope": "hero",
-      "source": "free-text",
+      "source": "keyword",
       "cardCount": 1,
       "cardIds": [
         "core/black-widow"
@@ -1218,17 +1218,6 @@
       "hidden": false
     },
     {
-      "slug": "reveal-cost-lte-2-draw",
-      "label": "Reveal Cost Lte 2 Draw",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 1,
-      "cardIds": [
-        "core/spider-man"
-      ],
-      "hidden": true
-    },
-    {
       "slug": "reveal-count",
       "label": "Reveal Count",
       "scope": "hero",
@@ -1426,21 +1415,10 @@
       "hidden": true
     },
     {
-      "slug": "shuffle-discard-empty-reward-attack",
-      "label": "Shuffle Discard Empty Reward Attack",
+      "slug": "shuffle-discard-empty-reward",
+      "label": "Shuffle Discard Empty Reward",
       "scope": "hero",
-      "source": "free-text",
-      "cardCount": 1,
-      "cardIds": [
-        "antm/jocasta"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "shuffle-discard-empty-reward-recruit",
-      "label": "Shuffle Discard Empty Reward Recruit",
-      "scope": "hero",
-      "source": "free-text",
+      "source": "keyword",
       "cardCount": 1,
       "cardIds": [
         "antm/jocasta"
@@ -2246,8 +2224,7 @@
       "mechanics": [
         "draw",
         "empowered",
-        "shuffle-discard-empty-reward-attack",
-        "shuffle-discard-empty-reward-recruit",
+        "shuffle-discard-empty-reward",
         "size-changing"
       ]
     },
@@ -2447,9 +2424,9 @@
     },
     "core/black-widow": {
       "mechanics": [
-        "attack-per-count-victory-bystanders",
+        "attack-per-count",
         "draw",
-        "optional-ko-reward-rescue",
+        "optional-ko-reward",
         "rescue"
       ]
     },
@@ -2507,7 +2484,6 @@
       "mechanics": [
         "rescue",
         "reveal",
-        "reveal-cost-lte-2-draw",
         "reveal-count"
       ]
     },

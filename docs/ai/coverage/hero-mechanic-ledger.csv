@@ -58,8 +58,7 @@ antm/black-knight,Black Knight,antm,return-zero-cost-discard,executable,,,packag
 antm/black-knight,Black Knight,antm,victory-villain-attack,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#victory-villain-attack
 antm/jocasta,Jocasta,antm,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 antm/jocasta,Jocasta,antm,empowered,executable,WP-267,D-24044,packages/game-engine/src/hero/effectPrimitive.interpret.ts
-antm/jocasta,Jocasta,antm,shuffle-discard-empty-reward:attack,unsupported,,,
-antm/jocasta,Jocasta,antm,shuffle-discard-empty-reward:recruit,unsupported,,,
+antm/jocasta,Jocasta,antm,shuffle-discard-empty-reward,executable,WP-356,D-24148,packages/game-engine/src/hero/heroEffects.execute.ts#shuffle-discard-empty-reward
 antm/jocasta,Jocasta,antm,size-changing,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing
 antm/wasp,Wasp,antm,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 antm/wasp,Wasp,antm,microscopic-size-changing,unsupported,,,
@@ -147,9 +146,9 @@ chmp/totally-awesome-hulk,Totally Awesome Hulk,chmp,size-changing,executable,,,p
 chmp/viv-vision,Viv Vision,chmp,cheering-crowds,unsupported,,,
 chmp/viv-vision,Viv Vision,chmp,size-changing,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing
 chmp/viv-vision,Viv Vision,chmp,versatile,unsupported,,,
-core/black-widow,Black Widow,core,attack-per-count:victory-bystanders,unsupported,,,
+core/black-widow,Black Widow,core,attack-per-count,executable,WP-247,,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count
 core/black-widow,Black Widow,core,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
-core/black-widow,Black Widow,core,optional-ko-reward:rescue,unsupported,,,
+core/black-widow,Black Widow,core,optional-ko-reward,executable,WP-248,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward
 core/black-widow,Black Widow,core,rescue,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#rescue
 core/captain-america,Captain America,core,(unmarked),unmarked,,,
 core/cyclops,Cyclops,core,(unmarked),unmarked,,,
@@ -164,7 +163,6 @@ core/rogue,Rogue,core,(unmarked),unmarked,,,
 core/spider-man,Spider-Man,core,rescue,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#rescue
 core/spider-man,Spider-Man,core,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal
 core/spider-man,Spider-Man,core,reveal-count,unsupported,,,
-core/spider-man,Spider-Man,core,reveal:cost-lte-2:draw,unsupported,,,
 core/storm,Storm,core,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 core/thor,Thor,core,(unmarked),unmarked,,,
 core/wolverine,Wolverine,core,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw

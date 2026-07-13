@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "cardType": "hero",
   "summary": {
-    "totalRows": 640,
+    "totalRows": 638,
     "byStatus": {
-      "executable": 201,
+      "executable": 204,
       "deferred": 0,
       "condition": 5,
-      "unsupported": 391,
+      "unsupported": 386,
       "unmarked": 43
     },
-    "distinctMechanics": 144
+    "distinctMechanics": 142
   },
   "rows": [
     {
@@ -607,21 +607,11 @@
       "extId": "antm/jocasta",
       "heroName": "Jocasta",
       "set": "antm",
-      "mechanic": "shuffle-discard-empty-reward:attack",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
-    },
-    {
-      "extId": "antm/jocasta",
-      "heroName": "Jocasta",
-      "set": "antm",
-      "mechanic": "shuffle-discard-empty-reward:recruit",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "shuffle-discard-empty-reward",
+      "status": "executable",
+      "wp": "WP-356",
+      "decision": "D-24148",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#shuffle-discard-empty-reward"
     },
     {
       "extId": "antm/jocasta",
@@ -1497,11 +1487,11 @@
       "extId": "core/black-widow",
       "heroName": "Black Widow",
       "set": "core",
-      "mechanic": "attack-per-count:victory-bystanders",
-      "status": "unsupported",
-      "wp": "",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count"
     },
     {
       "extId": "core/black-widow",
@@ -1517,11 +1507,11 @@
       "extId": "core/black-widow",
       "heroName": "Black Widow",
       "set": "core",
-      "mechanic": "optional-ko-reward:rescue",
-      "status": "unsupported",
-      "wp": "",
+      "mechanic": "optional-ko-reward",
+      "status": "executable",
+      "wp": "WP-248",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward"
     },
     {
       "extId": "core/black-widow",
@@ -1658,16 +1648,6 @@
       "heroName": "Spider-Man",
       "set": "core",
       "mechanic": "reveal-count",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": ""
-    },
-    {
-      "extId": "core/spider-man",
-      "heroName": "Spider-Man",
-      "set": "core",
-      "mechanic": "reveal:cost-lte-2:draw",
       "status": "unsupported",
       "wp": "",
       "decision": "",
