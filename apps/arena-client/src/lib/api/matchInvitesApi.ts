@@ -8,7 +8,7 @@
  *   * POST /api/me/match-invites/:matchId/accept  — accept (returns { matchId })
  *   * POST /api/me/match-invites/:matchId/decline — decline
  *
- * Consumed by `useMatchInvites` / `MatchInvitesSection.vue` / `InviteFriendControl.vue`.
+ * Consumed by `useMatchInvites` / `MatchInvitesSection.vue` / `WaitingForPlayersPanel.vue`.
  * The `MatchInviteView` shape is mirrored inline by structural compatibility with
  * the server `apps/server/src/match/matchInvites.types.ts#MatchInviteView` — the
  * engine/server-isolation rule forbids importing server-layer types (mirrors

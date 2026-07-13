@@ -28701,7 +28701,7 @@ Protect this file.
 
 ### D-24163 — Pre-match waiting-room: seat-aware "Waiting for players" invite panel (play-view waiting state)
 
-**Status:** Drafted 2026-07-12; not yet landed. Flips to Active when WP-369 executes.
+**Status:** **Active** (WP-369 executed 2026-07-13, EC-398).
 
 **User-Visible Surface:** `play.legendary-arena.com` — a "Waiting for players" panel in the in-match view while seats are open; a lobby match-highlight from the copied join link.
 
@@ -28715,7 +28715,9 @@ Protect this file.
 4. **Copy-join-link carries no secret.** `${origin}/?route=lobby&match=<matchId>` — a public lobby deep-link (matches are already publicly joinable via the lobby); no bearer/credentials/seat. `LobbyView` gains a minimal highlight/order of the `?match=<id>` row (no auto-join; `joinExisting` unchanged).
 5. **Handle-only identity (FR-2)** — `@handle` + display name only, no `accountId`; §23(b) co-op copy ("waiting"/"invite"/"join"), no PvP framing. The panel never reads/writes `G`/`UIState`.
 
-**Packet:** WP-369 (+ EC at execution-prep). **Drafted:** 2026-07-12. **Executed:** —
+**Packet:** WP-369 (EC-398). **Drafted:** 2026-07-12. **Executed:** 2026-07-13.
+
+**Execution note.** Seat-fill is polled at `SEAT_POLL_INTERVAL_MS = 5000` (the poll stops the moment the match fills — short-lived wait). The panel is self-contained (reads `?match=` + `useAuthStore()`, the `ViewLoadoutButton` idiom), reusing WP-366's `useMatchInvites().invite`. `InviteFriendControl.vue` + its test were deleted (superseded; only mount was `PlayViewport`); the invite API/composable plumbing is byte-unchanged. The `LobbyView` deep-link highlight orders the `?match=<id>` row first + applies `.match-row--highlight`, with a jsdom-guarded `scrollIntoView`. No `bgioClient.ts`/transport change. EC-398 (EC-397 = WP-367/#712).
 
 Protect this file.
 

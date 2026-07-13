@@ -1,5 +1,5 @@
 <script lang="ts">
-import { defineComponent, ref, computed, onMounted } from 'vue';
+import { defineComponent, ref, computed, onMounted, nextTick } from 'vue';
 import type { MatchSetupConfig } from '@legendary-arena/game-engine';
 import {
   createMatch,
@@ -82,6 +82,26 @@ export default defineComponent({
     // read-only server list is a display concern — the client deletes no match
     // (the server-side reaper that removes stale rows is WP-327).
     const joinableMatches = computed(() => filterJoinableMatches(matches.value));
+
+    // why: WP-369 — the waiting-room copy-join-link lands the recipient here as
+    // `?route=lobby&match=<id>`. Read that id once and order/highlight the row so
+    // the friend can join it in one click instead of hunting the list. Absent
+    // param → no highlight, list unchanged. `joinExisting` / the join contract is
+    // untouched (this is display ordering only).
+    const highlightMatchId =
+      new URLSearchParams(window.location.search).get('match') ?? '';
+    const orderedMatches = computed<LobbyMatchSummary[]>(() => {
+      const list = joinableMatches.value;
+      if (highlightMatchId === '') {
+        return list;
+      }
+      const highlighted = list.filter(
+        (match) => match.matchID === highlightMatchId,
+      );
+      const rest = list.filter((match) => match.matchID !== highlightMatchId);
+      return [...highlighted, ...rest];
+    });
+
     const errorMessage = ref<string | null>(null);
     const isSubmitting = ref(false);
 
@@ -463,11 +483,27 @@ export default defineComponent({
       }
     }
 
-    onMounted(() => {
-      void refreshMatches();
+    onMounted(async () => {
+      await refreshMatches();
+      // why: WP-369 — after the list loads, scroll the highlighted match into
+      // view. Guarded because jsdom (tests) does not implement scrollIntoView.
+      if (highlightMatchId !== '') {
+        await nextTick();
+        const highlightedRow = document.querySelector(
+          `[data-match-id="${highlightMatchId}"]`,
+        );
+        if (
+          highlightedRow !== null &&
+          typeof highlightedRow.scrollIntoView === 'function'
+        ) {
+          highlightedRow.scrollIntoView({ block: 'center' });
+        }
+      }
     });
 
     return {
+      highlightMatchId,
+      orderedMatches,
       schemeId,
       mastermindId,
       villainGroupIds,
@@ -798,9 +834,10 @@ export default defineComponent({
 
       <ul class="match-list" data-testid="lobby-match-list">
         <li
-          v-for="match in joinableMatches"
+          v-for="match in orderedMatches"
           :key="match.matchID"
           class="match-row"
+          :class="{ 'match-row--highlight': match.matchID === highlightMatchId }"
         >
           <span class="match-id" :data-match-id="match.matchID">
             {{ match.matchID }}
@@ -913,6 +950,16 @@ export default defineComponent({
   gap: 0.25rem;
   padding: 0.5rem 0;
   border-top: 1px solid var(--color-foreground, #666);
+}
+
+/* why: WP-369 — the match reached via a copy-join-link (?match=<id>) is ordered
+   first and highlighted so the recipient spots it immediately. */
+.match-row--highlight {
+  padding: 0.5rem;
+  border-top: none;
+  border-radius: 6px;
+  background: rgba(59, 130, 246, 0.12);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.5);
 }
 
 .seat-row {

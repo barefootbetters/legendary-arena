@@ -5,7 +5,7 @@ import PlayDesktop from './PlayDesktop.vue';
 import PlayMobile from './PlayMobile.vue';
 import DiagnosticExportButton from '../components/DiagnosticExportButton.vue';
 import ViewLoadoutButton from '../components/ViewLoadoutButton.vue';
-import InviteFriendControl from '../components/InviteFriendControl.vue';
+import WaitingForPlayersPanel from '../components/WaitingForPlayersPanel.vue';
 import HollowEffectsPanel from '../components/play/HollowEffectsPanel.vue';
 import { useViewport } from '../composables/useViewport';
 import { useSkinApplier } from '../composables/useSkinApplier';
@@ -49,7 +49,7 @@ const SUBMISSION_MESSAGES: Record<string, string> = {
  */
 export default defineComponent({
   name: 'PlayViewport',
-  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, ViewLoadoutButton, InviteFriendControl, HollowEffectsPanel },
+  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, ViewLoadoutButton, WaitingForPlayersPanel, HollowEffectsPanel },
   props: {
     submitMove: {
       type: Function as PropType<SubmitMove>,
@@ -132,14 +132,15 @@ export default defineComponent({
     -->
     <ViewLoadoutButton />
     <!--
-      // why: WP-366 — mounted ONCE here at the shared viewport root (the same
-      // shared-child case as <ViewLoadoutButton>), so the in-match "Invite a
-      // friend" control covers BOTH the <PlayMobile> and <PlayDesktop> surfaces.
-      // Self-hides when there is no `?match=` or the viewer is a guest, so it
-      // adds no DOM outside a live authenticated match. It reads only `?match=`
-      // — never G or the UIState projection.
+      // why: WP-369 — mounted ONCE here at the shared viewport root (the same
+      // shared-child case as <ViewLoadoutButton>), so the pre-match "Waiting for
+      // players" panel covers BOTH the <PlayMobile> and <PlayDesktop> surfaces.
+      // Supersedes WP-366's always-on corner InviteFriendControl: it renders only
+      // while the match has an open seat (polled from the public lobby list) and
+      // auto-hides when full. It reads only `?match=` — never G or the UIState
+      // projection.
     -->
-    <InviteFriendControl />
+    <WaitingForPlayersPanel />
     <!--
       // why: WP-258 — mounted ONCE here at the shared viewport root (the
       // Mounting Rule's shared-child case), alongside <DiagnosticExportButton>,
