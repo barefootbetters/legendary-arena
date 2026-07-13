@@ -212,24 +212,25 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
    * missing-setupData error.
    *
    * @param setupData - the setupData from the create request body
-   * @param _numPlayers - player count (validated separately by boardgame.io)
+   * @param numPlayers - player count; drives the WP-370 composition gate
    * @returns an error message string if invalid, undefined if valid
    */
   validateSetupData: (
     setupData: MatchConfiguration | undefined,
-    _numPlayers: number,
+    numPlayers: number,
   ): string | undefined => {
     if (!setupData) {
       return 'Missing setupData. The create request must include a setupData ' +
         'object with a valid MatchConfiguration (schemeId, mastermindId, etc.).';
     }
     // why: run the authoritative match-setup validation here so an invalid
-    // config (unknown ext_id, below-floor supply count, malformed field)
+    // config (unknown ext_id, below-floor supply count, malformed field,
+    // or — WP-370 — a composition that does not match the player count)
     // returns a message-bearing HTTP 400 from the lobby create endpoint
     // instead of an opaque HTTP 500 from a setup() throw. Guarded on
     // gameRegistry for the no-registry test path (mirrors setup()).
     if (gameRegistry) {
-      const result = validateMatchSetup(setupData, gameRegistry);
+      const result = validateMatchSetup(setupData, gameRegistry, numPlayers);
       if (!result.ok) {
         const firstError = result.errors[0];
         return firstError
@@ -272,7 +273,10 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // Game.setup() is the ONLY place in the engine where throwing is correct
     // — an invalid config must abort match creation immediately.
     if (gameRegistry) {
-      const result = validateMatchSetup(matchConfiguration, gameRegistry);
+      // why: WP-370 — pass ctx.numPlayers so the composition gate can reject a
+      // loadout whose villain-group / henchman / hero counts do not match the
+      // player count (belt-and-suspenders behind validateSetupData).
+      const result = validateMatchSetup(matchConfiguration, gameRegistry, context.ctx.numPlayers);
       if (!result.ok) {
         const firstError = result.errors[0];
         const errorMessage = firstError

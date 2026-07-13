@@ -16,6 +16,7 @@ import {
   applyQuery,
   buildHealthReport,
 } from "../shared.js";
+import { PLAYER_COUNT_SETUP } from "../playerCountSetup.js";
 import type {
   CardRegistry,
   SetIndexEntry,
@@ -151,6 +152,11 @@ export async function createRegistryFromHttp(
 
   // ── Public API ─────────────────────────────────────────────────────────────
   return {
+    // why: WP-370 / D-24165 — the canonical per-player-count setup table
+    // rides on the registry object so the engine reads it at setup time
+    // without importing this package.
+    playerCountSetup: PLAYER_COUNT_SETUP,
+
     /** @returns High-level counts for the registry. */
     info(): RegistryInfo {
       const flatCards = rebuildFlatCards();

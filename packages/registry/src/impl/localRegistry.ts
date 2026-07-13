@@ -16,6 +16,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { join, extname, resolve } from "node:path";
 import { SetIndexEntrySchema, SetDataSchema } from "../schema.js";
 import { flattenSet, applyQuery, buildHealthReport } from "../shared.js";
+import { PLAYER_COUNT_SETUP } from "../playerCountSetup.js";
 import type {
   CardRegistry,
   SetIndexEntry,
@@ -164,6 +165,11 @@ export async function createRegistryFromLocalFiles(
         metadataBaseUrl: metadataDir,
       };
     },
+
+    // why: WP-370 / D-24165 — the canonical per-player-count setup table
+    // rides on the registry object so the engine reads it at setup time
+    // without importing this package.
+    playerCountSetup: PLAYER_COUNT_SETUP,
 
     listSets():           SetIndexEntry[]    { return setIndex; },
     getSet(abbr: string): SetData | undefined { return loadedSets.get(abbr); },

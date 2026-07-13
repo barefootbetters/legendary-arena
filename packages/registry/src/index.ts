@@ -27,6 +27,22 @@ export type {
 export { createRegistryFromHttp        } from "./impl/httpRegistry.js";
 export { createRegistryFromLocalFiles  } from "./impl/localRegistry.js";
 
+// why: WP-370 / D-24165 — the canonical per-player-count setup table + pure
+// helpers, the single source of truth consumed by the registry-viewer
+// loadout builder, the server match-create gate, and (via the registry
+// object at setup time) the game engine.
+export {
+  PLAYER_COUNT_SETUP,
+  getPlayerCountSetup,
+  checkPlayerCountComposition,
+} from "./playerCountSetup.js";
+export type {
+  PlayerCountSetupRow,
+  SupportedPlayerCount,
+  PlayerCountCompositionMismatch,
+  PlayerCountCompositionInput,
+} from "./playerCountSetup.js";
+
 // Schema (for external validation use)
 export {
   SetDataSchema,

@@ -504,6 +504,53 @@ describe('buildVillainDeck', () => {
     );
   });
 
+  // why: WP-370 / D-24166 — a full inline player-count table fixture (the
+  // engine reads only villainDeckBystanderCount off it). Kept local so the
+  // engine test does not import the registry package.
+  const PLAYER_COUNT_SETUP_FIXTURE: Readonly<Record<number, {
+    villainGroupCount: number;
+    henchmenGroupCount: number;
+    villainDeckBystanderCount: number;
+    heroCount: number;
+  }>> = {
+    1: { villainGroupCount: 1, henchmenGroupCount: 1, villainDeckBystanderCount: 1, heroCount: 3 },
+    2: { villainGroupCount: 2, henchmenGroupCount: 1, villainDeckBystanderCount: 2, heroCount: 5 },
+    3: { villainGroupCount: 3, henchmenGroupCount: 1, villainDeckBystanderCount: 8, heroCount: 5 },
+    4: { villainGroupCount: 3, henchmenGroupCount: 2, villainDeckBystanderCount: 8, heroCount: 5 },
+    5: { villainGroupCount: 4, henchmenGroupCount: 2, villainDeckBystanderCount: 12, heroCount: 6 },
+  };
+
+  it('bystander table: a null-bystander scheme seeds the per-player-count table value, not numPlayers', () => {
+    // why: the pre-existing bug — at 3 players the fallback seeded 3, but the
+    // rules require 8. With the table on the registry, the count is 8.
+    const registry = { ...createMockRegistry(), playerCountSetup: PLAYER_COUNT_SETUP_FIXTURE };
+    const config = createTestConfig();
+
+    for (const [numPlayers, expectedBystanders] of [[1, 1], [2, 2], [3, 8], [4, 8], [5, 12]] as const) {
+      const result = buildVillainDeck(config, registry, makeMockCtx({ numPlayers }));
+      assert.equal(
+        countByType(result, 'bystander'),
+        expectedBystanders,
+        `${numPlayers}-player villain deck must seed ${expectedBystanders} bystanders from the table`,
+      );
+    }
+  });
+
+  it('bystander table: a scheme-specified villainDeckBystanderCount still overrides the table', () => {
+    // why: Midtown declares villainDeckBystanderCount: 12; the scheme value wins
+    // over the table (which would say 2 at 2 players).
+    const registry = { ...createMidtownMockRegistry(), playerCountSetup: PLAYER_COUNT_SETUP_FIXTURE };
+    const config = createMidtownConfig();
+
+    const result = buildVillainDeck(config, registry, makeMockCtx({ numPlayers: 2 }));
+
+    assert.equal(
+      countByType(result, 'bystander'),
+      12,
+      'A scheme-specified villainDeckBystanderCount must override the table value',
+    );
+  });
+
   it('golden composition (Midtown loadout): exact per-type counts and total', () => {
     // why: this golden test locks the per-type counts and the whole-deck total
     // for the watch-bot-play loadout. A failure here means a replay-breaking

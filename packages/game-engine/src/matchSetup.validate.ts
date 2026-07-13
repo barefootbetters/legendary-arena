@@ -51,6 +51,29 @@ export interface CardRegistryReader {
   listSets(): Array<{ abbr: string }>;
   /** Full set data for one set. */
   getSet(abbr: string): unknown | undefined;
+  /**
+   * The canonical per-player-count setup table (WP-370 / D-24165).
+   *
+   * why: game reference data carried on the registry object. The engine may
+   * not import @legendary-arena/registry (layer boundary), so it reads the
+   * table structurally off the registry passed into Game.setup(). Optional
+   * so narrow test mocks (and any registry that predates the table) skip the
+   * composition check rather than fail.
+   */
+  playerCountSetup?: Readonly<Record<number, PlayerCountSetupRow>>;
+}
+
+/**
+ * The four per-player-count setup counts the engine reads off the registry.
+ *
+ * Engine-local (structurally satisfied by the registry's PlayerCountSetupRow)
+ * so the engine defines what it needs without importing the registry package.
+ */
+export interface PlayerCountSetupRow {
+  villainGroupCount: number;
+  henchmenGroupCount: number;
+  villainDeckBystanderCount: number;
+  heroCount: number;
 }
 
 /** The 9 field names that must appear in a valid MatchSetupConfig. */
@@ -446,9 +469,59 @@ function validateExistence(
  * @returns A ValidateMatchSetupResult — either ok with the validated config,
  *          or not ok with an array of errors.
  */
+/**
+ * Checks the composition array lengths against the per-player-count setup
+ * table and pushes a full-sentence error for each mismatch.
+ *
+ * No-op when numPlayers is absent, the registry carries no player-count
+ * table, or the count is outside the table's supported range — the
+ * composition gate only fires on the real Game.setup path where a registry
+ * with the table is configured and boardgame.io supplies the seat count.
+ */
+function validatePlayerCountComposition(
+  input: Record<string, unknown>,
+  registry: CardRegistryReader,
+  numPlayers: number | undefined,
+  errors: MatchSetupError[],
+): void {
+  if (numPlayers === undefined || registry.playerCountSetup === undefined) {
+    return;
+  }
+  const row = registry.playerCountSetup[numPlayers];
+  if (row === undefined) {
+    return;
+  }
+  checkCompositionCount('villainGroupIds', 'villain groups', row.villainGroupCount, numPlayers, input, errors);
+  checkCompositionCount('henchmanGroupIds', 'henchmen groups', row.henchmenGroupCount, numPlayers, input, errors);
+  checkCompositionCount('heroDeckIds', 'heroes', row.heroCount, numPlayers, input, errors);
+}
+
+/**
+ * Pushes a full-sentence error when one composition array's length does not
+ * equal the count the player-count table requires.
+ */
+function checkCompositionCount(
+  field: (typeof ARRAY_FIELDS)[number],
+  label: string,
+  required: number,
+  numPlayers: number,
+  input: Record<string, unknown>,
+  errors: MatchSetupError[],
+): void {
+  const value = input[field];
+  const actual = Array.isArray(value) ? value.length : 0;
+  if (actual !== required) {
+    errors.push({
+      field,
+      message: `A ${numPlayers}-player match requires ${required} ${label}, but the loadout provides ${actual}. Adjust the loadout composition to match the player count.`,
+    });
+  }
+}
+
 export function validateMatchSetup(
   input: unknown,
   registry: CardRegistryReader,
+  numPlayers?: number,
 ): ValidateMatchSetupResult {
   const errors: MatchSetupError[] = [];
 
@@ -475,6 +548,18 @@ export function validateMatchSetup(
   // fires before "slug not in that set". Validator delegates slug
   // grammar to per-builder helpers (Authority Lock).
   validateExistence(input, registry, errors);
+
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  // why: WP-370 / D-24165 — composition-length gate against the per-player-
+  // count setup table. Runs only when the caller passes numPlayers AND the
+  // registry carries the table for that count (the real Game.setup path);
+  // 2-argument callers and table-less test mocks skip it. Runs after the
+  // existence checks so a wrong count is reported only on an otherwise-valid
+  // config, and never masks a more specific ext_id error.
+  validatePlayerCountComposition(input, registry, numPlayers, errors);
 
   if (errors.length > 0) {
     return { ok: false, errors };

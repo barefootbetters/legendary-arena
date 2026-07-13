@@ -24,6 +24,7 @@ import type {
   CardQuerySchema,
   PhysicalCardSchema,
 } from "../schema.js";
+import type { PlayerCountSetupRow, SupportedPlayerCount } from "../playerCountSetup.js";
 
 // ── Domain types (Zod-inferred — do not hand-edit) ───────────────────────────
 export type SetIndexEntry   = z.infer<typeof SetIndexEntrySchema>;
@@ -189,6 +190,16 @@ export interface CardRegistry {
    * @returns The owning PhysicalCard, or undefined on miss.
    */
   getPhysicalCardForSide(heroSlug: string, sideSlug: string): PhysicalCard | undefined;
+
+  /**
+   * The canonical per-player-count setup table (WP-370 / D-24165).
+   *
+   * why: game reference data carried on the registry object so the game
+   * engine can read it at setup time (via structural typing on its local
+   * CardRegistryReader) without importing this package — the layer boundary
+   * forbids game-engine → registry imports.
+   */
+  playerCountSetup: Readonly<Record<SupportedPlayerCount, PlayerCountSetupRow>>;
 }
 
 // ── Factory options ──────────────────────────────────────────────────────────

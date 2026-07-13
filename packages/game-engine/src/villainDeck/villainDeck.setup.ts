@@ -259,12 +259,23 @@ export function buildVillainDeck(
   // why: bystander-villain-deck-{index} format chosen for consistency with
   // henchman and scheme twist patterns. Enables replay targeting of individual
   // bystander reveal events. The count comes from the scheme's
-  // villainDeckBystanderCount; the numPlayers default applies only when the
-  // scheme omits the field (or no scheme resolved). This is separate from
-  // config.bystandersCount which sizes the bystander pile (supply).
+  // villainDeckBystanderCount; when the scheme omits it (or no scheme
+  // resolved) the count is the per-player-count setup-table value
+  // (WP-370 / D-24166: 1/2/8/8/12), NOT ctx.numPlayers — the old fallback
+  // under-seeded 3/4/5-player decks (3 instead of 8, etc.). The table rides on
+  // the registry object (D-24165); it is read defensively so table-less test
+  // mocks fall back to the historical ctx.numPlayers behavior. This is
+  // separate from config.bystandersCount which sizes the bystander pile (supply).
   const bystanderFromScheme = scheme === null ? null : readSchemeBystanderCount(scheme);
+  const bystanderTable = (registry as {
+    playerCountSetup?: Record<number, { villainDeckBystanderCount?: number }>;
+  }).playerCountSetup;
+  const bystanderFromTable =
+    bystanderTable?.[context.ctx.numPlayers]?.villainDeckBystanderCount;
   const bystanderCount =
-    bystanderFromScheme === null ? context.ctx.numPlayers : bystanderFromScheme;
+    bystanderFromScheme !== null
+      ? bystanderFromScheme
+      : bystanderFromTable ?? context.ctx.numPlayers;
 
   for (let bystanderIndex = 0; bystanderIndex < bystanderCount; bystanderIndex++) {
     const paddedIndex = String(bystanderIndex).padStart(2, '0');
