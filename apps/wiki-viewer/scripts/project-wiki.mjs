@@ -12,7 +12,7 @@
 // runs on Linux; a case-insensitive copy would let `INDEX.md` and `Index.md`
 // alias and hide drift that fails in CI.
 
-import { existsSync, mkdirSync, readdirSync, copyFileSync, rmSync, renameSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, copyFileSync, readFileSync, writeFileSync, rmSync, renameSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -22,6 +22,33 @@ const wikiSource = join(repoRoot, 'wiki');
 const ewikiAssets = join(repoRoot, 'ewiki');
 const projectionTarget = join(here, '..', 'content');
 const staticTarget = join(here, '..', 'static');
+
+// why: D-24164 — the changelog is the ONE docs/ file the ewiki also publishes.
+// docs/09-CHANGELOG.md is the single source of truth (read by git/dashboard
+// readers too), so it is projected — not duplicated — into the wiki as
+// changelog.md. This amends the WP-139/D-13810 wiki-only projection scope for
+// exactly this file. The transform below is the reason it must be projected
+// (rewritten), not copied: its links are docs-relative and would 404 on the ewiki.
+const changelogSource = join(repoRoot, 'docs', '09-CHANGELOG.md');
+const githubDocsBlobBase =
+  'https://github.com/barefootbetters/legendary-arena/blob/main/docs/';
+// why: a Hugo page needs frontmatter for its title + nav; the source docs file
+// carries none (it is a plain doc), so the ewiki-specific frontmatter is injected
+// here at projection time rather than polluting the source.
+const changelogFrontmatter = [
+  '---',
+  'title: Changelog',
+  'type: Guide',
+  'tags:',
+  '  - changelog',
+  '  - milestones',
+  '  - project',
+  'status: canonical',
+  '---',
+  '',
+  '<!-- Auto-projected from docs/09-CHANGELOG.md by project-wiki.mjs (D-24164). Edit the source, not this copy. -->',
+  '',
+].join('\n');
 
 /**
  * Project wiki/*.md into apps/wiki-viewer/content/.
@@ -117,9 +144,53 @@ function projectWiki() {
   return copiedCount;
 }
 
+/**
+ * Project docs/09-CHANGELOG.md into apps/wiki-viewer/content/changelog.md.
+ *
+ * Read-only on the source. Injects ewiki frontmatter (the source is a plain
+ * doc), drops the source's `# 09 — Changelog` H1 (the frontmatter title supplies
+ * it), and rewrites docs-relative markdown links to absolute GitHub blob URLs so
+ * they resolve on the rendered ewiki AND pass the link-integrity check (which
+ * exempts http(s) links). Every link in the changelog is a docs-relative `.md`
+ * path (no http / mailto / #anchor / rooted forms), so the rewrite rule is total.
+ *
+ * @returns 1 when the changelog was projected, 0 when the source is absent.
+ */
+function projectChangelog() {
+  if (!existsSync(changelogSource)) {
+    process.stdout.write(
+      'Changelog source docs/09-CHANGELOG.md not found — skipping changelog projection.\n'
+    );
+    return 0;
+  }
+  const raw = readFileSync(changelogSource, 'utf8');
+  // why: drop the leading `# 09 — Changelog` H1 (the `09-` is a docs-ordering
+  // prefix) so the page title comes from the injected frontmatter, not a
+  // duplicated in-body heading.
+  const withoutTitle = raw.replace(/^# 09 — Changelog\r?\n/, '');
+  // why: rewrite docs-relative `.md` links (e.g. ai/work-packets/WORK_INDEX.md,
+  // 05-ROADMAP-MINDMAP.md) — which resolve against docs/, not the ewiki content/
+  // root — to absolute GitHub blob URLs. The negative lookahead skips links that
+  // are already external / rooted / in-page anchors.
+  const rewritten = withoutTitle.replace(
+    /\]\((?!https?:|mailto:|#|\/)([^)]+\.md[^)]*)\)/g,
+    (_whole, relativePath) => `](${githubDocsBlobBase}${relativePath})`
+  );
+  writeFileSync(
+    join(projectionTarget, 'changelog.md'),
+    changelogFrontmatter + rewritten,
+    'utf8'
+  );
+  return 1;
+}
+
 try {
   const count = projectWiki();
   process.stdout.write(`Projected ${count} wiki files to ${projectionTarget}\n`);
+  const changelogCount = projectChangelog();
+  if (changelogCount > 0) {
+    process.stdout.write(`Projected the changelog to ${join(projectionTarget, 'changelog.md')}\n`);
+  }
 } catch (error) {
   process.stderr.write(`Wiki projection failed: ${error instanceof Error ? error.message : String(error)}\n`);
   process.exit(1);
