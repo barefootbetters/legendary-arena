@@ -459,6 +459,7 @@ mindmap
         ["WP-359 ✅ Friend-email opt-out toggle (arena client) — a ?route=me checkbox reading/writing WP-357's friendRequestEmails via the existing owner-profile fetch/save (one ref + one PATCH field + one checkbox); client OwnerProfileView/Patch mirror gains the field; no new endpoint/composable; arena-client typecheck 0 + test 845/845; client follow-on to WP-357; EC-389; D-24151"]
         ["WP-360 ✅ Match-invite UI: invitee core (arena client) — matchInvitesApi (mirrors friendsApi) + useMatchInvites + MatchInvitesSection (?route=me: list pending invites, Accept→hand off to Lobby, Decline) mounted in MyProfilePage; handle-only identity, never accountId; mutate→refetch + client error-code drift mirror; inviter-side invite trigger + full seat-join deferred to a follow-on (LobbyView has no persistent matchId; join needs the seat/credentials flow); arena-client typecheck 0 + test 867/867; EC-390; D-24152"]
         ["WP-366 ✅ Match-invite UI: inviter trigger + join-from-invite (arena client) — completes the deferred WP-360 follow-on: new InviteFriendControl.vue mounted in PlayViewport (self-contained — reads ?match= + useAuthStore, the ViewLoadoutButton idiom; render-gated live-match+authed; never G/UIState) + additive inviteFriendToMatch wrapper & useMatchInvites().invite; MatchInvitesSection Accept upgraded to a real join via a new pure joinMatchFromInvite.ts (injected listMatches/joinMatch/navigate deps) → lobbyApi.listMatches (first open seat) + joinMatch + the joinExisting ?match&player&credentials navigate (no reimplemented join); match-absent→\"no longer available\", full→\"already full\"; handle-only identity (never accountId, FR-2); §23(b) copy; client-only, no server change; arena-client typecheck 0 + test 899/899; EC-396; D-24158"]
+        ["WP-369 📝 Pre-match waiting room: seat-aware 'Waiting for players' invite panel (arena client) — play-view waiting state (operator chose it over a dedicated new room surface): a WaitingForPlayersPanel.vue in PlayViewport that supersedes WP-366's corner InviteFriendControl, renders only for an authed live match with ≥1 open seat (auto-hides when full/gone; solo never shows), shows '{filled} of {total}' + an @handle invite (reuses useMatchInvites().invite, no new mechanic) + a Copy-join-link ${origin}/?route=lobby&match=<id> (public deep-link, no secret); seat-fill via a new useMatchSeatStatus composable that POLLS lobbyApi.listMatches (open=!seat.name) on a bounded interval — no bgioClient/transport change (matchData not plumbed); InviteFriendControl deleted (plumbing retained); LobbyView gains a minimal ?match= row highlight; handle-only (never accountId); client-only, no server change; D-24163"]
 
       Next Horizons
         ["📦 Core set keyword & ability coverage — get the core set fully playable first, then add sets incrementally (in progress via the effect-authoring grind — e.g. WP-310/316/317)"]
@@ -542,13 +543,13 @@ mindmap
 | Live-Play HUD & Pending-Choice UX (2026-07) | 15/15 | — |
 | Competitive Score Submission & Verification (2026-07) | 10/10 | — |
 | Gauntlet Leaderboards (Legends) (2026-07) | 3/4 | 1 open |
-| Friends & Ranked Trust (2026-07) | 11/11 | — |
+| Friends & Ranked Trust (2026-07) | 11/12 | 1 open |
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **357/360 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 2 open |
+| **Total** | **357/361 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 3 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 3):** WP-042.1 ⏸ blocked; WP-349 open; WP-345 open.
+**Open / blocked WPs (derived from WORK_INDEX, 4):** WP-042.1 ⏸ blocked; WP-349 open; WP-345 open; WP-369 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

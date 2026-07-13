@@ -28699,6 +28699,24 @@ Protect this file.
 
 **Execution note.** The inviter control follows the just-landed `ViewLoadoutButton` (WP-363) idiom — self-contained, reads `?match=` + `useAuthStore()`, self-hides — rather than the prop-drilled `matchId` sketched at draft; equivalent within D-16501 (PlayViewport's own `matchId` derives from `?match=`) and consistent with its sibling. The join orchestration was extracted to a pure `joinMatchFromInvite.ts` with injected `listMatches`/`joinMatch`/`navigate` deps so every branch (open-seat join+navigate, match-absent, full, list/join throw) is unit-testable without a live server or jsdom navigation. EC renumbered 394 → 396 (WP-362 took EC-394 during its own parallel execution; EC-395 = WP-364).
 
+### D-24163 — Pre-match waiting-room: seat-aware "Waiting for players" invite panel (play-view waiting state)
+
+**Status:** Drafted 2026-07-12; not yet landed. Flips to Active when WP-369 executes.
+
+**User-Visible Surface:** `play.legendary-arena.com` — a "Waiting for players" panel in the in-match view while seats are open; a lobby match-highlight from the copied join link.
+
+**Context.** WP-366 shipped an always-on corner "Invite a friend" control in the play view. But a host who creates an N-seat match has no waiting-room experience: they land in the play view and the game stalls until others join, with no seat-fill indication and no seat-aware prompt. There is **no dedicated waiting-room surface** today (routes are `profile / me / login / play / lobby / fixture / live`; `LobbyView.submitCreate` navigates straight to `?match=`; the play mat renders immediately). Operator chose (2026-07-12) the **play-view waiting state** over building a dedicated new room surface.
+
+**Decision.** Replace WP-366's corner `InviteFriendControl` with a seat-aware **`WaitingForPlayersPanel.vue`** in `PlayViewport`, reusing the WP-366 invite plumbing. Client-only; no server/engine/transport change. Locks:
+
+1. **Seat-gated panel.** Renders only for an authed live match (`?match=`) with **≥1 open seat**; auto-hides at 0 open seats (full) or when the match is no longer listed; a solo (1-seat) match never shows it. Shows "{filled} of {total}", the invite input, and a copy-join-link.
+2. **Seat-fill by polling, not transport.** A new `useMatchSeatStatus` composable polls `lobbyApi.listMatches()` (open seat = `!seat.name`, the `joinMatchFromInvite` rule) on a bounded interval, cleared on full/gone/unmount; a failed poll preserves the last snapshot. **`bgioClient.ts` is not touched** — boardgame.io `matchData` is deliberately not plumbed to the UI (the WP-090/311 transport surfaces only `G`/`isConnected`/`_stateID`); polling avoids extending that governed layer.
+3. **Invite reuses WP-366.** The panel's invite calls `useMatchInvites().invite` (→ `inviteFriendToMatch`, `POST /api/match/invites`) — no new mechanic, no server change. `InviteFriendControl.vue` + its test are **deleted** (superseded; the only mount was `PlayViewport`); the API/composable plumbing is retained byte-unchanged.
+4. **Copy-join-link carries no secret.** `${origin}/?route=lobby&match=<matchId>` — a public lobby deep-link (matches are already publicly joinable via the lobby); no bearer/credentials/seat. `LobbyView` gains a minimal highlight/order of the `?match=<id>` row (no auto-join; `joinExisting` unchanged).
+5. **Handle-only identity (FR-2)** — `@handle` + display name only, no `accountId`; §23(b) co-op copy ("waiting"/"invite"/"join"), no PvP framing. The panel never reads/writes `G`/`UIState`.
+
+**Packet:** WP-369 (+ EC at execution-prep). **Drafted:** 2026-07-12. **Executed:** —
+
 Protect this file.
 
 ### D-24157 — Final-score VP by printed card VP (villains / henchmen / masterminds); flat table demoted to fallback
