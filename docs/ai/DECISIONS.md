@@ -30181,6 +30181,26 @@ is untouched and the requirement is discoverable from the board.
 
 Protect this file.
 
+### D-24162 — Final-turn warning banner is a pure, prop-driven client render of `UIState.finalTurn`
+
+**Status:** Drafted 2026-07-12; not yet landed. Flips to Active when WP-368 executes.
+
+**User-Visible Surface:** `play.legendary-arena.com` (a warning banner on the play HUD during the deck-exhaustion final turn).
+
+**Context.** WP-367 ships the engine mechanic (deck exhaustion → latched final turn → tie, D-24159) and an optional `UIState.finalTurn?: UIFinalTurnState` projection (`{ reason, heroDeckRemaining, villainDeckRemaining }`, present only while a deck is exhausted and the game has not ended). No client renders it yet, so a player gets no advance warning — they only see the tie after the fact. Jeff's original request was "a warning system or countdown showing how close you are to losing."
+
+**Decision.** Render the projection as a warning banner. Locks:
+
+1. **New pure, prop-driven component** `apps/arena-client/src/components/hud/FinalTurnBanner.vue` — takes a single `finalTurn: UIState['finalTurn']` prop, reads NO store / engine / registry / browser global (mirrors `TurnPhaseBanner.vue`). `ArenaHud.vue` remains the sole `useUiStateStore` consumer and prop-drills `snapshot.finalTurn` in.
+2. **Present-only-when-projected.** `v-if="finalTurn"` — the banner renders nothing when the field is absent. No client-side game logic: the "is it the final turn / suppress at game over / it's a tie" decisions are the engine's (the engine already omits `finalTurn` once `gameOver` is set), so the client never re-derives them.
+3. **Accessible as an alert, not a status.** `role="alert"` + `aria-live="assertive"` — deliberately stronger than `TurnPhaseBanner`'s `aria-live="polite"`, because the final turn is an urgent, one-time stakes change a screen-reader user must hear, not ambient phase context.
+4. **Content.** The projection's `reason` + a deck-remaining readout (`heroDeckRemaining` / `villainDeckRemaining`) as the "how close to losing" data; theme-aware styling via `var(--color-*)` tokens with a warning accent.
+5. **Scope boundary.** A broader loss-proximity meter (escaped-villains X/8, scheme-twists X/N) is explicitly a **separate future WP** — scheme-twist proximity is not projected yet (would need a small engine `UIState.progress` add), so it is not bundled into this client-only banner. The tie result itself continues to surface through the existing `gameOver` projection / `EndgameSummary.vue`, not this banner.
+
+**Packet:** WP-368 (+ EC + session prompt at execution-prep). **Drafted:** 2026-07-12. **Executed:** —
+
+Protect this file.
+
 ### D-24160 — Villain Deck no longer reshuffles from its discard (exhaustion is terminal)
 
 **Status:** Active (post-execution) 2026-07-12 (WP-367 / EC-397).
