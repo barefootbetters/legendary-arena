@@ -487,7 +487,7 @@
           "attack": "3+",
           "recruit": null,
           "abilities": [
-            "[hc:strength]: [keyword:Cross-Dimensional Hulk Rampage.]",
+            "[hc:strength]: [keyword:Cross-Dimensional Hulk Rampage]",
             "If any players gained a Wound this way, you get [keyword:Wounded Fury]."
           ]
         },
@@ -3160,7 +3160,7 @@
         {
           "abilities": [
             "Setup: 10 Twists. 6 Wounds per player in Wound Stack. Use exactly two Heroes with “Hulk“ in their Hero Names.",
-            "Twist 3-6: [keyword:Cross-Dimension Hulk Rampage].",
+            "Twist 3-6: [keyword:Cross-Dimensional Hulk Rampage].",
             "Twist 7-10: Each player gains a Wound.",
             "Evil Wins: When the Wound Stack runs out."
           ]
