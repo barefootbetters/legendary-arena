@@ -30157,5 +30157,54 @@ should be decided, not defaulted.
 **Precedent.** Same class as D-24187's fixed-hero-pool constraint: a ranked
 surface may impose requirements the base game does not, provided casual play
 is untouched and the requirement is discoverable from the board.
+### D-24159 — Deck-exhaustion "final turn" → tie (latched end condition; new `tie` EndgameOutcome)
+
+**Status:** Active (post-execution) 2026-07-12 (WP-367 / EC-397). `D-24026` **operator-pending on deploy**.
+
+**User-Visible Surface:** `play.legendary-arena.com` (game log "final turn" line + a tie result on the endgame screen).
+
+**Context.** The engine had no deck-exhaustion end condition. `evaluateEndgame` (WP-010) is a pure, live re-evaluation of `G.counters` wired to the play-phase `endIf`, so every existing end condition fires **immediately** (escaped-villains ≥ 8, schemeLoss, mastermindDefeated). The rulebook rule Jeff reported is different in two ways: (1) once the Hero Deck **or** Villain Deck reaches zero, the game ends **at the end of the current turn**, not immediately — "even if some card effect somehow puts cards back into the empty deck"; and (2) if neither side has won or lost by the end of that final turn, the game ends in a **tie** between good and evil. A live counter re-evaluation structurally cannot express "latch now, end later, and don't un-latch on a refill."
+
+**Decision.** Add a latched final-turn mechanism and a third outcome. Locks:
+
+1. **New `tie` outcome.** `EndgameOutcome = 'heroes-win' | 'scheme-wins' | 'tie'` (single-sourced; every outcome-typed field references the type, incl. `MatchSnapshotOutcome.result`).
+2. **Two new counters** (`ENDGAME_CONDITIONS`): `FINAL_TURN_TRIGGERED = 'finalTurnTriggered'` (the sticky latch) and `FINAL_TURN_TIE = 'finalTurnTie'` (the resolved tie). The latch **never** ends the game — `evaluateEndgame` ignores it; only `FINAL_TURN_TIE` yields the tie outcome.
+3. **Latch (`latchFinalTurnIfDeckExhausted`, `finalTurn.logic.ts`).** Called from `game.ts` `turn.onMove` after every play move (so it observes the post-move deck state, including card-effect depletion). Sets `FINAL_TURN_TRIGGERED = 1` the first time `G.villainDeck.deck` **or** `G.heroDeck` is empty; **sticky** — never cleared, so a later refill does not cancel the final turn. Idempotent (logs once).
+4. **Tie resolution (`resolveFinalTurnTieIfUnresolved`).** Called from `turn.onEnd` after the existing onTurnEnd effects. If the latch is set AND `evaluateEndgame(G) === null` (no win/loss fired), sets `FINAL_TURN_TIE = 1`. The null guard is the "finish the current turn as a final chance to win" rule: a mastermind defeated / scheme completed / 8th escape during the final turn wins/loses outright.
+5. **Tie ranked last.** `evaluateEndgame` checks losses → win → tie, so a win/loss present alongside the tie counter always wins/loses. Because the tie counter is only ever set when `evaluateEndgame` was null, there is never a real contention — the ordering is defensive.
+6. **Projection (`UIState.finalTurn?: UIFinalTurnState`).** Optional, omit-when-absent (mirrors `gameOver`/`pendingHeroChoice` — zero fixture churn). Present only while latched AND not yet game-over; carries a per-deck `reason` (generic if a refill left both non-empty) + `heroDeckRemaining`/`villainDeckRemaining`. The dedicated warning **banner UI** is a follow-on client WP; this packet ships the data. The tie itself surfaces through the existing `gameOver` projection (already derived from `evaluateEndgame`).
+7. **Determinism.** Both counters are set through `G.counters` (hashed, replay-faithful); no new randomness. Sentinel `finalStateHash` unchanged (`sim:coverage --check` OK).
+
+**Out of scope / deferred:** competitive/ranked treatment of a tie (see D-24161); a sweep `winnerCounts` tie bucket (ties count in the non-decisive bucket); a final-turn banner UI (follow-on client WP).
+
+**Packet:** WP-367 (+ EC-397). **Drafted:** 2026-07-12. **Executed:** 2026-07-12 (EC-397).
+
+Protect this file.
+
+### D-24160 — Villain Deck no longer reshuffles from its discard (exhaustion is terminal)
+
+**Status:** Active (post-execution) 2026-07-12 (WP-367 / EC-397).
+
+**User-Visible Surface:** `play.legendary-arena.com` (a Villain Deck that runs out now stays out, triggering the D-24159 final turn instead of cycling forever).
+
+**Context.** `performVillainReveal` (WP-014A) reshuffled `G.villainDeck.discard` back into the deck whenever the deck emptied, so the Villain Deck effectively never ran out. That contradicts the quoted rulebook (the deck running out is terminal; only a *card effect* can put cards back, not a standard reshuffle) and it makes the D-24159 villain-deck exhaustion path unreachable. In practice the villain discard is already dead: revealed villains/henchmen route to the City and other card types route to their own piles (strike/twist/captured), so nothing accumulates in `villainDeck.discard` to reshuffle anyway — the reshuffle branch was the sole writer of that zone (aside from the empty-init).
+
+**Decision.** Remove the discard→deck reshuffle from `performVillainReveal`. An empty villain deck is now a **no-op reveal** that logs a skip message; the final-turn latch (D-24159) was already set on the reveal that drew the last card. The `shuffleDeck` import (its only remaining use) is dropped. Determinism improves — the removed path used `ctx.random.Shuffle`; removing it subtracts a randomness source. No fixture churn: the sentinel replay never exhausts the villain deck (`sim:coverage --check` sentinel unchanged; engine suite green). The one reshuffle unit test is rewritten to assert the no-reshuffle behavior.
+
+**Packet:** WP-367 (+ EC-397). **Drafted:** 2026-07-12. **Executed:** 2026-07-12 (EC-397).
+
+Protect this file.
+
+### D-24161 — Competitive scoring maps a `tie` to SQL NULL (no gauntlet leg); `CompetitiveOutcome` stays the two-value decisive set
+
+**Status:** Active (post-execution) 2026-07-12 (WP-367 / EC-397).
+
+**User-Visible Surface:** none — infrastructure (competitive/gauntlet provenance).
+
+**Context.** `competition.logic.ts` derives the stored `competitive_scores.outcome` by assigning `evaluateEndgame(reduced.finalState).outcome` (an `EndgameOutcome`) into `CompetitiveOutcome | null`. `CompetitiveOutcome` is a **separate** closed union `'heroes-win' | 'scheme-wins'` with its own canonical array + drift test (D-24131), and the column already treats `null` as "not a decisive result / never a gauntlet leg" (D-24131 §3). Adding `'tie'` to `EndgameOutcome` (D-24159) breaks that assignment at compile time and forces a decision about how ranked play treats a tie.
+
+**Decision.** Keep `CompetitiveOutcome` and the `competitive_scores.outcome` column as the two-value decisive set — **no migration, no drift-test change**. Map a `'tie'` outcome to SQL `NULL` at the assignment site (`endgameResult === null || endgameResult.outcome === 'tie' ? null : endgameResult.outcome`), the same disposition as a null evaluation, so a tied match never qualifies as a gauntlet leg. This is the conservative, contained choice: it keeps ranked/gauntlet semantics unchanged and preserves the existing closed set. Whether ties should earn competitive credit (their own outcome value + column constraint + gauntlet rules) is a separate ranked-design decision, **deferred** to a future WP. Sweep analysis (`sweep.analyze.ts`) similarly accepts `'tie'` as a valid manifest `winner` and counts it in the existing non-decisive (`null`) winner bucket rather than a new tie bucket.
+
+**Packet:** WP-367 (+ EC-397). **Drafted:** 2026-07-12. **Executed:** 2026-07-12 (EC-397).
 
 Protect this file.

@@ -14,6 +14,7 @@
 
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type { PlayerId } from '../types.js';
+import type { EndgameOutcome } from '../endgame/endgame.types.js';
 
 // why: The three persistence classes are the canonical data classification for
 // all data in Legendary Arena. They govern what may be persisted, how, and
@@ -125,8 +126,11 @@ export interface MatchSnapshotPlayer {
  * Mirrors the shape of EndgameResult from endgame.types.ts.
  */
 export interface MatchSnapshotOutcome {
-  /** Which side won the match. */
-  result: 'heroes-win' | 'scheme-wins';
+  // why: WP-367 / D-24159 — typed as EndgameOutcome (not a re-spelled literal
+  // union) so it stays in lockstep with the engine's canonical outcome set,
+  // which now includes the deck-exhaustion 'tie'.
+  /** Which side won the match, or 'tie' on a deck-exhaustion tie. */
+  result: EndgameOutcome;
   /** Human-readable description of the triggering condition. */
   reason: string;
 }

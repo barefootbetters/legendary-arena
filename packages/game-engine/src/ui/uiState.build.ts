@@ -24,6 +24,7 @@ import type {
   UICityCard,
   UIGameOverState,
   UIProgressCounters,
+  UIFinalTurnState,
   UIParBreakdown,
   UICardDisplay,
   UIHQCard,
@@ -1099,6 +1100,33 @@ export function buildUIState(
     };
   }
 
+  // --- 14b. Project the final-turn warning (WP-367 / D-24159) ---
+  // why: present ONLY while the deck-exhaustion latch is active and the game has
+  // not yet ended, so the client shows the "final turn" banner exactly during the
+  // last turn. Once gameOver is set (including the tie), the endgame screen
+  // supersedes the banner, so finalTurn is suppressed. The reason names the
+  // currently-empty deck when one is still empty; if a card effect refilled the
+  // deck after the latch tripped, both may read non-empty, so a generic reason
+  // is used (the latch persists regardless — D-24159).
+  let finalTurn: UIFinalTurnState | undefined;
+  const isFinalTurnLatched =
+    (gameState.counters[ENDGAME_CONDITIONS.FINAL_TURN_TRIGGERED] ?? 0) > 0;
+  if (isFinalTurnLatched && gameOver === undefined) {
+    let reason: string;
+    if (gameState.villainDeck.deck.length === 0) {
+      reason = 'The villain deck is empty — win or lose this turn, or the game ends in a tie.';
+    } else if (gameState.heroDeck.length === 0) {
+      reason = 'The hero deck is empty — win or lose this turn, or the game ends in a tie.';
+    } else {
+      reason = 'A deck ran out — win or lose this turn, or the game ends in a tie.';
+    }
+    finalTurn = {
+      reason,
+      heroDeckRemaining: gameState.heroDeck.length,
+      villainDeckRemaining: gameState.villainDeck.deck.length,
+    };
+  }
+
   return {
     game,
     players,
@@ -1122,6 +1150,10 @@ export function buildUIState(
     piles,
     koPile,
     ...(gameOver !== undefined ? { gameOver } : {}),
+    // why: WP-367 / D-24159 — conditional spread; the final-turn banner data is
+    // omitted unless a deck has been exhausted (no `finalTurn: undefined` literal
+    // under exactOptionalPropertyTypes).
+    ...(finalTurn !== undefined ? { finalTurn } : {}),
     ...(pendingHeroChoice !== undefined ? { pendingHeroChoice } : {}),
     ...(pendingKoHeroChoice !== undefined ? { pendingKoHeroChoice } : {}),
     ...(pendingOptionalKoReward !== undefined ? { pendingOptionalKoReward } : {}),

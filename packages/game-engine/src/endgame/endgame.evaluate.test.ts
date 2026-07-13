@@ -73,6 +73,50 @@ describe('evaluateEndgame', () => {
     });
   });
 
+  it('returns tie when finalTurnTie >= 1 and no win/loss is set', () => {
+    const result = evaluateEndgame(makeMinimalState({
+      [ENDGAME_CONDITIONS.FINAL_TURN_TIE]: 1,
+    }));
+    assert.deepStrictEqual(result, {
+      outcome: 'tie',
+      reason:
+        'A deck ran out and the final turn ended with no winner — the game is a tie between good and evil.',
+    });
+  });
+
+  // why: the tie is only ever resolved when nothing else fired, but the
+  // evaluator must still rank it LAST defensively — a win/loss present alongside
+  // the tie counter must win/lose, never tie.
+  it('a win/loss takes priority over the tie counter', () => {
+    const heroesWin = evaluateEndgame(makeMinimalState({
+      [ENDGAME_CONDITIONS.FINAL_TURN_TIE]: 1,
+      [ENDGAME_CONDITIONS.MASTERMIND_DEFEATED]: 1,
+    }));
+    assert.deepStrictEqual(heroesWin, {
+      outcome: 'heroes-win',
+      reason: 'The mastermind has been defeated.',
+    });
+
+    const schemeWins = evaluateEndgame(makeMinimalState({
+      [ENDGAME_CONDITIONS.FINAL_TURN_TIE]: 1,
+      [ENDGAME_CONDITIONS.SCHEME_LOSS]: 1,
+    }));
+    assert.deepStrictEqual(schemeWins, {
+      outcome: 'scheme-wins',
+      reason: 'The scheme has been completed.',
+    });
+  });
+
+  // why: the FINAL_TURN_TRIGGERED latch alone must NEVER end the game — it only
+  // marks that the current turn is the final one. Only the resolved
+  // FINAL_TURN_TIE counter (set by turn.onEnd) ends the game in a tie.
+  it('returns null when only the final-turn latch is set (latch never ends the game)', () => {
+    const result = evaluateEndgame(makeMinimalState({
+      [ENDGAME_CONDITIONS.FINAL_TURN_TRIGGERED]: 1,
+    }));
+    assert.strictEqual(result, null);
+  });
+
   it('JSON.stringify succeeds for all return values', () => {
     const nullResult = evaluateEndgame(makeMinimalState({}));
     assert.strictEqual(JSON.stringify(nullResult), 'null');
