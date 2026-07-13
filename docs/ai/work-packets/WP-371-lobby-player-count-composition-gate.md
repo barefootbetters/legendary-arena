@@ -1,29 +1,32 @@
-# WP-371 — Match-Create Player-Count Composition Gate (Server) + Lobby Surface (Arena Client)
+# WP-371 — Lobby Player-Count Pre-Submit Check: read-only setup-requirements endpoint (Server) + warn/disable-before-submit (Arena Client)
 
-**Status:** Draft 2026-07-13 · **BLOCKED on WP-370** (needs the `PLAYER_COUNT_SETUP` table + the registry export path) · **Standard two-session lane** (D-24028 — crosses Server → App; validates a multiplayer match-create path). Pairs with **EC** (authored at execution-prep). Reserves **D-24167** (lands Active at execution).
-**Primary Layer:** Server (`apps/server` — the authoritative create-gate) + App (`apps/arena-client` — the lobby surface). The server imports the registry table; the arena-client does **not** (it surfaces the server's structured rejection).
-**Dependencies:** **WP-370** ⛔ (the `PLAYER_COUNT_SETUP` table + its registry export); WP-334 / WP-333 / WP-301 (`POST /api/match/create` gate + Hanko session auth); the arena-client lobby (`LobbyView.vue` create + join paths).
-**User-Visible Surface:** play.legendary-arena.com — the lobby. Creating a match whose loadout composition does not match the chosen player count is **rejected with a clear message**, before a match is created.
+**Status:** **Done 2026-07-13** (EC-400; standard two-session lane; design per **D-24167** now Active). **Executed with an operator-approved scope change (2026-07-13): the drafted server "composition gate" was dropped as redundant** — WP-370's `validateSetupData` already blocks a composition/player-count mismatch at match creation and the existing `POST /api/match/create` passthrough already returns that as a 400. Per the operator "expand it" decision, WP-371 instead adds a **read-only `GET /api/match/setup-requirements` endpoint** (guest) + a **lobby pre-submit check** that warns and disables Create *before* the user submits, with the engine 400 as the backstop. See §Execution Amendment.
+**Primary Layer:** Server (`apps/server` — a read-only requirements projection) + App (`apps/arena-client` — the lobby pre-check). The server imports the registry table; the arena-client does **not** (it consumes the requirements as data from the endpoint).
+**Dependencies:** WP-370 ✅ (the `PLAYER_COUNT_SETUP` table + its registry export + the engine block); WP-334 / WP-333 / WP-301 (`POST /api/match/create` gate + Hanko session auth); the arena-client lobby (`LobbyView.vue` create paths).
+**User-Visible Surface:** play.legendary-arena.com — the lobby. A composition that does not match the chosen player count is **flagged with a warning and Create is disabled** before submit; the engine still rejects it at create time as a backstop.
 
 ---
 
-## Session Context
+## Execution Amendment (2026-07-13) — gate → read-only endpoint + pre-check
 
-`POST /api/match/create` (`apps/server/src/match/matchGate.routes.ts:224`) is a thin auth gate: it reads `{ numPlayers, setupData }` from the request body (:235-236) and forwards them verbatim to the boardgame.io native lobby (:252-253). It performs **no** composition-vs-player-count validation — the engine's `Game.setup()` is the only authority, and (before WP-370) it did not check either. The arena-client lobby (`LobbyView.vue`) sends `numPlayers` and the 9-field composition fully **decoupled**: `submitCreate` (:207) from the manual form's `numPlayers` ref, `submitFromJson` (:390) from the uploaded envelope's `playerCount`. A user can create a 4-player match with 1 villain group; today it either starts an illegal board or (post-WP-370) fails deep in `Game.setup()` with an opaque server error rather than a clean lobby message.
+The WP was drafted (in #724) **before** WP-370 was implemented, on the assumption the server needed its own composition gate. Execution framing found that redundant:
 
-WP-370 installs the authoritative engine block and the registry-owned table. This WP adds the **server-layer** gate (a clean, early rejection with a structured error code the lobby can render) and the **lobby surface** (warn + block submit), so the mismatch is caught and explained at the create boundary rather than surfacing as a generic setup failure.
+- `POST /api/match/create` (`matchGate.routes.ts:257-266`) already **propagates the native lobby's non-ok status + body verbatim**. Post-WP-370 the native lobby runs `LegendaryGame.validateSetupData(setupData, numPlayers)`, which returns the composition-mismatch message as a **400** — already surfaced to the client through `lobbyApi.createMatch` → `LobbyView` `errorMessage`.
+- A second server gate would **duplicate enforcement** and violate the route's own "server wires, engine decides" contract.
+
+Per the operator "expand it" decision, WP-371 delivers the genuinely-new value instead: a **read-only, guest-accessible `GET /api/match/setup-requirements`** (a projection of the `PLAYER_COUNT_SETUP` table, since arena-client may not import registry) + a **lobby pre-submit check** that warns and disables Create for a mismatched composition **before** submit. The authoritative block stays at the engine (D-24165); this is a progressive-enhancement UX. D-24167 is reframed accordingly.
 
 ---
 
 ## Goal
 
-After this session, `POST /api/match/create` validates the submitted composition's villain-group / henchman-group / hero counts against `numPlayers` using `PLAYER_COUNT_SETUP` (imported from `@legendary-arena/registry`) **before** delegating to the native lobby, and returns a structured `400` with a typed error code + full-sentence message on mismatch (no match created). The arena-client lobby renders that rejection inline on both create paths (`submitCreate`, `submitFromJson`) and disables the create button while a known mismatch is present — a warn-then-block UX consistent with the engine's authoritative block (D-24165 enforcement model).
+After this session, the server exposes a read-only `GET /api/match/setup-requirements` (guest) returning the per-player-count required counts (from `PLAYER_COUNT_SETUP`). The arena-client lobby fetches it on mount and, on both create paths (the uploaded loadout's `playerCount`/composition and the manual form's `numPlayers`/CSV lengths), computes any villain-group / henchman / hero count mismatch, renders a full-sentence warning per mismatch, and **disables Create while a mismatch is present** — a warn-then-disable UX consistent with the D-24165 enforcement model. If the requirements fetch is unavailable the pre-check stays silent and the engine block (surfaced as a create 400) remains the authority. No redundant server gate is added.
 
 ---
 
 ## User-Visible Impact
 
-Creating a match with a composition that does not fit the player count now shows a clear lobby message ("A 4-player match requires 3 villain groups; this loadout has 1.") and does not create a match, instead of an opaque failure after the match is already spun up. Valid setups are unaffected.
+In the lobby, a composition that does not fit the chosen player count now shows a clear warning ("A 4-player match needs 3 villain groups — this loadout has 1.") and disables Create until it is fixed — catching the problem before submit instead of only via the create-time 400. Valid setups are unaffected.
 
 ---
 
@@ -65,6 +68,12 @@ If any of the above is false (esp. WP-370 not merged), this packet is **BLOCKED*
 
 ## Scope (In)
 
+> **Superseded by §Execution Amendment.** The scope below is the original
+> draft (a server create-gate). It was **not** executed as written — the gate
+> is redundant with WP-370. The delivered scope is: a read-only
+> `GET /api/match/setup-requirements` (server) + a lobby pre-submit warn/disable
+> (arena-client). See §Execution Amendment and §Files Expected to Change.
+
 ### A) Server create-gate (`apps/server/src/match/matchGate.routes.ts` — modified)
 - After auth + body validation, before delegation: read the composition arrays + `numPlayers` from `setupData`/body, look up `PLAYER_COUNT_SETUP[numPlayers]`, and check `villainGroupIds` / `henchmanGroupIds` / `heroDeckIds` lengths. On mismatch, respond `400 { errorCode: 'PLAYER_COUNT_COMPOSITION_MISMATCH', message }` and return (no delegation). Absent table row / unparseable numPlayers → fall through to existing behavior (not this gate's error to own). `// why:` cites D-24167.
 - A small shared pure helper (server-local or reused from registry) computes the mismatch list so the route stays thin.
@@ -96,16 +105,19 @@ If any of the above is false (esp. WP-370 not merged), this packet is **BLOCKED*
 
 ## Files Expected to Change
 
-- `apps/server/src/match/matchGate.routes.ts` — **modified** — composition-vs-numPlayers gate
-- `apps/server/src/match/matchGate.routes.test.ts` — **modified** — rejection + parity tests
-- `apps/server/src/match/matchGate.routes.integration.test.ts` — **modified** (if the integration path needs the case)
-- `docs/ai/REFERENCE/api-endpoints.md` — **modified** — whole-row replace for `POST /api/match/create` (D-11804)
-- `apps/arena-client/src/lobby/LobbyView.vue` — **modified** — surface the rejection + optional button-disable
-- `apps/arena-client/src/lobby/lobbyApi.ts` — **modified** (if the error shape needs typing)
-- `apps/arena-client/src/lobby/*.test.ts` — **modified** — lobby rejection tests
+> Reflects the executed (amended) design — read-only endpoint + lobby pre-check, no server gate. See §Execution Amendment.
+
+- `apps/server/src/match/matchGate.routes.ts` — **modified** — new `GET /api/match/setup-requirements` (guest, read-only)
+- `apps/server/src/match/matchGate.routes.test.ts` — **modified** — fake router `get`; endpoint-list + endpoint tests
+- `apps/arena-client/src/lobby/playerCountRequirements.ts` — **new** — pure mismatch check + warning formatter + row types
+- `apps/arena-client/src/lobby/playerCountRequirements.test.ts` — **new**
+- `apps/arena-client/src/lobby/lobbyApi.ts` — **modified** — `fetchSetupRequirements` (+ shape guard)
+- `apps/arena-client/src/lobby/LobbyView.vue` — **modified** — mount fetch + mismatch computeds + gate both create buttons + warning lists
+- `apps/arena-client/src/lobby/LobbyView.test.ts` — **modified** — mismatch→disabled+warn; match→enabled; unavailable→inert
+- `docs/ai/REFERENCE/api-endpoints.md` — **modified** — new `GET /api/match/setup-requirements` row (D-11804)
 - `docs/ai/STATUS.md`, `docs/ai/DECISIONS.md` (D-24167), `docs/ai/work-packets/WORK_INDEX.md`, `docs/ai/execution-checklists/EC_INDEX.md`, `docs/05-ROADMAP-MINDMAP.md` + counts — **modified** — governance close
 
-No other files. Run the server + arena-client suites, `pnpm roadmap:counts:check`, and the api-endpoints companion check before pushing.
+No other files. (The `POST /api/match/create` gate + `matchGate.routes.integration.test.ts` in the original draft were **not** touched — the redundant-gate work was dropped.)
 
 ---
 
@@ -121,7 +133,7 @@ N/A — lobby validation only; no funding affordances/copy/channels.
 
 ## API Catalog (00.3 §21)
 
-**Applies.** `POST /api/match/create` behavior changes (adds a `400` rejection path + error code). `docs/ai/REFERENCE/api-endpoints.md` row replaced whole (D-11804) in the impl commit; `Auth` = `authenticated-session-required` and `Status` = `Wired` unchanged.
+**Applies.** A **new** endpoint `GET /api/match/setup-requirements` is added (`Wired`, `Auth = guest`). A row is added to `docs/ai/REFERENCE/api-endpoints.md` (D-11804) in the impl commit. `POST /api/match/create` is **unchanged** (the redundant gate was dropped — see §Execution Amendment).
 
 ---
 

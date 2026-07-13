@@ -7,6 +7,16 @@
 
 ## Current State
 
+### WP-371 / EC-400 Executed — Lobby player-count pre-submit check: read-only setup-requirements endpoint + warn/disable (D-24167 Active) (2026-07-13)
+
+The lobby now warns and **disables Create before submit** when a loadout's composition does not match the chosen player count. **Operator-approved scope change ("expand it"):** the drafted server composition gate was **dropped as redundant** — WP-370's `validateSetupData` already blocks a mismatch and `POST /api/match/create` (`matchGate.routes.ts:257-266`) already propagates that as a 400 to the lobby. Building a second gate would duplicate enforcement and violate the route's "server wires, engine decides" contract.
+
+**Delivered instead:** (1) a **read-only, guest** `GET /api/match/setup-requirements` returning `{ requirements: PLAYER_COUNT_SETUP }` (the server imports `@legendary-arena/registry`; `Cache-Control: public, max-age=3600`) — guidance data, **not** a gate; (2) a **lobby pre-check** — `LobbyView` fetches the requirements on mount (best-effort) and, on both create paths (the uploaded loadout's `playerCount`/composition and the manual form's `numPlayers`/CSV lengths), computes villain-group/henchman/hero mismatches via a new pure `playerCountRequirements.ts` (`computePlayerCountMismatches` + `formatMismatchWarning`), renders a full-sentence warning per mismatch, and disables Create (`canSubmitFromJson` + `canSubmitCreate`).
+
+**Progressive enhancement:** `fetchSetupRequirements` is shape-guarded (throws on a malformed response → the caller stores `null`), and a null requirements table makes the pre-check inert — Create is never falsely blocked, and the engine's create-time 400 remains the authoritative backstop. `arena-client` imports **no** registry table (the counts arrive as endpoint data). `POST /api/match/create`/`join` byte-unchanged; new `api-endpoints.md` row (D-11804).
+
+`arena-client` typecheck (vue-tsc) 0 + test **916/0** (+8: 5 pure-helper + 3 lobby integration — mismatch→disabled+warn, match→enabled, requirements-unavailable→inert); `server` test **797 pass / 154 DB-skipped / 0 fail** (+1); `pnpm -r build` 0. `User-Visible Surface = play.legendary-arena.com` — **D-24026 operator-pending on deploy**. **D-24167 reframed + Active.** The final packet of the player-count arc, WP-372 (loadout-builder warn/export-gate), remains unblocked and un-executed.
+
 ### WP-370 / EC-399 Executed — Player-count setup table + engine composition block + villain-deck bystander fix (D-24165 + D-24166 Active) (2026-07-13)
 
 The number of players now **drives** the required setup counts. A canonical `PLAYER_COUNT_SETUP` table (villain groups / henchmen groups / villain-deck bystanders / heroes = `1·1·1·3` / `2·1·2·5` / `3·1·8·5` / `3·2·8·5` / `4·2·12·6`) is the **single source of truth**, and it lives in `packages/registry` (game reference data) — the layer boundary forbids the engine from importing registry, so the engine reads the table off the `CardRegistry` object at setup via structural typing on its local `CardRegistryReader` (no cross-import). Foundation packet of the three-packet arc; **WP-371** (server create-gate + lobby surface) and **WP-372** (loadout-builder warn/export-gate) are now unblocked.

@@ -28785,16 +28785,16 @@ Protect this file.
 
 Protect this file.
 
-### D-24167 — Server match-create composition gate; arena-client lobby surfaces the structured rejection
+### D-24167 — Lobby player-count pre-submit check: read-only setup-requirements endpoint; the engine remains the authoritative block (no redundant server gate)
 
-**Status:** Reserved 2026-07-13 (WP-371 draft; flips Active at execution).
+**Status:** Active 2026-07-13.
 
 **User-Visible Surface:** play.legendary-arena.com — the lobby create flow.
 
-**Context.** `POST /api/match/create` (`matchGate.routes.ts:224`) is a thin auth gate that forwards `{ numPlayers, setupData }` verbatim to the native boardgame.io lobby — no composition-vs-player-count check. Post-WP-370 the engine blocks a mismatch authoritatively at `Game.setup()`, but the failure surfaces as an opaque deep server error rather than a clean lobby message. `arena-client` cannot import the registry table (boundary: no `registry` runtime import).
+**Context.** `POST /api/match/create` (`matchGate.routes.ts:224`) is a thin auth gate that forwards `{ numPlayers, setupData }` to the native boardgame.io lobby and **already propagates the native response's non-ok status + body verbatim** (`:257-266`). Post-WP-370 the native lobby runs `LegendaryGame.validateSetupData(setupData, numPlayers)`, which returns the composition-mismatch message as a **400** — already surfaced to the client through `lobbyApi.createMatch` → `LobbyView` `errorMessage`. So a server-side composition gate (the WP-371 draft) is **redundant** and would duplicate enforcement + violate the route's "server wires, engine decides" contract. `arena-client` cannot import the registry table (boundary: no `registry` runtime import), so it cannot compute the required counts locally.
 
-**Decision.** The server create-gate validates the composition's villain-group / henchman / hero lengths against `numPlayers` using the WP-370 `PLAYER_COUNT_SETUP` table (the server imports `@legendary-arena/registry`) **before** delegating to the native lobby, and returns `400 { errorCode: 'PLAYER_COUNT_COMPOSITION_MISMATCH', message }` with **no match created** on mismatch. It is framed as **input validation at the create boundary** (server wires; engine decides) — a fast, friendly pre-check reading the same registry data and rejecting **exactly** what the engine would reject (parity is drift-tested), never a second rules engine. The `arena-client` lobby surfaces the server's full-sentence message inline on both create paths (`submitCreate`, `submitFromJson`) and may disable the Create button on a local length pre-check (UX only — the server/engine remain the gate); the lobby imports **no** registry table. The `api-endpoints.md` create row is replaced whole (D-11804).
+**Decision.** WP-371 (executed) does **not** add a server gate. Instead: (1) the server exposes a **read-only, guest** `GET /api/match/setup-requirements` returning `{ requirements: PLAYER_COUNT_SETUP }` (the server imports `@legendary-arena/registry`) — public game-rules data, `Cache-Control: public, max-age=3600`, **guidance only, not a gate**; (2) the `arena-client` lobby fetches it on mount (best-effort) and, on both create paths (the uploaded loadout's `playerCount`/composition and the manual form's `numPlayers`/CSV lengths), computes any villain-group/henchman/hero count mismatch, renders a full-sentence warning per mismatch, and **disables Create while a mismatch is present**. The **authoritative block stays at the engine** (D-24165, surfaced as the create 400); the pre-check is progressive enhancement — when the requirements fetch is unavailable it stays silent (never falsely blocks). The lobby imports **no** registry table (the counts arrive as endpoint data). A new `api-endpoints.md` row is added for the endpoint (D-11804); `POST /api/match/create` is unchanged. **Superseded framing:** the drafted "server composition gate + structured `PLAYER_COUNT_COMPOSITION_MISMATCH` error code" was dropped as redundant per the operator "expand it" decision.
 
-**Packet:** WP-371 (blocked on WP-370). **Reserved:** 2026-07-13; flips Active at execution.
+**Packet:** WP-371 (hard-dep WP-370 ✅). **Decided + Executed:** 2026-07-13 (EC-400; arena-client `916/0`, server `797 pass / 154 skipped / 0 fail`).
 
 Protect this file.
