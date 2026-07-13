@@ -7,6 +7,16 @@
 
 ## Current State
 
+### WP-363 / EC-393 Executed — In-match "View loadout in Registry Viewer" link (D-24155 Active) (2026-07-12) — arc complete
+
+The **client half** — and final packet — of the "open a live game's loadout in the Registry Viewer" arc. A small fixed-position control on the play surface (mounted once in `PlayViewport.vue` beside `DiagnosticExportButton`, covering both `PlayMobile` and `PlayDesktop`; **not rendered outside a live match** — no `?match=`). On click it fetches the current match's Tier-1 LAGN from **WP-361** `GET /api/match/:matchId/lagn` (authenticated with the player's `useAuthStore().token` bearer), base64url-encodes it into **WP-362**'s `?lagn=` deep-link (`lagnShareLink.ts` — `TextEncoder`→`btoa`→base64url, the **exact inverse** of the viewer's decoder), and opens it in a new tab (`window.open(..., 'noopener')`).
+
+Hardened per the tightened WP: a **null token** short-circuits to a sign-in message with **no** fetch; an **in-flight guard** blocks a double-open; a **blocked pop-up** (`window.open` → null) shows a fallback message; `fetchMatchLagn` **never throws** (non-200 / network / a malformed 200 body via an in-guard `json()` all map to a typed result). The `lagn` is treated **opaquely** — the client never validates or inspects it (the server validated it in WP-361, the viewer re-validates in WP-362; the client is a relay); the bearer stays in the `Authorization` header, **never** in the opened URL. Full-sentence failure messages for `401`/`403`/`404`/network/pop-up-blocked.
+
+`pnpm -r build` 0; arena-client `typecheck` (vue-tsc) 0; test **884 pass / 0 fail** (867 baseline + 17 new). `User-Visible Surface = play.legendary-arena.com` — **D-24026 operator-pending on deploy** (in a real match, click → viewer Loadout tab opens pre-filled; a non-participant sees the participants-only message). **With WP-361 (server) + WP-362 (viewer) + WP-363 (client) all merged, the loadout-in-viewer arc is complete end-to-end.** `EC-393` was double-booked by WP-366 at draft; WP-363 executed first and kept it — WP-366 renumbers when it executes.
+
+---
+
 ### WP-362 / EC-394 Executed — Loadout tab opens a LAGN from the URL (`?lagn=`) (D-24154 Active) (2026-07-12)
 
 The **viewer half** of the "open a live game's loadout in the Registry Viewer" arc. A `?lagn=<base64url(UTF-8 LAGN JSON)>` URL parameter on `cards.legendary-arena.com`: on mount a **pure, decode-only** `lagnUrlParam.ts` (browser `atob` + `TextDecoder`, an 8192-char cap, present-but-empty + `URLSearchParams` `+`→space handled, **never throws**) turns the param into JSON text, `useLagnFromUrl` runs it through the **existing** `parseLagnLoadout` (WP-291 — the sole validator, called once, no fork), and on success **atomically** applies the composition to the shared Loadout draft (`resetDraft` + the WP-291 setters run **only** on a valid LAGN — a bad link leaves the draft untouched) and one-shot auto-switches to the Loadout tab (WP-114 machinery). A `?lagn=` link **takes precedence over and suppresses** the WP-114 five-field setup preview (App.vue creates the draft first, applies `?lagn=`, then gates `useSetupFromUrl` on its absence); a decode-failed / invalid-LAGN link opens the tab and shows a dismissible full-sentence error banner rather than a blank builder.

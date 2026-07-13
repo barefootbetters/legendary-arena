@@ -228,14 +228,14 @@ Published as `@legendary-arena/lagn@1.0.0`:
 - [`packages/lagn-spec/scripts/generate-schema.mjs`](../packages/lagn-spec/scripts/generate-schema.mjs)
   — Generates `schemas/lagn-v1.json` at build time
 
-## Cross-Surface Loadout Sharing (WP-361 ✅ + WP-362 ✅ shipped; WP-363 remaining)
+## Cross-Surface Loadout Sharing (WP-361 ✅ + WP-362 ✅ + WP-363 ✅ — arc complete)
 
 LAGN is the interchange format that lets a **live game on
 play.legendary-arena.com** open its loadout in the **Registry Viewer's
 Loadout tab** on cards.legendary-arena.com — for inspection, tweaking, or
-re-export. The three-packet arc (D-24153 / D-24154 / D-24155): **WP-361
-(server) + WP-362 (viewer) are shipped 2026-07-12; WP-363 (the in-match
-client link) is the remaining piece.**
+re-export. The three-packet arc (D-24153 / D-24154 / D-24155) — **WP-361
+(server) + WP-362 (viewer) + WP-363 (the in-match client link) all shipped
+2026-07-12; the flow is complete end-to-end.**
 
 1. ✅ **Server (WP-361 / D-24153, shipped).** `GET /api/match/:matchId/lagn` returns the
    current match's setup as a **Tier-1 LAGN**, projected read-only from the
@@ -255,7 +255,7 @@ client link) is the remaining piece.**
    call — the payload is self-contained, so the viewer needs no auth and no
    CORS. `?lagn=` **suppresses** the WP-114 five-field setup preview; a malformed
    payload fails visible (tab + a dismissible full-sentence error banner).
-3. **Client (WP-363 / D-24155, remaining — now unblocked).** An in-match "View loadout in Registry
+3. ✅ **Client (WP-363 / D-24155, shipped).** An in-match "View loadout in Registry
    Viewer" control fetches the LAGN from WP-361 (Hanko bearer), base64url-
    encodes it into WP-362's `?lagn=` link (the exact inverse of the viewer's
    decoder), and opens it in a new tab (`noopener`). The bearer stays in the
