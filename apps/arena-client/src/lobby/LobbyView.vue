@@ -6,8 +6,14 @@ import {
   joinMatch,
   listMatches,
   serverUrl,
+  fetchSetupRequirements,
 } from './lobbyApi';
 import type { LobbyMatchSummary } from './lobbyApi';
+import {
+  computePlayerCountMismatches,
+  formatMismatchWarning,
+} from './playerCountRequirements';
+import type { SetupRequirements } from './playerCountRequirements';
 import { filterJoinableMatches } from './lobbyMatchFilter';
 import { parseLoadoutJson } from './parseLoadoutJson';
 import type { ParsedLoadout } from './parseLoadoutJson';
@@ -126,6 +132,11 @@ export default defineComponent({
     // shape-guard pass is in hand.
     const pasteText = ref('');
     const parsedLoadout = ref<ParsedLoadout | null>(null);
+    // why: WP-371 — the per-player-count setup requirements, fetched once from
+    // the server on mount (guest endpoint). Null until loaded (or if the fetch
+    // fails), in which case the pre-submit check stays silent and the
+    // authoritative engine block (WP-370, surfaced as a create 400) still applies.
+    const setupRequirements = ref<SetupRequirements | null>(null);
     // why: content-preview state so the operator can confirm the uploaded
     // setup (mastermind, scheme, villains, henchmen, heroes) before creating
     // the match. `loadoutDisplayNames` is populated only on the LAGN path
@@ -158,14 +169,66 @@ export default defineComponent({
         heroSelectionMode: parsed.heroSelectionMode,
       };
     });
+    // why: WP-371 — player-count composition mismatches for the two create
+    // paths. The uploaded loadout carries its own playerCount + composition;
+    // the manual form uses its numPlayers ref + the CSV field lengths. Both
+    // return [] when the requirements have not loaded, so the check is a
+    // progressive enhancement over the authoritative engine block.
+    const jsonPlayerCountMismatches = computed(() => {
+      const parsed = parsedLoadout.value;
+      if (parsed === null) {
+        return [];
+      }
+      return computePlayerCountMismatches(
+        setupRequirements.value,
+        parsed.playerCount,
+        {
+          villainGroups: parsed.composition.villainGroupIds.length,
+          henchmanGroups: parsed.composition.henchmanGroupIds.length,
+          heroes: parsed.composition.heroDeckIds.length,
+        },
+      );
+    });
+    const manualPlayerCountMismatches = computed(() => {
+      return computePlayerCountMismatches(
+        setupRequirements.value,
+        Number(numPlayers.value),
+        {
+          villainGroups: splitCsv(villainGroupIds.value).length,
+          henchmanGroups: splitCsv(henchmanGroupIds.value).length,
+          heroes: splitCsv(heroDeckIds.value).length,
+        },
+      );
+    });
+    const jsonPlayerCountWarnings = computed<string[]>(() =>
+      jsonPlayerCountMismatches.value.map((mismatch) =>
+        formatMismatchWarning(parsedLoadout.value?.playerCount ?? 0, mismatch),
+      ),
+    );
+    const manualPlayerCountWarnings = computed<string[]>(() =>
+      manualPlayerCountMismatches.value.map((mismatch) =>
+        formatMismatchWarning(Number(numPlayers.value), mismatch),
+      ),
+    );
+
     // why: disabling the submit button until parse success prevents
     // partially parsed or stale JSON from being submitted, ensuring
     // createMatch is never called with unchecked input. The button also
     // re-disables during submission so a double-click cannot create two
-    // matches.
+    // matches. WP-371 adds the player-count composition gate so a loadout that
+    // does not match its player count cannot be submitted (the engine would
+    // reject it anyway; this catches it earlier with a clear warning).
     const canSubmitFromJson = computed(
       (): boolean =>
-        parsedLoadout.value !== null && !isSubmitting.value,
+        parsedLoadout.value !== null &&
+        !isSubmitting.value &&
+        jsonPlayerCountMismatches.value.length === 0,
+    );
+    // why: WP-371 — the manual "advanced" create is likewise blocked while its
+    // composition does not match the chosen player count.
+    const canSubmitCreate = computed(
+      (): boolean =>
+        !isSubmitting.value && manualPlayerCountMismatches.value.length === 0,
     );
 
     function buildConfig(): MatchSetupConfig {
@@ -491,6 +554,15 @@ export default defineComponent({
 
     onMounted(async () => {
       await refreshMatches();
+      // why: WP-371 — load the player-count setup requirements for the
+      // pre-submit check. Best-effort: on any failure the pre-check stays
+      // silent (setupRequirements stays null) and the authoritative engine
+      // block still rejects a bad composition at create time.
+      try {
+        setupRequirements.value = await fetchSetupRequirements();
+      } catch {
+        setupRequirements.value = null;
+      }
       // why: WP-369 — after the list loads, scroll the highlighted match into
       // view. Guarded because jsdom (tests) does not implement scrollIntoView.
       if (highlightMatchId !== '') {
@@ -529,6 +601,9 @@ export default defineComponent({
       parsedLoadout,
       loadoutPreview,
       canSubmitFromJson,
+      canSubmitCreate,
+      jsonPlayerCountWarnings,
+      manualPlayerCountWarnings,
       handleFileUpload,
       parsePasted,
       submitFromJson,
@@ -710,6 +785,16 @@ export default defineComponent({
         </dl>
       </div>
 
+      <ul
+        v-if="jsonPlayerCountWarnings.length > 0"
+        class="player-count-warnings"
+        data-testid="lobby-json-player-count-warnings"
+      >
+        <li v-for="warning in jsonPlayerCountWarnings" :key="warning">
+          {{ warning }}
+        </li>
+      </ul>
+
       <button
         type="button"
         :disabled="!canSubmitFromJson"
@@ -807,9 +892,19 @@ export default defineComponent({
         aria-label="numPlayers"
       />
 
+      <ul
+        v-if="manualPlayerCountWarnings.length > 0"
+        class="player-count-warnings"
+        data-testid="lobby-manual-player-count-warnings"
+      >
+        <li v-for="warning in manualPlayerCountWarnings" :key="warning">
+          {{ warning }}
+        </li>
+      </ul>
+
       <button
         type="button"
-        :disabled="isSubmitting"
+        :disabled="!canSubmitCreate"
         data-testid="lobby-submit-create"
         @click="submitCreate"
       >
