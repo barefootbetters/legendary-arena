@@ -28681,7 +28681,7 @@ Protect this file.
 
 ### D-24158 — Match-invite inviter trigger + join-from-invite (the deferred WP-360 follow-on)
 
-**Status:** Drafted 2026-07-12; not yet landed. Flips to Active when WP-366 executes. (Renumbered from D-24157 → D-24158: WP-365/D-24157 landed first as the final-score-VP draft #699; this packet is WP-366/D-24158 per the first-keeps-the-number collision convention.)
+**Status:** **Active** (WP-366 executed 2026-07-12). (Renumbered from D-24157 → D-24158: WP-365/D-24157 landed first as the final-score-VP draft #699; this packet is WP-366/D-24158 per the first-keeps-the-number collision convention.)
 
 **User-Visible Surface:** `play.legendary-arena.com` — an in-match "Invite a friend" control + a one-click Join on the `?route=me` game-invites panel.
 
@@ -28695,7 +28695,9 @@ Protect this file.
 4. **Join edge cases are handled, not swallowed.** A match absent from `listMatches` (ended/gameover) → "This match is no longer joinable."; a match with no open seat (full) → "This match is full."
 5. **Handle-only identity (FR-2).** The invite acts on `@handle` + shows `displayName`; no `accountId` is rendered or read (the API sends none). §23(b) copy is invite/join only — no PvP framing.
 
-**Packet:** WP-366 (+ EC-394 at execution-prep). **Drafted:** 2026-07-12. **Executed:** —
+**Packet:** WP-366 (EC-396). **Drafted:** 2026-07-12. **Executed:** 2026-07-12.
+
+**Execution note.** The inviter control follows the just-landed `ViewLoadoutButton` (WP-363) idiom — self-contained, reads `?match=` + `useAuthStore()`, self-hides — rather than the prop-drilled `matchId` sketched at draft; equivalent within D-16501 (PlayViewport's own `matchId` derives from `?match=`) and consistent with its sibling. The join orchestration was extracted to a pure `joinMatchFromInvite.ts` with injected `listMatches`/`joinMatch`/`navigate` deps so every branch (open-seat join+navigate, match-absent, full, list/join throw) is unit-testable without a live server or jsdom navigation. EC renumbered 394 → 396 (WP-362 took EC-394 during its own parallel execution; EC-395 = WP-364).
 
 Protect this file.
 

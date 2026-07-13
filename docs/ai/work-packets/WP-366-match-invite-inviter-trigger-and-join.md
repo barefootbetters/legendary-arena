@@ -1,6 +1,6 @@
 # WP-366 — Match Invites UI: Inviter Trigger + Join-From-Invite (Arena Client)
 
-**Status:** Draft 2026-07-12 · **READY (not blocked — all hard-deps Done)** · **Standard two-session lane** (extends two WP-360 contract-adjacent files + a new play-view control + upgrades the Accept flow + a user-visible surface). Pairs with **EC-394** (execution-prep). Reserves **D-24158** (lands at execution).
+**Status:** Draft 2026-07-12 · **READY (not blocked — all hard-deps Done)** · **Standard two-session lane** (extends two WP-360 contract-adjacent files + a new play-view control + upgrades the Accept flow + a user-visible surface). Pairs with **EC-396** (execution-prep). Reserves **D-24158** (lands at execution).
 **Primary Layer:** App (`apps/arena-client`)
 **User-Visible Surface:** `play.legendary-arena.com` — an "Invite a friend" control in the **in-match play view** + a **real one-click Join** on the `?route=me` game-invites panel. **D-24026 live-verify APPLIES.**
 **Dependencies:** WP-360 (the invitee-core `matchInvitesApi` / `useMatchInvites` / `MatchInvitesSection`) ✅ **Done (PR #697)**; WP-358 (the `/api/match/invites` + accept endpoints) ✅; the client lobby (`lobbyApi.listMatches` / `joinMatch`, `PlayViewport`) ✅. **No unmerged dependency — executable now.**
@@ -95,7 +95,7 @@ If any of the above is false, this packet is **BLOCKED**.
 - `apps/arena-client/src/pages/PlayViewport.vue` — **modified** (mount the control)
 - `apps/arena-client/src/components/MatchInvitesSection.vue` — **modified** (Accept → real join)
 - Tests: `matchInvitesApi.test.ts` + `useMatchInvites.test.ts` + `MatchInvitesSection.test.ts` (extend) + `InviteFriendControl.test.ts` (new)
-- Governance: `WORK_INDEX.md` + `DECISIONS.md` (**D-24158**) + `STATUS.md` + `wiki/profile-login.md` + mindmap. `EC_INDEX.md` + EC-394 at execution-prep.
+- Governance: `WORK_INDEX.md` + `DECISIONS.md` (**D-24158**) + `STATUS.md` + `wiki/profile-login.md` + mindmap. `EC_INDEX.md` + EC-396 at execution-prep.
 
 **2 extended wrappers + 1 new component + 1 play-view mount + 1 upgraded component + tests. Standard two-session lane.** No server/engine touch.
 
