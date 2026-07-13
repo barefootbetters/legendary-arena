@@ -142,71 +142,15 @@
       "hidden": true
     },
     {
-      "slug": "bridge-conqueror",
-      "label": "Bridge Conqueror",
+      "slug": "burn-shards",
+      "label": "Burn Shards",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 2,
-      "cardIds": [
-        "amwp/jentorra",
-        "anni/heralds-of-galactus"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "burn-2-shards",
-      "label": "Burn 2 Shards",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 3,
+      "cardCount": 4,
       "cardIds": [
         "cosm/adam-warlock",
         "cosm/quasar",
-        "cosm/ronan-the-accuser"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "burn-4-shards",
-      "label": "Burn 4 Shards",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 2,
-      "cardIds": [
-        "cosm/adam-warlock",
-        "cosm/quasar"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "burn-8-shards",
-      "label": "Burn 8 Shards",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 1,
-      "cardIds": [
-        "cosm/adam-warlock"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "burn-a-shards",
-      "label": "Burn A Shards",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 1,
-      "cardIds": [
-        "cosm/quasar"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "burn-any-number-of-shards",
-      "label": "Burn Any Number Of Shards",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 1,
-      "cardIds": [
+        "cosm/ronan-the-accuser",
         "cosm/yondu"
       ],
       "hidden": true
@@ -245,8 +189,9 @@
       "label": "Conqueror",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 4,
+      "cardCount": 5,
       "cardIds": [
+        "amwp/jentorra",
         "anni/heralds-of-galactus",
         "anni/super-skrull",
         "asrd/valkyrie",
@@ -292,46 +237,16 @@
       "hidden": true
     },
     {
-      "slug": "cross-dimensional-colossus-rampage",
-      "label": "Cross Dimensional Colossus Rampage",
+      "slug": "cross-dimensional-rampage",
+      "label": "Cross Dimensional Rampage",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 1,
+      "cardCount": 4,
       "cardIds": [
-        "ssw2/soulsword-colossus"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "cross-dimensional-hulk-rampage",
-      "label": "Cross Dimensional Hulk Rampage",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 1,
-      "cardIds": [
+        "ssw1/old-man-logan",
+        "ssw2/soulsword-colossus",
+        "wtif/party-thor",
         "wwhk/gladiator-hulk"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "cross-dimensional-party-rampage",
-      "label": "Cross Dimensional Party Rampage",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 1,
-      "cardIds": [
-        "wtif/party-thor"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "cross-dimensional-wolverine-rampage",
-      "label": "Cross Dimensional Wolverine Rampage",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 1,
-      "cardIds": [
-        "ssw1/old-man-logan"
       ],
       "hidden": true
     },
@@ -957,137 +872,26 @@
       "hidden": true
     },
     {
-      "slug": "patrol-any-city-space",
-      "label": "Patrol Any City Space",
+      "slug": "patrol",
+      "label": "Patrol",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 3,
+      "cardCount": 14,
       "cardIds": [
+        "mdns/blade-daywalker",
         "mdns/elsa-bloodstone",
-        "ssw2/beast",
-        "ssw2/time-traveling-jean-grey"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "patrol-every-city-space",
-      "label": "Patrol Every City Space",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 1,
-      "cardIds": [
-        "ssw2/dr-punisher-soldier-supreme"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "patrol-the-bank",
-      "label": "Patrol The Bank",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 2,
-      "cardIds": [
-        "ssw2/agent-venom",
-        "ssw2/spider-gwen"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "patrol-the-bridge",
-      "label": "Patrol The Bridge",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 3,
-      "cardIds": [
         "mdns/wong-master-of-the-mystic-arts",
+        "ssw2/agent-venom",
+        "ssw2/arkon-the-magnificent",
+        "ssw2/beast",
+        "ssw2/captain-and-the-devil-the",
+        "ssw2/captain-britain",
+        "ssw2/corvus-glaive",
+        "ssw2/dr-punisher-soldier-supreme",
+        "ssw2/elsa-bloodstone",
+        "ssw2/shang-chi",
         "ssw2/spider-gwen",
         "ssw2/time-traveling-jean-grey"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "patrol-the-escape-pile",
-      "label": "Patrol The Escape Pile",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 1,
-      "cardIds": [
-        "ssw2/corvus-glaive"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "patrol-the-rooftops",
-      "label": "Patrol The Rooftops",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 5,
-      "cardIds": [
-        "mdns/blade-daywalker",
-        "ssw2/arkon-the-magnificent",
-        "ssw2/captain-britain",
-        "ssw2/shang-chi",
-        "ssw2/spider-gwen"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "patrol-the-sewers",
-      "label": "Patrol The Sewers",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 4,
-      "cardIds": [
-        "mdns/blade-daywalker",
-        "ssw2/agent-venom",
-        "ssw2/arkon-the-magnificent",
-        "ssw2/elsa-bloodstone"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "patrol-the-streets",
-      "label": "Patrol The Streets",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 3,
-      "cardIds": [
-        "mdns/elsa-bloodstone",
-        "ssw2/captain-and-the-devil-the",
-        "ssw2/dr-punisher-soldier-supreme"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "patrol-two-adjacent-city-spaces",
-      "label": "Patrol Two Adjacent City Spaces",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 1,
-      "cardIds": [
-        "ssw2/arkon-the-magnificent"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "patrol-your-discard-pile",
-      "label": "Patrol Your Discard Pile",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 1,
-      "cardIds": [
-        "ssw2/shang-chi"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "patrol-your-victory-pile",
-      "label": "Patrol Your Victory Pile",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 1,
-      "cardIds": [
-        "ssw2/spider-gwen"
       ],
       "hidden": true
     },
@@ -1390,18 +1194,6 @@
       "hidden": true
     },
     {
-      "slug": "sewers-conqueror",
-      "label": "Sewers Conqueror",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 2,
-      "cardIds": [
-        "amwp/jentorra",
-        "asrd/valkyrie"
-      ],
-      "hidden": true
-    },
-    {
       "slug": "shatter",
       "label": "Shatter",
       "scope": "hero",
@@ -1571,17 +1363,6 @@
       "cardCount": 1,
       "cardIds": [
         "rlmk/gorgon"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "streets-conqueror",
-      "label": "Streets Conqueror",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 1,
-      "cardIds": [
-        "asrd/warriors-three-the"
       ],
       "hidden": true
     },
@@ -2158,9 +1939,8 @@
     },
     "amwp/jentorra": {
       "mechanics": [
-        "bridge-conqueror",
-        "explore",
-        "sewers-conqueror"
+        "conqueror",
+        "explore"
       ]
     },
     "amwp/scott-lang-cat-burglar": {
@@ -2186,7 +1966,6 @@
     },
     "anni/heralds-of-galactus": {
       "mechanics": [
-        "bridge-conqueror",
         "conqueror",
         "focus"
       ]
@@ -2265,7 +2044,6 @@
       "mechanics": [
         "bridge",
         "conqueror",
-        "sewers-conqueror",
         "streets",
         "thrown-artifact"
       ]
@@ -2274,8 +2052,7 @@
       "mechanics": [
         "bridge",
         "conqueror",
-        "draw",
-        "streets-conqueror"
+        "draw"
       ]
     },
     "bkpt/general-okoye": {
@@ -2504,9 +2281,7 @@
     },
     "cosm/adam-warlock": {
       "mechanics": [
-        "burn-2-shards",
-        "burn-4-shards",
-        "burn-8-shards"
+        "burn-shards"
       ]
     },
     "cosm/captain-mar-vell": {
@@ -2537,21 +2312,19 @@
     },
     "cosm/quasar": {
       "mechanics": [
-        "burn-2-shards",
-        "burn-4-shards",
-        "burn-a-shards"
+        "burn-shards"
       ]
     },
     "cosm/ronan-the-accuser": {
       "mechanics": [
-        "burn-2-shards",
+        "burn-shards",
         "contest-of-champions",
         "rescue"
       ]
     },
     "cosm/yondu": {
       "mechanics": [
-        "burn-any-number-of-shards",
+        "burn-shards",
         "danger-sense"
       ]
     },
@@ -2907,8 +2680,7 @@
       "mechanics": [
         "blood-frenzy",
         "moonlight",
-        "patrol-the-rooftops",
-        "patrol-the-sewers",
+        "patrol",
         "sunlight"
       ]
     },
@@ -2916,8 +2688,7 @@
       "mechanics": [
         "blood-frenzy",
         "hunt-for-victims",
-        "patrol-any-city-space",
-        "patrol-the-streets"
+        "patrol"
       ]
     },
     "mdns/morbius": {
@@ -2936,7 +2707,7 @@
     },
     "mdns/wong-master-of-the-mystic-arts": {
       "mechanics": [
-        "patrol-the-bridge",
+        "patrol",
         "sunlight"
       ]
     },
@@ -3412,7 +3183,7 @@
     },
     "ssw1/old-man-logan": {
       "mechanics": [
-        "cross-dimensional-wolverine-rampage"
+        "cross-dimensional-rampage"
       ]
     },
     "ssw1/proxima-midnight": {
@@ -3437,8 +3208,7 @@
     },
     "ssw2/agent-venom": {
       "mechanics": [
-        "patrol-the-bank",
-        "patrol-the-sewers",
+        "patrol",
         "spectrum",
         "wall-crawl"
       ]
@@ -3446,16 +3216,14 @@
     "ssw2/arkon-the-magnificent": {
       "mechanics": [
         "draw",
-        "patrol-the-rooftops",
-        "patrol-the-sewers",
-        "patrol-two-adjacent-city-spaces",
+        "patrol",
         "spectrum",
         "wall-crawl"
       ]
     },
     "ssw2/beast": {
       "mechanics": [
-        "patrol-any-city-space",
+        "patrol",
         "wall-crawl"
       ]
     },
@@ -3466,30 +3234,29 @@
     },
     "ssw2/captain-and-the-devil-the": {
       "mechanics": [
-        "patrol-the-streets",
+        "patrol",
         "spectrum"
       ]
     },
     "ssw2/captain-britain": {
       "mechanics": [
-        "patrol-the-rooftops"
+        "patrol"
       ]
     },
     "ssw2/corvus-glaive": {
       "mechanics": [
-        "patrol-the-escape-pile"
+        "patrol"
       ]
     },
     "ssw2/dr-punisher-soldier-supreme": {
       "mechanics": [
-        "patrol-every-city-space",
-        "patrol-the-streets",
+        "patrol",
         "reveal-ko-attack"
       ]
     },
     "ssw2/elsa-bloodstone": {
       "mechanics": [
-        "patrol-the-sewers",
+        "patrol",
         "spectrum",
         "wall-crawl"
       ]
@@ -3506,8 +3273,7 @@
     },
     "ssw2/shang-chi": {
       "mechanics": [
-        "patrol-the-rooftops",
-        "patrol-your-discard-pile",
+        "patrol",
         "wall-crawl"
       ]
     },
@@ -3523,22 +3289,18 @@
     },
     "ssw2/soulsword-colossus": {
       "mechanics": [
-        "cross-dimensional-colossus-rampage"
+        "cross-dimensional-rampage"
       ]
     },
     "ssw2/spider-gwen": {
       "mechanics": [
-        "patrol-the-bank",
-        "patrol-the-bridge",
-        "patrol-the-rooftops",
-        "patrol-your-victory-pile",
+        "patrol",
         "wall-crawl"
       ]
     },
     "ssw2/time-traveling-jean-grey": {
       "mechanics": [
-        "patrol-any-city-space",
-        "patrol-the-bridge"
+        "patrol"
       ]
     },
     "vill/bullseye": {
@@ -3709,7 +3471,7 @@
     },
     "wtif/party-thor": {
       "mechanics": [
-        "cross-dimensional-party-rampage",
+        "cross-dimensional-rampage",
         "what-if"
       ]
     },
@@ -3751,7 +3513,7 @@
     },
     "wwhk/gladiator-hulk": {
       "mechanics": [
-        "cross-dimensional-hulk-rampage",
+        "cross-dimensional-rampage",
         "draw",
         "smash",
         "transform",

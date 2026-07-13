@@ -1034,7 +1034,7 @@
           "attack": "3+",
           "recruit": null,
           "abilities": [
-            "[hc:instinct][keyword:: Cross-Dimensional Wolverine Rampage.] For each other player who gained a Wound this way, you get +1[icon:attack]."
+            "[hc:instinct][keyword:Cross-Dimensional Wolverine Rampage] For each other player who gained a Wound this way, you get +1[icon:attack]."
           ]
         },
         {

@@ -2533,7 +2533,7 @@
         {
           "qtd": 3,
           "abilities": [
-            "When you rescue this Bystander, [keyword:Patrol the Sewers:] If it's empty, you get +2[icon:recruit]."
+            "When you rescue this Bystander, [keyword:Patrol the Sewers] If it's empty, you get +2[icon:recruit]."
           ]
         }
       ]
