@@ -41,4 +41,4 @@
 ## After Completing
 - [x] `pnpm -r build` 0; arena-client `typecheck` (vue-tsc) 0; `test` **884 pass / 0 fail** (867 baseline + 17 new).
 - [x] D-24155 → Active; WORK_INDEX WP-363 `[x]`; EC_INDEX + STATUS + `wiki/lagn-v1.md`. **Completes the WP-361/362/363 arc.**
-- [ ] **D-24026:** APPLIES — operator-pending on deploy: in a real match on play.legendary-arena.com, click "View loadout in Registry Viewer" → a new tab opens the viewer Loadout tab pre-filled; a non-participant context shows the participants-only message.
+- [x] **D-24026:** VERIFIED live 2026-07-13 — in a real signed-in match on play.legendary-arena.com, "View loadout in Registry Viewer" opens a new tab on the viewer's Loadout tab pre-filled (after the #707 pop-up-blocker fix; the pre-open-then-navigate pattern). Non-participant / null-token guards confirmed live.
