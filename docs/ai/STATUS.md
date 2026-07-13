@@ -17,6 +17,18 @@ Hardened per the tightened WP: a **null token** short-circuits to a sign-in mess
 
 ---
 
+### WP-364 / EC-395 Executed — Hero "gain a Wound" keywords (D-24156 Active) (2026-07-12)
+
+Clears the plain "gain a Wound" hero hollow — Hulk's **Crazed Rampage** ("Each player gains a Wound.") played twice with **no effect** in the live `sGTM7LWSIHy` capture (Wound supply stayed 30, player gained 0). Two stacked gaps: the printed line was bare prose (no marker) **and** the generic hero `wound` keyword is `DEFERRED_BY_DESIGN_MECHANICS`. The plain form needs no targeting (the Wound goes to discard), so the deferral reason didn't apply.
+
+Two **narrow** `HeroKeyword` members — `gain-wound-self` ("You gain a Wound.") and `gain-wound-each` ("Each player gains a Wound.") — reuse the WP-017 `gainWound` helper via the WP-316 villain per-target loop (`self` = active player; `each` = sorted `Object.keys(G.playerZones)`; active-player `woundsDrawn` bump; empty-supply → logged no-op; summary log line; no RNG). One shared `heroEffectGainWound` registered under both keys; both added to `NO_MAGNITUDE_KEYWORDS`/`HANDLED_KEYWORDS`. **The production parser was unchanged** — the generic `[keyword:X]` builder already emits `{ type }` for a plain keyword, so only `HERO_KEYWORDS` registration was needed. **Honest-Partial:** the generic `wound` keyword + all 40 targeting/conditional hero wound forms stay deferred (`hollowEffect.types.ts` / `heroAbility.types.ts` byte-unchanged). 7 marker rows across 6 sets (3× Crazed Rampage `each` + 4× `self`: Half-Kree[idx 1] / Reckless / Draw-Their-Fire / Hothead) → all 7 now `executable` by-hook in the hero ledger.
+
+**EC renumber:** drafted citing EC-391, but WP-361 executed first (#701) and kept EC-391, WP-365 took EC-392 — so this landed as **EC-395**.
+
+`pnpm --filter @legendary-arena/game-engine build` 0; engine suite **1903/444/0**; `ledger:heroes` / `mechanics:metadata` / `sim:runtime-observed` / `sim:coverage --check` all OK; apply-markers = exactly 7 lines (idempotent); `game.test.ts` unchanged (no move added); sentinel `finalStateHash` unchanged (markers fire only in real games). `User-Visible Surface = play.legendary-arena.com` — **D-24026 operator-pending on deploy** (Crazed Rampage → every player gains a Wound + a game-log line).
+
+---
+
 ### WP-362 / EC-394 Executed — Loadout tab opens a LAGN from the URL (`?lagn=`) (D-24154 Active) (2026-07-12)
 
 The **viewer half** of the "open a live game's loadout in the Registry Viewer" arc. A `?lagn=<base64url(UTF-8 LAGN JSON)>` URL parameter on `cards.legendary-arena.com`: on mount a **pure, decode-only** `lagnUrlParam.ts` (browser `atob` + `TextDecoder`, an 8192-char cap, present-but-empty + `URLSearchParams` `+`→space handled, **never throws**) turns the param into JSON text, `useLagnFromUrl` runs it through the **existing** `parseLagnLoadout` (WP-291 — the sole validator, called once, no fork), and on success **atomically** applies the composition to the shared Loadout draft (`resetDraft` + the WP-291 setters run **only** on a valid LAGN — a bad link leaves the draft untouched) and one-shot auto-switches to the Loadout tab (WP-114 machinery). A `?lagn=` link **takes precedence over and suppresses** the WP-114 five-field setup preview (App.vue creates the draft first, applies `?lagn=`, then gates `useSetupFromUrl` on its absence); a decode-failed / invalid-LAGN link opens the tab and shows a dismissible full-sentence error banner rather than a blank builder.

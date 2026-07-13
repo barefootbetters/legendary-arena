@@ -42,7 +42,7 @@
           "attack": "4",
           "recruit": null,
           "abilities": [
-            "You gain a Wound."
+            "You gain a Wound. [keyword:gain-wound-self]"
           ]
         },
         {

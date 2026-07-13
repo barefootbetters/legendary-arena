@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "cardType": "hero",
   "summary": {
-    "totalRows": 635,
+    "totalRows": 638,
     "byStatus": {
-      "executable": 194,
+      "executable": 201,
       "deferred": 0,
       "condition": 5,
       "unsupported": 389,
-      "unmarked": 47
+      "unmarked": 43
     },
-    "distinctMechanics": 140
+    "distinctMechanics": 142
   },
   "rows": [
     {
@@ -207,11 +207,11 @@
       "extId": "3dtc/hulk",
       "heroName": "Hulk",
       "set": "3dtc",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "gain-wound-each",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each"
     },
     {
       "extId": "3dtc/man-thing",
@@ -1577,11 +1577,11 @@
       "extId": "core/hulk",
       "heroName": "Hulk",
       "set": "core",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "gain-wound-each",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each"
     },
     {
       "extId": "core/iron-man",
@@ -1957,6 +1957,16 @@
       "extId": "cvwr/hulkling",
       "heroName": "Hulkling",
       "set": "cvwr",
+      "mechanic": "gain-wound-self",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self"
+    },
+    {
+      "extId": "cvwr/hulkling",
+      "heroName": "Hulkling",
+      "set": "cvwr",
       "mechanic": "size-changing",
       "status": "executable",
       "wp": "",
@@ -1972,6 +1982,16 @@
       "wp": "",
       "decision": "",
       "handler": ""
+    },
+    {
+      "extId": "cvwr/luke-cage",
+      "heroName": "Luke Cage",
+      "set": "cvwr",
+      "mechanic": "gain-wound-self",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self"
     },
     {
       "extId": "cvwr/patriot",
@@ -2277,11 +2297,11 @@
       "extId": "dkcy/colossus",
       "heroName": "Colossus",
       "set": "dkcy",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "gain-wound-self",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self"
     },
     {
       "extId": "dkcy/daredevil",
@@ -2642,6 +2662,16 @@
       "wp": "",
       "decision": "",
       "handler": ""
+    },
+    {
+      "extId": "ff04/human-torch",
+      "heroName": "Human Torch",
+      "set": "ff04",
+      "mechanic": "gain-wound-self",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self"
     },
     {
       "extId": "ff04/invisible-woman",
@@ -3427,11 +3457,11 @@
       "extId": "msp1/hulk",
       "heroName": "Hulk",
       "set": "msp1",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "gain-wound-each",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each"
     },
     {
       "extId": "msp1/iron-man",

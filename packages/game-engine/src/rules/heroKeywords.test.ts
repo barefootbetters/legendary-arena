@@ -62,12 +62,23 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 27 entries after the return-zero-cost-discard addition', () => {
+  it('HERO_KEYWORDS array has exactly 29 entries after the gain-wound-self/each addition', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      27,
-      'HERO_KEYWORDS must have exactly 27 entries (26 post-put-bottom-hq-icon-reward + return-zero-cost-discard)',
+      29,
+      'HERO_KEYWORDS must have exactly 29 entries (27 + gain-wound-self + gain-wound-each, D-24156)',
     );
+  });
+});
+
+describe('gain-wound-self / gain-wound-each keywords (WP-364 / EC-393 / D-24156)', () => {
+  it('both are registered in HERO_KEYWORDS', () => {
+    assert.ok(HERO_KEYWORDS.includes('gain-wound-self'), 'gain-wound-self must be in HERO_KEYWORDS');
+    assert.ok(HERO_KEYWORDS.includes('gain-wound-each'), 'gain-wound-each must be in HERO_KEYWORDS');
+  });
+
+  it('the generic wound keyword stays deferred (un-defer is two NEW keywords, never a loosening)', () => {
+    assert.ok(HERO_KEYWORDS.includes('wound'), 'the generic wound keyword must remain registered and deferred');
   });
 });
 

@@ -708,6 +708,33 @@
       "hidden": true
     },
     {
+      "slug": "gain-wound-each",
+      "label": "Gain Wound Each",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 3,
+      "cardIds": [
+        "3dtc/hulk",
+        "core/hulk",
+        "msp1/hulk"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "gain-wound-self",
+      "label": "Gain Wound Self",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 4,
+      "cardIds": [
+        "cvwr/hulkling",
+        "cvwr/luke-cage",
+        "dkcy/colossus",
+        "ff04/human-torch"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "heist",
       "label": "Heist",
       "scope": "hero",
@@ -1762,18 +1789,16 @@
       "label": "Unmarked",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 47,
+      "cardCount": 43,
       "cardIds": [
         "3dtc/deadpool",
         "3dtc/howard-the-duck",
-        "3dtc/hulk",
         "3dtc/man-thing",
         "amwp/scott-lang-cat-burglar",
         "amwp/wasp",
         "core/captain-america",
         "core/cyclops",
         "core/deadpool",
-        "core/hulk",
         "core/nick-fury",
         "core/rogue",
         "core/thor",
@@ -1785,12 +1810,10 @@
         "dims/howard-the-duck",
         "dkcy/angel",
         "dkcy/blade",
-        "dkcy/colossus",
         "dkcy/daredevil",
         "dkcy/professor-x",
         "gotg/groot",
         "msp1/captain-america",
-        "msp1/hulk",
         "msp1/nick-fury",
         "msp1/thor",
         "nmut/karma",
@@ -2093,7 +2116,7 @@
     },
     "3dtc/hulk": {
       "mechanics": [
-        "unmarked"
+        "gain-wound-each"
       ]
     },
     "3dtc/man-thing": {
@@ -2438,7 +2461,7 @@
     },
     "core/hulk": {
       "mechanics": [
-        "unmarked"
+        "gain-wound-each"
       ]
     },
     "core/iron-man": {
@@ -2568,12 +2591,14 @@
     },
     "cvwr/hulkling": {
       "mechanics": [
+        "gain-wound-self",
         "size-changing"
       ]
     },
     "cvwr/luke-cage": {
       "mechanics": [
-        "fortify"
+        "fortify",
+        "gain-wound-self"
       ]
     },
     "cvwr/patriot": {
@@ -2696,7 +2721,7 @@
     },
     "dkcy/colossus": {
       "mechanics": [
-        "unmarked"
+        "gain-wound-self"
       ]
     },
     "dkcy/daredevil": {
@@ -2828,7 +2853,8 @@
     },
     "ff04/human-torch": {
       "mechanics": [
-        "focus"
+        "focus",
+        "gain-wound-self"
       ]
     },
     "ff04/invisible-woman": {
@@ -3051,7 +3077,7 @@
     },
     "msp1/hulk": {
       "mechanics": [
-        "unmarked"
+        "gain-wound-each"
       ]
     },
     "msp1/iron-man": {

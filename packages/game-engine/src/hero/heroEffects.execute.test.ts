@@ -52,13 +52,16 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     );
   });
 
-  it('has exactly 14 handlers and none for the deferred keywords', () => {
+  it('has exactly 16 handlers and none for the deferred keywords', () => {
     // why: WP-286 / D-24069 added the draw-or-empowered park handler (9 → 10); the
     // Ionic Energy optional-put-bottom-hq fix added its park handler (10 → 11); D-24132
     // added the put-any-number-bottom-hq park handler (11 → 12); D-24133 added the
     // put-bottom-hq-icon-reward park handler (12 → 13); D-24139 added the
-    // return-zero-cost-discard park handler (13 → 14).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 14);
+    // return-zero-cost-discard park handler (13 → 14); D-24156 / WP-364 registered the
+    // one shared gain-wound handler under both gain-wound-self and gain-wound-each (14 → 16).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 16);
+    // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
+    // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
     assert.equal(HERO_EFFECT_HANDLERS['conditional'], undefined);
   });
@@ -169,6 +172,10 @@ function makeTestState(overrides?: {
       recruit: overrides?.turnEconomyRecruit ?? 0,
       spentAttack: 0,
       spentRecruit: 0,
+      // why: woundsDrawn is a required TurnEconomy field (economy.types.ts) the
+      // mock previously omitted; the gain-wound handler (WP-364) bumps it, matching
+      // the villain gain-wound path. Initialized to 0 as resetTurnEconomy does.
+      woundsDrawn: 0,
     },
     cardStats: overrides?.cardStats ?? {},
     mastermind: {
@@ -3557,5 +3564,87 @@ describe('executeHeroEffects return-zero-cost-discard park (D-24139)', () => {
 
     assert.equal(gameState.pendingReturnZeroCostDiscard?.length ?? 0, 0, 'nothing parked on an empty discard');
     assert.equal(gameState.messages.length, 1, 'exactly one explanatory log line');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// gain-wound-self / gain-wound-each — plain "gain a Wound" family (WP-364 / D-24156)
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects — gain-wound-self / gain-wound-each (WP-364 / D-24156)', () => {
+  const mockCtx = makeMockCtx();
+
+  it('gain-wound-self moves one Wound into the active player discard and bumps woundsDrawn', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['gain-wound-self'], effects: [{ type: 'gain-wound-self' }] },
+      ],
+    });
+    gameState.piles.wounds = ['pile-wound', 'pile-wound'];
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x');
+
+    assert.equal(gameState.piles.wounds.length, 1, 'one Wound leaves the supply');
+    assert.deepEqual(gameState.playerZones['0'].discard, ['pile-wound'], 'the Wound enters the active player discard');
+    assert.equal(gameState.turnEconomy.woundsDrawn, 1, 'woundsDrawn bumps for the active player');
+  });
+
+  it('gain-wound-each wounds every player and drops the supply by the player count', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['gain-wound-each'], effects: [{ type: 'gain-wound-each' }] },
+      ],
+    });
+    gameState.piles.wounds = ['pile-wound', 'pile-wound'];
+    gameState.playerZones['1'] = { deck: [], hand: [], discard: [], inPlay: [], victory: [] };
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x');
+
+    assert.equal(gameState.piles.wounds.length, 0, 'two Wounds leave the supply');
+    assert.equal(gameState.playerZones['0'].discard.length, 1, 'player 0 gains a Wound');
+    assert.equal(gameState.playerZones['1'].discard.length, 1, 'player 1 gains a Wound');
+    assert.equal(gameState.turnEconomy.woundsDrawn, 1, 'woundsDrawn bumps only for the active player');
+  });
+
+  it('empty Wound supply is a logged no-op, never a throw', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['gain-wound-each'], effects: [{ type: 'gain-wound-each' }] },
+      ],
+    });
+    gameState.piles.wounds = [];
+
+    assert.doesNotThrow(() => executeHeroEffects(gameState, mockCtx, '0', 'hero-x'));
+    assert.equal(gameState.playerZones['0'].discard.length, 0, 'no Wound gained from an empty supply');
+    assert.ok(
+      gameState.messages.some((line) => line.includes('Wound supply is empty')),
+      'an empty-supply line is logged so the no-op is observable',
+    );
+  });
+
+  it('appends a summary log line and leaves G JSON-serializable', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['gain-wound-self'], effects: [{ type: 'gain-wound-self' }] },
+      ],
+    });
+    gameState.piles.wounds = ['pile-wound'];
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x');
+
+    assert.ok(gameState.messages.some((line) => line.includes('gained a Wound')), 'a summary log line is emitted');
+    assert.doesNotThrow(() => JSON.stringify(gameState), 'G stays JSON-serializable');
+  });
+
+  it('both keywords are handled; the generic wound keyword stays deferred (un-defer is two NEW keywords)', () => {
+    assert.ok(HANDLED_KEYWORDS.has('gain-wound-self'), 'gain-wound-self is a handled keyword');
+    assert.ok(HANDLED_KEYWORDS.has('gain-wound-each'), 'gain-wound-each is a handled keyword');
+    assert.equal(typeof HERO_EFFECT_HANDLERS['gain-wound-self'], 'function', 'gain-wound-self has a handler');
+    assert.equal(typeof HERO_EFFECT_HANDLERS['gain-wound-each'], 'function', 'gain-wound-each has a handler');
+    assert.ok(!HANDLED_KEYWORDS.has('wound'), 'the generic wound keyword remains unhandled (deferred)');
   });
 });

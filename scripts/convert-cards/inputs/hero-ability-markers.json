@@ -13,7 +13,8 @@
   ],
   "3dtc": [
     { "heroSlug": "black-widow", "cardSlug": "mission-accomplished", "abilityIndex": 1, "markupToken": "[keyword:rescue:1]" },
-    { "heroSlug": "black-widow", "cardSlug": "mission-accomplished", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" }
+    { "heroSlug": "black-widow", "cardSlug": "mission-accomplished", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" },
+    { "heroSlug": "hulk", "cardSlug": "crazed-rampage", "abilityIndex": 0, "markupToken": "[keyword:gain-wound-each]" }
   ],
   "ca75": [
     { "heroSlug": "captain-america-1941", "cardSlug": "liberate-the-prisoners", "abilityIndex": 0, "markupToken": "[keyword:rescue:1]" },
@@ -44,7 +45,8 @@
     { "heroSlug": "storm", "cardSlug": "gathering-stormclouds", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" },
     { "heroSlug": "wolverine", "cardSlug": "berserker-rage", "abilityIndex": 0, "markupToken": "[keyword:draw:3]" },
     { "heroSlug": "wolverine", "cardSlug": "frenzied-slashing", "abilityIndex": 0, "markupToken": "[keyword:draw:2]" },
-    { "heroSlug": "wolverine", "cardSlug": "keen-senses", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" }
+    { "heroSlug": "wolverine", "cardSlug": "keen-senses", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" },
+    { "heroSlug": "hulk", "cardSlug": "crazed-rampage", "abilityIndex": 0, "markupToken": "[keyword:gain-wound-each]" }
   ],
   "cosm": [
     { "heroSlug": "ronan-the-accuser", "cardSlug": "rally-kree-warriors", "abilityIndex": 1, "markupToken": "[keyword:rescue:1]" },
@@ -66,7 +68,9 @@
     { "heroSlug": "storm-black-panther", "cardSlug": "gathering-rain-clouds", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" },
     { "heroSlug": "tigra", "cardSlug": "ferocity", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" },
     { "heroSlug": "wiccan", "cardSlug": "supersonic-speed", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" },
-    { "heroSlug": "wiccan", "cardSlug": "supersonic-spells", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" }
+    { "heroSlug": "wiccan", "cardSlug": "supersonic-spells", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" },
+    { "heroSlug": "hulkling", "cardSlug": "half-kree", "abilityIndex": 1, "markupToken": "[keyword:gain-wound-self]" },
+    { "heroSlug": "luke-cage", "cardSlug": "reckless", "abilityIndex": 0, "markupToken": "[keyword:gain-wound-self]" }
   ],
   "dkcy": [
     { "heroSlug": "jean-grey", "cardSlug": "psychic-search", "abilityIndex": 0, "markupToken": "[keyword:rescue:1]" },
@@ -79,7 +83,8 @@
     { "heroSlug": "iron-fist", "cardSlug": "ancient-legacy", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" },
     { "heroSlug": "punisher", "cardSlug": "boom-goes-the-dynamite", "abilityIndex": 1, "markupToken": "[keyword:draw:1]" },
     { "heroSlug": "wolverine", "cardSlug": "animal-instincts", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" },
-    { "heroSlug": "wolverine", "cardSlug": "no-mercy", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" }
+    { "heroSlug": "wolverine", "cardSlug": "no-mercy", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" },
+    { "heroSlug": "colossus", "cardSlug": "draw-their-fire", "abilityIndex": 0, "markupToken": "[keyword:gain-wound-self]" }
   ],
   "msis": [
     { "heroSlug": "wanda-vision", "cardSlug": "witchcraft", "abilityIndex": 0, "markupToken": "[keyword:reveal-odd-draw]" },
@@ -92,7 +97,8 @@
     { "heroSlug": "black-widow", "cardSlug": "mission-accomplished", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" },
     { "heroSlug": "hawkeye", "cardSlug": "quick-draw", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" },
     { "heroSlug": "iron-man", "cardSlug": "endless-invention", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" },
-    { "heroSlug": "iron-man", "cardSlug": "quantum-breakthrough", "abilityIndex": 0, "markupToken": "[keyword:draw:2]" }
+    { "heroSlug": "iron-man", "cardSlug": "quantum-breakthrough", "abilityIndex": 0, "markupToken": "[keyword:draw:2]" },
+    { "heroSlug": "hulk", "cardSlug": "crazed-rampage", "abilityIndex": 0, "markupToken": "[keyword:gain-wound-each]" }
   ],
   "smhc": [
     { "heroSlug": "high-tech-spider-man", "cardSlug": "advanced-targeting-system", "abilityIndex": 0, "markupToken": "[keyword:reveal:2]" },
@@ -159,7 +165,8 @@
     { "heroSlug": "ancient-one-the", "cardSlug": "teachings-of-kamar-taj", "abilityIndex": 0, "markupToken": "[keyword:draw:2]" }
   ],
   "ff04": [
-    { "heroSlug": "mr-fantastic", "cardSlug": "unstable-molecules", "abilityIndex": 0, "markupToken": "[keyword:draw:2]" }
+    { "heroSlug": "mr-fantastic", "cardSlug": "unstable-molecules", "abilityIndex": 0, "markupToken": "[keyword:draw:2]" },
+    { "heroSlug": "human-torch", "cardSlug": "hothead", "abilityIndex": 0, "markupToken": "[keyword:gain-wound-self]" }
   ],
   "mgtg": [
     { "heroSlug": "gamora", "cardSlug": "forgive", "abilityIndex": 0, "markupToken": "[keyword:draw:1]" },
