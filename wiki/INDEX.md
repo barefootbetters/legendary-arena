@@ -3,7 +3,9 @@
 > **41 / 50** entity pages.
 > Last regenerated: 2026-07-09.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
-> [README.md](README.md) for purpose, conventions, and authority.
+> [README.md](README.md) for purpose, conventions, and authority —
+> including [§ Tradeoffs](README.md#tradeoffs) on what the LLM-wiki
+> pattern buys and costs.
 
 ---
 
