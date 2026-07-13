@@ -255,33 +255,12 @@
       "label": "Cyber-Mod",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 3,
+      "cardCount": 4,
       "cardIds": [
         "2099/doctor-doom-2099",
         "2099/ghost-rider-2099",
+        "2099/hulk-2099",
         "2099/spider-man-2099"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "cyber-mod-4-wounds",
-      "label": "Cyber-Mod: 4 Wounds",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 1,
-      "cardIds": [
-        "2099/hulk-2099"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "cyber-mod-wound",
-      "label": "Cyber-Mod Wound",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 1,
-      "cardIds": [
-        "2099/hulk-2099"
       ],
       "hidden": true
     },
@@ -1288,28 +1267,6 @@
       "hidden": true
     },
     {
-      "slug": "soulbind-a-bystander-or-villain",
-      "label": "Soulbind A Bystander Or Villain",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 1,
-      "cardIds": [
-        "wtif/doctor-strange-supreme"
-      ],
-      "hidden": true
-    },
-    {
-      "slug": "soulbind-six-villains",
-      "label": "Soulbind Six Villains",
-      "scope": "hero",
-      "source": "free-text",
-      "cardCount": 1,
-      "cardIds": [
-        "wtif/gamora-destroyer-of-thanos"
-      ],
-      "hidden": true
-    },
-    {
       "slug": "speak",
       "label": "Speak",
       "scope": "hero",
@@ -1840,8 +1797,7 @@
     },
     "2099/hulk-2099": {
       "mechanics": [
-        "cyber-mod-4-wounds",
-        "cyber-mod-wound",
+        "cyber-mod",
         "fated-future",
         "undercover"
       ]
@@ -3431,7 +3387,6 @@
       "mechanics": [
         "draw",
         "soulbind",
-        "soulbind-a-bystander-or-villain",
         "what-if"
       ]
     },
@@ -3439,7 +3394,6 @@
       "mechanics": [
         "draw",
         "soulbind",
-        "soulbind-six-villains",
         "what-if"
       ]
     },

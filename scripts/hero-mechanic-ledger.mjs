@@ -195,12 +195,22 @@ function reduceParameterizedKeyword(name) {
 // (base once-per-turn passive vs reactive discard-for-effect vs a throw action vs a
 // triggered ability), so implementing one does NOT clear the others — they are four
 // separate worklist targets, not a parameterized family (verified 2026-07-13).
+//
+// why (cyber-mod, soulbind — verified 2026-07-13): both are ONE keyword parameterized by
+// an axis. Cyber-Mod is an adaptive tiered ability — `[keyword:Cyber-Mod] [hc:X]: effect`,
+// `Cyber-Mod Wound: +1 attack per Wound`, `Cyber-Mod 4 Wounds: instead +2 attack` — the
+// parameter is the scaling source (classes / wounds / threshold). Soulbind is `Soulbind
+// <target>: <effect>` (a Bystander / a Villain / six Villains / another Villain / Arnim
+// Zola…), the parameter is the bound target — the same shape as Patrol, NOT the Artifact
+// case. Implementing each keyword once clears every variant, so they fold by prefix.
 const MECHANIC_FAMILY_RULES = [
   { pattern: /^patrol(-|$)/, canonical: 'patrol' },
   { pattern: /(^|-)conqueror$/, canonical: 'conqueror' },
   { pattern: /cross-dimensional.*rampage/, canonical: 'cross-dimensional-rampage' },
   { pattern: /^burn-.+-shards$/, canonical: 'burn-shards' },
   { pattern: /out-of-time$/, canonical: 'out-of-time' },
+  { pattern: /^cyber-mod(-|$)/, canonical: 'cyber-mod' },
+  { pattern: /^soulbind(-|$)/, canonical: 'soulbind' },
 ];
 
 /**
@@ -213,11 +223,21 @@ const MECHANIC_FAMILY_RULES = [
  * and the family fold right-sizes the worklist so "implement Patrol once" reads as one row, not
  * twelve. Applied only in the ledger; the card data and its player-facing display are untouched.
  *
+ * why (quote strip): a marker that QUOTES a referenced term — `[keyword:"When Recruited"
+ * Abilities]`, `[keyword:Revenge for Deadpool's "Friends"]` — leaves stray delimiter quotes
+ * MID-slug that the leading/trailing punctuation strip cannot reach (`when-recruited"-abilities`).
+ * Strip double-quote characters (straight and curly) anywhere in the slug. Apostrophes are
+ * DELIBERATELY spared — they are part of the word (`don't-speak`, `killmonger's-wounds`), and
+ * stripping them would read as a typo.
+ *
  * @param {string} name - a normalized, keyword-reduced mechanic name.
- * @returns {string} the canonical family slug, or the punctuation-stripped name when no family matches.
+ * @returns {string} the canonical family slug, or the cleaned name when no family matches.
  */
 function foldMechanicFamily(name) {
-  const stripped = name.replace(/^[^a-z0-9]+/, '').replace(/[^a-z0-9]+$/, '');
+  const stripped = name
+    .replace(/["“”]/g, '')
+    .replace(/^[^a-z0-9]+/, '')
+    .replace(/[^a-z0-9]+$/, '');
   for (const rule of MECHANIC_FAMILY_RULES) {
     if (rule.pattern.test(stripped)) {
       return rule.canonical;

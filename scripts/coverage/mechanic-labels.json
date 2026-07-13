@@ -4,8 +4,6 @@
   "mechanics": {
     "berserk": { "label": "Berserk", "hidden": false },
     "cyber-mod": { "label": "Cyber-Mod", "hidden": true },
-    "cyber-mod-4-wounds": { "label": "Cyber-Mod: 4 Wounds", "hidden": true },
-    "cyber-mod-wound": { "label": "Cyber-Mod Wound", "hidden": true },
     "draw": { "label": "Draw", "hidden": false },
     "empowered": { "label": "Empowered", "hidden": false },
     "rescue": { "label": "Rescue", "hidden": false },
