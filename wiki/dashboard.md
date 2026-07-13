@@ -26,6 +26,10 @@ source:
   - ../apps/dashboard/src/router/index.ts
   - ../apps/dashboard/src/services/mocks.ts
   - ../apps/dashboard/src/services/analyticsLiveFetchers.ts
+  - ../apps/dashboard/src/services/api.ts
+  - ../apps/dashboard/src/services/endpoints.ts
+  - ../apps/dashboard/src/pages/players/PlayerAnalyticsPage.vue
+  - ../apps/server/src/analytics/analytics.routes.ts
   - ../apps/dashboard/src/auth/hankoClient.ts
   - ../apps/dashboard/src/main.ts
   - ../.github/workflows/ci.yml
@@ -94,13 +98,46 @@ except `/login` sits behind an authenticated `AppLayout`:
 | `/overview` | `OverviewPage` | Morning glance — KPI strip, funnel, revenue, governance |
 | `/vision` | `VisionRoadmapPage` | Build vision + dated roadmap |
 | `/coverage` | `CoveragePage` | Hero-mechanic + in-play effect coverage |
-| `/players` | `PlayerAnalyticsPage` | Traffic sources, activation funnel, retention cohorts |
+| `/players` | `PlayerAnalyticsPage` | A player-records table + traffic-sources, activation-funnel, retention-cohorts trend widgets (see [Data provenance](#the-players-page-data-provenance-and-what-it-is-not)) |
 | `/monetization` | `MonetizationPage` | Revenue, net revenue, paid-action errors |
 | `/gameplay` | `GameplayPage` | Match / gameplay analytics |
 | `/system` | `SystemHealthPage` | Server status, error rate, ops-at-a-glance |
 | `/pipeline` | `PipelinePage` | Governance throughput, sweep health, inspection triage |
 | `/debug` | `DebugPage` | Feature flags / diagnostic surface |
 | `/login` | `LoginPage` | Hanko sign-in (the only unauthenticated route) |
+
+### The `/players` page: data provenance (and what it is NOT)
+
+The name is misleading, so it is worth stating plainly: **`/players`
+([`PlayerAnalyticsPage`](../apps/dashboard/src/pages/players/PlayerAnalyticsPage.vue))
+is an acquisition/retention *analytics* view. It is not a directory of players,
+and it has no connection to the friends-invite / lobby flow.** The page carries
+two independent feeds, wired through two different HTTP clients:
+
+| Feed on the page | Client | Live URL | Backed by |
+|---|---|---|---|
+| Traffic-sources, activation-funnel, retention-cohorts trend widgets | [`analyticsLiveFetchers.ts`](../apps/dashboard/src/services/analyticsLiveFetchers.ts) (via the `mocks.ts` `fetch*` aliases) | `${VITE_API_BASE_URL}/api/analytics/{traffic-sources,activation-funnel,retention-cohorts}` | **Real server routes** in [`apps/server/src/analytics/analytics.routes.ts`](../apps/server/src/analytics/analytics.routes.ts), reading the `legendary.analytics_events` table (session/UTM acquisition telemetry, per D-20501) |
+| The player-records table (`fetchPlayerRecords` — handle, last-active, etc.) | [`endpoints.ts`](../apps/dashboard/src/services/endpoints.ts) → the axios `apiClient` ([`api.ts`](../apps/dashboard/src/services/api.ts), default base `…/api/dash`) | `${VITE_API_BASE_URL}/players` (`/api/dash/players` by default) | **No server route** — nothing under `/api/dash/*` is registered in `apps/server`. This feed is **mock-only** in practice ([`mockPlayerRecords()`](../apps/dashboard/src/services/mocks.ts) returns synthetic names like *"Alice Chen"*); a live call would 404. |
+
+So the two clients even disagree on the base-URL convention (`analyticsLiveFetchers`
+appends the full `/api/analytics/…` path to the server root; `apiClient` appends
+bare `/players` to an `…/api/dash` base). Only the `/api/analytics/*` family has a
+server implementation today — the whole `endpoints.ts` family (`/kpis`, `/players`,
+`/matches`, `/revenue`, `/alerts`, `/system/nodes`, `/metrics/*`) is unbuilt
+server-side and stays mock, consistent with the dashboard being **largely Phase 1
+(structure with mock data)** (see [Operating model](#operating-model-design-intent)).
+
+**Why it is *not* the friends-invite / lobby flow.** That flow — friend
+requests, match invites, the pre-match "Waiting for players" panel — lives in a
+**different app and backend**: the play server (`apps/server`) operating on the
+`legendary.friendships` / `match_invites` / `match_seat_accounts` / `players`
+domain tables via `/api/me/friends*`, `/api/match/invites`, and
+`/api/me/match-invites*`, surfaced on `play.legendary-arena.com` (the arena
+client; see [Profile Login](profile-login.md) §Friends & Ranked Trust). The
+dashboard reads **none** of those tables or endpoints. The only friends/invite
+strings anywhere in `apps/dashboard` are merged Work-Packet titles in the
+build-time [`governance-snapshot.json`](../apps/dashboard/src/data/governance-snapshot.json)
+(the Pipeline/governance view) — build history, not a runtime data connection.
 
 ### Mock-mode-first (the LIVE flip seam)
 
