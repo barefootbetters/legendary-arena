@@ -15,6 +15,7 @@ import {
   fetchMatchInvites,
   acceptMatchInvite,
   declineMatchInvite,
+  inviteFriendToMatch,
   type MatchInviteView,
   type MatchInviteApiErrorCode,
 } from '../lib/api/matchInvitesApi';
@@ -26,6 +27,7 @@ export interface UseMatchInvites {
   load(): Promise<void>;
   accept(matchId: string): Promise<boolean>;
   decline(matchId: string): Promise<boolean>;
+  invite(matchId: string, handle: string): Promise<boolean>;
 }
 
 /**
@@ -84,5 +86,20 @@ export function useMatchInvites(
     return true;
   }
 
-  return { invites, isLoading, errorCode, load, accept, decline };
+  /**
+   * Invite the friend `handle` into `matchId` (the inviter-side trigger, WP-366).
+   * Returns true on success, false on failure (with `errorCode` set). Does NOT
+   * touch the invitee list — this is the sending side, not the receiving side.
+   */
+  async function invite(matchId: string, handle: string): Promise<boolean> {
+    errorCode.value = null;
+    const result = await inviteFriendToMatch(readAuthToken(), matchId, handle);
+    if (result.ok === false) {
+      errorCode.value = result.code;
+      return false;
+    }
+    return true;
+  }
+
+  return { invites, isLoading, errorCode, load, accept, decline, invite };
 }

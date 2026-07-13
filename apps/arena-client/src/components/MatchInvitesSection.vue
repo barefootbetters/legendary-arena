@@ -2,6 +2,8 @@
 import { defineComponent, onMounted, ref, type PropType } from 'vue';
 
 import { useMatchInvites } from '../composables/useMatchInvites';
+import { listMatches, joinMatch } from '../lobby/lobbyApi';
+import { joinMatchFromInvite } from '../lib/joinMatchFromInvite';
 import type {
   MatchInviteApiErrorCode,
   MatchInviteView,
@@ -28,6 +30,20 @@ function inviteMessageForCode(code: MatchInviteApiErrorCode | null): string {
   return 'Something went wrong. Please try again.';
 }
 
+/**
+ * Full-sentence line for a join-from-invite failure reason (WP-366). Co-op
+ * framing, no PvP language (§23(b)).
+ */
+function joinFailureMessage(reason: 'not_joinable' | 'full' | 'error'): string {
+  if (reason === 'not_joinable') {
+    return 'That game is no longer available to join.';
+  }
+  if (reason === 'full') {
+    return 'That game is already full.';
+  }
+  return 'Couldn’t join the game — please try again.';
+}
+
 export default defineComponent({
   name: 'MatchInvitesSection',
   props: {
@@ -35,20 +51,56 @@ export default defineComponent({
       type: [String, null] as unknown as PropType<string | null>,
       required: true,
     },
+    // why: the display name to show for the joined seat (the lobby requires a
+    // non-empty name). Sourced from the owner profile by the parent page; a
+    // signed-in player always has a NOT-NULL display_name, so '' only occurs
+    // before the profile loads (guarded before the join).
+    playerName: {
+      type: String,
+      default: '',
+    },
   },
   setup(props) {
     const { invites, isLoading, errorCode, load, accept, decline } =
       useMatchInvites(() => props.authToken);
 
-    // why: the seat-selecting join is a deferred follow-on (it needs the
-    // lobby's seat + credentials flow). On accept we surface the matchId and
-    // hand the player off to the Lobby to complete the join.
-    const acceptedMatchId = ref<string | null>(null);
+    // why: WP-366 — a join-from-invite status line (replaces the WP-360 Lobby
+    // hand-off). Set only when the post-accept join can't complete.
+    const joinMessage = ref<string | null>(null);
 
+    /**
+     * Accept the invite, then join its match: find the first open seat via the
+     * lobby `listMatches` and `joinMatch`, and navigate into play. A gone / full
+     * match or a join failure surfaces an inline line instead of navigating.
+     */
     async function onAccept(invite: MatchInviteView): Promise<void> {
-      const ok = await accept(invite.matchId);
-      if (ok === true) {
-        acceptedMatchId.value = invite.matchId;
+      joinMessage.value = null;
+      const accepted = await accept(invite.matchId);
+      if (accepted !== true) {
+        // why: the accept itself failed — errorCode already drives the message.
+        return;
+      }
+      const authToken = props.authToken;
+      if (authToken === null) {
+        joinMessage.value = 'Please sign in again to join this game.';
+        return;
+      }
+      const result = await joinMatchFromInvite(
+        invite.matchId,
+        props.playerName,
+        authToken,
+        {
+          listMatches,
+          joinMatch,
+          // why: navigation is injected so the orchestration stays testable; in
+          // production it sets the browser query, exactly like the lobby's join.
+          navigate: (query: string) => {
+            window.location.search = query;
+          },
+        },
+      );
+      if (result.ok === false) {
+        joinMessage.value = joinFailureMessage(result.reason);
       }
     }
 
@@ -64,7 +116,7 @@ export default defineComponent({
       invites,
       isLoading,
       errorCode,
-      acceptedMatchId,
+      joinMessage,
       onAccept,
       onDecline,
       inviteMessageForCode,
@@ -77,8 +129,7 @@ export default defineComponent({
   <section class="match-invites-section" data-testid="match-invites-section">
     <h2>Game invites</h2>
     <p class="match-invites-help">
-      Friends can invite you into a game. Accept one, then join it from the
-      <strong>Lobby</strong>.
+      Friends can invite you into a game. Accept one to jump straight in.
     </p>
 
     <p
@@ -90,12 +141,11 @@ export default defineComponent({
     </p>
 
     <p
-      v-if="acceptedMatchId !== null"
-      class="match-invites-accepted"
-      data-testid="match-invites-accepted"
+      v-if="joinMessage !== null"
+      class="match-invites-error"
+      data-testid="match-invites-join-status"
     >
-      Invite accepted. Join match
-      <code>{{ acceptedMatchId }}</code> from the Lobby to start playing.
+      {{ joinMessage }}
     </p>
 
     <p
@@ -166,11 +216,6 @@ export default defineComponent({
 .match-invites-error {
   font-size: 0.875rem;
   color: #b3261e;
-  margin: 0;
-}
-
-.match-invites-accepted {
-  font-size: 0.875rem;
   margin: 0;
 }
 

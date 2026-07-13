@@ -1124,7 +1124,10 @@ export default defineComponent({
       <section class="profile-friends">
         <FriendsSection :auth-token="readAuthToken()" />
 
-        <MatchInvitesSection :auth-token="readAuthToken()" />
+        <MatchInvitesSection
+          :auth-token="readAuthToken()"
+          :player-name="view?.displayName ?? view?.handleCanonical ?? ''"
+        />
       </section>
 
       <section class="profile-billing">
