@@ -68,6 +68,8 @@ const {
   isValid,
   requiredVillainGroupIds,
   missingRequiredVillainGroupIds,
+  requiredPlayerCountSetup,
+  playerCountCompositionMismatches,
   setScheme,
   setMastermind,
   addVillainGroup,
@@ -265,7 +267,11 @@ function onDownload(): void {
   // document (e.g. a theme prefill with an unresolved bare slug, D-24018) or a
   // loadout missing a mastermind's Always-Leads villain group from being
   // downloaded, should the template binding ever be bypassed.
-  if (!isValid.value || missingRequiredVillainGroupIds.value.length > 0) {
+  if (
+    !isValid.value ||
+    missingRequiredVillainGroupIds.value.length > 0 ||
+    playerCountCompositionMismatches.value.length > 0
+  ) {
     return;
   }
   const blob = exportToJsonBlob();
@@ -280,7 +286,11 @@ function onDownload(): void {
 }
 
 function onDownloadLagn(): void {
-  if (!lagnExportApi.isValid.value || missingRequiredVillainGroupIds.value.length > 0) {
+  if (
+    !lagnExportApi.isValid.value ||
+    missingRequiredVillainGroupIds.value.length > 0 ||
+    playerCountCompositionMismatches.value.length > 0
+  ) {
     return;
   }
   const blob = lagnExportApi.exportToJsonBlob();
@@ -508,6 +518,29 @@ function slotLabel(slot: PickerSlot): string {
           />
         </label>
 
+        <p
+          v-if="requiredPlayerCountSetup"
+          class="player-count-requirements"
+          data-testid="player-count-requirements"
+        >
+          For a {{ draft.playerCount }}-player match:
+          {{ requiredPlayerCountSetup.villainGroupCount }} villain groups,
+          {{ requiredPlayerCountSetup.henchmenGroupCount }} henchmen groups,
+          {{ requiredPlayerCountSetup.heroCount }} heroes,
+          {{ requiredPlayerCountSetup.villainDeckBystanderCount }} villain-deck bystanders.
+        </p>
+        <ul
+          v-if="playerCountCompositionMismatches.length > 0"
+          class="requirement-warning player-count-warnings"
+          data-testid="player-count-warnings"
+          role="alert"
+        >
+          <li v-for="mismatch in playerCountCompositionMismatches" :key="mismatch.field">
+            A {{ draft.playerCount }}-player match needs {{ mismatch.required }}
+            {{ mismatch.label }} — this loadout has {{ mismatch.actual }}.
+          </li>
+        </ul>
+
         <label class="field seed-field">
           <span class="field-label">Seed (16-hex opaque)</span>
           <div class="seed-row">
@@ -663,7 +696,7 @@ function slotLabel(slot: PickerSlot): string {
             type="button"
             class="primary-btn"
             @click="onDownload"
-            :disabled="!isValid || missingRequiredVillainGroupIds.length > 0"
+            :disabled="!isValid || missingRequiredVillainGroupIds.length > 0 || playerCountCompositionMismatches.length > 0"
           >
             ⬇ Download MATCH-SETUP
           </button>
@@ -671,7 +704,7 @@ function slotLabel(slot: PickerSlot): string {
             type="button"
             class="primary-btn"
             @click="onDownloadLagn"
-            :disabled="!isValid || !lagnExportApi.isValid.value || missingRequiredVillainGroupIds.length > 0"
+            :disabled="!isValid || !lagnExportApi.isValid.value || missingRequiredVillainGroupIds.length > 0 || playerCountCompositionMismatches.length > 0"
           >
             ⬇ Download LAGN
           </button>

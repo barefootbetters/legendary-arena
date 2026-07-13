@@ -242,6 +242,71 @@ describe("useLoadoutDraft prefillFromTheme — ext_id resolution (D-24018)", () 
   });
 });
 
+describe("useLoadoutDraft — player-count setup requirements (WP-372 / D-24165)", () => {
+  it("requiredPlayerCountSetup returns the row for the draft's player count", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.setPlayerCount(3);
+    assert.equal(api.requiredPlayerCountSetup.value?.villainGroupCount, 3);
+    assert.equal(api.requiredPlayerCountSetup.value?.heroCount, 5);
+    api.setPlayerCount(5);
+    assert.equal(api.requiredPlayerCountSetup.value?.heroCount, 6);
+    assert.equal(api.requiredPlayerCountSetup.value?.villainDeckBystanderCount, 12);
+  });
+
+  it("requiredPlayerCountSetup is undefined for an out-of-range player count", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.setPlayerCount(9);
+    assert.equal(api.requiredPlayerCountSetup.value, undefined);
+  });
+
+  it("flags composition-count mismatches on a fresh draft and clears them when matched", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.setPlayerCount(1); // 1 villain / 1 henchman / 3 heroes
+    // a fresh draft has an empty composition → every count is short
+    assert.ok(
+      api.playerCountCompositionMismatches.value.length > 0,
+      "an empty composition must mismatch the player count",
+    );
+
+    api.prefillFromTheme(
+      makeTheme(
+        makeSetupIntent({
+          villainGroupIds: ["brotherhood"],
+          henchmanGroupIds: ["sentinel"],
+          heroDeckIds: ["spider-man", "wolverine", "storm"],
+        }),
+      ),
+    );
+
+    assert.deepEqual(api.playerCountCompositionMismatches.value, []);
+  });
+
+  it("reports required and actual counts and is reactive to the player count", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.prefillFromTheme(
+      makeTheme(
+        makeSetupIntent({
+          villainGroupIds: ["brotherhood"],
+          henchmanGroupIds: ["sentinel"],
+          heroDeckIds: ["spider-man", "wolverine", "storm"],
+        }),
+      ),
+    );
+    api.setPlayerCount(1);
+    assert.deepEqual(api.playerCountCompositionMismatches.value, []); // matches 1 player
+
+    api.setPlayerCount(2); // needs 2 villain / 1 henchman / 5 heroes
+    const byField = Object.fromEntries(
+      api.playerCountCompositionMismatches.value.map((mismatch) => [mismatch.field, mismatch]),
+    );
+    assert.equal(byField["villainGroupIds"]?.required, 2);
+    assert.equal(byField["villainGroupIds"]?.actual, 1);
+    assert.equal(byField["heroDeckIds"]?.required, 5);
+    assert.equal(byField["heroDeckIds"]?.actual, 3);
+    assert.equal(byField["henchmanGroupIds"], undefined, "one henchman still satisfies 2 players");
+  });
+});
+
 // A registry whose core/magneto mastermind carries an Always-Leads clause
 // (Magneto Always Leads the Brotherhood), plus a cross-set case: an
 // xmen/magneto mastermind that also leads "brotherhood", with a same-set
