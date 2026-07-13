@@ -29,7 +29,7 @@ source:
   - ../apps/dashboard/src/auth/hankoClient.ts
   - ../apps/dashboard/src/main.ts
   - ../.github/workflows/ci.yml
-last-reviewed: 2026-07-09
+last-reviewed: 2026-07-13
 ---
 
 # Dashboard
@@ -45,6 +45,16 @@ Control) so the operator can answer one question — *"what single thing do I
 fix first today?"* It is **mock-mode-first**: every metric feed renders
 synthetic data by default and flips to a live API source only when the deploy
 environment enables it.
+
+> **Before trusting any number on the live dashboard:** no site-analytics
+> platform is wired yet (Cloudflare Web Analytics / Plausible for traffic,
+> Search Console for SEO all remain TODO), so threshold widgets stay in
+> **no-data / mock mode** and mock-mode-first is the default posture. And
+> *which* feeds have actually flipped **LIVE** in production is
+> **deploy-environment state, not visible from this repo or this page** — check
+> the Cloudflare Pages project env (`VITE_USE_MOCKS` / `VITE_API_BASE_URL`)
+> rather than assuming a page is showing real data. Full detail in
+> [§Open Questions](#open-questions) below.
 
 ## Mechanics
 
