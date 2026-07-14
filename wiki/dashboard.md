@@ -119,13 +119,17 @@ two independent feeds, wired through two different HTTP clients:
 | Traffic-sources, activation-funnel, retention-cohorts trend widgets | [`analyticsLiveFetchers.ts`](../apps/dashboard/src/services/analyticsLiveFetchers.ts) (via the `mocks.ts` `fetch*` aliases) | `${VITE_API_BASE_URL}/api/analytics/{traffic-sources,activation-funnel,retention-cohorts}` | **Real server routes** in [`apps/server/src/analytics/analytics.routes.ts`](../apps/server/src/analytics/analytics.routes.ts), reading the `legendary.analytics_events` table (session/UTM acquisition telemetry, per D-20501) |
 | The player-records table (`fetchPlayerRecords` — handle, last-active, etc.) | [`endpoints.ts`](../apps/dashboard/src/services/endpoints.ts) → the axios `apiClient` ([`api.ts`](../apps/dashboard/src/services/api.ts), default base `…/api/dash`) | `${VITE_API_BASE_URL}/players` (`/api/dash/players` by default) | **No server route** — nothing under `/api/dash/*` is registered in `apps/server`. This feed is **mock-only** in practice ([`mockPlayerRecords()`](../apps/dashboard/src/services/mocks.ts) returns synthetic names like *"Alice Chen"*); a live call would 404. |
 
-So the two clients even disagree on the base-URL convention (`analyticsLiveFetchers`
-appends the full `/api/analytics/…` path to the server root; `apiClient` appends
-bare `/players` to an `…/api/dash` base). Only the `/api/analytics/*` family has a
-server implementation today — the whole `endpoints.ts` family (`/kpis`, `/players`,
-`/matches`, `/revenue`, `/alerts`, `/system/nodes`, `/metrics/*`) is unbuilt
-server-side and stays mock, consistent with the dashboard being **largely Phase 1
-(structure with mock data)** (see [Operating model](#operating-model-design-intent)).
+Both clients now share **one base-URL convention** (aligned 2026-07-13): the
+`VITE_API_BASE_URL` is the API **server root** (e.g. `https://api.legendary-arena.com`),
+and every call passes an **absolute** path — `analyticsLiveFetchers` builds
+`/api/analytics/…`, and `apiClient` (`endpoints.ts`) builds `/api/dash/…`. So a single
+`VITE_API_BASE_URL` serves both families. (Earlier the `apiClient` base baked in a
+`/api/dash` suffix while `endpoints.ts` passed bare paths — that would have
+double-prefixed the analytics fetchers and 404'd them in live mode; the fix moved the
+`/api/dash` prefix onto the paths.) Server coverage: the `/api/analytics/*` widgets
+plus the `endpoints.ts` **billing/revenue (WP-373)** and **matches/players/kpis
+(WP-374)** feeds are now wired; `/metrics/dau`, `/alerts`, and `/system/nodes` remain
+mock (no data source yet — see the note above).
 
 > **Wiring underway (2026-07).** The `/api/dash/*` family is being wired to real
 > data, and the **billing + revenue** slice is now **live server-side** — a new
