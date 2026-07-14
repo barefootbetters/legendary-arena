@@ -28799,7 +28799,7 @@ Protect this file.
 
 ### D-24168 — Wire the dashboard `/api/dash/*` billing + revenue endpoints to real Stripe data (first `/api/dash/*` server slice)
 
-**Status:** Drafted 2026-07-13; not yet landed. Flips to Active when WP-373 executes.
+**Status:** Active 2026-07-13 (WP-373 executed — the `apps/server/src/dashboard/` module + 4 `/api/dash/*` routes landed with tests + the D-11804 catalog rows).
 
 **User-Visible Surface:** `dashboard.legendary-arena.com` — the `/monetization` + `/overview` billing-health/revenue widgets flip mock → live once the deploy enables live mode.
 
@@ -28813,6 +28813,6 @@ Protect this file.
 4. **Envelope + purity.** Bare `{ data: T }` (D-20503); read-only (no write, no migration, no Stripe API call); determinism N/A (live DB read).
 5. **Scope fence.** `/kpis` / `/players` / `/matches` / `/metrics/dau` are later WPs; `/system/nodes` + `/alerts` are deferred until their data infrastructure exists. 4 `Wired` catalog rows (D-11804).
 
-**Packet:** WP-373 (+ EC at execution-prep). **Drafted:** 2026-07-13. **Executed:** —
+**Packet:** WP-373 / EC-402. **Drafted:** 2026-07-13. **Executed:** 2026-07-13.
 
 Protect this file.

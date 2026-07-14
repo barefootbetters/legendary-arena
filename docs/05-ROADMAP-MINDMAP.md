@@ -351,7 +351,7 @@ mindmap
         ["WP-229 ✅ Agent Pipeline page (Architect/Builder/Inspector/Evaluator lanes)"]
         ["WP-238 ✅ Done — Sweep MOCK→LIVE flip (dashboard sweep panels render real GET /api/sweep/latest)"]
         ["WP-241 ✅ Done — Operator auth + Bearer cutover (real Hanko login → Authorization: Bearer on the LIVE fetchers; supersedes the cookie posture, complies with the bearer-only server)"]
-        ["WP-373 📝 Dashboard billing + revenue endpoints (server) — first slice of wiring the dashboard's live /api/dash/* family to real data (operator chose billing+revenue first; the endpoints.ts family was mock-only — no server route served it). New apps/server/src/dashboard/ module + /api/dash/* sub-surface, 4 read-only admin-session-required routes (requireAdminSession; no finance role → admin per D-19603): /api/dash/metrics/billing/health (+/sparklines) fulfilling the D-19603 forward contract (BillingHealth-byte-compatible + rate invariants) from stripe_events.process_error + stripe_checkout_sessions.intent_status; /api/dash/revenue + /metrics/revenue deriving the amount from stripe_events.payload->data->object->amount_total (cents) — the price allowlist carries no amount, skip-on-missing never fabricated. Bare {data:T} (D-20503); no migration/write/dashboard-app change (live flip = deploy env). /kpis//players//matches/DAU later; /system/nodes+/alerts blocked on absent infra; D-24168"]
+        ["WP-373 ✅ Dashboard billing + revenue endpoints (server) — DONE 2026-07-13 (EC-402): first slice of wiring the dashboard's live /api/dash/* family to real data (operator chose billing+revenue first; the endpoints.ts family was mock-only — no server route served it). New apps/server/src/dashboard/ module + /api/dash/* sub-surface, 4 read-only admin-session-required routes (requireAdminSession; no finance role → admin per D-19603): /api/dash/metrics/billing/health (+/sparklines) fulfilling the D-19603 forward contract (BillingHealth-byte-compatible + rate invariants) from stripe_events.process_error + stripe_checkout_sessions.intent_status; /api/dash/revenue + /metrics/revenue deriving the amount from stripe_events.payload->data->object->amount_total (cents) — the price allowlist carries no amount, skip-on-missing never fabricated. Bare {data:T} (D-20503); no migration/write/dashboard-app change (live flip = deploy env). /kpis//players//matches/DAU later; /system/nodes+/alerts blocked on absent infra; executed 2026-07-13 via new apps/server/src/dashboard/dashboardBilling.{types,logic,routes}.ts + server.mjs wiring (4 admin-session-required routes); full server suite fail 0 (154 DB-skip) + DB integration 3/3 on local Postgres; 4 Wired api-endpoints.md rows (D-11804); EC-402; D-24168 Active"]
 
       Agent Triage Pipeline
         ["WP-230 ✅ Done — Pipeline page sweep integration (agent lanes consume nightly sweep findings)"]
@@ -535,7 +535,7 @@ mindmap
 | Hero Ability Coverage & Markup Pipeline | 47/47 | — |
 | Notable Events & Overlays | 4/4 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
-| Dashboard & Operator Analytics | 14/15 | 1 open |
+| Dashboard & Operator Analytics | 15/15 | — |
 | Agent Triage Pipeline | 7/8 | 1 open |
 | Admin & Route Wiring | 4/4 | — |
 | Phase 9 — Profile Surface Follow-ups | 11/11 | — |
@@ -551,9 +551,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **361/365 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 3 open |
+| **Total** | **362/365 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 2 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 4):** WP-042.1 ⏸ blocked; WP-349 open; WP-345 open; WP-373 open.
+**Open / blocked WPs (derived from WORK_INDEX, 3):** WP-042.1 ⏸ blocked; WP-349 open; WP-345 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
