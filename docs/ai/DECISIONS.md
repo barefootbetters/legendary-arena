@@ -28797,4 +28797,22 @@ Protect this file.
 
 **Packet:** WP-371 (hard-dep WP-370 ✅). **Decided + Executed:** 2026-07-13 (EC-400; arena-client `916/0`, server `797 pass / 154 skipped / 0 fail`).
 
+### D-24168 — Wire the dashboard `/api/dash/*` billing + revenue endpoints to real Stripe data (first `/api/dash/*` server slice)
+
+**Status:** Drafted 2026-07-13; not yet landed. Flips to Active when WP-373 executes.
+
+**User-Visible Surface:** `dashboard.legendary-arena.com` — the `/monetization` + `/overview` billing-health/revenue widgets flip mock → live once the deploy enables live mode.
+
+**Context.** The dashboard's `endpoints.ts` client calls a `/api/dash/*` family (`/kpis`, `/players`, `/matches`, `/revenue`, `/metrics/*`, `/alerts`, `/system/nodes`) in live mode, but **no server route serves any of them** — only `/api/analytics/*` (traffic/activation/retention, reading `legendary.analytics_events`) exists. So every `endpoints.ts` feed is mock-only. Data-availability audit (2026-07-13): billing-health + revenue are backed by the Stripe tables (migration 012); `/matches` / `/players` / `/kpis` are derivable with more work (blob reads, approximate last-active); `/metrics/dau` has no true activity signal; **`/system/nodes` (infra telemetry) and `/alerts` (no alerting model) have no data source at all** without new infrastructure. Operator chose (2026-07-13) to wire **billing + revenue first** — most-ready (D-19603 already locked the billing-health forward contract) and highest-leverage (revenue visibility).
+
+**Decision.** Stand up a new `apps/server/src/dashboard/` module + the `/api/dash/*` server sub-surface, implementing 4 read-only routes. Server-only; no dashboard-app change (the client already targets these paths; the live flip is a deploy-env action). Locks:
+
+1. **Surface + gate.** `GET /api/dash/metrics/billing/health`, `…/sparklines`, `/revenue`, `/metrics/revenue` — all **`admin-session-required`** via `requireAdminSession` (WP-159) as the first handler statement (`no-store` first). D-19603 specified a "finance/admin role gate"; **no `finance` role exists** (only `is_admin`; `player_roles` is a future table), so it resolves to admin — matching the existing `GET /api/admin/billing/history`.
+2. **Billing-health fulfills D-19603.** Response byte-compatible with the dashboard `BillingHealth` (8 fields); rate invariants `0 ≤ rate ≤ 1`, **zero-total window → rate 0 (never NaN)**, `count = round(total×rate)`. Webhook-failure = `stripe_events` where `process_error IS NOT NULL` / total; checkout-abandonment = `stripe_checkout_sessions.intent_status ∈ {expired,canceled}` / total; windowed by the analytics `DateRange` UTC-day handling.
+3. **Revenue amount provenance.** The price allowlist (`billing.config`) maps `price_id → entitlementKey` **only** and no column stores the amount — so the dollar amount is read from `stripe_events.payload -> 'data' -> 'object' -> 'amount_total'` (Stripe minor units / cents) + `-> 'currency'` of the `checkout.session.completed` envelope (the full envelope is stored; nothing reads `amount_total` today). **Skip-on-missing, never fabricated**; defensive jsonb extraction mirroring `processStripeEvent`'s payload parsing.
+4. **Envelope + purity.** Bare `{ data: T }` (D-20503); read-only (no write, no migration, no Stripe API call); determinism N/A (live DB read).
+5. **Scope fence.** `/kpis` / `/players` / `/matches` / `/metrics/dau` are later WPs; `/system/nodes` + `/alerts` are deferred until their data infrastructure exists. 4 `Wired` catalog rows (D-11804).
+
+**Packet:** WP-373 (+ EC at execution-prep). **Drafted:** 2026-07-13. **Executed:** —
+
 Protect this file.
