@@ -127,16 +127,22 @@ server implementation today — the whole `endpoints.ts` family (`/kpis`, `/play
 server-side and stays mock, consistent with the dashboard being **largely Phase 1
 (structure with mock data)** (see [Operating model](#operating-model-design-intent)).
 
-> **Wiring in progress (2026-07).** The `/api/dash/*` family is being wired to
-> real data, starting with **billing + revenue** — a new `apps/server/src/dashboard/`
-> module serving `GET /api/dash/metrics/billing/health` (+`/sparklines`),
+> **Wiring underway (2026-07).** The `/api/dash/*` family is being wired to real
+> data, and the **billing + revenue** slice is now **live server-side** — a new
+> [`apps/server/src/dashboard/`](../apps/server/src/dashboard/dashboardBilling.routes.ts)
+> module serves `GET /api/dash/metrics/billing/health` (+`/sparklines`),
 > `/revenue`, and `/metrics/revenue` (all `admin-session-required`) from the Stripe
 > tables: failure/abandonment rates from `stripe_events.process_error` +
 > `stripe_checkout_sessions.intent_status`, and revenue amounts from the
 > `checkout.session.completed` webhook envelope's `amount_total` (the price
-> allowlist carries no amount). Drafted as **WP-373 / D-24168**. `/kpis` / `/players`
-> / `/matches` / DAU follow in later WPs; `/system/nodes` (infra telemetry) and
-> `/alerts` (no alerting model) stay blocked until that data infrastructure exists.
+> allowlist carries no amount, so the amount comes from the stored envelope, in
+> cents ÷100; a missing amount is skipped, never fabricated). Executed as
+> **WP-373 / EC-402 / D-24168** (Active). **These feeds still render mock in the
+> deployed dashboard until the deploy sets `VITE_USE_MOCKS=false` + a
+> `VITE_API_BASE_URL` and prod Stripe data flows** — code-live ≠ dashboard-live.
+> `/kpis` / `/players` / `/matches` / DAU follow in later WPs; `/system/nodes`
+> (infra telemetry) and `/alerts` (no alerting model) stay blocked until that data
+> infrastructure exists.
 
 **Why it is *not* the friends-invite / lobby flow.** That flow — friend
 requests, match invites, the pre-match "Waiting for players" panel — lives in a

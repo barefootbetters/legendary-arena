@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-373 / EC-402 Executed — Dashboard billing + revenue endpoints (server, first `/api/dash/*` slice) (D-24168 Active) (2026-07-13)
+
+Wires the **first slice of the dashboard's live `/api/dash/*` family to real data** (operator chose billing + revenue first). The dashboard's `endpoints.ts` client already called `/api/dash/metrics/billing/health`, `…/sparklines`, `/revenue`, `/metrics/revenue` in live mode, but **no server route served them** (only `/api/analytics/*` existed) → mock-only. **Server-only; no migration, no dashboard-app code change** (the live flip is a deploy-env action — `VITE_USE_MOCKS=false` + `VITE_API_BASE_URL`).
+
+A new **`apps/server/src/dashboard/`** module stands up the `/api/dash/*` sub-surface with 4 read-only **`admin-session-required`** routes (`requireAdminSession`, WP-159 — D-19603 specified a finance/admin gate, but no `finance` role exists yet, so it resolves to admin, matching `GET /api/admin/billing/history`). **Billing-health fulfills the D-19603 forward contract** — `BillingHealth`-byte-compatible + rate invariants (`0 ≤ rate ≤ 1`, zero-total → 0, `count = round(total×rate)`) — from `stripe_events.process_error` (webhook failures) + `stripe_checkout_sessions.intent_status ∈ {expired,canceled}` (abandonment). **Revenue amount** is derived from the `checkout.session.completed` webhook envelope's `amount_total` (`stripe_events.payload->'data'->'object'->>'amount_total'`, cents → **÷100 dollars**) + `->>'currency'` (upper-cased); the price allowlist carries **no** amount and no column stores it, so a row with a missing/malformed `amount_total` is **skipped, never fabricated** into a $0 record; `source` joins the checkout session's `entitlement_key` (fallback `stripe`). Bare `{ data: T }` envelope (D-20503); day series zero-filled per UTC day; the rate/parse math is pure and unit-tested.
+
+No engine/registry/`boardgame.io` import. 4 `Wired` catalog rows (D-11804, §21). `pnpm -r build` 0; full server suite **810 pass / 0 fail / 154 DB-skipped**; the DB-gated integration suite is **3/3** against local Postgres (verifying the jsonb extraction, `FILTER` counts, UTC day grouping, and the session join). `User-Visible Surface = dashboard.legendary-arena.com` — **D-24026 deploy-pending** (needs the deploy live-flip + prod Stripe data). **Scope fence:** `/kpis` / `/players` / `/matches` / DAU are later WPs; `/system/nodes` (infra telemetry) + `/alerts` (no alerting model) stay blocked on absent data infrastructure.
+
 ### WP-372 / EC-401 Executed — Loadout builder player-count required-counts readout + warn/export-gate (consumes D-24165) (2026-07-13) — **arc complete**
 
 The cards.legendary-arena.com **Loadout tab** now guides the user to the correct composition for the chosen player count — closing the player-count setup-enforcement arc (WP-370 engine block + WP-371 lobby pre-check + WP-372 builder guidance).
