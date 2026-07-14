@@ -47,7 +47,7 @@ export async function fetchKpiSnapshots(): Promise<ServiceResponse<KpiSnapshot[]
     await simulateLatency();
     return mockKpiSnapshots();
   }
-  const response = await apiClient.get<ServiceResponse<KpiSnapshot[]>>('/kpis');
+  const response = await apiClient.get<ServiceResponse<KpiSnapshot[]>>('/api/dash/kpis');
   return response.data;
 }
 
@@ -56,7 +56,7 @@ export async function fetchPlayerRecords(): Promise<ServiceResponse<PlayerRecord
     await simulateLatency();
     return mockPlayerRecords();
   }
-  const response = await apiClient.get<ServiceResponse<PlayerRecord[]>>('/players');
+  const response = await apiClient.get<ServiceResponse<PlayerRecord[]>>('/api/dash/players');
   return response.data;
 }
 
@@ -65,7 +65,7 @@ export async function fetchMatchRecords(): Promise<ServiceResponse<MatchRecord[]
     await simulateLatency();
     return mockMatchRecords();
   }
-  const response = await apiClient.get<ServiceResponse<MatchRecord[]>>('/matches');
+  const response = await apiClient.get<ServiceResponse<MatchRecord[]>>('/api/dash/matches');
   return response.data;
 }
 
@@ -74,7 +74,7 @@ export async function fetchRevenueRecords(): Promise<ServiceResponse<RevenueReco
     await simulateLatency();
     return mockRevenueRecords();
   }
-  const response = await apiClient.get<ServiceResponse<RevenueRecord[]>>('/revenue');
+  const response = await apiClient.get<ServiceResponse<RevenueRecord[]>>('/api/dash/revenue');
   return response.data;
 }
 
@@ -83,7 +83,7 @@ export async function fetchDauHistory(range: DateRange): Promise<ServiceResponse
     await simulateLatency();
     return mockDauHistory(DATE_RANGE_DAYS[range]);
   }
-  const response = await apiClient.get<ServiceResponse<DailyMetric[]>>('/metrics/dau', {
+  const response = await apiClient.get<ServiceResponse<DailyMetric[]>>('/api/dash/metrics/dau', {
     params: { range },
   });
   return response.data;
@@ -96,9 +96,12 @@ export async function fetchRevenueHistory(
     await simulateLatency();
     return mockRevenueHistory(DATE_RANGE_DAYS[range]);
   }
-  const response = await apiClient.get<ServiceResponse<DailyMetric[]>>('/metrics/revenue', {
-    params: { range },
-  });
+  const response = await apiClient.get<ServiceResponse<DailyMetric[]>>(
+    '/api/dash/metrics/revenue',
+    {
+      params: { range },
+    },
+  );
   return response.data;
 }
 
@@ -107,7 +110,7 @@ export async function fetchAlerts(): Promise<ServiceResponse<AlertItem[]>> {
     await simulateLatency();
     return mockAlerts();
   }
-  const response = await apiClient.get<ServiceResponse<AlertItem[]>>('/alerts');
+  const response = await apiClient.get<ServiceResponse<AlertItem[]>>('/api/dash/alerts');
   return response.data;
 }
 
@@ -116,7 +119,7 @@ export async function fetchServerNodes(): Promise<ServiceResponse<ServerNode[]>>
     await simulateLatency();
     return mockServerNodes();
   }
-  const response = await apiClient.get<ServiceResponse<ServerNode[]>>('/system/nodes');
+  const response = await apiClient.get<ServiceResponse<ServerNode[]>>('/api/dash/system/nodes');
   return response.data;
 }
 
@@ -146,9 +149,12 @@ export async function fetchBillingHealth(
     return mockBillingHealth(range, nowMs);
   }
   void normalizeRange(range, Date.now());
-  const response = await apiClient.get<ServiceResponse<BillingHealth>>('/metrics/billing/health', {
-    params: { range },
-  });
+  const response = await apiClient.get<ServiceResponse<BillingHealth>>(
+    '/api/dash/metrics/billing/health',
+    {
+      params: { range },
+    },
+  );
   return response.data;
 }
 
@@ -170,7 +176,7 @@ export async function fetchBillingHealthSparklines(
   }
   void normalizeRange(range, Date.now());
   const response = await apiClient.get<ServiceResponse<BillingHealthSparklines>>(
-    '/metrics/billing/health/sparklines',
+    '/api/dash/metrics/billing/health/sparklines',
     {
       params: { range },
     },

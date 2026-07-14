@@ -2,7 +2,12 @@ import axios, { AxiosError } from 'axios';
 import type { ApiError } from '../types/index.js';
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/dash',
+  // why: the base URL is the API SERVER ROOT (e.g. https://api.legendary-arena.com),
+  // NOT a `/api/dash` sub-path. Every endpoints.ts call passes an absolute path
+  // (`/api/dash/...`), matching how `analyticsLiveFetchers` builds `/api/analytics/...`
+  // — so a single `VITE_API_BASE_URL` (the server root) serves BOTH client families.
+  // A `/api/dash` suffix here would double-prefix the analytics fetchers and 404 them.
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001',
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
