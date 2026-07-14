@@ -628,6 +628,14 @@ export async function startServer() {
       // `registerAnalyticsRoutes` consume the operator's
       // cookie-credentials Hanko session via this CORS allowance.
       'https://dashboard.legendary-arena.com',
+      // why: the CF Pages production alias for the `legendary-arena-dashboard`
+      // project (the custom domain above is `CNAME → legendary-arena-dashboard.pages.dev`).
+      // Allowlisted for parity with `legendary-arena-play.pages.dev` above — so a
+      // preview/parity deploy reached at the `.pages.dev` host can also call this API
+      // cross-origin in LIVE mode (the custom domain remains the primary origin). The
+      // admin-session gate on `/api/dash/*` (WP-373/374) is the real access boundary;
+      // CORS only lets the legit dashboard SPA make the browser request.
+      'https://legendary-arena-dashboard.pages.dev',
       'http://localhost:4173',
       'https://cards.barefootbetters.com',
       'https://cards.legendary-arena.com',
