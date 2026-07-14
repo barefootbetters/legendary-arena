@@ -127,6 +127,17 @@ server implementation today — the whole `endpoints.ts` family (`/kpis`, `/play
 server-side and stays mock, consistent with the dashboard being **largely Phase 1
 (structure with mock data)** (see [Operating model](#operating-model-design-intent)).
 
+> **Wiring in progress (2026-07).** The `/api/dash/*` family is being wired to
+> real data, starting with **billing + revenue** — a new `apps/server/src/dashboard/`
+> module serving `GET /api/dash/metrics/billing/health` (+`/sparklines`),
+> `/revenue`, and `/metrics/revenue` (all `admin-session-required`) from the Stripe
+> tables: failure/abandonment rates from `stripe_events.process_error` +
+> `stripe_checkout_sessions.intent_status`, and revenue amounts from the
+> `checkout.session.completed` webhook envelope's `amount_total` (the price
+> allowlist carries no amount). Drafted as **WP-373 / D-24168**. `/kpis` / `/players`
+> / `/matches` / DAU follow in later WPs; `/system/nodes` (infra telemetry) and
+> `/alerts` (no alerting model) stay blocked until that data infrastructure exists.
+
 **Why it is *not* the friends-invite / lobby flow.** That flow — friend
 requests, match invites, the pre-match "Waiting for players" panel — lives in a
 **different app and backend**: the play server (`apps/server`) operating on the
