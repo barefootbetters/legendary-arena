@@ -331,7 +331,14 @@ Forbidden examples:
 > read-only projection for cross-surface loadout display; a convenience
 > representation, not a source of truth — the blob stays authoritative — never
 > written back, never a save-game, never a source of competitive/derived features,
-> never round-tripped into gameplay state). All other application reads of the blob
+> never round-tripped into gameplay state) — **and** the D-24169 match-summary
+> carve-out: a server-layer read MAY read the blob's `initialState.G.matchConfiguration`
+> (+ `ctx.numPlayers`) and `metadata.{createdAt,updatedAt,gameover}` to project a
+> match as a read-only **match summary** (scheme / mastermind / player-count /
+> timing / outcome, for the operator dashboard's `/api/dash/matches` analytics; a
+> derived, read-only projection — never `state`/`log`, never written back, never a
+> save-game, never a source of competitive/derived gameplay features, never
+> round-tripped into gameplay state). All other application reads of the blob
 > remain forbidden. Snapshots remain counts-only.
 
 This applies across **all layers**.

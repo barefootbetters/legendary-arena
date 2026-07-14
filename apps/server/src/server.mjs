@@ -44,6 +44,7 @@ import { registerAdminBillingRoutes } from './billing/adminBilling.routes.js';
 import { registerAdminProfileRoutes } from './profile/admin/adminProfile.routes.js';
 import { registerAnalyticsRoutes } from './analytics/analytics.routes.js';
 import { registerDashboardBillingRoutes } from './dashboard/dashboardBilling.routes.js';
+import { registerDashboardGameplayRoutes } from './dashboard/dashboardGameplay.routes.js';
 import { getAnalyticsUserIdSalt } from './analytics/userIdHash.js';
 import { registerSweepRoutes } from './sweep/sweep.routes.js';
 import { registerInspectionRoutes } from './inspection/inspection.routes.js';
@@ -1037,6 +1038,17 @@ export async function startServer() {
   // finance/admin gate resolves to admin — no finance role exists).
   registerDashboardBillingRoutes(server.router, pool, {
     requireAdminSession,
+    verifier,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
+  });
+
+  // why: WP-374 / D-24169 — the dashboard gameplay + KPI slice: /api/dash/matches
+  // (a read-only bgio-blob match-summary projection, carve-out-authorized),
+  // /api/dash/players, /api/dash/kpis. Same admin gate as billing; the startup
+  // `registry` is threaded in to resolve scheme/mastermind ext_ids to names.
+  registerDashboardGameplayRoutes(server.router, pool, {
+    requireAdminSession,
+    registry,
     verifier,
     accountResolver: verifier === undefined ? undefined : accountResolver,
   });
