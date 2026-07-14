@@ -28815,4 +28815,23 @@ Protect this file.
 
 **Packet:** WP-373 / EC-402. **Drafted:** 2026-07-13. **Executed:** 2026-07-13.
 
+### D-24169 — Wire the dashboard `/api/dash/*` gameplay + KPI slice (`/matches` / `/players` / `/kpis`) to real data + extend the bgio-blob-read carve-out to a match-summary/analytics projection
+
+**Status:** Drafted 2026-07-13; not yet landed. Flips to Active when WP-374 executes.
+
+**User-Visible Surface:** `dashboard.legendary-arena.com` — the `/players`, `/gameplay`, and `/overview` KPI-strip widgets flip mock → live once the deploy enables live mode.
+
+**Context.** WP-373 wired the first `/api/dash/*` slice (billing + revenue). The next-most-tractable feeds are `/matches`, `/players`, and the derivable subset of `/kpis`. `/matches` needs each match's setup (scheme/mastermind) + result, which live **only** in the `bgio.matches` blob (`initial_state.G.matchConfiguration` + `metadata.gameover`); `competitive_scores` carries outcome/count but not scheme/mastermind. Reading the blob for a match-analytics purpose is a NEW use of the D-24095/24119/24153 carve-out (which today covers replay verification + the Tier-1 LAGN loadout projection), so it needs an explicit extension.
+
+**Decision.** Add three read-only `admin-session-required` routes to the WP-373 `apps/server/src/dashboard/` module, and extend the carve-out. Server-only; no migration, no dashboard-app change. Locks:
+
+1. **Routes.** `GET /api/dash/matches`, `/players`, `/kpis` — `requireAdminSession` first-statement, `no-store`, bare `{ data: T }` (D-20503), reusing the WP-373 gate/envelope idioms.
+2. **Carve-out extension (the architectural core).** The `bgio.matches` read is a **read-only match-summary/analytics projection**: `initial_state.G.matchConfiguration` (scheme/mastermind, resolved to display names via the startup registry — the WP-361 idiom) + `initial_state.ctx.numPlayers` + `metadata.{createdAt,updatedAt,gameover}` (timing + result). It is **never** `state`/`log`, never written back, never a source of gameplay state, never round-tripped. `docs/ai/ARCHITECTURE.md §Persistence Boundary` + `.claude/rules/architecture.md §Persistence Boundary` each gain a sentence authorizing it, mirroring the D-24153 loadout-projection sentence (the D-entry-authorizing-a-new-blob-read requires the ARCHITECTURE.md edit).
+3. **`/matches` mapping.** gameover absent → `in_progress` (never a guessed winner); present → `hero_wins`/`villain_wins` per the gameover winner; `startedAt` = `metadata.createdAt`, `duration` = `updatedAt − createdAt`; null-`initial_state` (setState-upsert) rows skipped.
+4. **`/players`.** `legendary.players` LEFT JOIN aggregated `competitive_scores` (matchesPlayed/winRate from `outcome ∈ {heroes-win,scheme-wins}`), status from `is_suspended` (→ `banned`) + a recency threshold, **approximate `lastActive`** = max score `created_at` ?? `players.created_at` (no per-account activity/session log exists — the standing "no site-analytics" gap; not fabricated). A 0-score player is `0`/`0`, not null.
+5. **`/kpis` honest-partial.** The **derivable** KPIs only — total/window players + matches, 30-day revenue (reuse WP-373 `getRevenueDaily`), hero-win rate — each with a prior-equal-window `previousValue` for the trend. **DAU and any activity-derived KPI are OMITTED**, not fabricated; `target`/`tolerance`/`direction` only where a real threshold is known (D-19802).
+6. **Fences.** No migration, no write, no new activity tracking; `/metrics/dau` deferred (no signal); `/system/nodes` + `/alerts` blocked on absent infrastructure. 3 `Wired` catalog rows (D-11804).
+
+**Packet:** WP-374 (+ EC-403 at execution-prep). **Drafted:** 2026-07-13. **Executed:** —
+
 Protect this file.
