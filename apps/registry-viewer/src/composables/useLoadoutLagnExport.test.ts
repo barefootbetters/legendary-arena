@@ -5,10 +5,10 @@ import { validate } from "@legendary-arena/lagn";
 import { useLoadoutLagnExport } from "./useLoadoutLagnExport";
 import type { MatchSetupDocument } from "@legendary-arena/registry/setupContract";
 
-// why: playerCount is 1 so the draft is consistent with the export's default
-// LAGN variant (Classic → "solo"), which the variant/player_count export guard
-// requires to seat exactly one player. Tests that switch the variant to Custom
-// (→ "cooperative") bump playerCount to 2 to stay consistent.
+// why: playerCount is 1 so the export's variant, which is now derived from the
+// seat count (1 → Classic/"solo"), starts consistent with the variant/player_count
+// export guard. Tests that exercise the Custom (→ "cooperative") path bump
+// playerCount to 2, which re-syncs the derived variant to Custom.
 function createValidDraft(): MatchSetupDocument {
   return {
     schemaVersion: "1.0",
@@ -246,7 +246,11 @@ test("solo variant with more than one player fails the export guard", () => {
   draft.value.playerCount = 2;
   const api = useLoadoutLagnExport(draft);
 
-  // Default variant is Classic (→ "solo"); 2 seats contradicts solo.
+  // why: the variant now auto-syncs to the seat count, so a 2-seat draft defaults
+  // to Custom (→ "cooperative"). Force it back to Classic (→ "solo") to exercise
+  // the guard against a MANUAL solo/2-seat contradiction (the watch fires only on
+  // a seat-count change, so this override sticks).
+  api.variant.value = "classic";
   assert(
     !api.isValid.value,
     "a solo loadout with player count 2 must fail the export guard",
@@ -277,6 +281,38 @@ test("cooperative variant with a single player fails the export guard", () => {
       error.includes('variant is "cooperative"'),
     ),
     "the guard error should explain the cooperative/player-count contradiction",
+  );
+});
+
+test("variant auto-syncs to the draft player count (default + on change)", () => {
+  // A 2-seat draft — a fresh viewer default, or a multiplayer match opened via
+  // `?lagn=` — must export as Custom/cooperative WITHOUT a manual dropdown flip.
+  // This is the reported "stuck on solo" trap: before the fix the variant was
+  // pinned to Classic/"solo" and a 2-player loadout failed the guard.
+  const draft = ref(createValidDraft());
+  draft.value.playerCount = 2;
+  const api = useLoadoutLagnExport(draft);
+  assert.equal(
+    api.variant.value,
+    "custom",
+    "a 2-seat draft should default to Custom (cooperative)",
+  );
+  assert(
+    api.isValid.value,
+    "a 2-seat draft should export without a manual variant flip",
+  );
+
+  // why: dropping back to a single seat re-syncs the derived variant to Classic
+  // (→ "solo") so the export stays consistent with the new seat count.
+  draft.value.playerCount = 1;
+  assert.equal(
+    api.variant.value,
+    "classic",
+    "returning to 1 seat should re-sync the variant to Classic (solo)",
+  );
+  assert(
+    api.isValid.value,
+    "a 1-seat draft should stay valid after the variant re-syncs",
   );
 });
 
