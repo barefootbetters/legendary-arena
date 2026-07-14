@@ -18,16 +18,21 @@ import { computed, ref, type ComputedRef, type Ref } from "vue";
 // themeClient.ts for `./schema` and `./theme.schema`.
 import {
   validateMatchSetupDocument,
-  getPlayerCountSetup,
-  checkPlayerCountComposition,
   type CardRegistryReader,
   type HeroSelectionMode,
   type MatchSetupDocument,
   type MatchSetupValidationError,
   type ValidateMatchSetupDocumentResult,
+} from "@legendary-arena/registry/setupContract";
+// why: the per-player-count setup table has its own browser-safe subpath (zero
+// node deps) — it is not a MATCH-SETUP-document concern, so it is imported here
+// rather than from the setupContract barrel.
+import {
+  getPlayerCountSetup,
+  checkPlayerCountComposition,
   type PlayerCountSetupRow,
   type PlayerCountCompositionMismatch,
-} from "@legendary-arena/registry/setupContract";
+} from "@legendary-arena/registry/playerCountSetup";
 
 import type { ThemeDefinition } from "../lib/themeClient";
 // why: D-24018 — surface ambiguous theme-slug substitutions (a deterministic
