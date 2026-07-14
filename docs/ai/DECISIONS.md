@@ -28817,7 +28817,7 @@ Protect this file.
 
 ### D-24169 — Wire the dashboard `/api/dash/*` gameplay + KPI slice (`/matches` / `/players` / `/kpis`) to real data + extend the bgio-blob-read carve-out to a match-summary/analytics projection
 
-**Status:** Drafted 2026-07-13; not yet landed. Flips to Active when WP-374 executes.
+**Status:** **Active** (WP-374 executed 2026-07-13, EC-403). The carve-out extension landed in `docs/ai/ARCHITECTURE.md §Persistence Boundary` + `.claude/rules/architecture.md`. Execution consolidated the 3 endpoints into one `dashboardGameplay.{types,logic,routes}.ts` module (scope-neutral); KPI unit chosen as whole-percent for `hero_win_rate_30d` (unit `%`), fraction 0-1 for `winRate` on `PlayerRecord`.
 
 **User-Visible Surface:** `dashboard.legendary-arena.com` — the `/players`, `/gameplay`, and `/overview` KPI-strip widgets flip mock → live once the deploy enables live mode.
 
@@ -28832,6 +28832,6 @@ Protect this file.
 5. **`/kpis` honest-partial.** The **derivable** KPIs only — total/window players + matches, 30-day revenue (reuse WP-373 `getRevenueDaily`), hero-win rate — each with a prior-equal-window `previousValue` for the trend. **DAU and any activity-derived KPI are OMITTED**, not fabricated; `target`/`tolerance`/`direction` only where a real threshold is known (D-19802).
 6. **Fences.** No migration, no write, no new activity tracking; `/metrics/dau` deferred (no signal); `/system/nodes` + `/alerts` blocked on absent infrastructure. 3 `Wired` catalog rows (D-11804).
 
-**Packet:** WP-374 (+ EC-403 at execution-prep). **Drafted:** 2026-07-13. **Executed:** —
+**Packet:** WP-374 (EC-403). **Drafted:** 2026-07-13. **Executed:** 2026-07-13.
 
 Protect this file.

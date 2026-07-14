@@ -140,13 +140,18 @@ server-side and stays mock, consistent with the dashboard being **largely Phase 
 > **WP-373 / EC-402 / D-24168** (Active). **These feeds still render mock in the
 > deployed dashboard until the deploy sets `VITE_USE_MOCKS=false` + a
 > `VITE_API_BASE_URL` and prod Stripe data flows** — code-live ≠ dashboard-live.
-> The **gameplay + KPI slice** (`/matches`, `/players`, `/kpis`) is **drafted as
-> WP-374 / D-24169** — `/matches` reads the `bgio.matches` blob as a read-only
-> match-summary projection (extending the D-24095/24153 carve-out), `/players`
-> aggregates `competitive_scores` (with an *approximate* `lastActive`), and
-> `/kpis` returns the derivable subset (**DAU omitted** — no activity signal).
-> `/metrics/dau` stays deferred, and `/system/nodes` (infra telemetry) and
-> `/alerts` (no alerting model) stay blocked until that data infrastructure exists.
+> The **gameplay + KPI slice** (`/matches`, `/players`, `/kpis`) is now **live
+> server-side** — **executed as WP-374 / EC-403 / D-24169** — via
+> `apps/server/src/dashboard/dashboardGameplay.{types,logic,routes}.ts`. `/matches`
+> reads the `bgio.matches` blob as a read-only **match-summary projection**
+> (extending the D-24095/24153 carve-out — a new ARCHITECTURE.md §Persistence
+> Boundary sentence; `initial_state.G.matchConfiguration` + `metadata` only, never
+> `state`/`log`), `/players` aggregates `competitive_scores` (with an *approximate*
+> `lastActive` — no activity log exists), and `/kpis` returns the derivable subset
+> with prior-window trends (**DAU omitted** — no activity signal). As with billing,
+> these render mock in the deployed dashboard until the live flip. `/metrics/dau`
+> stays deferred, and `/system/nodes` (infra telemetry) and `/alerts` (no alerting
+> model) stay blocked until that data infrastructure exists.
 
 **Why it is *not* the friends-invite / lobby flow.** That flow — friend
 requests, match invites, the pre-match "Waiting for players" panel — lives in a
