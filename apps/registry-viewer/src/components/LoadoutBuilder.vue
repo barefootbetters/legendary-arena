@@ -726,13 +726,17 @@ function slotLabel(slot: PickerSlot): string {
         <!-- LAGN export options -->
         <div v-if="isValid" class="lagn-options">
           <div class="lagn-row">
-            <label class="field">
+            <!-- why: WP-732 follow-up — the LAGN variant is DERIVED from the player
+                 count (1 → Solo, 2+ → Cooperative; the engine has no competitive
+                 variant), so it is shown read-only rather than as an editable
+                 dropdown that could only ever pick the one consistent value. Change
+                 the "Player count (1–5)" field above to change the variant. -->
+            <div class="field">
               <span class="field-label">LAGN Variant</span>
-              <select v-model="lagnExportApi.variant.value">
-                <option value="classic">Classic</option>
-                <option value="custom">Custom</option>
-              </select>
-            </label>
+              <span class="variant-readonly" data-testid="lagn-variant-readonly">
+                {{ lagnExportApi.variantLabel.value }}
+              </span>
+            </div>
             <label class="field">
               <span class="field-label">Outcome</span>
               <select v-model="lagnExportApi.outcome.value">
@@ -1088,6 +1092,14 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #6060c0
 .lagn-options { background: #12121a; border: 1px solid #22222e; border-radius: 6px; padding: 0.75rem; margin-top: 0.5rem; }
 .lagn-row { display: flex; gap: 0.75rem; margin-bottom: 0.5rem; }
 .lagn-row .field { flex: 1; }
+.variant-readonly {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.35rem 0.55rem;
+  font-size: 0.85rem;
+  color: #c8c8e0;
+}
 .lagn-info { font-size: 0.8rem; }
 .lagn-game-id { margin: 0; display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: #0f0f13; border-radius: 4px; font-family: ui-monospace, Consolas, monospace; color: #c8c8e0; }
 .lagn-game-id code { color: #60a5fa; flex: 1; word-break: break-all; }
