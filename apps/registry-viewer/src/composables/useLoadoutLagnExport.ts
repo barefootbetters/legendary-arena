@@ -6,7 +6,7 @@
  * and exposes a download-ready Blob.
  */
 
-import { computed, ref, type ComputedRef, type Ref } from "vue";
+import { computed, ref, watch, type ComputedRef, type Ref } from "vue";
 import { validate, type LAGN } from "@legendary-arena/lagn";
 import type { MatchSetupDocument } from "@legendary-arena/registry/setupContract";
 
@@ -50,6 +50,20 @@ function generateGameId(): string {
  */
 function mapVariantToLagn(userVariant: "classic" | "custom"): "solo" | "cooperative" | "competitive" {
   return userVariant === "classic" ? "solo" : "cooperative";
+}
+
+/**
+ * Derive the user-facing export variant from the draft's seat count: a
+ * single-seat draft is Classic (→ "solo"); any multi-seat draft is Custom
+ * (→ "cooperative"). Mirrors the server-side `variantForSeatCount`
+ * (`apps/server/src/match/matchLagn.logic.ts`) so the viewer's variant never
+ * contradicts the player count — the engine has no competitive variant, so the
+ * two are one axis, not two. This kills the "stuck on solo" trap where a
+ * 2-player loadout (a fresh draft's default, or a multiplayer match imported via
+ * `?lagn=`) exported as "solo" and failed the consistency guard.
+ */
+function variantForPlayerCount(playerCount: number): "classic" | "custom" {
+  return playerCount === 1 ? "classic" : "custom";
 }
 
 /**
@@ -160,7 +174,23 @@ function checkVariantPlayerCountConsistency(lagn: LAGN): string[] {
  * Each invocation returns an independent composable (no module-level state).
  */
 export function useLoadoutLagnExport(draft: Ref<MatchSetupDocument>): UseLoadoutLagnExportApi {
-  const variant = ref<"classic" | "custom">("classic");
+  // why: the variant is seeded from the draft's current seat count (not a fixed
+  // "classic" default) and re-synced whenever the seat count changes, so an
+  // unedited export — and a multiplayer loadout imported via `?lagn=` — is never
+  // the "solo" + 2-seat contradiction the consistency guard blocks. `flush:
+  // "sync"` keeps the derived variant in lockstep with the seat count the instant
+  // it changes (no scheduler tick), so export validity updates immediately and
+  // the coupling is testable without awaiting a flush. The dropdown remains an
+  // explicit override; checkVariantPlayerCountConsistency still guards a manual
+  // contradiction.
+  const variant = ref<"classic" | "custom">(variantForPlayerCount(draft.value.playerCount));
+  watch(
+    () => draft.value.playerCount,
+    (playerCount) => {
+      variant.value = variantForPlayerCount(playerCount);
+    },
+    { flush: "sync" },
+  );
   const outcome = ref<"victory" | "loss">("victory");
   const gameId = ref<string>(generateGameId());
 
