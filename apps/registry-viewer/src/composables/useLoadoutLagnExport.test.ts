@@ -5,10 +5,10 @@ import { validate } from "@legendary-arena/lagn";
 import { useLoadoutLagnExport } from "./useLoadoutLagnExport";
 import type { MatchSetupDocument } from "@legendary-arena/registry/setupContract";
 
-// why: playerCount is 1 so the export's variant, which is now derived from the
-// seat count (1 → Classic/"solo"), starts consistent with the variant/player_count
-// export guard. Tests that exercise the Custom (→ "cooperative") path bump
-// playerCount to 2, which re-syncs the derived variant to Custom.
+// why: playerCount is 1 so the export's variant, which is DERIVED (read-only)
+// from the seat count (1 → Classic/"solo"), is Solo here. Tests that exercise the
+// Custom (→ "cooperative") path set playerCount to 2, which is the only way to
+// change the variant now that it is a computed rather than an editable control.
 function createValidDraft(): MatchSetupDocument {
   return {
     schemaVersion: "1.0",
@@ -104,11 +104,10 @@ test("variant/outcome selection required for validation", () => {
   // Valid defaults: classic (solo) + victory + 1 player
   assert(api.isValid.value, "isValid should be true with default variant/outcome");
 
-  // why: switching to Custom (→ cooperative) also requires seating at least 2
-  // players, so bump playerCount alongside the variant to stay consistent with
-  // the variant/player_count export guard.
+  // why: the variant is derived from the seat count (read-only), so a 2-player
+  // draft is a cooperative export automatically — no variant control to set.
   draft.value.playerCount = 2;
-  api.variant.value = "custom";
+  assert.equal(api.variant.value, "custom", "2 seats should derive the Custom variant");
   assert(api.isValid.value, "isValid should remain true for a consistent cooperative + 2-player export");
 
   api.outcome.value = "loss";
@@ -131,7 +130,7 @@ test("valid composition + outcome passes validation", () => {
   const draft = ref(createValidDraft());
   const api = useLoadoutLagnExport(draft);
 
-  api.variant.value = "classic";
+  // playerCount 1 derives the classic (solo) variant; only outcome is user-set.
   api.outcome.value = "victory";
 
   assert(api.isValid.value, "valid draft should pass validation");
@@ -216,10 +215,9 @@ test("variant/outcome changes trigger re-validation", () => {
   // Start valid (classic/solo + 1 player)
   assert(api.isValid.value, "should start valid");
 
-  // why: a consistent variant change (Custom → cooperative) needs >= 2 players,
-  // so move both together; the export guard keeps variant and seat count coupled.
+  // why: setting 2 seats derives the cooperative variant on its own (no separate
+  // control), and the export stays valid.
   draft.value.playerCount = 2;
-  api.variant.value = "custom";
   assert(api.isValid.value, "consistent cooperative + 2-player export should stay valid");
 
   // Changing outcome should not invalidate
@@ -241,91 +239,58 @@ test("lossReason computed property always returns 'unavailable'", () => {
   assert.equal(api.lossReason.value, "unavailable", "lossReason should remain 'unavailable'");
 });
 
-test("solo variant with more than one player fails the export guard", () => {
-  const draft = ref(createValidDraft());
-  draft.value.playerCount = 2;
-  const api = useLoadoutLagnExport(draft);
-
-  // why: the variant now auto-syncs to the seat count, so a 2-seat draft defaults
-  // to Custom (→ "cooperative"). Force it back to Classic (→ "solo") to exercise
-  // the guard against a MANUAL solo/2-seat contradiction (the watch fires only on
-  // a seat-count change, so this override sticks).
-  api.variant.value = "classic";
-  assert(
-    !api.isValid.value,
-    "a solo loadout with player count 2 must fail the export guard",
-  );
-  assert(
-    api.validationErrors.value.some((error) => error.includes('variant is "solo"')),
-    "the guard error should explain the solo/player-count contradiction",
-  );
-  assert.equal(
-    api.buildLagnFile(),
-    null,
-    "buildLagnFile must refuse to produce an unstartable solo file",
-  );
-});
-
-test("cooperative variant with a single player fails the export guard", () => {
-  const draft = ref(createValidDraft());
-  draft.value.playerCount = 1;
-  const api = useLoadoutLagnExport(draft);
-  api.variant.value = "custom"; // → "cooperative", which needs >= 2 players
-
-  assert(
-    !api.isValid.value,
-    "a cooperative loadout with player count 1 must fail the export guard",
-  );
-  assert(
-    api.validationErrors.value.some((error) =>
-      error.includes('variant is "cooperative"'),
-    ),
-    "the guard error should explain the cooperative/player-count contradiction",
-  );
-});
-
-test("variant auto-syncs to the draft player count (default + on change)", () => {
+test("variant is derived read-only from the draft player count", () => {
   // A 2-seat draft — a fresh viewer default, or a multiplayer match opened via
-  // `?lagn=` — must export as Custom/cooperative WITHOUT a manual dropdown flip.
-  // This is the reported "stuck on solo" trap: before the fix the variant was
-  // pinned to Classic/"solo" and a 2-player loadout failed the guard.
+  // `?lagn=` — exports as Custom/cooperative with no separate control to set.
+  // This is the fixed "stuck on solo" trap: the variant now tracks the seat count.
   const draft = ref(createValidDraft());
   draft.value.playerCount = 2;
   const api = useLoadoutLagnExport(draft);
   assert.equal(
     api.variant.value,
     "custom",
-    "a 2-seat draft should default to Custom (cooperative)",
+    "a 2-seat draft should derive the Custom (cooperative) variant",
+  );
+  assert.equal(
+    api.variantLabel.value,
+    "Cooperative (2–5 players)",
+    "the read-only label should describe the derived cooperative variant",
   );
   assert(
     api.isValid.value,
-    "a 2-seat draft should export without a manual variant flip",
+    "a 2-seat draft should export without any manual variant selection",
   );
 
-  // why: dropping back to a single seat re-syncs the derived variant to Classic
+  // why: dropping back to a single seat re-derives the variant as Classic
   // (→ "solo") so the export stays consistent with the new seat count.
   draft.value.playerCount = 1;
   assert.equal(
     api.variant.value,
     "classic",
-    "returning to 1 seat should re-sync the variant to Classic (solo)",
+    "returning to 1 seat should re-derive the variant as Classic (solo)",
+  );
+  assert.equal(
+    api.variantLabel.value,
+    "Solo (1 player)",
+    "the read-only label should describe the derived solo variant",
   );
   assert(
     api.isValid.value,
-    "a 1-seat draft should stay valid after the variant re-syncs",
+    "a 1-seat draft should stay valid after the variant re-derives",
   );
 });
 
-test("consistent variant and player count pass the export guard", () => {
+test("derived variant and player count are always consistent", () => {
   // Solo + 1 player.
   const soloDraft = ref(createValidDraft());
   const soloApi = useLoadoutLagnExport(soloDraft);
-  assert(soloApi.isValid.value, "solo + 1 player should pass the guard");
+  assert.equal(soloApi.variant.value, "classic", "1 seat derives Classic (solo)");
+  assert(soloApi.isValid.value, "solo + 1 player should be a valid export");
 
-  // Cooperative + 2 players.
+  // Cooperative + 2 players — the variant derives from the seat count, not a control.
   const coopDraft = ref(createValidDraft());
   coopDraft.value.playerCount = 2;
   const coopApi = useLoadoutLagnExport(coopDraft);
-  coopApi.variant.value = "custom";
-  assert(coopApi.isValid.value, "cooperative + 2 players should pass the guard");
+  assert.equal(coopApi.variant.value, "custom", "2 seats derive Custom (cooperative)");
+  assert(coopApi.isValid.value, "cooperative + 2 players should be a valid export");
 });

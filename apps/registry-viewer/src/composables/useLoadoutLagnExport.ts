@@ -2,11 +2,12 @@
  * useLoadoutLagnExport.ts — LAGN Tier 1 export composable for Registry Viewer Loadout tab (WP-245).
  *
  * Converts a MATCH-SETUP draft into LAGN Tier 1 JSON format, generates a UUID v4 game_id,
- * and validates the result via @legendary-arena/lagn. Supports user-selected variant/outcome
- * and exposes a download-ready Blob.
+ * and validates the result via @legendary-arena/lagn. The variant is DERIVED from the
+ * draft's seat count (read-only, not user-selected — see `variantForPlayerCount`); the
+ * outcome stays user-selected. Exposes a download-ready Blob.
  */
 
-import { computed, ref, watch, type ComputedRef, type Ref } from "vue";
+import { computed, ref, type ComputedRef, type Ref } from "vue";
 import { validate, type LAGN } from "@legendary-arena/lagn";
 import type { MatchSetupDocument } from "@legendary-arena/registry/setupContract";
 
@@ -26,7 +27,10 @@ import type { MatchSetupDocument } from "@legendary-arena/registry/setupContract
  */
 
 export interface UseLoadoutLagnExportApi {
-  variant: Ref<"classic" | "custom">;
+  /** Derived (read-only) export variant: "classic" (solo) for 1 seat, "custom" (cooperative) for 2+. */
+  variant: ComputedRef<"classic" | "custom">;
+  /** Human-readable label for the derived variant, shown as read-only text in the UI. */
+  variantLabel: ComputedRef<string>;
   outcome: Ref<"victory" | "loss">;
   lossReason: ComputedRef<"unavailable">;
   gameId: Ref<string>;
@@ -139,57 +143,21 @@ function buildLagnObject(
 }
 
 /**
- * Checks that a LAGN file's variant and player_count agree, returning a
- * full-sentence error per violation (empty array when they are consistent).
- *
- * Why this guard exists: the @legendary-arena/lagn schema validates variant
- * and player_count independently — it accepts "solo" with player_count 2, or
- * "cooperative" with player_count 1, because neither is structurally illegal.
- * But a solo loadout with two seats can never start a solo match on the play
- * surface: the engine holds the match in its lobby phase until every required
- * seat readies (packages/game-engine/src/lobby/lobby.validate.ts
- * validateCanStartMatch), so the lone player waits forever for a second who
- * never joins. The Registry Viewer's default player count is 2 while the LAGN
- * variant dropdown defaults to Classic (→ "solo"), so an unedited export is
- * this exact contradiction. This export guard blocks it at authoring time
- * rather than letting an unstartable file ship. It lives in the export layer,
- * not the published spec validator, so the LAGN contract itself is unchanged.
- */
-function checkVariantPlayerCountConsistency(lagn: LAGN): string[] {
-  if (lagn.variant === "solo" && lagn.player_count !== 1) {
-    return [
-      `This loadout's variant is "solo", which requires exactly 1 player, but the player count is ${lagn.player_count}. Set the "Player count (1–5)" field to 1 to export a solo loadout, or change the LAGN Variant to a multiplayer mode.`,
-    ];
-  }
-  if (lagn.variant !== "solo" && lagn.player_count < 2) {
-    return [
-      `This loadout's variant is "${lagn.variant}", which requires at least 2 players, but the player count is ${lagn.player_count}. Set the "Player count (1–5)" field to 2 or more to export a ${lagn.variant} loadout, or change the LAGN Variant to Classic (solo).`,
-    ];
-  }
-  return [];
-}
-
-/**
  * Builds a loadout-LAGN-export composable for a given draft.
  * Each invocation returns an independent composable (no module-level state).
  */
 export function useLoadoutLagnExport(draft: Ref<MatchSetupDocument>): UseLoadoutLagnExportApi {
-  // why: the variant is seeded from the draft's current seat count (not a fixed
-  // "classic" default) and re-synced whenever the seat count changes, so an
-  // unedited export — and a multiplayer loadout imported via `?lagn=` — is never
-  // the "solo" + 2-seat contradiction the consistency guard blocks. `flush:
-  // "sync"` keeps the derived variant in lockstep with the seat count the instant
-  // it changes (no scheduler tick), so export validity updates immediately and
-  // the coupling is testable without awaiting a flush. The dropdown remains an
-  // explicit override; checkVariantPlayerCountConsistency still guards a manual
-  // contradiction.
-  const variant = ref<"classic" | "custom">(variantForPlayerCount(draft.value.playerCount));
-  watch(
-    () => draft.value.playerCount,
-    (playerCount) => {
-      variant.value = variantForPlayerCount(playerCount);
-    },
-    { flush: "sync" },
+  // why: the variant is DERIVED from the draft's seat count, not chosen — the
+  // engine has no competitive variant, so variant and player_count are one axis
+  // (1 → solo, 2+ → cooperative), mirroring the server's variantForSeatCount. A
+  // computed keeps it always consistent with player_count by construction, which
+  // is why the old cross-field consistency guard is gone: the contradiction it
+  // caught (a fixed "solo" default against a 2-seat draft) can no longer arise.
+  const variant = computed<"classic" | "custom">(() =>
+    variantForPlayerCount(draft.value.playerCount),
+  );
+  const variantLabel = computed<string>(() =>
+    variant.value === "classic" ? "Solo (1 player)" : "Cooperative (2–5 players)",
   );
   const outcome = ref<"victory" | "loss">("victory");
   const gameId = ref<string>(generateGameId());
@@ -205,13 +173,7 @@ export function useLoadoutLagnExport(draft: Ref<MatchSetupDocument>): UseLoadout
       return ["Draft composition is incomplete (missing mastermind, scheme, villain group, henchman group, or hero group)."];
     }
     const result = validate(lagnObject.value);
-    const schemaErrors = result.valid ? [] : result.errors || [];
-    // why: the LAGN schema validates variant and player_count independently,
-    // so a "solo" export with 2 seats passes it but cannot start a solo match
-    // (see checkVariantPlayerCountConsistency). Append the cross-field guard
-    // so isValid drops and the Download LAGN button disables.
-    const consistencyErrors = checkVariantPlayerCountConsistency(lagnObject.value);
-    return [...schemaErrors, ...consistencyErrors];
+    return result.valid ? [] : result.errors || [];
   });
 
   const isValid = computed<boolean>(() => validationErrors.value.length === 0);
@@ -292,6 +254,7 @@ export function useLoadoutLagnExport(draft: Ref<MatchSetupDocument>): UseLoadout
 
   return {
     variant,
+    variantLabel,
     outcome,
     lossReason,
     gameId,
