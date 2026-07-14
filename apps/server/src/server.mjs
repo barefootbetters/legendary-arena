@@ -43,6 +43,7 @@ import { registerBillingRoutes } from './billing/billing.routes.js';
 import { registerAdminBillingRoutes } from './billing/adminBilling.routes.js';
 import { registerAdminProfileRoutes } from './profile/admin/adminProfile.routes.js';
 import { registerAnalyticsRoutes } from './analytics/analytics.routes.js';
+import { registerDashboardBillingRoutes } from './dashboard/dashboardBilling.routes.js';
 import { getAnalyticsUserIdSalt } from './analytics/userIdHash.js';
 import { registerSweepRoutes } from './sweep/sweep.routes.js';
 import { registerInspectionRoutes } from './inspection/inspection.routes.js';
@@ -1025,6 +1026,16 @@ export async function startServer() {
   // is_admin = TRUE). The deps bundle is structurally identical to the
   // registerAdminProfileRoutes call below.
   registerAdminBillingRoutes(server.router, pool, {
+    requireAdminSession,
+    verifier,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
+  });
+
+  // why: WP-373 / D-24168 — the first `/api/dash/*` sub-surface: the dashboard's
+  // billing-health + revenue feeds, read-only over the Stripe tables, gated by
+  // the same WP-159 requireAdminSession bundle as adminBilling (D-19603's
+  // finance/admin gate resolves to admin — no finance role exists).
+  registerDashboardBillingRoutes(server.router, pool, {
     requireAdminSession,
     verifier,
     accountResolver: verifier === undefined ? undefined : accountResolver,
