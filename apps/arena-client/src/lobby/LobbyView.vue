@@ -351,14 +351,26 @@ export default defineComponent({
           'The "playerName" field must not be empty before creating a match.';
         return;
       }
-      const seatCount = parsePositiveInteger(numPlayers.value, 'numPlayers');
+      // why: WP-376 fast-follow — use whichever setup the player actually
+      // authored. When a loadout is uploaded/pasted (the recommended LAGN path)
+      // its composition + declared player count are authoritative (mirrors
+      // submitFromJson); otherwise fall back to the manually-entered fields
+      // (mirrors createAndJoin). Reading buildConfig() unconditionally sent an
+      // empty composition whenever the player used the upload path, which the
+      // game server (correctly) rejects with a 400.
+      const parsed = parsedLoadout.value;
+      const config = parsed !== null ? parsed.composition : buildConfig();
+      const seatCount =
+        parsed !== null
+          ? parsed.playerCount
+          : parsePositiveInteger(numPlayers.value, 'numPlayers');
       const botCount = parsePositiveInteger(botAllyBotCount.value, 'botAllyBotCount');
       // why: client-side UX validation mirroring the server 400 — a bot-ally match
       // needs at least 2 seats and must leave at least one open for the human, so
       // botCount is 1..seatCount-1. The server re-validates; this avoids a raw 400.
       if (seatCount < 2) {
         errorMessage.value =
-          'A bot-ally match needs at least 2 seats. Set the player count to 2 or more.';
+          'A bot-ally match needs at least 2 seats. Choose a 2+ player loadout (or set the player count to 2 or more).';
         return;
       }
       if (botCount < 1 || botCount > seatCount - 1) {
@@ -374,7 +386,6 @@ export default defineComponent({
 
       isSubmitting.value = true;
       try {
-        const config = buildConfig();
         const created = await createMatchWithBot(
           config,
           seatCount,
