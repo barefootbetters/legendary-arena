@@ -67,6 +67,15 @@ function defeatEvent(mastermindId: string): NotableGameEvent {
   };
 }
 
+function healEvent(woundsHealed: number): NotableGameEvent {
+  return {
+    type: 'healResolved',
+    playerId: '0',
+    woundsHealed,
+    narrative: `Used Healing, KO'ing ${woundsHealed} Wound(s) from hand.`,
+  };
+}
+
 describe('eventCardId helper (WP-201 / D-20104)', () => {
   test('resolves cardId for fightResolved variant', () => {
     assert.equal(eventCardId(fightEvent('doom-bot')), 'doom-bot');
@@ -86,6 +95,10 @@ describe('eventCardId helper (WP-201 / D-20104)', () => {
 
   test('resolves mastermindId for mastermindDefeated variant', () => {
     assert.equal(eventCardId(defeatEvent('core/magneto')), 'core/magneto');
+  });
+
+  test('returns an empty id for healResolved (no card identity) (WP-381)', () => {
+    assert.equal(eventCardId(healEvent(2)), '');
   });
 });
 

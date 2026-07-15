@@ -28,7 +28,7 @@ import type {
 } from './notableEvents.types.js';
 
 describe('NOTABLE_EVENT_TYPES drift detection', () => {
-  it('contains exactly five entries in canonical order', () => {
+  it('contains exactly six entries in canonical order', () => {
     assert.deepStrictEqual(
       [...NOTABLE_EVENT_TYPES],
       [
@@ -37,6 +37,7 @@ describe('NOTABLE_EVENT_TYPES drift detection', () => {
         'schemeTwistResolved',
         'mastermindStrikeResolved',
         'mastermindDefeated',
+        'healResolved',
       ],
     );
   });
@@ -56,6 +57,7 @@ describe('NOTABLE_EVENT_TYPES drift detection', () => {
       'schemeTwistResolved',
       'mastermindStrikeResolved',
       'mastermindDefeated',
+      'healResolved',
     ];
     for (const member of unionMembers) {
       assert.ok(

@@ -39,15 +39,17 @@ export type NotableGameEventType =
   | 'ambushResolved'
   | 'schemeTwistResolved'
   | 'mastermindStrikeResolved'
-  | 'mastermindDefeated';
+  | 'mastermindDefeated'
+  | 'healResolved';
 
 // why: drift-detection array — must match `NotableGameEventType` exactly
 // (the `notableEvents.types.test.ts` drift test asserts bidirectional
-// parity + length + uniqueness). The five-entry canonical order is locked:
+// parity + length + uniqueness). The six-entry canonical order is locked:
 // `fightResolved` (Fight fire site), `ambushResolved` (Ambush fire site),
 // `schemeTwistResolved` (Scheme Twist resolver terminal),
-// `mastermindStrikeResolved` (Mastermind Strike handler terminal), and
-// `mastermindDefeated` (fightMastermind vanquish fire site, D-20008).
+// `mastermindStrikeResolved` (Mastermind Strike handler terminal),
+// `mastermindDefeated` (fightMastermind vanquish fire site, D-20008), and
+// `healResolved` (healWounds fire site, WP-381 / D-24182).
 // Adding `'escapeResolved'` for WP-186's onEscape fire site requires a
 // new DECISIONS entry per D-20001.
 /**
@@ -59,6 +61,7 @@ export const NOTABLE_EVENT_TYPES: readonly NotableGameEventType[] = [
   'schemeTwistResolved',
   'mastermindStrikeResolved',
   'mastermindDefeated',
+  'healResolved',
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -202,6 +205,23 @@ export interface MastermindDefeatedEvent {
 }
 
 /**
+ * Emitted by the `healWounds` move (WP-381 / D-24182) when a player uses the
+ * Wound "Healing" ability. Surfaces the same center-screen overlay treatment
+ * every other notable turn action gets — `G.messages` is not projected to
+ * clients. Minimal payload per D-20001 (no `eventId` / `seq` / `timestamp`).
+ */
+export interface HealResolvedEvent {
+  /** Discriminator. */
+  type: 'healResolved';
+  /** boardgame.io player-index string ("0", "1", ...) of the healing player. */
+  playerId: string;
+  /** Number of Wounds KO'd from hand this heal (>= 1). */
+  woundsHealed: number;
+  /** Engine-composed single-sentence English narrative. */
+  narrative: string;
+}
+
+/**
  * Closed discriminated union of every notable game event variant.
  *
  * Append-only on `G.notableEvents` at runtime. JSON-serialisable. Event
@@ -213,4 +233,5 @@ export type NotableGameEvent =
   | AmbushResolvedEvent
   | SchemeTwistResolvedEvent
   | MastermindStrikeResolvedEvent
-  | MastermindDefeatedEvent;
+  | MastermindDefeatedEvent
+  | HealResolvedEvent;

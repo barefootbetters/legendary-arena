@@ -19,6 +19,7 @@ import {
   composeSchemeTwistNarrative,
   composeMastermindStrikeNarrative,
   composeEffectResultLogLine,
+  composeHealNarrative,
 } from './notableEvents.compose.js';
 
 describe('composeFightNarrative (WP-319 — names the effect targets)', () => {
@@ -237,5 +238,21 @@ describe('composeMastermindStrikeNarrative', () => {
   it('falls back to the raw cardId when display data was missing', () => {
     const narrative = composeMastermindStrikeNarrative('master-strike-00');
     assert.equal(narrative, 'Master Strike: "master-strike-00" resolved.');
+  });
+});
+
+describe('composeHealNarrative (WP-381)', () => {
+  it('emits the locked sentence for a single Wound', () => {
+    assert.equal(
+      composeHealNarrative(1),
+      "Used Healing, KO'ing 1 Wound(s) from hand.",
+    );
+  });
+
+  it('emits the locked sentence for multiple Wounds', () => {
+    assert.equal(
+      composeHealNarrative(2),
+      "Used Healing, KO'ing 2 Wound(s) from hand.",
+    );
   });
 });

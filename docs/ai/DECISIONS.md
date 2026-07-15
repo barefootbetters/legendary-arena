@@ -29090,3 +29090,19 @@ The capability flag stays **client-derived** (no new `canX` boolean in `UIState`
 **Packet:** WP-380 (EC-409). **Executed:** 2026-07-15.
 
 Protect this file.
+
+### D-24182 — Wound "Healing" gains a `healResolved` notable-event overlay (the sixth NotableGameEvent variant)
+
+**Status:** **Active** (executed 2026-07-15, WP-381 / EC-410). The cosmetic follow-up to WP-379 (the move) + WP-380 (the button, live-verified this same day).
+
+**User-Visible Surface:** `play.legendary-arena.com` — a center-screen **"Healed"** overlay when a player uses the Wound Healing ability, matching the treatment fights / ambushes / scheme twists / Master Strikes / mastermind defeats already get.
+
+**Context.** WP-379 shipped `healWounds` with a `G.messages` log line but **no `notableEvent`** ("a client concern for the follow-up WP"). WP-380's button is now confirmed working in production (a Red Skull game 2026-07-15, `gitSha 80ba584`: Player 0 healed on turns 16/24/32). A heal was the only notable turn action with no center-screen overlay — `G.messages` is not projected to clients, so the log line alone never surfaces one.
+
+**Decision.** Add a sixth `NotableGameEvent` variant `healResolved` (mirrors the `mastermindDefeated` D-20008 precedent). `healWounds` emits it as its final step — an unconditional `G.notableEvents.push` (the `fightVillain` idiom; setup guarantees the array; moves never throw) — with a **minimal payload** per D-20001: `type` + `playerId` + `woundsHealed` + an engine-composed `narrative` (`composeHealNarrative`, pure), no `eventId`/`seq`/`timestamp`. The event is **public** (not audience-redacted, like `fightResolved`) and rides the existing `UIState.notableEvents` projection with **no UIState change**. The arena-client `NotableEventOverlay` renders a **"Healed"** chip + the verbatim narrative (D-20002) via one `CHIP_LABELS` entry; the client `NotableGameEvent` type is derived from `UIState['notableEvents'][number]`, so it widens automatically.
+
+**Fences.** No engine gameplay change (the move / flags / gating from WP-379/380 are untouched — this only *appends* an event). No AI/simulation integration. **No competitive-hash re-pin:** `G.notableEvents` is hashed, but no recorded sentinel/golden fixture exercises `healWounds` (not in `ai.legalMoves`), so `finalStateHash` + `PRE_WP080_HASH` are byte-identical. **Inline amendment (forced by the widened union):** `eventCardId` in `useNotableEventStream.ts` had an implicit `return event.mastermindId` catch-all assuming `mastermindDefeated` was the last variant — made exhaustive (returns `''` for the card-less `healResolved`), and the overlay maps `''` → `null` so no card-name row renders (+2 files beyond the 8-file allowlist). Out of scope: the **Healing Factor** hero-card wound-KO (the deferred generic `wound` keyword family, WP-364) and Enraging Wounds. `pnpm -r build` 0; `arena-client` typecheck 0 + test 961 → 963; engine 1953 → 1957 / 0.
+
+**Packet:** WP-381 (EC-410). **Executed:** 2026-07-15.
+
+Protect this file.
