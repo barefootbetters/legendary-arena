@@ -28021,7 +28021,7 @@ Protect this file.
 
 ### D-24134 — Player-count gauntlet boards (roster-keyed multiplayer entries) + gauntlet leg challenge links
 
-**Status:** Active 2026-07-09 (design lock; ratified at SPEC draft, the D-24131 pattern). **WP-344 executed 2026-07-09** (EC-376; migration 027 auto-applies via the Render migrate step on deploy). **WP-345** (client) execution pending.
+**Status:** Active 2026-07-09 (design lock; ratified at SPEC draft, the D-24131 pattern). **WP-344 executed 2026-07-09** (EC-376; migration 027 auto-applies via the Render migrate step on deploy). **WP-345 executed 2026-07-15** (EC-379; client rendering, zero engine/data change; `D-24026` live-verify operator-pending on deploy).
 
 > **Execution note (2026-07-09, WP-344 / EC-376).** Landed as designed with
 > three EC-draft reconciliations recorded in the WP addendum: (1) the summary
@@ -28035,6 +28035,23 @@ Protect this file.
 > test), amended 12 → 13. Bonus fix in the same column sweep:
 > `findCompetitiveScore` had missed WP-342's `outcome` column (its mapped
 > records carried `outcome: undefined`) — both columns now selected.
+
+> **Execution note (2026-07-15, WP-345 / EC-379).** Landed as designed —
+> client-only, 7 files under `apps/legends-board/src/`, no server / engine /
+> registry import, no new dependency, zero-API posture unchanged. The additive
+> WP-344 fields (`players`, `entryCounts`, `legs`) are hand-mirrored as
+> OPTIONAL on the client so pre-WP-344 snapshots degrade to WP-343 behavior
+> (solo-only tab, no challenge links). Four pure helpers (`buildPlayerCountTabs`,
+> `formatRoster` + the `rosterForEntry` fallback, `buildChallengeUrl`,
+> `resolveBoardIndexEntry`) unit-tabled — legends-board `node:test` 54/54,
+> `vue-tsc` 0, build 0. `parseHashRoute` + the kiosk/attract cycle are
+> byte-identical; the pinned challenge URL is asserted incl. `%2F` encoding.
+> One scope-neutral refinement: the routed unclaimed-count fetch is skipped in
+> `App.vue` so a `-p<N>` deep link to an empty count renders the
+> open-championship state instead of a spurious 404. Dev smoke against the live
+> manifest (WP-344 deployed; every count unclaimed — the launch state): the
+> player-count selector, a `-p2` deep link, and the challenge-link hrefs
+> verified. `D-24026` live-on-surface operator-pending on the CF Pages deploy.
 
 **User-Visible Surface:** none at this entry (design lock). Eventual surfaces: legends.legendary-arena.com (per-player-count gauntlet boards with full team rosters; per-leg challenge links) and cards.legendary-arena.com (the challenge link's landing surface — the existing WP-114 URL-parameterized loadout preview).
 
@@ -28113,7 +28130,7 @@ every unclaimed board gains a one-click path into a correctly-keyed loadout.
 
 **Packets:** WP-344 (server: migration 027 + player-count persistence + roster-keyed per-count
 standings + publisher emission) and WP-345 (client: legends-board per-count boards, rosters,
-challenge links) — both Drafted 2026-07-09.
+challenge links) — WP-344 executed 2026-07-09 (EC-376); WP-345 executed 2026-07-15 (EC-379).
 
 Protect this file.
 
