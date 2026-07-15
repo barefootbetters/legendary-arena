@@ -117,6 +117,25 @@ export default defineComponent({
       required: false,
       default: false,
     },
+    // why: WP-380 — derived at the page level: hasWoundInHand from scanning the
+    // viewer's handCards for the Wound ext_id (Healing KOs Wounds from hand
+    // specifically); hasActedThisTurn / hasHealedThisTurn read from UIState.game.
+    // Passed down so TurnActionBar can gate the Heal-Wounds button.
+    hasWoundInHand: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    hasActedThisTurn: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    hasHealedThisTurn: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   setup(props) {
     function activeStep(): 1 | 2 | 3 {
@@ -133,6 +152,13 @@ export default defineComponent({
 
     function endTurnGate(): { allowed: boolean; reason: string | null } {
       return useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard).canEndTurn();
+    }
+
+    // why: WP-380 — threads the three new props (hasWoundInHand from the page-level
+    // hand scan; hasActedThisTurn / hasHealedThisTurn from UIState.game) as the
+    // trailing useTurnActions params so canHealWounds gates the Heal-Wounds button.
+    function healGate(): { allowed: boolean; reason: string | null } {
+      return useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard, props.hasWoundInHand, props.hasActedThisTurn, props.hasHealedThisTurn).canHealWounds();
     }
 
     function onReveal(): void {
@@ -156,14 +182,23 @@ export default defineComponent({
       props.submitMove('endTurn', {});
     }
 
+    function onHealWounds(): void {
+      // why: WP-380 — empty-object payload; the healWounds move takes no arguments
+      // (healWounds.ts). KOs every Wound from the viewer's hand; the next server
+      // frame reflects the shrunk hand + grown KO pile + the WP-379 log line.
+      props.submitMove('healWounds', {});
+    }
+
     return {
       activeStep,
       revealGate,
       passPriorityGate,
       endTurnGate,
+      healGate,
       onReveal,
       onPassPriority,
       onEndTurn,
+      onHealWounds,
     };
   },
 });
@@ -222,6 +257,20 @@ export default defineComponent({
                useTurnActions.canPassPriority (always allowed; the gate
                is here for the precedence-pattern uniformity). -->
           Pass priority
+        </button>
+        <button
+          type="button"
+          data-testid="play-action-heal-wounds"
+          :disabled="!healGate().allowed"
+          :aria-disabled="!healGate().allowed ? 'true' : undefined"
+          :title="healGate().reason ?? undefined"
+          @click="onHealWounds"
+        >
+          <!-- why: WP-380 / D-24181 — the printed Wound "Healing" ability (engine
+               healWounds: KO all Wounds from hand). Disabled-tooltip precedence per
+               EC-132 §3 binds the reason from useTurnActions.canHealWounds (turn →
+               main → no pending → wound-in-hand → not-acted → not-healed). -->
+          Heal Wounds
         </button>
       </li>
       <li

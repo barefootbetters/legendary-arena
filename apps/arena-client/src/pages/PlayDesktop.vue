@@ -34,6 +34,7 @@ import EconomyBar from '../components/play/EconomyBar.vue';
 import YourDeckDiscardZone from '../components/play/YourDeckDiscardZone.vue';
 import YourVictoryPile from '../components/play/YourVictoryPile.vue';
 import TurnActionBar from '../components/play/TurnActionBar.vue';
+import { handHasWound } from '../components/play/woundIdentity';
 import LobbyControls from '../components/play/LobbyControls.vue';
 import NotableEventOverlay from '../components/play/NotableEventOverlay.vue';
 import GameLogPanel from '../components/log/GameLogPanel.vue';
@@ -401,6 +402,11 @@ export default defineComponent({
       () => snapshot.value?.pendingReturnZeroCostDiscard !== undefined,
     );
 
+    // why: WP-380 — Healing KOs Wounds from HAND specifically, so scan the viewer's
+    // own handCards (UIPlayerState.woundCount counts every zone and cannot answer
+    // this). handHasWound tolerates a redacted / absent hand (spectator) as false.
+    const hasWoundInHand = computed<boolean>(() => handHasWound(viewer.value?.handCards));
+
     return {
       snapshot,
       viewer,
@@ -429,6 +435,7 @@ export default defineComponent({
       hasPendingOptionalPutBottomHQ,
       hasPendingPutAnyNumberBottomHQ,
       hasPendingReturnZeroCostDiscard,
+      hasWoundInHand,
     };
   },
 });
@@ -653,6 +660,9 @@ export default defineComponent({
             :has-pending-optional-put-bottom-h-q="hasPendingOptionalPutBottomHQ"
             :has-pending-put-any-number-bottom-h-q="hasPendingPutAnyNumberBottomHQ"
             :has-pending-return-zero-cost-discard="hasPendingReturnZeroCostDiscard"
+            :has-wound-in-hand="hasWoundInHand"
+            :has-acted-this-turn="snapshot.game.hasActedThisTurn"
+            :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
             :submit-move="submitMove"
           />
         </template>

@@ -3,7 +3,9 @@
     "phase": "end",
     "turn": 11,
     "activePlayerId": "0",
-    "currentStage": "cleanup"
+    "currentStage": "cleanup",
+    "hasActedThisTurn": false,
+    "hasHealedThisTurn": false
   },
   "players": [
     {

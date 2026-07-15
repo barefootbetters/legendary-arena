@@ -3,7 +3,9 @@
     "phase": "play",
     "turn": 3,
     "activePlayerId": "0",
-    "currentStage": "main"
+    "currentStage": "main",
+    "hasActedThisTurn": false,
+    "hasHealedThisTurn": false
   },
   "players": [
     {

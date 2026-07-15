@@ -295,4 +295,53 @@ describe('useTurnActions — hasPendingReturnZeroCostDiscard gating (D-24139)', 
     assert.equal(actions.canEndTurn().allowed, true);
     assert.equal(actions.canPassPriority().allowed, true);
   });
+
+  // why: WP-380 — canHealWounds gates the Heal-Wounds button. Args after the 8
+  // pending flags are: hasWoundInHand, hasActedThisTurn, hasHealedThisTurn.
+  const NO_PENDING = [false, false, false, false, false, false, false, false] as const;
+
+  test('canHealWounds allowed on the viewer main turn with a Wound in hand, not acted, not healed', () => {
+    const result = useTurnActions('main', true, ...NO_PENDING, true, false, false).canHealWounds();
+    assert.equal(result.allowed, true);
+    assert.equal(result.reason, null);
+  });
+
+  test('canHealWounds blocked when it is not the viewer turn', () => {
+    const result = useTurnActions('main', false, ...NO_PENDING, true, false, false).canHealWounds();
+    assert.equal(result.allowed, false);
+    assert.match(result.reason!, /not your turn/i);
+  });
+
+  test('canHealWounds blocked outside the main stage', () => {
+    for (const stage of ['start', 'cleanup'] as const) {
+      const result = useTurnActions(stage, true, ...NO_PENDING, true, false, false).canHealWounds();
+      assert.equal(result.allowed, false, `heal blocked at ${stage}`);
+      assert.match(result.reason!, /Only available during the Main/);
+    }
+  });
+
+  test('canHealWounds blocked while a block-all choice is pending', () => {
+    // 4th arg (hasPendingKoChoice) = true
+    const result = useTurnActions('main', true, false, true, false, false, false, false, false, false, true, false, false).canHealWounds();
+    assert.equal(result.allowed, false);
+    assert.match(result.reason!, /pending choice/i);
+  });
+
+  test('canHealWounds blocked with no Wound in hand', () => {
+    const result = useTurnActions('main', true, ...NO_PENDING, false, false, false).canHealWounds();
+    assert.equal(result.allowed, false);
+    assert.match(result.reason!, /no Wounds in hand/i);
+  });
+
+  test('canHealWounds blocked after recruiting or fighting this turn', () => {
+    const result = useTurnActions('main', true, ...NO_PENDING, true, true, false).canHealWounds();
+    assert.equal(result.allowed, false);
+    assert.match(result.reason!, /after recruiting or fighting/i);
+  });
+
+  test('canHealWounds blocked after already healing this turn', () => {
+    const result = useTurnActions('main', true, ...NO_PENDING, true, false, true).canHealWounds();
+    assert.equal(result.allowed, false);
+    assert.match(result.reason!, /already healed/i);
+  });
 });

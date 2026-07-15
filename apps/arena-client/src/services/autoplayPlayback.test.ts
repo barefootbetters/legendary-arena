@@ -79,7 +79,7 @@ function envelope(
 // reference, so the tests assert identity (===), not deep shape.
 function sampleUiState(): UIState {
   return {
-    game: { phase: 'play', turn: 3, activePlayerId: 'alice', currentStage: 'main' },
+    game: { phase: 'play', turn: 3, activePlayerId: 'alice', currentStage: 'main', hasActedThisTurn: false, hasHealedThisTurn: false },
     players: [],
     city: { spaces: [], escapedPile: [] },
     hq: { slots: [] },

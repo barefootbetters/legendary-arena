@@ -13,6 +13,8 @@ test('TurnPhaseBanner renders phase, turn, stage, and active-player labels from 
         turn: 3,
         activePlayerId: '0',
         currentStage: 'main',
+        hasActedThisTurn: false,
+        hasHealedThisTurn: false,
       },
     },
   });
@@ -31,6 +33,8 @@ test('TurnPhaseBanner carries aria-live="polite" on the banner region', () => {
         turn: 1,
         activePlayerId: '1',
         currentStage: 'start',
+        hasActedThisTurn: false,
+        hasHealedThisTurn: false,
       },
     },
   });
@@ -48,6 +52,8 @@ test('TurnPhaseBanner exposes literal leaf-name aria-labels for every field', ()
         turn: 0,
         activePlayerId: '',
         currentStage: 'start',
+        hasActedThisTurn: false,
+        hasHealedThisTurn: false,
       },
     },
   });

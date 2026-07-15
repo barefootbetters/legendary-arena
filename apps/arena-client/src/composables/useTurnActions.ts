@@ -123,6 +123,13 @@ const NOT_YOUR_TURN: GatingResult = {
  *   blocks `canEndTurn` and `canPassPriority` at ANY stage (D-24139 — the engine's full
  *   block-all guard set freezes the board, mirroring `hasPendingKoChoice`). Defaults to
  *   false. The choice is mandatory, so the reason names no decline exit.
+ * @param hasWoundInHand Whether the viewer holds at least one Wound in hand
+ *   (derived client-side by scanning `viewer.handCards` for the Wound ext_id).
+ *   Gates `canHealWounds`. Defaults to false. WP-380.
+ * @param hasActedThisTurn Whether the viewer has recruited or fought this turn
+ *   (from `UIState.game.hasActedThisTurn`). Bars `canHealWounds`. Defaults to false. WP-380.
+ * @param hasHealedThisTurn Whether the viewer has already used Healing this turn
+ *   (from `UIState.game.hasHealedThisTurn`). Bars `canHealWounds`. Defaults to false. WP-380.
  */
 export function useTurnActions(
   currentStage: string,
@@ -135,6 +142,9 @@ export function useTurnActions(
   hasPendingOptionalPutBottomHQ: boolean = false,
   hasPendingPutAnyNumberBottomHQ: boolean = false,
   hasPendingReturnZeroCostDiscard: boolean = false,
+  hasWoundInHand: boolean = false,
+  hasActedThisTurn: boolean = false,
+  hasHealedThisTurn: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -144,6 +154,7 @@ export function useTurnActions(
   canFightMastermind: () => GatingResult;
   canPassPriority: () => GatingResult;
   canEndTurn: () => GatingResult;
+  canHealWounds: () => GatingResult;
 } {
   return {
     activeStep: activeStepFor(currentStage),
@@ -341,6 +352,49 @@ export function useTurnActions(
       return currentStage === 'cleanup'
         ? ALLOWED
         : { allowed: false, reason: stageGateReason(currentStage, 'cleanup') };
+    },
+    // why: WP-380 / D-24181 — the Wound "Healing" ability (engine healWounds).
+    // Precedence: turn → main stage → block-all pending → wound-in-hand →
+    // not-acted → not-healed. The pending set mirrors the engine healWounds
+    // guards exactly (D-24008 / D-24019 / D-24067 / D-24069 / D-24139 — the same
+    // 5-guard cluster as fightVillain), so a grayed button never hides a legal
+    // move and a live button never offers an illegal one.
+    canHealWounds: () => {
+      if (!isViewerTurn) return NOT_YOUR_TURN;
+      if (currentStage !== 'main') {
+        return { allowed: false, reason: stageGateReason(currentStage, 'main') };
+      }
+      if (
+        hasPendingKoChoice ||
+        hasPendingOptionalKoReward ||
+        hasPendingVictoryPileCardPick ||
+        hasPendingDrawOrEmpowered ||
+        hasPendingReturnZeroCostDiscard
+      ) {
+        return {
+          allowed: false,
+          reason: 'Resolve the pending choice before you can heal.',
+        };
+      }
+      if (!hasWoundInHand) {
+        return {
+          allowed: false,
+          reason: 'You have no Wounds in hand to heal.',
+        };
+      }
+      if (hasActedThisTurn) {
+        return {
+          allowed: false,
+          reason: 'You cannot heal after recruiting or fighting this turn.',
+        };
+      }
+      if (hasHealedThisTurn) {
+        return {
+          allowed: false,
+          reason: 'You have already healed this turn.',
+        };
+      }
+      return ALLOWED;
     },
   };
 }

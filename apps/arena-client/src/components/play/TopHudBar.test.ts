@@ -14,6 +14,8 @@ function fixture(overrides: Partial<UIState['game']> = {}): UIState {
       turn: 4,
       activePlayerId: 'alice',
       currentStage: 'main',
+      hasActedThisTurn: false,
+      hasHealedThisTurn: false,
       ...overrides,
     },
     players: [],
