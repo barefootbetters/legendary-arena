@@ -73,6 +73,15 @@ function defeatEvent(mastermindId: string): NotableGameEvent {
   };
 }
 
+function healEvent(woundsHealed: number): NotableGameEvent {
+  return {
+    type: 'healResolved',
+    playerId: '0',
+    woundsHealed,
+    narrative: `Used Healing, KO'ing ${woundsHealed} Wound(s) from hand.`,
+  };
+}
+
 describe('NotableEventOverlay — null event renders nothing (WP-201)', () => {
   test('omits the overlay element when event prop is null', () => {
     const wrapper = mount(NotableEventOverlay, { props: { event: null } });
@@ -131,6 +140,19 @@ describe('NotableEventOverlay — locked chip labels (WP-201 §Locked Values)', 
       props: { event: defeatEvent('core/magneto') },
     });
     assert.match(wrapper.text(), /Mastermind Defeated!/);
+  });
+
+  test('healResolved → "Healed" chip + verbatim narrative, no card-name row (WP-381)', () => {
+    const wrapper = mount(NotableEventOverlay, {
+      props: { event: healEvent(2) },
+    });
+    const overlay = wrapper.find('[data-testid="play-notable-event-overlay"]');
+    assert.equal(overlay.attributes('data-event-type'), 'healResolved');
+    assert.match(wrapper.text(), /Healed/);
+    assert.match(wrapper.text(), /KO'ing 2 Wound\(s\) from hand\./);
+    // why: WP-381 — a heal carries no card, so cardId → null and the card-name
+    // row renders empty.
+    assert.equal(wrapper.find('.notable-event-overlay__card-name').text(), '');
   });
 });
 

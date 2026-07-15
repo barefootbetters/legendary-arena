@@ -60,15 +60,17 @@ const EFFECT_LABELS: Readonly<Record<string, string>> = {
   captureBystander: 'Captures a Bystander',
 };
 
-// why: locked chip labels — five entries matching `NotableGameEventType`
-// exactly (D-20008 added `mastermindDefeated`). The labels are user-facing
-// English (engine-side type names use camelCase suffixes).
+// why: locked chip labels — six entries matching `NotableGameEventType`
+// exactly (D-20008 added `mastermindDefeated`; WP-381 / D-24182 added
+// `healResolved`). The labels are user-facing English (engine-side type names
+// use camelCase suffixes).
 const CHIP_LABELS: Readonly<Record<string, string>> = {
   fightResolved: 'Fought',
   ambushResolved: 'Ambush!',
   schemeTwistResolved: 'Scheme Twist!',
   mastermindStrikeResolved: 'Master Strike!',
   mastermindDefeated: 'Mastermind Defeated!',
+  healResolved: 'Healed',
 };
 
 function chipLabel(type: string): string {
@@ -104,7 +106,10 @@ export default defineComponent({
   setup(props) {
     const cardId = computed<string | null>(() => {
       if (props.event === null) return null;
-      return eventCardId(props.event);
+      const id = eventCardId(props.event);
+      // why: WP-381 — an empty id (healResolved has no card) means no card-name
+      // row; map it to null so the overlay renders only the chip + narrative.
+      return id === '' ? null : id;
     });
 
     const cardName = computed<string | null>(() => {
@@ -230,6 +235,12 @@ export default defineComponent({
 
 .notable-event-overlay[data-event-type="mastermindDefeated"] {
   border-color: var(--color-victory, #2e7d32);
+}
+
+/* why: WP-381 — a distinct restorative teal for the Heal overlay, separate from
+   the mastermind-defeat victory green. */
+.notable-event-overlay[data-event-type="healResolved"] {
+  border-color: var(--color-heal, #2e9e8f);
 }
 
 .notable-event-overlay__chip {

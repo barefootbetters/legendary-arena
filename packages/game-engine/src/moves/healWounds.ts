@@ -26,6 +26,7 @@ import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
 import { pushLog } from '../log/logPush.js';
+import { composeHealNarrative } from '../events/notableEvents.compose.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -114,4 +115,16 @@ export function healWounds({ G, ctx }: MoveContext): void {
     G,
     `Player ${ctx.currentPlayer} used Healing: KO'd ${woundsToKo} Wound(s) from hand.`,
   );
+
+  // why: WP-381 / D-24182 — emit the healResolved notable event LAST (after the
+  // reverse-lock flag and the log push), observing settled state — the
+  // fightVillain emission precedent. Unconditional push; setup guarantees
+  // G.notableEvents. G.messages is not projected to clients, so this event is
+  // what drives the center-screen "Healed" overlay.
+  G.notableEvents.push({
+    type: 'healResolved',
+    playerId: ctx.currentPlayer,
+    woundsHealed: woundsToKo,
+    narrative: composeHealNarrative(woundsToKo),
+  });
 }

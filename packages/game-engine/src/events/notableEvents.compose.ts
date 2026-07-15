@@ -258,3 +258,15 @@ export function composeMastermindDefeatedNarrative(
       : '';
   return `Defeated the Mastermind "${mastermindName}"${bystanderClause}.`;
 }
+
+/**
+ * Composes the single-sentence narrative for a `healResolved` event (WP-381).
+ *
+ * Pure: given the same count, returns byte-identical output.
+ *
+ * @param woundsHealed - Number of Wounds KO'd from hand this heal (>= 1).
+ * @returns A single English sentence for the notable-event overlay.
+ */
+export function composeHealNarrative(woundsHealed: number): string {
+  return `Used Healing, KO'ing ${String(woundsHealed)} Wound(s) from hand.`;
+}

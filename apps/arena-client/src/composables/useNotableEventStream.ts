@@ -51,7 +51,11 @@ export function eventCardId(event: NotableGameEvent): string {
   if (event.type === 'ambushResolved') return event.revealedCardId;
   if (event.type === 'schemeTwistResolved') return event.twistCardId;
   if (event.type === 'mastermindStrikeResolved') return event.strikeCardId;
-  return event.mastermindId;
+  if (event.type === 'mastermindDefeated') return event.mastermindId;
+  // why: WP-381 — healResolved carries no card identity (the overlay renders
+  // only its chip + narrative), so there is no ext_id to resolve. Returning ''
+  // also keeps this helper exhaustive over the widened NotableGameEvent union.
+  return '';
 }
 
 /**

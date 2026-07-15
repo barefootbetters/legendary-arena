@@ -164,6 +164,28 @@ describe('healWounds — core behavior', () => {
     assert.strictEqual(state.hasHealedThisTurn, true);
   });
 
+  it('emits a healResolved notable event with the KO count (WP-381)', () => {
+    const state = createHealState({ hand: [WOUND_EXT_ID, 'hero-a', WOUND_EXT_ID] });
+    healWounds(createMoveContext(state));
+
+    assert.strictEqual(state.notableEvents.length, 1);
+    const event = state.notableEvents[0]!;
+    assert.strictEqual(event.type, 'healResolved');
+    // why: narrow the discriminated union before reading the variant fields.
+    if (event.type === 'healResolved') {
+      assert.strictEqual(event.playerId, '0');
+      assert.strictEqual(event.woundsHealed, 2);
+      assert.match(event.narrative, /KO'ing 2 Wound\(s\)/);
+    }
+    assert.doesNotThrow(() => JSON.stringify(state));
+  });
+
+  it('emits no notable event on a no-op heal (WP-381)', () => {
+    const acted = createHealState({ hand: [WOUND_EXT_ID], hasActedThisTurn: true });
+    healWounds(createMoveContext(acted));
+    assert.strictEqual(acted.notableEvents.length, 0);
+  });
+
   it('appends the KO\'d Wounds after any existing KO pile contents', () => {
     const state = createHealState({
       hand: [WOUND_EXT_ID],
