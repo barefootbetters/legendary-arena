@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-376 / EC-405 Executed — Solo bot-ally lobby affordance (client) — the "Play with a bot ally" button (D-24171 Active) (2026-07-14) — **cluster complete**
+
+Adds the client entry point that makes the bot-ally feature usable: a **"Play with a bot ally"** control in the arena-client lobby (seat count reuses the existing `numPlayers` field, plus a bot count and a policy). Submitting it calls `createMatchWithBot` (`POST /api/match/create-with-bot`, WP-375), then the human **joins their own seat 0 via the authed `joinMatch(..., authToken)`** and navigates to the play surface — never a server-returned credential (the key distinction from the "Watch Bot Play" spectator flow), so seat 0 keeps its `match_seat_accounts` row for WP-377's ranked guard + attribution. Co-op copy only (§23(b)); auth-gated (a guest is redirected to login); `botCount ∈ 1..seats-1` validated client-side; reuses `buildConfig()`; no `WaitingForPlayersPanel` change (WP-375's join-before-return ordering keeps it hidden). `parsePositiveInteger` was hardened to `String()`-coerce (defensive against a numeric v-model).
+
+This **completes the solo bot-ally cluster**: **WP-375** (server `create-with-bot` endpoint + per-match `BotAllyDriver`) + **WP-377** (seat-count-complete ranked guard, closing the §5b farm vector) + **WP-376** (this client affordance). A lone signed-in player can now start a cooperative 2–5-seat match with a bot ally filling the other seat(s), the match starts once they ready seat 0, and the bot takes its turns — and that bot-assisted match records Casual, never ranked.
+
+`pnpm -r build` 0; `arena-client` typecheck (vue-tsc) 0 + test **922/0** (+6: `createMatchWithBot` posts/throws; `createWithBotAlly` create→authed-seat-0-join, botCount validation, guest redirect, co-op copy). Grep gates pass. `User-Visible Surface = arena.legendary-arena.com` — **D-24026 live-verify operator-pending on deploy** (the full lobby→play→bot-turn flow needs the deployed backend; the client logic + block render are unit-covered — the post-deploy check is simply clicking "Play with a bot ally" and confirming the match starts and the bot moves).
+
 ### WP-377 / EC-406 Executed — Ranked eligibility: seat-count-complete roster guard (server) (D-24172 Active, amends D-24146) (2026-07-14)
 
 Hardens `computeRankedEligibility` so a match with any **non-account seat** (a bot ally from WP-375, or a guest — both rowless per D-24120) can never submit a **ranked** score — closing the DESIGN §5b leak where a short roster is vacuously ranked. Ranked now requires, in order: (1) **no `botSeats` tag** (short-circuit to Casual); (2) `roster.length === seatCount`; (3) `areAllMutualFriends(roster)`. The predicate is `!== seatCount`, **never `< 2`**, so a genuine 1-player solo match (roster 1 == seatCount 1) stays vacuously ranked.

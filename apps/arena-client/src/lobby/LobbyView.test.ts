@@ -6,6 +6,7 @@ import { setActivePinia, createPinia } from 'pinia';
 import { mount, flushPromises, enableAutoUnmount } from '@vue/test-utils';
 
 import LobbyView from './LobbyView.vue';
+import { useAuthStore } from '../stores/auth';
 
 /**
  * Tests for the WP-369 / EC-398 addition to the lobby: the copy-join-link deep
@@ -175,4 +176,130 @@ test('WP-371: when the requirements fetch is unavailable the pre-check stays sil
     !(createButton.element as HTMLButtonElement).disabled,
     'Create must not be blocked by an unavailable pre-check (engine remains the authority)',
   );
+});
+
+// --- WP-376 / EC-405: "Play with a bot ally" affordance ---
+
+interface RecordedCall {
+  url: string;
+  init: RequestInit | undefined;
+}
+
+/**
+ * Stub fetch routing by URL: the bot-ally create returns { matchId }, the join
+ * returns the human's own credential, and the mount-time list / requirements
+ * calls succeed. Records every call for assertions.
+ */
+function stubBotAllyFetch(): RecordedCall[] {
+  const recorded: RecordedCall[] = [];
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    recorded.push({ url, init });
+    if (url.includes('/api/match/create-with-bot')) {
+      return { ok: true, status: 200, json: async () => ({ matchId: 'match-bot-xyz' }) } as Response;
+    }
+    if (url.includes('/api/match/join')) {
+      return { ok: true, status: 200, json: async () => ({ playerCredentials: 'human-own-cred' }) } as Response;
+    }
+    if (url.includes('/api/match/setup-requirements')) {
+      return { ok: true, status: 200, json: async () => ({ requirements: SETUP_REQUIREMENTS }) } as Response;
+    }
+    return { ok: true, status: 200, json: async () => ({ matches: [] }) } as Response;
+  }) as typeof globalThis.fetch;
+  return recorded;
+}
+
+/** Sign in the pinia auth store so the affordance's auth gate passes. */
+function signIn(): void {
+  useAuthStore().setSession('bot-ally-token', null);
+}
+
+test('WP-376: createWithBotAlly POSTs create-with-bot then joins seat 0 via the authed join', async () => {
+  setSearch('?route=lobby');
+  const calls = stubBotAllyFetch();
+  const wrapper = mountLobby();
+  await flushPromises();
+  signIn();
+  await wrapper.find('#playerName').setValue('Solo Player');
+
+  await wrapper.find('[data-testid="lobby-create-bot-ally"]').trigger('click');
+  await flushPromises();
+
+  const createCall = calls.find((call) => call.url.includes('/api/match/create-with-bot'));
+  assert.ok(createCall, 'the bot-ally create endpoint was called');
+  assert.equal(
+    (createCall!.init?.headers as Record<string, string>).Authorization,
+    'Bearer bot-ally-token',
+    'the create carries the human bearer token (auth-gated)',
+  );
+  const createBody = JSON.parse(String(createCall!.init?.body)) as {
+    numPlayers: number;
+    botCount: number;
+    policy: string;
+  };
+  assert.equal(createBody.numPlayers, 2);
+  assert.equal(createBody.botCount, 1);
+  assert.equal(createBody.policy, 'competent');
+
+  // The human joins their OWN seat 0 through the authed join (never a
+  // server-returned seat-0 credential — the key distinction from autoplay).
+  const joinCall = calls.find((call) => call.url.includes('/api/match/join'));
+  assert.ok(joinCall, 'the human joined seat 0 via the authed join endpoint');
+  const joinBody = JSON.parse(String(joinCall!.init?.body)) as { matchID: string; playerID: string };
+  assert.equal(joinBody.matchID, 'match-bot-xyz');
+  assert.equal(joinBody.playerID, '0');
+  assert.equal(
+    (joinCall!.init?.headers as Record<string, string>).Authorization,
+    'Bearer bot-ally-token',
+  );
+});
+
+test('WP-376: a botCount not less than the seat count is rejected before any POST', async () => {
+  setSearch('?route=lobby');
+  const calls = stubBotAllyFetch();
+  const wrapper = mountLobby();
+  await flushPromises();
+  signIn();
+  await wrapper.find('#playerName').setValue('Solo Player');
+  await wrapper.find('#numPlayers').setValue('2');
+  await wrapper.find('#botAllyBotCount').setValue('2'); // 2 bots in a 2-seat match leaves no human seat
+
+  await wrapper.find('[data-testid="lobby-create-bot-ally"]').trigger('click');
+  await flushPromises();
+
+  assert.ok(
+    !calls.some((call) => call.url.includes('/api/match/create-with-bot')),
+    'an invalid bot count never reaches the server',
+  );
+  assert.match(wrapper.find('[data-testid="lobby-error"]').text(), /bot count must be between 1 and 1/i);
+});
+
+test('WP-376: a guest is redirected to login and never posts a bot-ally create', async () => {
+  setSearch('?route=lobby');
+  const calls = stubBotAllyFetch();
+  const wrapper = mountLobby();
+  await flushPromises();
+  // no signIn() — the auth store token stays null (guest)
+  await wrapper.find('#playerName').setValue('Guest');
+
+  await wrapper.find('[data-testid="lobby-create-bot-ally"]').trigger('click');
+  await flushPromises();
+
+  assert.ok(
+    !calls.some((call) => call.url.includes('/api/match/create-with-bot')),
+    'a guest never issues an unauthenticated bot-ally create',
+  );
+});
+
+test('WP-376: the bot-ally block uses co-op copy with no versus/opponent framing', async () => {
+  setSearch('?route=lobby');
+  stubBotAllyFetch();
+  const wrapper = mountLobby();
+  await flushPromises();
+
+  const block = wrapper.find('[data-testid="lobby-bot-ally"]');
+  assert.ok(block.exists(), 'the bot-ally block renders');
+  const text = block.text().toLowerCase();
+  assert.ok(text.includes('bot ally'), 'the copy frames the bot as an ally');
+  assert.ok(!/\bvs\b|opponent|beat the bot|versus/.test(text), 'no PvP/versus framing (VISION §23(b))');
 });

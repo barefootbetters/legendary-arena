@@ -3,6 +3,7 @@ import { defineComponent, ref, computed, onMounted, nextTick } from 'vue';
 import type { MatchSetupConfig } from '@legendary-arena/game-engine';
 import {
   createMatch,
+  createMatchWithBot,
   joinMatch,
   listMatches,
   serverUrl,
@@ -45,8 +46,11 @@ function splitCsv(raw: string): string[] {
   return parts;
 }
 
-function parsePositiveInteger(raw: string, fieldLabel: string): number {
-  const trimmed = raw.trim();
+function parsePositiveInteger(raw: string | number, fieldLabel: string): number {
+  // why: a `<input type="number">` v-model yields a string in a real browser, but
+  // some hosts (and test harnesses) hand back a number; coerce with String() so
+  // this helper never throws a `.trim is not a function` on a numeric value.
+  const trimmed = String(raw).trim();
   if (trimmed === '') {
     throw new Error(
       `The "${fieldLabel}" field must not be empty. Provide a positive integer.`,
@@ -120,6 +124,13 @@ export default defineComponent({
     const autoplayPlayerCount = ref('1');
     const autoplayPolicy = ref('competent');
     const autoplayDelay = ref('800');
+
+    // why: WP-376 — the bot-ally affordance reuses the main `numPlayers` field for
+    // the seat count; these two add how many of those seats the bot ally fills
+    // (default 1 human + 1 bot) and which policy drives it. Bounds: botCount is
+    // 1..seatCount-1 so at least one seat is always left open for the human.
+    const botAllyBotCount = ref('1');
+    const botAllyPolicy = ref('competent');
 
     // why: JSON-first layout per WP-092. The Registry Viewer loadout
     // builder (WP-091) is the expected authoring path; users export a
@@ -313,6 +324,85 @@ export default defineComponent({
             ? submitError.message
             : String(submitError);
         errorMessage.value = `Failed to create and join the match. ${cause}`;
+      } finally {
+        isSubmitting.value = false;
+      }
+    }
+
+    /**
+     * Creates a cooperative match with a bot ally filling the non-human seat(s),
+     * then joins the human's own seat 0 and navigates to the play surface.
+     *
+     * // why: WP-376 — the human ALWAYS joins seat 0 via `joinMatch(..., authToken)`
+     * (the authed path), NOT a server-returned credential like the autoplay
+     * spectator flow (`startAutoplay`). That authed join is what writes seat 0's
+     * `match_seat_accounts` row and hands back the human's own credential — keeping
+     * WP-377's ranked/attribution correct (a server credential would leave seat 0
+     * accountless and mark the human's own match Casual + unattributed). The bot
+     * seats are reserved + auto-readied server-side; the client never readies or
+     * starts the match and never touches the bot seats.
+     */
+    async function createWithBotAlly(): Promise<void> {
+      if (isSubmitting.value) {
+        return;
+      }
+      if (playerName.value.trim() === '') {
+        errorMessage.value =
+          'The "playerName" field must not be empty before creating a match.';
+        return;
+      }
+      const seatCount = parsePositiveInteger(numPlayers.value, 'numPlayers');
+      const botCount = parsePositiveInteger(botAllyBotCount.value, 'botAllyBotCount');
+      // why: client-side UX validation mirroring the server 400 — a bot-ally match
+      // needs at least 2 seats and must leave at least one open for the human, so
+      // botCount is 1..seatCount-1. The server re-validates; this avoids a raw 400.
+      if (seatCount < 2) {
+        errorMessage.value =
+          'A bot-ally match needs at least 2 seats. Set the player count to 2 or more.';
+        return;
+      }
+      if (botCount < 1 || botCount > seatCount - 1) {
+        errorMessage.value =
+          `The bot count must be between 1 and ${seatCount - 1} so at least one seat is left open for you.`;
+        return;
+      }
+      const policy = botAllyPolicy.value === 'random' ? 'random' : 'competent';
+      const authToken = requireAuthTokenOrRedirectToLogin();
+      if (authToken === null) {
+        return;
+      }
+
+      isSubmitting.value = true;
+      try {
+        const config = buildConfig();
+        const created = await createMatchWithBot(
+          config,
+          seatCount,
+          botCount,
+          policy,
+          authToken,
+        );
+        // why: best-effort client-local setup stash (as createAndJoin does).
+        persistMatchSetup(created.matchId, config);
+        // why: the human joins their OWN seat 0 with the auth token — never the
+        // server's credential (see the function-level note).
+        const joined = await joinMatch(
+          created.matchId,
+          '0',
+          playerName.value.trim(),
+          authToken,
+        );
+        const query =
+          `?match=${encodeURIComponent(created.matchId)}` +
+          `&player=0` +
+          `&credentials=${encodeURIComponent(joined.playerCredentials)}`;
+        window.location.search = query;
+      } catch (submitError) {
+        const cause =
+          submitError instanceof Error
+            ? submitError.message
+            : String(submitError);
+        errorMessage.value = `Failed to create the bot-ally match. ${cause}`;
       } finally {
         isSubmitting.value = false;
       }
@@ -616,6 +706,9 @@ export default defineComponent({
       autoplayPolicy,
       autoplayDelay,
       startAutoplay,
+      botAllyBotCount,
+      botAllyPolicy,
+      createWithBotAlly,
     };
   },
 });
@@ -691,6 +784,52 @@ export default defineComponent({
         @click="startAutoplay"
       >
         Watch Bot Play
+      </button>
+    </section>
+
+    <!-- why: WP-376 — co-op affordance (VISION §23(b)): the bot is an ally on
+         the player's side, fighting the Mastermind together. Seat count reuses
+         the main numPlayers field above; this adds the bot count + policy. -->
+    <section
+      class="play-with-bot-ally"
+      aria-labelledby="bot-ally-heading"
+      data-testid="lobby-bot-ally"
+    >
+      <h2 id="bot-ally-heading">Play with a bot ally</h2>
+
+      <p class="bot-ally-hint">
+        Add a bot ally to your table to play a cooperative game on your own — the
+        bot fills the other seat(s) and takes its turns alongside you against the
+        Mastermind. Uses the player count and loadout you set above.
+      </p>
+
+      <label for="botAllyBotCount">Bot allies (1 or more, leaving a seat for you)</label>
+      <input
+        id="botAllyBotCount"
+        v-model="botAllyBotCount"
+        type="number"
+        min="1"
+        max="4"
+        aria-label="Number of bot allies"
+      />
+
+      <label for="botAllyPolicy">Bot ally skill</label>
+      <select
+        id="botAllyPolicy"
+        v-model="botAllyPolicy"
+        aria-label="Bot ally policy"
+      >
+        <option value="competent">Competent (heuristic)</option>
+        <option value="random">Random</option>
+      </select>
+
+      <button
+        type="button"
+        :disabled="isSubmitting"
+        data-testid="lobby-create-bot-ally"
+        @click="createWithBotAlly"
+      >
+        Play with a bot ally
       </button>
     </section>
 
