@@ -17,6 +17,7 @@ import type { HeroAbilityHook, HeroEffectDescriptor } from '../rules/heroAbility
 import type { HeroKeyword } from '../rules/heroKeywords.js';
 import { revealRulesForLegacyKeyword } from '../rules/revealRule.js';
 import { HERO_COMPOSITION_MARKERS, buildEmpoweredComposition } from '../rules/heroCompositions.js';
+import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 
 // why: WP-253 Amendment-A — the pre-existing reveal fixtures hand-built legacy
 // `{ type: 'reveal-ko' }` descriptors; once those keywords lose their handlers
@@ -52,15 +53,16 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     );
   });
 
-  it('has exactly 16 handlers and none for the deferred keywords', () => {
+  it('has exactly 18 handlers and none for the deferred keywords', () => {
     // why: WP-286 / D-24069 added the draw-or-empowered park handler (9 → 10); the
     // Ionic Energy optional-put-bottom-hq fix added its park handler (10 → 11); D-24132
     // added the put-any-number-bottom-hq park handler (11 → 12); D-24133 added the
     // put-bottom-hq-icon-reward park handler (12 → 13); D-24139 added the
     // return-zero-cost-discard park handler (13 → 14); D-24156 / WP-364 registered the
     // one shared gain-wound handler under both gain-wound-self and gain-wound-each (14 → 16);
-    // D-24148 / WP-356 added the shuffle-discard-empty-reward immediate handler (16 → 17).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 17);
+    // D-24148 / WP-356 added the shuffle-discard-empty-reward immediate handler (16 → 17);
+    // WP-382 / D-24183 added the ko-wound-reward immediate handler (17 → 18).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 18);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -3762,5 +3764,131 @@ describe('heroEffectShuffleDiscardEmptyReward (WP-356)', () => {
     const shuffleBranchState = makeShuffleRewardState({ deck: ['deck-1'], discard: ['disc-1'], rewardType: 'attack' });
     executeHeroEffects(shuffleBranchState, mockCtx, '0', 'hero-reprocess' as string);
     assert.ok(JSON.stringify(shuffleBranchState).length > 0, 'shuffle branch state must serialize');
+  });
+});
+
+describe('heroEffectKoWoundReward (WP-382 / D-24183)', () => {
+  const mockCtx = makeMockCtx();
+
+  function makeKoWoundState(overrides: {
+    hand?: string[];
+    discard?: string[];
+    deck?: string[];
+    rewardType?: string;
+    magnitude?: number;
+  }) {
+    return makeTestState({
+      hand: overrides.hand ?? [WOUND_EXT_ID],
+      discard: overrides.discard ?? [],
+      deck: overrides.deck ?? [],
+      inPlay: ['hero-healing-factor'],
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-healing-factor' as string,
+          timing: 'onPlay',
+          keywords: ['ko-wound-reward'],
+          effects: [{
+            type: 'ko-wound-reward',
+            magnitude: overrides.magnitude ?? 1,
+            rewardType: (overrides.rewardType ?? 'draw') as 'draw',
+          }],
+        },
+      ],
+    });
+  }
+
+  it('KOs a Wound from hand and grants the attack reward', () => {
+    const gameState = makeKoWoundState({
+      hand: [WOUND_EXT_ID, 'card-x'],
+      rewardType: 'attack',
+      magnitude: 2,
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-healing-factor' as string);
+
+    assert.deepStrictEqual(gameState.playerZones['0'].hand, ['card-x'], 'the Wound must leave the hand, other cards untouched');
+    assert.deepStrictEqual(gameState.ko, [WOUND_EXT_ID], 'the Wound must be in the KO pile');
+    assert.equal(gameState.turnEconomy.attack, 2, 'the attack reward must be granted');
+  });
+
+  it('KOs a Wound from the discard pile when the hand has none, then draws', () => {
+    const gameState = makeKoWoundState({
+      hand: [],
+      discard: [WOUND_EXT_ID],
+      deck: ['deck-1'],
+      rewardType: 'draw',
+      magnitude: 1,
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-healing-factor' as string);
+
+    assert.deepStrictEqual(gameState.playerZones['0'].discard, [], 'the Wound must leave the discard pile');
+    assert.deepStrictEqual(gameState.ko, [WOUND_EXT_ID], 'the Wound must be in the KO pile');
+    assert.deepStrictEqual(gameState.playerZones['0'].hand, ['deck-1'], 'the draw reward must pull a card into hand');
+    assert.deepStrictEqual(gameState.playerZones['0'].deck, [], 'the drawn card must leave the deck');
+  });
+
+  it('prefers the hand Wound when a Wound sits in both hand and discard', () => {
+    const gameState = makeKoWoundState({
+      hand: [WOUND_EXT_ID],
+      discard: [WOUND_EXT_ID],
+      rewardType: 'attack',
+      magnitude: 1,
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-healing-factor' as string);
+
+    assert.deepStrictEqual(gameState.playerZones['0'].hand, [], 'the hand Wound must be the one KO\'d');
+    assert.deepStrictEqual(gameState.playerZones['0'].discard, [WOUND_EXT_ID], 'the discard Wound must stay put');
+  });
+
+  it('is a logged no-op when there is no Wound to KO', () => {
+    const gameState = makeKoWoundState({
+      hand: ['card-x'],
+      discard: [],
+      rewardType: 'attack',
+      magnitude: 2,
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-healing-factor' as string);
+
+    assert.deepStrictEqual(gameState.ko, [], 'nothing is KO\'d');
+    assert.equal(gameState.turnEconomy.attack, 0, 'no reward is granted without a KO');
+    const noOpLine = gameState.messages.find((message) => message.includes('no Wound in hand or discard'));
+    assert.ok(noOpLine !== undefined, 'the no-op must be logged for replay inspection');
+  });
+
+  it('never KOs a non-Wound card even when the hand has one', () => {
+    const gameState = makeKoWoundState({
+      hand: [WOUND_EXT_ID, 'hero-valuable'],
+      rewardType: 'attack',
+      magnitude: 1,
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-healing-factor' as string);
+
+    assert.deepStrictEqual(gameState.ko, [WOUND_EXT_ID], 'only the Wound may be KO\'d');
+    assert.ok(gameState.playerZones['0'].hand.includes('hero-valuable'), 'the valuable Hero must stay in hand');
+  });
+
+  it('skips an unseeded reward without KOing the Wound', () => {
+    const gameState = makeKoWoundState({
+      hand: [WOUND_EXT_ID],
+      rewardType: 'rescue',
+      magnitude: 1,
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-healing-factor' as string);
+
+    assert.deepStrictEqual(gameState.ko, [], 'no KO happens for an unsupported reward');
+    assert.deepStrictEqual(gameState.playerZones['0'].hand, [WOUND_EXT_ID], 'the Wound stays in hand');
+    const skipLine = gameState.messages.find((message) => message.includes('not yet supported'));
+    assert.ok(skipLine !== undefined, 'the skip must be logged');
+  });
+
+  it('G remains JSON-serializable after resolution', () => {
+    const gameState = makeKoWoundState({ hand: [WOUND_EXT_ID], rewardType: 'attack', magnitude: 1 });
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-healing-factor' as string);
+    assert.ok(JSON.stringify(gameState).length > 0, 'state must serialize after KO-and-reward');
   });
 });

@@ -18,6 +18,12 @@
   ],
   "3dtc": [
     {
+      "heroSlug": "hulk",
+      "cardSlug": "unstoppable-hulk",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:ko-wound-reward:attack:2]"
+    },
+    {
       "heroSlug": "black-widow",
       "cardSlug": "mission-accomplished",
       "abilityIndex": 1,
@@ -101,6 +107,18 @@
     }
   ],
   "core": [
+    {
+      "heroSlug": "hulk",
+      "cardSlug": "unstoppable-hulk",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:ko-wound-reward:attack:2]"
+    },
+    {
+      "heroSlug": "wolverine",
+      "cardSlug": "healing-factor",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:ko-wound-reward:draw:1]"
+    },
     {
       "heroSlug": "black-widow",
       "cardSlug": "mission-accomplished",
@@ -219,6 +237,12 @@
     }
   ],
   "cvwr": [
+    {
+      "heroSlug": "hulkling",
+      "cardSlug": "cellular-regeneration",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:ko-wound-reward:attack:1]"
+    },
     {
       "heroSlug": "cloak-dagger",
       "cardSlug": "darkness",
@@ -398,6 +422,12 @@
   ],
   "msis": [
     {
+      "heroSlug": "bruce-banner",
+      "cardSlug": "hulkbuster-armor",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:ko-wound-reward:recruit:2]"
+    },
+    {
       "heroSlug": "wanda-vision",
       "cardSlug": "witchcraft",
       "abilityIndex": 0,
@@ -423,6 +453,12 @@
     }
   ],
   "msp1": [
+    {
+      "heroSlug": "hulk",
+      "cardSlug": "unstoppable-hulk",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:ko-wound-reward:attack:2]"
+    },
     {
       "heroSlug": "black-widow",
       "cardSlug": "mission-accomplished",
@@ -730,6 +766,12 @@
   ],
   "dstr": [
     {
+      "heroSlug": "vishanti-the",
+      "cardSlug": "oshtur",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:ko-wound-reward:draw:1]"
+    },
+    {
       "heroSlug": "ancient-one-the",
       "cardSlug": "teachings-of-kamar-taj",
       "abilityIndex": 0,
@@ -737,6 +779,12 @@
     }
   ],
   "ff04": [
+    {
+      "heroSlug": "human-torch",
+      "cardSlug": "call-for-backup",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:ko-wound-reward:recruit:1]"
+    },
     {
       "heroSlug": "mr-fantastic",
       "cardSlug": "unstable-molecules",
@@ -1278,6 +1326,38 @@
       "abilityIndex": 1,
       "abilityText": "[hc:strength][hc:covert]: Draw a card.",
       "reason": "D-22501 \u2014 multi-condition cost prefix: the doubled [hc:X] prefix encodes a 'pay two hero-class icons' cost the single-condition evaluator does not model; deferred."
+    },
+    {
+      "setAbbr": "mdns",
+      "heroSlug": "morbius",
+      "cardSlug": "scalded-by-sunlight",
+      "abilityIndex": 1,
+      "abilityText": "[keyword:Moonlight]: You may KO a Wound from your hand or discard pile. If you do, you get +2[icon:attack].",
+      "reason": "WP-382 / D-24183 \u2014 ko-wound-reward candidate deferred: the [keyword:Moonlight]: prefix is a night/day state condition the hero condition evaluator does not model; auto-firing it would ignore the gate. Same discipline as D-21602/D-21603 timing/condition-gated deferrals."
+    },
+    {
+      "setAbbr": "wpnx",
+      "heroSlug": "weapon-x-wolverine",
+      "cardSlug": "raging-regeneration",
+      "abilityIndex": 1,
+      "abilityText": "[hc:instinct]: You may KO a Wound from your hand or discard pile. If you do, [keyword:Berserk] again.",
+      "reason": "WP-382 / D-24183 \u2014 ko-wound-reward candidate deferred on two counts: an [hc:instinct]: condition prefix, and the reward is [keyword:Berserk] again (a re-trigger effect) which is outside the seeded {draw,attack,recruit} reward vocabulary."
+    },
+    {
+      "setAbbr": "xmen",
+      "heroSlug": "x-23",
+      "cardSlug": "healing-factor-genome",
+      "abilityIndex": 1,
+      "abilityText": "You may KO a Wound from your hand or discard pile.",
+      "reason": "WP-382 / D-24183 \u2014 rewardless: 'KO a Wound' with no 'If you do, <reward>' clause. ko-wound-reward is a reward keyword; a bare optional heal grants nothing to dispatch, so there is no keyword to attach."
+    },
+    {
+      "setAbbr": "cvwr",
+      "heroSlug": "peter-parker",
+      "cardSlug": "hot-bowl-of-soup",
+      "abilityIndex": 0,
+      "abilityText": "You may KO a Wound from your hand or discard pile.",
+      "reason": "WP-382 / D-24183 \u2014 rewardless: same as x-23/healing-factor-genome; no reward clause, so no ko-wound-reward token."
     }
   ]
 }

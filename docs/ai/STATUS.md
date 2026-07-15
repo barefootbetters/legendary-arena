@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-382 / EC-411 Executed — `ko-wound-reward` hero keyword: auto-resolve "you may KO a Wound → reward" (the Healing Factor family) (D-24183 Active) (2026-07-15)
+
+The hero-card counterpart to WP-379's universal Wound Healing rule. A dozen hero cards print *"You may KO a Wound from your hand or discard pile. If you do, `<reward>`."* — all previously hollow (the Red Skull live game played **Healing Factor** ~10× with no Wound KO'd + no draw). Adds a new `HeroKeyword` `'ko-wound-reward'`, a **Wound-restricted, auto-resolving** variant of `optional-ko-reward` (D-24019): the executor immediately KOs one `WOUND_EXT_ID` (hand-first, else discard) to `G.ko` and grants the reward by **reusing `executeSingleEffect({ type: rewardType, magnitude })`** (`rewardType ∈ {draw, attack, recruit}`); no Wound → a `G.messages` no-op (D-24017). It auto-resolves (not a pending choice) because a Wound is a fungible dead card and KO-plus-reward is pure upside. KO is filtered to `WOUND_EXT_ID` only — a Hero in hand is never KO'd. Engine + card data, **no client**.
+
+**Marks 8 cards** (refined from the WP's optimistic 9 after corpus inspection): draw ×2 (Healing Factor + Oshtur), attack ×4 (Unstoppable Hulk ×3 + Cellular Regeneration), recruit ×2 (Call for Backup + Hulkbuster Armor) across core/dstr/cvwr/3dtc/msp1/ff04/msis. **Four candidates deferred** and documented in the marker map's `_deferred` section: mdns/morbius (`[keyword:Moonlight]:` state gate), wpnx/weapon-x (`[hc:instinct]:` gate + `[keyword:Berserk]` reward outside the seeded vocab), and xmen/x-23 + cvwr/peter-parker (rewardless — no reward clause to dispatch).
+
+**Sim-outcome cascade** — regenerated `mechanics:metadata` + `ledger:heroes` + `runtime-observed`; **no sentinel re-pin** (no recorded fixture plays a marked card; `sim:runtime-observed:check` green, no `finalStateHash` shift). `pnpm -r build` 0; engine test **1957 → 1965 / 0** (+8). `User-Visible Surface = play.legendary-arena.com` — **D-24026 live-verify operator-pending on deploy** (Healing Factor with a Wound in hand KOs it + draws).
+
 ### WP-381 / EC-410 Executed — Wound "Healing" notable-event overlay: the "Healed" center-screen announcement (D-24182 Active) (2026-07-15)
 
 A heal now raises the same center-screen overlay every other notable turn action gets. Adds a sixth `NotableGameEvent` variant `healResolved`: `healWounds` emits it as its final step — minimal payload (`type` + `playerId` + `woundsHealed` + engine-composed `narrative`, no `eventId`/`seq`/`timestamp` per D-20001) — and the arena-client `NotableEventOverlay` renders a **"Healed"** chip + verbatim narrative (D-20002). Public; rides the existing `UIState.notableEvents` projection with no UIState change.

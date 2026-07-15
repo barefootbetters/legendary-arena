@@ -233,7 +233,7 @@ describe('buildHeroAbilityHooks', () => {
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 26 canonical keyword values', () => {
+  it('contains exactly the 31 canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -251,6 +251,7 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'reveal-ko-attack',
       'attack-per-count',
       'optional-ko-reward',
+      'ko-wound-reward', // why: WP-382 / D-24183 — Wound-restricted auto-resolving variant of optional-ko-reward
       'wall-crawl', // why: D-24049 — recruit-time-executed keyword
       'dodge', // why: D-24051 — hand-action-executed keyword (the dodgeCard move)
       'undercover', // why: D-24060 / WP-282 — face-down-send-and-play keyword
@@ -269,8 +270,8 @@ describe('HERO_KEYWORDS drift-detection', () => {
 
     assert.equal(
       HERO_KEYWORDS.length,
-      30,
-      'HERO_KEYWORDS must have exactly 30 entries',
+      31,
+      'HERO_KEYWORDS must have exactly 31 entries',
     );
 
     assert.deepStrictEqual(

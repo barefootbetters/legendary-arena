@@ -847,7 +847,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Size-Changing]: [hc:strength]",
-            "You may KO a Wound from your hand or discard pile. If you do, you get +1[icon:attack]."
+            "You may KO a Wound from your hand or discard pile. If you do, you get +1[icon:attack]. [keyword:ko-wound-reward:attack:1]"
           ]
         },
         {

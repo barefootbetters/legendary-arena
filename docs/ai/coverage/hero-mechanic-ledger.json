@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "cardType": "hero",
   "summary": {
-    "totalRows": 616,
+    "totalRows": 624,
     "byStatus": {
-      "executable": 204,
+      "executable": 212,
       "deferred": 0,
       "condition": 5,
       "unsupported": 364,
       "unmarked": 43
     },
-    "distinctMechanics": 115
+    "distinctMechanics": 116
   },
   "rows": [
     {
@@ -202,6 +202,16 @@
       "wp": "",
       "decision": "",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each"
+    },
+    {
+      "extId": "3dtc/hulk",
+      "heroName": "Hulk",
+      "set": "3dtc",
+      "mechanic": "ko-wound-reward",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward"
     },
     {
       "extId": "3dtc/man-thing",
@@ -1544,6 +1554,16 @@
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each"
     },
     {
+      "extId": "core/hulk",
+      "heroName": "Hulk",
+      "set": "core",
+      "mechanic": "ko-wound-reward",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward"
+    },
+    {
       "extId": "core/iron-man",
       "heroName": "Iron Man",
       "set": "core",
@@ -1632,6 +1652,16 @@
       "wp": "",
       "decision": "",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw"
+    },
+    {
+      "extId": "core/wolverine",
+      "heroName": "Wolverine",
+      "set": "core",
+      "mechanic": "ko-wound-reward",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward"
     },
     {
       "extId": "cosm/adam-warlock",
@@ -1872,6 +1902,16 @@
       "wp": "",
       "decision": "",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self"
+    },
+    {
+      "extId": "cvwr/hulkling",
+      "heroName": "Hulkling",
+      "set": "cvwr",
+      "mechanic": "ko-wound-reward",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward"
     },
     {
       "extId": "cvwr/hulkling",
@@ -2467,6 +2507,16 @@
       "extId": "dstr/vishanti-the",
       "heroName": "Vishanti, The",
       "set": "dstr",
+      "mechanic": "ko-wound-reward",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward"
+    },
+    {
+      "extId": "dstr/vishanti-the",
+      "heroName": "Vishanti, The",
+      "set": "dstr",
       "mechanic": "ritual-artifact",
       "status": "unsupported",
       "wp": "",
@@ -2582,6 +2632,16 @@
       "wp": "",
       "decision": "",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self"
+    },
+    {
+      "extId": "ff04/human-torch",
+      "heroName": "Human Torch",
+      "set": "ff04",
+      "mechanic": "ko-wound-reward",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward"
     },
     {
       "extId": "ff04/invisible-woman",
@@ -2977,6 +3037,16 @@
       "extId": "msis/bruce-banner",
       "heroName": "Bruce Banner",
       "set": "msis",
+      "mechanic": "ko-wound-reward",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward"
+    },
+    {
+      "extId": "msis/bruce-banner",
+      "heroName": "Bruce Banner",
+      "set": "msis",
       "mechanic": "sacrifice",
       "status": "unsupported",
       "wp": "",
@@ -3352,6 +3422,16 @@
       "wp": "",
       "decision": "",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each"
+    },
+    {
+      "extId": "msp1/hulk",
+      "heroName": "Hulk",
+      "set": "msp1",
+      "mechanic": "ko-wound-reward",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward"
     },
     {
       "extId": "msp1/iron-man",
