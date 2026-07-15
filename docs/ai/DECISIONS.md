@@ -28893,3 +28893,25 @@ Locks:
 **Packet:** WP-377 (EC-406). **Drafted:** 2026-07-14. **Executed:** 2026-07-14.
 
 Protect this file.
+
+### D-24171 — Solo bot-ally lobby affordance: the human joins seat 0 via the authed join, never a server credential
+
+**Status:** **Active** (WP-376 executed 2026-07-14, EC-405).
+
+**User-Visible Surface:** `arena.legendary-arena.com` lobby — a "Play with a bot ally" control (seat count + bot count + policy) that creates a bot-ally match and drops the player onto the play surface, no "Waiting for players". D-24026 live-verify APPLIES.
+
+**Context.** WP-375 shipped `POST /api/match/create-with-bot` + the server-side `BotAllyDriver`, and WP-377 closed the ranked-farm vector — but there was no client entry point, so a player could only ever create a normal match (which correctly waits at "1 of 2"). This is the client affordance that makes the co-op-with-a-bot feature usable.
+
+**Decision.** Add a "Play with a bot ally" affordance to `LobbyView.vue` + a `createMatchWithBot` helper to `lobbyApi.ts`. Locks:
+
+1. **The human ALWAYS joins seat 0 via `joinMatch(matchId, '0', name, authToken)`** — the authed path — and navigates on the credential that join returns. The client **NEVER** navigates on a server-returned seat-0 credential (the distinction from the autoplay spectator flow, `startAutoplay`). That authed join is what writes seat 0's `match_seat_accounts` row and hands back the human's own credential; reusing a server credential would leave seat 0 accountless → WP-377's guard would (correctly) mark the human's own match Casual and attribution would break. Enforced structurally by the `credentials['0']` grep gate (zero in `LobbyView.vue`).
+2. **Flow** (modeled on `createAndJoin`): auth-gate (`requireAuthTokenOrRedirectToLogin`; a guest is redirected, never an unauthed create) → `buildConfig()` (reused — no second setup path) → `createMatchWithBot(config, seatCount, botCount, policy, authToken)` → `persistMatchSetup` (best-effort) → `joinMatch(matchId, '0', ...)` → navigate `?match=&player=0&credentials=<joined>`.
+3. **Inputs:** seat count reuses the existing `numPlayers` field; `botAllyBotCount` (default 1, client-validated `1..seatCount-1`); `botAllyPolicy` (default `competent`, ∈ `{competent, random}`). Client validation is UX only — the server 400 is the authority.
+4. **The client never readies or starts the match and never touches the bot seats** — bot readiness is server-owned (WP-375); the human readies seat 0 on the play surface. No `WaitingForPlayersPanel` logic change (WP-375's join-before-return ordering keeps it hidden for a bot-filled match).
+5. **Co-op copy only (§23(b))** — "Play with a bot ally" / "Add a bot ally to your table"; never "vs" / "opponent" / "beat". Enforced by the versus/opponent grep gate.
+
+**Fences.** Client layer only (no server/engine import); consumes WP-375's endpoint (the `api-endpoints.md` row is owned by WP-375, not duplicated); no new bot policies beyond `competent`/`random`. Production exposure was gated on WP-377 (the ranked guard), which is now Active — so this affordance is safe to ship.
+
+**Packet:** WP-376 (EC-405). **Drafted:** 2026-07-14. **Executed:** 2026-07-14.
+
+Protect this file.
