@@ -185,15 +185,18 @@ test('useInPlayCoverage credits a fixed mechanic from the committed seed (dodge 
   assert.equal(view.percentResolved.value, 26.4);
 });
 
-test('useInPlayCoverage falls back to the bundled seed + ledger and reads 42.1% with dodge + undercover + size-changing executable (WP-275 + WP-282 + WP-290)', () => {
-  // No injection: the real committed seed (140 obs) + the real hero ledger. Three of the seed's
-  // observed mechanics are now `executable`: dodge (37 obs, flipped by WP-275 / D-24051),
-  // undercover (20 obs, flipped by WP-282's keyword integration), and size-changing (2 obs,
-  // flipped by WP-290 / D-24074), so they credit (37 + 20 + 2) / 140 = 59 / 140 = 42.1%. The
-  // remaining observed mechanics (moonlight, conqueror, …) are still unsupported, so the
-  // worklist stays non-empty.
+test('useInPlayCoverage reads the real committed seed + ledger and computes the in-play coverage snapshot', () => {
+  // No injection: the real committed runtime-observed seed + the real hero ledger.
+  // The seed is a FIXED-SEED deterministic sim sweep, so it is sensitive to engine
+  // changes that alter game outcomes — D-24178 corrected scheme twist-loss timing
+  // (schemes no longer resolve a twist early), which shifted the deterministic games
+  // and therefore the observed-mechanic mix (the previously-credited
+  // dodge/undercover/size-changing runs no longer appear in the shifted sweep).
+  // This test pins the composable's output against the current committed seed:
+  // totalObs (the summed hit counts) and percentResolved are the deterministic
+  // snapshot, and the worklist stays non-empty (unsupported mechanics remain).
   const view = useInPlayCoverage();
-  assert.equal(view.percentResolved.value, 42.1);
-  assert.equal(view.totalObs.value, 140);
+  assert.equal(view.totalObs.value, 179);
+  assert.equal(view.percentResolved.value, 33);
   assert.ok(view.remaining.value.length > 0);
 });
