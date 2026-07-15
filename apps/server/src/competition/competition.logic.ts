@@ -82,6 +82,7 @@ import type { MatchReplayResult } from '../replay/matchReplay.logic.js';
 import {
   isMatchFinished,
   readReplayHashByMatchId,
+  readMatchSeatCount,
 } from '../replay/matchReplay.logic.js';
 import { captureMatch } from '../replay/matchCapture.logic.js';
 
@@ -112,7 +113,7 @@ import type {
 // absent) and runs WP-350's pure mutual-friend-clique predicate over it.
 // Both are same-layer server modules — no engine/registry/boardgame.io
 // import is introduced.
-import { readSeatAccounts } from '../match/seatAccount.logic.js';
+import { readSeatAccounts, readMatchBotSeats } from '../match/seatAccount.logic.js';
 import { areAllMutualFriends } from '../friendships/friendships.logic.js';
 
 import type {
@@ -468,23 +469,53 @@ export async function submitCompetitiveScoreByMatchIdForRequest(
 }
 
 /**
- * Compute ranked eligibility for a finished match: the match's
- * authenticated human roster (`readSeatAccounts`; bots/guests have no
- * seat row, D-24120) must be a full mutual-friend clique
- * (`areAllMutualFriends`). A solo / empty roster is vacuously eligible
- * (`n <= 1` ⇒ `true`).
+ * Compute ranked eligibility for a finished match. Ranked requires the match to
+ * be a **seat-count-complete mutual-friend clique** — every seat maps to an
+ * account and those accounts are all mutual friends (WP-377 / D-24172, amending
+ * WP-354 / D-24146). Three rules, in order:
  *
- * Fail-safe: any roster-read or clique-query throw yields `false`
- * (Casual). A friendship-infra hiccup must never break score submission;
- * defaulting to Casual is the conservative, leaderboard-integrity-
- * preserving direction (WP-354 §Non-Negotiable Constraints; D-24146).
+ *   1. A non-empty `botSeats` tag (a server-created bot ally, WP-375) ⇒ Casual.
+ *   2. `roster.length !== seatCount` ⇒ Casual — a seat that does not map to an
+ *      account (a bot OR a guest, both rowless per D-24120) leaves the roster
+ *      shorter than the seat count.
+ *   3. otherwise the roster must be a full mutual-friend clique
+ *      (`areAllMutualFriends`).
+ *
+ * The check is `!==`, NEVER `< 2` / `<= 1`: a genuine 1-player solo match
+ * (`roster.length === 1`, `seatCount === 1`) stays vacuously ranked, exactly as
+ * WP-354 intended. Rules 1 and 2 are defence-in-depth — either alone forces
+ * Casual for a bot-ally match (DESIGN §5b/§5c).
+ *
+ * Fail-safe: any roster / seat-count / bot-seats / clique read throw yields
+ * `false` (Casual). A friendship-infra hiccup must never break score submission;
+ * defaulting to Casual is the conservative, leaderboard-integrity-preserving
+ * direction (WP-354 §Non-Negotiable Constraints; D-24146).
  */
 async function computeRankedEligibility(
   matchId: string,
   database: DatabaseClient,
 ): Promise<boolean> {
   try {
+    // why: rule 1 (DESIGN §5c) — a non-empty botSeats tag means the server itself
+    // reserved a bot seat, the most authoritative bot-ally signal; force Casual
+    // regardless of the roster. Inert (empty) for every non-bot-ally match.
+    const botSeats = await readMatchBotSeats(matchId, database);
+    if (botSeats.length > 0) {
+      return false;
+    }
     const roster = await readSeatAccounts(matchId, database);
+    // why: seatCount is the number of boardgame.io metadata.players slots — a
+    // started match genuinely seated `numPlayers`, so this is the authoritative
+    // seat count for the account-completeness test.
+    const seatCount = await readMatchSeatCount(matchId, database);
+    // why: rule 2 — `!==`, NOT `< 2`. A short roster means a rowless (bot/guest)
+    // seat, which is NOT ranked (DESIGN §5b); genuine solo (1 === 1) stays
+    // vacuously ranked. Catches bots AND guests generically.
+    if (roster.length !== seatCount) {
+      return false;
+    }
+    // why: rule 3 — unchanged WP-354 behavior; the seat-complete roster must be a
+    // full mutual-friend clique.
     return await areAllMutualFriends(
       database,
       roster.map((seat) => seat.accountId),
