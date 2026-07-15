@@ -167,10 +167,12 @@ describe('computeFinalScores', () => {
     assert.strictEqual(result.players[0]!.totalVP, -3);
   });
 
-  it('tactic defeated: +5 VP per tactic (awarded to all players)', () => {
+  it('tactic defeated: scores only for the player who defeated it, not every player (D-24176)', () => {
+    // Player 0 defeated both tactics (both in their victory pile); player 1
+    // defeated none. Only player 0 scores the tactic VP.
     const gameState = createMockGameState({
       playerZones: {
-        '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+        '0': { deck: [], hand: [], discard: [], inPlay: [], victory: ['tactic-1', 'tactic-2'] },
         '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
       },
       tacticsDefeated: ['tactic-1', 'tactic-2'],
@@ -178,11 +180,26 @@ describe('computeFinalScores', () => {
 
     const result = computeFinalScores(gameState);
 
-    // Both players should get tactic VP
     assert.strictEqual(result.players[0]!.tacticVP, 2 * VP_TACTIC);
-    assert.strictEqual(result.players[1]!.tacticVP, 2 * VP_TACTIC);
+    assert.strictEqual(result.players[1]!.tacticVP, 0);
     assert.strictEqual(result.players[0]!.totalVP, 10);
-    assert.strictEqual(result.players[1]!.totalVP, 10);
+    assert.strictEqual(result.players[1]!.totalVP, 0);
+  });
+
+  it('tactic defeated: splits VP by which player earned each tactic (D-24176)', () => {
+    // Player 0 defeated tactic-1; player 1 defeated tactic-2.
+    const gameState = createMockGameState({
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [], victory: ['tactic-1'] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: ['tactic-2'] },
+      },
+      tacticsDefeated: ['tactic-1', 'tactic-2'],
+    });
+
+    const result = computeFinalScores(gameState);
+
+    assert.strictEqual(result.players[0]!.tacticVP, 1 * VP_TACTIC);
+    assert.strictEqual(result.players[1]!.tacticVP, 1 * VP_TACTIC);
   });
 
   it('multiple players: each gets independent score', () => {
@@ -364,7 +381,8 @@ describe('computeFinalScores — printed VP (D-24157)', () => {
 
   it('scores tactics by the mastermind printed vp, keyed by baseCardId', () => {
     const gameState = createMockGameState({
-      playerZones: { '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] } },
+      // the defeating player holds the 4 tactics in their victory pile (D-24176)
+      playerZones: { '0': { deck: [], hand: [], discard: [], inPlay: [], victory: ['t1', 't2', 't3', 't4'] } },
       tacticsDefeated: ['t1', 't2', 't3', 't4'],
       // 'test-mastermind-base' is the mock's baseCardId
       cardVictoryPoints: { 'test-mastermind-base': 5 },
@@ -376,7 +394,7 @@ describe('computeFinalScores — printed VP (D-24157)', () => {
 
   it('falls back to VP_TACTIC (5) when the mastermind has no printed vp', () => {
     const gameState = createMockGameState({
-      playerZones: { '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] } },
+      playerZones: { '0': { deck: [], hand: [], discard: [], inPlay: [], victory: ['t1', 't2'] } },
       tacticsDefeated: ['t1', 't2'],
       // no cardVictoryPoints → mastermind fallback 5
     });
