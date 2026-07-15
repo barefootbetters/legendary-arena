@@ -28835,3 +28835,32 @@ Protect this file.
 **Packet:** WP-374 (EC-403). **Drafted:** 2026-07-13. **Executed:** 2026-07-13.
 
 Protect this file.
+
+### D-24170 — Solo bot-ally: a `cooperative` mixed human+bot match driven by a per-match server-side `BotAllyDriver` (poll turn-detection, boot re-registration, side-table metadata)
+
+**Status:** **Active** (WP-375 executed 2026-07-14, EC-404).
+
+**User-Visible Surface:** `arena.legendary-arena.com` — a signed-in player can start a cooperative 2–5-seat match whose non-human seats are filled and driven by a bot ally; the match starts and plays to a terminal state. D-24026 live-verify APPLIES (a real 1-human+1-bot match must reach a terminal state; operator-pending on deploy).
+
+**Context.** A lone human cannot start a 2-player game today — a 2-seat match sets `requiredPlayers = 2` and the lobby waits for two distinct seats to ready (`lobby.validate.ts:63`), so the human sits at "Waiting for players — 1 of 2" forever (DESIGN-SOLO-BOT-ALLY §1). Multiplayer Legendary is co-op (`variantForSeatCount`: 1 → `solo`, 2+ → `cooperative`), so the fix is a bot **ally** filling the empty seat(s), never a new engine variant and never a PvP opponent. The all-bot autoplay loop (`autoplay.mjs`, WP-163) already runs the full lifecycle server-side; this decision narrows that pattern to the bot seats of a match that also has a real human.
+
+**Decision.** Add `POST /api/match/create-with-bot` (`authenticated-session-required`) + a per-match server-side `BotAllyDriver` in `apps/server/src/bot-ally/`. Locks:
+
+1. **Shape.** A bot-ally match is a `cooperative` N-seat match (2–5), human at seat `"0"`, bots at `"1"…"botCount"`. `solo` stays exactly 1 player; `requiredPlayers` is unchanged; no new engine variant.
+2. **Endpoint ordering (all BEFORE returning `matchId`).** loopback native `create` (WP-308 internal-delegation secret) → secret-join ONLY the bot seats (**never seat 0**; **no `match_seat_accounts` row for a bot**, D-24120) → persist the `botSeats` tag → auto-ready the bot seats via `Master.onUpdate`. The endpoint **never** starts the match — the human readying seat 0 reaches `readyCount === requiredPlayers` and starts it. So `openSeats === 0` when the human arrives and the waiting panel auto-hides.
+3. **Driver.** A module-scope `Map<matchId, BotAllyDriver>` (mirrors `autoplayControllers`). It acts ONLY on a bot seat's turn (`ctx.currentPlayer ∈ botSeats`), never for seat `"0"`. Per bot turn: `buildUIState` → `filterUIStateForAudience({kind:'player', playerId: botSeat})` → `getLegalMoves` → drain a parked choice (`findPendingChoiceMove`) or `policy.decideTurn` → `Master.onUpdate`. The policy never sees raw `G` (hidden-info discipline). Determinism: the bot's only randomness is its seeded PRNG; no `Math.random`/`Date.now` in the decision path. Its decision seed is the **match id** (the bot's OWN tie-break seed, D-3604 — NOT the match shuffle seed).
+4. **Never block the human.** A `decideTurn` throw / illegal move / stalled dispatch falls through the fault fallback (`endTurn` → `advanceStage`); only when neither advances is the match marked **bot-faulted** with a PUBLIC-SAFE co-op sentence (never a raw exception/stack/DB/secret/id/path — WP-261 / D-24037). The human's turn is never permanently gated on the bot.
+5. **Teardown.** The driver is removed from the map + its poll cleared on EVERY exit path — terminal (`ctx.gameover`), human abandonment (idle-progress grace, ≈20 min at 250ms), match turn cap (`maxTurns = 400`), and fault (D-16308 leak discipline).
+6. **`botSeats` tag (defence-in-depth for ranked).** The match is tagged `botSeats: PlayerID[]` at creation. This is the durable Casual-never-ranked signal WP-377/EC-406 consumes (DESIGN §5b/§5c) — a non-empty tag forces Casual, independent of the seat-count roster check.
+
+**The three open sub-choices, now locked:**
+
+- **(a) Turn detection = poll.** The driver polls `db.fetch(matchId, {state:true})` at `botPollIntervalMs = 250` and acts when it is a bot seat's turn. Chosen over a bgio v0.50 post-update subscription: the poll is the proven autoplay idiom, trivial to reason about and to tear down, and it does not couple to framework internals. Subscription remains a later optimization.
+- **(b) Restart re-hydration = re-register on boot.** In-memory drivers are lost on restart; `rehydrateBotAllyDrivers` scans the side-table for `status = 'active'` matches, re-reads each bot seat's credential from the persisted boardgame.io match metadata (the framework store's own metadata surface, not a raw `G` blob read), and re-attaches a driver to any match that is not yet terminal. Chosen over "end in-flight matches on restart" so a bot-ally match survives a deploy instead of freezing — the same durability concern D-24095 addressed for the match store, narrowed to the bot seats. A match whose metadata cannot be read is left `active` (skipped, retried on a later boot); a finished/gone match is marked `completed`.
+- **(c) Metadata storage = `legendary.match_bot_ally` side-table (migration 033).** `{ match_id, bot_seats, decision_seed, policy, status, fault_message }`. Chosen over bgio `setupData` so `botSeats` is a first-class, queryable read for WP-377's ranked guard and the boot re-registration scan, and so it stays server-side only (never in client-exposed `player.data`/`setupData`). The row is written at creation and only its `status`/`fault_message` change on teardown; the row is never deleted, so `bot_seats` stays readable for a finished match. (Migration number is **033**, not the WP/EC placeholder 030 — 030/032 were already taken on main.)
+
+**Fences.** No engine change (`solo` invariant + `requiredPlayers` untouched); server layer only (imports only the engine barrel helpers autoplay already uses). This packet only *produces* the `botSeats` tag; EC-406/WP-377 *consumes* it, and WP-376 adds the client affordance. §23(b) co-op copy on any surfaced string.
+
+**Packet:** WP-375 (EC-404). **Drafted:** 2026-07-14. **Executed:** 2026-07-14.
+
+Protect this file.
