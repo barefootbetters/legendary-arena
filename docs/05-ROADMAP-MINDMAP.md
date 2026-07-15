@@ -346,6 +346,7 @@ mindmap
         ["WP-203 ✅ Acquisition + activation + retention surfaces"]
         ["WP-204 ✅ Public-surface health + error monitor + cost watchdog"]
         ["WP-206 ✅ Analytics MOCK→LIVE flip"]
+        ["WP-378 📝 Analytics client emitter — feed the acquisition/activation/retention funnel (arena client; closes the WP-205 producer gap — the guest POST /api/analytics/events + analytics_events table + dashboard reads all exist but nothing writes events, so Traffic Sources/Activation Funnel/Retention Cohorts read 'No data captured'; adds a fire-and-forget analyticsEmitter [opaque sessionStorage session id, RAW user_id server-hashed per D-20502, silent-failure, keepalive], a pure channelClassifier [referrer/UTM → direct/search/referral/paid], and one useAnalyticsCapture reactive hub [App.vue] emitting channel + retention on load + watching auth/match stores for signup/first-match — client-local localStorage detection v1; nine frozen event types; no server/schema change; drafted 2026-07-14; EC-407; reserves D-24173..D-24175)"]
         ["WP-210 ✅ SweepHealthWidget dashboard surface"]
         ["WP-226 ✅ Global mock-mode banner"]
         ["WP-229 ✅ Agent Pipeline page (Architect/Builder/Inspector/Evaluator lanes)"]
@@ -539,7 +540,7 @@ mindmap
 | Hero Ability Coverage & Markup Pipeline | 47/47 | — |
 | Notable Events & Overlays | 4/4 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
-| Dashboard & Operator Analytics | 16/16 | — |
+| Dashboard & Operator Analytics | 16/17 | 1 open |
 | Agent Triage Pipeline | 7/8 | 1 open |
 | Admin & Route Wiring | 4/4 | — |
 | Phase 9 — Profile Surface Follow-ups | 11/11 | — |
@@ -555,9 +556,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **366/369 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 2 open |
+| **Total** | **366/370 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 3 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 3):** WP-042.1 ⏸ blocked; WP-349 open; WP-345 open.
+**Open / blocked WPs (derived from WORK_INDEX, 4):** WP-042.1 ⏸ blocked; WP-349 open; WP-345 open; WP-378 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
