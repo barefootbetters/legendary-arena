@@ -89,11 +89,12 @@ High-level card categorizations recognised by the engine.
 Cross-cutting governance, methodology, and readiness assessments.
 
 - [Card Image Acquisition](card-image-acquisition.md) — *(draft)* the
-  front of the image pipeline: per-set PowerShell scrapers pull card
-  face JPEGs from the `legendarycardgame.com` at-a-glance pages, then
-  ImageMagick converters re-encode them to WebP, ahead of the downstream
-  rename to the R2 naming convention. Backup copies of both live in
-  `scripts/card-image-downloaders/` and `scripts/card-image-converters/`.
+  card-image staging chain (scrape → convert → rename): per-set
+  PowerShell scrapers pull card face JPEGs from the
+  `legendarycardgame.com` at-a-glance pages, ImageMagick converters
+  re-encode to WebP, and a hand-authored renamer maps each to the
+  deterministic R2 name, ahead of R2 upload. Backup copies live in
+  `scripts/card-image-{downloaders,converters,renamers}/`.
 - [Changelog](changelog.md) — Milestone history of significant changes,
   newest first (projected from `docs/09-CHANGELOG.md`; the exhaustive
   per-packet record lives in WORK_INDEX + git log).

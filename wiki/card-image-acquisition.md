@@ -16,7 +16,9 @@ source:
   - ../scripts/card-image-downloaders/README.md
   - ../scripts/card-image-converters/Convert-Core2e-JpgToWebp.ps1
   - ../scripts/card-image-converters/README.md
-last-reviewed: 2026-07-14
+  - ../scripts/card-image-renamers/rename-core2e-images.ps1
+  - ../scripts/card-image-renamers/README.md
+last-reviewed: 2026-07-15
 ---
 
 # Card Image Acquisition
@@ -25,20 +27,30 @@ last-reviewed: 2026-07-14
 
 Card face images originate as scraped JPEGs pulled from the
 `legendarycardgame.com` "at-a-glance" set pages by a family of
-per-set PowerShell scrapers, then get re-encoded to WebP before being
-renamed and uploaded to Cloudflare R2. This page documents the front of
-the image pipeline — the scrape step and the JPEG→WebP conversion — and
-how it feeds the naming convention that gameplay and the Registry Viewer
-depend on. The deployed, R2-hosted naming is covered separately by
+per-set PowerShell scrapers, get re-encoded to WebP, then get renamed to
+the deterministic R2 convention before upload to Cloudflare R2. This
+page documents the three staging steps — **scrape → convert → rename** —
+that feed the naming convention gameplay and the Registry Viewer depend
+on. The deployed, R2-hosted naming is defined separately by
 [R2 Image Naming Convention](r2-image-naming-convention.md); this page
-covers where the raw bytes come from and how they reach WebP.
+covers how the raw bytes get there.
+
+The three steps run as separate per-set PowerShell scripts, producing a
+three-directory staging chain:
+
+```
+original-jpeg\<set>\   --convert-->   original\<set>\   --rename-->   renamed\<set>\
+   (scraped JPEG)                        (WebP)                     (R2-named WebP)
+```
 
 > **Where the runnable scripts live.** The canonical, runnable copies
-> of the scrapers live in the sibling **staging repo**, not this repo:
-> `barefootbetters-legendary-setup\card-images-staging\original-jpeg\`,
-> alongside their per-set output directories. This repo keeps a
-> **version-controlled backup** under
-> [`scripts/card-image-downloaders/`](../scripts/card-image-downloaders/)
+> live in the sibling **staging repo**, not this repo:
+> `barefootbetters-legendary-setup\card-images-staging\`, alongside their
+> per-set image directories. This repo keeps **version-controlled
+> backups** under
+> [`scripts/card-image-downloaders/`](../scripts/card-image-downloaders/),
+> [`scripts/card-image-converters/`](../scripts/card-image-converters/),
+> and [`scripts/card-image-renamers/`](../scripts/card-image-renamers/)
 > so the tooling survives outside the staging tree. Edit the staging
 > copy to run it; keep the backup copy in sync.
 
@@ -97,22 +109,28 @@ conversion writes a parallel `original\<set>\` tree beside the raw
 barefootbetters-legendary-setup\
 └── card-images-staging\
     ├── Convert-<Set>-JpgToWebp.ps1                 (one per set)
+    ├── rename-<set>-images.ps1                     (one per set)
     ├── original-jpeg\
     │   ├── download-legendarycardgame-<set>.ps1    (one per set)
     │   ├── core/                                    (1st-edition core JPEGs)
     │   ├── core2e/                                  (2nd-edition core JPEGs)
     │   ├── anni/  antm/  asrd/  …                   (per-set JPEG inputs)
     │   └── …
-    └── original\
-        ├── core2e/                                  (2nd-edition core WebP)
-        ├── anni/  antm/  …                          (per-set WebP outputs)
+    ├── original\
+    │   ├── core2e/                                  (2nd-edition core WebP)
+    │   ├── anni/  antm/  …                          (per-set WebP outputs)
+    │   └── …
+    └── renamed\
+        ├── core2e/                                  (R2-named WebP, upload-ready)
+        ├── core/  …                                 (per-set R2-named WebP)
         └── …
 ```
 
 Each set's directory is keyed by a short set token that matches the
-script name (`core2e`, `anni`, `bkpt`, `cvwr`, …). Note the naming: the
-**JPEG inputs** live under `original-jpeg\`, the **WebP outputs** under
-`original\` — the shorter name is the converted, canonical-format tree.
+script name (`core2e`, `anni`, `bkpt`, `cvwr`, …). The naming tells you
+the stage: `original-jpeg\` holds the scraped **JPEG inputs**,
+`original\` the converted **WebP**, and `renamed\` the **R2-named WebP**
+that is ready to upload.
 
 ### Converting JPEG to WebP
 
@@ -139,17 +157,56 @@ The encode settings are fixed in each script:
 Conversion preserves the **source-side filename** (only the extension
 changes: `2eHeroSpider-Man_1Rare.jpg` → `2eHeroSpider-Man_1Rare.webp`).
 The rename to the deterministic `{setAbbr}-{ribbon}-{slug}.webp` R2 name
-still happens downstream — WebP conversion changes the *format*, not the
+is the *next* step — WebP conversion changes the *format*, not the
 *name*.
+
+### Renaming to the R2 convention
+
+The final staging step is a per-set script named
+`rename-<set>-images.ps1` that copies each converted WebP from
+`original\<set>\` into `renamed\<set>\` under its deterministic R2 name
+(`{setAbbr}-{ribbon}-{slug}.webp`). The script:
+
+1. Clears `renamed\<set>\`, then copies each mapped file across.
+2. Restamps every copy's `LastWriteTime` to "now" (so a fresh run is
+   visible at a glance — `Copy-Item` otherwise preserves the WebP's
+   generation date).
+3. Reports `NOT FOUND` in red for any mapped source missing from
+   `original\<set>\`, and prints a "BEFORE UPLOADING TO R2" checklist of
+   items to verify.
+
+Unlike the scrape and convert steps — which are fully mechanical — the
+**rename map is hand-authored per set.** Each entry pairs a source
+filename with a target `{setAbbr}-{ribbon}-{slug}.webp` name, assigning
+the correct two-letter ribbon per card family (`hr`, `mm`, `me`, `mt`,
+`vi`, `hm`, `sc`, `st`, `ms`, `by`, `wd`, `sa`, `so`, `tr`, `sk`; see
+[R2 Image Naming Convention](r2-image-naming-convention.md)). This is
+where the source-side name (`2eHeroSpider-Man_1Rare.webp`) becomes the
+canonical R2 name (`core2e-hr-spider-man-…​.webp`).
+
+**Source-name legibility varies by set.** For Core Set 2nd Edition, most
+families' 2e source names embed enough to derive the slug directly —
+villains, schemes, henchmen, bystanders, S.H.I.E.L.D., and even the
+mastermind **tactics** (each tactic is named, e.g.
+`…RedSkullTacticVastResources` → `core2e-mt-red-skull-vast-resources`),
+so there is none of the 1st-edition `Tactic1-4` ordering ambiguity.
+**Heroes are the exception:** the 2e hero source names carry only rarity
+(`_1Rare` / `_2Common` / `_3Common` / `_4Uncommon`), not the card title
+the R2 hero convention uses for its slug — so the `core2e` map fills
+those 60 entries with **rarity placeholders** (`rare` / `common-1` /
+`common-2` / `uncommon`) that must be replaced with real card-title
+slugs before upload. See Edge Cases.
 
 ## Interactions
 
 - **[R2 Image Naming Convention](r2-image-naming-convention.md).** The
-  downstream half. Once acquired, images are renamed / re-encoded to the
-  deterministic `{setAbbr}-{ribbon}-{slug}.webp` shape and uploaded to
-  the `legendary-images` R2 bucket, served at
-  `images.legendary-arena.com`. This page is the *upstream* half — the
-  raw source bytes before that transform.
+  target of the rename step and the authority for it. The rename map in
+  each `rename-<set>-images.ps1` must produce exactly the
+  `{setAbbr}-{ribbon}-{slug}.webp` names that convention defines (and
+  that the convert pipeline emits into each card's `imageUrl`) — a
+  mismatch surfaces as a broken image in the Registry Viewer. This page
+  covers the staging steps that *produce* those names; that page defines
+  what the names must be.
 - **[Data & File Locations](data-file-locations.md).** The locator map
   for card JSON, the convert pipeline, and R2 key prefixes. The staging
   tree described here is the pre-pipeline holding area those locations
@@ -209,6 +266,28 @@ still happens downstream — WebP conversion changes the *format*, not the
 - **ImageMagick is a hard dependency.** The converter throws if
   `magick.exe` is neither on `PATH` nor at the fallback install path.
   WebP support is built into ImageMagick 7 (used here: 7.1.2 Q16-HDRI).
+- **Hero rename slugs are placeholders until card data exists.** The
+  `core2e` rename map fills all 60 hero targets with rarity placeholders
+  (`core2e-hr-<hero>-rare` / `-common-1` / `-common-2` / `-uncommon`)
+  because the 2e source filenames carry only rarity, not the card title
+  the R2 hero convention needs. These are correct in *format* but wrong
+  in *slug* — they must be replaced with real card-title slugs before R2
+  upload. The script prints this in its "BEFORE UPLOADING TO R2"
+  checklist. The 91 non-hero targets are derived directly from the
+  descriptive 2e source names.
+- **Some 2e group slugs differ from 1st edition.** The `core2e` villain
+  targets follow the 2e source names: `skulls` (1st-ed core used
+  `skrulls`) and `sinister-spider-foes` (1st-ed used `spider-foes`).
+  Confirm the group slugs against the eventual core2e card data before
+  upload; a wrong group slug is a broken image.
+- **The rename destination is cleared each run.** `rename-<set>-images.ps1`
+  runs `Remove-Item "renamed\<set>\*"` before copying, so any manual
+  fixes made directly in `renamed\<set>\` are lost on the next run. Make
+  slug corrections in the script's rename map, not in the output folder.
+- **The stray non-card image is dropped at rename.** The `core2e` map has
+  no entry for `20220108_175929.webp`, so it is not copied into
+  `renamed\core2e\` — 151 cards out of the 152 staged files. Its omission
+  is deliberate (noted in a `# why:` comment), not a missed card.
 
 ## Code Touchpoints
 
@@ -225,6 +304,13 @@ still happens downstream — WebP conversion changes the *format*, not the
 - [`scripts/card-image-converters/README.md`](../scripts/card-image-converters/README.md)
   — converter backup-folder purpose, ImageMagick requirement, and
   encode settings.
+- [`scripts/card-image-renamers/rename-core2e-images.ps1`](../scripts/card-image-renamers/rename-core2e-images.ps1)
+  — backup copy of the Core Set 2nd Edition renamer: the hand-authored
+  151-entry source→R2-name map, the clear/copy/restamp loop, and the
+  before-upload verification checklist.
+- [`scripts/card-image-renamers/README.md`](../scripts/card-image-renamers/README.md)
+  — renamer backup-folder purpose, the hand-authored-map note, and the
+  known core2e verification items.
 
 ## Data Files
 
@@ -234,19 +320,28 @@ still happens downstream — WebP conversion changes the *format*, not the
 - `barefootbetters-legendary-setup\card-images-staging\original\`
   (sibling staging repo) — the converters' per-set directories of
   WebP output. Not part of this repo.
+- `barefootbetters-legendary-setup\card-images-staging\renamed\`
+  (sibling staging repo) — the renamers' per-set directories of
+  R2-named, upload-ready WebP. Not part of this repo.
 
 ## Open Questions
 
-- **The rename + upload tail is not documented in this repo.** The
-  scrape and the JPEG→WebP conversion are now backed up in-repo
-  (`scripts/card-image-downloaders/`, `scripts/card-image-converters/`),
-  but the final steps — renaming a converted `2eHeroSpider-Man_1Rare.webp`
-  to the deterministic `core2e-hr-spider-man-…​.webp` R2 name and
-  uploading it to the `legendary-images` bucket — still live in the
-  staging repo and operator workflow, not a repo-citable artifact. This
-  page links forward to [R2 Image Naming Convention](r2-image-naming-convention.md)
-  for the target shape, but that rename/upload transform is unsourced
-  here — treat it as operator knowledge until it is captured.
+- **The R2 upload tail is not documented in this repo.** The scrape,
+  convert, and rename steps are now backed up in-repo
+  (`scripts/card-image-downloaders/`, `-converters/`, `-renamers/`), so
+  the staging chain that produces `renamed\<set>\` upload-ready WebP is
+  captured. The final step — pushing `renamed\<set>\` to the
+  `legendary-images` R2 bucket — still lives in the operator workflow
+  (see [Data & File Locations](data-file-locations.md) and the R2 upload
+  scripting) and is not described here.
+- **core2e hero titles and provisional slugs need card data.** The
+  `core2e` rename map ships hero targets as rarity placeholders and
+  follows the 2e source names for group slugs (`skulls`,
+  `sinister-spider-foes`) and the five S.H.I.E.L.D. Officer variants
+  (filed under `so`). These are provisional until core2e card data
+  exists to confirm the card titles, group slugs, and officer prefix.
+  Until then, do not upload `renamed\core2e\` hero images to R2 under the
+  placeholder names.
 - **Set-token ↔ set-abbreviation mapping.** The scraper output tokens
   (`core2e`, `bkpt`, …) match the set directories but the authoritative
   set-abbreviation list is the convert pipeline's concern; confirm a new
@@ -263,7 +358,11 @@ still happens downstream — WebP conversion changes the *format*, not the
   — the JPEG→WebP converter (backup copy)
 - [`scripts/card-image-converters/README.md`](../scripts/card-image-converters/README.md)
   — converter backup-folder purpose, ImageMagick requirement, settings
+- [`scripts/card-image-renamers/rename-core2e-images.ps1`](../scripts/card-image-renamers/rename-core2e-images.ps1)
+  — the source→R2-name renamer (backup copy)
+- [`scripts/card-image-renamers/README.md`](../scripts/card-image-renamers/README.md)
+  — renamer backup-folder purpose, hand-authored-map note, verification items
 - [R2 Image Naming Convention](r2-image-naming-convention.md) — the
-  downstream deployed naming this acquisition feeds
+  deployed naming the rename step targets
 - [Data & File Locations](data-file-locations.md) — where card data,
   the convert pipeline, and R2 prefixes live
