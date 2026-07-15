@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-381 / EC-410 Executed — Wound "Healing" notable-event overlay: the "Healed" center-screen announcement (D-24182 Active) (2026-07-15)
+
+A heal now raises the same center-screen overlay every other notable turn action gets. Adds a sixth `NotableGameEvent` variant `healResolved`: `healWounds` emits it as its final step — minimal payload (`type` + `playerId` + `woundsHealed` + engine-composed `narrative`, no `eventId`/`seq`/`timestamp` per D-20001) — and the arena-client `NotableEventOverlay` renders a **"Healed"** chip + verbatim narrative (D-20002). Public; rides the existing `UIState.notableEvents` projection with no UIState change.
+
+**No competitive-hash re-pin** — `G.notableEvents` is hashed, but no recorded fixture heals, so the sentinel `finalStateHash` + `PRE_WP080_HASH` are byte-identical (engine 1953 → 1957 / 0). **Inline amendment:** `eventCardId` (`useNotableEventStream.ts`) had an implicit `mastermindDefeated` catch-all — made exhaustive (returns `''` for the card-less heal; the overlay maps `''` → null so no card-name row) (+2 files beyond the 8-file allowlist). `pnpm -r build` 0; `arena-client` typecheck (vue-tsc) 0 + test 961 → 963.
+
+**This also confirms WP-380's D-24026 live-verify:** the same Red Skull game (`gitSha 80ba584`, match `8Qh6W1WAI7j`) shows the Heal Wounds button working in production — Player 0 healed on turns 16/24/32 (KO'ing 1–2 Wounds each, no fight/recruit those turns). `User-Visible Surface = play.legendary-arena.com` — WP-381's own **D-24026 live-verify operator-pending** for the overlay (a real heal raises a "Healed" overlay on the next deploy).
+
 ### WP-378 / EC-407 Executed — Analytics client emitter: feed the acquisition/activation/retention funnel (arena client) (D-24173..D-24175 Active) (2026-07-15)
 
 **No user-observable change on the arena client — the payoff is on the operator dashboard.** The WP-205 analytics pipeline was built end-to-end server-side (the guest `POST /api/analytics/events` capture endpoint, the `legendary.analytics_events` table, the three dashboard aggregation reads) and the dashboard widgets authenticate and render (WP-206 + the #742 apiClient-bearer fix) — but **nothing wrote events**, so Traffic Sources / Activation Funnel / Retention Cohorts all read "No data captured." This WP adds the missing **producer** in the arena client.
