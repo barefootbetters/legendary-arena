@@ -16,7 +16,11 @@ import {
 } from "./snapshots/snapshotClient";
 import { getKioskConfig, type KioskConfig } from "./attract/kioskMode";
 import { createHashRouteRef } from "./router/hashRoute";
-import { buildAttractBoardList } from "./panels/gauntletDisplay";
+import {
+  buildAttractBoardList,
+  buildPlayerCountTabs,
+  resolveBoardIndexEntry,
+} from "./panels/gauntletDisplay";
 import AttractCycler from "./attract/AttractCycler.vue";
 import FreshnessBadge from "./freshness/FreshnessBadge.vue";
 import OverallPanel from "./panels/OverallPanel.vue";
@@ -71,13 +75,18 @@ const routedGauntletIndexEntry = computed((): GauntletIndexEntry | null => {
   if (currentRoute.value.view !== "gauntlet" || gauntletIndex.value === null) {
     return null;
   }
-  const routedBoardName = currentRoute.value.boardName;
-  for (const entry of gauntletIndex.value.gauntlets) {
-    if (entry.board === routedBoardName) {
-      return entry;
-    }
-  }
-  return null;
+  // why: a `-p<N>` per-count board resolves to its parent gauntlet's index
+  // entry so the panel reads the shared `entryCounts` + `legs` (WP-345).
+  return resolveBoardIndexEntry(
+    currentRoute.value.boardName,
+    gauntletIndex.value.gauntlets,
+  );
+});
+
+const routedBoardName = computed((): string | null => {
+  return currentRoute.value.view === "gauntlet"
+    ? currentRoute.value.boardName
+    : null;
 });
 
 const activeBoard = computed((): LegendsSnapshotBoard | null => {
@@ -156,6 +165,14 @@ async function loadRoutedGauntletBoard(): Promise<void> {
   const boardName = currentRoute.value.boardName;
   routedGauntletBoard.value = null;
   routedGauntletError.value = null;
+  // why: an unclaimed per-count board has NO file (D-24131 §7) — skip the
+  // fetch so a `-p<N>` deep link to an empty count renders the open-
+  // championship state instead of a 404 error. When the index has not loaded
+  // yet the guard returns false and we fetch as before; the re-run after the
+  // index loads then corrects an unclaimed deep link.
+  if (isRoutedCountUnclaimed(boardName)) {
+    return;
+  }
   try {
     routedGauntletBoard.value = await fetchGauntletBoard(boardName);
   } catch (error) {
@@ -163,6 +180,31 @@ async function loadRoutedGauntletBoard(): Promise<void> {
       error instanceof Error ? error.message : "Failed to load gauntlet board";
     console.error(`[legends] Gauntlet board "${boardName}" load failed:`, error);
   }
+}
+
+/**
+ * Whether the routed board is a known-unclaimed player count (which has no
+ * board file). Returns false when the index has not loaded or the board is
+ * unknown, so the caller falls through to a normal fetch.
+ */
+function isRoutedCountUnclaimed(boardName: string): boolean {
+  if (gauntletIndex.value === null) {
+    return false;
+  }
+  const indexEntry = resolveBoardIndexEntry(
+    boardName,
+    gauntletIndex.value.gauntlets,
+  );
+  if (indexEntry === null) {
+    return false;
+  }
+  const routedTab = buildPlayerCountTabs(indexEntry).find(
+    (tab) => tab.boardName === boardName,
+  );
+  if (routedTab === undefined) {
+    return false;
+  }
+  return !routedTab.isClaimed;
 }
 
 /** Initial load: fetch manifest, then all boards. */
@@ -176,6 +218,11 @@ async function loadData(): Promise<void> {
     manifest.value = loadedManifest;
 
     await loadGauntletIndex(loadedManifest);
+
+    // why: the immediate route watch may have fetched a routed board before
+    // the index was available; re-run now so an unclaimed `-p<N>` deep link
+    // drops its spurious 404 and renders the open-championship state.
+    await loadRoutedGauntletBoard();
 
     if (loadedManifest.boards.length === 0) {
       isLoading.value = false;
@@ -294,6 +341,7 @@ onUnmounted(() => {
         <GauntletBoardPanel
           :board="routedGauntletBoard"
           :index-entry="routedGauntletIndexEntry"
+          :board-name="routedBoardName"
           :error="routedGauntletError"
         />
       </div>

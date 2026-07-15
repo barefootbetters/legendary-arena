@@ -1,6 +1,11 @@
 import { describe, it, beforeEach, afterEach, mock } from "node:test";
 import assert from "node:assert/strict";
 
+import type {
+  GauntletIndexEntry,
+  GauntletSnapshotEntry,
+} from "./snapshotClient.ts";
+
 /**
  * Unit tests for the snapshot client's pure helpers.
  *
@@ -41,5 +46,67 @@ describe("boardDisplayName", () => {
   it("titles the WP-343 gauntlet-index attract slide", async () => {
     const { boardDisplayName } = await import("./snapshotClient.ts");
     assert.equal(boardDisplayName("gauntlet-index"), "Gauntlet Index");
+  });
+});
+
+/**
+ * The WP-344 additive fields (`players` on entries; `entryCounts` + `legs`
+ * on index entries) are hand-mirrored as OPTIONAL on the client — a
+ * pre-WP-344 snapshot in R2 lacks them. These fixtures pin that both the
+ * fresh shape and the old shape type-check and read back as expected
+ * (absent fields tolerated). This is the client mirror's compile-time guard.
+ */
+describe("gauntlet additive field mirror (WP-345)", () => {
+  it("a fresh-shape entry carries the published roster", () => {
+    const entry: GauntletSnapshotEntry = {
+      handle: "alice",
+      rank: 1,
+      totalScore: -5,
+      legCount: 4,
+      averageScoreCentis: -125,
+      players: ["alice", "bob"],
+    };
+    assert.deepEqual(entry.players, ["alice", "bob"]);
+  });
+
+  it("an old-shape entry omits `players` and still type-checks", () => {
+    const entry: GauntletSnapshotEntry = {
+      handle: "solo",
+      rank: 1,
+      totalScore: -5,
+      legCount: 4,
+      averageScoreCentis: -125,
+    };
+    assert.equal(entry.players, undefined);
+  });
+
+  it("a fresh-shape index entry carries entryCounts + legs", () => {
+    const entry: GauntletIndexEntry = {
+      setAbbr: "core",
+      setName: "Core Set",
+      mastermindSlug: "dr-doom",
+      mastermindName: "Dr. Doom",
+      legCount: 4,
+      entryCount: 3,
+      board: "gauntlet-core-dr-doom",
+      entryCounts: { "1": 3, "2": 1, "3": 0, "4": 0, "5": 0 },
+      legs: [{ schemeSlug: "midtown-bank-robbery", schemeName: "Midtown Bank Robbery" }],
+    };
+    assert.equal(entry.entryCounts?.["2"], 1);
+    assert.equal(entry.legs?.[0]?.schemeSlug, "midtown-bank-robbery");
+  });
+
+  it("an old-shape index entry omits entryCounts + legs", () => {
+    const entry: GauntletIndexEntry = {
+      setAbbr: "core",
+      setName: "Core Set",
+      mastermindSlug: "loki",
+      mastermindName: "Loki",
+      legCount: 4,
+      entryCount: 0,
+      board: "gauntlet-core-loki",
+    };
+    assert.equal(entry.entryCounts, undefined);
+    assert.equal(entry.legs, undefined);
   });
 });
