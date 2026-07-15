@@ -1,7 +1,7 @@
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createMatch, joinMatch, listMatches, serverUrl } from './lobbyApi';
+import { createMatch, createMatchWithBot, joinMatch, listMatches, serverUrl } from './lobbyApi';
 import type { LobbyMatchSummary } from './lobbyApi';
 import type { MatchSetupConfig } from '@legendary-arena/game-engine';
 import { parseLoadoutJson } from './parseLoadoutJson';
@@ -97,6 +97,39 @@ describe('lobbyApi (WP-090)', () => {
     };
     assert.equal(parsed.numPlayers, 2);
     assert.deepEqual(parsed.setupData, SAMPLE_CONFIG);
+  });
+
+  test('createMatchWithBot POSTs { numPlayers, botCount, policy, setupData } to /api/match/create-with-bot and returns matchId', async () => {
+    installFetchStub(() => jsonResponse(200, { matchId: 'match-bot-1' }));
+    const result = await createMatchWithBot(SAMPLE_CONFIG, 2, 1, 'competent', 'test-token');
+
+    assert.equal(result.matchId, 'match-bot-1');
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]!.url, `${serverUrl}/api/match/create-with-bot`);
+    assert.equal(calls[0]!.init?.method, 'POST');
+    assert.equal(
+      (calls[0]!.init?.headers as Record<string, string>).Authorization,
+      'Bearer test-token',
+    );
+
+    const parsed = JSON.parse(String(calls[0]!.init?.body)) as {
+      numPlayers: number;
+      botCount: number;
+      policy: string;
+      setupData: MatchSetupConfig;
+    };
+    assert.equal(parsed.numPlayers, 2);
+    assert.equal(parsed.botCount, 1);
+    assert.equal(parsed.policy, 'competent');
+    assert.deepEqual(parsed.setupData, SAMPLE_CONFIG);
+  });
+
+  test('createMatchWithBot throws a full-sentence error on a non-ok response', async () => {
+    installFetchStub(() => textResponse(400, 'botCount must be less than numPlayers'));
+    await assert.rejects(
+      () => createMatchWithBot(SAMPLE_CONFIG, 2, 1, 'random', 'test-token'),
+      /Failed to create a bot-ally match.*HTTP 400/,
+    );
   });
 
   test('listMatches parses raw response and normalizes player ids to strings, open seats as name-less', async () => {

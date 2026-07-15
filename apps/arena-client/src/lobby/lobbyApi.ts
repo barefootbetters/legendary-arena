@@ -74,6 +74,56 @@ export async function createMatch(
 }
 
 /**
+ * Creates a cooperative match whose non-human seats are filled and driven by a
+ * bot ally, via the authenticated `POST /api/match/create-with-bot` endpoint
+ * (WP-375). The server reserves + secret-joins + auto-readies seats
+ * `"1".."botCount"` and returns only `{ matchId }` — seat `"0"` is left OPEN for
+ * the human, who then joins it with {@link joinMatch} (so seat 0 gets its own
+ * `match_seat_accounts` row + credential). The bot is an ally, never an opponent
+ * (co-op, VISION §23(b)).
+ *
+ * @param config  Nine-field MatchSetupConfig used as boardgame.io setupData.
+ * @param seatCount  Total seats to allocate (2..5).
+ * @param botCount  How many seats the bot ally fills (1..seatCount-1).
+ * @param policy  Bot policy: `'competent'` (default heuristic) or `'random'`.
+ * @param authToken  Bearer token for the authenticated session.
+ * @returns The server-assigned matchId.
+ * @throws Error with a full-sentence message on non-2xx responses.
+ */
+export async function createMatchWithBot(
+  config: MatchSetupConfig,
+  seatCount: number,
+  botCount: number,
+  policy: 'competent' | 'random',
+  authToken: string,
+): Promise<{ matchId: string }> {
+  const endpoint = `${serverUrl}/api/match/create-with-bot`;
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${authToken}`,
+    },
+    body: JSON.stringify({
+      numPlayers: seatCount,
+      botCount,
+      policy,
+      setupData: config,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(
+      `Failed to create a bot-ally match at ${endpoint}: server returned HTTP ${response.status}. ${errorBody}`,
+    );
+  }
+
+  const body = (await response.json()) as { matchId: string };
+  return { matchId: body.matchId };
+}
+
+/**
  * Fetches the read-only per-player-count setup requirements from the server
  * (WP-371). Used by the lobby to warn + disable Create before submit when a
  * composition does not match the player count. Guest endpoint (public rules
