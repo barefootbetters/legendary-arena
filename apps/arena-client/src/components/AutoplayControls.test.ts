@@ -73,7 +73,7 @@ function status(
 
 function sampleUiState(): UIState {
   return {
-    game: { phase: 'play', turn: 1, activePlayerId: 'a', currentStage: 'main' },
+    game: { phase: 'play', turn: 1, activePlayerId: 'a', currentStage: 'main', hasActedThisTurn: false, hasHealedThisTurn: false },
     players: [],
     city: { spaces: [], escapedPile: [] },
     hq: { slots: [] },

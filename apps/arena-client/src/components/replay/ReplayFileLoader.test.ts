@@ -27,6 +27,8 @@ function buildValidReplayBlob(): string {
           turn: 1,
           activePlayerId: '0',
           currentStage: 'start',
+          hasActedThisTurn: false,
+          hasHealedThisTurn: false,
         },
         players: [],
         city: { spaces: [null, null, null, null, null] },

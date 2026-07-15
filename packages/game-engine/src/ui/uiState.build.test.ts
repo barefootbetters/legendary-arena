@@ -89,6 +89,23 @@ describe('buildUIState', () => {
     assert.equal(result.game.activePlayerId, '0');
   });
 
+  it('game.hasActedThisTurn / hasHealedThisTurn mirror G, undefined projecting as false (WP-380)', () => {
+    // why: WP-380 — the two WP-379 per-turn flags project as definite booleans so
+    // the client can gate the Heal-Wounds affordance (D-24181). An absent G flag
+    // (optional, undefined) projects as false; a set flag projects verbatim.
+    const unsetState = createTestGameState();
+    const unsetResult = buildUIState(unsetState, mockCtx);
+    assert.equal(unsetResult.game.hasActedThisTurn, false);
+    assert.equal(unsetResult.game.hasHealedThisTurn, false);
+
+    const actedState = createTestGameState();
+    actedState.hasActedThisTurn = true;
+    actedState.hasHealedThisTurn = true;
+    const actedResult = buildUIState(actedState, mockCtx);
+    assert.equal(actedResult.game.hasActedThisTurn, true);
+    assert.equal(actedResult.game.hasHealedThisTurn, true);
+  });
+
   it('game.turn reads G.logMeta.turn when set, not the bumped ctx.turn (WP-331)', () => {
     // why: WP-331 — at game-over boardgame.io transitions play -> end, and a
     // phase change starts a fresh framework turn, bumping ctx.turn one past the

@@ -445,6 +445,11 @@ export function buildUIState(
     turn: gameState.logMeta?.turn ?? ctx.turn,
     activePlayerId: ctx.currentPlayer,
     currentStage: gameState.currentStage,
+    // why: WP-380 — coerce the optional WP-379 per-turn G flags to definite
+    // boolean projections (undefined = not-yet-acted / not-yet-healed). These
+    // drive the client Heal-Wounds affordance gating (D-24181).
+    hasActedThisTurn: gameState.hasActedThisTurn ?? false,
+    hasHealedThisTurn: gameState.hasHealedThisTurn ?? false,
   };
 
   // --- 2. Project player states ---

@@ -63,7 +63,10 @@ export type UiMoveName =
   // Wonder of the World, Sunspot's Empyreal Force, Star-Lord (T'Challa)'s Colliding Dreams).
   | 'resolvePutAnyNumberBottomHQ'
   // why: D-24139 — unblocks the return-zero-cost-discard prompt (Black Knight's Defend the Weak).
-  | 'resolveReturnZeroCostDiscard';
+  | 'resolveReturnZeroCostDiscard'
+  // why: WP-380 / D-24181 — surfaces the WP-379 Wound "Healing" ability (engine
+  // healWounds). Dispatched with an empty payload; the move takes no arguments.
+  | 'healWounds';
 
 /**
  * Function signature shared by every prop-drilled `submitMove` in the

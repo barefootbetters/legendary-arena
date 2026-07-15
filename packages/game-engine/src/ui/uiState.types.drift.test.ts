@@ -445,6 +445,30 @@ describe('UIState type drift (WP-128 / EC-131) — type pinning', () => {
     ]);
   });
 
+  it('UIState.game retains phase/turn/activePlayerId/currentStage AND adds hasActedThisTurn + hasHealedThisTurn (WP-380)', () => {
+    // why: WP-380 — additive extension of the inline game shape; the two new
+    // fields are the WP-379 per-turn flags projected as public booleans so the
+    // client can gate the Heal-Wounds affordance (D-24181). This pin fails if
+    // a field is added to the type but not the builder (or vice versa).
+    const fixture: UIState['game'] = {
+      phase: 'play',
+      turn: 1,
+      activePlayerId: '0',
+      currentStage: 'main',
+      hasActedThisTurn: false,
+      hasHealedThisTurn: false,
+    };
+
+    assert.deepStrictEqual(Object.keys(fixture).sort(), [
+      'activePlayerId',
+      'currentStage',
+      'hasActedThisTurn',
+      'hasHealedThisTurn',
+      'phase',
+      'turn',
+    ]);
+  });
+
   it('all 8 safe-skip sites (D-12806) project typed-stable defaults on empty match; koPile uses G.ko top-level path (NOT G.piles.ko, PS-1)', () => {
     // why: D-12806 commits to deterministic safe-skip values when the
     // underlying G source is absent. When a future WP adds the source,

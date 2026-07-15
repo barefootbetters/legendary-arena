@@ -18,6 +18,8 @@ function snapshot(): UIState {
       turn: 4,
       activePlayerId: 'alice',
       currentStage: 'main',
+      hasActedThisTurn: false,
+      hasHealedThisTurn: false,
     },
     players: [
       {

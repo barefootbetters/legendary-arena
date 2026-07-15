@@ -68,6 +68,8 @@ function makeUIState(overrides?: Partial<UIState>): UIState {
       turn: 1,
       activePlayerId: '1',
       currentStage: 'main',
+      hasActedThisTurn: false,
+      hasHealedThisTurn: false,
     },
     players: [
       {

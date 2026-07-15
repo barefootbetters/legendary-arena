@@ -50,6 +50,14 @@ export interface UIState {
     turn: number;
     activePlayerId: string;
     currentStage: string;
+    // why: WP-380 / D-24181 — mirrors the WP-379 per-turn G flags so the client
+    // can gate the Heal-Wounds affordance (a player may heal only if they have
+    // not acted; not again after healing). Public (like currentStage): whether the
+    // active player has acted/healed this turn is observable, not secret — no
+    // per-player redaction. Always-present boolean projections (undefined G flag
+    // projects as false).
+    hasActedThisTurn: boolean;
+    hasHealedThisTurn: boolean;
   };
   players: UIPlayerState[];
   city: UICityState;

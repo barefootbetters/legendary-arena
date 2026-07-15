@@ -202,4 +202,66 @@ describe('TurnActionBar (WP-129 — 3-step rewrite of WP-100; WP-236 — Draw sc
       'KO gate reason takes precedence over the hero-choice reason',
     );
   });
+
+  // why: WP-380 — the Heal Wounds button (engine healWounds). Lives in Step 2
+  // (play.main); enabled only for the viewer with a Wound in hand, not acted, not
+  // healed; disabled-with-tooltip otherwise per the EC-132 §3 precedence.
+  test('Heal Wounds click emits healWounds with empty payload when enabled', () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: { currentStage: 'main', isViewerTurn: true, hasWoundInHand: true, submitMove },
+    });
+    const heal = wrapper.find('[data-testid="play-action-heal-wounds"]');
+    assert.equal(
+      heal.attributes('disabled'),
+      undefined,
+      'enabled with a Wound in hand, not acted, not healed',
+    );
+    void heal.trigger('click');
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]!.name, 'healWounds');
+    assert.deepEqual(calls[0]!.args, {});
+  });
+
+  test('Heal Wounds is disabled with a tooltip when no Wound is in hand', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: { currentStage: 'main', isViewerTurn: true, hasWoundInHand: false, submitMove },
+    });
+    const heal = wrapper.find('[data-testid="play-action-heal-wounds"]');
+    assert.equal(heal.attributes('disabled'), '');
+    assert.match(heal.attributes('title')!, /no Wounds in hand/i);
+  });
+
+  test('Heal Wounds is disabled after acting this turn', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: {
+        currentStage: 'main',
+        isViewerTurn: true,
+        hasWoundInHand: true,
+        hasActedThisTurn: true,
+        submitMove,
+      },
+    });
+    const heal = wrapper.find('[data-testid="play-action-heal-wounds"]');
+    assert.equal(heal.attributes('disabled'), '');
+    assert.match(heal.attributes('title')!, /after recruiting or fighting/i);
+  });
+
+  test('Heal Wounds is disabled after already healing this turn', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: {
+        currentStage: 'main',
+        isViewerTurn: true,
+        hasWoundInHand: true,
+        hasHealedThisTurn: true,
+        submitMove,
+      },
+    });
+    const heal = wrapper.find('[data-testid="play-action-heal-wounds"]');
+    assert.equal(heal.attributes('disabled'), '');
+    assert.match(heal.attributes('title')!, /already healed/i);
+  });
 });
