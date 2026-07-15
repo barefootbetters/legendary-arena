@@ -28991,3 +28991,64 @@ The flags are **structural, not derived from `G.turnEconomy`** — a 0-cost figh
 **Packet:** WP-379 (EC-408). **Executed:** 2026-07-14.
 
 Protect this file.
+
+### D-24173 — Analytics client emitter: a fire-and-forget producer that feeds the WP-205 pipeline with a RAW (never client-hashed) user_id
+
+**Status:** **Active** (executed 2026-07-15, WP-378 / EC-407).
+
+**User-Visible Surface:** none on the arena-client itself (capture is silent). The downstream surface is `dashboard.legendary-arena.com/players` — the Traffic Sources / Activation Funnel / Retention Cohorts widgets populate once events flow.
+
+**Context.** The WP-205 analytics pipeline is built end-to-end server-side — the guest `POST /api/analytics/events` capture endpoint, the `legendary.analytics_events` table, and the three dashboard aggregation reads — and the dashboard widgets authenticate and render (WP-206 + the #742 apiClient-bearer fix). But **nothing wrote events**, so every widget read "No data captured." This decision adds the missing producer in the arena client.
+
+**Decision.** A single-responsibility `apps/arena-client/src/lib/api/analyticsEmitter.ts` exposes `captureAnalyticsEvent(eventType, userId, properties?)` — a **fire-and-forget** `void fetch(buildApiUrl('/api/analytics/events'), { method: 'POST', keepalive: true, … })` whose promise rejection is caught and swallowed. It **never throws into a caller, never surfaces to the UI, and never blocks a click**. Privacy posture:
+- **`user_id` is sent RAW** — the caller's internal account id, or `null` for an anonymous (pre-signup) event. The server computes the SHA-256 digest at the route boundary before INSERT (D-20502); **the client never hashes** (grep-gated: no `createHash`/`sha256`/`subtle.digest`).
+- An **opaque `crypto.randomUUID()` session id** is created-or-read in `sessionStorage` (key `legendary-arena.analytics.session-id`), with a try/catch fallback to an ephemeral id when storage is unavailable. It is not derived from any account identifier.
+- The body is `{ event_type, user_id, session_id, timestamp, properties? }`, matching WP-205's `AnalyticsEventCapturePayload`; `keepalive` lets an in-flight beacon survive an unload.
+
+**Signature note (execution deviation, ratified).** The WP text sketched a 2-arg call ("caller-supplied account id"); execution locked a **3-arg** signature with an **explicit `userId`** argument rather than reaching into the auth store from inside the emitter. This keeps the emitter pure and layer-isolated (independently testable, no Pinia coupling) and pushes the "who is the current account" question up to the single `useAnalyticsCapture` hub (D-24174) — a strictly cleaner boundary than the sketch, with no behavioural difference at any call site.
+
+**Fences.** The emitter imports **nothing** from the game engine, the card-registry, the pre-planning package, the match-simulation framework, or any server package (grep-gated). The nine-value `AcquisitionEventType` union is declared **inline as a structural mirror** of the server's `ACQUISITION_EVENT_TYPES` closed set (migration 017 CHECK) — importing the server type would cross the layer boundary. The same-layer `apiBaseUrl`/`buildApiUrl` seam (WP-161 / D-16101) supplies the base URL. No server route, schema, or migration change.
+
+**Packet:** WP-378 (EC-407). **Executed:** 2026-07-15.
+
+Protect this file.
+
+### D-24174 — Client-local acquisition/activation/retention detection (non-authoritative v1): one reactive hub, per-device localStorage flags
+
+**Status:** **Active** (executed 2026-07-15, WP-378 / EC-407).
+
+**User-Visible Surface:** none on the arena-client (silent instrumentation); downstream `dashboard.legendary-arena.com/players`.
+
+**Context.** Six of the nine `AcquisitionEventType` values are lifecycle moments (`signup-start`, `signup-complete`, `first-match-started`, `first-match-completed`, `retention-return`, plus the on-load channel event) that must be detected on the client at the moment they occur. A server-derived version (join the sessions table, diff timestamps) is the eventual authority; this packet ships the **v1 client-local** detector so the funnel lights up now.
+
+**Decision.** A single `apps/arena-client/src/composables/useAnalyticsCapture.ts` reactive hub is mounted **exactly once** at the app root (`App.vue`; grep-gated to one call-site). It:
+- reads and re-stamps a `last-visit` timestamp on load; a gap past the **1-day threshold** (`86_400_000` ms) marks the visit stale;
+- `watch`es `authStore.isAuthenticated` (immediate) — on the first authenticated transition, if the per-device **signup-complete** flag is unset it emits `signup-complete` (with the RAW `accountId`) and sets the flag; otherwise, if the visit was stale it emits `retention-return`. A returning sign-in (flag already set) emits neither;
+- `watch`es the match snapshot (immediate) — emits `first-match-started` when the game enters the `play` phase and `first-match-completed` when `gameOver` is set, each **once**, gated by its own per-device localStorage flag;
+- emits the channel event (D-24175) anonymously on mount.
+
+**Non-authoritative posture (fences).** Detection is **per-device**, keyed on `localStorage`/`sessionStorage` — clearing storage or switching device re-arms a one-shot event; this is an accepted v1 limitation, not a correctness bug, because the events feed **directional funnel/cohort analytics**, never gameplay, billing, ranked eligibility, or any authoritative record. `retention-return` requires authentication (an anonymous stale visit is not a "return"). `signup-start` is emitted from `LoginPage.vue` when the Hanko surface becomes `ready` (the widget combines sign-in and register, so surface-ready is the top-of-funnel "opened the register flow" signal), anonymously. A server-derived successor may supersede this detector without changing the emitter (D-24173) or the taxonomy (D-24175).
+
+**Packet:** WP-378 (EC-407). **Executed:** 2026-07-15.
+
+Protect this file.
+
+### D-24175 — Channel classification taxonomy: referrer + UTM → direct / search / referral / paid (paid-first precedence)
+
+**Status:** **Active** (executed 2026-07-15, WP-378 / EC-407).
+
+**User-Visible Surface:** none on the arena-client; downstream Traffic Sources widget on `dashboard.legendary-arena.com/players`.
+
+**Context.** The on-load channel event must resolve the visitor's acquisition channel to one of the four `AcquisitionEventType` channel values from the document referrer and URL parameters, deterministically and without any PII.
+
+**Decision.** A pure `apps/arena-client/src/lib/api/channelClassifier.ts` exposes `classifyChannel(referrer, params, sameOriginHost)` with **paid-first precedence**:
+1. **`paid`** — a `gclid` parameter is present, OR `utm_medium ∈ {cpc, ppc, paid}` (case-insensitive). Paid wins even over an otherwise-search referrer (a paid search ad is paid, not organic search).
+2. **`direct`** — the referrer is empty, unparseable, or same-origin (`sameOriginHost` is passed in to keep the function pure — no `window`/`location` read).
+3. **`search`** — the referrer host contains a known search-engine host fragment (`google.`, `bing.`, `duckduckgo.`, `yahoo.`, `baidu.`, `yandex.`, `ecosia.`, `startpage.`, `brave.`). The trailing dot prevents a look-alike host (`googleblog.example`) from false-matching.
+4. **`referral`** — any other external host.
+
+**Fences.** Pure and deterministic (all inputs passed in; no I/O, no ambient globals). The channel event carries only non-PII `properties` (`referrer_host`, `utm_source`, `utm_medium`) and is emitted anonymously (`user_id: null`). The host-fragment list is a client-side heuristic, extensible without a schema change. No `reduce` in the classifier; explicit ordered checks.
+
+**Packet:** WP-378 (EC-407). **Executed:** 2026-07-15.
+
+Protect this file.
