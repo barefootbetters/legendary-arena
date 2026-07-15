@@ -29069,3 +29069,24 @@ Protect this file.
 **Packet:** WP-378 (EC-407). **Executed:** 2026-07-15.
 
 Protect this file.
+
+### D-24181 — Wound "Healing" client affordance: project the two turn-action flags to `UIState.game` + a gated Heal-Wounds button in TurnActionBar Step 2
+
+**Status:** **Active** (executed 2026-07-15, WP-380 / EC-409). The client half of the WP-379 Healing ability.
+
+**User-Visible Surface:** `play.legendary-arena.com` — a **Heal Wounds** button in the play HUD's Step 2 (Main) turn-action panel, enabled only when a player may legally heal and disabled-with-tooltip otherwise.
+
+**Context.** WP-379 shipped the engine `healWounds` move and the two per-turn `LegendaryGameState` flags that gate it (`hasActedThisTurn`, `hasHealedThisTurn`), but projected nothing to `UIState` and added no client control. Without projecting those flags the client cannot correctly gate a button (it can already read `currentStage`, the viewer's turn, and the viewer's `handCards`, but not whether the player has acted/healed) — so a naive button would be clickable-but-no-op after acting/healing, breaking the disabled-with-tooltip convention every other TurnActionBar affordance follows.
+
+**Decision.** A single cross-layer WP (engine-first commit):
+1. **Projection.** Add `hasActedThisTurn` and `hasHealedThisTurn` to `UIState.game` as **public** read-only booleans (siblings of `currentStage`; `buildUIState` coerces the optional G flags with `?? false`). They are public — not per-player-redacted — because whether the active player has acted/healed is observable, not secret. `filterUIStateForAudience` spreads `game`, so the fields pass through unchanged. Pinned in the `uiState.types.drift.test.ts` game-shape drift test. **No competitive-hash impact:** `UIState` is not part of `computeStateHash`, so the sentinel fixture and `PRE_WP080_HASH` are byte-identical (no re-pin).
+2. **Client affordance.** `'healWounds'` is added to the `UiMoveName` union; a client-derived `useTurnActions().canHealWounds()` `GatingResult` predicate gates the button in precedence order (not-your-turn → not-`main` → any block-all pending → no-Wound-in-hand → already-acted → already-healed), each with a full-sentence reason. The pending set mirrors the **exact 5-guard cluster** the engine `healWounds` guards (D-24008 / D-24019 / D-24067 / D-24069 / D-24139), so a grayed button never hides a legal move and a live button never offers an illegal one. The **Heal Wounds** button in `TurnActionBar` Step 2 dispatches `submitMove('healWounds', {})` (empty payload; the move takes no args). `PlayDesktop` / `PlayMobile` derive `hasWoundInHand` by scanning the viewer's `handCards` for the Wound ext_id and read the two flags from `snapshot.game`.
+3. **Wound identity.** Components may not add a runtime `@legendary-arena/game-engine` import, so the Wound ext_id (`'pile-wound'`) is a client-local constant in `woundIdentity.ts`, guarded by a drift test that imports the engine `WOUND_EXT_ID` (a test-only engine import is permitted). The all-zones `UIPlayerState.woundCount` cannot answer "Wound in hand," so the hand scan is necessary.
+
+The capability flag stays **client-derived** (no new `canX` boolean in `UIState`, matching the codebase convention).
+
+**Fences.** No engine gameplay change (the `healWounds` move, the two flags, and the reverse lock are WP-379's locked contract). No AI/simulation integration. No `notableEvent` / center-screen heal overlay (deferred cosmetic polish — the player observes the hand shrink + KO pile + the WP-379 log line). No `playCard` "Wounds can't be played" fix; no Enraging-Wound variants. **Inline amendment (mechanical):** the required-field add to `UIState.game` forced a `game`-literal backfill across every arena-client test that constructs a full `UIState` (+12 fixture files, incl. 3 JSON fixtures) — the documented UIState-field-add recurrence; no behavior change. `pnpm -r build` 0; `arena-client` typecheck 0 + test 923 → 939 (+16); engine test 1953 / 0.
+
+**Packet:** WP-380 (EC-409). **Executed:** 2026-07-15.
+
+Protect this file.
