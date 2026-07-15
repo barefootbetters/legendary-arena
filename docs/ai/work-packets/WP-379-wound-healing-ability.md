@@ -59,7 +59,7 @@ Before writing a single line:
 - `docs/ai/REFERENCE/00.2-data-requirements.md §Zones & Piles` — confirm the canonical `wounds` / `ko` pile naming and that Wounds are represented purely as `WOUND_EXT_ID` strings in zones (never card objects).
 - `docs/ai/REFERENCE/00.1-master-coordination-prompt.md` — non-negotiable constraints: no DB queries in moves; moves are deterministic; moves never throw.
 - `docs/ai/REFERENCE/00.6-code-style.md` — Rule 4 (no abbreviations), Rule 6 (`// why:` comments), Rule 7/8 (no `.reduce()` in zone ops; explicit `for...of`), Rule 9 (`node:` prefix), Rule 13 (ESM only).
-- `docs/ai/DECISIONS.md` — scan D-24008 / D-24019 / D-24139 (the block-all pending-choice guard precedents `healWounds` mirrors) and the reserved D-24176 / D-24177 at the tail of this WP.
+- `docs/ai/DECISIONS.md` — scan D-24008 / D-24019 / D-24139 (the block-all pending-choice guard precedents `healWounds` mirrors) and the reserved D-24179 / D-24180 at the tail of this WP.
 
 ---
 
@@ -84,7 +84,7 @@ Before writing a single line:
 - The two flags gate structurally, not by economy: `hasActedThisTurn` is set by `fightVillain` / `recruitHero` / `fightMastermind` on successful commit — **a 0-cost fight or recruit still counts as acting** (per the printed rule "recruit or fight anything"), so the flag must not be derived from `spentAttack` / `spentRecruit`.
 - No zone-op `.reduce()` — partition the hand with an explicit `for...of` loop.
 - `fightVillain.ts` / `recruitHero.ts` / `fightMastermind.ts` receive **only** the reverse-lock guard line + the `hasActedThisTurn = true` assignment — no other behavioral change.
-- Every `// why:` comment discipline from 00.6 applies; the reverse-lock guard and the healing precondition each need a `// why:` citing the rule + D-24176/D-24177.
+- Every `// why:` comment discipline from 00.6 applies; the reverse-lock guard and the healing precondition each need a `// why:` citing the rule + D-24179/D-24180.
 
 **Session protocol:**
 - If any contract, field name, or reference is unclear, stop and ask the human before proceeding — never guess or invent field names, type shapes, or file paths.
@@ -115,7 +115,7 @@ Before writing a single line:
 - `healWounds({ G, ctx }: MoveContext): void` — the move.
   - **Step 2 (stage gate):** `if (G.currentStage !== 'main') return;` — Healing is a main-window action (mirrors `fightVillain`/`recruitHero`). Add a `// why:` comment.
   - **Block-all guards:** the identical `hasPending*` cluster used by `fightVillain` (KO-hero D-24008, optional-KO-reward D-24019, victory-pile-pick D-24067, draw-or-empowered D-24069, return-zero-cost-discard D-24139 — and any others present in `fightVillain` at execution time). Each returns silently. Copy the cluster verbatim from `fightVillain.ts` so it cannot drift.
-  - **Healing precondition:** `if (G.hasActedThisTurn === true) return;` — with a `// why:` citing the rule and D-24176 (you may not heal after recruiting or fighting).
+  - **Healing precondition:** `if (G.hasActedThisTurn === true) return;` — with a `// why:` citing the rule and D-24179 (you may not heal after recruiting or fighting).
   - **Wound scan:** iterate `G.playerZones[ctx.currentPlayer]!.hand` with an explicit `for...of` loop, building `remainingHand` (non-Wound `CardExtId`s) and counting `woundsToKo` (entries `=== WOUND_EXT_ID`). No `.reduce()`, no `.filter()` for the partition.
   - **Empty guard:** `if (woundsToKo === 0) return;` — deterministic no-op when the hand holds no Wounds. Add a `// why:`.
   - **Step 3 (mutate):** append each KO'd Wound to `G.ko` via `koCard` (one call per Wound, all `WOUND_EXT_ID`); assign `remainingHand` back to the player's `hand`; set `G.hasHealedThisTurn = true`; `pushLog(G, ...)` a single deterministic line naming the player and the KO count.
@@ -139,8 +139,8 @@ Before writing a single line:
 
 ### E) Reverse lock — `fightVillain.ts`, `recruitHero.ts`, `fightMastermind.ts` (**modified**)
 
-- In each, import `hasHealedThisTurn` from `./healWounds.js` and add, at the end of the existing block-all guard cluster (before any mutation): `if (hasHealedThisTurn(G)) return;` with a `// why:` citing the rule + D-24177 (cannot fight/recruit after Healing).
-- In each Step-3 mutation block, set `G.hasActedThisTurn = true;` at the point of successful commit, with a `// why:` citing D-24177.
+- In each, import `hasHealedThisTurn` from `./healWounds.js` and add, at the end of the existing block-all guard cluster (before any mutation): `if (hasHealedThisTurn(G)) return;` with a `// why:` citing the rule + D-24180 (cannot fight/recruit after Healing).
+- In each Step-3 mutation block, set `G.hasActedThisTurn = true;` at the point of successful commit, with a `// why:` citing D-24180.
 
 ### F) Move-set drift test — `packages/game-engine/src/game.test.ts` (**modified**)
 
@@ -290,7 +290,7 @@ This packet is complete when ALL of the following are true:
 - [ ] `fightVillain.ts` / `recruitHero.ts` / `fightMastermind.ts` changed by exactly the two named lines each; no other behavioral edit (confirmed with `git diff`).
 - [ ] No files outside `## Files Expected to Change` were modified (confirmed with `git diff --name-only`), except regenerated sentinel/golden fixtures per the conditional clause.
 - [ ] `docs/ai/STATUS.md` updated — the engine now implements the Wound Healing ability + mutual-exclusion turn-action state.
-- [ ] `docs/ai/DECISIONS.md` updated — land D-24176 (Healing move) and D-24177 (turn-action mutual-exclusion state) as Active (post-execution).
+- [ ] `docs/ai/DECISIONS.md` updated — land D-24179 (Healing move) and D-24180 (turn-action mutual-exclusion state) as Active (post-execution).
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` has WP-379 checked off with today's date.
 
 ---
@@ -357,8 +357,8 @@ Selected findings (non-clean-PASS notes; all others clean PASS):
 
 ## Reserved Decisions (land at execution)
 
-- **D-24176 (reserved; Drafted 2026-07-14, not yet landed)** — The universal Wound "Healing" ability is a dedicated `healWounds` move that KOs every `WOUND_EXT_ID` card from the current player's hand into `G.ko` (permanent removal, never back to `G.wounds` and never to discard). It follows the non-core move contract: `main`-stage gate + the block-all `hasPending*` guard cluster + a `hasActedThisTurn` precondition, then mutate. It creates no pending-choice state (healing is synchronous) and emits a `G.messages` line but no `notableEvent`. Wounds are identified by `WOUND_EXT_ID` only.
-- **D-24177 (reserved; Drafted 2026-07-14, not yet landed)** — Turn-action mutual exclusion is carried by two optional boolean `LegendaryGameState` flags, `hasActedThisTurn` and `hasHealedThisTurn`, both reset in the `play` phase `turn.onBegin`. `hasActedThisTurn` is set by `fightVillain` / `recruitHero` / `fightMastermind` on successful commit and gates `healWounds`; `hasHealedThisTurn` is set by `healWounds` and reverse-locks those three moves. The flags are structural, **not** derived from `G.turnEconomy` — a 0-cost fight or recruit still counts as "acting" per the printed rule "recruit or fight anything."
+- **D-24179 (reserved; Drafted 2026-07-14, not yet landed)** — The universal Wound "Healing" ability is a dedicated `healWounds` move that KOs every `WOUND_EXT_ID` card from the current player's hand into `G.ko` (permanent removal, never back to `G.wounds` and never to discard). It follows the non-core move contract: `main`-stage gate + the block-all `hasPending*` guard cluster + a `hasActedThisTurn` precondition, then mutate. It creates no pending-choice state (healing is synchronous) and emits a `G.messages` line but no `notableEvent`. Wounds are identified by `WOUND_EXT_ID` only.
+- **D-24180 (reserved; Drafted 2026-07-14, not yet landed)** — Turn-action mutual exclusion is carried by two optional boolean `LegendaryGameState` flags, `hasActedThisTurn` and `hasHealedThisTurn`, both reset in the `play` phase `turn.onBegin`. `hasActedThisTurn` is set by `fightVillain` / `recruitHero` / `fightMastermind` on successful commit and gates `healWounds`; `hasHealedThisTurn` is set by `healWounds` and reverse-locks those three moves. The flags are structural, **not** derived from `G.turnEconomy` — a 0-cost fight or recruit still counts as "acting" per the printed rule "recruit or fight anything."
 
 ---
 

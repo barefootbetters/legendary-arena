@@ -33,10 +33,10 @@
 
 ## Required `// why:` Comments
 - `healWounds` stage gate: main-window action, mirrors fightVillain.
-- `healWounds` `hasActedThisTurn` precondition: rule + D-24176 (no heal after acting).
+- `healWounds` `hasActedThisTurn` precondition: rule + D-24179 (no heal after acting).
 - `healWounds` empty-hand guard: deterministic no-op.
-- Reverse-lock guard in all three fight/recruit moves: rule + D-24177 (no fight/recruit after heal).
-- `hasActedThisTurn = true` in all three moves: D-24177.
+- Reverse-lock guard in all three fight/recruit moves: rule + D-24180 (no fight/recruit after heal).
+- `hasActedThisTurn = true` in all three moves: D-24180.
 - `game.ts` flag resets in `onBegin`: once-per-turn allowance refreshes.
 
 ## Files to Produce
@@ -57,7 +57,7 @@
 - [ ] `Select-String` gates pass: no `throw` / no `boardgame.io/testing` / no `'pile-wound'` literal in `healWounds.ts`; no `Math.random` in engine src.
 - [ ] Live-on-surface verification — N/A; STATUS.md states "No user-observable change — infrastructure only" (surface = `none — infrastructure`).
 - [ ] `docs/ai/STATUS.md` updated
-- [ ] `docs/ai/DECISIONS.md` updated — land D-24176 + D-24177 (Active, post-execution)
+- [ ] `docs/ai/DECISIONS.md` updated — land D-24179 + D-24180 (Active, post-execution)
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` WP-379 checked off with date
 - [ ] `git diff --name-only` shows only the allowlist (+ regenerated fixtures)
 
