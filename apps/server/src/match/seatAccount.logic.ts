@@ -85,3 +85,34 @@ export async function readSeatAccounts(
     }),
   );
 }
+
+/**
+ * Read the bot-ally seat ids tagged for a match, from the `legendary.match_bot_ally`
+ * side-table (WP-375 / D-24170). A match created with a bot ally carries a row
+ * whose `bot_seats` lists the server-driven seats; every other match has no row.
+ *
+ * Used by the ranked-eligibility guard (WP-377 / D-24172): a non-empty result is
+ * the most authoritative signal that a match had a non-account seat and must be
+ * Casual, never ranked (DESIGN §5b/§5c) — defence-in-depth alongside the
+ * seat-count-vs-roster backstop.
+ *
+ * @param matchId The boardgame.io match id.
+ * @param database The caller-injected `pg` pool.
+ * @returns The bot seat ids (e.g. `['1']`), or an empty array when the match has
+ *   no bot-ally row.
+ */
+export async function readMatchBotSeats(
+  matchId: string,
+  database: DatabaseClient,
+): Promise<string[]> {
+  const result = await database.query(
+    'SELECT bot_seats FROM legendary.match_bot_ally WHERE match_id = $1',
+    [matchId],
+  );
+  if (result.rows.length === 0) {
+    return [];
+  }
+  // why: bot_seats is a NOT NULL text[] column, but a defensive ?? [] keeps a
+  // malformed/NULL value from throwing out of the fail-safe ranked read.
+  return (result.rows[0].bot_seats as string[] | null) ?? [];
+}

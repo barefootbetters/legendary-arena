@@ -366,6 +366,38 @@ export async function isMatchFinished(
 }
 
 /**
+ * The authoritative seat count of a match: the number of seat slots in its
+ * boardgame.io metadata (`metadata.players`), read from `bgio.matches`.
+ *
+ * // why: a match is created with `numPlayers` seats and boardgame.io records one
+ * `metadata.players` slot per seat, so this count equals the seat count that had
+ * to ready to start the match — the value the ranked guard (WP-377 / D-24172)
+ * compares against the authenticated roster. It is read from the framework
+ * METADATA surface (the same `bgio.matches.metadata` `isMatchFinished` reads),
+ * NOT from the `state`/`initial_state` `G`/`ctx` blob, so it needs no
+ * persistence-boundary carve-out. Returns 0 when the match or its players slot is
+ * absent; the ranked guard treats a seat-count/roster mismatch as Casual, so an
+ * absent count fails safe.
+ *
+ * @param matchId The boardgame.io match id.
+ * @param database The caller-injected `pg` pool.
+ * @returns The number of seats, or 0 when the match / players metadata is absent.
+ */
+export async function readMatchSeatCount(
+  matchId: string,
+  database: DatabaseClient,
+): Promise<number> {
+  const result = await database.query(
+    "SELECT metadata->'players' AS players FROM bgio.matches WHERE match_id = $1",
+    [matchId],
+  );
+  if (result.rows.length === 0 || result.rows[0].players === null || result.rows[0].players === undefined) {
+    return 0;
+  }
+  return Object.keys(result.rows[0].players).length;
+}
+
+/**
  * Resolve a finished match's canonical `replayHash` from the durable WP-335
  * `bgio.replay_artifacts` store by its `match_id`. This is the lookup the
  * submit-by-matchId flow (WP-338) uses: the arena-client submits a `matchId`, and

@@ -1255,13 +1255,19 @@ describe('submitCompetitiveScoreByMatchIdForRequest (WP-338)', () => {
     await testPool.query('DELETE FROM legendary.competitive_scores WHERE replay_hash = $1', [expectedHash]);
     await testPool.query('DELETE FROM bgio.replay_artifacts WHERE match_id = $1', [matchId]);
     await testPool.query('DELETE FROM legendary.match_seat_accounts WHERE match_id = $1', [matchId]);
+    await testPool.query('DELETE FROM legendary.match_bot_ally WHERE match_id = $1', [matchId]);
     await testPool.query('DELETE FROM bgio.matches WHERE match_id = $1', [matchId]);
     // The owner sits at seat '0'.
     await testPool.query(
       'INSERT INTO legendary.match_seat_accounts (match_id, player_id, account_id) VALUES ($1, $2, $3)',
       [matchId, '0', owner.value.accountId],
     );
-    const metadata = finished ? '{"gameover":{"winner":"0"}}' : '{}';
+    // why: WP-377 — the ranked guard reads the seat count from metadata.players
+    // (one slot per seat, as boardgame.io writes it). Seed seat 0's slot so a
+    // solo seed reads seatCount 1; addSecondSeat / addMetadataSeat bump it.
+    const metadata = finished
+      ? '{"gameover":{"winner":"0"},"players":{"0":{}}}'
+      : '{"players":{"0":{}}}';
     await testPool.query(
       'INSERT INTO bgio.matches (match_id, state, initial_state, metadata, log) ' +
         "VALUES ($1, '{}'::jsonb, $2::jsonb, $3::jsonb, $4::jsonb)",
@@ -1420,7 +1426,19 @@ describe('submitCompetitiveScoreByMatchIdForRequest (WP-338)', () => {
 
   // --- WP-354 ranked-eligibility gate ---
 
-  /** Provision a co-player and seat them at seat '1' of the match. */
+  /** Add a seat slot to the match's boardgame.io metadata (mirrors a bgio join). */
+  async function addMetadataSeat(
+    testPool: pg.Pool,
+    matchId: string,
+    seat: string,
+  ): Promise<void> {
+    await testPool.query(
+      "UPDATE bgio.matches SET metadata = jsonb_set(metadata, ARRAY['players', $2::text], '{}'::jsonb) WHERE match_id = $1",
+      [matchId, seat],
+    );
+  }
+
+  /** Provision a co-player and seat them at seat '1' of the match (account row + metadata slot). */
   async function addSecondSeat(
     testPool: pg.Pool,
     matchId: string,
@@ -1440,7 +1458,23 @@ describe('submitCompetitiveScoreByMatchIdForRequest (WP-338)', () => {
       'INSERT INTO legendary.match_seat_accounts (match_id, player_id, account_id) VALUES ($1, $2, $3)',
       [matchId, '1', coplayer.value.accountId],
     );
+    // why: WP-377 — a real second human occupies both a seat-account row AND a
+    // metadata slot, so seatCount (2) matches the roster (2).
+    await addMetadataSeat(testPool, matchId, '1');
     return coplayer.value;
+  }
+
+  /** Tag a match as bot-ally in the WP-375 side-table (for the short-circuit test). */
+  async function tagBotAlly(
+    testPool: pg.Pool,
+    matchId: string,
+    botSeats: string[],
+  ): Promise<void> {
+    await testPool.query(
+      'INSERT INTO legendary.match_bot_ally (match_id, bot_seats, decision_seed, policy, status) ' +
+        "VALUES ($1, $2, $1, 'competent', 'active')",
+      [matchId, botSeats],
+    );
   }
 
   /** Establish an accepted friendship between two accounts via the WP-350 API. */
@@ -1473,6 +1507,7 @@ describe('submitCompetitiveScoreByMatchIdForRequest (WP-338)', () => {
     await testPool.query('DELETE FROM legendary.replay_ownership WHERE replay_hash = $1', [expectedHash]);
     await testPool.query('DELETE FROM bgio.replay_artifacts WHERE match_id = $1', [matchId]);
     await testPool.query('DELETE FROM legendary.match_seat_accounts WHERE match_id = $1', [matchId]);
+    await testPool.query('DELETE FROM legendary.match_bot_ally WHERE match_id = $1', [matchId]);
     await testPool.query('DELETE FROM bgio.matches WHERE match_id = $1', [matchId]);
     await testPool.query('DELETE FROM legendary.friendships WHERE requester_id IN (SELECT player_id FROM legendary.players WHERE ext_id = ANY($1)) OR addressee_id IN (SELECT player_id FROM legendary.players WHERE ext_id = ANY($1))', [accountIds]);
     // why: a successful submission issues Tier-1 badges (player_badges rows)
@@ -1602,6 +1637,58 @@ describe('submitCompetitiveScoreByMatchIdForRequest (WP-338)', () => {
       assert.ok(result.ok === true, `expected ok despite the roster throw, got ${JSON.stringify(result)}`);
       assert.strictEqual(result.wasExisting, false);
       // Fail-safe direction: a friendship-infra throw records the run as Casual.
+      assert.strictEqual(result.record.isRankedEligible, false);
+
+      await cleanupMatch(testPool, matchId, expectedHash, [owner.accountId, friend.accountId]);
+    },
+  );
+
+  test(
+    'a 1-human + 1-bot match (roster 1, seatCount 2) is Casual (WP-377 seat-count backstop)',
+    { skip: hasTestDatabase ? false : 'requires test database' },
+    async () => {
+      const testPool = pool as pg.Pool;
+      const matchId = 'wp377-bot-ally';
+      const { owner, expectedHash } = await seedMatch(testPool, matchId, true);
+      // A bot occupies seat 1: a metadata slot exists (so seatCount is 2) but
+      // NO match_seat_accounts row (bots are rowless, D-24120) → roster stays 1.
+      await addMetadataSeat(testPool, matchId, '1');
+
+      const result = await submitCompetitiveScoreByMatchIdForRequest(
+        owner,
+        matchId,
+        testPool as unknown as DatabaseClient,
+        WP338_PROD_DEPS,
+      );
+      assert.ok(result.ok === true, `expected ok, got ${JSON.stringify(result)}`);
+      // The fix: a rowless (bot) seat leaves roster.length (1) !== seatCount (2),
+      // so the match is Casual even though a solo roster would be vacuously ranked.
+      assert.strictEqual(result.record.isRankedEligible, false);
+
+      await cleanupMatch(testPool, matchId, expectedHash, [owner.accountId]);
+    },
+  );
+
+  test(
+    'a non-empty botSeats tag forces Casual even when the roster is seat-complete and friended (short-circuit)',
+    { skip: hasTestDatabase ? false : 'requires test database' },
+    async () => {
+      const testPool = pool as pg.Pool;
+      const matchId = 'wp377-tag-shortcircuit';
+      const { owner, expectedHash } = await seedMatch(testPool, matchId, true);
+      const friend = await addSecondSeat(testPool, matchId, 'tagged');
+      await makeFriends(testPool, owner, friend);
+      // Roster 2 == seatCount 2 AND a mutual-friend clique → rules 2 and 3 would
+      // rank it. The botSeats tag (rule 1) must short-circuit to Casual anyway.
+      await tagBotAlly(testPool, matchId, ['1']);
+
+      const result = await submitCompetitiveScoreByMatchIdForRequest(
+        owner,
+        matchId,
+        testPool as unknown as DatabaseClient,
+        WP338_PROD_DEPS,
+      );
+      assert.ok(result.ok === true, `expected ok, got ${JSON.stringify(result)}`);
       assert.strictEqual(result.record.isRankedEligible, false);
 
       await cleanupMatch(testPool, matchId, expectedHash, [owner.accountId, friend.accountId]);

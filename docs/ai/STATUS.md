@@ -7,6 +7,16 @@
 
 ## Current State
 
+### WP-377 / EC-406 Executed — Ranked eligibility: seat-count-complete roster guard (server) (D-24172 Active, amends D-24146) (2026-07-14)
+
+Hardens `computeRankedEligibility` so a match with any **non-account seat** (a bot ally from WP-375, or a guest — both rowless per D-24120) can never submit a **ranked** score — closing the DESIGN §5b leak where a short roster is vacuously ranked. Ranked now requires, in order: (1) **no `botSeats` tag** (short-circuit to Casual); (2) `roster.length === seatCount`; (3) `areAllMutualFriends(roster)`. The predicate is `!== seatCount`, **never `< 2`**, so a genuine 1-player solo match (roster 1 == seatCount 1) stays vacuously ranked.
+
+**Seat-count source (D-24172):** the number of `bgio.matches.metadata.players` slots — a started match seated `numPlayers`, and boardgame.io writes one metadata slot per seat, so this equals the seat count that had to ready to start. Read from the framework **metadata** surface (the same `bgio.matches.metadata` `isMatchFinished` reads), **not** the `G`/`ctx` blob → no persistence-carve-out edit. Two small readers added: `readMatchSeatCount` (`matchReplay.logic.ts`) + `readMatchBotSeats` (`seatAccount.logic.ts`, reads the WP-375 `legendary.match_bot_ally` tag). Fail-safe Casual on any throw is preserved (the reads join the WP-354 try/catch); the by-hash `?? true` default and scoring math are untouched; no migration.
+
+This is the **blocking prerequisite** that makes bot-ally safe to expose to the client — the co-op ranked-farm vector is now closed defence-in-depth (the `botSeats` tag AND the seat-count backstop each independently force Casual). **WP-376** (the "Play with a bot ally" client affordance) is now unblocked for production.
+
+`pnpm -r build` 0; DB-gated `competition.logic.test.ts` **26/26** against local Postgres (full eligibility matrix incl. solo-stays-ranked regression, 1h+1b→Casual, botSeats short-circuit); grep gates pass. `User-Visible Surface = the public ranked leaderboard` — **D-24026 live-verify operator-pending on deploy** (a bot-ally match records Casual, never on the ranked board).
+
 ### WP-375 / EC-404 Executed — Solo bot-ally driver: mixed human+bot cooperative match (server) (D-24170 Active) (2026-07-14)
 
 A lone signed-in player can now start a cooperative 2–5-seat match whose non-human seat(s) are filled and driven by a **bot ally** — closing the "how do I play a 2-player game solo?" gap without a new engine variant (`solo` stays exactly 1 player). New **`POST /api/match/create-with-bot`** (`authenticated-session-required`) + a per-match server-side **`BotAllyDriver`** in `apps/server/src/bot-ally/`, narrowing the WP-163 autoplay lifecycle to the bot seats of a match that also has a real human.
