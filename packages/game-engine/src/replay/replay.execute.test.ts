@@ -116,8 +116,14 @@ import { makeMockCtx } from '../test/mockCtx.js';
 // final state, shifting the hash with NO behaviour change in this moves:[]
 // replay (nothing is recruited or classified by cost here). Same
 // dependency-driven class as the WP-282 faceDownCards re-pin above.
-// Pre-change: '379f7e46'. Post-change: 'be266d02'.
-const PRE_WP080_HASH = 'be266d02';
+// Pre-change: '379f7e46'. Post-WP-282: 'be266d02'.
+// why: WP-379 hasActedThisTurn + hasHealedThisTurn re-pin — the two new per-turn
+// boolean flags (both false at setup, reset deterministically each turn) serialize
+// into this empty replay's final state, shifting the hash with NO behaviour change
+// (nothing heals, fights, or recruits in this moves:[] replay). Same
+// dependency-driven class as the WP-236 hasDrawnThisTurn / WP-282 faceDownCards
+// re-pins above. Pre-WP-379: 'be266d02'. Post-WP-379: 'ec64506a'.
+const PRE_WP080_HASH = 'ec64506a';
 
 /**
  * Minimal mock registry for replay tests. Mirrors replay.verify.test.ts.

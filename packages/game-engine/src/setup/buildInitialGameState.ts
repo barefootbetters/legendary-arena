@@ -466,6 +466,12 @@ export function buildInitialGameState(
     // why: no draw has occurred at setup time; the play phase onBegin hook resets
     // this to false on every turn and performs the turn-1 auto-draw.
     hasDrawnThisTurn: false,
+    // why: WP-379 — neither turn-action flag is set at setup time; the play phase
+    // onBegin hook resets both to false on every turn. hasActedThisTurn gates the
+    // Wound Healing ability; hasHealedThisTurn reverse-locks fight/recruit
+    // (D-24179 / D-24180).
+    hasActedThisTurn: false,
+    hasHealedThisTurn: false,
     playerZones,
     piles,
     messages: setupMessages,

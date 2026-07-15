@@ -25,6 +25,7 @@ import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
+import { hasHealedThisTurn } from './healWounds.js';
 import { resolveCardName } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
 
@@ -81,6 +82,10 @@ export function fightMastermind(
   // why: block-all — pendingReturnZeroCostDiscard must be resolved before any other action (D-24139)
   if (hasPendingReturnZeroCostDiscard(G)) return;
 
+  // why: D-24180 — a player who used the Wound Healing ability this turn may not
+  // fight or recruit for the rest of the turn (the reverse lock).
+  if (hasHealedThisTurn(G)) return;
+
   // Step 3: Mutate G
   // why: capture the tactic card ID before defeatTopTactic moves it from
   // tacticsDeck to tacticsDefeated — the player earns this card in their
@@ -89,6 +94,10 @@ export function fightMastermind(
   G.mastermind = defeatTopTactic(G.mastermind);
   G.playerZones[ctx.currentPlayer]!.victory.push(defeatedTacticId);
   G.turnEconomy = spendAttack(G.turnEconomy, requiredFightCost);
+
+  // why: D-24180 — this successful mastermind fight marks the player as having
+  // acted this turn, which bars the Wound Healing ability for the rest of the turn.
+  G.hasActedThisTurn = true;
 
   // why: WP-323 — name the mastermind (G.mastermind.id is the qualified
   // "core/magneto", not a display name; baseCardId keys cardDisplayData — the

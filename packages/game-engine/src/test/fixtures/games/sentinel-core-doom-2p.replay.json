@@ -1,6 +1,6 @@
 {
   "expected": {
-    "finalStateHash": "47afd86a96b709b9f01aafb63f4027ccebc738fd0af37685eb99c1cb43997bb1",
+    "finalStateHash": "3da2c374248697af1a23bcf0673fa98fc83435d4e9ec32c9828cd3bd651f0037",
     "messages": [
       "Mastermind strike revealed — strike count incremented.",
       "Player 0 played S.H.I.E.L.D. Trooper (starting-shield-trooper).",

@@ -28955,3 +28955,39 @@ Protect this file.
 **Packet:** none (`INFRA:` fix). **Fixed:** 2026-07-14.
 
 Protect this file.
+
+### D-24179 — Wound "Healing" ability: a dedicated `healWounds` move KOs all Wounds from the current player's hand to `G.ko`
+
+**Status:** **Active** (executed 2026-07-14, WP-379 / EC-408). Reserved at draft as D-24176; **renumbered** because a concurrent `INFRA:` scoring fix landed D-24176 first (the collision rule: the landed entry keeps the number, the later one renumbers), and open PR #751 held D-24178 — so this WP's pair landed contiguously at D-24179/D-24180.
+
+**User-Visible Surface:** none — infrastructure. The engine now enforces the Healing rule and a bot/replay can exercise it, but no human-facing control ships in this WP; the "Heal Wounds" button is a deferred follow-up client WP.
+
+**Context.** The printed universal Wound ability — Universal Rules v23 §Healing Wounds, *"If you don't recruit or fight anything on your turn, you may KO all the Wounds from your hand."* — was unimplemented. The engine had every primitive (`WOUND_EXT_ID` = `pile-wound`, the `G.ko` pile, the `koCard` append helper, the non-core stage-gated move pattern) but no move to use them and no per-turn tracking of whether the player had acted.
+
+**Decision.** Add a dedicated `healWounds` move (`packages/game-engine/src/moves/healWounds.ts`) following the non-core Move Validation Contract: `main`-stage gate → the identical block-all `hasPending*` cluster the fight/recruit moves carry (D-24008 / D-24019 / D-24067 / D-24069 / D-24139) → a `hasActedThisTurn` precondition (D-24180) → mutate. On a successful heal it partitions the hand with an explicit `for...of` (no `.reduce()`/`.filter()`), KOs every `WOUND_EXT_ID` to `G.ko` (permanent removal — never back to `G.wounds`, never to discard), assigns the surviving hand back, sets `G.hasHealedThisTurn`, and appends one `G.messages` line. It creates **no** pending-choice state (Healing is synchronous) and emits **no** `notableEvent` (a center-screen overlay is a client concern). Wounds are identified only by the imported `WOUND_EXT_ID`, never a string literal. The move is registered `{ move: healWounds, client: false }` (D-10008); the `game.test.ts` move-set drift test is bumped 19 → 20.
+
+**Fences.** No client control, no `UIState` projection, no AI/simulation integration (`ai.legalMoves` untouched, so PAR/sweep baselines are unchanged), no `notableEvent`, no change to `playCard`'s handling of a Wound in hand ("Wounds can't be played" is a distinct follow-up), and no Enraging-Wound variants (those carry unique per-card KO conditions). **Determinism:** the two new per-turn boolean flags (D-24180) grow the hashed `G`, so two pinned hashes were re-pinned behaviour-neutrally — the sentinel fixture `sentinel-core-doom-2p.replay.json` `finalStateHash` (`47afd86a…` → `3da2c374…`, via the canonical `record-game-fixture.mjs`, never hand-edited) and the `PRE_WP080_HASH` regression-guard constant in `replay.execute.test.ts` (`be266d02` → `ec64506a`) — the same dependency-driven re-pin class as WP-236 `hasDrawnThisTurn` and WP-282 `faceDownCards`. Engine suite 1927 → 1943 / 0 fail.
+
+**Packet:** WP-379 (EC-408). **Executed:** 2026-07-14.
+
+Protect this file.
+
+### D-24180 — Turn-action mutual exclusion: two per-turn boolean `LegendaryGameState` flags gate Healing against fight/recruit
+
+**Status:** **Active** (executed 2026-07-14, WP-379 / EC-408). Reserved at draft as D-24177; renumbered with D-24179 (see that entry for the collision rationale).
+
+**User-Visible Surface:** none — infrastructure (internal turn-action state, not projected to `UIState`).
+
+**Context.** The Healing rule is a mutual exclusion with acting: a player may heal only if they have *not* recruited or fought this turn, and once they heal they may *not* recruit or fight for the rest of the turn. This state must persist across moves within a turn, so it lives in `G` — the same class as the existing per-turn flags `hasDrawnThisTurn` / `villainRevealedThisTurn`.
+
+**Decision.** Carry the mutual exclusion in two optional boolean `LegendaryGameState` fields, both reset to `false` in the `play` phase `turn.onBegin` (beside `hasDrawnThisTurn`) and initialized `false` in `buildInitialGameState`:
+- `hasActedThisTurn` — set `true` by `fightVillain` / `recruitHero` / `fightMastermind` on a successful commit; read by `healWounds` to bar Healing after acting.
+- `hasHealedThisTurn` — set `true` by `healWounds`; read by those three moves (via the exported `hasHealedThisTurn(G)` predicate) to bar fighting/recruiting after Healing.
+
+The flags are **structural, not derived from `G.turnEconomy`** — a 0-cost fight or recruit still counts as "acting" per the printed rule "recruit or fight anything," so a `spentAttack`/`spentRecruit` derivation would be wrong. The reverse-lock guard is placed in each of the three moves' block-all cluster (before any mutation); the flag-set assignment lands at the successful-commit point. Optional (`?: boolean`) so existing full-`LegendaryGameState` test literals need no edit.
+
+**Fences.** No new contract file; the fields are plain booleans (JSON-serializable, deterministic). Solo and multiplayer both benefit; the flags are per-turn and reset every turn. The determinism re-pin is documented under D-24179.
+
+**Packet:** WP-379 (EC-408). **Executed:** 2026-07-14.
+
+Protect this file.

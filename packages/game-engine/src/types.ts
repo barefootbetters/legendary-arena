@@ -710,6 +710,24 @@ export interface LegendaryGameState {
   /** Whether the start-of-turn draw has been consumed this turn. */
   hasDrawnThisTurn?: boolean;
 
+  // why: WP-379 / D-24180 — tracks whether the current player has recruited or
+  // fought this turn. Set true by fightVillain / recruitHero / fightMastermind on a
+  // successful commit; gates the Wound Healing ability (a player may heal only if
+  // they have NOT acted). Structural, NOT derived from G.turnEconomy — a 0-cost
+  // fight or recruit still counts as acting per the printed rule. Optional so
+  // existing full-LegendaryGameState literals across the test suite need no edit
+  // (absent = not-yet-acted). Reset to false each turn by the play phase onBegin hook.
+  /** Whether the current player has recruited or fought this turn (gates Healing). */
+  hasActedThisTurn?: boolean;
+
+  // why: WP-379 / D-24179 / D-24180 — tracks whether the current player has used the
+  // Wound "Healing" ability this turn. Set true by healWounds; reverse-locks
+  // fightVillain / recruitHero / fightMastermind for the rest of the turn. Optional
+  // so existing full-LegendaryGameState literals need no edit (absent = not-yet-healed).
+  // Reset to false each turn by the play phase onBegin hook.
+  /** Whether the current player has used the Wound Healing ability this turn. */
+  hasHealedThisTurn?: boolean;
+
   // why: pending player-choice state set by reveal-attack-choose executor (D-22001).
   // Must be undefined at every turn-end. Optional so existing test state literals
   // do not need updating. Absent (undefined) = no pending choice.
