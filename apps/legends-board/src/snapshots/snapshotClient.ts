@@ -58,6 +58,13 @@ export interface GauntletSnapshotEntry {
   readonly totalScore: number;
   readonly legCount: number;
   readonly averageScoreCentis: number;
+  // why: additive (WP-344 / D-24134 §4) and OPTIONAL on the client mirror —
+  // the server source (apps/server/src/legends/legends.types.ts) declares
+  // `players` required because the current publisher always writes it, but a
+  // pre-WP-344 snapshot in R2 predates the field, so the client tolerates its
+  // absence and the panel falls back to `handle`. Handle-ASC roster;
+  // `handle` equals `players[0]`. Never imported cross-package.
+  readonly players?: readonly string[];
 }
 
 /** A gauntlet board snapshot at `legends/v1/<board>.json` — written only
@@ -69,6 +76,23 @@ export interface GauntletSnapshotBoard {
   readonly schemaVersion: 1;
 }
 
+/** One leg of a gauntlet as published on the index (WP-344 / D-24134 §5) —
+ * the data the per-leg challenge links and leg display consume. `schemeName`
+ * is the registry display name; `schemeSlug` combines with the gauntlet's
+ * `setAbbr` into the set-qualified id the challenge URL carries.
+ * Mirrored from apps/server/src/legends/legends.types.ts — DO NOT import. */
+export interface GauntletIndexLeg {
+  readonly schemeSlug: string;
+  readonly schemeName: string;
+}
+
+/** Complete-entry counts per player count for one gauntlet
+ * (WP-344 / D-24134 §5). Keys are the stringified player counts 1-5.
+ * Mirrored from apps/server/src/legends/legends.types.ts — DO NOT import. */
+export type GauntletEntryCounts = Readonly<
+  Record<"1" | "2" | "3" | "4" | "5", number>
+>;
+
 /** One row of the gauntlet index — every catalog gauntlet appears,
  * including `entryCount: 0` "unclaimed" boards (which have NO board file). */
 export interface GauntletIndexEntry {
@@ -77,8 +101,17 @@ export interface GauntletIndexEntry {
   readonly mastermindSlug: string;
   readonly mastermindName: string;
   readonly legCount: number;
+  // why: `entryCount` predates the player-count dimension and reports the
+  // SOLO board's complete-entry count (WP-344 / D-24134 §5) — old WP-343
+  // renderers keep using it; per-count detail lives in `entryCounts`.
   readonly entryCount: number;
   readonly board: string;
+  // why: additive (WP-344 / D-24134 §5) and OPTIONAL on the client mirror —
+  // required in the server source, but a pre-WP-344 index artifact in R2
+  // lacks these, so the panels degrade to WP-343 behavior (solo-only tab, no
+  // challenge links) rather than crash. Never imported cross-package.
+  readonly entryCounts?: GauntletEntryCounts;
+  readonly legs?: readonly GauntletIndexLeg[];
 }
 
 /** The gauntlet index artifact at `legends/v1/gauntlet-index.json`. */

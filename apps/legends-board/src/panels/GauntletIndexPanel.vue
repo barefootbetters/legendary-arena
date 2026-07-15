@@ -1,12 +1,22 @@
 <script setup lang="ts">
 /**
- * Gauntlet index panel (WP-343 / D-24131 §8a) — every set-gauntlet
- * championship grouped by set. Populated boards link to their board
- * view; zero-entry boards render the unclaimed CTA inline.
+ * Gauntlet index panel (WP-343 / WP-345 / D-24131 §8a / D-24134) — every
+ * set-gauntlet championship grouped by set. Each row shows per-player-count
+ * claim chips (claimed counts link to their board; empty counts render inline
+ * unclaimed state), and unclaimed gauntlets carry a challenge link that lands
+ * on the leg's pinned loadout preview.
  */
 import { computed } from "vue";
-import type { GauntletIndexSnapshot } from "../snapshots/snapshotClient";
-import { groupGauntletsBySet } from "./gauntletDisplay";
+import type {
+  GauntletIndexEntry,
+  GauntletIndexSnapshot,
+} from "../snapshots/snapshotClient";
+import {
+  buildChallengeUrl,
+  buildPlayerCountTabs,
+  groupGauntletsBySet,
+  type PlayerCountTab,
+} from "./gauntletDisplay";
 import EmptyBoardCta from "../components/EmptyBoardCta.vue";
 
 const props = defineProps<{
@@ -20,6 +30,36 @@ const setGroups = computed(() => {
   }
   return groupGauntletsBySet(props.index.gauntlets);
 });
+
+/** The per-count claim chips for one gauntlet row. */
+function countChips(gauntlet: GauntletIndexEntry): PlayerCountTab[] {
+  return buildPlayerCountTabs(gauntlet);
+}
+
+/** The chip label for one player count (e.g. `1p`, `2p`). */
+function chipLabel(tab: PlayerCountTab): string {
+  return `${tab.playerCount}p`;
+}
+
+/**
+ * The challenge link for an unclaimed gauntlet's first leg, or `null` when
+ * the index entry predates WP-344 (no `legs`) so no link renders.
+ */
+function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
+  const legs = gauntlet.legs;
+  if (legs === undefined || legs.length === 0) {
+    return null;
+  }
+  const firstLeg = legs[0];
+  if (firstLeg === undefined) {
+    return null;
+  }
+  return buildChallengeUrl(
+    gauntlet.setAbbr,
+    firstLeg.schemeSlug,
+    gauntlet.mastermindSlug,
+  );
+}
 </script>
 
 <template>
@@ -53,19 +93,43 @@ const setGroups = computed(() => {
           >
             <span class="mastermind-name">{{ gauntlet.mastermindName }}</span>
             <span class="leg-count">{{ gauntlet.legCount }} schemes</span>
-            <!-- why: zero-entry gauntlets have NO board file (the WP-342
-                 publisher writes boards only at >=1 complete entry,
-                 D-24131 §7) — a link here would 404, so the unclaimed
-                 state renders inline instead. -->
+
+            <div class="count-chips">
+              <template
+                v-for="chip of countChips(gauntlet)"
+                :key="chip.playerCount"
+              >
+                <a
+                  v-if="chip.isClaimed"
+                  class="chip chip-claimed"
+                  :href="`#/gauntlet/${chip.boardName}`"
+                >{{ chipLabel(chip) }} ✓</a>
+                <!-- why: an empty count has NO board file below one entry
+                     (the WP-342 publisher writes boards only at >=1 complete
+                     entry, D-24131 §7) — a link would 404, so the unclaimed
+                     count renders inline muted state instead. -->
+                <span
+                  v-else
+                  class="chip chip-unclaimed"
+                  title="Unclaimed"
+                >{{ chipLabel(chip) }}</span>
+              </template>
+            </div>
+
+            <!-- Unclaimed gauntlet CTA: challenge the first leg on a pinned
+                 loadout (D-24134 §6), or the shared play CTA on an old
+                 snapshot that predates `legs`. -->
             <a
-              v-if="gauntlet.entryCount > 0"
-              class="board-link"
-              :href="`#/gauntlet/${gauntlet.board}`"
-            >
-              {{ gauntlet.entryCount }}
-              {{ gauntlet.entryCount === 1 ? "champion" : "champions" }} →
-            </a>
-            <EmptyBoardCta v-else compact />
+              v-if="gauntlet.entryCount === 0 && firstLegChallengeUrl(gauntlet) !== null"
+              class="challenge-link"
+              :href="firstLegChallengeUrl(gauntlet) ?? undefined"
+              target="_blank"
+              rel="noopener"
+            >Challenge →</a>
+            <EmptyBoardCta
+              v-else-if="gauntlet.entryCount === 0"
+              compact
+            />
           </li>
         </ul>
       </section>
@@ -146,13 +210,43 @@ const setGroups = computed(() => {
   font-size: 0.85rem;
 }
 
-.board-link {
-  color: #ffd700;
-  text-decoration: none;
-  font-variant-numeric: tabular-nums;
+/* Per-count claim chips */
+.count-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
 }
 
-.board-link:hover {
+.chip {
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+}
+
+.chip-claimed {
+  color: #ffd700;
+  border: 1px solid rgba(255, 215, 0, 0.4);
+}
+
+.chip-claimed:hover {
+  background: rgba(255, 215, 0, 0.12);
+}
+
+.chip-unclaimed {
+  color: #555;
+  border: 1px dashed #2a2a3a;
+}
+
+.challenge-link {
+  color: #ffd700;
+  text-decoration: none;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.challenge-link:hover {
   text-decoration: underline;
 }
 </style>

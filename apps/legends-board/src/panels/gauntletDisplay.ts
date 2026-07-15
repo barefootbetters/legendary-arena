@@ -4,7 +4,10 @@
  * node:test (the SPA has no component mount harness).
  */
 
-import type { GauntletIndexEntry } from "../snapshots/snapshotClient";
+import type {
+  GauntletIndexEntry,
+  GauntletSnapshotEntry,
+} from "../snapshots/snapshotClient";
 
 /** One set's slice of the gauntlet index, for grouped rendering. */
 export interface GauntletSetGroup {
@@ -12,6 +15,27 @@ export interface GauntletSetGroup {
   readonly setName: string;
   readonly gauntlets: readonly GauntletIndexEntry[];
 }
+
+/** One player-count tab for a gauntlet's board view / index chips
+ * (WP-345 / D-24134 §5). `boardName` is the bare gauntlet board for the solo
+ * tab and `<board>-p<N>` for counts 2-5; `isClaimed` gates linking (an
+ * unclaimed count has NO board file, so it must never be rendered as a link). */
+export interface PlayerCountTab {
+  readonly playerCount: number;
+  readonly boardName: string;
+  readonly entryCount: number;
+  readonly isClaimed: boolean;
+}
+
+// why: the player-count dimension is fixed at 1-5 (D-24134 §2); iterating a
+// named constant array keeps buildPlayerCountTabs a plain for...of loop
+// rather than a C-style index loop.
+const PLAYER_COUNTS = [1, 2, 3, 4, 5] as const;
+
+/** The cards-site loadout-preview origin the challenge links target
+ * (WP-114). `cards.legendary-arena.com` appears ONLY in `<a href>` values —
+ * never a fetch target (the zero-API invariant, D-24134 §6). */
+const CHALLENGE_PREVIEW_BASE_URL = "https://cards.legendary-arena.com/";
 
 /**
  * Formats an integer centesimal PAR-relative average for display.
@@ -86,4 +110,141 @@ export function buildAttractBoardList(
     return [...boardNames, "gauntlet-index"];
   }
   return [...boardNames];
+}
+
+/**
+ * Builds the player-count tabs (1-5) for a gauntlet's board view and the
+ * index's per-count claim chips (WP-345 / D-24134 §5). The solo tab uses the
+ * bare gauntlet board name; counts 2-5 use `<board>-p<N>`. A count links only
+ * when it reports at least one complete entry.
+ *
+ * @param indexEntry The gauntlet's index row (its `entryCounts` drives claim
+ *   state; a missing `entryCounts` — an old snapshot — degrades to a single
+ *   solo tab keyed off the legacy `entryCount`).
+ * @returns One tab per known player count, in ascending order.
+ */
+export function buildPlayerCountTabs(
+  indexEntry: GauntletIndexEntry,
+): PlayerCountTab[] {
+  // why: a pre-WP-344 index entry has no `entryCounts` map — degrade to the
+  // WP-343 shape (solo only, claim state from the legacy `entryCount`) so old
+  // snapshots keep rendering rather than showing four dead unclaimed tabs.
+  if (indexEntry.entryCounts === undefined) {
+    return [
+      {
+        playerCount: 1,
+        boardName: indexEntry.board,
+        entryCount: indexEntry.entryCount,
+        isClaimed: indexEntry.entryCount > 0,
+      },
+    ];
+  }
+
+  const tabs: PlayerCountTab[] = [];
+  for (const playerCount of PLAYER_COUNTS) {
+    const countKey = String(playerCount) as keyof typeof indexEntry.entryCounts;
+    const entryCount = indexEntry.entryCounts[countKey];
+    const boardName =
+      playerCount === 1
+        ? indexEntry.board
+        : `${indexEntry.board}-p${playerCount}`;
+    tabs.push({
+      playerCount,
+      boardName,
+      entryCount,
+      isClaimed: entryCount > 0,
+    });
+  }
+  return tabs;
+}
+
+/**
+ * Joins a team roster's display handles for presentation.
+ *
+ * @param players The handle-ASC roster (a one-element array on solo boards).
+ * @returns The handles joined by `" + "` — e.g. `'alice + bob'`, `'solo'`.
+ */
+export function formatRoster(players: readonly string[]): string {
+  return players.join(" + ");
+}
+
+/**
+ * Resolves a gauntlet entry's roster for display, tolerating old snapshots.
+ *
+ * @param entry A gauntlet snapshot row (its `players` roster may be absent).
+ * @returns The joined roster, or the entry's `handle` when `players` is absent.
+ */
+export function rosterForEntry(
+  entry: Pick<GauntletSnapshotEntry, "handle" | "players">,
+): string {
+  // why: a pre-WP-344 snapshot predates `players`; falling back to the
+  // entry's `handle` keeps old boards rendering (never a blank cell).
+  const roster = entry.players ?? [entry.handle];
+  return formatRoster(roster);
+}
+
+/**
+ * Builds the challenge link for one gauntlet leg — the WP-114 loadout-preview
+ * URL with the leg's scheme and the gauntlet's mastermind pinned.
+ *
+ * @param setAbbr The set both the scheme and mastermind belong to.
+ * @param schemeSlug The leg's scheme slug.
+ * @param mastermindSlug The gauntlet's mastermind slug.
+ * @returns A `cards.legendary-arena.com` URL with exactly the two id keys.
+ */
+export function buildChallengeUrl(
+  setAbbr: string,
+  schemeSlug: string,
+  mastermindSlug: string,
+): string {
+  // why: only the two id keys ride the URL (D-24134 §6) — hero/villain choice
+  // is the player's and counts are the builder's defaults, so villain groups,
+  // henchmen, heroes, and player count are deliberately NOT pinned.
+  // URLSearchParams encodes the `/` in the set-qualified ids to `%2F`.
+  const params = new URLSearchParams();
+  params.set("schemeId", `${setAbbr}/${schemeSlug}`);
+  params.set("mastermindId", `${setAbbr}/${mastermindSlug}`);
+  return `${CHALLENGE_PREVIEW_BASE_URL}?${params.toString()}`;
+}
+
+// why: a single end-anchored `-p<N>` suffix, N constrained to 2-5 — the solo
+// board has no suffix and player counts never exceed 5 (D-24134 §2).
+const BOARD_COUNT_SUFFIX_PATTERN = /-p[2-5]$/;
+
+/**
+ * Resolves the index entry for a routed board name, stripping a trailing
+ * `-p<N>` player-count suffix when the bare lookup misses so a per-count
+ * board view can read its parent gauntlet's `entryCounts` + `legs`.
+ *
+ * @param boardName The routed board name (bare or `<board>-p<N>`).
+ * @param gauntlets The gauntlet index rows to search.
+ * @returns The matching index entry, or `null` for an unknown board.
+ */
+export function resolveBoardIndexEntry(
+  boardName: string,
+  gauntlets: readonly GauntletIndexEntry[],
+): GauntletIndexEntry | null {
+  for (const gauntlet of gauntlets) {
+    if (gauntlet.board === boardName) {
+      return gauntlet;
+    }
+  }
+
+  // why: suffix-stripping fires ONLY after the direct lookup misses — a real
+  // board name (including any mastermind slug) matches above and returns, so
+  // the `-p<N>` rule can never shadow a mastermind whose slug ends in `-p2`.
+  const suffixMatch = BOARD_COUNT_SUFFIX_PATTERN.exec(boardName);
+  if (suffixMatch === null) {
+    return null;
+  }
+  const parentBoardName = boardName.slice(
+    0,
+    boardName.length - suffixMatch[0].length,
+  );
+  for (const gauntlet of gauntlets) {
+    if (gauntlet.board === parentBoardName) {
+      return gauntlet;
+    }
+  }
+  return null;
 }
