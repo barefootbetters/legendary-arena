@@ -6,10 +6,25 @@
  *
  * Core-set coverage (v1): 5 of 8 schemes. The remaining 3 require new
  * resolvers in future WPs:
- * - core/portals-to-the-dark-dimension (dark dimension pile)
- * - core/replace-earths-leaders-with-killbots (leader replacement)
+ * - core/portals-to-the-dark-dimension (dark dimension pile) — its printed
+ *   loss-twist is 7, which happens to equal the unconfigured MVP fallback, so it
+ *   loses at the right count today even without a config.
+ * - core/replace-earths-leaders-with-killbots (leader replacement) — 5-twist
+ *   villain-deck stack; unconfigured, so it uses the wrong fallback of 7.
  * - core/secret-invasion-of-the-skrull-shapeshifters (HQ-to-City hero
- *   conversion — verified twist text does not match reveal-or-punish)
+ *   conversion — verified twist text does not match reveal-or-punish) — 8-twist
+ *   resource-loss stack; unconfigured, so it uses the wrong fallback of 7.
+ * Those 3 need both a resolver AND a lossThreshold in a future scheme-fidelity
+ * packet (D-24178).
+ *
+ * why (D-24178): each config's lossThreshold is the scheme's PRINTED twist-stack
+ * size, so no scheme resolves a twist early. Only twist-loss schemes (printed
+ * "Twist N: Evil Wins!" — Portals 7, Cosmic Cube 8) truly lose when the counter
+ * reaches that number; the others lose on RESOURCE conditions (bystanders/
+ * heroes/villains escaped, wound/hero deck empty) the engine does not yet model,
+ * so their threshold is a doom-clock proxy at the full stack length. Super Hero
+ * Civil War's stack varies by seat count (8 at 2-3p, 5 at 4-5p) — modeled via
+ * lossThresholdByPlayerCount.
  *
  * No boardgame.io imports. No registry imports.
  */
@@ -26,6 +41,8 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
       schemeId: 'core/midtown-bank-robbery',
       resolverId: 'midtown-bank-robbery',
       params: {},
+      // why: 8-twist stack (resource loss — 8 bystanders carried away); doom-clock proxy (D-24178).
+      lossThreshold: 8,
     },
   ],
   [
@@ -37,6 +54,8 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
         condition: { field: 'heroClass', value: 'tech' },
         penalty: 'gainWound',
       },
+      // why: 8-twist stack (resource loss — wound stack empties); doom-clock proxy (D-24178).
+      lossThreshold: 8,
     },
   ],
   [
@@ -45,6 +64,8 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
       schemeId: 'core/negative-zone-prison-breakout',
       resolverId: 'chained-reveals',
       params: { revealCount: 2 },
+      // why: 8-twist stack (resource loss — 12 villains escape); doom-clock proxy (D-24178).
+      lossThreshold: 8,
     },
   ],
   [
@@ -53,6 +74,9 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
       schemeId: 'core/unleash-the-power-of-the-cosmic-cube',
       resolverId: 'wound-all',
       params: { woundCount: 1 },
+      // why: TRUE twist-loss scheme — printed "Twist 8: Evil Wins!" (D-24178).
+      // This was losing a twist early at the fallback 7; the reported bug.
+      lossThreshold: 8,
     },
   ],
   [
@@ -61,6 +85,9 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
       schemeId: 'core/super-hero-civil-war',
       resolverId: 'ko-from-hq',
       params: { koCount: 2 },
+      // why: player-count-dependent stack (resource loss — hero deck empties):
+      // 8 twists at 2-3 players, 5 at 4-5 (D-24178).
+      lossThresholdByPlayerCount: { '2': 8, '3': 8, '4': 5, '5': 5 },
     },
   ],
 ]);

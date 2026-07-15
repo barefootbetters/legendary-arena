@@ -37,8 +37,21 @@ export interface SchemeTwistConfig {
   resolverId: SchemeTwistResolverId;
   /** Resolver-specific parameters. */
   params: Record<string, unknown>;
-  /** Override MVP_SCHEME_TWIST_THRESHOLD for this scheme. */
+  /**
+   * Override MVP_SCHEME_TWIST_THRESHOLD for this scheme — the twist count at
+   * which scheme loss triggers. Set to the scheme's printed twist-stack size so
+   * the scheme never resolves a twist early (D-24178). A player-count-independent
+   * scheme uses this scalar.
+   */
   lossThreshold?: number;
+  /**
+   * Per-player-count loss threshold, for schemes whose printed twist stack varies
+   * by player count (e.g. Super Hero Civil War: 8 twists at 2-3 players, 5 at 4-5).
+   * Keyed by `String(gameState.lobby.requiredPlayers)`; when a key matches, it wins
+   * over `lossThreshold`. Falls back to `lossThreshold`, then the MVP default
+   * (D-24178). Data-only (a plain map, no functions).
+   */
+  lossThresholdByPlayerCount?: Record<string, number>;
 }
 
 /**

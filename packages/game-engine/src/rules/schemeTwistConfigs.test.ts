@@ -35,4 +35,20 @@ describe('SCHEME_TWIST_CONFIGS drift tests', () => {
   it('config registry is non-empty', () => {
     assert.ok(SCHEME_TWIST_CONFIGS.size > 0, 'SCHEME_TWIST_CONFIGS must have at least one entry');
   });
+
+  // why: D-24178 — pin each configured scheme's loss threshold to its PRINTED
+  // twist-stack size so no scheme resolves a twist early. Cosmic Cube (a true
+  // twist-loss scheme, "Twist 8: Evil Wins!") was losing at the fallback 7 — the
+  // reported bug. The resource-loss schemes (8-twist stacks) use the threshold as
+  // a doom-clock proxy. Super Hero Civil War's stack varies by seat count.
+  it('drift test C: configured schemes carry their printed twist-stack loss threshold (D-24178)', () => {
+    assert.equal(SCHEME_TWIST_CONFIGS.get('core/unleash-the-power-of-the-cosmic-cube')?.lossThreshold, 8);
+    assert.equal(SCHEME_TWIST_CONFIGS.get('core/midtown-bank-robbery')?.lossThreshold, 8);
+    assert.equal(SCHEME_TWIST_CONFIGS.get('core/legacy-virus-the')?.lossThreshold, 8);
+    assert.equal(SCHEME_TWIST_CONFIGS.get('core/negative-zone-prison-breakout')?.lossThreshold, 8);
+    assert.deepEqual(
+      SCHEME_TWIST_CONFIGS.get('core/super-hero-civil-war')?.lossThresholdByPlayerCount,
+      { '2': 8, '3': 8, '4': 5, '5': 5 },
+    );
+  });
 });

@@ -7,24 +7,30 @@
   },
   "summary": {
     "distinctMechanics": 10,
-    "totalObservations": 77,
+    "totalObservations": 116,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 0,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 77
+      "parse-unrecognized": 116
     }
   },
   "byMechanic": {
     "ambush": {
-      "hitCount": 1,
-      "lastSeenTurn": 5,
+      "hitCount": 2,
+      "lastSeenTurn": 7,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 1
+        "parse-unrecognized": 2
       },
       "examples": [
+        {
+          "cardId": "bkpt/white-wolf/command-the-hatut-zeraze#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
         {
           "cardId": "bkpt/white-wolf/command-the-hatut-zeraze#2",
           "cardType": "hero",
@@ -34,14 +40,26 @@
       ]
     },
     "artifact": {
-      "hitCount": 1,
-      "lastSeenTurn": 6,
+      "hitCount": 3,
+      "lastSeenTurn": 7,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 1
+        "parse-unrecognized": 3
       },
       "examples": [
+        {
+          "cardId": "mgtg/star-lord/expandable-helmet#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mgtg/star-lord/expandable-helmet#2",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
         {
           "cardId": "mgtg/star-lord/expandable-helmet#2",
           "cardType": "hero",
@@ -51,12 +69,12 @@
       ]
     },
     "bridge": {
-      "hitCount": 9,
-      "lastSeenTurn": 6,
+      "hitCount": 13,
+      "lastSeenTurn": 7,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 9
+        "parse-unrecognized": 13
       },
       "examples": [
         {
@@ -92,12 +110,12 @@
       ]
     },
     "conqueror": {
-      "hitCount": 12,
-      "lastSeenTurn": 6,
+      "hitCount": 18,
+      "lastSeenTurn": 7,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 12
+        "parse-unrecognized": 18
       },
       "examples": [
         {
@@ -133,12 +151,12 @@
       ]
     },
     "coordinate": {
-      "hitCount": 7,
-      "lastSeenTurn": 6,
+      "hitCount": 10,
+      "lastSeenTurn": 7,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 7
+        "parse-unrecognized": 10
       },
       "examples": [
         {
@@ -154,13 +172,13 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "smhc/tony-stark/stay-out-of-trouble#4",
+          "cardId": "smhc/tony-stark/stay-out-of-trouble#3",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "smhc/tony-stark/stay-out-of-trouble#4",
+          "cardId": "smhc/tony-stark/stay-out-of-trouble#3",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -174,12 +192,12 @@
       ]
     },
     "cyber-mod": {
-      "hitCount": 4,
-      "lastSeenTurn": 6,
+      "hitCount": 5,
+      "lastSeenTurn": 7,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 4
+        "parse-unrecognized": 5
       },
       "examples": [
         {
@@ -205,18 +223,36 @@
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "2099/spider-man-2099/venomous-fangs#4",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
         }
       ]
     },
     "investigate": {
-      "hitCount": 5,
-      "lastSeenTurn": 6,
+      "hitCount": 9,
+      "lastSeenTurn": 7,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 5
+        "parse-unrecognized": 9
       },
       "examples": [
+        {
+          "cardId": "noir/spider-man-noir/gumshoes-revolver#3",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "noir/spider-man-noir/gumshoes-revolver#3",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
         {
           "cardId": "noir/spider-man-noir/gumshoes-revolver#4",
           "cardType": "hero",
@@ -224,25 +260,13 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "noir/spider-man-noir/solve-the-crime#2",
+          "cardId": "noir/spider-man-noir/gumshoes-revolver#4",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "noir/spider-man-noir/solve-the-crime#2",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
-          "cardId": "noir/spider-man-noir/solve-the-crime#2",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
-          "cardId": "noir/spider-man-noir/spider-totems-chosen#0",
+          "cardId": "noir/spider-man-noir/solve-the-crime#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -250,12 +274,12 @@
       ]
     },
     "moonlight": {
-      "hitCount": 18,
-      "lastSeenTurn": 6,
+      "hitCount": 27,
+      "lastSeenTurn": 7,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 18
+        "parse-unrecognized": 27
       },
       "examples": [
         {
@@ -291,12 +315,12 @@
       ]
     },
     "shatter": {
-      "hitCount": 10,
-      "lastSeenTurn": 6,
+      "hitCount": 12,
+      "lastSeenTurn": 7,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 10
+        "parse-unrecognized": 12
       },
       "examples": [
         {
@@ -332,14 +356,20 @@
       ]
     },
     "sunlight": {
-      "hitCount": 10,
-      "lastSeenTurn": 6,
+      "hitCount": 17,
+      "lastSeenTurn": 7,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 10
+        "parse-unrecognized": 17
       },
       "examples": [
+        {
+          "cardId": "nmut/wolfsbane/wolf-out#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
         {
           "cardId": "nmut/wolfsbane/wolf-out#1",
           "cardType": "hero",
@@ -354,12 +384,6 @@
         },
         {
           "cardId": "nmut/wolfsbane/wolf-out#2",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
-          "cardId": "nmut/wolfsbane/wolf-out#3",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
