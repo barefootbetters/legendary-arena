@@ -27,7 +27,7 @@
           "attack": null,
           "recruit": "2+",
           "abilities": [
-            "You may KO a Wound from your hand or discard pile. If you do, you get +1[icon:recruit]."
+            "You may KO a Wound from your hand or discard pile. If you do, you get +1[icon:recruit]. [keyword:ko-wound-reward:recruit:1]"
           ]
         },
         {

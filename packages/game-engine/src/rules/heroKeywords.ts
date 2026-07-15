@@ -40,6 +40,7 @@ export type HeroKeyword =
   | 'reveal-ko-attack' // why: D-22301 — compound executor; magnitude encodes fixed attack grant (not a cost ceiling)
   | 'attack-per-count' // why: D-24016 — count-scaled attack; magnitude is the per-unit rate, countSource resolves the count
   | 'optional-ko-reward' // why: D-24019 — "you may KO a card from hand/discard; if you do, <reward>"; rewardType carries the reward
+  | 'ko-wound-reward' // why: WP-382 / D-24183 — "you may KO a Wound from hand/discard; if you do, <reward>"; Wound-restricted, auto-resolving variant of optional-ko-reward (Healing Factor family); rewardType carries the reward
   | 'wall-crawl' // why: D-24049 — printed "Wall-Crawl" ("when you recruit this Hero, you may put it on top of your deck"); executable via the recruitHero deck-top placement, not an onPlay HERO_EFFECT_HANDLERS entry
   | 'dodge' // why: D-24051 — printed "Dodge" ("during your turn, you may discard this card from your hand to draw another card"); executable via the dodgeCard hand-discard-to-draw move, not an onPlay HERO_EFFECT_HANDLERS entry
   | 'conditional'
@@ -79,6 +80,7 @@ export const HERO_KEYWORDS: readonly HeroKeyword[] = [
   'reveal-ko-attack', // why: D-22301 — compound executor; magnitude encodes fixed attack grant (not a cost ceiling)
   'attack-per-count', // why: D-24016 — count-scaled attack; magnitude is the per-unit rate, countSource resolves the count
   'optional-ko-reward', // why: D-24019 — "you may KO a card from hand/discard; if you do, <reward>"; rewardType carries the reward
+  'ko-wound-reward', // why: WP-382 / D-24183 — Wound-restricted, auto-resolving variant of optional-ko-reward (Healing Factor family); rewardType carries the reward
   'wall-crawl', // why: D-24049 — printed "Wall-Crawl"; executable via the recruitHero deck-top placement, not an onPlay HERO_EFFECT_HANDLERS entry
   'dodge', // why: D-24051 — printed "Dodge"; executable via the dodgeCard hand-discard-to-draw move, not an onPlay HERO_EFFECT_HANDLERS entry
   'undercover', // why: D-24060 / WP-282 — "send a card face-down, play it later"; executable via sendUndercover + playFromUndercover moves on onPlay trigger

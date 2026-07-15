@@ -717,6 +717,24 @@
       "hidden": true
     },
     {
+      "slug": "ko-wound-reward",
+      "label": "Ko Wound Reward",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 8,
+      "cardIds": [
+        "3dtc/hulk",
+        "core/hulk",
+        "core/wolverine",
+        "cvwr/hulkling",
+        "dstr/vishanti-the",
+        "ff04/human-torch",
+        "msis/bruce-banner",
+        "msp1/hulk"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "last-stand",
       "label": "Last Stand",
       "scope": "hero",
@@ -1833,7 +1851,8 @@
     },
     "3dtc/hulk": {
       "mechanics": [
-        "gain-wound-each"
+        "gain-wound-each",
+        "ko-wound-reward"
       ]
     },
     "3dtc/man-thing": {
@@ -2175,7 +2194,8 @@
     },
     "core/hulk": {
       "mechanics": [
-        "gain-wound-each"
+        "gain-wound-each",
+        "ko-wound-reward"
       ]
     },
     "core/iron-man": {
@@ -2212,7 +2232,8 @@
     },
     "core/wolverine": {
       "mechanics": [
-        "draw"
+        "draw",
+        "ko-wound-reward"
       ]
     },
     "cosm/adam-warlock": {
@@ -2301,6 +2322,7 @@
     "cvwr/hulkling": {
       "mechanics": [
         "gain-wound-self",
+        "ko-wound-reward",
         "size-changing"
       ]
     },
@@ -2524,6 +2546,7 @@
     "dstr/vishanti-the": {
       "mechanics": [
         "demonic-bargain",
+        "ko-wound-reward",
         "ritual-artifact"
       ]
     },
@@ -2563,7 +2586,8 @@
     "ff04/human-torch": {
       "mechanics": [
         "focus",
-        "gain-wound-self"
+        "gain-wound-self",
+        "ko-wound-reward"
       ]
     },
     "ff04/invisible-woman": {
@@ -2687,6 +2711,7 @@
     },
     "msis/bruce-banner": {
       "mechanics": [
+        "ko-wound-reward",
         "sacrifice"
       ]
     },
@@ -2784,7 +2809,8 @@
     },
     "msp1/hulk": {
       "mechanics": [
-        "gain-wound-each"
+        "gain-wound-each",
+        "ko-wound-reward"
       ]
     },
     "msp1/iron-man": {

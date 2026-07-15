@@ -32,6 +32,7 @@ import { shuffleDeck } from '../setup/shuffle.js';
 import { moveCardFromZone, moveAllCards } from '../moves/zoneOps.js';
 import { addResources } from '../economy/economy.logic.js';
 import { koCard } from '../board/ko.logic.js';
+import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { gainWound } from '../board/wounds.logic.js';
 import { resolveCountSource } from './heroCountSource.resolve.js';
 import { interpretHeroPrimitiveEffect } from './effectPrimitive.interpret.js';
@@ -72,6 +73,8 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   'gain-wound-self', 'gain-wound-each',
   // why: D-24148 — mandatory immediate empty-discard-reward-or-shuffle (Jocasta's Reprocess / Electromagnetic Eyebeams); has a HERO_EFFECT_HANDLERS entry, so it belongs here.
   'shuffle-discard-empty-reward',
+  // why: WP-382 / D-24183 — auto-resolving Wound-restricted KO-a-Wound-then-reward (Healing Factor family); has a HERO_EFFECT_HANDLERS entry (heroEffectKoWoundReward), so it belongs here.
+  'ko-wound-reward',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -165,6 +168,17 @@ export const MVP_KEYWORDS = new Set<string>([
 // same constant in setup/heroAbility.setup.ts (two copies, per duplicate-first).
 const OPTIONAL_KO_REWARD_SEEDED_REWARDS: ReadonlySet<HeroKeyword> = new Set<HeroKeyword>([
   'rescue',
+  'draw',
+  'attack',
+  'recruit',
+]);
+
+// why: WP-382 / D-24183 — the ko-wound-reward reward is dispatched to an
+// ALREADY-BUILT reward executor; only these three are seeded for the family's
+// core vocabulary (draw / attack / recruit — the no-reward and Berserk members
+// stay hollow, Honest-Partial). Mirrors the same constant in
+// setup/heroAbility.setup.ts (two copies, per duplicate-first).
+const KO_WOUND_REWARD_SEEDED_REWARDS: ReadonlySet<HeroKeyword> = new Set<HeroKeyword>([
   'draw',
   'attack',
   'recruit',
@@ -1183,6 +1197,84 @@ function heroEffectOptionalKoReward(
 }
 
 /**
+ * Handler for the `ko-wound-reward` hero keyword (WP-382 / D-24183).
+ *
+ * The auto-resolving, Wound-restricted variant of `optional-ko-reward` (the
+ * Healing Factor family, "you may KO a Wound from your hand or discard pile; if
+ * you do, <reward>"). It immediately KOs one Wound to `G.ko` — preferring hand,
+ * else discard — and grants the reward by REUSING `executeSingleEffect`; with no
+ * Wound in either zone it logs a no-op (D-24017) and returns.
+ *
+ * The player choice / decline is intentionally NOT modeled (unlike
+ * `optional-ko-reward`): a Wound is a fungible dead card and KO-plus-reward is
+ * strictly beneficial, so an auto-resolve captures optimal play. Moves/effects
+ * never throw.
+ *
+ * @param G - Game state (mutated: KOs a Wound, grants the reward).
+ * @param ctx - Move context; carries `ctx.random` for the draw reward's reshuffle.
+ * @param playerID - The player who played the card.
+ * @param cardId - The source hero card's ext_id (passed to the reward executor).
+ * @param effect - The descriptor carrying `rewardType` + `magnitude`.
+ */
+function heroEffectKoWoundReward(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) { return; }
+
+  // why: D-24183 — KO a Wound, hand first (removes the currently-held Wound),
+  // else discard. The KO target is filtered to WOUND_EXT_ID — a valuable Hero is
+  // never KO'd (the reason this family could not reuse the KO-any-card keyword).
+  let targetZone: 'hand' | 'discard' | null = null;
+  if (playerZones.hand.includes(WOUND_EXT_ID)) {
+    targetZone = 'hand';
+  } else if (playerZones.discard.includes(WOUND_EXT_ID)) {
+    targetZone = 'discard';
+  }
+  if (targetZone === null) {
+    // why: D-24017 — no Wound to KO means the optional effect does nothing; log
+    // the no-op so the player and the replay inspector can see why the ability
+    // granted no reward.
+    pushLog(G,
+      `Player ${playerID} had no Wound in hand or discard pile to KO for a hero ability, so no reward was granted.`,
+    );
+    return;
+  }
+
+  // why: defensive — the parser only emits a seeded rewardType, but an unseeded
+  // reward here is a logged no-op (no reward executor exists for it).
+  const rewardType = effect.rewardType;
+  if (rewardType === undefined || !KO_WOUND_REWARD_SEEDED_REWARDS.has(rewardType)) {
+    pushLog(G,
+      `Player ${playerID} played a hero ability whose KO-a-Wound reward is not yet supported, so it was skipped.`,
+    );
+    return;
+  }
+
+  // why: D-24183 — remove exactly one Wound from the chosen zone and KO it.
+  // moveCardFromZone removes the first matching WOUND_EXT_ID; koCard appends it.
+  const moveResult = moveCardFromZone(playerZones[targetZone], [], WOUND_EXT_ID);
+  if (!moveResult.found) { return; }
+  playerZones[targetZone] = moveResult.from;
+  G.ko = koCard(G.ko, WOUND_EXT_ID);
+  pushLog(G,
+    `Player ${playerID} KO'd a Wound from their ${targetZone} via a hero ability.`,
+  );
+
+  // why: D-24183 — THEN grant the reward by REUSING the existing executor — no
+  // re-implementation of draw / attack / recruit. `ctx` carries `ctx.random` for
+  // the draw reward's deck-exhaustion reshuffle.
+  executeSingleEffect(G, ctx, playerID, cardId, {
+    type: rewardType,
+    magnitude: effect.magnitude ?? 1,
+  });
+}
+
+/**
  * Park handler for the `optional-put-bottom-hq` hero keyword.
  *
  * Checks whether there are any cards in the HQ. If yes, parks a
@@ -1497,6 +1589,7 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   reveal: heroEffectReveal,
   'attack-per-count': heroEffectAttackPerCount,
   'optional-ko-reward': heroEffectOptionalKoReward,
+  'ko-wound-reward': heroEffectKoWoundReward,
   'optional-put-bottom-hq': heroEffectOptionalPutBottomHq,
   'put-any-number-bottom-hq': heroEffectPutAnyNumberBottomHq,
   'put-bottom-hq-icon-reward': heroEffectPutBottomHqIconReward,

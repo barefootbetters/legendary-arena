@@ -460,7 +460,7 @@
           "attack": null,
           "recruit": "2",
           "abilities": [
-            "You may KO a Wound from your hand or discard pile. If you do, draw a card."
+            "You may KO a Wound from your hand or discard pile. If you do, draw a card. [keyword:ko-wound-reward:draw:1]"
           ]
         },
         {

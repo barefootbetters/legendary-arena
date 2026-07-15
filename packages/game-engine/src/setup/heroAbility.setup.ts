@@ -200,6 +200,13 @@ const COUNT_SCALED_PATTERN = /\[keyword:attack-per-count:([a-z][a-z-]*):(\d+)\]/
 /** Regex for [keyword:optional-ko-reward:<reward>:<n>] optional-KO-reward markup. */
 const OPTIONAL_KO_REWARD_PATTERN = /\[keyword:optional-ko-reward:([a-z][a-z-]*):(\d+)\]/g;
 
+// why: WP-382 / D-24183 — the ko-wound-reward token mirrors optional-ko-reward's
+// three-segment shape ([keyword:ko-wound-reward:<reward>:<n>]); like it, the
+// third `:<reward>` segment means KEYWORD_PATTERN cannot match it, so it never
+// reaches the unresolved-marker scan.
+/** Regex for [keyword:ko-wound-reward:<reward>:<n>] KO-a-Wound-then-reward markup. */
+const KO_WOUND_REWARD_PATTERN = /\[keyword:ko-wound-reward:([a-z][a-z-]*):(\d+)\]/g;
+
 // why: [keyword:optional-put-bottom-hq:<n>] token for "You may put a card from the
 // HQ on the bottom of the Hero Deck". Simple 2-segment token carrying just the
 // magnitude (always 1 for this MVP form). Follows the COUNT_SCALED_PATTERN precedent.
@@ -279,6 +286,16 @@ const RECOGNIZED_NON_KEYWORD_MARKERS: ReadonlySet<string> = new Set<string>([
 // never reach the pending queue. Mirrored defensively in heroEffects.execute.ts.
 const OPTIONAL_KO_REWARD_SEEDED_REWARDS: ReadonlySet<HeroKeyword> = new Set<HeroKeyword>([
   'rescue',
+  'draw',
+  'attack',
+  'recruit',
+]);
+
+// why: WP-382 / D-24183 — the seeded reward vocabulary for ko-wound-reward
+// (draw / attack / recruit — the Healing Factor family's core vocabulary). An
+// unseeded reward emits no descriptor. Mirrors the same constant in
+// hero/heroEffects.execute.ts (two copies, per duplicate-first).
+const KO_WOUND_REWARD_SEEDED_REWARDS: ReadonlySet<HeroKeyword> = new Set<HeroKeyword>([
   'draw',
   'attack',
   'recruit',
@@ -746,6 +763,26 @@ function parseAbilityText(abilityText: string): {
     optionalKoRewardMatch = optionalKoRewardRegex.exec(abilityText);
   }
 
+  // Step 2f: Extract [keyword:ko-wound-reward:<reward>:<n>] markup (WP-382 / D-24183).
+  // why: mirrors Step 2e — the ko-wound-reward token has three segments; the reward
+  // dispatches to the same reward executor after the Wound is KO'd, and the
+  // magnitude is the reward magnitude. A descriptor is emitted ONLY when the reward
+  // is seeded AND n >= 1.
+  const koWoundRewardRegex = new RegExp(KO_WOUND_REWARD_PATTERN.source, 'g');
+  let koWoundRewardMatch: RegExpExecArray | null = koWoundRewardRegex.exec(abilityText);
+  while (koWoundRewardMatch !== null) {
+    const rewardCandidate = koWoundRewardMatch[1]!;
+    const rewardMagnitude = parseInt(koWoundRewardMatch[2]!, 10);
+    if (isValidHeroKeyword(rewardCandidate)
+      && KO_WOUND_REWARD_SEEDED_REWARDS.has(rewardCandidate)
+      && rewardMagnitude >= 1) {
+      keywords.push('ko-wound-reward');
+      magnitudes.set('ko-wound-reward', rewardMagnitude);
+      rewardTypes.set('ko-wound-reward', rewardCandidate);
+    }
+    koWoundRewardMatch = koWoundRewardRegex.exec(abilityText);
+  }
+
   // Step 2e-bis: Extract [keyword:shuffle-discard-empty-reward:<reward>:<n>]
   // markup (D-24148). Mirrors Step 2e: the reward is stored in rewardTypes and
   // the grant magnitude in magnitudes so the effect builder can attach both. A
@@ -934,6 +971,15 @@ function parseAbilityText(abilityText: string): {
         const rewardType = rewardTypes.get('optional-ko-reward');
         if (magnitude !== undefined && rewardType !== undefined) {
           effects.push({ type: keyword, magnitude, rewardType });
+        }
+      } else if (keyword === 'ko-wound-reward') {
+        // why: WP-382 / D-24183 — the ko-wound-reward effect carries its rewardType
+        // so the executor can dispatch the reward via executeSingleEffect after
+        // KO'ing the Wound; magnitude is the reward magnitude. Step 2f records both,
+        // so the guard both narrows the optional Map reads and is defensive.
+        const koWoundRewardType = rewardTypes.get('ko-wound-reward');
+        if (magnitude !== undefined && koWoundRewardType !== undefined) {
+          effects.push({ type: keyword, magnitude, rewardType: koWoundRewardType });
         }
       } else if (keyword === 'shuffle-discard-empty-reward') {
         // why: D-24148 — the shuffle-discard-empty-reward effect carries its

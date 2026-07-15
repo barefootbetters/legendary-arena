@@ -62,11 +62,20 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 30 entries after the shuffle-discard-empty-reward addition', () => {
+  it('HERO_KEYWORDS array has exactly 31 entries after the ko-wound-reward addition', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      30,
-      'HERO_KEYWORDS must have exactly 30 entries (29 + shuffle-discard-empty-reward, D-24148)',
+      31,
+      'HERO_KEYWORDS must have exactly 31 entries (30 + ko-wound-reward, D-24183)',
+    );
+  });
+});
+
+describe('ko-wound-reward keyword (WP-382 / EC-411 / D-24183)', () => {
+  it('is registered in HERO_KEYWORDS', () => {
+    assert.ok(
+      HERO_KEYWORDS.includes('ko-wound-reward'),
+      'ko-wound-reward must be in HERO_KEYWORDS array',
     );
   });
 });

@@ -18,6 +18,7 @@ ext_id,hero_name,set,mechanic,status,wp,decision,handler
 3dtc/deadpool,Deadpool,3dtc,(unmarked),unmarked,,,
 3dtc/howard-the-duck,Howard the Duck,3dtc,(unmarked),unmarked,,,
 3dtc/hulk,Hulk,3dtc,gain-wound-each,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each
+3dtc/hulk,Hulk,3dtc,ko-wound-reward,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward
 3dtc/man-thing,Man-Thing,3dtc,(unmarked),unmarked,,,
 amwp/ant-army,Ant Army,amwp,antics,unsupported,,,
 amwp/ant-army,Ant Army,amwp,heist,unsupported,,,
@@ -152,6 +153,7 @@ core/emma-frost,Emma Frost,core,draw,executable,,,packages/game-engine/src/hero/
 core/gambit,Gambit,core,reveal-cost-attack,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-cost-attack
 core/hawkeye,Hawkeye,core,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 core/hulk,Hulk,core,gain-wound-each,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each
+core/hulk,Hulk,core,ko-wound-reward,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward
 core/iron-man,Iron Man,core,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 core/nick-fury,Nick Fury,core,(unmarked),unmarked,,,
 core/rogue,Rogue,core,(unmarked),unmarked,,,
@@ -161,6 +163,7 @@ core/spider-man,Spider-Man,core,reveal-count,unsupported,,,
 core/storm,Storm,core,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 core/thor,Thor,core,(unmarked),unmarked,,,
 core/wolverine,Wolverine,core,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
+core/wolverine,Wolverine,core,ko-wound-reward,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward
 cosm/adam-warlock,Adam Warlock,cosm,burn-shards,unsupported,,,
 cosm/captain-mar-vell,Captain Mar-Vell,cosm,danger-sense,unsupported,,,
 cosm/moondragon,Moondragon,cosm,danger-sense,unsupported,,,
@@ -185,6 +188,7 @@ cvwr/goliath,Goliath,cvwr,size-changing,executable,,,packages/game-engine/src/he
 cvwr/hercules,Hercules,cvwr,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 cvwr/hercules,Hercules,cvwr,reveal-ko,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-ko
 cvwr/hulkling,Hulkling,cvwr,gain-wound-self,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self
+cvwr/hulkling,Hulkling,cvwr,ko-wound-reward,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward
 cvwr/hulkling,Hulkling,cvwr,size-changing,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing
 cvwr/luke-cage,Luke Cage,cvwr,fortify,unsupported,,,
 cvwr/luke-cage,Luke Cage,cvwr,gain-wound-self,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self
@@ -244,6 +248,7 @@ dstr/doctor-strange,Doctor Strange,dstr,ritual-artifact,unsupported,,,
 dstr/doctor-voodoo,Doctor Voodoo,dstr,artifact,unsupported,,,
 dstr/doctor-voodoo,Doctor Voodoo,dstr,ritual-artifact,unsupported,,,
 dstr/vishanti-the,"Vishanti, The",dstr,demonic-bargain,unsupported,,,
+dstr/vishanti-the,"Vishanti, The",dstr,ko-wound-reward,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward
 dstr/vishanti-the,"Vishanti, The",dstr,ritual-artifact,unsupported,,,
 fear/greithoth-breaker-of-wills,"Greithoth, Breaker of Wills",fear,artifact,unsupported,,,
 fear/greithoth-breaker-of-wills,"Greithoth, Breaker of Wills",fear,artifacts,unsupported,,,
@@ -256,6 +261,7 @@ fear/skadi,Skadi,fear,thrown-artifact,unsupported,,,
 fear/skirn-breaker-of-men,"Skirn, Breaker of Men",fear,thrown-artifact,unsupported,,,
 ff04/human-torch,Human Torch,ff04,focus,unsupported,,,
 ff04/human-torch,Human Torch,ff04,gain-wound-self,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self
+ff04/human-torch,Human Torch,ff04,ko-wound-reward,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward
 ff04/invisible-woman,Invisible Woman,ff04,focus,unsupported,,,
 ff04/mr-fantastic,Mr. Fantastic,ff04,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 ff04/mr-fantastic,Mr. Fantastic,ff04,focus,unsupported,,,
@@ -295,6 +301,7 @@ mgtg/star-lord,Star-Lord,mgtg,artifact,unsupported,,,
 mgtg/star-lord,Star-Lord,mgtg,triggered-artifact,unsupported,,,
 msis/black-panther,Black Panther,msis,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 msis/black-panther,Black Panther,msis,sacrifice,unsupported,,,
+msis/bruce-banner,Bruce Banner,msis,ko-wound-reward,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward
 msis/bruce-banner,Bruce Banner,msis,sacrifice,unsupported,,,
 msis/captain-marvel,Captain Marvel,msis,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 msis/captain-marvel,Captain Marvel,msis,endgame,unsupported,,,
@@ -333,6 +340,7 @@ msp1/black-widow,Black Widow,msp1,rescue,executable,,,packages/game-engine/src/h
 msp1/captain-america,Captain America,msp1,(unmarked),unmarked,,,
 msp1/hawkeye,Hawkeye,msp1,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 msp1/hulk,Hulk,msp1,gain-wound-each,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each
+msp1/hulk,Hulk,msp1,ko-wound-reward,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward
 msp1/iron-man,Iron Man,msp1,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 msp1/nick-fury,Nick Fury,msp1,(unmarked),unmarked,,,
 msp1/thor,Thor,msp1,(unmarked),unmarked,,,
