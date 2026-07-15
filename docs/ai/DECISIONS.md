@@ -28915,3 +28915,19 @@ Protect this file.
 **Packet:** WP-376 (EC-405). **Drafted:** 2026-07-14. **Executed:** 2026-07-14.
 
 Protect this file.
+
+### D-24176 — Mastermind tactic VP is scored per-player (from each player's victory pile), not globally to every player (amends the WP-019 MVP shortcut)
+
+**Status:** **Active** (fixed 2026-07-14; `INFRA:` fast-follow, no WP — engine bug fix surfaced by the D-24026 bot-ally live-verify game). Amends the WP-019 MVP note in `scoring.logic.ts` and complements **D-24157** (printed-VP scoring).
+
+**User-Visible Surface:** the competitive leaderboard / final-score screen — a match's per-player VP totals, and the higher-VP "winner" designation, are now correct when players defeated different numbers of Mastermind tactics.
+
+**Context.** `computeFinalScores` (`packages/game-engine/src/scoring/scoring.logic.ts`) scored villains, henchmen, and bystanders **per-player** from each player's own victory pile, but scored tactics **globally**: `tacticVP = mastermind.tacticsDefeated.length × mastermindPrintedVp`, added to **every** player. A code comment documented this as an MVP shortcut ("WP-019 does not track which player defeated each tactic"). That shortcut is now wrong: `fightMastermind` (`fightMastermind.ts:88-90`) pushes each defeated tactic into the **defeating player's** victory pile *and* records its id in `mastermind.tacticsDefeated`, so the per-player attribution data exists. A live 1-human + 1-bot bot-ally game exposed it concretely — the bot defeated both tactics, yet the human was credited `tacticVP 10` for tactics in the bot's victory pile, inflating the human's total from 18 to 28 and **flipping the higher-VP designation**. This corrupts competitive scores, PAR, and the leaderboard, and is especially wrong for bot-ally (a human credited for the bot's Mastermind kills).
+
+**Decision.** Score tactic VP **per-player**: inside the existing victory-pile loop, count each player's victory-pile cards whose id is in `mastermind.tacticsDefeated`, then `tacticVP = tacticCount × mastermindPrintedVp` (the printed-VP-per-tactic logic from D-24157 is unchanged; only the count becomes per-player). A player who defeated no tactics scores 0. The `PlayerScoreBreakdown.tacticVP` field shape is unchanged — only its value semantics. Solo play is unaffected (the lone player defeats every tactic, all in their pile, so per-player === the old global count). Determinism: no golden/sentinel re-pin — the engine suite (1928) + `sim:coverage --check` + the hash-invariance sentinels all pass unchanged (the golden fixtures have no multi-player differentiated tactic defeats).
+
+**Fences.** No new contract field; no migration; no retro-rescore of historical DB rows (out of scope — the fix is forward-only). The tactic classification uses `tacticsDefeated` membership rather than a new card-type, because tactics carry no `villainDeckCardTypes` entry. Test `scoring.logic.test.ts` updated: the old "awarded to all players" assertion is replaced with per-player cases (only the defeater scores; a split-between-two-players case).
+
+**Packet:** none (`INFRA:` fix). **Fixed:** 2026-07-14.
+
+Protect this file.

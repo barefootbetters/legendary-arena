@@ -40,9 +40,17 @@ export function computeFinalScores(
   // and inconsistent JSON comparisons
   const playerIds = Object.keys(gameState.playerZones).sort();
 
-  // why: MVP awards tactic VP to every player because WP-019 does not
-  // track which player defeated each tactic. Per-player attribution is
-  // a future packet.
+  // why: each defeated Mastermind tactic scores for the SPECIFIC player who
+  // defeated it, NOT for every player. `fightMastermind` pushes the defeated
+  // tactic into that player's victory pile AND records its id in
+  // `mastermind.tacticsDefeated`, so a victory-pile card whose id is in
+  // `tacticsDefeated` is a tactic THIS player earned. This corrects the earlier
+  // MVP shortcut that awarded every tactic's VP to every player (WP-019 pre-dated
+  // per-player victory piles, so it could not attribute a tactic to its defeater);
+  // per-player attribution is load-bearing for competitive scoring — a global
+  // count credits every seat for tactics a co-player (or a bot ally) defeated and
+  // can flip the higher-VP winner. Per-player counting happens inside the
+  // victory-pile loop below. See DECISIONS.md D-24176.
   // why: D-24157 — each defeated tactic scores the mastermind's PRINTED vp (read
   // from the G.cardVictoryPoints setup snapshot by the mastermind's baseCardId),
   // falling back to VP_TACTIC only when the mastermind has no printed vp (e.g. a
@@ -50,7 +58,6 @@ export function computeFinalScores(
   // masterminds no longer misreport.
   const mastermindPrintedVp =
     gameState.cardVictoryPoints?.[gameState.mastermind.baseCardId] ?? VP_TACTIC;
-  const tacticVP = gameState.mastermind.tacticsDefeated.length * mastermindPrintedVp;
 
   const players: PlayerScoreBreakdown[] = [];
 
@@ -67,6 +74,7 @@ export function computeFinalScores(
     let villainVP = 0;
     let henchmanVP = 0;
     let bystanderCount = 0;
+    let tacticCount = 0;
 
     for (const cardId of zones.victory) {
       const cardType = gameState.villainDeckCardTypes[cardId];
@@ -81,10 +89,17 @@ export function computeFinalScores(
         // supply-pile bystanders (using BYSTANDER_EXT_ID from WP-017).
         // Both contribute a flat VP_BYSTANDER.
         bystanderCount++;
+      } else if (gameState.mastermind.tacticsDefeated.includes(cardId)) {
+        // why: a victory-pile card whose id is in mastermind.tacticsDefeated is a
+        // Mastermind tactic THIS player defeated (fightMastermind pushes it to the
+        // defeater's victory pile). Count it per-player so only the defeater scores
+        // it — not every seat (D-24176). Tactics carry no villainDeckCardTypes
+        // entry, so they reach this branch (they are not villain/henchman/bystander).
+        tacticCount++;
       }
-      // why: cards not in G.villainDeckCardTypes (undefined) or classified
-      // as scheme-twist / mastermind-strike contribute 0 VP.
-      // Heroes, starting cards, and other non-deck cards score 0.
+      // why: cards not in G.villainDeckCardTypes (undefined) and not a defeated
+      // tactic — scheme-twist / mastermind-strike / heroes / starting cards —
+      // contribute 0 VP.
     }
 
     // --- Wound count across all non-victory zones ---
@@ -119,6 +134,10 @@ export function computeFinalScores(
     // victory-pile loop above (printed vp with a flat fallback); only bystanderVP
     // stays a flat count × VP_BYSTANDER here.
     const bystanderVP = bystanderCount * VP_BYSTANDER;
+    // why: per-player tactic VP — this player's own defeated tactics (counted from
+    // their victory pile above) × the mastermind's printed vp (D-24157). Zero for a
+    // player who defeated no tactics (D-24176).
+    const tacticVP = tacticCount * mastermindPrintedVp;
     // why: 0 * -1 produces -0 in JavaScript; coerce to +0 for clean
     // JSON serialization and strict equality comparisons
     const woundVP = woundCount === 0 ? 0 : woundCount * VP_WOUND;

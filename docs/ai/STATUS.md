@@ -7,6 +7,10 @@
 
 ## Current State
 
+### INFRA fix — Mastermind tactic VP scored per-player, not globally (D-24176 Active) (2026-07-14)
+
+Bug found during the bot-ally live-verify game: `computeFinalScores` scored villains / henchmen / bystanders **per-player** from each player's victory pile, but scored Mastermind tactics **globally** (`tacticVP = mastermind.tacticsDefeated.length × masterVP`) and added that to *every* player. In the live 1-human + 1-bot game the bot defeated both tactics, yet the human was credited 10 tactic VP for tactics sitting in the bot's victory pile — inflating the human's total 18 → 28 and **flipping the higher-VP designation**. This corrupts competitive scores / PAR / the leaderboard (and is especially wrong for bot-ally). Fixed to count each player's own defeated tactics from their victory pile (`tacticsDefeated` membership) — solo play is unchanged (the lone player defeats all tactics), so it's a multiplayer-only correction. No golden/sentinel re-pin (engine 1928/0 + `sim:coverage --check` + hash sentinels all unchanged); DB-gated competition suite 26/26. Forward-only (no retro-rescore). See **D-24176**. This is finding #1 of the bot-ally-game bug review (see also: scheme twist-loss off-by-one, and the Sentinel KO log-line gap — both still open).
+
 ### INFRA fix — bot-ally lobby affordance now uses the uploaded loadout (WP-376 fast-follow) (2026-07-14)
 
 Live-verify surfaced a bug in WP-376: `createWithBotAlly` read the **manual** composition fields (`buildConfig()`) unconditionally, so when the player authored via the recommended **LAGN upload** path (the manual fields empty) it POSTed an empty `villainGroupIds` and the game server (correctly) returned a 400. Fixed to prefer the parsed loadout — `parsedLoadout.composition` + `parsedLoadout.playerCount` when a loadout is uploaded/pasted (mirrors `submitFromJson`), falling back to the manual fields (mirrors `createAndJoin`) — matching the panel's own "uses the loadout you set above" copy. `arena-client` test **923/0** (+1: create-with-bot body carries the uploaded composition + player count); typecheck 0; `pnpm -r build` 0.
