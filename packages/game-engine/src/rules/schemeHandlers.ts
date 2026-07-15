@@ -20,8 +20,12 @@ import { SCHEME_TWIST_RESOLVERS } from './schemeTwistResolvers.js';
 import { SCHEME_TWIST_CONFIGS } from './schemeTwistConfigs.js';
 import { pushLog } from '../log/logPush.js';
 
-// why: MVP uses a fixed threshold. Most standard Legendary schemes trigger
-// loss at 7 twists. Per-scheme overrides come from SchemeTwistConfig.lossThreshold.
+// why: fallback threshold ONLY — used when a scheme has no config or no
+// lossThreshold override. It is deliberately arbitrary (7): a scheme's real
+// twist-stack size comes from its SchemeTwistConfig.lossThreshold /
+// lossThresholdByPlayerCount (D-24178). Do NOT read this as "most schemes lose at
+// 7" — most core schemes have an 8-twist stack. Unconfigured schemes fall here
+// until they gain a config.
 const MVP_SCHEME_TWIST_THRESHOLD = 7;
 
 /**
@@ -146,10 +150,23 @@ export function schemeTwistHandler(
     );
   }
 
-  // why: lossThreshold from config overrides the default when present,
-  // allowing per-scheme twist thresholds (e.g. schemes that require fewer
-  // or more twists before loss). If no config or no override, use the MVP default.
-  const effectiveThreshold = config?.lossThreshold ?? MVP_SCHEME_TWIST_THRESHOLD;
+  // why: resolve the twist-loss threshold in priority order (D-24178):
+  //   1. a per-player-count override (schemes whose printed stack varies by
+  //      seat count, e.g. Super Hero Civil War: 8 at 2-3p, 5 at 4-5p) —
+  //      keyed by the seat count frozen at setup (G.lobby.requiredPlayers ===
+  //      ctx.numPlayers, buildInitialGameState.ts);
+  //   2. the scalar lossThreshold (a fixed twist-stack size);
+  //   3. the arbitrary MVP fallback (unconfigured schemes only).
+  // The threshold is the scheme's twist-stack size, so a scheme never resolves a
+  // twist early. NOTE: only twist-loss schemes (printed "Twist N: Evil Wins!" —
+  // Portals, Cosmic Cube) truly lose at this count; the resource-loss schemes
+  // (loss on bystanders/heroes/villains escaped, wound/hero deck empty) use it as
+  // a doom-clock proxy at the full stack length until their real loss conditions
+  // are modeled (a separate scheme-fidelity backlog item — D-24178).
+  const playerCountThreshold =
+    config?.lossThresholdByPlayerCount?.[String(gameState.lobby.requiredPlayers)];
+  const effectiveThreshold =
+    playerCountThreshold ?? config?.lossThreshold ?? MVP_SCHEME_TWIST_THRESHOLD;
 
   return buildGenericTwistEffects(gameState, effectiveThreshold);
 }

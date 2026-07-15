@@ -28931,3 +28931,27 @@ Protect this file.
 **Packet:** none (`INFRA:` fix). **Fixed:** 2026-07-14.
 
 Protect this file.
+
+### D-24178 — Scheme twist-loss threshold = each scheme's printed twist-stack size (no scheme resolves a twist early); Super Hero Civil War is player-count-aware
+
+**Status:** **Active** (fixed 2026-07-14; `INFRA:` fast-follow, no WP — finding #2 of the bot-ally-game bug review). Configures `SchemeTwistConfig.lossThreshold` and adds `lossThresholdByPlayerCount`.
+
+**User-Visible Surface:** the play surface / final-score screen — a scheme no longer ends the game a twist early. The reported bug: *Unleash the Power of the Cosmic Cube* (printed "Twist 8: Evil Wins!") was ending at twist **7**.
+
+**Context.** `schemeTwistHandler` (`schemeHandlers.ts`) triggers scheme loss when the twist counter reaches a threshold. That threshold defaulted to a hardcoded `MVP_SCHEME_TWIST_THRESHOLD = 7`, and NONE of the five configured core schemes set a `lossThreshold` override — so every scheme lost at 7 twists. An audit of the printed core schemes (`data/cards/core.json`) found:
+
+- **Two are true twist-loss schemes** ("Twist N: Evil Wins!"): **Portals to the Dark Dimension** (7) and **Unleash the Power of the Cosmic Cube** (8). These lose exactly when the counter reaches N. Cosmic Cube was losing at 7 (the bug); Portals is unconfigured and happens to be correct at the fallback 7.
+- **Six lose on RESOURCE conditions** (bystanders / heroes / villains escaped, wound stack empty, hero deck empty), NOT on the twist count. For these the twist stack is only a doom-clock length; reaching the last twist is not itself the loss.
+- **Exactly one scheme's twist stack varies by player count:** Super Hero Civil War — 8 twists at 2-3 players, 5 at 4-5.
+
+**Decision.** Set each configured scheme's threshold to its **printed twist-stack size**, so no scheme resolves a twist early:
+
+1. **`lossThreshold`** (scalar) on the four player-count-independent configured schemes: Cosmic Cube **8** (fixes the reported bug), Midtown Bank Robbery **8**, The Legacy Virus **8**, Negative Zone Prison Breakout **8**.
+2. **`lossThresholdByPlayerCount`** (new optional `Record<string, number>` field on `SchemeTwistConfig`) on Super Hero Civil War: `{ '2': 8, '3': 8, '4': 5, '5': 5 }`, resolved against `gameState.lobby.requiredPlayers` (= `ctx.numPlayers` frozen at setup). Data-only (a plain map, no functions).
+3. Resolution order in `schemeHandlers.ts`: `lossThresholdByPlayerCount[requiredPlayers] ?? lossThreshold ?? MVP_SCHEME_TWIST_THRESHOLD`. The MVP fallback (7) is now documented as an arbitrary last resort for **unconfigured** schemes only — not "most schemes lose at 7."
+
+**Scope / fences.** For the six **resource-loss** schemes the threshold is only a **doom-clock proxy at the full stack length** — the engine does not yet model their real loss conditions (escaped bystanders/heroes/villains, empty wound/hero deck). Modeling resource-based scheme loss is a separate scheme-fidelity backlog item. The three **unconfigured** core schemes (Portals 7 ✓ by luck, Killbots 5, Secret Invasion 8) still use the fallback 7 and need both a resolver AND a threshold in that future packet. This packet also leaves the twist EFFECTS as-is (e.g. Cosmic Cube's flat 1-wound-to-all placeholder vs the printed tiered 5-6→1 / 7→3) — effect fidelity is orthogonal. Determinism: `sim:coverage --check` (finalStateHash sentinel) unchanged, no re-pin; the `docs/ai/coverage/runtime-observed-hollows.json` derived artifact was regenerated (affected-scheme sim games run ~1 turn longer → observation counts shift). Forward-only. Engine suite 1933/0.
+
+**Packet:** none (`INFRA:` fix). **Fixed:** 2026-07-14.
+
+Protect this file.

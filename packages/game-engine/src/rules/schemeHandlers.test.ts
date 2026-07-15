@@ -460,3 +460,81 @@ describe('schemeTwistHandler — Midtown Bank Robbery', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Scheme loss threshold (D-24178) — per-scheme + per-player-count twist stacks
+// ---------------------------------------------------------------------------
+
+/** Whether the handler's effects include the scheme-loss counter bump. */
+function triggersSchemeLoss(effects: ReturnType<typeof schemeTwistHandler>): boolean {
+  return effects.some(
+    (effect) => (effect as { counter?: string }).counter === ENDGAME_CONDITIONS.SCHEME_LOSS,
+  );
+}
+
+describe('scheme loss threshold (D-24178)', () => {
+  it('Cosmic Cube loses at twist 8, not the fallback 7 (the reported bug)', () => {
+    // schemeTwistCount 6 → predicted 7 → no loss (7 < 8).
+    const beforeLoss = makeTestState({ schemeTwistCount: 6 });
+    beforeLoss.selection.schemeId = 'core/unleash-the-power-of-the-cosmic-cube';
+    assert.equal(
+      triggersSchemeLoss(schemeTwistHandler(beforeLoss, {}, { cardId: 't' }, DEFAULT_IMPLEMENTATION_MAP)),
+      false,
+      'must NOT lose at predicted twist 7 (was the early-loss bug)',
+    );
+
+    // schemeTwistCount 7 → predicted 8 → loss.
+    const atLoss = makeTestState({ schemeTwistCount: 7 });
+    atLoss.selection.schemeId = 'core/unleash-the-power-of-the-cosmic-cube';
+    assert.equal(
+      triggersSchemeLoss(schemeTwistHandler(atLoss, {}, { cardId: 't' }, DEFAULT_IMPLEMENTATION_MAP)),
+      true,
+      'must lose at predicted twist 8 (printed "Twist 8: Evil Wins!")',
+    );
+  });
+
+  it('Super Hero Civil War: loses at twist 8 for 2-3 players, twist 5 for 4-5 players', () => {
+    const makeCivilWar = (twistCount: number, players: number) => {
+      const state = makeTestState({ schemeTwistCount: twistCount });
+      state.selection.schemeId = 'core/super-hero-civil-war';
+      state.lobby.requiredPlayers = players;
+      return schemeTwistHandler(state, {}, { cardId: 't' }, DEFAULT_IMPLEMENTATION_MAP);
+    };
+
+    // 2 players (threshold 8): predicted 5 → no loss; predicted 8 → loss.
+    assert.equal(triggersSchemeLoss(makeCivilWar(4, 2)), false, '2p must not lose at predicted twist 5');
+    assert.equal(triggersSchemeLoss(makeCivilWar(7, 2)), true, '2p must lose at predicted twist 8');
+
+    // 4 players (threshold 5): predicted 5 → loss.
+    assert.equal(triggersSchemeLoss(makeCivilWar(4, 4)), true, '4p must lose at predicted twist 5');
+    // 5 players (threshold 5): predicted 4 → no loss.
+    assert.equal(triggersSchemeLoss(makeCivilWar(3, 5)), false, '5p must not lose at predicted twist 4');
+  });
+
+  it('a resource-loss scheme (Negative Zone) runs its full 8-twist stack, not the fallback 7', () => {
+    const at7 = makeTestState({ schemeTwistCount: 6 });
+    at7.selection.schemeId = 'core/negative-zone-prison-breakout';
+    assert.equal(
+      triggersSchemeLoss(schemeTwistHandler(at7, {}, { cardId: 't' }, DEFAULT_IMPLEMENTATION_MAP)),
+      false,
+      'must not lose a twist early at predicted 7',
+    );
+    const at8 = makeTestState({ schemeTwistCount: 7 });
+    at8.selection.schemeId = 'core/negative-zone-prison-breakout';
+    assert.equal(
+      triggersSchemeLoss(schemeTwistHandler(at8, {}, { cardId: 't' }, DEFAULT_IMPLEMENTATION_MAP)),
+      true,
+      'doom clock reaches the full 8-twist stack',
+    );
+  });
+
+  it('an unconfigured scheme still falls back to the MVP default threshold (7)', () => {
+    const state = makeTestState({ schemeTwistCount: 6 });
+    // 'test-scheme' has no config → fallback 7 → predicted 7 → loss.
+    assert.equal(
+      triggersSchemeLoss(schemeTwistHandler(state, {}, { cardId: 't' }, DEFAULT_IMPLEMENTATION_MAP)),
+      true,
+      'unconfigured scheme uses the fallback threshold of 7',
+    );
+  });
+});
