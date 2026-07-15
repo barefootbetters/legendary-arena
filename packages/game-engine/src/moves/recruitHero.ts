@@ -21,6 +21,7 @@ import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
+import { hasHealedThisTurn } from './healWounds.js';
 import { getHooksForCard, filterHooksByTiming } from '../rules/heroAbility.types.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
@@ -96,6 +97,10 @@ export function recruitHero(
   // why: block-all — pendingReturnZeroCostDiscard must be resolved before any other action (D-24139)
   if (hasPendingReturnZeroCostDiscard(G)) return;
 
+  // why: D-24180 — a player who used the Wound Healing ability this turn may not
+  // fight or recruit for the rest of the turn (the reverse lock).
+  if (hasHealedThisTurn(G)) return;
+
   // Step 3: Mutate G
   // why: D-24049 — the printed "Wall-Crawl" ability ("when you recruit this Hero,
   // you may put it on top of your deck") is optional and acts on the recruiting
@@ -125,6 +130,10 @@ export function recruitHero(
     G.playerZones[ctx.currentPlayer]!.discard.push(cardId);
   }
   G.turnEconomy = spendRecruit(G.turnEconomy, requiredCost);
+
+  // why: D-24180 — this successful recruit marks the player as having acted this
+  // turn, which bars the Wound Healing ability for the rest of the turn.
+  G.hasActedThisTurn = true;
 
   // why: WP-135 — refill the vacated slot from G.heroDeck (FIFO via shift).
   // Empty-deck case leaves the slot null per D-13503; no auto-reshuffle of

@@ -33,6 +33,7 @@ import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
+import { hasHealedThisTurn } from './healWounds.js';
 import {
   composeFightNarrative,
   composeEffectResultLogLine,
@@ -131,6 +132,10 @@ export function fightVillain(
   // why: block-all — pendingReturnZeroCostDiscard must be resolved before any other action (D-24139)
   if (hasPendingReturnZeroCostDiscard(G)) return;
 
+  // why: D-24180 — a player who used the Wound Healing ability this turn may not
+  // fight or recruit for the rest of the turn (the reverse lock).
+  if (hasHealedThisTurn(G)) return;
+
   // Step 3: Mutate G
   // why: MVP has no attack point check; WP-018 adds the economy. Any player
   // can fight any occupied City space without spending attack points.
@@ -151,6 +156,10 @@ export function fightVillain(
   awardAttachedHeroes(G, cardId, ctx.currentPlayer);
 
   G.turnEconomy = spendAttack(G.turnEconomy, requiredFightCost);
+
+  // why: D-24180 — this successful fight marks the player as having acted this
+  // turn, which bars the Wound Healing ability for the rest of the turn.
+  G.hasActedThisTurn = true;
 
   // why: Fight: effects fire after the bystander award (Step 3b) and before
   // the message push, so they observe post-award pile state. A Fight:

@@ -22,6 +22,7 @@ import { setPlayerReady, startMatchIfReady } from './lobby/lobby.moves.js';
 import { revealVillainCard } from './villainDeck/villainDeck.reveal.js';
 import { fightVillain } from './moves/fightVillain.js';
 import { recruitHero } from './moves/recruitHero.js';
+import { healWounds } from './moves/healWounds.js';
 import { dodgeCard } from './moves/dodgeCard.js';
 import { sendUndercover } from './moves/sendUndercover.js';
 import { playFromUndercover } from './moves/playFromUndercover.js';
@@ -369,6 +370,11 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     sendUndercover: { move: sendUndercover, client: false },
     playFromUndercover: { move: playFromUndercover, client: false },
     fightMastermind: { move: fightMastermind, client: false },
+    // why: WP-379 / D-24179 — healWounds uses the printed Wound "Healing" ability,
+    // KO'ing all Wounds from the current player's hand to G.ko. Server-only
+    // (client: false) per D-10008 — it mutates real G (playerZones.hand / G.ko),
+    // absent on UIState.
+    healWounds: { move: healWounds, client: false },
     resolveHeroChoice: { move: resolveHeroChoice, client: false },
     resolveKoHeroChoice: { move: resolveKoHeroChoice, client: false },
     resolveOptionalKoReward: { move: resolveOptionalKoReward, client: false },
@@ -518,6 +524,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // every player turn; without this reset the drawCards move guard
           // would permanently block draws from turn 2 onward.
           G.hasDrawnThisTurn = false;
+
+          // why: WP-379 / D-24180 — the Healing/act mutual-exclusion allowance
+          // refreshes at the start of every player turn. Without this reset a
+          // player who acted or healed last turn would stay locked out this turn.
+          G.hasActedThisTurn = false;
+          G.hasHealedThisTurn = false;
 
           // why: the engine owns the start-of-turn draw — the former
           // TurnActionBar "Draw to 6" UI scaffold is retired. Fill the active
