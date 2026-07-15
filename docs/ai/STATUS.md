@@ -7,6 +7,10 @@
 
 ## Current State
 
+### INFRA fix — bot-ally lobby affordance now uses the uploaded loadout (WP-376 fast-follow) (2026-07-14)
+
+Live-verify surfaced a bug in WP-376: `createWithBotAlly` read the **manual** composition fields (`buildConfig()`) unconditionally, so when the player authored via the recommended **LAGN upload** path (the manual fields empty) it POSTed an empty `villainGroupIds` and the game server (correctly) returned a 400. Fixed to prefer the parsed loadout — `parsedLoadout.composition` + `parsedLoadout.playerCount` when a loadout is uploaded/pasted (mirrors `submitFromJson`), falling back to the manual fields (mirrors `createAndJoin`) — matching the panel's own "uses the loadout you set above" copy. `arena-client` test **923/0** (+1: create-with-bot body carries the uploaded composition + player count); typecheck 0; `pnpm -r build` 0.
+
 ### WP-376 / EC-405 Executed — Solo bot-ally lobby affordance (client) — the "Play with a bot ally" button (D-24171 Active) (2026-07-14) — **cluster complete**
 
 Adds the client entry point that makes the bot-ally feature usable: a **"Play with a bot ally"** control in the arena-client lobby (seat count reuses the existing `numPlayers` field, plus a bot count and a policy). Submitting it calls `createMatchWithBot` (`POST /api/match/create-with-bot`, WP-375), then the human **joins their own seat 0 via the authed `joinMatch(..., authToken)`** and navigates to the play surface — never a server-returned credential (the key distinction from the "Watch Bot Play" spectator flow), so seat 0 keeps its `match_seat_accounts` row for WP-377's ranked guard + attribution. Co-op copy only (§23(b)); auth-gated (a guest is redirected to login); `botCount ∈ 1..seats-1` validated client-side; reuses `buildConfig()`; no `WaitingForPlayersPanel` change (WP-375's join-before-return ordering keeps it hidden). `parsePositiveInteger` was hardened to `String()`-coerce (defensive against a numeric v-model).

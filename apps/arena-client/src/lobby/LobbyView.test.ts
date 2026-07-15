@@ -254,6 +254,54 @@ test('WP-376: createWithBotAlly POSTs create-with-bot then joins seat 0 via the 
   );
 });
 
+test('WP-376: createWithBotAlly uses an uploaded loadout composition + player count (not the empty manual fields)', async () => {
+  setSearch('?route=lobby');
+  const calls = stubBotAllyFetch();
+  const wrapper = mountLobby();
+  await flushPromises();
+  signIn();
+  await wrapper.find('#playerName').setValue('Solo Player');
+
+  // Author via the recommended loadout path (paste a MATCH-SETUP document),
+  // leaving the manual composition fields empty — the exact shape that used to
+  // send an empty villainGroupIds and 400.
+  const loadoutDocument = JSON.stringify({
+    schemaVersion: '1.0',
+    playerCount: 2,
+    heroSelectionMode: 'GROUP_STANDARD',
+    composition: {
+      schemeId: 'core/midtown-bank-robbery',
+      mastermindId: 'core/magneto',
+      villainGroupIds: ['core/brotherhood', 'core/hydra'],
+      henchmanGroupIds: ['core/hand-ninjas'],
+      heroDeckIds: ['core/spider-man', 'core/hulk', 'core/wolverine', 'core/black-widow', 'core/cyclops'],
+      bystandersCount: 2,
+      woundsCount: 30,
+      officersCount: 5,
+      sidekicksCount: 12,
+    },
+  });
+  await wrapper.find('#loadoutPaste').setValue(loadoutDocument);
+  await wrapper.find('[data-testid="lobby-loadout-parse"]').trigger('click');
+  await flushPromises();
+
+  await wrapper.find('[data-testid="lobby-create-bot-ally"]').trigger('click');
+  await flushPromises();
+
+  const createCall = calls.find((call) => call.url.includes('/api/match/create-with-bot'));
+  assert.ok(createCall, 'the bot-ally create endpoint was called');
+  const body = JSON.parse(String(createCall!.init?.body)) as {
+    numPlayers: number;
+    botCount: number;
+    setupData: { villainGroupIds: string[]; mastermindId: string };
+  };
+  // The composition came from the uploaded loadout — NOT the empty manual form.
+  assert.deepEqual(body.setupData.villainGroupIds, ['core/brotherhood', 'core/hydra']);
+  assert.equal(body.setupData.mastermindId, 'core/magneto');
+  assert.equal(body.numPlayers, 2, 'seat count comes from the loadout playerCount');
+  assert.equal(body.botCount, 1);
+});
+
 test('WP-376: a botCount not less than the seat count is rejected before any POST', async () => {
   setSearch('?route=lobby');
   const calls = stubBotAllyFetch();
