@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **41 / 50** entity pages.
-> Last regenerated: 2026-07-09.
+> **42 / 50** entity pages.
+> Last regenerated: 2026-07-14.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
 > including [§ Tradeoffs](README.md#tradeoffs) on what the LLM-wiki
@@ -88,6 +88,12 @@ High-level card categorizations recognised by the engine.
 
 Cross-cutting governance, methodology, and readiness assessments.
 
+- [Card Image Acquisition](card-image-acquisition.md) — *(draft)* the
+  front of the image pipeline: per-set PowerShell scrapers pull card
+  face JPEGs from the `legendarycardgame.com` at-a-glance pages into a
+  staging tree, before the downstream rename / re-encode to the R2
+  naming convention. Backup copies of the scrapers live in
+  `scripts/card-image-downloaders/`.
 - [Changelog](changelog.md) — Milestone history of significant changes,
   newest first (projected from `docs/09-CHANGELOG.md`; the exhaustive
   per-packet record lives in WORK_INDEX + git log).
