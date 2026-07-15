@@ -20,6 +20,8 @@ import type { CardExtId } from '../state/zones.types.js';
 import { moveCardFromZone } from './zoneOps.js';
 import { koCard } from '../board/ko.logic.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { pushLog } from '../log/logPush.js';
+import { resolveCardName } from '../log/logDisplay.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -94,6 +96,15 @@ export function resolveKoHeroChoice({ G, playerID }: MoveContext, args: ResolveK
   playerZones[args.zone] = moveResult.from;
   G.ko = koCard(G.ko, args.cardId);
 
-  // Step 5: Front-pop ONLY on success (front-pop = Array.shift, D-24007/D-24008)
+  // Step 5: Narrate the resolved KO in the game log so the player sees WHICH
+  // hero they KO'd. The fight-time line only says "the active player must KO a
+  // hero" for this interactive (>=2-eligible) path — resolve-time naming was a
+  // WP-316 §Scope Out deferral; this completes it. (The exactly-1 auto-KO path
+  // already names its target at fight time.) `G.messages` is hash-excluded
+  // (D-24081), so this adds no determinism / sentinel impact.
+  const koHeroName = resolveCardName(G.cardDisplayData, args.cardId);
+  pushLog(G, `Player ${playerID} KO'd ${koHeroName} (${args.cardId}).`);
+
+  // Step 6: Front-pop ONLY on success (front-pop = Array.shift, D-24007/D-24008)
   queue.shift();
 }

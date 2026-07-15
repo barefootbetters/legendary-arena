@@ -106,8 +106,9 @@ export function composeEffectResultLogLine(results: ResolvedEffectResult[]): str
 function composeEffectResultClause(result: ResolvedEffectResult): string {
   if (result.pending === true) {
     // why: WP-316 — no hero is KO'd yet for a parked interactive KO; the player
-    // picks via resolveKoHeroChoice later, so name no target here (resolve-time
-    // naming is a deferred follow-up, WP-316 §Scope Out).
+    // picks via resolveKoHeroChoice later, so name no target here. The resolved
+    // hero IS named at resolve time — resolveKoHeroChoice pushes a "Player N KO'd
+    // <name>" log line (the WP-316 §Scope Out resolve-time-naming follow-up).
     return 'the active player must KO a hero';
   }
   const label = labelForEffect(result.keyword);

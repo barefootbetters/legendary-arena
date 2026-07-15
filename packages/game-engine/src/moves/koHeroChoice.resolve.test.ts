@@ -177,6 +177,58 @@ describe('resolveKoHeroChoice — success paths', () => {
     assert.equal(gameState.pendingKoHeroChoices!.length, 0, 'queue front-popped');
   });
 
+  it('logs the resolved KO naming the hero (WP-316 resolve-time naming)', () => {
+    const gameState = makeTestGameState({
+      discard: ['hero-d' as CardExtId],
+      pendingKoHeroChoices: [koChoice()],
+    });
+    (gameState as unknown as { cardDisplayData: Record<string, { name: string }> }).cardDisplayData = {
+      'hero-d': { name: 'Optic Blast' },
+    };
+    const { context } = makeMoveContext(gameState);
+
+    resolveKoHeroChoice(context, { zone: 'discard', cardId: 'hero-d' as CardExtId });
+
+    assert.ok(
+      gameState.messages.some(
+        (message) => message.includes('Player 0') && message.includes("KO'd Optic Blast (hero-d)"),
+      ),
+      'a resolve-time log line names the KO\'d hero',
+    );
+  });
+
+  it('the KO log falls back to the ext_id when no display name exists', () => {
+    const gameState = makeTestGameState({
+      hand: ['hero-x' as CardExtId],
+      pendingKoHeroChoices: [koChoice()],
+    });
+    const { context } = makeMoveContext(gameState);
+
+    resolveKoHeroChoice(context, { zone: 'hand', cardId: 'hero-x' as CardExtId });
+
+    assert.ok(
+      gameState.messages.some((message) => message.includes("KO'd hero-x (hero-x)")),
+      'falls back to the ext_id when cardDisplayData has no entry',
+    );
+  });
+
+  it('a no-op resolve (target absent from the named zone) pushes no KO log line', () => {
+    const gameState = makeTestGameState({
+      discard: ['hero-d' as CardExtId],
+      pendingKoHeroChoices: [koChoice()],
+    });
+    const { context } = makeMoveContext(gameState);
+
+    // hero-d is in discard, not hand → no-op
+    resolveKoHeroChoice(context, { zone: 'hand', cardId: 'hero-d' as CardExtId });
+
+    assert.equal(
+      gameState.messages.filter((message) => message.includes("KO'd")).length,
+      0,
+      'a no-op resolve narrates nothing',
+    );
+  });
+
   it('resolves from hand', () => {
     const gameState = makeTestGameState({
       hand: ['hero-h' as CardExtId, 'hero-i' as CardExtId],
