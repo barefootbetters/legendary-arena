@@ -29,6 +29,7 @@ import {
 } from './auth/hankoClient';
 import { isGuardedRoute, shouldHydrateSession } from './auth/routeAuthPolicy';
 import { useAuthStore } from './stores/auth';
+import { useAnalyticsCapture } from './composables/useAnalyticsCapture';
 
 // why: PlayerProfilePage is lazy-loaded via defineAsyncComponent so the
 // public-profile branch (?profile=<handle>) does not increase the
@@ -247,6 +248,13 @@ export default defineComponent({
     },
   },
   setup(props) {
+    // why: WP-378 — the single analytics instrumentation mount point. Observes
+    // the auth + UIState stores reactively and emits acquisition/activation/
+    // retention events fire-and-forget; nothing here surfaces to the player.
+    // This is the ONLY app-level analytics call site (the only other emit is
+    // signup-start on the LoginPage auth surface).
+    useAnalyticsCapture();
+
     const rawSearch =
       props.searchOverride ??
       (typeof window !== 'undefined' ? window.location.search : '');

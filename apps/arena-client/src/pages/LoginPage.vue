@@ -25,6 +25,7 @@ import {
   type HankoClientHandle,
 } from '../auth/hankoClient';
 import { useAuthStore } from '../stores/auth';
+import { captureAnalyticsEvent } from '../lib/api/analyticsEmitter';
 
 type LoginPageState =
   | 'initializing'
@@ -142,6 +143,12 @@ export default defineComponent({
         },
       });
       state.value = 'ready';
+      // why: WP-378 — signup-start is the funnel's top step: the visitor has
+      // reached the auth surface (the Hanko widget combines sign-in AND register,
+      // so there is no separate register CTA — the surface becoming ready IS the
+      // "opened the register flow" signal). Emitted ANONYMOUSLY (user_id null —
+      // the visitor has not authenticated yet) and fire-and-forget.
+      captureAnalyticsEvent('signup-start', null);
     });
 
     return {
