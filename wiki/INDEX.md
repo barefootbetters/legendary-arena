@@ -90,10 +90,10 @@ Cross-cutting governance, methodology, and readiness assessments.
 
 - [Card Image Acquisition](card-image-acquisition.md) — *(draft)* the
   front of the image pipeline: per-set PowerShell scrapers pull card
-  face JPEGs from the `legendarycardgame.com` at-a-glance pages into a
-  staging tree, before the downstream rename / re-encode to the R2
-  naming convention. Backup copies of the scrapers live in
-  `scripts/card-image-downloaders/`.
+  face JPEGs from the `legendarycardgame.com` at-a-glance pages, then
+  ImageMagick converters re-encode them to WebP, ahead of the downstream
+  rename to the R2 naming convention. Backup copies of both live in
+  `scripts/card-image-downloaders/` and `scripts/card-image-converters/`.
 - [Changelog](changelog.md) — Milestone history of significant changes,
   newest first (projected from `docs/09-CHANGELOG.md`; the exhaustive
   per-packet record lives in WORK_INDEX + git log).

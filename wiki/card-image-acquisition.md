@@ -14,6 +14,8 @@ status: draft
 source:
   - ../scripts/card-image-downloaders/download-legendarycardgame-core2e.ps1
   - ../scripts/card-image-downloaders/README.md
+  - ../scripts/card-image-converters/Convert-Core2e-JpgToWebp.ps1
+  - ../scripts/card-image-converters/README.md
 last-reviewed: 2026-07-14
 ---
 
@@ -23,13 +25,13 @@ last-reviewed: 2026-07-14
 
 Card face images originate as scraped JPEGs pulled from the
 `legendarycardgame.com` "at-a-glance" set pages by a family of
-per-set PowerShell scrapers, then land in a staging tree before being
-processed and uploaded to Cloudflare R2. This page documents that
-acquisition step — the front of the image pipeline — and how it feeds
-the naming convention that gameplay and the Registry Viewer depend on.
-The deployed, R2-hosted naming is covered separately by
+per-set PowerShell scrapers, then get re-encoded to WebP before being
+renamed and uploaded to Cloudflare R2. This page documents the front of
+the image pipeline — the scrape step and the JPEG→WebP conversion — and
+how it feeds the naming convention that gameplay and the Registry Viewer
+depend on. The deployed, R2-hosted naming is covered separately by
 [R2 Image Naming Convention](r2-image-naming-convention.md); this page
-covers where the raw bytes come from.
+covers where the raw bytes come from and how they reach WebP.
 
 > **Where the runnable scripts live.** The canonical, runnable copies
 > of the scrapers live in the sibling **staging repo**, not this repo:
@@ -87,21 +89,58 @@ acquisition step, not in the scraper.
 
 ### Where the output lands
 
-Scraped JPEGs stage under the sibling setup repo:
+Scraped JPEGs stage under the sibling setup repo, and the WebP
+conversion writes a parallel `original\<set>\` tree beside the raw
+`original-jpeg\<set>\` inputs:
 
 ```
 barefootbetters-legendary-setup\
 └── card-images-staging\
-    └── original-jpeg\
-        ├── download-legendarycardgame-<set>.ps1   (one per set)
-        ├── core/                                   (1st-edition core output)
-        ├── core2e/                                 (2nd-edition core output)
-        ├── anni/  antm/  asrd/  …                  (per-set output dirs)
+    ├── Convert-<Set>-JpgToWebp.ps1                 (one per set)
+    ├── original-jpeg\
+    │   ├── download-legendarycardgame-<set>.ps1    (one per set)
+    │   ├── core/                                    (1st-edition core JPEGs)
+    │   ├── core2e/                                  (2nd-edition core JPEGs)
+    │   ├── anni/  antm/  asrd/  …                   (per-set JPEG inputs)
+    │   └── …
+    └── original\
+        ├── core2e/                                  (2nd-edition core WebP)
+        ├── anni/  antm/  …                          (per-set WebP outputs)
         └── …
 ```
 
-Each set's output directory is keyed by a short set token that matches
-the script name (`core2e`, `anni`, `bkpt`, `cvwr`, …).
+Each set's directory is keyed by a short set token that matches the
+script name (`core2e`, `anni`, `bkpt`, `cvwr`, …). Note the naming: the
+**JPEG inputs** live under `original-jpeg\`, the **WebP outputs** under
+`original\` — the shorter name is the converted, canonical-format tree.
+
+### Converting JPEG to WebP
+
+The staged JPEGs are re-encoded to WebP by a family of per-set scripts
+named `Convert-<Set>-JpgToWebp.ps1`, one per set, differing only in
+their input/output set token. Each script:
+
+1. Resolves ImageMagick (`magick.exe`) — on `PATH`, or the fallback
+   install at `C:\Program Files\ImageMagick-7.1.2-Q16-HDRI\magick.exe`.
+2. Reads every `.jpg` / `.jpeg` under `original-jpeg\<set>\` (recursing
+   into subfolders).
+3. Writes `.webp` to `original\<set>\`, preserving subfolder structure
+   and **skipping files that already exist** (idempotent re-runs).
+
+The encode settings are fixed in each script:
+
+| Setting | Value | Effect |
+|---|---|---|
+| `$Quality` | `80` | WebP quality (0-100). |
+| `$StripMeta` | `$true` | Passes `-strip` to drop metadata for smaller files. |
+| `$SkipExisting` | `$true` | Never overwrites an existing `.webp`. |
+| `$Recurse` | `$true` | Processes subfolders. |
+
+Conversion preserves the **source-side filename** (only the extension
+changes: `2eHeroSpider-Man_1Rare.jpg` → `2eHeroSpider-Man_1Rare.webp`).
+The rename to the deterministic `{setAbbr}-{ribbon}-{slug}.webp` R2 name
+still happens downstream — WebP conversion changes the *format*, not the
+*name*.
 
 ## Interactions
 
@@ -146,8 +185,27 @@ the script name (`core2e`, `anni`, `bkpt`, `cvwr`, …).
   publisher-side image changes; a changed image at the same filename is
   not re-fetched. Delete the local copy to force a refresh.
 - **Run location matters.** The relative `$OutputDir` resolves against
-  the current working directory, so running the script from anywhere
+  the current working directory, so running the scraper from anywhere
   other than the staging `original-jpeg` folder scatters output.
+- **Non-card strays carry through the conversion.** The converter
+  processes every JPEG in the input directory, so a stray like
+  `20220108_175929.jpg` becomes `20220108_175929.webp` too. Prune
+  non-card files from `original-jpeg\<set>\` *before* converting, or
+  delete their `.webp` afterward.
+- **Convert scripts hardcode the staging root (portability bug).** The
+  older staging-repo `Convert-<Set>-JpgToWebp.ps1` scripts set
+  `$StagingRoot` to a per-machine absolute path (e.g. `C:\GISE\…`), so
+  they fail on any other machine. The in-repo `core2e` backup resolves
+  the root from the script's own location (`$PSScriptRoot`) instead; new
+  converters should follow that pattern.
+- **WebP savings are modest for these sources.** At `$Quality = 80` the
+  Core Set 2nd Edition set shrank only ~8% (≈445 MB → ≈408 MB) because
+  the source JPEGs are already large, high-quality scans. WebP here is
+  mainly about format normalization for R2, not aggressive size
+  reduction; lowering `$Quality` trades fidelity for smaller files.
+- **ImageMagick is a hard dependency.** The converter throws if
+  `magick.exe` is neither on `PATH` nor at the fallback install path.
+  WebP support is built into ImageMagick 7 (used here: 7.1.2 Q16-HDRI).
 
 ## Code Touchpoints
 
@@ -157,24 +215,35 @@ the script name (`core2e`, `anni`, `bkpt`, `cvwr`, …).
 - [`scripts/card-image-downloaders/README.md`](../scripts/card-image-downloaders/README.md)
   — documents that this folder holds backup copies; the canonical
   runnable copies live in the staging repo.
+- [`scripts/card-image-converters/Convert-Core2e-JpgToWebp.ps1`](../scripts/card-image-converters/Convert-Core2e-JpgToWebp.ps1)
+  — backup copy of the Core Set 2nd Edition JPEG→WebP converter
+  (ImageMagick resolve, quality / strip / skip-existing settings,
+  recurse-and-convert loop).
+- [`scripts/card-image-converters/README.md`](../scripts/card-image-converters/README.md)
+  — converter backup-folder purpose, ImageMagick requirement, and
+  encode settings.
 
 ## Data Files
 
 - `barefootbetters-legendary-setup\card-images-staging\original-jpeg\`
-  (sibling staging repo) — the scrapers and their per-set output
-  directories of raw source JPEGs. Not part of this repo.
+  (sibling staging repo) — the scrapers and their per-set directories of
+  raw source JPEGs. Not part of this repo.
+- `barefootbetters-legendary-setup\card-images-staging\original\`
+  (sibling staging repo) — the converters' per-set directories of
+  WebP output. Not part of this repo.
 
 ## Open Questions
 
-- **The full acquisition-to-R2 chain is not documented in this repo.**
-  The rename / re-encode / upload steps that turn a staged
-  `2eHeroSpider-Man_1Rare.jpg` into the deployed
-  `core2e-hr-spider-man-…​.webp` object live in the staging repo and
-  operator workflow, not in a repo-citable artifact. This page documents
-  the scrape step (which is now backed up in-repo) and links forward to
-  [R2 Image Naming Convention](r2-image-naming-convention.md) for the
-  target shape, but the middle transform is unsourced here — treat the
-  chain as operator knowledge until it is captured.
+- **The rename + upload tail is not documented in this repo.** The
+  scrape and the JPEG→WebP conversion are now backed up in-repo
+  (`scripts/card-image-downloaders/`, `scripts/card-image-converters/`),
+  but the final steps — renaming a converted `2eHeroSpider-Man_1Rare.webp`
+  to the deterministic `core2e-hr-spider-man-…​.webp` R2 name and
+  uploading it to the `legendary-images` bucket — still live in the
+  staging repo and operator workflow, not a repo-citable artifact. This
+  page links forward to [R2 Image Naming Convention](r2-image-naming-convention.md)
+  for the target shape, but that rename/upload transform is unsourced
+  here — treat it as operator knowledge until it is captured.
 - **Set-token ↔ set-abbreviation mapping.** The scraper output tokens
   (`core2e`, `bkpt`, …) match the set directories but the authoritative
   set-abbreviation list is the convert pipeline's concern; confirm a new
@@ -186,7 +255,11 @@ the script name (`core2e`, `anni`, `bkpt`, `cvwr`, …).
 - [`scripts/card-image-downloaders/download-legendarycardgame-core2e.ps1`](../scripts/card-image-downloaders/download-legendarycardgame-core2e.ps1)
   — the scraper (backup copy)
 - [`scripts/card-image-downloaders/README.md`](../scripts/card-image-downloaders/README.md)
-  — backup-folder purpose and run instructions
+  — scraper backup-folder purpose and run instructions
+- [`scripts/card-image-converters/Convert-Core2e-JpgToWebp.ps1`](../scripts/card-image-converters/Convert-Core2e-JpgToWebp.ps1)
+  — the JPEG→WebP converter (backup copy)
+- [`scripts/card-image-converters/README.md`](../scripts/card-image-converters/README.md)
+  — converter backup-folder purpose, ImageMagick requirement, settings
 - [R2 Image Naming Convention](r2-image-naming-convention.md) — the
   downstream deployed naming this acquisition feeds
 - [Data & File Locations](data-file-locations.md) — where card data,
