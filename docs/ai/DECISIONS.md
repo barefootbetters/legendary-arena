@@ -28864,3 +28864,32 @@ Protect this file.
 **Packet:** WP-375 (EC-404). **Drafted:** 2026-07-14. **Executed:** 2026-07-14.
 
 Protect this file.
+
+### D-24172 — Ranked eligibility requires a seat-count-complete mutual-friend roster (amends D-24146); bot/guest seats force Casual
+
+**Status:** **Active** (WP-377 executed 2026-07-14, EC-406). Amends **D-24146** (the WP-354 ranked-eligibility gate).
+
+**User-Visible Surface:** the public ranked leaderboard — a match with any non-account seat (a bot ally from WP-375, or a guest) is recorded but shows **Casual**, never ranked. D-24026 live-verify APPLIES once a rowless-seat match (bot-ally) can be produced; operator-pending on deploy.
+
+**Context.** `computeRankedEligibility` (WP-354 / D-24146) was **roster-only**: it read the authenticated human roster via `readSeatAccounts` and returned `areAllMutualFriends(roster)`, and an `n ≤ 1` roster is vacuously ranked (`friendships.logic.ts`). Any match with a **rowless seat** — a bot (WP-375) or a guest, both absent from `match_seat_accounts` per D-24120 — presents a **short roster**. A 1-human + 1-bot match → roster length 1 → vacuously ranked → the human could submit a **ranked** score (`player_count = 2`), bypassing the mutual-friend-clique requirement a real 2-human ranked match must satisfy (DESIGN-SOLO-BOT-ALLY §5b). This is the blocking prerequisite that makes bot-ally safe to expose to the client.
+
+**Decision.** Harden `computeRankedEligibility` to require the roster to be **seat-count-complete** — every seat must map to a mutual-friend account. Three rules, inside the existing WP-354 try/catch, in order:
+
+1. **`botSeats` tag non-empty ⇒ `false`** (defence-in-depth; a server-created bot seat is the most authoritative bot-ally signal). Read via `readMatchBotSeats` from the WP-375 `legendary.match_bot_ally` side-table; inert (empty) for every non-bot-ally match.
+2. **`roster.length !== seatCount` ⇒ `false`** — a seat that does not map to an account (bot OR guest) leaves the roster shorter than the seat count. Catches both generically.
+3. else **`areAllMutualFriends(roster)`** — unchanged WP-354 behavior.
+
+Locks:
+
+- **Predicate is `!==`, NEVER `< 2` / `<= 1`.** A genuine 1-player solo match (`roster.length === 1`, `seatCount === 1`) stays vacuously ranked — the top regression guard.
+- **Seat-count source = the number of `bgio.matches.metadata.players` slots** (`readMatchSeatCount`). A started match seated `numPlayers`, and boardgame.io records one `metadata.players` slot per seat, so this equals the seat count that had to ready to start the match. It is read from the framework **metadata** surface (the same `bgio.matches.metadata` `isMatchFinished` reads) — **NOT** the `state`/`initial_state` `G`/`ctx` blob — so it needs no persistence-boundary carve-out. (This refines the WP/EC's recommended source (a) `ctx.numPlayers` by reading it off metadata rather than the blob; either value is the seat count, and metadata keeps the read off the carve-out surface.)
+- **Fail-safe preserved:** any roster / seat-count / bot-seats / clique read throw ⇒ `false` (Casual), via the existing WP-354 catch; a friendship/seat-count infra hiccup never fails submission.
+- **FR-7 immutability preserved** — recomputation on a resubmit never rewrites a stored flag (the idempotency fast-path owns it); this packet does not touch that path.
+- **By-hash default untouched** — `submitCompetitiveScoreImpl`'s `deps.isRankedEligible ?? true` (no roster; correctly defaults ranked) is unchanged. The guard lives only in `computeRankedEligibility`.
+- **No migration** (`is_ranked_eligible` exists, WP-354/029); no scoring-math / PAR / replay-hash change (the flag is orthogonal — a read-time decision).
+
+**Relationship to WP-375.** WP-375 *produces* the `botSeats` tag; this guard *consumes* it. Landable independently — the seat-count backstop (rule 2) is a no-op for all-human matches (every authed seat has both a metadata slot and an account row, so `roster.length === seatCount`); the `botSeats` short-circuit (rule 1) activates once WP-375 writes the tag (it now does). Together with WP-375 this makes the bot-ally client (WP-376) safe to ship.
+
+**Packet:** WP-377 (EC-406). **Drafted:** 2026-07-14. **Executed:** 2026-07-14.
+
+Protect this file.
