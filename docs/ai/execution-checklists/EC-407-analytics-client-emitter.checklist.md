@@ -68,7 +68,7 @@ banner; new event types.
 - [ ] `pnpm --filter @legendary-arena/arena-client test` green
 - [ ] `rg "game-engine|@legendary-arena/(registry|server|preplan)|boardgame" apps/arena-client/src/lib/api/analyticsEmitter.ts apps/arena-client/src/lib/api/channelClassifier.ts apps/arena-client/src/composables/useAnalyticsCapture.ts` → zero
 - [ ] `rg "createHash|sha256|subtle\.digest" apps/arena-client/src/lib/api/analyticsEmitter.ts` → zero
-- [ ] `rg "useAnalyticsCapture" apps/arena-client/src/App.vue` → exactly 1
+- [ ] `rg "useAnalyticsCapture\(" apps/arena-client/src/App.vue` → exactly 1 (the single app-level mount / call-site; the separate `import` line is unavoidable Vue boilerplate and is intentionally not counted — the invariant this guards is one mount site, so double-emission is impossible)
 - [ ] Live D-24026: a real sign-in / first match on `arena.legendary-arena.com` yields a non-empty row on the matching `dashboard.legendary-arena.com/players` widget (operator-pending on deploy)
 - [ ] D-24173..D-24175 Active; STATUS / WORK_INDEX / EC_INDEX / mindmap updated
 - [ ] Commit prefix `EC-407:` (staged files under `apps/arena-client/` + `docs/`)
