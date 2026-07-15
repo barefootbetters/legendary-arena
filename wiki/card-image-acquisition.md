@@ -192,12 +192,15 @@ still happens downstream — WebP conversion changes the *format*, not the
   `20220108_175929.jpg` becomes `20220108_175929.webp` too. Prune
   non-card files from `original-jpeg\<set>\` *before* converting, or
   delete their `.webp` afterward.
-- **Convert scripts hardcode the staging root (portability bug).** The
-  older staging-repo `Convert-<Set>-JpgToWebp.ps1` scripts set
-  `$StagingRoot` to a per-machine absolute path (e.g. `C:\GISE\…`), so
-  they fail on any other machine. The in-repo `core2e` backup resolves
-  the root from the script's own location (`$PSScriptRoot`) instead; new
-  converters should follow that pattern.
+- **Convert scripts must resolve the staging root portably.** The
+  staging-repo `Convert-<Set>-JpgToWebp.ps1` scripts historically set
+  `$StagingRoot` to a per-machine absolute path (e.g. `C:\GISE\…`), which
+  failed on any other machine. All 37 staging converters were repointed
+  to resolve the root from the script's own location (`$PSScriptRoot`) on
+  2026-07-14, matching the in-repo `core2e` backup; new converters must
+  follow that pattern. The staging folder is not version-controlled, so a
+  re-copied or regenerated script could reintroduce a hardcoded path —
+  check the `$StagingRoot` line before running an unfamiliar converter.
 - **WebP savings are modest for these sources.** At `$Quality = 80` the
   Core Set 2nd Edition set shrank only ~8% (≈445 MB → ≈408 MB) because
   the source JPEGs are already large, high-quality scans. WebP here is
