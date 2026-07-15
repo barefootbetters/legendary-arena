@@ -53,6 +53,7 @@ import { requireAdminSession } from './auth/adminSession.js';
 import { loadBillingConfig, createStripeClient } from './billing/billing.config.js';
 import { registerLegendsPublisherRoutes } from './legends/legends.routes.js';
 import { registerAutoplayRoutes } from './autoplay/autoplay.mjs';
+import { registerBotAllyRoutes, rehydrateBotAllyDrivers } from './bot-ally/botAllyRoutes.mjs';
 import { requireAuthenticatedSession } from './auth/sessionToken.logic.js';
 import { requireUnsuspendedAccount } from './auth/requireUnsuspendedAccount.js';
 import { createHankoSessionVerifier } from './auth/hanko/hankoVerifier.logic.js';
@@ -934,6 +935,35 @@ export async function startServer() {
     serverUrl: autoplayServerUrl,
     internalDelegationSecret,
   });
+
+  // why: WP-375 / D-24170 — the solo bot-ally endpoint (POST
+  // /api/match/create-with-bot) + per-match BotAllyDriver. Mirrors the autoplay
+  // wiring (db/transport/auth/serverUrl + the internal-delegation secret) and
+  // the matchGate wiring (pool + authenticated-session bundle), because the
+  // endpoint is authenticated-session-required and reserves + secret-joins +
+  // auto-readies the bot seats, then drives them via Master.onUpdate. The
+  // internal secret is injected here (never from config/env), exactly as
+  // autoplay obtains it.
+  const botAllyContext = {
+    db: server.db,
+    transport: server.transport,
+    auth: server.auth,
+    serverUrl: autoplayServerUrl,
+    internalDelegationSecret,
+    database: pool,
+    requireAuthenticatedSession,
+    verifier,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
+  };
+  registerBotAllyRoutes(server.router, botAllyContext);
+
+  // why: WP-375 / D-24170 restart policy — in-memory bot-ally drivers are lost
+  // on restart; re-register a driver for every still-active bot-ally match so a
+  // mixed human+bot match survives a deploy instead of freezing (the D-24095
+  // durability concern, narrowed to the bot seats). Best-effort + fully guarded;
+  // awaited so a re-registered driver is polling before the server accepts
+  // traffic.
+  await rehydrateBotAllyDrivers(botAllyContext);
 
   // why: WP-308 / D-24094 — mount the native-lobby hard gate. `unshift` (not
   // `app.use`) places it at the FRONT of the Koa middleware stack, ahead of
