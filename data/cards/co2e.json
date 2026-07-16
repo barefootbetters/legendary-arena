@@ -371,7 +371,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "[hc:covert]: You may play the top card of the Villain Deck. If you do, you get +2[icon:attack]."
+            "[hc:covert]: You may get +3[icon:attack]. If you do, reveal the top card of the Villain Deck and if it is a Master Strike, play it."
           ]
         },
         {
@@ -382,7 +382,7 @@
           "rarityLabel": "Uncommon",
           "slot": 3,
           "hc": "instinct",
-          "cost": 5,
+          "cost": 6,
           "attack": "3",
           "recruit": null,
           "abilities": [
@@ -398,10 +398,10 @@
           "slot": 4,
           "hc": "strength",
           "cost": 7,
-          "attack": "5",
-          "recruit": "0+",
+          "attack": "4",
+          "recruit": null,
           "abilities": [
-            "Whenever you defeat a Villain or Mastermind this turn, you get +3[icon:recruit]."
+            "If a Master Strike would occur, you may reveal this card to KO that Master Strike and shuffle a card from the Bystander Deck into the Villain Deck instead."
           ]
         }
       ],
@@ -409,7 +409,7 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-emma-frost-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-emma-frost-mental-discipline.webp",
           "sides": [
             "mental-discipline"
           ]
@@ -417,7 +417,7 @@
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-emma-frost-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-emma-frost-shadowed-thoughts.webp",
           "sides": [
             "shadowed-thoughts"
           ]
@@ -425,7 +425,7 @@
         {
           "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-emma-frost-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-emma-frost-psychic-link.webp",
           "sides": [
             "psychic-link"
           ]
@@ -433,7 +433,7 @@
         {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-emma-frost-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-emma-frost-diamond-form.webp",
           "sides": [
             "diamond-form"
           ]
