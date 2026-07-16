@@ -882,55 +882,55 @@
       "slug": "nick-fury",
       "team": "shield",
       "cardCounts": {
-        "Battlefield Promotion": 5,
-        "High-Tech Weaponry": 5,
-        "Legendary Commander": 3,
+        "Stealth Assault Squad": 5,
+        "Weapon Bank": 5,
+        "Battlefield Promotion": 3,
         "Pure Fury": 1
       },
       "cards": [
         {
-          "name": "High-Tech Weaponry",
-          "displayName": "High-Tech Weaponry",
-          "slug": "high-tech-weaponry",
+          "name": "Stealth Assault Squad",
+          "displayName": "Stealth Assault Squad",
+          "slug": "stealth-assault-squad",
           "rarity": 1,
           "rarityLabel": "Common 1",
           "slot": 1,
+          "hc": "covert",
+          "cost": 2,
+          "attack": "1+",
+          "recruit": null,
+          "abilities": [
+            "You get +2[icon:attack] if you played another [team:shield] Hero that costs 1 or more this turn."
+          ]
+        },
+        {
+          "name": "Weapon Bank",
+          "displayName": "Weapon Bank",
+          "slug": "weapon-bank",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
           "hc": "tech",
-          "cost": 3,
+          "cost": 4,
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "[hc:tech]: You get +1[icon:attack]."
+            "[hc:tech]: If the Bank is empty, you get +2[icon:attack]."
           ]
         },
         {
           "name": "Battlefield Promotion",
           "displayName": "Battlefield Promotion",
           "slug": "battlefield-promotion",
-          "rarity": 1,
-          "rarityLabel": "Common 2",
-          "slot": 2,
-          "hc": "covert",
-          "cost": 4,
-          "attack": null,
-          "recruit": null,
-          "abilities": [
-            "You may KO a [team:shield] Hero from your hand or discard pile. If you do, you may gain a S.H.I.E.L.D. Officer to your hand."
-          ]
-        },
-        {
-          "name": "Legendary Commander",
-          "displayName": "Legendary Commander",
-          "slug": "legendary-commander",
           "rarity": 2,
           "rarityLabel": "Uncommon",
           "slot": 3,
-          "hc": "strength",
-          "cost": 6,
-          "attack": "1+",
+          "hc": "covert",
+          "cost": 5,
+          "attack": "2",
           "recruit": null,
           "abilities": [
-            "You get +1[icon:attack] for each other[team:shield] Hero you played this turn."
+            "[hc:covert]: You may KO a [team:shield] Hero from your hand or discard pile. If you do, reveal the top three cards of the Officer Deck. You may gain one of them to your hand. Put the rest back on the bottom of that deck."
           ]
         },
         {
@@ -945,7 +945,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "Defeat any Villain or Mastermind whose [icon:attack] is less than the number of [team:shield] Heroes in the KO pile."
+            "You may KO a [team:shield] Hero from your hand or discard pile. Then you may fight any Villain or Mastermind for free whose [icon:attack] is less than the number of [team:shield] Heroes in the KO pile."
           ]
         }
       ],
@@ -953,31 +953,31 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-nick-fury-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-nick-fury-stealth-assault-squad.webp",
           "sides": [
-            "high-tech-weaponry"
+            "stealth-assault-squad"
           ]
         },
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-nick-fury-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-nick-fury-weapon-bank.webp",
           "sides": [
-            "battlefield-promotion"
+            "weapon-bank"
           ]
         },
         {
           "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-nick-fury-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-nick-fury-battlefield-promotion.webp",
           "sides": [
-            "legendary-commander"
+            "battlefield-promotion"
           ]
         },
         {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-nick-fury-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-nick-fury-pure-fury.webp",
           "sides": [
             "pure-fury"
           ]
