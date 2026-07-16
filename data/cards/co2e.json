@@ -1995,7 +1995,7 @@
       "slug": "hand-ninjas",
       "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hm-hand-ninjas.webp",
       "abilities": [
-        "Fight: You get +1[icon:recruit]."
+        "Fight: If you fight Hand Ninjas in the Sewers or Rooftops, KO one of your Heroes. Otherwise, you get +1[icon:recruit]."
       ],
       "vAttack": "3",
       "vp": "1"
@@ -2006,7 +2006,7 @@
       "slug": "savage-land-mutates",
       "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hm-savage-land-mutates.webp",
       "abilities": [
-        "Fight: When you draw a new hand of cards at the end of this turn, draw an extra card."
+        "Fight: Reveal the top card of your deck. If it's grey, KO it. If it's [hc:strength] or [hc:instinct], draw it."
       ],
       "vAttack": "3",
       "vp": "1"
