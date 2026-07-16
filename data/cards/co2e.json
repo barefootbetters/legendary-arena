@@ -774,7 +774,7 @@
       "cardCounts": {
         "Endless Invention": 5,
         "Repulsor Rays": 5,
-        "Arc Reactor": 3,
+        "Overloaded Unibeam": 3,
         "Quantum Breakthrough": 1
       },
       "cards": [
@@ -802,17 +802,17 @@
           "rarityLabel": "Common 2",
           "slot": 2,
           "hc": "ranged",
-          "cost": 3,
+          "cost": 4,
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "[hc:ranged]: You get +1[icon:attack]."
+            "If you played at least 8 other cards this turn, you get +2[icon:attack]."
           ]
         },
         {
-          "name": "Arc Reactor",
-          "displayName": "Arc Reactor",
-          "slug": "arc-reactor",
+          "name": "Overloaded Unibeam",
+          "displayName": "Overloaded Unibeam",
+          "slug": "overloaded-unibeam",
           "rarity": 2,
           "rarityLabel": "Uncommon",
           "slot": 3,
@@ -821,7 +821,7 @@
           "attack": "3+",
           "recruit": null,
           "abilities": [
-            "[hc:tech]: You get +1[icon:attack] for each other[hc:tech] Hero you played this turn."
+            "[hc:tech]: You get +1[icon:attack] for each other [hc:tech] Hero you played this turn."
           ]
         },
         {
@@ -832,12 +832,12 @@
           "rarityLabel": "Rare",
           "slot": 4,
           "hc": "tech",
-          "cost": 7,
+          "cost": 8,
           "attack": null,
           "recruit": null,
           "abilities": [
             "Draw two cards. [keyword:draw:2]",
-            "[hc:tech]: Draw two more cards."
+            "[team:avengers]: Draw two more cards."
           ]
         }
       ],
@@ -845,7 +845,7 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-iron-man-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-iron-man-endless-invention.webp",
           "sides": [
             "endless-invention"
           ]
@@ -853,7 +853,7 @@
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-iron-man-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-iron-man-repulsor-rays.webp",
           "sides": [
             "repulsor-rays"
           ]
@@ -861,15 +861,15 @@
         {
           "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-iron-man-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-iron-man-overloaded-unibeam.webp",
           "sides": [
-            "arc-reactor"
+            "overloaded-unibeam"
           ]
         },
         {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-iron-man-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-iron-man-quantum-breakthrough.webp",
           "sides": [
             "quantum-breakthrough"
           ]
