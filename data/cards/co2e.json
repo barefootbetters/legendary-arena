@@ -990,10 +990,10 @@
       "slug": "rogue",
       "team": "x-men",
       "cardCounts": {
-        "Borrowed Brawn": 5,
         "Energy Drain": 5,
-        "Copy Powers": 3,
-        "Steal Abilities": 1
+        "Borrowed Brawn": 5,
+        "Stolen Powers": 3,
+        "Grand Larceny": 1
       },
       "cards": [
         {
@@ -1006,9 +1006,9 @@
           "hc": "covert",
           "cost": 3,
           "attack": null,
-          "recruit": "2+",
+          "recruit": "1+",
           "abilities": [
-            "[hc:covert]: You may KO a card from your hand or discard pile. If you do, you get +1[icon:recruit]."
+            "[hc:covert]: You may KO a card from your hand or discard pile. If you do, you get +2[icon:recruit]. [keyword:optional-ko-reward:recruit:2]"
           ]
         },
         {
@@ -1027,9 +1027,9 @@
           ]
         },
         {
-          "name": "Copy Powers",
-          "displayName": "Copy Powers",
-          "slug": "copy-powers",
+          "name": "Stolen Powers",
+          "displayName": "Stolen Powers",
+          "slug": "stolen-powers",
           "rarity": 2,
           "rarityLabel": "Uncommon",
           "slot": 3,
@@ -1038,22 +1038,22 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "Play this card as a copy of another Hero you played this turn. This card is both [hc:covert] and the color you copy."
+            "Play this card as a copy of one of your Heroes that you played this turn."
           ]
         },
         {
-          "name": "Steal Abilities",
-          "displayName": "Steal Abilities",
-          "slug": "steal-abilities",
+          "name": "Grand Larceny",
+          "displayName": "Grand Larceny",
+          "slug": "grand-larceny",
           "rarity": 3,
           "rarityLabel": "Rare",
           "slot": 4,
-          "hc": "strength",
+          "hc": "covert",
           "cost": 8,
-          "attack": "4",
+          "attack": "5",
           "recruit": null,
           "abilities": [
-            "Each player discards the top card of their deck. Play a copy of each of those cards."
+            "[team:x-men]: Each player discards the top card of their deck. Play a copy of one of those cards."
           ]
         }
       ],
@@ -1061,7 +1061,7 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-rogue-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-rogue-energy-drain.webp",
           "sides": [
             "energy-drain"
           ]
@@ -1069,7 +1069,7 @@
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-rogue-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-rogue-borrowed-brawn.webp",
           "sides": [
             "borrowed-brawn"
           ]
@@ -1077,17 +1077,17 @@
         {
           "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-rogue-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-rogue-stolen-powers.webp",
           "sides": [
-            "copy-powers"
+            "stolen-powers"
           ]
         },
         {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-rogue-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-rogue-grand-larceny.webp",
           "sides": [
-            "steal-abilities"
+            "grand-larceny"
           ]
         }
       ]
