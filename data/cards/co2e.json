@@ -2131,6 +2131,60 @@
           "copies": 2
         }
       ]
+    },
+    {
+      "id": 7,
+      "name": "Sinister Syndicate",
+      "slug": "sinister-syndicate",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Beetle",
+          "slug": "beetle",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-syndicate-beetle.webp",
+          "abilities": [
+            "Fight: Count your [hc:covert] Heroes, then draw that many cards.",
+            "Escape: Each player reveals a [hc:covert] Hero or gains a Wound."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Boomerang",
+          "slug": "boomerang",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-syndicate-boomerang.webp",
+          "abilities": [
+            "Fight: KO one of your Heroes. Then reveal the top card of the Villain Deck. If it's a Villain, put Boomerang in its place and play that Villain."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Hydro-Man",
+          "slug": "hydro-man",
+          "vp": "3",
+          "vAttack": "4+",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-syndicate-hydro-man.webp",
+          "abilities": [
+            "Hydro-Man gets +2[icon:attack] in the Sewers and Bridge.",
+            "Fight: If you fight Hydro-Man in the Sewers or Bridge, KO one of your Heroes."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Speed Demon",
+          "slug": "speed-demon",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-syndicate-speed-demon.webp",
+          "abilities": [
+            "Ambush: Speed Demon moves two extra spaces forward. If this pushes any other Villains forward, each player discards a card."
+          ],
+          "copies": 2
+        }
+      ]
     }
   ],
   "henchmen": [
