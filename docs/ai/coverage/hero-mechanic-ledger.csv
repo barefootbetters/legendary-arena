@@ -147,7 +147,7 @@ co2e/black-widow,Black Widow,co2e,draw,executable,,,packages/game-engine/src/her
 co2e/black-widow,Black Widow,co2e,optional-ko-reward,executable,WP-248,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward
 co2e/black-widow,Black Widow,co2e,rescue,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#rescue
 co2e/captain-america,Captain America,co2e,(unmarked),unmarked,,,
-co2e/cyclops,Cyclops,co2e,(unmarked),unmarked,,,
+co2e/cyclops,Cyclops,co2e,discard-to-play,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play
 co2e/emma-frost,Emma Frost,co2e,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 co2e/gambit,Gambit,co2e,reveal-cost-attack,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-cost-attack
 co2e/hawkeye,Hawkeye,co2e,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw

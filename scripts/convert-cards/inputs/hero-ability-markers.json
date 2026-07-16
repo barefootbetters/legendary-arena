@@ -106,6 +106,20 @@
       "markupToken": "[keyword:draw:1]"
     }
   ],
+  "co2e": [
+    {
+      "heroSlug": "cyclops",
+      "cardSlug": "determination",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:discard-to-play:1]"
+    },
+    {
+      "heroSlug": "cyclops",
+      "cardSlug": "optic-blast",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:discard-to-play:1]"
+    }
+  ],
   "core": [
     {
       "heroSlug": "cyclops",

@@ -29177,7 +29177,13 @@ resolve short-circuit; chooser-only `UIPendingDiscardToPlay` projection
 (mandatory, no Decline) + `useTurnActions` End-Turn / Pass-Priority gate. The
 keyword carries the cost magnitude (not in `NO_MAGNITUDE_KEYWORDS`).
 
-**Cards marked (5, all `n=1`).** One multi-discard card deferred:
+**Cards marked (7, all `n=1`).** The original 5 (core/cyclops/determination,
+core/cyclops/optic-blast, ssw2/ruby-summers/heir-to-legends,
+vill/juggernaut/runaway-train, xmen/havok/unleash-havok) plus the **co2e (Core
+Set 2nd Edition) reprints** of Determination + Optic Blast — co2e landed on
+`main` mid-execution via #766 (a real 14-hero set, not a stub) and its Cyclops
+reprints carry the identical cost, so marking them keeps the fix complete rather
+than shipping a fresh known-hollow. One multi-discard card deferred:
 ssw2/ruby-summers/extinction-blast (*"discard three cards"*, `n=3`) —
 documented in the marker map `_deferred`; the `remaining` counter supports
 `n>1` structurally, but the 3-sequential-prompt resolve UX is out of scope for
