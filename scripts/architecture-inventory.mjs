@@ -463,7 +463,9 @@ const FIRST_PARTY_SUBSYSTEMS = [
       'Three-tier format: Tier 1 (mandatory game setup), Tier 2 (optional card catalog), ' +
       'Tier 3 (optional replay sequence). Single source of truth is the Zod schema; ' +
       'TypeScript types are inferred; JSON Schema is auto-generated and versioned at ' +
-      '@legendary-arena/lagn@1.0.0 and published via npm and schema CDN.',
+      '@legendary-arena/lagn@1.0.0 and published via npm, schema CDN, and the public ' +
+      'GitHub repo github.com/legendary-arena/lagn-spec (MIT; a package-only snapshot ' +
+      'of packages/lagn-spec — the monorepo copy stays canonical, per WP-244 Gate 1).',
     contractSymbols: [
       'validate',
       'summarize',
