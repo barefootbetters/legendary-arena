@@ -151,15 +151,14 @@ co2e/cyclops,Cyclops,co2e,discard-to-play,executable,,,packages/game-engine/src/
 co2e/emma-frost,Emma Frost,co2e,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 co2e/gambit,Gambit,co2e,reveal-cost-attack,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-cost-attack
 co2e/hawkeye,Hawkeye,co2e,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
-co2e/hulk,Hulk,co2e,gain-wound-each,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each
 co2e/hulk,Hulk,co2e,ko-wound-reward,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward
 co2e/iron-man,Iron Man,co2e,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 co2e/nick-fury,Nick Fury,co2e,(unmarked),unmarked,,,
-co2e/rogue,Rogue,co2e,(unmarked),unmarked,,,
-co2e/spider-man,Spider-Man,co2e,rescue,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#rescue
+co2e/rogue,Rogue,co2e,optional-ko-reward,executable,WP-248,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward
 co2e/spider-man,Spider-Man,co2e,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal
 co2e/spider-man,Spider-Man,co2e,reveal-count,unsupported,,,
-co2e/storm,Storm,co2e,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
+co2e/spider-man-miles-morales,Spider-Man (Miles Morales),co2e,(unmarked),unmarked,,,
+co2e/storm,Storm,co2e,(unmarked),unmarked,,,
 co2e/thor,Thor,co2e,(unmarked),unmarked,,,
 co2e/wolverine,Wolverine,co2e,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 co2e/wolverine,Wolverine,co2e,ko-wound-reward,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward
