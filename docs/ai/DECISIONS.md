@@ -29142,3 +29142,85 @@ Protect this file.
 **Not fixed here (noted).** For villain groups and hero decks the resolved display name is the first flat card's name (e.g. "Blob" for `core/brotherhood`) rather than the group name — a pre-existing cosmetic nuance of keep-first, immaterial to the challenge-link case (scheme + mastermind, where the first card IS the group). The registry-viewer has no component mount harness, so this fix is covered by live smoke per the app's established pure-helpers-tested / component-via-smoke posture; a pure-helper extraction with a unit test is a reasonable follow-up.
 
 Protect this file.
+
+### D-24184 — `discard-to-play` hero card cost: mandatory "discard a card to play this card"
+
+**Status:** **Active** (executed 2026-07-15, WP-383 / EC-412).
+
+**User-Visible Surface:** `play.legendary-arena.com` — playing Cyclops's
+**Determination** (+3 recruit) or **Optic Blast** (+3 attack) with a spare card
+in hand now prompts the player to discard one card; playing such a card as your
+only card is no longer possible (previously the cost was silently skipped and
+the power was granted for free — surfaced in the Red Skull live game).
+
+**Context.** Five hero cards print *"To play this card, you must discard a card
+from your hand."* (core/cyclops/determination, core/cyclops/optic-blast,
+ssw2/ruby-summers/heir-to-legends, vill/juggernaut/runaway-train,
+xmen/havok/unleash-havok). The text carried no keyword marker and no engine
+handler, so the discard cost was never charged — every such card was strictly
+stronger than printed.
+
+**Decision.** Add a new `HeroKeyword` `'discard-to-play'` (union +
+`HERO_KEYWORDS`, lockstep) — a mandatory **play COST**, not a reward. Marker
+token `[keyword:discard-to-play:<n>]` (`n` = cards to discard; all 5 marked
+cards use `1`). Implementation is a **hybrid**: a pre-commit precondition in
+`playCard` (D-24185) that blocks an unpayable play, plus a mandatory
+`PendingDiscardToPlay { playerID, sourceCardId, remaining }` parked at commit by
+`heroEffectDiscardToPlay` and resolved by a new `resolveDiscardToPlay` move
+(`client: false`, D-10008) — the player picks a hand card, which moves
+hand→discard, decrementing `remaining` and front-popping at 0. The pending
+choice mirrors `return-zero-cost-discard` (D-24139) end-to-end: block-all guard
+on every action move + the `game.ts` cleanup guard; `ai.legalMoves` forced-
+resolve short-circuit; chooser-only `UIPendingDiscardToPlay` projection
+(eligible list = the whole current hand, recomputed via the imported
+`getEligibleDiscardToPlayCards` — the round-trip rule); a `DiscardToPlayPrompt.vue`
+(mandatory, no Decline) + `useTurnActions` End-Turn / Pass-Priority gate. The
+keyword carries the cost magnitude (not in `NO_MAGNITUDE_KEYWORDS`).
+
+**Cards marked (5, all `n=1`).** One multi-discard card deferred:
+ssw2/ruby-summers/extinction-blast (*"discard three cards"*, `n=3`) —
+documented in the marker map `_deferred`; the `remaining` counter supports
+`n>1` structurally, but the 3-sequential-prompt resolve UX is out of scope for
+the first ship.
+
+**Fences.** Out of scope: the reveal-N "put the rest back in any order" reorder
+gap (a separate deferred family), unpayable-play visual feedback (the engine
+no-ops the play; a grayed hand card is deferred), `n>1` multi-discard. **Sim-
+outcome cascade:** marking these cards changes the balance sweep (plays now cost
+a discard), so `mechanics:metadata` + `ledger:heroes` regenerated;
+`runtime-observed-hollows.json` was byte-identical (the marked cards did not
+shift the observed-hollow sample). **No sentinel re-pin** — `pendingDiscardToPlay`
+is an optional G field, undefined unless triggered, and no recorded fixture
+plays a marked card, so `finalStateHash` + `PRE_WP080_HASH` are byte-identical.
+`pnpm -r build` 0; engine **1965 → 1981 / 0** (+16); arena-client typecheck 0 +
+test **963 → 974** (+11).
+
+**Packet:** WP-383 (EC-412). **Executed:** 2026-07-15.
+
+Protect this file.
+
+### D-24185 — Move Validation Contract extension: card-specific pre-commit preconditions
+
+**Status:** **Active** (executed 2026-07-15, WP-383 / EC-412).
+
+**Context.** Every existing pending choice in the engine fires **after** a card
+has committed (appended to `inPlay`, base power granted) — the onPlay hook model
+has no timing that fires before commit. A mandatory "discard a card to play this
+card" cost (D-24184) needs to *withhold* the play (and its power) when the
+player cannot pay, which the post-commit hook cannot do.
+
+**Decision.** The Move Validation Contract (ARCHITECTURE.md §The Move Validation
+Contract) is extended to permit a **card-specific pre-commit precondition**: a
+move MAY, as part of Step 1 (validation, before any `G` mutation), reject a play
+based on the specific card being played and return `void` with no commit. The
+first case is `playCard`'s `discard-to-play` check (WP-383). This does not
+weaken the contract — it is still a validation-phase silent return (no throw),
+runs before the `G` mutation, and preserves "validate → gate → mutate → void".
+It is distinct from the pending-choice pattern (post-commit); use a pre-commit
+precondition only when the outcome must be withheld unless the cost is payable.
+Encoded in ARCHITECTURE.md §The Move Validation Contract and mirrored in
+`.claude/rules/architecture.md §Move Validation Contract`.
+
+**Packet:** WP-383 (EC-412). **Executed:** 2026-07-15.
+
+Protect this file.
