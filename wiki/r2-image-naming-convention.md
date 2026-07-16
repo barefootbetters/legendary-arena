@@ -86,7 +86,7 @@ image slug — image slugs come from the individual card, not the set. `sets.jso
 is therefore the **decoder ring** for any R2 path: given a four-letter
 directory, it names the set.
 
-The 40 sets and their abbreviations:
+The 41 sets and their abbreviations:
 
 | `abbr` | Set (`name`) | `type` |
 |---|---|---|
@@ -130,17 +130,29 @@ The 40 sets and their abbreviations:
 | `amwp` | Ant-Man and the Wasp | 33rd Expansion |
 | `2099` | 2099 | 34th Expansion |
 | `wpnx` | Weapon X | 35th Expansion |
+| `co2e` | Core Set (2nd Edition) | Core Set (2nd Edition) |
+
+The table order matches the `sets.json` array order — `co2e` (set #41) is
+appended after `wpnx`, not slotted by release date.
 
 > **The convert pipeline does not read `sets.json` for the abbreviation.**
 > Stage 1 ([`convert-cards-v15.mjs`](../scripts/convert-cards/convert-cards-v15.mjs))
 > carries its own hardcoded `SET_ABBR_MAP` keyed by the **upstream** source-set
-> name (`'NewMutants' → 'nmut'`) and composes every `imageUrl` from that. The
-> `abbr` values in `sets.json` are identical to `SET_ABBR_MAP`'s values by
-> construction, so the two never disagree in practice — but `sets.json` is the
-> canonical registry the running app reads, while the pipeline map is a
-> build-time convenience. Adding a new set means adding the abbreviation in
-> **both** places, and they must match, until the naming is made data-driven
-> from `sets.json` (a Work-Packet-scoped change, not in place today).
+> name (`'NewMutants' → 'nmut'`) and composes every `imageUrl` from that. For
+> the 40 sets with card data, the `abbr` values in `sets.json` match
+> `SET_ABBR_MAP`'s values exactly — but `sets.json` is the canonical registry
+> the running app reads, while the pipeline map is a build-time convenience.
+> Adding a new set means adding the abbreviation in **both** places, and they
+> must match, until the naming is made data-driven from `sets.json` (a
+> Work-Packet-scoped change, not in place today).
+>
+> **Live gap: `co2e`.** Core Set 2nd Edition (set #41) was registered in
+> `sets.json` as `co2e` but has **no** `SET_ABBR_MAP` entry yet — the two
+> currently diverge for this one set. It is harmless today because no
+> `data/cards/co2e.json` exists to convert, but `co2e` must be added to
+> `SET_ABBR_MAP` before its card data is processed, or the generated
+> `imageUrl`s will not carry the `co2e` prefix. See
+> [Card Image Acquisition](card-image-acquisition.md) → Open Questions.
 
 ### Ribbon codes by card type
 
@@ -337,7 +349,7 @@ are assigned in code rather than derived from `card-types.json` (see Edge Cases)
 ## Data Files
 
 - [`data/metadata/sets.json`](../data/metadata/sets.json) — the canonical
-  40-entry set index (`id`, `abbr`, `pkgId`, `slug`, `name`, `releaseDate`,
+  41-entry set index (`id`, `abbr`, `pkgId`, `slug`, `name`, `releaseDate`,
   `type`). Its `abbr` field is the `{setAbbr}` directory + filename prefix; the
   Registry loads it at startup.
 - `modern-master-strike/src/data/card-types.json` (upstream, sibling repo) — the

@@ -204,9 +204,13 @@ slugs before upload. See Edge Cases.
   each `rename-<set>-images.ps1` must produce exactly the
   `{setAbbr}-{ribbon}-{slug}.webp` names that convention defines (and
   that the convert pipeline emits into each card's `imageUrl`) — a
-  mismatch surfaces as a broken image in the Registry Viewer. This page
-  covers the staging steps that *produce* those names; that page defines
-  what the names must be.
+  mismatch surfaces as a broken image in the Registry Viewer. The
+  `{setAbbr}` piece is a set's **`abbr`** from
+  [`data/metadata/sets.json`](../data/metadata/sets.json), not the scrape
+  token by coincidence; that page's "Set abbreviation" section is the
+  authority for where the directory prefix comes from. This page covers
+  the staging steps that *produce* those names; that page defines what the
+  names must be.
 - **[Data & File Locations](data-file-locations.md).** The locator map
   for card JSON, the convert pipeline, and R2 key prefixes. The staging
   tree described here is the pre-pipeline holding area those locations
@@ -342,11 +346,20 @@ slugs before upload. See Edge Cases.
   exists to confirm the card titles, group slugs, and officer prefix.
   Until then, do not upload `renamed\co2e\` hero images to R2 under the
   placeholder names.
-- **Set-token ↔ set-abbreviation mapping.** The scraper output tokens
-  (`co2e`, `bkpt`, …) match the set directories but the authoritative
-  set-abbreviation list is the convert pipeline's concern; confirm a new
-  set's token against `scripts/convert-cards/` before assuming the R2
-  `{setAbbr}` matches the scrape directory name.
+- **Set-token ↔ set-abbreviation — and a `SET_ABBR_MAP` gap for co2e.**
+  A scrape/staging token (`co2e`, `bkpt`, …) must match a set's **`abbr`**
+  in [`data/metadata/sets.json`](../data/metadata/sets.json) — the
+  canonical 41-entry set registry whose `abbr` field *is* the `{setAbbr}`
+  R2 directory and filename prefix (see
+  [R2 Image Naming Convention](r2-image-naming-convention.md), "Set
+  abbreviation (`setAbbr`) — from `sets.json`"). Core Set 2nd Edition is
+  registered there as `co2e` (set #41). One gap remains: the convert
+  pipeline carries a **second**, hardcoded `SET_ABBR_MAP` (in
+  `scripts/convert-cards/convert-cards-v15.mjs`, keyed by the upstream
+  source-set name), and `co2e` is **not yet in it**. A set's abbreviation
+  must live in **both** places and match, or the generated `imageUrl` and
+  the scrape token diverge — so `co2e` needs a `SET_ABBR_MAP` entry before
+  its card data is converted (which itself waits on 2e card data, above).
 
 ## References
 
