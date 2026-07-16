@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "cardType": "hero",
   "summary": {
-    "totalRows": 647,
+    "totalRows": 646,
     "byStatus": {
-      "executable": 232,
+      "executable": 230,
       "deferred": 0,
       "condition": 5,
       "unsupported": 365,
-      "unmarked": 45
+      "unmarked": 46
     },
     "distinctMechanics": 117
   },
@@ -1537,16 +1537,6 @@
       "extId": "co2e/hulk",
       "heroName": "Hulk",
       "set": "co2e",
-      "mechanic": "gain-wound-each",
-      "status": "executable",
-      "wp": "",
-      "decision": "",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each"
-    },
-    {
-      "extId": "co2e/hulk",
-      "heroName": "Hulk",
-      "set": "co2e",
       "mechanic": "ko-wound-reward",
       "status": "executable",
       "wp": "",
@@ -1577,21 +1567,11 @@
       "extId": "co2e/rogue",
       "heroName": "Rogue",
       "set": "co2e",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
-    },
-    {
-      "extId": "co2e/spider-man",
-      "heroName": "Spider-Man",
-      "set": "co2e",
-      "mechanic": "rescue",
+      "mechanic": "optional-ko-reward",
       "status": "executable",
-      "wp": "",
+      "wp": "WP-248",
       "decision": "",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue"
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward"
     },
     {
       "extId": "co2e/spider-man",
@@ -1614,14 +1594,24 @@
       "handler": ""
     },
     {
+      "extId": "co2e/spider-man-miles-morales",
+      "heroName": "Spider-Man (Miles Morales)",
+      "set": "co2e",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
       "extId": "co2e/storm",
       "heroName": "Storm",
       "set": "co2e",
-      "mechanic": "draw",
-      "status": "executable",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
       "wp": "",
       "decision": "",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw"
+      "handler": ""
     },
     {
       "extId": "co2e/thor",

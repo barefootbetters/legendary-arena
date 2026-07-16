@@ -9,71 +9,72 @@
       "slug": "black-widow",
       "team": "avengers",
       "cardCounts": {
-        "Dangerous Rescue": 5,
-        "Mission Accomplished": 5,
-        "Covert Operation": 3,
-        "Silent Sniper": 1
+        "Covert Operation": 5,
+        "Gather Intel": 5,
+        "Dangerous Rescue": 3,
+        "Intelligence Network": 1
       },
       "cards": [
         {
-          "name": "Mission Accomplished",
-          "displayName": "Mission Accomplished",
-          "slug": "mission-accomplished",
+          "name": "Covert Operation",
+          "displayName": "Covert Operation",
+          "slug": "covert-operation",
           "rarity": 1,
           "rarityLabel": "Common 1",
           "slot": 1,
-          "hc": "tech",
-          "cost": 2,
-          "attack": null,
+          "hc": "covert",
+          "cost": 3,
+          "attack": "2+",
           "recruit": null,
           "abilities": [
-            "Draw a Card. [keyword:draw:1]",
-            "[hc:tech]: Rescue a Bystander. [keyword:rescue:1]"
+            "If you have at least 4 Bystanders in your Victory Pile, you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Gather Intel",
+          "displayName": "Gather Intel",
+          "slug": "gather-intel",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2",
+          "abilities": [
+            "[hc:tech]: Rescue a Bystander. [keyword:rescue:1] Then if you have at least 4 Bystanders in your Victory Pile, draw a card."
           ]
         },
         {
           "name": "Dangerous Rescue",
           "displayName": "Dangerous Rescue",
           "slug": "dangerous-rescue",
-          "rarity": 1,
-          "rarityLabel": "Common 2",
-          "slot": 2,
-          "hc": "covert",
-          "cost": 3,
-          "attack": "2",
-          "recruit": null,
-          "abilities": [
-            "[hc:covert]: You may KO a card from your hand or discard pile. If you do, rescue a Bystander. [keyword:optional-ko-reward:rescue:1]"
-          ]
-        },
-        {
-          "name": "Covert Operation",
-          "displayName": "Covert Operation",
-          "slug": "covert-operation",
           "rarity": 2,
           "rarityLabel": "Uncommon",
           "slot": 3,
-          "hc": "covert",
-          "cost": 4,
-          "attack": "0+",
+          "hc": "tech",
+          "cost": 5,
+          "attack": "2",
           "recruit": null,
           "abilities": [
-            "You get +1[icon:attack] for each Bystander in your Victory Pile. [keyword:attack-per-count:victory-bystanders:1]"
+            "[hc:tech]: You may KO a card from your hand or discard pile. If you do, rescue a Bystander. [keyword:optional-ko-reward:rescue:1]"
           ]
         },
         {
-          "name": "Silent Sniper",
-          "displayName": "Silent Sniper",
-          "slug": "silent-sniper",
+          "name": "Intelligence Network",
+          "displayName": "Intelligence Network",
+          "slug": "intelligence-network",
           "rarity": 3,
           "rarityLabel": "Rare",
           "slot": 4,
           "hc": "covert",
           "cost": 7,
-          "attack": "4",
+          "attack": "0+",
           "recruit": null,
           "abilities": [
-            "Defeat a Villain or Mastermind that has a Bystander."
+            "Draw a card. [keyword:draw:1]",
+            "Rescue a Bystander. [keyword:rescue:1]",
+            "Then you get +1[icon:attack] for each Bystander in your Victory Pile. [keyword:attack-per-count:victory-bystanders:1]"
           ]
         }
       ],
@@ -81,33 +82,33 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-black-widow-common-1.webp",
-          "sides": [
-            "mission-accomplished"
-          ]
-        },
-        {
-          "id": "p2",
-          "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-black-widow-common-2.webp",
-          "sides": [
-            "dangerous-rescue"
-          ]
-        },
-        {
-          "id": "p3",
-          "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-black-widow-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-black-widow-covert-operation.webp",
           "sides": [
             "covert-operation"
           ]
         },
         {
+          "id": "p2",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-black-widow-gather-intel.webp",
+          "sides": [
+            "gather-intel"
+          ]
+        },
+        {
+          "id": "p3",
+          "count": 3,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-black-widow-dangerous-rescue.webp",
+          "sides": [
+            "dangerous-rescue"
+          ]
+        },
+        {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-black-widow-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-black-widow-intelligence-network.webp",
           "sides": [
-            "silent-sniper"
+            "intelligence-network"
           ]
         }
       ]
@@ -120,7 +121,7 @@
       "cardCounts": {
         "Avengers Assemble!": 5,
         "Perfect Teamwork": 5,
-        "Diving Block": 3,
+        "Vibranium Shield": 3,
         "A Day Unlike Any Other": 1
       },
       "cards": [
@@ -134,9 +135,9 @@
           "hc": "instinct",
           "cost": 3,
           "attack": null,
-          "recruit": "0+",
+          "recruit": "1+",
           "abilities": [
-            "You get +1[icon:recruit] for each color of Hero you have."
+            "You get +1[icon:recruit] for each Hero Class you have."
           ]
         },
         {
@@ -148,16 +149,16 @@
           "slot": 2,
           "hc": "strength",
           "cost": 4,
-          "attack": "0+",
+          "attack": "1+",
           "recruit": null,
           "abilities": [
-            "You get +1[icon:attack] for each color of Hero you have."
+            "You get +1[icon:attack] for each Hero Class you have."
           ]
         },
         {
-          "name": "Diving Block",
-          "displayName": "Diving Block",
-          "slug": "diving-block",
+          "name": "Vibranium Shield",
+          "displayName": "Vibranium Shield",
+          "slug": "vibranium-shield",
           "rarity": 2,
           "rarityLabel": "Uncommon",
           "slot": 3,
@@ -166,7 +167,7 @@
           "attack": "4",
           "recruit": null,
           "abilities": [
-            "If you would gain a Wound, you may reveal this card and draw a card instead."
+            "Once per turn, when a player gains a Wound, you may reveal this card to return that Wound to the Wound Deck and draw a card."
           ]
         },
         {
@@ -178,10 +179,11 @@
           "slot": 4,
           "hc": "covert",
           "cost": 7,
-          "attack": "3+",
+          "attack": "2+",
           "recruit": null,
           "abilities": [
-            "[team:avengers]: You get +3[icon:attack] for each other [team:avengers] you played this turn."
+            "You get +1[icon:attack] for each Hero Class you have.",
+            "[team:avengers]: You also get +1[icon:attack] for each other [team:avengers] Hero you played this turn."
           ]
         }
       ],
@@ -189,7 +191,7 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-captain-america-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-captain-america-avengers-assemble.webp",
           "sides": [
             "avengers-assemble"
           ]
@@ -197,7 +199,7 @@
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-captain-america-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-captain-america-perfect-teamwork.webp",
           "sides": [
             "perfect-teamwork"
           ]
@@ -205,15 +207,15 @@
         {
           "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-captain-america-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-captain-america-vibranium-shield.webp",
           "sides": [
-            "diving-block"
+            "vibranium-shield"
           ]
         },
         {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-captain-america-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-captain-america-a-day-unlike-any-other.webp",
           "sides": [
             "a-day-unlike-any-other"
           ]
@@ -274,7 +276,7 @@
           "attack": "4",
           "recruit": null,
           "abilities": [
-            "If a card effect makes you discard this card, you may return this card to your hand."
+            "When a card effect causes you to discard this card from your hand, you may return it to your hand."
           ]
         },
         {
@@ -289,7 +291,9 @@
           "attack": "6+",
           "recruit": null,
           "abilities": [
-            "[team:x-men]: You get +2[icon:attack] for each other [team:x-men] Hero you played this turn."
+            "To play this card, you must discard a card from your hand. [keyword:discard-to-play:1]",
+            "You get +1[icon:attack] for each card you discarded from your hand this turn.",
+            "[team:x-men]: You also get +1[icon:attack] for each other [team:x-men] Hero you played this turn."
           ]
         }
       ],
@@ -297,7 +301,7 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-cyclops-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-cyclops-determination.webp",
           "sides": [
             "determination"
           ]
@@ -305,7 +309,7 @@
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-cyclops-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-cyclops-optic-blast.webp",
           "sides": [
             "optic-blast"
           ]
@@ -313,7 +317,7 @@
         {
           "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-cyclops-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-cyclops-unending-energy.webp",
           "sides": [
             "unending-energy"
           ]
@@ -321,7 +325,7 @@
         {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-cyclops-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-cyclops-x-men-united.webp",
           "sides": [
             "x-men-united"
           ]
@@ -367,7 +371,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "[hc:covert]: You may play the top card of the Villain Deck. If you do, you get +2[icon:attack]."
+            "[hc:covert]: You may get +3[icon:attack]. If you do, reveal the top card of the Villain Deck and if it is a Master Strike, play it."
           ]
         },
         {
@@ -378,7 +382,7 @@
           "rarityLabel": "Uncommon",
           "slot": 3,
           "hc": "instinct",
-          "cost": 5,
+          "cost": 6,
           "attack": "3",
           "recruit": null,
           "abilities": [
@@ -394,10 +398,10 @@
           "slot": 4,
           "hc": "strength",
           "cost": 7,
-          "attack": "5",
-          "recruit": "0+",
+          "attack": "4",
+          "recruit": null,
           "abilities": [
-            "Whenever you defeat a Villain or Mastermind this turn, you get +3[icon:recruit]."
+            "If a Master Strike would occur, you may reveal this card to KO that Master Strike and shuffle a card from the Bystander Deck into the Villain Deck instead."
           ]
         }
       ],
@@ -405,7 +409,7 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-emma-frost-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-emma-frost-mental-discipline.webp",
           "sides": [
             "mental-discipline"
           ]
@@ -413,7 +417,7 @@
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-emma-frost-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-emma-frost-shadowed-thoughts.webp",
           "sides": [
             "shadowed-thoughts"
           ]
@@ -421,7 +425,7 @@
         {
           "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-emma-frost-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-emma-frost-psychic-link.webp",
           "sides": [
             "psychic-link"
           ]
@@ -429,7 +433,7 @@
         {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-emma-frost-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-emma-frost-diamond-form.webp",
           "sides": [
             "diamond-form"
           ]
@@ -442,10 +446,10 @@
       "slug": "gambit",
       "team": "x-men",
       "cardCounts": {
-        "Card Shark": 5,
         "Stack the Deck": 5,
+        "Kinetic Card": 5,
         "Hypnotic Charm": 3,
-        "High Stakes Jackpot": 1
+        "High-Stakes Jackpot": 1
       },
       "cards": [
         {
@@ -464,39 +468,39 @@
           ]
         },
         {
-          "name": "Hypnotic Charm",
-          "displayName": "Hypnotic Charm",
-          "slug": "hypnotic-charm",
+          "name": "Kinetic Card",
+          "displayName": "Kinetic Card",
+          "slug": "kinetic-card",
           "rarity": 1,
           "rarityLabel": "Common 2",
           "slot": 2,
-          "hc": "instinct",
-          "cost": 3,
-          "attack": null,
-          "recruit": "2",
-          "abilities": [
-            "Reveal the top card of your deck. Discard it or put it back.",
-            "[hc:instinct]: Do the same thing to each other player's deck."
-          ]
-        },
-        {
-          "name": "Card Shark",
-          "displayName": "Card Shark",
-          "slug": "card-shark",
-          "rarity": 2,
-          "rarityLabel": "Uncommon",
-          "slot": 3,
           "hc": "ranged",
-          "cost": 4,
+          "cost": 3,
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "Reveal the top card of your deck. If it's an [team:x-men] Hero, draw it."
+            "Reveal the top card of your deck. If it's an [team:x-men] Hero, draw it. Otherwise, discard it or put it back."
           ]
         },
         {
-          "name": "High Stakes Jackpot",
-          "displayName": "High Stakes Jackpot",
+          "name": "Hypnotic Charm",
+          "displayName": "Hypnotic Charm",
+          "slug": "hypnotic-charm",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 5,
+          "attack": null,
+          "recruit": "3",
+          "abilities": [
+            "For each player, reveal the top card of their deck and you decide if that player discards it or puts it back.",
+            "[hc:covert]: You may KO the card you revealed from your own deck."
+          ]
+        },
+        {
+          "name": "High-Stakes Jackpot",
+          "displayName": "High-Stakes Jackpot",
           "slug": "high-stakes-jackpot",
           "rarity": 3,
           "rarityLabel": "Rare",
@@ -506,7 +510,7 @@
           "attack": "4+",
           "recruit": null,
           "abilities": [
-            "Reveal the top card of your deck. You get +[icon:attack] equal to that card's cost. [keyword:reveal-cost-attack]"
+            "Reveal the top card of your deck. You get +[icon:attack] equal to that card's cost. [keyword:reveal-cost-attack] Discard it or put it back."
           ]
         }
       ],
@@ -514,31 +518,31 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-gambit-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-gambit-stack-the-deck.webp",
           "sides": [
             "stack-the-deck"
           ]
         },
         {
           "id": "p2",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-gambit-kinetic-card.webp",
+          "sides": [
+            "kinetic-card"
+          ]
+        },
+        {
+          "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-gambit-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-gambit-hypnotic-charm.webp",
           "sides": [
             "hypnotic-charm"
           ]
         },
         {
-          "id": "p3",
-          "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-gambit-uncommon.webp",
-          "sides": [
-            "card-shark"
-          ]
-        },
-        {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-gambit-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-gambit-high-stakes-jackpot.webp",
           "sides": [
             "high-stakes-jackpot"
           ]
@@ -551,20 +555,35 @@
       "slug": "hawkeye",
       "team": "avengers",
       "cardCounts": {
+        "Trick Arrow": 5,
         "Quick Draw": 5,
-        "Team Player": 5,
-        "Covering Fire": 3,
-        "Impossible Trick Shot": 1
+        "Supporting Fire": 3,
+        "Pinpoint Precision": 1
       },
       "cards": [
+        {
+          "name": "Trick Arrow",
+          "displayName": "Trick Arrow",
+          "slug": "trick-arrow",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 2,
+          "attack": "1+",
+          "recruit": null,
+          "abilities": [
+            "If you drew any cards this turn, you get +2[icon:attack]."
+          ]
+        },
         {
           "name": "Quick Draw",
           "displayName": "Quick Draw",
           "slug": "quick-draw",
           "rarity": 1,
-          "rarityLabel": "Common 1",
-          "slot": 1,
-          "hc": "instinct",
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
           "cost": 3,
           "attack": "1",
           "recruit": null,
@@ -573,48 +592,34 @@
           ]
         },
         {
-          "name": "Team Player",
-          "displayName": "Team Player",
-          "slug": "team-player",
-          "rarity": 1,
-          "rarityLabel": "Common 2",
-          "slot": 2,
-          "hc": "tech",
-          "cost": 4,
-          "attack": "2+",
-          "recruit": null,
-          "abilities": [
-            "[team:avengers]: You get +1[icon:attack]."
-          ]
-        },
-        {
-          "name": "Covering Fire",
-          "displayName": "Covering Fire",
-          "slug": "covering-fire",
+          "name": "Supporting Fire",
+          "displayName": "Supporting Fire",
+          "slug": "supporting-fire",
           "rarity": 2,
           "rarityLabel": "Uncommon",
           "slot": 3,
-          "hc": "tech",
+          "hc": "ranged",
           "cost": 5,
-          "attack": "3",
+          "attack": "2",
           "recruit": null,
           "abilities": [
-            "[hc:tech]: Choose one: each other player draws a card or each other player discards a card."
+            "[hc:ranged]: Each player draws a card."
           ]
         },
         {
-          "name": "Impossible Trick Shot",
-          "displayName": "Impossible Trick Shot",
-          "slug": "impossible-trick-shot",
+          "name": "Pinpoint Precision",
+          "displayName": "Pinpoint Precision",
+          "slug": "pinpoint-precision",
           "rarity": 3,
           "rarityLabel": "Rare",
           "slot": 4,
-          "hc": "tech",
+          "hc": "ranged",
           "cost": 7,
-          "attack": "5",
+          "attack": "5+",
           "recruit": null,
           "abilities": [
-            "Whenever you defeat a Villain or Mastermind this turn, rescue three Bystanders."
+            "Whenever you fight the Mastermind this turn, look at two of their face down Mastermind Tactics at random and choose which one to fight.",
+            "[team:avengers]: You get +2[icon:attack]."
           ]
         }
       ],
@@ -622,33 +627,33 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hawkeye-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hawkeye-trick-arrow.webp",
           "sides": [
-            "quick-draw"
+            "trick-arrow"
           ]
         },
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hawkeye-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hawkeye-quick-draw.webp",
           "sides": [
-            "team-player"
+            "quick-draw"
           ]
         },
         {
           "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hawkeye-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hawkeye-supporting-fire.webp",
           "sides": [
-            "covering-fire"
+            "supporting-fire"
           ]
         },
         {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hawkeye-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hawkeye-pinpoint-precision.webp",
           "sides": [
-            "impossible-trick-shot"
+            "pinpoint-precision"
           ]
         }
       ]
@@ -659,16 +664,16 @@
       "slug": "hulk",
       "team": "avengers",
       "cardCounts": {
-        "Growing Anger": 5,
-        "Unstoppable Hulk": 5,
+        "Growing Rage": 5,
+        "Don't Make Me Angry": 5,
         "Crazed Rampage": 3,
         "Hulk Smash!": 1
       },
       "cards": [
         {
-          "name": "Growing Anger",
-          "displayName": "Growing Anger",
-          "slug": "growing-anger",
+          "name": "Growing Rage",
+          "displayName": "Growing Rage",
+          "slug": "growing-rage",
           "rarity": 1,
           "rarityLabel": "Common 1",
           "slot": 1,
@@ -681,9 +686,9 @@
           ]
         },
         {
-          "name": "Unstoppable Hulk",
-          "displayName": "Unstoppable Hulk",
-          "slug": "unstoppable-hulk",
+          "name": "Don't Make Me Angry",
+          "displayName": "Don't Make Me Angry",
+          "slug": "dont-make-me-angry",
           "rarity": 1,
           "rarityLabel": "Common 2",
           "slot": 2,
@@ -707,7 +712,7 @@
           "attack": "4",
           "recruit": null,
           "abilities": [
-            "Each player gains a Wound. [keyword:gain-wound-each]"
+            "Each player reveals another [hc:strength] Hero or gains a Wound."
           ]
         },
         {
@@ -722,7 +727,7 @@
           "attack": "5+",
           "recruit": null,
           "abilities": [
-            "[hc:strength]: You get +5[icon:attack]."
+            "[hc:strength]: You may gain a Wound. If you do, you get +5[icon:attack]."
           ]
         }
       ],
@@ -730,23 +735,23 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hulk-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hulk-growing-rage.webp",
           "sides": [
-            "growing-anger"
+            "growing-rage"
           ]
         },
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hulk-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hulk-dont-make-me-angry.webp",
           "sides": [
-            "unstoppable-hulk"
+            "dont-make-me-angry"
           ]
         },
         {
           "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hulk-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hulk-crazed-rampage.webp",
           "sides": [
             "crazed-rampage"
           ]
@@ -754,7 +759,7 @@
         {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hulk-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hulk-hulk-smash.webp",
           "sides": [
             "hulk-smash"
           ]
@@ -769,7 +774,7 @@
       "cardCounts": {
         "Endless Invention": 5,
         "Repulsor Rays": 5,
-        "Arc Reactor": 3,
+        "Overloaded Unibeam": 3,
         "Quantum Breakthrough": 1
       },
       "cards": [
@@ -797,17 +802,17 @@
           "rarityLabel": "Common 2",
           "slot": 2,
           "hc": "ranged",
-          "cost": 3,
+          "cost": 4,
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "[hc:ranged]: You get +1[icon:attack]."
+            "If you played at least 8 other cards this turn, you get +2[icon:attack]."
           ]
         },
         {
-          "name": "Arc Reactor",
-          "displayName": "Arc Reactor",
-          "slug": "arc-reactor",
+          "name": "Overloaded Unibeam",
+          "displayName": "Overloaded Unibeam",
+          "slug": "overloaded-unibeam",
           "rarity": 2,
           "rarityLabel": "Uncommon",
           "slot": 3,
@@ -816,7 +821,7 @@
           "attack": "3+",
           "recruit": null,
           "abilities": [
-            "[hc:tech]: You get +1[icon:attack] for each other[hc:tech] Hero you played this turn."
+            "[hc:tech]: You get +1[icon:attack] for each other [hc:tech] Hero you played this turn."
           ]
         },
         {
@@ -827,12 +832,12 @@
           "rarityLabel": "Rare",
           "slot": 4,
           "hc": "tech",
-          "cost": 7,
+          "cost": 8,
           "attack": null,
           "recruit": null,
           "abilities": [
             "Draw two cards. [keyword:draw:2]",
-            "[hc:tech]: Draw two more cards."
+            "[team:avengers]: Draw two more cards."
           ]
         }
       ],
@@ -840,7 +845,7 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-iron-man-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-iron-man-endless-invention.webp",
           "sides": [
             "endless-invention"
           ]
@@ -848,7 +853,7 @@
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-iron-man-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-iron-man-repulsor-rays.webp",
           "sides": [
             "repulsor-rays"
           ]
@@ -856,15 +861,15 @@
         {
           "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-iron-man-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-iron-man-overloaded-unibeam.webp",
           "sides": [
-            "arc-reactor"
+            "overloaded-unibeam"
           ]
         },
         {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-iron-man-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-iron-man-quantum-breakthrough.webp",
           "sides": [
             "quantum-breakthrough"
           ]
@@ -877,55 +882,55 @@
       "slug": "nick-fury",
       "team": "shield",
       "cardCounts": {
-        "Battlefield Promotion": 5,
-        "High-Tech Weaponry": 5,
-        "Legendary Commander": 3,
+        "Stealth Assault Squad": 5,
+        "Weapon Bank": 5,
+        "Battlefield Promotion": 3,
         "Pure Fury": 1
       },
       "cards": [
         {
-          "name": "High-Tech Weaponry",
-          "displayName": "High-Tech Weaponry",
-          "slug": "high-tech-weaponry",
+          "name": "Stealth Assault Squad",
+          "displayName": "Stealth Assault Squad",
+          "slug": "stealth-assault-squad",
           "rarity": 1,
           "rarityLabel": "Common 1",
           "slot": 1,
+          "hc": "covert",
+          "cost": 2,
+          "attack": "1+",
+          "recruit": null,
+          "abilities": [
+            "You get +2[icon:attack] if you played another [team:shield] Hero that costs 1 or more this turn."
+          ]
+        },
+        {
+          "name": "Weapon Bank",
+          "displayName": "Weapon Bank",
+          "slug": "weapon-bank",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
           "hc": "tech",
-          "cost": 3,
+          "cost": 4,
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "[hc:tech]: You get +1[icon:attack]."
+            "[hc:tech]: If the Bank is empty, you get +2[icon:attack]."
           ]
         },
         {
           "name": "Battlefield Promotion",
           "displayName": "Battlefield Promotion",
           "slug": "battlefield-promotion",
-          "rarity": 1,
-          "rarityLabel": "Common 2",
-          "slot": 2,
-          "hc": "covert",
-          "cost": 4,
-          "attack": null,
-          "recruit": null,
-          "abilities": [
-            "You may KO a [team:shield] Hero from your hand or discard pile. If you do, you may gain a S.H.I.E.L.D. Officer to your hand."
-          ]
-        },
-        {
-          "name": "Legendary Commander",
-          "displayName": "Legendary Commander",
-          "slug": "legendary-commander",
           "rarity": 2,
           "rarityLabel": "Uncommon",
           "slot": 3,
-          "hc": "strength",
-          "cost": 6,
-          "attack": "1+",
+          "hc": "covert",
+          "cost": 5,
+          "attack": "2",
           "recruit": null,
           "abilities": [
-            "You get +1[icon:attack] for each other[team:shield] Hero you played this turn."
+            "[hc:covert]: You may KO a [team:shield] Hero from your hand or discard pile. If you do, reveal the top three cards of the Officer Deck. You may gain one of them to your hand. Put the rest back on the bottom of that deck."
           ]
         },
         {
@@ -940,7 +945,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "Defeat any Villain or Mastermind whose [icon:attack] is less than the number of [team:shield] Heroes in the KO pile."
+            "You may KO a [team:shield] Hero from your hand or discard pile. Then you may fight any Villain or Mastermind for free whose [icon:attack] is less than the number of [team:shield] Heroes in the KO pile."
           ]
         }
       ],
@@ -948,31 +953,31 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-nick-fury-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-nick-fury-stealth-assault-squad.webp",
           "sides": [
-            "high-tech-weaponry"
+            "stealth-assault-squad"
           ]
         },
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-nick-fury-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-nick-fury-weapon-bank.webp",
           "sides": [
-            "battlefield-promotion"
+            "weapon-bank"
           ]
         },
         {
           "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-nick-fury-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-nick-fury-battlefield-promotion.webp",
           "sides": [
-            "legendary-commander"
+            "battlefield-promotion"
           ]
         },
         {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-nick-fury-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-nick-fury-pure-fury.webp",
           "sides": [
             "pure-fury"
           ]
@@ -985,10 +990,10 @@
       "slug": "rogue",
       "team": "x-men",
       "cardCounts": {
-        "Borrowed Brawn": 5,
         "Energy Drain": 5,
-        "Copy Powers": 3,
-        "Steal Abilities": 1
+        "Borrowed Brawn": 5,
+        "Stolen Powers": 3,
+        "Grand Larceny": 1
       },
       "cards": [
         {
@@ -1001,9 +1006,9 @@
           "hc": "covert",
           "cost": 3,
           "attack": null,
-          "recruit": "2+",
+          "recruit": "1+",
           "abilities": [
-            "[hc:covert]: You may KO a card from your hand or discard pile. If you do, you get +1[icon:recruit]."
+            "[hc:covert]: You may KO a card from your hand or discard pile. If you do, you get +2[icon:recruit]. [keyword:optional-ko-reward:recruit:2]"
           ]
         },
         {
@@ -1022,9 +1027,9 @@
           ]
         },
         {
-          "name": "Copy Powers",
-          "displayName": "Copy Powers",
-          "slug": "copy-powers",
+          "name": "Stolen Powers",
+          "displayName": "Stolen Powers",
+          "slug": "stolen-powers",
           "rarity": 2,
           "rarityLabel": "Uncommon",
           "slot": 3,
@@ -1033,22 +1038,22 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "Play this card as a copy of another Hero you played this turn. This card is both [hc:covert] and the color you copy."
+            "Play this card as a copy of one of your Heroes that you played this turn."
           ]
         },
         {
-          "name": "Steal Abilities",
-          "displayName": "Steal Abilities",
-          "slug": "steal-abilities",
+          "name": "Grand Larceny",
+          "displayName": "Grand Larceny",
+          "slug": "grand-larceny",
           "rarity": 3,
           "rarityLabel": "Rare",
           "slot": 4,
-          "hc": "strength",
+          "hc": "covert",
           "cost": 8,
-          "attack": "4",
+          "attack": "5",
           "recruit": null,
           "abilities": [
-            "Each player discards the top card of their deck. Play a copy of each of those cards."
+            "[team:x-men]: Each player discards the top card of their deck. Play a copy of one of those cards."
           ]
         }
       ],
@@ -1056,7 +1061,7 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-rogue-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-rogue-energy-drain.webp",
           "sides": [
             "energy-drain"
           ]
@@ -1064,7 +1069,7 @@
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-rogue-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-rogue-borrowed-brawn.webp",
           "sides": [
             "borrowed-brawn"
           ]
@@ -1072,17 +1077,17 @@
         {
           "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-rogue-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-rogue-stolen-powers.webp",
           "sides": [
-            "copy-powers"
+            "stolen-powers"
           ]
         },
         {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-rogue-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-rogue-grand-larceny.webp",
           "sides": [
-            "steal-abilities"
+            "grand-larceny"
           ]
         }
       ]
@@ -1093,71 +1098,73 @@
       "slug": "spider-man",
       "team": "spider-friends",
       "cardCounts": {
-        "Astonishing Strength": 5,
-        "Great Responsibility": 5,
-        "Web-Shooters": 3,
-        "The Amazing Spider-Man": 1
+        "Witty Banter": 5,
+        "Web-Shooters": 5,
+        "Astonishing Strength": 3,
+        "With Great Power...": 1
       },
       "cards": [
         {
-          "name": "Astonishing Strength",
-          "displayName": "Astonishing Strength",
-          "slug": "astonishing-strength",
+          "name": "Witty Banter",
+          "displayName": "Witty Banter",
+          "slug": "witty-banter",
           "rarity": 1,
           "rarityLabel": "Common 1",
           "slot": 1,
-          "hc": "strength",
-          "cost": 2,
-          "attack": null,
-          "recruit": "1",
-          "abilities": [
-            "Reveal the top card of your deck. If that card costs 2[icon:vp] or less, draw it. [keyword:reveal]"
-          ]
-        },
-        {
-          "name": "Great Responsibility",
-          "displayName": "Great Responsibility",
-          "slug": "great-responsibility",
-          "rarity": 1,
-          "rarityLabel": "Common 2",
-          "slot": 2,
           "hc": "instinct",
           "cost": 2,
-          "attack": "1",
+          "attack": "2",
           "recruit": null,
           "abilities": [
-            "Reveal the top card of your deck. If that card costs 2[icon:vp] or less, draw it. [keyword:reveal]"
+            "[hc:instinct]: Gain a Sidekick."
           ]
         },
         {
           "name": "Web-Shooters",
           "displayName": "Web-Shooters",
           "slug": "web-shooters",
-          "rarity": 2,
-          "rarityLabel": "Uncommon",
-          "slot": 3,
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
           "hc": "tech",
           "cost": 2,
-          "attack": null,
+          "attack": "1+",
           "recruit": null,
           "abilities": [
-            "Rescue a Bystander. [keyword:rescue:1]",
-            "Reveal the top card of your deck. If that card costs 2[icon:vp] or less, draw it. [keyword:reveal]"
+            "Reveal the top card of your deck. If it costs 2 or less, draw it. [keyword:reveal]",
+            "[hc:tech]: You get +1[icon:attack]."
           ]
         },
         {
-          "name": "The Amazing Spider-Man",
-          "displayName": "The Amazing Spider-Man",
-          "slug": "the-amazing-spider-man",
+          "name": "Astonishing Strength",
+          "displayName": "Astonishing Strength",
+          "slug": "astonishing-strength",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 2,
+          "attack": "1",
+          "recruit": null,
+          "abilities": [
+            "Reveal the top card of your deck. If it costs 2 or less, draw it. [keyword:reveal]",
+            "[hc:strength]: If that card costs 0, you may KO it instead."
+          ]
+        },
+        {
+          "name": "With Great Power...",
+          "displayName": "With Great Power...",
+          "slug": "with-great-power",
           "rarity": 3,
           "rarityLabel": "Rare",
           "slot": 4,
-          "hc": "covert",
+          "hc": "instinct",
           "cost": 2,
           "attack": null,
           "recruit": null,
           "abilities": [
-            "Reveal the top three cards of your deck. Put any that cost 2[icon:vp] or less into your hand. Put the rest back in any order. [keyword:reveal:cost-lte-2:draw][keyword:reveal-count:3]"
+            "Reveal the top two cards of your deck. Draw each of them that costs 2 or less. Put the rest back in any order. [keyword:reveal:cost-lte-2:draw][keyword:reveal-count:2]",
+            "[team:spider-friends]: Instead, rescue a Bystander then do the above effect but revealing three cards."
           ]
         }
       ],
@@ -1165,33 +1172,33 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-witty-banter.webp",
           "sides": [
-            "astonishing-strength"
+            "witty-banter"
           ]
         },
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-common-2.webp",
-          "sides": [
-            "great-responsibility"
-          ]
-        },
-        {
-          "id": "p3",
-          "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-web-shooters.webp",
           "sides": [
             "web-shooters"
           ]
         },
         {
+          "id": "p3",
+          "count": 3,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-astonishing-strength.webp",
+          "sides": [
+            "astonishing-strength"
+          ]
+        },
+        {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-with-great-power.webp",
           "sides": [
-            "the-amazing-spider-man"
+            "with-great-power"
           ]
         }
       ]
@@ -1202,25 +1209,25 @@
       "slug": "storm",
       "team": "x-men",
       "cardCounts": {
-        "Gathering Stormclouds": 5,
+        "Revitalizing Rain": 5,
         "Lightning Bolt": 5,
         "Spinning Cyclone": 3,
         "Tidal Wave": 1
       },
       "cards": [
         {
-          "name": "Gathering Stormclouds",
-          "displayName": "Gathering Stormclouds",
-          "slug": "gathering-stormclouds",
+          "name": "Revitalizing Rain",
+          "displayName": "Revitalizing Rain",
+          "slug": "revitalizing-rain",
           "rarity": 1,
           "rarityLabel": "Common 1",
           "slot": 1,
           "hc": "ranged",
           "cost": 3,
           "attack": null,
-          "recruit": "2",
+          "recruit": "2+",
           "abilities": [
-            "[hc:ranged]:  Draw a card. [keyword:draw:1]"
+            "[hc:ranged]: You get +2[icon:recruit]."
           ]
         },
         {
@@ -1232,10 +1239,11 @@
           "slot": 2,
           "hc": "ranged",
           "cost": 4,
-          "attack": "2",
+          "attack": "2+",
           "recruit": null,
           "abilities": [
-            "Any Villain you fight on the Rooftops this turn gets -2[icon:attack]."
+            "You get +2[icon:attack] usable only against Villains on the Rooftops.",
+            "[hc:ranged]: You may use this bonus [icon:attack] against the Mastermind instead."
           ]
         },
         {
@@ -1250,8 +1258,7 @@
           "attack": "4",
           "recruit": null,
           "abilities": [
-            "You may move a Villain to a new city space. Rescue any Bystanders captured by that Villain.",
-            "(If you move a Villain to a city space that already has Villain, swap them.)"
+            "You may move a Villain to another city space. If another Villain is already there, swap them."
           ]
         },
         {
@@ -1263,11 +1270,11 @@
           "slot": 4,
           "hc": "ranged",
           "cost": 7,
-          "attack": "5",
+          "attack": "4+",
           "recruit": null,
           "abilities": [
-            "Any Villain you fight on the Bridge this turn gets -2[icon:attack].",
-            "[hc:ranged]: The Mastermind gets -2[icon:attack] this turn."
+            "You get +3[icon:attack] usable only against Villains in the Sewers or Bridge.",
+            "[hc:ranged]: You may use this bonus [icon:attack] against the Mastermind instead."
           ]
         }
       ],
@@ -1275,15 +1282,15 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-storm-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-storm-revitalizing-rain.webp",
           "sides": [
-            "gathering-stormclouds"
+            "revitalizing-rain"
           ]
         },
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-storm-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-storm-lightning-bolt.webp",
           "sides": [
             "lightning-bolt"
           ]
@@ -1291,7 +1298,7 @@
         {
           "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-storm-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-storm-spinning-cyclone.webp",
           "sides": [
             "spinning-cyclone"
           ]
@@ -1299,7 +1306,7 @@
         {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-storm-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-storm-tidal-wave.webp",
           "sides": [
             "tidal-wave"
           ]
@@ -1312,55 +1319,55 @@
       "slug": "thor",
       "team": "avengers",
       "cardCounts": {
+        "Glory of Asgard": 5,
         "Odinson": 5,
-        "Surge of Power": 5,
-        "Call Lightning": 3,
+        "Spark of the Divine": 3,
         "God of Thunder": 1
       },
       "cards": [
         {
-          "name": "Odinson",
-          "displayName": "Odinson",
-          "slug": "odinson",
+          "name": "Glory of Asgard",
+          "displayName": "Glory of Asgard",
+          "slug": "glory-of-asgard",
           "rarity": 1,
           "rarityLabel": "Common 1",
           "slot": 1,
           "hc": "strength",
           "cost": 3,
+          "attack": "0+",
+          "recruit": "2",
+          "abilities": [
+            "Once this turn, if you made at least 8[icon:recruit] this turn, you get +3[icon:attack]."
+          ]
+        },
+        {
+          "name": "Odinson",
+          "displayName": "Odinson",
+          "slug": "odinson",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 5,
           "attack": null,
-          "recruit": "2+",
+          "recruit": "3+",
           "abilities": [
             "[hc:strength]: You get +2[icon:recruit]."
           ]
         },
         {
-          "name": "Surge of Power",
-          "displayName": "Surge of Power",
-          "slug": "surge-of-power",
-          "rarity": 1,
-          "rarityLabel": "Common 2",
-          "slot": 2,
-          "hc": "ranged",
-          "cost": 4,
-          "attack": "0+",
-          "recruit": "2",
-          "abilities": [
-            "If you made 8 or more [icon:recruit] this turn, you get +3[icon:attack]."
-          ]
-        },
-        {
-          "name": "Call Lightning",
-          "displayName": "Call Lightning",
-          "slug": "call-lightning",
+          "name": "Spark of the Divine",
+          "displayName": "Spark of the Divine",
+          "slug": "spark-of-the-divine",
           "rarity": 2,
           "rarityLabel": "Uncommon",
           "slot": 3,
           "hc": "ranged",
           "cost": 6,
-          "attack": "3+",
-          "recruit": null,
+          "attack": "0+",
+          "recruit": "3",
           "abilities": [
-            "[hc:ranged]: You get +3[icon:attack]."
+            "Once this turn, if you made at least 8[icon:recruit] this turn, you may KO a card from your hand or discard pile. If you do, you get +3[icon:attack]."
           ]
         },
         {
@@ -1370,12 +1377,12 @@
           "rarity": 3,
           "rarityLabel": "Rare",
           "slot": 4,
-          "hc": "ranged",
+          "hc": "strength",
           "cost": 8,
           "attack": "0+",
           "recruit": "5",
           "abilities": [
-            "You can use [icon:recruit] as [icon:attack] this turn."
+            "You can spend any amount of your [icon:recruit] as [icon:attack] this turn."
           ]
         }
       ],
@@ -1383,31 +1390,31 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-thor-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-thor-glory-of-asgard.webp",
           "sides": [
-            "odinson"
+            "glory-of-asgard"
           ]
         },
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-thor-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-thor-odinson.webp",
           "sides": [
-            "surge-of-power"
+            "odinson"
           ]
         },
         {
           "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-thor-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-thor-spark-of-the-divine.webp",
           "sides": [
-            "call-lightning"
+            "spark-of-the-divine"
           ]
         },
         {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-thor-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-thor-god-of-thunder.webp",
           "sides": [
             "god-of-thunder"
           ]
@@ -1450,8 +1457,8 @@
           "slot": 2,
           "hc": "instinct",
           "cost": 3,
-          "attack": "2",
-          "recruit": null,
+          "attack": null,
+          "recruit": "2",
           "abilities": [
             "You may KO a Wound from your hand or discard pile. If you do, draw a card. [keyword:ko-wound-reward:draw:1]"
           ]
@@ -1464,7 +1471,7 @@
           "rarityLabel": "Uncommon",
           "slot": 3,
           "hc": "instinct",
-          "cost": 5,
+          "cost": 6,
           "attack": "2",
           "recruit": null,
           "abilities": [
@@ -1484,7 +1491,7 @@
           "recruit": null,
           "abilities": [
             "Draw three cards. [keyword:draw:3]",
-            "[hc:instinct]: You get +1[icon:attack] for each extra card you've drawn this turn."
+            "[hc:instinct]: You get +1[icon:attack] for each card you draw this turn."
           ]
         }
       ],
@@ -1492,7 +1499,7 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-wolverine-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-wolverine-keen-senses.webp",
           "sides": [
             "keen-senses"
           ]
@@ -1500,7 +1507,7 @@
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-wolverine-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-wolverine-healing-factor.webp",
           "sides": [
             "healing-factor"
           ]
@@ -1508,7 +1515,7 @@
         {
           "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-wolverine-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-wolverine-frenzied-slashing.webp",
           "sides": [
             "frenzied-slashing"
           ]
@@ -1516,9 +1523,117 @@
         {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-wolverine-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-wolverine-berserker-rage.webp",
           "sides": [
             "berserker-rage"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "name": "Spider-Man (Miles Morales)",
+      "slug": "spider-man-miles-morales",
+      "team": "spider-friends",
+      "cardCounts": {
+        "Venom Strike": 5,
+        "Web-Trap": 5,
+        "Spider-Camouflage": 3,
+        "Jump Dimensions": 1
+      },
+      "cards": [
+        {
+          "name": "Venom Strike",
+          "displayName": "Venom Strike",
+          "slug": "venom-strike",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 2,
+          "attack": "1+",
+          "recruit": null,
+          "abilities": [
+            "[hc:strength]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Web-Trap",
+          "displayName": "Web-Trap",
+          "slug": "web-trap",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": "1",
+          "recruit": null,
+          "abilities": [
+            "[hc:instinct]: When you draw a new hand this turn, draw an extra card."
+          ]
+        },
+        {
+          "name": "Spider-Camouflage",
+          "displayName": "Spider-Camouflage",
+          "slug": "spider-camouflage",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 2,
+          "attack": "2",
+          "recruit": null,
+          "abilities": [
+            "You may set aside a card from your hand. When you draw a new hand this turn, add that card to your hand."
+          ]
+        },
+        {
+          "name": "Jump Dimensions",
+          "displayName": "Jump Dimensions",
+          "slug": "jump-dimensions",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 2,
+          "attack": "2",
+          "recruit": null,
+          "abilities": [
+            "[team:spider-friends]: Rescue a Bystander. Then discard up to three cards. When you draw a new hand this turn, draw as many extra cards as you discarded this way."
+          ]
+        }
+      ],
+      "physicalCards": [
+        {
+          "id": "p1",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-miles-morales-venom-strike.webp",
+          "sides": [
+            "venom-strike"
+          ]
+        },
+        {
+          "id": "p2",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-miles-morales-web-trap.webp",
+          "sides": [
+            "web-trap"
+          ]
+        },
+        {
+          "id": "p3",
+          "count": 3,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-miles-morales-spider-camouflage.webp",
+          "sides": [
+            "spider-camouflage"
+          ]
+        },
+        {
+          "id": "p4",
+          "count": 1,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-miles-morales-jump-dimensions.webp",
+          "sides": [
+            "jump-dimensions"
           ]
         }
       ]

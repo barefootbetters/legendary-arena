@@ -400,7 +400,7 @@
       "label": "Draw",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 88,
+      "cardCount": 87,
       "cardIds": [
         "3dtc/black-widow",
         "amwp/freedom-fighters",
@@ -422,7 +422,6 @@
         "co2e/emma-frost",
         "co2e/hawkeye",
         "co2e/iron-man",
-        "co2e/storm",
         "co2e/wolverine",
         "core/black-widow",
         "core/emma-frost",
@@ -628,10 +627,9 @@
       "label": "Gain Wound Each",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 4,
+      "cardCount": 3,
       "cardIds": [
         "3dtc/hulk",
-        "co2e/hulk",
         "core/hulk",
         "msp1/hulk"
       ],
@@ -836,9 +834,10 @@
       "label": "Optional Ko Reward",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 2,
+      "cardCount": 3,
       "cardIds": [
         "co2e/black-widow",
+        "co2e/rogue",
         "core/black-widow"
       ],
       "hidden": true
@@ -970,7 +969,7 @@
       "label": "Rescue",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 14,
+      "cardCount": 13,
       "cardIds": [
         "3dtc/black-widow",
         "ca75/captain-america-1941",
@@ -979,7 +978,6 @@
         "chmp/ms-marvel",
         "chmp/nova",
         "co2e/black-widow",
-        "co2e/spider-man",
         "core/black-widow",
         "core/spider-man",
         "cosm/ronan-the-accuser",
@@ -1568,7 +1566,7 @@
       "label": "Unmarked",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 45,
+      "cardCount": 46,
       "cardIds": [
         "3dtc/deadpool",
         "3dtc/howard-the-duck",
@@ -1577,7 +1575,8 @@
         "amwp/wasp",
         "co2e/captain-america",
         "co2e/nick-fury",
-        "co2e/rogue",
+        "co2e/spider-man-miles-morales",
+        "co2e/storm",
         "co2e/thor",
         "core/captain-america",
         "core/deadpool",
@@ -2222,7 +2221,6 @@
     },
     "co2e/hulk": {
       "mechanics": [
-        "gain-wound-each",
         "ko-wound-reward"
       ]
     },
@@ -2238,19 +2236,23 @@
     },
     "co2e/rogue": {
       "mechanics": [
-        "unmarked"
+        "optional-ko-reward"
       ]
     },
     "co2e/spider-man": {
       "mechanics": [
-        "rescue",
         "reveal",
         "reveal-count"
       ]
     },
+    "co2e/spider-man-miles-morales": {
+      "mechanics": [
+        "unmarked"
+      ]
+    },
     "co2e/storm": {
       "mechanics": [
-        "draw"
+        "unmarked"
       ]
     },
     "co2e/thor": {
