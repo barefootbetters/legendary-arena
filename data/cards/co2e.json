@@ -1791,6 +1791,63 @@
   ],
   "villains": [
     {
+      "id": 1,
+      "name": "Brotherhood of Mutants",
+      "slug": "brotherhood-of-mutants",
+      "ledBy": [
+        "magneto"
+      ],
+      "cards": [
+        {
+          "name": "Juggernaut",
+          "slug": "juggernaut",
+          "vp": "5",
+          "vAttack": "7",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-brotherhood-of-mutants-juggernaut.webp",
+          "abilities": [
+            "Ambush: Each player reveals their hand and discards all cards that have the same card names as any Heroes in the HQ. Then put all Heroes from the HQ on the bottom of the Hero Deck.",
+            "Fight: KO two of your Heroes."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Mystique",
+          "slug": "mystique",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-brotherhood-of-mutants-mystique.webp",
+          "abilities": [
+            "Ambush: Each player discards an [team:x-men] Hero.",
+            "Escape: Mystique becomes a Scheme Twist that takes effect immediately."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Sabretooth",
+          "slug": "sabretooth",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-brotherhood-of-mutants-sabretooth.webp",
+          "abilities": [
+            "Ambush: Each player reveals an [hc:instinct] Hero or gains a Wound.",
+            "Escape: Same effect."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "The Blob",
+          "slug": "the-blob",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-brotherhood-of-mutants-the-blob.webp",
+          "abilities": [
+            "Ambush: Put The Blob to the left of the Mastermind space. Nothing moves The Blob. While he's there, you can't fight the Mastermind. (You can still fight The Blob.)"
+          ],
+          "copies": 2
+        }
+      ]
+    },
+    {
       "id": 2,
       "name": "Enemies of Asgard",
       "slug": "enemies-of-asgard",
