@@ -555,20 +555,35 @@
       "slug": "hawkeye",
       "team": "avengers",
       "cardCounts": {
+        "Trick Arrow": 5,
         "Quick Draw": 5,
-        "Team Player": 5,
-        "Covering Fire": 3,
-        "Impossible Trick Shot": 1
+        "Supporting Fire": 3,
+        "Pinpoint Precision": 1
       },
       "cards": [
+        {
+          "name": "Trick Arrow",
+          "displayName": "Trick Arrow",
+          "slug": "trick-arrow",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 2,
+          "attack": "1+",
+          "recruit": null,
+          "abilities": [
+            "If you drew any cards this turn, you get +2[icon:attack]."
+          ]
+        },
         {
           "name": "Quick Draw",
           "displayName": "Quick Draw",
           "slug": "quick-draw",
           "rarity": 1,
-          "rarityLabel": "Common 1",
-          "slot": 1,
-          "hc": "instinct",
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
           "cost": 3,
           "attack": "1",
           "recruit": null,
@@ -577,48 +592,34 @@
           ]
         },
         {
-          "name": "Team Player",
-          "displayName": "Team Player",
-          "slug": "team-player",
-          "rarity": 1,
-          "rarityLabel": "Common 2",
-          "slot": 2,
-          "hc": "tech",
-          "cost": 4,
-          "attack": "2+",
-          "recruit": null,
-          "abilities": [
-            "[team:avengers]: You get +1[icon:attack]."
-          ]
-        },
-        {
-          "name": "Covering Fire",
-          "displayName": "Covering Fire",
-          "slug": "covering-fire",
+          "name": "Supporting Fire",
+          "displayName": "Supporting Fire",
+          "slug": "supporting-fire",
           "rarity": 2,
           "rarityLabel": "Uncommon",
           "slot": 3,
-          "hc": "tech",
+          "hc": "ranged",
           "cost": 5,
-          "attack": "3",
+          "attack": "2",
           "recruit": null,
           "abilities": [
-            "[hc:tech]: Choose one: each other player draws a card or each other player discards a card."
+            "[hc:ranged]: Each player draws a card."
           ]
         },
         {
-          "name": "Impossible Trick Shot",
-          "displayName": "Impossible Trick Shot",
-          "slug": "impossible-trick-shot",
+          "name": "Pinpoint Precision",
+          "displayName": "Pinpoint Precision",
+          "slug": "pinpoint-precision",
           "rarity": 3,
           "rarityLabel": "Rare",
           "slot": 4,
-          "hc": "tech",
+          "hc": "ranged",
           "cost": 7,
-          "attack": "5",
+          "attack": "5+",
           "recruit": null,
           "abilities": [
-            "Whenever you defeat a Villain or Mastermind this turn, rescue three Bystanders."
+            "Whenever you fight the Mastermind this turn, look at two of their face down Mastermind Tactics at random and choose which one to fight.",
+            "[team:avengers]: You get +2[icon:attack]."
           ]
         }
       ],
@@ -626,33 +627,33 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hawkeye-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hawkeye-trick-arrow.webp",
           "sides": [
-            "quick-draw"
+            "trick-arrow"
           ]
         },
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hawkeye-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hawkeye-quick-draw.webp",
           "sides": [
-            "team-player"
+            "quick-draw"
           ]
         },
         {
           "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hawkeye-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hawkeye-supporting-fire.webp",
           "sides": [
-            "covering-fire"
+            "supporting-fire"
           ]
         },
         {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hawkeye-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hawkeye-pinpoint-precision.webp",
           "sides": [
-            "impossible-trick-shot"
+            "pinpoint-precision"
           ]
         }
       ]
