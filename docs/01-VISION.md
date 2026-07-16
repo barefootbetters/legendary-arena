@@ -188,7 +188,7 @@ rewrites required to add new ones. The authoritative theme data model is
 established in WP-055 as a registry-layer content primitive: purely data, never
 behavior.
 
-#### 10a. Registry Viewer (cards.barefootbetters.com)
+#### 10a. Registry Viewer (cards.legendary-arena.com)
 
 The Registry Viewer is the **public-facing card and theme browser** for
 Legendary Arena, a ground-up rebuild of the earlier www.master-strike.com

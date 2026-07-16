@@ -328,7 +328,15 @@ onUnmounted(() => {
   <div class="legends-app" :class="{ kiosk: kioskConfig.isKiosk }">
     <!-- Header (hidden in kiosk mode) -->
     <header v-if="!kioskConfig.isKiosk" class="app-header">
-      <h1 class="app-title">Hall of Legends</h1>
+      <div class="app-header-brand">
+        <h1 class="app-title">Hall of Legends</h1>
+        <!-- why: three-site ecosystem cross-link (marketing-site Pattern C) —
+             every public surface links back to the www home. Plain <a>, zero
+             new deps, hidden with the rest of the header in kiosk mode. -->
+        <a class="app-home-link" href="https://www.legendary-arena.com">
+          legendary-arena.com
+        </a>
+      </div>
       <FreshnessBadge
         :generated-at="manifest?.generatedAt ?? null"
         :fetch-error="manifestFetchError"
@@ -456,6 +464,23 @@ onUnmounted(() => {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.app-header-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.app-home-link {
+  font-size: 0.85rem;
+  color: #888;
+  text-decoration: none;
+}
+
+.app-home-link:hover,
+.app-home-link:focus-visible {
+  color: #ffd700;
 }
 
 /* States */

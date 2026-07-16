@@ -217,7 +217,7 @@ CONNECTIONS (concurrent)
   ✓ PostgreSQL : legendary_arena — PostgreSQL 18.3  (232ms)
   ✓ Cloudflare R2 : metadata/sets.json → 200 application/json  (197ms)
   ✓ boardgame.io server : /health → 200 application/json 15B  (310ms)
-  ✓ Cloudflare Pages : https://cards.barefootbetters.com → 200  (301ms)
+  ✓ Cloudflare Pages : https://cards.legendary-arena.com → 200  (301ms)
   ✓ API server CORS : https://legendary-arena-server.onrender.com/api/me/profile allows Origin=https://play.legendary-arena.com  (HTTP 204, 335ms)
   ✓ Arena-client bundle env : https://play.legendary-arena.com/assets/index-BaZEBP-t.js has all required VITE_* env vars inlined.
   ✓ GitHub API : barefootbetters/legendary-arena found  (563ms)

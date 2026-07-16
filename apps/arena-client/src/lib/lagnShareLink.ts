@@ -18,11 +18,12 @@
 
 // why: the deployed Registry Viewer origin — the link opens the viewer directly,
 // so it must match the SERVED origin (per apps/registry-viewer/CLAUDE.md the
-// viewer is live at cards.barefootbetters.com; both cards.barefootbetters.com and
-// cards.legendary-arena.com are CORS-allowlisted server-side, but that governs
-// the server fetch, not this direct viewer navigation). No trailing slash so the
-// URL is built with exactly one `/` before `?lagn=`.
-export const REGISTRY_VIEWER_ORIGIN = "https://cards.barefootbetters.com";
+// viewer is live at cards.legendary-arena.com since the 2026-07-16 domain
+// migration; the legacy cards.barefootbetters.com 301-redirects here and both
+// remain CORS-allowlisted server-side, but that governs the server fetch, not
+// this direct viewer navigation). No trailing slash so the URL is built with
+// exactly one `/` before `?lagn=`.
+export const REGISTRY_VIEWER_ORIGIN = "https://cards.legendary-arena.com";
 
 /**
  * Encode a UTF-8 string to base64url (RFC 4648 §5: `-`/`_` alphabet, no `=`

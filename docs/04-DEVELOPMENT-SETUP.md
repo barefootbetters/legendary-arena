@@ -79,7 +79,7 @@ PostgreSQL, only these matter:
 | `NODE_ENV` | `development` |
 | `PORT` | `8000` |
 | `R2_PUBLIC_URL` | `https://images.barefootbetters.com` |
-| `CF_PAGES_URL` | `https://cards.barefootbetters.com` |
+| `CF_PAGES_URL` | `https://cards.legendary-arena.com` |
 | `VITE_GAME_SERVER_URL` | `http://localhost:8000` |
 
 The remaining variables are needed when running the full server stack

@@ -499,7 +499,7 @@ mindmap
       Reference (one-line pointers)
         ["docs/12-SCORING-REFERENCE.md — formula and invariants"]
         ["docs/12.1-PAR-ARTIFACT-INTEGRITY.md — hashing trust model"]
-        ["cards.barefootbetters.com — registry viewer (public)"]
+        ["cards.legendary-arena.com — registry viewer (public)"]
         [".claude/CLAUDE.md — root coordination"]
         [".claude/rules/ — 7 rule files"]
         ["EC_INDEX.md — execution checklists (range in Project Baselines)"]

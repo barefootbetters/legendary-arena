@@ -24,7 +24,7 @@
 | **G** | Game State | boardgame.io mutable state object — never persisted |
 | **ctx** | Context | boardgame.io internal metadata (player, turn, phase, random) |
 | **CLI** | Command Line Interface | `.mjs` scripts in `scripts/` and `pnpm` commands |
-| **SPA** | Single Page Application | The registry viewer at `cards.barefootbetters.com` |
+| **SPA** | Single Page Application | The registry viewer at `cards.legendary-arena.com` |
 
 ---
 

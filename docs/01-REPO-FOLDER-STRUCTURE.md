@@ -113,7 +113,7 @@ apps/
 │   └── dist/                   # Build output (not committed)
 │
 ├── registry-viewer/            # Read-only card browser SPA (Vue 3 + Vite)
-│   │                           # cards.barefootbetters.com
+│   │                           # cards.legendary-arena.com
 │   ├── src/
 │   │   ├── components/         # CardGrid, CardDetail, CardDataTile (WP-096),
 │   │   │                       # CardSizeSlider (WP-121), AbilityEffectFilter (WP-125),

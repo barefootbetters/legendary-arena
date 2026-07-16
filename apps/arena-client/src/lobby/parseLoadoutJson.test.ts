@@ -570,7 +570,7 @@ describe('parseLoadoutJson (WP-092)', () => {
 // expected message is rebuilt here from the same template and asserted in full
 // (strictEqual, never substring / .includes).
 function expectedUnqualifiedExtIdMessage(field: string, value: string): string {
-  return `The loadout field "${field}" value "${value}" is not a set-qualified ext_id of the form "<setAbbr>/<slug>" (for example, "core/black-widow"). This usually means the loadout was exported before the qualified-ext_id fix; re-export it from the Registry Viewer loadout builder at cards.barefootbetters.com.`;
+  return `The loadout field "${field}" value "${value}" is not a set-qualified ext_id of the form "<setAbbr>/<slug>" (for example, "core/black-widow"). This usually means the loadout was exported before the qualified-ext_id fix; re-export it from the Registry Viewer loadout builder at cards.legendary-arena.com.`;
 }
 
 describe('parseLoadoutJson qualified-form guard (WP-254)', () => {

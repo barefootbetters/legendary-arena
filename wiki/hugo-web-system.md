@@ -503,7 +503,7 @@ header and footer partials:
 | Shop | `/shop/` | 25 |
 | Brand | `/brand/` | 30 |
 | Play | `https://play.legendary-arena.com/` | 40 |
-| Cards | `https://cards.barefootbetters.com/` | 50 |
+| Cards | `https://cards.legendary-arena.com/` | 50 |
 | Account | `https://play.legendary-arena.com/?route=me` | 60 |
 
 Play and Cards are the **primary conversion / external destinations**,
@@ -532,7 +532,7 @@ session) but never auth-*owning* (no login form / broker / session mutation).
 | Shop | `/shop/` | 22 |
 | Brand | `/brand/` | 25 |
 | Play | `https://play.legendary-arena.com/` | 30 |
-| Cards | `https://cards.barefootbetters.com/` | 40 |
+| Cards | `https://cards.legendary-arena.com/` | 40 |
 
 Trailing slashes on internal URLs are required — the header partial
 does exact string comparison for active-state styling.

@@ -31,7 +31,7 @@ describe("setupUrlParams (WP-114)", () => {
       officersCount: 30,
       sidekicksCount: 0,
     };
-    const baseUrl = "https://cards.barefootbetters.com/";
+    const baseUrl = "https://cards.legendary-arena.com/";
 
     const serialized = serializeSetupToUrl(composition, baseUrl);
     const queryString = new URL(serialized).search;
@@ -58,7 +58,7 @@ describe("setupUrlParams (WP-114)", () => {
       officersCount: 30,
       sidekicksCount: 0,
     };
-    const serialized = serializeSetupToUrl(composition, "https://cards.barefootbetters.com/");
+    const serialized = serializeSetupToUrl(composition, "https://cards.legendary-arena.com/");
     const queryString = serialized.split("?", 2)[1] ?? "";
 
     const schemePos = queryString.indexOf("schemeId=");
@@ -101,7 +101,7 @@ describe("setupUrlParams (WP-114)", () => {
       officersCount: 30,
       sidekicksCount: 0,
     };
-    const serialized = serializeSetupToUrl(composition, "https://cards.barefootbetters.com/");
+    const serialized = serializeSetupToUrl(composition, "https://cards.legendary-arena.com/");
     const parsed = parseSetupUrl(new URL(serialized).search);
     assert.equal(parsed.schemeId, "core/midtown-bank-robbery");
     assert.equal(parsed.mastermindId, "core/loki-god-of-mischief");

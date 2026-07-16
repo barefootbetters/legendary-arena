@@ -16,7 +16,7 @@
 | Component | Service | URL | Status |
 |---|---|---|---|
 | Card data & images | Cloudflare R2 | `https://images.barefootbetters.com` | ✅ Live |
-| Registry viewer | Cloudflare Pages | `https://cards.barefootbetters.com` | ✅ Live |
+| Registry viewer | Cloudflare Pages | `https://cards.legendary-arena.com` | ✅ Live |
 | Game server | Render.com | `render.yaml` | ✅ Live (FP-01) |
 | PostgreSQL | Render.com (managed) | `legendary.*` schema | ✅ Live (FP-01) |
 | Database migrations | `scripts/migrate.mjs` | `data/migrations/` | ✅ Live (FP-02) |
@@ -59,7 +59,7 @@ fallback.
 
 ### Cloudflare Pages (Registry Viewer)
 
-The card browser SPA at `cards.barefootbetters.com`. Built from
+The card browser SPA at `cards.legendary-arena.com`. Built from
 `apps/registry-viewer/`. Deployed via Cloudflare Pages Git integration.
 
 ### GitHub Actions (CI)
@@ -131,7 +131,7 @@ These variables are configured in the Render.com dashboard:
 | `GAME_SERVER_URL` | Render dashboard | Public URL of the Render service |
 | `JWT_SECRET` | Render dashboard | 32+ byte hex — rotate by updating and redeploying |
 | `R2_PUBLIC_URL` | Render dashboard | `https://images.barefootbetters.com` |
-| `CF_PAGES_URL` | Render dashboard | `https://cards.barefootbetters.com` |
+| `CF_PAGES_URL` | Render dashboard | `https://cards.legendary-arena.com` |
 | `VITE_GAME_SERVER_URL` | Render dashboard | Same as `GAME_SERVER_URL` |
 | `PORT` | Render (auto-injected) | Do NOT set in dashboard — Render injects automatically |
 | `EXPECTED_DB_NAME` | Render dashboard | Database name for connection verification |

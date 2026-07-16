@@ -120,7 +120,7 @@ const REQUIRED_VARS = {
   ],
   'Cloudflare': [
     'R2_PUBLIC_URL',      // e.g. https://images.legendary-arena.com
-    'CF_PAGES_URL',       // e.g. https://cards.barefootbetters.com
+    'CF_PAGES_URL',       // e.g. https://cards.legendary-arena.com
   ],
   'Frontend (Vite)': [
     'VITE_GAME_SERVER_URL', // exposed to browser bundle — must match GAME_SERVER_URL

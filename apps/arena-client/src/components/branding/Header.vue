@@ -34,7 +34,7 @@ export default defineComponent({
            and Cards leave to other sites), so it leads the nav. -->
       <a class="brand-nav-link" href="/" data-testid="brand-nav-play">Play</a>
       <a class="brand-nav-link" href="https://www.legendary-arena.com">Home</a>
-      <a class="brand-nav-link" href="https://cards.barefootbetters.com">
+      <a class="brand-nav-link" href="https://cards.legendary-arena.com">
         Cards
       </a>
 
