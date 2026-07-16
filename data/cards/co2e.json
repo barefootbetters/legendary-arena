@@ -1911,17 +1911,18 @@
       "name": "Masters of Evil",
       "slug": "masters-of-evil",
       "ledBy": [
-        "dr-doom"
+        "doctor-doom"
       ],
       "cards": [
         {
           "name": "Baron Zemo",
           "slug": "baron-zemo",
-          "vp": "4",
-          "vAttack": "6",
+          "vp": "3",
+          "vAttack": "4+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-masters-of-evil-baron-zemo.webp",
           "abilities": [
-            "Fight: For each of your [team:avengers] Heroes, rescue a Bystander."
+            "Baron Zemo gets +1[icon:attack] for each Bystander he has.",
+            "Ambush: Baron Zemo captures a Bystander. Then he captures another Bystander for each [team:avengers] Hero in the HQ."
           ],
           "copies": 2
         },
@@ -1939,11 +1940,12 @@
         {
           "name": "Ultron",
           "slug": "ultron",
-          "vp": "2+",
-          "vAttack": "6",
+          "vp": "4",
+          "vAttack": "5+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-masters-of-evil-ultron.webp",
           "abilities": [
-            "Ultron is worth +1[icon:piercing] for each [hc:tech] Hero you have among all your cards at the end of the game.",
+            "Ultron gets +1[icon:attack] for each [hc:tech] Hero in the HQ.",
+            "Fight: Choose a [hc:tech] Hero from the HQ. Either KO that Hero or choose a player to gain it.",
             "Escape: Each player reveals a [hc:tech] Hero or gains a Wound."
           ],
           "copies": 2
@@ -1955,7 +1957,8 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-masters-of-evil-whirlwind.webp",
           "abilities": [
-            "Fight: If you fight Whirlwind on the Rooftops or Bridge, KO two of your Heroes."
+            "Ambush: Two Villains in the city swap spaces.",
+            "Fight: If you fight Whirlwind on the Rooftops or Bridge, KO one of your Heroes."
           ],
           "copies": 2
         }
