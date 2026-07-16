@@ -1973,11 +1973,23 @@
         {
           "name": "Abomination",
           "slug": "abomination",
-          "vp": "3",
-          "vAttack": "5",
+          "vp": "4",
+          "vAttack": "5+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-radiation-abomination.webp",
           "abilities": [
-            "Fight: If you fight Abomination on the Streets or Bridge, rescue three Bystanders."
+            "Abomination gets +[icon:attack] equal to the printed [icon:attack] of the Hero in the HQ space under his current city space.",
+            "Fight: You get +1[icon:recruit] for each of your [hc:strength] Heroes."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Maestro, Wasteland Hulk",
+          "slug": "maestro-wasteland-hulk",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-radiation-maestro-wasteland-hulk.webp",
+          "abilities": [
+            "Fight: Count your [hc:strength] Heroes. KO that many of your Heroes."
           ],
           "copies": 2
         },
@@ -1988,7 +2000,7 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-radiation-the-leader.webp",
           "abilities": [
-            "Ambush: Play the top card of the Villain Deck."
+            "Ambush: Reveal a [hc:strength] Hero or play a card from the Villain Deck."
           ],
           "copies": 2
         },
