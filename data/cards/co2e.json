@@ -1209,25 +1209,25 @@
       "slug": "storm",
       "team": "x-men",
       "cardCounts": {
-        "Gathering Stormclouds": 5,
+        "Revitalizing Rain": 5,
         "Lightning Bolt": 5,
         "Spinning Cyclone": 3,
         "Tidal Wave": 1
       },
       "cards": [
         {
-          "name": "Gathering Stormclouds",
-          "displayName": "Gathering Stormclouds",
-          "slug": "gathering-stormclouds",
+          "name": "Revitalizing Rain",
+          "displayName": "Revitalizing Rain",
+          "slug": "revitalizing-rain",
           "rarity": 1,
           "rarityLabel": "Common 1",
           "slot": 1,
           "hc": "ranged",
           "cost": 3,
           "attack": null,
-          "recruit": "2",
+          "recruit": "2+",
           "abilities": [
-            "[hc:ranged]:  Draw a card. [keyword:draw:1]"
+            "[hc:ranged]: You get +2[icon:recruit]."
           ]
         },
         {
@@ -1239,10 +1239,11 @@
           "slot": 2,
           "hc": "ranged",
           "cost": 4,
-          "attack": "2",
+          "attack": "2+",
           "recruit": null,
           "abilities": [
-            "Any Villain you fight on the Rooftops this turn gets -2[icon:attack]."
+            "You get +2[icon:attack] usable only against Villains on the Rooftops.",
+            "[hc:ranged]: You may use this bonus [icon:attack] against the Mastermind instead."
           ]
         },
         {
@@ -1257,8 +1258,7 @@
           "attack": "4",
           "recruit": null,
           "abilities": [
-            "You may move a Villain to a new city space. Rescue any Bystanders captured by that Villain.",
-            "(If you move a Villain to a city space that already has Villain, swap them.)"
+            "You may move a Villain to another city space. If another Villain is already there, swap them."
           ]
         },
         {
@@ -1270,11 +1270,11 @@
           "slot": 4,
           "hc": "ranged",
           "cost": 7,
-          "attack": "5",
+          "attack": "4+",
           "recruit": null,
           "abilities": [
-            "Any Villain you fight on the Bridge this turn gets -2[icon:attack].",
-            "[hc:ranged]: The Mastermind gets -2[icon:attack] this turn."
+            "You get +3[icon:attack] usable only against Villains in the Sewers or Bridge.",
+            "[hc:ranged]: You may use this bonus [icon:attack] against the Mastermind instead."
           ]
         }
       ],
@@ -1282,15 +1282,15 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-storm-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-storm-revitalizing-rain.webp",
           "sides": [
-            "gathering-stormclouds"
+            "revitalizing-rain"
           ]
         },
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-storm-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-storm-lightning-bolt.webp",
           "sides": [
             "lightning-bolt"
           ]
@@ -1298,7 +1298,7 @@
         {
           "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-storm-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-storm-spinning-cyclone.webp",
           "sides": [
             "spinning-cyclone"
           ]
@@ -1306,7 +1306,7 @@
         {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-storm-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-storm-tidal-wave.webp",
           "sides": [
             "tidal-wave"
           ]
